@@ -180,6 +180,25 @@ serdes_fw_file (void)
     return g_linkmgr_cfg.catalog->serdes_fw_file();
 }
 
+
+int
+serdes_build_id2 (void)
+{
+    return g_linkmgr_cfg.catalog->serdes_build_id2();
+}
+
+int
+serdes_rev_id2 (void)
+{
+    return g_linkmgr_cfg.catalog->serdes_rev_id2();
+}
+
+std::string
+serdes_fw2_file (void)
+{
+    return g_linkmgr_cfg.catalog->serdes_fw2_file();
+}
+
 sdk_ret_t
 port_link_poll_timer_add(port *port)
 {
@@ -399,8 +418,12 @@ linkmgr_event_thread_init (void *ctxt)
     int         exp_build_id = serdes_build_id();
     int         exp_rev_id   = serdes_rev_id();
     std::string cfg_file     = "fw/" + serdes_fw_file();
+    int         exp_build_id2 = serdes_build_id2();
+    int         exp_rev_id2   = serdes_rev_id2();
+    std::string cfg_file2     = "fw/" + serdes_fw2_file();
 
     cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file;
+    cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file2;
 
     pal_wr_lock(SBUSLOCK);
 
@@ -413,20 +436,23 @@ linkmgr_event_thread_init (void *ctxt)
         uint32_t sbus_addr = sbus_addr_asic_port(0, asic_port);
 
         if (sbus_addr == 0) {
-            continue;
+          continue;
         }
 
-        sdk::linkmgr::serdes_fns.serdes_spico_upload(sbus_addr, cfg_file.c_str());
+        sdk::linkmgr::serdes_fns.serdes_spico_upload(sbus_addr, cfg_file.c_str(), cfg_file2.c_str());
 
         int build_id = sdk::linkmgr::serdes_fns.serdes_get_build_id(sbus_addr);
         int rev_id   = sdk::linkmgr::serdes_fns.serdes_get_rev(sbus_addr);
 
-        if (build_id != exp_build_id || rev_id != exp_rev_id) {
+        if (
+            (build_id != exp_build_id || rev_id != exp_rev_id) &&
+            (build_id != exp_build_id2 || rev_id != exp_rev_id2) 
+           ) {
             SDK_TRACE_DEBUG("sbus_addr 0x%x,"
-                            " build_id 0x%x, exp_build_id 0x%x,"
-                            " rev_id 0x%x, exp_rev_id 0x%x",
-                            sbus_addr, build_id, exp_build_id,
-                            rev_id, exp_rev_id);
+                            " build_id 0x%x , exp_build_id2 0x%x, exp_build_id 0x%x,"
+                            " rev_id 0x%x, exp_rev_id2 0x%x, exp_rev_id 0x%x",
+                            sbus_addr, build_id, exp_build_id2,  exp_build_id,
+                            rev_id, exp_rev_id2, exp_rev_id);
             // TODO fail if no match
         }
 

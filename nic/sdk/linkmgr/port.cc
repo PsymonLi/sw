@@ -734,6 +734,7 @@ port::port_serdes_an_hcd_cfg (void)
     port_speed_t serdes_speed =
                     port_speed_to_serdes_speed(this->port_speed_);
 
+    uint32_t rx_term;
     for (lane = 0; lane < num_lanes; ++lane) {
         sbus_addr = port_sbus_addr(lane);
 
@@ -744,10 +745,12 @@ port::port_serdes_an_hcd_cfg (void)
 
         // configure Tx/Rx slip, Rx termination, Tx EQ
         serdes_fns()->serdes_cfg(sbus_addr, serdes_info);
+
+        rx_term = serdes_info->rx_term;
     }
 
     // configure divider, width, start link training
-    return serdes_fns()->serdes_an_hcd_cfg(port_sbus_addr(0), this->sbus_addr_);
+    return serdes_fns()->serdes_an_hcd_cfg(port_sbus_addr(0), this->sbus_addr_, an_hcd, rx_term);
 }
 
 int
