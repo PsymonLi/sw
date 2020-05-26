@@ -437,6 +437,13 @@ catalog::populate_clock_info (ptree &prop_tree)
 uint32_t
 catalog::serdes_index_get(uint32_t sbus_addr)
 {
+  uint8_t ll  = (sbus_addr&0xf0000)>>16 ;
+  if ( ll != 0 ) {
+    return (ll-8);
+  } 
+  if ( sbus_addr > 0xff ) {
+    return 8;
+  }
     if (sbus_addr < SERDES_SBUS_START) {
         return sbus_addr;
     }
@@ -461,7 +468,11 @@ catalog::parse_serdes(ptree &prop_tree)
 
         uint32_t mac_id      = serdes.second.get<uint32_t>("mac_id", 0);
         uint32_t mac_ch      = serdes.second.get<uint32_t>("mac_ch", 0);
-        uint32_t sbus_addr   = serdes.second.get<uint32_t>("sbus_addr", 0);
+
+        //sbus address can be hex
+        std::string s_addr   = serdes.second.get<std::string>("sbus_addr", "0x0");
+        uint32_t sbus_addr   = ( (s_addr.find("0x")!=std::string::npos) || (s_addr.find("0X")!=std::string::npos) )?
+                               std::stoul (s_addr, nullptr, 16) : std::stoul (s_addr, nullptr, 10);
         uint32_t serdes_lane = 0;
         uint8_t  cable_type  = 0;
         uint32_t port_speed  = 0;
@@ -622,6 +633,18 @@ catalog::populate_serdes(char *dir_name, ptree &prop_tree)
     std::string serdes_rev_id =
                         prop_tree.get<std::string>("serdes.rev_id", "");
     catalog_db_.serdes_rev_id = strtoul(serdes_rev_id.c_str(), NULL, 16);
+
+    catalog_db_.serdes_fw2_file =
+                        prop_tree.get<std::string>("serdes.fw2", "");
+
+    std::string serdes_build_id2 =
+                        prop_tree.get<std::string>("serdes.build_id2", "");
+    catalog_db_.serdes_build_id2 = strtoul(serdes_build_id2.c_str(), NULL, 16);
+
+    std::string serdes_rev_id2 =
+                        prop_tree.get<std::string>("serdes.rev_id2", "");
+
+    catalog_db_.serdes_rev_id2 = strtoul(serdes_rev_id2.c_str(), NULL, 16);
 
     std::string serdes_file =
                         prop_tree.get<std::string>("serdes.serdes_file", "");
@@ -1016,6 +1039,8 @@ catalog::oob_auto_neg_enable(uint32_t logical_oob_port) {
     return catalog_logical_oob_port->auto_neg_enable;
 }
 
+//TODO: To get the serdes_info we could have used mac_id and mac_chnl instead of serdes_index.
+// Using serdes_index requires us to know sbus_addr allocation which could vary chip2chip
 serdes_info_t*
 catalog::serdes_info_get(uint32_t sbus_addr,
                          uint32_t port_speed,

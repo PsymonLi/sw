@@ -58,9 +58,25 @@ typedef struct serdes_info_s {
     uint8_t  tx_pol;
     uint8_t  rx_pol;
     uint8_t  rx_term;
-    uint32_t amp;
-    uint32_t pre;
-    uint32_t post;
+    int      amp;
+    int      pre;
+    int      pre2;
+    int      post;
+    int      post2;
+    int      post3;
+
+    uint8_t  pam4_mode;     //Table:7 BH Srds Spec.
+                            //3'b000: PAM2 (NRZ) modulation, 40b data input 
+                            //3'b100: PAM2 (NRZ) modulation, 20b data input 
+                            //3'b001: PAM4 modulation, 40b data input
+                            //3'b101: PAM4 modulation, 80b data input
+
+    uint8_t  osr;           //Table:7 BH Srds Spec. we use OSR1/OSR2P5/OSR20P625
+                            //4'd0: OSR1
+                            //4'd3: OSR2p5
+                            //4'd12: OSR20p625 
+                            
+    uint8_t  cable_type;    //0|1|2 , 0:pcb_trace , 1:copper, 2:fiber
 } serdes_info_t;
 
 typedef struct ch_profile_ {
@@ -176,6 +192,9 @@ typedef struct catalog_s {
     uint32_t                   serdes_build_id;                       // serdes FW build ID
     uint32_t                   serdes_rev_id;                         // serdes FW rev ID
     std::string                serdes_fw_file;                        // serdes FW file
+    uint32_t                   serdes_build_id2;                      // serdes FW2 build ID
+    uint32_t                   serdes_rev_id2;                        // serdes FW2 rev ID
+    std::string                serdes_fw2_file;                       // serdes FW2 file
     serdes_info_t              serdes[MAX_SERDES]
                                      [MAX_PORT_SPEEDS]
                                      [sdk::types::CABLE_TYPE_MAX];
@@ -319,6 +338,9 @@ public:
     uint32_t     serdes_build_id(void) { return catalog_db_.serdes_build_id; }
     uint32_t     serdes_rev_id(void) { return catalog_db_.serdes_rev_id;   }
     std::string  serdes_fw_file(void) { return catalog_db_.serdes_fw_file;  }
+    uint32_t     serdes_build_id2(void) { return catalog_db_.serdes_build_id2; }
+    uint32_t     serdes_rev_id2(void) { return catalog_db_.serdes_rev_id2;   }
+    std::string  serdes_fw2_file(void) { return catalog_db_.serdes_fw2_file;  }
     uint8_t aacs_server_en(void) { return catalog_db_.aacs_info.server_en; }
     uint8_t aacs_connect(void)   { return catalog_db_.aacs_info.connect; }
     std::string  aacs_server_ip(void) {
