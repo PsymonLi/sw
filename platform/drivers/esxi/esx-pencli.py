@@ -11,7 +11,7 @@ import textwrap
 import ssl
 import shutil
 
-TOOL_VERSION = '1.3'
+TOOL_VERSION = '1.8'
 
 CLI_UPLINKS = 'esxcfg-nics '
 CLI_VS = 'esxcfg-vswitch '
@@ -529,7 +529,7 @@ class Pencli:
 
         return 0
 
-    def ChangeDscMode(self, dsc_id, config_opt, management_network, mgmt_ip, gw, controllers):
+    def ChangeDscMode(self, dsc_id, config_opt, management_network, mgmt_ip, gw, inband_ip, controllers):
         cmd = ''
         if config_opt == 'static':
             controllers_str = ''
@@ -538,7 +538,10 @@ class Pencli:
                 controllers_str += '"{}"'.format(controller)+','
             controllers_str = controllers_str[:-1]
 
-            cmd = '{"kind":"","meta":{"name":"","generation-id":"","creation-time":"1970-01-01T00:00:00Z","mod-time":"1970-01-01T00:00:00Z"},"spec":{"ID":"' + dsc_id + '","ip-config":{"ip-address":"' + mgmt_ip + '","default-gw":"' + gw +'"},"mode":"NETWORK","network-mode":"' + management_network.upper() +'","controllers":[' + controllers_str + '],"naples-profile":"default"},"status":{"mode":""}}'
+            if inband_ip is None:
+                cmd = '{"kind":"","meta":{"name":"","generation-id":"","creation-time":"1970-01-01T00:00:00Z","mod-time":"1970-01-01T00:00:00Z"},"spec":{"ID":"' + dsc_id + '","ip-config":{"ip-address":"' + mgmt_ip + '","default-gw":"' + gw +'"},"mode":"NETWORK","network-mode":"' + management_network.upper() +'","controllers":[' + controllers_str + '],"naples-profile":"default"},"status":{"mode":""}}'
+            else:
+                cmd = '{"kind":"","meta":{"name":"","generation-id":"","creation-time":"1970-01-01T00:00:00Z","mod-time":"1970-01-01T00:00:00Z"},"spec":{"ID":"' + dsc_id + '","ip-config":{"ip-address":"' + mgmt_ip + '","default-gw":"' + gw +'"},"mode":"NETWORK","network-mode":"' + management_network.upper() +'","controllers":[' + controllers_str + '],"naples-profile":"default","inband-ip-config":{"ip-address":"' + inband_ip +'"}},"status":{"mode":""}}'
         else:
             cmd = '{"kind":"","meta":{"name":"","generation-id":"","creation-time":"1970-01-01T00:00:00Z","mod-time":"1970-01-01T00:00:00Z"},"spec":{"ID":"' + dsc_id + '","ip-config":{},"mode":"NETWORK","network-mode":"' + management_network.upper() +'","naples-profile":"default"},"status":{"mode":""}}'
 
@@ -865,6 +868,10 @@ def ValidateArgsForDscModeChange(args):
         if args.controllers is None:
             print('Please provide information of controller(s)')
             return 1
+        if args.inband_ip is not None:
+            if '/' not in args.inband_ip:
+                print('Please provide inband IP address in CIDR format(For example: 10.10.10.19/24')
+                return 1
         if len(args.controllers.split(',')) % 2 == 0:
             print('Number of controllers must be an odd number, current number: ' + str(len(args.controllers.split(','))))
             return 1
@@ -899,7 +906,7 @@ def ChangeDscMode(args):
         print('Failed at validating connectivity to Pensando DSC')
         return 1
 
-    ret = pencli.ChangeDscMode(args.dsc_id, args.config_opt, args.management_network, args.mgmt_ip, args.gw, args.controllers)
+    ret = pencli.ChangeDscMode(args.dsc_id, args.config_opt, args.management_network, args.mgmt_ip, args.gw, args.inband_ip, args.controllers)
     pencli.CleanupPenMgmtNetwork()
 
     if ret:
@@ -936,6 +943,8 @@ if __name__ == '__main__':
                    python esx-pencli.pyc upgrade_dsc  --fw_img /vmfs/volumes/datastore1/naples_fw.tar
                 4. Change Pensando DSC mode from host managed to network managed
                    python esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
+                5. Change Pensando DSC mode from host managed to network managed with static configurations and inband IP address
+                   python esx-pencli.pyc change_dsc_mode --config_opt static --management_network oob --dsc_id pen_dsc1 --mgmt_ip 10.10.10.10/24 --gw 10.10.10.1 --inband_ip 1.1.1.1/24 --controllers 10.10.10.11,10.10.10.12,10.10.10.13
         '''))          
     subparsers = parser.add_subparsers()
 
@@ -968,6 +977,7 @@ if __name__ == '__main__':
     subparser.add_argument('--config_opt', required=True, help = 'Use static/dhcp based configurations for DSC mode change(static/dhcp)')
     subparser.add_argument('--management_network', required=True, help = 'Management Network(inband or oob)')
     subparser.add_argument('--mgmt_ip', help = 'Management IP in CIDR format(only required for static configuration)')
+    subparser.add_argument('--inband_ip', help = 'Inband IP in CIDR format(only required for static configuration)')
     subparser.add_argument('--gw', help = 'Default GW for mgmt')
     subparser.add_argument('--controllers', help = 'List of controller IP addresses or ids, separated by commas(for example: 10.10.10.11,10.10.10.12,10.10.10.13')
     subparser.add_argument('--uplink', default = '', help = 'Which management uplink to be used, required only in dual DSCs environment')
