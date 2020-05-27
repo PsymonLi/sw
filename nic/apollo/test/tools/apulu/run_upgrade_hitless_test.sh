@@ -36,8 +36,8 @@ sudo $MY_DIR/../../../tools/$PIPELINE/start-dhcpd-sim.sh -p apulu
 
 # set the upgrade domain id
 rm -f  /tmp/agent_up
-# set the domain
-sh $MY_DIR/start_upgrade_hitless_process.sh $UPGRADE_DOMAIN_A &
+# set the domain. but this bringup is in default mode
+sh $MY_DIR/start_upgrade_hitless_process.sh $UPGRADE_DOMAIN_A "0" &
 # wait for this to be up
 count=0
 while [ ! -f /tmp/agent_up ];do

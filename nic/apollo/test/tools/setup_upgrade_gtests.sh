@@ -118,6 +118,9 @@ function hitless_copy_files() {
         cp -r --parents $d $PDSPKG_TOPDIR
     done
     find ./vpp -name "*.mk" | xargs -I '{}'  cp -r --parents '{}' $PDSPKG_TOPDIR
+    # this has to be in tools
+    mkdir -p $PDSPKG_TOPDIR/tools/
+    cp ./sdk/upgrade/core/upgmgr_core_base.sh $PDSPKG_TOPDIR/tools/
 }
 
 function hitless_cleanup() {

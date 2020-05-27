@@ -21,6 +21,10 @@ obj_backup_hitless (void)
 {
     sdk_ret_t ret = SDK_RET_OK;
     std::list<::api::upg_ev_hitless_t> hitless_list;
+    upg_ev_params_t params;
+
+    params.id = UPG_MSG_ID_BACKUP;
+    params.mode = upg_mode_t::UPGRADE_MODE_HITLESS;
 
     hitless_list = ::api::g_upg_state->ev_threads_hdlr_hitless();
     std::list<::api::upg_ev_hitless_t>::iterator it = hitless_list.begin();
@@ -28,7 +32,7 @@ obj_backup_hitless (void)
         if (!it->backup_hdlr) {
             continue;
         }
-        ret = it->backup_hdlr(NULL);
+        ret = it->backup_hdlr(&params);
         if (ret != SDK_RET_OK) {
             break;
         }

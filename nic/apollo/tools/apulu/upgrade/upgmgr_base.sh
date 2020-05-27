@@ -5,6 +5,7 @@ unset FW_PATH RUNNING_IMAGE FW_UPDATE_TOOL SYS_UPDATE_TOOL
 source $PDSPKG_TOPDIR/tools/upgmgr_core_base.sh
 
 UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
+PENVISORCTL='penvisorctl'
 
 function upgmgr_set_upgrade_status() {
     time_stamp="$(date +"%Y-%m-%d %H:%M:%S")"
@@ -86,6 +87,53 @@ function upgmgr_restore() {
     return 0
 }
 
+function upgmgr_hitless_backup_files_check() {
+    local files_must="/update/pcieport_upgdata /update/pciemgr_upgdata "
+    files_must+="/update/pds_api_upgdata "
+    local files_optional="/update/pciemgr_upgrollback "
+    # first make sure all the mandatory files are present
+    for e in $files_must; do
+        if [[ ! -f $e ]]; then
+            echo "File $e not present"
+            return 1
+        fi
+    done
+    # create softlinks to share
+    files_must+=" $files_optional"
+    for e in $files_must; do
+        rm -rf /share/$(basename $e)
+        if [[ -f $e ]]; then
+             ln -s $e /share/$(basename $e)
+        fi
+    done
+    return 0
+}
+
+function upgmgr_hitless_restore_files_check() {
+    local files_must="/share/pcieport_upgdata /share/pciemgr_upgdata "
+    files_must+="/share/pds_api_upgdata "
+    local files_optional="/share/pciemgr_upgrollback "
+    # ignore if share directory not present
+    if [ ! -d  /share ];then
+        return 0
+    fi
+    # first make sure all the mandatory files for this version are present
+    # TODO do we need a version comparion here to decide
+    for e in $files_must; do
+        if [[ ! -f $e ]]; then
+            echo "File $e not present"
+            return 1
+        fi
+    done
+    # create softlinks to update
+    files_must+=" $files_optional"
+    for e in $files_must; do
+        if [[ -f $e ]]; then
+             ln -s $e /update/$(basename $e)
+        fi
+    done
+}
+
 function reload_drivers() {
     echo "Reloading mnic drivers"
     rmmod mnet mnet_uio_pdrv_genirq ionic_mnic
@@ -99,4 +147,16 @@ function reload_drivers() {
 
     insmod $PDSPKG_TOPDIR/bin/mnet.ko &> $NON_PERSISTENT_LOG_DIR/mnet_load.log
     [[ $? -ne 0 ]] && echo "Aborting reload, failed to load mnet driver!" && exit 1
+}
+
+function copy_img_to_alt_partition() {
+    tool=$1
+    running_image=$2
+    if [[ $running_image == "mainfwa" ]];then
+        img="mainfwb"
+    else
+        img="mainfwa"
+    fi
+    $tool -i $img -p /update/naples_fw.tar
+    return $?
 }

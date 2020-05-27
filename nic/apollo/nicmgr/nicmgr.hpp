@@ -85,8 +85,7 @@ private:
                                              const void *ctxt);
 };
 
-sdk_ret_t nicmgr_upg_graceful_init(void);
-sdk_ret_t nicmgr_upg_hitless_init(void);
+sdk_ret_t nicmgr_upg_init(void);
 
 }    // namespace nicmgr
 

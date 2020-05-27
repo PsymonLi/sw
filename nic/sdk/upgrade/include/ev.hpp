@@ -103,7 +103,7 @@ upg_stage2event (upg_stage_t stage)
 // file setup by the upgrade loader during bringup
 // if it not set, regular boot is assumed
 #define UPGRADE_INIT_MODE_FILE "/update/upgrade_init_mode.txt"
-#define UPGRADE_INIT_DOM_FILE "upgrade_init_domain.txt"
+#define UPGRADE_INIT_DOM_FILE "/update/upgrade_init_domain.txt"
 
 static inline upg_mode_t
 upg_init_mode (void)
@@ -137,15 +137,12 @@ upg_init_domain (void)
 {
     FILE *fp;
     char buf[32], *m = NULL;
-    std::string file;
     upg_dom_t dom_id;
+    std::string file = UPGRADE_INIT_DOM_FILE;
 
     if (upg_init_mode() != upg_mode_t::UPGRADE_MODE_HITLESS) {
         return upg_dom_t::UPGRADE_DOMAIN_NONE;
     }
-    file = std::string(getenv("CONFIG_PATH")) + "/gen/" +
-        UPGRADE_INIT_DOM_FILE;
-
     fp = fopen(file.c_str(), "r");
     SDK_ASSERT(fp != NULL);
     m = fgets(buf, sizeof(buf), fp);

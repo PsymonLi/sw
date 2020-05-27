@@ -65,10 +65,16 @@ public:
     /// \param[in] state destroy the upgrade state
     static void destroy(upg_state *state);
 
-  // table engine configuration. will be extracted during pre-upgrade and will be
+    // table engine configuration. will be extracted during pre-upgrade and will be
     // applied during the final stage of the upgrade.
     uint32_t tbl_eng_cfg(p4pd_pipeline_t pipe, p4_tbl_eng_cfg_t **cfg, uint32_t *max_cfgs);
     void incr_tbl_eng_cfg_count(p4pd_pipeline_t pipe, uint32_t ncfgs);
+    // clear the saved info if a new backup request come.
+    // this can come if there is a upgrade failure after backup and retrying
+    void clear_tbl_eng_cfg(void) {
+        memset(tbl_eng_cfgs_count_, 0, sizeof(tbl_eng_cfgs_count_));
+        memset(tbl_eng_cfgs_, 0, sizeof(tbl_eng_cfgs_));
+    }
     // qstate config info. only pc_offset will be modified during upgrade
     // pc_offset will be exctracted during pre_upgrade and will be applied during
     // the final stage of the upgrade

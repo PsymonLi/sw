@@ -15,6 +15,29 @@ source $PDSPKG_TOPDIR/tools/upgmgr_base.sh
 upgmgr_parse_inputs $*
 
 echo "Starting commands for $STAGE_NAME"
-// TODO
+
+if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
+    upgmgr_set_upgrade_status  "in-progress"
+    upgmgr_setup
+    upgmgr_pkgcheck
+    [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
+
+elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
+    upgmgr_setup
+    # verification of the image is already done
+    # $SYS_UPDATE_TOOL -p $FW_PATH check with Stavros, whether we can do sysupdate
+    copy_img_to_alt_partition $FW_UPDATE_TOOL $RUNNING_IMAGE
+    [[ $? -ne 0 ]] && echo "Firmware store failed!" && exit 1
+
+elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
+    upgmgr_hitless_backup_files_check
+
+elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
+    $PENVISORCTL load
+
+else
+    echo "Unknown stage name given"
+    exit 1
+fi
 echo "Commands for $STAGE_NAME processed successfully"
 exit 0

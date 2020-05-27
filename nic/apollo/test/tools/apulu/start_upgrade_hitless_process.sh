@@ -3,6 +3,7 @@
 set -x
 MY_DIR=$( readlink -f $( dirname $0 ))
 HITLESS_DOM=$1
+SET_DOM=$2
 
 export PDSPKG_TOPDIR=/tmp/$HITLESS_DOM/
 export ZMQ_SOC_DIR=/sw/nic/
@@ -15,9 +16,11 @@ upg_operd_init
 
 # use 8G configuration
 cp $CONFIG_PATH/catalog_hw_68-0004.json $CONFIG_PATH/$PIPELINE/catalog.json
-# set upgrade mode
-source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
-upgmgr_set_init_domain $CONFIG_PATH $HITLESS_DOM
+if [[ $SET_DOM = "1" ]];then
+    # set upgrade mode
+    source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
+    upgmgr_set_init_domain $HITLESS_DOM
+fi
 
 function trap_finish () {
     kill_process "$BUILD_DIR/bin/pciemgrd"

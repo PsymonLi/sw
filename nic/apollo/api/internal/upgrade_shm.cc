@@ -30,14 +30,17 @@ upg_shm::init_(bool shm_create) {
     sdk::lib::shm_mode_e mode = shm_create ? sdk::lib::SHM_CREATE_ONLY :
                                              sdk::lib::SHM_OPEN_READ_ONLY;
     const char *op = shm_create ? "create" : "open";
-    upg_mode_t upg_init_mode = api::g_upg_state->upg_init_mode();
+    upg_mode_t upg_init_mode = api::g_upg_state->upg_init_mode(); // bootup
+    upg_mode_t upg_req_mode = api::g_upg_state->upg_req_mode(); // upgrade mode
     std::string fname = PDS_API_UPG_SHM_NAME;
+    std::string fpath;
     struct stat st = { 0 };
 
     // for hitless, open if shm_create is false (shared from A to B). create if
     // shm_create is true (new states on B). cannot use the same name as A, as A
     // need to reuse this if there is an upgrade failure
-    if (sdk::platform::upgrade_mode_hitless(upg_init_mode)) {
+    if (sdk::platform::upgrade_mode_hitless(upg_init_mode) ||
+        sdk::platform::upgrade_mode_hitless(upg_req_mode)) {
         sdk::upg::upg_dom_t dom =  api::g_upg_state->upg_init_domain();
 
         if ((shm_create && sdk::upg::upg_domain_b(dom)) ||

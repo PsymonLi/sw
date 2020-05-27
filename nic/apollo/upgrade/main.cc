@@ -227,13 +227,13 @@ upg_ev_request_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     g_ipc_msg_in_ptr = msg;
 
     if (req->id == UPG_REQ_MSG_ID_START) {
-    #ifdef __aarch64__
+#ifdef __aarch64__
         // respond back immediately for NMD to exit the grpc wait. upgrade
         // actual status should be read from the generated file
         upg_status_t status = UPG_STATUS_OK;
         sdk::ipc::respond(g_ipc_msg_in_ptr, &status, sizeof(status));
         g_ipc_msg_in_ptr = NULL;
-    #endif
+#endif
         // start the fsm
         upg_fsm_init(req->upg_mode, UPG_STAGE_COMPAT_CHECK,
                      req->fw_pkgname, true);
@@ -253,7 +253,11 @@ upg_event_thread_init (void *ctxt)
     if (sdk::platform::upgrade_mode_graceful(mode)) {
         upg_fsm_init(mode, UPG_STAGE_READY, "none", false);
     } else if (sdk::platform::upgrade_mode_hitless(mode)) {
+#ifndef __aarch64__
+        // for simulation, all logs goes to /dev/upgradelog.
+        // adding a distinction
         g_upg_log_pfx = "peer";
+#endif
         // spawn for a hitless upgrade
         upg_peer_init(false);
         upg_fsm_init(mode, UPG_STAGE_NONE, "none", false);

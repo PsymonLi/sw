@@ -95,10 +95,10 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
         g_devmgr->LoadProfile(device_cfg_file, init_pci);
     } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
         g_devmgr->UpgradeGracefulInit(&cfg);
-        // upgrade graceful init does the state loading
+        // upg_init below does the state loading
     } else {
-        // TODO upgrade hitless init does the state loading
         // g_devmgr->UpgradeHitlessInit(&cfg);
+        // TODO : upg_init below does the state loading
     }
 
     if (sdk::asic::asic_is_hard_init()) {
@@ -113,7 +113,7 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
         sdk::event_thread::prepare_start(&g_ev_prepare);
 
         // register for upgrade events
-        nicmgr_upg_graceful_init();
+        nicmgr_upg_init();
     }
 
     PDS_TRACE_INFO("Listening to events ...");

@@ -1001,6 +1001,7 @@ apulu_impl::upgrade_backup(void) {
     p4plus_prog_t prog;
     uint32_t rss_tblid = P4_P4PLUS_RXDMA_TBL_ID_ETH_RX_RSS_INDIR;
 
+    api::g_upg_state->clear_tbl_eng_cfg();
     // backup table engine config
     for (uint32_t i = 0; i < sizeof(pipe)/sizeof(uint32_t); i++) {
         table_engine_cfg_backup_(pipe[i]);

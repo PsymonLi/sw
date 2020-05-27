@@ -6,38 +6,42 @@
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
-
-namespace nicmgr {
-
-sdk_ret_t
-nicmgr_upg_hitless_init (void)
-{
-    // TODO
-    return SDK_RET_OK;
-}
-
-}    // namespace nicmgr
+#include "nic/apollo/api/upgrade_state.hpp"
 
 // below functions are called from api thread context
 namespace api {
 
-static sdk_ret_t
-nicmgr_send_ipc (api::upg_ev_msg_id_t id)
+static void
+nicmgr_upg_ev_response_hdlr (sdk::ipc::ipc_msg_ptr msg,
+                             const void *request_cookie)
 {
-    // TODO
-    return SDK_RET_OK;
+    upg_ev_params_t *params = (upg_ev_params_t *)msg->data();
+
+    PDS_TRACE_DEBUG("Upgrade ipc rsp %s from nicmgr is %u",
+                    upg_msgid2str(params->id), params->rsp_code);
+    api::upg_ev_process_response(params->rsp_code, params->id);
+}
+
+static sdk_ret_t
+nicmgr_send_ipc (upg_ev_params_t *params)
+{
+    PDS_TRACE_DEBUG("Upgrade ipc req %s to nicmgr", upg_msgid2str(params->id));
+    sdk::ipc::request(core::PDS_THREAD_ID_NICMGR, params->id,
+                      params, sizeof(*params),
+                      nicmgr_upg_ev_response_hdlr, NULL);
+    return SDK_RET_IN_PROGRESS;
 }
 
 static sdk_ret_t
 upg_ev_compat_check (upg_ev_params_t *params)
 {
-    return nicmgr_send_ipc(UPG_MSG_ID_COMPAT_CHECK);
+    return nicmgr_send_ipc(params);
 }
 
 static sdk_ret_t
 upg_ev_ready (upg_ev_params_t *params)
 {
-    return nicmgr_send_ipc(UPG_MSG_ID_READY);
+    return SDK_RET_OK;
 }
 
 static sdk_ret_t
@@ -55,13 +59,22 @@ upg_ev_sync (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_backup (upg_ev_params_t *params)
 {
-    return SDK_RET_OK;
+    sdk_ret_t ret;
+    api::upg_ctxt *ctx = api::g_upg_state->backup_shm()->nicmgr_upg_ctx();
+
+    // initialize a segment from shared memory for write
+    ret = ctx->init(PDS_UPGRADE_NICMGR_OBJ_STORE_NAME,
+                    PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE, true);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+    return nicmgr_send_ipc(params);
 }
 
 static sdk_ret_t
 upg_ev_quiesce (upg_ev_params_t *params)
 {
-    return nicmgr_send_ipc(UPG_MSG_ID_QUIESCE);
+    return SDK_RET_OK;
 }
 
 static sdk_ret_t

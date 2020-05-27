@@ -28,9 +28,7 @@ upg_ev_finish_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     pciesys_loginfo("Upgrade handler, event %s mode %u\n",
                     sdk::upg::upg_event2str(params->id), params->mode);
-    if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
-         upgrade_complete();
-    }
+    upgrade_complete();
     return SDK_RET_OK;
 }
 
@@ -39,9 +37,7 @@ upg_ev_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     pciesys_loginfo("Upgrade handler, event %s mode %u\n",
                     sdk::upg::upg_event2str(params->id), params->mode);
-    if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
-        upgrade_failed();
-    }
+    upgrade_failed();
     return SDK_RET_OK;
 }
 
@@ -65,11 +61,9 @@ upg_ev_backup_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     pciesys_loginfo("Upgrade handler, event %s mode %u\n",
                     sdk::upg::upg_event2str(params->id), params->mode);
-    if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
-        if (upgrade_state_save() < 0) {
-            pciesys_logerror("Upgrade handler, state save failed\n");
-            return SDK_RET_ERR;
-        }
+    if (upgrade_state_save() < 0) {
+        pciesys_logerror("Upgrade handler, state save failed\n");
+        return SDK_RET_ERR;
     }
     return SDK_RET_OK;
 }

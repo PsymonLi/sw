@@ -2,7 +2,7 @@
     "svc": {
         "names": [ "pciemgr", "pdsagent", "vpp"],
         "event_sequence": "parallel",
-        "rsp_timeout": "1000ms",
+        "rsp_timeout": "60000ms",
         "domain": "A",
         "discovery": "no"
     },
@@ -21,7 +21,8 @@
                 { "name": "svc_rsp_fail", "next_stage": "exit"  },
                 { "name": "svc_rsp_crit", "next_stage": "exit"  },
                 { "name": "svc_no_rsp",   "next_stage": "exit"  }
-            ]
+            ],
+            "pre_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "start": {
@@ -30,6 +31,7 @@
             "svc": {
                 "event_sequence": "serial",
                 "names": [ "pdsagent" ],
+                "rsp_timeout": "300000ms",
                 "domain": "A"
             },
             "events": [
@@ -37,7 +39,8 @@
                 { "name": "svc_rsp_fail", "next_stage": "repeal" },
                 { "name": "svc_rsp_crit", "next_stage": "exit"   },
                 { "name": "svc_no_rsp",   "next_stage": "repeal" }
-            ]
+            ],
+            "post_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "backup": {
@@ -49,7 +52,8 @@
                 { "name": "svc_rsp_fail", "next_stage": "repeal"  },
                 { "name": "svc_rsp_crit", "next_stage": "exit"    },
                 { "name": "svc_no_rsp",   "next_stage": "repeal"  }
-            ]
+            ],
+            "post_hooks" : ["upgmgr_hitless.sh"]
         },
 
         "prepare": {

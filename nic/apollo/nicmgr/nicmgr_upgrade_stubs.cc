@@ -9,13 +9,7 @@ namespace nicmgr {
 
 // below functions are called from nicmgr thread context
 sdk_ret_t
-nicmgr_upg_graceful_init (void)
-{
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-nicmgr_upg_hitless_init (void)
+nicmgr_upg_init (void)
 {
     return SDK_RET_OK;
 }

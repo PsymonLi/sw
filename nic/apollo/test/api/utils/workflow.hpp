@@ -728,9 +728,11 @@ inline void workflow_u1_s1(feeder_T& feeder1)
     batch_commit(bctxt);
     many_read<feeder_T>(feeder1);
 
-    // bakcup the objs
+    // backup the objs. nicmgr does async backups(in-progress) which is
+    // anyway ignored for read comparison
     ret = upg_obj_backup(mode);
-    WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_S1 batch1 - upg backup failed");
+    WF_TRACE_ERR((ret == SDK_RET_OK || ret == SDK_RET_IN_PROGRESS),
+                 "WF_U1_S1 batch1 - upg backup failed");
 
     bctxt = batch_start();
     many_delete<feeder_T>(bctxt, feeder1);

@@ -8,7 +8,7 @@ unset HELP FW_PKG_NAME STAGE_NAME STAGE_TYPE STAGE_STATUS
 UPGRADE_INIT_MODE_FILE='/update/upgrade_init_mode.txt'
 
 # file to identify the hitless bootup domain
-UPGRADE_INIT_DOM_FILE='upgrade_init_domain.txt'
+UPGRADE_INIT_DOM_FILE='/update/upgrade_init_domain.txt'
 UPGRADE_DOMAIN_A="dom_a"
 UPGRADE_DOMAIN_B="dom_b"
 
@@ -36,7 +36,7 @@ function upgmgr_parse_inputs() {
 }
 
 function upgmgr_set_init_mode() {
-    mkdir -p /update/
+    mkdir -p "$(dirname "$UPGRADE_INIT_MODE_FILE")"
     echo $1 > $UPGRADE_INIT_MODE_FILE
     sync
 }
@@ -49,7 +49,7 @@ function upgmgr_init_domain() {
     if [ -f $UPGRADE_INIT_MODE_FILE ]; then
         mode=`cat $UPGRADE_INIT_MODE_FILE`
         if [[ $mode == "hitless" ]]; then
-            dom=`cat "${CONFIG_PATH}/gen/${UPGRADE_INIT_DOM_FILE}"`
+            dom=`cat "${UPGRADE_INIT_DOM_FILE}"`
             if [[ $dom != $UPGRADE_DOMAIN_A && $dom != $UPGRADE_DOMAIN_B ]];then
                 echo "Invalid domain id"
                 exit 1
@@ -73,22 +73,24 @@ function upgmgr_get_alt_domain() {
     echo $dom
 }
 
-# set the new domain. pass the new config path
+# set the new domain
 function upgmgr_set_init_domain() {
-    if [ "$#" -ne 2 ];then
-        echo "Invalid arguments"
+    if [ "$#" -ne 1 ];then
+        echo "Invalid arguments, pass domain"
         exit 1
     fi
-    new_cfgpath=$1
-    dom=$2
-    file=$new_cfgpath/gen/$UPGRADE_INIT_DOM_FILE
+    dom=$1
     if [[ $dom != $UPGRADE_DOMAIN_A  && $dom != $UPGRADE_DOMAIN_B ]];then
         echo "Invalid domain id"
         return 1
     fi
-    mkdir -p $new_cfgpath/gen/
-    echo $dom > $file
-    sync
+    mkdir -p "$(dirname "$UPGRADE_INIT_DOM_FILE")"
+    echo $dom > $UPGRADE_INIT_DOM_FILE
+    upgmgr_set_init_mode "hitless"
     export UPGRADE_DOMAIN_ID=$dom # TODO for ipc now. remove it later
     return 0
+}
+
+function upgmgr_clear_init_domain() {
+    rm -rf $UPGRADE_INIT_DOM_FILE
 }
