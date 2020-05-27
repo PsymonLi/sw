@@ -90,7 +90,7 @@ class TestSuite:
         self.__skip = self.__apply_skip_filters()
         self.__ignoreList = getattr(spec.meta, "ignore_list", [])
         self.__images = self.__load_image_manifest()
-        self.__pipelines = getattr(spec.meta, "pipelines",[])
+        self.__process_provision_spec()
         self.__defaultNicMode = getattr(spec.meta, "nicmode", types.nicModes.CLASSIC)
         self.__defaultNicPipeline = GlobalOptions.pipeline
         return
@@ -243,6 +243,16 @@ class TestSuite:
             fh.write(json.dumps(new_img_manifest, indent=2))
         return manifest_file
 
+    def __process_provision_spec(self):
+        if not self.ProvisionInfo():
+            return
+
+        prov_spec = parser.YmlParse(self.ProvisionInfo())
+        for rel_ver in getattr(prov_spec.spec, 'images', []):
+            self.__release_versions['Firmware'] = rel_ver
+
+        return
+
     def __load_image_manifest(self):
         manifest_file = self.GetImageManifestFile()
         image_info = parser.JsonParse(manifest_file)
@@ -342,7 +352,7 @@ class TestSuite:
         if not topospec:
             Logger.error("Error: No topology specified in the testsuite.")
             assert(0)
-        self.__topology = topology.Topology(topospec)
+        self.__topology = topology.Topology(topospec, self.ProvisionInfo())
         store.SetTopology(self.__topology)
         return types.status.SUCCESS
 
@@ -452,6 +462,11 @@ class TestSuite:
 
     def Mode(self):
         return self.__spec.meta.mode
+
+    def ProvisionInfo(self):
+        if hasattr(self.__spec.meta, 'provision'):
+            return self.__spec.meta.provision
+        return None
 
     def LogsDir(self):
         return "%s/iota/logs/%s" % (api.GetTopDir(), self.Name())
@@ -608,10 +623,11 @@ class TestSuite:
             Logger.debug("setting global firmware type to gold")
             GlobalOptions.use_gold_firmware = True
 
-        if GlobalOptions.compat_test:
+        if self.__release_versions:
             # Download Assets
-            for sw, rel in self.__release_versions.items():
-                api.DownloadAssets(rel)
+            for _, rel in self.__release_versions.items():
+                if rel != 'latest':
+                    api.DownloadAssets(rel)
 
         # Initialize Testbed for this testsuite
         status = store.GetTestbed().InitForTestsuite(self)
@@ -639,7 +655,7 @@ class TestSuite:
             self.__timer.Stop()
             return status
 
-        self.UpdateNaplesPipelines()
+        # self.UpdateNaplesPipelines()
 
         self.result = self.__execute_testbundles()
         self.__update_stats()

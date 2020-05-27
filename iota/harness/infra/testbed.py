@@ -484,6 +484,8 @@ class _Testbed:
                     cmd.extend(["--uuid", "%s" % nic_uuid])
 
                 cmd.extend(["--image-manifest", manifest_file])
+                if self.curr_ts.ProvisionInfo():
+                    cmd.extend(["--provision-spec", self.curr_ts.ProvisionInfo()])
 
                 if GlobalOptions.only_reboot:
                     logfile = "%s/%s-%s-reboot.log" % (GlobalOptions.logdir, self.curr_ts.Name(), instance.Name)

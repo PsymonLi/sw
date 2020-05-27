@@ -77,6 +77,7 @@ def __add_workloads(target_node = None):
         ret = __setup_vmotion_on_hosts()
         if ret != api.types.status.SUCCESS:
             sys.exit(1)
+    return api.types.status.SUCCESS
 
 def __recover_workloads(target_node = None):
     objects = netagent_api.QueryConfigs(kind='Endpoint')
@@ -85,6 +86,7 @@ def __recover_workloads(target_node = None):
     resp = api.RestoreWorkloads(req)
     if resp is None:
         sys.exit(1)
+    return api.types.status.SUCCESS
 
 def GetIPv4Allocator(nw_name):
     ipv4_subnet_allocator = wl_orch.TopoWorkloadConfig.AllocIpv4SubnetAllocator(nw_name)
@@ -104,16 +106,16 @@ def GetMacAllocator():
     return copy.deepcopy(wl_orch.TopoWorkloadConfig.GetClassicMacAllocator())
 
 def AddWorkloads(target_node = None):
-    __add_workloads(target_node)
+    return __add_workloads(target_node)
 
 def RestoreWorkloads():
-    __recover_workloads()
+    return __recover_workloads()
 
 def DeleteWorkloads(target_node=None):
     if api.GetTestbedNicMode(target_node) == 'classic':
-        __delete_classic_workloads()
+        return __delete_classic_workloads()
     else:
-        __delete_workloads()
+        return __delete_workloads()
 
 def AddNaplesWorkloads(target_node=None):
     req = topo_svc.WorkloadMsg()
@@ -137,6 +139,7 @@ def AddNaplesWorkloads(target_node=None):
         resp = api.AddWorkloads(req, skip_store=True)
         if resp is None:
             sys.exit(1)
+    return api.types.status.SUCCESS
 
 def __delete_classic_workloads(target_node = None):
     req = topo_svc.WorkloadMsg()
@@ -152,6 +155,7 @@ def __delete_classic_workloads(target_node = None):
         resp = api.DeleteWorkloads(req, True)
         if resp is None:
             sys.exit(1)
+    return api.types.status.SUCCESS
 
 def __readd_classic_workloads(target_node = None):
     req = topo_svc.WorkloadMsg()
@@ -180,6 +184,7 @@ def __readd_classic_workloads(target_node = None):
         resp = api.AddWorkloads(req)
         if resp is None:
             sys.exit(1)
+    return api.types.status.SUCCESS
 
 def __delete_workloads(target_node = None):
     ep_objs = netagent_api.QueryConfigs(kind='Endpoint')
@@ -200,6 +205,7 @@ def __delete_workloads(target_node = None):
         resp = api.DeleteWorkloads(req)
         if resp is None:
             sys.exit(1)
+    return api.types.status.SUCCESS
 
 def ReAddWorkloads(node):
     if api.GetTestbedNicMode(node) == 'classic':
@@ -208,7 +214,7 @@ def ReAddWorkloads(node):
     else:
         __delete_workloads(node)
         __add_workloads(node)
-    AddNaplesWorkloads(node)
+    return AddNaplesWorkloads(node)
 
 def UpdateNetworkAndEnpointObject():
     nwObj = netagent_api.QueryConfigs(kind='Network')

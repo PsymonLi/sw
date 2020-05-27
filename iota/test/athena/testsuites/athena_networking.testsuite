@@ -5,12 +5,7 @@ meta:
     cfgmode     : netagent
     nicmode     : bitw
     os          : [ linux, freebsd, esx ]
-    pipelines:
-        - node: node2
-          nicNumber: 1
-          version: 1.5.0-E-14
-          pipeline: iris
-          mode: classic
+    provision   : test/athena/topologies/classic_2baremetal_2Naples/provision.yml
 
 packages:
     - iota.test.athena
@@ -23,7 +18,9 @@ image_manifest:
 setup:
     topology: test/athena/topologies/classic_2baremetal_2Naples/classic_baremetal.topology
     config  :
+        - step  : config.setup_workloads
         - step  : config.athena_app_config
+
 common:
     verifs:
         #-   step    : verif.utils.verify_links

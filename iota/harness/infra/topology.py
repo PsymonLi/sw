@@ -301,8 +301,9 @@ class Node(object):
             else:
                 Logger.info("Skipping management IP read as no console info %s" % self.__name)
 
-    def __init__(self, topo, spec):
+    def __init__(self, topo, spec, prov_spec=None):
         self.__spec = spec
+        self.__prov_spec = prov_spec
         self.__topo = topo
         self.__name = spec.name
         self.__node_type = GetNodeType(spec.role)
@@ -327,7 +328,7 @@ class Node(object):
         nics = getattr(self.__inst, "Nics", None)
         if  self.__node_type == "bm":
             if nics != None and len(nics) != 0:
-                for nic in nics:
+                for idx, nic in enumerate(nics):
                     nic_type = getattr(nic, "Type", "pensando-sim")
                     name = nic_type + str(self.__dev_index)
                     device = Node.NicDevice(name, nic_type)
@@ -346,9 +347,15 @@ class Node(object):
                         device.SetMac(port.MAC)
                         break
                     device.read_from_console()       
-                    device.SetMode(defaultMode)
-                    device.SetNaplesPipeline(defaultPipeline)
                     device.SetNicFirewallRules()
+
+                    if self.__prov_spec:
+                        nic_prov_spec = self.__prov_spec.nics[idx].nic
+                        device.SetMode(nic_prov_spec.mode)
+                        device.SetNaplesPipeline(nic_prov_spec.pipeline)
+                    else:
+                        device.SetMode(defaultMode)
+                        device.SetNaplesPipeline(defaultPipeline)
 
                     device.SetPorts(getattr(nic, 'Ports', []))
                     if not GlobalOptions.enable_multi_naples:
@@ -369,8 +376,14 @@ class Node(object):
                     device.SetNicUnderlayIPs(getattr(self.__inst, "NicUnderlayIPs", []))
                     device.SetNicStaticRoutes(getattr(self.__inst, "NicStaticRoutes", []))
                     device.read_from_console()
-                    device.SetMode(defaultMode)
-                    device.SetNaplesPipeline(defaultPipeline)
+                    if self.__prov_spec:
+                        nic_prov_spec = self.__prov_spec.nics[0].nic
+                        device.SetMode(nic_prov_spec.mode)
+                        device.SetNaplesPipeline(nic_prov_spec.pipeline)
+                    else:
+                        device.SetMode(defaultMode)
+                        device.SetNaplesPipeline(defaultPipeline)
+
                     device.SetNicFirewallRules()
 
         self.__role = self.__get_instance_role(spec.role, getattr(spec, "mode", None))
@@ -880,14 +893,17 @@ class Topology(object):
     IpmiMethodSoft = "soft"
     IpmiMethods = [IpmiMethodCycle, IpmiMethodOn, IpmiMethodOff, IpmiMethodReset, IpmiMethodSoft]
 
-    def __init__(self, spec):
+    def __init__(self, spec, prov_spec=None):
         self.__nodes = {}
         self.__orch_node = None
+        self.__prov_spec = None
 
         assert(spec)
         Logger.info("Parsing Topology: %s" % spec)
         self.__dirname = os.path.dirname(spec)
         self.__spec = parser.YmlParse(spec)
+        if prov_spec:
+            self.__prov_spec = parser.YmlParse(prov_spec)
         self.__parse_nodes()
         self.vlan_start = 0
         self.vlan_end = 0
@@ -900,8 +916,11 @@ class Topology(object):
         self.__orch_node = node
 
     def __parse_nodes(self):
-        for node_spec in self.__spec.nodes:
-            node = Node(self, node_spec)
+        for idx, node_spec in enumerate(self.__spec.nodes):
+            node_prov_spec = None
+            if self.__prov_spec: 
+                node_prov_spec = self.__prov_spec.nodes[idx].node
+            node = Node(self, node_spec, node_prov_spec)
             self.__nodes[node.Name()] = node
         return
 

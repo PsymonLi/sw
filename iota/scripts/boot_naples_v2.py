@@ -34,6 +34,8 @@ parser.add_argument('--naples', dest='naples_type', required = True,
                     default="", help='Naples type : capri')
 
 # Optional parameters
+parser.add_argument("--provision-spec", dest="provision", default=None, 
+                    help="Provisioning Spec for multi-nic/multi-pipeline system")
 parser.add_argument("--pipeline", dest="pipeline", default="iris",
                     help="Pipeline")
 parser.add_argument("--image-build", dest="image_build", default=None,
@@ -88,7 +90,7 @@ GlobalOptions.timeout = int(GlobalOptions.timeout)
 ws_top = os.path.dirname(sys.argv[0]) + '/../../'
 ws_top = os.path.abspath(ws_top)
 sys.path.insert(0, ws_top)
-import iota.harness.infra.utils.parser as jparser
+import iota.harness.infra.utils.parser as spec_parser
 
 ESX_CTRL_VM_BRINGUP_SCRIPT = "%s/iota/bin/iota_esx_setup" % (GlobalOptions.wsdir)
 
@@ -427,14 +429,11 @@ class EntityManagement:
             raise Exception("Enitity : {}, src : {}:{}, dst {} ".format(self.ipaddr, self.ssh_host, src_filename, dest_filename))
 
     @_exceptionWrapper(_errCodes.NAPLES_CMD_FAILED, "Naples command failed")
-    def RunNaplesCmd(self, command, ignore_failure = False):
-        ret = []
+    def RunNaplesCmd(self, naples_inst, command, ignore_failure = False):
         assert(ignore_failure == True or ignore_failure == False)
-        for naples_inst in self.host.naples:
-            full_command = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@%s %s" %\
-                           (naples_inst.password, naples_inst.ipaddr, command)
-            ret.append(self.RunSshCmd(full_command, ignore_failure))
-        return ret
+        full_command = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@%s %s" %\
+                       (naples_inst.password, naples_inst.ipaddr, command)
+        return self.RunSshCmd(full_command, ignore_failure)
 
 class NaplesManagement(EntityManagement):
     def __init__(self, nic_spec, fw_images = None):
@@ -812,8 +811,8 @@ class NaplesManagement(EntityManagement):
         return
 
 class HostManagement(EntityManagement):
-    def __init__(self, ipaddr, server_type, host_username, host_password, fw_images):
-        super().__init__(ipaddr, host_username, host_password, fw_images)
+    def __init__(self, ipaddr, server_type, host_username, host_password):
+        super().__init__(ipaddr, host_username, host_password, None)
         self.naples = None
         self.server = server_type
         self.__host_os = None
@@ -934,26 +933,28 @@ class HostManagement(EntityManagement):
 #        except:
 #            print('lspci failed to find nic. calling ipmi power cycle')
 #            self.IpmiResetAndWait()
-        for naples in self.naples:
-            naples.InstallPrep()
-
         #CreateConfigConsoleNoAuth()
         #self.CopyIN(NAPLES_CONFIG_SPEC_LOCAL,
         #            entity_dir = HOST_NAPLES_DIR, naples_dir = "/sysconfig/config0")
 
-        if copy_fw:
-            self.CopyIN(os.path.join(GlobalOptions.wsdir, self.fw_images.image), entity_dir = HOST_NAPLES_DIR, naples_dir = NAPLES_TMP_DIR)
+        for naples_inst in self.naples:
+            naples_inst.InstallPrep()
 
-        self.RunNaplesCmd("/nic/tools/sysupdate.sh -p /%s/%s"%(NAPLES_TMP_DIR, os.path.basename(self.fw_images.image)))
-        self.RunNaplesCmd("/nic/tools/fwupdate -l")
+            if copy_fw:
+                self.CopyIN(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.image), entity_dir = HOST_NAPLES_DIR, naples_dir = NAPLES_TMP_DIR)
+
+            self.RunNaplesCmd(naples_inst, "/nic/tools/sysupdate.sh -p /%s/%s"%(NAPLES_TMP_DIR, os.path.basename(naples_inst.fw_images.image)))
+            self.RunNaplesCmd(naples_inst, "/nic/tools/fwupdate -l")
         return
 
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FROM_HOST_FAILED, "Gold FW install Failed")
     def InstallGoldFirmware(self):
-        self.CopyIN(os.path.join(GlobalOptions.wsdir, self.fw_images.gold_fw_img), entity_dir = HOST_NAPLES_DIR, naples_dir = "/data")
-        self.RunNaplesCmd("/nic/tools/sysupdate.sh -p /data/" +  os.path.basename(self.fw_images.gold_fw_img))
-        self.RunNaplesCmd("/nic/tools/fwupdate -l")
+        for naples_inst in self.naples: 
+            if not naples_inst.IsNaplesGoldFWLatest():
+                self.CopyIN(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.gold_fw_img), entity_dir = HOST_NAPLES_DIR, naples_dir = "/data")
+                self.RunNaplesCmd(naples_inst, "/nic/tools/sysupdate.sh -p /data/" +  os.path.basename(naples_inst.fw_images.gold_fw_img))
+                self.RunNaplesCmd(naples_inst, "/nic/tools/fwupdate -l")
 
     def InitForUpgrade(self):
         pass
@@ -969,18 +970,19 @@ class HostManagement(EntityManagement):
 
     def CleanUpOldFiles(self):
         #clean up db that was setup by previous
-        self.RunNaplesCmd("rm -rf /sysconfig/config0/*.db")
-        self.RunNaplesCmd("rm -rf /sysconfig/config0/*.conf")
-        self.RunNaplesCmd("rm -rf /sysconfig/config1/*.db")
-        self.RunNaplesCmd("rm -rf /sysconfig/config1/*.conf")
-        self.RunNaplesCmd("rm -f /sysconfig/config0/clusterTrustRoots.pem")
-        self.RunNaplesCmd("rm -f /sysconfig/config1/clusterTrustRoots.pem")
-        self.RunNaplesCmd("rm -f /sysconfig/config0/frequency.json")
+        for naples_inst in self.naples: 
+            self.RunNaplesCmd(naples_inst, "rm -rf /sysconfig/config0/*.db")
+            self.RunNaplesCmd(naples_inst, "rm -rf /sysconfig/config0/*.conf")
+            self.RunNaplesCmd(naples_inst, "rm -rf /sysconfig/config1/*.db")
+            self.RunNaplesCmd(naples_inst, "rm -rf /sysconfig/config1/*.conf")
+            self.RunNaplesCmd(naples_inst, "rm -f /sysconfig/config0/clusterTrustRoots.pem")
+            self.RunNaplesCmd(naples_inst, "rm -f /sysconfig/config1/clusterTrustRoots.pem")
+            self.RunNaplesCmd(naples_inst, "rm -f /sysconfig/config0/frequency.json")
 
-        self.RunNaplesCmd("rm -rf /data/log && sync")
-        self.RunNaplesCmd("rm -rf /data/core/* && sync")
-        self.RunNaplesCmd("rm -rf /data/*.dat && sync")
-        self.RunNaplesCmd("rm -rf /data/pen-netagent* && sync")
+            self.RunNaplesCmd(naples_inst, "rm -rf /data/log && sync")
+            self.RunNaplesCmd(naples_inst, "rm -rf /data/core/* && sync")
+            self.RunNaplesCmd(naples_inst, "rm -rf /data/*.dat && sync")
+            self.RunNaplesCmd(naples_inst, "rm -rf /data/pen-netagent* && sync")
 
     def SetUpInitFiles(self):
         CreateConfigConsoleNoAuth()
@@ -989,8 +991,8 @@ class HostManagement(EntityManagement):
 
 
 class EsxHostManagement(HostManagement):
-    def __init__(self, ipaddr, server_type, host_username, host_password, fw_images, driver_images):
-        HostManagement.__init__(self, ipaddr, server_type, host_username, host_password, fw_images)
+    def __init__(self, ipaddr, server_type, host_username, host_password, driver_images):
+        HostManagement.__init__(self, ipaddr, server_type, host_username, host_password)
         self.driver_images = driver_images
         if GlobalOptions.esx_script is None:
             GlobalOptions.esx_script = ESX_CTRL_VM_BRINGUP_SCRIPT
@@ -1019,14 +1021,11 @@ class EsxHostManagement(HostManagement):
         return 0
 
     @_exceptionWrapper(_errCodes.NAPLES_CMD_FAILED, "Naples command failed")
-    def RunNaplesCmd(self, command, ignore_failure = False):
-        ret = []
+    def RunNaplesCmd(self, naples_inst, command, ignore_failure = False):
         assert(ignore_failure == True or ignore_failure == False)
-        for naples_inst in self.naples:
-            full_command = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null  -o StrictHostKeyChecking=no %s@%s %s" %\
-                           (naples_inst.password, naples_inst.username, naples_inst.ipaddr, command)
-            ret.append(self.ctrl_vm_run(full_command, ignore_failure))
-        return ret
+        full_command = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null  -o StrictHostKeyChecking=no %s@%s %s" %\
+                       (naples_inst.password, naples_inst.username, naples_inst.ipaddr, command)
+        return self.ctrl_vm_run(full_command, ignore_failure)
 
     @_exceptionWrapper(_errCodes.HOST_ESX_CTRL_VM_RUN_CMD_FAILED, "ESX ctrl vm run failed")
     def ctrl_vm_run(self, command, background = False, ignore_result = False):
@@ -1133,26 +1132,27 @@ class EsxHostManagement(HostManagement):
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FROM_HOST_FAILED, "FW install Failed")
     def InstallMainFirmware(self, mount_data = True, copy_fw = True):
 
-        for naples in self.naples:
-            naples.InstallPrep()
+        for naples_inst in self.naples:
+            naples_inst.InstallPrep()
 
-        #Ctrl VM reboot might have removed the image
-        self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, self.fw_images.image),
-                    entity_dir = HOST_ESX_NAPLES_IMAGES_DIR,
-                    naples_dir = "/data")
+            #Ctrl VM reboot might have removed the image
+            self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.image),
+                        entity_dir = HOST_ESX_NAPLES_IMAGES_DIR,
+                        naples_dir = "/data")
 
-        self.RunNaplesCmd("/nic/tools/sysupdate.sh -p /data/%s"%os.path.basename(self.fw_images.image))
-
-        self.RunNaplesCmd("/nic/tools/fwupdate -l")
+            self.RunNaplesCmd(naples_inst, "/nic/tools/sysupdate.sh -p /data/%s"%os.path.basename(naples_inst.fw_images.image))
+            self.RunNaplesCmd(naples_inst, "/nic/tools/fwupdate -l")
         return
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FAILED, "Gold Firmware Install failed")
     def InstallGoldFirmware(self):
-        self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, self.fw_images.gold_fw_img),
-                    entity_dir = HOST_ESX_NAPLES_IMAGES_DIR,
-                    naples_dir = "/data")
-        self.RunNaplesCmd("/nic/tools/sysupdate.sh -p /data/" +  os.path.basename(self.fw_images.gold_fw_img))
-        self.RunNaplesCmd("/nic/tools/fwupdate -l")
+        for naples_inst in self.naples: 
+            if not naples_inst.IsNaplesGoldFWLatest():
+                self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.gold_fw_img),
+                            entity_dir = HOST_ESX_NAPLES_IMAGES_DIR,
+                            naples_dir = "/data")
+                self.RunNaplesCmd(naples_inst, "/nic/tools/sysupdate.sh -p /data/" +  os.path.basename(naples_inst.fw_images.gold_fw_img))
+                self.RunNaplesCmd(naples_inst, "/nic/tools/fwupdate -l")
 
     def RebootRequiredOnDriverInstall(self):
         return True
@@ -1211,38 +1211,77 @@ class PenOrchestrator:
     def __init__(self):
         self.__naples = list()
         self.__host = None
-        self.__img_manifest = None
         self.__driver_images = None
-        self.__fw_images = None
         self.__server_type = None
         self.__testbed = None
         self.__node_os = "linux"
         self.__host_username = None
         self.__host_password = None
+        self.__provision_spec = None
+        self.__testbed_id = 1
 
         # This variable introduced to control successive ipmi-reset in case of multiple Naples
         self.__ipmi_reboot_allowed = False  
 
+        self.__load_provision_spec()
         self.__load_testbed_json()
-        self.__load_image_manifest()
+        # Load Default/cmd-line specified image
+        self.__driver_images, _ = self.__load_image_manifest(GlobalOptions.image_manifest, GlobalOptions.naples_type, 
+                                                             GlobalOptions.pipeline, GlobalOptions.image_build)
 
-    def __load_image_manifest(self):
-        self.__img_manifest = jparser.JsonParse(GlobalOptions.image_manifest)
-        self.__driver_images = list(filter(lambda x: x.OS == self.__node_os, self.__img_manifest.Drivers))[0]
-        naples_fw_img_spec = list(filter(lambda x: x.naples_type == GlobalOptions.naples_type, self.__img_manifest.Firmwares))[0]
+    def __load_provision_spec(self):
+        if not GlobalOptions.provision:
+            return
+
+        self.__provision_spec = spec_parser.YmlParse(GlobalOptions.provision)
+        return
+
+    def __retrieve_node_provisioning_info(self):
+        if not GlobalOptions.provision:
+            # Build provisioning information
+            node = spec_parser.Dict2Object({})
+            setattr(node, 'nics', list())
+            for idx, nic in enumerate(self.__testbed.Nics):
+                nic_obj = spec_parser.Dict2Object({})
+                node.nics.append(nic_obj)
+
+                nic_attr = spec_parser.Dict2Object(
+                        {
+                            'name'              : 'naples' + str(idx + 1),
+                            'pipeline'          : GlobalOptions.pipeline,
+                            'image'             : GlobalOptions.image_manifest, 
+                            'naples_type'       : GlobalOptions.naples_type
+                        })
+                if GlobalOptions.image_build:
+                    setattr(nic_attr, 'image_build', GlobalOptions.image_build)
+                setattr(nic_obj, 'nic', nic_attr)
+            return node
+        
+        return self.__provision_spec.nodes[self.__testbed_id].node
+
+    def __load_image_manifest(self, manifest_file, naples_type, pipeline, extra=None):
+        img_manifest = spec_parser.JsonParse(manifest_file)
+        driver_images = list(filter(lambda x: x.OS == self.__node_os, img_manifest.Drivers))[0]
+        naples_fw_img_spec = list(filter(lambda x: x.naples_type == naples_type, img_manifest.Firmwares))[0]
         # Build tag based on pipeline and optional image_build
-        tag = GlobalOptions.pipeline
-        if GlobalOptions.image_build:
-            tag += "-" + GlobalOptions.image_build
-        self.__fw_images = list(filter(lambda x: x.tag == tag, naples_fw_img_spec.Images))[0]
+        tag = pipeline
+        if extra:
+            tag += "-" + extra
+        fw_images = list(filter(lambda x: x.tag == tag, naples_fw_img_spec.Images))[0]
 
-        if self.__driver_images is None or self.__fw_images is None:
+        if driver_images is None or fw_images is None:
             sys.stderr.write("Unable to load image manifest")
             sys.exit(1)
+        return driver_images, fw_images
 
     def __load_testbed_json(self):
-        warmd = jparser.JsonParse(GlobalOptions.testbed)
-        self.__testbed = list(filter(lambda x: x.Name == GlobalOptions.instance_name, warmd.Instances))[0]
+        warmd = spec_parser.JsonParse(GlobalOptions.testbed)
+        for idx, instance in enumerate(warmd.Instances):
+            if instance.Name == GlobalOptions.instance_name:
+                self.__testbed = instance
+                self.__testbed_id = idx
+                break
+
         if self.__testbed is None:
             sys.stderr.write("Unable to load warmd.json")
             sys.exit(1)
@@ -1298,7 +1337,7 @@ class PenOrchestrator:
             setattr(self.__testbed, 'NodeCimcUsername', 'admin') 
             setattr(self.__testbed, 'NodeCimcPassword', 'N0isystem$')
 
-            nic = jparser.Dict2Object({})
+            nic = spec_parser.Dict2Object({})
             setattr(nic, 'NaplesUsername', GlobalOptions.naples_username)
             setattr(nic, 'NaplesPassword', GlobalOptions.naples_password)
             setattr(nic, 'ConsoleUsername', 'admin') 
@@ -1355,16 +1394,22 @@ class PenOrchestrator:
         if self.__node_os == 'esx':
             self.__host = EsxHostManagement(self.__testbed.NodeMgmtIP, self.__server_type,
                                             self.__host_username, self.__host_password,
-                                            self.__fw_images, self.__driver_images)
+                                            self.__driver_images)
         else:
             self.__host = HostManagement(self.__testbed.NodeMgmtIP, self.__server_type, 
-                                         self.__host_username, self.__host_password, 
-                                         self.__fw_images)
+                                         self.__host_username, self.__host_password)
         self.__host.SetIpmiHandler(self.IpmiReset)
         self.__host.SetNodeOs(self.__node_os)
 
-        for nic in self.__testbed.Nics:
-            naples_inst = NaplesManagement(nic, fw_images = self.__fw_images) 
+        node_prov_info = self.__retrieve_node_provisioning_info()
+        for idx, nic in enumerate(self.__testbed.Nics):
+            # pick up nic_prov_info.pipeline and nic_prov_info.image to load on this naples
+            nic_prov_info = node_prov_info.nics[idx].nic
+            _, fw_images = self.__load_image_manifest(nic_prov_info.image, 
+                                                      nic_prov_info.naples_type, 
+                                                      nic_prov_info.pipeline, 
+                                                      getattr(nic_prov_info, 'image_build', None))
+            naples_inst = NaplesManagement(nic, fw_images = fw_images) 
             naples_inst.SetHost(self.__host)
             naples_inst.SetIpmiHandler(self.IpmiReset)
             self.__naples.append(naples_inst)
@@ -1431,17 +1476,23 @@ class PenOrchestrator:
         if self.__node_os == 'esx':
             self.__host = EsxHostManagement(self.__testbed.NodeMgmtIP, self.__server_type, 
                                             self.__host_username, self.__host_password, 
-                                            self.__fw_images, self.__driver_images)
+                                            self.__driver_images)
         else:
             self.__host = HostManagement(self.__testbed.NodeMgmtIP, self.__server_type, 
-                                         self.__host_username, self.__host_password, 
-                                         self.__fw_images)
+                                         self.__host_username, self.__host_password)
 
         self.__host.SetIpmiHandler(self.IpmiReset)
         self.__host.SetNodeOs(self.__node_os)
 
-        for nic in self.__testbed.Nics:
-            naples_inst = NaplesManagement(nic, fw_images = self.__fw_images)
+        node_prov_info = self.__retrieve_node_provisioning_info()
+        for idx, nic in enumerate(self.__testbed.Nics):
+            nic_prov_info = node_prov_info.nics[idx].nic
+            # pick up nic_prov_info.pipeline and nic_prov_info.image to load on this naples
+            _, fw_images = self.__load_image_manifest(nic_prov_info.image, 
+                                                      nic_prov_info.naples_type, 
+                                                      nic_prov_info.pipeline, 
+                                                      getattr(nic_prov_info, 'image_build', None))
+            naples_inst = NaplesManagement(nic, fw_images)
             naples_inst.SetHost(self.__host)
             naples_inst.SetIpmiHandler(self.IpmiReset)
             self.__naples.append(naples_inst)
@@ -1514,7 +1565,7 @@ class PenOrchestrator:
             #naples.InitForUpgrade(goldfw = True)
             if naples_inst.IsOOBAvailable() and naples_inst.IsSSHUP():
                 #OOb is present and up install right away,
-                print("installing and running tests with firmware {0} without checking goldfw".format(self.__fw_images.image))
+                print("installing and running tests with firmware without checking goldfw")
                 try:
                     naples_inst.InstallMainFirmware()
                     if not naples_inst.IsNaplesGoldFWLatest():
@@ -1557,9 +1608,7 @@ class PenOrchestrator:
             self.__ipmi_reboot_allowed = True
             self.__host.InstallMainFirmware()
             #Install gold fw if required.
-            for naples_inst in self.__naples:
-                if not naples_inst.IsNaplesGoldFWLatest():
-                    self.__host.InstallGoldFirmware()
+            self.__host.InstallGoldFirmware()
 
         #Script that might have to run just before reboot
         # ESX would require drivers to be installed here to avoid
@@ -1595,10 +1644,10 @@ class PenOrchestrator:
             naples_inst.RebootGoldFw()
 
         if GlobalOptions.use_gold_firmware:
-            print("installing and running tests with gold firmware {0}".format(self.__fw_images.gold_fw_img))
+            print("installing and running tests with gold firmware {0}".format(naples_inst.fw_images.gold_fw_img))
             naples_inst.InstallGoldFirmware()
         else:
-            print("installing and running tests with firmware {0}".format(self.__fw_images.image))
+            print("installing and running tests with firmware {0}".format(naples_inst.fw_images.image))
             naples_inst.InstallMainFirmware()
             if not naples_inst.IsNaplesGoldFWLatest():
                 naples_inst.InstallGoldFirmware()

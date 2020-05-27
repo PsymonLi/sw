@@ -16,7 +16,7 @@ nodes:
 
     - node: node2
       name: node2
-      role: PERSONALITY_NAPLES_BITW
+      role: PERSONALITY_NAPLES
       workloads:
         linux:
             type    : WORKLOAD_TYPE_BARE_METAL
@@ -24,3 +24,4 @@ nodes:
         freebsd:
             type    : WORKLOAD_TYPE_BARE_METAL
             image   : "N/A"
+

@@ -5,6 +5,7 @@ meta:
     cfgmode     : netagent
     nicmode     : bitw
     os          : [ linux, freebsd, esx ]
+    provision   : test/athena/topologies/classic_2baremetal_2Naples/provision.yml
 
 packages:
     - iota.test.athena
@@ -17,7 +18,7 @@ image_manifest:
 setup:
     topology: test/athena/topologies/classic_2baremetal_2Naples/classic_baremetal.topology
     config  :
-        - step : config.athena_app_config
+        - step  : config.setup_workloads
 
 common:
     verifs:
