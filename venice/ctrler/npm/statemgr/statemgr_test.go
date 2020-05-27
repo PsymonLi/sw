@@ -10488,6 +10488,114 @@ func TestWorkloadInterfaceUpdate(t *testing.T) {
 	Assert(t, wrState.isInterfaceChanged(&wr), "Interfaces were changed")
 }
 
+func TestWorkloadProvisionAndAdmitDSC(t *testing.T) {
+	// create network state manager
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	// host params
+	host := cluster.Host{
+		TypeMeta: api.TypeMeta{Kind: "Host"},
+		ObjectMeta: api.ObjectMeta{
+			Name:   "testHost",
+			Tenant: "default",
+		},
+		Spec: cluster.HostSpec{
+			DSCs: []cluster.DistributedServiceCardID{
+				{
+					MACAddress: "0001.0203.0405",
+				},
+			},
+		},
+	}
+
+	// create the host
+	err = stateMgr.ctrler.Host().Create(&host)
+	AssertOk(t, err, "Could not create the host")
+
+	// workload params
+	wr := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "testWorkload",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: "testHost",
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   "0001.0203.0409",
+					MicroSegVlan: 100,
+					ExternalVlan: 1,
+				},
+			},
+		},
+	}
+
+	// create the workload
+	err = stateMgr.ctrler.Workload().Create(&wr)
+	AssertOk(t, err, "Could not create the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Network not found", "20ms", "1s")
+
+	// verify we can find the network for the workload
+	nw, err := stateMgr.FindNetwork("default", "Network-Vlan-1")
+	AssertOk(t, err, "Could not find the network")
+
+	// verify we can not find the endpoint associated with the workload
+	// without snic
+	_, ok := nw.FindEndpoint("testWorkload-0001.0203.0409")
+	Assert(t, !ok, "Could find the endpoint", "testWorkload-0001.0203.0409")
+
+	// verify after snic is created and admitted reconcile happens creating
+	// endpoints for the provisioned workloads
+	// smartNic params
+	snic := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name: "testDistributedServiceCard",
+		},
+		Spec: cluster.DistributedServiceCardSpec{},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC:     "0001.0203.0405",
+			AdmissionPhase: "admitted",
+		},
+	}
+
+	// create the smartNic
+	err = stateMgr.ctrler.DistributedServiceCard().Create(&snic)
+	AssertOk(t, err, "Could not create the smartNic")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindEndpoint("default", "testWorkload-0001.0203.0409")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1ms", "1s")
+
+	// verify we can find the endpoint associated with the workload
+	var foundEp *EndpointState
+	foundEp, ok = nw.FindEndpoint("testWorkload-0001.0203.0409")
+	Assert(t, ok, "Could not find the endpoint", "testWorkload-0001.0203.0409")
+	Assert(t, (foundEp.Endpoint.Status.WorkloadName == wr.Name), "endpoint params did not match")
+}
+
 /*
 func TestEndpointUpdate(t *testing.T) {
 	// create network state manager

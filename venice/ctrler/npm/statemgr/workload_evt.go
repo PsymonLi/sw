@@ -123,6 +123,10 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 
 	hsts.addWorkload(w)
 	err = ws.createEndpoints()
+	if err != nil {
+		log.Warnf("Gracefully return success for provisioning")
+		return nil
+	}
 
 	var snic *DistributedServiceCardState
 	// find the smart nic by name or mac addr
