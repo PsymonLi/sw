@@ -255,40 +255,42 @@ static void
 fte_nat_csum_adj_h2s_v4 (struct ipv4_hdr *iph, uint32_t new_ipaddr)
 {
     uint8_t *oip, *nip, *ipcsum, *l4csum;
-    uint16_t oip_sum0, oip_sum1;
-    uint16_t nip_sum0, nip_sum1;
-    uint32_t tmp_ipcsum = 0, tmp_l4csum = 0;
+    uint16_t oip_sum, nip_sum;
+    int32_t tmp_ipcsum = 0, tmp_l4csum = 0;
     uint8_t ip_hlen = 0, l4csum_adj = 0;
     uint8_t ip_proto;
     struct tcp_hdr *tcph;
     struct udp_hdr *udph;
+    uint8_t i;
 
     ipcsum = (uint8_t *) &(iph->hdr_checksum);
     tmp_ipcsum = ((ipcsum[0] << 8) + ipcsum[1]);
-    tmp_ipcsum = ~tmp_ipcsum;
+    tmp_ipcsum = ((~tmp_ipcsum) & 0xffff);
 
     // oip is in BE form
     oip = (uint8_t *) &(iph->src_addr);
-    oip_sum0 = ((oip[0] << 8) + oip[1]);
-    oip += 2;
-    oip_sum1 = ((oip[0] << 8) + oip[1]);
+    for (i = 0; i < 2; i++) {
+        oip_sum = ((oip[0] << 8) + oip[1]);
+        oip += 2;
+
+        tmp_ipcsum -= oip_sum;
+        if (tmp_ipcsum <= 0) {
+            tmp_ipcsum--;
+            tmp_ipcsum &= 0xffff;
+        }
+    }
 
     // nip is in LE form
     nip = (uint8_t *) &new_ipaddr; 
-    nip_sum0 = ((nip[1] << 8) + nip[0]);
-    nip += 2;
-    nip_sum1 = ((nip[1] << 8) + nip[0]);
+    for (i = 0; i < 2; i++) {
+        nip_sum = ((nip[1] << 8) + nip[0]);
+        nip += 2;
 
-    // IP csum adjustment
-    tmp_ipcsum -= oip_sum0;
-    tmp_ipcsum -= oip_sum1;
-    tmp_ipcsum &= 0xffff;
-
-    tmp_ipcsum += nip_sum0;
-    tmp_ipcsum += nip_sum1;
-    if (tmp_ipcsum & 0x10000) {
-        tmp_ipcsum++;
-        tmp_ipcsum &= 0xffff;
+        tmp_ipcsum += nip_sum;
+        if (tmp_ipcsum & 0x10000) {
+            tmp_ipcsum++;
+            tmp_ipcsum &= 0xffff;
+        }
     }
 
     tmp_ipcsum = (~tmp_ipcsum & 0xffff);
@@ -318,17 +320,32 @@ fte_nat_csum_adj_h2s_v4 (struct ipv4_hdr *iph, uint32_t new_ipaddr)
     // TCP/UDP csum adjustment
     if (l4csum_adj) {
         tmp_l4csum = ((l4csum[0] << 8) + l4csum[1]);
-        tmp_l4csum = ~tmp_l4csum;
+        tmp_l4csum = ((~tmp_l4csum) & 0xffff);
 
-        tmp_l4csum -= oip_sum0;
-        tmp_l4csum -= oip_sum1;
-        tmp_l4csum &= 0xffff;
+        // oip is in BE form
+        oip = (uint8_t *) &(iph->src_addr);
+        for (i = 0; i < 2; i++) {
+            oip_sum = ((oip[0] << 8) + oip[1]);
+            oip += 2;
 
-        tmp_l4csum += nip_sum0;
-        tmp_l4csum += nip_sum1;
-        if (tmp_l4csum & 0x10000) {
-            tmp_l4csum++;
-            tmp_l4csum &= 0xffff;
+            tmp_l4csum -= oip_sum;
+            if (tmp_l4csum <= 0) {
+                tmp_l4csum--;
+                tmp_l4csum &= 0xffff;
+            }
+        }
+
+        // nip is in LE form
+        nip = (uint8_t *) &new_ipaddr;
+        for (i = 0; i < 2; i++) {
+            nip_sum = ((nip[1] << 8) + nip[0]);
+            nip += 2;
+
+            tmp_l4csum += nip_sum;
+            if (tmp_l4csum & 0x10000) {
+                tmp_l4csum++;
+                tmp_l4csum &= 0xffff;
+            }
         }
 
         tmp_l4csum = (~tmp_l4csum & 0xffff);
