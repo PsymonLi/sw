@@ -221,11 +221,13 @@ pds_impl_db_vr_ip_get (uint16_t subnet, uint32_t *vr_ip)
 
 int
 pds_impl_db_device_set (const u8 *mac, const u8 *ip, u8 ip4,
-                        u8 overlay_routing_en, u16 mapping_prio)
+                        u8 overlay_routing_en, u8 symmetric_routing_en,
+                        u16 mapping_prio)
 {
     pds_impl_db_device_entry_t *dev = &impl_db_ctx.device;
 
     dev->overlay_routing_en = overlay_routing_en;
+    dev->symmetric_routing_en = symmetric_routing_en;
     dev->mapping_prio = mapping_prio;
     clib_memcpy(dev->device_mac, mac, ETH_ADDR_LEN);
     if (ip4) {

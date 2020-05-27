@@ -39,7 +39,6 @@ pds_cfg_db_subnet_set_cb (const pds_cfg_msg_t *msg)
                                 msg->subnet.status.hw_id,
                                 msg->subnet.spec.fabric_encap.val.vnid,
                                 vpc_id);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -53,7 +52,6 @@ pds_cfg_db_subnet_del_cb (const pds_cfg_msg_t *msg)
     int rc;
 
     rc = pds_impl_db_subnet_del(msg->subnet.status.hw_id);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -98,7 +96,6 @@ pds_cfg_db_vnic_set_cb (const pds_cfg_msg_t *msg)
                               msg->vnic.spec.vnic_encap.val.vlan_tag,
                               msg->vnic.status.nh_hw_id,
                               msg->vnic.status.host_if_hw_id);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -112,7 +109,6 @@ pds_cfg_db_vnic_del_cb (const pds_cfg_msg_t *msg)
     int rc;
 
     rc = pds_impl_db_vnic_del(msg->vnic.status.hw_id);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -130,7 +126,6 @@ pds_cfg_db_vpc_set_cb (const pds_cfg_msg_t *msg)
         flags |= PDS_VPP_VPC_FLAGS_CONTROL_VPC;
     }
     rc = pds_impl_db_vpc_set(msg->vpc.status.hw_id, msg->vpc.status.bd_hw_id, flags);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -144,7 +139,6 @@ pds_cfg_db_vpc_del_cb (const pds_cfg_msg_t *msg)
     int rc;
 
     rc = pds_impl_db_vpc_del(msg->vpc.status.hw_id);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -162,8 +156,8 @@ pds_cfg_db_device_set_cb (const pds_cfg_msg_t *msg)
                                 (const uint8_t *) &spec->device_ip_addr.addr,
                                 (spec->device_ip_addr.af == IP_AF_IPV4) ? 1:0,
                                 spec->overlay_routing_en,
+                                spec->symmetric_routing_en,
                                 spec->ip_mapping_priority);
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {
@@ -177,7 +171,6 @@ pds_cfg_db_device_del_cb (const pds_cfg_msg_t *msg)
     int rc;
 
     rc = pds_impl_db_device_del();
-
     if (rc == 0) {
         return sdk::SDK_RET_OK;
     } else {

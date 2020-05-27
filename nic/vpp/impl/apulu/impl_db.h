@@ -56,8 +56,9 @@ typedef struct {
 typedef struct {
     mac_addr_t device_mac;      // device MAC address
     ip46_address_t device_ip;   // device IP address
-    u8 overlay_routing_en;      // overlay Routing enabled or not
-    u16 mapping_prio;            // mapping priority, used for mappping vs route
+    u8 overlay_routing_en : 1;  // overlay Routing enabled or not
+    u8 symmetric_routing_en : 1;// symmetric routing - VNI for i/rflow is same
+    u16 mapping_prio;           // mapping priority, used for mappping vs route
 } pds_impl_db_device_entry_t;
 
 #define foreach_impl_db_element                         \

@@ -614,6 +614,14 @@ priority_check:
     return true;
 }
 
+always_inline bool
+pds_device_asymmetric_routing (void) {
+    pds_impl_db_device_entry_t *dev = pds_impl_db_device_get();
+
+    return (dev->overlay_routing_en &&
+            !dev->symmetric_routing_en);
+}
+
 always_inline void
 pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                              u16 flags, u16 *next, u32 *counter,
@@ -622,12 +630,12 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
     u16 xlate_id;
     u8 intra_subnet = 0;
     u8 pkt_type;
-    pds_impl_db_device_entry_t *dev = pds_impl_db_device_get();
     bool mapping;
 
     vnet_buffer(p)->sw_if_index[VLIB_TX] = hdr->ingress_bd_id;
 
     if (!hdr->rx_packet) {
+        bool asym_route = pds_device_asymmetric_routing();
         if (hdr->ingress_bd_id == hdr->egress_bd_id) {
             intra_subnet = 1;
         }
@@ -652,11 +660,11 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
             }
         } else {
             // route hit case
-            if (dev->overlay_routing_en) {
+            if (asym_route) {
                 // remote end knows subnet VNI
                 vnet_buffer(p)->pds_flow_data.egress_lkp_id =
                         hdr->ingress_bd_id;
-                pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_EN;
+                pkt_type = PDS_FLOW_L2N_ASYMMETRIC_ROUTE;
             } else {
                 // remote end knows VNI of VPC, not subnet
                 pds_impl_db_vpc_entry_t *vpc = pds_impl_db_vpc_get(hdr->vpc_id);
@@ -665,11 +673,11 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                     counter[FLOW_CLASSIFY_COUNTER_VPC_NOT_FOUND] += 1;
                     return;
                 }
-                if (PREDICT_FALSE(vpc->flags & PDS_VPP_VPC_FLAGS_CONTROL_VPC &&
-                    hdr->snat_type == ROUTE_RESULT_SNAT_TYPE_NONE)) {
+                if (PREDICT_FALSE((vpc->flags & PDS_VPP_VPC_FLAGS_CONTROL_VPC)
+                    && (hdr->snat_type == ROUTE_RESULT_SNAT_TYPE_NONE))) {
                     pkt_type = PDS_FLOW_L2N_INTRA_VCN_ROUTE;
                 } else {
-                    pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_DIS;
+                    pkt_type = PDS_FLOW_L2N_SYMMETRIC_ROUTE;
                 }
                 vnet_buffer(p)->pds_flow_data.egress_lkp_id = vpc->hw_bd_id;
             }
@@ -697,11 +705,11 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                         pds_dnat_tbl_read_ip4(xlate_id, &ip, &port);
                         vnet_buffer2(p)->pds_nat_data.xlate_idx2 = xlate_id;
                         vnet_buffer2(p)->pds_nat_data.xlate_addr2 = ip;
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_TWICE_NAT;
-                    } else if (dev->overlay_routing_en) {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAPT;
+                        pkt_type = PDS_FLOW_L2N_SYMMETRIC_ROUTE_TWICE_NAT;
+                    } else if (asym_route) {
+                        pkt_type = PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAPT;
                     } else {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAPT;
+                        pkt_type = PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT;
                     }
                 }
                 /* Try static NAT */
@@ -712,10 +720,10 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                     pds_snat_tbl_read_ip4(xlate_id, &ip, &port);
                     vnet_buffer2(p)->pds_nat_data.xlate_idx = xlate_id;
                     vnet_buffer2(p)->pds_nat_data.xlate_addr = ip;
-                    if (dev->overlay_routing_en) {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAT;
+                    if (asym_route) {
+                        pkt_type = PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT;
                     } else {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAT;
+                        pkt_type = PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAT;
                     }
                 } else {
                     /* nat44 */
@@ -729,10 +737,10 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                         counter[FLOW_CLASSIFY_COUNTER_UNKOWN] += 1;
                         return;
                     }
-                    if (dev->overlay_routing_en) {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAPT;
+                    if (asym_route) {
+                        pkt_type = PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAPT;
                     } else {
-                        pkt_type = PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAPT;
+                        pkt_type = PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT;
                     }
                 }
             }
@@ -752,20 +760,20 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
             } else {
                 // rflow is not mapping hit, its route hit.
                 // ingress bd id will be VPC bd id
-                if (dev->overlay_routing_en) {
-                    pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_EN;
+                if (!hdr->is_l3_vnid) {
+                    pkt_type = PDS_FLOW_N2L_ASYMMETRIC_ROUTE;
                 } else {
-                    pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_DIS;
+                    pkt_type = PDS_FLOW_N2L_SYMMETRIC_ROUTE;
                 }
                 if (hdr->service_xlate_id) {
                     /* Service mapping case (pip, port --> vip, port) */
                     BIT_SET(vnet_buffer(p)->pds_flow_data.flags,
                             VPP_CPU_FLAGS_NAT_SVC_MAP);
                     vnet_buffer2(p)->pds_nat_data.xlate_idx = hdr->service_xlate_id;
-                    if (dev->overlay_routing_en) {
-                        pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_EN_SVC_NAT;
+                    if (!hdr->is_l3_vnid) {
+                        pkt_type = PDS_FLOW_N2L_ASYMMETRIC_ROUTE_SVC_NAT;
                     } else {
-                        pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_DIS_SVC_NAT;
+                        pkt_type = PDS_FLOW_N2L_SYMMETRIC_ROUTE_SVC_NAT;
                     }
                 } else if (hdr->snat_type != ROUTE_RESULT_SNAT_TYPE_NONE) {
                     /* Only static nat should be valid here */
@@ -776,10 +784,10 @@ pds_flow_packet_type_derive (vlib_buffer_t *p, p4_rx_cpu_hdr_t *hdr,
                         pds_snat_tbl_read_ip4(xlate_id + 1, &ip, &port);
                         vnet_buffer2(p)->pds_nat_data.xlate_idx = xlate_id;
                         vnet_buffer2(p)->pds_nat_data.xlate_addr = ip;
-                        if (dev->overlay_routing_en) {
-                            pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_EN_NAT;
+                        if (!hdr->is_l3_vnid) {
+                            pkt_type = PDS_FLOW_N2L_ASYMMETRIC_ROUTE_NAT;
                         } else {
-                            pkt_type = PDS_FLOW_N2L_OVERLAY_ROUTE_DIS_NAT;
+                            pkt_type = PDS_FLOW_N2L_SYMMETRIC_ROUTE_NAT;
                         }
                     } else {
                         /*
@@ -1092,13 +1100,15 @@ pds_flow_rewrite_flags_init (void)
     pds_flow_rewrite_flags_t *rewrite_flags;
 
     vec_validate(fm->rewrite_flags, PDS_FLOW_PKT_TYPE_MAX);
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2L_INTRA_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2L_INTRA_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2L_INTER_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2L_INTER_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
@@ -1108,14 +1118,16 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2R_INTRA_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2R_INTRA_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2R_INTER_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2R_INTER_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
@@ -1126,7 +1138,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_EN);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_ASYMMETRIC_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1136,7 +1149,8 @@ pds_flow_rewrite_flags_init (void)
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAPT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAPT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_SPORT_FROM_NAT << P4_REWRITE_SPORT_START) |
@@ -1152,7 +1166,8 @@ pds_flow_rewrite_flags_init (void)
              (P4_REWRITE_DPORT_FROM_NAT << P4_REWRITE_DPORT_START) |
              (P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1164,7 +1179,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_DIP_FROM_NAT << P4_REWRITE_DIP_START) |
             (P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_DIS);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_SYMMETRIC_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1176,7 +1192,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAPT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_SPORT_FROM_NAT << P4_REWRITE_SPORT_START) |
@@ -1194,7 +1211,8 @@ pds_flow_rewrite_flags_init (void)
              (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
              (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1208,7 +1226,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_TWICE_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_SYMMETRIC_ROUTE_TWICE_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_SPORT_FROM_NAT << P4_REWRITE_SPORT_START) |
@@ -1227,20 +1246,23 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
     // For intra VCN traffic, don't do routing rewrites
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_L2N_INTRA_VCN_ROUTE);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_L2N_INTRA_VCN_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_R2L_INTRA_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_R2L_INTRA_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_R2L_INTER_SUBNET);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_R2L_INTER_SUBNET);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
@@ -1251,7 +1273,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_EN);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_ASYMMETRIC_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1261,7 +1284,8 @@ pds_flow_rewrite_flags_init (void)
     rewrite_flags->rx_rewrite =
             (P4_REWRITE_DMAC_FROM_MAPPING << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_EN_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_ASYMMETRIC_ROUTE_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1273,7 +1297,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_DIP_FROM_NAT << P4_REWRITE_DIP_START) |
             (P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_EN_SVC_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_ASYMMETRIC_ROUTE_SVC_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
@@ -1285,7 +1310,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_DPORT_FROM_NAT << P4_REWRITE_DPORT_START) |
             (P4_REWRITE_DMAC_FROM_NEXTHOP << P4_REWRITE_DMAC_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_DIS);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_SYMMETRIC_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1297,7 +1323,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_DIS_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_SYMMETRIC_ROUTE_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_SIP_FROM_NAT << P4_REWRITE_SIP_START) |
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
@@ -1311,7 +1338,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_SMAC_FROM_VRMAC << P4_REWRITE_SMAC_START) |
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_OVERLAY_ROUTE_DIS_SVC_NAT);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_SYMMETRIC_ROUTE_SVC_NAT);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_DMAC_FROM_TUNNEL << P4_REWRITE_DMAC_START) |
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START) |
@@ -1326,7 +1354,8 @@ pds_flow_rewrite_flags_init (void)
             (P4_REWRITE_TTL_DEC << P4_REWRITE_TTL_START);
 
     // For intra VCN traffic, don't do routing rewrites
-    rewrite_flags = vec_elt_at_index(fm->rewrite_flags, PDS_FLOW_N2L_INTRA_VCN_ROUTE);
+    rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                     PDS_FLOW_N2L_INTRA_VCN_ROUTE);
     rewrite_flags->tx_rewrite =
             (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
     rewrite_flags->rx_rewrite =
