@@ -532,15 +532,17 @@ func (n *NMD) NaplesRolloutGetHandler(r *http.Request) (interface{}, error) {
 	if val, ok := os.LookupEnv("NAPLES_PIPELINE"); ok {
 		log.Infof("NAPLES_PIPELINE is %v", val)
 		if val == globals.NaplesPipelineApollo {
+			var status string
 			result := utils.ProcessPdsUpgStatus()
 			switch result {
 			case utils.PdsUpgStatusSuccess:
-				go n.UpgSuccessful()
+				status = "success"
 			case utils.PdsUpgStatusFail:
-				go n.UpgFailed(&[]string{fmt.Sprintf("Upgrade failed")})
+				status = "failed"
 			default:
-				go n.UpgInProgress()
+				status = "progressing"
 			}
+			n.UpdUpgStatus(status)
 		}
 	}
 	st := n.GetDSCRolloutStatus()

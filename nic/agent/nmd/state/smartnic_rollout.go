@@ -178,7 +178,7 @@ func (n *NMD) issueNextPendingOp() {
 				case utils.PdsUpgStatusFail:
 					go n.UpgFailed(&[]string{fmt.Sprintf("Upgrade failed")})
 				default:
-					go n.UpgInProgress()
+					go n.UpdUpgStatus("progressing")
 				}
 			}
 		}
@@ -346,19 +346,19 @@ func (n *NMD) issueNextPendingOp() {
 	}
 }
 
-// UpgInProgress is called after NMD restarts and for response to rest query in Apollo
-func (n *NMD) UpgInProgress() {
-	log.Infof("UpgInProgress  got called")
+// UpdUpgStatus is called after NMD restarts and for response to rest query in Apollo
+func (n *NMD) UpdUpgStatus(status string) {
+	log.Infof("UpdUpgStatus  got called")
 	n.Lock()
 	defer n.Unlock()
 
 	message := ""
 
 	if n.ro.InProgressOp.Op != protos.DSCOp_DSCNoOp {
-		n.updateOpStatus(n.ro.InProgressOp.Op, n.ro.InProgressOp.Version, "progressing", message)
+		n.updateOpStatus(n.ro.InProgressOp.Op, n.ro.InProgressOp.Version, status, message)
 		n.updateRolloutStatus(protos.DSCOpSpec{Op: protos.DSCOp_DSCDisruptiveUpgrade})
 	} else {
-		log.Infof("UpgInProgress got called when there is no pending Op")
+		log.Infof("UpdUpgStatus got called when there is no pending Op")
 	}
 }
 

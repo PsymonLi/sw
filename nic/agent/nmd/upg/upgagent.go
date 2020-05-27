@@ -287,9 +287,9 @@ func (u *NaplesUpgClient) UpgSuccessful() {
 	u.nmd.UpgSuccessful()
 }
 
-//UpgInProgress from upgrade manager
-func (u *NaplesUpgClient) UpgInProgress() {
-	u.nmd.UpgInProgress()
+//UpdUpgStatus from upgrade manager
+func (u *NaplesUpgClient) UpdUpgStatus(status string) {
+	u.nmd.UpdUpgStatus(status)
 }
 
 // UpgAborted from upgrade manager

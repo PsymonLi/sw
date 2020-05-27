@@ -119,7 +119,7 @@ type UpgMgrAPI interface {
 // NmdRolloutAPI is the API called by upgmgr agent to nmd
 type NmdRolloutAPI interface {
 	UpgSuccessful()
-	UpgInProgress()
+	UpdUpgStatus(status string)
 	UpgFailed(errStrList *[]string)
 	UpgPossible()
 	UpgNotPossible(errStrList *[]string)

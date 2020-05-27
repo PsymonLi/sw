@@ -53,13 +53,13 @@ func ProcessPdsUpgStatus() int {
 		log.Infof(" unable to read /update/pds_upg_status.txt %v", err)
 		return PdsUpgStatusFail
 	}
-	log.Infof("file content %v", data)
+	log.Infof("file content %v", string(data))
 	strList := strings.Split(string(data), ":")
 
-	if strList[len(strList)-1] == "success" {
+	if strings.TrimSuffix(strList[len(strList)-1], "\n") == "success" {
 		return PdsUpgStatusSuccess
 	}
-	if strList[len(strList)-1] == "failed" {
+	if strings.TrimSuffix(strList[len(strList)-1], "\n") == "failed" {
 		return PdsUpgStatusFail
 	}
 	return PdsUpgStatusInProcess
