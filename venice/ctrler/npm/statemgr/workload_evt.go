@@ -271,14 +271,8 @@ func (sm *Statemgr) OnWorkloadReconnect() {
 
 // createNetwork creates a network for workload's external vlan
 func (ws *WorkloadState) createNetwork(netName string, extVlan uint32) error {
-	// acquire a lock per network
-	lk, ok := ws.stateMgr.networkLocks[netName]
-	if !ok {
-		lk = &sync.Mutex{}
-		ws.stateMgr.networkLocks[netName] = lk
-	}
-	lk.Lock()
-	defer lk.Unlock()
+	ws.stateMgr.networkKindLock.Lock()
+	defer ws.stateMgr.networkKindLock.Unlock()
 
 	nwt := network.Network{
 		TypeMeta: api.TypeMeta{Kind: "Network"},
@@ -286,6 +280,7 @@ func (ws *WorkloadState) createNetwork(netName string, extVlan uint32) error {
 			Name:      netName,
 			Namespace: ws.Workload.Namespace,
 			Tenant:    ws.Workload.Tenant,
+			Labels:    map[string]string{},
 		},
 		Spec: network.NetworkSpec{
 			Type:        network.NetworkType_Bridged.String(),
@@ -298,6 +293,10 @@ func (ws *WorkloadState) createNetwork(netName string, extVlan uint32) error {
 			// this will be changed by npm correctly when processing the watch event
 			// OperState: network.OperState_Active.String(),
 		},
+	}
+	pnwt := &nwt
+	if !isOrchHubKeyPresent(ws.Workload.Labels) {
+		AddNpmSystemLabel(pnwt.Labels)
 	}
 
 	// create it in apiserver

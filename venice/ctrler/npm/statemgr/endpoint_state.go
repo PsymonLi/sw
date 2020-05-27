@@ -504,6 +504,8 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 // OnEndpointDelete deletes an endpoint
 func (sm *Statemgr) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
 	log.Infof("Deleting Endpoint: %#v", epinfo)
+	sm.networkKindLock.Lock()
+	defer sm.networkKindLock.Unlock()
 
 	// see if we have the endpoint
 	eps, err := EndpointStateFromObj(epinfo)
@@ -520,17 +522,13 @@ func (sm *Statemgr) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
 
 		// free the IPv4 address
 		for _, ipv4add := range eps.Endpoint.Status.IPv4Addresses {
-			ns.Lock()
 			err = ns.freeIPv4Addr(ipv4add)
-			ns.Unlock()
 			if err != nil {
 				log.Errorf("Error freeing the endpoint address. Err: %v", err)
 			}
 
 			// write the modified network state to api server
-			ns.Lock()
 			err = ns.Network.Write()
-			ns.Unlock()
 			if err != nil {
 				log.Errorf("Error writing the network object. Err: %v", err)
 			}

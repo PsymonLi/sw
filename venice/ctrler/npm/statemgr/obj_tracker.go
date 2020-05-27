@@ -170,7 +170,5 @@ func (objTracker *smObjectTracker) getPropStatus() objPropagationStatus {
 	} else {
 		propStatus.status = fmt.Sprintf("Propagation pending on: %s", strings.Join(propStatus.pendingDSCs, ", "))
 	}
-	log.Infof("propogation status object %s : %+v", objTracker.obj.GetKey(), propStatus)
-
 	return propStatus
 }

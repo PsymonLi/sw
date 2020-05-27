@@ -53,6 +53,12 @@ type dscUpdateIntf interface {
 	GetKey() string
 }
 
+// GarbageCollector for auto created stale network objects
+type GarbageCollector struct {
+	Seconds       int
+	CollectorChan chan bool
+}
+
 // Topics are the Nimbus message bus topics
 type Topics struct {
 	AppTopic                   *nimbus.AppTopic
@@ -74,11 +80,11 @@ type Statemgr struct {
 	mbus                  *nimbus.MbusServer       // nimbus server
 	periodicUpdaterQueue  chan updatable           // queue for periodically writing items back to apiserver
 	dscObjUpdateQueue     chan dscUpdateObj        // queue for sending updates after DSC update
+	garbageCollector      *GarbageCollector        // nw object garbage collector
 	dscUpdateNotifObjects map[string]dscUpdateIntf // objects which are watching dsc update
 	ctrler                ctkit.Controller         // controller instance
 	topics                Topics                   // message bus topics
 	networkKindLock       sync.Mutex               // lock on entire network kind, take when any changes are done to any network
-	networkLocks          map[string]*sync.Mutex   // lock for performing network operation
 	logger                log.Logger
 	WatchFilterFlags      map[string]uint
 
@@ -313,10 +319,19 @@ func (sm *Statemgr) ListObjects(kind string) []runtime.Object {
 	return sm.ctrler.ListObjects(kind)
 }
 
+// StopGarbageCollection stop garbage collection of stale networks
+func (sm *Statemgr) StopGarbageCollection() {
+	if sm.garbageCollector != nil {
+		close(sm.garbageCollector.CollectorChan)
+		sm.garbageCollector = nil
+	}
+}
+
 // Stop stops the watchers
 func (sm *Statemgr) Stop() error {
 	log.Infof("Statemanager stop called")
 	close(sm.periodicUpdaterQueue)
+	sm.StopGarbageCollection()
 	return sm.ctrler.Stop()
 }
 
@@ -330,7 +345,6 @@ func (sm *featureMgrBase) ProcessDSCEvent(ev EventType, dsc *cluster.Distributed
 
 func initStatemgr() {
 	singletonStatemgr = Statemgr{
-		networkLocks:          make(map[string]*sync.Mutex),
 		dscUpdateNotifObjects: make(map[string]dscUpdateIntf),
 		WatchFilterFlags:      make(map[string]uint),
 	}
@@ -460,6 +474,9 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 	// of the process, we don't have to worry about leaked go subroutines
 	sm.periodicUpdaterQueue = newPeriodicUpdater()
 	sm.dscObjUpdateQueue = newdscOpdateObjNotifier()
+
+	// Start garbage collection of unused network
+	sm.StartGarbageCollection()
 
 	// init the watch reactors
 	sm.setDefaultReactors(defReactor)
@@ -622,6 +639,10 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		log.Errorf("Error starting Aggregate RPC server")
 		return err
 	}
+
+	// label the objects for relA to relB
+	sm.labelInternalNetworkObjects()
+
 	return err
 }
 
@@ -1047,6 +1068,13 @@ func (sm *Statemgr) StopAppWatch() {
 //StopNetworkSecurityPolicyWatch stops App watch, used of testing
 func (sm *Statemgr) StopNetworkSecurityPolicyWatch() {
 	sm.ctrler.NetworkSecurityPolicy().StopWatch(sm)
+}
+
+// SetNetworkGarbageCollectionOption custom timer, used for testing
+func SetNetworkGarbageCollectionOption(seconds int) Option {
+	return func(sm *Statemgr) {
+		sm.garbageCollector = &GarbageCollector{Seconds: seconds}
+	}
 }
 
 type mbusObject interface {

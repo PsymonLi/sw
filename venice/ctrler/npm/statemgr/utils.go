@@ -5,8 +5,16 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pensando/sw/venice/globals"
+
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
+)
+
+var (
+	// NpmNameKey is the key used to label npm created objects
+	NpmNameKey = fmt.Sprintf("%s%s", globals.SystemLabelPrefix, "psm-internal")
 )
 
 func cloneRD(in *network.RouteDistinguisher) *netproto.RouteDistinguisher {
@@ -57,4 +65,33 @@ func ParseToIPPrefix(in string) (*netproto.IPPrefix, error) {
 			V4Address: binary.BigEndian.Uint32(ip.To4()),
 		},
 	}, nil
+}
+
+// AddNpmSystemLabel mark object label to identify venice created object
+func AddNpmSystemLabel(labels map[string]string) {
+	labels[NpmNameKey] = "Auto"
+}
+
+// IsObjInternal check for venice auto created object label
+func IsObjInternal(labels map[string]string) bool {
+	if labels == nil {
+		return false
+	}
+	if val, ok := labels[NpmNameKey]; ok {
+		if val == "Auto" {
+			return true
+		}
+	}
+	return false
+}
+
+// isOrchHubKeyPresent check for orchhub key
+func isOrchHubKeyPresent(labels map[string]string) bool {
+	if labels == nil {
+		return false
+	}
+	if _, ok := labels[utils.OrchNameKey]; ok {
+		return true
+	}
+	return false
 }

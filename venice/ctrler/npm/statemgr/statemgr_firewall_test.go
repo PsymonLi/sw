@@ -29,8 +29,10 @@ func newStatemgr() (*Statemgr, error) {
 
 	featureflags.SetInitialized()
 	// create network state manager
+	var options []Option
 	stateMgr := MustGetStatemgr()
-	err := stateMgr.Run(nil, globals.APIServer, nil, msrv, log.GetNewLogger(log.GetDefaultConfig("npm-test")))
+	options = append(options, SetNetworkGarbageCollectionOption(60))
+	err := stateMgr.Run(nil, globals.APIServer, nil, msrv, log.GetNewLogger(log.GetDefaultConfig("npm-test")), options...)
 	if err != nil {
 		log.Errorf("Could not create network manager. Err: %v", err)
 		return nil, err
@@ -74,6 +76,7 @@ func stopGrpcServer(grpcServer *rpckit.RPCServer) {
 func TestSgpolicyCreateDelete(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -462,6 +465,7 @@ func getPolicyVersionForNode(s *Statemgr, policyname, nodename string) (string, 
 func TestSmartPolicyNodeVersions(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -514,6 +518,7 @@ func TestSmartPolicyNodeVersions(t *testing.T) {
 func TestNetworkSecurityPolicySmartNICEvents(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -731,6 +736,7 @@ func TestNetworkSecurityPolicySmartNICEvents(t *testing.T) {
 func TestNetworkSecurityPolicyPropogation(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -856,6 +862,7 @@ func createFwProfile(s *Statemgr, name, version string) error {
 func TestFirewallProfileNodeVersions(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -917,6 +924,7 @@ func TestFirewallProfileNodeVersions(t *testing.T) {
 func TestFirewallProfile(t *testing.T) {
 	// create network state manazger
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 
@@ -998,6 +1006,7 @@ func TestFirewallProfile(t *testing.T) {
 func TestAlgPolicy(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -1098,6 +1107,7 @@ func TestAlgPolicy(t *testing.T) {
 func TestNetworkSecurityPolicyMultiApp(t *testing.T) {
 	// create network state manager
 	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return

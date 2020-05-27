@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/utils/log"
 
 	"github.com/gogo/protobuf/types"
@@ -3715,6 +3716,7 @@ func TestRoutingConfigCreateDelete(t *testing.T) {
 func TestModuleObject(t *testing.T) {
 	// create network state manager
 	smgr, err := newStatemgr()
+	defer smgr.Stop()
 	if err != nil {
 		t.Fatalf("Could not create network manager. Err: %v", err)
 		return
@@ -10513,6 +10515,243 @@ func TestEndpointUpdate(t *testing.T) {
 	Assert(t, ep != nil, "EP was nil")
 }
 */
+
+func TestNetworkLabelingAndCleanup(t *testing.T) {
+	// create network state manager
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	// smartNic params
+	snic := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name: "testDistributedServiceCard",
+		},
+		Spec: cluster.DistributedServiceCardSpec{},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC:     "0001.0203.0405",
+			AdmissionPhase: "admitted",
+		},
+	}
+
+	// create the smartNic
+	err = stateMgr.ctrler.DistributedServiceCard().Create(&snic)
+	AssertOk(t, err, "Could not create the smartNic")
+
+	// host params
+	host := cluster.Host{
+		TypeMeta: api.TypeMeta{Kind: "Host"},
+		ObjectMeta: api.ObjectMeta{
+			Name:   "testHost",
+			Tenant: "default",
+		},
+		Spec: cluster.HostSpec{
+			DSCs: []cluster.DistributedServiceCardID{
+				{
+					MACAddress: "0001.0203.0405",
+				},
+			},
+		},
+	}
+
+	// create the host
+	err = stateMgr.ctrler.Host().Create(&host)
+	AssertOk(t, err, "Could not create the host")
+
+	netwrk := &network.Network{
+		TypeMeta: api.TypeMeta{Kind: "Network"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "network100",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: network.NetworkSpec{
+			Type:   network.NetworkType_Bridged.String(),
+			VlanID: 100,
+		},
+	}
+
+	// create network
+	err = stateMgr.ctrler.Network().Create(netwrk)
+	AssertOk(t, err, "Could not create the network")
+
+	netwrk = &network.Network{
+		TypeMeta: api.TypeMeta{Kind: "Network"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "networkToLable",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: network.NetworkSpec{
+			Type:   network.NetworkType_Bridged.String(),
+			VlanID: 102,
+		},
+	}
+
+	// create network
+	err = stateMgr.ctrler.Network().Create(netwrk)
+	AssertOk(t, err, "Could not create the network")
+
+	// workload params
+	wr := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "testWorkload",
+			Namespace: "default",
+			Tenant:    "default",
+			Labels:    map[string]string{},
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: "testHost",
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   "0001.0203.0405",
+					MicroSegVlan: 100,
+					ExternalVlan: 1,
+				},
+				{
+					MACAddress:   "0001.0203.0406",
+					MicroSegVlan: 100,
+					Network:      "network100",
+				},
+			},
+		},
+	}
+	utils.AddOrchNameLabel(wr.Labels, "DC1")
+
+	// create the workload
+	err = stateMgr.ctrler.Workload().Create(&wr)
+	AssertOk(t, err, "Could not create the workload")
+	start := time.Now()
+
+	done := false
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1")
+		if err == nil {
+			if !done {
+				timeTrack(start, "Network create took")
+				done = true
+			}
+			return true, nil
+		}
+		return false, nil
+	}, "Network not found", "1ms", "1s")
+
+	netwrk = &network.Network{
+		TypeMeta: api.TypeMeta{Kind: "Network"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "network101",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: network.NetworkSpec{
+			Type:   network.NetworkType_Bridged.String(),
+			VlanID: 101,
+		},
+	}
+	// create network
+	err = stateMgr.ctrler.Network().Create(netwrk)
+	AssertOk(t, err, "Could not create the network")
+
+	wr2 := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "testWorkload2",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: "testHost",
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   "0001.0203.0455",
+					MicroSegVlan: 100,
+					ExternalVlan: 1001,
+				},
+			},
+		},
+	}
+	// create the workload
+	err = stateMgr.ctrler.Workload().Create(&wr2)
+	AssertOk(t, err, "Could not create the workload2")
+
+	// update workload external vlan and network
+	nwr := ref.DeepCopy(wr).(workload.Workload)
+	nwr.Spec.Interfaces[0].ExternalVlan = 2
+	nwr.Spec.Interfaces[1].Network = "network101"
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	// call labelInternalNetworkObject
+	stateMgr.labelInternalNetworkObjects()
+
+	nwr2 := ref.DeepCopy(wr2).(workload.Workload)
+	nwr2.Spec.Interfaces[0].ExternalVlan = 1002
+	err = stateMgr.ctrler.Workload().Update(&nwr2)
+	AssertOk(t, err, "Could not update the workload2")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-2")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Network not found", "1ms", "1s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1002")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Network not found", "1ms", "1s")
+
+	// verify we can find the new network for the workload
+	nw, err := stateMgr.FindNetwork("default", "Network-Vlan-2")
+	AssertOk(t, err, "Could not find updated network")
+	Assert(t, !IsObjInternal(nw.Network.Labels), "Orchhub network must not have label")
+	nw1, err := stateMgr.FindNetwork("default", "network101")
+	AssertOk(t, err, "Could not find updated network")
+	Assert(t, !IsObjInternal(nw1.Network.Labels), "Orchhub network must not have label")
+	nw2, err := stateMgr.FindNetwork("default", "networkToLable")
+	AssertOk(t, err, "Could not find updated network")
+	Assert(t, IsObjInternal(nw2.Network.Labels), "Other network must not have label")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindEndpoint("default", "testWorkload-0001.0203.0405")
+		if err == nil {
+			_, ok := nw.FindEndpoint("testWorkload-0001.0203.0405")
+			return ok, nil
+		}
+		_, err = stateMgr.FindEndpoint("default", "testWorkload-0001.0203.0406")
+		if err == nil {
+			_, ok := nw1.FindEndpoint("testWorkload-0001.0203.0406")
+			return ok, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1ms", "1s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1001")
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Stale network still present", "10s", "20s")
+
+	foundEp, ok := nw.FindEndpoint("testWorkload-0001.0203.0405")
+	Assert(t, ok, "Could not find the endpoint", "testWorkload-0001.0203.0405")
+	Assert(t, (foundEp.Endpoint.Status.Network == nw.Network.Name), "endpoint network did not match")
+
+}
 
 func TestMain(m *testing.M) {
 	// init tsdb client

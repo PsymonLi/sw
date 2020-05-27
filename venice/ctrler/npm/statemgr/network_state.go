@@ -4,13 +4,13 @@ package statemgr
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"strings"
 	"time"
 
 	"net"
-	"sync"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/willf/bitset"
@@ -25,13 +25,26 @@ import (
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
+// networkObjState current state of object
+type networkObjState int32
+
+// NetworkLive to track object state
+const (
+	networkLive       networkObjState = iota // Valid network
+	networkMarkDelete                        // Marked for garbage collection
+	networkDeleted                           // Delete request sent to API server object invalid
+)
+const (
+	defaultGarbageCollectionInterval = 600 // cleanup timer set to 10 minutes as much of contention happens for networkkindlock
+)
+
 // NetworkState is a wrapper for network object
 type NetworkState struct {
-	sync.Mutex                           // lock the network object
 	Network    *ctkit.Network            `json:"-"` // network object
 	endpointDB map[string]*EndpointState // endpoint database
 	macaddrDB  map[string]*EndpointState // mapping of mac address to endpoint
 	stateMgr   *Statemgr                 // pointer to network manager
+	curState   networkObjState           // maintaines the object lifecycle
 }
 
 // NetworkStateFromObj conerts from memdb object to network state
@@ -248,27 +261,38 @@ func (ns *NetworkState) freeIPv4Addr(reqAddr string) error {
 
 // AddEndpoint adds endpoint to network
 func (ns *NetworkState) AddEndpoint(ep *EndpointState) error {
-	ns.Lock()
-	defer ns.Unlock()
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
+	if ns.isNetworkDeleted() {
+		return fmt.Errorf("garbage collector deleted object")
+	}
 	ns.endpointDB[ep.endpointKey()] = ep
 	ns.macaddrDB[ep.Endpoint.Status.MacAddress] = ep
+	ns.curState = networkLive
 	return nil
 }
 
 // RemoveEndpoint removes an endpoint from network
 func (ns *NetworkState) RemoveEndpoint(ep *EndpointState) error {
-	ns.Lock()
-	defer ns.Unlock()
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
+	if ns.isNetworkDeleted() {
+		panic("Bug - Removing deleted endpoint")
+	}
 	delete(ns.endpointDB, ep.endpointKey())
 	delete(ns.macaddrDB, ep.Endpoint.Status.MacAddress)
+	if len(ns.endpointDB) == 0 && IsObjInternal(ns.Network.Labels) {
+		ns.curState = networkMarkDelete
+		log.Errorf("mark for garbage collection networkstate: {%+v}", ns)
+	}
 	return nil
 }
 
 // FindEndpoint finds an endpoint in a network
 func (ns *NetworkState) FindEndpoint(epName string) (*EndpointState, bool) {
 	// lock the endpoint db
-	ns.Lock()
-	defer ns.Unlock()
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
 
 	// find the endpoint in the DB
 	eps, ok := ns.endpointDB[epName]
@@ -282,8 +306,8 @@ func (ns *NetworkState) FindEndpoint(epName string) (*EndpointState, bool) {
 // FindEndpointByMacAddr finds an endpoint in a network by its mac address
 func (ns *NetworkState) FindEndpointByMacAddr(macaddr string) (*EndpointState, error) {
 	// lock the endpoint db
-	ns.Lock()
-	defer ns.Unlock()
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
 
 	// find the endpoint in the DB
 	eps, ok := ns.macaddrDB[macaddr]
@@ -299,8 +323,8 @@ func (ns *NetworkState) ListEndpoints() []*EndpointState {
 	var eplist []*EndpointState
 
 	// lock the endpoint db
-	ns.Lock()
-	defer ns.Unlock()
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
 
 	// walk all endpoints
 	for _, ep := range ns.endpointDB {
@@ -355,8 +379,6 @@ func NewNetworkState(nw *ctkit.Network, stateMgr *Statemgr) (*NetworkState, erro
 		stateMgr:   stateMgr,
 	}
 	nw.HandlerCtx = ns
-	ns.Lock()
-	defer ns.Unlock()
 
 	// mark gateway addr as used
 	if nw.Spec.IPv4Gateway != "" {
@@ -435,8 +457,6 @@ func (sm *Statemgr) GetNetworkWatchOptions() *api.ListWatchOptions {
 
 // OnNetworkCreate creates local network state based on watch event
 func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
-	sm.networkKindLock.Lock()
-	defer sm.networkKindLock.Unlock()
 	// create new network state
 	ns, err := NewNetworkState(nw, sm)
 	if err != nil {
@@ -485,7 +505,6 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 
 // OnNetworkUpdate handles network update
 func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) error {
-	// no need to take networkKindLock here - vlanid cannot be updated
 	// see if anything changed
 	_, ok := ref.ObjDiff(nw.Spec, nnw.Spec)
 	ok = ok || (nw.Network.Status.OperState != nnw.Status.OperState)
@@ -516,8 +535,6 @@ func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) err
 // OnNetworkDelete deletes a network
 func (sm *Statemgr) OnNetworkDelete(nto *ctkit.Network) error {
 	log.Infof("Delete Network {Meta: %+v, Spec: %+v}", nto.Network.ObjectMeta, nto.Network.Spec)
-	sm.networkKindLock.Lock()
-	defer sm.networkKindLock.Unlock()
 	// see if we already have it
 	nso, err := sm.FindObject("Network", nto.Tenant, "default", nto.Name)
 	if err != nil {
@@ -596,4 +613,147 @@ func (sm *Statemgr) checkRejectedNetworks() {
 		}
 		rso.Network.Write()
 	}
+}
+
+// npm cleans up any network which is created by npm and no references to endpoint
+func (sm *Statemgr) cleanUnusedNetworks() {
+	sm.networkKindLock.Lock()
+	defer sm.networkKindLock.Unlock()
+	nws, _ := sm.ListNetworks()
+	for _, nw := range nws {
+		if nw.isNetworkMarkedDelete() && IsObjInternal(nw.Network.Labels) {
+			log.Infof("network garbage collector delete: %+v", nw)
+			// delete the endpoint in api server
+			nwInfo := network.Network{
+				TypeMeta: api.TypeMeta{Kind: "Network"},
+				ObjectMeta: api.ObjectMeta{
+					Name:      nw.Network.Name,
+					Tenant:    nw.Network.Tenant,
+					Namespace: nw.Network.Namespace,
+				},
+			}
+			err := nw.stateMgr.ctrler.Network().Delete(&nwInfo)
+			nw.curState = networkDeleted
+			if err != nil {
+				log.Errorf("Ignore error deleting the network. Err: %v", err)
+			}
+		} else if len(nw.endpointDB) == 0 && IsObjInternal(nw.Network.Labels) {
+			// rel A to rel B stale networks gets cleaned up
+			log.Errorf("marking for garbage collection networkstate: {%+v}", nw)
+			nw.curState = networkMarkDelete
+		}
+	}
+
+}
+
+func (sm *Statemgr) runNwGarbageCollector() {
+	if sm.garbageCollector == nil {
+		sm.garbageCollector = &GarbageCollector{Seconds: defaultGarbageCollectionInterval}
+	}
+	gc := sm.garbageCollector
+	gc.CollectorChan = make(chan bool)
+	ticker := time.NewTicker(time.Duration(gc.Seconds) * time.Second)
+	log.Infof("Network Garbage Collector Started with %v seconds timer", gc.Seconds)
+	for {
+		select {
+		case _, ok := <-gc.CollectorChan:
+			if !ok {
+				log.Errorf("network garbage collector stopped")
+				return
+			}
+		case _ = <-ticker.C:
+			sm.cleanUnusedNetworks()
+		}
+	}
+}
+
+// StartGarbageCollection start garbage collection for system created network
+func (sm *Statemgr) StartGarbageCollection() {
+	go sm.runNwGarbageCollector()
+}
+
+func (ns *NetworkState) isNetworkLive() bool {
+	return ns.curState == networkLive
+}
+func (ns *NetworkState) isNetworkMarkedDelete() bool {
+	return ns.curState == networkMarkDelete
+}
+func (ns *NetworkState) isNetworkDeleted() bool {
+	return ns.curState == networkDeleted
+}
+
+// only for rel A to rel B
+// TODO : remove on rel C and up
+// This approach will mark all the network which are not associated
+// with orchhub to be labled for garbage collection when they become
+// unused by npm
+func (sm *Statemgr) labelInternalNetworkObjects() {
+	// 1. get all network and create a networkMap
+	// 2. find any workload owned by orchhub
+	// 3. remove associated networks from the networkMap
+	// 4. Mark all remaining networks which are in networkMap
+	sm.networkKindLock.Lock()
+	defer sm.networkKindLock.Unlock()
+	networkMap := make(map[uint32]*network.Network)
+	networkVlanMap := make(map[string]uint32)
+	netObjs, err := sm.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
+	if err == nil {
+		for _, nw := range netObjs {
+			networkMap[nw.Network.Spec.VlanID] = &nw.Network
+			networkVlanMap[nw.Network.Name] = nw.Network.Spec.VlanID
+		}
+	} else {
+		log.Infof("Error getting network list %v", err)
+		return
+	}
+	var workloads []*ctkit.Workload
+	workloads, err = sm.ctrler.Workload().List(context.Background(), &api.ListWatchOptions{})
+	if err == nil {
+		for _, ws := range workloads {
+			if !isOrchHubKeyPresent(ws.Workload.Labels) {
+				log.Infof("venice owned workload [%v] network will be labeled", ws)
+				continue
+			}
+
+			for ii := range ws.Workload.Spec.Interfaces {
+				intf := ws.Workload.Spec.Interfaces[ii]
+				if len(intf.Network) > 0 {
+					if vlan, ok := networkVlanMap[intf.Network]; ok {
+						//log.Infof("Orchhub owned Named Network [%v] will not be labeled", intf.Network)
+						delete(networkMap, vlan)
+					}
+				} else {
+					//log.Infof("Orchhub owned External Network [%v] will not be labeled", intf.ExternalVlan)
+					delete(networkMap, intf.ExternalVlan)
+				}
+			}
+		}
+	} else {
+		log.Infof("Error getting workload list %v", err)
+	}
+	for _, ns := range networkMap {
+		if !IsObjInternal(ns.Labels) {
+			log.Infof("Updating Network %v with internal label", ns)
+			nwt := network.Network{
+				TypeMeta: api.TypeMeta{Kind: "Network"},
+				ObjectMeta: api.ObjectMeta{
+					Name:      ns.Name,
+					Tenant:    ns.Tenant,
+					Namespace: ns.Namespace,
+					Labels:    ns.Labels,
+				},
+				Spec:   ns.Spec,
+				Status: ns.Status,
+			}
+			if nwt.Labels == nil {
+				nwt.Labels = map[string]string{}
+			}
+			AddNpmSystemLabel(nwt.Labels)
+			err := sm.ctrler.Network().Update(&nwt)
+			if err != nil {
+				log.Errorf("Ignore error updating the network[%v]. Err: %v", nwt, err)
+			}
+		}
+	}
+
 }
