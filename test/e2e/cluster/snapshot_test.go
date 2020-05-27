@@ -481,8 +481,8 @@ var _ = Describe("Config SnapShot and restore", func() {
 							},
 							Spec: network.NetworkSpec{
 								Type:        network.NetworkType_Bridged.String(),
-								IPv4Subnet:  "10.0.0.0/8",
-								IPv4Gateway: "10.1.1.1",
+								IPv4Subnet:  "11.0.0.0/8",
+								IPv4Gateway: "11.1.1.1",
 							},
 							Status: network.NetworkStatus{
 								OperState: network.OperState_Active.String(),

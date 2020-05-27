@@ -3,6 +3,7 @@ package cluster
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gogo/protobuf/types"
@@ -109,6 +110,7 @@ var _ = Describe("audit tests", func() {
 			var items []*bulkedit.BulkEditItem
 			numItems := 1001
 			for i := 0; i < numItems; i++ {
+				subnet := "10.3." + strconv.Itoa(i/256) + "." + strconv.Itoa(i%256) + "/24"
 				netw1 := network.Network{
 					TypeMeta: api.TypeMeta{
 						Kind:       "Network",
@@ -121,7 +123,7 @@ var _ = Describe("audit tests", func() {
 					},
 					Spec: network.NetworkSpec{
 						Type:        network.NetworkType_Bridged.String(),
-						IPv4Subnet:  "10.1.1.1/24",
+						IPv4Subnet:  subnet,
 						IPv4Gateway: "10.1.1.1",
 						VlanID:      uint32(i + 100),
 					},
