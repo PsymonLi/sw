@@ -2,7 +2,7 @@
 
 include ${MKDEFS}/pre.mk
 MODULE_TARGET   = pdsctl.gobin
-MODULE_PREREQS  = agent_pdsproto.submake
+MODULE_PREREQS  = agent_pdsproto.submake ms_pdsproto.submake
 ifeq ($(SKIPPDSCTL), 1)
 MODULE_PIPELINE = apollo artemis athena
 else
