@@ -5,6 +5,8 @@ import json
 import os
 import time
 from iota.test.athena.config.netagent.hw_push_config import AddWorkloads
+from scapy.all import *
+from scapy.contrib.mpls import MPLS
 
 FLOWS = [ {'sip' : '10.0.0.1', 'dip' : '10.0.0.65', 'proto' : 'UDP', 
             'src_port' : 100, 'dst_port' : 200},
@@ -16,6 +18,15 @@ FLOWS = [ {'sip' : '10.0.0.1', 'dip' : '10.0.0.65', 'proto' : 'UDP',
 PROTO_NUM = {'UDP' : 17, 'TCP': 6, 'ICMP': 1}
 SNIFF_TIMEOUT = 5
 ATHENA_SEC_APP_RSTRT_SLEEP = 140 # secs
+
+DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
+DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
+DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
+DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
+DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
+DEFAULT_POLICY_JSON_FILENAME = './policy.json'
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+
 
 class FlowInfo():
 
@@ -91,23 +102,6 @@ class FlowInfo():
                 'DstPort: {}}}'.format(self.sip, self.dip, self.proto,
                 self.src_port, self.dst_port))
 
-
-def get_intf_smac(node, host_intf):
-
-    smac = None
-    cmd = 'ifconfig ' + host_intf
-    out = node.RunSshCmd(cmd) 
-
-    op = out.splitlines()
-    for line in op:
-        if line.strip().startswith('ether'):
-            smac_str = line.strip()
-            smac = smac_str.split()[1]    
-            break
-
-    return smac
-
-
 def Athena_sec_app_restart(tc):
     
     athena_sec_app_pid = None
@@ -176,6 +170,186 @@ def Athena_sec_app_restart(tc):
 
     return api.types.status.SUCCESS
 
+def craft_pkt(_types, _dicts):
+
+    for i in range(len(_types)):
+        _type = _types[i]
+        _dict = _dicts[i]
+
+        if _type == "Ether":
+            if 'smac' not in _dict.keys() or \
+               'dmac' not in _dict.keys():
+                raise Exception('Ether: smac and/or dmac not found')
+            else:
+                pkt = Ether(src = _dict['smac'],
+                            dst = _dict['dmac'])
+
+        elif _type == "Dot1Q":
+            if 'vlan' not in _dict.keys():
+                raise Exception('Dot1Q: vlan not found')
+            else:
+                pkt = pkt/Dot1Q(vlan = int(_dict['vlan']))
+
+        elif _type == "IP":
+            if 'sip' not in _dict.keys() or \
+               'dip' not in _dict.keys():
+                raise Exception('IP: sip and/or dip not found')
+            else:
+                pkt = pkt/IP(src = _dict['sip'],
+                             dst = _dict['dip'],
+                             id = 0)
+
+        elif _type == "UDP":
+            if 'sport' not in _dict.keys() or \
+               'dport' not in _dict.keys():
+                raise Exception('UDP: sport and/or dport not found')
+            else:
+                pkt = pkt/UDP(sport=int(_dict['sport']),
+                              dport=int(_dict['dport']))
+
+        elif _type == "MPLS":
+            if 'label' not in _dict.keys() or \
+               's' not in _dict.keys():
+                raise Exception('MPLS: label and/or s not found')
+            else:
+                pkt = pkt/MPLS(label=int(_dict['label']),
+                               s=int(_dict['s']))
+
+    return pkt
+
+class Args():
+
+    def __init__(self):
+        self.encap = False
+        self.node = None
+        self.Rx = None
+        self._dir = None
+        self.proto = None
+
+        self.smac = None
+        self.dmac = None
+        self.vlan = None
+        self.sip = None
+        self.dip = None
+        self.sport = None
+        self.dport = None
+
+def setup_pkt(_args):
+    types = []
+    dicts = []
+
+    #print("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args._dir, _args.Rx))
+    with open(CURR_DIR + "/config/" + DEFAULT_POLICY_JSON_FILENAME) as json_fd:
+        plcy_obj = json.load(json_fd)
+
+    vnics = plcy_obj['vnic']
+    trg_vnic = None
+
+    for vnic in vnics:
+        if _args.encap:
+            encap_info = vnic['rewrite_underlay']
+            vlan = encap_info['vlan_id']
+        else:
+            vlan = vnic['vlan_id']
+        if vlan == str(_args.vlan):
+            trg_vnic = vnic
+            break
+
+    if trg_vnic is not None:
+        # encap info
+        encap_info = trg_vnic['rewrite_underlay']
+        # rewrite host info
+        rewrite_host_info = trg_vnic['rewrite_host']
+
+
+    if _args.encap:
+        if encap_info is None:
+            raise Exception('vnic config not found encap vlan %s' % _args.vlan)
+
+        if _args._dir == 's2h':
+            outer_smac = _args.smac
+            outer_dmac = _args.dmac
+
+        if encap_info['type'] == 'mplsoudp':
+            if _args._dir == 'h2s':
+                outer_smac = encap_info['smac']
+                outer_dmac = encap_info['dmac']
+            outer_sip = encap_info['ipv4_sip']
+            outer_dip = encap_info['ipv4_dip']
+            mpls_lbl1 = encap_info['mpls_label1']
+            mpls_lbl2 = encap_info['mpls_label2']
+
+        else:
+            raise Exception('encap type %s not supported currently' % encap_info['type'])
+
+        types.append("Ether")
+        ether = {'smac' : outer_smac, 'dmac' : outer_dmac}
+        dicts.append(ether)
+
+        types.append("Dot1Q")
+        dot1q = {'vlan' : _args.vlan}
+        dicts.append(dot1q)
+
+        # append outer IP
+        types.append("IP")
+        ip = {'sip' : outer_sip, 'dip' : outer_dip}
+        dicts.append(ip)
+        
+        # append outer UDP
+        types.append(_args.proto)
+        proto = {'sport' : '0', 'dport' : '6635'}
+        dicts.append(proto)
+
+        # append MPLS label 1
+        types.append("MPLS")
+        mpls = {'label' : mpls_lbl1, 's' : 0}
+        dicts.append(mpls)
+        
+        # append MPLS label 2
+        types.append("MPLS")
+        mpls = {'label' : mpls_lbl2, 's' : 1}
+        dicts.append(mpls)
+        
+    else:
+        types.append("Ether")
+        if _args._dir == 'h2s':
+            ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
+        elif _args._dir == 's2h':
+            if rewrite_host_info is None:
+                raise Exception('vnic config not found encap vlan %s' % _args.vlan)
+            smac = rewrite_host_info['smac']
+            dmac = rewrite_host_info['dmac']
+            ether = {'smac' : smac, 'dmac' : dmac}
+        dicts.append(ether)
+
+        types.append("Dot1Q")
+        dot1q = {'vlan' : _args.vlan}
+        dicts.append(dot1q)
+
+    types.append("IP")
+    ip = {'sip' : _args.sip, 'dip' : _args.dip}
+    dicts.append(ip)
+
+    types.append("UDP")
+    udp = {'sport' : _args.sport, 'dport' : _args.dport}
+    dicts.append(udp)
+
+    pkt = craft_pkt(types, dicts)
+    pkt = pkt/DEFAULT_PAYLOAD
+    #print(pkt.show())
+
+    if _args._dir == 'h2s':
+        fname = DEFAULT_H2S_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_H2S_GEN_PKT_FILENAME
+    elif _args._dir == 's2h':
+        fname = DEFAULT_S2H_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_S2H_GEN_PKT_FILENAME
+
+    with open(CURR_DIR + '/config/' + fname, 'w+') as fd:
+        logging.info('Writing crafted pkt to pcap file %s' % fd.name)
+        wrpcap(fd.name, pkt)
+
+    # copy the pcap file to the host
+    api.CopyToHost(_args.node.Name(), [fd.name], "")
+    fd.close()
 
 def Setup(tc):
 
@@ -321,6 +495,9 @@ def Setup(tc):
             api.CopyToHost(node.Name(), [recv_pkt_script_fname], "")
             api.CopyToHost(node.Name(), [policy_json_fname], "")
 
+    # init response list
+    tc.resp = []
+
     return api.types.status.SUCCESS
 
 
@@ -337,98 +514,125 @@ def Trigger(tc):
     
         # convention: regular pkts sent on up1 and encap pkts sent on up0
         for flow in tc.flows:
-        
-            # send pkts and validate in h2s dir
-            req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
-            
-            recv_cmd = "./recv_pkt.py --intf_name %s --intf_vlan %s \
-                        --intf_mac %s --skip_vlan_cfg --timeout %s \
-                        --proto %s --src_ip %s --dst_ip %s --src_port %s \
-                        --dst_port %s --dir h2s" % (tc.up0_intf, tc.up0_vlan, 
-                        tc.up0_mac, str(SNIFF_TIMEOUT), flow.proto, flow.sip, 
-                        flow.dip, str(flow.src_port), str(flow.dst_port))
 
-            api.Trigger_AddHostCommand(req, node.Name(), recv_cmd,
+            # common args to setup scapy pkt
+            args = Args()
+            args.node = node
+            # TODO pick this from iterator
+            args.proto = 'UDP'
+            args.sip = flow.sip
+            args.dip = flow.dip
+            args.sport = flow.src_port
+            args.dport = flow.dst_port
+
+            # ==========================================
+            # Send and Receive packets in H2S direction
+            # ==========================================
+            args._dir = 'h2s'
+            h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+
+            # ==========
+            # Rx Packet
+            # ==========
+            args.encap =  True
+            args.Rx = True
+            args.vlan = tc.up0_vlan
+
+            setup_pkt(args)
+            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s --timeout %s" \
+                        % (tc.up0_intf, DEFAULT_H2S_RECV_PKT_FILENAME, str(SNIFF_TIMEOUT))
+
+            api.Trigger_AddHostCommand(h2s_req, node.Name(), recv_cmd,
                                                 background=True)
 
-            send_cmd = './send_pkt.py --intf_name %s --intf_vlan %s \
-                        --intf_mac %s --skip_vlan_cfg --proto %s --src_ip %s \
-                        --dst_ip %s --src_port %s --dst_port %s --dir h2s' % (
-                        tc.up1_intf, tc.up1_vlan, tc.up1_mac, flow.proto, 
-                        flow.sip, flow.dip, flow.src_port, flow.dst_port)
- 
-            api.Trigger_AddHostCommand(req, node.Name(), 'sleep 2')
-            api.Trigger_AddHostCommand(req, node.Name(), send_cmd)
+            # ==========
+            # Tx Packet
+            # ==========
+            args.encap = False
+            args.Rx = False
+            args.smac = tc.up1_mac
+            args.dmac = "00:aa:bb:cc:dd:ee"
+            args.vlan = tc.up1_vlan
 
-            trig_resp = api.Trigger(req)
+            setup_pkt(args)
+            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s" \
+                        % (tc.up1_intf, DEFAULT_H2S_GEN_PKT_FILENAME)
+
+            api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 2')
+            api.Trigger_AddHostCommand(h2s_req, node.Name(), send_cmd)
+
+            trig_resp = api.Trigger(h2s_req)
             time.sleep(SNIFF_TIMEOUT) 
             term_resp = api.Trigger_TerminateAllCommands(trig_resp)
 
-            resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+            h2s_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+            tc.resp.append(h2s_resp)
 
-            for cmd in resp.commands:
-                api.PrintCommandResults(cmd)
-                if cmd.exit_code != 0:
-                    if 'send_pkt' in cmd.command:
-                        api.Logger.error("send pkts script failed in h2s dir")
-                    if 'recv_pkt' in cmd.command:
-                        api.Logger.error("recv pkts script failed in h2s dir")
-                    return api.types.status.FAILURE
-    
-                if 'recv_pkt' in cmd.command and 'FAIL' in cmd.stdout:
-                    api.Logger.error("Datapath test failed in h2s dir for "
-                    "flow %s" % flow.display())
-                    return api.types.status.FAILURE
+            # ==========================================
+            # Send and Receive packets in S2H direction
+            # ==========================================
+            args._dir = 's2h'
+            s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
+            # ==========
+            # Rx Packet
+            # ==========
+            args.encap = False
+            args.Rx = True
+            args.vlan = tc.up1_vlan
 
-            # send pkts and validate in s2h dir
-            req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
-            
-            recv_cmd = './recv_pkt.py --intf_name %s --intf_vlan %s \
-                        --intf_mac %s --skip_vlan_cfg --timeout %s --proto %s \
-                        --src_ip %s --dst_ip %s --src_port %s --dst_port %s \
-                        --dir s2h' % (tc.up1_intf, tc.up1_vlan, tc.up1_mac, 
-                        str(SNIFF_TIMEOUT), flow.proto, flow.sip, flow.dip, 
-                        str(flow.src_port), str(flow.dst_port))
+            setup_pkt(args)
+            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s --timeout %s" \
+                        % (tc.up1_intf, DEFAULT_S2H_RECV_PKT_FILENAME, str(SNIFF_TIMEOUT))
 
-            api.Trigger_AddHostCommand(req, node.Name(), recv_cmd,
+            api.Trigger_AddHostCommand(s2h_req, node.Name(), recv_cmd,
                                                 background=True)
    
-            send_cmd = './send_pkt.py --intf_name %s --intf_vlan %s \
-                        --intf_mac %s --skip_vlan_cfg --proto %s --src_ip %s \
-                        --dst_ip %s --src_port %s --dst_port %s --dir s2h' % (
-                        tc.up0_intf, tc.up0_vlan, tc.up1_mac, flow.proto, 
-                        flow.sip, flow.dip, flow.src_port, flow.dst_port)
- 
-            api.Trigger_AddHostCommand(req, node.Name(), 'sleep 2')
-            api.Trigger_AddHostCommand(req, node.Name(), send_cmd)
+            # ==========
+            # Tx Packet
+            # ==========
+            args.encap =  True
+            args.Rx = False
+            args.smac = tc.up1_mac
+            args.dmac = "00:aa:bb:cc:dd:ee"
+            args.vlan = tc.up0_vlan
 
-            trig_resp = api.Trigger(req)
+            setup_pkt(args)
+            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s" \
+                        % (tc.up0_intf, DEFAULT_S2H_GEN_PKT_FILENAME)
+
+            api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 2')
+            api.Trigger_AddHostCommand(s2h_req, node.Name(), send_cmd)
+
+            trig_resp = api.Trigger(s2h_req)
             time.sleep(SNIFF_TIMEOUT) 
             term_resp = api.Trigger_TerminateAllCommands(trig_resp)
 
-            resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
-
-            for cmd in resp.commands:
-                api.PrintCommandResults(cmd)
-                if cmd.exit_code != 0:
-                    if 'send_pkt' in cmd.command:
-                        api.Logger.error("send pkts script failed in s2h dir")
-                    if 'recv_pkt' in cmd.command:
-                        api.Logger.error("recv pkts script failed in s2h dir")
-                    return api.types.status.FAILURE
-    
-                if 'recv_pkt' in cmd.command and 'FAIL' in cmd.stdout:
-                    api.Logger.error("Datapath test failed in s2h dir for "
-                    "flow %s" % flow.display())
-                    return api.types.status.FAILURE
-
-
-            api.Logger.info('Datapath test passed for flow %s' % flow.display())
+            s2h_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+            tc.resp.append(s2h_resp)
 
     return api.types.status.SUCCESS
 
 def Verify(tc):
+    if len(tc.resp) == 0:
+        return api.types.status.FAILURE
+
+    for resp in tc.resp:
+        for cmd in resp.commands:
+            api.PrintCommandResults(cmd)
+            if cmd.exit_code != 0:
+                if 'send_pkt' in cmd.command:
+                    api.Logger.error("send pkts script failed")
+                if 'recv_pkt' in cmd.command:
+                    api.Logger.error("recv pkts script failed")
+                return api.types.status.FAILURE
+    
+            if 'recv_pkt' in cmd.command and 'FAIL' in cmd.stdout:
+                api.Logger.error("Datapath test failed")
+                return api.types.status.FAILURE
+
+    api.Logger.info('Datapath test passed')
+
     return api.types.status.SUCCESS
 
 def Teardown(tc):
