@@ -141,6 +141,7 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	num_intfs := 0
 	if cmd != nil && cmd.Flags().Changed("yaml") {
 		for _, resp := range respMsg.Response {
 			respType := reflect.ValueOf(resp)
@@ -148,14 +149,29 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 			fmt.Println(string(b))
 			fmt.Println("---")
 		}
-	} else if cmd != nil && cmd.Flags().Changed("summary") {
-		printIfSummary(len(respMsg.Response))
+	} else if cmd != nil && cmd.Flags().Changed("id") {
+		for _, resp := range respMsg.Response {
+			if resp.GetSpec().GetType() == pds.IfType_IF_TYPE_NONE {
+				fmt.Printf("For ETH type interface, use 'pdsctl show port status --port <id>'\n")
+				return
+			}
+		}
+    } else if cmd != nil && cmd.Flags().Changed("summary") {
+		for _, resp := range respMsg.Response {
+			if resp.GetSpec().GetType() != pds.IfType_IF_TYPE_NONE {
+				num_intfs += 1
+			}
+		}
+		printIfSummary(num_intfs)
 	} else {
 		printIfHeader()
 		for _, resp := range respMsg.Response {
-			printIf(resp)
+			if resp.GetSpec().GetType() != pds.IfType_IF_TYPE_NONE {
+				num_intfs += 1
+				printIf(resp)
+			}
 		}
-		printIfSummary(len(respMsg.Response))
+		printIfSummary(num_intfs)
 	}
 }
 
