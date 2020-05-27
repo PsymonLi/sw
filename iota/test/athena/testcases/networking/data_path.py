@@ -347,9 +347,11 @@ def setup_pkt(_args):
         logging.info('Writing crafted pkt to pcap file %s' % fd.name)
         wrpcap(fd.name, pkt)
 
+    pcap_fname = fd.name
+
     # copy the pcap file to the host
-    api.CopyToHost(_args.node.Name(), [fd.name], "")
-    fd.close()
+    api.CopyToHost(_args.node.Name(), [pcap_fname], "")
+    os.remove(pcap_fname)
 
 def Setup(tc):
 
