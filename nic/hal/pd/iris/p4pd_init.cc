@@ -111,12 +111,51 @@ p4pd_ddos_policers_init (void)
 #endif
 
 static hal_ret_t
+p4pd_input_properties_mac_vlan_init (p4pd_def_cfg_t *p4pd_def_cfg)
+{
+    hal_ret_t                              ret = HAL_RET_OK;
+    sdk_ret_t                             sdk_ret;
+    input_properties_mac_vlan_swkey_t      key;
+    input_properties_mac_vlan_swkey_mask_t mask;
+    input_properties_mac_vlan_actiondata_t data;
+    tcam                                   *mac_vlan_tbl = NULL;
+    uint32_t                               idx = INPUT_PROPS_MAC_VLAN_HOST_UNTAG;
+
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+
+    mac_vlan_tbl = g_hal_state_pd->
+        tcam_table(P4TBL_ID_INPUT_PROPERTIES_MAC_VLAN);
+
+    key.entry_inactive_input_mac_vlan = 0;
+    key.vlan_tag_valid = 0;
+    key.control_metadata_uplink = 0;
+    key.control_metadata_host_lif = 1;
+
+    mask.entry_inactive_input_mac_vlan_mask = 0x1;
+    mask.vlan_tag_valid_mask = ~(mask.vlan_tag_valid_mask & 0);
+    mask.control_metadata_uplink_mask = ~(mask.control_metadata_uplink_mask & 0);
+    mask.control_metadata_host_lif_mask = ~(mask.control_metadata_host_lif_mask & 0);
+
+    data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_NOP_ID;
+
+    sdk_ret = mac_vlan_tbl->insert_withid(&key, &mask, &data, idx);
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("input props mac vlan host untag entry "
+                      "failed ret: {}", ret);
+    }
+    return ret;
+}
+
+static hal_ret_t
 p4pd_input_mapping_native_init (p4pd_def_cfg_t *p4pd_def_cfg)
 {
     uint32_t                             idx;
     input_mapping_native_swkey_t         key;
     input_mapping_native_swkey_mask_t    mask;
-    input_mapping_native_actiondata_t      data;
+    input_mapping_native_actiondata_t    data;
     hal_ret_t                            ret;
     sdk_ret_t                            sdk_ret;
     tcam                                 *tcam;
@@ -225,7 +264,7 @@ p4pd_input_mapping_tunneled_init (p4pd_def_cfg_t *p4pd_def_cfg)
     uint32_t                             idx;
     input_mapping_tunneled_swkey_t       key;
     input_mapping_tunneled_swkey_mask_t  mask;
-    input_mapping_tunneled_actiondata_t    data;
+    input_mapping_tunneled_actiondata_t  data;
     hal_ret_t                            ret;
     sdk_ret_t                            sdk_ret;
     tcam                                 *tcam;
@@ -1519,6 +1558,7 @@ p4pd_table_defaults_init (p4pd_def_cfg_t *p4pd_def_cfg)
     // initialize all P4 ingress tables with default entries, if any
     SDK_ASSERT(p4pd_input_mapping_native_init(p4pd_def_cfg) == HAL_RET_OK);
     SDK_ASSERT(p4pd_input_mapping_tunneled_init(p4pd_def_cfg) == HAL_RET_OK);
+    SDK_ASSERT(p4pd_input_properties_mac_vlan_init(p4pd_def_cfg) == HAL_RET_OK);
     SDK_ASSERT(p4pd_flow_info_init() == HAL_RET_OK);
     SDK_ASSERT(p4pd_session_state_init() == HAL_RET_OK);
     SDK_ASSERT(p4pd_flow_stats_init() == HAL_RET_OK);

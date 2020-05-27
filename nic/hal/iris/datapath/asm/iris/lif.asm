@@ -11,6 +11,7 @@ struct phv_   p;
 
 .align
 lif_info:
+    phvwr           p.control_metadata_host_lif, d.lif_info_d.host_lif 
     seq.e           c1, d.lif_info_d.ingress_mirror_en, 1
     phvwr.c1        p.capri_intrinsic_tm_span_session, \
                         d.lif_info_d.ingress_mirror_session_id

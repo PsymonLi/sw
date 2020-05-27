@@ -14,6 +14,7 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/qos.hpp"
+#include "nic/hal/pd/iris/nw/enicif_pd.hpp"
 #ifdef ELBA
 #include "nic/sdk/platform/elba/elba_tbl_rw.hpp"
 #else
@@ -1062,6 +1063,28 @@ pd_system_upgrade_table_reset(pd_func_args_t *pd_func_args)
     inp_prop_tbl->deprogram_entries();
 
     return HAL_RET_OK;
+}
+
+hal_ret_t
+pd_system_mode_change (pd_func_args_t *pd_func_args)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    pd_system_mode_change_args_t *args = 
+        pd_func_args->pd_system_mode_change;
+
+    HAL_TRACE_DEBUG("System mode change pd {}:{} -> {}:{}",
+                    args->old_fwdmode, args->old_polmode,
+                    args->new_fwdmode, args->new_polmode);
+
+    // => Microseg.
+    // - Install host untag traffic drop entry
+    if (args->old_fwdmode != args->new_fwdmode) {
+        ret = pd_enicif_host_untag_drop(args->new_fwdmode == 
+                                        sys::FWD_MODE_MICROSEG ? 
+                                        true : false);
+    }
+
+    return ret;
 }
 
 }    // namespace pd

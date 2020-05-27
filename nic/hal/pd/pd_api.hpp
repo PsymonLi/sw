@@ -2157,6 +2157,14 @@ pd_drop_monitor_rule_get_args_init (pd_drop_monitor_rule_get_args_t *args)
     args->rule = NULL;
 }
 
+// sys mode
+typedef struct pd_system_mode_change_args_s {
+    sys::ForwardMode old_fwdmode;
+    sys::PolicyMode  old_polmode;
+    sys::ForwardMode new_fwdmode;
+    sys::PolicyMode  new_polmode;
+} pd_system_mode_change_args_t;
+
 // collector
 typedef struct pd_collector_create_args_s {
     collector_config_t *cfg;
@@ -3424,7 +3432,8 @@ pd_nvme_cq_create_args_init (pd_nvme_cq_create_args_t *args)
     ENTRY(PD_FUNC_ID_QOS_CLEAR_STATS,            355, "PD_FUNC_ID_QOS_CLEAR_STATS")        \
     ENTRY(PD_FUNC_ID_MIRROR_SESSION_CFG_UPDATE,  356, "PD_FUNC_ID_MIRROR_SESSION_CFG_UPDATE")\
     ENTRY(PD_FUNC_ID_COLLECTOR_UPDATE,           357, "PD_FUNC_ID_COLLECTOR_UPDATE")\
-    ENTRY(PD_FUNC_ID_MAX,                        358, "pd_func_id_max")
+    ENTRY(PD_FUNC_ID_SYSTEM_MODE_CHANGE,         358, "PD_FUNC_ID_SYSTEM_MODE_CHANGE")\
+    ENTRY(PD_FUNC_ID_MAX,                        359, "pd_func_id_max")
 
 DEFINE_ENUM(pd_func_id_t, PD_FUNC_IDS)
 #undef PD_FUNC_IDS
@@ -3880,6 +3889,8 @@ typedef struct pd_func_args_s {
 
         // upgrade calls
         PD_UNION_ARGS_FIELD(pd_system_upgrade_table_reset);
+
+        PD_UNION_ARGS_FIELD(pd_system_mode_change);
 
     };
 } pd_func_args_t;
@@ -4362,6 +4373,8 @@ PD_FUNCP_TYPEDEF(pd_nvme_cq_create);
 
 // upgrade calls
 PD_FUNCP_TYPEDEF(pd_system_upgrade_table_reset);
+
+PD_FUNCP_TYPEDEF(pd_system_mode_change);
 
 hal_ret_t hal_pd_call(pd_func_id_t pd_func_id, pd_func_args_t *args);
 

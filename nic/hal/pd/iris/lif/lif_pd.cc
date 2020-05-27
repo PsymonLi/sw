@@ -409,6 +409,13 @@ lif_pd_program_hw (pd_lif_t *pd_lif)
         goto end;
     }
 
+    // Program lif table
+    ret = lif_pd_pgm_lif_tbl(pd_lif, TABLE_OPER_INSERT);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("unable to program lif table. ret {}", ret);
+        goto end;
+    }
+
     // Program the rx-policer.
     ret = lif_pd_rx_policer_program_hw(pd_lif, false);
     if (ret != HAL_RET_OK) {
@@ -475,7 +482,15 @@ lif_pd_deprogram_hw (pd_lif_t *pd_lif)
     }
 
     pd_lif_copy_asicpd_params(&apd_lif, pd_lif);
-    // Deprogram output mapping table
+
+    // deprogram lif table
+    ret = lif_pd_depgm_lif_tbl(pd_lif);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("unable to deprogram lif table. err: {}", ret);
+        goto end;
+    }
+
+    // deprogram output mapping table
     ret = lif_pd_depgm_output_mapping_tbl(pd_lif);
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("unable to deprogram hw");
@@ -1191,6 +1206,79 @@ lif_pd_populate_rx_policer_stats (qos::PolicerStats *stats_rsp, pd_lif_t *pd_lif
     return HAL_RET_OK;
 }
 #undef RX_POLICER_STATS
+
+
+//-----------------------------------------------------------------------------
+// Program Lif Table
+//-----------------------------------------------------------------------------
+#define	lif_info   data.action_u.lif_lif_info
+hal_ret_t
+lif_pd_pgm_lif_tbl (pd_lif_t *pd_lif, table_oper_t oper)
+{
+    hal_ret_t           ret = HAL_RET_OK;
+    sdk_ret_t           sdk_ret;
+    lif_t               *lif = NULL;
+    directmap           *lif_table = NULL;
+    lif_actiondata_t    data;
+
+    lif = (lif_t *)pd_lif->pi_lif;
+
+    if (lif->type != types::LIF_TYPE_HOST) {
+        HAL_TRACE_DEBUG("skipping lif table for lif {} type {}",
+                        lif->lif_id, lif->type);
+        return ret;
+    }
+
+    lif_table = g_hal_state_pd->dm_table(P4TBL_ID_LIF);
+    memset(&data, 0, sizeof(data));
+    lif_info.host_lif = (lif->type == types::LIF_TYPE_HOST) ? 1 : 0;
+
+    if (oper == TABLE_OPER_INSERT) {
+        sdk_ret = lif_table->insert_withid(&data, pd_lif->hw_lif_id);
+    } else {
+        sdk_ret = lif_table->update(pd_lif->hw_lif_id, &data);
+    }
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("unable to program lif table for lif {} ret {}",
+                      pd_lif->hw_lif_id, ret);
+    }
+    return ret;
+}
+
+//-----------------------------------------------------------------------------
+// DeProgram lif table
+//-----------------------------------------------------------------------------
+hal_ret_t
+lif_pd_depgm_lif_tbl (pd_lif_t *pd_lif)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    sdk_ret_t sdk_ret;
+    directmap *lif_table = NULL;
+    lif_t *lif = NULL;
+
+    lif = (lif_t *)pd_lif->pi_lif;
+
+    if (lif->type != types::LIF_TYPE_HOST) {
+        HAL_TRACE_DEBUG("skipping lif table for lif {} type {}",
+                        lif->lif_id, lif->type);
+        return ret;
+    }
+
+    lif_table = g_hal_state_pd->dm_table(P4TBL_ID_LIF);
+
+    sdk_ret = lif_table->remove(pd_lif->hw_lif_id);
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("lif_id:{},unable to deprogram lif_table ret: {}",
+                      lif_get_lif_id((lif_t *)pd_lif->pi_lif), ret);
+    } else {
+        HAL_TRACE_ERR("lif_id:{},deprogrammed lif table",
+                      lif_get_lif_id((lif_t *)pd_lif->pi_lif));
+    }
+
+    return ret;
+}
 
 //-----------------------------------------------------------------------------
 // Program Output Mapping Table

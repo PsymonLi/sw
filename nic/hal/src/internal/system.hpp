@@ -43,6 +43,10 @@ hal_ret_t system_handle_fwd_policy_updates(const SysSpec *spec,
 hal_ret_t system_get_fwd_policy_mode(SysSpecGetResponse *rsp);
 hal_ret_t system_handle_a_to_b(void);
 hal_ret_t system_sched_to_flap_ports(void);
+hal_ret_t system_mode_chage_pd(sys::ForwardMode old_fwdmode, 
+                               sys::PolicyMode old_polmode,
+                               sys::ForwardMode new_fwdmode, 
+                               sys::PolicyMode new_polmode);
 
 }    // namespace hal
 

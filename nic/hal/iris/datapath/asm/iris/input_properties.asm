@@ -13,11 +13,10 @@ struct phv_                 p;
 input_properties:
     // if table lookup is miss, return
     nop.!c1.e
-    or              r1, d.input_properties_d.src_lport, \
-                        d.input_properties_d.dst_lport, 16
-    phvwrpair       p.{control_metadata_dst_lport,control_metadata_src_lport}, \
-                        r1, p.flow_lkp_metadata_lkp_vrf, \
-                        d.input_properties_d.vrf
+    or              r1, d.input_properties_d.vrf, \
+                        d.input_properties_d.src_lport, 16
+    phvwr           p.{control_metadata_src_lport, flow_lkp_metadata_lkp_vrf}, r1
+    phvwr           p.control_metadata_dst_lport, d.input_properties_d.dst_lport
 
     or              r2, d.input_properties_d.mirror_on_drop_session_id, \
                         d.input_properties_d.mirror_on_drop_en, 8
@@ -36,24 +35,26 @@ input_properties:
                         control_metadata_clear_promiscuous_repl, \
                         flow_lkp_metadata_lkp_reg_mac_vrf}, r1
 
-    or              r1, d.{input_properties_d.mseg_bm_bc_repls, \
-                        input_properties_d.mseg_bm_mc_repls}, \
-                        d.{input_properties_d.mdest_flow_miss_action,\
-                        input_properties_d.if_label_check_en}, 4
-    or              r1, r1, d.input_properties_d.if_label_check_fail_drop, 3
-    phvwrm          p.{control_metadata_mdest_flow_miss_action, \
-                        control_metadata_if_label_check_en, \
-                        control_metadata_if_label_check_fail_drop,\
-                        control_metadata_skip_flow_update, \
-                        control_metadata_mseg_bm_bc_repls, \
-                        control_metadata_mseg_bm_mc_repls}, r1, 0x7B
+    phvwr           p.control_metadata_mseg_bm_bc_repls, \
+                        d.input_properties_d.mseg_bm_bc_repls
+    phvwr           p.control_metadata_mseg_bm_mc_repls, \
+                        d.input_properties_d.mseg_bm_mc_repls
 
-    or              r1, d.input_properties_d.bounce_vnid, \
-                        d.input_properties_d.tunnel_rewrite_index, 24
-    or              r1, r1, d.input_properties_d.rewrite_index, 40
-    phvwr           p.{rewrite_metadata_rewrite_index, \
-                        rewrite_metadata_tunnel_rewrite_index, \
-                        rewrite_metadata_tunnel_vnid},  r1
+    or             r1, d.{input_properties_d.if_label_check_en, \
+                       input_properties_d.if_label_check_fail_drop}, \
+                       d.input_properties_d.mdest_flow_miss_action, 3
+    phvwrm         p.{control_metadata_mdest_flow_miss_action, \
+                       control_metadata_registered_mac_miss, \
+                       control_metadata_if_label_check_en, \
+                       control_metadata_if_label_check_fail_drop}, r1, 0x1b
+
+    or              r1, d.input_properties_d.bounce_vnid_sbit20_ebit23, \
+                        d.input_properties_d.bounce_vnid_sbit0_ebit19, 4
+    phvwr           p.rewrite_metadata_tunnel_vnid, r1
+    phvwr           p.rewrite_metadata_rewrite_index, \
+                        d.input_properties_d.rewrite_index
+    phvwr           p.rewrite_metadata_tunnel_rewrite_index, \
+                        d.input_properties_d.tunnel_rewrite_index
 
     phvwr           p.flow_lkp_metadata_lkp_dir, d.input_properties_d.dir
     phvwr.e         p.l4_metadata_profile_idx, d.input_properties_d.l4_profile_idx

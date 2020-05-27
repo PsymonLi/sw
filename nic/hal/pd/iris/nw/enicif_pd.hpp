@@ -18,6 +18,7 @@ struct pd_enicif_s {
     // Hw Indices
     uint32_t    inp_prop_mac_vlan_idx_host;     // Pkts from Host
     uint32_t    inp_prop_mac_vlan_idx_upl;      // Pkts from Uplink
+    uint32_t    inp_prop_mac_vlan_idx_host_untag;
     uint32_t    enic_lport_id;                  // lport
     uint32_t    inp_prop_native_l2seg_clsc;     // Classic mode, pkts from host
     uint32_t    inp_prop_native_l2seg_pri_clsc; // Classic mode, pkts from host with priority tag
@@ -65,6 +66,7 @@ pd_enicif_init (pd_enicif_t *enicif)
     enicif->enic_lport_id                        = INVALID_INDEXER_INDEX;
     enicif->inp_prop_native_l2seg_clsc           = INVALID_INDEXER_INDEX;
     enicif->inp_prop_native_l2seg_pri_clsc       = INVALID_INDEXER_INDEX;
+    enicif->inp_prop_mac_vlan_idx_host_untag     = INVALID_INDEXER_INDEX;
 
     return enicif;
 }
@@ -194,6 +196,9 @@ hal_ret_t pd_enicif_update_num_prom(pd_enicif_t *pd_enicif,
                                     dllist_ctxt_t *del_l2seg_list);
 hal_ret_t pd_enicif_inb_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
                                                   table_oper_t oper);
+hal_ret_t pd_enicif_host_untag_drop(bool pgm);
+hal_ret_t pd_enicif_inp_props_mac_vlan_nop(pd_enicif_t *pd_enicif,
+                                           table_oper_t oper);
 }   // namespace pd
 }   // namespace hal
 #endif    // __HAL_PD_ENICIF_HPP__

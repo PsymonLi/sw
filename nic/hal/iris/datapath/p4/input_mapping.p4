@@ -302,6 +302,18 @@ table input_properties {
     size : INPUT_PROPERTIES_TABLE_SIZE;
 }
 
+action input_properties_mac_vlan_nop() {
+    adjust_lkp_fields();
+    modify_field(control_metadata.src_lif, capri_intrinsic.lif);
+}
+
+action input_properties_mac_vlan_drop() {
+    adjust_lkp_fields();
+    modify_field(control_metadata.src_lif, capri_intrinsic.lif);
+    modify_field(control_metadata.drop_reason, DROP_INPUT_PROPERTIES_MISS);
+    drop_packet();
+}
+
 action input_properties_mac_vlan(vrf, dir, mdest_flow_miss_action,
                                  flow_miss_qos_class_id,
                                  flow_miss_idx, ipsg_enable,
@@ -404,24 +416,29 @@ action adjust_lkp_fields() {
 table input_properties_mac_vlan {
     reads {
         entry_inactive.input_mac_vlan : ternary;
+        control_metadata.host_lif     : ternary;
         control_metadata.uplink       : ternary;
         vlan_tag.valid                : ternary;
         vlan_tag.vid                  : ternary;
         ethernet.srcAddr              : ternary;
     }
     actions {
+        input_properties_mac_vlan_nop;
+        input_properties_mac_vlan_drop;
         input_properties_mac_vlan;
     }
+    default_action: input_properties_mac_vlan_nop;
     size : INPUT_PROPERTIES_MAC_VLAN_TABLE_SIZE;
 }
 
 /******************************************************************************/
 /* LIF info                                                                   */
 /******************************************************************************/
-action lif_info(ingress_mirror_en, ingress_mirror_session_id) {
+action lif_info(ingress_mirror_en, ingress_mirror_session_id, host_lif) {
     if (ingress_mirror_en == TRUE) {
         modify_field(capri_intrinsic.tm_span_session, ingress_mirror_session_id);
     }
+    modify_field(control_metadata.host_lif, host_lif);
     modify_field(scratch_metadata.flag, ingress_mirror_en);
 }
 

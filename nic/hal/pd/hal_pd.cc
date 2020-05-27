@@ -522,6 +522,8 @@ hal_pd_load_symbols (void)
     //PD_FUNC_LOAD(PD_FUNC_ID_NVME_CQ_UPDATE, pd_nvme_cq_update);
     //PD_FUNC_LOAD(PD_FUNC_ID_NVME_CQ_GET, pd_nvme_cq_get);
 
+    PD_FUNC_LOAD(PD_FUNC_ID_SYSTEM_MODE_CHANGE, pd_system_mode_change);
+
     return ret;
 }
 

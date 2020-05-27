@@ -6,6 +6,9 @@
 // NWSEC profile table
 #define L4_PROF_DEFAULT_ENTRY       0
 
+// Input properties mac vlan 
+#define INPUT_PROPS_MAC_VLAN_HOST_UNTAG 1023
+
 // Flow info table
 #define FLOW_INFO_MISS_ENTRY        0
 #define FLOW_INFO_DROP_ENTRY        1

@@ -38,6 +38,8 @@ hal_ret_t lif_pd_program_hw(pd_lif_t *pd_lif);
 hal_ret_t lif_pd_deprogram_hw (pd_lif_t *pd_lif);
 if_t *pd_lif_get_enic(lif_id_t lif_id);
 
+hal_ret_t lif_pd_pgm_lif_tbl(pd_lif_t *pd_lif, table_oper_t oper);
+hal_ret_t lif_pd_depgm_lif_tbl(pd_lif_t *pd_lif);
 hal_ret_t lif_pd_pgm_output_mapping_tbl(pd_lif_t *pd_lif,
                                         pd_lif_update_args_t *args,
                                         table_oper_t oper);

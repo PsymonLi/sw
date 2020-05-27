@@ -783,6 +783,11 @@ system_mseg_enf_to_transp (const SysSpec *spec)
     // Remove host enics from mgmt prom list
     ret = enicif_update_host_prom(false);
 
+    // Uninstall host untag traffic drop entry
+    ret = system_mode_chage_pd(hal::g_hal_state->fwd_mode(), 
+                               hal::g_hal_state->policy_mode(), 
+                               spec->fwd_mode(), spec->policy_mode()); 
+
     // Remove Learn ACLs
     ret = hal_acl_micro_seg_deinit();
 
@@ -846,6 +851,8 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
 {
     hal_ret_t ret = HAL_RET_OK;
     auto spec_ref = *spec;
+    sys::ForwardMode old_fwdmode;
+    sys::PolicyMode old_polmode;
 
     proto_msg_dump(spec_ref);
 
@@ -854,6 +861,9 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
         HAL_TRACE_WARN("No change in sys spec Noop");
         goto end;
     }
+
+    old_fwdmode = hal::g_hal_state->fwd_mode();
+    old_polmode = hal::g_hal_state->policy_mode();
 
     HAL_TRACE_DEBUG("Mode change: {},{} => {},{}",
                     ForwardMode_Name(hal::g_hal_state->fwd_mode()),
@@ -886,34 +896,39 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
         }
 
+        // => (Microseg, Enforce)
         if (IS_MODE(spec->fwd_mode(), sys::FWD_MODE_MICROSEG,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
             /*
-             * 1. Change l4 profile to disable policy_enf_cfg_en to not pull packets to FTE
+             * Change l4 profile to disable policy_enf_cfg_en to not pull packets to FTE
              *    To prevent shared mgmt pkts from uplink or host to not come to FTE
              */
             ret = hal::plugins::sfw::
                 sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
 
-            // 1. Cleanup config from nicmgr.
+            // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
 
-            // 2. Remove host enics from mseg prom list
+            // Remove host enics from mseg prom list
             ret = enicif_update_host_prom(false);
 
-            // 3. Set up mode in hal state
+            // Set up mode in hal state
             hal::g_hal_state->set_fwd_mode(spec->fwd_mode());
 
-            // 4. Add host enics to mgmt prom list
+            // Add host enics to mgmt prom list
             ret = enicif_update_host_prom(true);
 
-            // 5. Install ACLs for micro seg mode.
+            // Install ACLs for micro seg mode.
             ret = hal_acl_micro_seg_init();
 
-            // 6. vMotion Init
+            // Install host untag traffic drop entry.
+            ret = system_mode_chage_pd(old_fwdmode, old_polmode,
+                                       spec->fwd_mode(), spec->policy_mode()); 
+
+            // vMotion Init
             ret = vmotion_init(stoi(hal::g_hal_cfg.vmotion_port));
 
-            // 7. Set FTE to stop Quiescing
+            // Set FTE to stop Quiescing
             fte::fte_set_quiesce(0 /* FTE ID */, false);
 
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
@@ -949,45 +964,49 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
         }
 
-        // => (Microseg, Enforce)
         if (IS_MODE(spec->fwd_mode(), sys::FWD_MODE_TRANSPARENT,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
         }
 
+        // => (Microseg, Enforce)
         if (IS_MODE(spec->fwd_mode(), sys::FWD_MODE_MICROSEG,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
 
-            // 1. Make host traffic management
+            // Make host traffic management
             ret = hal::plugins::sfw::
                 sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
 
-            // 2. Cleanup config from nicmgr.
+            // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
 
-            // 3. Remove host enics from mseg prom list
+            // Remove host enics from mseg prom list
             ret = enicif_update_host_prom(false);
 
-            // 4. Mark Quiesce on in FTE
+            // Mark Quiesce on in FTE
             fte::fte_set_quiesce(0 /* FTE ID */, true);
 
-            // 5. Clear sessions
+            // Clear sessions
             hal::session_delete_all();
 
-            // 6. Change mode
+            // Change mode
             hal::g_hal_state->set_fwd_mode(spec->fwd_mode());
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
 
-            // 7. Add host enics to mgmt prom list
+            // Add host enics to mgmt prom list
             ret = enicif_update_host_prom(true);
 
-            // 8. Install ACLs for micro seg mode.
+            // Install ACLs for micro seg mode.
             ret = hal_acl_micro_seg_init();
 
-            // 9. vMotion Init
+            // Install host untag traffic drop entry.
+            ret = system_mode_chage_pd(old_fwdmode, old_polmode,
+                                       spec->fwd_mode(), spec->policy_mode()); 
+
+            // vMotion Init
             ret = vmotion_init(stoi(hal::g_hal_cfg.vmotion_port));
 
-            // 10. Mark Quiesce off in FTE
+            // Mark Quiesce off in FTE
             fte::fte_set_quiesce(0 /* FTE ID */, false);
 
             // Flap ports
@@ -1037,36 +1056,40 @@ system_handle_fwd_policy_updates(const SysSpec *spec,
         if (IS_MODE(spec->fwd_mode(), sys::FWD_MODE_MICROSEG,
                     spec->policy_mode(), sys::POLICY_MODE_ENFORCE)) {
 
-            // 1. Make host traffic management
+            // Make host traffic management
             ret = hal::plugins::sfw::
                 sfw_update_default_security_profile(L4_PROFILE_HOST_DEFAULT, false);
 
-            // 2. Cleanup config from nicmgr.
+            // Cleanup config from nicmgr.
             hal::svc::micro_seg_mode_notify(sys::MICRO_SEG_ENABLE);
 
-            // 3. Remove host enics from mseg prom list
+            // Remove host enics from mseg prom list
             ret = enicif_update_host_prom(false);
 
-            // 4. Mark Quiesce on in FTE
+            // Mark Quiesce on in FTE
             fte::fte_set_quiesce(0 /* FTE ID */, true);
 
-            // 5. Clear sessions
+            // Clear sessions
             hal::session_delete_all();
 
-            // 6. Change mode
+            // Change mode
             hal::g_hal_state->set_fwd_mode(spec->fwd_mode());
             hal::g_hal_state->set_policy_mode(spec->policy_mode());
 
-            // 7. Add host enics to mgmt prom list
+            // Add host enics to mgmt prom list
             ret = enicif_update_host_prom(true);
 
-            // 8. Install ACLs for micro seg mode.
+            // Install ACLs for micro seg mode.
             ret = hal_acl_micro_seg_init();
 
-            // 9. vMotion Init
+            // Install host untag traffic drop entry.
+            ret = system_mode_chage_pd(old_fwdmode, old_polmode,
+                                       spec->fwd_mode(), spec->policy_mode()); 
+
+            // vMotion Init
             ret = vmotion_init(stoi(hal::g_hal_cfg.vmotion_port));
 
-            // 10. Mark Quiesce off in FTE
+            // Mark Quiesce off in FTE
             fte::fte_set_quiesce(0 /* FTE ID */, false);
 
             // Flap ports
@@ -1125,6 +1148,35 @@ system_sched_to_flap_ports (void)
                              NULL, flap_cb, false);
 
     return HAL_RET_OK;
+}
+
+//----------------------------------------------------------------------------
+// Install catch all host untag entry
+//----------------------------------------------------------------------------
+hal_ret_t
+system_mode_chage_pd (sys::ForwardMode old_fwdmode, sys::PolicyMode old_polmode,
+                      sys::ForwardMode new_fwdmode, sys::PolicyMode new_polmode)
+{
+    hal_ret_t                           ret = HAL_RET_OK;
+    pd::pd_func_args_t                  pd_func_args = {0};
+    pd::pd_system_mode_change_args_t    sys_args;
+
+    sys_args.old_fwdmode = old_fwdmode;
+    sys_args.old_polmode = old_polmode;
+    sys_args.new_fwdmode = new_fwdmode;
+    sys_args.new_polmode = new_polmode;
+
+    HAL_TRACE_DEBUG("System mode change pd call {}:{} -> {}:{}",
+                    ForwardMode_Name(old_fwdmode), PolicyMode_Name(old_polmode), 
+                    ForwardMode_Name(new_fwdmode), PolicyMode_Name(new_polmode));
+
+    pd_func_args.pd_system_mode_change = &sys_args;
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_SYSTEM_MODE_CHANGE, &pd_func_args);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed in pd system mode change, err : {}", ret);
+    }
+
+    return ret;
 }
 
 //----------------------------------------------------------------------------

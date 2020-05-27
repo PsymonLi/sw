@@ -639,6 +639,14 @@ pd_enicif_deprogram_hw (pd_enicif_t *pd_enicif, bool del_only_inp_mac_vlan)
         goto end;
     }
 
+    // Deprogram host untag entry
+    ret = pd_enicif_inp_props_mac_vlan_nop(pd_enicif, TABLE_OPER_REMOVE);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("unable to deprogram host untag mac vlan "
+                      "nop entry. ret {}", ret);
+        goto end;
+    }
+
     // Only for SWM LIF, check if rx_en is set.
     if ((hal_if->enic_type != intf::IF_ENIC_TYPE_CLASSIC) ||
         (!enicif_is_swm(hal_if)) || lif->rx_en) {
@@ -893,6 +901,12 @@ pd_enicif_program_hw(pd_enicif_t *pd_enicif)
         if (lif && lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
             ret = pd_enicif_inb_pgm_inp_prop_mac_vlan_tbl(pd_enicif,
                                                           TABLE_OPER_INSERT);
+        }
+
+        // For host enics, install nop mac vlan entry for host untag traffic
+        if (lif && lif->type == types::LIF_TYPE_HOST) {
+            ret = pd_enicif_inp_props_mac_vlan_nop(pd_enicif, 
+                                                   TABLE_OPER_INSERT);
         }
     }
 
@@ -1962,6 +1976,7 @@ pd_enicif_inb_pgm_inp_prop_mac_vlan_tbl (pd_enicif_t *pd_enicif,
     key.entry_inactive_input_mac_vlan = 0;
     mask.entry_inactive_input_mac_vlan_mask = 0x1;
 
+    data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_ID;
     inp_prop_mac_vlan_data.clear_ingresss_mirror = 1;
 
     if (oper == TABLE_OPER_INSERT) {
@@ -2182,6 +2197,7 @@ pd_enicif_inp_prop_mac_vlan_form_data (pd_enicif_t *pd_enicif,
         ret = if_l2seg_get_multicast_rewrite_data(uplink, l2seg, lif, &rdata);
         SDK_ASSERT_RETURN((ret == HAL_RET_OK), ret);
 
+        data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_ID;
         inp_prop_mac_vlan_data.tunnel_vnid = (uint32_t)rdata.qid_or_vnid;
         inp_prop_mac_vlan_data.dst_lport = (uint16_t)rdata.lport;
         inp_prop_mac_vlan_data.rewrite_index = (uint16_t)rdata.rewrite_index;
@@ -2373,6 +2389,111 @@ pd_enicif_get_vlan_strip (lif_t *lif, pd_if_lif_update_args_t *lif_upd)
         return lif_upd->vlan_strip_en;
     }
     return lif->vlan_strip_en;
+}
+
+hal_ret_t
+pd_enicif_inp_props_mac_vlan_nop (pd_enicif_t *pd_enicif,
+                                  table_oper_t oper)
+{
+    hal_ret_t                              ret = HAL_RET_OK;
+    if_t                                   *hal_if = (if_t *)pd_enicif->pi_if;
+    lif_t                                  *lif = NULL;
+    input_properties_mac_vlan_swkey_t      key;
+    input_properties_mac_vlan_swkey_mask_t mask;
+    input_properties_mac_vlan_actiondata_t data;
+
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+
+    if (oper == TABLE_OPER_INSERT) {
+        lif = if_get_lif(hal_if);
+        key.entry_inactive_input_mac_vlan = 0;
+        key.vlan_tag_valid = 0;
+        key.control_metadata_uplink = 0;
+        key.control_metadata_host_lif = 1;
+        memcpy(key.ethernet_srcAddr, lif->mac_addr, 6);
+        memrev(key.ethernet_srcAddr, 6);
+
+        mask.entry_inactive_input_mac_vlan_mask = 0x1;
+        mask.vlan_tag_valid_mask = ~(mask.vlan_tag_valid_mask & 0);
+        mask.control_metadata_uplink_mask = ~(mask.control_metadata_uplink_mask & 0);
+        mask.control_metadata_host_lif_mask = ~(mask.control_metadata_host_lif_mask & 0);
+        memset(mask.ethernet_srcAddr_mask, ~0, sizeof(mask.ethernet_srcAddr_mask));
+
+        data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_NOP_ID;
+
+        ret = pd_enicif_pgm_inp_prop_mac_vlan_entry(&key, &mask, &data,
+                                                    &(pd_enicif->
+                                                      inp_prop_mac_vlan_idx_host_untag),
+                                                    oper);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("unable to program host untag traffic entry");
+        } else {
+            HAL_TRACE_DEBUG("programmed host untag traffic entry index:{}",
+                            pd_enicif->inp_prop_mac_vlan_idx_host_untag);
+        }
+    } else {
+        if (pd_enicif->inp_prop_mac_vlan_idx_host_untag != INVALID_INDEXER_INDEX) {
+            ret = pd_enicif_depgm_inp_prop_mac_vlan_entry(&pd_enicif->
+                                                          inp_prop_mac_vlan_idx_host_untag);
+
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("unable to de-program entry for host untag traffic");
+            } else {
+                HAL_TRACE_DEBUG("deprogrammed entry for host untag traffic");
+            }
+            pd_enicif->inp_prop_mac_vlan_idx_host_untag = INVALID_INDEXER_INDEX;
+        }
+    }
+
+    return ret;
+}
+
+hal_ret_t
+pd_enicif_host_untag_drop (bool pgm)
+{
+    hal_ret_t                                   ret = HAL_RET_OK;
+    sdk_ret_t                                   sdk_ret;
+    input_properties_mac_vlan_swkey_t           key;
+    input_properties_mac_vlan_swkey_mask_t      mask;
+    input_properties_mac_vlan_actiondata_t      data;
+    tcam                                        *inp_prop_mac_vlan_tbl = NULL;
+
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+
+    HAL_TRACE_DEBUG("Host untag drop pgm: {}", pgm);
+
+    if (pgm) {
+#if 0
+        key.entry_inactive_input_mac_vlan = 0;
+        key.vlan_tag_valid = 0;
+        key.control_metadata_uplink = 0;
+        key.control_metadata_host_lif = 1;
+
+        mask.entry_inactive_input_mac_vlan_mask = 0x1;
+        mask.vlan_tag_valid_mask = ~(mask.vlan_tag_valid_mask & 0);
+        mask.control_metadata_uplink_mask = ~(mask.control_metadata_uplink_mask & 0);
+        mask.control_metadata_host_lif_mask = ~(mask.control_metadata_host_lif_mask & 0);
+#endif
+
+        data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_DROP_ID;
+    } else {
+        data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_NOP_ID;
+    }
+
+    inp_prop_mac_vlan_tbl = g_hal_state_pd->tcam_table(
+                            P4TBL_ID_INPUT_PROPERTIES_MAC_VLAN);
+    sdk_ret = inp_prop_mac_vlan_tbl->update(INPUT_PROPS_MAC_VLAN_HOST_UNTAG, &data);
+    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Unable to program host untag drop. err: {}", ret);
+    } else {
+        HAL_TRACE_DEBUG("programmed host untag drop");
+    }
+    return ret;
 }
 
 }    // namespace pd
