@@ -607,9 +607,8 @@ func (ws *WorkloadState) handleMigration() error {
 	switch ws.Workload.Status.MigrationStatus.Stage {
 	case workload.WorkloadMigrationStatus_MIGRATION_START.String():
 		if ws.moveCancel != nil {
-			log.Errorf("migration already in progress. Stopping all EP moves. System may go into inconsistent state.")
-			ws.moveCancel()
-			ws.moveWg.Wait()
+			log.Errorf("Migration is already in progress. Unexpected start migration received.")
+			return nil
 		}
 		ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_STARTED.String()
 		fallthrough
