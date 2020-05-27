@@ -11,6 +11,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_route.hpp"
+#include "nic/apollo/api/internal/pds.hpp"
 #include "nic/apollo/api/internal/pds_route.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 
@@ -75,7 +76,6 @@ void pds_route_table_spec_s::move_(pds_route_table_spec_t&& route_table) {
 namespace api {
 
 #define PDS_MAX_UNDERLAY_ROUTES                   1
-#define PDS_UNDERLAY_ROUTE_API_EPOCH_START        0x00800000
 uint32_t g_num_routes = 0;
 typedef struct route_entry_s {
     uint8_t valid:1;
@@ -83,7 +83,6 @@ typedef struct route_entry_s {
     pds_route_spec_t spec;
 } route_entry_t;
 static route_entry_t g_route_db[PDS_MAX_UNDERLAY_ROUTES];
-static uint32_t g_route_api_epoch_ = PDS_UNDERLAY_ROUTE_API_EPOCH_START;
 
 static bool
 tep_upd_walk_cb_ (void *obj, void *ctxt) {
@@ -129,7 +128,7 @@ pds_update_teps (void)
     pds_batch_ctxt_t bctxt;
     pds_batch_params_t batch_params = { 0 };
 
-    batch_params.epoch = g_route_api_epoch_;
+    batch_params.epoch = PDS_INTERNAL_API_EPOCH_START;
     batch_params.async = true;
     // no need to pass callback as there is no action we can take there
     bctxt = pds_batch_start(&batch_params);

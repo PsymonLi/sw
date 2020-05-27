@@ -9,7 +9,9 @@
 //----------------------------------------------------------------------------
 
 #include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/api/mirror.hpp"
+#include "nic/apollo/api/include/pds_batch.hpp"
+#include "nic/apollo/api/include/pds_mirror.hpp"
+#include "nic/apollo/api/internal/pds.hpp"
 #include "nic/apollo/api/internal/pds_mirror.hpp"
 
 namespace api {

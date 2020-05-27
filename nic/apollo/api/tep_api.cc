@@ -53,11 +53,9 @@ pds_tep_read (_In_ pds_obj_key_t *key, _Out_ pds_tep_info_t *info)
     if ((key == NULL) || (info == NULL)) {
         return sdk::SDK_RET_INVALID_ARG;
     }
-
     if ((entry = pds_tep_entry_find(key)) == NULL) {
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
-
     return entry->read(info);
 }
 
