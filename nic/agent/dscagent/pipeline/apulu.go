@@ -1729,6 +1729,21 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 			OperStatus: status.GetStatus().String(),
 		},
 	}
+
+	// Retain the subnet-PF attahment from boltDB
+	curIntf := netproto.Interface{}
+	o, err := a.InfraAPI.Read(i.Kind, i.GetKey())
+	if err == nil {
+		err = curIntf.Unmarshal(o)
+		if err != nil {
+			log.Errorf("Could not parse existing Interface object")
+		} else {
+			// Retain tenant and network
+			i.Spec.VrfName = curIntf.Spec.VrfName
+			i.Spec.Network = curIntf.Spec.Network
+		}
+	}
+
 	log.Infof("Processing host interface [%+v]", i)
 	a.LocalInterfaces[i.Name] = i.UUID
 	dat, _ := i.Marshal()
