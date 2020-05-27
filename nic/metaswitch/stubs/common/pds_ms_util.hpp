@@ -239,7 +239,7 @@ rt2msstr (const uint8_t *rt_str) {
     return buf;
 }
 
-struct ms_rt_t {
+typedef struct ms_rt_t {
     uint8_t rt_str[AMB_BGP_EXT_COMM_LEN];
 
     ms_rt_t (const unsigned char rt_str_[]) {
@@ -265,7 +265,17 @@ struct ms_rt_t {
         }
         return false;
     }
-};
+} ms_rt_t;
+
+static inline bool operator < (const ms_rt_t& a, const ms_rt_t& b) {
+    for (int i = 0; i < AMB_BGP_EXT_COMM_LEN; ++i) {
+        if (a.rt_str[i] == b.rt_str[i]) {
+            continue;
+        }
+        return (a.rt_str[i] < b.rt_str[i]);
+    }
+    return false;
+}
 
 struct pend_rt_t {
     using ms_id_t=uint32_t;

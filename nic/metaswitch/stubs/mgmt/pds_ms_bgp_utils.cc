@@ -271,6 +271,7 @@ update_bgp_route_map_table (NBB_ULONG correlator)
     BgpRouteMapSpec spec;
     std::string str;
     NBB_ULONG len = 0;
+    std::set<ms_rt_t> set_of_rts;
 
     auto state_ctxt = state_t::thread_context();
     // Disabling the EVI RT in the ORF route-map since we are doing the
@@ -278,23 +279,36 @@ update_bgp_route_map_table (NBB_ULONG correlator)
 #if 0
     // walk-through subnets
     state_ctxt.state()->subnet_store().
-        walk([&str] (ms_bd_id_t bd_id, subnet_obj_t& subnet_obj) -> bool {
-                // walk-through (import) rt list of each subnet
-                subnet_obj.rt_store.walk([&str] (ms_rt_t &obj) -> void {
-                    str=str+obj.ms_str()+',';
-                    });
-                return true;
-                });
+        walk([&set_of_rts] (ms_bd_id_t bd_id, subnet_obj_t& subnet_obj) -> bool {
+            // walk-through (import) rt list of each subnet
+            subnet_obj.rt_store.walk([&set_of_rts] (ms_rt_t &obj) -> void {
+                // Add it to the unique sorted set. This is to avoid duplicate
+                // RTs in the ORF list. The list is also sorted to ensure that
+                // the RR has the same RT ordering from all the peers
+                set_of_rts.emplace(obj);
+            });
+            return true;
+        });
 #endif
     // walk-through vpcs
     state_ctxt.state()->vpc_store().
-        walk([&str] (ms_vrf_id_t vrf_id, vpc_obj_t& vpc_obj) -> bool {
-                // walk-through (import) rt list of each vpc
-                vpc_obj.rt_store.walk([&str] (ms_rt_t &obj) -> void {
-                    str=str+obj.ms_str()+',';
-                    });
-                return true;
-                });
+        walk([&set_of_rts] (ms_vrf_id_t vrf_id, vpc_obj_t& vpc_obj) -> bool {
+            // walk-through (import) rt list of each vpc
+            vpc_obj.rt_store.walk([&set_of_rts] (ms_rt_t &obj) -> void {
+                // Add it to the unique sorted set. This is to avoid duplicate
+                // RTs in the ORF list. The list is also sorted to ensure that
+                // the RR has the same RT ordering from all the peers
+                set_of_rts.emplace(obj);
+            });
+            return true;
+        });
+
+    // now walk the sorted RT set with unique RTs
+    std::set<ms_rt_t>::iterator it = set_of_rts.begin();
+    while (it != set_of_rts.end()) {
+        str = str + (*it).ms_str() + ',';
+        it++;
+    }
 
     if (str.empty()) {
         // By default send deny all routes in the ORF to RR

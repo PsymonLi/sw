@@ -173,7 +173,7 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
     }
     if (tracked) {
         return ip_track_reachability_change(destip, ips_info_.ecmp_id,
-											pds_obj_id);
+                                            pds_obj_id);
     }
 
     if (mgmt_state_t::thread_context().state()->overlay_routing_en()) {
