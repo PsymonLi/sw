@@ -16,16 +16,7 @@ def Trigger(tc):
         api.Logger.error("Failed to switch profile")
         return ret
 
-    #Push the default profile
-    #profile_json = api.GetTopologyDirectory() + "/" + "security_profile.json"
-    profile_objs = netagent_api.QueryConfigs(kind='SecurityProfile')
-    ret = netagent_api.PushConfigObjects(profile_objs)
-    if ret != api.types.status.SUCCESS:
-       api.Logger.error("Failed to push nwsec profile")
-       return ret
-
     #Push the default policy
-    #policy_json = api.GetTopologyDirectory() + "/" + "sgpolicy.json"
     policy_objs = netagent_api.QueryConfigs(kind='NetworkSecurityPolicy')
     ret = netagent_api.PushConfigObjects(policy_objs)
     if ret != api.types.status.SUCCESS:

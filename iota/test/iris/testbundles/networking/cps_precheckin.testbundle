@@ -4,6 +4,18 @@ meta:
     nics    : [ pensando, mellanox, intel, broadcom ]
 
 testcases:
+    -   name    : Cps_Remote_Workloads
+        testcase: testcases.networking.conn_per_sec
+        stress  : True
+        args    :
+            type     : remote_only
+            drop_tol : 10.0 #percent
+        iterators:
+            type      : nested
+            proto     : [ tcp ]
+            cps       : [ 1000 ]
+            duration  : [ 60 ]
+
     -   name    : session_scale
         testcase: testcases.networking.session_scale
         stress  : True

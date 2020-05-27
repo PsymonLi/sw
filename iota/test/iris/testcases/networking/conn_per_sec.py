@@ -77,6 +77,20 @@ def RestoreHalLogLevel(tc):
     except Exception as e:
         api.Logger.error("%s"%e)
 
+def __modify_security_profile(tc):
+    sp_objects = netagent_api.QueryConfigs(kind='SecurityProfile')
+    tc.cloned_sp_objects = netagent_api.CloneConfigObjects(sp_objects)
+    for obj in sp_objects:
+        obj.spec.timeouts.tcp = "1s"
+        obj.spec.timeouts.udp = "1s"
+        obj.spec.timeouts.tcp_half_close = "1s"
+        obj.spec.timeouts.tcp_close = "1s"
+        obj.spec.timeouts.tcp_connection_setup = "1s"
+    return netagent_api.UpdateConfigObjects(sp_objects)
+
+def __restore_security_profile(tc):
+    return netagent_api.UpdateConfigObjects(tc.cloned_sp_objects)
+
 def Setup(tc):
     tc.seed = random.randrange(sys.maxsize)
     api.Logger.info("Using seed : %s"%(tc.seed))
@@ -84,7 +98,7 @@ def Setup(tc):
     tc.clientHandle = None
     StoreCurrentHalLogLevel(tc)
     SetHalLogsLevelToError(tc)
-
+    __modify_security_profile(tc)
     chooseWorkload(tc)
     server, client = tc.workload_pair[0], tc.workload_pair[1]
     api.Logger.info("Server: %s(%s)(%s) <--> Client: %s(%s)(%s)" %\
@@ -185,6 +199,7 @@ def cleanup(tc):
     try:
         utils.clearNaplesSessions()
         RestoreHalLogLevel(tc)
+        __restore_security_profile(tc)
         if tc.serverHandle:
             tc.serverHandle.disconnect()
             tc.serverHandle.cleanup()

@@ -248,8 +248,10 @@ def Main(args):
     if GlobalOptions.skip_setup:
         RestoreWorkloads()
     else:
-        if api.GetConfigNicMode() not in ['classic','unified']:
-            netagent_api.PushBaseConfig()
+        nic_mode = api.GetConfigNicMode()
+        if nic_mode not in ['classic']:
+            kinds = ["SecurityProfile"] if nic_mode == 'unified' else None
+            netagent_api.PushBaseConfig(kinds=kinds)
         __add_workloads()
     return api.types.status.SUCCESS
 
