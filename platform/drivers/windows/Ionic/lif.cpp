@@ -1053,7 +1053,7 @@ ionic_lif_init(struct lif *lif)
                 if (VlanIdx != lif->vlan_id) {
                     status = ionic_lif_vlan(lif, VlanIdx, true);
                     if (status != NDIS_STATUS_SUCCESS) {
-                        EvLogWarning("%wZ - Could not add VLAN filter for VLAN:%u.", lif->ionic->name, VlanIdx);
+                        EvLogWarning("%wZ Could't add filter for VLAN:%u.", lif->ionic->name, VlanIdx);
                         DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR, "%s ionic_lif_vlan(%u) returned: %08lX\n", __FUNCTION__, VlanIdx, status));
                     }
                     else {
@@ -1568,24 +1568,23 @@ ionic_lif_macvlan(struct lif *lif, const u8 *addr, u16 vlan_id, bool add)
 NDIS_STATUS
 ionic_lif_vlan(struct lif *lif, u16 vlan_id, bool add)
 {
-    struct ionic *ionic = lif->ionic;
-    unsigned int nmfilters;
+    struct ionic* ionic = lif->ionic;
     unsigned int nufilters;
-
+    
     if (add) {
         /* Do we have space for this filter?  We test the counters
          * here before checking the need for deferral so that we
          * can return an overflow error to the stack.
          */
-        nmfilters = le32_to_cpu(ionic->ident.lif.eth.max_mcast_filters);
         nufilters = le32_to_cpu(ionic->ident.lif.eth.max_ucast_filters);
-
-        if (lif->nucast < nufilters)
-            lif->nucast++;
+        
+        if (lif->vlanfltcount < nufilters)
+            lif->vlanfltcount++;
         else
             return NDIS_STATUS_RESOURCES;
+        
     } else {
-        lif->nucast--;
+        lif->vlanfltcount--;
     }
 
     DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_VERBOSE,

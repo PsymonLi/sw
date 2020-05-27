@@ -420,6 +420,7 @@ struct lif {
 	unsigned int nmcast;
 	bool uc_overflow;
 	unsigned int nucast;
+	unsigned int vlanfltcount;
 
 	union lif_identity *identity;
 	struct lif_info *info;
