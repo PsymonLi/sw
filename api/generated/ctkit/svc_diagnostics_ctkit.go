@@ -686,6 +686,7 @@ type ModuleAPI interface {
 	SyncCreate(obj *diagnostics.Module) error
 	Update(obj *diagnostics.Module) error
 	SyncUpdate(obj *diagnostics.Module) error
+	Label(obj *api.Label) error
 	Delete(obj *diagnostics.Module) error
 	Find(meta *api.ObjectMeta) (*Module, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Module, error)
@@ -789,6 +790,30 @@ func (api *moduleAPI) SyncUpdate(obj *diagnostics.Module) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Module object
+func (api *moduleAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.DiagnosticsV1().Module().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Module
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleModuleEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Module object

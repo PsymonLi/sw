@@ -694,6 +694,7 @@ type OrchestratorAPI interface {
 	SyncCreate(obj *orchestration.Orchestrator) error
 	Update(obj *orchestration.Orchestrator) error
 	SyncUpdate(obj *orchestration.Orchestrator) error
+	Label(obj *api.Label) error
 	Delete(obj *orchestration.Orchestrator) error
 	Find(meta *api.ObjectMeta) (*Orchestrator, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Orchestrator, error)
@@ -790,6 +791,30 @@ func (api *orchestratorAPI) SyncUpdate(obj *orchestration.Orchestrator) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Orchestrator object
+func (api *orchestratorAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.OrchestratorV1().Orchestrator().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Orchestrator
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleOrchestratorEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Orchestrator object

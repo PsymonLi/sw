@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/pensando/sw/api"
+	apierrors "github.com/pensando/sw/api/errors"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/events/generated/eventtypes"
@@ -65,9 +66,12 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 		}
 
 		snic.DistributedServiceCard.Labels[utils.OrchNameKey] = orchNameValue
-		err := snic.stateMgr.ctrler.DistributedServiceCard().Update(&snic.DistributedServiceCard.DistributedServiceCard)
+		labelObj := &api.Label{
+			ObjectMeta: snic.DistributedServiceCard.ObjectMeta,
+		}
+		err := snic.stateMgr.ctrler.DistributedServiceCard().Label(labelObj)
 		if err != nil {
-			sm.logger.Errorf("Failed to update orchhub label for DSC [%v]. Err : %v", snic.DistributedServiceCard.Name, err)
+			sm.logger.Errorf("Failed to update orchhub label for DSC [%v]. Err : %v", snic.DistributedServiceCard.Name, apierrors.FromError(err))
 		}
 
 		if !snic.isOrchestratorCompatible() {
@@ -117,16 +121,22 @@ func (sm *Statemgr) OnHostUpdate(nh *ctkit.Host, newHost *cluster.Host) error {
 			}
 
 			snic.DistributedServiceCard.Labels[utils.OrchNameKey] = orchNameValue
-			err := snic.stateMgr.ctrler.DistributedServiceCard().Update(&snic.DistributedServiceCard.DistributedServiceCard)
+			labelObj := &api.Label{
+				ObjectMeta: snic.DistributedServiceCard.ObjectMeta,
+			}
+			err := snic.stateMgr.ctrler.DistributedServiceCard().Label(labelObj)
 			if err != nil {
-				sm.logger.Errorf("Failed to update orchhub label for DSC [%v]. Err : %v", snic.DistributedServiceCard.Name, err)
+				sm.logger.Errorf("Failed to update orchhub label for DSC [%v]. Err : %v", snic.DistributedServiceCard.Name, apierrors.FromError(err))
 			}
 		} else if ok && !isHostOrchhubManaged && snic.DistributedServiceCard.Labels != nil {
 			// Remove Label from DSC object
 			delete(snic.DistributedServiceCard.Labels, utils.OrchNameKey)
-			err := snic.stateMgr.ctrler.DistributedServiceCard().Update(&snic.DistributedServiceCard.DistributedServiceCard)
+			labelObj := &api.Label{
+				ObjectMeta: snic.DistributedServiceCard.ObjectMeta,
+			}
+			err := snic.stateMgr.ctrler.DistributedServiceCard().Label(labelObj)
 			if err != nil {
-				sm.logger.Errorf("Failed to remove orhchub label from DSC object [%v]. Err : %v", snic.DistributedServiceCard.Name, err)
+				sm.logger.Errorf("Failed to remove orhchub label from DSC object [%v]. Err : %v", snic.DistributedServiceCard.Name, apierrors.FromError(err))
 			}
 		}
 	}
@@ -154,9 +164,12 @@ func (sm *Statemgr) OnHostDelete(nh *ctkit.Host) error {
 
 			if snic != nil && snic.DistributedServiceCard.ObjectMeta.Labels != nil {
 				delete(snic.DistributedServiceCard.Labels, utils.OrchNameKey)
-				err := snic.stateMgr.ctrler.DistributedServiceCard().Update(&snic.DistributedServiceCard.DistributedServiceCard)
+				labelObj := &api.Label{
+					ObjectMeta: snic.DistributedServiceCard.ObjectMeta,
+				}
+				err := snic.stateMgr.ctrler.DistributedServiceCard().Label(labelObj)
 				if err != nil {
-					sm.logger.Errorf("Failed to update DSC. Err : %v", err)
+					sm.logger.Errorf("Failed to update DSC. Err : %v", apierrors.FromError(err))
 				}
 			}
 		}

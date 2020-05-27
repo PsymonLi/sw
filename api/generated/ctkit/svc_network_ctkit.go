@@ -686,6 +686,7 @@ type NetworkAPI interface {
 	SyncCreate(obj *network.Network) error
 	Update(obj *network.Network) error
 	SyncUpdate(obj *network.Network) error
+	Label(obj *api.Label) error
 	Delete(obj *network.Network) error
 	Find(meta *api.ObjectMeta) (*Network, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Network, error)
@@ -782,6 +783,30 @@ func (api *networkAPI) SyncUpdate(obj *network.Network) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Network object
+func (api *networkAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().Network().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Network
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleNetworkEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Network object
@@ -1560,6 +1585,7 @@ type ServiceAPI interface {
 	SyncCreate(obj *network.Service) error
 	Update(obj *network.Service) error
 	SyncUpdate(obj *network.Service) error
+	Label(obj *api.Label) error
 	Delete(obj *network.Service) error
 	Find(meta *api.ObjectMeta) (*Service, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Service, error)
@@ -1656,6 +1682,30 @@ func (api *serviceAPI) SyncUpdate(obj *network.Service) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Service object
+func (api *serviceAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().Service().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Service
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleServiceEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Service object
@@ -2434,6 +2484,7 @@ type LbPolicyAPI interface {
 	SyncCreate(obj *network.LbPolicy) error
 	Update(obj *network.LbPolicy) error
 	SyncUpdate(obj *network.LbPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *network.LbPolicy) error
 	Find(meta *api.ObjectMeta) (*LbPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*LbPolicy, error)
@@ -2530,6 +2581,30 @@ func (api *lbpolicyAPI) SyncUpdate(obj *network.LbPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels LbPolicy object
+func (api *lbpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().LbPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.LbPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleLbPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes LbPolicy object
@@ -3308,6 +3383,7 @@ type VirtualRouterAPI interface {
 	SyncCreate(obj *network.VirtualRouter) error
 	Update(obj *network.VirtualRouter) error
 	SyncUpdate(obj *network.VirtualRouter) error
+	Label(obj *api.Label) error
 	Delete(obj *network.VirtualRouter) error
 	Find(meta *api.ObjectMeta) (*VirtualRouter, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*VirtualRouter, error)
@@ -3404,6 +3480,30 @@ func (api *virtualrouterAPI) SyncUpdate(obj *network.VirtualRouter) error {
 	}
 
 	return writeErr
+}
+
+// Label labels VirtualRouter object
+func (api *virtualrouterAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().VirtualRouter().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.VirtualRouter
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleVirtualRouterEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes VirtualRouter object
@@ -4182,6 +4282,7 @@ type NetworkInterfaceAPI interface {
 	SyncCreate(obj *network.NetworkInterface) error
 	Update(obj *network.NetworkInterface) error
 	SyncUpdate(obj *network.NetworkInterface) error
+	Label(obj *api.Label) error
 	Delete(obj *network.NetworkInterface) error
 	Find(meta *api.ObjectMeta) (*NetworkInterface, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*NetworkInterface, error)
@@ -4278,6 +4379,30 @@ func (api *networkinterfaceAPI) SyncUpdate(obj *network.NetworkInterface) error 
 	}
 
 	return writeErr
+}
+
+// Label labels NetworkInterface object
+func (api *networkinterfaceAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().NetworkInterface().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.NetworkInterface
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleNetworkInterfaceEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes NetworkInterface object
@@ -5056,6 +5181,7 @@ type IPAMPolicyAPI interface {
 	SyncCreate(obj *network.IPAMPolicy) error
 	Update(obj *network.IPAMPolicy) error
 	SyncUpdate(obj *network.IPAMPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *network.IPAMPolicy) error
 	Find(meta *api.ObjectMeta) (*IPAMPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*IPAMPolicy, error)
@@ -5152,6 +5278,30 @@ func (api *ipampolicyAPI) SyncUpdate(obj *network.IPAMPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels IPAMPolicy object
+func (api *ipampolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().IPAMPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.IPAMPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleIPAMPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes IPAMPolicy object
@@ -5938,6 +6088,7 @@ type RoutingConfigAPI interface {
 	SyncCreate(obj *network.RoutingConfig) error
 	Update(obj *network.RoutingConfig) error
 	SyncUpdate(obj *network.RoutingConfig) error
+	Label(obj *api.Label) error
 	Delete(obj *network.RoutingConfig) error
 	Find(meta *api.ObjectMeta) (*RoutingConfig, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RoutingConfig, error)
@@ -6034,6 +6185,30 @@ func (api *routingconfigAPI) SyncUpdate(obj *network.RoutingConfig) error {
 	}
 
 	return writeErr
+}
+
+// Label labels RoutingConfig object
+func (api *routingconfigAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().RoutingConfig().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.RoutingConfig
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRoutingConfigEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes RoutingConfig object
@@ -6812,6 +6987,7 @@ type RouteTableAPI interface {
 	SyncCreate(obj *network.RouteTable) error
 	Update(obj *network.RouteTable) error
 	SyncUpdate(obj *network.RouteTable) error
+	Label(obj *api.Label) error
 	Delete(obj *network.RouteTable) error
 	Find(meta *api.ObjectMeta) (*RouteTable, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RouteTable, error)
@@ -6908,6 +7084,30 @@ func (api *routetableAPI) SyncUpdate(obj *network.RouteTable) error {
 	}
 
 	return writeErr
+}
+
+// Label labels RouteTable object
+func (api *routetableAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.NetworkV1().RouteTable().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.RouteTable
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRouteTableEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes RouteTable object

@@ -694,6 +694,7 @@ type ClusterAPI interface {
 	SyncCreate(obj *cluster.Cluster) error
 	Update(obj *cluster.Cluster) error
 	SyncUpdate(obj *cluster.Cluster) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Cluster) error
 	Find(meta *api.ObjectMeta) (*Cluster, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Cluster, error)
@@ -803,6 +804,30 @@ func (api *clusterAPI) SyncUpdate(obj *cluster.Cluster) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Cluster object
+func (api *clusterAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Cluster().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Cluster
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleClusterEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Cluster object
@@ -1683,6 +1708,7 @@ type NodeAPI interface {
 	SyncCreate(obj *cluster.Node) error
 	Update(obj *cluster.Node) error
 	SyncUpdate(obj *cluster.Node) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Node) error
 	Find(meta *api.ObjectMeta) (*Node, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Node, error)
@@ -1779,6 +1805,30 @@ func (api *nodeAPI) SyncUpdate(obj *cluster.Node) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Node object
+func (api *nodeAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Node().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Node
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleNodeEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Node object
@@ -2557,6 +2607,7 @@ type HostAPI interface {
 	SyncCreate(obj *cluster.Host) error
 	Update(obj *cluster.Host) error
 	SyncUpdate(obj *cluster.Host) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Host) error
 	Find(meta *api.ObjectMeta) (*Host, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Host, error)
@@ -2653,6 +2704,30 @@ func (api *hostAPI) SyncUpdate(obj *cluster.Host) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Host object
+func (api *hostAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Host().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Host
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleHostEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Host object
@@ -3431,6 +3506,7 @@ type DistributedServiceCardAPI interface {
 	SyncCreate(obj *cluster.DistributedServiceCard) error
 	Update(obj *cluster.DistributedServiceCard) error
 	SyncUpdate(obj *cluster.DistributedServiceCard) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.DistributedServiceCard) error
 	Find(meta *api.ObjectMeta) (*DistributedServiceCard, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*DistributedServiceCard, error)
@@ -3527,6 +3603,30 @@ func (api *distributedservicecardAPI) SyncUpdate(obj *cluster.DistributedService
 	}
 
 	return writeErr
+}
+
+// Label labels DistributedServiceCard object
+func (api *distributedservicecardAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().DistributedServiceCard().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.DistributedServiceCard
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleDistributedServiceCardEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes DistributedServiceCard object
@@ -4305,6 +4405,7 @@ type TenantAPI interface {
 	SyncCreate(obj *cluster.Tenant) error
 	Update(obj *cluster.Tenant) error
 	SyncUpdate(obj *cluster.Tenant) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Tenant) error
 	Find(meta *api.ObjectMeta) (*Tenant, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Tenant, error)
@@ -4401,6 +4502,30 @@ func (api *tenantAPI) SyncUpdate(obj *cluster.Tenant) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Tenant object
+func (api *tenantAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Tenant().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Tenant
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleTenantEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Tenant object
@@ -5179,6 +5304,7 @@ type VersionAPI interface {
 	SyncCreate(obj *cluster.Version) error
 	Update(obj *cluster.Version) error
 	SyncUpdate(obj *cluster.Version) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Version) error
 	Find(meta *api.ObjectMeta) (*Version, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Version, error)
@@ -5275,6 +5401,30 @@ func (api *versionAPI) SyncUpdate(obj *cluster.Version) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Version object
+func (api *versionAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Version().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Version
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleVersionEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Version object
@@ -6053,6 +6203,7 @@ type ConfigurationSnapshotAPI interface {
 	SyncCreate(obj *cluster.ConfigurationSnapshot) error
 	Update(obj *cluster.ConfigurationSnapshot) error
 	SyncUpdate(obj *cluster.ConfigurationSnapshot) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.ConfigurationSnapshot) error
 	Find(meta *api.ObjectMeta) (*ConfigurationSnapshot, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*ConfigurationSnapshot, error)
@@ -6156,6 +6307,30 @@ func (api *configurationsnapshotAPI) SyncUpdate(obj *cluster.ConfigurationSnapsh
 	}
 
 	return writeErr
+}
+
+// Label labels ConfigurationSnapshot object
+func (api *configurationsnapshotAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().ConfigurationSnapshot().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.ConfigurationSnapshot
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleConfigurationSnapshotEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes ConfigurationSnapshot object
@@ -6985,6 +7160,7 @@ type SnapshotRestoreAPI interface {
 	SyncCreate(obj *cluster.SnapshotRestore) error
 	Update(obj *cluster.SnapshotRestore) error
 	SyncUpdate(obj *cluster.SnapshotRestore) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.SnapshotRestore) error
 	Find(meta *api.ObjectMeta) (*SnapshotRestore, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*SnapshotRestore, error)
@@ -7088,6 +7264,30 @@ func (api *snapshotrestoreAPI) SyncUpdate(obj *cluster.SnapshotRestore) error {
 	}
 
 	return writeErr
+}
+
+// Label labels SnapshotRestore object
+func (api *snapshotrestoreAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().SnapshotRestore().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.SnapshotRestore
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleSnapshotRestoreEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes SnapshotRestore object
@@ -7917,6 +8117,7 @@ type LicenseAPI interface {
 	SyncCreate(obj *cluster.License) error
 	Update(obj *cluster.License) error
 	SyncUpdate(obj *cluster.License) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.License) error
 	Find(meta *api.ObjectMeta) (*License, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*License, error)
@@ -8013,6 +8214,30 @@ func (api *licenseAPI) SyncUpdate(obj *cluster.License) error {
 	}
 
 	return writeErr
+}
+
+// Label labels License object
+func (api *licenseAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().License().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.License
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleLicenseEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes License object
@@ -8791,6 +9016,7 @@ type DSCProfileAPI interface {
 	SyncCreate(obj *cluster.DSCProfile) error
 	Update(obj *cluster.DSCProfile) error
 	SyncUpdate(obj *cluster.DSCProfile) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.DSCProfile) error
 	Find(meta *api.ObjectMeta) (*DSCProfile, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*DSCProfile, error)
@@ -8887,6 +9113,30 @@ func (api *dscprofileAPI) SyncUpdate(obj *cluster.DSCProfile) error {
 	}
 
 	return writeErr
+}
+
+// Label labels DSCProfile object
+func (api *dscprofileAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().DSCProfile().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.DSCProfile
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleDSCProfileEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes DSCProfile object
@@ -9673,6 +9923,7 @@ type CredentialsAPI interface {
 	SyncCreate(obj *cluster.Credentials) error
 	Update(obj *cluster.Credentials) error
 	SyncUpdate(obj *cluster.Credentials) error
+	Label(obj *api.Label) error
 	Delete(obj *cluster.Credentials) error
 	Find(meta *api.ObjectMeta) (*Credentials, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Credentials, error)
@@ -9769,6 +10020,30 @@ func (api *credentialsAPI) SyncUpdate(obj *cluster.Credentials) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Credentials object
+func (api *credentialsAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ClusterV1().Credentials().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Credentials
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleCredentialsEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Credentials object

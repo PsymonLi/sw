@@ -694,6 +694,7 @@ type EventPolicyAPI interface {
 	SyncCreate(obj *monitoring.EventPolicy) error
 	Update(obj *monitoring.EventPolicy) error
 	SyncUpdate(obj *monitoring.EventPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.EventPolicy) error
 	Find(meta *api.ObjectMeta) (*EventPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*EventPolicy, error)
@@ -790,6 +791,30 @@ func (api *eventpolicyAPI) SyncUpdate(obj *monitoring.EventPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels EventPolicy object
+func (api *eventpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().EventPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.EventPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleEventPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes EventPolicy object
@@ -1576,6 +1601,7 @@ type FwlogPolicyAPI interface {
 	SyncCreate(obj *monitoring.FwlogPolicy) error
 	Update(obj *monitoring.FwlogPolicy) error
 	SyncUpdate(obj *monitoring.FwlogPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.FwlogPolicy) error
 	Find(meta *api.ObjectMeta) (*FwlogPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FwlogPolicy, error)
@@ -1672,6 +1698,30 @@ func (api *fwlogpolicyAPI) SyncUpdate(obj *monitoring.FwlogPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels FwlogPolicy object
+func (api *fwlogpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().FwlogPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.FwlogPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleFwlogPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes FwlogPolicy object
@@ -2458,6 +2508,7 @@ type FlowExportPolicyAPI interface {
 	SyncCreate(obj *monitoring.FlowExportPolicy) error
 	Update(obj *monitoring.FlowExportPolicy) error
 	SyncUpdate(obj *monitoring.FlowExportPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.FlowExportPolicy) error
 	Find(meta *api.ObjectMeta) (*FlowExportPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FlowExportPolicy, error)
@@ -2554,6 +2605,30 @@ func (api *flowexportpolicyAPI) SyncUpdate(obj *monitoring.FlowExportPolicy) err
 	}
 
 	return writeErr
+}
+
+// Label labels FlowExportPolicy object
+func (api *flowexportpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().FlowExportPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.FlowExportPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleFlowExportPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes FlowExportPolicy object
@@ -3332,6 +3407,7 @@ type AlertAPI interface {
 	SyncCreate(obj *monitoring.Alert) error
 	Update(obj *monitoring.Alert) error
 	SyncUpdate(obj *monitoring.Alert) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.Alert) error
 	Find(meta *api.ObjectMeta) (*Alert, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Alert, error)
@@ -3428,6 +3504,30 @@ func (api *alertAPI) SyncUpdate(obj *monitoring.Alert) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Alert object
+func (api *alertAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().Alert().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Alert
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAlertEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Alert object
@@ -4206,6 +4306,7 @@ type AlertPolicyAPI interface {
 	SyncCreate(obj *monitoring.AlertPolicy) error
 	Update(obj *monitoring.AlertPolicy) error
 	SyncUpdate(obj *monitoring.AlertPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.AlertPolicy) error
 	Find(meta *api.ObjectMeta) (*AlertPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AlertPolicy, error)
@@ -4302,6 +4403,30 @@ func (api *alertpolicyAPI) SyncUpdate(obj *monitoring.AlertPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels AlertPolicy object
+func (api *alertpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().AlertPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.AlertPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAlertPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes AlertPolicy object
@@ -5080,6 +5205,7 @@ type StatsAlertPolicyAPI interface {
 	SyncCreate(obj *monitoring.StatsAlertPolicy) error
 	Update(obj *monitoring.StatsAlertPolicy) error
 	SyncUpdate(obj *monitoring.StatsAlertPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.StatsAlertPolicy) error
 	Find(meta *api.ObjectMeta) (*StatsAlertPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*StatsAlertPolicy, error)
@@ -5176,6 +5302,30 @@ func (api *statsalertpolicyAPI) SyncUpdate(obj *monitoring.StatsAlertPolicy) err
 	}
 
 	return writeErr
+}
+
+// Label labels StatsAlertPolicy object
+func (api *statsalertpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().StatsAlertPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.StatsAlertPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleStatsAlertPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes StatsAlertPolicy object
@@ -5962,6 +6112,7 @@ type AlertDestinationAPI interface {
 	SyncCreate(obj *monitoring.AlertDestination) error
 	Update(obj *monitoring.AlertDestination) error
 	SyncUpdate(obj *monitoring.AlertDestination) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.AlertDestination) error
 	Find(meta *api.ObjectMeta) (*AlertDestination, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AlertDestination, error)
@@ -6058,6 +6209,30 @@ func (api *alertdestinationAPI) SyncUpdate(obj *monitoring.AlertDestination) err
 	}
 
 	return writeErr
+}
+
+// Label labels AlertDestination object
+func (api *alertdestinationAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().AlertDestination().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.AlertDestination
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAlertDestinationEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes AlertDestination object
@@ -6836,6 +7011,7 @@ type MirrorSessionAPI interface {
 	SyncCreate(obj *monitoring.MirrorSession) error
 	Update(obj *monitoring.MirrorSession) error
 	SyncUpdate(obj *monitoring.MirrorSession) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.MirrorSession) error
 	Find(meta *api.ObjectMeta) (*MirrorSession, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*MirrorSession, error)
@@ -6932,6 +7108,30 @@ func (api *mirrorsessionAPI) SyncUpdate(obj *monitoring.MirrorSession) error {
 	}
 
 	return writeErr
+}
+
+// Label labels MirrorSession object
+func (api *mirrorsessionAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().MirrorSession().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.MirrorSession
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleMirrorSessionEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes MirrorSession object
@@ -7710,6 +7910,7 @@ type TroubleshootingSessionAPI interface {
 	SyncCreate(obj *monitoring.TroubleshootingSession) error
 	Update(obj *monitoring.TroubleshootingSession) error
 	SyncUpdate(obj *monitoring.TroubleshootingSession) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.TroubleshootingSession) error
 	Find(meta *api.ObjectMeta) (*TroubleshootingSession, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TroubleshootingSession, error)
@@ -7806,6 +8007,30 @@ func (api *troubleshootingsessionAPI) SyncUpdate(obj *monitoring.Troubleshooting
 	}
 
 	return writeErr
+}
+
+// Label labels TroubleshootingSession object
+func (api *troubleshootingsessionAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().TroubleshootingSession().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.TroubleshootingSession
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleTroubleshootingSessionEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes TroubleshootingSession object
@@ -8584,6 +8809,7 @@ type TechSupportRequestAPI interface {
 	SyncCreate(obj *monitoring.TechSupportRequest) error
 	Update(obj *monitoring.TechSupportRequest) error
 	SyncUpdate(obj *monitoring.TechSupportRequest) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.TechSupportRequest) error
 	Find(meta *api.ObjectMeta) (*TechSupportRequest, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TechSupportRequest, error)
@@ -8680,6 +8906,30 @@ func (api *techsupportrequestAPI) SyncUpdate(obj *monitoring.TechSupportRequest)
 	}
 
 	return writeErr
+}
+
+// Label labels TechSupportRequest object
+func (api *techsupportrequestAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().TechSupportRequest().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.TechSupportRequest
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleTechSupportRequestEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes TechSupportRequest object
@@ -9458,6 +9708,7 @@ type ArchiveRequestAPI interface {
 	SyncCreate(obj *monitoring.ArchiveRequest) error
 	Update(obj *monitoring.ArchiveRequest) error
 	SyncUpdate(obj *monitoring.ArchiveRequest) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.ArchiveRequest) error
 	Find(meta *api.ObjectMeta) (*ArchiveRequest, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*ArchiveRequest, error)
@@ -9561,6 +9812,30 @@ func (api *archiverequestAPI) SyncUpdate(obj *monitoring.ArchiveRequest) error {
 	}
 
 	return writeErr
+}
+
+// Label labels ArchiveRequest object
+func (api *archiverequestAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().ArchiveRequest().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.ArchiveRequest
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleArchiveRequestEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes ArchiveRequest object
@@ -10398,6 +10673,7 @@ type AuditPolicyAPI interface {
 	SyncCreate(obj *monitoring.AuditPolicy) error
 	Update(obj *monitoring.AuditPolicy) error
 	SyncUpdate(obj *monitoring.AuditPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *monitoring.AuditPolicy) error
 	Find(meta *api.ObjectMeta) (*AuditPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AuditPolicy, error)
@@ -10494,6 +10770,30 @@ func (api *auditpolicyAPI) SyncUpdate(obj *monitoring.AuditPolicy) error {
 	}
 
 	return writeErr
+}
+
+// Label labels AuditPolicy object
+func (api *auditpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.MonitoringV1().AuditPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.AuditPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAuditPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes AuditPolicy object

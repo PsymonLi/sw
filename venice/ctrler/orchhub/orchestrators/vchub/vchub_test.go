@@ -3068,7 +3068,11 @@ func TestVerifyOverride(t *testing.T) {
 	overrides = probe.DvsStateMap[dcName][dvsName]
 	for port, config := range overrides {
 		vlan := config.Config.Setting.(*types.VMwareDVSPortSetting).Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec).VlanId
-		AssertEquals(t, currOverrides[port], vlan, "Vlan was not reset for port %s", port)
+		retVlan := currOverrides[port]
+		if vlan != retVlan {
+			probe.DvsStateMapLock.Unlock()
+			AssertEquals(t, retVlan, vlan, "Vlan was not reset for port %s", port)
+		}
 	}
 	probe.DvsStateMapLock.Unlock()
 
@@ -3101,7 +3105,11 @@ func TestVerifyOverride(t *testing.T) {
 	overrides = probe.DvsStateMap[dcName][dvsName]
 	for port, config := range overrides {
 		vlan := config.Config.Setting.(*types.VMwareDVSPortSetting).Vlan.(*types.VmwareDistributedVirtualSwitchVlanIdSpec).VlanId
-		AssertEquals(t, currOverrides[port], vlan, "Vlan was not reset for port %s", port)
+		retVlan := currOverrides[port]
+		if vlan != retVlan {
+			probe.DvsStateMapLock.Unlock()
+			AssertEquals(t, retVlan, vlan, "Vlan was not reset for port %s", port)
+		}
 	}
 	probe.DvsStateMapLock.Unlock()
 

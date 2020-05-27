@@ -686,6 +686,7 @@ type EndpointAPI interface {
 	SyncCreate(obj *workload.Endpoint) error
 	Update(obj *workload.Endpoint) error
 	SyncUpdate(obj *workload.Endpoint) error
+	Label(obj *api.Label) error
 	Delete(obj *workload.Endpoint) error
 	Find(meta *api.ObjectMeta) (*Endpoint, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Endpoint, error)
@@ -782,6 +783,30 @@ func (api *endpointAPI) SyncUpdate(obj *workload.Endpoint) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Endpoint object
+func (api *endpointAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.WorkloadV1().Endpoint().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Endpoint
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleEndpointEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Endpoint object
@@ -1560,6 +1585,7 @@ type WorkloadAPI interface {
 	SyncCreate(obj *workload.Workload) error
 	Update(obj *workload.Workload) error
 	SyncUpdate(obj *workload.Workload) error
+	Label(obj *api.Label) error
 	Delete(obj *workload.Workload) error
 	Find(meta *api.ObjectMeta) (*Workload, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Workload, error)
@@ -1681,6 +1707,30 @@ func (api *workloadAPI) SyncUpdate(obj *workload.Workload) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Workload object
+func (api *workloadAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.WorkloadV1().Workload().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Workload
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleWorkloadEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Workload object

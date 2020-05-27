@@ -686,6 +686,7 @@ type OrderAPI interface {
 	SyncCreate(obj *bookstore.Order) error
 	Update(obj *bookstore.Order) error
 	SyncUpdate(obj *bookstore.Order) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Order) error
 	Find(meta *api.ObjectMeta) (*Order, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Order, error)
@@ -795,6 +796,30 @@ func (api *orderAPI) SyncUpdate(obj *bookstore.Order) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Order object
+func (api *orderAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Order().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Order
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleOrderEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Order object
@@ -1675,6 +1700,7 @@ type BookAPI interface {
 	SyncCreate(obj *bookstore.Book) error
 	Update(obj *bookstore.Book) error
 	SyncUpdate(obj *bookstore.Book) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Book) error
 	Find(meta *api.ObjectMeta) (*Book, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Book, error)
@@ -1778,6 +1804,30 @@ func (api *bookAPI) SyncUpdate(obj *bookstore.Book) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Book object
+func (api *bookAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Book().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Book
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleBookEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Book object
@@ -2607,6 +2657,7 @@ type PublisherAPI interface {
 	SyncCreate(obj *bookstore.Publisher) error
 	Update(obj *bookstore.Publisher) error
 	SyncUpdate(obj *bookstore.Publisher) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Publisher) error
 	Find(meta *api.ObjectMeta) (*Publisher, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Publisher, error)
@@ -2703,6 +2754,30 @@ func (api *publisherAPI) SyncUpdate(obj *bookstore.Publisher) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Publisher object
+func (api *publisherAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Publisher().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Publisher
+	writeObj.Labels = obj.Labels
+
+	api.ct.handlePublisherEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Publisher object
@@ -3481,6 +3556,7 @@ type StoreAPI interface {
 	SyncCreate(obj *bookstore.Store) error
 	Update(obj *bookstore.Store) error
 	SyncUpdate(obj *bookstore.Store) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Store) error
 	Find(meta *api.ObjectMeta) (*Store, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Store, error)
@@ -3584,6 +3660,30 @@ func (api *storeAPI) SyncUpdate(obj *bookstore.Store) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Store object
+func (api *storeAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Store().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Store
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleStoreEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Store object
@@ -4413,6 +4513,7 @@ type CouponAPI interface {
 	SyncCreate(obj *bookstore.Coupon) error
 	Update(obj *bookstore.Coupon) error
 	SyncUpdate(obj *bookstore.Coupon) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Coupon) error
 	Find(meta *api.ObjectMeta) (*Coupon, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Coupon, error)
@@ -4509,6 +4610,30 @@ func (api *couponAPI) SyncUpdate(obj *bookstore.Coupon) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Coupon object
+func (api *couponAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Coupon().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Coupon
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleCouponEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Coupon object
@@ -5295,6 +5420,7 @@ type CustomerAPI interface {
 	SyncCreate(obj *bookstore.Customer) error
 	Update(obj *bookstore.Customer) error
 	SyncUpdate(obj *bookstore.Customer) error
+	Label(obj *api.Label) error
 	Delete(obj *bookstore.Customer) error
 	Find(meta *api.ObjectMeta) (*Customer, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Customer, error)
@@ -5391,6 +5517,30 @@ func (api *customerAPI) SyncUpdate(obj *bookstore.Customer) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Customer object
+func (api *customerAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.BookstoreV1().Customer().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Customer
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleCustomerEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Customer object

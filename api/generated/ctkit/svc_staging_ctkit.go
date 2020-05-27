@@ -686,6 +686,7 @@ type BufferAPI interface {
 	SyncCreate(obj *staging.Buffer) error
 	Update(obj *staging.Buffer) error
 	SyncUpdate(obj *staging.Buffer) error
+	Label(obj *api.Label) error
 	Delete(obj *staging.Buffer) error
 	Find(meta *api.ObjectMeta) (*Buffer, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Buffer, error)
@@ -801,6 +802,30 @@ func (api *bufferAPI) SyncUpdate(obj *staging.Buffer) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Buffer object
+func (api *bufferAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.StagingV1().Buffer().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Buffer
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleBufferEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Buffer object

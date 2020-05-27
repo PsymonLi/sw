@@ -686,6 +686,7 @@ type BucketAPI interface {
 	SyncCreate(obj *objstore.Bucket) error
 	Update(obj *objstore.Bucket) error
 	SyncUpdate(obj *objstore.Bucket) error
+	Label(obj *api.Label) error
 	Delete(obj *objstore.Bucket) error
 	Find(meta *api.ObjectMeta) (*Bucket, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Bucket, error)
@@ -782,6 +783,30 @@ func (api *bucketAPI) SyncUpdate(obj *objstore.Bucket) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Bucket object
+func (api *bucketAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ObjstoreV1().Bucket().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Bucket
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleBucketEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Bucket object
@@ -1560,6 +1585,7 @@ type ObjectAPI interface {
 	SyncCreate(obj *objstore.Object) error
 	Update(obj *objstore.Object) error
 	SyncUpdate(obj *objstore.Object) error
+	Label(obj *api.Label) error
 	Delete(obj *objstore.Object) error
 	Find(meta *api.ObjectMeta) (*Object, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Object, error)
@@ -1656,6 +1682,30 @@ func (api *objectAPI) SyncUpdate(obj *objstore.Object) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Object object
+func (api *objectAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.ObjstoreV1().Object().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Object
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleObjectEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Object object

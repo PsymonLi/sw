@@ -686,6 +686,7 @@ type SecurityGroupAPI interface {
 	SyncCreate(obj *security.SecurityGroup) error
 	Update(obj *security.SecurityGroup) error
 	SyncUpdate(obj *security.SecurityGroup) error
+	Label(obj *api.Label) error
 	Delete(obj *security.SecurityGroup) error
 	Find(meta *api.ObjectMeta) (*SecurityGroup, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*SecurityGroup, error)
@@ -782,6 +783,30 @@ func (api *securitygroupAPI) SyncUpdate(obj *security.SecurityGroup) error {
 	}
 
 	return writeErr
+}
+
+// Label labels SecurityGroup object
+func (api *securitygroupAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().SecurityGroup().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.SecurityGroup
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleSecurityGroupEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes SecurityGroup object
@@ -1560,6 +1585,7 @@ type NetworkSecurityPolicyAPI interface {
 	SyncCreate(obj *security.NetworkSecurityPolicy) error
 	Update(obj *security.NetworkSecurityPolicy) error
 	SyncUpdate(obj *security.NetworkSecurityPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *security.NetworkSecurityPolicy) error
 	Find(meta *api.ObjectMeta) (*NetworkSecurityPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*NetworkSecurityPolicy, error)
@@ -1656,6 +1682,30 @@ func (api *networksecuritypolicyAPI) SyncUpdate(obj *security.NetworkSecurityPol
 	}
 
 	return writeErr
+}
+
+// Label labels NetworkSecurityPolicy object
+func (api *networksecuritypolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().NetworkSecurityPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.NetworkSecurityPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleNetworkSecurityPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes NetworkSecurityPolicy object
@@ -2434,6 +2484,7 @@ type AppAPI interface {
 	SyncCreate(obj *security.App) error
 	Update(obj *security.App) error
 	SyncUpdate(obj *security.App) error
+	Label(obj *api.Label) error
 	Delete(obj *security.App) error
 	Find(meta *api.ObjectMeta) (*App, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*App, error)
@@ -2530,6 +2581,30 @@ func (api *appAPI) SyncUpdate(obj *security.App) error {
 	}
 
 	return writeErr
+}
+
+// Label labels App object
+func (api *appAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().App().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.App
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAppEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes App object
@@ -3308,6 +3383,7 @@ type FirewallProfileAPI interface {
 	SyncCreate(obj *security.FirewallProfile) error
 	Update(obj *security.FirewallProfile) error
 	SyncUpdate(obj *security.FirewallProfile) error
+	Label(obj *api.Label) error
 	Delete(obj *security.FirewallProfile) error
 	Find(meta *api.ObjectMeta) (*FirewallProfile, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FirewallProfile, error)
@@ -3404,6 +3480,30 @@ func (api *firewallprofileAPI) SyncUpdate(obj *security.FirewallProfile) error {
 	}
 
 	return writeErr
+}
+
+// Label labels FirewallProfile object
+func (api *firewallprofileAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().FirewallProfile().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.FirewallProfile
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleFirewallProfileEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes FirewallProfile object
@@ -4182,6 +4282,7 @@ type CertificateAPI interface {
 	SyncCreate(obj *security.Certificate) error
 	Update(obj *security.Certificate) error
 	SyncUpdate(obj *security.Certificate) error
+	Label(obj *api.Label) error
 	Delete(obj *security.Certificate) error
 	Find(meta *api.ObjectMeta) (*Certificate, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Certificate, error)
@@ -4278,6 +4379,30 @@ func (api *certificateAPI) SyncUpdate(obj *security.Certificate) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Certificate object
+func (api *certificateAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().Certificate().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Certificate
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleCertificateEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Certificate object
@@ -5056,6 +5181,7 @@ type TrafficEncryptionPolicyAPI interface {
 	SyncCreate(obj *security.TrafficEncryptionPolicy) error
 	Update(obj *security.TrafficEncryptionPolicy) error
 	SyncUpdate(obj *security.TrafficEncryptionPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *security.TrafficEncryptionPolicy) error
 	Find(meta *api.ObjectMeta) (*TrafficEncryptionPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TrafficEncryptionPolicy, error)
@@ -5152,6 +5278,30 @@ func (api *trafficencryptionpolicyAPI) SyncUpdate(obj *security.TrafficEncryptio
 	}
 
 	return writeErr
+}
+
+// Label labels TrafficEncryptionPolicy object
+func (api *trafficencryptionpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.SecurityV1().TrafficEncryptionPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.TrafficEncryptionPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleTrafficEncryptionPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes TrafficEncryptionPolicy object

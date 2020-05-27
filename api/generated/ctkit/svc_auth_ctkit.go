@@ -694,6 +694,7 @@ type UserAPI interface {
 	SyncCreate(obj *auth.User) error
 	Update(obj *auth.User) error
 	SyncUpdate(obj *auth.User) error
+	Label(obj *api.Label) error
 	Delete(obj *auth.User) error
 	Find(meta *api.ObjectMeta) (*User, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*User, error)
@@ -809,6 +810,30 @@ func (api *userAPI) SyncUpdate(obj *auth.User) error {
 	}
 
 	return writeErr
+}
+
+// Label labels User object
+func (api *userAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.AuthV1().User().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.User
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleUserEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes User object
@@ -1748,6 +1773,7 @@ type AuthenticationPolicyAPI interface {
 	SyncCreate(obj *auth.AuthenticationPolicy) error
 	Update(obj *auth.AuthenticationPolicy) error
 	SyncUpdate(obj *auth.AuthenticationPolicy) error
+	Label(obj *api.Label) error
 	Delete(obj *auth.AuthenticationPolicy) error
 	Find(meta *api.ObjectMeta) (*AuthenticationPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AuthenticationPolicy, error)
@@ -1863,6 +1889,30 @@ func (api *authenticationpolicyAPI) SyncUpdate(obj *auth.AuthenticationPolicy) e
 	}
 
 	return writeErr
+}
+
+// Label labels AuthenticationPolicy object
+func (api *authenticationpolicyAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.AuthV1().AuthenticationPolicy().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.AuthenticationPolicy
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleAuthenticationPolicyEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes AuthenticationPolicy object
@@ -2794,6 +2844,7 @@ type RoleAPI interface {
 	SyncCreate(obj *auth.Role) error
 	Update(obj *auth.Role) error
 	SyncUpdate(obj *auth.Role) error
+	Label(obj *api.Label) error
 	Delete(obj *auth.Role) error
 	Find(meta *api.ObjectMeta) (*Role, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Role, error)
@@ -2890,6 +2941,30 @@ func (api *roleAPI) SyncUpdate(obj *auth.Role) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Role object
+func (api *roleAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.AuthV1().Role().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Role
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRoleEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Role object
@@ -3668,6 +3743,7 @@ type RoleBindingAPI interface {
 	SyncCreate(obj *auth.RoleBinding) error
 	Update(obj *auth.RoleBinding) error
 	SyncUpdate(obj *auth.RoleBinding) error
+	Label(obj *api.Label) error
 	Delete(obj *auth.RoleBinding) error
 	Find(meta *api.ObjectMeta) (*RoleBinding, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RoleBinding, error)
@@ -3764,6 +3840,30 @@ func (api *rolebindingAPI) SyncUpdate(obj *auth.RoleBinding) error {
 	}
 
 	return writeErr
+}
+
+// Label labels RoleBinding object
+func (api *rolebindingAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.AuthV1().RoleBinding().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.RoleBinding
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRoleBindingEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes RoleBinding object
@@ -4542,6 +4642,7 @@ type UserPreferenceAPI interface {
 	SyncCreate(obj *auth.UserPreference) error
 	Update(obj *auth.UserPreference) error
 	SyncUpdate(obj *auth.UserPreference) error
+	Label(obj *api.Label) error
 	Delete(obj *auth.UserPreference) error
 	Find(meta *api.ObjectMeta) (*UserPreference, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*UserPreference, error)
@@ -4638,6 +4739,30 @@ func (api *userpreferenceAPI) SyncUpdate(obj *auth.UserPreference) error {
 	}
 
 	return writeErr
+}
+
+// Label labels UserPreference object
+func (api *userpreferenceAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.AuthV1().UserPreference().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.UserPreference
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleUserPreferenceEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes UserPreference object

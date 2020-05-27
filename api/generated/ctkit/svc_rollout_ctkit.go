@@ -686,6 +686,7 @@ type RolloutAPI interface {
 	SyncCreate(obj *rollout.Rollout) error
 	Update(obj *rollout.Rollout) error
 	SyncUpdate(obj *rollout.Rollout) error
+	Label(obj *api.Label) error
 	Delete(obj *rollout.Rollout) error
 	Find(meta *api.ObjectMeta) (*Rollout, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Rollout, error)
@@ -807,6 +808,30 @@ func (api *rolloutAPI) SyncUpdate(obj *rollout.Rollout) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Rollout object
+func (api *rolloutAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.RolloutV1().Rollout().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Rollout
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRolloutEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Rollout object
@@ -1789,6 +1814,7 @@ type RolloutActionAPI interface {
 	SyncCreate(obj *rollout.RolloutAction) error
 	Update(obj *rollout.RolloutAction) error
 	SyncUpdate(obj *rollout.RolloutAction) error
+	Label(obj *api.Label) error
 	Delete(obj *rollout.RolloutAction) error
 	Find(meta *api.ObjectMeta) (*RolloutAction, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RolloutAction, error)
@@ -1885,6 +1911,30 @@ func (api *rolloutactionAPI) SyncUpdate(obj *rollout.RolloutAction) error {
 	}
 
 	return writeErr
+}
+
+// Label labels RolloutAction object
+func (api *rolloutactionAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.RolloutV1().RolloutAction().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.RolloutAction
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleRolloutActionEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes RolloutAction object

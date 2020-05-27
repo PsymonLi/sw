@@ -694,6 +694,7 @@ type NeighborAPI interface {
 	SyncCreate(obj *routing.Neighbor) error
 	Update(obj *routing.Neighbor) error
 	SyncUpdate(obj *routing.Neighbor) error
+	Label(obj *api.Label) error
 	Delete(obj *routing.Neighbor) error
 	Find(meta *api.ObjectMeta) (*Neighbor, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Neighbor, error)
@@ -790,6 +791,30 @@ func (api *neighborAPI) SyncUpdate(obj *routing.Neighbor) error {
 	}
 
 	return writeErr
+}
+
+// Label labels Neighbor object
+func (api *neighborAPI) Label(obj *api.Label) error {
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, err = apicl.RoutingV1().Neighbor().Label(context.Background(), obj)
+		return err
+	}
+
+	ctkitObj, err := api.Find(obj.GetObjectMeta())
+	if err != nil {
+		return err
+	}
+	writeObj := ctkitObj.Neighbor
+	writeObj.Labels = obj.Labels
+
+	api.ct.handleNeighborEvent(&kvstore.WatchEvent{Object: &writeObj, Type: kvstore.Updated})
+	return nil
 }
 
 // Delete deletes Neighbor object
