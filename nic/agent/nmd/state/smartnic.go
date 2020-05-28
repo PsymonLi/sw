@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pensando/sw/events/generated/eventtypes"
@@ -103,7 +104,9 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 	// notifications from CMD before we actually shut down the updates channel and we
 	// don't want to do react to each of them.
 	if oldNic != nil {
-		decommission := oldNic.Spec.MgmtMode == cmd.DistributedServiceCardSpec_NETWORK.String() &&
+
+		// TODO fix this in nmd proto to use lowercase strEnums
+		decommission := strings.ToLower(oldNic.Spec.MgmtMode) == cmd.DistributedServiceCardSpec_NETWORK.String() &&
 			nic.Spec.MgmtMode == cmd.DistributedServiceCardSpec_HOST.String()
 
 		// TODO : Discuss if deAdmission code path has to be completely removed
