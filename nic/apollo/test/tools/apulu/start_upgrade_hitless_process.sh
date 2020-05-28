@@ -35,7 +35,7 @@ trap trap_finish EXIT SIGTERM
 # start processes
 $BUILD_DIR/bin/pciemgrd -d &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
-sudo $PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS}
+$PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS} &
 
 upg_wait_for_pdsagent
 touch /tmp/agent_up

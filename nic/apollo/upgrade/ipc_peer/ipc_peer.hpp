@@ -34,7 +34,7 @@ class ipc_peer_ctx {
 public:
     ipc_peer_ctx() { fd_ = -1; recv_fd_ = -1; };
     ~ipc_peer_ctx() {};
-    static ipc_peer_ctx *factory(const char *path, struct ev_loop *loop);
+    static ipc_peer_ctx *factory(const char *path, uint16_t port, struct ev_loop *loop);
     static void destroy(ipc_peer_ctx *ctx);
     ipc_peer_recv_cb_t recv_cb;
     ipc_peer_err_cb_t err_cb;
@@ -50,6 +50,7 @@ public:
 private:
     union {
         struct sockaddr    sa_;
+        struct sockaddr_in in_;
         struct sockaddr_un un_;
     };
     size_t sa_sz_;
@@ -58,7 +59,7 @@ private:
     struct ev_loop *loop_;
 
 private:
-    ipc_peer_ctx *init_(const char *path, struct ev_loop *loop);
+    ipc_peer_ctx *init_(const char *path, uint16_t port, struct ev_loop *loop);
 };
 
 typedef struct ipc_peer_msg_s {

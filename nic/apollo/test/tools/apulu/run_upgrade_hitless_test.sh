@@ -12,6 +12,7 @@ source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
 rm -rf /update/*       # upgrade init mode
 rm -rf /root/.pcie*  # pciemgrd saves here in sim mode
 rm -rf /sw/nic/*.log /sw/nic/core.*
+mkdir -p /update
 
 function kill_process() {
     pid=`pgrep -f $1`

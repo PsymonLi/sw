@@ -116,7 +116,8 @@ upg_peer_init (bool client)
 {
     sdk_ret_t ret;
 
-    g_ipc_peer_ctx = ipc_peer_ctx::factory(UPGRADE_IPC_PEER_SOCK_NAME,
+    g_ipc_peer_ctx = ipc_peer_ctx::factory(NULL,
+                                           PDS_IPC_PEER_TCP_PORT_UPGMGR,
                                            g_upg_event_thread->ev_loop());
     if (!g_ipc_peer_ctx) {
         UPG_TRACE_ERR("Peer IPC create failed");
@@ -173,6 +174,7 @@ upg_event_send_to_peer_hdlr (upg_stage_t stage, std::string svc_name,
         if (ret != SDK_RET_OK) {
             upg_status_t status = UPG_STATUS_FAIL;
             upg_interactive_response(&status, sizeof(status));
+            return;
         }
         connected = true;
     }

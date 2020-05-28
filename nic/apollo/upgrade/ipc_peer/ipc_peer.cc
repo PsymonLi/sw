@@ -9,9 +9,29 @@
 //----------------------------------------------------------------------------
 
 #include <fcntl.h>
+#include <arpa/inet.h>
 #include "nic/sdk/upgrade/core/logger.hpp"
 #include "nic/sdk/include/sdk/mem.hpp"
 #include "ipc_peer.hpp"
+
+static int
+socket_in (uint16_t port, struct sockaddr_in *a)
+{
+    int fd;
+    int on = 1;
+
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0) {
+        return -1;
+    }
+
+    memset(a, 0, sizeof(*a));
+    a->sin_family = AF_INET;
+    a->sin_port = htons(port);
+    a->sin_addr.s_addr = inet_addr("127.0.0.1");
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    return fd;
+}
 
 static int
 socket_un (const char *path, struct sockaddr_un *a)
@@ -30,13 +50,20 @@ socket_un (const char *path, struct sockaddr_un *a)
 }
 
 ipc_peer_ctx *
-ipc_peer_ctx::init_(const char *path, struct ev_loop *loop) {
-    int fd = socket_un(path, &un_);
+ipc_peer_ctx::init_(const char *path, uint16_t port, struct ev_loop *loop) {
+    int fd;
+
+    if (path) {
+        fd = socket_un(path, &un_);
+        sa_sz_ = sizeof(struct sockaddr_un);
+    } else {
+        fd = socket_in(port, &in_);
+        sa_sz_ = sizeof(struct sockaddr_in);
+    }
 
     if (fd < 0) {
         return NULL;
     }
-    sa_sz_ = sizeof(struct sockaddr_un);
     fd_ = fd;
     recv_fd_ = -1;
     loop_ = loop;
@@ -45,7 +72,7 @@ ipc_peer_ctx::init_(const char *path, struct ev_loop *loop) {
 }
 
 ipc_peer_ctx *
-ipc_peer_ctx::factory(const char *path, struct ev_loop *loop) {
+ipc_peer_ctx::factory(const char *path, uint16_t port, struct ev_loop *loop) {
     ipc_peer_ctx *ctx;
     void *mem;
 
@@ -55,7 +82,7 @@ ipc_peer_ctx::factory(const char *path, struct ev_loop *loop) {
         return NULL;
     }
     ctx = new (mem) ipc_peer_ctx();
-    return ctx->init_(path, loop);
+    return ctx->init_(path, port, loop);
 }
 
 void
@@ -141,7 +168,9 @@ client_connect_cb (void *arg)
 
 sdk_ret_t
 ipc_peer_ctx::listen(void) {
-    unlink(un_.sun_path);
+    if (sa_.sa_family == AF_UNIX) {
+        unlink(un_.sun_path);
+    }
     if (bind(fd(), &sa_, sa_sz_) < 0) {
         UPG_TRACE_ERR("IPC peer bind failed, error %s", strerror(errno));
         return SDK_RET_ERR;

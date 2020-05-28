@@ -29,6 +29,11 @@ upg_init (pds_init_params_t *params)
                     mode == upg_mode_t::UPGRADE_MODE_GRACEFUL ? "Graceful" :
                     "Hitless");
 
+    PDS_TRACE_DEBUG("Setting bootup domain to %s",
+                    dom == sdk::upg::upg_dom_t::UPGRADE_DOMAIN_NONE ? "NONE" :
+                    dom == sdk::upg::upg_dom_t::UPGRADE_DOMAIN_A ? "Dom_A" :
+                    "Dom_B");
+
     // initialize upgrade state and call the upgade compatibitly checks
     if ((g_upg_state = upg_state::factory(params)) == NULL) {
         PDS_TRACE_ERR("Upgrade state creation failed");

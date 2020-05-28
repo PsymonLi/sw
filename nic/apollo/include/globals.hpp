@@ -21,6 +21,8 @@
 #define PDS_GRPC_PORT_OPERD               11359
 /// grpc port for operd default plugin
 #define PDS_GRPC_PORT_OPERD_PEN_PLUGIN    11360
+/// ipc peer port number for upgrade manager
+#define PDS_IPC_PEER_TCP_PORT_UPGMGR      11361
 
 /// thread ids
 /// [PDS_THREAD_ID_MIN - PDS_THREAD_ID_MAX] are for PDS HAL threads
