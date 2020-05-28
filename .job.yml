@@ -315,18 +315,19 @@ dependencies:
   iota/harness:
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
   iota/scripts:
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
     - reference: iota/test/standalone/precheckin/windows
     - reference: iota/test/standalone/precheckin/athena
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
   iota/svcs:
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
     - reference: iota/test/venice
     - reference: iota/test/venice/vcenter
-  iota/test/apollo:
-    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
   iota/test/apulu:
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
   iota/test/athena:
