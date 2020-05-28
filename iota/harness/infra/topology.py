@@ -347,7 +347,6 @@ class Node(object):
                         device.SetMac(port.MAC)
                         break
                     device.read_from_console()       
-                    device.SetNicFirewallRules()
 
                     if self.__prov_spec:
                         nic_prov_spec = self.__prov_spec.nics[idx].nic
@@ -357,6 +356,7 @@ class Node(object):
                         device.SetMode(defaultMode)
                         device.SetNaplesPipeline(defaultPipeline)
 
+                    device.SetNicFirewallRules()
                     device.SetPorts(getattr(nic, 'Ports', []))
                     if not GlobalOptions.enable_multi_naples:
                         break
