@@ -7,25 +7,29 @@ meta:
 testcases:
     -   name        : DISRUPTIVE_UPGRADE
         testcase    : testcases.naples_upgrade.disruptive_upgrade
+        stress      : True
         disable     : False
         ignore      : False
         iterators   :
-            type    : simple
+            type    : nested
             option  : [""]
+            selection : [ any, all ]  # upgrade all or any
         args        :
             sleep   : 150
 
     -   name        : DISRUPTIVE_UPGRADE_GRACEFUL
         testcase    : testcases.naples_upgrade.disruptive_upgrade
+        stress      : True
         disable     : False
         ignore      : False
         iterators   :
-            type    : simple
+            type    : nested
             option  : [""]
+            selection : [ any ]  # upgrade all or any
             workload_type : [ remote ]
             workload_scope : [ inter-subnet ]
         args        :
             type    : remote_only
             sleep   : 300
             mode    : "graceful"
-            expected_down_time : 40
+            allowed_down_time : 40

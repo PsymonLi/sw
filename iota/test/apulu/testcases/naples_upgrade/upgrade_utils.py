@@ -66,12 +66,12 @@ def __calculate_upg_state_duration(node, records):
 def __dump_upg_log(node, logs):
     api.Logger.SetNode(node)
     indent = "-" * 25
-    api.Logger.info(f"{indent} U P G R A D E   L O G S {indent}")
+    api.Logger.verbose(f"{indent} U P G R A D E   L O G S {indent}")
     api.Logger.SetSkipLogPrefix(True)
     for log in logs:
-        api.Logger.info(log)
+        api.Logger.verbose(log)
     api.Logger.SetSkipLogPrefix(False)
-    api.Logger.info(f"{indent} U P G R A D E   L O G S   E N D {indent}")
+    api.Logger.verbose(f"{indent} U P G R A D E   L O G S   E N D {indent}")
     api.Logger.SetNode(None)
 
 def __display_upg_state_transition(node, records):

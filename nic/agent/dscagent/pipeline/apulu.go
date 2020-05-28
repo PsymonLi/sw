@@ -191,6 +191,7 @@ func (a *ApuluAPI) PipelineInit() error {
 			log.Error(errors.Wrapf(types.ErrUnmarshal, "Err: %v", err))
 		} else {
 			a.InfraAPI.StoreConfig(obj)
+			a.HandleDevice(types.Update)
 			a.HandleDSCInterfaceInfo(obj)
 		}
 	}
