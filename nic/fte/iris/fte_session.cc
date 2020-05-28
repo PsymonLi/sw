@@ -89,6 +89,9 @@ sync_session_in_fte (fte_session_args_t *sess_args)
 
         hal::proto_msg_dump(spec);
 
+        // Process pkt with db open
+        fte::impl::cfg_db_open();
+
         //Init context
         ret = ctx.init(&spec, &status, &stats, l2seg, sess_args->vrf_handle, iflow, rflow,
                        feature_state, num_features);
@@ -102,6 +105,9 @@ sync_session_in_fte (fte_session_args_t *sess_args)
         }
 
         ctx.process();
+
+        // close the config db
+        fte::impl::cfg_db_close();
     }
 
     if (feature_state) {
