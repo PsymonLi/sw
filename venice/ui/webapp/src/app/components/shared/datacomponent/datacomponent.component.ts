@@ -197,11 +197,6 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
         if (this.getSelectedDataObjects().length <= 0) {
           return;
         }
-
-        const allSuccessSummary = 'Deleted';
-        const partialSuccessSummary = 'Partially deleted';
-        const msg = 'Deleted ' + selectedDataObjects.length + ' selected records.';
-
         const successMsg = 'Successfully deleted  ' + selectedDataObjects.length + ' records.';
         const failureMsg = 'Failed to delete ' + selectedDataObjects.length + ' records.';
         this.invokeDeleteMultipleRecordsBulkedit(successMsg, failureMsg);  // use bulkedit
@@ -218,9 +213,7 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
    * @param partialSuccessSummary
    * @param msg
    */
-  invokeAPIonMultipleRecords(observables: Observable<any>[] = [], allSuccessSummary: string, partialSuccessSummary: string, msg: string,
-    successCallback: () => void = null, errorCallback: (error: any) => void = null
-  ) {
+  invokeAPIonMultipleRecords(observables: Observable<any>[] = [], allSuccessSummary: string, partialSuccessSummary: string, msg: string) {
     if (observables.length <= 0) {
       return;
     }
@@ -230,27 +223,28 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
         const isAllOK = Utility.isForkjoinResultAllOK(results);
         if (isAllOK) {
           this.controllerService.invokeSuccessToaster(allSuccessSummary, msg);
-          if (successCallback) {
-            successCallback();
-          }
+          this.onInvokeAPIonMultipleRecordsSuccess();
         } else {
           const error = Utility.joinErrors(results);
           this.controllerService.invokeRESTErrorToaster(partialSuccessSummary, error);
-          if (errorCallback) {
-            errorCallback(error);
-          }
+          this.onInvokeAPIonMultipleRecordsFailure();
         }
       },
       (error) => {
         this.operationOnMultiRecordsComplete.emit(error);
         this.controllerService.invokeRESTErrorToaster('Failure', error);
-        if (errorCallback) {
-          errorCallback(error);
-        }
+        this.onInvokeAPIonMultipleRecordsFailure();
       }
     );
     this.subscriptions.push(sub);
   }
+
+  /**
+   * Overridable API for ForkJoin success and failure
+  */
+  onInvokeAPIonMultipleRecordsSuccess () {}
+  onInvokeAPIonMultipleRecordsFailure() {}
+
   /**
    * This API perform bulkedit call.
    * @param veniceObjects

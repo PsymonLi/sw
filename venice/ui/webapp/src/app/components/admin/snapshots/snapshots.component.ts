@@ -476,6 +476,15 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
     return filenames;
   }
 
+   /**
+  * Overrides callback function
+  */
+  onInvokeAPIonMultipleRecordsSuccess () {
+    this.refresh();
+  }
+
+  onInvokeAPIonMultipleRecordsFailure() {}
+
   /**
   * This API serves html template
   */
@@ -493,6 +502,5 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
       this.fileUploadProgress = (progress > this.fileUploadProgress) ? progress : this.fileUploadProgress;
     }
   }
-
-  /** File upload API  END */
 }
+  /** File upload API  END */

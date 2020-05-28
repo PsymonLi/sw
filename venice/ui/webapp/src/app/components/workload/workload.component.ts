@@ -566,13 +566,11 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
    * @param updatedWorkloads
    */
   bulkeditLabels(updatedWorkloads: WorkloadWorkload[]) {
-
     const successMsg: string = 'Updated ' + updatedWorkloads.length + ' workload labels';
     const failureMsg: string = 'Failed to update workload labels';
     const stagingBulkEditAction = this.buildBulkEditLabelsPayload(updatedWorkloads);
     this.bulkEditHelper(updatedWorkloads, stagingBulkEditAction, successMsg, failureMsg );
   }
-
 
   updateWithForkjoin(updatedWorkloads: WorkloadWorkload[]) {
     const observables = this.getObservables(updatedWorkloads);
@@ -581,14 +579,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
       const partialSuccessSummary = 'Partially update';
       const msg = 'Marked selected ' + updatedWorkloads.length + '  updated.';
       const self = this;
-      this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg,
-        () => {
-          self.handleEditCancel(null);
-        }, // onSuccess callback
-        () => {
-          self.handleEditCancel(null);
-        }  // onFailure call back
-      );
+      this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg);
     }
   }
 

@@ -344,12 +344,12 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     this.handleForkJoin(observables, summary, objectType);
   }
 
-  onForkJoinSuccess() {
+  onInvokeAPIonMultipleRecordsSuccess() {
     this.inLabelEditMode = false;
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
-    this.onForkJoinSuccess();
+    this.onInvokeAPIonMultipleRecordsSuccess();
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
@@ -372,7 +372,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
       if (successCount > 0) {
         const msg = 'Successfully updated ' + successCount.toString() + ' ' + objectType + '.';
         this._controllerService.invokeSuccessToaster(summary, msg);
-        this.onForkJoinSuccess();
+        this.onInvokeAPIonMultipleRecordsSuccess();
       }
       if (failCount > 0) {
         this._controllerService.invokeRESTErrorToaster(summary, errors.join('\n'));

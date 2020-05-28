@@ -1051,7 +1051,7 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
       if (successCount > 0) {
         const msg = 'Successfully updated ' + successCount.toString() + ' ' + objectType + '.';
         this._controllerService.invokeSuccessToaster(summary, msg);
-        this.onForkJoinSuccess();
+        this.onInvokeAPIonMultipleRecordsSuccess();
       }
       if (failCount > 0) {
         this._controllerService.invokeRESTErrorToaster(summary, errors.join('\n'));
@@ -1066,7 +1066,7 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
     );
   }
 
-  onForkJoinSuccess() {
+  onInvokeAPIonMultipleRecordsSuccess() {
     this.inLabelEditMode = false;
     this.inProfileAssigningMode = false;
     this.tableContainer.selectedDataObjects = [];
@@ -1076,7 +1076,7 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.setSavebuttonState(true);
-    this.onForkJoinSuccess();
+    this.onInvokeAPIonMultipleRecordsSuccess();
   }
 
   private setSavebuttonState(flag: boolean) {

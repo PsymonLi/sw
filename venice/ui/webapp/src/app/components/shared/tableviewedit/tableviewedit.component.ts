@@ -602,13 +602,36 @@ export abstract class TablevieweditAbstract<I, T extends I> extends TableviewAbs
    * @param summary
    * @param msg
    */
-  deleteMultipleRecords(selectedDataObjects: T[], summary: string, partialSuccessSummary: string, msg: string) {
+  deleteMultipleRecords(selectedDataObjects: T[], summary: string, partialSuccessSummary: string, msg: string, ) {
     const observables = [];
     for (let i = 0; selectedDataObjects && i < selectedDataObjects.length; i++) {
       const observable = this.deleteRecord(selectedDataObjects[i]);
       observables.push(observable);
     }
     this.invokeAPIonMultipleRecords(observables, summary, partialSuccessSummary, msg);
+  }
+
+  /**
+   * This API is used in html template. P-table with checkbox enables user to select multiple records. User can delete multiple records.
+   * This function asks for user confirmation and invokes the REST API.
+   * Uses ForkJoin
+   */
+  onDeleteSelectedRowsForkJoin($event) {
+    const selectedDataObjects = this.getSelectedDataObjects();
+    this.controllerService.invokeConfirm({
+      header: 'Delete selected ' + selectedDataObjects.length + ' records?',
+      message: 'This action cannot be reversed',
+      acceptLabel: 'Delete',
+      accept: () => {
+        if (this.getSelectedDataObjects().length <= 0) {
+          return;
+        }
+        const allSuccessSummary = 'Deleted';
+        const partialSuccessSummary = 'Partially deleted';
+        const msg = 'Deleted ' + selectedDataObjects.length + ' selected records.';
+        this.deleteMultipleRecords(selectedDataObjects, allSuccessSummary, partialSuccessSummary, msg); // with forkjoin
+      }
+    });
   }
 }
 
