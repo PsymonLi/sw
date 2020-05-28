@@ -29,27 +29,41 @@ def validate_recv_pkt(recv_pkts, gen_pkts):
     count = 0
     unmatched_pkts = []
 
-    # zero out outer udp csum since we ignore it for validation
-    gen_pkts[0]['UDP'].chksum = 0
+    # zero out user pkt IP and UDP csum becoz of NAT translation in regular case
+    # zero out outer udp csum in encap case since mplsoudp src port is random, 
+    # but for now do both IP and UDP 
+    gen_pkts[0].getlayer(IP, nb=1).chksum = 0
+    gen_pkts[0].getlayer(UDP, nb=1).chksum = 0
+
+    if gen_pkts[0].getlayer(IP, nb=2) is not None:
+        gen_pkts[0].getlayer(IP, nb=2).chksum = 0
+    if gen_pkts[0].getlayer(UDP, nb=2) is not None:
+        gen_pkts[0].getlayer(UDP, nb=2).chksum = 0
+
 
     for r_pkt in recv_pkts:
-        if True:
-        #if encap_info['type'] == 'mplsoudp':
-            r_pkt['UDP'].chksum = 0
-            if MPLS in r_pkt: 
-                # TODO: check if it's a bug
-                r_pkt.getlayer(MPLS, nb=1).ttl = 0
-                r_pkt.getlayer(MPLS, nb=2).ttl = 0
-                if UDP in r_pkt['MPLS'].underlayer:
-                    # ignore randomly generated sport when comparing mpls-in-udp pkts
-                    r_pkt['UDP'].sport = 0  
+        r_pkt.getlayer(IP, nb=1).chksum = 0
+        r_pkt.getlayer(UDP, nb=1).chksum = 0
+
+        if MPLS in r_pkt: 
+            # TODO: check if it's a bug
+            r_pkt.getlayer(MPLS, nb=1).ttl = 0
+            r_pkt.getlayer(MPLS, nb=2).ttl = 0
+            if UDP in r_pkt['MPLS'].underlayer:
+                # ignore randomly generated sport when comparing mpls-in-udp pkts
+                r_pkt.getlayer(UDP, nb=1).sport = 0
+            
+            r_pkt.getlayer(IP, nb=2).chksum = 0
+            r_pkt.getlayer(UDP, nb=2).chksum = 0
+
             #print("Received pkt: {}".format(r_pkt.show()))
             #print("Generated pkt: {}".format(gen_pkts[0].show()))
 
-            if r_pkt == gen_pkts[0]:
-                count += 1    
-            else:
-                unmatched_pkts.append(r_pkt)  
+
+        if r_pkt == gen_pkts[0]:
+            count += 1    
+        else:
+            unmatched_pkts.append(r_pkt)  
 
     if count != DEFAULT_NUM_RECV_PKTS:
         logging.error('FAIL !! - Received matching pkt count (%d pkts) '

@@ -27,3 +27,11 @@ testcases:
         enable  : True
         args    :
             type    : policy_2M
+
+    #-   name    : Data_Path_Test
+    #    testcase: testcases.networking.data_path
+    #    enable  : True
+    #    iterators :
+    #        type     : nested
+    #        nat      : ['yes', 'no']
+    

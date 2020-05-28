@@ -1,12 +1,33 @@
 #!/usr/bin/python3
 
-import iota.harness.api as api
 import json
 import os
 import time
-from iota.test.athena.config.netagent.hw_push_config import AddWorkloads
 from scapy.all import *
 from scapy.contrib.mpls import MPLS
+from enum import Enum
+from ipaddress import ip_address
+
+import iota.harness.api as api
+import iota.test.athena.utils.athena_app as athena_app_utils
+from iota.test.athena.utils.flow import FlowInfo 
+import iota.harness.infra.store as store
+
+DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
+DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
+DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
+DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
+DEFAULT_POLICY_JSON_FILENAME = '/config/policy.json'
+TEMPLATE_POLICY_JSON_FILENAME = '/config/template_policy.json'
+SEND_PKT_SCRIPT_FILENAME = '/scripts/send_pkt.py'
+RECV_PKT_SCRIPT_FILENAME = '/scripts/recv_pkt.py'
+CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+
+DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
+SNIFF_TIMEOUT = 5
+
+
+# ======= TODO START: move flow gen to another module ========= #
 
 FLOWS = [ {'sip' : '10.0.0.1', 'dip' : '10.0.0.65', 'proto' : 'UDP', 
             'src_port' : 100, 'dst_port' : 200},
@@ -15,160 +36,54 @@ FLOWS = [ {'sip' : '10.0.0.1', 'dip' : '10.0.0.65', 'proto' : 'UDP',
             {'sip' : '100.0.0.1', 'dip' : '100.0.10.1', 'proto' : 'UDP', 
             'src_port' : 60, 'dst_port' : 80} ]
 
+NAT_FLOW_INFO = { 'proto' : 'UDP', 'src_port' : 100, 'dst_port' : 200 }
+
 PROTO_NUM = {'UDP' : 17, 'TCP': 6, 'ICMP': 1}
-SNIFF_TIMEOUT = 5
-ATHENA_SEC_APP_RSTRT_SLEEP = 140 # secs
-
-DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
-DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
-DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
-DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
-DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
-DEFAULT_POLICY_JSON_FILENAME = './policy.json'
-CURR_DIR = os.path.dirname(os.path.realpath(__file__))
+NAT_PUBLIC_DST_IP = '100.0.0.1'
 
 
-class FlowInfo():
+class Feature(Enum):
+    L3          = 1
+    L3_w_NAT    = 2
 
-    def __init__(self):
-        self.smac = None
-        self.dmac = None
-        self.sip = None
-        self.dip = None
-        self.proto = None
-        self.src_port = None
-        self.dst_port = None
-        self.icmp_type = None
-        self.icmp_code = None 
+feat_to_vnic = { Feature.L3 : '1', Feature.L3_w_NAT : '2'}
 
-    # Setters
-    def set_smac(self, smac):
-        self.smac = smac
+vnic_to_vlan_offset = { '1' : { "up0" : 2, "up1" : 3}, 
+                        '2' : { "up0" : 4, "up1" : 5}}
 
-    def set_dmac(self, dmac):
-        self.dmac = dmac
+nat_flows = {'h2s' : defaultdict(list), 's2h' : defaultdict(list)}
 
-    def set_sip(self, sip):
-        self.sip = sip
 
-    def set_dip(self, dip):
-        self.dip = dip
-
-    def set_proto(self, proto):
-        self.proto = proto
-
-    def set_src_port(self, src_port):
-        self.src_port = src_port
-
-    def set_dst_port(self, dst_port):
-        self.dst_port = dst_port
-
-    def set_icmp_type(self, icmp_type):
-        self.icmp_type = icmp_type
-
-    def set_icmp_code(self, icmp_code):
-        self.icmp_code = icmp_code
-
-    # Getters
-    def get_smac(self):
-        return self.smac
-
-    def get_dmac(self):
-        return self.dmac
-
-    def get_sip(self):
-        return self.sip
-
-    def get_dip(self):
-        return self.dip
-
-    def get_proto(self):
-        return self.proto
-
-    def get_src_port(self):
-        return self.src_port
-
-    def get_dst_port(self):
-        return self.dst_port
-
-    def get_icmp_type(self):
-        return self.icmp_type
-
-    def get_icmp_code(self):
-        return self.icmp_code
-    
-    def display(self):
-        return ('{{SIP: {}, DIP: {}, Prot: {}, SrcPort: {}, '
-                'DstPort: {}}}'.format(self.sip, self.dip, self.proto,
-                self.src_port, self.dst_port))
-
-def Athena_sec_app_restart(tc):
-    
-    athena_sec_app_pid = None
-    req = api.Trigger_CreateExecuteCommandsRequest()
-    
-    cmd = "mv /policy.json /data/policy.json"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node.Name(), cmd)
-    
-    cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node.Name(), cmd)
-
-    resp = api.Trigger(req)
-    for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
-        if "mv" in cmd.command and cmd.exit_code != 0:
-            return api.types.status.FAILURE
-    
-        if "ps" in cmd.command and "athena_app" in cmd.stdout:
-            athena_sec_app_pid = cmd.stdout.strip().split()[1]
-    
-    if athena_sec_app_pid:
-        api.Logger.info("Athena sec app already running with pid %s. Kill and "
-                "restart." % athena_sec_app_pid)
-        
-        req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddNaplesCommand(req, tc.bitw_node.Name(), "kill -SIGTERM "\
-                                    + athena_sec_app_pid)
-        resp = api.Trigger(req)
-        for cmd in resp.commands:
-            api.PrintCommandResults(cmd)
-            if cmd.exit_code != 0:
-                return api.types.status.FAILURE
-
-    req = api.Trigger_CreateExecuteCommandsRequest()
-    cmd = "/nic/tools/start-sec-agent-iota.sh"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node.Name(), cmd, background = True)
-    resp = api.Trigger(req)
-    for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            return api.types.status.FAILURE
-    
-    # sleep for init to complete
-    time.sleep(ATHENA_SEC_APP_RSTRT_SLEEP)
-
-    athena_sec_app_pid = None
-    req = api.Trigger_CreateExecuteCommandsRequest()
-    cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node.Name(), cmd)
-
-    resp = api.Trigger(req)
-    for cmd in resp.commands:
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            return api.types.status.FAILURE
-    
-        if "ps" in cmd.command and "athena_app" in cmd.stdout:
-            athena_sec_app_pid = cmd.stdout.strip().split()[1]
-    
-    if athena_sec_app_pid:
-        api.Logger.info('Athena sec app restarted and has pid %s' % \
-                        athena_sec_app_pid)
+def get_test_feature(tc):
+    if getattr(tc.iterators, 'nat', None) == 'yes':
+        return (Feature.L3_w_NAT)
     else:
-        api.Logger.info('Athena sec app failed to restart')
-        return api.types.status.FAILURE
+        return (Feature.L3)
 
-    return api.types.status.SUCCESS
+
+def get_test_vnic(tc):
+    return feat_to_vnic[get_test_feature(tc)]
+
+
+def get_uplink_vlan(tc, uplink):
+    if uplink != "up0" and uplink != "up1":
+        raise Exception("Invalid uplink str %s" % uplink)
+
+    vnic = get_test_vnic(tc) 
+    vlan_offset = vnic_to_vlan_offset[vnic][uplink]
+    return (api.Testbed_GetVlanBase() + vlan_offset)
+
+
+def get_nat_flow_sip_dip(dp_dir = 'h2s', Rx = False, flow_id = 1):
+    Rx_or_Tx = 'Rx' if Rx else 'Tx'   
+    sip = nat_flows[dp_dir][Rx_or_Tx][flow_id].get_sip()
+    dip = nat_flows[dp_dir][Rx_or_Tx][flow_id].get_dip()
+
+    return (sip, dip)
+
+
+# ======= TODO END: move flow gen to another module ========= #
+
 
 def craft_pkt(_types, _dicts):
 
@@ -225,7 +140,9 @@ class Args():
         self.Rx = None
         self._dir = None
         self.proto = None
-
+        self.nat = None 
+        
+        self.flow_id = None
         self.smac = None
         self.dmac = None
         self.vlan = None
@@ -239,7 +156,7 @@ def setup_pkt(_args):
     dicts = []
 
     #print("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args._dir, _args.Rx))
-    with open(CURR_DIR + "/config/" + DEFAULT_POLICY_JSON_FILENAME) as json_fd:
+    with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME) as json_fd:
         plcy_obj = json.load(json_fd)
 
     vnics = plcy_obj['vnic']
@@ -328,6 +245,9 @@ def setup_pkt(_args):
 
     types.append("IP")
     ip = {'sip' : _args.sip, 'dip' : _args.dip}
+    if _args.nat:
+       nat_sip, nat_dip = get_nat_flow_sip_dip(_args._dir, _args.Rx, _args.flow_id)
+       ip = {'sip' : nat_sip, 'dip' : nat_dip}
     dicts.append(ip)
 
     types.append("UDP")
@@ -355,29 +275,37 @@ def setup_pkt(_args):
 
 def Setup(tc):
 
-    # set up workloads
-    AddWorkloads()
+    # init params for feature under test
+    tc.nat = (getattr(tc.iterators, 'nat', None) == 'yes')
+
+    # get node info
+    tc.bitw_node_name = None
+    tc.bitw_node = None
     
+    tc.wl_node_name = None
+    tc.wl_node = None
+    
+    # Assuming only one bitw node and one workload node
+    nics =  store.GetTopology().GetNicsByPipeline("athena")
+    for nic in nics:
+        tc.bitw_node_name = nic.GetNodeName()
+        break
+
     workloads = api.GetWorkloads()
     if len(workloads) == 0:
         api.Logger.error('No workloads available')
         return api.types.status.FAILURE
 
-    # All workloads created will be on same node currently
-    tc.wl_node_name = workloads[0].node_name
-    
-    tc.wl_node = None
-    tc.nodes = api.GetNodes() 
+    tc.wl_node_name = workloads[0].node_name 
+
+    tc.nodes = api.GetNodes()
     for node in tc.nodes:
-        if node.Name() == tc.wl_node_name:
-            tc.wl_node = node
-            break
+        if node.Name() == tc.bitw_node_name:
+            tc.bitw_node = node
+        else:
+            tc.wl_node = node    
 
-    if not tc.wl_node:
-        api.Logger.error('Failed to get workload node')
-        return api.types.status.FAILURE
 
-        
     host_intfs = api.GetNaplesHostInterfaces(tc.wl_node_name)
     
     # Assuming single nic per host 
@@ -387,23 +315,19 @@ def Setup(tc):
 
     tc.up0_intf = host_intfs[0]
     tc.up1_intf = host_intfs[1] 
-    tc.up0_vlan, tc.up1_vlan = None, None
+    
+    # get uplink vlans
+    tc.up0_vlan = get_uplink_vlan(tc, "up0")
+    tc.up1_vlan = get_uplink_vlan(tc, "up1")
+    
     tc.up0_mac, tc.up1_mac = None, None
 
-    # Assuming only two workloads today. One associated 
-    # with up0 and vlanA, and other with up1 and vlanB
     for wl in workloads:
-        if wl.parent_interface == tc.up0_intf:
-            tc.up0_vlan = wl.uplink_vlan
+        if wl.parent_interface == tc.up0_intf and wl.uplink_vlan == tc.up0_vlan:
             tc.up0_mac = wl.mac_address  
     
-        if wl.parent_interface == tc.up1_intf:
-            tc.up1_vlan = wl.uplink_vlan
+        if wl.parent_interface == tc.up1_intf and wl.uplink_vlan == tc.up1_vlan:
             tc.up1_mac = wl.mac_address
-
-    if not tc.up0_vlan or not tc.up1_vlan:
-        api.Logger.error('Failed to get workload sub-intf VLANs')
-        return api.types.status.FAILURE
 
     if not tc.up0_mac or not tc.up1_mac:
         api.Logger.error('Failed to get workload sub-intf mac addresses')
@@ -440,58 +364,113 @@ def Setup(tc):
    
 
     # setup policy.json file
-    curr_dir = os.path.dirname(os.path.realpath(__file__))
     plcy_obj = None
-    vnic_id = '1'
     
-    # read from template file 
-    with open(curr_dir + '/config/template_policy.json') as fd:
+    with open(CURR_DIR + TEMPLATE_POLICY_JSON_FILENAME) as fd:
         plcy_obj = json.load(fd)
 
     vnics = plcy_obj['vnic']
-        
-    # Assuming one vnic only
-    vnic_id = vnics[0]['vnic_id']
-
-    vnics[0]['vlan_id'] = str(tc.up1_vlan)
-    vnics[0]['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-    vnics[0]['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
-    vnics[0]['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-    vnics[0]['rewrite_host']['dmac'] = str(tc.up1_mac)
-
-    for flow in tc.flows:
-        v4_flow = {'vnic_lo': vnic_id, 'vnic_hi': vnic_id, 'sip_lo': flow.get_sip(), 
-                    'sip_hi': flow.get_sip(), 'dip_lo': flow.get_dip(), 
-                    'dip_hi': flow.get_dip(), 'proto':
-                    str(PROTO_NUM[flow.get_proto()]), 'sport_lo':
-                    str(flow.get_src_port()), 'sport_hi':
-                    str(flow.get_src_port()), 'dport_lo':
-                    str(flow.get_dst_port()), 'dport_hi':
-                    str(flow.get_dst_port())}
     
-        plcy_obj['v4_flows'].append(v4_flow)
+    vnic_idx = None
+    test_vnic = get_test_vnic(tc)
+    for idx, vnic in enumerate(vnics):
+        if vnic['vnic_id'] == test_vnic:
+            vnic_idx = idx
+            break
 
-    # write vlan/mac addr and flow info to actual file 
-    with open(curr_dir + '/config/policy.json', 'w+') as fd:
-        json.dump(plcy_obj, fd, indent=4)
+    if vnic_idx is None:
+        api.Logger.error("Cannot find vnic config for test in "
+                        "template_policy.json. feature %s, test_vnic %s " %
+                        (get_test_feature(tc).name, test_vnic))
+        return api.types.status.FAILURE
 
+    
+    if tc.nat:    
+        vnics[vnic_idx]['vlan_id'] = str(tc.up1_vlan)
+        vnics[vnic_idx]['session']['to_switch']['host_mac'] = str(tc.up1_mac)
+        vnics[vnic_idx]['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
+        vnics[vnic_idx]['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+        vnics[vnic_idx]['rewrite_host']['dmac'] = str(tc.up1_mac)
 
-    # copy policy.json file and send/recv scripts to node
-    tc.nodes = api.GetNodes()
-    tc.bitw_node = None
+        local_ip_lo = vnics[vnic_idx]['nat']['local_ip_lo']
+        local_ip_hi = vnics[vnic_idx]['nat']['local_ip_hi']
+        nat_ip_lo = vnics[vnic_idx]['nat']['nat_ip_lo']
+        nat_ip_hi = vnics[vnic_idx]['nat']['nat_ip_hi']
 
-    for node in tc.nodes:
-        if node.IsNaplesHwWithBumpInTheWire():
-            policy_json_fname = curr_dir + '/config/policy.json'
-            api.CopyToNaples(node.Name(), [policy_json_fname], "") 
-            tc.bitw_node = node
-            continue
+        local_ip_lo_obj = ip_address(local_ip_lo)
+        local_ip_hi_obj = ip_address(local_ip_hi)
+        nat_ip_lo_obj = ip_address(nat_ip_lo)
+        nat_ip_hi_obj = ip_address(nat_ip_hi)
+
+        if (int(nat_ip_hi_obj) - int(nat_ip_lo_obj) != 
+            int(local_ip_hi_obj) - int(local_ip_lo_obj)):
+            api.Logger.error("Invalid NAT ip addr translation config in "
+                                                    "policy.json file")    
+            return api.types.status.FAILURE
+
+        # generate flows
+        for dir in ['h2s', 's2h']:
+            for idx in range(int(local_ip_hi_obj) - int(local_ip_lo_obj) + 1):
+                
+                send_flow = FlowInfo()
+                send_flow.set_proto(NAT_FLOW_INFO['proto'])
+                send_flow.set_src_port(NAT_FLOW_INFO['src_port'])
+                send_flow.set_dst_port(NAT_FLOW_INFO['dst_port'])
+                
+                if dir == 'h2s':
+                    send_flow.set_sip(str(ip_address(
+                                            int(local_ip_lo_obj) + idx)))
+                    send_flow.set_dip(NAT_PUBLIC_DST_IP)
+                    nat_flows['h2s']['Tx'].append(send_flow) 
+                else:
+                    send_flow.set_sip(NAT_PUBLIC_DST_IP)
+                    send_flow.set_dip(str(ip_address(int(nat_ip_lo_obj) + idx)))
+                    nat_flows['s2h']['Tx'].append(send_flow) 
          
 
+                recv_flow = FlowInfo()
+                recv_flow.set_proto(NAT_FLOW_INFO['proto'])
+                recv_flow.set_src_port(NAT_FLOW_INFO['src_port'])
+                recv_flow.set_dst_port(NAT_FLOW_INFO['dst_port'])
+                
+                if dir == 'h2s':
+                    recv_flow.set_sip(str(ip_address(int(nat_ip_lo_obj) + idx)))
+                    recv_flow.set_dip(NAT_PUBLIC_DST_IP)
+                    nat_flows['h2s']['Rx'].append(recv_flow) 
+                else:
+                    recv_flow.set_sip(NAT_PUBLIC_DST_IP)
+                    recv_flow.set_dip(str(ip_address(
+                                                int(local_ip_lo_obj) + idx)))
+                    nat_flows['s2h']['Rx'].append(recv_flow) 
+         
+    
+        # setting up tc.flows with just nat (h2s, tx) flows so that num flows
+        # are accurate. Actual sip/dip will be handled in setup_pkt
+        tc.flows = nat_flows['h2s']['Tx'][:]
+    
+    else:
+        vnics[vnic_idx]['vlan_id'] = str(tc.up1_vlan)
+        vnics[vnic_idx]['session']['to_switch']['host_mac'] = str(tc.up1_mac)
+        vnics[vnic_idx]['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
+        vnics[vnic_idx]['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+        vnics[vnic_idx]['rewrite_host']['dmac'] = str(tc.up1_mac)
+
+
+    # write vlan/mac addr and flow info to actual file 
+    with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME, 'w+') as fd:
+        json.dump(plcy_obj, fd, indent=4)
+
+    
+    # copy policy.json file and send/recv scripts to node
+    for node in tc.nodes:
+        if node is tc.bitw_node:
+            policy_json_fname = CURR_DIR + DEFAULT_POLICY_JSON_FILENAME
+            api.CopyToNaples(node.Name(), [policy_json_fname], "") 
+
         if node is tc.wl_node:
-            send_pkt_script_fname = curr_dir + '/scripts/send_pkt.py' 
-            recv_pkt_script_fname = curr_dir + '/scripts/recv_pkt.py' 
-            policy_json_fname = curr_dir + '/config/policy.json'
+            send_pkt_script_fname = CURR_DIR + SEND_PKT_SCRIPT_FILENAME
+            recv_pkt_script_fname = CURR_DIR + RECV_PKT_SCRIPT_FILENAME 
+            policy_json_fname = CURR_DIR + DEFAULT_POLICY_JSON_FILENAME
 
             api.CopyToHost(node.Name(), [send_pkt_script_fname], "")
             api.CopyToHost(node.Name(), [recv_pkt_script_fname], "")
@@ -506,16 +485,33 @@ def Setup(tc):
 def Trigger(tc):
     
     # Copy policy.json to /data and restart Athena sec app on Athena Node
-    ret = Athena_sec_app_restart(tc) 
+    req = api.Trigger_CreateExecuteCommandsRequest()
+    
+    cmd = "mv /policy.json /data/policy.json"
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
+    
+    resp = api.Trigger(req)
+    cmd = resp.commands[0]
+    api.PrintCommandResults(cmd)
+    
+    if cmd.exit_code != 0:
+        api.Logger.error("moving policy.json to /data failed on node %s" % \
+                        tc.bitw_node_name)
+        return api.types.status.FAILURE
+    
+    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name) 
     if ret != api.types.status.SUCCESS:
+        api.Logger.error("Failed to restart athena sec app on node %s" % \
+                        tc.bitw_node_name)
         return (ret)
+
 
     for node in tc.nodes:
         if node is not tc.wl_node:
             continue
     
         # convention: regular pkts sent on up1 and encap pkts sent on up0
-        for flow in tc.flows:
+        for idx, flow in enumerate(tc.flows):
 
             # common args to setup scapy pkt
             args = Args()
@@ -526,6 +522,8 @@ def Trigger(tc):
             args.dip = flow.dip
             args.sport = flow.src_port
             args.dport = flow.dst_port
+            args.nat = tc.nat
+            args.flow_id = idx
 
             # ==========================================
             # Send and Receive packets in H2S direction

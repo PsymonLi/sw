@@ -39,6 +39,12 @@ spec:
 
     workloads:
         - workload:
+            name        : native # Untagged workloads
+            network_spec: default_ipv4_ipv6
+            tagged      : False
+
+
+        - workload:
             name        : tagged # Vlan tagged workloads
             network_spec: default_ipv4_ipv6
             tagged      : True
@@ -52,10 +58,18 @@ instances:
         - workload:
             node        : node2
             count       : 2
+            spec        : native
+            # Some kind of a tag for host if
+            interfaces  :
+                - host_if1 # Tag or Label for Interface1
+                - host_if2 # Tag or Label for Interface2
+
+        - workload:
+            node        : node2
+            count       : 4
             spec        : tagged
             interface   : auto
             # Distribution is equal, 1 on each interface
             interfaces  :
                 - host_if1
                 - host_if2
-
