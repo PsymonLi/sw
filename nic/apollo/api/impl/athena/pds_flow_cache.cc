@@ -336,7 +336,7 @@ pds_flow_cache_entry_delete (pds_flow_key_t *key)
 }
 
 pds_ret_t
-pds_flow_cache_entry_delete_by_flow_info (pds_flow_info_t *info)
+pds_flow_cache_entry_delete_by_flow_info (pds_flow_data_t *data)
 {
     pds_ret_t ret;
     sdk_table_api_params_t params = { 0 };
@@ -344,14 +344,14 @@ pds_flow_cache_entry_delete_by_flow_info (pds_flow_info_t *info)
     uint32_t cache_id;
     bool primary;
 
-    if (!info) {
-        PDS_TRACE_ERR("flow info is null");
+    if (!data) {
+        PDS_TRACE_ERR("flow data is null");
         return PDS_RET_INVALID_ARG;
     }
-    if (!IS_INDEX_TYPE_SESSION(info->spec.data.index_type)) {
+    if (!IS_INDEX_TYPE_SESSION(data->index_type)) {
         return PDS_RET_INVALID_ARG;
     }
-    ret = pds_flow_session_ctx_get_clr(info->spec.data.index,
+    ret = pds_flow_session_ctx_get_clr(data->index,
                                        &cache_id, &primary);
     if (ret == PDS_RET_ENTRY_NOT_FOUND) {
 

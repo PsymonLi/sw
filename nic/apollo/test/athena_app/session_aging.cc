@@ -226,21 +226,21 @@ bool
 session_and_cache_clear_full(test_vparam_ref_t vparam)
 {
     pds_flow_session_key_t  key;
-    pds_flow_info_t         info = {0};
+    pds_flow_data_t         data;
     uint32_t                depth;
     pds_ret_t               ret = PDS_RET_OK;
 
     depth = vparam.expected_num(session_table_depth());
     depth = std::min(depth, session_table_depth());
 
-    info.spec.data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
+    data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
     flow_session_key_init(&key);
     for (key.session_info_id = 1;
          key.session_info_id < depth;
          key.session_info_id++) {
 
-        info.spec.data.index = key.session_info_id;
-        ret = pds_flow_cache_entry_delete_by_flow_info(&info);
+        data.index = key.session_info_id;
+        ret = pds_flow_cache_entry_delete_by_flow_info(&data);
         if (!SESSION_DELETE_RET_VALIDATE(ret)) {
             break;
         }

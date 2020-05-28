@@ -409,7 +409,7 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
     switch (expiry_type) {
 
     case EXPIRY_TYPE_SESSION: {
-        pds_flow_info_t         info = {0};
+        pds_flow_data_t         data;
         pds_flow_session_key_t  key = {0};
         pds_ret_t               cache_ret;
         pds_ret_t               session_ret;
@@ -422,9 +422,9 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
          * After this, caller needs to also release the session ID to
          * its ID management pool.
          */
-        info.spec.data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
-        info.spec.data.index = expiry_id;
-        cache_ret = pds_flow_cache_entry_delete_by_flow_info(&info);
+        data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
+        data.index = expiry_id;
+        cache_ret = pds_flow_cache_entry_delete_by_flow_info(&data);
 
         key.session_info_id = expiry_id;
         key.direction = HOST_TO_SWITCH | SWITCH_TO_HOST;
