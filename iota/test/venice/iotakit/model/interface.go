@@ -84,7 +84,7 @@ type ClusterActionIntf interface {
 	VerifyTechsupport(techsupportName string) error
 	VerifyTechsupportStatus(techsupportName string) error
 
-	GetRolloutObject(scaleData bool) (*rollout.Rollout, error)
+	GetRolloutObject(bundleType string, scaleData bool) (*rollout.Rollout, error)
 	CreateRolloutObject(bundleType, rolloutName, upgradeType string) (*rollout.Rollout, error)
 	PerformRollout(rollout *rollout.Rollout, scaleData bool, bundleType string) error
 	VerifyRolloutStatus(rolloutName string) error

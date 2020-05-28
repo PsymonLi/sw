@@ -42,7 +42,7 @@ var _ = Describe("rollout tests", func() {
 
 		It("Perform Rollout", func() {
 			var workloadPairs *objects.WorkloadPairCollection
-			rollout, err := ts.model.GetRolloutObject(ts.scaleData)
+			rollout, err := ts.model.GetRolloutObject("upgrade-bundle", ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			if *simOnlyFlag == false {

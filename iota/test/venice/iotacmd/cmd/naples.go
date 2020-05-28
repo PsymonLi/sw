@@ -126,7 +126,7 @@ func doNaplesUpgrade(percent int) error {
 		return nil
 	})
 
-	rollout, err := setupModel.GetRolloutObject(true)
+	rollout, err := setupModel.GetRolloutObject("upgrade-bundle", true)
 	if err != nil {
 		return err
 	}

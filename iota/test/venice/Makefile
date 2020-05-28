@@ -21,6 +21,15 @@ upgrade:
 	mkdir -p ${GOPATH}/src/github.com/pensando/sw/upgrade-bundle
 	../../bin/iota_cmd run --suite rollout --topo default --skip-setup
 
+rollout-apulu2apulu:
+	cd ../../../ && make ws-tools && make pull-assets
+	cd ../../../ && tar -zxf /sw/naples_fw_all_apulu.tgz -C .
+	cp /sw/bin/venice.apulu.tgz ${GOPATH}/src/github.com/pensando/sw/bin/venice.apulu.tgz
+	cd ${GOPATH}/src/github.com/pensando/sw/nic && ls -al
+	mkdir -p ${GOPATH}/src/github.com/pensando/sw/apulu-bundle
+	cd ../../ && make
+	NO_INTERNAL_MGMT=1 SKIP_SWITCH=1 USE_OOB=1 ../../bin/iota_cmd run --suite apulu2apulu --topo cloud
+
 tot-upgrade-bundle:
 	cd ../../../ && make ws-tools && make pull-assets
 	cd ../../../ && tar -zxf /sw/naples_fw_all.tgz -C .

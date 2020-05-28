@@ -159,7 +159,7 @@ func (sm *SysModel) GetClusterVersion() string {
 }
 
 // GetRolloutObject gets rollout instance
-func (sm *SysModel) GetRolloutObject(scaleData bool) (*rollout.Rollout, error) {
+func (sm *SysModel) GetRolloutObject(bundleType string, scaleData bool) (*rollout.Rollout, error) {
 
 	version := ""
 	seconds := time.Now().Unix()
@@ -180,7 +180,7 @@ func (sm *SysModel) GetRolloutObject(scaleData bool) (*rollout.Rollout, error) {
 
 	clusterVersion := sm.GetClusterVersion()
 
-	bundleLocalFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/upgrade-bundle/bundle.tar", os.Getenv("GOPATH"))
+	bundleLocalFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/%s/bundle.tar", os.Getenv("GOPATH"), bundleType)
 
 	versionPrefix, buildNumber, err := getLatestBuildVersionInfo("master")
 	if err != nil {

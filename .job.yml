@@ -252,6 +252,8 @@ jobs:
     labels: ["daily"]
   iota/test/venice/rollout/rolloutbrelm:
     labels: ["2xhourly"]
+  iota/test/venice/rollout/apulu2apulu:
+    labels: ["2xhourly"]
   iota/test/venice/sim:
     labels: ["precommit", "hourly"]
   nic:
