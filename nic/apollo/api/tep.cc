@@ -147,6 +147,18 @@ tep_entry::init_config(api_ctxt_t *api_ctxt) {
 }
 
 sdk_ret_t
+tep_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
+    msg->cfg_msg.op = obj_ctxt->api_op;
+    msg->cfg_msg.obj_id = OBJ_ID_TEP;
+    if (obj_ctxt->api_op == API_OP_DELETE) {
+        msg->cfg_msg.tep.key = obj_ctxt->api_params->key;
+    } else {
+        msg->cfg_msg.tep.spec = obj_ctxt->api_params->tep_spec;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 tep_entry::program_create(api_obj_ctxt_t *obj_ctxt) {
     if (impl_) {
         return impl_->program_hw(this, obj_ctxt);

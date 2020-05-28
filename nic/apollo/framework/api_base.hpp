@@ -103,6 +103,14 @@ public:
         return SDK_RET_INVALID_OP;
     }
 
+    /// \brief    return true if this object needs to be circulated to other IPC
+    ///           endpoints
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return    true if we need to circulate this object or else false
+    virtual bool circulate(api_obj_ctxt_t *obj_ctxt) {
+        return false;
+    }
+
     /// \brief populate the IPC msg with object specific information
     ///        so it can be sent to other components
     /// \param[in] msg         IPC message to be filled in

@@ -79,6 +79,22 @@ public:
     /// \return         SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t cleanup_config(api_obj_ctxt_t *obj_ctxt) override;
 
+    /// \brief    return true if this object needs to be circulated to other IPC
+    ///           endpoints
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return    true if we need to circulate this object or else false
+    virtual bool circulate(api_obj_ctxt_t *obj_ctxt) override {
+        return true;
+    }
+
+    /// \brief populate the IPC msg with object specific information
+    ///        so it can be sent to other components
+    /// \param[in] msg         IPC message to be filled in
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t populate_msg(pds_msg_t *msg,
+                                   api_obj_ctxt_t *obj_ctxt) override;
+
     /// \brief    compute the object diff during update operation compare the
     ///           attributes of the object on which this API is invoked and the
     ///           attrs provided in the update API call passed in the object

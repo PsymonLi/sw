@@ -209,6 +209,20 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
 }
 
 sdk_ret_t
+mirror_session::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
+    msg->cfg_msg.op = obj_ctxt->api_op;
+    msg->cfg_msg.obj_id = OBJ_ID_MIRROR_SESSION;
+    if (obj_ctxt->api_op == API_OP_DELETE) {
+        msg->cfg_msg.mirror_session.key =
+            obj_ctxt->api_params->key;
+    } else {
+        msg->cfg_msg.mirror_session.spec =
+            obj_ctxt->api_params->mirror_session_spec;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 mirror_session::program_create(api_obj_ctxt_t *obj_ctxt) {
     return impl_->program_hw(this, obj_ctxt);
 }

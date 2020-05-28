@@ -547,8 +547,9 @@ api_engine::add_deps_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
 }
 
 sdk_ret_t
-api_engine::count_api_msg_(obj_id_t obj_id) {
-    if (!api_obj_circulate(obj_id)) {
+api_engine::count_api_msg_(obj_id_t obj_id, api_base *api_obj,
+                           api_obj_ctxt_t *obj_ctxt) {
+    if (!api_obj->circulate(obj_ctxt)) {
         // none of the IPC endpoints are interested in this API object
         return SDK_RET_OK;
     }
@@ -663,7 +664,7 @@ api_engine::obj_dependency_computation_stage_(void) {
         // if this API msg needs to relayed to other components as well,
         // count it so we can allocate resources for all them in one shot
         if (obj_ctxt->api_op != API_OP_NONE) {
-            count_api_msg_(obj_ctxt->obj_id);
+            count_api_msg_(obj_ctxt->obj_id, api_obj, obj_ctxt);
         }
     }
 
@@ -742,8 +743,7 @@ api_engine::resource_reservation_stage_(void) {
             goto error;
         }
         // if this object needs to be circulated, add it to the msg list
-        if ((obj_ctxt->api_op != API_OP_NONE) &&
-            api_obj_circulate(obj_ctxt->obj_id)) {
+        if ((obj_ctxt->api_op != API_OP_NONE) && api_obj->circulate(obj_ctxt)) {
             populate_api_msg_(api_obj, obj_ctxt);
         }
     }

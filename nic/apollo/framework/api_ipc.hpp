@@ -39,11 +39,6 @@ typedef vector<api_obj_ipc_peer_info_t> api_obj_ipc_peer_list_t;
 // per API object IP endpoint info map
 typedef unordered_map<obj_id_t, api_obj_ipc_peer_list_t> api_obj_ipc_peer_map_t;
 
-/// \brief return true if this API object is of interest to any IPC peers
-/// \param[in] obj_id    API object id
-/// \return true if this object if of interest to any of the peers
-bool api_obj_circulate(obj_id_t obj_id);
-
 /// \brief  return list of IPC endpoints interested in the given API object
 /// \param[in] obj_id    API object id
 /// \return list of IPC endpoints interested in the object

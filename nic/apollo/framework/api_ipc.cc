@@ -71,15 +71,6 @@ static api_obj_ipc_peer_map_t g_api_obj_ipc_peer_map {
     },
 };
 
-bool
-api_obj_circulate (obj_id_t obj_id)
-{
-    if (g_api_obj_ipc_peer_map.find(obj_id) != g_api_obj_ipc_peer_map.end()) {
-        return true;
-    }
-    return false;
-}
-
 api_obj_ipc_peer_list_t&
 ipc_peer_list (obj_id_t obj_id)
 {

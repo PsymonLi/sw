@@ -94,6 +94,14 @@ public:
     /// \return    SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t init_config(api_ctxt_t *api_ctxt) override;
 
+    /// \brief    return true if this object needs to be circulated to other IPC
+    ///           endpoints
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return    true if we need to circulate this object or else false
+    virtual bool circulate(api_obj_ctxt_t *obj_ctxt) override {
+        return true;
+    }
+
     /// \brief populate the IPC msg with object specific information
     ///        so it can be sent to other components
     /// \param[in] msg         IPC message to be filled in

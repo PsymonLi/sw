@@ -521,26 +521,22 @@ private:
     /// \brief De-dup given API operation
     /// This is based on the currently computed operation and new API operation
     /// seen on the object
-    ///
     /// \param[in] curr_op Current outstanding API operation on the object
     /// \param[in] new_op Newly encountered API operation on the object
     /// \return De-duped/compressed API operation
     api_op_t api_op_(api_op_t curr_op, api_op_t new_op);
 
     /// \brief Pre-process create operation and form effected list of objs
-    ///
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_create_(api_ctxt_t *api_ctxt);
 
     /// \brief Pre-process delete operation and form effected list of objs
-    ///
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_delete_(api_ctxt_t *api_ctxt);
 
     /// \brief Pre-process update operation and form effected list of objs
-    ///
     /// \param[in] api_ctxt Transient state associated with this API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t pre_process_update_(api_ctxt_t *api_ctxt);
@@ -552,7 +548,6 @@ private:
     sdk_ret_t pre_process_api_(api_ctxt_t *api_ctxt);
 
     /// \brief Allocate any sw & hw resources for the given object and operation
-    ///
     /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt Transient information maintained to process the API
     /// \return #SDK_RET_OK on success, failure status code on error
@@ -561,7 +556,6 @@ private:
     /// \brief Process given object from the dirty list
     /// This is done by doing add/update of corresponding h/w entries, based
     /// on accumulated configuration without activating the epoch
-    ///
     /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt Transient information maintained to process the API
     /// \return #SDK_RET_OK on success, failure status code on error
@@ -577,7 +571,6 @@ private:
     /// \brief Activate configuration by switching to new epoch
     /// If object has effected any stage 0 datapath table(s), switch to new
     /// epoch in this stage NOTE: NO failures must happen in this stage
-    ///
     /// \param[in] api_obj API object being processed
     /// \param[in] it    iterator position of api obj to be deleted
     /// \param[in] obj_ctxt    transient information maintained to process API
@@ -588,9 +581,8 @@ private:
     /// \brief Abort all changes made to an object, rollback to its prev state
     /// NOTE: this is not expected to fail and also epoch is not activated if
     /// we are here
-    ///
-    /// \param[in] api_obj API object being processed
     /// \param[in] it    iterator position of api obj to be deleted
+    /// \param[in] api_obj API object being processed
     /// \param[in] obj_ctxt    transient information maintained to process API
     /// \return #SDK_RET_OK on success, failure status code on error
     sdk_ret_t rollback_config_(dirty_obj_list_t::iterator it,
@@ -599,8 +591,11 @@ private:
     /// \brief given an API object id, check which all IPC peers are interested
     ///        in this object and perform bookkeeping
     /// \param[in] obj_id API object id
+    /// \param[in] api_obj API object being processed
+    /// \param[in] obj_ctxt    transient information maintained to process API
     /// \return #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t count_api_msg_(obj_id_t obj_id);
+    sdk_ret_t count_api_msg_(obj_id_t obj_id, api_base *api_obj,
+                             api_obj_ctxt_t *obj_ctxt);
 
     /// \brief allocate all necessary IPC API msgs to send API
     ///        object request/response msgs and/or event notification messages

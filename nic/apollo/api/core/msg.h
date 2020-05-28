@@ -18,7 +18,9 @@
 #include "nic/apollo/api/include/pds_dhcp.hpp"
 #include "nic/apollo/api/include/pds_nat.hpp"
 #include "nic/apollo/api/include/pds_subnet.hpp"
+#include "nic/apollo/api/include/pds_tep.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
+#include "nic/apollo/api/include/pds_mirror.hpp"
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/include/pds_flow.hpp"
 
@@ -95,6 +97,24 @@ typedef struct pds_security_profile_cfg_msg_s {
     pds_security_profile_status_t status;
 } pds_security_profile_cfg_msg_t;
 
+/// mirror session configurtation
+typedef struct pds_mirror_session_cfg_msg_s {
+    union {
+        pds_obj_key_t key;
+        pds_mirror_session_spec_t spec;
+    };
+    pds_mirror_session_status_t status;
+} pds_mirror_session_cfg_msg_t;
+
+/// tep configurtation
+typedef struct pds_tep_cfg_msg_s {
+    union {
+        pds_obj_key_t key;
+        pds_tep_spec_t spec;
+    };
+    pds_tep_status_t status;
+} pds_tep_cfg_msg_t;
+
 /// configuration message structure for create/update/delete operations
 typedef struct pds_cfg_msg_s {
     /// API operation
@@ -105,8 +125,10 @@ typedef struct pds_cfg_msg_s {
     union {
         pds_device_cfg_msg_t device;
         pds_vpc_cfg_msg_t vpc;
-        pds_vnic_cfg_msg_t vnic;
         pds_subnet_cfg_msg_t subnet;
+        pds_tep_cfg_msg_t tep;
+        pds_vnic_cfg_msg_t vnic;
+        pds_mirror_session_cfg_msg_t mirror_session;
         pds_dhcp_policy_cfg_msg_t dhcp_policy;
         pds_nat_port_block_cfg_msg_t nat_port_block;
         pds_security_profile_cfg_msg_t security_profile;

@@ -59,6 +59,14 @@ public:
     /// \return   sdk_ret_ok or error code
     static sdk_ret_t free(subnet_entry *subnet);
 
+    /// \brief    return true if this object needs to be circulated to other IPC
+    ///           endpoints
+    /// \param[in] obj_ctxt    transient state associated with this API
+    /// \return    true if we need to circulate this object or else false
+    virtual bool circulate(api_obj_ctxt_t *obj_ctxt) override {
+        return true;
+    }
+
     /// \brief          allocate h/w resources for this object
     /// \param[in]      orig_obj    old version of the unmodified object
     /// \param[in]      obj_ctxt    transient state associated with this API
