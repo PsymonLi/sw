@@ -1,0 +1,87 @@
+#!/bin/bash
+#
+#  penctl
+#
+#  should be installed on the PATH, along with penctl.linux
+#
+
+
+PROG=`basename $0`
+
+if [ "$1" == "-h" -o "$1" == "--help" ] ; then
+	echo "Usage: $PROG [-i ethX | -s pci ] args ..."
+	echo "  or export DSC_URL=http://169.254.<pcibus>.1 to specify DSC device"
+	exit 1
+fi
+
+if [ "$1" == "-i" ] ; then
+	shift
+
+	ifname=$1
+	shift
+
+	if [ ! -e /sys/class/net/$ifname ] ; then
+		echo "$PROG: unknown net device '$ifname'"
+		exit 1
+	fi
+
+	device=`cat /sys/class/net/$ifname/device/device`
+	if [ "$device" != "0x1004" ] ; then
+		echo "$PROG: $ifname ($device) is not a DSC management device (0x1004)"
+		exit 1
+	fi
+
+	pci=`ethtool -i $ifname | grep bus-info | cut "-d " -f 2`
+
+elif [ "$1" == "-s" ] ; then
+	shift
+	pci=$1
+	device=`cat /sys/bus/pci/devices/$pci/device`
+	if [ "$device" != "0x1004" ] ; then
+		echo "$PROG: $pci ($device) is not a DSC management device (0x1004)"
+		exit 1
+	fi
+
+	shift
+fi
+
+if [ -z "$pci" -a -z "$DSC_URL" ] ; then
+
+	dbdf=`lspci -Dnd 1dd8:1004 | awk '{ print $1; }'`
+	cnt=`lspci -Dnd 1dd8:1004 | awk '{ print $1; }' | wc -l`
+	if [ $cnt -eq 0 ] ; then
+		echo "$PROG: No management device 1dd8:1004 found"
+		exit 1
+	fi
+
+	if [ $cnt -ne 1 ] ; then
+		echo "Multiple devices found, please specify which one to use with :"
+		echo $dbdf
+		exit 1
+	fi
+
+	pci=$dbdf
+fi
+
+if [ -n "$pci" ] ; then
+	ifname=`ls /sys/bus/pci/devices/$pci/net`
+	if [ -z "$ifname" ]; then
+		echo "No management interface (load ionic driver)"
+		exit 1
+	fi
+
+	busx=`echo $pci | awk -F : '{ print $2; }'`
+	bus=`printf "%d" 0x$busx`
+
+	ipaddr=169.254.$bus.2
+	netmask=255.255.255.0
+
+	echo "Setting DSC management interface:" ifconfig $ifname $ipaddr netmask $netmask
+	ifconfig $ifname $ipaddr netmask $netmask
+
+	DSC_URL=http://169.254.$bus.1
+fi
+
+echo DSC_URL=$DSC_URL penctl.linux $@
+DSC_URL=$DSC_URL penctl.linux $@
+
