@@ -30,13 +30,14 @@
 
 #define UPGRADE_GRACEFUL "upgrade_graceful.json"
 #define UPGRADE_HITLESS  "upgrade_hitless.json"
+#define UPGMGR_EXIT_SCRIPT "upgmgr_exit.sh"
 
 namespace sdk {
 namespace upg {
 
 namespace pt = boost::property_tree;
 
-struct ev_loop *loop;
+ struct ev_loop *loop;
 ev_timer timeout_watcher;
 fsm fsm_states;
 upg_stages_map fsm_stages;
@@ -213,6 +214,27 @@ send_ipc_to_next_service (void)
     }
 }
 
+static void
+execute_exit_script (upg_status_t status)
+{
+    if (UPG_STATUS_OK != status) {
+        std::string exit_script("");
+        exit_script = UPGMGR_EXIT_SCRIPT;
+
+        if (is_valid_script(fsm_states.init_params()->tools_dir, exit_script)) {
+            exit_script = fsm_states.init_params()->tools_dir + "/" + exit_script;
+            exit_script += " -r " + std::string(svc_rsp_code_name[status]);
+            if (!execute(exit_script.c_str())) {
+                UPG_TRACE_ERR("Failed to execute exit script %s",
+                              exit_script.c_str());
+                UPG_TRACE_ERR("Tech support may not be generated !");
+            }
+        } else {
+            UPG_TRACE_ERR("Not a valid Script %s", exit_script.c_str());
+        }
+    }
+}
+
 static upg_status_t
 get_exit_status (void)
 {
@@ -235,6 +257,7 @@ get_exit_status (void)
     }
 
     UPG_TRACE_INFO("Upgrade exit code %u ", status);
+
     return status;
 }
 
@@ -246,6 +269,7 @@ move_to_nextstage (void)
     upg_stage_t id = fsm_states.current_stage();
     fsm_states.set_current_stage(id);
     if (fsm_states.current_stage() == fsm_states.end_stage()) {
+        execute_exit_script(get_exit_status());
         fsm_states.init_params()->fsm_completion_cb(get_exit_status());
         SDK_ASSERT(0);
     }
@@ -336,6 +360,7 @@ upg_event_handler (upg_event_msg_t *event)
             upg_stage_t id = fsm_states.current_stage();
             fsm_states.set_current_stage(id);
             if (fsm_states.current_stage() == fsm_states.end_stage()) {
+                execute_exit_script(get_exit_status());
                 // not expeting to come back here
                 fsm_states.init_params()->fsm_completion_cb(get_exit_status());
                 SDK_ASSERT(0);
@@ -370,6 +395,7 @@ timeout_cb (EV_P_ ev_timer *w, int revents)
         move_to_nextstage();
     } else {
         UPG_TRACE_WARN("Upgrade must not wait for response in last stage");
+        execute_exit_script(get_exit_status());
         fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_FAIL);
         SDK_ASSERT(0);
     }
@@ -809,6 +835,7 @@ init_fsm (fsm_init_params_t *params)
     if (!execute_pre_hooks(fsm_states.current_stage())) {
         UPG_TRACE_ERR("Failed to execute pre hooks in stage %s",
                       upg_stage2str(fsm_states.current_stage()));
+        execute_exit_script(get_exit_status());
         return SDK_RET_ERR;
     }
     send_discovery_event(IPC_SVC_DOM_ID_A, fsm_states.current_stage());

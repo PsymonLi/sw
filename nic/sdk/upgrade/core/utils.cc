@@ -271,7 +271,7 @@ is_valid_script (std::string tools_dir, const std::string script)
     return true;
 }
 
-static bool
+bool
 execute (const char *cmd)
 {
     bool result=true;

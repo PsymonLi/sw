@@ -42,6 +42,7 @@ void dump(const svc_sequence_list& svcs);
 void dump(const stage_map& tran);
 void dump(const fsm& fsm);
 bool is_valid_script(const std::string tools_dir, const std::string path);
+bool execute (const char *cmd);
 bool execute_hook(const std::string tools_dir, const std::string script,
                   const std::string stage_name, const std::string fw_pkgname,
                   hook_execution_t hook_type, svc_rsp_code_t status =
