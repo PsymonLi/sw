@@ -13,7 +13,7 @@ import (
 )
 
 const defaultNumParallel = 2           // if user has not specified parallelism in Spec, we do do many SmartNICs in parallel. We can change this logic in future as needed..
-const dSCTimeoutSeconds = 480          // 8 mins of timeout for DSC preUpgrade..
+const dSCTimeoutSeconds = 900          // 15 mins of timeout for DSC preUpgrade..
 const rolloutPhasesTimeoutSeconds = 10 //timeout between rollout phases
 const veniceHealthCheckTimeout = 30
 

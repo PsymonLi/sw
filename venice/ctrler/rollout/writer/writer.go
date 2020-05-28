@@ -72,23 +72,26 @@ func (wr *APISrvWriter) CheckRolloutInProgress() bool {
 	apicl, err := wr.GetAPIClient()
 	if err != nil {
 		log.Infof("Updating Rollout Failed to connect get APIClient %v", err)
-		return true
-	}
-
-	obj := api.ObjectMeta{
-		Name: "version",
-	}
-
-	vobj, err := apicl.ClusterV1().Version().Get(context.Background(), &obj)
-	if err != nil {
-		log.Errorf("Failed to get cluster object (%+v)", err)
-		return true
-	}
-	log.Debugf("Version Object %+v", vobj)
-	if vobj.Status.RolloutBuildVersion == "" {
 		return false
 	}
-	return true
+
+	obj := api.ObjectMeta{}
+	roa, err := apicl.RolloutV1().RolloutAction().Get(context.Background(), &obj)
+
+	if err != nil {
+		log.Errorf("Failed to get rolloutAction object (%+v)", err)
+		return false
+	}
+	log.Debugf("Rollout Action Object %+v", roa)
+	opState := roa.Status.GetOperationalState()
+	if opState == rollout.RolloutStatus_PROGRESSING.String() ||
+		opState == rollout.RolloutStatus_PRECHECK_IN_PROGRESS.String() ||
+		opState == rollout.RolloutStatus_SCHEDULED.String() ||
+		opState == rollout.RolloutStatus_SCHEDULED_FOR_RETRY.String() ||
+		opState == rollout.RolloutStatus_SUSPEND_IN_PROGRESS.String() {
+		return true
+	}
+	return false
 }
 
 // GetClusterVersion returns running venice version
