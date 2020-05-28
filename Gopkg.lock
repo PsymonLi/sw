@@ -38,12 +38,12 @@
   version = "v0.8.0"
 
 [[projects]]
+  branch = "master"
   digest = "1:5d72bbcc9c8667b11c3dc3cbe681c5a6f71e5096744c0bf7726ab5c6425d5dc4"
   name = "github.com/BurntSushi/toml"
   packages = ["."]
   pruneopts = "NUT"
   revision = "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005"
-  version = "v0.3.1"
 
 [[projects]]
   branch = "master"
@@ -112,6 +112,14 @@
   packages = ["."]
   pruneopts = "NUT"
   revision = "a4725f04ec91af1a91b380da679d6e0c2f061e59"
+
+[[projects]]
+  digest = "1:39557f1db3f27664952ed7bf5a7d217984fa95fc425e0e865ebd02afa659d68b"
+  name = "github.com/RoaringBitmap/roaring"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "c82f60c180e02b3d2fb91971bae92c2db5a8763a"
+  version = "v0.4.23"
 
 [[projects]]
   digest = "1:2cdd728023331eea7e5a22921095695e5b95cdad65f91969a5b909f57a11ebb1"
@@ -277,12 +285,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:977044cdbb9771c2011e36cb28ecfe86485f00bb123a1370a7161a0e6528bbf3"
+  digest = "1:8f9060d63dc95784c279be832b700055e802b1f859b44a9245dd4fe136a7299b"
   name = "github.com/cespare/xxhash"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "d7df74196a9e781ede915320c11c378c1b2f3a1f"
-  version = "v2.1.1"
+  revision = "569f7c8abf1f58d9043ab804d364483cb1c853b6"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:40a1cbb226e60770882b41e5b8e7f5c38426399c602fe75618de717e70dcb871"
@@ -474,23 +482,15 @@
   version = "v1.7"
 
 [[projects]]
-  digest = "1:64b14f449ec9db322308ba03bc7210cd540ecd86fbf3602e55ad4bbe06ea7a80"
+  digest = "1:2e08f767623936c719c07f52e1c89bb5d8597aac6b5fe669e6e851b92cebbe69"
   name = "github.com/dgrijalva/jwt-go"
   packages = [
     ".",
     "request",
   ]
   pruneopts = "NUT"
-  revision = "dbeaa9332f19a944acb5736b4456cfcc02140e29"
-  version = "v3.1.0"
-
-[[projects]]
-  branch = "master"
-  digest = "1:349887f98324a7458a41e90d4a0f5ebfa48530be2bb8804e1d83d7270fddf637"
-  name = "github.com/dgryski/go-bits"
-  packages = ["."]
-  pruneopts = "NUT"
-  revision = "bd8a69a71dc203aa976f9d918b428db9ac605f57"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   branch = "master"
@@ -628,8 +628,8 @@
   name = "github.com/fatih/color"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
-  version = "v1.7.0"
+  revision = "daf2830f2741ebb735b21709a520c5f37d642d85"
+  version = "v1.9.0"
 
 [[projects]]
   digest = "1:52ec55889de2c93a772ceba253313c12f65444aac61a11182d4d119ef97479e8"
@@ -662,6 +662,14 @@
   pruneopts = "NUT"
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9f5188cd41b10c2e46524f0d5dd7706cf8c71403961bafa4bcad041e603aa51b"
+  name = "github.com/glycerine/go-unsnap-stream"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "81cf024a9e0a906651886e23cb984a852a30b622"
 
 [[projects]]
   digest = "1:5d6a13485ff26011c23adcbb66c33212be42d288326f2d8b9c2b6d385296b28b"
@@ -925,12 +933,11 @@
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9413ddbde906f91f062fda0dfa9a7cff43458cd1b2282c0fa25c61d89300b116"
+  digest = "1:416507c39a949f8da9c273d11c0426fdc7c8fc9abbed5cdb4391e332a3b12fa0"
   name = "github.com/golang/snappy"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "553a641470496b2327abcac10b36396bd98e45c9"
+  revision = "d9eb7a3d35ec988b8585d4a0068e462c27d28380"
 
 [[projects]]
   digest = "1:38ec74012390146c45af1f92d46e5382b50531247929ff3a685d2b2be65155ac"
@@ -1222,7 +1229,7 @@
   version = "v1.0"
 
 [[projects]]
-  digest = "1:4a2efaa1db9950eb7077d43840bf9f33f82d56da9340ae6753e4850bc03137da"
+  digest = "1:c4b06c38650f2c7cb53c0ec042bf7c4e5a627a01b18767f0370441b6b2a321a3"
   name = "github.com/influxdata/influxdb"
   packages = [
     ".",
@@ -1233,17 +1240,23 @@
     "models",
     "monitor",
     "monitor/diagnostics",
-    "pkg/bits",
+    "pkg/binaryutil",
     "pkg/bloom",
     "pkg/bytesutil",
     "pkg/escape",
     "pkg/estimator",
     "pkg/estimator/hll",
+    "pkg/file",
     "pkg/limiter",
     "pkg/metrics",
     "pkg/mmap",
     "pkg/pool",
+    "pkg/radix",
     "pkg/rhh",
+    "pkg/slices",
+    "pkg/snowflake",
+    "pkg/tar",
+    "pkg/tlsconfig",
     "pkg/tracing",
     "pkg/tracing/fields",
     "pkg/tracing/labels",
@@ -1252,6 +1265,7 @@
     "prometheus/remote",
     "query",
     "query/internal",
+    "query/internal/gota",
     "query/neldermead",
     "services/collectd",
     "services/continuous_querier",
@@ -1278,18 +1292,19 @@
     "uuid",
   ]
   pruneopts = "NUT"
-  revision = "8b18cc445653866f71a59002f2f8524721a5d27e"
+  revision = "0036db61391d79bb0bdc769a4d1ad1437df2ac89"
+  version = "v1.6.6"
 
 [[projects]]
   branch = "master"
-  digest = "1:e59ad5f2fdde5d36466f7caaef0627c2096331e0ce3a9940e67e8dec45ade2ed"
+  digest = "1:62dcf0caad30db0d53aa515f99a9f7a930cced2e361ee5041fb1488546e2a15e"
   name = "github.com/influxdata/influxql"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "NUT"
-  revision = "47c654dfb4cd3be546b9ed1b37b30d7ab2784ffc"
+  revision = "d3157fa09d6e1073dd9905056cf659a5dd4923d6"
 
 [[projects]]
   branch = "master"
@@ -1374,6 +1389,14 @@
   pruneopts = "NUT"
   revision = "03217c3e97663914aec3faafde50d081f197a0a2"
   version = "1.1.8"
+
+[[projects]]
+  digest = "1:45bba2e6115039916f7592304640178725ee7dd82cb5baeeaea6d76ccda952fc"
+  name = "github.com/jsternberg/zap-logfmt"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ef1948cade6f9592fac3f57654e3ddfc4986bb52"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -1533,12 +1556,12 @@
   revision = "2dbc853185d9515cd0b7934cc7bfedab1565ac04"
 
 [[projects]]
-  digest = "1:bc4f7eec3b7be8c6cb1f0af6c1e3333d5bb71072951aaaae2f05067b0803f287"
+  branch = "master"
+  digest = "1:0c33ac3e505978f4ec8dd5b5d4e8ea294aa8bc20e9d84588d29bdd1c47fb8fcf"
   name = "github.com/mattn/go-isatty"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
-  version = "v0.0.3"
+  revision = "cb30d6282491c185f77d9bec5d25de1bb61a06bc"
 
 [[projects]]
   digest = "1:cb591533458f6eb6e2c1065ff3eac6b50263d7847deb23fc9f79b25bc608970e"
@@ -1803,6 +1826,14 @@
   version = "v0.6.3"
 
 [[projects]]
+  digest = "1:874d20d479aa479b2ed0200ac565e809d8ff849f672a04e7a21536069eba1cdd"
+  name = "github.com/mschoch/smat"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ef73189a3306dd920d41a64764c154ba2df31029"
+  version = "v0.2.0"
+
+[[projects]]
   digest = "1:2a2300e9d1c7eee7b1c7bfab3cba485823c036620e63b68c0bdb2d3ba4ace216"
   name = "github.com/nats-io/jwt"
   packages = ["."]
@@ -1950,7 +1981,8 @@
   revision = "a52f2342449246d5bcc273e65cbdcfa5f7d6c63c"
 
 [[projects]]
-  digest = "1:503e8c12cd65cec9a4684b606a20cbff103db275e9c39adea9e425b6afee3af4"
+  branch = "master"
+  digest = "1:c0d29acf123ca922207e9c30c0fe6caa181c2572156aa24103420956b2fc6f4c"
   name = "github.com/opentracing/opentracing-go"
   packages = [
     ".",
@@ -1958,8 +1990,7 @@
     "log",
   ]
   pruneopts = "NUT"
-  revision = "6edb48674bd9467b8e91fda004f2bd7202d60ce4"
-  version = "v1.0.1"
+  revision = "9b906502e23c426fb1483e9783e7f46b06d19940"
 
 [[projects]]
   branch = "master"

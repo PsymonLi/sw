@@ -10,6 +10,8 @@ import (
 	"time"
 	"unicode"
 
+	"fmt"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/influxdata/influxdb"
 	"github.com/influxdata/influxdb/models"
@@ -32,6 +34,10 @@ const (
 
 	// MinRetentionPolicyDuration represents the minimum duration for a policy.
 	MinRetentionPolicyDuration = time.Hour
+
+	// MaxNameLen is the maximum length of a database or retention policy name.
+	// InfluxDB uses the name for the directory name on disk.
+	MaxNameLen = 255
 )
 
 // Data represents the top level collection of all metadata.
@@ -77,6 +83,8 @@ func (data *Data) CloneDatabases() []DatabaseInfo {
 func (data *Data) CreateDatabase(name string) error {
 	if name == "" {
 		return ErrDatabaseNameRequired
+	} else if len(name) > MaxNameLen {
+		return ErrNameTooLong
 	} else if data.Database(name) != nil {
 		return nil
 	}
@@ -127,6 +135,8 @@ func (data *Data) CreateRetentionPolicy(database string, rpi *RetentionPolicyInf
 		return ErrRetentionPolicyRequired
 	} else if rpi.Name == "" {
 		return ErrRetentionPolicyNameRequired
+	} else if len(rpi.Name) > MaxNameLen {
+		return ErrNameTooLong
 	} else if rpi.ReplicaN < 1 {
 		return ErrReplicationFactorTooLow
 	}
@@ -439,7 +449,7 @@ func (data *Data) CreateContinuousQuery(database, name, query string) error {
 func (data *Data) DropContinuousQuery(database, name string) error {
 	di := data.Database(database)
 	if di == nil {
-		return influxdb.ErrDatabaseNotFound(database)
+		return nil
 	}
 
 	for i := range di.ContinuousQueries {
@@ -448,7 +458,7 @@ func (data *Data) DropContinuousQuery(database, name string) error {
 			return nil
 		}
 	}
-	return ErrContinuousQueryNotFound
+	return nil
 }
 
 // validateURL returns an error if the URL does not have a port or uses a scheme other than UDP or HTTP.
@@ -746,6 +756,32 @@ func (data *Data) UnmarshalBinary(buf []byte) error {
 	return nil
 }
 
+// TruncateShardGroups truncates any shard group that could contain timestamps beyond t.
+func (data *Data) TruncateShardGroups(t time.Time) {
+	for i := range data.Databases {
+		dbi := &data.Databases[i]
+
+		for j := range dbi.RetentionPolicies {
+			rpi := &dbi.RetentionPolicies[j]
+
+			for k := range rpi.ShardGroups {
+				sgi := &rpi.ShardGroups[k]
+
+				if !t.Before(sgi.EndTime) || sgi.Deleted() || (sgi.Truncated() && sgi.TruncatedAt.Before(t)) {
+					continue
+				}
+
+				if !t.After(sgi.StartTime) {
+					// future shardgroup
+					sgi.TruncatedAt = sgi.StartTime
+				} else {
+					sgi.TruncatedAt = t
+				}
+			}
+		}
+	}
+}
+
 // hasAdminUser exhaustively checks for the presence of at least one admin
 // user.
 func (data *Data) hasAdminUser() bool {
@@ -755,6 +791,106 @@ func (data *Data) hasAdminUser() bool {
 		}
 	}
 	return false
+}
+
+// ImportData imports selected data into the current metadata.
+// if non-empty, backupDBName, restoreDBName, backupRPName, restoreRPName can be used to select DB metadata from other,
+// and to assign a new name to the imported data.  Returns a map of shard ID's in the old metadata to new shard ID's
+// in the new metadata, along with a list of new databases created, both of which can assist in the import of existing
+// shard data during a database restore.
+func (data *Data) ImportData(other Data, backupDBName, restoreDBName, backupRPName, restoreRPName string) (map[uint64]uint64, []string, error) {
+	shardIDMap := make(map[uint64]uint64)
+	if backupDBName != "" {
+		dbName, err := data.importOneDB(other, backupDBName, restoreDBName, backupRPName, restoreRPName, shardIDMap)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return shardIDMap, []string{dbName}, nil
+	}
+
+	// if no backupDBName then we'll try to import all the DB's.  If one of them fails, we'll mark the whole
+	// operation a failure and return an error.
+	var newDBs []string
+	for _, dbi := range other.Databases {
+		if dbi.Name == "_internal" {
+			continue
+		}
+		dbName, err := data.importOneDB(other, dbi.Name, "", "", "", shardIDMap)
+		if err != nil {
+			return nil, nil, err
+		}
+		newDBs = append(newDBs, dbName)
+	}
+	return shardIDMap, newDBs, nil
+}
+
+// importOneDB imports a single database/rp from an external metadata object, renaming them if new names are provided.
+func (data *Data) importOneDB(other Data, backupDBName, restoreDBName, backupRPName, restoreRPName string, shardIDMap map[uint64]uint64) (string, error) {
+
+	dbPtr := other.Database(backupDBName)
+	if dbPtr == nil {
+		return "", fmt.Errorf("imported metadata does not have datbase named %s", backupDBName)
+	}
+
+	if restoreDBName == "" {
+		restoreDBName = backupDBName
+	}
+
+	if data.Database(restoreDBName) != nil {
+		return "", errors.New("database already exists")
+	}
+
+	// change the names if we want/need to
+	err := data.CreateDatabase(restoreDBName)
+	if err != nil {
+		return "", err
+	}
+	dbImport := data.Database(restoreDBName)
+
+	if backupRPName != "" {
+		rpPtr := dbPtr.RetentionPolicy(backupRPName)
+
+		if rpPtr != nil {
+			rpImport := rpPtr.clone()
+			if restoreRPName == "" {
+				restoreRPName = backupRPName
+			}
+			rpImport.Name = restoreRPName
+			dbImport.RetentionPolicies = []RetentionPolicyInfo{rpImport}
+			dbImport.DefaultRetentionPolicy = restoreRPName
+		} else {
+			return "", fmt.Errorf("retention Policy not found in meta backup: %s.%s", backupDBName, backupRPName)
+		}
+
+	} else { // import all RP's without renaming
+		dbImport.DefaultRetentionPolicy = dbPtr.DefaultRetentionPolicy
+		if dbPtr.RetentionPolicies != nil {
+			dbImport.RetentionPolicies = make([]RetentionPolicyInfo, len(dbPtr.RetentionPolicies))
+			for i := range dbPtr.RetentionPolicies {
+				dbImport.RetentionPolicies[i] = dbPtr.RetentionPolicies[i].clone()
+			}
+		}
+
+	}
+
+	// renumber the shard groups and shards for the new retention policy(ies)
+	for _, rpImport := range dbImport.RetentionPolicies {
+		for j, sgImport := range rpImport.ShardGroups {
+			data.MaxShardGroupID++
+			rpImport.ShardGroups[j].ID = data.MaxShardGroupID
+			for k, _ := range sgImport.Shards {
+				data.MaxShardID++
+				shardIDMap[sgImport.Shards[k].ID] = data.MaxShardID
+				sgImport.Shards[k].ID = data.MaxShardID
+				// OSS doesn't use Owners but if we are importing this from Enterprise, we'll want to clear it out
+				// to avoid any issues if they ever export this DB again to bring back to Enterprise.
+				sgImport.Shards[k].Owners = []ShardOwner{}
+			}
+		}
+	}
+
+	return restoreDBName, nil
 }
 
 // NodeInfo represents information about a single node in the cluster.
@@ -1193,9 +1329,9 @@ func (a ShardGroupInfos) Less(i, j int) bool {
 	return iEnd.Before(jEnd)
 }
 
-// Contains returns true if the shard group contains data for the timestamp.
-func (sgi *ShardGroupInfo) Contains(timestamp time.Time) bool {
-	return !sgi.StartTime.After(timestamp) && sgi.EndTime.After(timestamp)
+// Contains returns true iif StartTime ≤ t < EndTime.
+func (sgi *ShardGroupInfo) Contains(t time.Time) bool {
+	return !t.Before(sgi.StartTime) && t.Before(sgi.EndTime)
 }
 
 // Overlaps returns whether the shard group contains data for the time range between min and max
@@ -1382,9 +1518,7 @@ func (si *SubscriptionInfo) unmarshal(pb *internal.SubscriptionInfo) {
 
 	if len(pb.GetDestinations()) > 0 {
 		si.Destinations = make([]string, len(pb.GetDestinations()))
-		for i, h := range pb.GetDestinations() {
-			si.Destinations[i] = h
-		}
+		copy(si.Destinations, pb.GetDestinations())
 	}
 }
 
@@ -1453,15 +1587,11 @@ type UserInfo struct {
 type User interface {
 	query.Authorizer
 	ID() string
-	IsAdmin() bool
+	AuthorizeUnrestricted() bool
 }
 
 func (u *UserInfo) ID() string {
 	return u.Name
-}
-
-func (u *UserInfo) IsAdmin() bool {
-	return u.Admin
 }
 
 // AuthorizeDatabase returns true if the user is authorized for the given privilege on the given database.
@@ -1481,6 +1611,11 @@ func (u *UserInfo) AuthorizeSeriesRead(database string, measurement []byte, tags
 // AuthorizeSeriesWrite is used to limit access per-series (enterprise only)
 func (u *UserInfo) AuthorizeSeriesWrite(database string, measurement []byte, tags models.Tags) bool {
 	return true
+}
+
+// AuthorizeUnrestricted allows admins to shortcut access checks.
+func (u *UserInfo) AuthorizeUnrestricted() bool {
+	return u.Admin
 }
 
 // clone returns a deep copy of si.

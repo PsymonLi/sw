@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 
 	"github.com/influxdata/influxdb/pkg/bytesutil"
+	"github.com/influxdata/influxdb/tsdb"
 )
 
 // ErrFileInUse is returned when attempting to remove or close a TSM file that is still being used.
@@ -25,9 +26,11 @@ var nilOffset = []byte{255, 255, 255, 255}
 // TSMReader is a reader for a TSM file.
 type TSMReader struct {
 	// refs is the count of active references to this reader.
-	refs int64
+	refs   int64
+	refsWG sync.WaitGroup
 
-	mu sync.RWMutex
+	madviseWillNeed bool // Hint to the kernel with MADV_WILLNEED.
+	mu              sync.RWMutex
 
 	// accessor provides access and decoding of blocks for the reader.
 	accessor blockAccessor
@@ -223,9 +226,21 @@ type blockAccessor interface {
 	free() error
 }
 
+type tsmReaderOption func(*TSMReader)
+
+// WithMadviseWillNeed is an option for specifying whether to provide a MADV_WILL need hint to the kernel.
+var WithMadviseWillNeed = func(willNeed bool) tsmReaderOption {
+	return func(r *TSMReader) {
+		r.madviseWillNeed = willNeed
+	}
+}
+
 // NewTSMReader returns a new TSMReader from the given file.
-func NewTSMReader(f *os.File) (*TSMReader, error) {
+func NewTSMReader(f *os.File, options ...tsmReaderOption) (*TSMReader, error) {
 	t := &TSMReader{}
+	for _, option := range options {
+		option(t)
+	}
 
 	stat, err := f.Stat()
 	if err != nil {
@@ -234,7 +249,8 @@ func NewTSMReader(f *os.File) (*TSMReader, error) {
 	t.size = stat.Size()
 	t.lastModified = stat.ModTime().UnixNano()
 	t.accessor = &mmapAccessor{
-		f: f,
+		f:            f,
+		mmapWillNeed: t.madviseWillNeed,
 	}
 
 	index, err := t.accessor.init()
@@ -243,13 +259,18 @@ func NewTSMReader(f *os.File) (*TSMReader, error) {
 	}
 
 	t.index = index
-	t.tombstoner = &Tombstoner{Path: t.Path(), FilterFn: index.ContainsKey}
+	t.tombstoner = NewTombstoner(t.Path(), index.ContainsKey)
 
 	if err := t.applyTombstones(); err != nil {
 		return nil, err
 	}
 
 	return t, nil
+}
+
+// WithObserver sets the observer for the TSM reader.
+func (t *TSMReader) WithObserver(obs tsdb.FileStoreObserver) {
+	t.tombstoner.WithObserver(obs)
 }
 
 func (t *TSMReader) applyTombstones() error {
@@ -398,12 +419,10 @@ func (t *TSMReader) Type(key []byte) (byte, error) {
 
 // Close closes the TSMReader.
 func (t *TSMReader) Close() error {
+	t.refsWG.Wait()
+
 	t.mu.Lock()
 	defer t.mu.Unlock()
-
-	if t.InUse() {
-		return ErrFileInUse
-	}
 
 	if err := t.accessor.close(); err != nil {
 		return err
@@ -417,6 +436,7 @@ func (t *TSMReader) Close() error {
 // there are no more references.
 func (t *TSMReader) Ref() {
 	atomic.AddInt64(&t.refs, 1)
+	t.refsWG.Add(1)
 }
 
 // Unref removes a usage record of this TSMReader.  If the Reader was closed
@@ -424,6 +444,7 @@ func (t *TSMReader) Ref() {
 // be closed and remove
 func (t *TSMReader) Unref() {
 	atomic.AddInt64(&t.refs, -1)
+	t.refsWG.Done()
 }
 
 // InUse returns whether the TSMReader currently has any active references.
@@ -455,7 +476,10 @@ func (t *TSMReader) remove() error {
 	}
 
 	if path != "" {
-		os.RemoveAll(path)
+		err := os.RemoveAll(path)
+		if err != nil {
+			return err
+		}
 	}
 
 	if err := t.tombstoner.Delete(); err != nil {
@@ -835,6 +859,10 @@ func (d *indirectIndex) searchOffset(key []byte) int {
 // search returns the byte position of key in the index.  If key is not
 // in the index, len(index) is returned.
 func (d *indirectIndex) search(key []byte) int {
+	if !d.ContainsKey(key) {
+		return len(d.b)
+	}
+
 	// We use a binary search across our indirect offsets (pointers to all the keys
 	// in the index slice).
 	i := bytesutil.SearchBytesFixed(d.offsets, 4, func(x []byte) bool {
@@ -1329,15 +1357,15 @@ func (d *indirectIndex) Close() error {
 // mmapAccess is mmap based block accessor.  It access blocks through an
 // MMAP file interface.
 type mmapAccessor struct {
-	// Counter incremented everytime the mmapAccessor is accessed
-	accessCount uint64
-	// Counter to determine whether the accessor can free its resources
-	freeCount uint64
+	accessCount uint64 // Counter incremented everytime the mmapAccessor is accessed
+	freeCount   uint64 // Counter to determine whether the accessor can free its resources
+
+	mmapWillNeed bool // If true then mmap advise value MADV_WILLNEED will be provided the kernel for b.
 
 	mu sync.RWMutex
+	b  []byte
+	f  *os.File
 
-	f     *os.File
-	b     []byte
 	index *indirectIndex
 }
 
@@ -1366,6 +1394,15 @@ func (m *mmapAccessor) init() (*indirectIndex, error) {
 	}
 	if len(m.b) < 8 {
 		return nil, fmt.Errorf("mmapAccessor: byte slice too small for indirectIndex")
+	}
+
+	// Hint to the kernel that we will be reading the file.  It would be better to hint
+	// that we will be reading the index section, but that's not been
+	// implemented as yet.
+	if m.mmapWillNeed {
+		if err := madviseWillNeed(m.b); err != nil {
+			return nil, err
+		}
 	}
 
 	indexOfsPos := len(m.b) - 8
@@ -1455,6 +1492,9 @@ func (m *mmapAccessor) rename(path string) error {
 		return err
 	}
 
+	if m.mmapWillNeed {
+		return madviseWillNeed(m.b)
+	}
 	return nil
 }
 

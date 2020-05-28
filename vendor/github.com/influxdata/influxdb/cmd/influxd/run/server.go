@@ -1,6 +1,7 @@
 package run
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log"
@@ -33,9 +34,10 @@ import (
 	client "github.com/influxdata/usage-client/v1"
 	"go.uber.org/zap"
 
-	// Initialize the engine & index packages
 	"github.com/influxdata/influxdb/services/storage"
+	// Initialize the engine package
 	_ "github.com/influxdata/influxdb/tsdb/engine"
+	// Initialize the index package
 	_ "github.com/influxdata/influxdb/tsdb/index"
 )
 
@@ -70,7 +72,7 @@ type Server struct {
 	MetaClient *meta.Client
 
 	TSDBStore     *tsdb.Store
-	QueryExecutor *query.QueryExecutor
+	QueryExecutor *query.Executor
 	PointsWriter  *coordinator.PointsWriter
 	Subscriber    *subscriber.Service
 
@@ -100,8 +102,30 @@ type Server struct {
 	config *Config
 }
 
+// updateTLSConfig stores with into the tls config pointed at by into but only if with is not nil
+// and into is nil. Think of it as setting the default value.
+func updateTLSConfig(into **tls.Config, with *tls.Config) {
+	if with != nil && into != nil && *into == nil {
+		*into = with
+	}
+}
+
 // NewServer returns a new instance of Server built from a config.
 func NewServer(c *Config, buildInfo *BuildInfo) (*Server, error) {
+	// First grab the base tls config we will use for all clients and servers
+	tlsConfig, err := c.TLS.Parse()
+	if err != nil {
+		return nil, fmt.Errorf("tls configuration: %v", err)
+	}
+
+	// Update the TLS values on each of the configs to be the parsed one if
+	// not already specified (set the default).
+	updateTLSConfig(&c.HTTPD.TLS, tlsConfig)
+	updateTLSConfig(&c.Subscriber.TLS, tlsConfig)
+	for i := range c.OpenTSDBInputs {
+		updateTLSConfig(&c.OpenTSDBInputs[i].TLS, tlsConfig)
+	}
+
 	// We need to ensure that a meta directory always exists even if
 	// we don't start the meta store.  node.json is always stored under
 	// the meta directory.
@@ -121,7 +145,7 @@ func NewServer(c *Config, buildInfo *BuildInfo) (*Server, error) {
 		}
 	}
 
-	_, err := influxdb.LoadNode(c.Meta.Dir)
+	_, err = influxdb.LoadNode(c.Meta.Dir)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -178,11 +202,11 @@ func NewServer(c *Config, buildInfo *BuildInfo) (*Server, error) {
 	s.PointsWriter.TSDBStore = s.TSDBStore
 
 	// Initialize query executor.
-	s.QueryExecutor = query.NewQueryExecutor()
+	s.QueryExecutor = query.NewExecutor()
 	s.QueryExecutor.StatementExecutor = &coordinator.StatementExecutor{
 		MetaClient:  s.MetaClient,
 		TaskManager: s.QueryExecutor.TaskManager,
-		TSDBStore:   coordinator.LocalTSDBStore{Store: s.TSDBStore},
+		TSDBStore:   s.TSDBStore,
 		ShardMapper: &coordinator.LocalShardMapper{
 			MetaClient: s.MetaClient,
 			TSDBStore:  coordinator.LocalTSDBStore{Store: s.TSDBStore},
@@ -263,6 +287,12 @@ func (s *Server) appendHTTPDService(c httpd.Config) {
 	srv.Handler.Version = s.buildInfo.Version
 	srv.Handler.BuildType = "OSS"
 
+	// Wire up storage service for Prometheus endpoints.
+	storageStore := storage.NewStore()
+	storageStore.MetaClient = s.MetaClient
+	storageStore.TSDBStore = s.TSDBStore
+	srv.Handler.Store = storageStore
+
 	s.Services = append(s.Services, srv)
 }
 
@@ -321,11 +351,7 @@ func (s *Server) appendPrecreatorService(c precreator.Config) error {
 	if !c.Enabled {
 		return nil
 	}
-	srv, err := precreator.NewService(c)
-	if err != nil {
-		return err
-	}
-
+	srv := precreator.NewService(c)
 	srv.MetaClient = s.MetaClient
 	s.Services = append(s.Services, srv)
 	return nil
@@ -423,7 +449,7 @@ func (s *Server) Open() error {
 		return fmt.Errorf("open tsdb store: %s", err)
 	}
 
-	// Open the subcriber service
+	// Open the subscriber service
 	if err := s.Subscriber.Open(); err != nil {
 		return fmt.Errorf("open subscriber: %s", err)
 	}

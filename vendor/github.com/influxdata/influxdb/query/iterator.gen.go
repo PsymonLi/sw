@@ -112,6 +112,9 @@ type floatMergeIterator struct {
 	heap   *floatMergeHeap
 	init   bool
 
+	closed bool
+	mu     sync.RWMutex
+
 	// Current iterator and window.
 	curr   *floatMergeHeapItem
 	window struct {
@@ -140,6 +143,7 @@ func newFloatMergeIterator(inputs []FloatIterator, opt IteratorOptions) *floatMe
 		// Append to the heap.
 		itr.heap.items = append(itr.heap.items, &floatMergeHeapItem{itr: bufInput})
 	}
+
 	return itr
 }
 
@@ -154,17 +158,27 @@ func (itr *floatMergeIterator) Stats() IteratorStats {
 
 // Close closes the underlying iterators.
 func (itr *floatMergeIterator) Close() error {
+	itr.mu.Lock()
+	defer itr.mu.Unlock()
+
 	for _, input := range itr.inputs {
 		input.Close()
 	}
 	itr.curr = nil
 	itr.inputs = nil
 	itr.heap.items = nil
+	itr.closed = true
 	return nil
 }
 
 // Next returns the next point from the iterator.
 func (itr *floatMergeIterator) Next() (*FloatPoint, error) {
+	itr.mu.RLock()
+	defer itr.mu.RUnlock()
+	if itr.closed {
+		return nil, nil
+	}
+
 	// Initialize the heap. This needs to be done lazily on the first call to this iterator
 	// so that iterator initialization done through the Select() call returns quickly.
 	// Queries can only be interrupted after the Select() call completes so any operations
@@ -477,6 +491,95 @@ type floatSortedMergeHeapItem struct {
 	itr   FloatIterator
 }
 
+// floatIteratorScanner scans the results of a FloatIterator into a map.
+type floatIteratorScanner struct {
+	input        *bufFloatIterator
+	err          error
+	keys         []influxql.VarRef
+	defaultValue interface{}
+}
+
+// newFloatIteratorScanner creates a new IteratorScanner.
+func newFloatIteratorScanner(input FloatIterator, keys []influxql.VarRef, defaultValue interface{}) *floatIteratorScanner {
+	return &floatIteratorScanner{
+		input:        newBufFloatIterator(input),
+		keys:         keys,
+		defaultValue: defaultValue,
+	}
+}
+
+func (s *floatIteratorScanner) Peek() (int64, string, Tags) {
+	if s.err != nil {
+		return ZeroTime, "", Tags{}
+	}
+
+	p, err := s.input.peek()
+	if err != nil {
+		s.err = err
+		return ZeroTime, "", Tags{}
+	} else if p == nil {
+		return ZeroTime, "", Tags{}
+	}
+	return p.Time, p.Name, p.Tags
+}
+
+func (s *floatIteratorScanner) ScanAt(ts int64, name string, tags Tags, m map[string]interface{}) {
+	if s.err != nil {
+		return
+	}
+
+	p, err := s.input.Next()
+	if err != nil {
+		s.err = err
+		return
+	} else if p == nil {
+		s.useDefaults(m)
+		return
+	} else if p.Time != ts || p.Name != name || !p.Tags.Equals(&tags) {
+		s.useDefaults(m)
+		s.input.unread(p)
+		return
+	}
+
+	if k := s.keys[0]; k.Val != "" {
+		if p.Nil {
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		} else {
+			m[k.Val] = p.Value
+		}
+	}
+	for i, v := range p.Aux {
+		k := s.keys[i+1]
+		switch v.(type) {
+		case float64, int64, uint64, string, bool:
+			m[k.Val] = v
+		default:
+			// Insert the fill value if one was specified.
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		}
+	}
+}
+
+func (s *floatIteratorScanner) useDefaults(m map[string]interface{}) {
+	if s.defaultValue == SkipDefault {
+		return
+	}
+	for _, k := range s.keys {
+		if k.Val == "" {
+			continue
+		}
+		m[k.Val] = castToType(s.defaultValue, k.Type)
+	}
+}
+
+func (s *floatIteratorScanner) Stats() IteratorStats { return s.input.Stats() }
+func (s *floatIteratorScanner) Err() error           { return s.err }
+func (s *floatIteratorScanner) Close() error         { return s.input.Close() }
+
 // floatParallelIterator represents an iterator that pulls data in a separate goroutine.
 type floatParallelIterator struct {
 	input FloatIterator
@@ -676,21 +779,17 @@ func (itr *floatFillIterator) Next() (*FloatPoint, error) {
 	}
 
 	// Check if the next point is outside of our window or is nil.
-	for p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
+	if p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
 		// If we are inside of an interval, unread the point and continue below to
 		// constructing a new point.
-		if itr.opt.Ascending {
-			if itr.window.time <= itr.endTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
-		} else {
-			if itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
+		if itr.opt.Ascending && itr.window.time <= itr.endTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
+		} else if !itr.opt.Ascending && itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
 		}
 
 		// We are *not* in a current interval. If there is no next point,
@@ -709,10 +808,10 @@ func (itr *floatFillIterator) Next() (*FloatPoint, error) {
 			_, itr.window.offset = itr.opt.Zone(itr.window.time)
 		}
 		itr.prev = FloatPoint{Nil: true}
-		break
 	}
 
 	// Check if the point is our next expected point.
+CONSTRUCT:
 	if p == nil || (itr.opt.Ascending && p.Time > itr.window.time) || (!itr.opt.Ascending && p.Time < itr.window.time) {
 		if p != nil {
 			itr.input.unread(p)
@@ -745,7 +844,7 @@ func (itr *floatFillIterator) Next() (*FloatPoint, error) {
 		case influxql.NullFill:
 			p.Nil = true
 		case influxql.NumberFill:
-			p.Value = castToFloat(itr.opt.FillValue)
+			p.Value, _ = castToFloat(itr.opt.FillValue)
 		case influxql.PreviousFill:
 			if !itr.prev.Nil {
 				p.Value = itr.prev.Value
@@ -891,172 +990,6 @@ func (itr *floatCloseInterruptIterator) Next() (*FloatPoint, error) {
 			return nil, err
 		}
 	}
-	return p, nil
-}
-
-// auxFloatPoint represents a combination of a point and an error for the AuxIterator.
-type auxFloatPoint struct {
-	point *FloatPoint
-	err   error
-}
-
-// floatAuxIterator represents a float implementation of AuxIterator.
-type floatAuxIterator struct {
-	input      *bufFloatIterator
-	output     chan auxFloatPoint
-	fields     *auxIteratorFields
-	background bool
-	closer     sync.Once
-}
-
-func newFloatAuxIterator(input FloatIterator, opt IteratorOptions) *floatAuxIterator {
-	return &floatAuxIterator{
-		input:  newBufFloatIterator(input),
-		output: make(chan auxFloatPoint, 1),
-		fields: newAuxIteratorFields(opt),
-	}
-}
-
-func (itr *floatAuxIterator) Background() {
-	itr.background = true
-	itr.Start()
-	go DrainIterator(itr)
-}
-
-func (itr *floatAuxIterator) Start()               { go itr.stream() }
-func (itr *floatAuxIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-func (itr *floatAuxIterator) Close() error {
-	var err error
-	itr.closer.Do(func() { err = itr.input.Close() })
-	return err
-}
-
-func (itr *floatAuxIterator) Next() (*FloatPoint, error) {
-	p := <-itr.output
-	return p.point, p.err
-}
-func (itr *floatAuxIterator) Iterator(name string, typ influxql.DataType) Iterator {
-	return itr.fields.iterator(name, typ)
-}
-
-func (itr *floatAuxIterator) stream() {
-	for {
-		// Read next point.
-		p, err := itr.input.Next()
-		if err != nil {
-			itr.output <- auxFloatPoint{err: err}
-			itr.fields.sendError(err)
-			break
-		} else if p == nil {
-			break
-		}
-
-		// Send point to output and to each field iterator.
-		itr.output <- auxFloatPoint{point: p}
-		if ok := itr.fields.send(p); !ok && itr.background {
-			break
-		}
-	}
-
-	close(itr.output)
-	itr.fields.close()
-}
-
-// floatChanIterator represents a new instance of floatChanIterator.
-type floatChanIterator struct {
-	buf struct {
-		i      int
-		filled bool
-		points [2]FloatPoint
-	}
-	err  error
-	cond *sync.Cond
-	done bool
-}
-
-func (itr *floatChanIterator) Stats() IteratorStats { return IteratorStats{} }
-
-func (itr *floatChanIterator) Close() error {
-	itr.cond.L.Lock()
-	// Mark the channel iterator as done and signal all waiting goroutines to start again.
-	itr.done = true
-	itr.cond.Broadcast()
-	// Do not defer the unlock so we don't create an unnecessary allocation.
-	itr.cond.L.Unlock()
-	return nil
-}
-
-func (itr *floatChanIterator) setBuf(name string, tags Tags, time int64, value interface{}) bool {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Wait for either the iterator to be done (so we don't have to set the value)
-	// or for the buffer to have been read and ready for another write.
-	for !itr.done && itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Do not set the value and return false to signal that the iterator is closed.
-	// Do this after the above wait as the above for loop may have exited because
-	// the iterator was closed.
-	if itr.done {
-		return false
-	}
-
-	switch v := value.(type) {
-	case float64:
-		itr.buf.points[itr.buf.i] = FloatPoint{Name: name, Tags: tags, Time: time, Value: v}
-
-	case int64:
-		itr.buf.points[itr.buf.i] = FloatPoint{Name: name, Tags: tags, Time: time, Value: float64(v)}
-
-	default:
-		itr.buf.points[itr.buf.i] = FloatPoint{Name: name, Tags: tags, Time: time, Nil: true}
-	}
-	itr.buf.filled = true
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-	return true
-}
-
-func (itr *floatChanIterator) setErr(err error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-	itr.err = err
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-}
-
-func (itr *floatChanIterator) Next() (*FloatPoint, error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Check for an error and return one if there.
-	if itr.err != nil {
-		return nil, itr.err
-	}
-
-	// Wait until either a value is available in the buffer or
-	// the iterator is closed.
-	for !itr.done && !itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Return nil once the channel is done and the buffer is empty.
-	if itr.done && !itr.buf.filled {
-		return nil, nil
-	}
-
-	// Always read from the buffer if it exists, even if the iterator
-	// is closed. This prevents the last value from being truncated by
-	// the parent iterator.
-	p := &itr.buf.points[itr.buf.i]
-	itr.buf.i = (itr.buf.i + 1) % len(itr.buf.points)
-	itr.buf.filled = false
-	itr.cond.Signal()
 	return p, nil
 }
 
@@ -1267,10 +1200,17 @@ func (itr *floatStreamFloatIterator) Next() (*FloatPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *floatStreamFloatIterator) reduce() ([]FloatPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []FloatPoint
 			for _, rp := range itr.m {
@@ -1295,8 +1235,6 @@ func (itr *floatStreamFloatIterator) reduce() ([]FloatPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -1334,146 +1272,6 @@ func (itr *floatStreamFloatIterator) reduce() ([]FloatPoint, error) {
 		return points, nil
 	}
 }
-
-// floatExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type floatExprIterator struct {
-	left      *bufFloatIterator
-	right     *bufFloatIterator
-	fn        floatExprFunc
-	points    []FloatPoint // must be size 2
-	storePrev bool
-}
-
-func newFloatExprIterator(left, right FloatIterator, opt IteratorOptions, fn func(a, b float64) float64) *floatExprIterator {
-	var points []FloatPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []FloatPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToFloat(opt.FillValue)
-		points = []FloatPoint{{Value: value}, {Value: value}}
-	}
-	return &floatExprIterator{
-		left:      newBufFloatIterator(left),
-		right:     newBufFloatIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *floatExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *floatExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *floatExprIterator) Next() (*FloatPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		if a.Nil {
-			return a, nil
-		} else if b.Nil {
-			return b, nil
-		}
-		a.Value = itr.fn(a.Value, b.Value)
-		return a, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *floatExprIterator) next() (a, b *FloatPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// floatExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type floatExprFunc func(a, b float64) float64
 
 // floatReduceIntegerIterator executes a reducer for every interval and buffers the result.
 type floatReduceIntegerIterator struct {
@@ -1682,10 +1480,17 @@ func (itr *floatStreamIntegerIterator) Next() (*IntegerPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *floatStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []IntegerPoint
 			for _, rp := range itr.m {
@@ -1710,8 +1515,6 @@ func (itr *floatStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -1749,150 +1552,6 @@ func (itr *floatStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 		return points, nil
 	}
 }
-
-// floatIntegerExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type floatIntegerExprIterator struct {
-	left      *bufFloatIterator
-	right     *bufFloatIterator
-	fn        floatIntegerExprFunc
-	points    []FloatPoint // must be size 2
-	storePrev bool
-}
-
-func newFloatIntegerExprIterator(left, right FloatIterator, opt IteratorOptions, fn func(a, b float64) int64) *floatIntegerExprIterator {
-	var points []FloatPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []FloatPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToFloat(opt.FillValue)
-		points = []FloatPoint{{Value: value}, {Value: value}}
-	}
-	return &floatIntegerExprIterator{
-		left:      newBufFloatIterator(left),
-		right:     newBufFloatIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *floatIntegerExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *floatIntegerExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *floatIntegerExprIterator) Next() (*IntegerPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &IntegerPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *floatIntegerExprIterator) next() (a, b *FloatPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// floatIntegerExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type floatIntegerExprFunc func(a, b float64) int64
 
 // floatReduceUnsignedIterator executes a reducer for every interval and buffers the result.
 type floatReduceUnsignedIterator struct {
@@ -2101,10 +1760,17 @@ func (itr *floatStreamUnsignedIterator) Next() (*UnsignedPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *floatStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []UnsignedPoint
 			for _, rp := range itr.m {
@@ -2129,8 +1795,6 @@ func (itr *floatStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -2168,150 +1832,6 @@ func (itr *floatStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 		return points, nil
 	}
 }
-
-// floatUnsignedExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type floatUnsignedExprIterator struct {
-	left      *bufFloatIterator
-	right     *bufFloatIterator
-	fn        floatUnsignedExprFunc
-	points    []FloatPoint // must be size 2
-	storePrev bool
-}
-
-func newFloatUnsignedExprIterator(left, right FloatIterator, opt IteratorOptions, fn func(a, b float64) uint64) *floatUnsignedExprIterator {
-	var points []FloatPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []FloatPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToFloat(opt.FillValue)
-		points = []FloatPoint{{Value: value}, {Value: value}}
-	}
-	return &floatUnsignedExprIterator{
-		left:      newBufFloatIterator(left),
-		right:     newBufFloatIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *floatUnsignedExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *floatUnsignedExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *floatUnsignedExprIterator) Next() (*UnsignedPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &UnsignedPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *floatUnsignedExprIterator) next() (a, b *FloatPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// floatUnsignedExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type floatUnsignedExprFunc func(a, b float64) uint64
 
 // floatReduceStringIterator executes a reducer for every interval and buffers the result.
 type floatReduceStringIterator struct {
@@ -2520,10 +2040,17 @@ func (itr *floatStreamStringIterator) Next() (*StringPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *floatStreamStringIterator) reduce() ([]StringPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []StringPoint
 			for _, rp := range itr.m {
@@ -2548,8 +2075,6 @@ func (itr *floatStreamStringIterator) reduce() ([]StringPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -2587,150 +2112,6 @@ func (itr *floatStreamStringIterator) reduce() ([]StringPoint, error) {
 		return points, nil
 	}
 }
-
-// floatStringExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type floatStringExprIterator struct {
-	left      *bufFloatIterator
-	right     *bufFloatIterator
-	fn        floatStringExprFunc
-	points    []FloatPoint // must be size 2
-	storePrev bool
-}
-
-func newFloatStringExprIterator(left, right FloatIterator, opt IteratorOptions, fn func(a, b float64) string) *floatStringExprIterator {
-	var points []FloatPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []FloatPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToFloat(opt.FillValue)
-		points = []FloatPoint{{Value: value}, {Value: value}}
-	}
-	return &floatStringExprIterator{
-		left:      newBufFloatIterator(left),
-		right:     newBufFloatIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *floatStringExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *floatStringExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *floatStringExprIterator) Next() (*StringPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &StringPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *floatStringExprIterator) next() (a, b *FloatPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// floatStringExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type floatStringExprFunc func(a, b float64) string
 
 // floatReduceBooleanIterator executes a reducer for every interval and buffers the result.
 type floatReduceBooleanIterator struct {
@@ -2939,10 +2320,17 @@ func (itr *floatStreamBooleanIterator) Next() (*BooleanPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *floatStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []BooleanPoint
 			for _, rp := range itr.m {
@@ -2967,8 +2355,6 @@ func (itr *floatStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -3007,208 +2393,6 @@ func (itr *floatStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 	}
 }
 
-// floatBooleanExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type floatBooleanExprIterator struct {
-	left      *bufFloatIterator
-	right     *bufFloatIterator
-	fn        floatBooleanExprFunc
-	points    []FloatPoint // must be size 2
-	storePrev bool
-}
-
-func newFloatBooleanExprIterator(left, right FloatIterator, opt IteratorOptions, fn func(a, b float64) bool) *floatBooleanExprIterator {
-	var points []FloatPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []FloatPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToFloat(opt.FillValue)
-		points = []FloatPoint{{Value: value}, {Value: value}}
-	}
-	return &floatBooleanExprIterator{
-		left:      newBufFloatIterator(left),
-		right:     newBufFloatIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *floatBooleanExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *floatBooleanExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *floatBooleanExprIterator) Next() (*BooleanPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &BooleanPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *floatBooleanExprIterator) next() (a, b *FloatPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// floatBooleanExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type floatBooleanExprFunc func(a, b float64) bool
-
-// floatTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type floatTransformIterator struct {
-	input FloatIterator
-	fn    floatTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *floatTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *floatTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *floatTransformIterator) Next() (*FloatPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		p = itr.fn(p)
-	}
-	return p, nil
-}
-
-// floatTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type floatTransformFunc func(p *FloatPoint) *FloatPoint
-
-// floatBoolTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type floatBoolTransformIterator struct {
-	input FloatIterator
-	fn    floatBoolTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *floatBoolTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *floatBoolTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *floatBoolTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		return itr.fn(p), nil
-	}
-	return nil, nil
-}
-
-// floatBoolTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type floatBoolTransformFunc func(p *FloatPoint) *BooleanPoint
-
 // floatDedupeIterator only outputs unique points.
 // This differs from the DistinctIterator in that it compares all aux fields too.
 // This iterator is relatively inefficient and should only be used on small
@@ -3219,19 +2403,16 @@ type floatDedupeIterator struct {
 }
 
 type floatIteratorMapper struct {
-	e      *Emitter
-	buf    []interface{}
+	cur    Cursor
+	row    Row
 	driver IteratorMap   // which iterator to use for the primary value, can be nil
 	fields []IteratorMap // which iterator to use for an aux field
 	point  FloatPoint
 }
 
-func newFloatIteratorMapper(itrs []Iterator, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *floatIteratorMapper {
-	e := NewEmitter(itrs, opt.Ascending, 0)
-	e.OmitTime = true
+func newFloatIteratorMapper(cur Cursor, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *floatIteratorMapper {
 	return &floatIteratorMapper{
-		e:      e,
-		buf:    make([]interface{}, len(itrs)),
+		cur:    cur,
 		driver: driver,
 		fields: fields,
 		point: FloatPoint{
@@ -3241,18 +2422,20 @@ func newFloatIteratorMapper(itrs []Iterator, driver IteratorMap, fields []Iterat
 }
 
 func (itr *floatIteratorMapper) Next() (*FloatPoint, error) {
-	t, name, tags, err := itr.e.loadBuf()
-	if err != nil || t == ZeroTime {
-		return nil, err
+	if !itr.cur.Scan(&itr.row) {
+		if err := itr.cur.Err(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	itr.point.Time = t
-	itr.point.Name = name
-	itr.point.Tags = tags
 
-	itr.e.readInto(t, name, tags, itr.buf)
+	itr.point.Time = itr.row.Time
+	itr.point.Name = itr.row.Series.Name
+	itr.point.Tags = itr.row.Series.Tags
+
 	if itr.driver != nil {
-		if v := itr.driver.Value(tags, itr.buf); v != nil {
-			if v, ok := v.(float64); ok {
+		if v := itr.driver.Value(&itr.row); v != nil {
+			if v, ok := castToFloat(v); ok {
 				itr.point.Value = v
 				itr.point.Nil = false
 			} else {
@@ -3265,21 +2448,17 @@ func (itr *floatIteratorMapper) Next() (*FloatPoint, error) {
 		}
 	}
 	for i, f := range itr.fields {
-		itr.point.Aux[i] = f.Value(tags, itr.buf)
+		itr.point.Aux[i] = f.Value(&itr.row)
 	}
 	return &itr.point, nil
 }
 
 func (itr *floatIteratorMapper) Stats() IteratorStats {
-	stats := IteratorStats{}
-	for _, itr := range itr.e.itrs {
-		stats.Add(itr.Stats())
-	}
-	return stats
+	return itr.cur.Stats()
 }
 
 func (itr *floatIteratorMapper) Close() error {
-	return itr.e.Close()
+	return itr.cur.Close()
 }
 
 type floatFilterIterator struct {
@@ -3339,6 +2518,49 @@ func (itr *floatFilterIterator) Next() (*FloatPoint, error) {
 		}
 		return p, nil
 	}
+}
+
+type floatTagSubsetIterator struct {
+	input      FloatIterator
+	point      FloatPoint
+	lastTags   Tags
+	dimensions []string
+}
+
+func newFloatTagSubsetIterator(input FloatIterator, opt IteratorOptions) *floatTagSubsetIterator {
+	return &floatTagSubsetIterator{
+		input:      input,
+		dimensions: opt.GetDimensions(),
+	}
+}
+
+func (itr *floatTagSubsetIterator) Next() (*FloatPoint, error) {
+	p, err := itr.input.Next()
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+
+	itr.point.Name = p.Name
+	if !p.Tags.Equal(itr.lastTags) {
+		itr.point.Tags = p.Tags.Subset(itr.dimensions)
+		itr.lastTags = p.Tags
+	}
+	itr.point.Time = p.Time
+	itr.point.Value = p.Value
+	itr.point.Aux = p.Aux
+	itr.point.Aggregated = p.Aggregated
+	itr.point.Nil = p.Nil
+	return &itr.point, nil
+}
+
+func (itr *floatTagSubsetIterator) Stats() IteratorStats {
+	return itr.input.Stats()
+}
+
+func (itr *floatTagSubsetIterator) Close() error {
+	return itr.input.Close()
 }
 
 // newFloatDedupeIterator returns a new instance of floatDedupeIterator.
@@ -3514,6 +2736,9 @@ type integerMergeIterator struct {
 	heap   *integerMergeHeap
 	init   bool
 
+	closed bool
+	mu     sync.RWMutex
+
 	// Current iterator and window.
 	curr   *integerMergeHeapItem
 	window struct {
@@ -3557,17 +2782,27 @@ func (itr *integerMergeIterator) Stats() IteratorStats {
 
 // Close closes the underlying iterators.
 func (itr *integerMergeIterator) Close() error {
+	itr.mu.Lock()
+	defer itr.mu.Unlock()
+
 	for _, input := range itr.inputs {
 		input.Close()
 	}
 	itr.curr = nil
 	itr.inputs = nil
 	itr.heap.items = nil
+	itr.closed = true
 	return nil
 }
 
 // Next returns the next point from the iterator.
 func (itr *integerMergeIterator) Next() (*IntegerPoint, error) {
+	itr.mu.RLock()
+	defer itr.mu.RUnlock()
+	if itr.closed {
+		return nil, nil
+	}
+
 	// Initialize the heap. This needs to be done lazily on the first call to this iterator
 	// so that iterator initialization done through the Select() call returns quickly.
 	// Queries can only be interrupted after the Select() call completes so any operations
@@ -3880,6 +3115,95 @@ type integerSortedMergeHeapItem struct {
 	itr   IntegerIterator
 }
 
+// integerIteratorScanner scans the results of a IntegerIterator into a map.
+type integerIteratorScanner struct {
+	input        *bufIntegerIterator
+	err          error
+	keys         []influxql.VarRef
+	defaultValue interface{}
+}
+
+// newIntegerIteratorScanner creates a new IteratorScanner.
+func newIntegerIteratorScanner(input IntegerIterator, keys []influxql.VarRef, defaultValue interface{}) *integerIteratorScanner {
+	return &integerIteratorScanner{
+		input:        newBufIntegerIterator(input),
+		keys:         keys,
+		defaultValue: defaultValue,
+	}
+}
+
+func (s *integerIteratorScanner) Peek() (int64, string, Tags) {
+	if s.err != nil {
+		return ZeroTime, "", Tags{}
+	}
+
+	p, err := s.input.peek()
+	if err != nil {
+		s.err = err
+		return ZeroTime, "", Tags{}
+	} else if p == nil {
+		return ZeroTime, "", Tags{}
+	}
+	return p.Time, p.Name, p.Tags
+}
+
+func (s *integerIteratorScanner) ScanAt(ts int64, name string, tags Tags, m map[string]interface{}) {
+	if s.err != nil {
+		return
+	}
+
+	p, err := s.input.Next()
+	if err != nil {
+		s.err = err
+		return
+	} else if p == nil {
+		s.useDefaults(m)
+		return
+	} else if p.Time != ts || p.Name != name || !p.Tags.Equals(&tags) {
+		s.useDefaults(m)
+		s.input.unread(p)
+		return
+	}
+
+	if k := s.keys[0]; k.Val != "" {
+		if p.Nil {
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		} else {
+			m[k.Val] = p.Value
+		}
+	}
+	for i, v := range p.Aux {
+		k := s.keys[i+1]
+		switch v.(type) {
+		case float64, int64, uint64, string, bool:
+			m[k.Val] = v
+		default:
+			// Insert the fill value if one was specified.
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		}
+	}
+}
+
+func (s *integerIteratorScanner) useDefaults(m map[string]interface{}) {
+	if s.defaultValue == SkipDefault {
+		return
+	}
+	for _, k := range s.keys {
+		if k.Val == "" {
+			continue
+		}
+		m[k.Val] = castToType(s.defaultValue, k.Type)
+	}
+}
+
+func (s *integerIteratorScanner) Stats() IteratorStats { return s.input.Stats() }
+func (s *integerIteratorScanner) Err() error           { return s.err }
+func (s *integerIteratorScanner) Close() error         { return s.input.Close() }
+
 // integerParallelIterator represents an iterator that pulls data in a separate goroutine.
 type integerParallelIterator struct {
 	input IntegerIterator
@@ -4079,21 +3403,17 @@ func (itr *integerFillIterator) Next() (*IntegerPoint, error) {
 	}
 
 	// Check if the next point is outside of our window or is nil.
-	for p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
+	if p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
 		// If we are inside of an interval, unread the point and continue below to
 		// constructing a new point.
-		if itr.opt.Ascending {
-			if itr.window.time <= itr.endTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
-		} else {
-			if itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
+		if itr.opt.Ascending && itr.window.time <= itr.endTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
+		} else if !itr.opt.Ascending && itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
 		}
 
 		// We are *not* in a current interval. If there is no next point,
@@ -4112,10 +3432,10 @@ func (itr *integerFillIterator) Next() (*IntegerPoint, error) {
 			_, itr.window.offset = itr.opt.Zone(itr.window.time)
 		}
 		itr.prev = IntegerPoint{Nil: true}
-		break
 	}
 
 	// Check if the point is our next expected point.
+CONSTRUCT:
 	if p == nil || (itr.opt.Ascending && p.Time > itr.window.time) || (!itr.opt.Ascending && p.Time < itr.window.time) {
 		if p != nil {
 			itr.input.unread(p)
@@ -4148,7 +3468,7 @@ func (itr *integerFillIterator) Next() (*IntegerPoint, error) {
 		case influxql.NullFill:
 			p.Nil = true
 		case influxql.NumberFill:
-			p.Value = castToInteger(itr.opt.FillValue)
+			p.Value, _ = castToInteger(itr.opt.FillValue)
 		case influxql.PreviousFill:
 			if !itr.prev.Nil {
 				p.Value = itr.prev.Value
@@ -4294,169 +3614,6 @@ func (itr *integerCloseInterruptIterator) Next() (*IntegerPoint, error) {
 			return nil, err
 		}
 	}
-	return p, nil
-}
-
-// auxIntegerPoint represents a combination of a point and an error for the AuxIterator.
-type auxIntegerPoint struct {
-	point *IntegerPoint
-	err   error
-}
-
-// integerAuxIterator represents a integer implementation of AuxIterator.
-type integerAuxIterator struct {
-	input      *bufIntegerIterator
-	output     chan auxIntegerPoint
-	fields     *auxIteratorFields
-	background bool
-	closer     sync.Once
-}
-
-func newIntegerAuxIterator(input IntegerIterator, opt IteratorOptions) *integerAuxIterator {
-	return &integerAuxIterator{
-		input:  newBufIntegerIterator(input),
-		output: make(chan auxIntegerPoint, 1),
-		fields: newAuxIteratorFields(opt),
-	}
-}
-
-func (itr *integerAuxIterator) Background() {
-	itr.background = true
-	itr.Start()
-	go DrainIterator(itr)
-}
-
-func (itr *integerAuxIterator) Start()               { go itr.stream() }
-func (itr *integerAuxIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-func (itr *integerAuxIterator) Close() error {
-	var err error
-	itr.closer.Do(func() { err = itr.input.Close() })
-	return err
-}
-
-func (itr *integerAuxIterator) Next() (*IntegerPoint, error) {
-	p := <-itr.output
-	return p.point, p.err
-}
-func (itr *integerAuxIterator) Iterator(name string, typ influxql.DataType) Iterator {
-	return itr.fields.iterator(name, typ)
-}
-
-func (itr *integerAuxIterator) stream() {
-	for {
-		// Read next point.
-		p, err := itr.input.Next()
-		if err != nil {
-			itr.output <- auxIntegerPoint{err: err}
-			itr.fields.sendError(err)
-			break
-		} else if p == nil {
-			break
-		}
-
-		// Send point to output and to each field iterator.
-		itr.output <- auxIntegerPoint{point: p}
-		if ok := itr.fields.send(p); !ok && itr.background {
-			break
-		}
-	}
-
-	close(itr.output)
-	itr.fields.close()
-}
-
-// integerChanIterator represents a new instance of integerChanIterator.
-type integerChanIterator struct {
-	buf struct {
-		i      int
-		filled bool
-		points [2]IntegerPoint
-	}
-	err  error
-	cond *sync.Cond
-	done bool
-}
-
-func (itr *integerChanIterator) Stats() IteratorStats { return IteratorStats{} }
-
-func (itr *integerChanIterator) Close() error {
-	itr.cond.L.Lock()
-	// Mark the channel iterator as done and signal all waiting goroutines to start again.
-	itr.done = true
-	itr.cond.Broadcast()
-	// Do not defer the unlock so we don't create an unnecessary allocation.
-	itr.cond.L.Unlock()
-	return nil
-}
-
-func (itr *integerChanIterator) setBuf(name string, tags Tags, time int64, value interface{}) bool {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Wait for either the iterator to be done (so we don't have to set the value)
-	// or for the buffer to have been read and ready for another write.
-	for !itr.done && itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Do not set the value and return false to signal that the iterator is closed.
-	// Do this after the above wait as the above for loop may have exited because
-	// the iterator was closed.
-	if itr.done {
-		return false
-	}
-
-	switch v := value.(type) {
-	case int64:
-		itr.buf.points[itr.buf.i] = IntegerPoint{Name: name, Tags: tags, Time: time, Value: v}
-
-	default:
-		itr.buf.points[itr.buf.i] = IntegerPoint{Name: name, Tags: tags, Time: time, Nil: true}
-	}
-	itr.buf.filled = true
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-	return true
-}
-
-func (itr *integerChanIterator) setErr(err error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-	itr.err = err
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-}
-
-func (itr *integerChanIterator) Next() (*IntegerPoint, error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Check for an error and return one if there.
-	if itr.err != nil {
-		return nil, itr.err
-	}
-
-	// Wait until either a value is available in the buffer or
-	// the iterator is closed.
-	for !itr.done && !itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Return nil once the channel is done and the buffer is empty.
-	if itr.done && !itr.buf.filled {
-		return nil, nil
-	}
-
-	// Always read from the buffer if it exists, even if the iterator
-	// is closed. This prevents the last value from being truncated by
-	// the parent iterator.
-	p := &itr.buf.points[itr.buf.i]
-	itr.buf.i = (itr.buf.i + 1) % len(itr.buf.points)
-	itr.buf.filled = false
-	itr.cond.Signal()
 	return p, nil
 }
 
@@ -4667,10 +3824,17 @@ func (itr *integerStreamFloatIterator) Next() (*FloatPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *integerStreamFloatIterator) reduce() ([]FloatPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []FloatPoint
 			for _, rp := range itr.m {
@@ -4695,8 +3859,6 @@ func (itr *integerStreamFloatIterator) reduce() ([]FloatPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -4734,150 +3896,6 @@ func (itr *integerStreamFloatIterator) reduce() ([]FloatPoint, error) {
 		return points, nil
 	}
 }
-
-// integerFloatExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type integerFloatExprIterator struct {
-	left      *bufIntegerIterator
-	right     *bufIntegerIterator
-	fn        integerFloatExprFunc
-	points    []IntegerPoint // must be size 2
-	storePrev bool
-}
-
-func newIntegerFloatExprIterator(left, right IntegerIterator, opt IteratorOptions, fn func(a, b int64) float64) *integerFloatExprIterator {
-	var points []IntegerPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []IntegerPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToInteger(opt.FillValue)
-		points = []IntegerPoint{{Value: value}, {Value: value}}
-	}
-	return &integerFloatExprIterator{
-		left:      newBufIntegerIterator(left),
-		right:     newBufIntegerIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *integerFloatExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *integerFloatExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *integerFloatExprIterator) Next() (*FloatPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &FloatPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *integerFloatExprIterator) next() (a, b *IntegerPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// integerFloatExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type integerFloatExprFunc func(a, b int64) float64
 
 // integerReduceIntegerIterator executes a reducer for every interval and buffers the result.
 type integerReduceIntegerIterator struct {
@@ -5086,10 +4104,17 @@ func (itr *integerStreamIntegerIterator) Next() (*IntegerPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *integerStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []IntegerPoint
 			for _, rp := range itr.m {
@@ -5114,8 +4139,6 @@ func (itr *integerStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -5153,146 +4176,6 @@ func (itr *integerStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 		return points, nil
 	}
 }
-
-// integerExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type integerExprIterator struct {
-	left      *bufIntegerIterator
-	right     *bufIntegerIterator
-	fn        integerExprFunc
-	points    []IntegerPoint // must be size 2
-	storePrev bool
-}
-
-func newIntegerExprIterator(left, right IntegerIterator, opt IteratorOptions, fn func(a, b int64) int64) *integerExprIterator {
-	var points []IntegerPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []IntegerPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToInteger(opt.FillValue)
-		points = []IntegerPoint{{Value: value}, {Value: value}}
-	}
-	return &integerExprIterator{
-		left:      newBufIntegerIterator(left),
-		right:     newBufIntegerIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *integerExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *integerExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *integerExprIterator) Next() (*IntegerPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		if a.Nil {
-			return a, nil
-		} else if b.Nil {
-			return b, nil
-		}
-		a.Value = itr.fn(a.Value, b.Value)
-		return a, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *integerExprIterator) next() (a, b *IntegerPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// integerExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type integerExprFunc func(a, b int64) int64
 
 // integerReduceUnsignedIterator executes a reducer for every interval and buffers the result.
 type integerReduceUnsignedIterator struct {
@@ -5501,10 +4384,17 @@ func (itr *integerStreamUnsignedIterator) Next() (*UnsignedPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *integerStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []UnsignedPoint
 			for _, rp := range itr.m {
@@ -5529,8 +4419,6 @@ func (itr *integerStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -5568,150 +4456,6 @@ func (itr *integerStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 		return points, nil
 	}
 }
-
-// integerUnsignedExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type integerUnsignedExprIterator struct {
-	left      *bufIntegerIterator
-	right     *bufIntegerIterator
-	fn        integerUnsignedExprFunc
-	points    []IntegerPoint // must be size 2
-	storePrev bool
-}
-
-func newIntegerUnsignedExprIterator(left, right IntegerIterator, opt IteratorOptions, fn func(a, b int64) uint64) *integerUnsignedExprIterator {
-	var points []IntegerPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []IntegerPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToInteger(opt.FillValue)
-		points = []IntegerPoint{{Value: value}, {Value: value}}
-	}
-	return &integerUnsignedExprIterator{
-		left:      newBufIntegerIterator(left),
-		right:     newBufIntegerIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *integerUnsignedExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *integerUnsignedExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *integerUnsignedExprIterator) Next() (*UnsignedPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &UnsignedPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *integerUnsignedExprIterator) next() (a, b *IntegerPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// integerUnsignedExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type integerUnsignedExprFunc func(a, b int64) uint64
 
 // integerReduceStringIterator executes a reducer for every interval and buffers the result.
 type integerReduceStringIterator struct {
@@ -5920,10 +4664,17 @@ func (itr *integerStreamStringIterator) Next() (*StringPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *integerStreamStringIterator) reduce() ([]StringPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []StringPoint
 			for _, rp := range itr.m {
@@ -5948,8 +4699,6 @@ func (itr *integerStreamStringIterator) reduce() ([]StringPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -5987,150 +4736,6 @@ func (itr *integerStreamStringIterator) reduce() ([]StringPoint, error) {
 		return points, nil
 	}
 }
-
-// integerStringExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type integerStringExprIterator struct {
-	left      *bufIntegerIterator
-	right     *bufIntegerIterator
-	fn        integerStringExprFunc
-	points    []IntegerPoint // must be size 2
-	storePrev bool
-}
-
-func newIntegerStringExprIterator(left, right IntegerIterator, opt IteratorOptions, fn func(a, b int64) string) *integerStringExprIterator {
-	var points []IntegerPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []IntegerPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToInteger(opt.FillValue)
-		points = []IntegerPoint{{Value: value}, {Value: value}}
-	}
-	return &integerStringExprIterator{
-		left:      newBufIntegerIterator(left),
-		right:     newBufIntegerIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *integerStringExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *integerStringExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *integerStringExprIterator) Next() (*StringPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &StringPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *integerStringExprIterator) next() (a, b *IntegerPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// integerStringExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type integerStringExprFunc func(a, b int64) string
 
 // integerReduceBooleanIterator executes a reducer for every interval and buffers the result.
 type integerReduceBooleanIterator struct {
@@ -6339,10 +4944,17 @@ func (itr *integerStreamBooleanIterator) Next() (*BooleanPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *integerStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []BooleanPoint
 			for _, rp := range itr.m {
@@ -6367,8 +4979,6 @@ func (itr *integerStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -6407,208 +5017,6 @@ func (itr *integerStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 	}
 }
 
-// integerBooleanExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type integerBooleanExprIterator struct {
-	left      *bufIntegerIterator
-	right     *bufIntegerIterator
-	fn        integerBooleanExprFunc
-	points    []IntegerPoint // must be size 2
-	storePrev bool
-}
-
-func newIntegerBooleanExprIterator(left, right IntegerIterator, opt IteratorOptions, fn func(a, b int64) bool) *integerBooleanExprIterator {
-	var points []IntegerPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []IntegerPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToInteger(opt.FillValue)
-		points = []IntegerPoint{{Value: value}, {Value: value}}
-	}
-	return &integerBooleanExprIterator{
-		left:      newBufIntegerIterator(left),
-		right:     newBufIntegerIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *integerBooleanExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *integerBooleanExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *integerBooleanExprIterator) Next() (*BooleanPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &BooleanPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *integerBooleanExprIterator) next() (a, b *IntegerPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// integerBooleanExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type integerBooleanExprFunc func(a, b int64) bool
-
-// integerTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type integerTransformIterator struct {
-	input IntegerIterator
-	fn    integerTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *integerTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *integerTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *integerTransformIterator) Next() (*IntegerPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		p = itr.fn(p)
-	}
-	return p, nil
-}
-
-// integerTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type integerTransformFunc func(p *IntegerPoint) *IntegerPoint
-
-// integerBoolTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type integerBoolTransformIterator struct {
-	input IntegerIterator
-	fn    integerBoolTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *integerBoolTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *integerBoolTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *integerBoolTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		return itr.fn(p), nil
-	}
-	return nil, nil
-}
-
-// integerBoolTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type integerBoolTransformFunc func(p *IntegerPoint) *BooleanPoint
-
 // integerDedupeIterator only outputs unique points.
 // This differs from the DistinctIterator in that it compares all aux fields too.
 // This iterator is relatively inefficient and should only be used on small
@@ -6619,19 +5027,16 @@ type integerDedupeIterator struct {
 }
 
 type integerIteratorMapper struct {
-	e      *Emitter
-	buf    []interface{}
+	cur    Cursor
+	row    Row
 	driver IteratorMap   // which iterator to use for the primary value, can be nil
 	fields []IteratorMap // which iterator to use for an aux field
 	point  IntegerPoint
 }
 
-func newIntegerIteratorMapper(itrs []Iterator, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *integerIteratorMapper {
-	e := NewEmitter(itrs, opt.Ascending, 0)
-	e.OmitTime = true
+func newIntegerIteratorMapper(cur Cursor, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *integerIteratorMapper {
 	return &integerIteratorMapper{
-		e:      e,
-		buf:    make([]interface{}, len(itrs)),
+		cur:    cur,
 		driver: driver,
 		fields: fields,
 		point: IntegerPoint{
@@ -6641,18 +5046,20 @@ func newIntegerIteratorMapper(itrs []Iterator, driver IteratorMap, fields []Iter
 }
 
 func (itr *integerIteratorMapper) Next() (*IntegerPoint, error) {
-	t, name, tags, err := itr.e.loadBuf()
-	if err != nil || t == ZeroTime {
-		return nil, err
+	if !itr.cur.Scan(&itr.row) {
+		if err := itr.cur.Err(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	itr.point.Time = t
-	itr.point.Name = name
-	itr.point.Tags = tags
 
-	itr.e.readInto(t, name, tags, itr.buf)
+	itr.point.Time = itr.row.Time
+	itr.point.Name = itr.row.Series.Name
+	itr.point.Tags = itr.row.Series.Tags
+
 	if itr.driver != nil {
-		if v := itr.driver.Value(tags, itr.buf); v != nil {
-			if v, ok := v.(int64); ok {
+		if v := itr.driver.Value(&itr.row); v != nil {
+			if v, ok := castToInteger(v); ok {
 				itr.point.Value = v
 				itr.point.Nil = false
 			} else {
@@ -6665,21 +5072,17 @@ func (itr *integerIteratorMapper) Next() (*IntegerPoint, error) {
 		}
 	}
 	for i, f := range itr.fields {
-		itr.point.Aux[i] = f.Value(tags, itr.buf)
+		itr.point.Aux[i] = f.Value(&itr.row)
 	}
 	return &itr.point, nil
 }
 
 func (itr *integerIteratorMapper) Stats() IteratorStats {
-	stats := IteratorStats{}
-	for _, itr := range itr.e.itrs {
-		stats.Add(itr.Stats())
-	}
-	return stats
+	return itr.cur.Stats()
 }
 
 func (itr *integerIteratorMapper) Close() error {
-	return itr.e.Close()
+	return itr.cur.Close()
 }
 
 type integerFilterIterator struct {
@@ -6739,6 +5142,49 @@ func (itr *integerFilterIterator) Next() (*IntegerPoint, error) {
 		}
 		return p, nil
 	}
+}
+
+type integerTagSubsetIterator struct {
+	input      IntegerIterator
+	point      IntegerPoint
+	lastTags   Tags
+	dimensions []string
+}
+
+func newIntegerTagSubsetIterator(input IntegerIterator, opt IteratorOptions) *integerTagSubsetIterator {
+	return &integerTagSubsetIterator{
+		input:      input,
+		dimensions: opt.GetDimensions(),
+	}
+}
+
+func (itr *integerTagSubsetIterator) Next() (*IntegerPoint, error) {
+	p, err := itr.input.Next()
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+
+	itr.point.Name = p.Name
+	if !p.Tags.Equal(itr.lastTags) {
+		itr.point.Tags = p.Tags.Subset(itr.dimensions)
+		itr.lastTags = p.Tags
+	}
+	itr.point.Time = p.Time
+	itr.point.Value = p.Value
+	itr.point.Aux = p.Aux
+	itr.point.Aggregated = p.Aggregated
+	itr.point.Nil = p.Nil
+	return &itr.point, nil
+}
+
+func (itr *integerTagSubsetIterator) Stats() IteratorStats {
+	return itr.input.Stats()
+}
+
+func (itr *integerTagSubsetIterator) Close() error {
+	return itr.input.Close()
 }
 
 // newIntegerDedupeIterator returns a new instance of integerDedupeIterator.
@@ -6914,6 +5360,9 @@ type unsignedMergeIterator struct {
 	heap   *unsignedMergeHeap
 	init   bool
 
+	closed bool
+	mu     sync.RWMutex
+
 	// Current iterator and window.
 	curr   *unsignedMergeHeapItem
 	window struct {
@@ -6957,17 +5406,27 @@ func (itr *unsignedMergeIterator) Stats() IteratorStats {
 
 // Close closes the underlying iterators.
 func (itr *unsignedMergeIterator) Close() error {
+	itr.mu.Lock()
+	defer itr.mu.Unlock()
+
 	for _, input := range itr.inputs {
 		input.Close()
 	}
 	itr.curr = nil
 	itr.inputs = nil
 	itr.heap.items = nil
+	itr.closed = true
 	return nil
 }
 
 // Next returns the next point from the iterator.
 func (itr *unsignedMergeIterator) Next() (*UnsignedPoint, error) {
+	itr.mu.RLock()
+	defer itr.mu.RUnlock()
+	if itr.closed {
+		return nil, nil
+	}
+
 	// Initialize the heap. This needs to be done lazily on the first call to this iterator
 	// so that iterator initialization done through the Select() call returns quickly.
 	// Queries can only be interrupted after the Select() call completes so any operations
@@ -7280,6 +5739,95 @@ type unsignedSortedMergeHeapItem struct {
 	itr   UnsignedIterator
 }
 
+// unsignedIteratorScanner scans the results of a UnsignedIterator into a map.
+type unsignedIteratorScanner struct {
+	input        *bufUnsignedIterator
+	err          error
+	keys         []influxql.VarRef
+	defaultValue interface{}
+}
+
+// newUnsignedIteratorScanner creates a new IteratorScanner.
+func newUnsignedIteratorScanner(input UnsignedIterator, keys []influxql.VarRef, defaultValue interface{}) *unsignedIteratorScanner {
+	return &unsignedIteratorScanner{
+		input:        newBufUnsignedIterator(input),
+		keys:         keys,
+		defaultValue: defaultValue,
+	}
+}
+
+func (s *unsignedIteratorScanner) Peek() (int64, string, Tags) {
+	if s.err != nil {
+		return ZeroTime, "", Tags{}
+	}
+
+	p, err := s.input.peek()
+	if err != nil {
+		s.err = err
+		return ZeroTime, "", Tags{}
+	} else if p == nil {
+		return ZeroTime, "", Tags{}
+	}
+	return p.Time, p.Name, p.Tags
+}
+
+func (s *unsignedIteratorScanner) ScanAt(ts int64, name string, tags Tags, m map[string]interface{}) {
+	if s.err != nil {
+		return
+	}
+
+	p, err := s.input.Next()
+	if err != nil {
+		s.err = err
+		return
+	} else if p == nil {
+		s.useDefaults(m)
+		return
+	} else if p.Time != ts || p.Name != name || !p.Tags.Equals(&tags) {
+		s.useDefaults(m)
+		s.input.unread(p)
+		return
+	}
+
+	if k := s.keys[0]; k.Val != "" {
+		if p.Nil {
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		} else {
+			m[k.Val] = p.Value
+		}
+	}
+	for i, v := range p.Aux {
+		k := s.keys[i+1]
+		switch v.(type) {
+		case float64, int64, uint64, string, bool:
+			m[k.Val] = v
+		default:
+			// Insert the fill value if one was specified.
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		}
+	}
+}
+
+func (s *unsignedIteratorScanner) useDefaults(m map[string]interface{}) {
+	if s.defaultValue == SkipDefault {
+		return
+	}
+	for _, k := range s.keys {
+		if k.Val == "" {
+			continue
+		}
+		m[k.Val] = castToType(s.defaultValue, k.Type)
+	}
+}
+
+func (s *unsignedIteratorScanner) Stats() IteratorStats { return s.input.Stats() }
+func (s *unsignedIteratorScanner) Err() error           { return s.err }
+func (s *unsignedIteratorScanner) Close() error         { return s.input.Close() }
+
 // unsignedParallelIterator represents an iterator that pulls data in a separate goroutine.
 type unsignedParallelIterator struct {
 	input UnsignedIterator
@@ -7479,21 +6027,17 @@ func (itr *unsignedFillIterator) Next() (*UnsignedPoint, error) {
 	}
 
 	// Check if the next point is outside of our window or is nil.
-	for p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
+	if p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
 		// If we are inside of an interval, unread the point and continue below to
 		// constructing a new point.
-		if itr.opt.Ascending {
-			if itr.window.time <= itr.endTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
-		} else {
-			if itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
+		if itr.opt.Ascending && itr.window.time <= itr.endTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
+		} else if !itr.opt.Ascending && itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
 		}
 
 		// We are *not* in a current interval. If there is no next point,
@@ -7512,10 +6056,10 @@ func (itr *unsignedFillIterator) Next() (*UnsignedPoint, error) {
 			_, itr.window.offset = itr.opt.Zone(itr.window.time)
 		}
 		itr.prev = UnsignedPoint{Nil: true}
-		break
 	}
 
 	// Check if the point is our next expected point.
+CONSTRUCT:
 	if p == nil || (itr.opt.Ascending && p.Time > itr.window.time) || (!itr.opt.Ascending && p.Time < itr.window.time) {
 		if p != nil {
 			itr.input.unread(p)
@@ -7548,7 +6092,7 @@ func (itr *unsignedFillIterator) Next() (*UnsignedPoint, error) {
 		case influxql.NullFill:
 			p.Nil = true
 		case influxql.NumberFill:
-			p.Value = castToUnsigned(itr.opt.FillValue)
+			p.Value, _ = castToUnsigned(itr.opt.FillValue)
 		case influxql.PreviousFill:
 			if !itr.prev.Nil {
 				p.Value = itr.prev.Value
@@ -7694,169 +6238,6 @@ func (itr *unsignedCloseInterruptIterator) Next() (*UnsignedPoint, error) {
 			return nil, err
 		}
 	}
-	return p, nil
-}
-
-// auxUnsignedPoint represents a combination of a point and an error for the AuxIterator.
-type auxUnsignedPoint struct {
-	point *UnsignedPoint
-	err   error
-}
-
-// unsignedAuxIterator represents a unsigned implementation of AuxIterator.
-type unsignedAuxIterator struct {
-	input      *bufUnsignedIterator
-	output     chan auxUnsignedPoint
-	fields     *auxIteratorFields
-	background bool
-	closer     sync.Once
-}
-
-func newUnsignedAuxIterator(input UnsignedIterator, opt IteratorOptions) *unsignedAuxIterator {
-	return &unsignedAuxIterator{
-		input:  newBufUnsignedIterator(input),
-		output: make(chan auxUnsignedPoint, 1),
-		fields: newAuxIteratorFields(opt),
-	}
-}
-
-func (itr *unsignedAuxIterator) Background() {
-	itr.background = true
-	itr.Start()
-	go DrainIterator(itr)
-}
-
-func (itr *unsignedAuxIterator) Start()               { go itr.stream() }
-func (itr *unsignedAuxIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-func (itr *unsignedAuxIterator) Close() error {
-	var err error
-	itr.closer.Do(func() { err = itr.input.Close() })
-	return err
-}
-
-func (itr *unsignedAuxIterator) Next() (*UnsignedPoint, error) {
-	p := <-itr.output
-	return p.point, p.err
-}
-func (itr *unsignedAuxIterator) Iterator(name string, typ influxql.DataType) Iterator {
-	return itr.fields.iterator(name, typ)
-}
-
-func (itr *unsignedAuxIterator) stream() {
-	for {
-		// Read next point.
-		p, err := itr.input.Next()
-		if err != nil {
-			itr.output <- auxUnsignedPoint{err: err}
-			itr.fields.sendError(err)
-			break
-		} else if p == nil {
-			break
-		}
-
-		// Send point to output and to each field iterator.
-		itr.output <- auxUnsignedPoint{point: p}
-		if ok := itr.fields.send(p); !ok && itr.background {
-			break
-		}
-	}
-
-	close(itr.output)
-	itr.fields.close()
-}
-
-// unsignedChanIterator represents a new instance of unsignedChanIterator.
-type unsignedChanIterator struct {
-	buf struct {
-		i      int
-		filled bool
-		points [2]UnsignedPoint
-	}
-	err  error
-	cond *sync.Cond
-	done bool
-}
-
-func (itr *unsignedChanIterator) Stats() IteratorStats { return IteratorStats{} }
-
-func (itr *unsignedChanIterator) Close() error {
-	itr.cond.L.Lock()
-	// Mark the channel iterator as done and signal all waiting goroutines to start again.
-	itr.done = true
-	itr.cond.Broadcast()
-	// Do not defer the unlock so we don't create an unnecessary allocation.
-	itr.cond.L.Unlock()
-	return nil
-}
-
-func (itr *unsignedChanIterator) setBuf(name string, tags Tags, time int64, value interface{}) bool {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Wait for either the iterator to be done (so we don't have to set the value)
-	// or for the buffer to have been read and ready for another write.
-	for !itr.done && itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Do not set the value and return false to signal that the iterator is closed.
-	// Do this after the above wait as the above for loop may have exited because
-	// the iterator was closed.
-	if itr.done {
-		return false
-	}
-
-	switch v := value.(type) {
-	case uint64:
-		itr.buf.points[itr.buf.i] = UnsignedPoint{Name: name, Tags: tags, Time: time, Value: v}
-
-	default:
-		itr.buf.points[itr.buf.i] = UnsignedPoint{Name: name, Tags: tags, Time: time, Nil: true}
-	}
-	itr.buf.filled = true
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-	return true
-}
-
-func (itr *unsignedChanIterator) setErr(err error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-	itr.err = err
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-}
-
-func (itr *unsignedChanIterator) Next() (*UnsignedPoint, error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Check for an error and return one if there.
-	if itr.err != nil {
-		return nil, itr.err
-	}
-
-	// Wait until either a value is available in the buffer or
-	// the iterator is closed.
-	for !itr.done && !itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Return nil once the channel is done and the buffer is empty.
-	if itr.done && !itr.buf.filled {
-		return nil, nil
-	}
-
-	// Always read from the buffer if it exists, even if the iterator
-	// is closed. This prevents the last value from being truncated by
-	// the parent iterator.
-	p := &itr.buf.points[itr.buf.i]
-	itr.buf.i = (itr.buf.i + 1) % len(itr.buf.points)
-	itr.buf.filled = false
-	itr.cond.Signal()
 	return p, nil
 }
 
@@ -8067,10 +6448,17 @@ func (itr *unsignedStreamFloatIterator) Next() (*FloatPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *unsignedStreamFloatIterator) reduce() ([]FloatPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []FloatPoint
 			for _, rp := range itr.m {
@@ -8095,8 +6483,6 @@ func (itr *unsignedStreamFloatIterator) reduce() ([]FloatPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -8134,150 +6520,6 @@ func (itr *unsignedStreamFloatIterator) reduce() ([]FloatPoint, error) {
 		return points, nil
 	}
 }
-
-// unsignedFloatExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type unsignedFloatExprIterator struct {
-	left      *bufUnsignedIterator
-	right     *bufUnsignedIterator
-	fn        unsignedFloatExprFunc
-	points    []UnsignedPoint // must be size 2
-	storePrev bool
-}
-
-func newUnsignedFloatExprIterator(left, right UnsignedIterator, opt IteratorOptions, fn func(a, b uint64) float64) *unsignedFloatExprIterator {
-	var points []UnsignedPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []UnsignedPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToUnsigned(opt.FillValue)
-		points = []UnsignedPoint{{Value: value}, {Value: value}}
-	}
-	return &unsignedFloatExprIterator{
-		left:      newBufUnsignedIterator(left),
-		right:     newBufUnsignedIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *unsignedFloatExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *unsignedFloatExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *unsignedFloatExprIterator) Next() (*FloatPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &FloatPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *unsignedFloatExprIterator) next() (a, b *UnsignedPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// unsignedFloatExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type unsignedFloatExprFunc func(a, b uint64) float64
 
 // unsignedReduceIntegerIterator executes a reducer for every interval and buffers the result.
 type unsignedReduceIntegerIterator struct {
@@ -8486,10 +6728,17 @@ func (itr *unsignedStreamIntegerIterator) Next() (*IntegerPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *unsignedStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []IntegerPoint
 			for _, rp := range itr.m {
@@ -8514,8 +6763,6 @@ func (itr *unsignedStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -8553,150 +6800,6 @@ func (itr *unsignedStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 		return points, nil
 	}
 }
-
-// unsignedIntegerExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type unsignedIntegerExprIterator struct {
-	left      *bufUnsignedIterator
-	right     *bufUnsignedIterator
-	fn        unsignedIntegerExprFunc
-	points    []UnsignedPoint // must be size 2
-	storePrev bool
-}
-
-func newUnsignedIntegerExprIterator(left, right UnsignedIterator, opt IteratorOptions, fn func(a, b uint64) int64) *unsignedIntegerExprIterator {
-	var points []UnsignedPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []UnsignedPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToUnsigned(opt.FillValue)
-		points = []UnsignedPoint{{Value: value}, {Value: value}}
-	}
-	return &unsignedIntegerExprIterator{
-		left:      newBufUnsignedIterator(left),
-		right:     newBufUnsignedIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *unsignedIntegerExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *unsignedIntegerExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *unsignedIntegerExprIterator) Next() (*IntegerPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &IntegerPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *unsignedIntegerExprIterator) next() (a, b *UnsignedPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// unsignedIntegerExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type unsignedIntegerExprFunc func(a, b uint64) int64
 
 // unsignedReduceUnsignedIterator executes a reducer for every interval and buffers the result.
 type unsignedReduceUnsignedIterator struct {
@@ -8905,10 +7008,17 @@ func (itr *unsignedStreamUnsignedIterator) Next() (*UnsignedPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *unsignedStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []UnsignedPoint
 			for _, rp := range itr.m {
@@ -8933,8 +7043,6 @@ func (itr *unsignedStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -8972,146 +7080,6 @@ func (itr *unsignedStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 		return points, nil
 	}
 }
-
-// unsignedExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type unsignedExprIterator struct {
-	left      *bufUnsignedIterator
-	right     *bufUnsignedIterator
-	fn        unsignedExprFunc
-	points    []UnsignedPoint // must be size 2
-	storePrev bool
-}
-
-func newUnsignedExprIterator(left, right UnsignedIterator, opt IteratorOptions, fn func(a, b uint64) uint64) *unsignedExprIterator {
-	var points []UnsignedPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []UnsignedPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToUnsigned(opt.FillValue)
-		points = []UnsignedPoint{{Value: value}, {Value: value}}
-	}
-	return &unsignedExprIterator{
-		left:      newBufUnsignedIterator(left),
-		right:     newBufUnsignedIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *unsignedExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *unsignedExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *unsignedExprIterator) Next() (*UnsignedPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		if a.Nil {
-			return a, nil
-		} else if b.Nil {
-			return b, nil
-		}
-		a.Value = itr.fn(a.Value, b.Value)
-		return a, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *unsignedExprIterator) next() (a, b *UnsignedPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// unsignedExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type unsignedExprFunc func(a, b uint64) uint64
 
 // unsignedReduceStringIterator executes a reducer for every interval and buffers the result.
 type unsignedReduceStringIterator struct {
@@ -9320,10 +7288,17 @@ func (itr *unsignedStreamStringIterator) Next() (*StringPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *unsignedStreamStringIterator) reduce() ([]StringPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []StringPoint
 			for _, rp := range itr.m {
@@ -9348,8 +7323,6 @@ func (itr *unsignedStreamStringIterator) reduce() ([]StringPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -9387,150 +7360,6 @@ func (itr *unsignedStreamStringIterator) reduce() ([]StringPoint, error) {
 		return points, nil
 	}
 }
-
-// unsignedStringExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type unsignedStringExprIterator struct {
-	left      *bufUnsignedIterator
-	right     *bufUnsignedIterator
-	fn        unsignedStringExprFunc
-	points    []UnsignedPoint // must be size 2
-	storePrev bool
-}
-
-func newUnsignedStringExprIterator(left, right UnsignedIterator, opt IteratorOptions, fn func(a, b uint64) string) *unsignedStringExprIterator {
-	var points []UnsignedPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []UnsignedPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToUnsigned(opt.FillValue)
-		points = []UnsignedPoint{{Value: value}, {Value: value}}
-	}
-	return &unsignedStringExprIterator{
-		left:      newBufUnsignedIterator(left),
-		right:     newBufUnsignedIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *unsignedStringExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *unsignedStringExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *unsignedStringExprIterator) Next() (*StringPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &StringPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *unsignedStringExprIterator) next() (a, b *UnsignedPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// unsignedStringExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type unsignedStringExprFunc func(a, b uint64) string
 
 // unsignedReduceBooleanIterator executes a reducer for every interval and buffers the result.
 type unsignedReduceBooleanIterator struct {
@@ -9739,10 +7568,17 @@ func (itr *unsignedStreamBooleanIterator) Next() (*BooleanPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *unsignedStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []BooleanPoint
 			for _, rp := range itr.m {
@@ -9767,8 +7603,6 @@ func (itr *unsignedStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -9807,208 +7641,6 @@ func (itr *unsignedStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 	}
 }
 
-// unsignedBooleanExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type unsignedBooleanExprIterator struct {
-	left      *bufUnsignedIterator
-	right     *bufUnsignedIterator
-	fn        unsignedBooleanExprFunc
-	points    []UnsignedPoint // must be size 2
-	storePrev bool
-}
-
-func newUnsignedBooleanExprIterator(left, right UnsignedIterator, opt IteratorOptions, fn func(a, b uint64) bool) *unsignedBooleanExprIterator {
-	var points []UnsignedPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []UnsignedPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToUnsigned(opt.FillValue)
-		points = []UnsignedPoint{{Value: value}, {Value: value}}
-	}
-	return &unsignedBooleanExprIterator{
-		left:      newBufUnsignedIterator(left),
-		right:     newBufUnsignedIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *unsignedBooleanExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *unsignedBooleanExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *unsignedBooleanExprIterator) Next() (*BooleanPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = 0
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = 0
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &BooleanPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *unsignedBooleanExprIterator) next() (a, b *UnsignedPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// unsignedBooleanExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type unsignedBooleanExprFunc func(a, b uint64) bool
-
-// unsignedTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type unsignedTransformIterator struct {
-	input UnsignedIterator
-	fn    unsignedTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *unsignedTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *unsignedTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *unsignedTransformIterator) Next() (*UnsignedPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		p = itr.fn(p)
-	}
-	return p, nil
-}
-
-// unsignedTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type unsignedTransformFunc func(p *UnsignedPoint) *UnsignedPoint
-
-// unsignedBoolTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type unsignedBoolTransformIterator struct {
-	input UnsignedIterator
-	fn    unsignedBoolTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *unsignedBoolTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *unsignedBoolTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *unsignedBoolTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		return itr.fn(p), nil
-	}
-	return nil, nil
-}
-
-// unsignedBoolTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type unsignedBoolTransformFunc func(p *UnsignedPoint) *BooleanPoint
-
 // unsignedDedupeIterator only outputs unique points.
 // This differs from the DistinctIterator in that it compares all aux fields too.
 // This iterator is relatively inefficient and should only be used on small
@@ -10019,19 +7651,16 @@ type unsignedDedupeIterator struct {
 }
 
 type unsignedIteratorMapper struct {
-	e      *Emitter
-	buf    []interface{}
+	cur    Cursor
+	row    Row
 	driver IteratorMap   // which iterator to use for the primary value, can be nil
 	fields []IteratorMap // which iterator to use for an aux field
 	point  UnsignedPoint
 }
 
-func newUnsignedIteratorMapper(itrs []Iterator, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *unsignedIteratorMapper {
-	e := NewEmitter(itrs, opt.Ascending, 0)
-	e.OmitTime = true
+func newUnsignedIteratorMapper(cur Cursor, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *unsignedIteratorMapper {
 	return &unsignedIteratorMapper{
-		e:      e,
-		buf:    make([]interface{}, len(itrs)),
+		cur:    cur,
 		driver: driver,
 		fields: fields,
 		point: UnsignedPoint{
@@ -10041,18 +7670,20 @@ func newUnsignedIteratorMapper(itrs []Iterator, driver IteratorMap, fields []Ite
 }
 
 func (itr *unsignedIteratorMapper) Next() (*UnsignedPoint, error) {
-	t, name, tags, err := itr.e.loadBuf()
-	if err != nil || t == ZeroTime {
-		return nil, err
+	if !itr.cur.Scan(&itr.row) {
+		if err := itr.cur.Err(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	itr.point.Time = t
-	itr.point.Name = name
-	itr.point.Tags = tags
 
-	itr.e.readInto(t, name, tags, itr.buf)
+	itr.point.Time = itr.row.Time
+	itr.point.Name = itr.row.Series.Name
+	itr.point.Tags = itr.row.Series.Tags
+
 	if itr.driver != nil {
-		if v := itr.driver.Value(tags, itr.buf); v != nil {
-			if v, ok := v.(uint64); ok {
+		if v := itr.driver.Value(&itr.row); v != nil {
+			if v, ok := castToUnsigned(v); ok {
 				itr.point.Value = v
 				itr.point.Nil = false
 			} else {
@@ -10065,21 +7696,17 @@ func (itr *unsignedIteratorMapper) Next() (*UnsignedPoint, error) {
 		}
 	}
 	for i, f := range itr.fields {
-		itr.point.Aux[i] = f.Value(tags, itr.buf)
+		itr.point.Aux[i] = f.Value(&itr.row)
 	}
 	return &itr.point, nil
 }
 
 func (itr *unsignedIteratorMapper) Stats() IteratorStats {
-	stats := IteratorStats{}
-	for _, itr := range itr.e.itrs {
-		stats.Add(itr.Stats())
-	}
-	return stats
+	return itr.cur.Stats()
 }
 
 func (itr *unsignedIteratorMapper) Close() error {
-	return itr.e.Close()
+	return itr.cur.Close()
 }
 
 type unsignedFilterIterator struct {
@@ -10139,6 +7766,49 @@ func (itr *unsignedFilterIterator) Next() (*UnsignedPoint, error) {
 		}
 		return p, nil
 	}
+}
+
+type unsignedTagSubsetIterator struct {
+	input      UnsignedIterator
+	point      UnsignedPoint
+	lastTags   Tags
+	dimensions []string
+}
+
+func newUnsignedTagSubsetIterator(input UnsignedIterator, opt IteratorOptions) *unsignedTagSubsetIterator {
+	return &unsignedTagSubsetIterator{
+		input:      input,
+		dimensions: opt.GetDimensions(),
+	}
+}
+
+func (itr *unsignedTagSubsetIterator) Next() (*UnsignedPoint, error) {
+	p, err := itr.input.Next()
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+
+	itr.point.Name = p.Name
+	if !p.Tags.Equal(itr.lastTags) {
+		itr.point.Tags = p.Tags.Subset(itr.dimensions)
+		itr.lastTags = p.Tags
+	}
+	itr.point.Time = p.Time
+	itr.point.Value = p.Value
+	itr.point.Aux = p.Aux
+	itr.point.Aggregated = p.Aggregated
+	itr.point.Nil = p.Nil
+	return &itr.point, nil
+}
+
+func (itr *unsignedTagSubsetIterator) Stats() IteratorStats {
+	return itr.input.Stats()
+}
+
+func (itr *unsignedTagSubsetIterator) Close() error {
+	return itr.input.Close()
 }
 
 // newUnsignedDedupeIterator returns a new instance of unsignedDedupeIterator.
@@ -10314,6 +7984,9 @@ type stringMergeIterator struct {
 	heap   *stringMergeHeap
 	init   bool
 
+	closed bool
+	mu     sync.RWMutex
+
 	// Current iterator and window.
 	curr   *stringMergeHeapItem
 	window struct {
@@ -10357,17 +8030,27 @@ func (itr *stringMergeIterator) Stats() IteratorStats {
 
 // Close closes the underlying iterators.
 func (itr *stringMergeIterator) Close() error {
+	itr.mu.Lock()
+	defer itr.mu.Unlock()
+
 	for _, input := range itr.inputs {
 		input.Close()
 	}
 	itr.curr = nil
 	itr.inputs = nil
 	itr.heap.items = nil
+	itr.closed = true
 	return nil
 }
 
 // Next returns the next point from the iterator.
 func (itr *stringMergeIterator) Next() (*StringPoint, error) {
+	itr.mu.RLock()
+	defer itr.mu.RUnlock()
+	if itr.closed {
+		return nil, nil
+	}
+
 	// Initialize the heap. This needs to be done lazily on the first call to this iterator
 	// so that iterator initialization done through the Select() call returns quickly.
 	// Queries can only be interrupted after the Select() call completes so any operations
@@ -10680,6 +8363,95 @@ type stringSortedMergeHeapItem struct {
 	itr   StringIterator
 }
 
+// stringIteratorScanner scans the results of a StringIterator into a map.
+type stringIteratorScanner struct {
+	input        *bufStringIterator
+	err          error
+	keys         []influxql.VarRef
+	defaultValue interface{}
+}
+
+// newStringIteratorScanner creates a new IteratorScanner.
+func newStringIteratorScanner(input StringIterator, keys []influxql.VarRef, defaultValue interface{}) *stringIteratorScanner {
+	return &stringIteratorScanner{
+		input:        newBufStringIterator(input),
+		keys:         keys,
+		defaultValue: defaultValue,
+	}
+}
+
+func (s *stringIteratorScanner) Peek() (int64, string, Tags) {
+	if s.err != nil {
+		return ZeroTime, "", Tags{}
+	}
+
+	p, err := s.input.peek()
+	if err != nil {
+		s.err = err
+		return ZeroTime, "", Tags{}
+	} else if p == nil {
+		return ZeroTime, "", Tags{}
+	}
+	return p.Time, p.Name, p.Tags
+}
+
+func (s *stringIteratorScanner) ScanAt(ts int64, name string, tags Tags, m map[string]interface{}) {
+	if s.err != nil {
+		return
+	}
+
+	p, err := s.input.Next()
+	if err != nil {
+		s.err = err
+		return
+	} else if p == nil {
+		s.useDefaults(m)
+		return
+	} else if p.Time != ts || p.Name != name || !p.Tags.Equals(&tags) {
+		s.useDefaults(m)
+		s.input.unread(p)
+		return
+	}
+
+	if k := s.keys[0]; k.Val != "" {
+		if p.Nil {
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		} else {
+			m[k.Val] = p.Value
+		}
+	}
+	for i, v := range p.Aux {
+		k := s.keys[i+1]
+		switch v.(type) {
+		case float64, int64, uint64, string, bool:
+			m[k.Val] = v
+		default:
+			// Insert the fill value if one was specified.
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		}
+	}
+}
+
+func (s *stringIteratorScanner) useDefaults(m map[string]interface{}) {
+	if s.defaultValue == SkipDefault {
+		return
+	}
+	for _, k := range s.keys {
+		if k.Val == "" {
+			continue
+		}
+		m[k.Val] = castToType(s.defaultValue, k.Type)
+	}
+}
+
+func (s *stringIteratorScanner) Stats() IteratorStats { return s.input.Stats() }
+func (s *stringIteratorScanner) Err() error           { return s.err }
+func (s *stringIteratorScanner) Close() error         { return s.input.Close() }
+
 // stringParallelIterator represents an iterator that pulls data in a separate goroutine.
 type stringParallelIterator struct {
 	input StringIterator
@@ -10879,21 +8651,17 @@ func (itr *stringFillIterator) Next() (*StringPoint, error) {
 	}
 
 	// Check if the next point is outside of our window or is nil.
-	for p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
+	if p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
 		// If we are inside of an interval, unread the point and continue below to
 		// constructing a new point.
-		if itr.opt.Ascending {
-			if itr.window.time <= itr.endTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
-		} else {
-			if itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
+		if itr.opt.Ascending && itr.window.time <= itr.endTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
+		} else if !itr.opt.Ascending && itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
 		}
 
 		// We are *not* in a current interval. If there is no next point,
@@ -10912,10 +8680,10 @@ func (itr *stringFillIterator) Next() (*StringPoint, error) {
 			_, itr.window.offset = itr.opt.Zone(itr.window.time)
 		}
 		itr.prev = StringPoint{Nil: true}
-		break
 	}
 
 	// Check if the point is our next expected point.
+CONSTRUCT:
 	if p == nil || (itr.opt.Ascending && p.Time > itr.window.time) || (!itr.opt.Ascending && p.Time < itr.window.time) {
 		if p != nil {
 			itr.input.unread(p)
@@ -10934,7 +8702,7 @@ func (itr *stringFillIterator) Next() (*StringPoint, error) {
 		case influxql.NullFill:
 			p.Nil = true
 		case influxql.NumberFill:
-			p.Value = castToString(itr.opt.FillValue)
+			p.Value, _ = castToString(itr.opt.FillValue)
 		case influxql.PreviousFill:
 			if !itr.prev.Nil {
 				p.Value = itr.prev.Value
@@ -11080,169 +8848,6 @@ func (itr *stringCloseInterruptIterator) Next() (*StringPoint, error) {
 			return nil, err
 		}
 	}
-	return p, nil
-}
-
-// auxStringPoint represents a combination of a point and an error for the AuxIterator.
-type auxStringPoint struct {
-	point *StringPoint
-	err   error
-}
-
-// stringAuxIterator represents a string implementation of AuxIterator.
-type stringAuxIterator struct {
-	input      *bufStringIterator
-	output     chan auxStringPoint
-	fields     *auxIteratorFields
-	background bool
-	closer     sync.Once
-}
-
-func newStringAuxIterator(input StringIterator, opt IteratorOptions) *stringAuxIterator {
-	return &stringAuxIterator{
-		input:  newBufStringIterator(input),
-		output: make(chan auxStringPoint, 1),
-		fields: newAuxIteratorFields(opt),
-	}
-}
-
-func (itr *stringAuxIterator) Background() {
-	itr.background = true
-	itr.Start()
-	go DrainIterator(itr)
-}
-
-func (itr *stringAuxIterator) Start()               { go itr.stream() }
-func (itr *stringAuxIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-func (itr *stringAuxIterator) Close() error {
-	var err error
-	itr.closer.Do(func() { err = itr.input.Close() })
-	return err
-}
-
-func (itr *stringAuxIterator) Next() (*StringPoint, error) {
-	p := <-itr.output
-	return p.point, p.err
-}
-func (itr *stringAuxIterator) Iterator(name string, typ influxql.DataType) Iterator {
-	return itr.fields.iterator(name, typ)
-}
-
-func (itr *stringAuxIterator) stream() {
-	for {
-		// Read next point.
-		p, err := itr.input.Next()
-		if err != nil {
-			itr.output <- auxStringPoint{err: err}
-			itr.fields.sendError(err)
-			break
-		} else if p == nil {
-			break
-		}
-
-		// Send point to output and to each field iterator.
-		itr.output <- auxStringPoint{point: p}
-		if ok := itr.fields.send(p); !ok && itr.background {
-			break
-		}
-	}
-
-	close(itr.output)
-	itr.fields.close()
-}
-
-// stringChanIterator represents a new instance of stringChanIterator.
-type stringChanIterator struct {
-	buf struct {
-		i      int
-		filled bool
-		points [2]StringPoint
-	}
-	err  error
-	cond *sync.Cond
-	done bool
-}
-
-func (itr *stringChanIterator) Stats() IteratorStats { return IteratorStats{} }
-
-func (itr *stringChanIterator) Close() error {
-	itr.cond.L.Lock()
-	// Mark the channel iterator as done and signal all waiting goroutines to start again.
-	itr.done = true
-	itr.cond.Broadcast()
-	// Do not defer the unlock so we don't create an unnecessary allocation.
-	itr.cond.L.Unlock()
-	return nil
-}
-
-func (itr *stringChanIterator) setBuf(name string, tags Tags, time int64, value interface{}) bool {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Wait for either the iterator to be done (so we don't have to set the value)
-	// or for the buffer to have been read and ready for another write.
-	for !itr.done && itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Do not set the value and return false to signal that the iterator is closed.
-	// Do this after the above wait as the above for loop may have exited because
-	// the iterator was closed.
-	if itr.done {
-		return false
-	}
-
-	switch v := value.(type) {
-	case string:
-		itr.buf.points[itr.buf.i] = StringPoint{Name: name, Tags: tags, Time: time, Value: v}
-
-	default:
-		itr.buf.points[itr.buf.i] = StringPoint{Name: name, Tags: tags, Time: time, Nil: true}
-	}
-	itr.buf.filled = true
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-	return true
-}
-
-func (itr *stringChanIterator) setErr(err error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-	itr.err = err
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-}
-
-func (itr *stringChanIterator) Next() (*StringPoint, error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Check for an error and return one if there.
-	if itr.err != nil {
-		return nil, itr.err
-	}
-
-	// Wait until either a value is available in the buffer or
-	// the iterator is closed.
-	for !itr.done && !itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Return nil once the channel is done and the buffer is empty.
-	if itr.done && !itr.buf.filled {
-		return nil, nil
-	}
-
-	// Always read from the buffer if it exists, even if the iterator
-	// is closed. This prevents the last value from being truncated by
-	// the parent iterator.
-	p := &itr.buf.points[itr.buf.i]
-	itr.buf.i = (itr.buf.i + 1) % len(itr.buf.points)
-	itr.buf.filled = false
-	itr.cond.Signal()
 	return p, nil
 }
 
@@ -11453,10 +9058,17 @@ func (itr *stringStreamFloatIterator) Next() (*FloatPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *stringStreamFloatIterator) reduce() ([]FloatPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []FloatPoint
 			for _, rp := range itr.m {
@@ -11481,8 +9093,6 @@ func (itr *stringStreamFloatIterator) reduce() ([]FloatPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -11520,150 +9130,6 @@ func (itr *stringStreamFloatIterator) reduce() ([]FloatPoint, error) {
 		return points, nil
 	}
 }
-
-// stringFloatExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type stringFloatExprIterator struct {
-	left      *bufStringIterator
-	right     *bufStringIterator
-	fn        stringFloatExprFunc
-	points    []StringPoint // must be size 2
-	storePrev bool
-}
-
-func newStringFloatExprIterator(left, right StringIterator, opt IteratorOptions, fn func(a, b string) float64) *stringFloatExprIterator {
-	var points []StringPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []StringPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToString(opt.FillValue)
-		points = []StringPoint{{Value: value}, {Value: value}}
-	}
-	return &stringFloatExprIterator{
-		left:      newBufStringIterator(left),
-		right:     newBufStringIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *stringFloatExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *stringFloatExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *stringFloatExprIterator) Next() (*FloatPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = ""
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = ""
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &FloatPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *stringFloatExprIterator) next() (a, b *StringPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// stringFloatExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type stringFloatExprFunc func(a, b string) float64
 
 // stringReduceIntegerIterator executes a reducer for every interval and buffers the result.
 type stringReduceIntegerIterator struct {
@@ -11872,10 +9338,17 @@ func (itr *stringStreamIntegerIterator) Next() (*IntegerPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *stringStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []IntegerPoint
 			for _, rp := range itr.m {
@@ -11900,8 +9373,6 @@ func (itr *stringStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -11939,150 +9410,6 @@ func (itr *stringStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 		return points, nil
 	}
 }
-
-// stringIntegerExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type stringIntegerExprIterator struct {
-	left      *bufStringIterator
-	right     *bufStringIterator
-	fn        stringIntegerExprFunc
-	points    []StringPoint // must be size 2
-	storePrev bool
-}
-
-func newStringIntegerExprIterator(left, right StringIterator, opt IteratorOptions, fn func(a, b string) int64) *stringIntegerExprIterator {
-	var points []StringPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []StringPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToString(opt.FillValue)
-		points = []StringPoint{{Value: value}, {Value: value}}
-	}
-	return &stringIntegerExprIterator{
-		left:      newBufStringIterator(left),
-		right:     newBufStringIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *stringIntegerExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *stringIntegerExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *stringIntegerExprIterator) Next() (*IntegerPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = ""
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = ""
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &IntegerPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *stringIntegerExprIterator) next() (a, b *StringPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// stringIntegerExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type stringIntegerExprFunc func(a, b string) int64
 
 // stringReduceUnsignedIterator executes a reducer for every interval and buffers the result.
 type stringReduceUnsignedIterator struct {
@@ -12291,10 +9618,17 @@ func (itr *stringStreamUnsignedIterator) Next() (*UnsignedPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *stringStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []UnsignedPoint
 			for _, rp := range itr.m {
@@ -12319,8 +9653,6 @@ func (itr *stringStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -12358,150 +9690,6 @@ func (itr *stringStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 		return points, nil
 	}
 }
-
-// stringUnsignedExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type stringUnsignedExprIterator struct {
-	left      *bufStringIterator
-	right     *bufStringIterator
-	fn        stringUnsignedExprFunc
-	points    []StringPoint // must be size 2
-	storePrev bool
-}
-
-func newStringUnsignedExprIterator(left, right StringIterator, opt IteratorOptions, fn func(a, b string) uint64) *stringUnsignedExprIterator {
-	var points []StringPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []StringPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToString(opt.FillValue)
-		points = []StringPoint{{Value: value}, {Value: value}}
-	}
-	return &stringUnsignedExprIterator{
-		left:      newBufStringIterator(left),
-		right:     newBufStringIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *stringUnsignedExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *stringUnsignedExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *stringUnsignedExprIterator) Next() (*UnsignedPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = ""
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = ""
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &UnsignedPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *stringUnsignedExprIterator) next() (a, b *StringPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// stringUnsignedExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type stringUnsignedExprFunc func(a, b string) uint64
 
 // stringReduceStringIterator executes a reducer for every interval and buffers the result.
 type stringReduceStringIterator struct {
@@ -12710,10 +9898,17 @@ func (itr *stringStreamStringIterator) Next() (*StringPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *stringStreamStringIterator) reduce() ([]StringPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []StringPoint
 			for _, rp := range itr.m {
@@ -12738,8 +9933,6 @@ func (itr *stringStreamStringIterator) reduce() ([]StringPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -12777,146 +9970,6 @@ func (itr *stringStreamStringIterator) reduce() ([]StringPoint, error) {
 		return points, nil
 	}
 }
-
-// stringExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type stringExprIterator struct {
-	left      *bufStringIterator
-	right     *bufStringIterator
-	fn        stringExprFunc
-	points    []StringPoint // must be size 2
-	storePrev bool
-}
-
-func newStringExprIterator(left, right StringIterator, opt IteratorOptions, fn func(a, b string) string) *stringExprIterator {
-	var points []StringPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []StringPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToString(opt.FillValue)
-		points = []StringPoint{{Value: value}, {Value: value}}
-	}
-	return &stringExprIterator{
-		left:      newBufStringIterator(left),
-		right:     newBufStringIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *stringExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *stringExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *stringExprIterator) Next() (*StringPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = ""
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = ""
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		if a.Nil {
-			return a, nil
-		} else if b.Nil {
-			return b, nil
-		}
-		a.Value = itr.fn(a.Value, b.Value)
-		return a, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *stringExprIterator) next() (a, b *StringPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// stringExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type stringExprFunc func(a, b string) string
 
 // stringReduceBooleanIterator executes a reducer for every interval and buffers the result.
 type stringReduceBooleanIterator struct {
@@ -13125,10 +10178,17 @@ func (itr *stringStreamBooleanIterator) Next() (*BooleanPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *stringStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []BooleanPoint
 			for _, rp := range itr.m {
@@ -13153,8 +10213,6 @@ func (itr *stringStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -13193,208 +10251,6 @@ func (itr *stringStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 	}
 }
 
-// stringBooleanExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type stringBooleanExprIterator struct {
-	left      *bufStringIterator
-	right     *bufStringIterator
-	fn        stringBooleanExprFunc
-	points    []StringPoint // must be size 2
-	storePrev bool
-}
-
-func newStringBooleanExprIterator(left, right StringIterator, opt IteratorOptions, fn func(a, b string) bool) *stringBooleanExprIterator {
-	var points []StringPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []StringPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToString(opt.FillValue)
-		points = []StringPoint{{Value: value}, {Value: value}}
-	}
-	return &stringBooleanExprIterator{
-		left:      newBufStringIterator(left),
-		right:     newBufStringIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *stringBooleanExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *stringBooleanExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *stringBooleanExprIterator) Next() (*BooleanPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = ""
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = ""
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &BooleanPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *stringBooleanExprIterator) next() (a, b *StringPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// stringBooleanExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type stringBooleanExprFunc func(a, b string) bool
-
-// stringTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type stringTransformIterator struct {
-	input StringIterator
-	fn    stringTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *stringTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *stringTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *stringTransformIterator) Next() (*StringPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		p = itr.fn(p)
-	}
-	return p, nil
-}
-
-// stringTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type stringTransformFunc func(p *StringPoint) *StringPoint
-
-// stringBoolTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type stringBoolTransformIterator struct {
-	input StringIterator
-	fn    stringBoolTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *stringBoolTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *stringBoolTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *stringBoolTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		return itr.fn(p), nil
-	}
-	return nil, nil
-}
-
-// stringBoolTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type stringBoolTransformFunc func(p *StringPoint) *BooleanPoint
-
 // stringDedupeIterator only outputs unique points.
 // This differs from the DistinctIterator in that it compares all aux fields too.
 // This iterator is relatively inefficient and should only be used on small
@@ -13405,19 +10261,16 @@ type stringDedupeIterator struct {
 }
 
 type stringIteratorMapper struct {
-	e      *Emitter
-	buf    []interface{}
+	cur    Cursor
+	row    Row
 	driver IteratorMap   // which iterator to use for the primary value, can be nil
 	fields []IteratorMap // which iterator to use for an aux field
 	point  StringPoint
 }
 
-func newStringIteratorMapper(itrs []Iterator, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *stringIteratorMapper {
-	e := NewEmitter(itrs, opt.Ascending, 0)
-	e.OmitTime = true
+func newStringIteratorMapper(cur Cursor, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *stringIteratorMapper {
 	return &stringIteratorMapper{
-		e:      e,
-		buf:    make([]interface{}, len(itrs)),
+		cur:    cur,
 		driver: driver,
 		fields: fields,
 		point: StringPoint{
@@ -13427,18 +10280,20 @@ func newStringIteratorMapper(itrs []Iterator, driver IteratorMap, fields []Itera
 }
 
 func (itr *stringIteratorMapper) Next() (*StringPoint, error) {
-	t, name, tags, err := itr.e.loadBuf()
-	if err != nil || t == ZeroTime {
-		return nil, err
+	if !itr.cur.Scan(&itr.row) {
+		if err := itr.cur.Err(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	itr.point.Time = t
-	itr.point.Name = name
-	itr.point.Tags = tags
 
-	itr.e.readInto(t, name, tags, itr.buf)
+	itr.point.Time = itr.row.Time
+	itr.point.Name = itr.row.Series.Name
+	itr.point.Tags = itr.row.Series.Tags
+
 	if itr.driver != nil {
-		if v := itr.driver.Value(tags, itr.buf); v != nil {
-			if v, ok := v.(string); ok {
+		if v := itr.driver.Value(&itr.row); v != nil {
+			if v, ok := castToString(v); ok {
 				itr.point.Value = v
 				itr.point.Nil = false
 			} else {
@@ -13451,21 +10306,17 @@ func (itr *stringIteratorMapper) Next() (*StringPoint, error) {
 		}
 	}
 	for i, f := range itr.fields {
-		itr.point.Aux[i] = f.Value(tags, itr.buf)
+		itr.point.Aux[i] = f.Value(&itr.row)
 	}
 	return &itr.point, nil
 }
 
 func (itr *stringIteratorMapper) Stats() IteratorStats {
-	stats := IteratorStats{}
-	for _, itr := range itr.e.itrs {
-		stats.Add(itr.Stats())
-	}
-	return stats
+	return itr.cur.Stats()
 }
 
 func (itr *stringIteratorMapper) Close() error {
-	return itr.e.Close()
+	return itr.cur.Close()
 }
 
 type stringFilterIterator struct {
@@ -13525,6 +10376,49 @@ func (itr *stringFilterIterator) Next() (*StringPoint, error) {
 		}
 		return p, nil
 	}
+}
+
+type stringTagSubsetIterator struct {
+	input      StringIterator
+	point      StringPoint
+	lastTags   Tags
+	dimensions []string
+}
+
+func newStringTagSubsetIterator(input StringIterator, opt IteratorOptions) *stringTagSubsetIterator {
+	return &stringTagSubsetIterator{
+		input:      input,
+		dimensions: opt.GetDimensions(),
+	}
+}
+
+func (itr *stringTagSubsetIterator) Next() (*StringPoint, error) {
+	p, err := itr.input.Next()
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+
+	itr.point.Name = p.Name
+	if !p.Tags.Equal(itr.lastTags) {
+		itr.point.Tags = p.Tags.Subset(itr.dimensions)
+		itr.lastTags = p.Tags
+	}
+	itr.point.Time = p.Time
+	itr.point.Value = p.Value
+	itr.point.Aux = p.Aux
+	itr.point.Aggregated = p.Aggregated
+	itr.point.Nil = p.Nil
+	return &itr.point, nil
+}
+
+func (itr *stringTagSubsetIterator) Stats() IteratorStats {
+	return itr.input.Stats()
+}
+
+func (itr *stringTagSubsetIterator) Close() error {
+	return itr.input.Close()
 }
 
 // newStringDedupeIterator returns a new instance of stringDedupeIterator.
@@ -13700,6 +10594,9 @@ type booleanMergeIterator struct {
 	heap   *booleanMergeHeap
 	init   bool
 
+	closed bool
+	mu     sync.RWMutex
+
 	// Current iterator and window.
 	curr   *booleanMergeHeapItem
 	window struct {
@@ -13743,17 +10640,27 @@ func (itr *booleanMergeIterator) Stats() IteratorStats {
 
 // Close closes the underlying iterators.
 func (itr *booleanMergeIterator) Close() error {
+	itr.mu.Lock()
+	defer itr.mu.Unlock()
+
 	for _, input := range itr.inputs {
 		input.Close()
 	}
 	itr.curr = nil
 	itr.inputs = nil
 	itr.heap.items = nil
+	itr.closed = true
 	return nil
 }
 
 // Next returns the next point from the iterator.
 func (itr *booleanMergeIterator) Next() (*BooleanPoint, error) {
+	itr.mu.RLock()
+	defer itr.mu.RUnlock()
+	if itr.closed {
+		return nil, nil
+	}
+
 	// Initialize the heap. This needs to be done lazily on the first call to this iterator
 	// so that iterator initialization done through the Select() call returns quickly.
 	// Queries can only be interrupted after the Select() call completes so any operations
@@ -14066,6 +10973,95 @@ type booleanSortedMergeHeapItem struct {
 	itr   BooleanIterator
 }
 
+// booleanIteratorScanner scans the results of a BooleanIterator into a map.
+type booleanIteratorScanner struct {
+	input        *bufBooleanIterator
+	err          error
+	keys         []influxql.VarRef
+	defaultValue interface{}
+}
+
+// newBooleanIteratorScanner creates a new IteratorScanner.
+func newBooleanIteratorScanner(input BooleanIterator, keys []influxql.VarRef, defaultValue interface{}) *booleanIteratorScanner {
+	return &booleanIteratorScanner{
+		input:        newBufBooleanIterator(input),
+		keys:         keys,
+		defaultValue: defaultValue,
+	}
+}
+
+func (s *booleanIteratorScanner) Peek() (int64, string, Tags) {
+	if s.err != nil {
+		return ZeroTime, "", Tags{}
+	}
+
+	p, err := s.input.peek()
+	if err != nil {
+		s.err = err
+		return ZeroTime, "", Tags{}
+	} else if p == nil {
+		return ZeroTime, "", Tags{}
+	}
+	return p.Time, p.Name, p.Tags
+}
+
+func (s *booleanIteratorScanner) ScanAt(ts int64, name string, tags Tags, m map[string]interface{}) {
+	if s.err != nil {
+		return
+	}
+
+	p, err := s.input.Next()
+	if err != nil {
+		s.err = err
+		return
+	} else if p == nil {
+		s.useDefaults(m)
+		return
+	} else if p.Time != ts || p.Name != name || !p.Tags.Equals(&tags) {
+		s.useDefaults(m)
+		s.input.unread(p)
+		return
+	}
+
+	if k := s.keys[0]; k.Val != "" {
+		if p.Nil {
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		} else {
+			m[k.Val] = p.Value
+		}
+	}
+	for i, v := range p.Aux {
+		k := s.keys[i+1]
+		switch v.(type) {
+		case float64, int64, uint64, string, bool:
+			m[k.Val] = v
+		default:
+			// Insert the fill value if one was specified.
+			if s.defaultValue != SkipDefault {
+				m[k.Val] = castToType(s.defaultValue, k.Type)
+			}
+		}
+	}
+}
+
+func (s *booleanIteratorScanner) useDefaults(m map[string]interface{}) {
+	if s.defaultValue == SkipDefault {
+		return
+	}
+	for _, k := range s.keys {
+		if k.Val == "" {
+			continue
+		}
+		m[k.Val] = castToType(s.defaultValue, k.Type)
+	}
+}
+
+func (s *booleanIteratorScanner) Stats() IteratorStats { return s.input.Stats() }
+func (s *booleanIteratorScanner) Err() error           { return s.err }
+func (s *booleanIteratorScanner) Close() error         { return s.input.Close() }
+
 // booleanParallelIterator represents an iterator that pulls data in a separate goroutine.
 type booleanParallelIterator struct {
 	input BooleanIterator
@@ -14265,21 +11261,17 @@ func (itr *booleanFillIterator) Next() (*BooleanPoint, error) {
 	}
 
 	// Check if the next point is outside of our window or is nil.
-	for p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
+	if p == nil || p.Name != itr.window.name || p.Tags.ID() != itr.window.tags.ID() {
 		// If we are inside of an interval, unread the point and continue below to
 		// constructing a new point.
-		if itr.opt.Ascending {
-			if itr.window.time <= itr.endTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
-		} else {
-			if itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
-				itr.input.unread(p)
-				p = nil
-				break
-			}
+		if itr.opt.Ascending && itr.window.time <= itr.endTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
+		} else if !itr.opt.Ascending && itr.window.time >= itr.endTime && itr.endTime != influxql.MinTime {
+			itr.input.unread(p)
+			p = nil
+			goto CONSTRUCT
 		}
 
 		// We are *not* in a current interval. If there is no next point,
@@ -14298,10 +11290,10 @@ func (itr *booleanFillIterator) Next() (*BooleanPoint, error) {
 			_, itr.window.offset = itr.opt.Zone(itr.window.time)
 		}
 		itr.prev = BooleanPoint{Nil: true}
-		break
 	}
 
 	// Check if the point is our next expected point.
+CONSTRUCT:
 	if p == nil || (itr.opt.Ascending && p.Time > itr.window.time) || (!itr.opt.Ascending && p.Time < itr.window.time) {
 		if p != nil {
 			itr.input.unread(p)
@@ -14320,7 +11312,7 @@ func (itr *booleanFillIterator) Next() (*BooleanPoint, error) {
 		case influxql.NullFill:
 			p.Nil = true
 		case influxql.NumberFill:
-			p.Value = castToBoolean(itr.opt.FillValue)
+			p.Value, _ = castToBoolean(itr.opt.FillValue)
 		case influxql.PreviousFill:
 			if !itr.prev.Nil {
 				p.Value = itr.prev.Value
@@ -14466,169 +11458,6 @@ func (itr *booleanCloseInterruptIterator) Next() (*BooleanPoint, error) {
 			return nil, err
 		}
 	}
-	return p, nil
-}
-
-// auxBooleanPoint represents a combination of a point and an error for the AuxIterator.
-type auxBooleanPoint struct {
-	point *BooleanPoint
-	err   error
-}
-
-// booleanAuxIterator represents a boolean implementation of AuxIterator.
-type booleanAuxIterator struct {
-	input      *bufBooleanIterator
-	output     chan auxBooleanPoint
-	fields     *auxIteratorFields
-	background bool
-	closer     sync.Once
-}
-
-func newBooleanAuxIterator(input BooleanIterator, opt IteratorOptions) *booleanAuxIterator {
-	return &booleanAuxIterator{
-		input:  newBufBooleanIterator(input),
-		output: make(chan auxBooleanPoint, 1),
-		fields: newAuxIteratorFields(opt),
-	}
-}
-
-func (itr *booleanAuxIterator) Background() {
-	itr.background = true
-	itr.Start()
-	go DrainIterator(itr)
-}
-
-func (itr *booleanAuxIterator) Start()               { go itr.stream() }
-func (itr *booleanAuxIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-func (itr *booleanAuxIterator) Close() error {
-	var err error
-	itr.closer.Do(func() { err = itr.input.Close() })
-	return err
-}
-
-func (itr *booleanAuxIterator) Next() (*BooleanPoint, error) {
-	p := <-itr.output
-	return p.point, p.err
-}
-func (itr *booleanAuxIterator) Iterator(name string, typ influxql.DataType) Iterator {
-	return itr.fields.iterator(name, typ)
-}
-
-func (itr *booleanAuxIterator) stream() {
-	for {
-		// Read next point.
-		p, err := itr.input.Next()
-		if err != nil {
-			itr.output <- auxBooleanPoint{err: err}
-			itr.fields.sendError(err)
-			break
-		} else if p == nil {
-			break
-		}
-
-		// Send point to output and to each field iterator.
-		itr.output <- auxBooleanPoint{point: p}
-		if ok := itr.fields.send(p); !ok && itr.background {
-			break
-		}
-	}
-
-	close(itr.output)
-	itr.fields.close()
-}
-
-// booleanChanIterator represents a new instance of booleanChanIterator.
-type booleanChanIterator struct {
-	buf struct {
-		i      int
-		filled bool
-		points [2]BooleanPoint
-	}
-	err  error
-	cond *sync.Cond
-	done bool
-}
-
-func (itr *booleanChanIterator) Stats() IteratorStats { return IteratorStats{} }
-
-func (itr *booleanChanIterator) Close() error {
-	itr.cond.L.Lock()
-	// Mark the channel iterator as done and signal all waiting goroutines to start again.
-	itr.done = true
-	itr.cond.Broadcast()
-	// Do not defer the unlock so we don't create an unnecessary allocation.
-	itr.cond.L.Unlock()
-	return nil
-}
-
-func (itr *booleanChanIterator) setBuf(name string, tags Tags, time int64, value interface{}) bool {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Wait for either the iterator to be done (so we don't have to set the value)
-	// or for the buffer to have been read and ready for another write.
-	for !itr.done && itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Do not set the value and return false to signal that the iterator is closed.
-	// Do this after the above wait as the above for loop may have exited because
-	// the iterator was closed.
-	if itr.done {
-		return false
-	}
-
-	switch v := value.(type) {
-	case bool:
-		itr.buf.points[itr.buf.i] = BooleanPoint{Name: name, Tags: tags, Time: time, Value: v}
-
-	default:
-		itr.buf.points[itr.buf.i] = BooleanPoint{Name: name, Tags: tags, Time: time, Nil: true}
-	}
-	itr.buf.filled = true
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-	return true
-}
-
-func (itr *booleanChanIterator) setErr(err error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-	itr.err = err
-
-	// Signal to all waiting goroutines that a new value is ready to read.
-	itr.cond.Signal()
-}
-
-func (itr *booleanChanIterator) Next() (*BooleanPoint, error) {
-	itr.cond.L.Lock()
-	defer itr.cond.L.Unlock()
-
-	// Check for an error and return one if there.
-	if itr.err != nil {
-		return nil, itr.err
-	}
-
-	// Wait until either a value is available in the buffer or
-	// the iterator is closed.
-	for !itr.done && !itr.buf.filled {
-		itr.cond.Wait()
-	}
-
-	// Return nil once the channel is done and the buffer is empty.
-	if itr.done && !itr.buf.filled {
-		return nil, nil
-	}
-
-	// Always read from the buffer if it exists, even if the iterator
-	// is closed. This prevents the last value from being truncated by
-	// the parent iterator.
-	p := &itr.buf.points[itr.buf.i]
-	itr.buf.i = (itr.buf.i + 1) % len(itr.buf.points)
-	itr.buf.filled = false
-	itr.cond.Signal()
 	return p, nil
 }
 
@@ -14839,10 +11668,17 @@ func (itr *booleanStreamFloatIterator) Next() (*FloatPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *booleanStreamFloatIterator) reduce() ([]FloatPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []FloatPoint
 			for _, rp := range itr.m {
@@ -14867,8 +11703,6 @@ func (itr *booleanStreamFloatIterator) reduce() ([]FloatPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -14906,150 +11740,6 @@ func (itr *booleanStreamFloatIterator) reduce() ([]FloatPoint, error) {
 		return points, nil
 	}
 }
-
-// booleanFloatExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type booleanFloatExprIterator struct {
-	left      *bufBooleanIterator
-	right     *bufBooleanIterator
-	fn        booleanFloatExprFunc
-	points    []BooleanPoint // must be size 2
-	storePrev bool
-}
-
-func newBooleanFloatExprIterator(left, right BooleanIterator, opt IteratorOptions, fn func(a, b bool) float64) *booleanFloatExprIterator {
-	var points []BooleanPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []BooleanPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToBoolean(opt.FillValue)
-		points = []BooleanPoint{{Value: value}, {Value: value}}
-	}
-	return &booleanFloatExprIterator{
-		left:      newBufBooleanIterator(left),
-		right:     newBufBooleanIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *booleanFloatExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *booleanFloatExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *booleanFloatExprIterator) Next() (*FloatPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = false
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = false
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &FloatPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *booleanFloatExprIterator) next() (a, b *BooleanPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// booleanFloatExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type booleanFloatExprFunc func(a, b bool) float64
 
 // booleanReduceIntegerIterator executes a reducer for every interval and buffers the result.
 type booleanReduceIntegerIterator struct {
@@ -15258,10 +11948,17 @@ func (itr *booleanStreamIntegerIterator) Next() (*IntegerPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *booleanStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []IntegerPoint
 			for _, rp := range itr.m {
@@ -15286,8 +11983,6 @@ func (itr *booleanStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -15325,150 +12020,6 @@ func (itr *booleanStreamIntegerIterator) reduce() ([]IntegerPoint, error) {
 		return points, nil
 	}
 }
-
-// booleanIntegerExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type booleanIntegerExprIterator struct {
-	left      *bufBooleanIterator
-	right     *bufBooleanIterator
-	fn        booleanIntegerExprFunc
-	points    []BooleanPoint // must be size 2
-	storePrev bool
-}
-
-func newBooleanIntegerExprIterator(left, right BooleanIterator, opt IteratorOptions, fn func(a, b bool) int64) *booleanIntegerExprIterator {
-	var points []BooleanPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []BooleanPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToBoolean(opt.FillValue)
-		points = []BooleanPoint{{Value: value}, {Value: value}}
-	}
-	return &booleanIntegerExprIterator{
-		left:      newBufBooleanIterator(left),
-		right:     newBufBooleanIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *booleanIntegerExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *booleanIntegerExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *booleanIntegerExprIterator) Next() (*IntegerPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = false
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = false
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &IntegerPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *booleanIntegerExprIterator) next() (a, b *BooleanPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// booleanIntegerExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type booleanIntegerExprFunc func(a, b bool) int64
 
 // booleanReduceUnsignedIterator executes a reducer for every interval and buffers the result.
 type booleanReduceUnsignedIterator struct {
@@ -15677,10 +12228,17 @@ func (itr *booleanStreamUnsignedIterator) Next() (*UnsignedPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *booleanStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []UnsignedPoint
 			for _, rp := range itr.m {
@@ -15705,8 +12263,6 @@ func (itr *booleanStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -15744,150 +12300,6 @@ func (itr *booleanStreamUnsignedIterator) reduce() ([]UnsignedPoint, error) {
 		return points, nil
 	}
 }
-
-// booleanUnsignedExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type booleanUnsignedExprIterator struct {
-	left      *bufBooleanIterator
-	right     *bufBooleanIterator
-	fn        booleanUnsignedExprFunc
-	points    []BooleanPoint // must be size 2
-	storePrev bool
-}
-
-func newBooleanUnsignedExprIterator(left, right BooleanIterator, opt IteratorOptions, fn func(a, b bool) uint64) *booleanUnsignedExprIterator {
-	var points []BooleanPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []BooleanPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToBoolean(opt.FillValue)
-		points = []BooleanPoint{{Value: value}, {Value: value}}
-	}
-	return &booleanUnsignedExprIterator{
-		left:      newBufBooleanIterator(left),
-		right:     newBufBooleanIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *booleanUnsignedExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *booleanUnsignedExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *booleanUnsignedExprIterator) Next() (*UnsignedPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = false
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = false
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &UnsignedPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *booleanUnsignedExprIterator) next() (a, b *BooleanPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// booleanUnsignedExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type booleanUnsignedExprFunc func(a, b bool) uint64
 
 // booleanReduceStringIterator executes a reducer for every interval and buffers the result.
 type booleanReduceStringIterator struct {
@@ -16096,10 +12508,17 @@ func (itr *booleanStreamStringIterator) Next() (*StringPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *booleanStreamStringIterator) reduce() ([]StringPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []StringPoint
 			for _, rp := range itr.m {
@@ -16124,8 +12543,6 @@ func (itr *booleanStreamStringIterator) reduce() ([]StringPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -16163,150 +12580,6 @@ func (itr *booleanStreamStringIterator) reduce() ([]StringPoint, error) {
 		return points, nil
 	}
 }
-
-// booleanStringExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type booleanStringExprIterator struct {
-	left      *bufBooleanIterator
-	right     *bufBooleanIterator
-	fn        booleanStringExprFunc
-	points    []BooleanPoint // must be size 2
-	storePrev bool
-}
-
-func newBooleanStringExprIterator(left, right BooleanIterator, opt IteratorOptions, fn func(a, b bool) string) *booleanStringExprIterator {
-	var points []BooleanPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []BooleanPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToBoolean(opt.FillValue)
-		points = []BooleanPoint{{Value: value}, {Value: value}}
-	}
-	return &booleanStringExprIterator{
-		left:      newBufBooleanIterator(left),
-		right:     newBufBooleanIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *booleanStringExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *booleanStringExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *booleanStringExprIterator) Next() (*StringPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = false
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = false
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		p := &StringPoint{
-			Name:       a.Name,
-			Tags:       a.Tags,
-			Time:       a.Time,
-			Nil:        a.Nil || b.Nil,
-			Aggregated: a.Aggregated,
-		}
-		if !p.Nil {
-			p.Value = itr.fn(a.Value, b.Value)
-		}
-		return p, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *booleanStringExprIterator) next() (a, b *BooleanPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// booleanStringExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type booleanStringExprFunc func(a, b bool) string
 
 // booleanReduceBooleanIterator executes a reducer for every interval and buffers the result.
 type booleanReduceBooleanIterator struct {
@@ -16515,10 +12788,17 @@ func (itr *booleanStreamBooleanIterator) Next() (*BooleanPoint, error) {
 // reduce creates and manages aggregators for every point from the input.
 // After aggregating a point, it always tries to emit a value using the emitter.
 func (itr *booleanStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
+	// We have already read all of the input points.
+	if itr.m == nil {
+		return nil, nil
+	}
+
 	for {
 		// Read next point.
 		curr, err := itr.input.Next()
-		if curr == nil {
+		if err != nil {
+			return nil, err
+		} else if curr == nil {
 			// Close all of the aggregators to flush any remaining points to emit.
 			var points []BooleanPoint
 			for _, rp := range itr.m {
@@ -16543,8 +12823,6 @@ func (itr *booleanStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 			// Eliminate the aggregators and emitters.
 			itr.m = nil
 			return points, nil
-		} else if err != nil {
-			return nil, err
 		} else if curr.Nil {
 			continue
 		}
@@ -16583,204 +12861,6 @@ func (itr *booleanStreamBooleanIterator) reduce() ([]BooleanPoint, error) {
 	}
 }
 
-// booleanExprIterator executes a function to modify an existing point
-// for every output of the input iterator.
-type booleanExprIterator struct {
-	left      *bufBooleanIterator
-	right     *bufBooleanIterator
-	fn        booleanExprFunc
-	points    []BooleanPoint // must be size 2
-	storePrev bool
-}
-
-func newBooleanExprIterator(left, right BooleanIterator, opt IteratorOptions, fn func(a, b bool) bool) *booleanExprIterator {
-	var points []BooleanPoint
-	switch opt.Fill {
-	case influxql.NullFill, influxql.PreviousFill:
-		points = []BooleanPoint{{Nil: true}, {Nil: true}}
-	case influxql.NumberFill:
-		value := castToBoolean(opt.FillValue)
-		points = []BooleanPoint{{Value: value}, {Value: value}}
-	}
-	return &booleanExprIterator{
-		left:      newBufBooleanIterator(left),
-		right:     newBufBooleanIterator(right),
-		points:    points,
-		fn:        fn,
-		storePrev: opt.Fill == influxql.PreviousFill,
-	}
-}
-
-func (itr *booleanExprIterator) Stats() IteratorStats {
-	stats := itr.left.Stats()
-	stats.Add(itr.right.Stats())
-	return stats
-}
-
-func (itr *booleanExprIterator) Close() error {
-	itr.left.Close()
-	itr.right.Close()
-	return nil
-}
-
-func (itr *booleanExprIterator) Next() (*BooleanPoint, error) {
-	for {
-		a, b, err := itr.next()
-		if err != nil || (a == nil && b == nil) {
-			return nil, err
-		}
-
-		// If any of these are nil and we are using fill(none), skip these points.
-		if (a == nil || a.Nil || b == nil || b.Nil) && itr.points == nil {
-			continue
-		}
-
-		// If one of the two points is nil, we need to fill it with a fake nil
-		// point that has the same name, tags, and time as the other point.
-		// There should never be a time when both of these are nil.
-		if a == nil {
-			p := *b
-			a = &p
-			a.Value = false
-			a.Nil = true
-		} else if b == nil {
-			p := *a
-			b = &p
-			b.Value = false
-			b.Nil = true
-		}
-
-		// If a value is nil, use the fill values if the fill value is non-nil.
-		if a.Nil && !itr.points[0].Nil {
-			a.Value = itr.points[0].Value
-			a.Nil = false
-		}
-		if b.Nil && !itr.points[1].Nil {
-			b.Value = itr.points[1].Value
-			b.Nil = false
-		}
-
-		if itr.storePrev {
-			itr.points[0], itr.points[1] = *a, *b
-		}
-
-		if a.Nil {
-			return a, nil
-		} else if b.Nil {
-			return b, nil
-		}
-		a.Value = itr.fn(a.Value, b.Value)
-		return a, nil
-
-	}
-}
-
-// next returns the next points within each iterator. If the iterators are
-// uneven, it organizes them so only matching points are returned.
-func (itr *booleanExprIterator) next() (a, b *BooleanPoint, err error) {
-	// Retrieve the next value for both the left and right.
-	a, err = itr.left.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-	b, err = itr.right.Next()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// If we have a point from both, make sure that they match each other.
-	if a != nil && b != nil {
-		if a.Name > b.Name {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Name < b.Name {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if ltags, rtags := a.Tags.ID(), b.Tags.ID(); ltags > rtags {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if ltags < rtags {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-
-		if a.Time > b.Time {
-			itr.left.unread(a)
-			return nil, b, nil
-		} else if a.Time < b.Time {
-			itr.right.unread(b)
-			return a, nil, nil
-		}
-	}
-	return a, b, nil
-}
-
-// booleanExprFunc creates or modifies a point by combining two
-// points. The point passed in may be modified and returned rather than
-// allocating a new point if possible. One of the points may be nil, but at
-// least one of the points will be non-nil.
-type booleanExprFunc func(a, b bool) bool
-
-// booleanTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type booleanTransformIterator struct {
-	input BooleanIterator
-	fn    booleanTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *booleanTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *booleanTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *booleanTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		p = itr.fn(p)
-	}
-	return p, nil
-}
-
-// booleanTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type booleanTransformFunc func(p *BooleanPoint) *BooleanPoint
-
-// booleanBoolTransformIterator executes a function to modify an existing point for every
-// output of the input iterator.
-type booleanBoolTransformIterator struct {
-	input BooleanIterator
-	fn    booleanBoolTransformFunc
-}
-
-// Stats returns stats from the input iterator.
-func (itr *booleanBoolTransformIterator) Stats() IteratorStats { return itr.input.Stats() }
-
-// Close closes the iterator and all child iterators.
-func (itr *booleanBoolTransformIterator) Close() error { return itr.input.Close() }
-
-// Next returns the minimum value for the next available interval.
-func (itr *booleanBoolTransformIterator) Next() (*BooleanPoint, error) {
-	p, err := itr.input.Next()
-	if err != nil {
-		return nil, err
-	} else if p != nil {
-		return itr.fn(p), nil
-	}
-	return nil, nil
-}
-
-// booleanBoolTransformFunc creates or modifies a point.
-// The point passed in may be modified and returned rather than allocating a
-// new point if possible.
-type booleanBoolTransformFunc func(p *BooleanPoint) *BooleanPoint
-
 // booleanDedupeIterator only outputs unique points.
 // This differs from the DistinctIterator in that it compares all aux fields too.
 // This iterator is relatively inefficient and should only be used on small
@@ -16791,19 +12871,16 @@ type booleanDedupeIterator struct {
 }
 
 type booleanIteratorMapper struct {
-	e      *Emitter
-	buf    []interface{}
+	cur    Cursor
+	row    Row
 	driver IteratorMap   // which iterator to use for the primary value, can be nil
 	fields []IteratorMap // which iterator to use for an aux field
 	point  BooleanPoint
 }
 
-func newBooleanIteratorMapper(itrs []Iterator, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *booleanIteratorMapper {
-	e := NewEmitter(itrs, opt.Ascending, 0)
-	e.OmitTime = true
+func newBooleanIteratorMapper(cur Cursor, driver IteratorMap, fields []IteratorMap, opt IteratorOptions) *booleanIteratorMapper {
 	return &booleanIteratorMapper{
-		e:      e,
-		buf:    make([]interface{}, len(itrs)),
+		cur:    cur,
 		driver: driver,
 		fields: fields,
 		point: BooleanPoint{
@@ -16813,18 +12890,20 @@ func newBooleanIteratorMapper(itrs []Iterator, driver IteratorMap, fields []Iter
 }
 
 func (itr *booleanIteratorMapper) Next() (*BooleanPoint, error) {
-	t, name, tags, err := itr.e.loadBuf()
-	if err != nil || t == ZeroTime {
-		return nil, err
+	if !itr.cur.Scan(&itr.row) {
+		if err := itr.cur.Err(); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
-	itr.point.Time = t
-	itr.point.Name = name
-	itr.point.Tags = tags
 
-	itr.e.readInto(t, name, tags, itr.buf)
+	itr.point.Time = itr.row.Time
+	itr.point.Name = itr.row.Series.Name
+	itr.point.Tags = itr.row.Series.Tags
+
 	if itr.driver != nil {
-		if v := itr.driver.Value(tags, itr.buf); v != nil {
-			if v, ok := v.(bool); ok {
+		if v := itr.driver.Value(&itr.row); v != nil {
+			if v, ok := castToBoolean(v); ok {
 				itr.point.Value = v
 				itr.point.Nil = false
 			} else {
@@ -16837,21 +12916,17 @@ func (itr *booleanIteratorMapper) Next() (*BooleanPoint, error) {
 		}
 	}
 	for i, f := range itr.fields {
-		itr.point.Aux[i] = f.Value(tags, itr.buf)
+		itr.point.Aux[i] = f.Value(&itr.row)
 	}
 	return &itr.point, nil
 }
 
 func (itr *booleanIteratorMapper) Stats() IteratorStats {
-	stats := IteratorStats{}
-	for _, itr := range itr.e.itrs {
-		stats.Add(itr.Stats())
-	}
-	return stats
+	return itr.cur.Stats()
 }
 
 func (itr *booleanIteratorMapper) Close() error {
-	return itr.e.Close()
+	return itr.cur.Close()
 }
 
 type booleanFilterIterator struct {
@@ -16911,6 +12986,49 @@ func (itr *booleanFilterIterator) Next() (*BooleanPoint, error) {
 		}
 		return p, nil
 	}
+}
+
+type booleanTagSubsetIterator struct {
+	input      BooleanIterator
+	point      BooleanPoint
+	lastTags   Tags
+	dimensions []string
+}
+
+func newBooleanTagSubsetIterator(input BooleanIterator, opt IteratorOptions) *booleanTagSubsetIterator {
+	return &booleanTagSubsetIterator{
+		input:      input,
+		dimensions: opt.GetDimensions(),
+	}
+}
+
+func (itr *booleanTagSubsetIterator) Next() (*BooleanPoint, error) {
+	p, err := itr.input.Next()
+	if err != nil {
+		return nil, err
+	} else if p == nil {
+		return nil, nil
+	}
+
+	itr.point.Name = p.Name
+	if !p.Tags.Equal(itr.lastTags) {
+		itr.point.Tags = p.Tags.Subset(itr.dimensions)
+		itr.lastTags = p.Tags
+	}
+	itr.point.Time = p.Time
+	itr.point.Value = p.Value
+	itr.point.Aux = p.Aux
+	itr.point.Aggregated = p.Aggregated
+	itr.point.Nil = p.Nil
+	return &itr.point, nil
+}
+
+func (itr *booleanTagSubsetIterator) Stats() IteratorStats {
+	return itr.input.Stats()
+}
+
+func (itr *booleanTagSubsetIterator) Close() error {
+	return itr.input.Close()
 }
 
 // newBooleanDedupeIterator returns a new instance of booleanDedupeIterator.

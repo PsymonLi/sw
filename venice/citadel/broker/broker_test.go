@@ -393,6 +393,8 @@ func TestBrokerTstoreContinuousQuery(t *testing.T) {
 	Assert(t, err != nil, "Failed to raise error for providing invalid query into CreateContinuousQuery")
 	err = brokers[0].CreateContinuousQuery(context.Background(), "cqdb", "testcq3", "default", 7*24, "SHOW CONTINUOUS QUERIES")
 	Assert(t, err != nil, "Failed to raise error for providing wrong type of query into CreateContinuousQuery")
+	err = brokers[0].CreateContinuousQuery(context.Background(), "cqdb", "testcq4", "InvalidRetentionPolicy", 7*24, cqQuery)
+	Assert(t, err != nil, "Failed to raise error for providing non existing retention policy")
 
 	// read databases
 	AssertEventually(t, func() (bool, interface{}) {
@@ -475,7 +477,7 @@ func TestBrokerTstoreContinuousQuery(t *testing.T) {
 
 	// raise error from DeleteRetentionPolicy for test coverage
 	err = brokers[0].DeleteContinuousQuery(context.Background(), "InvalidDBName", "xxx", "xxx")
-	Assert(t, err != nil, "Failed to raise error for deleting continuous query with invalid database name")
+	Assert(t, err == nil, "Get non-nil error for deleting continuous query with invalid database name")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		dbList, err := brokers[0].ReadDatabases(context.Background())

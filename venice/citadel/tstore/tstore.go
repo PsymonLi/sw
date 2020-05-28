@@ -34,7 +34,7 @@ type Tstore struct {
 	dbPath        string                         // directory where files are stored
 	tsdb          *tsdb.Store                    // tsdb store instance
 	stmtExecutor  *coordinator.StatementExecutor // statement executor
-	queryExecutor *query.QueryExecutor           // query executor
+	queryExecutor *query.Executor                // query executor
 	pointsWriter  *coordinator.PointsWriter      // points writer
 	metaClient    *meta.Client                   // metadata client
 }
@@ -122,7 +122,7 @@ func newTstore(dbPath string, ts *tsdb.Store) (*Tstore, error) {
 	}
 
 	// create a query executor
-	qEx := query.NewQueryExecutor()
+	qEx := query.NewExecutor()
 	qEx.StatementExecutor = &stEx
 
 	ret := retention.NewService(retention.NewConfig())

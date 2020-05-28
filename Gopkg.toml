@@ -39,6 +39,10 @@ noverify = ["github.com/docker/docker", "github.com/vmware/govmomi", "github.com
 
 ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
 
+[[override]]
+  name = "github.com/prometheus/client_golang"
+  branch = "master"
+
 [[constraint]]
   name = "github.com/eclipse/paho.mqtt.golang"
   version = "1.2.0"
@@ -87,7 +91,7 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
   name = "github.com/go-stack/stack"
   version = "1.7.0"
 
-[[constraint]]
+[[override]]
   name = "github.com/gogo/protobuf"
   version = "=0.5.0"
 
@@ -131,9 +135,9 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
   name = "github.com/onsi/gomega"
   version = "1.2.0"
 
-[[constraint]]
+[[override]]
   name = "github.com/opentracing/opentracing-go"
-  version = "=1.0.1"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/openzipkin/zipkin-go-opentracing"
@@ -228,11 +232,12 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
 # Override needed for supporting the correct db.Writes in TestServer. ToDo Use compatible semver
 [[override]]
   name = "github.com/influxdata/influxdb"
-  revision = "8b18cc445653866f71a59002f2f8524721a5d27e"
+  version = "=1.6.6"
 
-[[constraint]]
+[[override]]
   name = "github.com/influxdata/influxql"
   branch = "master"
+
 # Override needed for the handling unmarshal errors in Agent REST Server and NMD REST Server. ToDo Use compatible semver
 [[override]]
   name = "github.com/coreos/etcd"

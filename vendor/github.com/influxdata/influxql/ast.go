@@ -94,6 +94,33 @@ func InspectDataType(v interface{}) DataType {
 	}
 }
 
+// DataTypeFromString returns a data type given the string representation of that
+// data type.
+func DataTypeFromString(s string) DataType {
+	switch s {
+	case "float":
+		return Float
+	case "integer":
+		return Integer
+	case "unsigned":
+		return Unsigned
+	case "string":
+		return String
+	case "boolean":
+		return Boolean
+	case "time":
+		return Time
+	case "duration":
+		return Duration
+	case "tag":
+		return Tag
+	case "field":
+		return AnyField
+	default:
+		return Unknown
+	}
+}
+
 // LessThan returns true if the other DataType has greater precedence than the
 // current data type. Unknown has the lowest precedence.
 //
@@ -109,6 +136,39 @@ func (d DataType) LessThan(other DataType) bool {
 		return d >= String
 	}
 	return other != Unknown && other < d
+}
+
+var (
+	zeroFloat64  interface{} = float64(0)
+	zeroInt64    interface{} = int64(0)
+	zeroUint64   interface{} = uint64(0)
+	zeroString   interface{} = ""
+	zeroBoolean  interface{} = false
+	zeroTime     interface{} = time.Time{}
+	zeroDuration interface{} = time.Duration(0)
+)
+
+// Zero returns the zero value for the DataType.
+// The return value of this method, when sent back to InspectDataType,
+// may not produce the same value.
+func (d DataType) Zero() interface{} {
+	switch d {
+	case Float:
+		return zeroFloat64
+	case Integer:
+		return zeroInt64
+	case Unsigned:
+		return zeroUint64
+	case String, Tag:
+		return zeroString
+	case Boolean:
+		return zeroBoolean
+	case Time:
+		return zeroTime
+	case Duration:
+		return zeroDuration
+	}
+	return nil
 }
 
 // String returns the human-readable string representation of the DataType.
@@ -196,6 +256,7 @@ func (*ShowUsersStatement) node()                  {}
 
 func (*BinaryExpr) node()      {}
 func (*BooleanLiteral) node()  {}
+func (*BoundParameter) node()  {}
 func (*Call) node()            {}
 func (*Dimension) node()       {}
 func (Dimensions) node()       {}
@@ -331,6 +392,7 @@ type Expr interface {
 
 func (*BinaryExpr) expr()      {}
 func (*BooleanLiteral) expr()  {}
+func (*BoundParameter) expr()  {}
 func (*Call) expr()            {}
 func (*Distinct) expr()        {}
 func (*DurationLiteral) expr() {}
@@ -355,6 +417,7 @@ type Literal interface {
 }
 
 func (*BooleanLiteral) literal()  {}
+func (*BoundParameter) literal()  {}
 func (*DurationLiteral) literal() {}
 func (*IntegerLiteral) literal()  {}
 func (*UnsignedLiteral) literal() {}
@@ -463,7 +526,9 @@ func IsSystemName(name string) bool {
 	switch name {
 	case "_fieldKeys",
 		"_measurements",
+		"_name",
 		"_series",
+		"_tagKey",
 		"_tagKeys",
 		"_tags":
 		return true
@@ -1358,68 +1423,194 @@ func (s *SelectStatement) RewriteRegexConditions() {
 		// Handle regex-based condition.
 		rhs := be.RHS.(*RegexLiteral) // This must be a regex.
 
-		val, ok := matchExactRegex(rhs.Val.String())
+		vals, ok := matchExactRegex(rhs.Val.String())
 		if !ok {
 			// Regex didn't match.
 			return e
 		}
 
-		// Remove leading and trailing ^ and $.
-		be.RHS = &StringLiteral{Val: val}
-
 		// Update the condition operator.
+		var concatOp Token
 		if be.Op == EQREGEX {
 			be.Op = EQ
+			concatOp = OR
 		} else {
 			be.Op = NEQ
+			concatOp = AND
+		}
+
+		// Remove leading and trailing ^ and $.
+		switch {
+		case len(vals) == 0:
+			be.RHS = &StringLiteral{}
+		case len(vals) == 1:
+			be.RHS = &StringLiteral{Val: vals[0]}
+		default:
+			expr := &BinaryExpr{
+				Op:  be.Op,
+				LHS: be.LHS,
+				RHS: &StringLiteral{Val: vals[0]},
+			}
+			for i := 1; i < len(vals); i++ {
+				expr = &BinaryExpr{
+					Op:  concatOp,
+					LHS: expr,
+					RHS: &BinaryExpr{
+						Op:  be.Op,
+						LHS: be.LHS,
+						RHS: &StringLiteral{Val: vals[i]},
+					},
+				}
+			}
+			return &ParenExpr{Expr: expr}
 		}
 		return be
 	})
+
+	// Unwrap any top level parenthesis.
+	if cond, ok := s.Condition.(*ParenExpr); ok {
+		s.Condition = cond.Expr
+	}
 }
 
-// matchExactRegex matches regexes that have the following form: /^foo$/. It
-// considers /^$/ to be a matching regex.
-func matchExactRegex(v string) (string, bool) {
+// matchExactRegex matches regexes into literals if possible. This will match the
+// pattern /^foo$/ or /^(foo|bar)$/. It considers /^$/ to be a matching regex.
+func matchExactRegex(v string) ([]string, bool) {
 	re, err := syntax.Parse(v, syntax.Perl)
 	if err != nil {
 		// Nothing we can do or log.
-		return "", false
+		return nil, false
 	}
+	re = re.Simplify()
 
 	if re.Op != syntax.OpConcat {
-		return "", false
+		return nil, false
 	}
 
-	if len(re.Sub) < 2 || len(re.Sub) > 3 {
-		// Regex has too few or too many subexpressions.
-		return "", false
+	if len(re.Sub) < 2 {
+		// Regex has too few subexpressions.
+		return nil, false
 	}
 
 	start := re.Sub[0]
 	if !(start.Op == syntax.OpBeginLine || start.Op == syntax.OpBeginText) {
 		// Regex does not begin with ^
-		return "", false
+		return nil, false
 	}
 
 	end := re.Sub[len(re.Sub)-1]
 	if !(end.Op == syntax.OpEndLine || end.Op == syntax.OpEndText) {
 		// Regex does not end with $
-		return "", false
+		return nil, false
 	}
 
-	if len(re.Sub) == 3 {
-		middle := re.Sub[1]
-		if middle.Op != syntax.OpLiteral || middle.Flags^syntax.Perl != 0 {
-			// Regex does not contain a literal op.
-			return "", false
+	// Remove the begin and end text from the regex.
+	re.Sub = re.Sub[1 : len(re.Sub)-1]
+
+	if len(re.Sub) == 0 {
+		// The regex /^$/
+		return nil, true
+	}
+	return matchRegex(re)
+}
+
+// matchRegex will match a regular expression to literals if possible.
+func matchRegex(re *syntax.Regexp) ([]string, bool) {
+
+	// Maximum number of literals that the expression should be expanded to. If
+	// this is exceeded, no expansion will be done. This allows reasonable
+	// optimizations of regex by expansion to literals but prevents cases
+	// where that expansion would result in a large number of literals.
+	const maxLiterals = 100
+
+	// Exit if we see a case-insensitive flag as it is not something we support at this time.
+	if re.Flags&syntax.FoldCase != 0 {
+		return nil, false
+	}
+
+	switch re.Op {
+	case syntax.OpLiteral:
+		// We can rewrite this regex.
+		return []string{string(re.Rune)}, true
+	case syntax.OpCapture:
+		return matchRegex(re.Sub[0])
+	case syntax.OpConcat:
+		// Go through each of the subs and concatenate the result to each one.
+		names, ok := matchRegex(re.Sub[0])
+		if !ok {
+			return nil, false
 		}
 
-		// We can rewrite this regex.
-		return string(middle.Rune), true
-	}
+		for _, sub := range re.Sub[1:] {
+			vals, ok := matchRegex(sub)
+			if !ok {
+				return nil, false
+			}
 
-	// The regex /^$/
-	return "", true
+			// If there is only one value, concatenate it to all strings rather
+			// than allocate a new slice.
+			if len(vals) == 1 {
+				for i := range names {
+					names[i] += vals[0]
+				}
+				continue
+			} else if len(names) == 1 {
+				// If there is only one value, then do this concatenation in
+				// the opposite direction.
+				for i := range vals {
+					vals[i] = names[0] + vals[i]
+				}
+				names = vals
+				continue
+			}
+
+			sz := len(names) * len(vals)
+			if sz > maxLiterals {
+				return nil, false
+			}
+
+			// The long method of using multiple concatenations.
+			concat := make([]string, sz)
+			for i := range names {
+				for j := range vals {
+					concat[i*len(vals)+j] = names[i] + vals[j]
+				}
+			}
+			names = concat
+		}
+		return names, true
+	case syntax.OpCharClass:
+		var sz int
+		for i := 0; i < len(re.Rune); i += 2 {
+			sz += int(re.Rune[i+1]) - int(re.Rune[i]) + 1
+		}
+
+		if sz > maxLiterals {
+			return nil, false
+		}
+
+		names := make([]string, 0, sz)
+		for i := 0; i < len(re.Rune); i += 2 {
+			for r := int(re.Rune[i]); r <= int(re.Rune[i+1]); r++ {
+				names = append(names, string([]rune{rune(r)}))
+			}
+		}
+		return names, true
+	case syntax.OpAlternate:
+		var names []string
+		for _, sub := range re.Sub {
+			vals, ok := matchRegex(sub)
+			if !ok {
+				return nil, false
+			}
+			names = append(names, vals...)
+		}
+		if len(names) > maxLiterals {
+			return nil, false
+		}
+		return names, true
+	}
+	return nil, false
 }
 
 // RewriteDistinct rewrites the expression to be a call for map/reduce to work correctly.
@@ -3478,6 +3669,18 @@ type NilLiteral struct{}
 // String returns a string representation of the literal.
 func (l *NilLiteral) String() string { return `nil` }
 
+// BoundParameter represents a bound parameter literal.
+// This is not available to the query language itself, but can be used when
+// constructing a query string from an AST.
+type BoundParameter struct {
+	Name string
+}
+
+// String returns a string representation of the bound parameter.
+func (bp *BoundParameter) String() string {
+	return fmt.Sprintf("$%s", QuoteIdent(bp.Name))
+}
+
 // BinaryExpr represents an operation between two expressions.
 type BinaryExpr struct {
 	Op  Token
@@ -3876,13 +4079,37 @@ func RewriteExpr(expr Expr, fn func(Expr) Expr) Expr {
 
 // Eval evaluates expr against a map.
 func Eval(expr Expr, m map[string]interface{}) interface{} {
+	eval := ValuerEval{Valuer: MapValuer(m)}
+	return eval.Eval(expr)
+}
+
+// MapValuer is a valuer that substitutes values for the mapped interface.
+type MapValuer map[string]interface{}
+
+// Value returns the value for a key in the MapValuer.
+func (m MapValuer) Value(key string) (interface{}, bool) {
+	v, ok := m[key]
+	return v, ok
+}
+
+// ValuerEval will evaluate an expression using the Valuer.
+type ValuerEval struct {
+	Valuer Valuer
+
+	// IntegerFloatDivision will set the eval system to treat
+	// a division between two integers as a floating point division.
+	IntegerFloatDivision bool
+}
+
+// Eval evaluates an expression and returns a value.
+func (v *ValuerEval) Eval(expr Expr) interface{} {
 	if expr == nil {
 		return nil
 	}
 
 	switch expr := expr.(type) {
 	case *BinaryExpr:
-		return evalBinaryExpr(expr, m)
+		return v.evalBinaryExpr(expr)
 	case *BooleanLiteral:
 		return expr.Val
 	case *IntegerLiteral:
@@ -3892,21 +4119,42 @@ func Eval(expr Expr, m map[string]interface{}) interface{} {
 	case *UnsignedLiteral:
 		return expr.Val
 	case *ParenExpr:
-		return Eval(expr.Expr, m)
+		return v.Eval(expr.Expr)
 	case *RegexLiteral:
 		return expr.Val
 	case *StringLiteral:
 		return expr.Val
+	case *Call:
+		if valuer, ok := v.Valuer.(CallValuer); ok {
+			var args []interface{}
+			if len(expr.Args) > 0 {
+				args = make([]interface{}, len(expr.Args))
+				for i := range expr.Args {
+					args[i] = v.Eval(expr.Args[i])
+				}
+			}
+			val, _ := valuer.Call(expr.Name, args)
+			return val
+		}
+		return nil
 	case *VarRef:
-		return m[expr.Val]
+		val, _ := v.Valuer.Value(expr.Val)
+		return val
 	default:
 		return nil
 	}
 }
 
-func evalBinaryExpr(expr *BinaryExpr, m map[string]interface{}) interface{} {
-	lhs := Eval(expr.LHS, m)
-	rhs := Eval(expr.RHS, m)
+// EvalBool evaluates expr and returns true if result is a boolean true.
+// Otherwise returns false.
+func (v *ValuerEval) EvalBool(expr Expr) bool {
+	val, _ := v.Eval(expr).(bool)
+	return val
+}
+
+func (v *ValuerEval) evalBinaryExpr(expr *BinaryExpr) interface{} {
+	lhs := v.Eval(expr.LHS)
+	rhs := v.Eval(expr.RHS)
 	if lhs == nil && rhs != nil {
 		// When the LHS is nil and the RHS is a boolean, implicitly cast the
 		// nil to false.
@@ -4047,8 +4295,15 @@ func evalBinaryExpr(expr *BinaryExpr, m map[string]interface{}) interface{} {
 			case MUL:
 				return lhs * rhs
 			case DIV:
+				if v.IntegerFloatDivision {
+					if rhs == 0 {
+						return float64(0)
+					}
+					return float64(lhs) / float64(rhs)
+				}
+
 				if rhs == 0 {
-					return float64(0)
+					return int64(0)
 				}
 				return lhs / rhs
 			case MOD:
@@ -4282,34 +4537,109 @@ type TypeMapper interface {
 	MapType(measurement *Measurement, field string) DataType
 }
 
+// CallTypeMapper maps a data type to the function call.
+type CallTypeMapper interface {
+	TypeMapper
+
+	CallType(name string, args []DataType) (DataType, error)
+}
+
 type nilTypeMapper struct{}
 
 func (nilTypeMapper) MapType(*Measurement, string) DataType { return Unknown }
 
-// EvalType evaluates the expression's type.
-func EvalType(expr Expr, sources Sources, typmap TypeMapper) DataType {
-	if typmap == nil {
-		typmap = nilTypeMapper{}
-	}
+type multiTypeMapper []TypeMapper
 
+// MultiTypeMapper combines multiple TypeMappers into a single one.
+// The MultiTypeMapper will return the first type that is not Unknown.
+// It will not iterate through all of them to find the highest priority one.
+func MultiTypeMapper(mappers ...TypeMapper) TypeMapper {
+	return multiTypeMapper(mappers)
+}
+
+func (a multiTypeMapper) MapType(measurement *Measurement, field string) DataType {
+	for _, m := range a {
+		if typ := m.MapType(measurement, field); typ != Unknown {
+			return typ
+		}
+	}
+	return Unknown
+}
+
+func (a multiTypeMapper) CallType(name string, args []DataType) (DataType, error) {
+	for _, m := range a {
+		call, ok := m.(CallTypeMapper)
+		if ok {
+			typ, err := call.CallType(name, args)
+			if err != nil {
+				return Unknown, err
+			} else if typ != Unknown {
+				return typ, nil
+			}
+		}
+	}
+	return Unknown, nil
+}
+
+// TypeValuerEval evaluates an expression to determine its output type.
+type TypeValuerEval struct {
+	TypeMapper TypeMapper
+	Sources    Sources
+}
+
+// EvalType returns the type for an expression. If the expression cannot
+// be evaluated for some reason, like incompatible types, it is returned
+// as a TypeError in the error. If the error is non-fatal so we can continue
+// even though an error happened, true will be returned.
+// This function assumes that the expression has already been reduced.
+func (v *TypeValuerEval) EvalType(expr Expr) (DataType, error) {
 	switch expr := expr.(type) {
 	case *VarRef:
-		// If this variable already has an assigned type, just use that.
-		if expr.Type != Unknown && expr.Type != AnyField {
-			return expr.Type
-		}
+		return v.evalVarRefExprType(expr)
+	case *Call:
+		return v.evalCallExprType(expr)
+	case *BinaryExpr:
+		return v.evalBinaryExprType(expr)
+	case *ParenExpr:
+		return v.EvalType(expr.Expr)
+	case *NumberLiteral:
+		return Float, nil
+	case *IntegerLiteral:
+		return Integer, nil
+	case *UnsignedLiteral:
+		return Unsigned, nil
+	case *StringLiteral:
+		return String, nil
+	case *BooleanLiteral:
+		return Boolean, nil
+	}
+	return Unknown, nil
+}
 
-		var typ DataType
-		for _, src := range sources {
+func (v *TypeValuerEval) evalVarRefExprType(expr *VarRef) (DataType, error) {
+	// If this variable already has an assigned type, just use that.
+	if expr.Type != Unknown && expr.Type != AnyField {
+		return expr.Type, nil
+	}
+
+	var typ DataType
+	if v.TypeMapper != nil {
+		for _, src := range v.Sources {
 			switch src := src.(type) {
 			case *Measurement:
-				if t := typmap.MapType(src, expr.Val); typ.LessThan(t) {
+				if t := v.TypeMapper.MapType(src, expr.Val); typ.LessThan(t) {
 					typ = t
 				}
 			case *SubQuery:
 				_, e := src.Statement.FieldExprByName(expr.Val)
 				if e != nil {
-					if t := EvalType(e, src.Statement.Sources, typmap); typ.LessThan(t) {
+					valuer := TypeValuerEval{
+						TypeMapper: v.TypeMapper,
+						Sources:    src.Statement.Sources,
+					}
+					if t, err := valuer.EvalType(e); err != nil {
+						return Unknown, err
+					} else if typ.LessThan(t) {
 						typ = t
 					}
 				}
@@ -4323,40 +4653,125 @@ func EvalType(expr Expr, sources Sources, typmap TypeMapper) DataType {
 				}
 			}
 		}
-		return typ
-	case *Call:
-		switch expr.Name {
-		case "mean", "median", "integral":
-			return Float
-		case "count":
-			return Integer
-		case "elapsed":
-			return Integer
-		default:
-			return EvalType(expr.Args[0], sources, typmap)
+	}
+	return typ, nil
+}
+
+func (v *TypeValuerEval) evalCallExprType(expr *Call) (DataType, error) {
+	typmap, ok := v.TypeMapper.(CallTypeMapper)
+	if !ok {
+		return Unknown, nil
+	}
+
+	// Evaluate all of the data types for the arguments.
+	args := make([]DataType, len(expr.Args))
+	for i, arg := range expr.Args {
+		typ, err := v.EvalType(arg)
+		if err != nil {
+			return Unknown, err
 		}
-	case *ParenExpr:
-		return EvalType(expr.Expr, sources, typmap)
-	case *NumberLiteral:
-		return Float
-	case *IntegerLiteral:
-		return Integer
-	case *UnsignedLiteral:
-		return Unsigned
-	case *StringLiteral:
-		return String
-	case *BooleanLiteral:
-		return Boolean
-	case *BinaryExpr:
-		lhs := EvalType(expr.LHS, sources, typmap)
-		rhs := EvalType(expr.RHS, sources, typmap)
-		if rhs.LessThan(lhs) {
-			return lhs
-		} else {
-			return rhs
+		args[i] = typ
+	}
+
+	// Pass in the data types for the call so it can be type checked and
+	// the resulting type can be returned.
+	return typmap.CallType(expr.Name, args)
+}
+
+func (v *TypeValuerEval) evalBinaryExprType(expr *BinaryExpr) (DataType, error) {
+	// Find the data type for both sides of the expression.
+	lhs, err := v.EvalType(expr.LHS)
+	if err != nil {
+		return Unknown, err
+	}
+	rhs, err := v.EvalType(expr.RHS)
+	if err != nil {
+		return Unknown, err
+	}
+
+	// If one of the two is unsigned and the other is an integer, we cannot add
+	// the two without an explicit cast unless the integer is a literal.
+	if lhs == Unsigned && rhs == Integer {
+		if isLiteral(expr.LHS) {
+			return Unknown, &TypeError{
+				Expr:    expr,
+				Message: fmt.Sprintf("cannot use %s with an integer and unsigned literal", expr.Op),
+			}
+		} else if !isLiteral(expr.RHS) {
+			return Unknown, &TypeError{
+				Expr:    expr,
+				Message: fmt.Sprintf("cannot use %s between an integer and unsigned, an explicit cast is required", expr.Op),
+			}
+		}
+	} else if lhs == Integer && rhs == Unsigned {
+		if isLiteral(expr.RHS) {
+			return Unknown, &TypeError{
+				Expr:    expr,
+				Message: fmt.Sprintf("cannot use %s with an integer and unsigned literal", expr.Op),
+			}
+		} else if !isLiteral(expr.LHS) {
+			return Unknown, &TypeError{
+				Expr:    expr,
+				Message: fmt.Sprintf("cannot use %s between an integer and unsigned, an explicit cast is required", expr.Op),
+			}
 		}
 	}
-	return Unknown
+
+	// If one of the two is unknown, then return the other as the type.
+	if lhs == Unknown {
+		return rhs, nil
+	} else if rhs == Unknown {
+		return lhs, nil
+	}
+
+	// Rather than re-implement the ValuerEval here, we create a dummy binary
+	// expression with the zero values and inspect the resulting value back into
+	// a data type to determine the output.
+	e := BinaryExpr{
+		LHS: &VarRef{Val: "lhs"},
+		RHS: &VarRef{Val: "rhs"},
+		Op:  expr.Op,
+	}
+	result := Eval(&e, map[string]interface{}{
+		"lhs": lhs.Zero(),
+		"rhs": rhs.Zero(),
+	})
+
+	typ := InspectDataType(result)
+	if typ == Unknown {
+		// If the type is unknown, then the two types were not compatible.
+		return Unknown, &TypeError{
+			Expr:    expr,
+			Message: fmt.Sprintf("incompatible types: %s and %s", lhs, rhs),
+		}
+	}
+	return typ, nil
+}
+
+// TypeError is an error when two types are incompatible.
+type TypeError struct {
+	// Expr contains the expression that generated the type error.
+	Expr Expr
+	// Message contains the informational message about the type error.
+	Message string
+}
+
+func (e *TypeError) Error() string {
+	return fmt.Sprintf("type error: %s: %s", e.Expr, e.Message)
+}
+
+// EvalType evaluates the expression's type.
+func EvalType(expr Expr, sources Sources, typmap TypeMapper) DataType {
+	if typmap == nil {
+		typmap = nilTypeMapper{}
+	}
+
+	valuer := TypeValuerEval{
+		TypeMapper: typmap,
+		Sources:    sources,
+	}
+	typ, _ := valuer.EvalType(expr)
+	return typ
 }
 
 func FieldDimensions(sources Sources, m FieldMapper) (fields map[string]DataType, dimensions map[string]struct{}, err error) {
@@ -4439,8 +4854,10 @@ func reduceBinaryExpr(expr *BinaryExpr, valuer Valuer) Expr {
 	rhs := reduce(expr.RHS, valuer)
 
 	loc := time.UTC
-	if v, ok := valuer.(ZoneValuer); ok {
-		loc = v.Zone()
+	if valuer, ok := valuer.(ZoneValuer); ok {
+		if l := valuer.Zone(); l != nil {
+			loc = l
+		}
 	}
 
 	// Do not evaluate if one side is nil.
@@ -4955,18 +5372,31 @@ func reduceBinaryExprTimeLHS(op Token, lhs *TimeLiteral, rhs Expr, loc *time.Loc
 }
 
 func reduceCall(expr *Call, valuer Valuer) Expr {
-	// Evaluate "now()" if valuer is set.
-	if expr.Name == "now" && len(expr.Args) == 0 && valuer != nil {
-		if v, ok := valuer.Value("now()"); ok {
-			v, _ := v.(time.Time)
-			return &TimeLiteral{Val: v}
+	// Otherwise reduce arguments.
+	var args []Expr
+	literalsOnly := true
+	if len(expr.Args) > 0 {
+		args = make([]Expr, len(expr.Args))
+		for i, arg := range expr.Args {
+			args[i] = reduce(arg, valuer)
+			if !isLiteral(args[i]) {
+				literalsOnly = false
+			}
 		}
 	}
 
-	// Otherwise reduce arguments.
-	args := make([]Expr, len(expr.Args))
-	for i, arg := range expr.Args {
-		args[i] = reduce(arg, valuer)
+	// Evaluate a function call if the valuer is a CallValuer and
+	// the arguments are only literals.
+	if literalsOnly {
+		if valuer, ok := valuer.(CallValuer); ok {
+			argVals := make([]interface{}, len(args))
+			for i := range args {
+				argVals[i] = Eval(args[i], nil)
+			}
+			if v, ok := valuer.Call(expr.Name, argVals); ok {
+				return asLiteral(v)
+			}
+		}
 	}
 	return &Call{Name: expr.Name, Args: args}
 }
@@ -4993,6 +5423,11 @@ func reduceVarRef(expr *VarRef, valuer Valuer) Expr {
 	}
 
 	// Return the value as a literal.
+	return asLiteral(v)
+}
+
+// asLiteral takes an interface and converts it into an influxql literal.
+func asLiteral(v interface{}) Literal {
 	switch v := v.(type) {
 	case bool:
 		return &BooleanLiteral{Val: v}
@@ -5000,6 +5435,8 @@ func reduceVarRef(expr *VarRef, valuer Valuer) Expr {
 		return &DurationLiteral{Val: v}
 	case float64:
 		return &NumberLiteral{Val: v}
+	case int64:
+		return &IntegerLiteral{Val: v}
 	case string:
 		return &StringLiteral{Val: v}
 	case time.Time:
@@ -5009,17 +5446,37 @@ func reduceVarRef(expr *VarRef, valuer Valuer) Expr {
 	}
 }
 
+// isLiteral returns if the expression is a literal.
+func isLiteral(expr Expr) bool {
+	_, ok := expr.(Literal)
+	return ok
+}
+
 // Valuer is the interface that wraps the Value() method.
 type Valuer interface {
 	// Value returns the value and existence flag for a given key.
 	Value(key string) (interface{}, bool)
 }
 
+// CallValuer implements the Call method for evaluating function calls.
+type CallValuer interface {
+	Valuer
+
+	// Call is invoked to evaluate a function call (if possible).
+	Call(name string, args []interface{}) (interface{}, bool)
+}
+
 // ZoneValuer is the interface that specifies the current time zone.
 type ZoneValuer interface {
-	// Zone returns the time zone location.
+	Valuer
+
+	// Zone returns the time zone location. This function may return nil
+	// if no time zone is known.
 	Zone() *time.Location
 }
+
+var _ CallValuer = (*NowValuer)(nil)
+var _ ZoneValuer = (*NowValuer)(nil)
 
 // NowValuer returns only the value for "now()".
 type NowValuer struct {
@@ -5035,12 +5492,62 @@ func (v *NowValuer) Value(key string) (interface{}, bool) {
 	return nil, false
 }
 
+// Call evaluates the now() function to replace now() with the current time.
+func (v *NowValuer) Call(name string, args []interface{}) (interface{}, bool) {
+	if name == "now" && len(args) == 0 {
+		return v.Now, true
+	}
+	return nil, false
+}
+
 // Zone is a method that returns the time.Location.
 func (v *NowValuer) Zone() *time.Location {
 	if v.Location != nil {
 		return v.Location
 	}
-	return time.UTC
+	return nil
+}
+
+// MultiValuer returns a Valuer that iterates over multiple Valuer instances
+// to find a match.
+func MultiValuer(valuers ...Valuer) Valuer {
+	return multiValuer(valuers)
+}
+
+type multiValuer []Valuer
+
+var _ CallValuer = multiValuer(nil)
+var _ ZoneValuer = multiValuer(nil)
+
+func (a multiValuer) Value(key string) (interface{}, bool) {
+	for _, valuer := range a {
+		if v, ok := valuer.Value(key); ok {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+func (a multiValuer) Call(name string, args []interface{}) (interface{}, bool) {
+	for _, valuer := range a {
+		if valuer, ok := valuer.(CallValuer); ok {
+			if v, ok := valuer.Call(name, args); ok {
+				return v, true
+			}
+		}
+	}
+	return nil, false
+}
+
+func (a multiValuer) Zone() *time.Location {
+	for _, valuer := range a {
+		if valuer, ok := valuer.(ZoneValuer); ok {
+			if v := valuer.Zone(); v != nil {
+				return v
+			}
+		}
+	}
+	return nil
 }
 
 // ContainsVarRef returns true if expr is a VarRef or contains one.
@@ -5158,6 +5665,22 @@ func (t TimeRange) MaxTimeNano() int64 {
 // This throws an error when we encounter a time condition that is combined with OR
 // to prevent returning unexpected results that we do not support.
 func ConditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
+	expr, tr, err := conditionExpr(cond, valuer)
+
+	// Remove top level parentheses
+	if e, ok := expr.(*ParenExpr); ok {
+		expr = e.Expr
+	}
+
+	if e, ok := expr.(*BooleanLiteral); ok && e.Val {
+		// If the condition is true, return nil instead to indicate there
+		// is no condition.
+		expr = nil
+	}
+	return expr, tr, err
+}
+
+func conditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
 	if cond == nil {
 		return nil, TimeRange{}, nil
 	}
@@ -5165,12 +5688,12 @@ func ConditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
 	switch cond := cond.(type) {
 	case *BinaryExpr:
 		if cond.Op == AND || cond.Op == OR {
-			lhsExpr, lhsTime, err := ConditionExpr(cond.LHS, valuer)
+			lhsExpr, lhsTime, err := conditionExpr(cond.LHS, valuer)
 			if err != nil {
 				return nil, TimeRange{}, err
 			}
 
-			rhsExpr, rhsTime, err := ConditionExpr(cond.RHS, valuer)
+			rhsExpr, rhsTime, err := conditionExpr(cond.RHS, valuer)
 			if err != nil {
 				return nil, TimeRange{}, err
 			}
@@ -5185,7 +5708,7 @@ func ConditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
 			} else if lhsExpr == nil {
 				return rhsExpr, timeRange, nil
 			}
-			return Reduce(&BinaryExpr{
+			return reduce(&BinaryExpr{
 				Op:  cond.Op,
 				LHS: lhsExpr,
 				RHS: rhsExpr,
@@ -5194,10 +5717,10 @@ func ConditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
 
 		// If either the left or the right side is "time", we are looking at
 		// a time range.
-		if lhs, ok := cond.LHS.(*VarRef); ok && lhs.Val == "time" {
+		if lhs, ok := cond.LHS.(*VarRef); ok && strings.ToLower(lhs.Val) == "time" {
 			timeRange, err := getTimeRange(cond.Op, cond.RHS, valuer)
 			return nil, timeRange, err
-		} else if rhs, ok := cond.RHS.(*VarRef); ok && rhs.Val == "time" {
+		} else if rhs, ok := cond.RHS.(*VarRef); ok && strings.ToLower(rhs.Val) == "time" {
 			// Swap the op for the opposite if it is a comparison.
 			op := cond.Op
 			switch op {
@@ -5213,15 +5736,15 @@ func ConditionExpr(cond Expr, valuer Valuer) (Expr, TimeRange, error) {
 			timeRange, err := getTimeRange(op, cond.LHS, valuer)
 			return nil, timeRange, err
 		}
-		return Reduce(cond, nil), TimeRange{}, nil
+		return reduce(cond, valuer), TimeRange{}, nil
 	case *ParenExpr:
-		expr, timeRange, err := ConditionExpr(cond.Expr, valuer)
+		expr, timeRange, err := conditionExpr(cond.Expr, valuer)
 		if err != nil {
 			return nil, TimeRange{}, err
 		} else if expr == nil {
 			return nil, timeRange, nil
 		}
-		return Reduce(&ParenExpr{Expr: expr}, nil), timeRange, nil
+		return reduce(&ParenExpr{Expr: expr}, nil), timeRange, nil
 	case *BooleanLiteral:
 		return cond, TimeRange{}, nil
 	default:
@@ -5237,10 +5760,9 @@ func getTimeRange(op Token, rhs Expr, valuer Valuer) (TimeRange, error) {
 	if strlit, ok := rhs.(*StringLiteral); ok {
 		if strlit.IsTimeLiteral() {
 			var loc *time.Location
-			if v, ok := valuer.(ZoneValuer); ok {
-				loc = v.Zone()
+			if valuer, ok := valuer.(ZoneValuer); ok {
+				loc = valuer.Zone()
 			}
-
 			t, err := strlit.ToTimeLiteral(loc)
 			if err != nil {
 				return TimeRange{}, err
