@@ -76,7 +76,7 @@ hint_table::ctxnew_(Apictx *src) {
     auto c = src + 1;
     sdk::table::ftl_base *ftlbase = (sdk::table::ftl_base *)src->ftlbase();
     nctx_++;
-    base_table_entry_t *entry = ftlbase->get_entry(nctx_);
+    base_table_entry_t *entry = ftlbase->get_entry(src->thread_id, nctx_);
     c->init(src, entry);
     return c;
 }

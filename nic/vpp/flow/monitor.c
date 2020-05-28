@@ -22,7 +22,7 @@ pds_flow_monitor_init (void)
 }
 
 static void
-flow_monitor_export_session (pds_flow_hw_ctx_t *session)
+flow_monitor_export_session (pds_flow_hw_ctx_t *session, uint16_t thread_id)
 {
     int flow_log_enabled = 0;
 
@@ -38,7 +38,8 @@ flow_monitor_export_session (pds_flow_hw_ctx_t *session)
                                  session->rflow.table_id,
                                  session->rflow.primary,
                                  FLOW_EXPORT_REASON_ACTIVE,
-                                 session->iflow_rx);
+                                 session->iflow_rx,
+                                 thread_id);
     } else {
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
         ftl_export_with_handle(table, session->iflow.table_id,
@@ -80,7 +81,7 @@ flow_monitor_process (vlib_main_t * vm,
                 }
                 pds_flow_hw_ctx_lock(session);
                 if (PREDICT_FALSE(session->monitor_seen)) {
-                    flow_monitor_export_session(session);
+                    flow_monitor_export_session(session, vm->thread_index);
                 } else {
                     session->monitor_seen = 1;
                 }

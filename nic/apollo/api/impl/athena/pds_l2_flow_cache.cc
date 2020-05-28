@@ -30,6 +30,7 @@ using namespace sdk::table;
 extern "C" {
 
 static ftl_base *l2_flow_table;
+static thread_local uint16_t thread_id_;
 
 uint32_t l2_flow_entry_count;
 
@@ -88,7 +89,8 @@ pds_l2_flow_cache_create ()
 void
 pds_l2_flow_cache_set_core_id (unsigned int core_id)
 {
-    l2_flow_table->set_thread_id(core_id);
+    SDK_ASSERT(core_id < FTL_MAX_THREADS);
+    thread_id_ = core_id;
 }
 
 pds_ret_t
@@ -123,6 +125,7 @@ pds_l2_flow_cache_entry_create (pds_l2_flow_spec_t *spec)
          return (pds_ret_t) ret;
     l2flow_set_index(&entry, index);
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = l2_flow_table->insert(&params);
 #if 0
     if (ret == SDK_RET_OK) {
@@ -156,6 +159,7 @@ pds_l2_flow_cache_entry_read (pds_l2_flow_key_t *key,
              != SDK_RET_OK)
          return (pds_ret_t)ret;
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = l2_flow_table->get(&params);
     if (ret == SDK_RET_OK) {
         info->spec.data.index = entry.idx;
@@ -191,6 +195,7 @@ pds_l2_flow_cache_entry_update (pds_l2_flow_spec_t *spec)
          return (pds_ret_t)ret;
     l2flow_set_index(&entry, index);
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = l2_flow_table->update(&params);
 #if 0
     if (ret == SDK_RET_OK) {
@@ -241,6 +246,7 @@ pds_l2_flow_cache_entry_delete (pds_l2_flow_key_t *key)
              != SDK_RET_OK)
          return (pds_ret_t) ret;
     params.entry = &entry;
+    params.thread_id = thread_id_;
     //params.movecb = l2_flow_table_entry_move;
     ret = l2_flow_table->remove(&params);
 #if 0
@@ -346,6 +352,7 @@ pds_l2_flow_cache_entry_iterate (pds_l2_flow_iter_cb_t iter_cb,
     params.itercb = l2_flow_cache_entry_iterate_cb;
     params.cbdata = &cbdata;
     params.force_hwread = iter_cb_arg->force_read;
+    params.thread_id = thread_id_;
     l2_flow_entry_count = 0;
     return (pds_ret_t)l2_flow_table->iterate(&params);
 }
@@ -364,7 +371,7 @@ pds_l2_flow_cache_stats_get (int32_t core_id, pds_l2_flow_stats_t *stats)
     }
 
     if (core_id != -1)
-        ret = l2_flow_table->stats_get(&api_stats, &table_stats, false, core_id);
+        ret = l2_flow_table->stats_get(&api_stats, &table_stats, core_id);
     else
         ret = l2_flow_table->stats_get(&api_stats, &table_stats);
     if (ret != SDK_RET_OK) {
@@ -406,6 +413,7 @@ pds_ret_t
 pds_l2_flow_cache_table_clear(void)
 {
     sdk_table_api_params_t      params = {0};
+    params.thread_id = thread_id_;
     return (pds_ret_t)l2_flow_table->clear(TRUE, FALSE, &params);
 }
 

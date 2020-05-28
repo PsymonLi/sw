@@ -28,6 +28,7 @@ using namespace sdk::table;
 extern "C" {
 
 static ftl_base *g_dnat_mapping_tbl;
+static thread_local uint16_t thread_id_;
 
 uint32_t dnat_entry_count;
 
@@ -69,7 +70,8 @@ pds_dnat_map_create ()
 void
 pds_dnat_map_set_core_id (uint32_t core_id)
 {
-    g_dnat_mapping_tbl->set_thread_id(core_id);
+    SDK_ASSERT(core_id < FTL_MAX_THREADS);
+    thread_id_ = core_id;
 }
 
 pds_ret_t
@@ -121,6 +123,7 @@ pds_dnat_map_entry_create (pds_dnat_mapping_spec_t *spec)
     dnat_set_map_addr_type(&entry, spec->data.addr_type);
     dnat_set_map_epoch(&entry, spec->data.epoch);
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = (pds_ret_t)g_dnat_mapping_tbl->insert(&params);
     if (ret != PDS_RET_OK) {
         //PDS_TRACE_ERR("Failed to insert entry in DNAT mapping "
@@ -158,6 +161,7 @@ pds_dnat_map_entry_read (pds_dnat_mapping_key_t *key,
              != PDS_RET_OK)
          return (pds_ret_t)ret;
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = (pds_ret_t)g_dnat_mapping_tbl->get(&params);
     if (ret == PDS_RET_OK) {
         dnat_get_map_ip(&entry, info->spec.data.addr);
@@ -205,6 +209,7 @@ pds_dnat_map_entry_update (pds_dnat_mapping_spec_t *spec)
     dnat_set_map_addr_type(&entry, spec->data.addr_type);
     dnat_set_map_epoch(&entry, spec->data.epoch);
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = (pds_ret_t)g_dnat_mapping_tbl->update(&params);
     if (ret != PDS_RET_OK) {
         //PDS_TRACE_ERR("Failed to update entry in DNAT mapping "
@@ -242,6 +247,7 @@ pds_dnat_map_entry_delete (pds_dnat_mapping_key_t *key)
              != PDS_RET_OK)
          return (pds_ret_t)ret;
     params.entry = &entry;
+    params.thread_id = thread_id_;
     ret = (pds_ret_t)g_dnat_mapping_tbl->remove(&params);
     if (ret != PDS_RET_OK) {
         //PDS_TRACE_ERR("Failed to delete entry in DNAT mapping "
@@ -255,6 +261,7 @@ pds_ret_t
 pds_dnat_map_table_clear(void)
 {
     sdk_table_api_params_t      params = {0};
+    params.thread_id = thread_id_;
     return (pds_ret_t)g_dnat_mapping_tbl->clear(TRUE, FALSE, &params);
 }
 

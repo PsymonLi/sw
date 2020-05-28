@@ -882,6 +882,31 @@ VLIB_REGISTER_NODE(pds_error_drop_node, static) = {
     },
 };
 
+uword
+pds_infra_process_init (vlib_main_t *vm, vlib_node_runtime_t *rt, vlib_frame_t *f)
+{
+       
+    vlib_node_t *node = vlib_get_node_by_name(vm, (u8 *) "unix-epoll-input");
+    vlib_worker_thread_barrier_sync(vm);
+
+    foreach_vlib_main (({
+        // skip main thread
+        if (ii == 0) {
+            continue;
+        }
+        vlib_node_set_state(this_vlib_main, node->index, VLIB_NODE_STATE_DISABLED);
+    }));
+    vlib_worker_thread_barrier_release(vm);
+    return 0;
+}
+
+VLIB_REGISTER_NODE(pds_infra_process_init_node, static) =
+{
+    .function = pds_infra_process_init,
+    .type = VLIB_NODE_TYPE_PROCESS,
+    .name = "pds-infra-process-init",
+};
+
 void
 pds_packet_dump_en_dis (bool enable, char *file, u16 size)
 {

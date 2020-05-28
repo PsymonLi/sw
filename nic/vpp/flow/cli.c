@@ -116,7 +116,7 @@ get_worker_flow_stats_summary_ftlv4 (vlib_main_t * vm)
 {
     pds_flow_main_t *fm = &pds_flow_main;
 
-    ftlv4_cache_stats(fm->table4);
+    ftlv4_cache_stats(fm->table4, vm->thread_index);
     clib_callback_enable_disable
         (vm->worker_thread_main_loop_callbacks,
          vm->worker_thread_main_loop_callback_tmp,
@@ -129,7 +129,7 @@ get_worker_flow_stats_summary_ftlv6 (vlib_main_t * vm)
 {
     pds_flow_main_t *fm = &pds_flow_main;
 
-    ftlv6_cache_stats(fm->table6_or_l2);
+    ftlv6_cache_stats(fm->table6_or_l2, vm->thread_index);
     clib_callback_enable_disable
         (vm->worker_thread_main_loop_callbacks,
          vm->worker_thread_main_loop_callback_tmp,
@@ -217,7 +217,8 @@ show_flow_stats_command_fn (vlib_main_t * vm,
             vlib_cli_output(vm, "IPv4 flow statistics\n");
             if (detail) {
                 vlib_cli_output(vm, "Total number of IPv4 flow entries in hardware %u",
-                                ftlv4_get_flow_count(fm->table4));
+                                ftlv4_get_flow_count(fm->table4, 
+                                                     vm->thread_index));
             }
             for (i = 1; i < no_of_threads; i++) {
                 if ((!all_threads) && (thread_id != i)) {
@@ -288,7 +289,7 @@ show_flow_stats_command_fn (vlib_main_t * vm,
     if (ip4) {
         vlib_cli_output(vm, "\nIPv4 flow statistics summary:\n");
         vlib_cli_output(vm, "Total number of IPv4 flow entries in hardware %u",
-                        ftlv4_get_flow_count(fm->table4));
+                        ftlv4_get_flow_count(fm->table4, vm->thread_index));
         ftlv4_init_stats_cache();
         for (i = 1; i < no_of_threads; i++) {
             clib_callback_enable_disable
@@ -419,7 +420,8 @@ dump_flow_entry_command_fn (vlib_main_t * vm,
                                   (u16)sport,
                                   (u16)dport,
                                   (u16)lkp_id,
-                                  buf, DISPLAY_BUF_SIZE-1);
+                                  buf, DISPLAY_BUF_SIZE-1,
+                                  vm->thread_index);
     } else {
         ret = ftlv6_dump_hw_entry(fm->table6_or_l2,
                                   src.ip6.as_u8,
@@ -493,7 +495,8 @@ dump_flow_entries_command_fn (vlib_main_t * vm,
     if (ip4) {
         vlib_cli_output(vm, "Reading IPv4 flow entries from HW, Please wait...\n");
         vlib_worker_thread_barrier_sync(vm);
-        ret = ftlv4_dump_hw_entries(fm->table4, logfile, detail);
+        ret = ftlv4_dump_hw_entries(fm->table4, logfile, detail, 
+                                    vm->thread_index);
         vlib_worker_thread_barrier_release(vm);
         if (ret < 0) {
             vlib_cli_output(vm, "Error writing IPv4 to %s\n", logfile);
@@ -565,7 +568,7 @@ static void
 clear_worker_flow_stats_ftlv4(vlib_main_t *vm)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    (void)ftlv4_clear(fm->table4, false, true);
+    (void)ftlv4_clear(fm->table4, false, true, vm->thread_index);
     clib_callback_enable_disable
         (vm->worker_thread_main_loop_callbacks,
          vm->worker_thread_main_loop_callback_tmp,
@@ -820,7 +823,8 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     vlib_cli_output(vm, "%s", delimiter);
     if (session->v4) {
         ret = ftlv4_dump_entry_with_handle(fm->table4, session->iflow.table_id,
-                                           session->iflow.primary, &flow_info);
+                                           session->iflow.primary, &flow_info, 
+                                           vm->thread_index);
         if (ret < 0) {
             vlib_cli_output(vm, "Iflow entry not found.");
         } else {
@@ -850,7 +854,8 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
         }
 
         ret = ftlv4_dump_entry_with_handle(fm->table4, session->rflow.table_id,
-                                           session->rflow.primary, &flow_info);
+                                           session->rflow.primary, &flow_info,
+                                           vm->thread_index);
         if (ret < 0) {
             vlib_cli_output(vm, "Rflow entry not found.");
         } else {
@@ -991,7 +996,8 @@ show_pds_flow_session_info_command_fn (vlib_main_t * vm,
                                            (u16)sport,
                                            (u16)dport,
                                            (u16)bd_id,
-                                           &session_index);
+                                           &session_index,
+                                           vm->thread_index);
         } else {
             ret = ftlv6_read_session_index(fm->table6_or_l2,
                                            src.ip6.as_u8,

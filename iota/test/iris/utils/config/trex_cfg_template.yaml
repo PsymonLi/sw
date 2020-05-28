@@ -2,11 +2,11 @@
   version         : 2
   low_end         : True
   interfaces      : ['dummy', 'dummy']
-  tx_desc         : 64
-  rx_desc         : 64
-  rx_desc_drop    : 64
+  tx_desc         : 256
+  rx_desc         : 512
+  rx_desc_drop    : 512
   port_bandwidth_gb : 1
-  limit_memory    : 1024
+  limit_memory    : 4096
   port_info       :
           - ip         : 0.0.0.0
             default_gw : 0.0.0.0

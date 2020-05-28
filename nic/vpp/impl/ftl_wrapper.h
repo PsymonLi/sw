@@ -68,7 +68,7 @@ int get_skip_ftl_program(void);
 
 void ftl_init_stats_cache(void);
 
-void ftl_cache_stats(ftl *obj);
+void ftl_cache_stats(ftl *obj, uint16_t thread_id);
 
 void ftl_dump_stats_cache(char *buf, int max_len);
 
@@ -144,33 +144,36 @@ ftlv4 * ftlv4_create(void *key2str,
 
 void ftlv4_delete(ftlv4 *obj);
 
-int ftlv4_dump_hw_entries(ftlv4 *obj, char *logfile, uint8_t detail);
+int ftlv4_dump_hw_entries(ftlv4 *obj, char *logfile, 
+                          uint8_t detail, uint16_t thread_id);
 
 int ftlv4_dump_hw_entry(ftlv4 *obj, uint32_t src, uint32_t dst,
                         uint8_t ip_proto, uint16_t sport,
                         uint16_t dport, uint16_t lookup_id,
-                        char *buf, int max_len);
+                        char *buf, int max_len, uint16_t thread_id);
 
 int ftlv4_dump_entry_with_handle(ftlv4 *obj, uint32_t index, bool primary,
-                                 v4_flow_info_t *flow_info);
+                                 v4_flow_info_t *flow_info, uint16_t thread_id);
 
 int ftlv4_read_session_index(ftlv4 *obj, uint32_t src, uint32_t dst,
                              uint8_t ip_proto, uint16_t sport,
                              uint16_t dport, uint16_t lookup_id,
-                             uint32_t *ses_id);
+                             uint32_t *ses_id, uint16_t thread_id);
 
 void ftlv4_init_stats_cache(void);
 
-void ftlv4_cache_stats(ftlv4 *obj);
+void ftlv4_cache_stats(ftlv4 *obj, uint16_t thread_id);
 
 void ftlv4_dump_stats(ftlv4 *obj, char *buf, int max_len);
 
 void ftlv4_dump_stats_cache(char *buf, int max_len);
 
-int ftlv4_clear(ftlv4 *obj, bool clear_global_state,
-                bool clear_thread_local_state);
+int ftlv4_clear(ftlv4 *obj, 
+                bool clear_global_state,
+                bool clear_thread_local_state,
+                uint16_t thread_id);
 
-uint64_t ftlv4_get_flow_count(ftlv4 *obj);
+uint64_t ftlv4_get_flow_count(ftlv4 *obj, uint16_t thread_id);
 
 void ftlv4_cache_batch_init(uint16_t thread_id);
 
@@ -247,7 +250,7 @@ int ftlv6_read_session_index(ftlv6 *obj, uint8_t *src, uint8_t *dst,
 
 void ftlv6_init_stats_cache(void);
 
-void ftlv6_cache_stats(ftlv6 *obj);
+void ftlv6_cache_stats(ftlv6 *obj, uint16_t thread_id);
 
 void ftlv6_dump_stats(ftlv6 *obj, char *buf, int max_len);
 
@@ -334,7 +337,8 @@ void ftll2_set_key(flow_entry *entry,
                    uint16_t ether_type,
                    uint16_t lookup_id);
 
-int ftlv4_remove(ftlv4 *obj, v4_flow_entry *entry, uint32_t hash);
+int ftlv4_remove(ftlv4 *obj, v4_flow_entry *entry, 
+                 uint32_t hash, uint16_t thread_id);
 
 int ftlv4_remove_cached_entry(ftlv4 *obj, uint16_t thread_id);
 
@@ -375,7 +379,7 @@ enum flow_export_reason_e {
 int ftlv4_export_with_handle(ftlv4 *obj, uint32_t iflow_index,
                              bool iflow_primary, uint32_t rflow_index,
                              bool rflow_primary, uint8_t reason,
-                             bool host_origin);
+                             bool host_origin, uint16_t thread_id);
 
 int ftlv4_export_with_entry(v4_flow_entry *iv4entry,
                             v4_flow_entry *rv4entry,

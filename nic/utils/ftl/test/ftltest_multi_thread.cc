@@ -11,13 +11,18 @@ using sdk::table::sdk_table_stats_t;
 
 class multi_thread: public ftl_test_base {
 public:
+    uint16_t get_worker_index(uint32_t index) {
+        return (index % g_no_of_threads);
+
+    }
     void insert_bulk_async(uint32_t count, sdk_ret_t expret,
                            bool with_hash = false, uint32_t hash_32b = 0,
                            vector<future<sdk_ret_t>> *fut_rs = NULL) {
         for (auto i = 0; i < count; i++) {
-            auto fut = enqueue_job(i, &ftl_test_base::insert_helper,
-                                   this, i, expret, with_hash,
-                                   hash_32b);
+            auto worker_index = get_worker_index(i);
+            auto fut = enqueue_job(worker_index, &ftl_test_base::insert_helper,
+                                   this, i, expret, with_hash, hash_32b,
+                                   worker_index+1);
             if (fut_rs) {
                 fut_rs->push_back(move(fut));
             }
@@ -28,9 +33,10 @@ public:
                            bool with_hash = false, uint32_t hash_32b = 0,
                            vector<future<sdk_ret_t>> *fut_rs = NULL) {
         for (auto i = 0; i < count; i++) {
-            auto fut = enqueue_job(i, &ftl_test_base::remove_helper,
+            auto worker_index = get_worker_index(i);
+            auto fut = enqueue_job(worker_index, &ftl_test_base::remove_helper,
                                    this, i, expret, with_hash,
-                                   hash_32b);
+                                   hash_32b, worker_index+1);
             if (fut_rs) {
                 fut_rs->push_back(move(fut));
             }
@@ -41,9 +47,10 @@ public:
                            bool with_hash = false, uint32_t hash_32b = 0,
                            vector<future<sdk_ret_t>> *fut_rs = NULL) {
         for (auto i = 0; i < count; i++) {
-            auto fut = enqueue_job(i, &ftl_test_base::update_helper,
+            auto worker_index = get_worker_index(i);
+            auto fut = enqueue_job(worker_index, &ftl_test_base::update_helper,
                                    this, i, expret, with_hash,
-                                   hash_32b);
+                                   hash_32b, worker_index+1);
             if (fut_rs) {
                 fut_rs->push_back(move(fut));
             }
@@ -54,8 +61,9 @@ public:
                         bool with_hash = false,
                         vector<future<sdk_ret_t>> *fut_rs = NULL) {
         for (auto i = 0; i < count; i++) {
-            auto fut = enqueue_job(i, &ftl_test_base::get_helper,
-                                   this, i, expret, with_hash);
+            auto worker_index = get_worker_index(i);
+            auto fut = enqueue_job(worker_index, &ftl_test_base::get_helper,
+                                   this, i, expret, with_hash, worker_index+1);
             if (fut_rs) {
                 fut_rs->push_back(move(fut));
             }
@@ -74,28 +82,22 @@ protected:
         g_trace_level = trace_level;
     }
 
-    void get_stats() {
+    void get_stats(uint16_t thread_id = 0) {
         sdk_table_stats_t tstat;
         sdk_table_api_stats_t astat;
         char buff[10000];
 
         for (auto i=0; i < g_no_of_threads; i++) {
             auto f = enqueue_job(i, &multi_thread::get_stats_,
-                                 this, &tstat, &astat);
+                                 this, &tstat, &astat, i+1);
             f.get();
             table_stats.accumulate(&tstat);
             api_stats.accumulate(&astat);
-            SDK_TRACE_INFO("=================== STATS THREAD ID: %d ===================", i);
+            SDK_TRACE_INFO("=================== STATS THREAD ID: %d ===================", i+1);
             astat.print(buff, 10000);
             SDK_TRACE_INFO("%s", buff);
             tstat.print(buff, 10000);
             SDK_TRACE_INFO("%s", buff);
-        }
-    }
-
-    void assign_thread_id() {
-        for (auto i=1; i <= g_no_of_threads; i++) {
-            enqueue_job(i, &multi_thread::set_thread_id, this, i);
         }
     }
 
@@ -108,7 +110,6 @@ private:
         for (auto i=0; i < g_no_of_threads; i++) {
             thread_pools_.push_back(new ThreadPool(1));
         }
-        assign_thread_id();
     }
 
     void TearDown() {
@@ -120,16 +121,16 @@ private:
     }
 
     template<class F, class... Args>
-    auto enqueue_job(uint32_t index, F&& f, Args&&... args)
+    auto enqueue_job(uint32_t worker_index, F&& f, Args&&... args)
         -> future<typename result_of<F(Args...)>::type> {
-        auto worker_index =  index % g_no_of_threads;
         return thread_pools_[worker_index]->enqueue(forward<F>(f),
                                                     forward<Args>(args)...);
     }
 
     void get_stats_(sdk_table_stats_t *tstat,
-                    sdk_table_api_stats_t *astat) {
-        table->stats_get(astat, tstat);
+                    sdk_table_api_stats_t *astat,
+                    uint16_t thread_id = 0) {
+        table->stats_get(astat, tstat, thread_id);
     }
 };
 
@@ -146,7 +147,7 @@ TEST_F(multi_thread, insert_iterate_remove)
     insert_bulk_async(16*1024, sdk::SDK_RET_OK, WITHOUT_HASH);
     remove_bulk_async(16*1024, sdk::SDK_RET_OK, WITHOUT_HASH);
     thread iterate_th(&multi_thread::iterate, this, 16*1024,
-                      sdk::SDK_RET_OK, WITHOUT_HASH, 0, false);
+                      sdk::SDK_RET_OK, WITHOUT_HASH, 0, false, 0);
     iterate_th.join();
 }
 

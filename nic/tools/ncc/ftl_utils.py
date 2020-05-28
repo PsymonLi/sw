@@ -607,27 +607,24 @@ class ${table_name}: public ftl_base {
 public:
     static ftl_base *factory(sdk_table_factory_params_t *params);
     static void destroy(ftl_base *f);
-    virtual void set_thread_id(uint32_t id) override;
 
     ${table_name}() {}
     ~${table_name}(){}
 
-    virtual base_table_entry_t *get_entry(int index) override;
+    virtual base_table_entry_t *get_entry(uint16_t thread_id, int index) override;
 
 protected:
     virtual sdk_ret_t genhash_(sdk_table_api_params_t *params) override;
-    virtual uint32_t thread_id(void) override;
+
 private:
     sdk_ret_t init_(sdk_table_factory_params_t *params);
-    static thread_local ${table_entry_name} entry_[FTL_MAX_RECIRCS];
-    static thread_local uint32_t thread_id_;
+    static ${table_entry_name} entry_[FTL_MAX_THREADS][FTL_MAX_RECIRCS];
 };
 """)
 
 ftl_table_template_cc = Template(
 """\
-thread_local ${table_entry_name} ${table_name}::entry_[FTL_MAX_RECIRCS];
-thread_local uint32_t ${table_name}::thread_id_ = 0;
+${table_entry_name} ${table_name}::entry_[FTL_MAX_THREADS][FTL_MAX_RECIRCS];
 
 ftl_base*
 ${table_name}::factory(sdk_table_factory_params_t *params) {
@@ -664,8 +661,8 @@ ${table_name}::init_(sdk_table_factory_params_t *params) {
 }
 
 base_table_entry_t *
-${table_name}::get_entry(int index) {
-    return &entry_[index];
+${table_name}::get_entry(uint16_t thread_id, int index) {
+    return &entry_[thread_id][index];
 }
 
 //---------------------------------------------------------------------------
@@ -705,17 +702,6 @@ ${table_name}::genhash_(sdk_table_api_params_t *params) {
                       ftlu_rawstr((uint8_t *)get_sw_entry_pointer(hashkey), 64),
                       params->hash_32b);
     return SDK_RET_OK;
-}
-
-void
-${table_name}::set_thread_id(uint32_t id) {
-    SDK_ASSERT(id < PDS_FLOW_HINT_POOLS_MAX);
-    thread_id_ = id;
-}
-
-uint32_t
-${table_name}::thread_id(void) {
-    return thread_id_;
 }
 
 """)

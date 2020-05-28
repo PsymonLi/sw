@@ -112,12 +112,13 @@ ftl_base::destroy(ftl_base *t) {
 // ftl: Create API context. This is used by all APIs
 //---------------------------------------------------------------------------
 sdk_ret_t
-ftl_base::ctxinit_(uint32_t threadid,
+ftl_base::ctxinit_(uint32_t thread_id,
                    sdk_table_api_op_t op,
                    sdk_table_api_params_t *params,
                    bool skip_hash) {
     int index;
 
+    SDK_ASSERT(thread_id < PDS_FLOW_HINT_POOLS_MAX);
     FTL_TRACE_VERBOSE("op:%d", op);
     if (!skip_hash && SDK_TABLE_API_OP_IS_CRUD(op)) {
         auto ret = genhash_(params);
@@ -128,8 +129,10 @@ ftl_base::ctxinit_(uint32_t threadid,
     }
 
     index = 0;
-    get_apictx(threadid, index)->init(op, params, props_, &tstats_[threadid], 
-               threadid, this, get_entry(index));
+    get_apictx(thread_id, index)->init(op, params, props_,
+                                       &tstats_[thread_id],
+                                       thread_id, this,
+                                       get_entry(thread_id, index));
     return SDK_RET_OK;
 }
 
@@ -140,24 +143,24 @@ sdk_ret_t
 ftl_base::insert(sdk_table_api_params_t *params) {
 __label__ done;
     sdk_ret_t ret = SDK_RET_OK;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
     SDK_ASSERT(params->entry);
 
     time_profile_begin(sdk::utils::time_profile::TABLE_LIB_FTL_INSERT);
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_INSERT, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_INSERT, params);
     FTL_RET_CHECK_AND_GOTO(ret, done, "ctxinit r:%d", ret);
 
-    ret = static_cast<main_table*>(main_table_)->insert_(get_apictx(threadid, 
+    ret = static_cast<main_table*>(main_table_)->insert_(get_apictx(thread_id,
                                                                     0));
     FTL_RET_CHECK_AND_GOTO(ret, done, "main table insert r:%d", ret);
 
 done:
     time_profile_end(sdk::utils::time_profile::TABLE_LIB_FTL_INSERT);
-    astats_[threadid].insert(ret);
+    astats_[thread_id].insert(ret);
     FTL_API_END_(ret);
     return ret;
 }
@@ -168,19 +171,19 @@ done:
 sdk_ret_t
 ftl_base::update(sdk_table_api_params_t *params) {
     sdk_ret_t ret = SDK_RET_OK;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
     SDK_ASSERT(params->key);
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_UPDATE, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_UPDATE, params);
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("failed to create api context. ret:%d", ret);
         goto update_return;
     }
 
-    ret = static_cast<main_table*>(main_table_)->update_(get_apictx(threadid, 
+    ret = static_cast<main_table*>(main_table_)->update_(get_apictx(thread_id,
                                                                     0));
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("update_ failed. ret:%d", ret);
@@ -188,7 +191,7 @@ ftl_base::update(sdk_table_api_params_t *params) {
     }
 
 update_return:
-    astats_[threadid].update(ret);
+    astats_[thread_id].update(ret);
     FTL_API_END_(ret);
     return ret;
 }
@@ -199,19 +202,19 @@ update_return:
 sdk_ret_t
 ftl_base::remove(sdk_table_api_params_t *params) {
     sdk_ret_t ret = SDK_RET_OK;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
     SDK_ASSERT(params->key);
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_REMOVE, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_REMOVE, params);
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("failed to create api context. ret:%d", ret);
         goto remove_return;
     }
 
-    ret = static_cast<main_table*>(main_table_)->remove_(get_apictx(threadid, 
+    ret = static_cast<main_table*>(main_table_)->remove_(get_apictx(thread_id,
                                                                     0));
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("remove_ failed. ret:%d", ret);
@@ -219,7 +222,7 @@ ftl_base::remove(sdk_table_api_params_t *params) {
     }
 
 remove_return:
-    astats_[threadid].remove(ret);
+    astats_[thread_id].remove(ret);
     FTL_API_END_(ret);
     return ret;
 }
@@ -230,26 +233,26 @@ remove_return:
 sdk_ret_t
 ftl_base::get(sdk_table_api_params_t *params) {
     sdk_ret_t ret = SDK_RET_OK;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
     SDK_ASSERT(params->key);
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_GET, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_GET, params);
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("failed to create api context. ret:%d", ret);
         goto get_return;
     }
 
-    ret = static_cast<main_table*>(main_table_)->get_(get_apictx(threadid, 0));
+    ret = static_cast<main_table*>(main_table_)->get_(get_apictx(thread_id, 0));
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("get_ failed. ret:%d", ret);
         goto get_return;
     }
 
 get_return:
-    astats_[threadid].get(ret);
+    astats_[thread_id].get(ret);
     FTL_API_END_(ret);
     return ret;
 }
@@ -258,18 +261,18 @@ sdk_ret_t
 ftl_base::get_with_handle(sdk_table_api_params_t *params) {
     sdk_ret_t ret = SDK_RET_OK;
     Apictx *ctx;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_GET, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_GET, params);
     if (ret != SDK_RET_OK) {
         FTL_TRACE_ERR("failed to create api context. ret:%d", ret);
         goto get_return;
     }
 
-    ctx = get_apictx(threadid, 0);
+    ctx = get_apictx(thread_id, 0);
 
     ret = static_cast<main_table*>(main_table_)->get_with_handle_(ctx);
     if (ret != SDK_RET_OK) {
@@ -278,7 +281,7 @@ ftl_base::get_with_handle(sdk_table_api_params_t *params) {
     }
 
 get_return:
-    astats_[threadid].get(ret);
+    astats_[thread_id].get(ret);
     FTL_API_END_(ret);
     return ret;
 }
@@ -290,31 +293,29 @@ get_return:
 sdk_ret_t
 ftl_base::stats_get(sdk_table_api_stats_t *api_stats,
                     sdk_table_stats_t *table_stats,
-                    bool use_local_thread_id, uint32_t id) {
+                    uint32_t thread_id) {
     FTL_API_BEGIN_();
-    id = likely(use_local_thread_id) ? thread_id() : id;
-    SDK_ASSERT(id < PDS_FLOW_HINT_POOLS_MAX);
-    astats_[id].get(api_stats);
-    tstats_[id].get(table_stats);
+    SDK_ASSERT(thread_id < PDS_FLOW_HINT_POOLS_MAX);
+    astats_[thread_id].get(api_stats);
+    tstats_[thread_id].get(table_stats);
     FTL_API_END_(SDK_RET_OK);
     return SDK_RET_OK;
 }
 
 sdk_ret_t
-ftl_base::iterate(sdk_table_api_params_t *params,
-                  bool use_local_thread_id, uint32_t id) {
+ftl_base::iterate(sdk_table_api_params_t *params) {
 __label__ done;
     sdk_ret_t ret = SDK_RET_OK;
-    uint32_t threadid;
+    uint32_t thread_id;
 
     FTL_API_BEGIN_();
     SDK_ASSERT(params->itercb);
     
-    threadid = likely(use_local_thread_id) ? thread_id() : id;
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_ITERATE, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_ITERATE, params);
     FTL_RET_CHECK_AND_GOTO(ret, done, "ctxinit r:%d", ret);
 
-    ret = static_cast<main_table*>(main_table_)->iterate_(get_apictx(threadid, 
+    ret = static_cast<main_table*>(main_table_)->iterate_(get_apictx(thread_id,
                                                                      0));
     FTL_RET_CHECK_AND_GOTO(ret, done, "iterate r:%d", ret);
 
@@ -330,22 +331,22 @@ ftl_base::clear(bool clear_global_state,
 __label__ done;
     sdk_ret_t ret = SDK_RET_OK;
     FTL_API_BEGIN_();
-    uint32_t threadid;
+    uint32_t thread_id;
 
-    threadid = thread_id();
-    ret = ctxinit_(threadid, sdk::table::SDK_TABLE_API_CLEAR, params);
+    thread_id = params->thread_id;
+    ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_CLEAR, params);
     FTL_RET_CHECK_AND_GOTO(ret, done, "ctxinit r:%d", ret);
 
-    get_apictx(threadid, 0)->clear_global_state = clear_global_state;
-    get_apictx(threadid, 0)->clear_thread_local_state = 
+    get_apictx(thread_id, 0)->clear_global_state = clear_global_state;
+    get_apictx(thread_id, 0)->clear_thread_local_state =
         clear_thread_local_state;
     ret = 
-        static_cast<main_table*>(main_table_)->clear_(get_apictx(threadid, 0));
+        static_cast<main_table*>(main_table_)->clear_(get_apictx(thread_id, 0));
     FTL_RET_CHECK_AND_GOTO(ret, done, "clear r:%d", ret);
     
     if (clear_thread_local_state) {
         for(auto i=0; i < PDS_FLOW_HINT_POOLS_MAX; i++) {
-            (void)clear_stats(false, i);
+            (void)clear_stats(i);
         }
     }
 
@@ -355,12 +356,11 @@ done:
 }
 
 sdk_ret_t
-ftl_base::clear_stats(bool use_local_thread_id, uint32_t id) {
+ftl_base::clear_stats(uint32_t thread_id) {
     FTL_API_BEGIN_();
-    id = likely(use_local_thread_id) ? thread_id() : id;
-    SDK_ASSERT(id < PDS_FLOW_HINT_POOLS_MAX);
-    astats_[id].clear();
-    tstats_[id].clear();
+    SDK_ASSERT(thread_id < PDS_FLOW_HINT_POOLS_MAX);
+    astats_[thread_id].clear();
+    tstats_[thread_id].clear();
     FTL_API_END_(SDK_RET_OK);
     return SDK_RET_OK;
 }

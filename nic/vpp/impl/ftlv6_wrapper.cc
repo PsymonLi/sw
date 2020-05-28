@@ -178,9 +178,9 @@ ftlv6_init_stats_cache (void)
 }
 
 void
-ftlv6_cache_stats (ftlv6 *obj)
+ftlv6_cache_stats (ftlv6 *obj, uint16_t thread_id)
 {
-    ftl_cache_stats(obj);
+    ftl_cache_stats(obj, thread_id);
 }
 
 void

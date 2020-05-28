@@ -204,6 +204,9 @@ typedef struct sdk_table_api_params_ {
     bool highest;
     // Key type of the entry
     uint8_t key_type;
+    // [Input]
+    // 0-based thread id passed from caller app
+    uint16_t thread_id;
 } sdk_table_api_params_t;
 
 typedef struct sdk_table_api_stats_ sdk_table_api_stats_t;

@@ -133,9 +133,9 @@ ftll2_init_stats_cache (void)
 }
 
 void
-ftll2_cache_stats (ftll2 *obj)
+ftll2_cache_stats (ftll2 *obj, uint16_t thread_id)
 {
-    ftl_cache_stats(obj);
+    ftl_cache_stats(obj, thread_id);
 }
 
 void

@@ -184,7 +184,8 @@ flow_table_pd::dump(TableResponse *rsp) {
 
     params.cbdata = rsp;
     params.itercb = table_entry_fill;
-    table_->iterate(&params, false, grpc_thread_id_);
+    params.thread_id = grpc_thread_id_;
+    table_->iterate(&params);
     return HAL_RET_OK;
 }
 

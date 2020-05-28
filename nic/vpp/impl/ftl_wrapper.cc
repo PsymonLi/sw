@@ -65,12 +65,12 @@ ftl_init_stats_cache (void)
 }
 
 void
-ftl_cache_stats (ftl *obj)
+ftl_cache_stats (ftl *obj, uint16_t thread_id)
 {
     sdk_table_api_stats_t api_stats;
     sdk_table_stats_t table_stats;
 
-    obj->stats_get(&api_stats, &table_stats);
+    obj->stats_get(&api_stats, &table_stats, thread_id);
     g_api_stats.accumulate(&api_stats);
     g_table_stats.accumulate(&table_stats);
 }
@@ -568,7 +568,7 @@ ftl_get_entry_l2l (flow_hash_entry_t *entry)
 void
 ftl_set_thread_id (ftl *obj, uint32_t thread_id)
 {
-    obj->set_thread_id(thread_id);
+    //obj->set_thread_id(thread_id);
     return;
 }
 

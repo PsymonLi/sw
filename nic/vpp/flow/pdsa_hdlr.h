@@ -50,6 +50,7 @@ void pds_flow_cfg_set(uint8_t con_track_en,
 
 // cli_helper.c
 int clear_all_flow_entries();
+uint16_t get_vlib_thread_index();
 void flow_stats_summary_get (void *ctxt_v4, void *ctxt_v6);
 int flow_vnic_active_ses_count_get(uint16_t vnic_id, uint32_t *active_sessions);
 

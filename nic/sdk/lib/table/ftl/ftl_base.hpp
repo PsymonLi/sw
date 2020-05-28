@@ -33,7 +33,6 @@ protected:
     sdk::table::properties_t *props_;
 
     virtual sdk_ret_t genhash_(sdk_table_api_params_t *params) = 0;
-    virtual uint32_t thread_id(void) = 0;
 
 public:
     static void destroy(ftl_base *f);
@@ -51,15 +50,13 @@ public:
     sdk_ret_t get_with_handle(sdk_table_api_params_t *params);
     sdk_ret_t stats_get(sdk_table_api_stats_t *api_stats,
                         sdk_table_stats_t *table_stats,
-                        bool use_local_thread_id=true, uint32_t id=0);
-    sdk_ret_t iterate(sdk_table_api_params_t *params,
-                      bool use_local_thread_id=true, uint32_t id=0);
+                        uint32_t thread_id=0);
+    sdk_ret_t iterate(sdk_table_api_params_t *params);
     sdk_ret_t clear(bool clear_global_state, bool clear_thread_local_state,
                     sdk_table_api_params_t *params);
-    sdk_ret_t clear_stats(bool use_local_thread_id=true, uint32_t id=0);
+    sdk_ret_t clear_stats(uint32_t thread_id=0);
 
-    virtual base_table_entry_t *get_entry(int index) = 0;
-    virtual void set_thread_id(uint32_t id) = 0;
+    virtual base_table_entry_t *get_entry(uint16_t thread_id, int index) = 0;
 };
 
 }   // namespace table

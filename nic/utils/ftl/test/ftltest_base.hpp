@@ -119,13 +119,11 @@ private:
     }
 
 public:
-    void set_thread_id(uint32_t id) {
-        table->set_thread_id(id);
-    }
-
     sdk_ret_t insert_helper(uint32_t index, sdk_ret_t expret,
-                            bool with_hash, uint32_t hash_32b) {
+                            bool with_hash, uint32_t hash_32b,
+                            uint16_t thread_id) {
         auto params = gen_entry(index, with_hash, hash_32b);
+        params->thread_id = thread_id;
         auto rs = insert_(params);
         MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         if (rs == SDK_RET_OK) {
@@ -136,17 +134,20 @@ public:
     }
 
     sdk_ret_t insert(uint32_t count, sdk_ret_t expret,
-                     bool with_hash = false, uint32_t hash_32b = 0) {
+                     bool with_hash = false, uint32_t hash_32b = 0,
+                     uint16_t thread_id = 0) {
         for (auto i = 0; i < count; i++) {
-            auto rs = insert_helper(i, expret, with_hash, hash_32b);
+            auto rs = insert_helper(i, expret, with_hash, hash_32b, thread_id);
             MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         }
         return SDK_RET_OK;
     }
 
     sdk_ret_t remove_helper(uint32_t index, sdk_ret_t expret,
-                            bool with_hash, uint32_t hash_32b) {
+                            bool with_hash, uint32_t hash_32b,
+                            uint16_t thread_id=0) {
         auto params = gen_entry(index, with_hash, hash_32b);
+        params->thread_id = thread_id;
         auto rs = remove_(params);
         MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         if (rs == SDK_RET_OK) {
@@ -156,37 +157,44 @@ public:
     }
 
     sdk_ret_t remove(uint32_t count, sdk_ret_t expret,
-                     bool with_hash = false, uint32_t hash_32b = 0) {
+                     bool with_hash = false, uint32_t hash_32b = 0,
+                     uint16_t thread_id = 0) {
         for (auto i = 0; i < count; i++) {
-            auto rs = remove_helper(i, expret, with_hash, hash_32b);
+            auto rs = remove_helper(i, expret, with_hash, hash_32b,
+                                    thread_id);
             MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         }
         return SDK_RET_OK;
     }
 
     sdk_ret_t update_helper(uint32_t index, sdk_ret_t expret,
-                     bool with_hash = false, uint32_t hash_32b = 0) {
+                            bool with_hash, uint32_t hash_32b,
+                            uint16_t thread_id) {
         auto params = gen_entry(index, with_hash, hash_32b);
+        params->thread_id = thread_id;
         auto rs = update_(params);
         MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         return SDK_RET_OK;
     }
 
     sdk_ret_t update(uint32_t count, sdk_ret_t expret,
-                     bool with_hash = false, uint32_t hash_32b = 0) {
+                     bool with_hash = false, uint32_t hash_32b = 0,
+                     uint16_t thread_id = 0) {
         for (auto i = 0; i < count; i++) {
-            auto rs = update_helper(i, expret, with_hash, hash_32b);
+            auto rs = update_helper(i, expret, with_hash, hash_32b,
+                                    thread_id);
             MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         }
         return SDK_RET_OK;
     }
 
     sdk_ret_t get_helper(uint32_t index, sdk_ret_t expret,
-                         bool with_hash = false) {
+                         bool with_hash, uint16_t thread_id) {
         auto params = gen_entry(index, with_hash);
         auto params2 = gen_entry(index, with_hash);
 
         params->entry->clear_data();
+        params->thread_id = thread_id;
         auto rs = get_(params);
         MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         assert(params->handle.valid());
@@ -197,17 +205,17 @@ public:
     }
 
     sdk_ret_t get(uint32_t count, sdk_ret_t expret,
-                  bool with_hash = false) {
+                  bool with_hash = false, uint16_t thread_id = 0) {
         for (auto i = 0; i < count; i++) {
-            auto rs = get_helper(i, expret, with_hash);
+            auto rs = get_helper(i, expret, with_hash, thread_id);
             MHTEST_CHECK_RETURN(rs == expret, sdk::SDK_RET_MAX);
         }
         return SDK_RET_OK;
     }
 
-    virtual void get_stats() {
+    virtual void get_stats(uint16_t thread_id = 0) {
         //auto hw_count = ftl_mock_get_valid_count(FTL_TBLID_IPV6);
-        table->stats_get(&api_stats, &table_stats);
+        table->stats_get(&api_stats, &table_stats, thread_id);
     }
 
     void display_stats() {
@@ -264,7 +272,7 @@ public:
 
     sdk_ret_t iterate(uint32_t count, sdk_ret_t expret,
                       bool with_hash = false, uint32_t hash_32b = 0,
-                      bool validate=true) {
+                      bool validate=true, uint16_t thread_id = 0) {
         sdk_table_api_params_t params = { 0 };
 #ifdef IRIS
         vector<flow_hash_info_entry_t> entry_vec;
@@ -275,6 +283,7 @@ public:
 #endif
         params.cbdata = (void*)&entry_vec;
         params.itercb = iterate_callback;
+        params.thread_id = thread_id;
         auto ret = table->iterate(&params);
         if (validate) {
             for (auto i=0; i<count; i++) {

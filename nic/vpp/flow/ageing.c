@@ -624,7 +624,8 @@ pds_flow_delete_session (u32 ses_id)
                                      session->rflow.table_id,
                                      session->rflow.primary,
                                      FLOW_EXPORT_REASON_DEL,
-                                     session->iflow_rx);
+                                     session->iflow_rx,
+                                     thread);
         }
         session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4, 

@@ -57,7 +57,8 @@ ftlv4_create (void *key2str,
 
 static int
 ftlv4_insert (ftlv4 *obj, ipv4_flow_hash_entry_t *entry, uint32_t hash,
-              uint32_t *pindex, uint32_t *sindex, uint8_t update)
+              uint32_t *pindex, uint32_t *sindex, 
+              uint8_t update, uint16_t thread_id)
 {
     sdk_table_api_params_t params = {0};
 
@@ -69,6 +70,8 @@ ftlv4_insert (ftlv4 *obj, ipv4_flow_hash_entry_t *entry, uint32_t hash,
         params.hash_32b = hash;
         params.hash_valid = 1;
     }
+
+    params.thread_id = thread_id;
     params.entry = entry;
     if (unlikely(update)) {
         if (SDK_RET_OK != obj->update(&params)) {
@@ -116,7 +119,8 @@ ftlv4_move_cb (base_table_entry_t *entry, handle_t old_handle,
 }
 
 int
-ftlv4_remove (ftlv4 *obj, ipv4_flow_hash_entry_t *entry, uint32_t hash)
+ftlv4_remove (ftlv4 *obj, ipv4_flow_hash_entry_t *entry, 
+              uint32_t hash, uint16_t thread_id)
 {
     sdk_table_api_params_t params = {0};
 
@@ -128,6 +132,7 @@ ftlv4_remove (ftlv4 *obj, ipv4_flow_hash_entry_t *entry, uint32_t hash)
         params.hash_32b = hash;
         params.hash_valid = 1;
     }
+    params.thread_id = thread_id;
     params.movecb = ftlv4_move_cb;
     params.entry = entry;
     if (SDK_RET_OK != obj->remove(&params)) {
@@ -155,6 +160,8 @@ ftlv4_get_with_handle (ftlv4 *obj, uint32_t index, bool primary,
     } else {
         params.handle.sindex(index);
     }
+    
+    params.thread_id = thread_id;
     params.entry = v4entry;
 
     if (SDK_RET_OK != obj->get_with_handle(&params)) {
@@ -170,14 +177,15 @@ ftlv4_update_cached_entry (ftlv4 *obj, uint16_t thread_id)
     uint32_t pindex;
     uint32_t sindex;
     return ftlv4_insert(obj, &g_ip4_flow_cache[thread_id].ip4_last_read_flow, 
-                        0, &pindex, &sindex, 1);
+                        0, &pindex, &sindex, 1, thread_id);
 }
 
 int
 ftlv4_remove_cached_entry (ftlv4 *obj, uint16_t thread_id)
 {
     return ftlv4_remove(obj, 
-                        &g_ip4_flow_cache[thread_id].ip4_last_read_flow, 0);
+                        &g_ip4_flow_cache[thread_id].ip4_last_read_flow, 
+                        0, thread_id);
 }
 
 void
@@ -232,7 +240,7 @@ ftlv4_remove_nat_session (uint32_t vpc_id, ftlv4 *obj, uint16_t thread_id)
 
 static inline sdk::sdk_ret_t
 ftlv4_read_with_handle (ftlv4 *obj, uint32_t index, bool primary,
-                        ipv4_flow_hash_entry_t &entry)
+                        ipv4_flow_hash_entry_t &entry, uint16_t thread_id)
 {
     sdk::sdk_ret_t ret;
     sdk_table_api_params_t params = {0};
@@ -242,6 +250,7 @@ ftlv4_read_with_handle (ftlv4 *obj, uint32_t index, bool primary,
     } else {
         params.handle.sindex(index);
     }
+    params.thread_id = thread_id;
     params.entry = &entry;
 
     ret = obj->get_with_handle(&params);
@@ -250,12 +259,12 @@ ftlv4_read_with_handle (ftlv4 *obj, uint32_t index, bool primary,
 
 int
 ftlv4_dump_entry_with_handle (ftlv4 *obj, uint32_t index, bool primary,
-                              v4_flow_info_t *flow_info)
+                              v4_flow_info_t *flow_info, uint16_t thread_id)
 {
     sdk::sdk_ret_t ret;
     ipv4_flow_hash_entry_t entry;
 
-    ret = ftlv4_read_with_handle(obj, index, primary, entry);
+    ret = ftlv4_read_with_handle(obj, index, primary, entry, thread_id);
     if (ret != SDK_RET_OK) {
         return -1;
     }
@@ -381,7 +390,7 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
 int
 ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
                           uint32_t rflow_index, bool rflow_primary,
-                          uint8_t reason, bool host_origin)
+                          uint8_t reason, bool host_origin, uint16_t thread_id)
 {
     ipv4_flow_hash_entry_t iv4entry, rv4entry;
     sdk_ret_t ret;
@@ -390,11 +399,13 @@ ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
         return 0;
     }
 
-    ret = ftlv4_read_with_handle(obj, iflow_index, iflow_primary, iv4entry);
+    ret = ftlv4_read_with_handle(obj, iflow_index, iflow_primary, 
+                                 iv4entry, thread_id);
     if (SDK_RET_OK != ret) {
         return -1;
     }
-    ret = ftlv4_read_with_handle(obj, rflow_index, rflow_primary, rv4entry);
+    ret = ftlv4_read_with_handle(obj, rflow_index, rflow_primary, 
+                                 rv4entry, thread_id);
     if (SDK_RET_OK != ret) {
         return -1;
     }
@@ -406,10 +417,11 @@ ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
 
 int
 ftlv4_clear (ftlv4 *obj, bool clear_global_state,
-             bool clear_thread_local_state)
+             bool clear_thread_local_state, uint16_t thread_id)
 {
     sdk_table_api_params_t params = {0};
 
+    params.thread_id = thread_id;
     if (SDK_RET_OK != obj->clear(clear_global_state,
                                  clear_thread_local_state,
                                  &params)) {
@@ -487,7 +499,8 @@ ftlv4_dump_hw_entry_detail_iter_cb (sdk_table_api_params_t *params)
 }
 
 int
-ftlv4_dump_hw_entries (ftlv4 *obj, char *logfile, uint8_t detail)
+ftlv4_dump_hw_entries (ftlv4 *obj, char *logfile, 
+                       uint8_t detail, uint16_t thread_id)
 {
     sdk_ret_t ret;
     sdk_table_api_params_t params = {0};
@@ -506,6 +519,7 @@ ftlv4_dump_hw_entries (ftlv4 *obj, char *logfile, uint8_t detail)
                     ftlv4_dump_hw_entry_iter_cb;
     params.cbdata = logfp;
     params.force_hwread = false;
+    params.thread_id = thread_id;
     ftlv4_entry_count = 0;
 
     if (!detail) {
@@ -533,7 +547,8 @@ static int
 ftlv4_read_hw_entry (ftlv4 *obj, uint32_t src, uint32_t dst,
                      uint8_t ip_proto, uint16_t sport,
                      uint16_t dport, uint16_t lookup_id,
-                     ipv4_flow_hash_entry_t *entry)
+                     ipv4_flow_hash_entry_t *entry,
+                     uint16_t thread_id)
 {
     sdk_ret_t ret;
     sdk_table_api_params_t params = {0};
@@ -542,6 +557,7 @@ ftlv4_read_hw_entry (ftlv4 *obj, uint32_t src, uint32_t dst,
     entry->clear();
     ftlv4_set_key(entry, src, dst, ip_proto, sport, dport, lookup_id);
     params.entry = entry;
+    params.thread_id = thread_id;
 
     ret = obj->get(&params);
     if (ret != SDK_RET_OK) {
@@ -555,13 +571,13 @@ int
 ftlv4_read_session_index (ftlv4 *obj, uint32_t src, uint32_t dst,
                           uint8_t ip_proto, uint16_t sport,
                           uint16_t dport, uint16_t lookup_id,
-                          uint32_t *ses_id)
+                          uint32_t *ses_id, uint16_t thread_id)
 {
     int retcode = 0;
     ipv4_flow_hash_entry_t entry;
 
     retcode = ftlv4_read_hw_entry(obj, src, dst, ip_proto, sport, dport, 
-                                  lookup_id, &entry);
+                                  lookup_id, &entry, thread_id);
     if (retcode != -1) {
         *ses_id = entry.session_index;
     }
@@ -572,13 +588,13 @@ int
 ftlv4_dump_hw_entry (ftlv4 *obj, uint32_t src, uint32_t dst,
                      uint8_t ip_proto, uint16_t sport,
                      uint16_t dport, uint16_t lookup_id,
-                     char *buf, int max_len)
+                     char *buf, int max_len, uint16_t thread_id)
 {
     int retcode = 0;
     ipv4_flow_hash_entry_t entry;
 
     retcode = ftlv4_read_hw_entry(obj, src, dst, ip_proto, sport, dport, 
-                                  lookup_id, &entry);
+                                  lookup_id, &entry, thread_id);
     if (retcode != -1) {
         entry.tostr(buf, max_len);
     }
@@ -592,9 +608,9 @@ ftlv4_init_stats_cache (void)
 }
 
 void
-ftlv4_cache_stats (ftlv4 *obj)
+ftlv4_cache_stats (ftlv4 *obj, uint16_t thread_id)
 {
-    ftl_cache_stats(obj);
+    ftl_cache_stats(obj, thread_id);
 }
 
 void
@@ -621,7 +637,7 @@ ftlv4_hw_entry_count_cb (sdk_table_api_params_t *params)
 }
 
 uint64_t
-ftlv4_get_flow_count (ftlv4 *obj)
+ftlv4_get_flow_count (ftlv4 *obj, uint16_t thread_id)
 {
     sdk_ret_t ret;
     sdk_table_api_params_t params = {0};
@@ -630,6 +646,7 @@ ftlv4_get_flow_count (ftlv4 *obj)
     params.itercb = ftlv4_hw_entry_count_cb;
     params.cbdata = &count;
     params.force_hwread = false;
+    params.thread_id = thread_id;
 
     ret = obj->iterate(&params);
     if (ret != SDK_RET_OK) {
@@ -777,14 +794,15 @@ ftlv4_cache_program_index (ftlv4 *obj, uint16_t id, uint32_t *pindex,
                         g_ip4_flow_cache[thread_id].ip4_hash[id], 
                         pindex, 
                         sindex,
-                        g_ip4_flow_cache[thread_id].flags[id].update);
+                        g_ip4_flow_cache[thread_id].flags[id].update,
+                        thread_id);
 }
 
 int
 ftlv4_cache_delete_index (ftlv4 *obj, uint16_t id, uint16_t thread_id)
 {
     return ftlv4_remove(obj, g_ip4_flow_cache[thread_id].ip4_flow + id,
-                        g_ip4_flow_cache[thread_id].ip4_hash[id]);
+                        g_ip4_flow_cache[thread_id].ip4_hash[id], thread_id);
 }
 
 void
@@ -897,7 +915,7 @@ ftlv4_set_last_read_entry_miss_hit (uint8_t flow_miss, uint16_t tid)
 void
 ftlv4_set_thread_id (ftlv4 *obj, uint32_t thread_id)
 {
-    obj->set_thread_id(thread_id);
+    //obj->set_thread_id(thread_id);
     return;
 }
 
