@@ -120,7 +120,7 @@ func (w *watcher) GetRunningStatus() bool {
 }
 
 type service interface {
-	Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error)
+	Watch(ctx context.Context, options *api.AggWatchOptions) (kvstore.Watcher, error)
 }
 
 // Creates API group watchers.
@@ -131,7 +131,7 @@ func (w *watcher) createWatchers() error {
 	apiClientVal := reflect.ValueOf(w.apiClient)
 
 	for group := range groupMap {
-		if group == "objstore" || group == "bookstore" {
+		if group == "objstore" || group == "bookstore" || group == "routing" {
 			continue
 		}
 
@@ -144,7 +144,7 @@ func (w *watcher) createWatchers() error {
 		}
 
 		// Get current resource version from Objdb.
-		opts := api.ListWatchOptions{}
+		opts := api.AggWatchOptions{}
 		resVersion := w.objdb.GetResourceVersion(group)
 		opts.ObjectMeta = api.ObjectMeta{
 			ResourceVersion: resVersion,

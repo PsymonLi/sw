@@ -69,14 +69,14 @@ func (m *mockMonitoringV1) Alert() monitoring.MonitoringV1AlertInterface {
 func (m *mockMonitoringV1) AlertPolicy() monitoring.MonitoringV1AlertPolicyInterface {
 	return m.mAlrtPol
 }
+func (m *mockMonitoringV1) StatsAlertPolicy() monitoring.MonitoringV1StatsAlertPolicyInterface {
+	return nil
+}
 func (m *mockMonitoringV1) AlertDestination() monitoring.MonitoringV1AlertDestinationInterface {
 	return nil
 }
 func (m *mockMonitoringV1) MirrorSession() monitoring.MonitoringV1MirrorSessionInterface {
 	return nil
-}
-func (m *mockMonitoringV1) Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
-	return nil, nil
 }
 func (m *mockMonitoringV1) TroubleshootingSession() monitoring.MonitoringV1TroubleshootingSessionInterface {
 	return nil
@@ -84,9 +84,14 @@ func (m *mockMonitoringV1) TroubleshootingSession() monitoring.MonitoringV1Troub
 func (m *mockMonitoringV1) TechSupportRequest() monitoring.MonitoringV1TechSupportRequestInterface {
 	return nil
 }
-
 func (m *mockMonitoringV1) ArchiveRequest() monitoring.MonitoringV1ArchiveRequestInterface {
 	return nil
+}
+func (m *mockMonitoringV1) AuditPolicy() monitoring.MonitoringV1AuditPolicyInterface {
+	return nil
+}
+func (m *mockMonitoringV1) Watch(ctx context.Context, options *api.ListWatchOptions) (kvstore.Watcher, error) {
+	return nil, nil
 }
 
 func createMockServices(t *testing.T) {
@@ -99,7 +104,7 @@ func createMockServices(t *testing.T) {
 	apiClientVal := reflect.ValueOf(w.apiClient)
 
 	for group := range groupMap {
-		if group == "objstore" || group == "bookstore" {
+		if group == "objstore" || group == "bookstore" || group == "routing" {
 			continue
 		}
 
@@ -153,6 +158,10 @@ func TestWatcherStart(t *testing.T) {
 	mapi := mockapi.NewMockServices(ctrl)
 	w.apiClient = mapi
 
+	w.ctx, w.cancel = context.WithCancel(context.Background())
+	w.outCh = make(chan *kvstore.WatchEvent, 10)
+	w.errCh = make(chan error, 1)
+
 	for k := range w.groupWatchers {
 		delete(w.groupWatchers, k)
 	}
@@ -160,24 +169,15 @@ func TestWatcherStart(t *testing.T) {
 	w.groupWatchers["AlertPolicy"] = alrtPolEvent
 	w.groupWatchers["Alert"] = alrtEvent
 
-	w.ctx, w.cancel = context.WithCancel(context.Background())
-
 	go w.startWatchers()
 	defer w.Stop()
 	defer w.stopWatchers()
 
-	// Alert policy object.
+	// Send alert policy on the channel.
 	req := []*fields.Requirement{&fields.Requirement{Key: "status.primary-mac", Operator: "in", Values: []string{"00ae.cd00.1142"}}}
 	pol := policygen.CreateAlertPolicyObj(globals.DefaultTenant, "", CreateAlphabetString(5), "DistributedServiceCard", eventattrs.Severity_INFO, "DSC mac check", req, []string{})
 	wEvent := &kvstore.WatchEvent{Type: "Created", Key: "Unused", Object: pol}
-
-	// Send alert policy on the channel.
-	select {
-	case alrtPolCh <- wEvent:
-	case <-time.After(5 * time.Second):
-		err := fmt.Errorf("input channel timeout")
-		AssertOk(t, err, "Input channel timeout")
-	}
+	alrtPolCh <- wEvent
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -186,6 +186,31 @@ func TestWatcherStart(t *testing.T) {
 	AssertOk(t, err, "Error getting object meta")
 	obj := w.objdb.Find("AlertPolicy", ometa)
 	Assert(t, obj != nil, "objdb not updated")
+
+	// Update alert policy object.
+	req = []*fields.Requirement{&fields.Requirement{Key: "status.primary-mac", Operator: "in", Values: []string{"00ae.cd00.1111"}}}
+	pol.Spec.Requirements = req
+	wEvent = &kvstore.WatchEvent{Type: "Updated", Key: "Unused", Object: pol}
+	alrtPolCh <- wEvent
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify object db is updated with alert policy object.
+	obj = w.objdb.Find("AlertPolicy", ometa)
+	Assert(t, obj != nil, "objdb not updated")
+	rPol := obj.(*monitoring.AlertPolicy)
+	v := rPol.Spec.Requirements[0].Values
+	Assert(t, v[0] == "00ae.cd00.1111", "alert policy not updated, mac: %s", v[0])
+
+	// Delete alert policy.
+	wEvent = &kvstore.WatchEvent{Type: "Deleted", Key: "Unused", Object: pol}
+	alrtPolCh <- wEvent
+
+	time.Sleep(100 * time.Millisecond)
+
+	// Verify object db is updated with alert policy object.
+	obj = w.objdb.Find("AlertPolicy", ometa)
+	Assert(t, obj == nil, "obj not deleted in objdb")
 }
 
 func TestWatcherRun(t *testing.T) {

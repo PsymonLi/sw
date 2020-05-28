@@ -31,7 +31,7 @@ var (
 
 	// create mock events recorder
 	_, _ = recorder.NewRecorder(&recorder.Config{
-		Component:     "events_integ_test",
+		Component:     "alertmgr_integ_test",
 		BackupDir:     "/tmp",
 		SkipEvtsProxy: true}, log.GetNewLogger(log.GetDefaultConfig("alertmgr_integ_test")))
 )
@@ -117,7 +117,7 @@ func (t *tInfo) setup(tst *testing.T) error {
 	t.alertmgr = amgr
 
 	// Run alertsmgr
-	go amgr.Run()
+	go amgr.Run(nil)
 
 	return nil
 }
@@ -167,7 +167,7 @@ func (t *tInfo) startAPIServer(clusterName string) error {
 		t.apiClient.Close()
 	}
 
-	t.apiClient, err = apiclient.NewGrpcAPIClient("events_test", t.apiServerAddr, t.logger)
+	t.apiClient, err = apiclient.NewGrpcAPIClient("alerts_test", t.apiServerAddr, t.logger)
 	if err != nil {
 		return err
 	}

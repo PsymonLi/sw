@@ -228,6 +228,13 @@ func (ae *alertEngine) deleteAlertInCache(alert *monitoring.Alert) {
 		}
 		delete(ae.cache.alertsByObjectAndPolicy[objRef], polID)
 		delete(ae.cache.alertsState, alert)
+		list := ae.cache.alertsByPolicy[polID]
+		for pos, polAlert := range list {
+			if polAlert == alert {
+				list = append(list[:pos], list[pos+1:]...)
+				ae.cache.alertsByPolicy[polID] = list
+			}
+		}
 	}
 
 	ae.logger.Debugf("alertcache dump %v", ae.cache.alertsByObjectAndPolicy)
@@ -353,7 +360,7 @@ func New(logger log.Logger, rslvr resolver.Interface, objdb objectdb.Interface) 
 		if !ok {
 			polMap = make(map[string]*monitoring.Alert)
 		}
-		polMap[refObj] = alert
+		polMap[refPol] = alert
 		alertsByObjectAndPolicy[refObj] = polMap
 	}
 
@@ -500,8 +507,6 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 					case alertStateOpenAcked:
 					case alertStateOpenDebounceTimerRunning:
 						ae.bounceAlertInCache(alert)
-						alert.ModTime = api.Timestamp{Timestamp: *now}
-						alertsToUpdate = append(alertsToUpdate, alert)
 					case alertStateResolved:
 						alert.Spec.State = monitoring.AlertState_OPEN.String()
 						alert.Status.Resolved = nil
@@ -512,7 +517,6 @@ func (ae *alertEngine) processObject(peOutput *policyengine.PEOutput) error {
 				} else {
 					switch ae.cache.alertsState[alert] {
 					case alertStateOpenUnacked:
-						alert.ModTime = api.Timestamp{Timestamp: *now}
 						ae.debounceAlertInCache(alert)
 					case alertStateOpenAcked:
 						// TODO

@@ -49,6 +49,7 @@ func teardown() {
 
 func TestRun(t *testing.T) {
 	setup(t)
+	defer teardown()
 	Assert(t, pe != nil, "policyengine nil")
 	pe.ctx, pe.cancel = context.WithCancel(context.Background())
 
@@ -68,8 +69,33 @@ func TestRun(t *testing.T) {
 	time.Sleep(1 * time.Second)
 }
 
+func TestRestart(t *testing.T) {
+	// Create logger, object db, context.
+	logger := logger.WithContext("t_name", t.Name())
+	objdb := objectdb.New()
+
+	/* Alert policy object. */
+	req := []*fields.Requirement{&fields.Requirement{Key: "status.primary-mac", Operator: "in", Values: []string{"00ae.cd00.1142"}}}
+	pol := policygen.CreateAlertPolicyObj(globals.DefaultTenant, "", CreateAlphabetString(5), "DistributedServiceCard", eventattrs.Severity_INFO, "DSC mac check", req, []string{})
+	objdb.Add(pol)
+
+	// Create new policy engine instance.
+	pi, err := New(objdb, logger)
+	AssertOk(t, err, "Failed to create new policy engine")
+	pe = pi.(*policyEngine)
+
+	var found bool
+	for _, p := range pe.policiesByKind["DistributedServiceCard"] {
+		if p == pol {
+			found = true
+		}
+	}
+	Assert(t, found, "policy not found after restart")
+}
+
 func TestHandleWatchEvent(t *testing.T) {
 	setup(t)
+	defer teardown()
 	Assert(t, pe != nil, "policyengine nil")
 	pe.ctx, pe.cancel = context.WithCancel(context.Background())
 	defer func() {
@@ -152,6 +178,7 @@ func TestHandleWatchEvent(t *testing.T) {
 
 func TestRunPolicyOnObjects(t *testing.T) {
 	setup(t)
+	defer teardown()
 	Assert(t, pe != nil, "policyengine nil")
 	pe.ctx, pe.cancel = context.WithCancel(context.Background())
 
@@ -233,4 +260,44 @@ func TestRunPolicyOnObjects(t *testing.T) {
 	}()
 	wg.Wait()
 	Assert(t, in == 3 && out == 4, "in %v, out %v", in, out)
+}
+
+func TestUpdatePolicies(t *testing.T) {
+	setup(t)
+	defer teardown()
+	Assert(t, pe != nil, "policyengine nil")
+
+	/* Alert policy object. */
+	req := []*fields.Requirement{&fields.Requirement{Key: "status.primary-mac", Operator: "in", Values: []string{"00ae.cd00.1142"}}}
+	pol := policygen.CreateAlertPolicyObj(globals.DefaultTenant, "", CreateAlphabetString(5), "DistributedServiceCard", eventattrs.Severity_INFO, "DSC mac check", req, []string{})
+	ometa, _ := runtime.GetObjectMeta(pol)
+	uuid := ometa.GetUUID()
+
+	pe.updatePoliciesByKind("DistributedServiceCard", pol, kvstore.Created)
+	polFound := func() bool {
+		pols, found := pe.policiesByKind["DistributedServiceCard"]
+		if !found {
+			return false
+		}
+		for _, pol := range pols {
+			ometa, _ := runtime.GetObjectMeta(pol)
+			if uuid == ometa.GetUUID() {
+				return true
+			}
+		}
+		return false
+	}
+	Assert(t, polFound(), "Alert policy list not updated")
+
+	// Try creating same policy again.
+	pe.updatePoliciesByKind("DistributedServiceCard", pol, kvstore.Created)
+	Assert(t, polFound(), "Alert policy list not updated")
+
+	// Delete policy.
+	pe.updatePoliciesByKind("DistributedServiceCard", pol, kvstore.Deleted)
+	Assert(t, !polFound(), "Alert policy list not updated")
+
+	// Try deleting same policy again.
+	pe.updatePoliciesByKind("DistributedServiceCard", pol, kvstore.Deleted)
+	Assert(t, !polFound(), "Alert policy list not updated")
 }

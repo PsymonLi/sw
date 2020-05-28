@@ -50,18 +50,18 @@ func (e *exporter) Run(ctx context.Context, inCh <-chan *monitoring.Alert) (<-ch
 	go func() {
 		defer e.cleanup()
 
-		for a := range inCh {
+		for {
 			select {
-			case <-e.ctx.Done():
-				e.errCh <- fmt.Errorf("exiting alertsengine, Ctx cancelled")
-				return
-			default:
-				err := e.export(a)
-				if err != nil {
-					// Fatal error.
-					e.errCh <- err
-					return
+			case a, ok := <-inCh:
+				if ok {
+					err := e.export(a)
+					if err != nil {
+						// Fatal error.
+						e.errCh <- err
+					}
 				}
+			case <-e.ctx.Done():
+				return
 			}
 		}
 	}()
@@ -85,6 +85,5 @@ func (e *exporter) cleanup() {
 }
 
 func (e *exporter) export(alert *monitoring.Alert) error {
-	fmt.Println("Received an alert")
-	return nil
+	return fmt.Errorf("unimplemented")
 }

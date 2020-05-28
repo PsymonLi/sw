@@ -41,7 +41,7 @@ const (
 // Interface for alertmgr.
 type Interface interface {
 	// Run alert manager in the main goroutine.
-	Run()
+	Run(mockAPIClient apiservice.Services)
 
 	// Stop alert manager.
 	Stop()
@@ -78,6 +78,9 @@ type mgr struct {
 
 	// Running status of AlertMgr.
 	running bool
+
+	// Error
+	err error
 }
 
 // New instance of alert manager.
@@ -132,7 +135,7 @@ func New(logger log.Logger, rslvr resolver.Interface) (Interface, error) {
 	return m, nil
 }
 
-func (m *mgr) Run() {
+func (m *mgr) Run(mockAPIClient apiservice.Services) {
 	inited := false
 	b := balancer.New(m.rslvr)
 
@@ -153,7 +156,7 @@ func (m *mgr) Run() {
 			m.exporter.Stop()
 		}
 
-		if m.apiClient != nil {
+		if m.apiClient != nil && m.apiClient != mockAPIClient {
 			m.apiClient.Close()
 		}
 
@@ -161,15 +164,19 @@ func (m *mgr) Run() {
 			return
 		}
 
-		// Create API client with resolver.
-		apiClient, err := apiservice.NewGrpcAPIClient(globals.AlertMgr, globals.APIServer, m.logger, rpckit.WithBalancer(b))
-		if err != nil {
-			m.logger.Warnf("Failed to create api client, err: %v", err)
-			time.Sleep(retryDelay)
-			continue
-		}
+		if mockAPIClient != nil {
+			m.apiClient = mockAPIClient
+		} else {
+			// Create API client with resolver.
+			apiClient, err := apiservice.NewGrpcAPIClient(globals.AlertMgr, globals.APIServer, m.logger, rpckit.WithBalancer(b))
+			if err != nil {
+				m.logger.Warnf("Failed to create api client, err: %v", err)
+				time.Sleep(retryDelay)
+				continue
+			}
 
-		m.apiClient = apiClient.(apiservice.Services)
+			m.apiClient = apiClient.(apiservice.Services)
+		}
 
 		// Alertmgr might have just restarted.
 		// While it restarted some reference objects might have gone away, leaving some alerts invalid.
@@ -184,7 +191,7 @@ func (m *mgr) Run() {
 		}
 
 		// Run watcher.
-		wOutCh, wErrCh, err := m.watcher.Run(m.ctx, apiClient)
+		wOutCh, wErrCh, err := m.watcher.Run(m.ctx, m.apiClient)
 		if err != nil {
 			m.logger.Warnf("Failed to run watcher, err: %v", err)
 			time.Sleep(retryDelay)
@@ -200,7 +207,7 @@ func (m *mgr) Run() {
 		}
 
 		// Run alert engine.
-		aeOutCh, aeErrCh, err := m.alertEngine.Run(m.ctx, apiClient, peOutCh)
+		aeOutCh, aeErrCh, err := m.alertEngine.Run(m.ctx, m.apiClient, peOutCh)
 		if err != nil {
 			m.logger.Warnf("Failed to run alert engine, err: %v", err)
 			time.Sleep(retryDelay)
@@ -253,135 +260,137 @@ func (m *mgr) setRunningStatus(status bool) {
 	m.running = status
 }
 
-type service interface {
-	List(ctx context.Context, opts *api.ListWatchOptions) ([]interface{}, error)
-}
-
 func (m *mgr) init() error {
-	ctx := m.ctx
+	// Get all alert policies.
+	getAlertPolicies := func() []*monitoring.AlertPolicy {
+		var policies []*monitoring.AlertPolicy
 
-	// Get all alert policies from KV store.
-	opts := api.ListWatchOptions{FieldSelector: "spec.resource != event"} // TODO add tenant info
-	policies, err := m.apiClient.MonitoringV1().AlertPolicy().List(ctx, &opts)
-	if err != nil {
-		m.logger.Errorf("Failed to list alert policies, err: %v", err)
-		return err
-	}
-
-	// Add them to object db.
-	for _, p := range policies {
-		err := m.objdb.Add(p)
-		if err != nil {
-			m.logger.Errorf("Failed to add policy to objdb, err: %v", err)
-			return err
-		}
-	}
-
-	// Get all objects of the kinds referenced by alert policies.
-	for _, p := range policies {
-		r := p.Spec.Resource
-
-		// Validate the kind the policy references.
-		policyResourceValid := func() bool {
-			groupMap := runtime.GetDefaultScheme().Kinds()
-			for group := range groupMap {
-				if r == group {
-					return true
+		if m.err == nil {
+			opts := api.ListWatchOptions{FieldSelector: "spec.resource != event"} // TODO add tenant info
+			policies, m.err = m.apiClient.MonitoringV1().AlertPolicy().List(m.ctx, &opts)
+			for _, p := range policies {
+				m.err = m.objdb.Add(p)
+				if m.err != nil {
+					break
 				}
 			}
-			return false
-		}()
-
-		if !policyResourceValid {
-			m.logger.Debugf("Invalid resource, %v, in policy %v", r, p)
-			continue
+			return policies
 		}
+		return nil
+	}
 
-		apiKindMethods, err := func(apiClient apiservice.Services, kind string) ([]reflect.Value, error) {
-			apiClientVal := reflect.ValueOf(apiClient)
-			version := "V1"
-			key := strings.Title(r) + version
-			groupFunc := apiClientVal.MethodByName(key)
-			if !groupFunc.IsValid() {
-				err := fmt.Errorf("Invalid API group %s", key)
-				m.logger.Errorf("Invalid API group %s", key)
-				return nil, err
+	// Get all alerts.
+	getAlerts := func() []*monitoring.Alert {
+		var alerts []*monitoring.Alert
+
+		if m.err == nil {
+			opts := api.ListWatchOptions{}
+			alerts, m.err = m.apiClient.MonitoringV1().Alert().List(m.ctx, &opts)
+			for _, p := range alerts {
+				m.err = m.objdb.Add(p)
+				if m.err != nil {
+					break
+				}
+			}
+			return alerts
+		}
+		return nil
+	}
+
+	// Get all objects of given API group.
+	getObjsOfAPIGroup := func(group string) {
+		if m.err == nil {
+			apiClientVal := reflect.ValueOf(m.apiClient)
+			key := strings.Title(group) + "V1"
+			apiGroupFn := apiClientVal.MethodByName(key)
+			if !apiGroupFn.IsValid() {
+				m.err = fmt.Errorf("Invalid API group %s", key)
+				return
 			}
 
-			return groupFunc.Call(nil), nil
-		}(m.apiClient, r)
+			apiGroupMethods := apiGroupFn.Call(nil)[0]
+			for i := 0; i < apiGroupMethods.NumMethod(); i++ {
+				if apiGroupMethods.Method(i).Type().NumIn() != 0 {
+					continue
+				}
+				crudFn := apiGroupMethods.Method(i).Call(nil)[0]
+				listFn := crudFn.MethodByName("List")
+				if !listFn.IsValid() {
+					continue
+				}
 
-		if err != nil {
-			return err
-		}
+				opts := api.ListWatchOptions{} // TODO add tenant info
+				in := []reflect.Value{reflect.ValueOf(m.ctx), reflect.ValueOf(&opts)}
+				ret := listFn.Call(in)
+				if err := ret[1].Interface(); err != nil {
+					m.logger.Debugf("Failed to list objects of api group %v, method index %v, err %v", group, i, err)
+					continue
+				}
 
-		opts := api.ListWatchOptions{} // TODO add tenant info
-		objs, err := apiKindMethods[0].Interface().(service).List(ctx, &opts)
-		if err != nil {
-			m.logger.Errorf("Failed to list objects of kind %v, err %v", r, err)
-			return err
-		}
-
-		// Add the objects to db.
-		for _, obj := range objs {
-			err := m.objdb.Add(obj.(objectdb.Object))
-			if err != nil {
-				m.logger.Errorf("Failed to add object to objdb, error %v", err)
-				return err
+				// Add the objects to db.
+				for i := 0; i < ret[0].Len(); i++ {
+					obj := ret[0].Index(i).Interface().(objectdb.Object)
+					m.logger.Debugf("%v", obj.GetObjectMeta())
+					m.err = m.objdb.Add(obj)
+					if m.err != nil {
+						return
+					}
+				}
 			}
 		}
 	}
 
-	// Get all alerts from KV store.
-	opts = api.ListWatchOptions{} // TODO add tenant info
-	alerts, err := m.apiClient.MonitoringV1().Alert().List(ctx, &opts)
-	if err != nil {
-		m.logger.Errorf("Failed to list alerts, err %v", err)
-		return err
-	}
-
-	for _, alert := range alerts {
-		err := m.objdb.Add(alert)
-		if err != nil {
-			m.logger.Errorf("Failed to add object to objdb, error %v", err)
-			return err
-		}
-
-		var obj objectdb.Object
-		var pol *monitoring.AlertPolicy
-
-		// Check if the alert references are still valid.
-		alertRefsIntact := func() bool {
-			val := reflect.ValueOf(alert.Status.ObjectRef)
-			obj = val.Interface().(objectdb.Object)
-			if m.objdb.Find(obj.GetObjectKind(), obj.GetObjectMeta()) == nil {
-				return false
+	// Check if the object and policy references are still valid.
+	alertRefsIntact := func(alert *monitoring.Alert) (bool, *monitoring.AlertPolicy, objectdb.Object) {
+		if m.err == nil {
+			var obj objectdb.Object
+			oref := alert.Status.ObjectRef
+			kind := oref.Kind
+			meta := &api.ObjectMeta{Tenant: oref.Tenant, Namespace: oref.Namespace, Name: oref.Name}
+			if obj = m.objdb.Find(kind, meta); obj == nil {
+				return false, nil, nil
 			}
 
 			pols := m.objdb.List("AlertPolicy")
 			for _, p := range pols {
-				pol = p.(*monitoring.AlertPolicy)
+				pol := p.(*monitoring.AlertPolicy)
 				polID := fmt.Sprintf("%s/%s", pol.GetName(), pol.GetUUID())
 				if polID == alert.Status.Reason.PolicyID {
-					return true
+					return true, pol, obj
 				}
 			}
-			return false
-		}()
+		}
+		return false, nil, nil
+	}
 
-		if !alertRefsIntact {
+	// Update KV store and object db.
+	alertOp := func(alert *monitoring.Alert, op alertengine.AlertOp) {
+		if m.err == nil {
+			m.err = m.kvOp(alert, op)
+			if m.err == nil {
+				switch op {
+				case alertengine.AlertOpReopen:
+					m.err = m.objdb.Update(alert)
+				case alertengine.AlertOpResolve:
+					m.err = m.objdb.Update(alert)
+				case alertengine.AlertOpDelete:
+					m.err = m.objdb.Delete(alert)
+				}
+			}
+		}
+	}
+
+	policies := getAlertPolicies()
+	for _, p := range policies {
+		getObjsOfAPIGroup(runtime.GetDefaultScheme().Kind2APIGroup(p.Spec.Resource))
+	}
+	alerts := getAlerts()
+
+	for _, alert := range alerts {
+		refsExist, pol, obj := alertRefsIntact(alert)
+		if !refsExist {
 			// Reference(s) do not exist.. delete alert from KV store.
-			err := m.kvOp(alert, alertengine.AlertOpDelete)
-			if err != nil {
-				m.logger.Errorf("KV delete operation error %v", err)
-				return err
-			}
-
-			err = m.objdb.Delete(alert)
-			if err != nil {
-				m.logger.Errorf("Failed to delete object from objdb, error %v", err)
-				return err
-			}
+			alertOp(alert, alertengine.AlertOpDelete)
 			continue
 		}
 
@@ -389,37 +398,21 @@ func (m *mgr) init() error {
 		policyMatchesObj, _ := aeutils.Match(pol.Spec.GetRequirements(), obj.(runtime.Object))
 		if policyMatchesObj {
 			if alert.Spec.State == monitoring.AlertState_RESOLVED.String() {
-				err := m.kvOp(alert, alertengine.AlertOpReopen)
-				if err != nil {
-					m.logger.Errorf("KV update operation error %v", err)
-					return err
-				}
-
-				err = m.objdb.Update(alert)
-				if err != nil {
-					m.logger.Errorf("Failed to update object in objdb, error %v", err)
-					return err
-				}
+				alertOp(alert, alertengine.AlertOpReopen)
 			}
 		} else {
 			if alert.Spec.State == monitoring.AlertState_OPEN.String() {
-				err := m.kvOp(alert, alertengine.AlertOpResolve)
-				if err != nil {
-					m.logger.Errorf("KV update operation error %v", err)
-					return err
-				}
-
-				err = m.objdb.Update(alert)
-				if err != nil {
-					m.logger.Errorf("Failed to delete update object in objdb, error %v", err)
-					return err
-				}
+				alertOp(alert, alertengine.AlertOpResolve)
 			}
 		}
 	}
 
-	m.logger.Debugf("Initialized alerts manager")
-	return nil
+	if m.err != nil {
+		m.logger.Errorf("Failed to initialize alerts manager, err: %v", m.err)
+	} else {
+		m.logger.Debugf("Initialized alerts manager")
+	}
+	return m.err
 }
 
 func (m *mgr) kvOp(alert *monitoring.Alert, op alertengine.AlertOp) error {
