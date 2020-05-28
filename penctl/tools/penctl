@@ -7,6 +7,21 @@
 
 
 PROG=`basename $0`
+PENCTL_PATH=`dirname $0`
+PENCTL_LINUX_STD=/usr/local/bin/penctl.linux
+
+PENCTL_LINUX=`which penctl.linux 2> /dev/null`
+if [ $? -ne 0 ] ; then
+	if [ -e $PENCTL_LINUX_STD ] ; then
+		PENCTL_LINUX=$PENCTL_LINUX_STD
+	elif [ -e $PENCTL_PATH/penctl.linux ] ; then
+		PENCTL_LINUX=$PENCTL_PATH/penctl.linux
+	else
+		echo "$PROG: Error: $PENCTL_LINUX_STD not found"
+		exit 1
+	fi
+fi
+
 
 if [ "$1" == "-h" -o "$1" == "--help" ] ; then
 	echo "Usage: $PROG [-i ethX | -s pci ] args ..."
@@ -82,6 +97,6 @@ if [ -n "$pci" ] ; then
 	DSC_URL=http://169.254.$bus.1
 fi
 
-echo DSC_URL=$DSC_URL penctl.linux $@
-DSC_URL=$DSC_URL penctl.linux $@
+echo DSC_URL=$DSC_URL $PENCTL_LINUX $@
+DSC_URL=$DSC_URL $PENCTL_LINUX $@
 
