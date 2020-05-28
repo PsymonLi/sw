@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"time"
 
@@ -571,6 +572,41 @@ func (h Hal) SysSpecGet(ctx context.Context, req *irisproto.SysSpecGetRequest) (
 	fmt.Println(string(dat))
 
 	return &irisproto.SysSpecGetResponse{
+		ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// SystemGet Stubbed out
+func (h Hal) SystemGet(ctx context.Context, req *irisproto.SystemGetRequest) (*irisproto.SystemResponse, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got SystemGet Request:")
+	fmt.Println(string(dat))
+
+	return &irisproto.SystemResponse{
+		ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
+	}, nil
+}
+
+// SystemUUIDGet Stubbed out
+func (h Hal) SystemUUIDGet(ctx context.Context, req *irisproto.Empty) (*irisproto.SystemResponse, error) {
+
+	var dat map[string]interface{}
+	byt, err := ioutil.ReadFile("/tmp/fru.json")
+	if err != nil {
+		log.Errorf("Failed to read contents of fru.json")
+		return &irisproto.SystemResponse{
+			ApiStatus: irisproto.ApiStatus_API_STATUS_ERR,
+		}, nil
+	}
+	if err := json.Unmarshal(byt, &dat); err != nil {
+		log.Errorf("Failed to unmarshal fru.json.")
+		return &irisproto.SystemResponse{
+			ApiStatus: irisproto.ApiStatus_API_STATUS_ERR,
+		}, nil
+	}
+
+	return &irisproto.SystemResponse{
+		Uuid:      dat["mac-address"].(string),
 		ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
 	}, nil
 }
