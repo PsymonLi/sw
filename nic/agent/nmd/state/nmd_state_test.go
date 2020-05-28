@@ -1186,8 +1186,9 @@ func TestNaplesFileUpload(t *testing.T) {
 		AssertOk(t, err, "Error writing upload file")
 
 		values := map[string]io.Reader{
-			"uploadFile": mustOpen(path + "/dat1"),
-			"uploadPath": strings.NewReader(path),
+			"uploadFile":    mustOpen(path + "/dat1"),
+			"uploadPath":    strings.NewReader(path),
+			"terminateChar": strings.NewReader("/"),
 		}
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)
@@ -1341,7 +1342,8 @@ func TestNaplesFileUploadNoUploadPath(t *testing.T) {
 		AssertOk(t, err, "Error writing upload file")
 
 		values := map[string]io.Reader{
-			"uploadFile": mustOpen(path + "/dat1"),
+			"uploadFile":    mustOpen(path + "/dat1"),
+			"terminateChar": strings.NewReader("/"),
 		}
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)
@@ -1420,8 +1422,9 @@ func TestNaplesPkgVerify(t *testing.T) {
 		AssertOk(t, err, "Error writing upload file")
 
 		values := map[string]io.Reader{
-			"uploadFile": mustOpen(path + "/dat1"),
-			"uploadPath": strings.NewReader(path),
+			"uploadFile":    mustOpen(path + "/dat1"),
+			"uploadPath":    strings.NewReader(path),
+			"terminateChar": strings.NewReader("/"),
 		}
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)
@@ -1503,8 +1506,9 @@ func TestNaplesSetBootImg(t *testing.T) {
 		AssertOk(t, err, "Error writing upload file")
 
 		values := map[string]io.Reader{
-			"uploadFile": mustOpen(path + "/dat1"),
-			"uploadPath": strings.NewReader(path),
+			"uploadFile":    mustOpen(path + "/dat1"),
+			"uploadPath":    strings.NewReader(path),
+			"terminateChar": strings.NewReader("/"),
 		}
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)
@@ -1586,8 +1590,9 @@ func TestNaplesPkgInstall(t *testing.T) {
 		AssertOk(t, err, "Error writing upload file")
 
 		values := map[string]io.Reader{
-			"uploadFile": mustOpen(path + "/dat1"),
-			"uploadPath": strings.NewReader(path),
+			"uploadFile":    mustOpen(path + "/dat1"),
+			"uploadPath":    strings.NewReader(path),
+			"terminateChar": strings.NewReader("/"),
 		}
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)
