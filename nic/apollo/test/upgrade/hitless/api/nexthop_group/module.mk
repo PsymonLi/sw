@@ -19,7 +19,4 @@ MODULE_LDLIBS   = ${NIC_COMMON_LDLIBS} ${NIC_CAPSIM_LDLIBS} \
 MODULE_FLAGS    = ${NIC_CSR_FLAGS}
 MODULE_DEFS     = -DCAPRI_SW ${NIC_CSR_DEFINES}
 MODULE_SRCS     = ${MODULE_SRC_DIR}/main.cc ${MODULE_SRC_DIR}/../helper.cc
-ifdef AGENT_MODE
-MODULE_SOLIBS  += agentclient
-endif
 include ${MKDEFS}/post.mk

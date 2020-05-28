@@ -86,11 +86,6 @@ public:
     /// \return    SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t nuke_resources(api_base *api_obj) override;
 
-    /// \brief      restore h/w resources for this obj from persistent storage
-    /// \param[in]  info pointer to the info object
-    /// \return     #SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t restore_resources(obj_info_t *info) override;
-
     /// \brief      read spec, statistics and status from hw tables
     /// \param[in]  api_obj  API object
     /// \param[in]  key  pointer to tep key. Not used.
@@ -251,6 +246,11 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_update_(pds_epoch_t epoch, tep_entry *tep,
                                tep_entry *orig_tep, api_obj_ctxt_t *obj_ctxt);
+
+    /// \brief      restore h/w resources for this obj from persistent storage
+    /// \param[in]  info pointer to the info object
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t restore_resources(obj_info_t *info) override;
 
     /// \brief      populate specification with hardware information
     /// \param[out] spec     specification

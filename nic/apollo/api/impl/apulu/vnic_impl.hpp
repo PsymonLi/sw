@@ -63,6 +63,18 @@ public:
     /// \return   sdk_ret_ok or error code
     static sdk_ret_t free(vnic_impl *impl);
 
+    /// \brief     stash this object into persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to put stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t backup(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
+    /// \brief     restore stashed object from persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to read stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t restore(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
     /// \brief     allocate/reserve h/w resources for this object
     /// \param[in] api_obj  object for which resources are being reserved
     /// \param[in] orig_obj old version of the unmodified object
@@ -301,6 +313,11 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
                                vnic_entry *orig_vnic, api_obj_ctxt_t *obj_ctxt);
+
+    /// \brief      restore h/w resources for this obj from persistent storage
+    /// \param[in]  info pointer to the info object
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t restore_resources(obj_info_t *info) override;
 
     /// \brief      fill the VNIC spec
     /// \param[out] spec specification

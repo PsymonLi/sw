@@ -17,6 +17,7 @@
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/port.hpp"
+#include "nic/apollo/api/vnic.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 
 namespace api {
@@ -49,6 +50,10 @@ backup_stateful_obj_cb (void *obj, void *info)
     case OBJ_ID_TEP:
         keystr = ((tep_entry *)obj)->key2str();
         ret = ((tep_entry *)obj)->backup(upg_info);
+
+    case OBJ_ID_VNIC:
+        keystr = ((vnic_entry *)obj)->key2str();
+        ret = ((vnic_entry *)obj)->backup(upg_info);
         break;
 
     default:
@@ -160,6 +165,20 @@ backup_nexthop_group (upg_obj_info_t *info)
 }
 
 static inline sdk_ret_t
+backup_vnic (upg_obj_info_t *info)
+{
+    sdk_ret_t ret;
+    ht *vnic_ht;
+    upg_shm *shm = api::g_upg_state->backup_shm();
+
+    vnic_ht = vnic_db()->vnic_ht();
+    ret = (vnic_ht->walk(backup_stateful_obj_cb, (void *)info));
+    // adjust the offset in persistent storage in the end of walk
+    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    return ret;
+}
+
+static inline sdk_ret_t
 backup_mapping (upg_obj_info_t *info)
 {
     sdk::lib::kvstore *kvs;
@@ -240,6 +259,13 @@ upg_ev_backup (upg_ev_params_t *params)
             // update total number of tep objs stashed
             hdr[id].obj_count = info.backup.stashed_obj_count;
             PDS_TRACE_INFO("Stashed %u tep objs", hdr[id].obj_count);
+            break;
+
+        case OBJ_ID_VNIC:
+            ret = backup_vnic(&info);
+            // update total number of vnic objs stashed
+            hdr[id].obj_count = info.backup.stashed_obj_count;
+            PDS_TRACE_INFO("Stashed %u vnic objs", hdr[id].obj_count);
             break;
 
         default:

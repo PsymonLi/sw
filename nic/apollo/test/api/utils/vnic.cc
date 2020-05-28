@@ -114,7 +114,8 @@ vnic_feeder::init(pds_obj_key_t key, pds_obj_key_t subnet,
                   uint8_t tx_mirror_session_bmap,
                   uint8_t rx_mirror_session_bmap,
                   uint8_t num_policies_per_vnic, uint8_t start_policy_index,
-                  pds_obj_key_t tx_policer, pds_obj_key_t rx_policer) {
+                  pds_obj_key_t tx_policer, pds_obj_key_t rx_policer,
+                  bool stash) {
     uint64_t mac_64;
     //static uint32_t lif_id = HOST_LIF_ID_MIN;
     num_obj = num_vnic;
@@ -160,11 +161,13 @@ vnic_feeder::init(pds_obj_key_t key, pds_obj_key_t subnet,
     }
     spec.tx_policer = tx_policer;
     spec.rx_policer = rx_policer;
+    stash_ = stash;
 }
 
 vnic_feeder::vnic_feeder(const vnic_feeder& feeder) {
     memcpy(&this->spec, &feeder.spec, sizeof(pds_vnic_spec_t));
     num_obj = feeder.num_obj;
+    this->stash_  = feeder.stash();
 }
 
 void
@@ -275,7 +278,7 @@ vnic_feeder::spec_compare(const pds_vnic_spec_t *spec) const {
 bool
 vnic_feeder::status_compare(const pds_vnic_status_t *status1,
                             const pds_vnic_status_t *status2) const {
-    return true;
+    return (!memcmp(status1, status2, sizeof(pds_vnic_status_t)));
 }
 
 //----------------------------------------------------------------------------

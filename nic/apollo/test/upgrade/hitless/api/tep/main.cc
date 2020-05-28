@@ -4,7 +4,7 @@
 //----------------------------------------------------------------------------
 ///
 /// \file
-/// This file contains the all upg tep test cases
+/// This file contains the all upgrade tep test cases
 ///
 //----------------------------------------------------------------------------
 
@@ -18,7 +18,7 @@ namespace test {
 namespace api {
 
 //----------------------------------------------------------------------------
-// TEP upg test class
+// TEP upgrade test class
 //----------------------------------------------------------------------------
 
 class tep_upg_test : public ::pds_test_base {

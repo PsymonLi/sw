@@ -19,6 +19,7 @@ run_gtest nh_upg
 run_gtest nh_group_upg
 run_gtest mapping_upg
 run_gtest tep_upg
+run_gtest vnic_upg
 
 # end of script
 clean_exit

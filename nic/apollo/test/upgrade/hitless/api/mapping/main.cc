@@ -31,7 +31,7 @@ namespace api {
 //#define SCALE_DOWN_FOR_DEBUG
 
 //----------------------------------------------------------------------------
-// Mapping upg test class
+// Mapping upgrade test class
 //----------------------------------------------------------------------------
 
 class mapping_upg_test : public pds_test_base {

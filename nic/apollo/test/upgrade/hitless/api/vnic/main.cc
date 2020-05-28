@@ -1,28 +1,33 @@
+
 //
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
 ///
 /// \file
-/// This file contains the all nexthop upgrade test cases
+/// This file contains the all upgrade vnic test cases
 ///
 //----------------------------------------------------------------------------
 
-#include "nic/apollo/test/api/utils/nexthop.hpp"
-#include "nic/apollo/test/api/utils/if.hpp"
+#include "nic/apollo/test/api/utils/device.hpp"
+#include "nic/apollo/test/api/utils/policer.hpp"
+#include "nic/apollo/test/api/utils/policy.hpp"
+#include "nic/apollo/test/api/utils/subnet.hpp"
+#include "nic/apollo/test/api/utils/vnic.hpp"
+#include "nic/apollo/test/api/utils/vpc.hpp"
 #include "nic/apollo/test/api/utils/workflow.hpp"
 
 namespace test {
 namespace api {
 
 //----------------------------------------------------------------------------
-// NH upgrade test class
+// VNIC upgrade test class
 //----------------------------------------------------------------------------
 
-class nh_upg_test : public ::pds_test_base {
+class vnic_upg_test : public pds_test_base {
 protected:
-    nh_upg_test() {}
-    virtual ~nh_upg_test() {}
+    vnic_upg_test() {}
+    virtual ~vnic_upg_test() {}
     virtual void SetUp() {}
     virtual void TearDown() {}
     static void SetUpTestCase() {
@@ -36,53 +41,62 @@ protected:
 };
 
 static inline void
-nexthop_upg_setup (void)
+vnic_upg_setup (void)
 {
     pds_batch_ctxt_t bctxt = batch_start();
-    sample_if_setup(bctxt);
+    sample_device_setup(bctxt);
+    sample_vpc_setup(bctxt, PDS_VPC_TYPE_TENANT);
+    sample_policy_setup(bctxt);
+    sample_subnet_setup(bctxt);
+    sample_policer_setup(bctxt);
     batch_commit(bctxt);
 }
 
 static inline void
-nexthop_upg_teardown (void)
+vnic_upg_teardown (void)
 {
     pds_batch_ctxt_t bctxt = batch_start();
-    sample_if_teardown(bctxt);
+    sample_policer_teardown(bctxt);
+    sample_subnet_teardown(bctxt);
+    sample_policy_teardown(bctxt);
+    sample_vpc_teardown(bctxt, PDS_VPC_TYPE_TENANT);
+    sample_device_teardown(bctxt);
     batch_commit(bctxt);
 }
 
 //----------------------------------------------------------------------------
-// NH upg test cases implementation
+// VNIC upg test cases implementation
 //----------------------------------------------------------------------------
 
-/// \defgroup NH Nexthop upg Tests
+/// \defgroup VNIC Vnic upg Tests
 /// @{
 
-/// \brief Nexthop group WF_U_1
+/// \brief VNIC WF_U_1
 /// \ref WF_U_1
-TEST_F(nh_upg_test, nh_upg_workflow_u1) {
-    nexthop_feeder feeder;
+TEST_F(vnic_upg_test, vnic_upg_workflow_u1) {
+    vnic_feeder feeder;
 
     pds_batch_ctxt_t bctxt = batch_start();
     // setup precursor
-    nexthop_upg_setup();
-    // setup nexthop
-    feeder.init("", 0x0E0D0A0B0100, 10, int2pdsobjkey(1),
-                PDS_NH_TYPE_UNDERLAY);
-    feeder.set_stash(true);
+    vnic_upg_setup();
+    // setup vnic
+    feeder.init(int2pdsobjkey(1), int2pdsobjkey(1), k_max_vnic, k_feeder_mac,
+                PDS_ENCAP_TYPE_DOT1Q, PDS_ENCAP_TYPE_MPLSoUDP,
+                true, true, 0, 0, 5, 0, int2pdsobjkey(20010),
+                int2pdsobjkey(20000), 1);
     // backup
-    workflow_u1_s1<nexthop_feeder>(feeder);
+    workflow_u1_s1<vnic_feeder>(feeder);
 
     // tearup precursor
-    nexthop_upg_teardown();
+    vnic_upg_teardown();
     // restore
-    workflow_u1_s2<nexthop_feeder>(feeder);
+    workflow_u1_s2<vnic_feeder>(feeder);
     // setup precursor again
-    nexthop_upg_setup();
+    vnic_upg_setup();
     // config replay
-    workflow_u1_s3<nexthop_feeder>(feeder);
+    workflow_u1_s3<vnic_feeder>(feeder);
     // tearup precursor
-    nexthop_upg_teardown();
+    vnic_upg_teardown();
 }
 
 /// @}

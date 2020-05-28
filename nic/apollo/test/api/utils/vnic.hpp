@@ -48,6 +48,7 @@ enum vnic_attrs {
 class vnic_feeder : public feeder {
 public:
     pds_vnic_spec_t spec;
+    vector <pds_vnic_info_t *> vec;
 
     // Constructor
     vnic_feeder() {
@@ -63,7 +64,8 @@ public:
               bool binding_checks_en, bool configure_policy,
               uint8_t tx_mirror_session_bmap, uint8_t rx_mirror_session_bmap,
               uint8_t num_policies_per_vnic, uint8_t start_policy_index,
-              pds_obj_key_t tx_policer, pds_obj_key_t rx_policer);
+              pds_obj_key_t tx_policer, pds_obj_key_t rx_policer,
+              bool stash_ = false);
 
     // Iterate helper routines
     void iter_next(int width = 1);
@@ -103,6 +105,7 @@ operator<<(std::ostream& os, const pds_vnic_spec_t *spec) {
 inline std::ostream&
 operator<<(std::ostream& os, const pds_vnic_status_t *status) {
     os << " HW id: " << status->hw_id;
+    os << " NH HW id: " << status->nh_hw_id;
     return os;
 }
 
@@ -135,6 +138,7 @@ operator<<(std::ostream& os, const vnic_feeder& obj) {
 // CRUD prototypes
 API_CREATE(vnic);
 API_READ(vnic);
+API_READ_CMP(vnic);
 API_UPDATE(vnic);
 API_DELETE(vnic);
 

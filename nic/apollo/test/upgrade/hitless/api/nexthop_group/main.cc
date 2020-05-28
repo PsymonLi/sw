@@ -17,7 +17,7 @@ namespace test {
 namespace api {
 
 //----------------------------------------------------------------------------
-// NH Group upg test class
+// NH Group upgrade test class
 //----------------------------------------------------------------------------
 
 class nh_group_upg_test : public ::pds_test_base {

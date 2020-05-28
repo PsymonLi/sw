@@ -30,6 +30,8 @@
 #include "nic/apollo/api/impl/apulu/policer_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vnic_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
+#include "nic/apollo/api/impl/apulu/svc/vnic_svc.hpp"
+#include "nic/apollo/api/impl/apulu/svc/svc_utils.hpp"
 #include "nic/apollo/p4/include/apulu_table_sizes.h"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/p4gen/p4/include/ftl.h"
@@ -101,14 +103,28 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         // NOTE: even if we partially acquire resources and fail eventually,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
-        // reserve an entry in the NEXTHOP table for this local vnic
-        ret = nexthop_impl_db()->nh_idxr()->alloc(&idx);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to allocate nexthop entry for vnic %s, "
-                          "err %u", spec->key.str(), ret);
-            return ret;
+
+        // if this object is restored from persistent storage
+        // resources are reserved already
+        if (!api_obj->in_restore_list()) {
+            // reserve an entry in the NEXTHOP table for this local vnic
+            ret = nexthop_impl_db()->nh_idxr()->alloc(&idx);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Failed to allocate nexthop entry for vnic %s, "
+                              "err %u", spec->key.str(), ret);
+                return ret;
+            }
+            nh_idx_ = idx;
+
+            // allocate hw id for this vnic
+            if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) !=
+                    SDK_RET_OK) {
+                PDS_TRACE_ERR("Failed to allocate hw id for vnic %s, err %u",
+                              spec->key.str(), ret);
+                return ret;
+            }
+            hw_id_ = idx;
         }
-        nh_idx_ = idx;
 
         subnet = subnet_find(&spec->subnet);
         if (subnet == NULL) {
@@ -116,15 +132,6 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
                           spec->subnet.str(), spec->key.str());
             return sdk::SDK_RET_INVALID_ARG;
         }
-        // allocate hw id for this vnic
-        if ((ret = vnic_impl_db()->vnic_idxr()->alloc(&idx)) !=
-                SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to allocate hw id for vnic %s, err %u",
-                          spec->key.str(), ret);
-            return ret;
-        }
-        hw_id_ = idx;
-
         // reserve an entry in LOCAL_MAPPING table for MAC entry
         local_mapping_key.key_metadata_local_mapping_lkp_type = KEY_TYPE_MAC;
         local_mapping_key.key_metadata_local_mapping_lkp_id =
@@ -1408,6 +1415,98 @@ vnic_impl::reset_stats(void) {
                                        &vnic_rx_stats_data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+vnic_impl::backup(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::VnicGetResponse proto_msg;
+    pds_vnic_info_t *vnic_info;
+    upg_obj_tlv_t *tlv;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    vnic_info = (pds_vnic_info_t *)info;
+
+    ret = fill_spec_(&vnic_info->spec);
+    if (unlikely(ret != SDK_RET_OK)) {
+        return ret;
+    }
+    fill_status_(&vnic_info->status);
+    // convert api info to proto
+    pds_vnic_api_info_to_proto(vnic_info, (void *)&proto_msg);
+    ret = pds_svc_serialize_proto_msg(upg_info, tlv, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to serialize vnic %s, err %u",
+                      vnic_info->spec.key.str(), ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+vnic_impl::restore_resources(obj_info_t *info) {
+    sdk_ret_t ret;
+    pds_vnic_info_t *vnic_info;
+    pds_vnic_spec_t *spec;
+    pds_vnic_status_t *status;
+
+    vnic_info = (pds_vnic_info_t *)info;
+    spec = &vnic_info->spec;
+    status = &vnic_info->status;
+
+    // restore an entry in the NEXTHOP table for this local vnic
+    ret = nexthop_impl_db()->nh_idxr()->alloc(status->nh_hw_id);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore nexthop entry for vnic %s, "
+                      "err %u, hw id %u", spec->key.str(), ret,
+                      status->nh_hw_id);
+        return ret;
+    }
+    nh_idx_ = status->nh_hw_id;
+
+    // allocate hw id for this vnic
+    ret = vnic_impl_db()->vnic_idxr()->alloc(status->hw_id);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore hw id for vnic %s, err %u,"
+                      " hw id %u", spec->key.str(), ret,
+                      status->hw_id);
+        return ret;
+    }
+    hw_id_ = status->hw_id;
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+vnic_impl::restore(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::VnicGetResponse proto_msg;
+    pds_vnic_info_t *vnic_info;
+    upg_obj_tlv_t *tlv;
+    uint32_t obj_size, meta_size;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    vnic_info = (pds_vnic_info_t *)info;
+    obj_size = tlv->len;
+    meta_size = sizeof(upg_obj_tlv_t);
+    // fill up the size, even if it fails later. to try and restore next obj
+    upg_info->size = obj_size + meta_size;
+    // de-serialize proto msg
+    if (proto_msg.ParseFromArray(tlv->obj, tlv->len) == false) {
+        PDS_TRACE_ERR("Failed to de-serialize vnic");
+        return SDK_RET_OOM;
+    }
+    // convert proto msg to vnic info
+    ret = pds_vnic_proto_to_api_info(vnic_info, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to convert vnic proto msg to info, err %u", ret);
+        return ret;
+    }
+    // now restore hw resources
+    ret = restore_resources((obj_info_t *)vnic_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore hw resources for vnic %s, err %u",
+                      vnic_info->spec.key.str(), ret);
+    }
+    return ret;
 }
 
 /// \@}
