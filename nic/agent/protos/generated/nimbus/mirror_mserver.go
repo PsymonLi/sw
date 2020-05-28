@@ -287,12 +287,17 @@ func (eh *InterfaceMirrorSessionTopic) GetAckedEventStatus(nodeID string, event 
 
 // CreateInterfaceMirrorSession creates InterfaceMirrorSession
 func (eh *InterfaceMirrorSessionTopic) CreateInterfaceMirrorSession(ctx context.Context, objinfo *netproto.InterfaceMirrorSession) (*netproto.InterfaceMirrorSession, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateInterfaceMirrorSession from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnInterfaceMirrorSessionCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnInterfaceMirrorSessionCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateInterfaceMirrorSession for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats
@@ -841,12 +846,17 @@ func (eh *MirrorSessionTopic) GetAckedEventStatus(nodeID string, event api.Event
 
 // CreateMirrorSession creates MirrorSession
 func (eh *MirrorSessionTopic) CreateMirrorSession(ctx context.Context, objinfo *netproto.MirrorSession) (*netproto.MirrorSession, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateMirrorSession from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnMirrorSessionCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnMirrorSessionCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateMirrorSession for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

@@ -651,6 +651,7 @@ func (c *API) netIfWorker(ctx context.Context) {
 					continue
 				}
 				intfs[0].Status.DSCID = c.InfraAPI.GetConfig().DSCID
+				intfs[0].Status.DSC = c.InfraAPI.GetDscName()
 				log.Infof("CREATE interface: [%+v]", intfs[0])
 				if resp, err := ifClient.CreateInterface(ctx, &intfs[0]); err != nil {
 					log.Errorf("create interface [%v] failed (%s)", resp, err)

@@ -287,12 +287,17 @@ func (eh *ProfileTopic) GetAckedEventStatus(nodeID string, event api.EventType) 
 
 // CreateProfile creates Profile
 func (eh *ProfileTopic) CreateProfile(ctx context.Context, objinfo *netproto.Profile) (*netproto.Profile, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateProfile from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnProfileCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnProfileCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateProfile for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

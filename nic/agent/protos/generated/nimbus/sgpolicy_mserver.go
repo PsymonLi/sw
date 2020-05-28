@@ -287,12 +287,17 @@ func (eh *NetworkSecurityPolicyTopic) GetAckedEventStatus(nodeID string, event a
 
 // CreateNetworkSecurityPolicy creates NetworkSecurityPolicy
 func (eh *NetworkSecurityPolicyTopic) CreateNetworkSecurityPolicy(ctx context.Context, objinfo *netproto.NetworkSecurityPolicy) (*netproto.NetworkSecurityPolicy, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateNetworkSecurityPolicy from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnNetworkSecurityPolicyCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnNetworkSecurityPolicyCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateNetworkSecurityPolicy for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

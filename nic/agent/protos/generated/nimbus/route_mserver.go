@@ -287,12 +287,17 @@ func (eh *RouteTableTopic) GetAckedEventStatus(nodeID string, event api.EventTyp
 
 // CreateRouteTable creates RouteTable
 func (eh *RouteTableTopic) CreateRouteTable(ctx context.Context, objinfo *netproto.RouteTable) (*netproto.RouteTable, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateRouteTable from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnRouteTableCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnRouteTableCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateRouteTable for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats
@@ -841,12 +846,17 @@ func (eh *RoutingConfigTopic) GetAckedEventStatus(nodeID string, event api.Event
 
 // CreateRoutingConfig creates RoutingConfig
 func (eh *RoutingConfigTopic) CreateRoutingConfig(ctx context.Context, objinfo *netproto.RoutingConfig) (*netproto.RoutingConfig, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateRoutingConfig from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnRoutingConfigCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnRoutingConfigCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateRoutingConfig for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

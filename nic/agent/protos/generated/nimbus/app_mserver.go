@@ -287,12 +287,17 @@ func (eh *AppTopic) GetAckedEventStatus(nodeID string, event api.EventType) *Eve
 
 // CreateApp creates App
 func (eh *AppTopic) CreateApp(ctx context.Context, objinfo *netproto.App) (*netproto.App, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateApp from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnAppCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnAppCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateApp for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

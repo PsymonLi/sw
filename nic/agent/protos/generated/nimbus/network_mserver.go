@@ -287,12 +287,17 @@ func (eh *NetworkTopic) GetAckedEventStatus(nodeID string, event api.EventType) 
 
 // CreateNetwork creates Network
 func (eh *NetworkTopic) CreateNetwork(ctx context.Context, objinfo *netproto.Network) (*netproto.Network, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateNetwork from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnNetworkCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnNetworkCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateNetwork for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats

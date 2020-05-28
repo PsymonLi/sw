@@ -287,12 +287,17 @@ func (eh *InterfaceTopic) GetAckedEventStatus(nodeID string, event api.EventType
 
 // CreateInterface creates Interface
 func (eh *InterfaceTopic) CreateInterface(ctx context.Context, objinfo *netproto.Interface) (*netproto.Interface, error) {
+	var err error
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	// log.Infof("Received CreateInterface from node %v: {%+v}", nodeID, objinfo)
 
 	// trigger callbacks. we allow creates to happen before it exists in memdb
 	if eh.statusReactor != nil {
-		eh.statusReactor.OnInterfaceCreateReq(nodeID, objinfo)
+		err = eh.statusReactor.OnInterfaceCreateReq(nodeID, objinfo)
+		if err != nil {
+			log.Errorf("CreateInterface for obj: {%+v} failed, err: %v", objinfo, err)
+			return objinfo, err
+		}
 	}
 
 	// increment stats
