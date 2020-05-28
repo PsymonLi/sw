@@ -40,11 +40,10 @@ arp_proxy_dst_mac_get(void *hdr, mac_addr_t mac_addr, uint32_t dst_addr)
     vpc_id = ((p4_rx_cpu_hdr_t *)hdr)->vpc_id;
     bd_id = ((p4_rx_cpu_hdr_t *)hdr)->ingress_bd_id;
 
-    if (arp_proxy_main.dst_mac_get_cb &&
-        pds_impl_db_vpc_is_control_vpc(vpc_id)) {
-        ret = arp_proxy_main.dst_mac_get_cb(vpc_id, bd_id, mac_addr, dst_addr);
-    } else {
-        ret = pds_dst_mac_get(vpc_id, bd_id, mac_addr, dst_addr);
+    ret = pds_dst_mac_get(vpc_id, bd_id, mac_addr, dst_addr);
+    if (PREDICT_FALSE(ret != 0 && arp_proxy_main.dst_mac_get_cb &&
+        pds_impl_db_vpc_is_control_vpc(vpc_id))) {
+            ret = arp_proxy_main.dst_mac_get_cb(vpc_id, bd_id, mac_addr, dst_addr);
     }
 
     return ret;

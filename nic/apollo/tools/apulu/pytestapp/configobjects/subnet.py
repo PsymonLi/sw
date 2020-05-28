@@ -7,7 +7,7 @@ import subnet_pb2 as subnet_pb2
 import types_pb2 as types_pb2
 
 class SubnetObject():
-    def __init__(self, id, vpcid, v4prefix, hostifindex, v4virtualrouterip, virtualroutermac, v4routetableid, fabricencap='VXLAN', fabricencapid=1, node_uuid=None, dhcp_policy_id=None, 
+    def __init__(self, id, vpcid, v4prefix, hostifindex, v4virtualrouterip, virtualroutermac, v4routetableid, fabricencap='VXLAN', fabricencapid=1, node_uuid=None, dhcp_policy_id=None,
                  ingress_policy_id=None, egress_policy_id=None):
         super().__init__()
         self.id    = id
@@ -15,13 +15,17 @@ class SubnetObject():
         self.dhcp_policy_id = dhcp_policy_id
         self.uuid = utils.PdsUuid(self.id)
         self.v4prefix = v4prefix
-        self.hostifuuid = None
-        if hostifindex:
-            self.hostifindex = int(hostifindex, 16)
+
+        self.hostifuuid = []
+        self.hostifindex = []
+        for cur_hostifidx in hostifindex:
+            cur_hostifidx = int(cur_hostifidx, 16)
+            self.hostifindex.append(cur_hostifidx)
             if node_uuid:
-                self.hostifuuid = utils.PdsUuid(self.hostifindex, node_uuid)
+                self.hostifuuid.append(utils.PdsUuid(cur_hostifidx, node_uuid))
             else:
-                self.hostifuuid = utils.PdsUuid(self.hostifindex)
+                self.hostifuuid.append(utils.PdsUuid(cur_hostifidx))
+
         self.v4virtualrouterip = v4virtualrouterip
         self.virtualroutermac = virtualroutermac
         self.fabricencap = fabricencap
@@ -49,8 +53,9 @@ class SubnetObject():
         spec.VirtualRouterMac = utils.getmac2num(self.virtualroutermac)
         if self.v4routetableid:
             spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.v4routetableid)
-        if self.hostifuuid:
-            spec.HostIf.append(self.hostifuuid.GetUuid())
+        for cur_hostifuuid in self.hostifuuid:
+            spec.HostIf.append(cur_hostifuuid.GetUuid())
+
         if self.ingress_policy_id:
             spec.IngV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.ingress_policy_id))
         if self.egress_policy_id:
