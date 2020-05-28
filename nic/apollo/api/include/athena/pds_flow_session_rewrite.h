@@ -20,7 +20,7 @@ extern "C" {
 /// @{
 
 // Maximum session rewrite index
-#define PDS_FLOW_SESSION_REWRITE_ID_MAX    (2 * 1024 * 1024)
+#define PDS_FLOW_SESSION_REWRITE_ID_MAX    (4 * 1024 * 1024)
 
 /// \brief Rewrite NAT type
 typedef enum pds_flow_session_rewrite_nat_type_e {

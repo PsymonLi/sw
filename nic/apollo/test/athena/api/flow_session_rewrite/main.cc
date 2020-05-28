@@ -242,6 +242,20 @@ TEST_F(flow_session_rewrite_test, flow_session_rewrite_crud) {
     fill_data(&spec.data, 34, REWRITE_NAT_TYPE_IPV6_SNAT, ENCAP_TYPE_MAX);
     SDK_ASSERT(pds_flow_session_rewrite_create(&spec) == 
             PDS_RET_INVALID_ARG);
+
+    memset(&spec, 0, sizeof(spec)); 
+    fill_key(&spec.key, PDS_FLOW_SESSION_REWRITE_ID_MAX);
+    fill_data(&spec.data, PDS_FLOW_SESSION_REWRITE_ID_MAX,
+            REWRITE_NAT_TYPE_NONE, ENCAP_TYPE_L2);
+    SDK_ASSERT(pds_flow_session_rewrite_create(&spec) == 
+            PDS_RET_INVALID_ARG);
+
+    memset(&spec, 0, sizeof(spec)); 
+    fill_key(&spec.key, (PDS_FLOW_SESSION_REWRITE_ID_MAX - 1));
+    fill_data(&spec.data, (PDS_FLOW_SESSION_REWRITE_ID_MAX - 1),
+            REWRITE_NAT_TYPE_NONE, ENCAP_TYPE_L2);
+    SDK_ASSERT(pds_flow_session_rewrite_create(&spec) == 
+            PDS_RET_OK);
 }
 
 /// \brief FLOW SESSION REWRITE scale tests
