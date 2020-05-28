@@ -1284,6 +1284,7 @@ populate_flow_monitor_rule (FlowMonitorRuleSpec &spec,
     }
     rule->action.num_mirror_dest = rule->action.num_collector = 0;
     if (spec.has_action()) {
+        rule->action.type = spec.action().action(0);
         if ((spec.action().action(0) == telemetry::MIRROR) ||
             (spec.action().action(0) == telemetry::MIRROR_TO_CPU)) {
             HAL_TRACE_DEBUG("Action: {}", spec.action().action(0));
@@ -1514,8 +1515,11 @@ flow_monitor_rule_update (FlowMonitorRuleSpec &spec, FlowMonitorRuleResponse *rs
     }
     HAL_TRACE_DEBUG("Ruleid {}", rule_id);
 
-    if (rule->action.num_mirror_dest == 0) {
+    if (rule->action.type != telemetry::MIRROR &&
+        rule->action.type != telemetry::MIRROR_TO_CPU) {
         HAL_TRACE_ERR("Update supported only for mirror.");
+        ret = HAL_RET_INVALID_ARG;
+        rsp->set_api_status(types::API_STATUS_INVALID_ARG);
         goto end;
     }
 
@@ -1572,7 +1576,8 @@ flow_monitor_rule_delete (FlowMonitorRuleDeleteRequest &req, FlowMonitorRuleDele
         goto end;
     }
     HAL_TRACE_DEBUG("Ruleid {}", rule_id);
-    mirror_action = (rule->action.num_mirror_dest > 0);
+    mirror_action = ((rule->action.type == telemetry::MIRROR) ||
+                     (rule->action.type == telemetry::MIRROR_TO_CPU));
     flowmon_acl_ctx = acl::acl_get(flowmon_acl_ctx_name(vrf_id, mirror_action));
     if (!flowmon_acl_ctx) {
         HAL_TRACE_DEBUG("Did not find flowmon acl ctx for vrf_id {}", vrf_id);

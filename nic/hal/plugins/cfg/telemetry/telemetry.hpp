@@ -55,6 +55,7 @@ using telemetry::FlowMonitorRuleGetRequest;
 using telemetry::FlowMonitorRuleGetRequestMsg;
 using telemetry::FlowMonitorRuleGetResponse;
 using telemetry::FlowMonitorRuleGetResponseMsg;
+using telemetry::RuleAction;
 
 using telemetry::DropMonitorRuleSpec;
 using telemetry::DropMonitorRuleStatus;
@@ -199,6 +200,7 @@ typedef struct drop_monitor_rule_s {
 } __PACK__ drop_monitor_rule_t;
 
 typedef struct flow_monitor_rule_action_s {
+    RuleAction  type;
     uint8_t     num_mirror_dest;    // Num of mirror sessions
     uint8_t     num_collector;  // Number of collectors
     uint8_t     collectors[MAX_COLLECTORS_PER_FLOW]; // Collector ids

@@ -121,6 +121,7 @@ const (
 	ErrCollectorCreateDuringUpdate                       = Error("ErrCollectorCreateDuringUpdate")
 	ErrCollectorStillReferenced                          = Error("ErrCollectorStillReferenced")
 	ErrCollectorCreate                                   = Error("ErrCollectorCreate")
+	ErrCollectorUpdate                                   = Error("ErrCollectorUpdate")
 	ErrCollectorDelete                                   = Error("ErrCollectorDelete")
 	ErrCollectorAlreadyDeleted                           = Error("ErrCollectorAlreadyDeleted")
 	ErrUnsupportedApp                                    = Error("ErrUnsupportedApp")

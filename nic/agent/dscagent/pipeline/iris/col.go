@@ -33,6 +33,8 @@ func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, 
 	switch oper {
 	case types.Create:
 		return createColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
+	case types.Update:
+		return updateColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
 	case types.Delete:
 		return deleteColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
 	default:
@@ -52,6 +54,19 @@ func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 	resp, err := telemetryClient.MirrorSessionCreate(context.Background(), mirrorReqMsg)
 	if resp != nil {
 		if err := utils.HandleErr(types.Create, resp.Response[0].ApiStatus, err, fmt.Sprintf("Create Failed for MirrorSession | %s", col.Name)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func updateColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col Collector, vrfID uint64) error {
+	// Update MirrorSession
+	mirrorReqMsg := convertHalMirrorSession(col, vrfID)
+	resp, err := telemetryClient.MirrorSessionUpdate(context.Background(), mirrorReqMsg)
+	if resp != nil {
+		if err := utils.HandleErr(types.Update, resp.Response[0].ApiStatus, err, fmt.Sprintf("Update Failed for MirrorSession | %s", col.Name)); err != nil {
 			return err
 		}
 	}

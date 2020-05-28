@@ -32,7 +32,7 @@ type netflowIDs struct {
 	NetflowKeys []string
 }
 
-var netflowSessionToFlowMonitorRuleMapping = map[string][]*halapi.FlowMonitorRuleKeyHandle{}
+var netflowSessionToFlowMonitorRuleMapping = map[string][]uint64{}
 
 var templateContextMap = map[string]context.CancelFunc{}
 
@@ -149,9 +149,9 @@ func deleteFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 	// Delete Flow Monitor rules
 	var flowMonitorDeleteReq halapi.FlowMonitorRuleDeleteRequestMsg
 
-	for _, flowMonitorKey := range netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()] {
+	for _, ruleID := range netflowSessionToFlowMonitorRuleMapping[netflow.GetKey()] {
 		req := &halapi.FlowMonitorRuleDeleteRequest{
-			KeyOrHandle:  flowMonitorKey,
+			KeyOrHandle:  convertRuleIDKeyHandle(ruleID),
 			VrfKeyHandle: convertVrfKeyHandle(vrfID),
 		}
 		flowMonitorDeleteReq.Request = append(flowMonitorDeleteReq.Request, req)

@@ -311,15 +311,6 @@ func (h Hal) CollectorGet(ctx context.Context, req *irisproto.CollectorGetReques
 	return nil, nil
 }
 
-// FlowMonitorRuleUpdate Stubbed out
-func (h Hal) FlowMonitorRuleUpdate(ctx context.Context, req *irisproto.FlowMonitorRuleRequestMsg) (*irisproto.FlowMonitorRuleResponseMsg, error) {
-	dat, _ := json.MarshalIndent(req, "", "  ")
-	log.Info("Got FlowMonitorRuleUpdate Request:")
-	fmt.Println(string(dat))
-
-	return nil, nil
-}
-
 // FlowMonitorRuleGet Stubbed out
 func (h Hal) FlowMonitorRuleGet(ctx context.Context, req *irisproto.FlowMonitorRuleGetRequestMsg) (*irisproto.FlowMonitorRuleGetResponseMsg, error) {
 	dat, _ := json.MarshalIndent(req, "", "  ")

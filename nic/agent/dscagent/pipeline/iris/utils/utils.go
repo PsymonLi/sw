@@ -14,6 +14,7 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
+	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
@@ -84,4 +85,100 @@ func ConvertIPAddresses(addresses ...string) (ipAddresses []*halapi.IPAddress) {
 		ipAddresses = nil
 	}
 	return
+}
+
+// ClassifyMirrorGenericAttributes returns whether collectors need to be updated for a mirror
+func ClassifyMirrorGenericAttributes(existingMirror, mirror netproto.MirrorSession) bool {
+	if existingMirror.Spec.PacketSize != mirror.Spec.PacketSize {
+		return true
+	}
+	if existingMirror.Spec.SpanID != mirror.Spec.SpanID {
+		return true
+	}
+	return false
+}
+
+// CollectorEqual compares two MirrorCollector
+func CollectorEqual(mc1, mc2 netproto.MirrorCollector) bool {
+	if mc1.ExportCfg.Destination != mc2.ExportCfg.Destination {
+		return false
+	}
+	if mc1.ExportCfg.Gateway != mc2.ExportCfg.Gateway {
+		return false
+	}
+	if mc1.Type != mc2.Type {
+		return false
+	}
+	if mc1.StripVlanHdr != mc2.StripVlanHdr {
+		return false
+	}
+	return true
+}
+
+func ipAddressesEqual(addresses1, addresses2 []string) bool {
+	if len(addresses1) != len(addresses2) {
+		return false
+	}
+	length := len(addresses1)
+	for i := 0; i < length; i++ {
+		if addresses1[i] != addresses2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func protoPortEqual(pp1, pp2 *netproto.ProtoPort) bool {
+	if pp1.Protocol != pp2.Protocol {
+		return false
+	}
+	if pp1.Port != pp2.Port {
+		return false
+	}
+	return true
+}
+
+func protoPortsEqual(pp1, pp2 []*netproto.ProtoPort) bool {
+	if len(pp1) != len(pp2) {
+		return false
+	}
+	length := len(pp1)
+	for i := 0; i < length; i++ {
+		if !protoPortEqual(pp1[i], pp2[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// MatchRuleEqual compares two MatchRule
+func MatchRuleEqual(mr1, mr2 netproto.MatchRule) bool {
+	// Src check
+	if mr1.Src == nil && mr2.Src != nil {
+		return false
+	}
+	if mr1.Src != nil && mr2.Src == nil {
+		return false
+	}
+	srcNil := (mr1.Src == nil && mr2.Src == nil)
+	if !srcNil && !ipAddressesEqual(mr1.Src.Addresses, mr2.Src.Addresses) {
+		return false
+	}
+	// Dst check
+	if mr1.Dst == nil && mr2.Dst != nil {
+		return false
+	}
+	if mr1.Dst != nil && mr2.Dst == nil {
+		return false
+	}
+	if mr1.Dst == nil && mr2.Dst == nil {
+		return true
+	}
+	if !ipAddressesEqual(mr1.Dst.Addresses, mr2.Dst.Addresses) {
+		return false
+	}
+	if !protoPortsEqual(mr1.Dst.ProtoPorts, mr2.Dst.ProtoPorts) {
+		return false
+	}
+	return true
 }

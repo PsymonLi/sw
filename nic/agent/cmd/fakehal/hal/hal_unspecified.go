@@ -478,6 +478,21 @@ func (h Hal) FlowMonitorRuleCreate(ctx context.Context, req *irisproto.FlowMonit
 	}, nil
 }
 
+// FlowMonitorRuleUpdate stubbed out
+func (h Hal) FlowMonitorRuleUpdate(ctx context.Context, req *irisproto.FlowMonitorRuleRequestMsg) (*irisproto.FlowMonitorRuleResponseMsg, error) {
+	dat, _ := json.MarshalIndent(req, "", "  ")
+	log.Info("Got FlowMonitorRuleUpdate Request:")
+	fmt.Println(string(dat))
+
+	return &irisproto.FlowMonitorRuleResponseMsg{
+		Response: []*irisproto.FlowMonitorRuleResponse{
+			{
+				ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
+			},
+		},
+	}, nil
+}
+
 // CollectorCreate Stubbed out
 func (h Hal) CollectorCreate(ctx context.Context, req *irisproto.CollectorRequestMsg) (*irisproto.CollectorResponseMsg, error) {
 	dat, _ := json.MarshalIndent(req, "", "  ")
