@@ -560,6 +560,11 @@ jobd/dol/apulu/lpm: ${JOBD_PREREQS}
 jobd/dol/apulu/learn: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo learn --feature learn
 
+.PHONY: jobd/dol/apulu/dsc_e2e
+jobd/dol/apulu/dsc_e2e: ${JOBD_PREREQS}
+	# TODO: using operd temporarily until new feature 'dsc_e2e' is in
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo dsc_hostvxlan --feature operd --netagent
+
 .PHONY: jobd/dol/apulu/operd
 jobd/dol/apulu/operd: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature operd

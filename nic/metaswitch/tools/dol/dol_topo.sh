@@ -87,7 +87,7 @@ function client-app-cfg {
 
 if [ $DOL_TEST == 1 ]; then
     # Setup already made - just run DOL
-    docker exec -it "$CONTAINER"1 sh -c "sudo ./apollo/tools/rundol.sh --pipeline apulu --topo overlay --feature overlay_networking --sub underlay_trig $CMDARGS" || ret=$?
+    docker exec -it "$CONTAINER"1 sh -c "sudo SKIP_FRU_SETUP=1 ./apollo/tools/rundol.sh --pipeline apulu --topo overlay --feature overlay_networking --sub underlay_trig $CMDARGS" || ret=$?
     exit
 fi
 
@@ -268,7 +268,7 @@ if [ $RR == 0 ]; then
 fi
 
 if [ $DOL_RUN == 1 ]; then
-    docker exec -it "$CONTAINER"1 sh -c "sudo ./apollo/tools/rundol.sh --pipeline apulu --topo overlay --feature overlay_networking --sub underlay_trig $CMDARGS" || ret=$?
+    docker exec -it "$CONTAINER"1 sh -c "sudo SKIP_FRU_SETUP=1 ./apollo/tools/rundol.sh --pipeline apulu --topo overlay --feature overlay_networking --sub underlay_trig $CMDARGS" || ret=$?
     if [ $ret -ne 0 ]; then
         echo "DOL run failed: $ret"
     else

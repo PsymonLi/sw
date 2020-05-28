@@ -39,12 +39,14 @@ function ErrorCheckNExit () {
 
 function SetDryRunOptionalArgs () {
     TEST_SUB_FEATURE=""
+    TEST_OPT_ARGS=""
     for cmdargs in "$@"
     do
         arg=$(echo $cmdargs | cut -f1 -d=)
         val=$(echo $cmdargs | cut -f2 -d=)
         case "$arg" in
             SUB) TEST_SUB_FEATURE=" --sub ${val}";;
+            DSCAGENTMODE) TEST_OPT_ARGS+=" --netagent ";;
             *)
         esac
     done
@@ -57,7 +59,7 @@ function DryRunSanity () {
     TEST_LOG=${NICDIR}/${TEST_NAME}.log
     SetDryRunOptionalArgs $@
     echo "`date +%x_%H:%M:%S:%N` : Running ${TEST_NAME}  > ${TEST_LOG} "
-    ${DOLDIR}/main.py --dryrun --topo ${TEST_TOPO} --feature ${TEST_FEATURE} --pipeline ${TEST_PIPELINE} ${TEST_SUB_FEATURE} | tee ${TEST_LOG}
+    ${DOLDIR}/main.py --dryrun --topo ${TEST_TOPO} --feature ${TEST_FEATURE} --pipeline ${TEST_PIPELINE} ${TEST_SUB_FEATURE} ${TEST_OPT_ARGS} | tee ${TEST_LOG}
     ErrorCheckNExit ${PIPESTATUS[0]} "${TEST_NAME}"
 }
 

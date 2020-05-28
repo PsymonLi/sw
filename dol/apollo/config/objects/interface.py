@@ -7,7 +7,6 @@ import ipaddress
 
 from infra.common.logging import logger
 import infra.common.objects as objects
-from infra.common.glopts  import GlobalOptions
 
 from apollo.config.store import client as EzAccessStoreClient
 
@@ -122,9 +121,9 @@ class InterfaceObject(base.ConfigObjectBase):
         return
 
     def UpdateImplicit(self):
-        if not GlobalOptions.netagent:
+        if not utils.IsNetAgentMode():
             return
-        if utils.IsDol() and GlobalOptions.dryrun:
+        if utils.IsDol() and utils.IsDryRun():
             return
         if not self.IsOriginImplicitlyCreated():
             return
@@ -654,7 +653,7 @@ class InterfaceObjectClient(base.ConfigClientBase):
         return
 
     def CreateObjects(self, node):
-        if not GlobalOptions.netagent:
+        if not utils.IsNetAgentMode():
             cookie = utils.GetBatchCookie(node)
             if utils.IsL3InterfaceSupported():
                 cfgObjects = self.__uplinkl3ifs[node].values()
@@ -698,10 +697,16 @@ class InterfaceObjectClient(base.ConfigClientBase):
 
     def ReadAgentInterfaces(self, node):
         if utils.IsDryRun(): return
-        if not GlobalOptions.netagent:
+        if not utils.IsNetAgentMode():
             return
         resp = api.client[node].GetHttp(api.ObjectTypes.INTERFACE)
         return resp
+
+    def IsReadSupported(self):
+        if utils.IsNetAgentMode() and utils.IsDol():
+            # TODO: fix l3 intf
+            return False
+        return True
 
     def ReadObjects(self, node):
         logger.info(f"Reading {self.ObjType.name} Objects from {node}")

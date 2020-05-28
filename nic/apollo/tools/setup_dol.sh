@@ -2,11 +2,14 @@
 
 DRYRUN=0
 NO_STOP=0
+DSCAGENTMODE=0
 # max wait time for system to come up
 SETUP_WAIT_TIME=600
 # list of processes
 SIM_PROCESSES=("vpp_main" "operd" "pdsagent" "pciemgrd" "sysmgr" "dhcpd")
 TS_NAME=nic_sanity_logs.tar.gz
+
+NAPLES_INTERFACES=("dsc0" "dsc1" "eth1" "oob_mnic0")
 
 # set file size limit to 50GB so that model logs will not exceed that.
 ulimit -f $((50*1024*1024))
@@ -18,6 +21,8 @@ for (( j=0; j<argc; j++ )); do
     [ "${argv[j]}" != '--nostop' ] && CMDARGS+="${argv[j]} "
     if [ ${argv[j]} == '--pipeline' ];then
         PIPELINE=${argv[j+1]}
+    elif [ ${argv[j]} == '--netagent' ];then
+        DSCAGENTMODE=1
     elif [[ ${argv[j]} =~ .*'--dry'.* ]];then
         DRYRUN=1
     elif [[ ${argv[j]} == '--nostop' ]];then
@@ -30,6 +35,10 @@ if [[ "$BASH_SOURCE" != "$0" ]]; then
     CUR_DIR=$( readlink -f $( dirname $BASH_SOURCE ) )
 fi
 source $CUR_DIR/setup_env_sim.sh $PIPELINE
+
+if [[ $DSCAGENTMODE == 1 ]]; then
+    SIM_PROCESSES+=("nmd" "netagent")
+fi
 
 function stop_model() {
     pkill cap_model
@@ -57,7 +66,12 @@ function start_dhcp_server() {
 }
 
 function start_sysmgr () {
-    PENLOG_LOCATION=/var/log/pensando/ sysmgr $PDSPKG_TOPDIR/sysmgr/src/$PIPELINE/pipeline-dol.json &
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        SYSMGR_CONF=pipeline-venice-dol.json
+    else
+        SYSMGR_CONF=pipeline-dol.json
+    fi
+    PENLOG_LOCATION=/var/log/pensando/ sysmgr $PDSPKG_TOPDIR/sysmgr/src/$PIPELINE/$SYSMGR_CONF &
 }
 
 function start_model () {
@@ -85,6 +99,12 @@ function remove_shm_files () {
     rm -f /dev/shm/nicmgr_shm /dev/shm/sysmgr /dev/shm/vpp
 }
 
+function remove_interfaces () {
+    for INTF in ${NAPLES_INTERFACES[@]}; do
+        ip link del ${INTF} type dummy >/dev/null 2>&1
+    done
+}
+
 function remove_stale_files () {
     echo "======> Cleaning debris"
     rm -f $PDSPKG_TOPDIR/out.sh
@@ -97,6 +117,9 @@ function remove_stale_files () {
     remove_db
     remove_ipc_files
     remove_shm_files
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        remove_interfaces
+    fi
 }
 
 function remove_logs () {
@@ -153,6 +176,10 @@ function check_health () {
             fi
         done
         echo "======> All systems go! Let's punch it"
+        if [[ $DSCAGENTMODE == 1 ]]; then
+            # wait for netagent to come up - TODO: convert to poll
+            sleep 30
+        fi
         return
     done
     ps -ef > $PDSPKG_TOPDIR/health.log
@@ -160,12 +187,43 @@ function check_health () {
     exit 1
 }
 
+function setup_interfaces () {
+    echo "======> Hailing frequencies"
+    # nmd waits for these interfaces
+    for INTF in ${NAPLES_INTERFACES[@]}; do
+        ip link add ${INTF} type dummy
+    done
+}
+
+function setup_fru () {
+    fru_json='{
+        "manufacturing-date": "1539734400",
+        "manufacturer": "PENSANDO SYSTEMS INC.",
+        "product-name": "NAPLES 100",
+        "serial-number": "SIM18440000",
+        "part-number": "68-0003-02 01",
+        "engineering-change-level": "00",
+        "board-id": "1000",
+        "num-mac-address": "24",
+        "mac-address": "02:22:22:11:11:11"
+    }'
+
+    if [[ $SKIP_FRU_SETUP != 1 ]]; then
+        echo " *** Setting up fru"
+        echo $fru_json > /tmp/fru.json
+    fi
+}
+
 function setup_env () {
-    sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/
+    sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/
     # TODO Remove this once agent code is fixed
     # Create dummy device.conf - agent is trying to update it when device object is updated.
     # Without this, pdsagent crashes since config file is not found.
     sudo touch /sysconfig/config0/device.conf
+    setup_fru
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        setup_interfaces
+    fi
 }
 
 function setup () {

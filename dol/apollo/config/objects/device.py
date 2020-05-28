@@ -33,6 +33,7 @@ class DeviceObject(base.ConfigObjectBase):
         self.LearningEnabled = getattr(spec, 'learning', False)
         self.LearnAgeTimeout = getattr(spec, 'learningagetimeout', 300)
         self.OverlayRoutingEn = getattr(spec, 'overlayrouting', False)
+        self.SymmetricRoutingEn = getattr(spec, 'symmetricrouting', False)
         #TODO: based on stack, get ip & gw addr
         # If loopback ip exists in testbed json, use that,
         # else use from cfgyaml

@@ -82,6 +82,15 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/dsc_e2e:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/dsc_e2e"]
+    owners: ["email:param@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
   apulu/dol/operd:
     commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/operd"]
     owners: ["email:param@pensando.io"]

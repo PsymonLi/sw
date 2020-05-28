@@ -8,7 +8,10 @@ setup ${PIPELINE}
 
 build
 
-# run all apulu DOL dry runs
+# run all DSC apulu DOL dry runs
+DryRunSanity dsc_hostvxlan operd DSCAGENTMODE
+
+# run all PDS apulu DOL dry runs
 DryRunSanity hostvxlan networking
 DryRunSanity l2_hostvxlan networking
 DryRunSanity learn learn

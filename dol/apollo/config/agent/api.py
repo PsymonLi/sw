@@ -7,6 +7,7 @@ import requests
 import time
 import urllib3
 import socket
+from http import HTTPStatus
 
 # operd proto
 import oper_pb2_grpc as oper_pb2_grpc
@@ -71,7 +72,7 @@ SOCK_BUF_LEN = 1024 * 1024
 
 class AgentPorts(enum.IntEnum):
     NONE = 0
-    DSCAGENTREST = 8888
+    NMDREST = 8888
     PDSAGENT = 11357
     OPERD = 11359
     PEN_OPER = 11360
@@ -188,7 +189,7 @@ class ClientResponseModule:
 
 class ClientRESTModule:
     def __init__(self, ip, uri):
-        self.url = f"https://{ip}:{AgentPorts.DSCAGENTREST.value}{uri}"
+        self.url = f"https://{ip}:{AgentPorts.NMDREST.value}{uri}"
         return
 
     def Create(self, objs):
@@ -202,7 +203,7 @@ class ClientRESTModule:
             logger.info("PostData: %s"%pdata)
             if not GlobalOptions.dryrun:
                 rdata = requests.post(self.url, pdata, verify=False)
-                if rdata.status_code != 200:
+                if rdata.status_code != HTTPStatus.OK:
                     logger.error("Obj:%s POST FAILED [%d] to URL %s"%(obj.GID(), rdata.status_code, self.url))
                 else:
                     resps.append(rdata)
@@ -222,7 +223,7 @@ class ClientRESTModule:
             logger.info("PutData: %s"%pdata)
             if not GlobalOptions.dryrun:
                 rdata = requests.put(url, pdata, verify=False)
-                if rdata.status_code != 200:
+                if rdata.status_code != HTTPStatus.OK:
                     logger.error("Obj:%s PUT FAILED [%d] to URL %s"%(obj.GID(), rdata.status_code, url))
                 else:
                     resps.append(rdata)
@@ -232,7 +233,7 @@ class ClientRESTModule:
 
     def Get(self):
         rdata = requests.get(self.url, verify=False)
-        if rdata.status_code != 200:
+        if rdata.status_code != HTTPStatus.OK:
             logger.error("GET FAILED [%d] to URL %s"%(rdata.status_code, self.url))
             return
         return rdata.json()
@@ -244,7 +245,7 @@ class ClientRESTModule:
             logger.info("Obj:%s Delete URL %s"%(obj.GID(), url))
             if not GlobalOptions.dryrun:
                 rdata = requests.delete(url, verify=False)
-                if rdata.status_code != 200:
+                if rdata.status_code != HTTPStatus.OK:
                     logger.error("Obj:%s DELETE FAILED [%d] URL %s"%(obj.GID(), rdata.status_code, url))
                 else:
                     resps.append(rdata)
@@ -726,7 +727,7 @@ class PdsAgentClient(AgentClientBase):
 
     def GetRestURL(self):
         if not GlobalOptions.netagent: return None
-        return f"https://{self.IPAddr}:{AgentPorts.DSCAGENTREST.value}"
+        return f"https://{self.IPAddr}:{AgentPorts.NMDREST.value}"
 
     def Start(self, objtype, obj):
         if GlobalOptions.dryrun: return
