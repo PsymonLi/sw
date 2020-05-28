@@ -146,8 +146,8 @@ func bgpShowCmdHandler(cmd *cobra.Command, args []string) error {
 }
 
 const (
-	bgpPeerFmt = `%-10s %-16v %-5v %-10v %-16v %-30v`
-	bgpPeerHdr = "AdminState,Remote Address,ASN,Auth,Status,FSM Established Time (sec)"
+	bgpPeerFmt = `%-10s %-16v %-5v %-10v %-16v %-40v`
+	bgpPeerHdr = "AdminState,Remote Address,ASN,Auth,Status,FSM Established Time"
 
 	bgpPeerDetStr = `BGP Peer details
 ------------------------------------

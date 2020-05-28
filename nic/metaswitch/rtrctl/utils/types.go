@@ -86,45 +86,45 @@ func (n *NLRIPrefix) AttrString() string {
 }
 
 func NewNLRIPrefix(afi int, safi int, in []byte) *NLRIPrefix {
-    if afi == 1 {
-        ret := &NLRIPrefix{
-            Afi:    afi,
-            Safi:   safi,
-            Type:   0,
-            Length: 0,
-        }
-        ret.Prefix = newIPv4Route(in[0:])
-        return ret
-    } else if afi == 25 {
-        if len(in) < 3 {
-           return nil
-        }
-        ret := &NLRIPrefix{
-            Afi:    afi,
-            Safi:   safi,
-            Type:   int(in[0]),
-            Length: int(in[1]),
-        }
-        switch ret.Type {
-        case 2:
-            p := &EVPNType2Route{}
-            p.parseBytes(in[2:])
-            ret.Prefix = newEVPNType2Route(p)
+	if afi == 1 {
+		ret := &NLRIPrefix{
+			Afi:    afi,
+			Safi:   safi,
+			Type:   0,
+			Length: 0,
+		}
+		ret.Prefix = newIPv4Route(in[0:])
+		return ret
+	} else if afi == 25 {
+		if len(in) < 3 {
+			return nil
+		}
+		ret := &NLRIPrefix{
+			Afi:    afi,
+			Safi:   safi,
+			Type:   int(in[0]),
+			Length: int(in[1]),
+		}
+		switch ret.Type {
+		case 2:
+			p := &EVPNType2Route{}
+			p.parseBytes(in[2:])
+			ret.Prefix = newEVPNType2Route(p)
 
-        case 3:
-            p := &EVPNType3Route{}
-            p.parseBytes(in[2:])
-            ret.Prefix = newEVPNType3Route(p)
+		case 3:
+			p := &EVPNType3Route{}
+			p.parseBytes(in[2:])
+			ret.Prefix = newEVPNType3Route(p)
 
-        case 5:
-            p := &EVPNType5Route{}
-            p.parseBytes(in[2:])
-            ret.Prefix = newEVPNType5Route(p)
-        }
-        return ret
-    } else {
-        return nil
-    }
+		case 5:
+			p := &EVPNType5Route{}
+			p.parseBytes(in[2:])
+			ret.Prefix = newEVPNType5Route(p)
+		}
+		return ret
+	} else {
+		return nil
+	}
 }
 
 type EVPNType2Route struct {
@@ -499,16 +499,17 @@ func newBGPPeerSpec(in *pds.BGPPeerSpec) ShadowBGPPeerSpec {
 
 // ShadowBGPPeerStatus shadows the BGPPeerStatus for CLI purposes
 type ShadowBGPPeerStatus struct {
-	Id               string
-	LastErrorRcvd    string
-	LastErrorSent    string
-	Status           string
-	PrevStatus       string
-	LocalAddr        string
-	CapsSent         string
-	CapsRcvd         string
-	CapsNeg          string
-	SelLocalAddrType string
+	Id                 string
+	LastErrorRcvd      string
+	LastErrorSent      string
+	Status             string
+	PrevStatus         string
+	LocalAddr          string
+	CapsSent           string
+	CapsRcvd           string
+	CapsNeg            string
+	SelLocalAddrType   string
+	FsmEstablishedTime string
 	*pds.BGPPeerStatus
 }
 
@@ -663,17 +664,18 @@ func BgpErrStr(bs []byte) string {
 
 func newBGPPeerStatus(in *pds.BGPPeerStatus) ShadowBGPPeerStatus {
 	return ShadowBGPPeerStatus{
-		Id:               "",
-		LastErrorRcvd:    BgpErrStr(in.LastErrorRcvd),
-		LastErrorSent:    BgpErrStr(in.LastErrorSent),
-		Status:           strings.TrimPrefix(in.Status.String(), "BGP_PEER_STATE_"),
-		PrevStatus:       strings.TrimPrefix(in.PrevStatus.String(), "BGP_PEER_STATE_"),
-		LocalAddr:        PdsIPToString(in.LocalAddr),
-		CapsSent:         BgpCapsStr(BgpCapabilities(in.CapsSent)),
-		CapsRcvd:         BgpCapsStr(BgpCapabilities(in.CapsRcvd)),
-		CapsNeg:          BgpCapsStr(BgpCapabilities(in.CapsNeg)),
-		SelLocalAddrType: strings.TrimPrefix(in.SelLocalAddrType.String(), "BGP_ADDR_TYPE_"),
-		BGPPeerStatus:    in,
+		Id:                 "",
+		LastErrorRcvd:      BgpErrStr(in.LastErrorRcvd),
+		LastErrorSent:      BgpErrStr(in.LastErrorSent),
+		Status:             strings.TrimPrefix(in.Status.String(), "BGP_PEER_STATE_"),
+		PrevStatus:         strings.TrimPrefix(in.PrevStatus.String(), "BGP_PEER_STATE_"),
+		LocalAddr:          PdsIPToString(in.LocalAddr),
+		CapsSent:           BgpCapsStr(BgpCapabilities(in.CapsSent)),
+		CapsRcvd:           BgpCapsStr(BgpCapabilities(in.CapsRcvd)),
+		CapsNeg:            BgpCapsStr(BgpCapabilities(in.CapsNeg)),
+		SelLocalAddrType:   strings.TrimPrefix(in.SelLocalAddrType.String(), "BGP_ADDR_TYPE_"),
+		FsmEstablishedTime: TimeStr(in.FsmEstablishedTime),
+		BGPPeerStatus:      in,
 	}
 }
 
