@@ -137,11 +137,6 @@
 					"Command" : "curl localhost:9007/api/endpoints/ | jq ."
                                 },
 				{
-                                        "Name" : "Show Agent Collectors",
-                                        "Method" : 0,
-					"Command" : "curl localhost:9007/api/collectors/ | jq ."
-                                },
-				{
                                         "Name" : "Show Agent Debug goroutine",
                                         "Method" : 0,
 					"Command" : "curl localhost:9007/api/debug/goroutine?debug=1"
