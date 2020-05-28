@@ -4,7 +4,7 @@ import { Utility } from '@app/common/Utility';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
-import { IApiStatus, IMonitoringFlowExportPolicy, IMonitoringMatchRule, MonitoringFlowExportPolicy } from '@sdk/v1/models/generated/monitoring';
+import { IApiStatus, IMonitoringFlowExportPolicy, IMonitoringMatchRule, MonitoringFlowExportPolicy, IMonitoringExportConfig } from '@sdk/v1/models/generated/monitoring';
 import { Observable } from 'rxjs';
 import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
@@ -40,7 +40,18 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
   ];
 
   exportFilename: string = 'PSM-flow-export-policies';
-  exportMap: CustomExportMap = {};
+  exportMap: CustomExportMap = {
+    'spec.match-rules': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      const resArr = this.formatMatchRules(value);
+      return resArr.toString();
+    },
+    'spec.exports': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      const resArr =  this.formatTargets(value);
+      return resArr.toString();
+    }
+  };
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
   maxNewTargets: number = FlowexportpolicyComponent.MAX_TARGETS_PER_POLICY;
@@ -101,10 +112,33 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     const column = col.field;
     switch (column) {
       case 'spec.exports':
-        return value.map(item => item.destination).join(', ');
+        return this.formatTargets(value);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
+  }
+  formatTargets(data: IMonitoringExportConfig[]) {
+    if (data == null) {
+      return '';
+    }
+    const retArr = [];
+    data.forEach((req) => {
+      let targetStr: string = '';
+      for (const k in req) {
+        if (req.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials') {
+          if (req[k]) {
+            targetStr += '  ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  req[k] + ', ';
+          }
+        }
+      }
+      if (targetStr.length === 0) {
+        targetStr += '*';
+      } else {
+        targetStr = targetStr.slice(0, -2);
+      }
+      retArr.push(targetStr);
+    });
+    return retArr;
   }
 
   formatMatchRules(data: IMonitoringMatchRule[]) {
@@ -146,7 +180,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       let apps = [];
       apps = apps.concat(req['app-protocol-selectors']['proto-ports']);
       if (apps.length > 0) {
-        ret += '    Protol / Ports: ' + apps.join(', ');
+        ret += '    Protocol / Ports: ' + apps.join(', ');
       }
       retArr.push(ret);
     });
