@@ -64,6 +64,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   rowsPerPageOptions: number[] = [10, 25, 50, 100];
   defaultRows: number = Math.min(...this.rowsPerPageOptions);
   scrollHeight: string = `100%`;
+  searchInitialized: boolean = false;
   selectedColumns: TableCol[] = [];
   selectedDataObjects: any[] = [];
   showRowExpand: boolean = false;
@@ -119,8 +120,21 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
           (change.data && !this.loading && !Utility.getLodash().isEqual(change.data.previousValue, change.data.currentValue))) {
         // emit search based on query params after current cycle
         setTimeout(() => {
-          this.advancedSearchComponent.search = this.filter;
-          this.advancedSearchComponent.generalSearch = this.filter;
+          if (!this.searchInitialized) {
+            this.advancedSearchComponent.search = this.filter;
+            this.advancedSearchComponent.generalSearch = this.filter;
+            this.searchInitialized = true;
+          }
+          // if search text does not match filter, user is editing. clear out filter and let data update naturally.
+          // TODO: implement checking filter value in advanced search component after adding support for advanced search fields in pentable.
+          if (this.searchInitialized && this.getSearchText() !== this.filter) {
+            this.controllerService.navigate([], {
+              queryParams: {
+                filter: null,
+              },
+            });
+            return;
+          }
           this.searchEmitter.emit(null);
         }, 0);
       }
@@ -175,6 +189,13 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   getRowID(rowData: any): string {
     return Utility.getLodash().get(rowData, this.dataKey);
+  }
+
+  getSearchText(): string {
+    const search = this.advancedSearchComponent.showAdvancedPanel ? null : this.advancedSearchComponent.search;
+    const generalSearch = this.advancedSearchComponent.showAdvancedPanel ? this.advancedSearchComponent.generalSearch : null;
+
+    return search || generalSearch || null;
   }
 
   handleDisabledEvents(event: Event) {
@@ -265,7 +286,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   onSearch() {
     this.controllerService.navigate([], {
       queryParams: {
-        filter: this.advancedSearchComponent.search || this.advancedSearchComponent.generalSearch || null,
+        filter: this.getSearchText(),
       },
     });
     this.searchEmitter.emit(null);
