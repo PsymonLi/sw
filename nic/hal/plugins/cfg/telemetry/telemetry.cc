@@ -1515,14 +1515,6 @@ flow_monitor_rule_update (FlowMonitorRuleSpec &spec, FlowMonitorRuleResponse *rs
     }
     HAL_TRACE_DEBUG("Ruleid {}", rule_id);
 
-    if (rule->action.type != telemetry::MIRROR &&
-        rule->action.type != telemetry::MIRROR_TO_CPU) {
-        HAL_TRACE_ERR("Update supported only for mirror.");
-        ret = HAL_RET_INVALID_ARG;
-        rsp->set_api_status(types::API_STATUS_INVALID_ARG);
-        goto end;
-    }
-
     ret = populate_flow_monitor_rule(spec, rule, true);
     if (ret != HAL_RET_OK) {
         rsp->set_api_status(types::API_STATUS_ERR);
