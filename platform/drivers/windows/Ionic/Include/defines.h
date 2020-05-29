@@ -240,16 +240,16 @@ NTSTATUS
 #define IONIC_DEFAULT_NUM_RSS_QUEUES		4
 
 //
+// When not in rss mode then the default queue count will be 1
+//
+
+#define IONIC_DEFAULT_QUEUE_COUNT           1
+
+//
 // Minimum Rx packet size
 //
 
 #define IONIC_MINIMUM_RX_PACKET_LEN			60
-
-//
-// When not in rss mode then the default queue count will be 4
-//
-
-#define IONIC_DEFAULT_QUEUE_COUNT           4
 
 //
 // Custom OIDs

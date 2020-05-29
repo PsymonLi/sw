@@ -1414,11 +1414,6 @@ oid_handle_offload_parameters(struct ionic *ionic,
         ionic->lsov2ipv4_state == NDIS_OFFLOAD_PARAMETERS_LSOV2_DISABLED ? "No" : "Yes",
         ionic->lsov2ipv6_state == NDIS_OFFLOAD_PARAMETERS_LSOV2_DISABLED ? "No" : "Yes"));
 
-    // XXX IONIC_OFFLOAD_PEARAMETERS_RSC
-    // ignoring the request to change RSC parameters
-    // continue to use the setting from device properties
-
-#ifdef IONIC_OFFLOAD_PARAMETERS_RSC
     if (pOffload->RscIPv4 == NDIS_OFFLOAD_PARAMETERS_RSC_ENABLED) {
         ionic->rscv4_enabled = TRUE;
     }
@@ -1432,7 +1427,6 @@ oid_handle_offload_parameters(struct ionic *ionic,
     else if (pOffload->RscIPv6 == NDIS_OFFLOAD_PARAMETERS_RSC_DISABLED) {
         ionic->rscv6_enabled = FALSE;
     }
-#endif
 
     DbgTrace((
         TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
