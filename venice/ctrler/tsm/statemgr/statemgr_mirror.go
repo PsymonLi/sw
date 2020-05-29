@@ -187,7 +187,7 @@ func (mss *MirrorSessionState) programMirrorSession(ms *monitoring.MirrorSession
 	// New or previously SCHEDULED session
 	if ms.Spec.StartConditions.ScheduleTime != nil {
 		schTime, _ := ms.Spec.StartConditions.ScheduleTime.Time()
-		if schTime.After(mss.schTime) {
+		if schTime.After(time.Now()) {
 			mss.schTime = schTime
 			// start the timer routine only if time is in future
 			log.Infof("Schedule time is %v", mss.schTime)

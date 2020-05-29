@@ -5,6 +5,9 @@ package npminteg
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/gogo/protobuf/types"
 
 	agentTypes "github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -115,6 +118,50 @@ func (it *integTestSuite) TestNpmMirrorPolicy(c *C) {
 		}
 		return true, nil
 	}, "Mirror status was not updated after adding new smartnic", "100ms", it.pollTimeout())
+
+	// update schedule start date to future day 2 days from now and update to
+	// scheduled-1 day and check for proper schedule-state
+	mr.Spec.StartConditions = monitoring.MirrorStartConditions{
+		ScheduleTime: &api.Timestamp{}}
+	scheduleTime := time.Now()
+	futureday1, _ := types.TimestampProto(scheduleTime.AddDate(0, 0, 1))
+	futureday2, _ := types.TimestampProto(scheduleTime.AddDate(0, 0, 2))
+	mr.Spec.StartConditions.ScheduleTime.Timestamp = *futureday2
+
+	_, err = it.apisrvClient.MonitoringV1().MirrorSession().Update(context.Background(), &mr)
+	AssertOk(c, err, "error updating schedule to mirror policy futureday2")
+	AssertEventually(c, func() (bool, interface{}) {
+		tsgp, gerr := it.apisrvClient.MonitoringV1().MirrorSession().Get(context.Background(), &mr.ObjectMeta)
+		if gerr != nil {
+			return false, gerr
+		}
+		log.Infof("Mirror status %#v", tsgp.Status)
+		if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) {
+			return false, tsgp
+		}
+		if tsgp.Status.ScheduleState == monitoring.MirrorSessionState_SCHEDULED.String() {
+			return true, nil
+		}
+		return false, fmt.Sprintf("Unexpected State : %v", tsgp.Status.ScheduleState)
+	}, "Mirror status was not in expected schedule state", "100ms", it.pollTimeout())
+
+	mr.Spec.StartConditions.ScheduleTime.Timestamp = *futureday1
+	_, err = it.apisrvClient.MonitoringV1().MirrorSession().Update(context.Background(), &mr)
+	AssertOk(c, err, "error updating schedule to mirror policy futureday1")
+	AssertEventually(c, func() (bool, interface{}) {
+		tsgp, gerr := it.apisrvClient.MonitoringV1().MirrorSession().Get(context.Background(), &mr.ObjectMeta)
+		if gerr != nil {
+			return false, gerr
+		}
+		log.Infof("Mirror status %#v", tsgp.Status)
+		if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) {
+			return false, tsgp
+		}
+		if tsgp.Status.ScheduleState == monitoring.MirrorSessionState_SCHEDULED.String() {
+			return true, nil
+		}
+		return false, fmt.Sprintf("Unexpected State : %v", tsgp.Status.ScheduleState)
+	}, "Mirror status was not in expected schedule state", "100ms", it.pollTimeout())
 
 	/*
 		// wait a little so that we dont cause a race condition between NPM write ans updates
