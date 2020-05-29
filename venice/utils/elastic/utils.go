@@ -219,5 +219,6 @@ func getClockHourTimeForIndex(t time.Time, hoursapart int) string {
 
 	temp := time.Date(y, m, d, fh, 0, 0, 0, time.UTC)
 	currentTime := temp.Format(time.RFC3339)
-	return strings.TrimSuffix(currentTime, "Z")
+	currentTime = strings.TrimSuffix(currentTime, "Z")
+	return strings.Replace(currentTime, ":", "", -1)
 }
