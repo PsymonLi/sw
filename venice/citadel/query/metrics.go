@@ -25,6 +25,7 @@ const (
 	fiveDays                 = time.Hour * 24 * 5
 	thirtyDays               = time.Hour * 24 * 30
 	autoSelectTableTimeDelta = time.Second * 30
+	maxPointsInQueryResponse = 50000
 )
 
 // validateMetricsQueryList validates a query list request
@@ -367,11 +368,18 @@ func buildCitadelMetricsQuery(qs *telemetry_query.MetricsQuerySpec) (string, err
 	q += fmt.Sprintf(" ORDER BY time %s", order)
 
 	if qs.Pagination != nil {
+		// number of query returned data cannot surpass maxPointsInQueryResponse
+		if qs.Pagination.Count > maxPointsInQueryResponse {
+			qs.Pagination.Count = maxPointsInQueryResponse
+		}
 		q += fmt.Sprintf(" LIMIT %d", qs.Pagination.Count)
 		// Count must be used with offset
 		if qs.Pagination.Offset != 0 {
 			q += fmt.Sprintf(" OFFSET %d", qs.Pagination.Offset)
 		}
+	} else {
+		// if no limit is set, make limit as maxPointsInQueryResponse by default
+		q += fmt.Sprintf(" LIMIT %d", maxPointsInQueryResponse)
 	}
 
 	return q, nil
