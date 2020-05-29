@@ -28,9 +28,8 @@ type flowExpHooks struct {
 }
 
 const (
-	veniceMaxCollectorsPerPolicy    = 2
-	veniceMaxUniquePolicyCollectors = 4
-	veniceMaxPolicySessions         = 8
+	veniceMaxCollectorsPerPolicy = 2
+	veniceMaxPolicySessions      = 8
 )
 
 func (r *flowExpHooks) validateFlowExportPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
@@ -66,11 +65,6 @@ func (r *flowExpHooks) validateFlowExportPolicy(ctx context.Context, kv kvstore.
 	if err != nil {
 		return nil, false, fmt.Errorf("error retrieving FlowExportPolicy: %v", err)
 	}
-	// perform global validation across policy
-	if err := globalFlowExportValidator(&policy, &policyList); err != nil {
-		return i, false, err
-	}
-
 	switch oper {
 	case apiintf.CreateOper:
 		if len(policyList.Items) >= veniceMaxPolicySessions {
@@ -203,7 +197,7 @@ func flowexportPolicyValidator(p *monitoring.FlowExportPolicy) error {
 		if key, err := json.Marshal(export); err == nil {
 			ks := string(key)
 			if _, ok := feTargets[ks]; ok {
-				return fmt.Errorf("found duplicate target %v %v", export.Destination, export.Transport)
+				return fmt.Errorf("found duplicate target %v", export.Destination)
 			}
 			feTargets[ks] = true
 		}
@@ -302,35 +296,4 @@ func parsePortProto(src string) (uint32, error) {
 	}
 
 	return uint32(port), nil
-}
-
-func globalFlowExportValidator(newfp *monitoring.FlowExportPolicy, policyList *monitoring.FlowExportPolicyList) error {
-	expConfig := make(map[string]monitoring.ExportConfig)
-	for _, policy := range policyList.Items {
-		if policy.Name == newfp.Name {
-			continue
-		}
-		for _, col := range policy.Spec.Exports {
-			expConfig[col.Destination] = col
-		}
-	}
-	for _, col := range newfp.Spec.Exports {
-		if existingCfg, ok := expConfig[col.Destination]; !ok {
-			expConfig[col.Destination] = col
-		} else {
-			if existingCfg.Transport != col.Transport {
-				return fmt.Errorf("Export %v already added with different proto-port %v, current %v",
-					existingCfg.Destination, existingCfg.Transport, col.Transport)
-			}
-			if existingCfg.Gateway != col.Gateway {
-				return fmt.Errorf("Export %v already added with gateway %v, current %v",
-					col.Destination, col.Gateway, existingCfg.Gateway)
-			}
-		}
-	}
-	if len(expConfig) > veniceMaxUniquePolicyCollectors {
-		return fmt.Errorf("invalid %v unique collectors, can't configure more than %v unique collectors",
-			len(expConfig), veniceMaxUniquePolicyCollectors)
-	}
-	return nil
 }

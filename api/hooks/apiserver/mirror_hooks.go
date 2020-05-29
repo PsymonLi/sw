@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -25,7 +26,6 @@ const (
 	// Finalize these parameters once we decide how to store the packets captured by Venice
 	veniceMaxPacketSize           = 2048
 	veniceMaxCollectorsPerSession = 2
-	veniceMaxMirrorCollectors     = 8
 	veniceMaxMirrorSessions       = 8
 )
 
@@ -59,7 +59,7 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	// PacketSize <= 256 if collector is Venice
 	// StartCondition: if specified, must not be in the past
 	// StopCondition: MUST be specified, MaxPacketCount <= 1000, expiryDuration <= 2h
-	// Collectors: atleast 1 must be specified, max 2 collectors, max 1 can be venice, unique 4 collectors across policies
+	// Collectors: atleast 1 must be specified, max 2 collectors, max 1 can be venice
 	// For erspan collectors, valid export config must be specified
 	// ExportCfg Validator: Destination - must be valid IP address (vrf?), Transport="GRE/ERSPANv3"
 	//  no credentials
@@ -94,7 +94,15 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	if err := kv.List(ctx, mirrorKey, &mirrors); err != nil {
 		return nil, true, fmt.Errorf("failed to list mirrors. Err: %v", err)
 	}
+	colTargets := map[string]bool{}
 	for _, c := range ms.Spec.Collectors {
+		if key, err := json.Marshal(c); err == nil {
+			ks := string(key)
+			if _, ok := colTargets[ks]; ok {
+				return i, false, fmt.Errorf("found duplicate target %v", c.ExportCfg.Destination)
+			}
+			colTargets[ks] = true
+		}
 		if c.Type == monitoring.PacketCollectorType_ERSPAN_TYPE_3.String() ||
 			c.Type == monitoring.PacketCollectorType_ERSPAN_TYPE_2.String() ||
 			c.Type == monitoring.PacketCollectorType_ERSPAN.String() {
@@ -111,10 +119,6 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			return i, false, fmt.Errorf("Unsupported collector type")
 		}
 
-	}
-	// perform global validation across policy
-	if err := globalMirrorSessionValidator(&ms, &mirrors); err != nil {
-		return i, false, err
 	}
 	if numVeniceCollectors > 0 && ms.Spec.PacketSize > veniceMaxPacketSize {
 		errStr := fmt.Errorf("Max packet size allowed by Venice collector is %v", veniceMaxPacketSize)
@@ -214,18 +218,4 @@ func registerMirrorSessionHooks(svc apiserver.Service, logger log.Logger) {
 type gCollector struct {
 	pktSize uint32
 	c       *monitoring.MirrorCollector
-}
-
-func globalMirrorSessionValidator(ms *monitoring.MirrorSession, mirrors *monitoring.MirrorSessionList) error {
-	totalCollectors := len(ms.Spec.Collectors)
-	for _, mir := range mirrors.Items {
-		if mir.Name == ms.Name {
-			continue
-		}
-		totalCollectors = totalCollectors + len(mir.Spec.Collectors)
-	}
-	if totalCollectors > veniceMaxMirrorCollectors {
-		return fmt.Errorf("can't configure more than %v mirror collectors", veniceMaxMirrorCollectors)
-	}
-	return nil
 }

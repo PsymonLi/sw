@@ -95,11 +95,7 @@ var _ = Describe("flow export policy tests", func() {
 					},
 					Exports: []monitoring.ExportConfig{
 						{
-							Destination: fmt.Sprintf("192.168.%d.1", i%tpm.MaxUniqueNumCollectors),
-							Transport:   "UDP/5545",
-						},
-						{
-							Destination: fmt.Sprintf("192.168.%d.1", (i+1)%tpm.MaxUniqueNumCollectors),
+							Destination: fmt.Sprintf("192.168.%d.1", i),
 							Transport:   "UDP/5545",
 						},
 					},
@@ -1354,55 +1350,6 @@ var _ = Describe("flow export policy tests", func() {
 			policy.Name = "test-max-collector"
 			_, err := flowExpClient.Create(ctx, policy)
 			Expect(err).ShouldNot(BeNil(), "policy create didn't fail for invalid number of collectors")
-		})
-
-		It("Check max unique session and update of transport should succeed", func() {
-			ctx := ts.tu.MustGetLoggedInContext(context.Background())
-			initFlowExportMap := make(map[string]monitoring.FlowExportPolicy)
-			fe := monitoring.FlowExportPolicy{
-				TypeMeta: api.TypeMeta{
-					Kind: "flowExportPolicy",
-				},
-				ObjectMeta: api.ObjectMeta{
-					Namespace: globals.DefaultNamespace,
-					Tenant:    globals.DefaultTenant,
-				},
-
-				Spec: monitoring.FlowExportPolicySpec{
-					Interval:         "10s",
-					TemplateInterval: "5m",
-					Format:           "IPFIX",
-				},
-			}
-
-			for i := 0; i < tpm.MaxUniqueNumCollectors+1; i++ {
-				fe.Name = fmt.Sprintf("unique-flowexport-%d", i+1)
-				fe.Spec.Exports = []monitoring.ExportConfig{
-					{
-						Destination: fmt.Sprintf("192.168.%d.1", i),
-						Transport:   "UDP/5545",
-					},
-				}
-
-				By(fmt.Sprintf("Creating FlowExport %v", fe.Name))
-				_, err := flowExpClient.Create(ctx, &fe)
-				if i < tpm.MaxUniqueNumCollectors {
-					Expect(err).ShouldNot(HaveOccurred())
-					initFlowExportMap[fe.GetName()] = fe
-				} else {
-					Expect(err).Should(HaveOccurred())
-				}
-			}
-			for i := 0; i < tpm.MaxUniqueNumCollectors; i++ {
-				key := fmt.Sprintf("unique-flowexport-%d", i+1)
-				By(fmt.Sprintf("Update flowexport proto port for %v", key))
-				if tfe, ok := initFlowExportMap[key]; ok {
-					tfe.Spec.Exports[0].Transport = "udp/5533"
-					tfe.Spec.Exports[0].Gateway = "192.168.0.1"
-					_, err := flowExpClient.Update(ctx, &tfe)
-					Expect(err).ShouldNot(HaveOccurred())
-				}
-			}
 		})
 
 		It("validate max. flow export policy", func() {

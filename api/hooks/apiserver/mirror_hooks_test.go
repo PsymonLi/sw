@@ -416,7 +416,7 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 		},
 	},
 	{
-		// bad collector with same ip and diff gateway
+		// bad collector with same ip and gateway
 		ObjectMeta: api.ObjectMeta{
 			Name:   "Test Mirror Session 14",
 			Tenant: "Tenant 1",

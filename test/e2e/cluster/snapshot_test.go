@@ -153,7 +153,7 @@ var _ = Describe("Config SnapShot and restore", func() {
 						{
 							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
 							ExportCfg: &monitoring.MirrorExportConfig{
-								Destination: fmt.Sprintf("192.168.%d.1", i%statemgr.MaxUniqueCollectors),
+								Destination: fmt.Sprintf("192.168.%d.1", i),
 							},
 						},
 					}
@@ -331,7 +331,7 @@ var _ = Describe("Config SnapShot and restore", func() {
 						{
 							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
 							ExportCfg: &monitoring.MirrorExportConfig{
-								Destination: fmt.Sprintf("192.168.%d.1", i%statemgr.MaxUniqueCollectors),
+								Destination: fmt.Sprintf("192.168.%d.1", i),
 							},
 						},
 					}
