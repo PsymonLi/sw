@@ -858,19 +858,19 @@ class HostManagement(EntityManagement):
         host_nvme_fio_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', 'nvme.fio')
         if cleanup:
             nodeinit_args += " --cleanup"
-            self.RunSshCmd("sudo rm -rf /naples &&  sudo mkdir -p /naples && sudo chown vm:vm /naples")
-            self.RunSshCmd("sudo mkdir -p /pensando && sudo chown vm:vm /pensando")
+            self.RunSshCmd("sudo -E rm -rf /naples &&  sudo -E mkdir -p /naples && sudo -E chown vm:vm /naples")
+            self.RunSshCmd("sudo -E mkdir -p /pensando && sudo -E chown vm:vm /pensando")
             self.CopyIN(node_init_script, HOST_NAPLES_DIR)
             print('running nodeinit.sh cleanup with args: {0}'.format(nodeinit_args))
-            self.RunSshCmd("sudo %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
+            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
 
         if GlobalOptions.skip_driver_install:
             print('user requested to skip driver install')
             return
 
         if driver_pkg:
-            self.RunSshCmd("sudo rm -rf /naples &&  sudo mkdir -p /naples && sudo chown vm:vm /naples")
-            self.RunSshCmd("sudo mkdir -p /pensando && sudo chown vm:vm /pensando")
+            self.RunSshCmd("sudo -E rm -rf /naples &&  sudo -E mkdir -p /naples && sudo -E chown vm:vm /naples")
+            self.RunSshCmd("sudo -E mkdir -p /pensando && sudo -E chown vm:vm /pensando")
             self.CopyIN(pen_nics_script,  HOST_NAPLES_DIR)
             self.CopyIN(node_init_script, HOST_NAPLES_DIR)
             self.CopyIN(host_nvmeof_script, HOST_NAPLES_DIR)
@@ -883,8 +883,8 @@ class HostManagement(EntityManagement):
             #Run with not mgmt first
             if gold_fw or not GlobalOptions.no_mgmt:
                 print('running nodeinit.sh with args: {0}'.format(nodeinit_args))
-                self.RunSshCmd("sudo %s/nodeinit.sh --no-mgmt --image %s --mode %s" % (HOST_NAPLES_DIR, os.path.basename(driver_pkg), GlobalOptions.mode))
-                #mgmtIPCmd = "sudo python5  %s/pen_nics.py --mac-hint %s --intf-type int-mnic --op mnic-ip --os %s" % (HOST_NAPLES_DIR, self.naples.mac_addr, self.__host_os)
+                self.RunSshCmd("sudo -E %s/nodeinit.sh --no-mgmt --image %s --mode %s" % (HOST_NAPLES_DIR, os.path.basename(driver_pkg), GlobalOptions.mode))
+                #mgmtIPCmd = "sudo -E python5  %s/pen_nics.py --mac-hint %s --intf-type int-mnic --op mnic-ip --os %s" % (HOST_NAPLES_DIR, self.naples.mac_addr, self.__host_os)
                 #output, errout = self.RunSshCmdWithOutput(mgmtIPCmd)
                 #print("Command output ", output)
                 #mnic_ip = ipaddress.ip_address(output.split("\n")[0])
@@ -894,7 +894,7 @@ class HostManagement(EntityManagement):
             else:
                 nodeinit_args += " --no-mgmt" + " --image " + os.path.basename(driver_pkg) + " --mode " + GlobalOptions.mode
             print('running nodeinit.sh with args: {0}'.format(nodeinit_args))
-            self.RunSshCmd("sudo %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
+            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
         return
 
     @_exceptionWrapper(_errCodes.HOST_COPY_FAILED, "Host Init Failed")
@@ -918,7 +918,7 @@ class HostManagement(EntityManagement):
         self.RunSshCmd("uptime")
         print("Rebooting Host : %s" % self.ipaddr)
         if dryrun == False:
-            self.RunSshCmd("sudo shutdown -r now", ignore_failure = True)
+            self.RunSshCmd("sudo -E shutdown -r now", ignore_failure = True)
             print("sleeping 60 after shutdown -r in Reboot")
             time.sleep(60)
             self.WaitForSsh()
@@ -929,7 +929,7 @@ class HostManagement(EntityManagement):
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FROM_HOST_FAILED, "FW install Failed")
     def InstallMainFirmware(self, mount_data = True, copy_fw = True):
 #        comment out, return value not checked
-#        try: self.RunSshCmd("sudo lspci -d 1dd8:")
+#        try: self.RunSshCmd("sudo -E lspci -d 1dd8:")
 #        except:
 #            print('lspci failed to find nic. calling ipmi power cycle')
 #            self.IpmiResetAndWait()

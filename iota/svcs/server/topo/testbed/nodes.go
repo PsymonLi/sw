@@ -311,7 +311,7 @@ func (n *TestNode) IpmiNodeControl(name string, restoreState bool, method string
 	}
 	ip, _ := n.GetNodeIP()
 	log.Infof("TOPO SVC | IpmiNodeControl | Starting IOTA Agent on TestNode: %v, IPAddress: %v", n.Node.Name, ip)
-	sudoAgtCmd := fmt.Sprintf("sudo %s", constants.DstIotaAgentBinary)
+	sudoAgtCmd := fmt.Sprintf("sudo -E %s", constants.DstIotaAgentBinary)
 	if err = n.StartAgent(sudoAgtCmd, sshCfg); err != nil {
 		log.Errorf("TOPO SVC | IpmiNodeControl | Failed to start agent binary: %v, on TestNode: %v, at IPAddress: %v", agentBinary, n.Node.Name, n.Node.IpAddress)
 		return err
@@ -397,7 +397,7 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 					log.Infof("Restart ctrl vm  %v %v %v",
 						n.info.Username, n.info.Password, ip)
 					addr = fmt.Sprintf("%s:%d", ip, constants.SSHPort)
-					command = fmt.Sprintf("sudo sync && sudo shutdown -h now")
+					command = fmt.Sprintf("sudo -E sync && sudo -E shutdown -h now")
 					nrunner.Run(addr, command, constants.RunCommandForeground)
 				}
 				sshCfg = InitSSHConfig(n.info.Username, n.info.Password)
@@ -413,7 +413,7 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 				log.Infof("Restart Host machine wtth %v %v %v",
 					n.info.Username, n.info.Password, n.info.IPAddress)
 				nrunner = runner.NewRunner(sshCfg)
-				command = fmt.Sprintf("sudo sync && sudo shutdown -r now")
+				command = fmt.Sprintf("sudo -E sync && sudo -E shutdown -r now")
 			}
 			nrunner.Run(addr, command, constants.RunCommandForeground)
 		}
@@ -582,7 +582,7 @@ func (n *TestNode) ReloadNode(name string, restoreState bool, method string, use
 	}
 	ip, _ := n.GetNodeIP()
 	log.Infof("TOPO SVC | ReloadNode | Starting IOTA Agent on TestNode: %v, IPAddress: %v", n.Node.Name, ip)
-	sudoAgtCmd := fmt.Sprintf("sudo %s", constants.DstIotaAgentBinary)
+	sudoAgtCmd := fmt.Sprintf("sudo -E %s", constants.DstIotaAgentBinary)
 	if err := n.StartAgent(sudoAgtCmd, sshCfg); err != nil {
 		log.Errorf("TOPO SVC | RestartNode | Failed to start agent binary: %v, on TestNode: %v, at IPAddress: %v", agentBinary, n.Node.Name, n.Node.IpAddress)
 		return err

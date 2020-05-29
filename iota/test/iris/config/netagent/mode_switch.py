@@ -117,7 +117,7 @@ def Main(step):
         return ret
 
     # Start SSH server on Naples
-    StartSSH()
+    # StartSSH()  - replaced by enable_ssh
 
     # Clean Up temporary files
     DeleteTmpFiles()

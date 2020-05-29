@@ -40,12 +40,12 @@ func SSHKeygen() {
 
 	privateKeyBytes := encodePrivateKeyToPEM(privateKey)
 
-	err = writeKeyToFile(privateKeyBytes, savePrivateFileTo)
+	err = writeKeyToFile(privateKeyBytes, savePrivateFileTo, 0600)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	err = writeKeyToFile([]byte(publicKeyBytes), savePublicFileTo)
+	err = writeKeyToFile([]byte(publicKeyBytes), savePublicFileTo, 0644)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -102,8 +102,8 @@ func generatePublicKey(privatekey *rsa.PublicKey) ([]byte, error) {
 }
 
 // writePemToFile writes keys to a file
-func writeKeyToFile(keyBytes []byte, saveFileTo string) error {
-	err := ioutil.WriteFile(saveFileTo, keyBytes, 0600)
+func writeKeyToFile(keyBytes []byte, saveFileTo string, perm os.FileMode) error {
+	err := ioutil.WriteFile(saveFileTo, keyBytes, perm)
 	if err != nil {
 		return err
 	}

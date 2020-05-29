@@ -16,7 +16,7 @@ def verify_connectivity(tc):
     if arping.ArPing(tc) != api.types.status.SUCCESS:
         api.Logger.info("arping failed on setup")
     if ping.TestPing(tc, 'all', 'ipv4', 64) != api.types.status.SUCCESS:
-        api.Logger.info("ping test failed on setup")
+        api.Logger.error("ping test failed on setup")
         return api.types.status.FAILURE
     return api.types.status.SUCCESS
 

@@ -25,10 +25,6 @@ def Main(step):
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Failed in upgrade pkg install")
                 return ret
-            ret = utils.copyNaplesFwImage(naplesHost, image, "/update/")
-            if ret != api.types.status.SUCCESS:
-                api.Logger.error("Failed in copy of pkg to naples")
-                return ret
 
     api.Logger.info("Upgrade pkg installed successfully")
     return api.types.status.SUCCESS

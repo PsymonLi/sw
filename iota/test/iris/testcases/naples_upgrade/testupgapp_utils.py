@@ -47,9 +47,12 @@ def startTestUpgApp(node, param):
         api.Logger.error("Failed to copy Drivers to Node: %s" % node)
         return api.types.status.FAILURE
 
-    ret = utils.copyNaplesFwImage(node, "sysmgr.json", "/data/")
-    if ret != api.types.status.SUCCESS:
-        return ret
+    resp = api.CopyToNaples(node, [fullpath], "", naples_dir="/data/")
+    if resp is None:
+        return api.types.status.FAILURE
+    if resp.api_response.api_status != types_pb2.API_STATUS_OK:
+        api.Logger.error("Failed to copy Drivers to Node: %s" % node)
+        return api.types.status.FAILURE
 
     req = api.Trigger_CreateExecuteCommandsRequest()
     api.Trigger_AddNaplesCommand(req, node, 

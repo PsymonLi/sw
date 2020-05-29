@@ -260,11 +260,11 @@ func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig,
 	ip, _ := n.GetNodeIP()
 	addr := fmt.Sprintf("%s:%d", ip, constants.SSHPort)
 
-	if err := runner.Run(addr, "sudo mkdir -p /pensando", constants.RunCommandForeground); err != nil {
+	if err := runner.Run(addr, "sudo -E mkdir -p /pensando", constants.RunCommandForeground); err != nil {
 		log.Errorf("TOPO SVC | InitTestBed | Failed to create /pensando dir on %v : %v , Err: %v", n.info.Name, n.info.IPAddress, err)
 		return fmt.Errorf("Failed to create /pensando dir:. TestNode: %v, IPAddress: %v , Err: %v", n.info.Name, n.info.IPAddress, err)
 	}
-	if err := runner.Run(addr, "sudo rm -rf /tmp/iota", constants.RunCommandForeground); err != nil {
+	if err := runner.Run(addr, "sudo -E rm -rf /tmp/iota", constants.RunCommandForeground); err != nil {
 		log.Errorf("TOPO SVC | InitTestBed | StartAgent on node %v failed, IPAddress: %v , Err: %v", n.info.Name, n.info.IPAddress, err)
 		return fmt.Errorf("StartAgent on node failed. TestNode: %v, IPAddress: %v , Err: %v", n.info.Name, n.info.IPAddress, err)
 	}
@@ -309,7 +309,7 @@ func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig,
 	}
 
 	log.Infof("TOPO SVC | InitTestBed | Starting IOTA Agent on TestNode: %v, IPAddress: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
-	sudoAgtCmd := fmt.Sprintf("sudo %s", constants.DstIotaAgentBinary)
+	sudoAgtCmd := fmt.Sprintf("sudo -E %s", constants.DstIotaAgentBinary)
 	if err := n.StartAgent(sudoAgtCmd, c); err != nil {
 		log.Errorf("TOPO SVC | InitTestBed | Failed to start agent binary: %v, on TestNode: %v, at IPAddress: %v", agentBinary, n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
 		return err
