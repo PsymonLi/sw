@@ -15,6 +15,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/events/generated/eventattrs"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils"
@@ -49,16 +50,13 @@ const (
 
 	// Unit = minutes
 	flowlogsDroppedCriticalEventReportingPeriod = 60
+	flowlogsWarnEventReportingPeriod            = 60
 
 	droppedCriticalEventDescrMessage = "Flow logs dropped at DSC %s. It could be due to connectivity issue between the DSC and PSM or " +
 		"due to sudden increase of flow logs influx into PSM. Please check that the flow logs are getting generated at the supported rate " +
 		"across the PSM cluster"
 
-	droppedWarnEventDescrMessage = "Flow logs dropped at DSC %s, bucketName %s, time period %s, size %d. It could be due to connectivity " +
-		"issue between the DSC and PSM or due to sudden increase of flow logs influx into PSM. Please check that the flow logs are getting " +
-		"generated at the supported rate across the PSM cluster"
-
-	reportingErrEventDescrMessage = "Flow logs could not be reported to PSM from DSC %s, bucketName %s, time period %s, size %d. This event " +
+	reportingErrEventDescrMessage = "Flow logs could not be reported to PSM from DSC %s. This event " +
 		"can occur if the PSM is experiencing heavy load during flow logs ingestion. The increased load could be a result of a sudden spike " +
 		"in connections per second seen across the PSM cluster. It does not mean that the logs have been dropped, but if the condition " +
 		"persists then it can lead to dropping of flow logs in which case another event called flow logs dropped will get raised"
@@ -131,27 +129,38 @@ func (s *PolicyState) ObjStoreInit(nodeUUID string,
 
 	w := newWorkers(s.ctx, numLogTransmitWorkers, workItemBufferSize)
 
-	shouldRaiseCriticalEvent := func() bool {
+	shouldRaiseEvent := func(tenantName string, eventSev eventattrs.Severity) bool {
 		s.eventCheckerLock.Lock()
 		defer s.eventCheckerLock.Unlock()
-		if time.Now().Sub(s.lastFwlogsDroppedCriticalEventRaisedTime).Minutes() >=
-			flowlogsDroppedCriticalEventReportingPeriod {
-			s.lastFwlogsDroppedCriticalEventRaisedTime = time.Now()
-			return true
+		switch eventSev {
+		case eventattrs.Severity_CRITICAL:
+			if time.Now().Sub(s.lastFwlogsDroppedCriticalEventRaisedTime[tenantName]).Minutes() >=
+				flowlogsDroppedCriticalEventReportingPeriod {
+				s.lastFwlogsDroppedCriticalEventRaisedTime[tenantName] = time.Now()
+				return true
+			}
+		case eventattrs.Severity_WARN:
+			if time.Now().Sub(s.lastFwlogsWarnEventRaisedTime[tenantName]).Minutes() >=
+				flowlogsWarnEventReportingPeriod {
+				s.lastFwlogsWarnEventRaisedTime[tenantName] = time.Now()
+				return true
+			}
 		}
+
 		return false
 	}
 
 	go periodicTransmit(s.ctx, rc, s.logsChannel,
 		periodicTransmitTime, testChannel, nodeUUID,
 		s.objStoreFileFormat, s.zipObjects, w,
-		shouldRaiseCriticalEvent)
+		shouldRaiseEvent)
 	return nil
 }
 
 func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan singleLog,
 	periodicTransmitTime time.Duration, testChannel chan<- TestObject,
-	nodeUUID string, ff fileFormat, zip bool, w *workers, shouldRaiseCriticalEvent func() bool) {
+	nodeUUID string, ff fileFormat, zip bool, w *workers,
+	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 
 	var c objstore.Client
 	clientChannel := make(chan interface{}, 1)
@@ -186,7 +195,7 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 				perVrfBufferedLogs[vrf].startTs,
 				perVrfBufferedLogs[vrf].endTs,
 				testChannel, nodeUUID, ff, zip,
-				shouldRaiseCriticalEvent))
+				shouldRaiseEvent))
 		}
 
 		// If client has not been initialized yet then drop the collected logs and move on.
@@ -277,7 +286,7 @@ func transmitLogs(ctx context.Context,
 	trends map[string]interface{},
 	numLogs int, startTs time.Time, endTs time.Time,
 	testChannel chan<- TestObject, nodeUUID string, ff fileFormat,
-	zip bool, shouldRaiseCriticalEvent func() bool) func() {
+	zip bool, shouldRaiseEvent func(string, eventattrs.Severity) bool) func() {
 	return func() {
 		// TODO: this can be optimized. Bucket name should be calcualted only once per hour.
 		tenantName := getTenantNameFromSourceVrf(vrf)
@@ -355,31 +364,26 @@ func transmitLogs(ctx context.Context,
 		putObjectHelper(ctx, c, bucketName,
 			objNameBuffer.String(), r, len(objBuffer.Bytes()),
 			meta, meta["logcount"], nodeUUID, nic, true,
-			shouldRaiseCriticalEvent)
+			tenantName, shouldRaiseEvent)
 
 		// The index's object name is same as the data object name
 		ir := bytes.NewReader(indexBuffer.Bytes())
 		putObjectHelper(ctx, c, indexBucketName,
 			objNameBuffer.String(), ir, len(indexBuffer.Bytes()),
 			map[string]string{}, "", nodeUUID, nic, false,
-			shouldRaiseCriticalEvent)
+			tenantName, shouldRaiseEvent)
 	}
 }
 
 func putObjectHelper(ctx context.Context,
 	c objstore.Client, bucketName string, objectName string, reader io.Reader,
 	size int, metaData map[string]string, logcount string, nodeUUID string,
-	nic *cluster.DistributedServiceCard, dolog bool, shouldRaiseCriticalEvent func() bool) {
+	nic *cluster.DistributedServiceCard, dolog bool, tenantName string,
+	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 	tries := 0
 	waitIntvl := time.Second * 20
 	maxRetries := 15
 	rateLimitedEventRaised := false
-
-	getTimePeriodFromFileName := func() string {
-		fileName := strings.Split(objectName, "/")[5]
-		fileName = strings.TrimSuffix(fileName, ".csv.gzip")
-		return fileName
-	}
 
 	_, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
 		a, err := c.PutObjectExplicit(ctx, bucketName, objectName, reader, int64(size), metaData)
@@ -387,9 +391,10 @@ func putObjectHelper(ctx context.Context,
 			tries++
 			log.Errorf("temporary, could not put object (%s)", err)
 
-			if strings.Contains(err.Error(), maxedOutError) && !rateLimitedEventRaised {
+			if strings.Contains(err.Error(), maxedOutError) &&
+				shouldRaiseEvent(tenantName, eventattrs.Severity_WARN) && !rateLimitedEventRaised {
 				rateLimitedEventRaised = true
-				descr := fmt.Sprintf(reportingErrEventDescrMessage, nodeUUID, bucketName, getTimePeriodFromFileName(), size)
+				descr := fmt.Sprintf(reportingErrEventDescrMessage, nodeUUID)
 				recorder.Event(eventtypes.FLOWLOGS_REPORTING_ERROR, descr, nic)
 			}
 		}
@@ -400,14 +405,11 @@ func putObjectHelper(ctx context.Context,
 		log.Errorf("dropping, bucket %s, time %s, logcount %s, data len %d, tries %d, err %s",
 			bucketName, time.Now().String(), logcount, size, tries, err)
 
-		// Raise a warning for every object, but the critical event is raised once in 60 minutes
-		descr := fmt.Sprintf(droppedWarnEventDescrMessage, nodeUUID, bucketName, getTimePeriodFromFileName(), size)
-		recorder.Event(eventtypes.FLOWLOGS_REPORTING_ERROR, descr, nic)
-
-		if shouldRaiseCriticalEvent() {
-			descr = fmt.Sprintf(droppedCriticalEventDescrMessage, nodeUUID)
+		if shouldRaiseEvent(tenantName, eventattrs.Severity_CRITICAL) {
+			descr := fmt.Sprintf(droppedCriticalEventDescrMessage, nodeUUID)
 			recorder.Event(eventtypes.FLOWLOGS_DROPPED, descr, nic)
 		}
+
 		metric.addDrop()
 		return
 	}

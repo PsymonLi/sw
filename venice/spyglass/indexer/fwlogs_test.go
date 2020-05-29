@@ -472,6 +472,19 @@ func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T) {
 		}
 		return false, nil
 	}, "failed to find flow logs rate limited event", "2s", "60s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		for _, ev := range mockEventsRecorder.GetEvents() {
+			if ev.EventType == eventtypes.FLOWLOGS_RATE_LIMITED.String() &&
+				ev.Category == "system" &&
+				ev.Severity == "critical" &&
+				strings.Contains(ev.Message, "Flow logs rate limited at the PSM") &&
+				ev.ObjRef.(*cluster.Tenant).ObjectMeta.Tenant != "" {
+				return true, ev
+			}
+		}
+		return false, nil
+	}, "failed to find flow logs rate limited event", "2s", "60s")
 }
 
 func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r resolver.Interface, logger log.Logger) {

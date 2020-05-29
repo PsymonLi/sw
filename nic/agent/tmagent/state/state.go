@@ -57,7 +57,8 @@ type PolicyState struct {
 	objStoreFileFormat                       fileFormat
 	zipObjects                               bool
 	eventCheckerLock                         sync.Mutex
-	lastFwlogsDroppedCriticalEventRaisedTime time.Time
+	lastFwlogsDroppedCriticalEventRaisedTime map[string]time.Time
+	lastFwlogsWarnEventRaisedTime            map[string]time.Time
 }
 
 type psmFwlogCollector struct {
@@ -115,10 +116,12 @@ func NewTpAgent(pctx context.Context, agentPort string) (*PolicyState, error) {
 		appName:         globals.Tmagent,
 		objStoreClients: map[string]objstore.Client{},
 		// This channel is used for transmitting logs from the collector to the transmitter routine
-		logsChannel:        make(chan singleLog, logChannelSize),
-		objStoreFileFormat: csvFileFormat,
-		zipObjects:         true,
-		eventCheckerLock:   sync.Mutex{},
+		logsChannel:                              make(chan singleLog, logChannelSize),
+		objStoreFileFormat:                       csvFileFormat,
+		zipObjects:                               true,
+		eventCheckerLock:                         sync.Mutex{},
+		lastFwlogsDroppedCriticalEventRaisedTime: map[string]time.Time{},
+		lastFwlogsWarnEventRaisedTime:            map[string]time.Time{},
 	}
 
 	state.connectSyslog()

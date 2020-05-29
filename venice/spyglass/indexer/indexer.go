@@ -175,6 +175,7 @@ type Indexer struct {
 
 	// maintained per tenant
 	lastFwlogsDroppedCriticalEventRaisedTime map[string]time.Time
+	lastFwlogsDroppedWarnEventRaisedTime     map[string]time.Time
 
 	// vosdisk watcher
 	vosDiskWtcher           *vosDiskWatcher
@@ -250,6 +251,7 @@ func NewIndexer(ctx context.Context,
 		indexFwlogs:                              enableFwlogIndexing,
 		flowlogsRateLimiters:                     newRateLimiterCollection(),
 		lastFwlogsDroppedCriticalEventRaisedTime: map[string]time.Time{},
+		lastFwlogsDroppedWarnEventRaisedTime:     map[string]time.Time{},
 		eventCheckerLock:                         sync.Mutex{},
 	}
 
