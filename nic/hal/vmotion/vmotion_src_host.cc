@@ -143,7 +143,8 @@ vmotion_src_host_fsm_def::proc_sync_begin(fsm_state_ctx ctx, fsm_event_data data
 
     if (!ep) {
         src_host_end(vmn_ep, MigrationState::FAILED, NULL);
-        return false;
+        ret = false;
+        goto end;
     }
 
     // Record the current time
@@ -213,7 +214,8 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
 
     if (!ep) {
         src_host_end(vmn_ep, MigrationState::FAILED, NULL);
-        return false;
+        ret = false;
+        goto end;
     }
 
     // Add EP Quiesce NACL entry
@@ -226,7 +228,8 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
     }
 
     if (hal::ep_get_session_info(ep, rsp, vmn_ep->get_last_sync_time()) != HAL_RET_OK) {
-        return false;
+        ret = false;
+        goto end;
     }
 
     do {

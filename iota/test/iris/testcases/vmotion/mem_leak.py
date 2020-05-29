@@ -15,7 +15,7 @@ def Trigger(tc):
     tc.cmd_cookies = []
     tc.memleak     = 0
 
-    memreq = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    memreq = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     api.Logger.info("Starting MemLeak test after vMotion suite")
 
     for node in tc.Nodes:
@@ -25,15 +25,18 @@ def Trigger(tc):
         api.Trigger_AddNaplesCommand(memreq, node, "/nic/bin/halctl show system memory mtrack --yaml")
 
     # Trigger the commands
-    trig_resp = api.Trigger(memreq)
+    tc.trig_resp = api.Trigger(memreq)
 
+    return api.types.status.SUCCESS
+
+def Verify(tc):
     cmd_cnt = 0
     for node in tc.Nodes:
         # Increment 2 for first two commands (clear && sleep)
         cmd_cnt += 2
 
         # Find any leak from memslab command output
-        memslab_cmd = trig_resp.commands[cmd_cnt]
+        memslab_cmd = tc.trig_resp.commands[cmd_cnt]
         api.PrintCommandResults(memslab_cmd)
 
         alg_meminfo = get_meminfo(memslab_cmd, 'alg')
@@ -45,7 +48,7 @@ def Trigger(tc):
         cmd_cnt += 1
 
         # Find any leak from mtrack command output
-        memtrack_cmd = trig_resp.commands[cmd_cnt]
+        memtrack_cmd = tc.trig_resp.commands[cmd_cnt]
         api.PrintCommandResults(memtrack_cmd)
 
         # Alloc ID 90 & 91 is for VMOTION
@@ -62,28 +65,13 @@ def Trigger(tc):
 
         cmd_cnt += 1
 
-    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
-    tc.resp   = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
-
-    return api.types.status.SUCCESS
-
-def Verify(tc):
-    if tc.resp is None:
-        return api.types.status.FAILURE
 
     if tc.memleak == 1:
        api.Logger.info("Memleak failure detected")
        return api.types.status.FAILURE
 
-    result = api.types.status.SUCCESS
-    cookie_idx = 0
-    api.Logger.info("Results for vMotion Memleak test")
-    for cmd in tc.resp.commands:
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0 and not api.Trigger_IsBackgroundCommand(cmd):
-                result = api.types.status.FAILURE
-        cookie_idx += 1       
-    return result
+    api.Logger.info("Results for vMotion Memleak test, PASS")
+    return api.types.status.SUCCESS
 
 def Teardown(tc):
     return api.types.status.SUCCESS

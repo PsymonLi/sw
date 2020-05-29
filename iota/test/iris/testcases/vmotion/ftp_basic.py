@@ -62,7 +62,6 @@ def Cleanup(server, client):
     ftpfile = os.path.dirname(os.path.realpath(__file__)) + '/' + "ftp.sh"
     os.remove(ftpfile)
     trig_resp = api.Trigger(req)
-    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
     return api.types.status.SUCCESS
 
 def Trigger(tc):
@@ -88,8 +87,8 @@ def Trigger(tc):
     serverReq = None
     clientReq = None
 
-    serverReq = api.Trigger_CreateExecuteCommandsRequest(serial = False)
-    clientReq = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    serverReq = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    clientReq = api.Trigger_CreateExecuteCommandsRequest(serial = True)
 
     tc.cmd_descr = "Server: %s(%s) <--> Client: %s(%s)" %\
                    (server.workload_name, server.ip_address, client.workload_name, client.ip_address)
@@ -113,7 +112,6 @@ def Trigger(tc):
     # Trigger the commands
     tc.server_resp = api.Trigger(serverReq)
     tc.client_resp = api.Trigger(clientReq)
-    tc.resp        = api.Trigger_AggregateCommandsResponse(tc.server_resp, tc.client_resp)
 
     # Trigger vMotion
     new_node = vm_utils.find_new_node_to_move_to(tc, tc.vm_node)
@@ -125,7 +123,6 @@ def Trigger(tc):
 
     # After vMotion - Wait for Commands to end
     tc.client_resp = api.Trigger_WaitForAllCommands(tc.client_resp)
-    api.Trigger_TerminateAllCommands(tc.server_resp)
 
     # After vMotion - Show sessions dump after vMotion
     tc.cmd_cookies = []
@@ -142,9 +139,7 @@ def Trigger(tc):
                            "sh -c 'du -kh ftpdir/ftp_server.txt | grep 1.0G'")
     tc.cmd_cookies.append("After get2")
 
-    trig_resp = api.Trigger(req)
-    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
-    tc.resp   = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+    tc.resp = api.Trigger(req)
 
     Cleanup(server, client)
 

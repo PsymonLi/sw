@@ -89,11 +89,11 @@ def Trigger(tc):
 
     api.Trigger_AddCommand(req, server.node_name, server.workload_name,
                            "ls -al /home/sunrpcmntdir/")
-    tc.cmd_cookies.append("After rpc")
+    tc.cmd_cookies.append("After rpc1")
 
     api.Trigger_AddCommand(req, server.node_name, server.workload_name,
                            "sh -c 'cat /home/sunrpcmntdir/sunrpc_file.txt'")
-    tc.cmd_cookies.append("After rpc")
+    tc.cmd_cookies.append("After rpc2")
 
     # Add Naples command validation
     api.Trigger_AddNaplesCommand(req, tc.vm_node.node_name, 
@@ -117,7 +117,10 @@ def Verify(tc):
         api.PrintCommandResults(cmd)
         if tc.cmd_cookies[cookie_idx].find("show session") != -1 and \
            cmd.stdout == '':
-           result = api.types.status.FAILURE
+            result = api.types.status.FAILURE
+        if tc.cmd_cookies[cookie_idx].find("After rpc2") != -1 and \
+           cmd.exit_code != 0:
+            result = api.types.status.FAILURE
         cookie_idx += 1
     return result
 

@@ -41,8 +41,7 @@ def Trigger(tc):
     serverReq = None
     clientReq = None
 
-    serverReq = api.Trigger_CreateExecuteCommandsRequest(serial = False)
-    clientReq = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    trigger_req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
 
     tc.cmd_descr = "Server: %s(%s) <--> Client: %s(%s)" %\
                    (server.workload_name, server.ip_address, client.workload_name, client.ip_address)
@@ -51,33 +50,30 @@ def Trigger(tc):
     SetupTFTPServer(server)
     SetupTFTPClient(client)
 
-    api.Trigger_AddCommand(serverReq, server.node_name, server.workload_name, "fallocate -l 1G tftpdir/tftp_server.txt")
+    api.Trigger_AddCommand(trigger_req, server.node_name, server.workload_name, "fallocate -l 1G tftpdir/tftp_server.txt")
     tc.cmd_cookies.append("Before file transfer1")
-    api.Trigger_AddCommand(serverReq, server.node_name, server.workload_name, "cp tftpdir/tftp_server.txt /var/lib/tftpboot")
+    api.Trigger_AddCommand(trigger_req, server.node_name, server.workload_name, "cp tftpdir/tftp_server.txt /var/lib/tftpboot")
     tc.cmd_cookies.append("Before file transfer2")
-    api.Trigger_AddCommand(serverReq, server.node_name, server.workload_name, "chmod 666 /var/lib/tftpboot/tftp_server.txt")
+    api.Trigger_AddCommand(trigger_req, server.node_name, server.workload_name, "chmod 666 /var/lib/tftpboot/tftp_server.txt")
     tc.cmd_cookies.append("Before file transfer3")
 
-    api.Trigger_AddCommand(clientReq, client.node_name, client.workload_name,
+    api.Trigger_AddCommand(trigger_req, client.node_name, client.workload_name,
                            "sh -c 'cd tftpdir && tftp -v %s -c get tftp_server.txt'" % server.ip_address,
                            background = True)
     tc.cmd_cookies.append("After initiating TFTP Get")
 
     # Trigger the commands
-    tc.server_resp = api.Trigger(serverReq)
-    tc.client_resp = api.Trigger(clientReq)
-    tc.resp        = api.Trigger_AggregateCommandsResponse(tc.server_resp, tc.client_resp)
+    tc.trigger_resp = api.Trigger(trigger_req)
 
     # Trigger vMotion
     new_node = vm_utils.find_new_node_to_move_to(tc, tc.vm_node)
     vm_utils.update_move_info(tc,[tc.vm_node],False,new_node)
     vmotion_resp = vm_utils.do_vmotion(tc, True)
 
-    vm_utils.update_node_info(tc, tc.client_resp)
+    vm_utils.update_node_info(tc, tc.trigger_resp)
 
     # After vMotion - Wait for Commands to end
-    tc.client_resp = api.Trigger_WaitForAllCommands(tc.client_resp)
-    api.Trigger_TerminateAllCommands(tc.server_resp)
+    tc.trigger_resp = api.Trigger_WaitForAllCommands(tc.trigger_resp)
 
     if vmotion_resp != api.types.status.SUCCESS:
         api.Logger.info("vmotion trigger failed, skipping further trigger")
