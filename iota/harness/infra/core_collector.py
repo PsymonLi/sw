@@ -11,8 +11,8 @@ import traceback
 log = logging.getLogger()
 
 winCoreDirs = [
-    "c:\\windows\\",
-    "c:\\windows\system32\\",
+    "/mnt/c/Windows/",
+    "/mnt/c/Windows/System32/",
 ]
 winCoreFileREs = [
     "MEMORY.DMP",
@@ -132,8 +132,10 @@ class CoreCollector(object):
                     try:
                         self.log.debug("processing core file {0}".format(core))
                         if osType == "windows":
-                            self.scpGetFile(node,"{0}\{1}".format(_dir, core), destFile)
-                            self.sshCmd(node,"sudo rm {0}\{1}".format(_dir, core))
+                            self.sshCmd(node,"gzip {0}".format(core))
+                            gzName = core+".gz"
+                            self.scpGetFile(node,"{0}/{1}".format(_dir, gzName), destFile)
+                            self.sshCmd(node,"sudo rm {0}/{1}".format(_dir, gzName))
                         else:
                             self.sshCmd(node,"sudo mv {0}/{1} /tmp".format(_dir,core))
                             self.sshCmd(node,"sudo chown vm:vm /tmp/{0}".format(core))
