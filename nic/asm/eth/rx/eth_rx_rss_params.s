@@ -21,9 +21,10 @@ eth_rx_rss_params:
   trace.c7            0x1
 #endif
 
+  bbeq                k.p4_to_p4plus_rss_override, 1, eth_rx_rss_none
   and                 r1, d.rss_type, k.p4_to_p4plus_pkt_type
   beq                 r1, r0, eth_rx_rss_none
-  phvwri              p.{app_header_table0_valid...app_header_table3_valid}, (1 << 3)
+  nop
 
   // Write RSS key to PHV
   phvwr               p.{toeplitz_key0_data, toeplitz_key1_data}, d.rss_key[319:64]
@@ -41,7 +42,7 @@ eth_rx_rss_params:
 
   .brcase 0
     b                   eth_rx_rss_none
-    phvwri              p.{app_header_table0_valid...app_header_table3_valid}, (1 << 3)
+    nop
 
    // Clear all table valid bits so the topelitz table can launch in next stage
   .brcase 1
@@ -70,11 +71,12 @@ eth_rx_rss_params:
 
   .brcase 7
     b                   eth_rx_rss_none
-    phvwri              p.{app_header_table0_valid...app_header_table3_valid}, (1 << 3)
+    nop
 
 .brend
 
 eth_rx_rss_none:
+  phvwri              p.{app_header_table0_valid...app_header_table3_valid}, (1 << 3)
   phvwr               p.common_te0_phv_table_lock_en, 0
   phvwri.e            p.common_te0_phv_table_pc, eth_rx_rss_skip[38:6]
   phvwri.f            p.common_te0_phv_table_raw_table_size, CAPRI_RAW_TABLE_SIZE_MPU_ONLY
@@ -83,25 +85,24 @@ eth_rx_rss_none:
 eth_rx_rss_ipv4_l4:
   phvwr               p.toeplitz_input0_data[63:32], k.{p4_to_p4plus_l4_sport, p4_to_p4plus_l4_dport}
 eth_rx_rss_ipv4:
-#if defined(APOLLO) || defined(ARTEMIS) || defined(ATHENA)
-  phvwr               p.toeplitz_input0_data[95:64], k.p4_to_p4plus_ip_da[31:0]
-  phvwr.e             p.toeplitz_input0_data[127:96], k.p4_to_p4plus_ip_sa_s96_e127[31:0]
-#elif defined(APULU)
-  phvwr.e             p.toeplitz_input0_data[127:64], k.p4_to_p4plus_ip_sa_s0_e111[79:16]
+#if defined(APOLLO) || defined(APULU) || defined(ARTEMIS) || defined(ATHENA)
+  phvwr               p.toeplitz_input0_data[127:96], k.p4_to_p4plus_ip_sa_s88_e127[31:0]
+  phvwr.e             p.toeplitz_input0_data[95:64], k.p4_to_p4plus_ip_da[31:0]
 #else
-  phvwr.e             p.toeplitz_input0_data[127:64], k.p4_to_p4plus_ip_sa_s0_e95[63:0]
+  phvwr               p.toeplitz_input0_data[127:72], k.p4_to_p4plus_ip_sa_s0_e87[55:0]
+  phvwr.e             p.toeplitz_input0_data[71:64], k.p4_to_p4plus_ip_sa_s88_e127[39:32]
 #endif
   phvwr.f             p.toeplitz_key2_data[33:0], k.p4_rxdma_intr_qstate_addr
+
 eth_rx_rss_ipv6_l4:
   phvwr               p.toeplitz_input2_data, k.{p4_to_p4plus_l4_sport, p4_to_p4plus_l4_dport}
 eth_rx_rss_ipv6:
-#if defined(ARTEMIS)
-  phvwr               p.toeplitz_input0_data[127:32], k.p4_to_p4plus_ip_sa
-#elif defined(APULU)
-  phvwr               p.toeplitz_input0_data[127:32], k.p4_to_p4plus_ip_sa_s0_e111[111:16]
+#if defined(APULU)
+  phvwr               p.toeplitz_input0_data[127:16], k.p4_to_p4plus_ip_sa_s0_e111
+  phvwr               p.toeplitz_input0_data[15:0], k.p4_to_p4plus_ip_sa_s88_e127[39:23]
 #else
-  phvwr               p.toeplitz_input0_data[127:32], k.p4_to_p4plus_ip_sa_s0_e95
+  phvwr               p.toeplitz_input0_data[127:40], k.p4_to_p4plus_ip_sa_s0_e87
+  phvwr               p.toeplitz_input0_data[39:0], k.p4_to_p4plus_ip_sa_s88_e127
 #endif
-  phvwr               p.toeplitz_input0_data[31:0], k.p4_to_p4plus_ip_sa_s96_e127
   phvwr.e             p.toeplitz_input1_data, k.p4_to_p4plus_ip_da
   phvwr.f             p.toeplitz_key2_data[33:0], k.p4_rxdma_intr_qstate_addr

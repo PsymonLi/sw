@@ -1187,6 +1187,8 @@ action eth_rx_rss_params(rss_type, rss_key, debug, rsvd)
     modify_field(p4_to_p4plus_scratch.table2_valid, p4_to_p4plus.table2_valid);
     modify_field(p4_to_p4plus_scratch.table3_valid, p4_to_p4plus.table3_valid);
 
+    modify_field(p4_to_p4plus_scratch.rss_override, p4_to_p4plus.rss_override);
+
     modify_field(p4_to_p4plus_scratch.pkt_type, p4_to_p4plus.pkt_type);
     modify_field(p4_to_p4plus_scratch.l4_sport, p4_to_p4plus.l4_sport);
     modify_field(p4_to_p4plus_scratch.l4_dport, p4_to_p4plus.l4_dport);
