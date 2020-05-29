@@ -29,11 +29,12 @@
 #include "gen/p4gen/p4/include/ftl.h"
 #include "gen/platform/mem_regions.hpp"
 
-#define COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS    256
-#define COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS   256
-#define COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS   256
-#define COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS  256
-#define COPP_ARP_FROM_ARM_PPS                   256
+#define COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS    250
+#define COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS   250
+#define COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS   250
+#define COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS  250
+#define COPP_ARP_FROM_ARM_PPS                   250
+#define COPP_BURST(pps)                         ((uint64_t)((pps)/10))
 #define COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS      300000
 #define COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS   50000
 
@@ -198,7 +199,9 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_ARP_FROM_ARM_PPS, 0
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_ARP_FROM_ARM_PPS,
+        COPP_BURST(COPP_ARP_FROM_ARM_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry for ARM to uplink ARP traffic (all vlans)
@@ -377,7 +380,9 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_ARP_FROM_ARM_PPS, 0
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_ARP_FROM_ARM_PPS,
+        COPP_BURST(COPP_ARP_FROM_ARM_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry for ARM to uplink ARP traffic (all vlans)
@@ -660,8 +665,9 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS,
-        COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS,
+        COPP_BURST(COPP_FLOW_MISS_ARP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry for ARP requests from host
@@ -706,8 +712,9 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS,
-        COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS,
+        COPP_BURST(COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry for DHCP requests going to vpp
@@ -753,9 +760,10 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     // allocate and program copp table entry for flow miss
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
-    policer = { sdk::qos::POLICER_TYPE_PPS,
-                COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS,
-                COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS
+    policer = {
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS,
+        COPP_BURST(COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS),
     };
     program_copp_entry_(&policer, idx, false);
 
@@ -793,9 +801,10 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     // allocate and program copp table entry for flow miss
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
-    policer = { sdk::qos::POLICER_TYPE_PPS,
-                COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS,
-                COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS
+    policer = {
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS,
+        COPP_BURST(COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS)
     };
     program_copp_entry_(&policer, idx, false);
 
@@ -1191,8 +1200,9 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS,
-        COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS,
+        COPP_BURST(COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry
@@ -1310,7 +1320,9 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
     SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
     policer = {
-        sdk::qos::POLICER_TYPE_PPS, COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS, 0
+        sdk::qos::POLICER_TYPE_PPS,
+        COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS,
+        COPP_BURST(COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS)
     };
     program_copp_entry_(&policer, idx, false);
     // install NACL entry for DHCP requests

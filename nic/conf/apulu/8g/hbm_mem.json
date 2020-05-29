@@ -347,7 +347,7 @@
             "kind": "static",
             "size": "1K"
         },
-        {   
+        {
             "name": "key-desc-array",
             "kind": "static",
             "size": "1024K"
@@ -584,6 +584,20 @@
             "kind": "opertbl",
             "size": "64M",
             "_comment": "2M * 16B * 2"
+        },
+        {
+            "name": "clock",
+            "kind": "opertbl",
+            "size": "64B",
+            "cache": "p4ig",
+            "cache1": "p4eg"
+        },
+        {
+            "name": "p4i_clock",
+            "kind": "opertbl",
+            "size": "64B",
+            "base_region": "clock",
+            "_comment" : "alias to clock"
         },
         {
             "name": "port_stats",

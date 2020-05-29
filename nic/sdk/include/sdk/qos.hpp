@@ -163,19 +163,20 @@ tm_q_valid (tm_q_t tm_q)
 }
 
 static inline sdk_ret_t
-policer_to_token_rate (policer_t *policer, uint64_t refresh_interval_us,
+policer_to_token_rate (policer_t *policer, uint64_t refresh_rate,
                        uint64_t max_policer_tokens_per_interval,
                        uint64_t *token_rate, uint64_t *token_burst)
 {
     uint64_t    rate_per_sec = policer->rate;
     uint64_t    burst = policer->burst;
     uint64_t    rate_tokens;
+    uint64_t    refresh_interval_us = 1000000/refresh_rate;
 
     if (rate_per_sec > UINT64_MAX/refresh_interval_us) {
         SDK_TRACE_ERR("Policer rate %lu is too high", rate_per_sec);
         return SDK_RET_INVALID_ARG;
     }
-    rate_tokens = (refresh_interval_us * rate_per_sec)/1000000;
+    rate_tokens = rate_per_sec/refresh_rate;
 
     if (rate_tokens == 0) {
         SDK_TRACE_ERR("Policer rate %lu too low for refresh interval %luus",
@@ -196,10 +197,10 @@ policer_to_token_rate (policer_t *policer, uint64_t refresh_interval_us,
 
 static inline sdk_ret_t
 policer_token_to_rate (uint64_t token_rate, uint64_t token_burst,
-                       uint64_t refresh_interval_us,
+                       uint64_t refresh_rate,
                        uint64_t *rate, uint64_t *burst)
 {
-    *rate = (token_rate * 1000000)/refresh_interval_us;
+    *rate = token_rate * refresh_rate;
     *burst = (token_burst - token_rate);
     return SDK_RET_OK;
 }

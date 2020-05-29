@@ -636,6 +636,20 @@
             "size": "1088K"
         },
         {
+            "name": "clock",
+            "kind": "opertbl",
+            "size": "64B",
+            "cache": "p4ig",
+            "cache1": "p4eg"
+        },
+        {
+            "name": "p4i_clock",
+            "kind": "opertbl",
+            "size": "64B",
+            "base_region": "clock",
+            "_comment" : "alias to clock"
+        },
+        {
             "name": "port_stats",
             "kind": "opertbl",
             "size": "3K",

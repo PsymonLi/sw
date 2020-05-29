@@ -466,7 +466,7 @@ do {                                          \
 } while(0)
 
 #define PROGRAM_POLICER_TABLE_ENTRY(policer, tbl, tid, aid, idx, upd,          \
-                                    refresh_interval)                          \
+                                    refresh_rate)                              \
 {                                                                              \
     sdk_ret_t ret;                                                             \
     p4pd_error_t p4pd_ret;                                                     \
@@ -482,7 +482,7 @@ do {                                          \
             tbl ## _data.tbl ## _info.pkt_rate = 1;                            \
         }                                                                      \
         ret = sdk::qos::policer_to_token_rate(                                 \
-                                         policer, refresh_interval,            \
+                                         policer, refresh_rate,                \
                                          PDS_POLICER_MAX_TOKENS_PER_INTERVAL,  \
                                          &rate_tokens, &burst_tokens);         \
         SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);                           \

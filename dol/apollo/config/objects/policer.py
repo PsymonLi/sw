@@ -27,6 +27,7 @@ class PolicerObject(base.ConfigObjectBase):
         self.direction = spec.direction
         self.rate = spec.rate
         self.burst = spec.burst
+        self.token_refresh_rate = 4000
         self.GID('Policer%d'%self.PolicerId)
         self.UUID = utils.PdsUuid(self.PolicerId, api.ObjectTypes.POLICER)
         self.DeriveOperInfo()
@@ -80,14 +81,16 @@ class PolicerObject(base.ConfigObjectBase):
             bpspolicer = getattr(spec, 'BPSPolicer', None)
             if not bpspolicer:
                 return False
-            if ((bpspolicer.BytesPerSecond != self.rate) or\
+            exp_rate = int(self.rate/self.token_refresh_rate) * self.token_refresh_rate
+            if ((bpspolicer.BytesPerSecond != exp_rate) or\
                 (bpspolicer.Burst != self.burst)):
                 return False
         else:
             ppspolicer = getattr(spec, 'PPSPolicer', None)
             if not ppspolicer:
                 return False
-            if ((ppspolicer.PacketsPerSecond != self.rate) or\
+            exp_rate = int(self.rate/self.token_refresh_rate) * self.token_refresh_rate
+            if ((ppspolicer.PacketsPerSecond != exp_rate) or\
                 (ppspolicer.Burst != self.burst)):
                 return False
         return True
@@ -104,14 +107,16 @@ class PolicerObject(base.ConfigObjectBase):
             bpspolicer = policer.get('bpspolicer', None)
             if not bpspolicer:
                 return False
-            if (bpspolicer['bytespersecond'] != self.rate) or\
+            exp_rate = int(self.rate/self.token_refresh_rate) * self.token_refresh_rate
+            if (bpspolicer['bytespersecond'] != exp_rate) or\
                (bpspolicer['burst'] != self.burst):
                 return False
         else:
             ppspolicer = policer.get('ppspolicer', None)
             if not ppspolicer:
                 return False
-            if (ppspolicer['packetspersecond'] != self.rate) or\
+            exp_rate = int(self.rate/self.token_refresh_rate) * self.token_refresh_rate
+            if (ppspolicer['packetspersecond'] != exp_rate) or\
                (ppspolicer['burst'] != self.burst):
                 return False
         return True
