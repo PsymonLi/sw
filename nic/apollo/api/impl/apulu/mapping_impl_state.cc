@@ -37,6 +37,8 @@ namespace impl {
 const char *k_dhcp_ctl_ip = "127.0.0.1";
 const int k_dhcp_ctl_port = 7911;
 const uint32_t dhcpctl_statements_attr_len = 1600;
+const char *lease_file = "/var/lib/dhcp/dhcpd.leases";
+static sdk_ret_t dump_dhcp_reservation (mapping_hw_key_t *key, int out_fd);
 
 /// \defgroup PDS_MAPPING_IMPL_STATE - mapping database functionality
 /// \ingroup PDS_MAPPING
@@ -456,6 +458,7 @@ mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
         }
     } else {
         mapping_dump_args_t *mapping_args = &args->mapping_dump;
+        device_entry *dentry = device_find();
         type = mapping_args->type;
 
         if (type == MAPPING_DUMP_TYPE_LOCAL) {
@@ -475,6 +478,9 @@ mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
             if (ret == SDK_RET_OK) {
                 local_mapping_print_header(fd);
                 local_mapping_dump_cb(&api_params);
+            }
+            if ((dentry) && (!dentry->overlay_routing_enabled())) {
+                dump_dhcp_reservation(&mapping_args->skey, fd);
             }
         }
         if (type == MAPPING_DUMP_TYPE_REMOTE_L3) {
@@ -520,6 +526,171 @@ mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
 sdk_ret_t
 mapping_impl_state::slab_walk(state_walk_cb_t walk_cb, void *ctxt) {
     walk_cb(mapping_impl_slab_, ctxt);
+    return SDK_RET_OK;
+}
+
+/// \brief     helper function to print the name value pair
+/// \param[in] out_fd   output file descriptor
+/// \param[in] name   attribute name
+/// \param[in] value   attribute value
+/// \param[in] skip_semicolon   flag to skip the semicolon
+static inline void
+print_name_value (int out_fd, const char *name, char *value, int skip_semicolon) {
+    if (skip_semicolon) {
+        // Skip the semicolon at the end of the value string
+        size_t len = strlen(value);
+        value[len - 1] = '\0';
+    }
+    dprintf(out_fd, "%-30s : %-20s\n", name, value);
+}
+
+/// \brief     helper function to convert hex bytes to int 
+/// \param[in]  value   points to time in hex
+static inline void
+format_integer_value (char *value)
+{
+    char *end = value;
+    unsigned long l0 = 0;
+
+    while (*end != '\0') {
+        l0 = (l0 << 8);
+        l0 += strtol(end, &end, 16);
+        end++;
+    }
+
+    sprintf(value, "%lu", l0);
+}
+
+/// \brief     helper function to convert MTU string to int
+/// \param[in]  value   points to mtu string
+static inline void
+format_mtu (char *value) {
+    uint16_t mtu;
+
+    // mtu can appear in the lease file either as ascii
+    // string or as colon separated byte string depending
+    // on the value. dhcpd tries to convert it to ascii 
+    // string first, if it fails fall back option is to 
+    // print it as colon separated string in the lease
+    // file. We need to support both cases.
+    if (value[0] == '"') {
+        mtu = (value[1] << 8) | (value[2]);
+        sprintf(value, "%u", (uint32_t)mtu);
+    } else {
+        format_integer_value(value);
+    }
+}
+
+/// \brief     helper function to convert ip address
+/// \param[in]  value   points to ip address in hex
+static inline void
+format_ipaddr (char *value)
+{
+    unsigned long l0, l1, l2, l3;
+    char *end;
+
+    l0 = strtol(value, &end, 16);
+    l1 = strtol(end + 1, &end, 16);
+    l2 = strtol(end + 1, &end, 16);
+    l3 = strtol(end + 1, &end, 16);
+    sprintf(value, "%lu.%lu.%lu.%lu", l0, l1, l2, l3);
+}
+
+/// \brief     helper function to format a name value pair for printing
+/// \param[in] name   points to name
+/// \param[in] value   points to value
+/// \skip_semicolon[in] skip_semicolon   flag indicating whether the
+/// \semicolon at the end of the value string should be skipped or not
+static inline void
+format_name_value (const char *name, char *value, int *skip_semicolon) {
+    if (!strcmp(name, "interface-mtu")) {
+        format_mtu(value);
+        *skip_semicolon = false;
+    } else if ((!strcmp(name, "subnet-mask")) || (!strcmp(name, "routers")) ||
+               (!strcmp(name, "domain-name-servers")) ||
+               (!strcmp(name, "ntp-servers"))) {
+        format_ipaddr(value);
+        *skip_semicolon = false;
+    } else if ((!strcmp(name, "server.default-lease-time")) ||
+               (!strcmp(name, "server.max-lease-time")) ||
+               (!strcmp(name, "server.min-lease-time"))) {
+        format_integer_value(value);
+        *skip_semicolon = false;
+    }
+}
+
+/// \brief     function to print DHCP reservation
+/// \param[in] key   mapping key 
+/// \param[in] out_fd   output file fd 
+static sdk_ret_t
+dump_dhcp_reservation (mapping_hw_key_t *key, int out_fd) {
+    FILE *fp = NULL;
+    int buffer_len = 2048;
+    char buffer[buffer_len];
+    char name[buffer_len];
+    char value[buffer_len];
+    off_t offset = {0};
+    char lookup_string[100];
+    char *v4_addr = NULL;
+
+    fp = fopen(lease_file, "r");
+    if (!fp) {
+        PDS_TRACE_ERR("Failed to open lease file %s", lease_file);
+        return(SDK_RET_ERR);
+    }
+
+    v4_addr = (char *)(&key->ip_addr.addr.v4_addr);
+    snprintf(lookup_string, sizeof(lookup_string), "host %u_%u.%u.%u.%u {\n",
+             (uint32_t)key->vpc, (uint32_t)(v4_addr[3]), (uint32_t)(v4_addr[2]),
+             (uint32_t)(v4_addr[1]), (uint32_t)(v4_addr[0]));
+
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (!strcmp(buffer, lookup_string)) {
+            offset = ftello(fp);
+            offset -= strlen(lookup_string);
+        }
+    }
+
+    if (offset) {
+        fseeko(fp, offset, SEEK_SET);
+        dprintf(out_fd, "\nLease:\n\n");
+
+        while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+            if (sscanf(buffer, "host %s {", value) == 1) {
+                // reservation name
+                print_name_value(out_fd, "DHCP lease", value, false);
+            } else if (sscanf(buffer, " supersede %s = %s\n", name, value) == 2) {
+                // most of the name, value pairs
+                int skip_semicolon = true;
+                format_name_value(name, value, &skip_semicolon);
+                print_name_value(out_fd, name, value, skip_semicolon);
+            } else if (sscanf(buffer, " hardware ethernet %s", value) == 1) {
+                // Ethernet address
+                print_name_value(out_fd, "hardware ethernet", value, true);
+            } else if (sscanf(buffer, " fixed-address %s", value) == 1) {
+                // IP address
+                print_name_value(out_fd, "fixed-address", value, true);
+            } else if (sscanf(buffer, " supersede %s = \n", name) == 1) {
+                // value should be on the next line. Read that as well.
+                if (fgets(buffer, buffer_len, fp) == NULL) {
+                    return(SDK_RET_ERR);
+                }
+                sscanf(buffer, "%s\n", value);
+                print_name_value(out_fd, name, value, true);
+            } else if (!strcmp(buffer, "  dynamic;\n")) {
+                // skip this. This is not relevant to the user
+                continue;
+            } else if (!strcmp(buffer, "  deleted;\n")) {
+                // the reservation has been removed.
+                print_name_value(out_fd, "", (char *)"(deleted)", false);
+            } else if (!strcmp(buffer, "}\n")) {
+                // done processing the record
+                break;
+            }
+        }
+    }
+
+    fclose(fp);
     return SDK_RET_OK;
 }
 
