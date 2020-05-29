@@ -159,10 +159,10 @@ func printNhGroupUnderlayHeader() {
 }
 
 func printNhGroupOverlayHeader() {
-	hdrLine := strings.Repeat("-", 104)
+	hdrLine := strings.Repeat("-", 114)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-14s%-10s%-40s\n",
-		"Id", "Type", "#Members", "TunnelIP")
+	fmt.Printf("%-40s%-14s%-10s%-40s%-10s\n",
+		"Id", "Type", "#Members", "TunnelIP", "HwID")
 	fmt.Println(hdrLine)
 }
 
@@ -228,8 +228,9 @@ func printNhGroup(resp *pds.NhGroup) {
 			break
 		case "OVERLAY":
 			if first {
-				fmt.Printf("%-40s\n",
+				fmt.Printf("%-40s",
 					utils.IPAddrToStr(memberStatus[i].GetOverlayNhInfo().GetTunnelIP()))
+				fmt.Printf("%-10d\n", status.GetHwId())
 				first = false
 			} else {
 				fmt.Printf("%-64s%-40s\n",

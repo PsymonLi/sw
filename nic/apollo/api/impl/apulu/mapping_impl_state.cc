@@ -294,11 +294,11 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
 static void
 remote_mapping_print_l3_header (int fd)
 {
-    dprintf(fd, "%s\n", std::string(115, '-').c_str());
-    dprintf(fd, "%-40s%-40s%-18s%-10s%-7s\n",
+    dprintf(fd, "%s\n", std::string(120, '-').c_str());
+    dprintf(fd, "%-40s%-40s%-18s%-10s%-12s\n",
             "VpcID", "OverlayIP", "OverlayMAC",
-            "NhType", "Tunnel");
-    dprintf(fd, "%s\n", std::string(115, '-').c_str());
+            "NhType", "Tunnel/ECMP");
+    dprintf(fd, "%s\n", std::string(120, '-').c_str());
 }
 
 /// \brief     callback function to dump remote l3 mapping entries
@@ -364,7 +364,7 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
         vpc_uuid = vpc->key()->str();
     }
 
-    dprintf(fd, "%-40s%-40s%-18s%-10s%-7u\n",
+    dprintf(fd, "%-40s%-40s%-18s%-10s%-12u\n",
             vpc_uuid ? vpc_uuid : "-",  ipaddr2str(&private_ip),
             macaddr2str(overlay_mac),
             nexthop_type.c_str(),
@@ -376,10 +376,10 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
 static void
 remote_mapping_print_l2_header (int fd)
 {
-    dprintf(fd, "%s\n", std::string(75, '-').c_str());
-    dprintf(fd, "%-40s%-18s%-10s%-7s\n",
-            "SubnetID", "OverlayMAC", "NhType", "Tunnel");
-    dprintf(fd, "%s\n", std::string(75, '-').c_str());
+    dprintf(fd, "%s\n", std::string(80, '-').c_str());
+    dprintf(fd, "%-40s%-18s%-10s%-12s\n",
+            "SubnetID", "OverlayMAC", "NhType", "Tunnel/ECMP");
+    dprintf(fd, "%s\n", std::string(80, '-').c_str());
 }
 
 /// \brief     callback function to dump remote l2 mapping entries
@@ -420,7 +420,7 @@ remote_l2_mapping_dump_cb (sdk_table_api_params_t *params)
     if (subnet) {
         subnet_uuid = subnet->key()->str();
     }
-    dprintf(fd, "%-40s%-18s%-10s%-7u\n",
+    dprintf(fd, "%-40s%-18s%-10s%-12u\n",
             subnet_uuid ? subnet_uuid : "-",
             macaddr2str(mac),
             nexthop_type.c_str(),
