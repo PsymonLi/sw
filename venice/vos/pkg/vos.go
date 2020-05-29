@@ -234,6 +234,8 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 
 	os.Setenv("MINIO_ACCESS_KEY", minioKey)
 	os.Setenv("MINIO_SECRET_KEY", minioSecret)
+	os.Setenv("MINIO_PROMETHEUS_AUTH_TYPE", "public")
+
 	log.Infof("minio env: %+v", os.Environ())
 	if trace {
 		os.Setenv("MINIO_HTTP_TRACE", "/dev/stdout")
