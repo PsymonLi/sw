@@ -557,7 +557,11 @@ api_engine::count_api_msg_(obj_id_t obj_id, api_base *api_obj,
     // check which IPC endpoint needs what type of msg and increment
     // corresponding counters
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_id);
-    for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
+    for (auto it = ipc_ep_list.begin();
+         (it != ipc_ep_list.end()) && (it->ipc_id != ipc_msg()->sender());
+         ++it) {
+        // atleast one IPC endpoint is potentially interested in this API msg
+        api_obj->set_circulate();
         if (batch_ctxt_.msg_map.find(it->ipc_id) != batch_ctxt_.msg_map.end()) {
             if (it->ntfn) {
                 batch_ctxt_.msg_map[it->ipc_id].num_ntfn_msgs++;
@@ -625,7 +629,9 @@ api_engine::populate_api_msg_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     // walk all IPC endpoints interested in this object and keep a copy
     // to be send in respective msg list
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_ctxt->obj_id);
-    for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
+    for (auto it = ipc_ep_list.begin();
+         (it != ipc_ep_list.end()) && (it->ipc_id != ipc_msg()->sender());
+         ++it) {
         if (it->ntfn) {
             // add to notification msg list
             batch_ctxt_.msg_map[it->ipc_id].add_ntfn_msg(&msg);
@@ -743,7 +749,7 @@ api_engine::resource_reservation_stage_(void) {
             goto error;
         }
         // if this object needs to be circulated, add it to the msg list
-        if ((obj_ctxt->api_op != API_OP_NONE) && api_obj->circulate(obj_ctxt)) {
+        if ((obj_ctxt->api_op != API_OP_NONE) && api_obj->circulate()) {
             populate_api_msg_(api_obj, obj_ctxt);
         }
     }
@@ -867,6 +873,8 @@ api_engine::activate_config_(dirty_obj_list_t::iterator it,
 
     PDS_TRACE_DEBUG("Activating API op %u on %s", obj_ctxt->api_op,
                     api_obj->key2str().c_str());
+    // clear the circulate flag, in case it is set
+    api_obj->clear_circulate();
     switch (obj_ctxt->api_op) {
     case API_OP_NONE:
         // only case where a dirty obj ends up with this opcode is when new
@@ -1028,6 +1036,8 @@ api_engine::rollback_config_(dirty_obj_list_t::iterator it, api_base *api_obj,
                              api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t    ret = SDK_RET_OK;
 
+    // clear the circulate flag, in case it is set
+    api_obj->clear_circulate();
     switch (obj_ctxt->api_op) {
     case API_OP_NONE:
         // only case where a dirty obj ends up with this opcode is when new

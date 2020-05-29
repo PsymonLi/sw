@@ -242,31 +242,31 @@ public:
     static api_base *find_obj(obj_id_t obj_id, void *key);
 
     /// \brief mark the object as dirty
-    void set_in_dirty_list(void) { in_dol_ = 1; }
+    void set_in_dirty_list(void) { in_dol_ = TRUE; }
 
     /// \brief returns true if the object is in dirty list
     bool in_dirty_list(void) const { return in_dol_ ? true : false; }
 
     /// \brief clear the dirty bit on this object
-    void clear_in_dirty_list(void) { in_dol_ = 0; }
+    void clear_in_dirty_list(void) { in_dol_ = FALSE; }
 
     /// \brief mark the object as dependent object
-    void set_in_deps_list(void) { in_aol_ = 1; }
+    void set_in_deps_list(void) { in_aol_ = TRUE; }
 
     /// \brief returns true if the object is in dependent list
     bool in_deps_list(void) const { return in_aol_ ? true : false; }
 
     /// \brief clear the dependent object bit on this object
-    void clear_in_deps_list(void) { in_aol_ = 0; }
+    void clear_in_deps_list(void) { in_aol_ = FALSE; }
 
     /// \brief mark the object as restored from persistent storage
-    void set_in_restore_list(void) { in_rol_ = 1; }
+    void set_in_restore_list(void) { in_rol_ = TRUE; }
 
     /// \brief returns true if the object is in restore list
     bool in_restore_list(void) const { return in_rol_ ? true : false; }
 
     /// \brief clear the restored object bit on this object
-    void clear_in_restore_list(void) { in_rol_ = 0; }
+    void clear_in_restore_list(void) { in_rol_ = FALSE; }
 
     /// \brief return true if object is 'stateless' given an object id
     /// \param[in] obj_id    object id
@@ -290,10 +290,19 @@ public:
     bool rsvd_rsc(void) const { return rsvd_rsc_ ? true : false; }
 
     /// \brief set reserved resources flag on this object
-    void set_rsvd_rsc(void) { rsvd_rsc_ = 1; }
+    void set_rsvd_rsc(void) { rsvd_rsc_ = TRUE; }
 
     /// \brief clear reserved resources flag on this object
-    void clear_rsvd_rsc(void) { rsvd_rsc_ = 0; }
+    void clear_rsvd_rsc(void) { rsvd_rsc_ = FALSE; }
+
+    /// \brief set circulate flag on this object
+    void set_circulate(void) { circulate_ = TRUE; }
+
+    /// \brief clear circulate flag on this object
+    void clear_circulate(void) { circulate_ = FALSE; }
+
+    /// \brief return true if object is marked for circulation
+    bool circulate(void) const { return circulate_ ? true : false; }
 
     /// \brief return stringified key of the object (for debugging)
     virtual string key2str(void) const { return "api_base_key"; }
@@ -304,10 +313,11 @@ public:
 protected:
     /// \brief constructor
     api_base() {
-        in_dol_ = 0;
-        in_aol_ = 0;
-        in_rol_   = 0;
-        rsvd_rsc_ = 0;
+        in_dol_ = FALSE;
+        in_aol_ = FALSE;
+        in_rol_ = FALSE;
+        rsvd_rsc_ = FALSE;
+        circulate_ = FALSE;
     };
 
     /// \brief destructor
@@ -318,6 +328,7 @@ protected:
     uint8_t in_aol_:1;       ///< true if object is in affected object list
     uint8_t rsvd_rsc_:1;     ///< true if resources are reserved
     uint8_t in_rol_:1;       ///< true if object is in restore list
+    uint8_t circulate_:1;    ///< true if object is marked for circulation
 } __PACK__;
 
 /// \brief    find and return cloned version of the given object

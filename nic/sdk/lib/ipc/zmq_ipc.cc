@@ -63,6 +63,11 @@ zmq_ipc_msg::type(void) {
     return DIRECT;
 }
 
+uint32_t
+zmq_ipc_msg::sender(void) {
+    return 0;
+}
+
 std::string
 zmq_ipc_msg::debug(void) {
     return "Internal ipc message";

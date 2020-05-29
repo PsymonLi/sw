@@ -36,11 +36,12 @@ class zmq_ipc_msg : public ipc_msg {
 public:
     zmq_ipc_msg();
     ~zmq_ipc_msg();
-    virtual uint32_t code(void) override;
-    virtual void *data(void) override;
-    virtual size_t length(void) override;
-    virtual ipc_msg_type_t type(void) override;
-    virtual std::string debug(void) override;
+    uint32_t code(void) override;
+    void *data(void) override;
+    size_t length(void) override;
+    ipc_msg_type_t type(void) override;
+    std::string debug(void) override;
+    uint32_t sender(void) override;
     zmq_msg_t *zmsg(void);
 private:
     zmq_msg_t zmsg_;
@@ -49,13 +50,13 @@ typedef std::shared_ptr<zmq_ipc_msg> zmq_ipc_msg_ptr;
 
 class zmq_ipc_user_msg : public zmq_ipc_msg {
 public:
-    virtual uint32_t code(void) override;
-    virtual void *data(void) override;
-    virtual size_t length(void) override;
-    virtual ipc_msg_type_t type(void) override;
-    virtual std::string debug(void) override;
+    uint32_t code(void) override;
+    void *data(void) override;
+    size_t length(void) override;
+    ipc_msg_type_t type(void) override;
+    uint32_t sender(void) override;
+    std::string debug(void) override;
     std::vector<std::shared_ptr<zmq_ipc_msg> > &headers(void);
-    uint32_t sender(void);
     void add_header(std::shared_ptr<zmq_ipc_msg> header);
     zmq_ipc_msg_preamble_t *preamble(void);
     const void *cookie(void);
