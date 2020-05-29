@@ -23,4 +23,9 @@ var CloudDscMetricsList = []string{
 	"MacMetrics",
 	"MgmtMacMetrics",
 	"LifMetrics",
+	"MemoryMetrics",
+	"PowerMetrics",
+	"AsicTemperatureMetrics",
+	"PortTemperatureMetrics",
+	"FlowStatsSummary",
 }
