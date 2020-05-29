@@ -62,10 +62,6 @@ def Verify(tc):
         if GlobalOptions.dryrun:
             return api.types.status.SUCCESS
 
-        if post_stats.InUseCount - tc.nat_pre_stats.InUseCount != tc.num_pairs:
-            api.Logger.error(f"NAT in use count did not go up as expected {tc.nat_pre_stats.InUseCount}:{post_stats.InUseCount}")
-            return api.types.status.FAILURE
-
         if post_stats.SessionCount - tc.nat_pre_stats.SessionCount != tc.num_pairs:
             api.Logger.error(f"NAT session count did not go up as expected {tc.nat_pre_stats.SessionCount}:{post_stats.SessionCount}")
             return api.types.status.FAILURE

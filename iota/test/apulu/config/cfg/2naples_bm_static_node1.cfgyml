@@ -247,6 +247,27 @@ vpc:
                     - '2.1.0.0\24'
                     - '3.1.0.0\24'
                     - '64.0.0.0\24'
+            - id        : 4
+              count     : 1             # 1 untagged VNIC
+              vmac      : macaddr/00ae.cd00.0814
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 4
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.0814
+                  lipaddr  : '9.0.0.102'
+              srcguard: false         # true or false (default false)
+              public  : false
+              tagged  : true         # true or false (default true)
+              vnicencapvalue : 998
+              vnictype : "local"
+              serviceips :
+                    - '64.0.0.80'
+              remoteroutes :
+                    - '2.1.0.0\24'
+                    - '3.1.0.0\24'
+                    - '64.0.0.0\24'
           rmap:                       # Remote IP mappings per subnet
             - id       : 3
               count    : 1

@@ -238,6 +238,12 @@ vpc:
               rmacaddr : macaddr/00ae.cd00.0813
               ripaddr  : '9.0.0.2'
               tunnelid : 1
+            - id       : 5
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.0814
+              ripaddr  : '9.0.0.102'
+              tunnelid : 1
         # For node1 this is an igw route, for node2 a local vnic
         - id               : 100
           count            : 1

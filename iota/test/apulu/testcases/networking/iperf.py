@@ -75,11 +75,11 @@ def Verify(tc):
         if GlobalOptions.dryrun:
             return api.types.status.SUCCESS
 
-        if post_stats['tcp'].InUseCount - tc.nat_pre_stats['tcp'].InUseCount != num_tcp_flows:
+        if post_stats['tcp'].InUseCount - tc.nat_pre_stats['tcp'].InUseCount > num_tcp_flows:
             api.Logger.error(f"NAT in use tcp count did not go up as expected {tc.nat_pre_stats['tcp'].InUseCount}:{post_stats['tcp'].InUseCount}:{num_tcp_flows}")
             return api.types.status.FAILURE
 
-        if post_stats['udp'].InUseCount - tc.nat_pre_stats['udp'].InUseCount != num_udp_flows:
+        if post_stats['udp'].InUseCount - tc.nat_pre_stats['udp'].InUseCount > num_udp_flows:
             api.Logger.error(f"NAT in use udp count did not go up as expected {tc.nat_pre_stats['udp'].InUseCount}:{post_stats['udp'].InUseCount}:{num_udp_flows}")
             return api.types.status.FAILURE
 
