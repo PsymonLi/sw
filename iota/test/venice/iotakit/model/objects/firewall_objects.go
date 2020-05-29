@@ -85,13 +85,12 @@ func (fwp *FirewallProfileCollection) SetFirewallLimit(sessType  string, limit i
 		return fwp.err
 	}
 
-	var tcpHalfOpenSessionLimit, udpActiveSessionLimit, icmpActiveSessionLimit, otherActiveSessionLimit uint32
+	var tcpHalfOpenSessionLimit, udpActiveSessionLimit, icmpActiveSessionLimit uint32
 
 	for _, profile := range fwp.Profiles {
 		tcpHalfOpenSessionLimit = profile.VeniceFirewallProfile.Spec.TcpHalfOpenSessionLimit
 		udpActiveSessionLimit	= profile.VeniceFirewallProfile.Spec.UdpActiveSessionLimit
 		icmpActiveSessionLimit = profile.VeniceFirewallProfile.Spec.IcmpActiveSessionLimit
-		otherActiveSessionLimit = profile.VeniceFirewallProfile.Spec.OtherActiveSessionLimit
 		break
 	}
 
@@ -102,13 +101,10 @@ func (fwp *FirewallProfileCollection) SetFirewallLimit(sessType  string, limit i
 		udpActiveSessionLimit	= uint32(limit)
 	case "ICMP" :
 		icmpActiveSessionLimit = uint32(limit)
-	case "OTHER" :
-		otherActiveSessionLimit = uint32(limit)
 	case "ALL" :
 		tcpHalfOpenSessionLimit = uint32(limit)
 		udpActiveSessionLimit	= uint32(limit)
 		icmpActiveSessionLimit = uint32(limit)
-		otherActiveSessionLimit = uint32(limit)
 	default:
 		return fmt.Errorf("Invalid sessionType : %s",  sessType)
 	}
@@ -117,7 +113,6 @@ func (fwp *FirewallProfileCollection) SetFirewallLimit(sessType  string, limit i
 		profile.VeniceFirewallProfile.Spec.TcpHalfOpenSessionLimit	=	tcpHalfOpenSessionLimit
 		profile.VeniceFirewallProfile.Spec.UdpActiveSessionLimit	=	udpActiveSessionLimit
 		profile.VeniceFirewallProfile.Spec.IcmpActiveSessionLimit	=	icmpActiveSessionLimit
-		profile.VeniceFirewallProfile.Spec.OtherActiveSessionLimit	=	otherActiveSessionLimit
 	}
 
 	return nil

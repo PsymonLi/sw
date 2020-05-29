@@ -163,7 +163,6 @@ func (fwp *firewallTestGroup) testFirewallUpdate() {
 			TcpHalfOpenSessionLimit:   20000,
 			UdpActiveSessionLimit:     20000,
 			IcmpActiveSessionLimit:    20000,
-			OtherActiveSessionLimit:   20000,
 			DetectApp:                 true,
 		},
 	}
@@ -321,13 +320,6 @@ func (fwp *firewallTestGroup) testFirewallSpecValidation() {
 	_, err = fwpInt.Update(fwp.suite.loggedInCtx, &defaultFwp)
 	Expect(err).Should(HaveOccurred())
 	By(fmt.Sprintf("Expected error success: %v", apierrors.FromError(err)))
-
-	defaultFwp.Defaults("")
-	defaultFwp.Spec.OtherActiveSessionLimit = 128001
-	_, err = fwpInt.Update(fwp.suite.loggedInCtx, &defaultFwp)
-	Expect(err).Should(HaveOccurred())
-	By(fmt.Sprintf("Expected error success: %v", apierrors.FromError(err)))
-
 }
 
 // Firewall test suite

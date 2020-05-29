@@ -23,7 +23,6 @@ export interface ISecurityFirewallProfileSpec {
     'tcp-half-open-session-limit': number;
     'udp-active-session-limit': number;
     'icmp-active-session-limit': number;
-    'other-active-session-limit': number;
     'detect-app'?: boolean;
     '_ui'?: any;
 }
@@ -60,8 +59,6 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
     'udp-active-session-limit': number = null;
     /** Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 128000. */
     'icmp-active-session-limit': number = null;
-    /** Other Active Session limit config after which new requests will be dropped. Value should be between 0 and 128000. */
-    'other-active-session-limit': number = null;
     /** Set the Application Identification Detection config for DSCs. */
     'detect-app': boolean = null;
     public static propInfo: { [prop in keyof ISecurityFirewallProfileSpec]: PropInfoItem } = {
@@ -157,12 +154,6 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
         'icmp-active-session-limit': {
             default: parseInt('0'),
             description:  `Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 128000.`,
-            required: true,
-            type: 'number'
-        },
-        'other-active-session-limit': {
-            default: parseInt('0'),
-            description:  `Other Active Session limit config after which new requests will be dropped. Value should be between 0 and 128000.`,
             required: true,
             type: 'number'
         },
@@ -306,13 +297,6 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
         } else {
             this['icmp-active-session-limit'] = null
         }
-        if (values && values['other-active-session-limit'] != null) {
-            this['other-active-session-limit'] = values['other-active-session-limit'];
-        } else if (fillDefaults && SecurityFirewallProfileSpec.hasDefaultValue('other-active-session-limit')) {
-            this['other-active-session-limit'] = SecurityFirewallProfileSpec.propInfo['other-active-session-limit'].default;
-        } else {
-            this['other-active-session-limit'] = null
-        }
         if (values && values['detect-app'] != null) {
             this['detect-app'] = values['detect-app'];
         } else if (fillDefaults && SecurityFirewallProfileSpec.hasDefaultValue('detect-app')) {
@@ -341,7 +325,6 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
                 'tcp-half-open-session-limit': CustomFormControl(new FormControl(this['tcp-half-open-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['tcp-half-open-session-limit']),
                 'udp-active-session-limit': CustomFormControl(new FormControl(this['udp-active-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['udp-active-session-limit']),
                 'icmp-active-session-limit': CustomFormControl(new FormControl(this['icmp-active-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['icmp-active-session-limit']),
-                'other-active-session-limit': CustomFormControl(new FormControl(this['other-active-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['other-active-session-limit']),
                 'detect-app': CustomFormControl(new FormControl(this['detect-app']), SecurityFirewallProfileSpec.propInfo['detect-app']),
             });
         }
@@ -368,7 +351,6 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
             this._formGroup.controls['tcp-half-open-session-limit'].setValue(this['tcp-half-open-session-limit']);
             this._formGroup.controls['udp-active-session-limit'].setValue(this['udp-active-session-limit']);
             this._formGroup.controls['icmp-active-session-limit'].setValue(this['icmp-active-session-limit']);
-            this._formGroup.controls['other-active-session-limit'].setValue(this['other-active-session-limit']);
             this._formGroup.controls['detect-app'].setValue(this['detect-app']);
         }
     }

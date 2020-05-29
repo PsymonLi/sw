@@ -121,7 +121,6 @@ export class NewfirewallprofileComponent extends CreationForm<SecurityFirewallPr
     this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'tcp-half-open-session-limit']), minValueValidator(0));
     this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'udp-active-session-limit']), minValueValidator(0));
     this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'icmp-active-session-limit']), minValueValidator(0));
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'other-active-session-limit']), minValueValidator(0));
 
   }
 

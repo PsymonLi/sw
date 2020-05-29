@@ -185,17 +185,10 @@
                  [formControl]="newObject.$formGroup.get(['spec', 'icmp-active-session-limit'])"
                  appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
                  type="number" pInputText
-                 appFloatLabel="UDP Active Session Limit" min='0' max='128000'>
+                 appFloatLabel="ICMP Active Session Limit" min='0' max='128000'>
         </div>
       </div>
       <div fxFlex fxLayout="column" class="newfirewallprofile-column">
-        <div fxLayout="row">
-          <input fxFlex="200px"
-                 [formControl]="newObject.$formGroup.get(['spec', 'other-active-session-limit'])"
-                 appErrorTooltip class="newfirewallprofile-input-common" matspellcheck="false"
-                 type="number" pInputText
-                 appFloatLabel="Other Active Session Limit" min='0' max='128000'>
-        </div>
       </div>
     </div>
   </div>

@@ -554,7 +554,6 @@ func (it *integTestSuite) TestNpmFwProfileCreateDelete(c *C) {
 			TcpHalfOpenSessionLimit:   20000,
 			UdpActiveSessionLimit:     20000,
 			IcmpActiveSessionLimit:    20000,
-			OtherActiveSessionLimit:   20000,
 			DetectApp:                 true,
 		},
 	}

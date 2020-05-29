@@ -1052,14 +1052,6 @@
             "format": "int64"
           },
           {
-            "name": "spec.other-active-session-limit",
-            "description": "Other Active Session limit config after which new requests will be dropped. Value should be between 0 and 128000.",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
             "name": "spec.detect-app",
             "description": "Set the Application Identification Detection config for DSCs.",
             "in": "query",
@@ -3523,14 +3515,6 @@
           {
             "name": "spec.icmp-active-session-limit",
             "description": "Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 128000.",
-            "in": "query",
-            "required": false,
-            "type": "integer",
-            "format": "int64"
-          },
-          {
-            "name": "spec.other-active-session-limit",
-            "description": "Other Active Session limit config after which new requests will be dropped. Value should be between 0 and 128000.",
             "in": "query",
             "required": false,
             "type": "integer",
@@ -7382,8 +7366,7 @@
         "icmp-timeout",
         "tcp-half-open-session-limit",
         "udp-active-session-limit",
-        "icmp-active-session-limit",
-        "other-active-session-limit"
+        "icmp-active-session-limit"
       ],
       "properties": {
         "session-idle-timeout": {
@@ -7472,13 +7455,6 @@
           "default": "0",
           "maximum": 128000,
           "description": "Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 128000."
-        },
-        "other-active-session-limit": {
-          "type": "integer",
-          "format": "int64",
-          "default": "0",
-          "maximum": 128000,
-          "description": "Other Active Session limit config after which new requests will be dropped. Value should be between 0 and 128000."
         },
         "detect-app": {
           "type": "boolean",

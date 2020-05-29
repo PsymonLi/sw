@@ -95,7 +95,6 @@ func (m *FirewallProfileSpec) Defaults(ver string) bool {
 		m.ICMPDropTimeout = "60s"
 		m.IcmpActiveSessionLimit = 0
 		m.IcmpTimeout = "6s"
-		m.OtherActiveSessionLimit = 0
 		m.SessionIdleTimeout = "90s"
 		m.TCPCloseTimeout = "15s"
 		m.TCPConnectionSetupTimeout = "30s"
@@ -307,18 +306,6 @@ func init() {
 
 		if err := validators.Duration(m.IcmpTimeout, args); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"IcmpTimeout", err.Error())
-		}
-		return nil
-	})
-
-	validatorMapFwprofile["FirewallProfileSpec"]["all"] = append(validatorMapFwprofile["FirewallProfileSpec"]["all"], func(path string, i interface{}) error {
-		m := i.(*FirewallProfileSpec)
-		args := make([]string, 0)
-		args = append(args, "0")
-		args = append(args, "128000")
-
-		if err := validators.IntRange(m.OtherActiveSessionLimit, args); err != nil {
-			return fmt.Errorf("%v failed validation: %s", path+"."+"OtherActiveSessionLimit", err.Error())
 		}
 		return nil
 	})

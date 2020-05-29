@@ -63,7 +63,6 @@ var typesMapFwprofile = map[string]*api.Struct{
 			"labels":                       api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"name":                         api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
 			"namespace":                    api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
-			"other-active-session-limit":   api.CLIInfo{Path: "Spec.OtherActiveSessionLimit", Skip: false, Insert: "", Help: ""},
 			"resource-version":             api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
 			"self-link":                    api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
 			"session-idle-timeout":         api.CLIInfo{Path: "Spec.SessionIdleTimeout", Skip: false, Insert: "", Help: ""},
@@ -110,8 +109,6 @@ var typesMapFwprofile = map[string]*api.Struct{
 			"UdpActiveSessionLimit": api.Field{Name: "UdpActiveSessionLimit", CLITag: api.CLIInfo{ID: "udp-active-session-limit", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "udp-active-session-limit", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 
 			"IcmpActiveSessionLimit": api.Field{Name: "IcmpActiveSessionLimit", CLITag: api.CLIInfo{ID: "icmp-active-session-limit", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "icmp-active-session-limit", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
-
-			"OtherActiveSessionLimit": api.Field{Name: "OtherActiveSessionLimit", CLITag: api.CLIInfo{ID: "other-active-session-limit", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "other-active-session-limit", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT32"},
 
 			"DetectApp": api.Field{Name: "DetectApp", CLITag: api.CLIInfo{ID: "detect-app", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "detect-app", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_BOOL"},
 		},

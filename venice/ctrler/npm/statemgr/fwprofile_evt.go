@@ -87,7 +87,7 @@ func convertFirewallProfile(fps *FirewallProfileState) *netproto.SecurityProfile
 				TcpHalfOpenSessionLimit: fps.FirewallProfile.Spec.TcpHalfOpenSessionLimit,
 				UdpActiveSessionLimit:   fps.FirewallProfile.Spec.UdpActiveSessionLimit,
 				IcmpActiveSessionLimit:  fps.FirewallProfile.Spec.IcmpActiveSessionLimit,
-				OtherActiveSessionLimit: fps.FirewallProfile.Spec.OtherActiveSessionLimit,
+				OtherActiveSessionLimit: 0,
 			},
 			DetectApp: fps.FirewallProfile.Spec.DetectApp,
 		},

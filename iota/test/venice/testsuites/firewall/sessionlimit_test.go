@@ -53,8 +53,6 @@ func VerifyFirewallHalConfig(fwp *objects.FirewallProfileCollection, sessType st
 		fieldString = fmt.Sprintf("udpactivesessionlimit: %d", limit)
 	case "ICMP":
 		fieldString = fmt.Sprintf("icmpactivesessionlimit: %d", limit)
-	case "OTHER":
-		fieldString = fmt.Sprintf("otheractivesessionlimit: %d", limit)
 	default:
 		return fmt.Errorf("Unsuported sessType :%v ", sessType)
 	}
@@ -223,7 +221,7 @@ var _ = Describe("session limit tests", func() {
 			}
 			var conn_limit int = 1000
 
-			By(fmt.Sprintf("Enabling TCP, UDP, ICMP, OTHER Firewall Session Limits to %d", conn_limit))
+			By(fmt.Sprintf("Enabling TCP, UDP, ICMP Firewall Session Limits to %d", conn_limit))
 			Expect(fwp.SetFirewallLimit("ALL", conn_limit)).Should(Succeed())
 			Expect(fwp.Commit()).Should(Succeed())
 
@@ -235,7 +233,6 @@ var _ = Describe("session limit tests", func() {
 			Expect(VerifyFirewallHalConfig(fwp, "TCP", conn_limit)).ShouldNot(HaveOccurred())
 			Expect(VerifyFirewallHalConfig(fwp, "UDP", conn_limit)).ShouldNot(HaveOccurred())
 			Expect(VerifyFirewallHalConfig(fwp, "ICMP", conn_limit)).ShouldNot(HaveOccurred())
-			Expect(VerifyFirewallHalConfig(fwp, "OTHER", conn_limit)).ShouldNot(HaveOccurred())
 
 		})
 

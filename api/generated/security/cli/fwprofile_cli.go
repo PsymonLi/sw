@@ -50,13 +50,6 @@ var CreateFirewallProfileFlags = []gen.CliFlag{
 		Insert: "",
 	},
 	{
-		ID:     "other-active-session-limit",
-		Type:   "String",
-		Help:   "",
-		Skip:   false,
-		Insert: "",
-	},
-	{
 		ID:     "session-idle-timeout",
 		Type:   "String",
 		Help:   "",
