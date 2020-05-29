@@ -130,6 +130,7 @@ class EthLif
 
     // Event Handlers
     void LinkEventHandler(port_status_t *evd);
+    void LifEventHandler(port_status_t *evd);
     void XcvrEventHandler(port_status_t *evd);
     void DelphiMountEventHandler(bool mounted);
     void SendDeviceReset(void);

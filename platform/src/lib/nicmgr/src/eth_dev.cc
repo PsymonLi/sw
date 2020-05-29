@@ -2114,6 +2114,7 @@ Eth::_CmdLifInit(void *req, void *req_data, void *resp, void *resp_data)
     struct ionic_lif_init_comp *comp = (struct ionic_lif_init_comp *)resp;
     uint64_t lif_id = 0;
     uplink_t *uplink;
+    uint8_t uplink_count = 0;
     uint32_t port_id = 0;
     EthLif *eth_lif = NULL;
     status_code_t ret = IONIC_RC_SUCCESS;
@@ -2203,7 +2204,8 @@ Eth::_CmdLifInit(void *req, void *req_data, void *resp, void *resp_data)
 
     // TODO: Workaround for linkmgr not setting port id
     port_status->id = spec->uplink_port_num;
-    if (spec->uplink_port_num == 0) {
+    dev_api->uplink_available_count(&uplink_count);
+    if (spec->uplink_port_num == 0 && uplink_count > 0) {
         port_status->status = IONIC_PORT_OPER_STATUS_UP;
         port_config->state = IONIC_PORT_OPER_STATUS_UP;
     }
@@ -2704,6 +2706,18 @@ Eth::IsDevLif(uint32_t lif_id)
     }
 
     return true;
+}
+
+EthLif *
+Eth::GetLif(uint16_t lif_id) {
+    EthLif *lif = NULL;
+
+    auto it = lif_map.find(lif_id);
+    if (it != lif_map.end()) {
+        lif = it->second;
+    }
+
+    return lif;
 }
 
 bool

@@ -70,6 +70,7 @@ public:
     // uplink APIs
     virtual sdk_ret_t uplink_create(uint32_t id, uint32_t port, bool is_oob) = 0;
     virtual sdk_ret_t uplink_destroy(uint32_t port) = 0;
+    virtual sdk_ret_t uplink_available_count(uint8_t *count) = 0;
 
     // port APIs
     virtual sdk_ret_t port_get_status(uint32_t port_num,

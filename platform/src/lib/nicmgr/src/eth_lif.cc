@@ -3134,6 +3134,41 @@ EthLif::UpdateQStatus(bool enable)
 }
 
 void
+EthLif::LifEventHandler(port_status_t *evd)
+{
+    sdk_ret_t ret;
+    uint64_t port_id = 0;
+    uplink_t *uplink = NULL;
+    port_status_t port_status = { 0 };
+
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+    if (spec->eth_type == ETH_HOST) {
+        uplink = devmgr->GetUplink(0);
+    } else {
+        uplink = devmgr->GetOOBUplink();
+    }
+
+    if (uplink != NULL) {
+        port_id = uplink->port;
+    }
+
+    // if there is no uplink port. by default Assign the speed as 1G
+    evd->speed = IONIC_SPEED_1G;
+    if (port_id != 0) {
+        // get port status for link speed
+        ret = dev_api->port_get_status(port_id, (port_status_t *)&port_status);
+        if (ret == SDK_RET_OK) {
+            evd->speed = port_status.speed;
+        } else {
+            NIC_LOG_ERR("{}: Unable to get port status {} for link speed",
+                        spec->name, port_id);
+        }
+    }
+
+    LinkEventHandler(evd);
+}
+
+void
 EthLif::LinkEventHandler(port_status_t *evd)
 {
     if (spec->uplink_port_num != evd->id) {

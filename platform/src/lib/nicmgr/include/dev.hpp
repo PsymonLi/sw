@@ -131,6 +131,7 @@ public:
     void UpgradeGracefulHalEventHandler(bool is_up);
     void UpgradeHitlessHalEventHandler(bool is_up);
     void LinkEventHandler(port_status_t *evd);
+    void LifEventHandler(port_status_t *evd, uint16_t lif_id);
     void XcvrEventHandler(port_status_t *evd);
     void DelphiMountEventHandler(bool mounted);
     void DeviceResetEventHandler();

@@ -64,6 +64,7 @@ public:
     // Uplink APIs
     sdk_ret_t uplink_create(uint32_t id, uint32_t port, bool is_oob);
     sdk_ret_t uplink_destroy(uint32_t port);
+    sdk_ret_t uplink_available_count(uint8_t *count);
 
     // Generic APIs
     sdk_ret_t set_fwd_mode(sdk::lib::dev_forwarding_mode_t fwd_mode);

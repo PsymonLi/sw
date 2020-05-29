@@ -183,6 +183,7 @@ public:
     bool IsDevReset();
     bool IsDevLif(uint32_t lif_id);
     bool IsPlatformDev();
+    EthLif* GetLif(uint16_t lif_id);
 
     int SendDeviceReset(void);
     void GetEthDevInfo(struct EthDevInfo *dev_info);

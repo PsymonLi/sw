@@ -1088,6 +1088,36 @@ DeviceManager::SetFwStatus(uint8_t fw_status)
 }
 
 void
+DeviceManager::LifEventHandler(port_status_t *evd,
+                               uint16_t lif_id)
+{
+    EthLif *eth_lif = NULL;
+
+    NIC_HEADER_TRACE("LIF Status Event");
+
+    // find the lif in the device manager
+    for (auto it = devices.begin(); it != devices.end(); it++) {
+        Device *dev = it->second;
+        if (dev->GetType() == ETH) {
+            Eth *eth_dev = (Eth *)dev;
+
+            eth_lif = eth_dev->GetLif(lif_id);
+            if (eth_lif != NULL) {
+                break;
+            }
+        }
+    }
+
+    if (eth_lif == NULL) {
+        NIC_LOG_ERR("Lif {} Not present, Skipping the Lif {} status Event",
+                    lif_id, evd->status);
+        return;
+    }
+
+    eth_lif->LifEventHandler(evd);
+}
+
+void
 DeviceManager::LinkEventHandler(port_status_t *evd)
 {
     NIC_HEADER_TRACE("Link Event");

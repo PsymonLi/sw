@@ -88,6 +88,7 @@ public:
     virtual sdk_ret_t uplink_destroy(if_index_t ifidx) {
         return SDK_RET_INVALID_OP;
     }
+    virtual sdk_ret_t uplink_available_count(uint8_t *count) override;
 
     // port APIs
     virtual sdk_ret_t port_get_status(if_index_t ifidx,

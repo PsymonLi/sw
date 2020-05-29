@@ -652,6 +652,12 @@ end:
 }
 
 sdk_ret_t
+devapi_iris::uplink_available_count(uint8_t *count)
+{
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 devapi_iris::port_get_status(uint32_t port_num,
                              port_status_t *status)
 {

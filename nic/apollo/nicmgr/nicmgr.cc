@@ -178,16 +178,31 @@ void
 nicmgrapi::host_dev_up_event_handler_(sdk::ipc::ipc_msg_ptr msg,
                                       const void *ctxt) {
     core::event_t *event = (core::event_t *)msg->data();
+    port_status_t st = { 0 };
+    uint16_t lif_id = event->host_dev.id;
+
+    // port status id should be zero for lif event
+    st.id = 0;
+    st.status = 1;
+    st.speed = 0;
 
     PDS_TRACE_DEBUG("Rcvd host dev up event for lif %u", event->host_dev.id);
+    g_devmgr->LifEventHandler(&st, lif_id);
 }
 
 void
 nicmgrapi::host_dev_down_event_handler_(sdk::ipc::ipc_msg_ptr msg,
                                         const void *ctxt) {
     core::event_t *event = (core::event_t *)msg->data();
+    port_status_t st = { 0 };
+    uint16_t lif_id = event->host_dev.id;
+
+    // port status id should be zero for lif event
+    st.id = 0;
+    st.status = 0;
 
     PDS_TRACE_DEBUG("Rcvd host dev down event for lif %u", event->host_dev.id);
+    g_devmgr->LifEventHandler(&st, lif_id);
 }
 
 DeviceManager *

@@ -43,6 +43,12 @@ port_event_lif_cb (void *entry, void *ctxt)
     event_id_t event_id = *(event_id_t *)ctxt;
     ::core::event_t event;
 
+    // send host dev notification only for host lifs
+    if ((lif->type() != lif_type_t::LIF_TYPE_HOST) &&
+        (lif->type() != lif_type_t::LIF_TYPE_MNIC_INBAND_MGMT)) {
+        return false;
+    }
+
     memset(&event, 0, sizeof(event));
     event.event_id = event_id;
     event.host_dev.id = lif->id();

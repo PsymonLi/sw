@@ -357,6 +357,13 @@ devapi_impl::uplink_create(__UNUSED__ uint32_t uplink_ifidx,
     return SDK_RET_OK;
 }
 
+sdk_ret_t
+devapi_impl::uplink_available_count(uint8_t *count) {
+    *count = sdk::linkmgr::num_uplinks_link_up();
+    return SDK_RET_OK;
+}
+
+
 void
 devapi_impl::port_get_config_(sdk::linkmgr::port_args_t *port_args,
                               void *ctxt) {
