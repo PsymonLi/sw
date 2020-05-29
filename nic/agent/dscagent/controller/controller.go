@@ -220,6 +220,7 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 // Start starts watchers for a given kind. Calls to start are idempotent
 func (c *API) Start(kinds []string) error {
 	// Clean up older go-routines. This makes calls to Start idempotent
+	c.Lock()
 	if err := c.Stop(); err != nil {
 		log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
 	}
@@ -228,6 +229,7 @@ func (c *API) Start(kinds []string) error {
 	c.WatchCtx, c.cancelWatcher = context.WithCancel(context.Background())
 
 	c.Add(1)
+	c.Unlock()
 	go func() {
 		if err := c.start(c.WatchCtx, kinds); err != nil {
 			log.Error(errors.Wrapf(types.ErrNPMControllerStart, "Controller API: %s", err))
@@ -257,8 +259,6 @@ func (c *API) Start(kinds []string) error {
 func (c *API) start(ctx context.Context, kinds []string) error {
 	log.Infof("Controller API acquiring lock for kind: %v", c.kinds)
 	defer c.Done()
-	c.Lock()
-	defer c.Unlock()
 	c.kinds = kinds
 	for {
 		select {
