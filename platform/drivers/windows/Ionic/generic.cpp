@@ -1380,7 +1380,7 @@ ionic_heartbeat_check(struct ionic *ionic)
 
     delta_time.QuadPart = current_time.QuadPart - idev->last_hb_time;
 
-    if (delta_time.QuadPart <= 10000000) {
+    if (delta_time.QuadPart <= IONIC_HEARTBEAT_TIME_SEC * HZ_100NS) {
         return 0;
     }
 
@@ -1413,12 +1413,9 @@ ionic_heartbeat_check(struct ionic *ionic)
             idev->last_hb_time = 1;
 
             EvLogWarning("%wZ - FW heartbeat stalled.", ionic->name);
-
-        } else {
-            DbgTrace((TRACE_COMPONENT_DEVICE, TRACE_LEVEL_ERROR,
-                      "%s Stalled detection\n", __FUNCTION__));
-            return NDIS_STATUS_FAILURE;
         }
+
+        return NDIS_STATUS_FAILURE;
     }
 
     if (idev->last_hb_time == 1)

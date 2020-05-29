@@ -80,7 +80,11 @@ NTSTATUS
 #define IONIC_LINKNAME_STRING             L"\\DosDevices\\IonicControl"
 #define IONIC_NTDEVICE_STRING             L"\\Device\\IonicCntrlDev"
 
-#define IONIC_ADMINQ_WAIT_TIME			10000
+#define IONIC_DEVCMD_WAIT_TIME_SEC	5
+#define IONIC_ADMINQ_WAIT_TIME_SEC	5
+#define IONIC_HEARTBEAT_TIME_SEC	5
+#define HZ_100NS			10000000
+#define HZ_1MS				1000
 
 #define IONIC_ENH_CAPS_OFFSET			0x100
 

@@ -16,7 +16,7 @@ ULONG	StateFlags = 0;
 
 ULONG	DriverFlags = 0;
 
-unsigned int devcmd_timeout = 30;
+unsigned int devcmd_timeout = IONIC_DEVCMD_WAIT_TIME_SEC;
 
 unsigned int max_slaves = 0;
 

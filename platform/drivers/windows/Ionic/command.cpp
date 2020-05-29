@@ -40,7 +40,7 @@ ionic_dev_cmd_wait(struct ionic *ionic, unsigned long max_seconds)
     /* Wait for dev cmd to complete, retrying if we get EAGAIN,
      * but don't wait any longer than max_seconds.
      */
-    timeout.QuadPart = max_seconds * 1000 * 1000 * 10;
+    timeout.QuadPart = max_seconds * HZ_100NS;
 
     NdisGetCurrentSystemTime(&ts1);
 
@@ -480,7 +480,7 @@ ionic_adminq_post_wait(struct lif *lif, struct ionic_admin_ctx *ctx)
         return status;
     }
 
-    if (!NdisWaitEvent(&ctx->CompEvent, IONIC_ADMINQ_WAIT_TIME)) {
+    if (!NdisWaitEvent(&ctx->CompEvent, IONIC_ADMINQ_WAIT_TIME_SEC * HZ_1MS)) {
         DbgTrace((TRACE_COMPONENT_COMMAND, TRACE_LEVEL_ERROR,
                   "%s Timed out waiting on comp event\n", __FUNCTION__));
         remaining = 0;
