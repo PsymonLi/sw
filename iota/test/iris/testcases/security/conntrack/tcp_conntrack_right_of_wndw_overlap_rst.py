@@ -43,7 +43,7 @@ def Setup(tc):
     api.PrintCommandResults(cmd)
     tc.pre_ctrckinf = get_conntrackinfo(cmd)
     if getattr(tc.args, 'vmotion_enable', False):
-        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.server])
+        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.client])
 
     return api.types.status.SUCCESS
 
@@ -79,13 +79,14 @@ def Trigger(tc):
     term_resp1 = api.Trigger_TerminateAllCommands(tc.setup_cmd_resp)
     tc.resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp1)
     
-    if getattr(tc.args, 'vmotion_enable', False):
-        vmotion_utils.PrepareWorkloadRestore(tc)
-
     return api.types.status.SUCCESS    
         
 def Verify(tc):
     api.Logger.info("Verify.")
+
+    if getattr(tc.args, 'vmotion_enable', False):
+        vmotion_utils.PrepareWorkloadRestore(tc)
+
     if tc.resp == None:
         return api.types.status.SUCCESS
     for cmd in tc.resp.commands:
@@ -104,7 +105,7 @@ def Verify(tc):
             else:
                 return api.types.status.FAILURE
 
-    return api.types.status.SUCCESS
+    return api.types.status.FAILURE
 
 def Teardown(tc):
     api.Logger.info("Teardown.")

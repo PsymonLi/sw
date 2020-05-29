@@ -29,10 +29,7 @@ setup:
           args :
              spec : scale_cfg_1vrf_1nw_2ep_2rep.cfgyml
         - step : testcases.drivers.install_iperf
-        - step : utils.naples_upgrade.install
-          args :
-             naples_upgr_pkgs : ["naples_fw.tar", "naples_upg_fw.tar"]
-        - step : testcases.naples_upgrade.testupgapp_install
+        - step : config.naples.oob_reinit
 
 common:
     args: 
@@ -58,13 +55,19 @@ common:
         -   step : triggers.vmotion.trigger_vmotion
 
 testbundles:
+    precheckin:
+        # Relative paths from iota/test/iris/testbundles/
+
     sanity:
         # Relative paths from iota/test/iris/testbundles/
+
+    regression:
+        # Relative paths from iota/test/iris/testbundles/
+        - firewall/conntrack_vmotion.testbundle
+        # - firewall/normalization.testbundle
+        # - firewall/policy.testbundle
         # - networking/connectivity.testbundle
         # - networking/cps.testbundle
-        - firewall/conntrack.testbundle
-        - firewall/normalization.testbundle
-        - firewall/policy.testbundle
 
 teardown:
     #- step      : verif.utils.collect_logs_and_cores

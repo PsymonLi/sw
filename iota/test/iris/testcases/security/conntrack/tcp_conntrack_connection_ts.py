@@ -36,7 +36,7 @@ def Setup(tc):
     add_command(req, tc, 'server', tc.server, cmd_cookie, True)
  
     #start session
-    cmd_cookie = "./scapy_3way.py"
+    cmd_cookie = "sudo -E python3 ./scapy_3way.py {} {}".format(tc.client.ip_address, tc.server.ip_address)
     api.Trigger_AddCommand(req, tc.client.node_name, tc.client.workload_name, cmd_cookie,False)
        
     cmd_cookie = "/nic/bin/halctl show session --dstport 1237 --dstip {} --yaml".format(tc.server.ip_address)
@@ -48,7 +48,7 @@ def Setup(tc):
     tc.pre_ctrckinf = get_conntrackinfo(cmd)
     
     if getattr(tc.args, 'vmotion_enable', False):
-        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.server])
+        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.client])
 
     return api.types.status.SUCCESS
 
@@ -91,9 +91,8 @@ def Trigger(tc):
     term_first_resp = api.Trigger_TerminateAllCommands(tc.first_resp)
     term_sec_resp = api.Trigger_TerminateAllCommands(sec_resp)
    
-    tc.resp = api.Trigger_AggregateCommandsResponse(tc.first_resp, sec_resp) 
-    tc.resp = api.Trigger_AggregateCommandsResponse(term_first_resp, term_sec_resp)
-    tc.resp = term_sec_resp
+    tc.resp = api.Trigger_AggregateCommandsResponse(tc.first_resp, term_first_resp) 
+    tc.resp = api.Trigger_AggregateCommandsResponse(sec_resp, term_sec_resp)
 
     if getattr(tc.args, 'vmotion_enable', False):
         vmotion_utils.PrepareWorkloadRestore(tc)
@@ -115,7 +114,7 @@ def Verify(tc):
                 return api.types.status.SUCCESS
             else:
                 return api.types.status.FAILURE
-    return api.types.status.SUCCESS
+    return api.types.status.FAILURE
 
 def Teardown(tc):
     api.Logger.info("Teardown.")

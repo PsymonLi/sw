@@ -39,7 +39,7 @@ def Setup(tc):
     api.PrintCommandResults(cmd)
     tc.pre_ctrckinf = get_conntrackinfo(cmd)
     if getattr(tc.args, 'vmotion_enable', False):
-        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.server])
+        vmotion_utils.PrepareWorkloadVMotion(tc, [tc.client])
 
     return api.types.status.SUCCESS
 
@@ -101,7 +101,7 @@ def Verify(tc):
             else:
                 return api.types.status.FAILURE
         
-    return api.types.status.SUCCESS
+    return api.types.status.FAILURE
 
 def Teardown(tc):
     api.Logger.info("Teardown.")

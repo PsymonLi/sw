@@ -6,6 +6,7 @@ import threading
 import time
 
 import iota.harness.api as api
+import iota.harness.infra.utils.timeprofiler as timeprofiler
 import iota.test.iris.config.netagent.api as agent_api
 import iota.test.iris.utils.vmotion_utils as vmotion_utils
 
@@ -70,6 +71,9 @@ def Main(tc):
     tc.vmotion_resp = api.types.status.FAILURE
     if getattr(tc, 'vmotion_cntxt', None):
 
+        timer = timeprofiler.TimeProfiler()
+        timer.Start()
+
         # Update the Naples endpoint information - mimicking Venice (run a thread)
         cfg_thread = threading.Thread(target=__create_endpoint_info, args=(tc, ))
 
@@ -87,6 +91,8 @@ def Main(tc):
         if tc.vmotion_resp == api.types.status.SUCCESS: 
             __delete_endpoint_info(tc)
             vmotion_utils.UpdateCurrentHome(tc)
+        timer.Stop()
+        tc.vmotion_cntxt.TimeProfile.append(timer.TotalTime())
 
     return tc.vmotion_resp
 

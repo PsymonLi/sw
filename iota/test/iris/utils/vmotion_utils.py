@@ -11,6 +11,7 @@ def PrepareWorkloadVMotion(tc, candidateWorkloads):
     tc.vmotion_cntxt.CurrentHome = {}
     tc.vmotion_cntxt.MoveRequest = {}
     tc.vmotion_cntxt.UUIDMap = api.GetNaplesNodeUuidMap()
+    tc.vmotion_cntxt.TimeProfile = []
 
     for wl in candidateWorkloads:
         other_hosts = [_n.Name() for _n in api.GetNodes() if _n.Name() != wl.node_name]

@@ -79,10 +79,13 @@ def Trigger(tc):
         cmd_cookie = "hping3 -c 1 -s {} -p {} -M {}  -L {} --ack --tcp-timestamp {} -d 10".format(client_port, server_port, wrap_around(tc.pre_ctrckinf.i_tcpseqnum, -200), tc.pre_ctrckinf.i_tcpacknum, tc.server.ip_address)   
         add_command(req, tc,"fail ping", tc.client, cmd_cookie)
 
-    cmd_cookie = "sleep 3 && /nic/bin/halctl show session --dstport {} --dstip {} --yaml".format(server_port, tc.server.ip_address)
-    add_command(req, tc, 'show after', tc.client, cmd_cookie, naples=True)
+    if getattr(tc.args, 'vmotion_enable', False):
+        cmd_cookie = "sleep 3 && /nic/bin/halctl show session --dstport {} --dstip {} --yaml".format(server_port, tc.server.ip_address)
+        add_command(req, tc, 'show after', tc.server, cmd_cookie, naples=True)
+    else:
+        cmd_cookie = "sleep 3 && /nic/bin/halctl show session --dstport {} --dstip {} --yaml".format(server_port, tc.server.ip_address)
+        add_command(req, tc, 'show after', tc.client, cmd_cookie, naples=True)
 
-    
     cmd_cookie = "/nic/bin/halctl clear session"
     add_command(req, tc, 'clear', tc.client, cmd_cookie, naples=True)
 
@@ -107,7 +110,7 @@ def Verify(tc):
         return api.types.status.SUCCESS
     for cmd in tc.resp.commands:
         #api.PrintCommandResults(cmd)
-        if tc.cmd_cookies['show after'] == cmd.command:     
+        if tc.cmd_cookies['show after'] == cmd.command:
             if not cmd.stdout:
                 #until we can manipulated close timeout to smaller value
                 return api.types.status.SUCCESS
@@ -115,15 +118,17 @@ def Verify(tc):
             yaml_out = get_yaml(cmd)
             if tc.resp_flow:
                 flow = get_respflow(yaml_out)
-            else:   
-                flow = get_initflow(yaml_out)    
+            else:
+                flow = get_initflow(yaml_out) 
             conn_info = get_conntrack_info(flow)
             excep =  get_exceptions(conn_info)
             if (excep['tcpfullretransmit'] == 'false'):
-                return api.types.status.FAILURE 
+                return api.types.status.FAILURE
+
+            return api.types.status.SUCCESS
         
     #print(tc.resp)
-    return api.types.status.SUCCESS
+    return api.types.status.FAILURE
 
 def Teardown(tc):
     api.Logger.info("Teardown.")

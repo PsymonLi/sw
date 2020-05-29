@@ -1,0 +1,157 @@
+meta:
+    name    : conntrack
+    nics    : [ pensando ]
+    os      : [ esx ]
+    targetcount : 94
+
+testcases:
+    -   name    : TDL_NZ_LOW_INSIDE_NOT_ALIGN
+        testcase: testcases.security.conntrack.tcp_conntrack_in_window_not_left_aligned
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+        
+    -   name    : TDL_NZ_LOW_ON_BORDER
+        testcase: testcases.security.conntrack.tcp_conntrack_left_of_wndw_border
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+        
+    -   name    : TDL_NZ_ROW_OVLP
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    #Data is trimmed and passed packet goes through need to debug if no data becomes aligned. 
+    -   name    : TDL_Z_ROW_OVLP_RST
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap_rst
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_LOW_INSIDE_NOT_ALIGN_RST
+        testcase: testcases.security.conntrack.tcp_conntrack_in_window_not_left_aligned_rst
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_ROW_OVLP_FIN
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap_fin
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_LOW_INSIDE_NOT_ALIGN_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_in_window_not_left_aligned
+        ignore:   False
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_LOW_ON_BORDER_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_left_of_wndw_border
+        ignore:   False
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    #ignoring below testcase as we need to reduce tcp close timeout
+    -   name    : TDL_NZ_ROW_OVLP_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap
+        ignore  : True
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+        
+    #Data is trimmed and passed packet goes through need to debug 
+    -   name    : TDL_Z_ROW_OVLP_RST_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap_rst
+        ignore:   False
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_LOW_INSIDE_NOT_ALIGN_RST_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_in_window_not_left_aligned_rst
+        ignore:   False
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_NZ_ROW_OVLP_FIN_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_right_of_wndw_overlap_fin
+        ignore  : True
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    -   name    : TDL_TERM_RESP
+        testcase: testcases.security.conntrack.tcp_conntrack_term
+        ignore:   False
+        args    :
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    # done / done resp
+    -   name    : TDL_DATA
+        testcase: testcases.security.conntrack.tcp_conntrack_data
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+    
+    # tcpunexpectedpkt = True
+    -   name    : TDL_DATA_CLOSE
+        testcase: testcases.security.conntrack.tcp_conntrack_data_close
+        ignore:   False
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    # trim the mss - default behaviour
+    -   name    : CONN_MSS
+        testcase: testcases.security.conntrack.tcp_conntrack_connection_mss
+        ignore:   True
+        args: 
+            resp_flow: True
+        iterators:
+            type : simple
+            kind : ["local"]
+
+    - name      : CONN_TS_RESP
+      testcase: testcases.security.conntrack.tcp_conntrack_connection_ts
+      ignore:   False
+      args: 
+            resp_flow: True
+      iterators:
+            type : simple
+            kind : ["local"]
+
+    - name      : CONN_TS
+      testcase: testcases.security.conntrack.tcp_conntrack_connection_ts
+      ignore:   False
+      iterators:
+            type : simple
+            kind : ["local"]
+

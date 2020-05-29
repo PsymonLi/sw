@@ -101,13 +101,13 @@ class VerifStep:
         self.__mod = loader.Import(self.__spec.step, self.__spec.packages)
         return
 
-    def __execute(self):
+    def __execute(self, iter_data):
         Logger.debug("Running testcase verif module: %s" % self.__spec.step)
-        return loader.RunCallback(self.__mod, 'Main', True, None)
+        return loader.RunCallback(self.__mod, 'Main', True, iter_data)
 
-    def Main(self):
+    def Main(self, iter_data):
         self.__timer.Start()
-        self.__status = self.__execute()
+        self.__status = self.__execute(iter_data)
         self.__timer.Stop()
         if self.__status != api.types.status.SUCCESS:
             return api.types.status.FAILURE
@@ -661,10 +661,10 @@ class Testcase:
                 result = status
         return result
 
-    def __run_common_verifs(self):
+    def __run_common_verifs(self, iter_data):
         result = types.status.SUCCESS
         for s in self.__verifs:
-            status = s.Main()
+            status = s.Main(iter_data)
             if status != types.status.SUCCESS:
                 result = status
         return result
@@ -764,7 +764,7 @@ class Testcase:
                 for task_name, bt in self.__background_tasks.items():
                     bt_stop_result = bt.StopTask('verify')
 
-                verify_result = self.__run_common_verifs();
+                verify_result = self.__run_common_verifs(iter_data);
                 if verify_result != types.status.SUCCESS:
                     Logger.error("Common verifs failed.")
                     result = verify_result

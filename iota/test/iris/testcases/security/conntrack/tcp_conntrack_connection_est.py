@@ -37,7 +37,7 @@ def Trigger(tc):
     add_command(req, tc, 'server', server, cmd_cookie, True)
  
     #start session
-    cmd_cookie = "./scapy_3way.py"
+    cmd_cookie = "sudo -E python3 ./scapy_3way.py {} {}".format(client.ip_address, server.ip_address)
     api.Trigger_AddCommand(req, client.node_name, client.workload_name, cmd_cookie,False)
        
     cmd_cookie = "/nic/bin/halctl show session --dstport 1237 --dstip {} --yaml".format(server.ip_address)
@@ -61,11 +61,14 @@ def Trigger(tc):
 
     cmd_cookie = "sleep 3 && /nic/bin/halctl show session --dstport 1237 --dstip {} --yaml".format(server.ip_address)
     add_command(req, tc, 'show after', client, cmd_cookie, naples=True)
+    '''
 
     
     cmd_cookie = "/nic/bin/halctl clear session"
     add_command(req, tc, 'clear', client, cmd_cookie, naples=True)
-    '''
+    if server.IsNaples():
+        cmd_cookie = "/nic/bin/halctl clear session"
+        add_command(req, tc, 'clear', server, cmd_cookie, naples=True)
 
     trig_resp = api.Trigger(req)
     term_resp = api.Trigger_TerminateAllCommands(trig_resp)

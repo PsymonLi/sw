@@ -29,6 +29,7 @@ setup:
           args :
              spec : scale_cfg_1vrf_1nw_2ep_2rep.cfgyml
         - step : testcases.drivers.install_iperf
+        - step : config.naples.oob_reinit
 
 common:
     verifs:

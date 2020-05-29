@@ -5,12 +5,6 @@ meta:
     #targetcount : 35
 
 testcases:
-    -   name    : ping_oob_mnic0_intf
-        testcase: testcases.mnic.ping_oob
-        ignore: True
-        args    :
-            mtu: 1500
-            verify: no
     -   name    : PING_VM_OOB_DETAILED
         testcase: testcases.vmotion.basic_ping
         stress  : True

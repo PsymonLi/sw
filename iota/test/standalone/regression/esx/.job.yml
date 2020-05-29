@@ -36,6 +36,34 @@ e2e-targets:
           VmOs: linux
           EsxUsername: root
           EsxPassword: Pen0trl!
+
+ e2e-esx-vmotion-ext:
+   commands: ["sh", "-c", "make esx-precheckin && ./run_iota_vcenter.sh --testsuite hostpin_vm_vmotion --regression --skip-sanity"]
+   # commands: [ "cat /warmd.json && sleep 30000000"]
+   owners: ["email:srivatsa@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-10
+       count: 2
+       resources:
+         servers:
+           - type: hpe
+           - type: server-a
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: esx
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
   - /testcase_result_export/testsuite_useg_enf_esx_results.json
