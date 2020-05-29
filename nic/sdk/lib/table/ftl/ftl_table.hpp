@@ -6,7 +6,7 @@
 
 #define PDS_FLOW_HINT_POOL_COUNT_MAX    256
 #define PDS_FLOW_HINT_POOLS_MAX 8
-
+#define FTL_MAX_THREADS 8
 namespace sdk {
 namespace table {
 namespace internal {
@@ -63,7 +63,7 @@ public:
 
 private:
     ftlindexer indexer_;
-    static thread_local uint8_t nctx_;
+    static uint8_t nctx_[FTL_MAX_THREADS];
     ftl_flow_hint_id_thr_local_pool_t thr_local_pools_[PDS_FLOW_HINT_POOLS_MAX];
 
 private:
@@ -89,7 +89,9 @@ private:
 
 public:
     static hint_table* factory(sdk::table::properties_t *props);
-    hint_table() {}
+    hint_table() {
+        memset(&nctx_, 0, sizeof(nctx_));
+    }
     ~hint_table() {}
 };
 

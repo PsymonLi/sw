@@ -13,7 +13,7 @@ testcases:
         iterators:
             type      : simple
             proto     : [ udp ]
-            cps       : [ 200000 ]
+            cps       : [ 237000 ]
             duration  : [ 1 ]
 
     -   name    : Trex_UDP_TCP_Remote_Workloads

@@ -8,7 +8,7 @@
 #include "ftl_base.hpp"
 #include "ftl_includes.hpp"
 
-thread_local uint8_t hint_table::nctx_ = 0;
+uint8_t hint_table::nctx_[FTL_MAX_THREADS];
 
 hint_table *
 hint_table::factory(sdk::table::properties_t *props) {
@@ -69,14 +69,15 @@ hint_table::destroy_(hint_table *table)
 inline Apictx *
 hint_table::ctxnew_(Apictx *src) {
     if (src->is_main()) {
-        nctx_ = 0;
+        nctx_[src->thread_id] = 0;
     } else {
-        SDK_ASSERT(nctx_ < FTL_MAX_API_CONTEXTS);
+        SDK_ASSERT(nctx_[src->thread_id] < FTL_MAX_API_CONTEXTS);
     }
     auto c = src + 1;
     sdk::table::ftl_base *ftlbase = (sdk::table::ftl_base *)src->ftlbase();
-    nctx_++;
-    base_table_entry_t *entry = ftlbase->get_entry(src->thread_id, nctx_);
+    nctx_[src->thread_id]++;
+    base_table_entry_t *entry = ftlbase->get_entry(src->thread_id, 
+                                                   nctx_[src->thread_id]);
     c->init(src, entry);
     return c;
 }
