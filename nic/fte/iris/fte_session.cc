@@ -567,7 +567,7 @@ fte_inject_eth_pkt (const lifqid_t &lifq,
 }
 
 hal_ret_t
-session_update_ep_in_fte (hal_handle_t session_handle)
+session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_only)
 {
     hal_ret_t ret = HAL_RET_OK;
     ctx_t ctx = {};
@@ -588,11 +588,6 @@ session_update_ep_in_fte (hal_handle_t session_handle)
         return HAL_RET_OK;
     }
 
-    HAL_TRACE_DEBUG("fte:: Received session update for session id {}",
-                    session->hal_handle);
-
-    HAL_TRACE_VERBOSE("num features: {} feature state size: {}", num_features, fstate_size);
-
     feature_state = (feature_state_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE, fstate_size);
     if (!feature_state) {
         ret = HAL_RET_OOM;
@@ -611,17 +606,34 @@ session_update_ep_in_fte (hal_handle_t session_handle)
         ctx.set_ipc_logger(get_current_ipc_logger_inst());
     } 
 
-    HAL_TRACE_VERBOSE("Sep: {} Dep: {} Sep Dir: {} Dep Dir: {}", 
-                      ctx.sep_handle(), ctx.dep_handle(), 
-                      ((ctx.sep() && (ctx.sep()->ep_flags & EP_FLAGS_LOCAL)) ?FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK),
-                      ((ctx.dep() && (ctx.dep()->ep_flags & EP_FLAGS_LOCAL)) ?FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK));
-    session->sep_handle  = ctx.sep_handle();
-    session->dep_handle  = ctx.dep_handle(); 
+    HAL_TRACE_VERBOSE("Session:{} Sep: {} Dep: {} Sep Dir: {} Dep Dir: {} reset: {}",
+                      session->hal_handle, ctx.sep_handle(), ctx.dep_handle(), 
+                      ((ctx.sep() && (ctx.sep()->ep_flags & EP_FLAGS_LOCAL))  \
+                                       ? FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK),
+                      ((ctx.dep() && (ctx.dep()->ep_flags & EP_FLAGS_LOCAL)) \
+                                       ? FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK),
+                      reset_sync_session_only);
+
+    // In session we have a field syncing_session. This will be set for the session, which got
+    // created as part of the sync process. This bit is used to skip the aging logic for the
+    // session; till the sync process is over. Once sync process is over, this bit will be reset.
+    // In case of vMotion is aborted in the middle, this bit has to be reset (so that the sessions
+    // created as part of sync process will be aged out). In such a scenario, only syncing_session
+    // alone has to be reset. No other fields sep_handle or dep_handle should be altered, because
+    // traffic could be still active to the old host.
+    if (reset_sync_session_only) {
+        session->syncing_session   = false;
+        goto end;
+    }
+
+    session->sep_handle        = ctx.sep_handle();
+    session->dep_handle        = ctx.dep_handle(); 
+    session->syncing_session   = false;
     session->iflow->config.dir = (ctx.sep() && (ctx.sep()->ep_flags & EP_FLAGS_LOCAL)) ?
-            FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
+                                                 FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
     if (session->rflow) {
         session->rflow->config.dir = (ctx.dep() && (ctx.dep()->ep_flags & EP_FLAGS_LOCAL)) ?
-            FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
+                                                     FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
     }
    
     ctx.flow_log()->sfw_action = (nwsec::SecurityAction)ctx.session()->sfw_action;

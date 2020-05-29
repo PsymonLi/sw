@@ -34,8 +34,7 @@ src_host_end (vmotion_ep *vmn_ep, MigrationState migration_state, vmotion_thread
 
         if (ep) {
             if (migration_state == MigrationState::SUCCESS) {
-                vmn_ep->get_vmotion()->migration_done(vmn_ep->get_ep_handle(),
-                                                      MigrationState::SUCCESS);
+                vmn_ep->get_vmotion()->migration_done(ep, MigrationState::SUCCESS);
             }
 
             // Remove EP Quiesce NACL entry

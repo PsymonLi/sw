@@ -338,7 +338,9 @@ vmotion::create_vmotion_ep(ep_t *ep, ep_vmotion_type_t type)
 {
     auto vmn_ep = vmotion_ep::factory(ep, type);
 
+    VMOTION_WLOCK
     vmn_eps_.push_back(vmn_ep);
+    VMOTION_WUNLOCK
 
     return vmn_ep;
 }
@@ -352,7 +354,10 @@ vmotion::delete_vmotion_ep(vmotion_ep *vmn_ep)
         return HAL_RET_ERR;
     }
     // Delete the from the EP List
+    VMOTION_WLOCK
     vmn_eps_.erase(it);
+    VMOTION_WUNLOCK
+
     // Destroy EP
     vmotion_ep::destroy(vmn_ep);
 
@@ -367,7 +372,7 @@ vmotion::vmotion_handle_ep_del(ep_t *ep)
     }
     if (ep->vmotion_state == MigrationState::IN_PROGRESS) {
         // Loop the sessions, and start aging timer if any sync sessions received
-        migration_done(ep->hal_handle, ep->vmotion_state);
+        endpoint_migration_done(ep, ep->vmotion_state);
     }
 
     run_vmotion(ep, VMOTION_EVT_EP_MV_ABORT);
@@ -535,6 +540,7 @@ vmotion::populate_vmotion_dump (internal::VmotionDebugResponse *rsp)
 void
 vmotion::incr_migration_state_stats(MigrationState state)
 {
+    VMOTION_WLOCK
     if (state == MigrationState::SUCCESS) {
         incr_stats(&vmotion_stats_t::mig_success);
     } else if (state == MigrationState::FAILED) {
@@ -544,6 +550,17 @@ vmotion::incr_migration_state_stats(MigrationState state)
     } else if (state == MigrationState::ABORTED) {
         incr_stats(&vmotion_stats_t::mig_aborted);
     }
+    VMOTION_WUNLOCK
+}
+
+void
+vmotion::migration_done(ep_t *ep, MigrationState mig_state)
+{
+    // In migration done, EP session_list_head will be looped, so take read lock.
+    // Ensure this function is called only from vMotion threads
+    VMOTION_HAL_READ_LOCK();
+    endpoint_migration_done(ep, mig_state);
+    VMOTION_HAL_READ_UNLOCK();
 }
 
 static void
@@ -559,39 +576,6 @@ vmotion_thread_delay_del_cb (void *timer, uint32_t timer_id, void *ctxt)
     if (g_hal_state->get_vmotion()) {
         g_hal_state->get_vmotion()->release_thread_id(thr->thread_id());
     }
-}
-
-struct migration_done_ctx_t {
-    hal_handle_t    ep_handle;
-    MigrationState  mig_state;
-};
-
-static void
-migration_done_in_fte (void *data)
-{
-    migration_done_ctx_t *ctx = reinterpret_cast<migration_done_ctx_t *>(data);
-    ep_t                 *ep = find_ep_by_handle(ctx->ep_handle);
-
-    if (!ep) {
-        HAL_TRACE_ERR("vMotion EP not found:{}", ctx->ep_handle);
-    } else {
-        // Loop the sessions, and start aging timer
-        endpoint_migration_done(ep, ctx->mig_state);
-    }
-
-    HAL_FREE(hal::HAL_MEM_ALLOC_FTE, ctx);
-}
- 
-void
-vmotion::migration_done(hal_handle_t ep_handle, MigrationState mig_state)
-{
-    struct migration_done_ctx_t *fn_ctx;
-    fn_ctx = (struct migration_done_ctx_t*)HAL_MALLOC(hal::HAL_MEM_ALLOC_FTE,
-                                                      sizeof(struct migration_done_ctx_t));
-    fn_ctx->ep_handle = ep_handle;
-    fn_ctx->mig_state = mig_state;
-
-    fte::fte_execute(0, migration_done_in_fte, fn_ctx);
 }
 
 void

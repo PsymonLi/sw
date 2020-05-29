@@ -35,6 +35,9 @@ namespace hal {
 #define VMOTION_PD_LOCK   hal_handle_cfg_db_lock(false, true);
 #define VMOTION_PD_UNLOCK hal_handle_cfg_db_lock(false, false);
 
+#define VMOTION_HAL_READ_LOCK()   hal_handle_cfg_db_lock(true, true);
+#define VMOTION_HAL_READ_UNLOCK() hal_handle_cfg_db_lock(true, false);
+
 #define VMOTION_MAX_THREADS \
         (HAL_THREAD_ID_VMOTION_THREADS_MAX - HAL_THREAD_ID_VMOTION_THREADS_MIN + 1)
 
@@ -187,7 +190,7 @@ public:
     void          incr_stats(uint32_t vmotion_stats_t::* const p_field) { (stats_.*p_field)++; }
     void          incr_migration_state_stats(MigrationState state); 
     TLSContext*   get_tls_context(void) { return tls_context_; }
-    void          migration_done(hal_handle_t ep_handle, MigrationState mig_state);
+    void          migration_done(ep_t *ep, MigrationState mig_state);
     static void   delay_delete_thread(sdk::event_thread::event_thread *thr);
     hal_ret_t     vmotion_ep_quiesce_program(ep_t *ep, bool entry_add);
     hal_ret_t     vmotion_ep_migration_normalization_cfg(ep_t *ep, bool disable, bool lock_needed);

@@ -1218,25 +1218,23 @@ end:
 
 typedef struct ep_session_upd_args_ {
     uint8_t         fte_id;
-    uint32_t        count;
-    hal_handle_t  *session_hdl_list;
+    uint8_t         count;
+    bool            reset_sync_session_only;
+    hal_handle_t    session_hdl_list[HAL_MAX_SESSIONS_PER_UPDATE];
 } ep_session_upd_args_t;
 
 // Runs in FTE Context to walk a batch
 void
 fte_session_update_list (void *data)
 {
-    hal_handle_t *session_list = (hal_handle_t *)data;
+    ep_session_upd_args_t *ep_updt = (ep_session_upd_args_t *)data;
 
-    HAL_TRACE_DEBUG("FTE session update");
-
-    for (uint8_t i=0; i<HAL_MAX_SESSIONS_PER_UPDATE; i++) {
-        if (session_list[i]) {
-            HAL_TRACE_DEBUG("FTE: updating session: {}", session_list[i]);
-            fte::session_update_ep_in_fte(session_list[i]);
-        }
+    for (uint8_t i = 0; i < ep_updt->count; i++) {
+        HAL_TRACE_VERBOSE("session: {} Count:{}", ep_updt->session_hdl_list[i], ep_updt->count);
+        fte::session_update_ep_in_fte(ep_updt->session_hdl_list[i],
+                                      ep_updt->reset_sync_session_only);
     }
-    HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, session_list);
+    HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
 }
 
 // get session info (in protobuf) for a given endpoint
@@ -2366,17 +2364,22 @@ typedef struct ep_session_delete_args_ {
     dllist_ctxt_t    session_list;
 } ep_session_delete_args_t;
 
+typedef enum session_del_op_type_s {
+    SESSION_DEL_OP_NONE = 0,
+    SESSION_DEL_OP_UPDT = 1,
+    SESSION_DEL_OP_DEL  = 2
+} session_del_op_type_t;
+
 static void
 ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
 {
-    hal_handle_t                   *sess_hdl_list = NULL;
     ep_session_delete_args_t       *args = (ep_session_delete_args_t *)ctxt;
+    ep_session_upd_args_t          *ep_updt = NULL;
     uint32_t                        count = 0;
     hal_ret_t                       ret = HAL_RET_OK;
 
-    sess_hdl_list =
-        (hal_handle_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
-                                   sizeof(hal_handle_t)*HAL_MAX_SESSIONS_PER_UPDATE);
+    ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
+                                                  sizeof(ep_session_upd_args_t));
 
     HAL_TRACE_VERBOSE("Ep Session delete walk cb");
     // delete all sessions
@@ -2384,49 +2387,56 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
     dllist_for_each_safe(curr, next, &args->session_list) {
         hal_handle_id_list_entry_t  *entry =
             dllist_entry(curr, hal_handle_id_list_entry_t, dllist_ctxt);
-        session_t *session = hal::find_session_by_handle(entry->handle_id);
-        bool       del = true;;
+        session_t *session       = hal::find_session_by_handle(entry->handle_id);
+        session_del_op_type_t op = SESSION_DEL_OP_DEL;
 
         if (session) {
             // If the session is referenced by another local EP (as SEP or DEP) dont delete
             if (session->sep_handle == args->ep_handle) {
                 if (session->dep_handle != HAL_HANDLE_INVALID) {
-                    session->sep_handle = HAL_HANDLE_INVALID;
-                    del = false;
+                    op = SESSION_DEL_OP_UPDT;
                 }
             } else if (session->dep_handle == args->ep_handle) {
                 if (session->sep_handle != HAL_HANDLE_INVALID) {
-                    session->sep_handle = HAL_HANDLE_INVALID;
-                    del = false;
+                    op = SESSION_DEL_OP_UPDT;
                 }
+            } else {
+                // Both session's SEP Handle and DEP handle not matches with deleting EP's handle.
+                // Then don't do anything. This can happen in a scenario - this session was
+                // earlier part of the EP (that is getting deleted). When EP is deleted,
+                // this session delete function will be called after a delay (250ms),  in that
+                // time, this session's SEP/DEP handle could get updated to some other EP 
+                // handle (in a vMotion scenario), then dont touch the session.
+                op = SESSION_DEL_OP_NONE;
             }
-            if (del == false) {
-                sess_hdl_list[count] = session->hal_handle;
+
+            HAL_TRACE_VERBOSE("ep delete: Ep:{} Sess:{} Sep:{} Dep:{} Op:{}", args->ep_handle,
+                               entry->handle_id, session->sep_handle, session->dep_handle, op);
+
+            if (op == SESSION_DEL_OP_UPDT) {
+                ep_updt->session_hdl_list[count] = session->hal_handle;
                 count++;
 
                 // Batch session updates.
                 if (count == HAL_MAX_SESSIONS_PER_UPDATE) {
-                    ret = fte::fte_softq_enqueue(0, /* FTE ID */
-                                                fte_session_update_list,
-                                                (void *)sess_hdl_list);
+                    ep_updt->count = count;
+
+                    ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
                     if (ret != HAL_RET_OK) {
                         HAL_TRACE_ERR("Failed to post update to FTE");
+                        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
                     }
 
-                    count = 0;
-                    sess_hdl_list =
-                           (hal_handle_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
-                                           sizeof(hal_handle_t)*HAL_MAX_SESSIONS_PER_UPDATE);
-
+                    count   = 0;
+                    ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
+                                                                  sizeof(ep_session_upd_args_t));
                 } 
+            } else if (op == SESSION_DEL_OP_DEL) {
+                if (fte::session_delete_async(session, true) != HAL_RET_OK) {
+                    HAL_TRACE_ERR("Couldnt delete session with handle: {}", entry->handle_id);
+                }
             }
 
-            HAL_TRACE_VERBOSE("ep delete: Ep:{} Sess:{} Sep:{} Dep:{} Del:{}", args->ep_handle,
-                               entry->handle_id, session->sep_handle, session->dep_handle, del);
-
-            if (del && (fte::session_delete_async(session, true) != HAL_RET_OK)) {
-                HAL_TRACE_ERR("Couldnt delete session with handle: {}", entry->handle_id);
-            }
             // clean up the session to ctxt reference
             if (curr == session->sep_sess_list_entry_ctxt) {
                 session->sep_sess_list_entry_ctxt = NULL;
@@ -2440,14 +2450,15 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
     }
 
     if (count != 0) {
-        ret = fte::fte_softq_enqueue(0, /* FTE ID */
-                                     fte_session_update_list,
-                                     (void *)sess_hdl_list);
+        ep_updt->count = count;
+
+        ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to post update to FTE");
+            HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
         }
     } else {
-        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, sess_hdl_list);
+        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
     }
 
     HAL_FREE(HAL_MEM_ALLOC_EP_SESS_DELETE_CTXT, args);
@@ -3434,89 +3445,73 @@ endpoint_migration_normalization_cfg(ep_t *ep, bool disable)
 }
 
 void
-endpoint_migration_done_src_host (ep_t *ep, session_t *session, MigrationState mig_state)
+endpoint_vmotion_sessions_update (ep_t *ep, bool reset_sync_session_only)
 {
-    if (mig_state != MigrationState::SUCCESS) {
-        // Nothing to be done in source host, if vMotion is not success
-        return;
-    }
+    ep_session_upd_args_t      *ep_updt = NULL;
+    hal_ret_t                   ret = HAL_RET_OK;
+    uint8_t                     count = 0;
+    hal_handle_id_list_entry_t *entry = NULL;
+    dllist_ctxt_t              *curr, *next;
 
-    // If the session is not deleted, the direction bit has to be flipped, as
-    // the session is moving out.
-    // As the 'direction' bit is part of the key, delete and insert again in the
-    // hash table.
-    if (session->sep_handle == ep->hal_handle) {
-        // 1) If the session is not referenced by another local EP (as DEP), because anyhow this 
-        //    session itself will be deleted (during EP del)
-        // 2) Flip by Direction bit only if it points to Host   
-        if ((session->dep_handle != HAL_HANDLE_INVALID) &&
-            (session->iflow->config.dir == FLOW_DIR_FROM_DMA)) {
-            HAL_TRACE_VERBOSE("Update iFlow Dir:{} ", session->iflow->config.dir);
-            session->iflow->config.dir = FLOW_DIR_FROM_UPLINK;
-        }
-    } else if (session->rflow) {
-        // 1) If the session is not referenced by another local EP (as SEP), because anyhow this 
-        //    session itself will be deleted (during EP del)
-        // 2) Flip by Direction bit only if it points to Host   
-        if ((session->sep_handle != HAL_HANDLE_INVALID) &&
-            (session->rflow->config.dir == FLOW_DIR_FROM_DMA)) {
-            HAL_TRACE_VERBOSE("Update rFlow Dir:{} ", session->rflow->config.dir);
-            session->rflow->config.dir = FLOW_DIR_FROM_UPLINK;
-        }
-    }
-}
+    ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
+                                                  sizeof(ep_session_upd_args_t));
 
-void
-endpoint_migration_done_dst_host (ep_t *ep, session_t *session, MigrationState mig_state)
-{
-    if (session->syncing_session) {
-        // Session was created as part of sync process
-        session->syncing_session = false;
-    } else if (mig_state == MigrationState::SUCCESS) {
-        // Session was already existing in this node, 
-        // Scenario - Earlier it was (Local - Remote) session, because of vMotion, now
-        // it has become (Local - Local) session, so update the direction bit to
-        // HOST
-        if (session->sep_handle == ep->hal_handle) {
-            if (session->iflow->config.dir == FLOW_DIR_FROM_UPLINK) {
-                HAL_TRACE_VERBOSE("Update iFlow Dir:{} ", session->iflow->config.dir);
-                session->iflow->config.dir = FLOW_DIR_FROM_DMA;
-            }
-        } else if (session->rflow) {
-            if (session->iflow->config.dir == FLOW_DIR_FROM_UPLINK) {
-                HAL_TRACE_VERBOSE("Update rFlow Dir:{} ", session->rflow->config.dir);
-                session->rflow->config.dir = FLOW_DIR_FROM_DMA;
+    for (uint8_t fte_id = 0; fte_id < HAL_MAX_DATA_THREAD; fte_id++) {
+        dllist_for_each_safe(curr, next, &ep->session_list_head[fte_id]) {
+            entry = dllist_entry(curr, hal_handle_id_list_entry_t, dllist_ctxt);
+
+            ep_updt->session_hdl_list[count] = entry->handle_id;
+            count++;
+
+            // Batch session updates.
+            if (count == HAL_MAX_SESSIONS_PER_UPDATE) {
+                ep_updt->count                   = count;
+                ep_updt->reset_sync_session_only = reset_sync_session_only;
+
+                ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
+                if (ret != HAL_RET_OK) {
+                    HAL_TRACE_ERR("Failed to post update to FTE");
+                    HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+                }
+
+                count = 0;
+                ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
+                                                              sizeof(ep_session_upd_args_t));
             }
         }
+    }
+
+    if (count != 0) {
+        ep_updt->count                   = count;
+        ep_updt->reset_sync_session_only = reset_sync_session_only;
+
+        ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Failed to post update to FTE");
+            HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+        }
+    } else {
+        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
     }
 }
 
 void
 endpoint_migration_done (ep_t *ep, MigrationState mig_state)
 {
-    hal_handle_id_list_entry_t        *entry = NULL;
-    dllist_ctxt_t                     *curr, *next;
-
     HAL_TRACE_DEBUG("EP:{} State:{} Type:{}", ep->hal_handle, mig_state, ep->vmotion_type);
 
-    for (uint8_t fte_id = 0; fte_id < HAL_MAX_DATA_THREAD; fte_id++) {
-        dllist_for_each_safe(curr, next, &ep->session_list_head[fte_id]) {
-            entry = dllist_entry(curr, hal_handle_id_list_entry_t, dllist_ctxt);
-
-            session_t *session = hal::find_session_by_handle(entry->handle_id);
-            if (session) {
-                if (ep->vmotion_type == VMOTION_TYPE_MIGRATE_IN) {
-                    endpoint_migration_done_dst_host(ep, session, mig_state);
-                } else if (ep->vmotion_type == VMOTION_TYPE_MIGRATE_OUT) {
-                    endpoint_migration_done_src_host(ep, session, mig_state);
-                }
-            }
+    if (ep->vmotion_type == VMOTION_TYPE_MIGRATE_OUT) {
+        // If vMotion is success, delete the sessions under the outgoing EP (in old node)
+        if (mig_state == MigrationState::SUCCESS) {
+            ep_sessions_delete(ep);
         }
-    }
-
-    // If vMotion is success, delete the sessions in the old node
-    if ((ep->vmotion_type == VMOTION_TYPE_MIGRATE_OUT) && (mig_state == MigrationState::SUCCESS)) {
-        ep_sessions_delete(ep);
+    } else {
+        if (mig_state == MigrationState::SUCCESS) {
+            endpoint_vmotion_sessions_update(ep, false);
+        } else {
+            // Migration failed in Destination host, so just reset sync_session bit alone 
+            endpoint_vmotion_sessions_update(ep, true);
+        }
     }
 }
 

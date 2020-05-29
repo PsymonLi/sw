@@ -459,16 +459,11 @@ updt_ep_to_session_db (ep_t *sep, ep_t *dep, session_t *session, bool ep_create)
 void
 ep_add_to_session_db (ep_t *ep, session_t *session)
 {
-    if (session->sep_handle && session->dep_handle) {
-        // Both the sep & dep handle of this session is already populated. Nothing to be done
-        return;
-    }
-
-    if ((session->sep_handle == HAL_HANDLE_INVALID) &&
-        (!memcmp(ep->l2_key.mac_addr, session->iflow->config.l2_info.smac, ETH_ADDR_LEN))) {
+    if (!memcmp(ep->l2_key.mac_addr, session->iflow->config.l2_info.smac, ETH_ADDR_LEN)) {
+        session->sep_handle = HAL_HANDLE_INVALID;
         updt_ep_to_session_db(ep, NULL, session, true);
-    } else if ((session->dep_handle == HAL_HANDLE_INVALID) &&
-               (!memcmp(ep->l2_key.mac_addr, session->iflow->config.l2_info.dmac, ETH_ADDR_LEN))) {
+    } else if (!memcmp(ep->l2_key.mac_addr, session->iflow->config.l2_info.dmac, ETH_ADDR_LEN)) {
+        session->dep_handle = HAL_HANDLE_INVALID;
         updt_ep_to_session_db(NULL, ep, session, true);
     }
 }

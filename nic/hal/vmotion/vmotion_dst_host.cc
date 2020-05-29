@@ -34,8 +34,7 @@ dst_host_end (vmotion_ep *vmn_ep)
             (vmn_ep->get_migration_state() == MigrationState::TIMEOUT)) {
 
             // Loop the sessions, and start aging timer
-            vmn_ep->get_vmotion()->migration_done(vmn_ep->get_ep_handle(),
-                                                  vmn_ep->get_migration_state());
+            vmn_ep->get_vmotion()->migration_done(ep, vmn_ep->get_migration_state());
 
             // Remove EP Quiesce NACL entry
             if (VMOTION_FLAG_IS_EP_QUIESCE_ADDED(vmn_ep)) {

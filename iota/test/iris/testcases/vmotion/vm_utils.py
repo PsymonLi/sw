@@ -253,6 +253,9 @@ def create_ep_info(tc, wl, dest_node, migr_state, src_node):
     # delete endpoint being moved on new host, TEMP
     agent_api.DeleteConfigObjects([object], [dest_node], True)
 
+    # sleep to let delete cleanup all sessions/handles
+    time.sleep(1)
+
     object.spec.node_uuid           = tc.uuidMap[dest_node]
     object.spec.migration           = migr_state 
     if (api.IsNaplesNode(src_node)):
