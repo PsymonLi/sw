@@ -132,36 +132,21 @@ class InterfaceObject(base.ConfigObjectBase):
         if not resp:
             return
         for ifinst in resp:
-            if self.Type == topo.InterfaceTypes.L3:
-                if (not ifinst['spec']['type'] == 'L3'):
-                    continue
-                riid = ifinst['meta']['name']
-                if (self.InterfaceId != int(riid[len(riid)-1])):
-                    continue
-            elif self.Type == topo.InterfaceTypes.LOOPBACK:
-                if (not ifinst['spec']['type'] == 'LOOPBACK'):
-                    continue
-            elif self.Type == topo.InterfaceTypes.ETH:
-                if (not ifinst['spec']['type'] == 'HOST_PF'):
-                    continue
-                if (ifinst['meta']['uuid'] != self.UUID.UuidStr):
-                    continue
-            else:
+            if (ifinst['meta']['uuid'] != self.UUID.UuidStr):
                 continue
-            # Found matching interface, get basic info
-            uuid_str = ifinst['meta']['uuid']
-            self.UUID = utils.PdsUuid(bytes.fromhex(uuid_str.replace('-','')),\
-                    self.ObjType)
+
+            # instance found. Store meta info
             self.Tenant = ifinst['meta']['tenant']
             self.Namespace = ifinst['meta']['namespace']
             self.SetIfNameFromAgentData(ifinst['meta']['name'])
 
             # get ifinfo
-            if hasattr(ifinst['spec'], 'ip-address'):
+            if 'ip-address' in ifinst['spec']:
                 self.IpPrefix = ipaddress.ip_network(ifinst['spec']['ip-address'],\
                         False)
-            if hasattr(ifinst['spec'], 'vrf-name'):
+            if 'vrf-name' in ifinst['spec']:
                 self.VrfName = ifinst['spec']['vrf-name']
+
         return
 
     def SetIfNameFromAgentData(self, ifname):
@@ -205,7 +190,7 @@ class InterfaceObject(base.ConfigObjectBase):
         return
 
     def ValidateSpec(self, spec):
-        if spec.Id != self.GetKey():
+        if not self.IsOriginImplicitlyCreated() and spec.Id != self.GetKey():
             return False
         if spec.AdminStatus != interface_pb2.IF_STATUS_UP:
             return False
@@ -432,7 +417,8 @@ class L3InterfaceObject(InterfaceObject):
             return False
         if spec.Type != interface_pb2.IF_TYPE_L3:
             return False
-        if spec.L3IfSpec.PortId != self.Port.GetUuid():
+        # Skip comparing port ID, since netagent uses a diff UUID
+        if not self.IsOriginImplicitlyCreated() and spec.L3IfSpec.PortId != self.Port.GetUuid():
             return False
         # TODO: Enable once device delete is fixed. MAC is also \
         # overwritten with 0 on deleting device config.
@@ -738,6 +724,12 @@ class InterfaceObjectClient(base.ConfigClientBase):
                     inf.Status.Update(resp.Status)
         logger.info(f"GRPC read count {numObjs} for {self.ObjType.name} in {node}")
         return (numObjs == self.GetNumHwObjects(node))
+
+    def IsReadSupported(self):
+        if utils.IsNetAgentMode():
+            # Netagent messes up the UUID so don't read
+            return False
+        return True
 
 
 client = InterfaceObjectClient()

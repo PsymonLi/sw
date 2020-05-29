@@ -36,6 +36,11 @@ uplink:
         status  : UP
         origin  : implicitly-created
 
+security_profile:
+   id          : 1
+   origin      : implicitly-created
+   deffwaction : deny
+
 vpc:
     - id         : 100
       stack      : ipv4
