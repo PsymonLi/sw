@@ -919,6 +919,8 @@ func TestFirewallProfileNodeVersions(t *testing.T) {
 	AssertEquals(t, "1", prop.GenerationID, "Incorrect 'generation id' propagation status")
 	AssertEquals(t, "", prop.MinVersion, "Incorrect 'min version' propagation status")
 
+	// Wait for the periodic updater to kick in at least once
+	time.Sleep(2 * time.Second)
 }
 
 func TestFirewallProfile(t *testing.T) {

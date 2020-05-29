@@ -4,7 +4,6 @@ package writer
 
 import (
 	"context"
-	"time"
 
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
@@ -62,28 +61,32 @@ func (wr *APISrvWriter) GetAPIClient() (apiclient.Services, error) {
 
 // WriteMirrorSession updates MirrorSession object
 func (wr *APISrvWriter) WriteMirrorSession(ms *monitoring.MirrorSession) error {
-	// if we have no URL, we are done
-	if wr.apisrvURL == "" {
-		return nil
-	}
 
-	// get the api client
-	apicl, err := wr.GetAPIClient()
-	if err != nil {
-		return err
-	}
-	log.Infof("Updating MirrorSession %v Status %v Version %v", ms.Name, ms.Status.ScheduleState, ms.ResourceVersion)
-
-	// update status
-	for i := 0; i < 5; i++ {
-		_, err = apicl.MonitoringV1().MirrorSession().UpdateStatus(context.Background(), ms)
-		if err == nil {
-			break
+	log.Infof("Skipping updating write of mirror session as tsm does not support feature anymore")
+	return nil
+	/*
+		// if we have no URL, we are done
+		if wr.apisrvURL == "" {
+			return nil
 		}
-		time.Sleep(time.Millisecond * 100)
-	}
 
-	return err
+		// get the api client
+		apicl, err := wr.GetAPIClient()
+		if err != nil {
+			return err
+		}
+		log.Infof("Updating MirrorSession %v Status %v Version %v", ms.Name, ms.Status.ScheduleState, ms.ResourceVersion)
+
+		// update status
+		for i := 0; i < 5; i++ {
+			_, err = apicl.MonitoringV1().MirrorSession().UpdateStatus(context.Background(), ms)
+			if err == nil {
+				break
+			}
+			time.Sleep(time.Millisecond * 100)
+		}
+
+		return err */
 }
 
 // WriteTechSupportRequest updates TechSupportRequest object

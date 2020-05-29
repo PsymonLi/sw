@@ -1133,6 +1133,10 @@ func (sm *Statemgr) AddPushObjectToMbus(key string, obj mbusObject,
 	obj.reinitObjTracking(meta.GenerationID)
 	sm.Unlock()
 
+	for _, recv := range receivers {
+		obj.startDSCTracking(recv.Name())
+	}
+
 	return sm.mbus.AddPushObject(key, dbObject, refs, receivers)
 
 }

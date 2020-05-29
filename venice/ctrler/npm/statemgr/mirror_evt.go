@@ -154,12 +154,16 @@ func (mss *MirrorSessionState) processDSCUpdate(dsc *cluster.DistributedServiceC
 	mss.MirrorSession.Lock()
 	defer mss.MirrorSession.Unlock()
 
+	//Interface based mirroring is pushed to respective naples selectively.
+	// and are tracked when receiver is added
 	if !mss.isFlowBasedMirroring() {
 		return nil
 	}
 
 	if mss.stateMgr.sm.isDscEnforcednMode(dsc) || mss.stateMgr.sm.isDscFlowawareMode(dsc) {
 		mss.smObjectTracker.startDSCTracking(dsc.Name)
+	} else {
+		mss.smObjectTracker.stopDSCTracking(dsc.Name)
 	}
 
 	return nil
@@ -179,7 +183,8 @@ func (mss *MirrorSessionState) processDSCDelete(dsc *cluster.DistributedServiceC
 //TrackedDSCs tracked DSCs
 func (mss *MirrorSessionState) TrackedDSCs() []string {
 
-	//Track mirror session only for flow aware case
+	//Interface based mirroring is pushed to respective naples selectively.
+	// and are tracked when receiver is added
 	if !mss.isFlowBasedMirroring() {
 		return nil
 	}
@@ -317,7 +322,7 @@ func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSess
 	if isFlowBasedMirroring(ms) && !mss.stateMgr.MirrorSessionCountAllocate() {
 		mss.State = monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION
 		mss.MirrorSession.Status.ScheduleState = monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String()
-		log.Infof("Mirror session  %v not scheduled", mss.MirrorSession.Name)
+		log.Infof("Mirror session %v not scheduled", mss.MirrorSession.Name)
 	} else {
 		mss.State = monitoring.MirrorSessionState_ACTIVE
 		mss.MirrorSession.Status.ScheduleState = monitoring.MirrorSessionState_ACTIVE.String()
@@ -325,7 +330,7 @@ func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSess
 		mss.MirrorSession.Status.StartedAt.Timestamp = *ts
 		// create PCAP file URL for sessions with venice collector
 		_t, _ := mss.MirrorSession.Status.StartedAt.Time()
-		log.Infof("Mirror session StartedAt %v", _t)
+		log.Infof("Mirror session %v StartedAt %v", mss.MirrorSession.Name, _t)
 	}
 }
 
@@ -1150,8 +1155,10 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSess
 				if m.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
 					log.Infof("retry session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
 					m.MirrorSession.Lock()
+					log.Infof("Attempting to program session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
 					m.setMirrorSessionRunning(&m.MirrorSession.MirrorSession)
 					if ms.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
+						log.Infof("retry failed session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
 						m.MirrorSession.Unlock()
 						continue
 					}
