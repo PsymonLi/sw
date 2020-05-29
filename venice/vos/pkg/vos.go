@@ -247,7 +247,7 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 	log.Infof("minio args:  %+v", inst.bootupArgs)
 
 	go minio.Main(inst.bootupArgs)
-	time.Sleep(2 * time.Second)
+	time.Sleep(4 * time.Second)
 
 	url := k8s.GetPodIP() + ":" + globals.VosMinioPort
 	if testURL != "" {
