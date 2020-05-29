@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "nic/sdk/lib/slab/slab.hpp"
 #include "nic/sdk/lib/eventmgr/eventmgr.hpp"
+#include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/apollo/api/include/pds_device.hpp"
 #include "nic/apollo/api/include/pds_service.hpp"
 
@@ -64,8 +65,12 @@ public:
     static sdk_ret_t init(void);
     static class agent_state *state(void);
 
-    agent_state();
-    ~agent_state();
+    agent_state() {
+        pds_mock_mode_ = false;
+        epoch_ = 0;
+    }
+
+    ~agent_state() {}
     pds_device_spec_t *device(void) { return cfg_db_->device(); }
 
     pds_svc_mapping_spec_t *find_in_service_db(pds_svc_mapping_key_t *key);
@@ -86,16 +91,26 @@ public:
     uint64_t epoch(void) const { return epoch_; }
     uint64_t new_epoch(void) { return SDK_ATOMIC_INC_UINT64(&epoch_, 1); }
     eventmgr *event_mgr(void) { return evmgr_; }
+    sdk::platform::upg_mode_t init_mode(void) const {
+        return init_mode_;
+    }
+    sdk::upg::upg_dom_t domain(void) const {
+        return domain_;
+    }
 
 private:
     void cleanup(void);
     service_db_t *service_map(void) const { return cfg_db_->service_map();  }
 
 private:
-    cfg_db   *cfg_db_;
-    bool     pds_mock_mode_;    // true if we are in PDS HAL mock mode
-    uint64_t epoch_;            // config epoch
-    eventmgr *evmgr_;           // event manager instance
+    uint64_t epoch_;     // config epoch
+    cfg_db *cfg_db_;     // cfg db instance pointer
+    bool pds_mock_mode_; // true if we are in PDS HAL mock mode
+    // firmware initialization/upgrade mode
+    sdk::platform::upg_mode_t init_mode_;
+    // firmware domain w.r.t firmware upgrade
+    sdk::upg::upg_dom_t domain_;
+    eventmgr *evmgr_;    // event manager instance
 };
 
 }    // namespace core

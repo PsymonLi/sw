@@ -23,7 +23,6 @@ namespace core {
 //TODO: Move these to global store
 static sdk::event_thread::event_thread *g_svc_server_thread;
 static sdk::lib::thread *g_routing_thread;
-sdk_ret_t spawn_routing_thread(void);
 
 #define DEVICE_CONF_FILE    "/sysconfig/config0/device.conf"
 
@@ -300,7 +299,7 @@ device_profile_read (void)
 //------------------------------------------------------------------------------
 // spawn command server thread
 //------------------------------------------------------------------------------
-sdk_ret_t
+static sdk_ret_t
 spawn_svc_server_thread (void)
 {
     // spawn periodic thread that does background tasks
@@ -312,7 +311,6 @@ spawn_svc_server_thread (void)
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
             true, true);
-
     SDK_ASSERT_TRACE_RETURN((g_svc_server_thread != NULL), SDK_RET_ERR,
                             "Service server thread create failure");
     g_svc_server_thread->start(g_svc_server_thread);
@@ -323,7 +321,7 @@ spawn_svc_server_thread (void)
 //------------------------------------------------------------------------------
 // spawn thread for metaswitch control plane stack
 //------------------------------------------------------------------------------
-sdk_ret_t
+static sdk_ret_t
 spawn_routing_thread (void)
 {
     // spawn control plane routing thread

@@ -181,39 +181,6 @@ cfg_db::slab_walk(sdk::lib::slab_walk_cb_t walk_cb, void *ctxt) {
     return SDK_RET_OK;
 }
 
-//------------------------------------------------------------------------------
-// constructor method
-//------------------------------------------------------------------------------
-agent_state::agent_state(void) {
-    cfg_db_ = cfg_db::factory();
-    SDK_ASSERT_GOTO(cfg_db_, error);
-    pds_mock_mode_ = false;
-    epoch_ = 0;
-    evmgr_ = eventmgr::factory(PDS_EVENT_ID_MAX);
-    return;
-
-error:
-
-    cleanup();
-}
-
-//------------------------------------------------------------------------------
-// common cleanup method
-//------------------------------------------------------------------------------
-void
-agent_state::cleanup(void) {
-    if (cfg_db_) {
-        cfg_db::destroy(cfg_db_);
-    }
-}
-
-//------------------------------------------------------------------------------
-// destructor
-//------------------------------------------------------------------------------
-agent_state::~agent_state() {
-    cleanup();
-}
-
 pds_svc_mapping_spec_t *
 agent_state::find_in_service_db(pds_svc_mapping_key_t *key) {
     FIND_IN_DB_WITH_KEY(service, key);
@@ -248,8 +215,22 @@ agent_state::init(void) {
     if (mem) {
         g_state = new(mem) agent_state();
     }
-    SDK_ASSERT_RETURN((g_state != NULL), SDK_RET_ERR);
+    SDK_ASSERT_RETURN((g_state != NULL), SDK_RET_OOM);
+    g_state->cfg_db_ = cfg_db::factory();
+    SDK_ASSERT_GOTO(g_state->cfg_db_, error);
+    g_state->evmgr_ = eventmgr::factory(PDS_EVENT_ID_MAX);
+    SDK_ASSERT_GOTO(g_state->evmgr_, error);
+    g_state->init_mode_ = sdk::upg::upg_init_mode();
+    g_state->domain_ = sdk::upg::upg_init_domain();
     return SDK_RET_OK;
+
+error:
+
+    if (g_state->cfg_db_) {
+        cfg_db::destroy(g_state->cfg_db_);
+    }
+    g_state->~agent_state();
+    return SDK_RET_OOM;
 }
 
 }    // namespace core
