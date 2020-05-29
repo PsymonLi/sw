@@ -46,7 +46,7 @@ lpm_build_interval_table (route_table_t *route_table, lpm_itable_t *itable)
     uint32_t                      num_intervals = 0;
     bool                          rollback;
 
-    PDS_TRACE_DEBUG("Building Interval Table: route count %u, "
+    PDS_TRACE_DEBUG("Building interval table, route count %u, "
                     "default nh %u, max routes %u", route_table->num_routes,
                     route_table->default_nhid, route_table->max_routes);
 

@@ -238,7 +238,7 @@ mem_hash_main_table::find_(mem_hash_api_context *ctx,
 
     ret = static_cast<mem_hash_table_bucket*>(ctx->bucket)->find_(ctx);
     if (ret != SDK_RET_OK) {
-         MEMHASH_TRACE_ERR("find_ failed, ret:%d", ret);
+         MEMHASH_TRACE_VERBOSE("find_ failed, ret:%d", ret);
          return ret;
     }
 
@@ -345,7 +345,7 @@ sdk_ret_t
 mem_hash_main_table::validate_(mem_hash_api_context *ctx) {
     // Currently there is no state validation in main table.
     // Future validations can be added here.
-    
+
     // Next: Validate the hint table
     auto ret = hint_table_->validate_(ctx);
     if (ret != SDK_RET_OK) {

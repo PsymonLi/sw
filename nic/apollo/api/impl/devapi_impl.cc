@@ -95,7 +95,7 @@ devapi_impl::lif_create(lif_info_t *info) {
 
 sdk_ret_t
 devapi_impl::lif_destroy(uint32_t lif_id) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Not implemented");
     return SDK_RET_OK;
 }
 
@@ -132,37 +132,37 @@ devapi_impl::lif_init(lif_info_t *info) {
 
 sdk_ret_t
 devapi_impl::lif_reset(uint32_t lif_id) {
-    PDS_TRACE_WARN("Not implemented");
+    PDS_TRACE_VERBOSE("Not implemented");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_mac(uint32_t lif_id, mac_t mac) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_del_mac(uint32_t lif_id, mac_t mac) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_vlan(uint32_t lif_id, vlan_t vlan) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_del_vlan(uint32_t lif_id, vlan_t vlan) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 devapi_impl::lif_add_macvlan(uint32_t lif_id, mac_t mac, vlan_t vlan) {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 
@@ -616,7 +616,7 @@ devapi_impl::swm_disable_rx(uint32_t channel)
 sdk_ret_t
 devapi_impl::swm_upd_vlan_mode(bool enable, uint32_t mode, uint32_t channel)
 {
-    PDS_TRACE_DEBUG("Not provided");
+    PDS_TRACE_VERBOSE("Not provided");
     return SDK_RET_OK;
 }
 

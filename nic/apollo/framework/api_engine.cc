@@ -128,15 +128,15 @@ api_obj_add_to_deps (api_op_t api_op,
                      uint64_t upd_bmap) {
     api_obj_ctxt_t *octxt;
 
-    PDS_TRACE_DEBUG("Adding %s to AoL, api op %u, upd bmap 0x%lx",
-                    api_obj_b->key2str().c_str(), api_op, upd_bmap);
+    PDS_TRACE_VERBOSE("Adding %s to AoL, api op %u, upd bmap 0x%lx",
+                      api_obj_b->key2str().c_str(), api_op, upd_bmap);
     octxt = g_api_engine.add_to_deps_list(api_op,
                                           obj_id_a, api_obj_a,
                                           obj_id_b, api_obj_b,
                                           upd_bmap);
     if (octxt) {
-        PDS_TRACE_DEBUG("Triggering recursive update on %s, update bmap 0x%lx",
-                        api_obj_b->key2str().c_str(), octxt->upd_bmap);
+        PDS_TRACE_VERBOSE("Triggering recursive update on %s, upd bmap 0x%lx",
+                          api_obj_b->key2str().c_str(), octxt->upd_bmap);
         api_obj_b->add_deps(octxt);
     }
     return SDK_RET_OK;

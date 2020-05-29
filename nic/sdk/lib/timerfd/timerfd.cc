@@ -66,7 +66,7 @@ timerfd_wait (timerfd_info_t *pinfo, uint64_t *missed)
         return -1;
     }
     if (*missed > 1) {
-        SDK_TRACE_DEBUG("Periodic thread missed %" PRIu64 " wakeups", *missed);
+        SDK_TRACE_VERBOSE("Periodic thread missed %" PRIu64 " wakeups", *missed);
     }
     pinfo->missed_wakeups += *missed;
     return 0;

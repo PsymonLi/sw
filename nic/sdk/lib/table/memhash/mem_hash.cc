@@ -365,7 +365,7 @@ mem_hash::get(sdk_table_api_params_t *params) {
 
     ret = static_cast<mem_hash_main_table*>(main_table_)->get_(&apictx_);
     if (ret != SDK_RET_OK) {
-        MEMHASH_TRACE_ERR("remove_ failed. ret:%d", ret);
+        MEMHASH_TRACE_VERBOSE("get failed. ret:%d", ret);
         goto get_return;
     }
 
