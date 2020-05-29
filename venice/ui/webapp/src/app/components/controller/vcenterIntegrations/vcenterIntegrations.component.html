@@ -52,7 +52,9 @@
       {{rowData.status['last-transition-time'] | PrettyDate }}
     </ng-container>
     <ng-container *ngSwitchCase="'spec.uri'">
-      <a [href]="'https://' + rowData.spec.uri" target="_blank">{{ rowData.spec.uri }}</a>
+      <a [href]="'https://' + rowData.spec.uri"
+         matTooltip="open vCenter management page in a new tab"
+         target="_blank">{{ rowData.spec.uri }}</a>
     </ng-container>
     <ng-container *ngSwitchCase="'spec.manage-namespaces'">
       <div class="ellipsisText" [title]="rowData._ui.associatedDatacenters.join(', ')">

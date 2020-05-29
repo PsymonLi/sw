@@ -91,15 +91,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
         this.newObject.$formGroup.get(['spec', 'orchestrators']) as FormArray;
       if (orchestrators && orchestrators.length > 0) {
         orchestrators.controls.forEach((orchestrator: FormGroup) => {
-          orchestrator.addControl('datacenterChoice', CustomFormControl(new FormControl('', null), {}));
-          let datacenterChoice = this.ALL_DATACENTERS;
-          if (this.isVcenterManagedAllDCsByName(orchestrator.value['orchestrator-name'])) {
-            const namespace = orchestrator.value['namespace'];
-            if (namespace && namespace.length > 0 && namespace[0] !== this.ALL_DATACENTERS) {
-              datacenterChoice = this.EACH_DATACENTER;
-            }
-          }
-          orchestrator.get('datacenterChoice').setValue(datacenterChoice);
           if (orchestrator.value && orchestrator.value['orchestrator-name']) {
             const orchestratorObj = orchestrator as any;
             orchestratorObj.datacenterOptions =
@@ -191,16 +182,13 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       this.newObject.$formGroup.get(['spec', 'orchestrators'])).controls;
     for (let i = 0; i < orchestrators.length; i++) {
       const orchestrator = orchestrators[i];
-      if (!Utility.isEmpty(orchestrator.get('orchestrator-name').value)) {
-        const vcenterName = orchestrator.get('orchestrator-name').value;
-        if ((this.isVcenterManagedAllDCsByName(vcenterName) &&
-            orchestrator.get('datacenterChoice').value !== this.ALL_DATACENTERS) ||
-            !this.isVcenterManagedAllDCsByName(vcenterName)) {
-          if (Utility.isEmpty(orchestrator.get(['namespace']).value)) {
-            this.submitButtonTooltip = 'Error: Datacenter name is required.';
-            return false;
-          }
-        }
+      if (Utility.isEmpty(orchestrator.get('orchestrator-name').value)) {
+        this.submitButtonTooltip = 'Error:vCenter name is required.';
+        return false;
+      }
+      if (Utility.isEmpty(orchestrator.get(['namespace']).value)) {
+        this.submitButtonTooltip = 'Error: Datacenter name is required.';
+        return false;
       }
     }
 
@@ -220,22 +208,13 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       currValue.spec.orchestrators.forEach((each) => {
         const item: any = each;
         if (item['orchestrator-name']) {
-          const datacenterChoice = item.datacenterChoice;
-          if (item.namespace && item.namespace.length > 0) {
-            const namespaceArr = item.namespace as any;
-            namespaceArr.forEach((namespace: string) => {
-              orchestrators.push({
-                'orchestrator-name': item['orchestrator-name'],
-                namespace
-              });
-            });
-          } else if (datacenterChoice === this.ALL_DATACENTERS) {
+          const namespaceArr = item.namespace as any;
+          namespaceArr.forEach((namespace: string) => {
             orchestrators.push({
               'orchestrator-name': item['orchestrator-name'],
-              namespace: this.ALL_DATACENTERS
+              namespace
             });
-          }
-          delete item.datacenterChoice;
+          });
         }
       });
     }
@@ -283,20 +262,24 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     this.cdr.detectChanges();
   }
 
-  onDatacenterChoiceChange(event: any, orchestrator: FormGroup) {
-    orchestrator.get('namespace').setValue([]);
+  /*
+     When there is any NONE-ALL options selected, OPTION_ALL will be removed
+     When none is seleced, we set OPTION_ALL as default.
+  */
+ onDatacenterOptionChange(event, orchestrator: FormGroup) {
+  const values = orchestrator.get('namespace').value;
+  if (values.length >= 1 && values.includes(this.ALL_DATACENTERS)) {
+    // When all is set, we untoggle everything else.
+    if (event.itemValue === this.ALL_DATACENTERS) {
+      orchestrator.get('namespace').setValue([this.ALL_DATACENTERS]);
+    } else {
+      const index = values.indexOf(this.ALL_DATACENTERS);
+      values.splice(index, 1);
+      orchestrator.get('namespace').setValue(values);
+    }
   }
+}
 
-  showDatacenterChoices(orchestrator: FormGroup) {
-    const vcenterName = orchestrator.value['orchestrator-name'];
-    return this.isVcenterManagedAllDCsByName(vcenterName);
-  }
-
-  showDatacenterNames(orchestrator: FormGroup) {
-    const vcenterName = orchestrator.value['orchestrator-name'];
-    return !this.isVcenterManagedAllDCsByName(vcenterName) ||
-        orchestrator.value['datacenterChoice'] !== this.ALL_DATACENTERS;
-  }
 
   generateDCNamesOptions(vCenter: string): SelectItem[] {
     if (vCenter && this.vcenters && this.vcenters.length > 0) {
@@ -317,9 +300,11 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
         const options: SelectItem[] =  discoveredDatacenters.map(item => {
           return {
             label: item,
-            value: item
+            value: item,
+            disable: false
           };
         });
+        options.unshift({ label: 'All Datacenters', value: this.ALL_DATACENTERS });
         return options;
       }
     }
@@ -341,10 +326,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       return true;
     }
     return false;
-  }
-
-  isVcenterManagedAllDCsByName(vCenterName: string): boolean {
-    return this.isVcenterManagedAllDCs(this.getVencetrObjectByName(vCenterName));
   }
 
   createObject(object: INetworkNetwork) {

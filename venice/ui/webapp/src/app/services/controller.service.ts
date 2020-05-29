@@ -496,7 +496,8 @@ export class ControllerService {
 
     if (error.statusCode !== 0) {
       // If status code is 400, we should almost always have a body with error message
-      let errorMsg = error.body != null ? error.body.message : 'Bad request';
+      let errorMsg = error.body != null ?
+          error.body.message : 'Bad request. Please refresh browser and sign in again.';
       if (errorMsg instanceof Array) {
         errorMsg = errorMsg.join('\n');
       }

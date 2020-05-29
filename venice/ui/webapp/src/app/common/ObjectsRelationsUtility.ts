@@ -403,6 +403,9 @@ export class ObjectsRelationsUtility {
     }
 
     public static getHostByMetaName(hosts: ReadonlyArray<ClusterHost> | ClusterHost[], hostname: string): ClusterHost {
+        if (!hosts) {
+            return null;
+        }
         const interfacesLength = hosts.length;
         for (let i = 0; i < interfacesLength; i++) {
             const host: ClusterHost = hosts[i];

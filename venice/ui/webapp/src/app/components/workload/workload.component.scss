@@ -73,6 +73,13 @@ $table-headercontentheight: 25px;
   white-space: pre-wrap
 }
 
+.workload-column-venice-icon,
+.workload-column-vcenter-icon {
+  height: 16px;
+  width: 16px;
+  margin-right: 5px;
+}
+
 .workload-table-headercontent {
   margin: 20px 15px 13px 0px;
 }

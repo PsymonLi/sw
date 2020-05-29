@@ -149,8 +149,9 @@
         {{rowData.meta['creation-time'] | PrettyDate }}
       </ng-container>
       <ng-container *ngSwitchCase="'status.host'">
-        <div class="ellipsisText" title="{{ rowData.status.host }}">
-          <a routerLink="/cluster/hosts">{{rowData.status.host}}</a>
+        <div class="ellipsisText" title="{{ getHostFullName(rowData.status.host) }}">
+          <a routerLink="/cluster/hosts"
+             [queryParams]="{filter: rowData.status.host}">{{getHostFullName(rowData.status.host)}}</a>
         </div>
       </ng-container>
       <ng-container *ngSwitchCase="'status.admission-phase'">

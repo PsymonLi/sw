@@ -20,7 +20,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { SearchUtil } from '@components/search/SearchUtil';
 import { AdvancedSearchComponent } from '@components/shared/advanced-search/advanced-search.component';
 import { LabelEditorMetadataModel } from '@components/shared/labeleditor';
-import { ClusterDistributedServiceCard, ClusterDistributedServiceCardSpec_mgmt_mode, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile, IClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterDistributedServiceCardSpec_mgmt_mode, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile, IClusterDistributedServiceCard, ClusterHost } from '@sdk/v1/models/generated/cluster';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
 import { FieldsRequirement, ISearchSearchResponse, SearchSearchRequest, SearchSearchResponse } from '@sdk/v1/models/generated/search';
 import { IBulkeditBulkEditItem, IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
@@ -101,22 +101,22 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
   hasAdmittedDSC: boolean = false;  // indicate whether PSM has admitted DSC.  We show DSC hero charts only when there are admitted DSCs
 
   cols: TableCol[] = [
-    { field: 'spec.id', header: 'Name/Spec.id', class: '', sortable: true, width: 10 },
-    { field: 'status.primary-mac', header: 'MAC Address', class: '', sortable: true, width: 10 },
+    { field: 'spec.id', header: 'Name/Spec.id', class: '', sortable: true, width: 100 },
+    { field: 'status.primary-mac', header: 'MAC Address', class: '', sortable: true, width: '110px' },
     { field: 'status.DSCVersion', header: 'Version', class: '', sortable: true, width: '80px' },
     { field: 'spec.dscprofile', header: 'Profile', class: '', sortable: true, width: '80px' },
-    { field: 'status.ip-config.ip-address', header: 'Management IP Address', class: '', sortable: false, width: '160px' },
-    { field: 'spec.admit', header: 'Admit', class: '', sortable: false, localSearch: true, width: 5, filterfunction: this.searchAdmits },
-    { field: 'status.admission-phase', header: 'Phase', class: '', sortable: false, width: '120px' },
+    { field: 'status.ip-config.ip-address', header: 'Management IP Address', class: '', sortable: false, width: '100px' },
+    { field: 'spec.admit', header: 'Admit', class: '', sortable: false, localSearch: true, width: '60px', filterfunction: this.searchAdmits },
+    { field: 'status.admission-phase', header: 'Phase', class: '', sortable: false, width: '80px' },
     {
-      field: 'status.conditions', header: 'Condition', class: '', sortable: true, localSearch: true, width: 10,
+      field: 'status.conditions', header: 'Condition', class: '', sortable: true, localSearch: true, width: '70px',
       filterfunction: this.searchConditions
     },
-    { field: 'status.host', header: 'Host', class: '', sortable: true, width: 10 },
-    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 7 },
-    { field: 'workloads', header: 'Workloads', class: '', sortable: false, localSearch: true, width: '180px' },
-    { field: 'meta.mod-time', header: 'Modification Time', class: '', sortable: true, width: '160px' },
-    { field: 'meta.creation-time', header: 'Creation Time', class: '', sortable: true, width: '180px' },
+    { field: 'status.host', header: 'Host', class: '', sortable: true, width: 100 },
+    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
+    { field: 'workloads', header: 'Workloads', class: '', sortable: false, localSearch: true, width: 100 },
+    { field: 'meta.mod-time', header: 'Modification Time', class: '', sortable: true, width: '170px' },
+    { field: 'meta.creation-time', header: 'Creation Time', class: '', sortable: true, width: '170px' },
   ];
   exportMap: CustomExportMap = {
     'workloads': (opts): string => {
@@ -189,6 +189,7 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
   disableTableWhenRowExpanded: boolean = false;
   exportFilename: string = 'PSM-DistributedServiceCards';
 
+  hostObjects: ReadonlyArray<ClusterHost>;
   workloadList: WorkloadWorkload[] = [];
   searchDSCsCount: number = 0;
 
@@ -455,7 +456,8 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
             this.getMetrics();
           } else {
             this.tableLoading = false;
-            this.controllerService.invokeInfoToaster('Information', 'There is no admitted DSC found in PSM');
+            // this.controllerService.invokeInfoToaster('Information', 'There is no admitted DSC found in PSM');  // this line cause a lot problem for Shrey
+            console.error('There is no admitted DSC found in PSM elastic search system');
           }
           this.invokeWatch();
         }
@@ -476,6 +478,7 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
     this.watchWorkloads();
     this.watchNaples();
     this.watchDSCProfiles();
+    this.watchHosts();
   }
 
   buildAdvSearchCols() {
@@ -491,6 +494,18 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
         }
       );
     }
+  }
+
+  watchHosts() {
+    const hostSubscription = this.clusterService.ListHostCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.hostObjects = response.data;
+      }
+    );
+    this.subscriptions.push(hostSubscription);
   }
 
   /**
@@ -520,12 +535,28 @@ export class NaplesComponent extends TablevieweditAbstract<IClusterDistributedSe
     dscs: ReadonlyArray<ClusterDistributedServiceCard> | ClusterDistributedServiceCard[]) {
     if (myworkloads && dscs) {
       this.dscsWorkloadsTuple = ObjectsRelationsUtility.buildDscWorkloadsMaps(myworkloads, dscs);
-      this.dataObjects.map(naple => {
+      this.dataObjects = this.dataObjects.map((naple: ClusterDistributedServiceCard) => {
         ((naple._ui) as DSCUiModel).associatedWorkloads = this.getDSCWorkloads(naple);
+        return naple;
       });
     }
   }
 
+  getHostFullName(hostName: string): string {
+    if (!this.hostObjects || this.hostObjects.length === 0) {
+      return hostName;
+    }
+    const hostObj: ClusterHost =
+      this.hostObjects.find((item: ClusterHost) => item.meta.name === hostName);
+    if (!hostObj) {
+      return hostName;
+    }
+    if (!hostObj.meta.labels || !hostObj.meta.labels['io.pensando.vcenter.display-name'] ||
+        !hostObj.meta.labels['io.pensando.orch-name']) {
+      return hostName;
+    }
+    return hostObj.meta.labels['io.pensando.vcenter.display-name'] + '(' + hostName + ')';
+  }
 
 
   provideCustomOptions() {

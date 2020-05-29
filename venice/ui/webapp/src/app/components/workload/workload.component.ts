@@ -144,13 +144,11 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
     }
   };
 
-  naplesEventUtility: HttpEventUtility<ClusterDistributedServiceCard>;
   naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
   workloadDSCHostTupleMap: { [key: string]: WorkloadDSCHostSecurityTuple } = {};
   labelEditorMetaData: LabelEditorMetadataModel;
   inLabelEditMode: boolean = false;
 
-  hostsEventUtility: HttpEventUtility<ClusterHost>;
   hostObjects: ReadonlyArray<ClusterHost>;
   hostOptions: SelectItem[] = [];
 
@@ -215,29 +213,33 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   }
 
   getHosts() {
-    this.hostsEventUtility = new HttpEventUtility<ClusterHost>(ClusterHost, true);
-    this.hostObjects = this.hostsEventUtility.array as ReadonlyArray<ClusterHost>;
-    const subscription = this.clusterService.WatchHost().subscribe(
-      response => {
-        this.hostOptions = this.hostsEventUtility.processEvents(response).map(x => {
+    const hostSubscription = this.clusterService.ListHostCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.hostObjects = response.data;
+        this.hostOptions = this.hostObjects.map(x => {
           return { label: x.meta.name, value: x.meta.name };
         });
-      },
-      this._controllerService.webSocketErrorHandler('Failed to get Hosts info')
+      }
     );
-    this.subscriptions.push(subscription);
+    this.subscriptions.push(hostSubscription);
   }
 
   getNaples() {
-    this.naplesEventUtility = new HttpEventUtility<ClusterDistributedServiceCard>(ClusterDistributedServiceCard);
-    this.naples = this.naplesEventUtility.array as ReadonlyArray<ClusterDistributedServiceCard>;
-    const subscription = this.clusterService.WatchDistributedServiceCard().subscribe(
-      response => {
-        this.naplesEventUtility.processEvents(response);
-      },
-      this._controllerService.webSocketErrorHandler('Failed to get DSCs')
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naples = response.data as ClusterDistributedServiceCard[];
+        if (!this.tableLoading) { // some times naples data come after workload
+          this.mapData();
+        }
+      }
     );
-    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
+    this.subscriptions.push(dscSubscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
 
   getSecuritygroups() {
@@ -250,6 +252,22 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
       this._controllerService.webSocketErrorHandler('Failed to get Security Groups info')
     );
     this.subscriptions.push(subscription);
+  }
+
+  getHostVcenterName(hostName: string): string {
+    if (!this.hostObjects || this.hostObjects.length === 0) {
+      return null;
+    }
+    const hostObj: ClusterHost =
+      this.hostObjects.find((item: ClusterHost) => item.meta.name === hostName);
+    if (!hostObj) {
+      return null;
+    }
+    if (!hostObj.meta.labels || !hostObj.meta.labels['io.pensando.vcenter.display-name'] ||
+        !hostObj.meta.labels['io.pensando.orch-name']) {
+      return null;
+    }
+    return hostObj.meta.labels['io.pensando.vcenter.display-name'];
   }
 
   setDefaultToolbar() {
@@ -653,7 +671,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   searchDSC(requirement: FieldsRequirement, data = this.dataObjects): any[] {
     const outputs: any[] = [];
     for (let i = 0; data && i < data.length; i++) {
-      const dscs = data[i]['dscs'];
+      const dscs = data[i]._ui['dscs'];
       for (let k = 0; k < dscs.length; k++) {
         const recordValue = _.get(dscs[k], ['spec', 'id']);
         const searchValues = requirement.values;

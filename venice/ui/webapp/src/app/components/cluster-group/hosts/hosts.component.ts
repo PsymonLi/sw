@@ -109,11 +109,11 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
   tableLoading: boolean = false;
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'hosts-column-host-name', sortable: true, width: 20 },
-    { field: 'spec.dscs', header: 'Distributed Services Cards', class: 'hosts-column-dscs', sortable: false, width: '180px' },
-    { field: 'workloads', header: 'Associated Workloads', class: 'hosts-column-workloads', sortable: false, width: 45 },
-    { field: 'meta.mod-time', header: 'Modification Time', class: 'hosts-column-date', sortable: true, width: '180px' },
-    { field: 'meta.creation-time', header: 'Creation Time', class: 'hosts-column-date', sortable: true, width: '180px' },
+    { field: 'meta.name', header: 'Name', class: 'hosts-column-host-name', sortable: true, width: '225px' },
+    { field: 'spec.dscs', header: 'Distributed Services Cards', class: 'hosts-column-dscs', sortable: false, width: '200px' },
+    { field: 'workloads', header: 'Associated Workloads', class: 'hosts-column-workloads', sortable: false, width: 100 },
+    { field: 'meta.mod-time', header: 'Modification Time', class: 'hosts-column-date', sortable: true, width: '175px' },
+    { field: 'meta.creation-time', header: 'Creation Time', class: 'hosts-column-date', sortable: true, width: '175px' },
   ];
 
   // advance search variables
@@ -160,13 +160,14 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
     hosts: ReadonlyArray<ClusterHost> | ClusterHost[], source: BuildHostWorkloadMapSourceType) {
     if (myworkloads && hosts) {
       this.hostWorkloadsTuple = ObjectsRelationsUtility.buildHostWorkloadsMap(myworkloads, hosts);
-      this.dataObjects.forEach(host => {
+      this.dataObjects = this.dataObjects.map(host => {
         const hostUiModel: HostUiModel = {
           processedSmartNics: this.processSmartNics(host),
           processedWorkloads: this.getHostWorkloads(host)
 
         };
         host._ui = hostUiModel;
+        return host;
       });
       // backup dataObjects
       this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);

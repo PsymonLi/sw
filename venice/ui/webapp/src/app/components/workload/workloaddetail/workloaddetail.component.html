@@ -53,6 +53,29 @@
               </ng-container>
             </div>
           </div>
+          <div fxLayout="row" fxLayoutGap="60px"
+               *ngIf="selectedObj?.status['migration-status'] && selectedObj?.status['migration-status'].status !== 'none'">
+            <div class="workloaddetail-col-1" fxFlex="noshrink">
+              <div class="detail-card-label-vmotion">VMotion Status</div>
+            </div>
+            <div class="workloaddetail-col-2" fxFlex="noshrink">
+              <div fxLayout="row">
+                <div class="detail-card-label">Started:</div>
+                <div class="detail-card-value">
+                  {{ selectedObj?.status['migration-status']['started-at'] | PrettyDate }}</div>
+              </div>
+              <div fxLayout="row">
+                <div class="detail-card-label">Completed:</div>
+                <div class="detail-card-value">
+                  {{ selectedObj?.status['migration-status']['completed-at'] | PrettyDate }}</div>
+              </div>
+              <div fxLayout="row">
+                <div class="detail-card-label">Status:</div>
+                <div class="detail-card-value">{{ selectedObj?.status['migration-status'].status }}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="workloaddetail-col-3">
           <div class="detail-card-border"></div>

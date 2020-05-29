@@ -87,12 +87,12 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: 15, notReorderable: true },
-    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: 15 },
-    { field: 'meta.creation-time', header: 'Creation Time', class: 'networkinterfaces-column-date', sortable: true, width: '180px', notReorderable: true },
-    { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: 15 },
-    { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: 15 },
-    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 7 }
+    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: '280px', notReorderable: true },
+    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '220px' },
+    { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: '125px' },
+    { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: '100px' },
+    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
+    { field: 'meta.creation-time', header: 'Creation Time', class: 'networkinterfaces-column-date', sortable: true, width: '170px', notReorderable: true }
   ];
 
   exportFilename: string = 'PSM-networkinterfaces';

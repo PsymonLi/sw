@@ -67,12 +67,18 @@
     <ng-container *ngSwitchCase="'meta.name'">
       <div class="ellipsisText" [title]="rowData.meta.name">
         <a routerLink="./{{rowData.meta.name}}">
+          <img class="workload-column-venice-icon"
+               src="/assets/images/icons/ico-venice-info-grey.svg" />
           {{rowData.meta.name}}
         </a>
       </div>
       <div class="ellipsisText" [title]="rowData.meta.labels['io.pensando.vcenter.display-name']"
            *ngIf="rowData.meta.labels && rowData.meta.labels['io.pensando.vcenter.display-name']">
-        ({{rowData.meta.labels['io.pensando.vcenter.display-name']}})
+        <a routerLink="./{{rowData.meta.name}}">
+          <img class="workload-column-vcenter-icon"
+               src="/assets/images/icons/ico-vcenter-info-grey.svg" />
+          {{rowData.meta.labels['io.pensando.vcenter.display-name']}}
+        </a>
       </div>
     </ng-container>
     <ng-container *ngSwitchCase="'meta.mod-time'">
@@ -87,8 +93,18 @@
     </ng-container>
     <ng-container *ngSwitchCase="'spec.host-name'">
       <div>
-        <a routerLink="/cluster/hosts" [matTooltip]="'Host machine'">
+        <a routerLink="/cluster/hosts" [queryParams]="{ filter: rowData.spec['host-name'] }"
+           [matTooltip]="'Host machine'">
+          <img class="workload-column-venice-icon"
+               src="/assets/images/icons/ico-venice-info-grey.svg" />
           {{rowData.spec["host-name"]}}</a>
+      </div>
+      <div *ngIf="getHostVcenterName(rowData.spec['host-name']) as vcenterName">
+        <a routerLink="/cluster/hosts" [queryParams]="{filter: vcenterName}"
+           [matTooltip]="'Host machine'">
+          <img class="workload-column-vcenter-icon"
+               src="/assets/images/icons/ico-vcenter-info-grey.svg" />
+          {{ vcenterName }}</a>
       </div>
       <div *ngIf="rowData._ui.dscs && rowData._ui.dscs.length>0">
         DSCS:
