@@ -68,7 +68,7 @@ def Trigger(tc):
             return api.types.status.FAILURE
 
         if naples_partnum.startswith("68-"):
-            naples_partnum = naples_partnum[0:6]
+            naples_partnum = naples_partnum[0:7]
 
         expected_subsystemid = verify_pci.pci_partnum_list[naples_partnum]["subsystem_id"]
         if (checkpcidevice(node, expected_subsystemid) == api.types.status.CRITICAL):

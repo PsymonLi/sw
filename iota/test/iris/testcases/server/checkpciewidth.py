@@ -74,7 +74,7 @@ def Trigger(tc):
             return api.types.status.FAILURE
 
         if naples_partnum.startswith("68-"):
-            naples_partnum = naples_partnum[0:6]
+            naples_partnum = naples_partnum[0:7]
 
         expected_width = verify_pci.pci_partnum_list[naples_partnum]["width"]
         if (verifypciwidth(node, expected_width) == api.types.status.CRITICAL):

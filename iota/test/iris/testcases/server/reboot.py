@@ -1,6 +1,7 @@
 import iota.harness.api as api
 import iota.test.utils.naples_host as host
 import iota.test.iris.testcases.server.verify_pci as verify_pci
+import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 from iota.harness.infra.exceptions import *
 
 def Setup (tc):
@@ -44,5 +45,7 @@ def Trigger (tc):
     return api.types.status.SUCCESS
 
 def Verify (tc):
-
+    if enable_ssh.Main(None) != api.types.status.SUCCESS:
+         api.Logger.info("Enabling SSH failed after reboot")
+         return api.types.status.FAILURE
     return api.types.status.SUCCESS
