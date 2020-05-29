@@ -140,7 +140,6 @@ typedef struct catalog_s {
     uint32_t                   mpu_trace_size;                        // MPU trace size
     uint64_t                   cores_mask;                            // mask of all control/data cores
     std::string                form_factor;                           // Form factor of the card
-    uint32_t                   cpld_id;                               // CPLD ID on this card
     uint32_t                   emmc_size;                             // eMMC size on card
     uint32_t                   memory_size;                           // Total Memory on card
     uint32_t                   num_asics;                             // number of asics on the board
@@ -218,7 +217,6 @@ public:
     card_id_t card_id(void) { return catalog_db_.card_id; }
     bool is_card_naples25(void);
     bool is_card_naples25_swm(void);
-    uint32_t cpld_id() { return catalog_db_.cpld_id; }
     bool access_mock_mode(void) { return catalog_db_.access_mock_mode; }
     uint32_t max_mpu_per_stage(void) const {
         return catalog_db_.max_mpu_per_stage;

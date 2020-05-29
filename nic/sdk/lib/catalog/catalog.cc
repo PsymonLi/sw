@@ -667,9 +667,6 @@ catalog::populate_catalog(std::string &catalog_file, ptree &prop_tree)
         return SDK_RET_ERR;
     }
 
-    std::string val = prop_tree.get<std::string>("cpld_id", "");
-    catalog_db_.cpld_id = strtoul(val.c_str(), NULL, 16);
-
     catalog_db_.form_factor = prop_tree.get<std::string>("form_factor", "");
     catalog_db_.emmc_size = prop_tree.get<uint32_t>("emmc_size", 0);
     catalog_db_.memory_size = prop_tree.get<uint32_t>("memory_size", 0);

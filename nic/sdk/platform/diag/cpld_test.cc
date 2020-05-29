@@ -83,20 +83,17 @@ void cpld_test_usage(test_mode_e mode)
 
 int cpld_verify_id_test()
 {
-    int read_val, ret_val, expected_cpld_id;
-    sdk::lib::catalog *ctlg = sdk::lib::catalog::factory();
-
-    expected_cpld_id = ctlg->cpld_id();
+    uint8_t read_val, ret_val;
 
     read_val = sdk::lib::pal_get_cpld_id();
-    if (read_val == expected_cpld_id)
+    if (read_val != 0 || read_val != 0xFF)
     {
         SDK_TRACE_INFO("CPLD ID: 0x%x, Rev: 0x%x", read_val, sdk::lib::pal_get_cpld_rev());
         ret_val = 0;
     }
     else
     {
-        SDK_TRACE_ERR("Wrong CPLD ID: 0x%x : Expected: 0x%x", read_val, expected_cpld_id);
+        SDK_TRACE_ERR("Wrong CPLD ID: 0x%x, CPLD ID cannot be 0", read_val);
         ret_val = -1;
     }
 
