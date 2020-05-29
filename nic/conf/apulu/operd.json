@@ -28,13 +28,6 @@
     },
     {
         "output": {
-            "type": "library",
-            "location": "libalerts_operd_con.so"
-        },
-        "input": ["alerts"]
-    },
-    {
-        "output": {
             "type": "file",
             "location": "/obfl/upgrademgr.log",
             "max-size": "1",
