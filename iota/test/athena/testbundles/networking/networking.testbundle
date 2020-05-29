@@ -33,5 +33,9 @@ testcases:
     #    enable  : True
     #    iterators :
     #        type     : nested
-    #        nat      : ['yes', 'no']
-    
+    #        flow_type : ['L3']
+    #        nat       : ['no', 'yes']
+    #        proto     : ['UDP']
+    #        size      : [64]
+    #        flow      : ['static']    
+    #        bidir     : ['yes']    

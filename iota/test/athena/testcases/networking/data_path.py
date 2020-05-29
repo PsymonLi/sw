@@ -245,7 +245,7 @@ def setup_pkt(_args):
 
     types.append("IP")
     ip = {'sip' : _args.sip, 'dip' : _args.dip}
-    if _args.nat:
+    if _args.nat == 'yes':
        nat_sip, nat_dip = get_nat_flow_sip_dip(_args._dir, _args.Rx, _args.flow_id)
        ip = {'sip' : nat_sip, 'dip' : nat_dip}
     dicts.append(ip)
@@ -273,10 +273,55 @@ def setup_pkt(_args):
     api.CopyToHost(_args.node.Name(), [pcap_fname], "")
     os.remove(pcap_fname)
 
-def Setup(tc):
+def parse_args(tc):
+    #==============================================================
+    # init cmd options
+    #==============================================================
+    tc.flow_type  = 'L3'
+    tc.nat        = 'no'
+    tc.size       = '64'
+    tc.proto      = 'UDP'
+    tc.bidir      = 'no'
+    tc.flow       = 'static'
 
-    # init params for feature under test
-    tc.nat = (getattr(tc.iterators, 'nat', None) == 'yes')
+    #==============================================================
+    # update non-default cmd options
+    #==============================================================
+    if hasattr(tc.iterators, 'flow_type'):
+        tc.flow_type = tc.iterators.flow_type
+
+    if hasattr(tc.iterators, 'nat'):
+        tc.nat = tc.iterators.nat
+
+    if hasattr(tc.iterators, 'size'):
+        tc.size = tc.iterators.size
+
+    if hasattr(tc.iterators, 'proto'):
+        tc.proto = tc.iterators.proto
+
+    if hasattr(tc.iterators, 'bidir'):
+        tc.bidir = tc.iterators.bidir
+
+    if hasattr(tc.iterators, 'flow'):
+        tc.flow = tc.iterators.flow
+
+    api.Logger.info('flow_type: {}, nat: {}'.format(tc.flow_type, tc.nat))
+
+def get_vnic(tc, plcy_obj):
+
+    vnics = plcy_obj['vnic']
+
+    for vnic in vnics:
+        flow_type = 'L2' if "vnic_type" in vnic and vnic['vnic_type'] == 'L2' else 'L3'
+        nat = 'yes' if "nat" in vnic else 'no'
+
+        if flow_type == tc.flow_type and \
+           nat == tc.nat:
+            return vnic
+
+    raise Exception("Matching vnic not found")
+
+def Setup(tc):
 
     # get node info
     tc.bitw_node_name = None
@@ -362,40 +407,34 @@ def Setup(tc):
 
         tc.flows.append(flow_info)
    
+    # parse iterator args
+    parse_args(tc)
 
     # setup policy.json file
     plcy_obj = None
-    
+    # read from template file
     with open(CURR_DIR + TEMPLATE_POLICY_JSON_FILENAME) as fd:
         plcy_obj = json.load(fd)
 
-    vnics = plcy_obj['vnic']
-    
-    vnic_idx = None
-    test_vnic = get_test_vnic(tc)
-    for idx, vnic in enumerate(vnics):
-        if vnic['vnic_id'] == test_vnic:
-            vnic_idx = idx
-            break
+    # get vnic
+    vnic = get_vnic(tc, plcy_obj)
+    vnic_id = vnic['vnic_id']
+    api.Logger.info('vnic id: {}'.format(vnic_id))
 
-    if vnic_idx is None:
-        api.Logger.error("Cannot find vnic config for test in "
-                        "template_policy.json. feature %s, test_vnic %s " %
-                        (get_test_feature(tc).name, test_vnic))
-        return api.types.status.FAILURE
+    # these keys need to be changed for both L2 and L3
+    vnic['vlan_id'] = str(tc.up1_vlan)
+    vnic['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
 
-    
-    if tc.nat:    
-        vnics[vnic_idx]['vlan_id'] = str(tc.up1_vlan)
-        vnics[vnic_idx]['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-        vnics[vnic_idx]['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
-        vnics[vnic_idx]['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-        vnics[vnic_idx]['rewrite_host']['dmac'] = str(tc.up1_mac)
+    if tc.nat == 'yes':    
+        vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
+        vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+        if tc.flow_type == 'L3':
+            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
 
-        local_ip_lo = vnics[vnic_idx]['nat']['local_ip_lo']
-        local_ip_hi = vnics[vnic_idx]['nat']['local_ip_hi']
-        nat_ip_lo = vnics[vnic_idx]['nat']['nat_ip_lo']
-        nat_ip_hi = vnics[vnic_idx]['nat']['nat_ip_hi']
+        local_ip_lo = vnic['nat']['local_ip_lo']
+        local_ip_hi = vnic['nat']['local_ip_hi']
+        nat_ip_lo = vnic['nat']['nat_ip_lo']
+        nat_ip_hi = vnic['nat']['nat_ip_hi']
 
         local_ip_lo_obj = ip_address(local_ip_lo)
         local_ip_hi_obj = ip_address(local_ip_hi)
@@ -449,13 +488,13 @@ def Setup(tc):
         tc.flows = nat_flows['h2s']['Tx'][:]
     
     else:
-        vnics[vnic_idx]['vlan_id'] = str(tc.up1_vlan)
-        vnics[vnic_idx]['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-        vnics[vnic_idx]['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
-        vnics[vnic_idx]['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-        vnics[vnic_idx]['rewrite_host']['dmac'] = str(tc.up1_mac)
-
-
+        # these fields need to be changed only for L3
+        # this will be cleaned up and moved to a separate config test
+        if tc.flow_type == 'L3':
+            vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
+            vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
+    
     # write vlan/mac addr and flow info to actual file 
     with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME, 'w+') as fd:
         json.dump(plcy_obj, fd, indent=4)
@@ -506,6 +545,10 @@ def Trigger(tc):
         return (ret)
 
 
+    # TODO handle L2 w/ & w/o NAT
+    if tc.flow_type != 'L3':
+        return api.types.status.SUCCESS
+
     for node in tc.nodes:
         if node is not tc.wl_node:
             continue
@@ -516,8 +559,7 @@ def Trigger(tc):
             # common args to setup scapy pkt
             args = Args()
             args.node = node
-            # TODO pick this from iterator
-            args.proto = 'UDP'
+            args.proto = tc.proto
             args.sip = flow.sip
             args.dip = flow.dip
             args.sport = flow.src_port
@@ -614,6 +656,10 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
+    # TODO handle L2 w/ & w/o NAT
+    if tc.flow_type != 'L3':
+        return api.types.status.SUCCESS
+
     if len(tc.resp) == 0:
         return api.types.status.FAILURE
 
