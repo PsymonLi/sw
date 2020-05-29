@@ -76,5 +76,17 @@
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC has detected a pcie link health error"
+    },
+    {
+        "name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
+        "category": "System",
+        "severity": "WARN",
+        "description": "Memory usage of the partition is above threshold percentage"
+    },
+    {
+        "name": "DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD",
+        "category": "System",
+        "severity": "INFO",
+        "description": "Memory usage of the partition is below threshold percentage"
     }
 ]

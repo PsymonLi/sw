@@ -5,8 +5,12 @@
 #include "sysmon_internal.hpp"
 #include "string.h"
 #include <map>
+#include <sys/stat.h>
+#include <sys/time.h>
 
 #define PS_COMMAND "ps -o pid,rss,vsz,comm,args | grep -v \"\\[\" | cut -c -80"
+#define TOTAL_MEM_FS_COMMAND "df %s |  awk '{print $2}' | grep -v \"1K-blocks\""
+#define MEM_USAGE_COMMAND "du -s %s |  awk '{print $1}'"
 #define MEMINFO "/proc/meminfo"
 #define TOTAL_MEMORY "MemTotal"
 #define FREE_MEMORY "MemFree"
@@ -29,7 +33,13 @@ typedef struct monprocess_s {
     int64_t vsz_change;
 } monprocess_t;
 
+typedef struct mem_cfg_threshold_internal_s {
+    uint64_t prev_mem_usage;
+    uint64_t mem_threshold;
+} memory_threshold_cfg_internal_t;
+
 static std::map<int, monprocess_t> monprocess_map;
+static std::map<std::string, memory_threshold_cfg_internal_t> mem_threshold_info;
 static bool color = true;
 
 /*
@@ -198,7 +208,7 @@ getmeminfo(char *psline) {
  * Monitor free curr_memory on the system
 */
 static void
-monitorfreememory (uint64_t *total_mem, uint64_t *available_mem, 
+monitorfreememory (uint64_t *total_mem, uint64_t *available_mem,
                    uint64_t *free_mem) {
     FILE *fptr = NULL;
     char line[100];
@@ -314,4 +324,119 @@ checkmemory(void)
     }
 }
 
+uint64_t
+get_memory_threshold_KiB (sysmon_memory_threshold_cfg_t *cfg)
+{
+    FILE        *fptr;
+    char        cmd[512];
+    char        psline[100];
+    uint64_t    total_memory = 0;
+    uint64_t    memory_threshold_KiB = 0;
+
+    snprintf(cmd, sizeof(cmd), TOTAL_MEM_FS_COMMAND, cfg->path.c_str());
+
+    fptr = popen(cmd, "r");
+    if (fptr == NULL) {
+        return memory_threshold_KiB;
+    }
+    if (fgets(psline, sizeof(psline), fptr) != NULL) {
+        total_memory = strtoul(psline, NULL, 10);
+        memory_threshold_KiB  =
+            (cfg->mem_threshold_percent * total_memory / 100);
+    }
+    fclose(fptr);
+    return memory_threshold_KiB;
+}
+
+bool
+is_dir_present (const char *path)
+{
+    struct stat dir_stat;
+
+    if ((stat(path, &dir_stat) == 0) && S_ISDIR(dir_stat.st_mode)) {
+        return true;
+    }
+    return false;
+}
+
+/*
+ * calculate the memory threshold to be used in check_memory_threshold() fn
+ */
+void
+memory_threshold_cfg_init (void)
+{
+    sysmon_memory_threshold_cfg_t *cfg = g_sysmon_cfg.memory_threshold_cfg;
+
+    for (int i = 0 ; i < g_sysmon_cfg.num_memory_threshold_cfg ; i++) {
+        memory_threshold_cfg_internal_t mem_cfg;
+        mem_cfg.prev_mem_usage = 0;
+        mem_cfg.mem_threshold = 0;
+        
+        if (is_dir_present(cfg[i].path.c_str())) {
+            mem_cfg.mem_threshold = get_memory_threshold_KiB(&cfg[i]);
+        } else { 
+            // Directory does not exist or other issue
+            SDK_HMON_TRACE_INFO("Warning: [Memory cfg threshold] Dir %s "
+                                "not valid", cfg[i].path.c_str());
+        }
+        mem_threshold_info[cfg[i].path] = mem_cfg;
+    }
+}
+
+/*
+ * Checks memory usage % for each path in sysmon_memory_threshold_cfg_t.
+ * If curr memory usage crosses above threshold,
+ *       ==> raise SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD
+ * If curr memory usage crosses below threshold,
+ *       ==> raise SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD
+ * If there is no crossover,
+ *       ==> raise SYSMON_MEM_PARTITION_USAGE_NONE
+ */
+void
+check_memory_threshold (void)
+{
+    FILE        *fptr;
+    char        cmd[512];
+    char        psline[100];
+    uint64_t    curr_mem_usage;
+    sysmon_memory_threshold_cfg_t    *cfg = g_sysmon_cfg.memory_threshold_cfg;
+    memory_threshold_cfg_internal_t  *mem_cfg;
+    sysmon_mem_threshold_event_t     event;
+
+    for (int i = 0 ; i < g_sysmon_cfg.num_memory_threshold_cfg ; i++) {
+        mem_cfg = &mem_threshold_info[cfg[i].path];
+        
+        if (!is_dir_present(cfg[i].path.c_str())) {
+            continue;
+        }
+        // if dir didnt exist during init and was newly created
+        if (mem_cfg->mem_threshold == 0) {
+            mem_cfg->mem_threshold = get_memory_threshold_KiB(&cfg[i]);
+            if (mem_cfg->mem_threshold == 0) {
+                continue;
+            }
+        }
+        snprintf(cmd, sizeof(cmd), MEM_USAGE_COMMAND, cfg[i].path.c_str());
+        fptr = popen(cmd, "r");
+        if (fptr == NULL) {
+            continue;
+        }
+        if (fgets(psline, sizeof(psline), fptr) != NULL) {
+            curr_mem_usage = strtoul(psline, NULL, 10);
+            if ((curr_mem_usage >= mem_cfg->mem_threshold) &&
+                (mem_cfg->prev_mem_usage < mem_cfg->mem_threshold)) {
+                event = SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD;
+            } else if ((curr_mem_usage < mem_cfg->mem_threshold) &&
+                (mem_cfg->prev_mem_usage >= mem_cfg->mem_threshold)) {
+                event = SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD;
+            } else {
+                event = SYSMON_MEM_PARTITION_USAGE_NONE;
+            }
+            mem_cfg->prev_mem_usage = curr_mem_usage;
+            g_sysmon_cfg.memory_threshold_event_cb(event, cfg[i].path.c_str(),
+                cfg[i].mem_threshold_percent);
+        }
+        pclose(fptr);
+    }
+}
 // MONFUNC(checkmemory);

@@ -12,6 +12,7 @@
 #include "nic/operd/alerts/alerts.hpp"
 
 namespace api {
+#include <sys/time.h>
 
 /// \brief     event callback for system power
 /// \param[in] power system power info
@@ -156,10 +157,9 @@ interrupt_event_cb (const intr_reg_t *reg, const intr_field_t *field)
 void
 cattrip_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_CATTRIP_INTERRUPT,
-                                                "DSC temperature crossed the "
-                                                "fatal threshold and will "
-                                                "reset");
+    operd::alerts::alert_recorder::get()->alert(
+        operd::alerts::NAPLES_CATTRIP_INTERRUPT, "DSC temperature crossed the "
+        "fatal threshold and will reset");
 }
 
 void
@@ -181,23 +181,44 @@ panic_event_cb (void)
 void
 postdiag_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_POST_DIAG_FAILURE_EVENT,
-                                                "DSC post diag failed in "
-                                                "this boot");
+    operd::alerts::alert_recorder::get()->alert(
+        operd::alerts::NAPLES_POST_DIAG_FAILURE_EVENT,
+        "DSC post diag failed in this boot");
 }
 
 void
 pciehealth_event_cb (sysmon_pciehealth_severity_t sev, const char *reason)
 {
     if (sev == SYSMON_PCIEHEALTH_INFO) {
-        operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_INFO_PCIEHEALTH_EVENT,
-                                                    reason);
+        operd::alerts::alert_recorder::get()->alert(
+            operd::alerts::NAPLES_INFO_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_WARN){
-        operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_WARN_PCIEHEALTH_EVENT,
-                                                    reason);
+        operd::alerts::alert_recorder::get()->alert(
+            operd::alerts::NAPLES_WARN_PCIEHEALTH_EVENT, reason);
     } else if (sev == SYSMON_PCIEHEALTH_ERROR){
-        operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_ERR_PCIEHEALTH_EVENT,
-                                                    reason);
+        operd::alerts::alert_recorder::get()->alert(
+            operd::alerts::NAPLES_ERR_PCIEHEALTH_EVENT, reason);
+    }
+}
+
+void
+memory_threshold_event_cb (sysmon_mem_threshold_event_t event,
+                           const char *path, uint32_t threshold_percent)
+{
+    char event_log[512];
+
+    if (event == SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD) {
+        snprintf(event_log, sizeof(event_log),
+                 "%s is above memory usage threshold of %u percent", path,
+                 threshold_percent);
+        operd::alerts::alert_recorder::get()->alert(
+            operd::alerts::DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD, event_log);
+    } else if (event == SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD) {
+        snprintf(event_log, sizeof(event_log),
+                 "%s is below memory usage threshold of %u percent", path,
+                 threshold_percent);
+        operd::alerts::alert_recorder::get()->alert(
+            operd::alerts::DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD, event_log);
     }
 }
 

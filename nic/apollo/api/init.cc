@@ -39,6 +39,21 @@
 
 const pds_obj_key_t k_pds_obj_key_invalid = { 0 };
 
+/*
+ * Threshold value is in %
+ * Currently tmpfs is 100MB, so, when /var/log/pensando crosses 85%
+ * (in this case, 85 MB), this would trigger alarm
+ */
+#define PDS_SYSMON_LOGDIR                 "/var/log/pensando"
+#define PDS_SYSMON_LOGDIR_THRESHOLD       85 
+
+static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = { 
+    {
+        .path = PDS_SYSMON_LOGDIR,
+        .mem_threshold_percent = PDS_SYSMON_LOGDIR_THRESHOLD
+    }
+};
+
 namespace api {
 
 /**
@@ -159,6 +174,10 @@ sysmon_init (void)
     sysmon_cfg.panic_event_cb = panic_event_cb;
     sysmon_cfg.postdiag_event_cb = postdiag_event_cb;
     sysmon_cfg.pciehealth_event_cb = pciehealth_event_cb;
+    sysmon_cfg.memory_threshold_event_cb = memory_threshold_event_cb;
+    
+    sysmon_cfg.num_memory_threshold_cfg = SDK_ARRAY_SIZE(mem_threshold_cfg);
+    sysmon_cfg.memory_threshold_cfg = mem_threshold_cfg;
 
     // init the sysmon lib
     sysmon_init(&sysmon_cfg);

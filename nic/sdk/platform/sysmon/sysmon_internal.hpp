@@ -63,9 +63,11 @@ void checkliveness(void);
 void checktemperature(void);
 void checkdisk(void);
 void checkmemory(void);
+void check_memory_threshold(void);
 void checkpower(void);
 void checkpostdiag(void);
 void checkpciehealth(void);
+void memory_threshold_cfg_init(void);
 
 extern sysmon_cfg_t g_sysmon_cfg;
 

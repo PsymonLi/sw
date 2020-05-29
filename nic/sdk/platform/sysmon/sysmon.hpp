@@ -29,6 +29,12 @@ typedef enum {
     SYSMON_PCIEHEALTH_ERROR = 2,
 } sysmon_pciehealth_severity_t;
 
+typedef enum {
+    SYSMON_MEM_PARTITION_USAGE_NONE = 0,
+    SYSMON_MEM_PARTITION_USAGE_ABOVE_THRESHOLD,
+    SYSMON_MEM_PARTITION_USAGE_BELOW_THRESHOLD,
+} sysmon_mem_threshold_event_t;
+
 typedef struct systemled_s {
     sysmond_led_event_t event;
     pal_led_color_t color;
@@ -39,6 +45,11 @@ typedef struct system_memory_s {
     uint64_t available_mem;
     uint64_t free_mem;
 } __attribute__((packed)) system_memory_t;
+
+typedef struct sysmon_memory_threshold_cfg_s {
+    std::string  path;
+    uint32_t     mem_threshold_percent;
+} sysmon_memory_threshold_cfg_t;
 
 // callbacks
 typedef void (*frequency_change_event_cb_t)(uint32_t frequency);
@@ -53,18 +64,24 @@ typedef void (*postdiag_event_cb_t)(void);
 typedef void (*liveness_event_cb_t)(void);
 typedef void (*pciehealth_event_cb_t)(sysmon_pciehealth_severity_t sev,
                                       const char *reason);
+typedef void (*memory_threshold_event_cb_t)(sysmon_mem_threshold_event_t event,
+                                            const char *path,
+                                            uint32_t threshold_percent);
 
 typedef struct sysmon_cfg_s {
-    frequency_change_event_cb_t frequency_change_event_cb;
-    cattrip_event_cb_t          cattrip_event_cb;
-    power_event_cb_t            power_event_cb;
-    temp_event_cb_t             temp_event_cb;
-    memory_event_cb_t           memory_event_cb;
-    panic_event_cb_t            panic_event_cb;
-    postdiag_event_cb_t         postdiag_event_cb;
-    liveness_event_cb_t         liveness_event_cb;
-    pciehealth_event_cb_t       pciehealth_event_cb;
-    sdk::lib::catalog           *catalog;
+    frequency_change_event_cb_t   frequency_change_event_cb;
+    cattrip_event_cb_t            cattrip_event_cb;
+    power_event_cb_t              power_event_cb;
+    temp_event_cb_t               temp_event_cb;
+    memory_event_cb_t             memory_event_cb;
+    panic_event_cb_t              panic_event_cb;
+    postdiag_event_cb_t           postdiag_event_cb;
+    liveness_event_cb_t           liveness_event_cb;
+    pciehealth_event_cb_t         pciehealth_event_cb;
+    sdk::lib::catalog             *catalog;
+    memory_threshold_event_cb_t   memory_threshold_event_cb;
+    sysmon_memory_threshold_cfg_t *memory_threshold_cfg;
+    uint16_t                      num_memory_threshold_cfg;
 } sysmon_cfg_t;
 
 int sysmon_init(sysmon_cfg_t *sysmon_cfg);

@@ -10,16 +10,17 @@ sysmon_cfg_t g_sysmon_cfg;
 systemled_t currentstatus = {UKNOWN_STATE, LED_COLOR_NONE};
 
 monfunc_t monfunclist[] = {
-    { checkcattrip     },
-    { checkfrequency   },
-    { checkruntime     },
-    { checktemperature },
-    { checkdisk        },
-    { checkmemory      },
-    { checkpostdiag    },
-    { checkliveness    },
-    { checkpower       },
-    { checkpciehealth  },
+    { checkcattrip           },
+    { checkfrequency         },
+    { checkruntime           },
+    { checktemperature       },
+    { checkdisk              },
+    { checkmemory            },
+    { check_memory_threshold },
+    { checkpostdiag          },
+    { checkliveness          },
+    { checkpower             },
+    { checkpciehealth        },
 };
 
 static void monitorsystem() {
@@ -82,6 +83,8 @@ sysmon_init (sysmon_cfg_t *sysmon_cfg)
     }
 
     g_sysmon_cfg = *sysmon_cfg;
+
+    memory_threshold_cfg_init();
 
     SDK_HMON_TRACE_INFO("Monitoring system events");
 
