@@ -137,7 +137,7 @@ func checkCQMetricsFields() {
 					}
 					return nil
 				})
-			}, time.Duration(5)*time.Minute, time.Duration(1)*time.Minute).Should(Succeed())
+			}, time.Duration(10)*time.Minute, time.Duration(30)*time.Second).Should(Succeed())
 		}
 	}
 }
