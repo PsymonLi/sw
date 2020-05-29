@@ -589,6 +589,11 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 			//log.Infof("Interface: %s | Info: %s ", intf.GetKey(), types.InfoIgnoreUpdate)
 			return nil, nil
 		}
+
+		// Ignore updates on UPLINK interfaces in apulu
+		if intf.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() || intf.Spec.Type == netproto.InterfaceSpec_UPLINK_MGMT.String() {
+			return nil, nil
+		}
 	case types.Delete:
 		var existingIntf netproto.Interface
 
