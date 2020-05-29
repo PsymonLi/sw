@@ -583,8 +583,8 @@ func NaplesFileUploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	termChar := r.FormValue("terminateChar")
 	if termChar == "" {
-		renderError(w, "termChar not  Specified\n", http.StatusBadRequest)
-		return
+		// Fall back to UNIX to support old clients
+		termChar = "/"
 	}
 
 	fileNameSlice := strings.Split(fileHeader.Filename, termChar)
