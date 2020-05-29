@@ -18,7 +18,6 @@ var CQMeasurementGroupByMap = map[string]int{
 	"FteCPSMetrics":          1,
 	"LifMetrics":             1,
 	"SessionSummaryMetrics":  1,
-	"RuleMetrics":            1,
 	"FteLifQMetrics":         1,
 	"MgmtMacMetrics":         1,
 	"MacMetrics":             1,

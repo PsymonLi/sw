@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pensando/sw/api/fields"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/metrics/genfields"
-	"github.com/pensando/sw/api/fields"
 	"github.com/pensando/sw/metrics/types"
 	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
 	cmdtypes "github.com/pensando/sw/venice/cmd/types"
@@ -136,7 +136,7 @@ func checkMetricsFields() {
 						return err
 					}
 
-					if  err := checkIntfMetrics(vnc, k, name, tms); err != nil {
+					if err := checkIntfMetrics(vnc, k, name, tms); err != nil {
 						return err
 					}
 
@@ -147,11 +147,11 @@ func checkMetricsFields() {
 	}
 }
 
-func checkIntfMetrics(vnc *objects.VeniceNodeCollection, kind string, reporterID string, tms string) error{
+func checkIntfMetrics(vnc *objects.VeniceNodeCollection, kind string, reporterID string, tms string) error {
 	// check interface stats
-	ifNames := map[string][]string {
-		"LifMetrics" : {"pf-69", "pf-70"},
-		"MacMetrics" : {"uplink-1-1", "uplink-1-2"},
+	ifNames := map[string][]string{
+		"LifMetrics":     {"pf-69", "pf-70"},
+		"MacMetrics":     {"uplink-1-1", "uplink-1-2"},
 		"MgmtMacMetrics": {"mgmt-1-3"},
 	}
 
@@ -167,8 +167,8 @@ func checkIntfMetrics(vnc *objects.VeniceNodeCollection, kind string, reporterID
 						Values: []string{reporterID + "-" + n},
 					},
 					{
-						Key:"reporterID",
-						Values:[]string{reporterID},
+						Key:    "reporterID",
+						Values: []string{reporterID},
 					},
 				},
 			}
@@ -188,7 +188,6 @@ func checkIntfMetrics(vnc *objects.VeniceNodeCollection, kind string, reporterID
 
 	return nil
 }
-
 
 func checkClusterMetrics() {
 	if !ts.tb.HasNaplesHW() {
@@ -265,7 +264,7 @@ func checkCQMetricsFields() {
 		}
 		for _, m := range types.DscMetricsList {
 			// drop metrics are reported only on drop
-			if m == "IPv4FlowDropMetrics" {
+			if m == "IPv4FlowDropMetrics" || m == "RuleMetrics" {
 				continue
 			}
 			cq := m + "_" + s
@@ -285,7 +284,7 @@ func checkCQMetricsFields() {
 							return err
 						}
 
-						if  err := checkIntfMetrics(vnc, cq, name, tms); err != nil {
+						if err := checkIntfMetrics(vnc, cq, name, tms); err != nil {
 							return err
 						}
 					}
