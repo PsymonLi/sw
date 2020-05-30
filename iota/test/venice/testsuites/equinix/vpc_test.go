@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"reflect"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -17,8 +16,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	yaml "gopkg.in/yaml.v2"
 )
-
-type matcherFn func(*string, *string, bool) error
 
 var _ = Describe("VPC", func() {
 	BeforeEach(func() {
@@ -70,12 +67,8 @@ var _ = Describe("VPC", func() {
 			allVpcs, err := getVpcCollection(tenantName)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			Eventually(func() error {
-				return verifyNetAgentVpcState(allVpcs)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(allVpcs)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(allVpcs)
+			verifyPDSVpcState(allVpcs)
 
 			//Delete VPC
 			Expect(vpc1.Delete()).Should(Succeed())
@@ -84,12 +77,8 @@ var _ = Describe("VPC", func() {
 			allVpcs, err = getVpcCollection(tenantName)
 			Expect(err).ShouldNot(HaveOccurred())
 
-			Eventually(func() error {
-				return verifyNetAgentVpcState(allVpcs)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(allVpcs)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(allVpcs)
+			verifyPDSVpcState(allVpcs)
 		})
 
 		It("Update router mac for VPC", func() {
@@ -124,22 +113,14 @@ var _ = Describe("VPC", func() {
 			Expect(veniceVpc.Obj.Spec.RouterMACAddress == newRmac).Should(BeTrue())
 
 			//Verify state in Naples
-			Eventually(func() error {
-				return verifyNetAgentVpcState(voc)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(voc)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(voc)
+			verifyPDSVpcState(voc)
 
 			vpc.UpdateRMAC(oldRmac)
 			Expect(voc.Update()).Should(Succeed())
 
-			Eventually(func() error {
-				return verifyNetAgentVpcState(voc)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(voc)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(voc)
+			verifyPDSVpcState(voc)
 		})
 
 		It("Change VPC RT & verify config", func() {
@@ -170,24 +151,16 @@ var _ = Describe("VPC", func() {
 			log.Infof("Import RT new assigned value %v", importRTs[0].AssignedValue)
 			Expect(voc.Update()).Should(Succeed())
 
-			Eventually(func() error {
-				return verifyNetAgentVpcState(voc)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(voc)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(voc)
+			verifyPDSVpcState(voc)
 
 			//Restore RT value
 			exportRTs[0].AssignedValue -= offset
 			importRTs[0].AssignedValue -= offset
 			Expect(voc.Update()).Should(Succeed())
 
-			Eventually(func() error {
-				return verifyNetAgentVpcState(voc)
-			}).Should(Succeed())
-			Eventually(func() error {
-				return verifyPDSVpcState(voc)
-			}).Should(Succeed())
+			verifyNetAgentVpcState(voc)
+			verifyPDSVpcState(voc)
 		})
 	})
 })
@@ -205,29 +178,23 @@ func vpcAddDel() {
 	Expect(err).ShouldNot(HaveOccurred())
 	Expect(veniceVpc.Obj.Name == vpcName).Should(BeTrue())
 
-	uuid := veniceVpc.Obj.GetUUID()
-	log.Infof("UUID %s", uuid)
+	vpcuuid := veniceVpc.Obj.GetUUID()
+	log.Infof("UUID %s", vpcuuid)
 
 	allVpcs, err := getVpcCollection(tenantName)
 	Expect(err).ShouldNot(HaveOccurred())
-	Eventually(func() error {
-		return verifyNetAgentVpcState(allVpcs)
-	}).Should(Succeed())
-	Eventually(func() error {
-		return verifyPDSVpcState(allVpcs)
-	}).Should(Succeed())
+
+	verifyNetAgentVpcState(allVpcs)
+	verifyPDSVpcState(allVpcs)
 
 	//Delete VPC
 	Expect(vpc.Delete()).Should(Succeed())
 
 	allVpcs, err = getVpcCollection(tenantName)
 	Expect(err).ShouldNot(HaveOccurred())
-	Eventually(func() error {
-		return verifyNetAgentVpcState(allVpcs)
-	}).Should(Succeed())
-	Eventually(func() error {
-		return verifyPDSVpcState(allVpcs)
-	}).Should(Succeed())
+
+	verifyNetAgentVpcState(allVpcs)
+	verifyPDSVpcState(allVpcs)
 }
 
 func defaultTenantName() (string, error) {
@@ -237,7 +204,7 @@ func defaultTenantName() (string, error) {
 	}
 
 	if len(ten) == 0 {
-		return "", fmt.Errorf("Not enough tenants to list")
+		return "", fmt.Errorf("not enough tenants to list")
 	}
 
 	//select first tenant ; there is only one tenant right now in iota
@@ -252,7 +219,7 @@ func getVpcCollection(tenantName string) (*objects.VpcObjCollection, error) {
 		}
 
 		if len(ten) == 0 {
-			return nil, fmt.Errorf("Not enough tenants to list networks")
+			return nil, fmt.Errorf("not enough tenants to list networks")
 		}
 
 		//select first tenant
@@ -264,7 +231,7 @@ func getVpcCollection(tenantName string) (*objects.VpcObjCollection, error) {
 		return nil, err
 	}
 	if len(vpcList) == 0 {
-		return nil, fmt.Errorf("No VPCs in tenant %s", tenantName)
+		return nil, fmt.Errorf("no VPCs in tenant %s", tenantName)
 	}
 	voc := objects.NewVPCCollection(ts.model.ConfigClient(), ts.model.Testbed())
 	for _, v := range vpcList {
@@ -335,15 +302,15 @@ func normalizePDSVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool
 	m := make(map[string]pdsVpc)
 
 	for _, s := range vpcs {
-		vpc_uuid := s.Obj.GetUUID()
+		vpcUuid := s.Obj.GetUUID()
 
 		naples := []*objects.Naples{node}
 		var cmdOut []string
 		if isHWNode {
-			cmd := fmt.Sprintf("/nic/bin/pdsctl show vpc --id %s --yaml", vpc_uuid)
+			cmd := fmt.Sprintf("/nic/bin/pdsctl show vpc --id %s --yaml", vpcUuid)
 			cmdOut, _ = ts.model.RunNaplesCommand(&objects.NaplesCollection{Nodes: naples}, cmd)
 		} else {
-			cmd := fmt.Sprintf("/naples/nic/bin/pdsctl show vpc --id %s --yaml", vpc_uuid)
+			cmd := fmt.Sprintf("/naples/nic/bin/pdsctl show vpc --id %s --yaml", vpcUuid)
 			cmdOut, _ = ts.model.RunFakeNaplesCommand(&objects.NaplesCollection{FakeNodes: naples}, cmd)
 		}
 		var data VpcDef
@@ -371,31 +338,24 @@ func normalizePDSVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool
 	return m
 }
 
-func verifyPDSVpcState(vc *objects.VpcObjCollection) error {
+func verifyPDSVpcState(vc *objects.VpcObjCollection) {
 	veniceVpc := normalizeVeniceVpcObj(vc)
 
 	nodes := ts.model.Naples().FakeNodes
 	for _, node := range nodes {
-		pdsVpc := normalizePDSVpcObj(vc.Objs, node, false)
-		log.Infof("Venice State: %+v", veniceVpc)
-		log.Infof("PDS State: %+v", pdsVpc)
-
-		if reflect.DeepEqual(veniceVpc, pdsVpc) == false {
-			return fmt.Errorf("PDS verify failed for node %s", node.IP())
-		}
+		EventuallyWithOffset(1, func() map[string]pdsVpc {
+			log.Infof("DSC %v: Trying to verify VPC state in PDS agent...", node.IP())
+			return normalizePDSVpcObj(vc.Objs, node, false)
+		}).Should(Equal(veniceVpc))
 	}
 
 	nodes = ts.model.Naples().Nodes
-	for i, node := range nodes {
-		pdsVpc := normalizePDSVpcObj(vc.Objs, node, true)
-		log.Infof("%d Venice State: %+v", i, veniceVpc)
-		log.Infof("%d PDS State: %+v", i, pdsVpc)
-		if reflect.DeepEqual(veniceVpc, pdsVpc) == false {
-			return fmt.Errorf("PDS verify failed for node %s", node.IP())
-		}
+	for _, node := range nodes {
+		EventuallyWithOffset(1, func() map[string]pdsVpc {
+			log.Infof("DSC %v: Trying to verify VPC statein PDS agent...", node.IP())
+			return normalizePDSVpcObj(vc.Objs, node, true)
+		}).Should(Equal(veniceVpc))
 	}
-
-	return nil
 }
 
 //////////////////////////////////////////////////////////
@@ -460,10 +420,7 @@ func normalizeVeniceVpcForNA(vpcs *objects.VpcObjCollection) map[string]netAgent
 
 		data.spec.rmac = v.Obj.Spec.GetRouterMACAddress()
 		data.spec.vni = v.Obj.Spec.GetVxLanVNI()
-		//if this doesn't work use RDSpec.clone() and keep a deep copy
-		//v.Obj.Spec.RouteImportExport.Clone()
 		data.spec.routeImportExport = ConvertVeniceRdToNARd(v.Obj.Spec.RouteImportExport).String()
-		//log.Infof("Venice RD Spec : %s", data.spec.routeImportExport)
 		data.spec.ipamPolicy = v.Obj.Spec.GetDefaultIPAMPolicy()
 		cfg[data.meta.uuid] = data
 	}
@@ -503,7 +460,6 @@ func normalizeNAVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool)
 			n.spec.rmac = datum.Spec.GetRouterMAC()
 			n.spec.vni = datum.Spec.GetVxLANVNI()
 			n.spec.routeImportExport = datum.Spec.RouteImportExport.String()
-			//log.Infof("NetAgent RD spec : %s", n.spec.routeImportExport)
 			n.spec.ipamPolicy = datum.Spec.GetIPAMPolicy()
 
 			m[n.meta.uuid] = n
@@ -513,28 +469,22 @@ func normalizeNAVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool)
 	return m
 }
 
-func verifyNetAgentVpcState(vpcs *objects.VpcObjCollection) error {
+func verifyNetAgentVpcState(vpcs *objects.VpcObjCollection) {
 	veniceVpc := normalizeVeniceVpcForNA(vpcs)
 
 	nodes := ts.model.Naples().FakeNodes
 	for _, node := range nodes {
-		netAgentVpc := normalizeNAVpcObj(vpcs.Objs, node, false)
-		log.Infof("Venice State: %+v", veniceVpc)
-		log.Infof("NetAgent State: %+v", netAgentVpc)
-		if reflect.DeepEqual(veniceVpc, netAgentVpc) == false {
-			return fmt.Errorf("Netagent verify failed for node %s", node.IP())
-		}
+		EventuallyWithOffset(1, func() map[string]netAgentVpc {
+			log.Infof("DSC %v: Trying to verify VPC state in Net agent...", node.IP())
+			return normalizeNAVpcObj(vpcs.Objs, node, false)
+		}).Should(Equal(veniceVpc))
 	}
 
 	nodes = ts.model.Naples().Nodes
-	for i, node := range nodes {
-		netAgentVpc := normalizeNAVpcObj(vpcs.Objs, node, true)
-		log.Infof("%d Venice State: %+v", i, veniceVpc)
-		log.Infof("%d NetAgent State: %+v", i, netAgentVpc)
-		if reflect.DeepEqual(veniceVpc, netAgentVpc) == false {
-			return fmt.Errorf("Netagent verify failed for node %s", node.IP())
-		}
+	for _, node := range nodes {
+		EventuallyWithOffset(1, func() map[string]netAgentVpc {
+			log.Infof("DSC %v: Trying to verify VPC state in Net agent...", node.IP())
+			return normalizeNAVpcObj(vpcs.Objs, node, true)
+		}).Should(Equal(veniceVpc))
 	}
-
-	return nil
 }

@@ -196,3 +196,25 @@ func GetNetworkInterfaceBySubnet(naples, subnet string, client objClient.ObjClie
 
 	return intfc, nil
 }
+
+func GetPFNetworkInterfacesForTenant(tenant, naples string,
+	client objClient.ObjClient, tb *testbed.TestBed) (*NetworkInterfaceCollection, error) {
+
+	filter := fmt.Sprintf("spec.type=host-pf,spec.attach-tenant=%v,status.dsc=%v", tenant, naples)
+	intfs, err := client.ListNetowrkInterfacesByFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(intfs) == 0 {
+		err = fmt.Errorf("no host-pf on %v for tenant %v", naples, tenant)
+		return nil, err
+	}
+
+	intfc := NewInterfaceCollection(client, tb)
+	for _, intf := range intfs {
+		intfc.Interfaces = append(intfc.Interfaces, intf)
+	}
+
+	return intfc, nil
+}

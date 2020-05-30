@@ -206,6 +206,41 @@ func (npc *NaplesCollection) Pop(num int) *NaplesCollection {
 	return newNpc
 }
 
+// Difference returns new collection with nodes in npc that are not in other
+func (npc *NaplesCollection) Difference(other *NaplesCollection) *NaplesCollection {
+	if npc.HasError() {
+		return npc
+	}
+
+	newNpc := &NaplesCollection{Nodes: []*Naples{}, FakeNodes: []*Naples{},
+		CollectionCommon: CollectionCommon{
+			Client:  npc.Client,
+			Testbed: npc.Testbed},
+	}
+
+	otherMap := make(map[string]bool)
+	for _, n := range other.Nodes {
+		otherMap[n.IP()] = true
+	}
+	for _, n := range other.FakeNodes {
+		otherMap[n.IP()] = true
+	}
+
+	for i := 0; i < len(npc.Nodes); i++ {
+		if otherMap[npc.Nodes[i].IP()] == false {
+			newNpc.Nodes = append(newNpc.Nodes, npc.Nodes[i])
+		}
+	}
+
+	for i := 0; i < len(npc.FakeNodes); i++ {
+		if otherMap[npc.FakeNodes[i].IP()] == false {
+			newNpc.FakeNodes = append(newNpc.FakeNodes, npc.FakeNodes[i])
+		}
+	}
+
+	return newNpc
+}
+
 // SetDscProfile sets DSC profile for the given naples
 func (npc *NaplesCollection) SetDscProfile(profile *DscProfile) error {
 
