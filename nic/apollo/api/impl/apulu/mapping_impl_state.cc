@@ -629,7 +629,7 @@ dump_dhcp_reservation (mapping_hw_key_t *key, int out_fd) {
     char buffer[buffer_len];
     char name[buffer_len];
     char value[buffer_len];
-    off_t offset = {0};
+    off_t offset = { 0 };
     char lookup_string[100];
     char *v4_addr = NULL;
 
@@ -729,8 +729,8 @@ do_insert_dhcp_binding (dhcpctl_handle *dhcp_connection,
     uint32_t index = 0;
     uint32_t buf_len = 0;
     unsigned char *bytes = NULL;
-    ipv4_prefix_t v4_prefix = {0};
-    ipv4_addr_t v4_mask = {0};
+    ipv4_prefix_t v4_prefix = { 0 };
+    ipv4_addr_t v4_mask = { 0 };
     vnic_entry *vnic = NULL;
     bool vnic_primary = false;
     uint32_t statements_len = dhcpctl_statements_attr_len;
