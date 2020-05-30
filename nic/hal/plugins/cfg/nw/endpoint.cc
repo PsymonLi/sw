@@ -2771,7 +2771,7 @@ find_ep_by_mac (mac_addr_t mac)
 
     memcpy(&ctxt.mac, mac, ETH_ADDR_LEN);
     ctxt.ep = NULL;
-    g_hal_state->ep_l2_ht()->walk(walk_func, &ctxt);
+    g_hal_state->ep_l2_ht()->walk_safe(walk_func, &ctxt);
 
     return ctxt.ep;
 }

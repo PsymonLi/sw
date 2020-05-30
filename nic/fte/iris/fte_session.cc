@@ -576,6 +576,8 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
     feature_state_t *feature_state = NULL;
     flow_t iflow[ctx_t::MAX_STAGES], rflow[ctx_t::MAX_STAGES];
     hal::session_t *session;
+    uint8_t iflow_dir = FLOW_DIR_FROM_UPLINK;
+    uint8_t rflow_dir = FLOW_DIR_FROM_UPLINK;
 
     session = hal::find_session_by_handle(session_handle);
     if (session == NULL) {
@@ -629,11 +631,25 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
     session->sep_handle        = ctx.sep_handle();
     session->dep_handle        = ctx.dep_handle(); 
     session->syncing_session   = false;
-    session->iflow->config.dir = (ctx.sep() && (ctx.sep()->ep_flags & EP_FLAGS_LOCAL)) ?
-                                                 FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
+
+    // In case of vMotion. In Source host, after vMotion is done Session update could be called.
+    // But, by that time, EP could still exist (NetAgent yet to come and delete the EP).
+    // In that time, valid SEP/DEP could be found in the FTE Ctxt. So ignore this SEP/DEP in
+    // case of vMotion source node, and mark direction as Uplink
+    if ((ctx.sep()) &&
+        (ctx.sep()->ep_flags & EP_FLAGS_LOCAL) &&
+        (ctx.sep()->vmotion_type != hal::ep_vmotion_type_t::VMOTION_TYPE_MIGRATE_OUT)) {
+        iflow_dir = FLOW_DIR_FROM_DMA;
+    }
+    session->iflow->config.dir = iflow_dir;
+
     if (session->rflow) {
-        session->rflow->config.dir = (ctx.dep() && (ctx.dep()->ep_flags & EP_FLAGS_LOCAL)) ?
-                                                     FLOW_DIR_FROM_DMA : FLOW_DIR_FROM_UPLINK;
+        if ((ctx.dep()) &&
+            (ctx.dep()->ep_flags & EP_FLAGS_LOCAL) &&
+            (ctx.dep()->vmotion_type != hal::ep_vmotion_type_t::VMOTION_TYPE_MIGRATE_OUT)) {
+            rflow_dir = FLOW_DIR_FROM_DMA;
+        }
+        session->rflow->config.dir = rflow_dir;
     }
    
     ctx.flow_log()->sfw_action = (nwsec::SecurityAction)ctx.session()->sfw_action;
@@ -643,6 +659,9 @@ session_update_ep_in_fte (hal_handle_t session_handle, bool reset_sync_session_o
                          (hal::flow_direction_t)session->iflow->config.dir);
 
 end:
+    if (feature_state) {
+        HAL_FREE(hal::HAL_MEM_ALLOC_FTE, feature_state);
+    }
     return ret;
 }
 

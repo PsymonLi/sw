@@ -346,8 +346,7 @@ ctx_t::init(SessionSpec* spec, SessionStatus* status, SessionStats* stats, hal::
             hal_handle_t vrf_handle, flow_t iflow[], flow_t rflow[],
             feature_state_t feature_state[], uint16_t num_features)
 {
-    mac_addr_t smac = {0};
-    mac_addr_t dmac = {0};
+    mac_addr_t smac, dmac;
     hal_ret_t  ret;
 
     ret = init(FLOW_MISS_LIFQ, feature_state, num_features);

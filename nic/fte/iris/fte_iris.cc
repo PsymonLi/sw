@@ -193,9 +193,6 @@ ctx_t::lookup_flow_objs (void)
             SDK_ASSERT_RETURN(dl2seg_, HAL_RET_L2SEG_NOT_FOUND);
         }
 
-        HAL_TRACE_VERBOSE("VRF:{} l2seg_id:{}, sl2seg:{:p} sep:{:p} dep:{:p}", key_.lkpvrf,
-                      (sl2seg_)?sl2seg_->seg_id:0, (void *)sl2seg_, (void *)sep_, (void *)dep_);
-
         if (sep_) {
             sep_handle_ = sep_->hal_handle;
             sl2seg_ = hal::l2seg_lookup_by_handle(sep_->l2seg_handle);
@@ -209,6 +206,9 @@ ctx_t::lookup_flow_objs (void)
 
         dep_handle_ = (dep_)?dep_->hal_handle:0;
     }
+
+    HAL_TRACE_VERBOSE("VRF:{} l2seg_id:{}, sl2seg:{:p} sep:{:p} dep:{:p}", key_.lkpvrf,
+            (sl2seg_)?sl2seg_->seg_id:0, (void *)sl2seg_, (void *)sep_, (void *)dep_);
 
     sep_handle_ = (sep_)?sep_->hal_handle:0;
     dep_handle_ = (dep_)?dep_->hal_handle:0;
@@ -330,6 +330,7 @@ ctx_t::create_session()
     hal_ret_t ret;
     hal::flow_key_t l2_info = {0};
     ether_header_t *ethhdr = NULL;
+    mac_addr_t      smac, dmac;
 
     bzero(&l2_info, sizeof(hal::flow_key_t));
 
@@ -342,6 +343,11 @@ ctx_t::create_session()
         ethhdr = (ether_header_t *)(pkt_ + cpu_rxhdr_->l2_offset);
         memcpy(l2_info.smac, ethhdr->smac, sizeof(l2_info.smac));
         memcpy(l2_info.dmac, ethhdr->dmac, sizeof(l2_info.dmac));
+    } else if (sync_session_request()) {
+        MAC_UINT64_TO_ADDR(smac, sess_status_->smac());
+        MAC_UINT64_TO_ADDR(dmac, sess_status_->dmac());
+        memcpy(l2_info.smac, smac, sizeof(l2_info.smac));
+        memcpy(l2_info.dmac, dmac, sizeof(l2_info.dmac));
     }
 
     for (int i = 0; i < MAX_STAGES; i++) {
@@ -391,6 +397,9 @@ ctx_t::create_session()
             ethhdr = (ether_header_t *)(pkt_ + cpu_rxhdr_->l2_offset);
             memcpy(l2_info.smac, ethhdr->dmac, sizeof(l2_info.smac));
             memcpy(l2_info.dmac, ethhdr->smac, sizeof(l2_info.dmac));
+        } else if (sync_session_request()) {
+            memcpy(l2_info.smac, dmac, sizeof(l2_info.smac));
+            memcpy(l2_info.dmac, smac, sizeof(l2_info.dmac));
         }
         for (int i = 0; i < MAX_STAGES; i++) {
             rflow_[i]->set_key(rkey_);
