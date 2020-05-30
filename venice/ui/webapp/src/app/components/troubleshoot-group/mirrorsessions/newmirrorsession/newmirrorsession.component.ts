@@ -142,15 +142,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
       this.newObject.$formGroup.get(['meta', 'name']).disable();
     }
 
-    if (!this.isInline) {
-      this.newObject.$formGroup.get(['meta', 'name']).setValidators([
-        this.newObject.$formGroup.get(['meta', 'name']).validator,
-        this.isMirrorsessionNameValid(this.existingObjects)]);
-      this.newObject.$formGroup.get(['spec', 'span-id']).setValue(null);
-    }
-
     this.newObject.$formGroup.get(['spec', 'packet-size']).setValidators([this.packetSizeValidator()]);
-    this.addFieldValidator(this.newObject.$formGroup.get(['spec', 'span-id']), this.isSpanIDAlreadyUsed(this.existingObjects));
 
     // due to currently backend does not support all drops, comment out next lines
     /*
