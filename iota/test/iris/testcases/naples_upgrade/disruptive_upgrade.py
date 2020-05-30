@@ -11,6 +11,7 @@ import iota.test.iris.testcases.naples_upgrade.upgrade_utils as upgrade_utils
 import iota.test.utils.ping as ping
 import iota.test.utils.arping as arping
 import iota.test.iris.config.netagent.api as netagent_cfg_api
+import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 
 def verify_connectivity(tc):
     if arping.ArPing(tc) != api.types.status.SUCCESS:
@@ -113,6 +114,10 @@ def Verify(tc):
     ping.TestTerminateBackgroundPing(tc, tc.pkt_size)
     ping_loss_duration = ping.GetMaxPktLossDuration(tc, tc.interval)
     api.Logger.info(f"Traffic dropped for {ping_loss_duration} sec")
+
+    if enable_ssh.Main(None) != api.types.status.SUCCESS:
+        api.Logger.error("Enabling SSH failed after upgrade")
+        return api.types.status.FAILURE
 
     if upgrade_utils.VerifyUpgLog(tc.Nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrade logs")
