@@ -16,6 +16,7 @@
 #include "elbmon.hpp"
 #include <time.h>
 #include <inttypes.h>
+#include "elb_txs_sw_api.h"
 
 asic_data_t *asic = NULL;
 
@@ -177,8 +178,32 @@ elbmon_mpu_display_fn (void *ptr)
         ELBMON_REPORT(" phv=%u%%", (mpu->phv_executed * 100) / cycles);
         ELBMON_REPORT(" phvwr_stl=%u%%", (mpu->phvwr_stall * 100) / cycles);
         ELBMON_REPORT(" st_stl=%u%%", (mpu->st_stall * 100) / cycles);
-        ELBMON_REPORT("  mpu %u table address = 0x%lx\n", mpu->index,
+        ELBMON_REPORT(" mpu %u table address = 0x%lx", mpu->index,
                       mpu->addr);
+        ELBMON_REPORT(" last PC byte addr = 0x%lx\n", mpu->last_pc << 3);
+        ELBMON_REPORT(" last icache miss addr = 0x%lx,", mpu->icache_miss_address);
+        ELBMON_REPORT(" fill latency = %d\n", mpu->icache_miss_latency);
+
+	if(mpu->last_exception_code !=0) {
+	  ELBMON_REPORT(" held excepetion code=%hhd ", mpu->last_exception_code);
+	  switch(mpu->last_exception_code) {
+	  case 1: ELBMON_REPORT("ILLEGAL_OPCODE");
+	  case 2: ELBMON_REPORT("MPU_INST_RESP_ERR");
+	  case 3: ELBMON_REPORT("MPU_DATA_RESP_ERR");
+	  case 4: ELBMON_REPORT("MPU_TABLE_ERR");
+	  case 5: ELBMON_REPORT("MPU_MAX_INST_ERR");
+	  case 6: ELBMON_REPORT("MPU_LD_ALIGN");
+	  case 7: ELBMON_REPORT("MPU_SP_ACCESS");
+	  case 8: ELBMON_REPORT("MPU_PHV_LD_FLUSHED");
+	  case 9: ELBMON_REPORT("MPU_DIV0MPU_DIV0");
+	  case 10: ELBMON_REPORT("MPU_PHV_ERR");
+	  case 11: ELBMON_REPORT("MPU_WATCH_PC_HIT");
+	  case 12: ELBMON_REPORT("MPU_WATCH_DATA_HIT");
+	  case 13: ELBMON_REPORT("MPU_STGLOCK_TIMEOUT");
+	  }
+	  ELBMON_REPORT(" held excepetion pc=0x%lx\n", mpu->last_exception_pc);
+	  ELBMON_REPORT(" current excepetion level=%hhd\n", mpu->exception_level);
+	}
     }
 }
 
@@ -224,6 +249,16 @@ elbmon_stage_phv_display (stage_t *stage)
         ELBMON_REPORT("  sdp PHV FIFO depth=%u\n", stage->phv_fifo_depth);
         ELBMON_REPORT("  sdp PHV processed count=%u\n",
                       stage->phv_processed_count);
+
+	if(stage->te_axi_err_resp != 0) {
+	  ELBMON_REPORT("  TE ERROR REPONSE = %hd for ID=%d; req_addr=0x%ld req_id=%hd, req_len=%hd, req_sz=%hd\n",
+			stage->te_axi_err_resp,
+			stage->te_axi_err_id,
+			stage->te_bad_addr,
+			stage->te_bad_id,
+			stage->te_bad_len,
+			stage->te_bad_sz);
+	}
     }
 }
 
@@ -593,6 +628,7 @@ elbmon_asic_display_tx_sched (void)
     }
     ELBMON_REPORT("\n");
 
+    elb_txs_mon_credit(0, 0);
 }
 
 static inline void
@@ -665,7 +701,8 @@ elbmon_asic_display_fn (void *)
 {
     // Display bwmon data
     if (bwmon) {
-        elbmon_asic_all_bwmon_display();
+      // This is now displayed by API call
+      //  elbmon_asic_all_bwmon_display();
     }
     // Display crypto
     if (crypto) {

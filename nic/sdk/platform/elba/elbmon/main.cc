@@ -33,6 +33,11 @@
 #include "elb_wa_c_hdr.h"
 #include "elb_pf_c_hdr.h"
 #include "elbmon.hpp"
+
+#include "platform/elba/csrint/csr_init.hpp"
+#include "platform/csr/asicrw_if.hpp"
+#include "lib/pal/pal.hpp"
+
 namespace pt {
 #include "elb_pt_c_hdr.h"
 }
@@ -82,7 +87,18 @@ main (int argc, char *argv[])
     int lif_start = 0;
     int lif_end = lif_max - 1;
 
+
+#ifdef __x86_64__
+    assert(sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_SIM) ==                                                         
+           sdk::lib::PAL_RET_OK);
+#elif __aarch64__
+    assert(sdk::lib::pal_init(platform_type_t::PLATFORM_TYPE_HW) ==
+           sdk::lib::PAL_RET_OK);
+#endif
+
     elbmon_struct_init(NULL);
+
+    sdk::platform::elba::csr_init();    
 
     while (i < (argc)) {
         if (strcmp(argv[i], "-r") == 0) {
@@ -228,7 +244,7 @@ main (int argc, char *argv[])
         } else if (strcmp(argv[i], "-wa") == 0) {
   	    printf("Setting all MPU performance counters to watch all PHVs.\n");
 	    set_watch_all();
-        } else if (strcmp(argv[i], "-wd") == 0) { 
+        } else if (strcmp(argv[i], "-wd") == 0) {
   	    printf("Setting all MPU performance counters to watch DEBUG PHVs.\n");
  	    set_watch_debug();
         } else if (strcmp(argv[i], "-wi") == 0) {
@@ -247,11 +263,11 @@ main (int argc, char *argv[])
 	    if (strcmp(pipe, "TXDMA") == 0) {
 	      pipeline = TXDMA;
 	    } else if (strcmp(pipe, "RXDMA") == 0) {
-	      pipeline = RXDMA;	      
+	      pipeline = RXDMA;
 	    } else if (strcmp(pipe, "P4EG") == 0) {
-	      pipeline = P4EG;	      
+	      pipeline = P4EG;
 	    } else if (strcmp(pipe, "P4IG") == 0) {
-	      pipeline = P4IG;	      
+	      pipeline = P4IG;
 	    } else {
 	      printf("Error: -wi requires pipe of TXDMA, RXDMA, P4EG, or P4IG (read %s)\n", pipe);
 	      return(-1);
@@ -280,7 +296,7 @@ main (int argc, char *argv[])
                 "usage: elbmon -v[erbose] -r[eset] -q[ueues] -b[wmon]"
 		" -c[rypto] -x[port to /tmp]"
 		" -wa[watch all] -wd[watch debug] -wi[watch inst_addr] pipe:stage:lo:hi"
-                " -s[pps] -l[lif] -t[qtype] -i[qid] -R[ring] -p[poll]"		
+                " -s[pps] -l[lif] -t[qtype] -i[qid] -R[ring] -p[poll]"
                 "<interval>\n\n");
             printf("Example: elbmon -q -l 1003:1005 -t 0 -i 0:5 -R 1 -p 100\n");
             return (0);
