@@ -2,6 +2,8 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //-----------------------------------------------------------------------------
 
+// +build apulu apollo
+
 package cmd
 
 import (
@@ -20,11 +22,8 @@ import (
 	"github.com/pensando/sw/nic/apollo/agent/gen/pds"
 )
 
-var (
-	// ID holds VPC ID
-	ID        string
-	transport string
-)
+// ID holds VPC ID
+var	ID        string
 
 var vpcShowCmd = &cobra.Command{
 	Use:   "vpc",

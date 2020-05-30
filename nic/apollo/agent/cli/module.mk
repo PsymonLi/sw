@@ -8,6 +8,6 @@ MODULE_PIPELINE = apollo artemis athena
 else
 MODULE_PIPELINE = apollo artemis apulu athena
 endif
-MODULE_FLAGS    = -ldflags="-s -w"
+MODULE_FLAGS    = -tags ${PIPELINE} -ldflags="-s -w"
 MODULE_DEPS     = $(shell find ${MODULE_SRC_DIR}/ -name '*.go')
 include ${MKDEFS}/post.mk

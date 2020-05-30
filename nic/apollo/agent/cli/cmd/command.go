@@ -17,6 +17,7 @@ import (
 
 var CmdSocket string = "/var/run/pds_svc_server_sock"
 var vppUdsPath string = "/run/vpp/pds.sock"
+var transport string
 
 type Transport int
 

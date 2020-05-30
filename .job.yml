@@ -405,6 +405,8 @@ dependencies:
     - reference: iota/test/standalone/precheckin/athena
   nic/apollo/agent/athena:
     - reference: iota/test/standalone/precheckin/athena
+  nic/apollo/agent/cli:
+    - reference: iota/test/standalone/precheckin/athena
   nic/agent:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
