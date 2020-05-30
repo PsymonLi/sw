@@ -236,12 +236,12 @@ upg_event_interactive_handler (upg_event_msg_t *event)
                               upg_stage2str(id));
                 UPG_TRACE_ERR("Setting stage progress failure for stage %s",
                               upg_stage2str(id));
-                //  todo: response ipc with failure
+                fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_FAIL);
             } else {
                 if (svc_rsp_code(event->rsp_status) != SVC_RSP_OK) {
-                    // todo: response ipc with failure
+                    fsm_states.init_params()->fsm_completion_cb(event->rsp_status);
                 } else {
-                    // todo: response ipc with success
+                    fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_OK);
                 }
             }
             stage_in_progress = false;
