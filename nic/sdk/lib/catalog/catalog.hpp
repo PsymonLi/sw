@@ -32,7 +32,8 @@ using boost::property_tree::ptree;
 typedef enum card_id_e {
     CARD_ID_NAPLES100,
     CARD_ID_NAPLES25,
-    CARD_ID_NAPLES25_SWM
+    CARD_ID_NAPLES25_SWM,
+    CARD_ID_NAPLES25_OCP
 } card_id_t;
 
 typedef enum mac_mode_e {

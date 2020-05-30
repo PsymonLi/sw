@@ -5,9 +5,12 @@
 #include <unistd.h>
 #include <marvell.hpp>
 #include "marvell_6321.hpp"
+#include "lib/runenv/runenv.h"
 extern "C" {
 #include "platform/pal/include/pal_cpld.h"
 }
+
+using namespace sdk::lib;
 
 namespace sdk {
 namespace marvell {
@@ -186,14 +189,14 @@ marvell_switch_init (marvell_cfg_t *marvell_cfg)
     cpld_mdio_wr(MARVELL_PORT_CTRL_REG, marvell_port_cfg_1g(), MARVELL_PORT0);
 
     if (marvell_cfg->catalog->is_card_naples25_swm()) {
-        // If ALOM is present:
+        // If NCSI feature is enabled:
         //     - Enable forwarding state of all ports except the RJ45 port
         //     - Power up the serdes on the serdes ports
         // Else:
         //     - Enable forwarding state of all ports
         //     - Power up the serdes on the serdes ports
         //     - Power up the PHY on PHY ports
-        if (cpld_reg_rd(CPLD_REGISTER_CTRL) & CPLD_ALOM_PRESENT_BIT) {
+        if (runenv::is_feature_enabled(NCSI_FEATURE) == FEATURE_ENABLED) {
             // bitmask of 7 ports except port3 and port4
             marvell_ports_enable(0x67);
             marvell_serdes_enable(MARVELL_SERDES_PORT0, true);

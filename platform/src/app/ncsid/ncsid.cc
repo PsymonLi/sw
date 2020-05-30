@@ -7,6 +7,7 @@
 #include "nic/sdk/platform/ncsi/ncsi_mgr.h"
 #include "nic/sdk/platform/pal/include/pal.h"
 #include "nic/sdk/lib/logger/logger.hpp"
+#include "nic/sdk/lib/runenv/runenv.h"
 #include "grpc_ipc.h"
 
 #define ARRAY_LEN(var)   (int)((sizeof(var)/sizeof(var[0])))
@@ -25,6 +26,7 @@ typedef std::shared_ptr<spdlog::logger> Logger;
 static Logger current_logger;
 using namespace std;
 using namespace sdk::platform::ncsi;
+using namespace sdk::lib;
 
 int usage(int argc, char* argv[]);
 void ipc_init();
@@ -146,8 +148,6 @@ void InitNcsiMgr()
 
 int main(int argc, char* argv[])
 {
-    int32_t cpld_cntl_reg;
-    int32_t cpld_id;
     ncsimgr = new NcsiMgr();
     grpc_ipc_svc = make_shared<grpc_ipc>();
     Logger logger_obj;
@@ -172,23 +172,12 @@ int main(int argc, char* argv[])
     if (argc > 2)
         strncpy(iface_name, argv[2], sizeof(iface_name));
 
-    /* If listening on oob interface, then we must be connected to ALOM 
-     * in order to receive NCSI packet from BMC */
-    cpld_id = cpld_reg_rd(CPLD_REGISTER_ID);
-    if (cpld_id != CPLD_ID_NAPLES25_SWM) {
-        SDK_TRACE_INFO("Not a SWM card. Exiting ncsid app !");
-        return 0;
-    }
     if (!strcmp(iface_name, "oob_mnic0")) {
-        cpld_cntl_reg = cpld_reg_rd(CPLD_REGISTER_CTRL);
-        if (cpld_cntl_reg == -1) {
-            SDK_TRACE_INFO("Error reading CPLD control reg for ALOM presence."
-                    "Exiting ncsid app !");
-            return 0;
-        }
-        if (! (cpld_cntl_reg & CPLD_ALOM_PRESENT_BIT)) {
-            SDK_TRACE_INFO("ALOM is not present. NCSI cannot function without ALOM."
-                    "Exiting ncsid app !");
+
+        feature_query_ret_e feature_query_ret = runenv::is_feature_enabled(NCSI_FEATURE);
+        if (feature_query_ret != FEATURE_ENABLED) {
+            SDK_TRACE_INFO("NCSI feature is not enabled. Feature query response: %d", feature_query_ret);
+            SDK_TRACE_INFO("Exiting ncsid app !");
             return 0;
         }
     }

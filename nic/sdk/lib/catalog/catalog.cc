@@ -639,8 +639,10 @@ catalog::catalog_board_type_to_sdk_card_id(std::string board_type)
         return CARD_ID_NAPLES100;
     } else if (board_type.compare("Naples25") == 0) {
         return CARD_ID_NAPLES25;
-    } else if (board_type.compare("Naples25 SWM") == 0) {
+    } else if (board_type.compare("Naples25 SWM") == 0) { 
         return CARD_ID_NAPLES25_SWM;
+    } else if(board_type.compare("Naples25 OCP") == 0) {
+        return CARD_ID_NAPLES25_OCP;
     } else {
         return CARD_ID_NAPLES100;
     }
@@ -1125,7 +1127,8 @@ catalog::is_card_naples25(void) {
 
 bool
 catalog::is_card_naples25_swm(void) {
-    return (card_id() == CARD_ID_NAPLES25_SWM);
+    return ((card_id() == CARD_ID_NAPLES25_SWM) || 
+            (card_id() == CARD_ID_NAPLES25_OCP));
 }
 
 }    // namespace lib

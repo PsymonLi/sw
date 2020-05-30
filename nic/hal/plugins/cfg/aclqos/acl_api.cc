@@ -6,6 +6,9 @@
 #include "nic/include/pd.hpp"
 #include "nic/hal/plugins/cfg/aclqos/acl_api.hpp"
 #include "nic/sdk/platform/pal/include/pal.h"
+#include "nic/sdk/lib/runenv/runenv.h"
+
+using namespace sdk::lib;
 
 namespace hal {
 
@@ -97,7 +100,7 @@ acl_install_ncsi_redirect (if_t *oob_mnic_enic, if_t *oob_uplink_if)
         HAL_TRACE_ERR("Unable to install NCSI oob_mnic -> uplink. err: {}", ret);
     }
 
-    if (pal_swm_enabled()) {
+    if (runenv::is_feature_enabled(NCSI_FEATURE) == FEATURE_ENABLED) {
         acl_id = ACL_NCSI_OOB_REDIRECT_ID3;
         priority = ACL_NCSI_OOB_BCAST_DROP_PRIORITY;
 
@@ -151,7 +154,7 @@ acl_uninstall_ncsi_redirect (void)
         HAL_TRACE_ERR("Unable to uninstall NCSI oob_mnic -> uplink. err: {}", ret);
     }
 
-    if (pal_swm_enabled()) {
+    if (runenv::is_feature_enabled(NCSI_FEATURE) == FEATURE_ENABLED) {
         acl_id = ACL_NCSI_OOB_REDIRECT_ID3;
         req.mutable_key_or_handle()->set_acl_id(acl_id);
 

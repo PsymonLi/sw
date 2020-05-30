@@ -38,6 +38,7 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/utils/trace/trace.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
+#include "nic/sdk/lib/runenv/runenv.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 
 // CPLD to Capri gpio interrupt pin
@@ -62,6 +63,8 @@
 
 // CPLD control register bits
 #define HOST_POWER_ON          0x80
+
+using namespace sdk::lib;
 
 namespace cpldmon {
 
@@ -441,6 +444,7 @@ main(int argc, char *argv[])
     int cpld_cntl_reg;
     int opt;
     int ret;
+    feature_query_ret_e feature_query_ret;
 
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
@@ -519,30 +523,34 @@ main(int argc, char *argv[])
     system("echo 1 > /sys/kernel/reboot/panic_reboot");
 
     // Check PCIe standup mode.  If CPLD indicates ALOM is present
+    // OR if it is OCP card (runenv does this checking for us) 
     // check live status otherwise set the core clock to 416 MHz.
     // Single wire management cards are set to 208 MHz in u-boot.
-    cpld_cntl_reg = cpld_reg_rd(CPLD_REGISTER_CTRL);
-    if (cpld_cntl_reg == -1) {
-        cpldmon_exit("Error reading cpld control register for ALOM presence", cpld_cntl_reg);
-    } else {
-        CLOG_INFO("cpld control register: 0x{}", cpld_cntl_reg);
-        if (cpld_cntl_reg & CPLD_ALOM_PRESENT_BIT) {
-            CLOG_INFO("ALOM present");
 
-            // Live status check
-            if (cpld_cntl_reg & HOST_POWER_ON) {
-                SET_HALF_CLOCK(0, 0);
-                sleep(2);
-                if (get_card_power(&card_power) == 0)
-                    CLOG_INFO("Main power is on, card power is now {} Watts", card_power);
-            }
-        } else {
-            CLOG_INFO("ALOM not present, core clock set to 416 MHz");
+    feature_query_ret = runenv::is_feature_enabled(NCSI_FEATURE);
+
+    if (feature_query_ret == FEATURE_QUERY_FAILED) {
+        cpldmon_exit("Error reading cpld control register for ALOM presence"
+                    " OR error reading OCP enable config, Errorcode: %d",
+                    feature_query_ret);
+    }
+    else if (feature_query_ret == FEATURE_ENABLED) {
+        CLOG_INFO("NCSI feature is enabled");
+
+        // Live status check
+        if (cpld_cntl_reg & HOST_POWER_ON) {
             SET_HALF_CLOCK(0, 0);
             sleep(2);
             if (get_card_power(&card_power) == 0)
-                CLOG_INFO("Card power {} Watts", card_power);
+                CLOG_INFO("Main power is on, card power is now {} Watts", card_power);
         }
+    }
+    else {
+        CLOG_INFO("NCSI feature not enabled, core clock set to 416 MHz");
+        SET_HALF_CLOCK(0, 0);
+        sleep(2);
+        if (get_card_power(&card_power) == 0)
+            CLOG_INFO("Card power {} Watts", card_power);
     }
 
     // Configure CPLD to Capri GPIO interrupt

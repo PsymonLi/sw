@@ -147,7 +147,8 @@ MODULE_SOLIBS   = \
         plugin_classic \
         plugin_ep_learn_common \
         plugin_sfw_pkt_utils \
-		sdk_asicrw_if
+		sdk_asicrw_if \
+		runenv
 
 MODULE_LDLIBS        = zmq ${NIC_HAL_ALL_LDLIBS} ev tins
 include ${MKDEFS}/post.mk

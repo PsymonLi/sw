@@ -31,7 +31,7 @@ export NIC_COMMON_FLAGS := -pthread -rdynamic
 
 export NIC_SDK_SOLIBS   := utils list slab shmmgr mmgr sdkpal sdkfru \
     ht indexer logger thread event_thread periodic twheel directmap sldirectmap \
-    hash hbmhash tcam timerfd catalog device sdkplatformutils sdk${ASIC} \
+    hash hbmhash tcam timerfd catalog runenv device sdkplatformutils sdk${ASIC} \
     sdkp4loader sdkasicrw sdkasiccmn sdkasicpd lif_mgr sdkring sysmon sensor \
     sdkxcvrdriver pcieport pciemgrutils pciemgr pcietlp intrutils cfgspace \
     evutils misc
@@ -289,7 +289,7 @@ export NIC_HAL_ALL_SOLIBS   := ${NIC_HAL_CORE_SOLIBS} \
                                marvell pal agent_api delphisdk haldelphi halsysmgr \
                                nicmgrproto sdk_asicrw_if commonproto \
                                ftestatsproto dropstatsproto rulestatsproto hal_mem linkmgrproto \
-			       			   haltrace vmotion flowstatsproto mirrorstatsproto ${NIC_HAL_NICMGR_SOLIBS} penipc penipc_ev
+			       			   haltrace vmotion flowstatsproto mirrorstatsproto ${NIC_HAL_NICMGR_SOLIBS} penipc penipc_ev runenv
 
 export NIC_HAL_ALL_LDLIBS   := ${NIC_THIRDPARTY_GOOGLE_LDLIBS} \
                                ${NIC_THIRDPARTY_SSL_LDLIBS} \
