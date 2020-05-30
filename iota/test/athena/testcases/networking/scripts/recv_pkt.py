@@ -14,6 +14,7 @@ import time
 from ipaddress import ip_address
 from scapy.all import *
 from scapy.contrib.mpls import MPLS
+from scapy.contrib.geneve import GENEVE
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
@@ -56,13 +57,19 @@ def validate_recv_pkt(recv_pkts, gen_pkts):
             r_pkt.getlayer(IP, nb=2).chksum = 0
             r_pkt.getlayer(UDP, nb=2).chksum = 0
 
-            #print("Received pkt: {}".format(r_pkt.show()))
-            #print("Generated pkt: {}".format(gen_pkts[0].show()))
+        elif GENEVE in r_pkt:
+            r_pkt.getlayer(UDP, nb=1).sport = 0
 
+            if r_pkt.getlayer(IP, nb=2) is not None:
+                r_pkt.getlayer(IP, nb=2).chksum = 0
+            if r_pkt.getlayer(UDP, nb=2) is not None:
+                r_pkt.getlayer(UDP, nb=2).chksum = 0
 
         if r_pkt == gen_pkts[0]:
             count += 1    
         else:
+            #print("Received pkt: {}".format(r_pkt.show()))
+            #print("Generated pkt: {}".format(gen_pkts[0].show()))
             unmatched_pkts.append(r_pkt)  
 
     if count != DEFAULT_NUM_RECV_PKTS:

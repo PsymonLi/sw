@@ -5,6 +5,7 @@ import os
 import time
 from scapy.all import *
 from scapy.contrib.mpls import MPLS
+from scapy.contrib.geneve import GENEVE
 from enum import Enum
 from ipaddress import ip_address
 
@@ -83,20 +84,96 @@ def get_nat_flow_sip_dip(dp_dir = 'h2s', Rx = False, flow_id = 1):
 
 # ======= TODO END: move flow gen to another module ========= #
 
+class Args():
+
+    def __init__(self):
+        self.encap = False
+        self.node = None
+        self.Rx = None
+        self._dir = None
+        self.proto = None
+        self.nat = None
+
+        self.flow_id = None
+        self.smac = None
+        self.dmac = None
+        self.vlan = None
+        self.sip = None
+        self.dip = None
+        self.sport = None
+        self.dport = None
+
+def parse_args(tc):
+    #==============================================================
+    # init cmd options
+    #==============================================================
+    tc.flow_type  = 'L3'
+    tc.nat        = 'no'
+    tc.size       = '64'
+    tc.proto      = 'UDP'
+    tc.bidir      = 'no'
+    tc.flow       = 'static'
+
+    #==============================================================
+    # update non-default cmd options
+    #==============================================================
+    if hasattr(tc.iterators, 'flow_type'):
+        tc.flow_type = tc.iterators.flow_type
+
+    if hasattr(tc.iterators, 'nat'):
+        tc.nat = tc.iterators.nat
+
+    if hasattr(tc.iterators, 'size'):
+        tc.size = tc.iterators.size
+
+    if hasattr(tc.iterators, 'proto'):
+        tc.proto = tc.iterators.proto
+
+    if hasattr(tc.iterators, 'bidir'):
+        tc.bidir = tc.iterators.bidir
+
+    if hasattr(tc.iterators, 'flow'):
+        tc.flow = tc.iterators.flow
+
+    api.Logger.info('flow_type: {}, nat: {}'.format(tc.flow_type, tc.nat))
+
+def isL2Vnic(trg_vnic):
+
+    return "vnic_type" in trg_vnic and trg_vnic['vnic_type'] == 'L2'
+
+def get_vnic(tc, plcy_obj):
+
+    vnics = plcy_obj['vnic']
+
+    for vnic in vnics:
+        flow_type = 'L2' if isL2Vnic(vnic) else 'L3'
+        nat = 'yes' if "nat" in vnic else 'no'
+
+        if flow_type == tc.flow_type and \
+           nat == tc.nat:
+            return vnic
+
+    raise Exception("Matching vnic not found")
 
 def craft_pkt(_types, _dicts):
 
+    pkt = None
     for i in range(len(_types)):
         _type = _types[i]
         _dict = _dicts[i]
+        #print("type: {}, dict: {}".format(_type, _dict))
 
         if _type == "Ether":
             if 'smac' not in _dict.keys() or \
                'dmac' not in _dict.keys():
                 raise Exception('Ether: smac and/or dmac not found')
             else:
-                pkt = Ether(src = _dict['smac'],
-                            dst = _dict['dmac'])
+                if pkt:
+                    pkt = pkt/Ether(src = _dict['smac'],
+                                dst = _dict['dmac'])
+                else:
+                    pkt = Ether(src = _dict['smac'],
+                                dst = _dict['dmac'])
 
         elif _type == "Dot1Q":
             if 'vlan' not in _dict.keys():
@@ -129,26 +206,14 @@ def craft_pkt(_types, _dicts):
                 pkt = pkt/MPLS(label=int(_dict['label']),
                                s=int(_dict['s']))
 
+        elif _type == "GENEVE":
+            if 'vni' not in _dict.keys() or \
+               'options' not in _dict.keys():
+                raise Exception('GENEVE: vni and/or options not found')
+            else:
+                pkt = pkt/GENEVE(vni=int(_dict['vni']),
+                               options=_dict['options'])
     return pkt
-
-class Args():
-
-    def __init__(self):
-        self.encap = False
-        self.node = None
-        self.Rx = None
-        self._dir = None
-        self.proto = None
-        self.nat = None 
-        
-        self.flow_id = None
-        self.smac = None
-        self.dmac = None
-        self.vlan = None
-        self.sip = None
-        self.dip = None
-        self.sport = None
-        self.dport = None
 
 def setup_pkt(_args):
     types = []
@@ -174,12 +239,13 @@ def setup_pkt(_args):
     if trg_vnic is not None:
         # encap info
         encap_info = trg_vnic['rewrite_underlay']
-        # rewrite host info
-        rewrite_host_info = trg_vnic['rewrite_host']
-
+        # only applicable to L3 vnics
+        if "vnic_type" not in trg_vnic:
+            # rewrite host info
+            rewrite_host_info = trg_vnic['rewrite_host']
 
     if _args.encap:
-        if encap_info is None:
+        if not encap_info:
             raise Exception('vnic config not found encap vlan %s' % _args.vlan)
 
         if _args._dir == 's2h':
@@ -194,6 +260,20 @@ def setup_pkt(_args):
             outer_dip = encap_info['ipv4_dip']
             mpls_lbl1 = encap_info['mpls_label1']
             mpls_lbl2 = encap_info['mpls_label2']
+
+        elif encap_info['type'] == 'geneve':
+            if _args._dir == 'h2s':
+                outer_smac = encap_info['smac']
+                outer_dmac = encap_info['dmac']
+            outer_sip = encap_info['ipv4_sip']
+            outer_dip = encap_info['ipv4_dip']
+            vni = encap_info['vni']
+            if _args._dir == 'h2s':
+                dst_slot_id = encap_info['dst_slot_id']
+                src_slot_id = trg_vnic['slot_id']
+            elif _args._dir == 's2h':
+                src_slot_id = encap_info['dst_slot_id']
+                dst_slot_id = trg_vnic['slot_id']
 
         else:
             raise Exception('encap type %s not supported currently' % encap_info['type'])
@@ -213,29 +293,51 @@ def setup_pkt(_args):
         
         # append outer UDP
         types.append(_args.proto)
-        proto = {'sport' : '0', 'dport' : '6635'}
+        dst_port = '6635' if encap_info['type'] == 'mplsoudp' else '6081'
+        proto = {'sport' : '0', 'dport' : dst_port}
         dicts.append(proto)
 
-        # append MPLS label 1
-        types.append("MPLS")
-        mpls = {'label' : mpls_lbl1, 's' : 0}
-        dicts.append(mpls)
+        if encap_info['type'] == 'mplsoudp':
+            # append MPLS label 1
+            types.append("MPLS")
+            mpls = {'label' : mpls_lbl1, 's' : 0}
+            dicts.append(mpls)
         
-        # append MPLS label 2
-        types.append("MPLS")
-        mpls = {'label' : mpls_lbl2, 's' : 1}
-        dicts.append(mpls)
-        
+            # append MPLS label 2
+            types.append("MPLS")
+            mpls = {'label' : mpls_lbl2, 's' : 1}
+            dicts.append(mpls)
+
+        elif encap_info['type'] == 'geneve':
+            # append GENEVE options
+            types.append("GENEVE")
+            # some of these fields are hard-coded for now
+            option1 = (0x21 << (5 * 8)) | (0x1 << (4 * 8)) | int(src_slot_id)
+            option2 = (0x22 << (5 * 8)) | (0x1 << (4 * 8)) | int(dst_slot_id)
+            options = (option1 << (8 * 8)) | option2
+            geneve = {'vni' : vni, 'options' : options.to_bytes(16, byteorder="big")}
+            dicts.append(geneve)
+
+            types.append("Ether")
+            if _args._dir == 'h2s':
+                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
+            elif _args._dir == 's2h':
+                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
+            dicts.append(ether)
+
     else:
         types.append("Ether")
         if _args._dir == 'h2s':
             ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
         elif _args._dir == 's2h':
-            if rewrite_host_info is None:
-                raise Exception('vnic config not found encap vlan %s' % _args.vlan)
-            smac = rewrite_host_info['smac']
-            dmac = rewrite_host_info['dmac']
-            ether = {'smac' : smac, 'dmac' : dmac}
+            if isL2Vnic(trg_vnic):
+                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
+            else:
+                if not rewrite_host_info:
+                    raise Exception('vnic config not found encap vlan %s' % _args.vlan)
+                smac = rewrite_host_info['smac']
+                dmac = rewrite_host_info['dmac']
+                ether = {'smac' : smac, 'dmac' : dmac}
         dicts.append(ether)
 
         types.append("Dot1Q")
@@ -491,7 +593,6 @@ def Setup(tc):
 
     return api.types.status.SUCCESS
 
-
 def Trigger(tc):
 
     # TODO handle L2 w/ & w/o NAT
@@ -528,6 +629,9 @@ def Trigger(tc):
             args.encap =  True
             args.Rx = True
             args.vlan = tc.up0_vlan
+            if tc.flow_type == 'L2':
+                args.smac = tc.up1_mac
+                args.dmac = tc.up0_mac
 
             setup_pkt(args)
             recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s --timeout %s" \
@@ -542,7 +646,7 @@ def Trigger(tc):
             args.encap = False
             args.Rx = False
             args.smac = tc.up1_mac
-            args.dmac = "00:aa:bb:cc:dd:ee"
+            args.dmac = tc.up0_mac
             args.vlan = tc.up1_vlan
 
             setup_pkt(args)
@@ -570,6 +674,8 @@ def Trigger(tc):
             # ==========
             args.encap = False
             args.Rx = True
+            args.smac = tc.up0_mac
+            args.dmac = tc.up1_mac
             args.vlan = tc.up1_vlan
 
             setup_pkt(args)
@@ -584,8 +690,8 @@ def Trigger(tc):
             # ==========
             args.encap =  True
             args.Rx = False
-            args.smac = tc.up1_mac
-            args.dmac = "00:aa:bb:cc:dd:ee"
+            args.smac = tc.up0_mac
+            args.dmac = tc.up1_mac
             args.vlan = tc.up0_vlan
 
             setup_pkt(args)
