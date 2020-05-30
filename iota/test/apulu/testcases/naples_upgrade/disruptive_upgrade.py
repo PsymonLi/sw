@@ -191,21 +191,21 @@ def CheckRolloutStatus(tc):
                 for item in resp['Status']['status']:
                     status_found = True
                     if not item['Op'] == 4:
-                        api.Logger.info("opcode is bad")
+                        api.Logger.info("opcode is bad for %s"%cmd.node_name)
                         result = api.types.status.FAILURE
                     if "fail" in tc.iterators.option:
                         if not item['opstatus'] == 'failure':
-                            api.Logger.info("opstatus is bad")
+                            api.Logger.info("opstatus is bad for %s"%cmd.node_name)
                             result = api.types.status.FAILURE
                         if tc.iterators.option not in item['Message']:
                             api.Logger.info("message is bad")
                             result = api.types.status.FAILURE
                     else:
                         if not item['opstatus'] == 'success':
-                            api.Logger.info("opstatus(%s) is bad"%(item['opstatus']))
+                            api.Logger.info("opstatus(%s) is bad for %s"%(item['opstatus'], cmd.node_name))
                             result = api.types.status.FAILURE
                         else:
-                            api.Logger.info("Rollout status is SUCCESS")
+                            api.Logger.info("Rollout status is SUCCESS for %s"%cmd.node_name)
                             result = api.types.status.SUCCESS
             except Exception as e:
                 api.Logger.error("resp: ", json.dumps(resp, indent=1))
@@ -220,6 +220,11 @@ def CheckRolloutStatus(tc):
     # find time elapsed in retrieving rollout status and adjust the wait time for traffic test.
     timedelta = end_ts - start_ts
     time_elapsed = timedelta.days * 24 * 3600 + timedelta.seconds
+
+    if time_elapsed < 100:
+        time_elapsed = 100
+        misc_utils.Sleep(time_elapsed)
+
     tc.sleep = (tc.sleep - time_elapsed) if (tc.sleep > time_elapsed) else 10
     return result
 
@@ -293,7 +298,7 @@ def Verify(tc):
                 indent = "-" * 10
                 if tc.pktlossverif:
                     result = api.types.status.FAILURE
-                api.Logger.error(f"{indent} Packet Loss duration during UPGRADE {pkt_loss_duration} secs {indent}")
+                api.Logger.error(f"{indent} Packet Loss duration during UPGRADE of {tc.Nodes} is {pkt_loss_duration} secs {indent}")
                 if tc.allowed_down_time and (pkt_loss_duration > tc.allowed_down_time):
                     api.Logger.error(f"{indent} Exceeded allowed Loss Duration {tc.allowed_down_time} secs {indent}")
                     result = api.types.status.FAILURE
