@@ -1265,6 +1265,11 @@ func (i *IrisAPI) HandleMirrorSession(oper types.Operation, mirror netproto.Mirr
 	i.Lock()
 	defer i.Unlock()
 
+	mirrors, err = handleMirrorSession(i, oper, mirror)
+	return
+}
+
+func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.MirrorSession) (mirrors []netproto.MirrorSession, err error) {
 	err = utils.ValidateMeta(oper, mirror.Kind, mirror.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -1382,6 +1387,11 @@ func (i *IrisAPI) HandleFlowExportPolicy(oper types.Operation, netflow netproto.
 	i.Lock()
 	defer i.Unlock()
 
+	netflows, err = handleFlowExportPolicy(i, oper, netflow)
+	return
+}
+
+func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.FlowExportPolicy) (netflows []netproto.FlowExportPolicy, err error) {
 	err = utils.ValidateMeta(oper, netflow.Kind, netflow.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -1864,7 +1874,7 @@ func (i *IrisAPI) PurgeConfigs(deleteDB bool) error {
 }
 
 func purgeConfigs(i *IrisAPI, deleteDB bool) error {
-	// SGPolicies, Apps, Endpoints,  Networks
+	// SGPolicies, Apps, Endpoints,  Networks, MirrorSessions, FlowExportPolicies
 	log.Info("Starting Decomission workflow")
 
 	// Populuate in memory state
@@ -1872,6 +1882,8 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	a := netproto.App{TypeMeta: api.TypeMeta{Kind: "App"}}
 	e := netproto.Endpoint{TypeMeta: api.TypeMeta{Kind: "Endpoint"}}
 	n := netproto.Network{TypeMeta: api.TypeMeta{Kind: "Network"}}
+	m := netproto.MirrorSession{TypeMeta: api.TypeMeta{Kind: "MirrorSession"}}
+	f := netproto.FlowExportPolicy{TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"}}
 	secprof := netproto.SecurityProfile{TypeMeta: api.TypeMeta{Kind: "SecurityProfile"}}
 	p := netproto.Profile{TypeMeta: api.TypeMeta{Kind: "Profile"}}
 
@@ -1879,6 +1891,8 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	apps, _ := handleApp(i, types.List, a)
 	endpoints, _ := handleEndpoint(i, types.List, e)
 	networks, _ := handleNetwork(i, types.List, n)
+	mirrorSessions, _ := handleMirrorSession(i, types.List, m)
+	flowExportPolicies, _ := handleFlowExportPolicy(i, types.List, f)
 	sp, _ := handleSecurityProfile(i, types.List, secprof)
 	profiles, _ := handleProfile(i, types.List, p)
 
@@ -1937,6 +1951,24 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 		}
 		if deleteDB != true {
 			i.InfraAPI.Delete(secProfile.Kind, secProfile.GetKey())
+		}
+	}
+
+	for _, mirrorSession := range mirrorSessions {
+		if _, err := handleMirrorSession(i, types.Delete, mirrorSession); err != nil {
+			log.Errorf("Failed to purge the MirrorSession. Err: %v", err)
+		}
+		if deleteDB != true {
+			i.InfraAPI.Delete(mirrorSession.Kind, mirrorSession.GetKey())
+		}
+	}
+
+	for _, flowExportPolicy := range flowExportPolicies {
+		if _, err := handleFlowExportPolicy(i, types.Delete, flowExportPolicy); err != nil {
+			log.Errorf("Failed to purge the FlowExportPolicy. Err: %v", err)
+		}
+		if deleteDB != true {
+			i.InfraAPI.Delete(flowExportPolicy.Kind, flowExportPolicy.GetKey())
 		}
 	}
 
