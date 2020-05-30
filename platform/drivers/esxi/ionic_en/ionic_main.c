@@ -653,31 +653,29 @@ ionic_port_identify(struct ionic *ionic)
 VMK_ReturnStatus
 ionic_port_init(struct ionic *ionic)
 {
-	struct ionic_en_priv_data *priv_data;
+        VMK_ReturnStatus status;
+        struct ionic_en_priv_data *priv_data;
 	struct ionic_dev *idev = &ionic->en_dev.idev;
 	struct ionic_identity *ident = &ionic->ident;
-	int err;
 	unsigned int i;
 	unsigned int nwords;
 
-	if (idev->port_info)
-		return VMK_OK;
+        priv_data = IONIC_CONTAINER_OF(ionic, struct ionic_en_priv_data, ionic);
 
-	priv_data = IONIC_CONTAINER_OF(ionic, struct ionic_en_priv_data, ionic);
-
-	idev->port_info_sz = IONIC_ALIGN(sizeof(*idev->port_info), VMK_PAGE_SIZE);
-	idev->port_info = ionic_dma_zalloc_align(ionic_driver.heap_id,
-                                                 priv_data->dma_engine_coherent,
-                                                 idev->port_info_sz,
-                                                 VMK_PAGE_SIZE,
-                                                 &idev->port_info_pa);
-	if (VMK_UNLIKELY(idev->port_info == NULL)) {
-                ionic_en_err("ionic_dma_alloc_align() failed, status: NO MEMORY");
-                return VMK_NO_MEMORY;
-	}
+	if (!idev->port_info) {
+                idev->port_info_sz = IONIC_ALIGN(sizeof(*idev->port_info), VMK_PAGE_SIZE);
+                idev->port_info = ionic_dma_zalloc_align(ionic_driver.heap_id,
+                                                         priv_data->dma_engine_coherent,
+                                                         idev->port_info_sz,
+                                                         VMK_PAGE_SIZE,
+                                                         &idev->port_info_pa);
+                if (VMK_UNLIKELY(idev->port_info == NULL)) {
+                        ionic_en_err("ionic_dma_alloc_align() failed, status: NO MEMORY");
+                        return VMK_NO_MEMORY;
+                }
+        }
 
 	vmk_MutexLock(ionic->dev_cmd_lock);
-
 	nwords = IONIC_MIN(ARRAY_SIZE(ident->port.config.words),
                            ARRAY_SIZE(idev->dev_cmd_regs->data));
 	for (i = 0; i < nwords; i++)
@@ -685,11 +683,24 @@ ionic_port_init(struct ionic *ionic)
                                  (vmk_VA)&idev->dev_cmd_regs->data[i]);
 
 	ionic_dev_cmd_port_init(idev);
-	err = ionic_dev_cmd_wait_check(ionic, HZ * devcmd_timeout);
+	status = ionic_dev_cmd_wait_check(ionic, HZ * devcmd_timeout);
 
+        ionic_dev_cmd_port_state(idev, IONIC_PORT_ADMIN_STATE_UP);
+        ionic_dev_cmd_wait_check(ionic, HZ * devcmd_timeout);
 	vmk_MutexUnlock(ionic->dev_cmd_lock);
 
-	return err;
+        if (status != VMK_OK) {
+                ionic_en_err("Failed to init port");
+                ionic_dma_free(ionic_driver.heap_id,
+                               priv_data->dma_engine_coherent,
+                               idev->port_info_sz,
+                               idev->port_info,
+                               idev->port_info_pa);
+                idev->port_info_pa = 0;
+                idev->port_info = NULL;
+        }
+
+	return status;
 }
 
 VMK_ReturnStatus

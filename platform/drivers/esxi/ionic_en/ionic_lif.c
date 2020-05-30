@@ -590,6 +590,13 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
                 goto out_err;
         }
 
+        status = ionic_port_init(&priv_data->ionic);
+	if (status != VMK_OK) {
+		ionic_en_err("Cannot init port: %s, aborting",
+                             vmk_StatusToString(status));
+	        goto out_err;
+	}
+
         vmk_BitVectorZap(priv_data->uplink_handle.uplink_q_info.activeQueues);
 
         // Assume no change in lifs_size
@@ -598,7 +605,7 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
         if (status != VMK_OK) {
                 ionic_en_err("ionic_qcqs_recover() failed, status: %s",
                              vmk_StatusToString(status));
-                goto out_err;
+                goto qcqs_rec_err;
         }
 
         vmk_Memset(priv_data->uplink_handle.vmk_mac_addr,
@@ -614,7 +621,7 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
         if (status != VMK_OK) {
                 ionic_en_err("ionic_lifs_init() failed, status: %s",
                           vmk_StatusToString(status));
-                goto out_err;
+                goto qcqs_rec_err;
         }
 
         IONIC_EN_SHARED_AREA_BEGIN_READ(lif->uplink_handle);
@@ -634,12 +641,15 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
         if (status != VMK_OK) {
                 ionic_en_err("ionic_en_uplink_start_io() failed, status: %s",
                              vmk_StatusToString(status));
-                goto out_err;
+                goto qcqs_rec_err;
         }
 
         ionic_en_info("Recovery from FW upgrade has been completed!");
 
         return status;
+
+qcqs_rec_err:
+        ionic_port_reset(&priv_data->ionic);
 
 out_err:
         ionic_en_err("Recovery from FW upgrade failed!");
