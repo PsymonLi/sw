@@ -109,7 +109,7 @@ describe('NeweventalertpolicyComponent', () => {
         requirements: [
           {
             key: 'meta.name',
-            operator: FieldsRequirement_operator.in,
+            operator: FieldsRequirement_operator.equals,
             values: ['test1', 'test2']
           }
         ],

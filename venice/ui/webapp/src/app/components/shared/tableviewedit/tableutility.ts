@@ -539,7 +539,6 @@ export class TableUtility {
     const operatorStr = operator.toLocaleLowerCase();
     switch (operatorStr) {
       case 'notin':
-      case 'not equals':
         return 'notcontains';
       case 'in':
         return 'contains';
@@ -551,6 +550,10 @@ export class TableUtility {
         return 'lt';
       case 'lte':
         return 'lte';
+      case 'equals':
+        return 'equals';
+      case 'notequals':
+        return 'notEquals';
       default:
         return 'contains';
     }

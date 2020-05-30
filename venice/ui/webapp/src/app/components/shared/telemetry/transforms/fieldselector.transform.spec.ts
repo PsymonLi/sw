@@ -191,11 +191,7 @@ describe('Field Selector transform', () => {
       const entry = fieldData.find( x => x.key.value === expField.name);
       expect(entry).toBeTruthy('Expected entry for ' + expField.name);
       expect(entry.key.label).toBe(expField.displayName);
-      if (expField.jsType === 'string') {
-        expect(entry.operators.length).toBe(2);
-      } else {
         expect(entry.operators.length).toBe(4);
-      }
     });
   }
 });

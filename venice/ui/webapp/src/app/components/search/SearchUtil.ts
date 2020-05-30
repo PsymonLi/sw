@@ -62,12 +62,17 @@ export class SearchUtil {
     }
   };
 
-  // For the backend, equal expects only one value, while in can support multiple
-  // The UI hides this distinction and shows equal, but allows user to select multiple if they wish to.
-  public static stringOperators = [
-    { label: 'equals', value: 'in' },
-    { label: 'not equals', value: 'notIn' },
+  public static stringOperators_contains = [
+    { label: 'contains', value: 'in' },
+    { label: 'not contains', value: 'notin' },
   ];
+
+  public static stringOperators_equals = [
+    { label: 'equals', value: 'equals' },
+    { label: 'not equals', value: 'notequals' }
+  ];
+
+  public static stringOperators = Utility.getLodash().union(SearchUtil.stringOperators_contains, SearchUtil.stringOperators_equals);
 
   public static numberOperators = [
     { label: '=', value: 'in' },
@@ -664,7 +669,7 @@ export class SearchUtil {
       _.union(SearchUtil.stringOperators, SearchUtil.numberOperators);
     }
     if (keys.length === 2 && keys[0] === 'meta' && keys[1] === 'labels') {
-      return SearchUtil.stringOperators;  // VS-1437
+      return SearchUtil.stringOperators_contains;   // stringOperators.;  // VS-1437
     }
     const instance = CategoryMapping[category][kind].instance;
     if (!instance) {

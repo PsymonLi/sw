@@ -43,6 +43,7 @@
                 <div fxFlex="nogrow" fxLayout="row" fxLayoutAlgin="start">
                   <p-dropdown class="neweventalertpolicy-severity" fxFlex="200px" appErrorTooltip
                               formControlName="severity" styleClass="neweventalertpolicy-font"
+                              appendTo="body"
                               [options]="alertOptions"></p-dropdown>
                   <div fxFlex="30px" fxLayout="row" fxLayoutAlign="center center">
                     <mat-icon fxFlex="none"
@@ -79,11 +80,11 @@
       </div>
       <div *ngIf="isInline" class="neweventalertpolicy-buttoncontainer" fxFlex="nogrow"
            fxLayout="row wrap" fxLayoutAlign="start start">
-        <div fxFlex="65px" fxLayout="row">
+        <div fxFlex="85px" fxLayout="row">
           <div fxFlex="65px" (click)="saveObject()"
                class="global-button-primary neweventalertpolicy-save">SAVE</div>
         </div>
-        <div fxFlex="65px" fxLayout="row">
+        <div fxFlex="85px" fxLayout="row">
           <div fxFlex="65px" (click)="cancelObject()"
                class="global-button-neutral neweventalertpolicy-cancel">CANCEL</div>
         </div>
