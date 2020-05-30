@@ -178,6 +178,7 @@ nic/build/$ARCH/$PIPELINE/lib/libpciemgrd.so                           /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libdropstatsproto.so                     /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libflowstatsproto.so                     /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/librulestatsproto.so                     /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libmirrorstatsproto.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libhal_mem.so                            /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkring.so                            /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkftl.so                             /nic/lib/

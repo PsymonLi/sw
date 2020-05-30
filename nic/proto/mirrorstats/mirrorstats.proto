@@ -1,0 +1,24 @@
+syntax = "proto3";
+package mirrorstats;
+
+import "delphi.proto";
+import "metrics_annotations.proto";
+
+message MirrorMetrics {
+    // External
+    // option (delphi.datapath_metrics) = true;
+
+    option (venice.metricInfo) = {
+        DisplayName: "Mirror Session Statistics",
+        Description: "Key index - Mirror Session ID",
+        Scope: PerMirrorSession,
+        Tags: [ Level4 ]
+    };
+
+    fixed64          Key                       = 1;        // Mirror Session Id
+
+    delphi.Counter pkts                        = 2 [(venice.metricsField) = {DisplayName: "Pkts" Description: "Total Mirror Packets"}];
+    delphi.Counter bytes                       = 3 [(venice.metricsField) = {DisplayName: "Bytes" Description: "Total Mirror Bytes"}];
+    delphi.Counter pps                         = 4 [(venice.metricsField) = {DisplayName: "PPS" Description: "Mirror BW Packets per second"}];
+    delphi.Counter bytesps                     = 5 [(venice.metricsField) = {DisplayName: "BPS" Description: "Mirror BW Bytes per second"}];
+}

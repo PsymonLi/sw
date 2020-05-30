@@ -224,6 +224,7 @@ typedef struct flow_monitor_rule_s {
 typedef struct mirror_session_s {
     sdk_spinlock_t slock;
     mirror_session_id_t sw_id;
+    uint32_t tag;
     mirror_desttype_en type;
     uint32_t truncate_len;
     if_t *dest_if; // not used for erspan
@@ -501,6 +502,7 @@ hal_ret_t populate_mirror_session_from_spec(mirror_session_t *session,
 hal_ret_t populate_collector_from_spec(collector_config_t &cfg,
                                        CollectorSpec &spec);
 
+hal_ret_t mirror_session_stats_update(void);
 }    // namespace
 
 #endif    // __TELEMETRY_HPP__

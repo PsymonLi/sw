@@ -16,6 +16,7 @@
 #include "nic/hal/pd/iris/nw/tnnl_rw_pd.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/hal/plugins/cfg/aclqos/qos.hpp"
+#include "gen/proto/mirrorstats/mirrorstats.pb.h"
 
 #define IPFIX_STATS_SHIFT 6
 
@@ -27,6 +28,8 @@ namespace pd {
 
 telemetry_export_dest_t export_destinations[TELEMETRY_NUM_EXPORT_DEST];
 char _deb_buf[TELEMETRY_EXPORT_BUFF_SIZE + 1];
+pd_mirror_metrics_t g_mirr_metrics[MAX_MIRROR_SESSIONS];
+
 
 hal_ret_t
 pd_mirror_update_hw (uint32_t id, mirror_actiondata_t *action_data)
@@ -420,7 +423,9 @@ hal_ret_t
 pd_mirror_session_delete(pd_func_args_t *pd_func_args)
 {
     mirror_actiondata_t action_data;
+    delphi::objects::MirrorMetricsPtr mptr;
     pd_mirror_session_delete_args_t *args = pd_func_args->pd_mirror_session_delete;
+
     if ((args == NULL) || (args->session == NULL) || (args->session->pd == NULL)) {
         HAL_TRACE_ERR("NULL argument");
         return HAL_RET_INVALID_ARG;
@@ -443,7 +448,49 @@ pd_mirror_session_delete(pd_func_args_t *pd_func_args)
         g_hal_state_pd->mirror_session_pd_slab()->free(args->session->pd);
         args->session->pd = NULL;
     }
+
+    if (is_platform_type_hw() || is_platform_type_haps()) {
+        if (find_num_mirr_sessions_with_tag(args->session->tag) == 1) {
+            // Last mirror session with the tag
+            HAL_TRACE_DEBUG("Removing session tag {} from delphi",
+                            args->session->tag);
+            mptr = delphi::objects::MirrorMetrics::Find(args->session->tag);
+            if (mptr == NULL) {
+                HAL_TRACE_ERR("Failed to find delphi object for tag: {}",
+                              args->session->tag);
+                goto end;
+            }
+            mptr->Delete();
+        }
+    }
+
+end:
     return ret;
+}
+
+uint32_t
+find_num_mirr_sessions_with_tag (uint32_t tag)
+{
+    auto ms_ht = g_hal_state->mirror_session_ht();
+    struct ctxt_t {
+        uint32_t tag;
+        uint32_t count;
+    } ctxt = {};
+    auto walk_cb = [](void *entry, void *ctxt) {
+        mirror_session_t *session = (mirror_session_t *)entry;
+        ctxt_t *ctx = (ctxt_t *)ctxt;
+        if (session->tag == ctx->tag) {
+            ctx->count++;
+        }
+
+        return false;
+    };
+
+    ctxt.tag = tag;
+    ctxt.count = 0;
+    ms_ht->walk_safe(walk_cb, &ctxt);
+
+    return ctxt.count;
 }
 
 hal_ret_t
@@ -1117,6 +1164,181 @@ hal_ret_t
 pd_drop_monitor_rule_get(pd_func_args_t *pd_func_args)
 {
     hal_ret_t ret = HAL_RET_OK;
+
+    return ret;
+}
+
+pd_mirror_metrics_t *
+pd_mirror_metrics_find_or_free (uint32_t tag)
+{
+    for (int i = 0; i < MAX_MIRROR_SESSIONS; i++) {
+        if (g_mirr_metrics[i].tag == tag ||
+            g_mirr_metrics[i].tag == 0) {
+            return &g_mirr_metrics[i];
+        }
+    }
+    return NULL;
+}
+
+#define ARRAY_TO_UINT64(arr)                                       \
+    (((arr)[7] & 0xFF)                      |                      \
+     (((arr)[6] & 0xFF) << 8)               |                      \
+     (((arr)[5] & 0xFF) << 16)              |                      \
+     ((uint64_t)((arr)[4] & 0xFF) << 24)    |                      \
+     ((uint64_t)((arr)[3] & 0xFF) << 32ul)  |                      \
+     ((uint64_t)((arr)[2] & 0xFF) << 40ul)  |                      \
+     ((uint64_t)((arr)[1] & 0xFF) << 48ul)  |                      \
+     ((uint64_t)((arr)[0] & 0xFF) << 56ul))
+
+//-----------------------------------------------------------------------------
+// Mirror session stats get from P4 table
+//-----------------------------------------------------------------------------
+hal_ret_t
+pd_mirror_stats_get (mirror_session_t *session, 
+                     delphi::objects::mirrormetrics_t *mirr_metrics)
+{
+    mirror_session_pd_t *session_pd;
+    mirror_actiondata_t action_data;
+    p4pd_error_t pdret;
+
+    session_pd  = (mirror_session_pd_t *)session->pd;
+    auto hw_id = session_pd->hw_id;
+
+    pdret = p4pd_entry_read(P4TBL_ID_MIRROR, hw_id, NULL,
+                            NULL, (void *)&action_data);
+    if (pdret != P4PD_SUCCESS) {
+        HAL_TRACE_ERR("Session id {} read from hw id {} failed {}",
+                      session->sw_id, hw_id,
+                      pdret);
+        return HAL_RET_ERR;
+    }
+
+    for (int i = 0; i < 8; i++) {
+        HAL_TRACE_DEBUG("Pkts[{}] : {}", i, 
+                        action_data.action_u.mirror_erspan_mirror.npkts[i]);
+        HAL_TRACE_DEBUG("Bytes[{}] : {}", i, 
+                        action_data.action_u.mirror_erspan_mirror.nbytes[i]);
+    }
+
+    memrev(action_data.action_u.mirror_erspan_mirror.npkts, 8);
+    memrev(action_data.action_u.mirror_erspan_mirror.nbytes, 8);
+
+    for (int i = 0; i < 8; i++) {
+        HAL_TRACE_DEBUG("After rev Pkts[{}] : {}", i, 
+                        action_data.action_u.mirror_erspan_mirror.npkts[i]);
+        HAL_TRACE_DEBUG("Bytes[{}] : {}", i, 
+                        action_data.action_u.mirror_erspan_mirror.nbytes[i]);
+    }
+
+    mirr_metrics->pkts = ARRAY_TO_UINT64(action_data.action_u.mirror_erspan_mirror.npkts);
+    mirr_metrics->bytes = ARRAY_TO_UINT64(action_data.action_u.mirror_erspan_mirror.nbytes);
+
+    HAL_TRACE_DEBUG("Mirror session sw_id: {}, hw_id: {}, pkts: {}, bytes: {}",
+                    session->sw_id, hw_id, mirr_metrics->pkts,
+                    mirr_metrics->bytes);
+
+    return HAL_RET_OK;
+
+}
+
+//-----------------------------------------------------------------------------
+// Populate current aggregate mirror stats in intermdediate global db
+//-----------------------------------------------------------------------------
+hal_ret_t
+pd_mirror_session_stats_populate (mirror_session_t *session)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    pd_mirror_metrics_t *metrics;
+    delphi::objects::mirrormetrics_t del_metrics = {0};
+
+    metrics = pd_mirror_metrics_find_or_free(session->tag);
+    if (metrics->tag == 0) {
+        metrics->tag = session->tag;
+        metrics->mptr = delphi::objects::MirrorMetrics::Find(metrics->tag);
+#if 0
+        if (metrics->mptr != NULL) {
+            metrics->del_metrics.pkts = metrics->mptr->pkts()->Get();
+            metrics->del_metrics.bytes = metrics->mptr->bytes()->Get();
+        } else {
+            metrics->del_metrics.pkts = 0;
+            metrics->del_metrics.bytes = 0;
+        }
+#endif
+        metrics->del_metrics.pkts = 0;
+        metrics->del_metrics.bytes = 0;
+    }
+    ret = pd_mirror_stats_get(session, &del_metrics);
+    metrics->del_metrics.pkts += del_metrics.pkts;
+    metrics->del_metrics.bytes += del_metrics.bytes;
+    HAL_TRACE_DEBUG("Populate mirror stats for swid: {} tag: {}, pkts: {}, bytes: {}",
+                    session->sw_id, metrics->tag,
+                    del_metrics.pkts, del_metrics.bytes);
+
+    return ret;
+}
+
+//-----------------------------------------------------------------------------
+// Mirror session stats update to delphi
+//-----------------------------------------------------------------------------
+hal_ret_t
+pd_mirror_stats_update (pd_func_args_t *pd_func_args) 
+{
+    hal_ret_t ret = HAL_RET_OK;
+    auto ms_ht = g_hal_state->mirror_session_ht();
+    delphi::objects::MirrorMetricsPtr mptr;
+    delphi::objects::mirrormetrics_t metrics;
+    uint64_t pkts, bytes, pps, bytesps;
+    uint8_t interval = 1;
+
+    memset(g_mirr_metrics, 0, sizeof(g_mirr_metrics));
+
+    HAL_TRACE_DEBUG("Update mirror stats in delphi");
+
+    auto walk_cb = [](void *entry, void *ctxt) {
+        hal_ret_t ret = HAL_RET_OK;
+        mirror_session_t *session = (mirror_session_t *)entry;
+        ret = pd_mirror_session_stats_populate(session);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_DEBUG("Failed to populate mirror stats. ret: {}", ret);
+        }
+
+        return false;
+    };
+
+    ms_ht->walk_safe(walk_cb, NULL);
+
+    for (int i = 0; i < MAX_MIRROR_SESSIONS; i++) {
+        if (g_mirr_metrics[i].tag != 0) {
+            mptr = g_mirr_metrics[i].mptr;
+            pkts = 0;
+            bytes = 0;
+            if (mptr != NULL) {
+                pkts = mptr->pkts()->Get();
+                bytes = mptr->bytes()->Get();
+            }
+
+            pps = BW(pkts, g_mirr_metrics[i].del_metrics.pkts, interval);
+            bytesps = BW(bytes, g_mirr_metrics[i].del_metrics.bytes, interval);
+
+            metrics.pkts = g_mirr_metrics[i].del_metrics.pkts;
+            metrics.bytes = g_mirr_metrics[i].del_metrics.bytes;
+            metrics.pps = pps;
+            metrics.bytesps = bytesps;
+
+            HAL_TRACE_DEBUG("Publish mirror stats for tag: {}, "
+                            "pkts: {}->{}, bytes: {}->{}, pps: {}, bps: {}",
+                            g_mirr_metrics[i].tag, pkts,
+                            metrics.pkts, bytes, metrics.bytes, 
+                            metrics.pps, metrics.bytesps);
+
+            delphi::objects::MirrorMetrics::Publish(g_mirr_metrics[i].tag,
+                                                    &metrics);
+
+            if (mptr != NULL) {
+                delphi::objects::MirrorMetrics::Release(mptr);
+            }
+        }
+    }
 
     return ret;
 }

@@ -289,7 +289,7 @@ export NIC_HAL_ALL_SOLIBS   := ${NIC_HAL_CORE_SOLIBS} \
                                marvell pal agent_api delphisdk haldelphi halsysmgr \
                                nicmgrproto sdk_asicrw_if commonproto \
                                ftestatsproto dropstatsproto rulestatsproto hal_mem linkmgrproto \
-			       			   haltrace vmotion flowstatsproto ${NIC_HAL_NICMGR_SOLIBS} penipc penipc_ev
+			       			   haltrace vmotion flowstatsproto mirrorstatsproto ${NIC_HAL_NICMGR_SOLIBS} penipc penipc_ev
 
 export NIC_HAL_ALL_LDLIBS   := ${NIC_THIRDPARTY_GOOGLE_LDLIBS} \
                                ${NIC_THIRDPARTY_SSL_LDLIBS} \

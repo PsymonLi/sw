@@ -30,6 +30,7 @@ enum MetricScope {
     PerRingPerSubRing   = 8; // incase of DMA, per each subring of a ring
     PerFwRule           = 9; // Per Firewall Rule
     PerPciePort         = 10; // Per PCIe port
+    PerMirrorSession    = 11; // per mirror session
 }
 
 enum MetricTags {

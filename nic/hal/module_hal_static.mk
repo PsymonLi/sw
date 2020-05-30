@@ -44,6 +44,7 @@ MODULE_ARLIBS	= \
 	events_recorder \
 	evutils \
 	flowstatsproto \
+	mirrorstatsproto \
 	fsm \
 	fte \
 	fte_iris \

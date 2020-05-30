@@ -10,6 +10,8 @@
 #include "gen/proto/system.pb.h"
 #include "gen/proto/dropstats/dropstats.delphi.hpp"
 #include "gen/proto/dropstats/dropstats.pb.h"
+#include "gen/proto/mirrorstats/mirrorstats.delphi.hpp"
+
 #include "asic/rw/asicrw.hpp"
 #include "nic/sdk/lib/catalog/catalog.hpp"
 
@@ -299,6 +301,8 @@ hal_global_stats_init (void)
     // Register to publish Drop stats
     delphi::objects::DropMetrics::CreateTable();
     delphi::objects::EgressDropMetrics::CreateTable();
+    HAL_TRACE_DEBUG("Regsiter mirror metrics table");
+    delphi::objects::MirrorMetrics::CreateTable();
 }
 
 static void

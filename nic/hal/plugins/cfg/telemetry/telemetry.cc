@@ -406,6 +406,8 @@ populate_mirror_session_from_spec (mirror_session_t *session,
 
     session->sw_id = spec.key_or_handle().mirrorsession_id();
     session->truncate_len = spec.snaplen();
+    session->tag = (spec.tag() == 0) ? 1 : spec.tag();
+
 
     if (spec.destination_case() == MirrorSessionSpec::kErspanSpec) {
         auto erspan = spec.erspan_spec();
@@ -626,6 +628,7 @@ mirror_session_fill_rsp (void *entry, void *ctxt)
     SDK_ASSERT(ret == HAL_RET_OK);
     response->mutable_status()->set_handle(hw_id);
     response->mutable_spec()->set_snaplen(session->truncate_len);
+    response->mutable_spec()->set_tag(session->tag);
 
     auto erspan = session->mirror_destination_u.er_span_dest;
     switch (session->type) {
@@ -1816,6 +1819,20 @@ hal_ret_t
 drop_monitor_rule_get (DropMonitorRuleGetRequest &req, DropMonitorRuleGetResponseMsg *rsp)
 {
     hal_ret_t ret = HAL_RET_OK;
+    return ret;
+}
+
+hal_ret_t
+mirror_session_stats_update (void)
+{
+    hal_ret_t ret = HAL_RET_OK;
+
+    pd::pd_func_args_t pd_func_args = {0};
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_MIRROR_STATS_UPDATE, &pd_func_args);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed to update mirror stats in delphi. ret: {}", ret);
+        return ret;
+    }
     return ret;
 }
 

@@ -29,6 +29,7 @@
 #include "gen/proto/ftestats/ftestats.delphi.hpp"
 #include "gen/proto/flowstats/flowstats.delphi.hpp"
 #include "nic/hal/iris/delphi/delphi_events.hpp"
+#include "nic/hal/plugins/cfg/telemetry/telemetry.hpp"
 
 using telemetry::MirrorSessionSpec;
 using session::FlowInfo;
@@ -3664,8 +3665,9 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
 
     // Compute BW on lifs
     ret = lif_compute_bw(1 /* secs */);
-    // Compute BW on uplinks
-    // ret = if_compute_bw(1 /* secs */);
+
+    // Publish mirror session stats
+    ret = mirror_session_stats_update();
 
    if (!g_mpu_prog_gen_done) {
         sret = sdk::p4::p4_dump_program_info(hal::g_hal_cfg.cfg_path.c_str());

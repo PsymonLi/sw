@@ -343,10 +343,11 @@ message MirrorSessionSpec {
   kh.MirrorSessionKeyHandle key_or_handle   = 1 [(gogoproto.moretags) = "venice:key"]; // MirrorSession key or handle
   kh.VrfKeyHandle           vrf_key_handle  = 2 [(gogoproto.moretags) = "venice:ref"];
   uint32                    snaplen         = 3; // maximum  bytes of packet to mirror.
+  uint32                    tag             = 4; 
   oneof destination {
-    kh.InterfaceKeyHandle   local_span_if   = 4 [(gogoproto.moretags) = "venice:ref"]; // Local span destination
-    RSpanSpec               rspan_spec      = 5; // VLAN encap to use when configuration is for RSPAN
-    ERSpanSpec              erspan_spec     = 6; // ERSPAN configuration in case of ERSPAN
+    kh.InterfaceKeyHandle   local_span_if   = 5 [(gogoproto.moretags) = "venice:ref"]; // Local span destination
+    RSpanSpec               rspan_spec      = 6; // VLAN encap to use when configuration is for RSPAN
+    ERSpanSpec              erspan_spec     = 7; // ERSPAN configuration in case of ERSPAN
   }
 }
 

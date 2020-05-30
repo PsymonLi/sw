@@ -8,6 +8,7 @@
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/plugins/cfg/telemetry/telemetry.hpp"
 #include "nic/hal/pd/cpupkt_headers.hpp"
+#include "gen/proto/mirrorstats/mirrorstats.delphi.hpp"
 
 #define TELEMETRY_EXPORT_BUFF_SIZE      2047
 #define TELEMETRY_IPFIX_BUFSIZE         2048
@@ -16,6 +17,14 @@
 
 namespace hal {
 namespace pd {
+
+#define MAX_MIRROR_SESSIONS 16
+
+typedef struct pd_mirror_metrics_s {
+    uint32_t tag;
+    delphi::objects::MirrorMetricsPtr mptr;
+    delphi::objects::mirrormetrics_t del_metrics;
+} pd_mirror_metrics_t;
 
 typedef struct telemetry_pd_export_buf_header_s telemetry_pd_export_buf_header_t;
 struct telemetry_pd_export_buf_header_s {
@@ -56,6 +65,11 @@ struct mirror_session_pd_s {
 
 hal_ret_t pd_mirror_populate_data(mirror_session_t *session,
                                   mirror_actiondata_t *action_data);
+hal_ret_t
+pd_mirror_stats_get(mirror_session_t *session, 
+                     delphi::objects::mirrormetrics_t *mirr_metrics);
+hal_ret_t pd_mirror_session_stats_populate(mirror_session_t *session);
+uint32_t find_num_mirr_sessions_with_tag(uint32_t tag);
 }    // namespace pd
 }    // namespace hal
 
