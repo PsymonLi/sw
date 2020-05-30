@@ -3,6 +3,7 @@
 import iota.harness.api as api
 import iota.harness.infra.store as store
 import iota.test.athena.utils.misc as misc_utils
+import iota.test.athena.utils.athena_app as athena_app_utils
 from iota.harness.infra.glopts import GlobalOptions
 import ipaddress
 import json
@@ -49,18 +50,10 @@ def Setup(tc):
 
 def Trigger(tc):
     for node in tc.nodes:
-        api.Logger.info("Start second athena_app to pick up policy.json")
-        req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-        api.Trigger_AddNaplesCommand(req, node, "/nic/tools/start-sec-agent-iota.sh", background = True)
-        resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("Start second athena_app failed on node {}".format(node))
-            return api.types.status.FAILURE
-
-    # default policy.json needs 80s and 1.5M custom policy.json needs 140s
-    misc_utils.Sleep(200)
+        ret = athena_app_utils.athena_sec_app_restart(node) 
+        if ret != api.types.status.SUCCESS:
+            api.Logger.error("Failed to restart athena sec app on node %s" % node)
+            return (ret)
 
     for node in tc.nodes:
         req = api.Trigger_CreateExecuteCommandsRequest()
@@ -149,45 +142,19 @@ def Verify(tc):
                 return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
-def StopAthenaApp(tc):
-    for node in tc.nodes:
-        req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddNaplesCommand(req, node, "ps -aef | grep athena_app | grep soft-init | grep -v 'grep'")
-
-        resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("ps failed on Node {}".format(node))
-            return api.types.status.FAILURE
-        if "athena_app" not in cmd.stdout:
-            # TODO: If athena_app is not running, run start_agent.sh manually
-            api.Logger.error("no athena_app running on Node {}, no termination process needed".format(node))
-            continue
-
-        athena_sec_app_pid = cmd.stdout.strip().split()[1]
-        api.Logger.info("athena_app up and running on Node {} with PID {}".format(node, athena_sec_app_pid))
-
-        req = api.Trigger_CreateExecuteCommandsRequest()
-        sig_cmd = "kill -SIGTERM " + athena_sec_app_pid
-        api.Trigger_AddNaplesCommand(req, node, sig_cmd)
-        resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("kill -SIGTERM failed on Node {}".format(node))
-            return api.types.status.FAILURE
-    misc_utils.Sleep(5)
-    return api.types.status.SUCCESS
-
 def Teardown(tc):
-    StopAthenaApp(tc)
+
     for node in tc.nodes:
+        ret = athena_app_utils.athena_sec_app_kill(node)
+        if ret != api.types.status.SUCCESS:
+            return ret
+
         req = api.Trigger_CreateExecuteCommandsRequest()
         if tc.policy_type == "default":
             api.Trigger_AddNaplesCommand(req, node, "> /data/flows_sec.log")
         else:
             api.Trigger_AddNaplesCommand(req, node, "rm -f /data/policy.json && > /data/flows_sec.log")
+
         resp = api.Trigger(req)
         cmd = resp.commands[0]
         api.PrintCommandResults(cmd)

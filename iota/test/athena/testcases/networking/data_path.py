@@ -18,7 +18,6 @@ DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
 DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
 DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
 DEFAULT_POLICY_JSON_FILENAME = '/config/policy.json'
-TEMPLATE_POLICY_JSON_FILENAME = '/config/template_policy.json'
 SEND_PKT_SCRIPT_FILENAME = '/scripts/send_pkt.py'
 RECV_PKT_SCRIPT_FILENAME = '/scripts/recv_pkt.py'
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -413,24 +412,15 @@ def Setup(tc):
     # setup policy.json file
     plcy_obj = None
     # read from template file
-    with open(CURR_DIR + TEMPLATE_POLICY_JSON_FILENAME) as fd:
+    tc.template_policy_json_path = api.GetTestsuiteAttr("template_policy_json_path")
+    with open(tc.template_policy_json_path) as fd:
         plcy_obj = json.load(fd)
 
     # get vnic
     vnic = get_vnic(tc, plcy_obj)
-    vnic_id = vnic['vnic_id']
-    api.Logger.info('vnic id: {}'.format(vnic_id))
+    api.Logger.info('vnic id: {}'.format(vnic['vnic_id']))
 
-    # these keys need to be changed for both L2 and L3
-    vnic['vlan_id'] = str(tc.up1_vlan)
-    vnic['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
-
-    if tc.nat == 'yes':    
-        vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-        vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-        if tc.flow_type == 'L3':
-            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
-
+    if tc.nat == 'yes':
         local_ip_lo = vnic['nat']['local_ip_lo']
         local_ip_hi = vnic['nat']['local_ip_hi']
         nat_ip_lo = vnic['nat']['nat_ip_lo']
@@ -486,34 +476,15 @@ def Setup(tc):
         # setting up tc.flows with just nat (h2s, tx) flows so that num flows
         # are accurate. Actual sip/dip will be handled in setup_pkt
         tc.flows = nat_flows['h2s']['Tx'][:]
-    
-    else:
-        # these fields need to be changed only for L3
-        # this will be cleaned up and moved to a separate config test
-        if tc.flow_type == 'L3':
-            vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-            vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
-    
-    # write vlan/mac addr and flow info to actual file 
-    with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME, 'w+') as fd:
-        json.dump(plcy_obj, fd, indent=4)
 
-    
-    # copy policy.json file and send/recv scripts to node
+    # copy send/recv scripts to node
     for node in tc.nodes:
-        if node is tc.bitw_node:
-            policy_json_fname = CURR_DIR + DEFAULT_POLICY_JSON_FILENAME
-            api.CopyToNaples(node.Name(), [policy_json_fname], "") 
-
         if node is tc.wl_node:
             send_pkt_script_fname = CURR_DIR + SEND_PKT_SCRIPT_FILENAME
             recv_pkt_script_fname = CURR_DIR + RECV_PKT_SCRIPT_FILENAME 
-            policy_json_fname = CURR_DIR + DEFAULT_POLICY_JSON_FILENAME
 
             api.CopyToHost(node.Name(), [send_pkt_script_fname], "")
             api.CopyToHost(node.Name(), [recv_pkt_script_fname], "")
-            api.CopyToHost(node.Name(), [policy_json_fname], "")
 
     # init response list
     tc.resp = []
@@ -522,28 +493,6 @@ def Setup(tc):
 
 
 def Trigger(tc):
-    
-    # Copy policy.json to /data and restart Athena sec app on Athena Node
-    req = api.Trigger_CreateExecuteCommandsRequest()
-    
-    cmd = "mv /policy.json /data/policy.json"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
-    
-    resp = api.Trigger(req)
-    cmd = resp.commands[0]
-    api.PrintCommandResults(cmd)
-    
-    if cmd.exit_code != 0:
-        api.Logger.error("moving policy.json to /data failed on node %s" % \
-                        tc.bitw_node_name)
-        return api.types.status.FAILURE
-    
-    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name) 
-    if ret != api.types.status.SUCCESS:
-        api.Logger.error("Failed to restart athena sec app on node %s" % \
-                        tc.bitw_node_name)
-        return (ret)
-
 
     # TODO handle L2 w/ & w/o NAT
     if tc.flow_type != 'L3':

@@ -28,14 +28,23 @@ testcases:
         args    :
             type    : policy_2M
 
-    #-   name    : Data_Path_Test
-    #    testcase: testcases.networking.data_path
-    #    enable  : True
-    #    iterators :
-    #        type     : nested
-    #        flow_type : ['L3']
-    #        nat       : ['no', 'yes']
-    #        proto     : ['UDP']
-    #        size      : [64]
-    #        flow      : ['static']    
-    #        bidir     : ['yes']    
+    #=======================================
+    # Data Path Test
+    #=======================================
+
+#    -   name    : Generate_DP_Policy
+#        testcase: testcases.networking.generate_dp_policy
+#        enable  : True
+#
+#    -   name    : Data_Path_Test
+#        testcase: testcases.networking.data_path
+#        enable  : True
+#        iterators :
+#            type     : nested
+#            flow_type : ['L3']
+#            nat       : ['no', 'yes']
+#            proto     : ['UDP']
+#            size      : [64]
+#            flow      : ['static']    
+#            bidir     : ['yes']    
+#    

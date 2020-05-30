@@ -10,6 +10,7 @@ import iota.test.athena.utils.misc as misc_utils
 import iota.harness.infra.store as store
 
 ATHENA_SEC_APP_INIT_WAIT_TIME = 200 # secs
+ATHENA_SEC_APP_KILL_WAIT_TIME = 5 # secs
 
 
 def get_bitw_nodes():
@@ -57,6 +58,10 @@ def athena_sec_app_kill(node_name = None):
             if pkill_cmd_resp.exit_code != 0:
                 api.Logger.info("pkill failed for athena sec app")
                 return api.types.status.FAILURE
+
+            # sleep for kill to complete
+            misc_utils.Sleep(ATHENA_SEC_APP_KILL_WAIT_TIME)
+
 
         else:
             api.Logger.info("athena sec app not running on node %s" % nname)
