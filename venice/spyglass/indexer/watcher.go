@@ -74,11 +74,11 @@ func (idr *Indexer) createWatchers() error {
 			}
 			opts := api.AggWatchOptions{}
 			// opts.FieldChangeSelector = []string{"Spec"}
-			// if entry, ok := idr.writerMap[key]; ok && entry.resVersion != "" {
-			// 	opts.ObjectMeta = api.ObjectMeta{
-			// 		ResourceVersion: entry.resVersion,
-			// 	}
-			// }
+			if entry, ok := idr.writerMap[key]; ok && entry.resVersion != "" {
+				opts.ObjectMeta = api.ObjectMeta{
+					ResourceVersion: entry.resVersion,
+				}
+			}
 
 			serviceGroup := groupFunc.Call(nil)
 			watch, err := serviceGroup[0].Interface().(service).Watch(idr.ctx, &opts)
