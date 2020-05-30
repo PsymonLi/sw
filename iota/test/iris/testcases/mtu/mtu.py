@@ -63,6 +63,8 @@ def getMTUconfigs(tc):
         new_mtu = getRandomMTU()
     if new_mtu < __MIN_MTU:
         new_mtu = __MIN_MTU
+    if new_mtu > __MAX_MTU:
+        new_mtu = __MAX_MTU
     return new_mtu
 
 def triggerMTUPings(tc):
@@ -78,8 +80,10 @@ def triggerMTUPings(tc):
     tc.cmd_cookies_3, tc.resp_3 = traffic_utils.pingAllRemoteWloadPairs(mtu=new_mtu+1, do_pmtu_disc=True)
     return
 
-def initPeerNode(naples_node, new_mtu=__MAX_MTU):
+def initPeerNode(naples_node, new_mtu=None):
     """ initialize MTU of interfaces on non 'naples_node' to __MAX_MTU """
+    if new_mtu is None:
+        new_mtu = __MAX_MTU
     result = api.types.status.SUCCESS
     workloads = api.GetWorkloads()
     for w in workloads:
