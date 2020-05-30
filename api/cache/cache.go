@@ -1473,7 +1473,10 @@ func (c *cache) getReflectKind(group, kind string) (string, error) {
 }
 
 func (c *cache) getReflectKindOfObj(obj runtime.Object) string {
-	return strings.TrimPrefix(reflect.TypeOf(obj).Name(), "*")
+	if obj != nil {
+		return obj.GetObjectKind()
+	}
+	return ""
 }
 
 func (c *cache) WatchAggregate(ctx context.Context, opts api.AggWatchOptions) (kvstore.Watcher, error) {
@@ -1515,8 +1518,7 @@ func (c *cache) WatchAggregate(ctx context.Context, opts api.AggWatchOptions) (k
 		if err != nil {
 			return nil, fmt.Errorf("Establishing watch failed: %s", err.Error())
 		}
-		filters[kind] = f
-
+		filters[k.Kind] = f
 	}
 
 	nctx, cancel := context.WithCancel(ctx)
@@ -1548,10 +1550,26 @@ func (c *cache) WatchAggregate(ctx context.Context, opts api.AggWatchOptions) (k
 		c.queues.DelAggregate(keys, peer)
 	}
 
+	var ignoreBulk bool
+	var fromVer uint64
+	var err error
+
+	if opts.ResourceVersion != "" {
+		resVer := strings.TrimSpace(opts.ResourceVersion)
+		if resVer == "-1" {
+			ignoreBulk = true
+		} else {
+			fromVer, err = strconv.ParseUint(opts.ResourceVersion, 10, 64)
+			if err != nil {
+				fromVer = 0
+			}
+		}
+	}
+
 	c.logger.DebugLog("oper", "watchfiltered", "msg", "starting watcher for kinds %v", kinds)
 	watchers.Add(1)
 	go func() {
-		wq.Dequeue(nctx, 0, false, watchHandler, cleanupFn, nil)
+		wq.Dequeue(nctx, fromVer, ignoreBulk, watchHandler, cleanupFn, nil)
 		watchers.Add(-1)
 		ret.Stop()
 		close(ret.ch)

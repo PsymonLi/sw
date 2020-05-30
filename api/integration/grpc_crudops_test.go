@@ -5684,7 +5684,7 @@ func TestAggregateWatcher(t *testing.T) {
 	var gotEvMu sync.Mutex
 	var wg sync.WaitGroup
 	wg.Add(1)
-	startWatcher := func(startCh, listCh chan error, watcher kvstore.Watcher) {
+	startWatcher := func(name string, startCh, listCh chan error, watcher kvstore.Watcher) {
 		close(startCh)
 		defer wg.Done()
 		listDone := false
@@ -5701,8 +5701,8 @@ func TestAggregateWatcher(t *testing.T) {
 								gotEvMu.Lock()
 								gotEvs = append(gotEvs, aggEvents{Type: ev.Type, Kind: ev.Object.GetObjectKind()})
 								gotEvMu.Unlock()
-								log.Infof("Got Event [%s][%s][%v]", ev.Type, ev.Object.GetObjectKind(), ev.Object)
-								t.Logf("Got Event [%s][%s][%v]", ev.Type, ev.Object.GetObjectKind(), ev.Object)
+								log.Infof("[%s] Got Event [%s][%s][%v]", name, ev.Type, ev.Object.GetObjectKind(), ev.Object)
+								t.Logf("[%s]Got Event [%s][%s][%v]", name, ev.Type, ev.Object.GetObjectKind(), ev.Object)
 							}
 						}
 					case kvstore.WatcherError:
@@ -5710,25 +5710,27 @@ func TestAggregateWatcher(t *testing.T) {
 						gotEvMu.Lock()
 						gotEvs = append(gotEvs, aggEvents{Type: ev.Type})
 						gotEvMu.Unlock()
-						log.Infof("Got WatchError [%s][%v]", ev.Type, ev.Object)
-						t.Logf("Got WatchError [%s][%v]", ev.Type, ev.Object)
+						log.Infof("[%s]Got WatchError [%s][%v]", name, ev.Type, ev.Object)
+						t.Logf("[%s]Got WatchError [%s][%v]", name, ev.Type, ev.Object)
 					case kvstore.WatcherControl:
 						kvCtrls++
 						gotEvMu.Lock()
 						gotEvs = append(gotEvs, aggEvents{Type: ev.Type})
 						gotEvMu.Unlock()
-						log.Infof("Got WatchControl [%s][%v]", ev.Type, ev.Control)
-						t.Logf("Got WatchControl [%s][%v]", ev.Type, ev.Control)
+						log.Infof("[%s]Got WatchControl [%s][%v]", name, ev.Type, ev.Control)
+						t.Logf("[%s]Got WatchControl [%s][%v]", name, ev.Type, ev.Control)
 						listDone = true
 						close(listCh)
+						t.Logf("[%s]DONE WatchControl [%s][%v]", name, ev.Type, ev.Control)
 					}
 				} else {
 					if !listDone {
 						close(listCh)
 					}
+					log.Infof("[%s]exiting watcher", name)
+					t.Logf("[%s]exiting watcher", name)
 					return
 				}
-
 			}
 		}
 	}
@@ -5792,7 +5794,7 @@ func TestAggregateWatcher(t *testing.T) {
 	AssertOk(t, err, "establishing aggregate watch failed (%s)", err)
 	startCh := make(chan error)
 	listCh := make(chan error)
-	go startWatcher(startCh, listCh, w1)
+	go startWatcher("one", startCh, listCh, w1)
 	<-startCh
 	<-listCh
 
@@ -5831,7 +5833,7 @@ func TestAggregateWatcher(t *testing.T) {
 			AdmissionPhase: cluster.DistributedServiceCardStatus_PENDING.String(),
 		},
 	}
-	_, err = apicl.ClusterV1().DistributedServiceCard().Create(ctx, &dsc)
+	retDsc, err := apicl.ClusterV1().DistributedServiceCard().Create(ctx, &dsc)
 	AssertOk(t, err, "dsc create should succeed")
 
 	// Create Host
@@ -5880,6 +5882,74 @@ func TestAggregateWatcher(t *testing.T) {
 	cancel()
 	wg.Wait()
 
+	rv, err := strconv.ParseUint(retDsc.ResourceVersion, 10, 64)
+	AssertOk(t, err, "failed to parse resource version [%v]", retDsc.ResourceVersion)
+	resVer := fmt.Sprintf("%d", rv+1)
+	t.Logf("=== Start watcher with fromver [%v]", resVer)
+	ctx, cancel = context.WithCancel(context.Background())
+	kvEvents, kvErrors, kvCtrls = 0, 0, 0
+	gotEvMu.Lock()
+	gotEvs = nil
+	gotEvMu.Unlock()
+	wopts.ResourceVersion = resVer
+	fw, err := apicl.AggWatchV1().Watch(ctx, &wopts)
+	AssertOk(t, err, "establishing aggregate watch failed (%s)", err)
+	startCh = make(chan error)
+	listCh = make(chan error)
+	wg.Add(1)
+	go startWatcher("fromver", startCh, listCh, fw)
+
+	expEvs = []aggEvents{
+		{Type: kvstore.Created, Kind: "Host", Seq: 0},
+		{Type: kvstore.Created, Kind: "Workload", Seq: 1},
+		{Type: kvstore.Updated, Kind: "Host", Seq: 1}, // Due to Reference update.
+	}
+	AssertEventually(t, func() (bool, interface{}) {
+		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 6"
+	}, fmt.Sprintf("failed to receive %d events, got [%d/%d]", len(expEvs), kvEvents, kvCtrls))
+
+	ok, msg = validateReceived(gotEvs, expEvs)
+	Assert(t, ok, msg)
+	cancel()
+	wg.Wait()
+
+	ctx, cancel = context.WithCancel(context.Background())
+	kvEvents, kvErrors, kvCtrls = 0, 0, 0
+	gotEvMu.Lock()
+	gotEvs = nil
+	gotEvMu.Unlock()
+
+	time.Sleep(time.Second)
+	t.Logf("=== Start watcher with fromver [-1]")
+
+	wopts.ResourceVersion = "-1"
+	// wopts.WatchOptions[2].Options.FieldChangeSelector = []string{"Spec"}
+	fw1, err := apicl.AggWatchV1().Watch(ctx, &wopts)
+	AssertOk(t, err, "establishing aggregate watch failed (%s)", err)
+	startCh = make(chan error)
+	listCh = make(chan error)
+	wg.Add(1)
+	go startWatcher("-1 watcher", startCh, listCh, fw1)
+	<-startCh
+	time.Sleep(100 * time.Millisecond)
+
+	expEvs = []aggEvents{
+		{Type: kvstore.Updated, Kind: "Host", Seq: 0},
+	}
+
+	_, err = apicl.ClusterV1().Host().Update(ctx, &host)
+	AssertOk(t, err, "host update should succeed")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 1"
+	}, fmt.Sprintf("failed to receive %d events, got [%d/%d]", len(expEvs), kvEvents, kvCtrls))
+
+	ok, msg = validateReceived(gotEvs, expEvs)
+	Assert(t, ok, msg)
+	cancel()
+	wg.Wait()
+	wopts.ResourceVersion = ""
+
 	t.Logf("== Starting Agg watch with filters ==")
 	// Create a new aggregate watcher with Filters. Testing along with Bulk End
 	expEvs = []aggEvents{
@@ -5892,9 +5962,12 @@ func TestAggregateWatcher(t *testing.T) {
 	w1opts := api.AggWatchOptions{
 		WatchOptions: []api.KindWatchOptions{
 			{
-				Group:   string(apiclient.GroupNetwork),
-				Kind:    string(network.KindNetwork),
-				Options: api.ListWatchOptions{FieldSelector: "spec.vlan-id=11"},
+				Group: string(apiclient.GroupNetwork),
+				Kind:  string(network.KindNetwork),
+				Options: api.ListWatchOptions{
+					FieldSelector:       "spec.vlan-id=11",
+					FieldChangeSelector: []string{"Spec"},
+				},
 			},
 			{
 				Group:   string(apiclient.GroupWorkload),
@@ -5930,7 +6003,7 @@ func TestAggregateWatcher(t *testing.T) {
 	w5, err := apicl.NetworkV1().Network().Watch(ctx, &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: "UnknownTenant"}})
 	startCh = make(chan error)
 	listCh = make(chan error)
-	go startWatcher(startCh, listCh, w2)
+	go startWatcher("filters", startCh, listCh, w2)
 	<-startCh
 	<-listCh
 	go func() {
@@ -5975,6 +6048,7 @@ func TestAggregateWatcher(t *testing.T) {
 			Tenant:    globals.DefaultTenant,
 			Name:      "AggWatchnNetwork1",
 			Namespace: globals.DefaultNamespace,
+			Labels:    map[string]string{"TestID": "AggregateWatchers"},
 		},
 		Spec: network.NetworkSpec{
 			Type:   network.NetworkType_Bridged.String(),
@@ -5984,17 +6058,20 @@ func TestAggregateWatcher(t *testing.T) {
 	_, err = apicl.NetworkV1().Network().Create(ctx, &netw1)
 	AssertOk(t, err, "nework create should succeed")
 
+	_, err = apicl.NetworkV1().Network().Update(ctx, &netw1)
+	AssertOk(t, err, "network create should succeed")
+
 	AssertEventually(t, func() (bool, interface{}) {
-		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 6"
+		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 5"
 	}, fmt.Sprintf("failed to receive %v events, got [%d/%d]", len(expEvs), kvEvents, kvCtrls))
 	ok, msg = validateReceived(gotEvs, expEvs)
 	Assert(t, ok, msg)
 
 	AssertEventually(t, func() (bool, interface{}) {
-		return len(w3rcvd) == 2, "waiting for w3 to receive 2 events"
+		return len(w3rcvd) == 3, "waiting for w3 to receive 2 events"
 	}, fmt.Sprintf("failed to receive 2 events on watcher 3 got[%v]", w3rcvd))
 	AssertEventually(t, func() (bool, interface{}) {
-		return len(w4rcvd) == 1, "waiting for w4 to receive 1 events"
+		return len(w4rcvd) == 2, "waiting for w4 to receive 1 events"
 	}, fmt.Sprintf("failed to receive 1 events on watcher 4 got[%v]", w4rcvd))
 	AssertEventually(t, func() (bool, interface{}) {
 		return kvEvents+kvCtrls == len(expEvs), fmt.Sprintf("waiting for events to get to %d", len(expEvs))
@@ -6003,4 +6080,5 @@ func TestAggregateWatcher(t *testing.T) {
 	Assert(t, ok, msg)
 	Assert(t, len(w5rcvd) == 0, "not expecting anything on watcher 5 , got [%v]", w5rcvd)
 	cancel()
+	wg.Wait()
 }

@@ -255,6 +255,8 @@ func (w *watchedPrefixes) AddAggregate(paths []string, peer string) WatchEventQ 
 	ret.store = w.store
 	ret.config = w.watchConfig
 	ret.multiPath = true
+	// Let the aggregate watch linger. Janitor will cleanup the events.
+	ret.refCount++
 	for _, p := range paths {
 		w.addOne(p, peer, ret)
 	}
@@ -265,7 +267,7 @@ func (w *watchedPrefixes) AddAggregate(paths []string, peer string) WatchEventQ 
 }
 
 func (w *watchedPrefixes) DelAggregate(paths []string, peer string) error {
-	w.log.DebugLog("oper", "AddAggregate", "prefixes", paths)
+	w.log.InfoLog("oper", "DelAggregate", "prefixes", paths)
 	// For aggregate watches a new watch queue is created and mpath elements are added to all the paths
 	//  so as to receive events. Reuseability is achieved by inserting a composite key made of all paths.
 	defer w.Unlock()
@@ -290,12 +292,12 @@ func (w *watchedPrefixes) DelAggregate(paths []string, peer string) error {
 	i := w.trie.Get(aprefix)
 	if i != nil {
 		q := i.(*watchEventQ)
+		w.log.InfoLog("oper", "DelWatchedAggregate", "prefix", paths, "peer", peer, "refCount", q.refCount)
+		if q.refCount > 1 {
+			return nil
+		}
 		for _, p := range paths {
 			w.delOne(p, peer)
-		}
-		q.refCount--
-		if q.refCount != 0 {
-			return nil
 		}
 		last := q.Stop()
 		if last {
@@ -304,7 +306,7 @@ func (w *watchedPrefixes) DelAggregate(paths []string, peer string) error {
 		}
 		return nil
 	}
-
+	w.log.ErrorLog("oper", "DelWatchedAggregate", "prefix", paths, "peer", peer, "msg", "queue not found")
 	return fmt.Errorf("not found")
 }
 
@@ -540,7 +542,10 @@ func (w *watchEventQ) Dequeue(ctx context.Context,
 	w.janitorVerMu.Unlock()
 	tracker.lastUpd = time.Now()
 	tracker.Unlock()
-	w.log.InfoLog("oper", "WatchEventQDequeue", "msg", "Start", "path", w.path, "fromVer", fromver, "peer", peer, "multipath", mpath)
+	w.log.InfoLog("oper", "WatchEventQDequeue", "msg", "Start", "path", w.path, "fromVer", fromver, "peer", peer, "multipath", mpath, "ignoreBulk", ignoreBulk)
+	if w.multiPath {
+		w.log.Infof("oper: WatchEventQDequeue peer: %s multiPaths: %v", peer, w.paths)
+	}
 	var lopts api.ListWatchOptions
 	if opts != nil {
 		lopts = *opts

@@ -80,6 +80,11 @@ func (a *crudClientAggWatchV1) Watch(ctx context.Context, options *api.AggWatchO
 						return
 					}
 					ev.Object = robj
+				case string(kvstore.WatcherError):
+					robj, err := listerwatcher.GetWatcherError(e)
+					if err == nil {
+						ev.Object = robj
+					}
 				case string(kvstore.WatcherControl):
 					ev.Control = &kvstore.WatchControl{
 						Code:    e.Control.Code,

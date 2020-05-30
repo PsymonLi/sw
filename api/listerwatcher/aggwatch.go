@@ -84,11 +84,18 @@ func SvcWatch(ctx context.Context, watcher kvstore.Watcher, stream grpc.ServerSt
 					return err
 				}
 			case kvstore.WatcherError:
-				status, ok := ev.Object.(*api.Status)
-				if ok {
-					return fmt.Errorf("%v:(%s) %s", status.Code, status.Result, status.Message)
+				err := ev.Object.(error)
+				obj, err := types.MarshalAny(ev.Object.(proto.Message))
+				if err != nil {
+					return err
 				}
-				return fmt.Errorf("watcher error [%v]", ev.Object)
+				strEvent := &api.WatchEvent{
+					Type:   string(ev.Type),
+					Object: obj,
+				}
+				err = addEvent(strEvent)
+				sendToStream()
+				return fmt.Errorf("watcher error: %s", err)
 
 			case kvstore.WatcherControl:
 				ctrl := ev.Control
@@ -125,6 +132,19 @@ func GetObject(obj *api.WatchEvent) (runtime.Object, error) {
 		return nil, err
 	}
 	if ret, ok := robj.Message.(runtime.Object); ok {
+		return ret, nil
+	}
+	return nil, errors.New("failed to unmarshal event")
+}
+
+// GetWatcherError retrieves the runtime.Object from a svc watch event
+func GetWatcherError(obj *api.WatchEvent) (*api.Status, error) {
+	robj := &types.DynamicAny{}
+	err := types.UnmarshalAny(obj.Object, robj)
+	if err != nil {
+		return nil, err
+	}
+	if ret, ok := robj.Message.(*api.Status); ok {
 		return ret, nil
 	}
 	return nil, errors.New("failed to unmarshal event")
