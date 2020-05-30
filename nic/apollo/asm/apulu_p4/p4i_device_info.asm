@@ -50,6 +50,7 @@ p4i_recirc_done:
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
 p4i_device_info_error:
-    phvwr           p.capri_intrinsic_drop, 1
-    sne.e           c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
+    sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
     phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
+    phvwr.e         p.capri_intrinsic_drop, 1
+    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq

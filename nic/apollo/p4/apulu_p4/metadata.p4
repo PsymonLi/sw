@@ -151,6 +151,8 @@ header_type scratch_metadata_t {
         binding_id          : 16;
         meter_id            : 10;
         priority            : 5;
+        erspan_type         : 2;
+        pad6                : 6;
 
         // policer
         policer_valid       : 1;

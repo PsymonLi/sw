@@ -322,11 +322,6 @@ action egress_recirc() {
 
 action p4e_inter_pipe() {
     remove_header(capri_txdma_intrinsic);
-    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
-        modify_field(capri_intrinsic.tm_iq, capri_intrinsic.tm_oq);
-    } else {
-        modify_field(capri_intrinsic.tm_oq, capri_intrinsic.tm_iq);
-    }
 
     if (egress_recirc.mapping_done == FALSE) {
         egress_recirc();

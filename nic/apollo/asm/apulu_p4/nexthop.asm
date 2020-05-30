@@ -42,8 +42,7 @@ nexthop_info2:
                         d.nexthop_info_d.vlan_strip_en
 
 nexthop_rewrite:
-    or              r2, k.rewrite_metadata_flags_s8_e15, \
-                        k.rewrite_metadata_flags_s0_e7, 8
+    or              r2, r0, k.rewrite_metadata_flags
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_MAPPING
     phvwr.c1        p.ethernet_1_dstAddr, k.rewrite_metadata_dmaci
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP

@@ -11,9 +11,6 @@ struct phv_                 p;
 
 p4e_inter_pipe:
     phvwr           p.capri_txdma_intrinsic_valid, 0
-    sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
-    phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
-    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
     seq             c1, k.egress_recirc_mapping_done, FALSE
     bcf             [c1], egress_recirc
     phvwrmi.!c1     p.{p4e_i2e_valid, \
@@ -216,6 +213,5 @@ egress_recirc:
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
 p4e_inter_pipe_error:
-    phvwr           p.capri_intrinsic_drop, 1
-    sne.e           c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
-    phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
+    phvwr.e.f       p.capri_intrinsic_drop, 1
+    nop

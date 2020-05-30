@@ -80,11 +80,16 @@ header ipv6_t ipv6_0;
 header udp_t udp_0;
 header vxlan_t vxlan_0;
 header gre_t gre_0;
-header erspan_header_t3_t erspan;
+header gre_opt_seq_t gre_0_opt_seq;
+@pragma pa_header_union egress erspan2 erspan3
+header erspan_t2_t erspan2;
+header erspan_t3_t erspan3;
+header erspan_t3_opt_t erspan3_opt;
 
 // layer 1
 header ethernet_t ethernet_1;
 header vlan_tag_t ctag_1;
+header vlan_tag_t ctag_s;
 header arp_rarp_t arp;
 @pragma pa_header_union ingress ipv4_1 ipv6_1
 header ipv4_t ipv4_1;
@@ -485,21 +490,19 @@ parser parse_span_copy_blob {
 }
 
 @pragma xgress egress
-@pragma capture_payload_offset
 @pragma allow_set_meta offset_metadata.l2_1
 parser parse_ethernet_span_copy {
     extract(ethernet_1);
     set_metadata(offset_metadata.l2_1, current + 0);
     return select(latest.etherType) {
-        ETHERTYPE_VLAN : parse_ctag_span_copy;
+        ETHERTYPE_CTAG : parse_ctag_span_copy;
         default : ingress;
     }
 }
 
 @pragma xgress egress
-@pragma dont_capture_payload_offset
 parser parse_ctag_span_copy {
-    extract(ctag_1);
+    extract(ctag_s);
     return ingress;
 }
 
@@ -529,6 +532,7 @@ parser parse_egress_ctag_1 {
         ETHERTYPE_IPV4 : parse_egress_ipv4_1;
         ETHERTYPE_IPV6 : parse_egress_ipv6_1;
         default : ingress;
+        1 mask 0 : parse_ethernet_span_copy;
     }
 }
 
@@ -765,7 +769,10 @@ parser deparse_egress {
     extract(udp_0);
     extract(vxlan_0);
     extract(gre_0);
-    extract(erspan);
+    extract(gre_0_opt_seq);
+    extract(erspan2);
+    extract(erspan3);
+    extract(erspan3_opt);
 
     return parse_egress_packet;
 }

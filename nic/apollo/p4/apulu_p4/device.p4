@@ -90,6 +90,13 @@ action p4e_device_info(device_ipv4_addr, device_ipv6_addr) {
     modify_field(control_metadata.lif_tx_stats_id,
                  ((p4e_i2e.src_lif << 4) +
                  (LIF_STATS_TX_UCAST_BYTES_OFFSET / 64)));
+
+    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
+        modify_field(capri_intrinsic.tm_iq, capri_intrinsic.tm_oq);
+    } else {
+        modify_field(capri_intrinsic.tm_oq, capri_intrinsic.tm_iq);
+    }
+
 }
 
 @pragma stage 0

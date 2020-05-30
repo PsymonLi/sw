@@ -220,7 +220,26 @@ header_type gre_t {
     }
 }
 
-header_type erspan_header_t3_t {
+header_type gre_opt_seq_t {
+    fields {
+        seq_num : 32;
+    }
+}
+
+header_type erspan_t2_t {
+    fields {
+        version : 4;
+        vlan : 12;
+        cos : 3;
+        encap_type : 2;
+        truncated : 1;
+        span_id : 10;
+        reserved : 12;
+        port_id : 20;
+    }
+}
+
+header_type erspan_t3_t {
     fields {
         version : 4;
         vlan : 12;
@@ -236,6 +255,15 @@ header_type erspan_header_t3_t {
         direction : 1;
         granularity : 2;
         options : 1;
+    }
+}
+
+header_type erspan_t3_opt_t {
+    fields {
+        platf_id : 6;
+        reserved : 12;
+        port_id : 14;
+        timestamp : 32;
     }
 }
 

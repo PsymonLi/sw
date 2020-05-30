@@ -28,6 +28,9 @@ p4e_device_info_unicast:
     phvwr           p.p4e_to_p4plus_classic_nic_l2_pkt_type, PACKET_TYPE_UNICAST
 
 p4e_device_info_common:
+    sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
+    phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
+    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
     phvwr           p.{control_metadata_tcp_option_ws_valid, \
                         control_metadata_tcp_option_mss_valid}, \
                         k.{tcp_option_ws_valid,tcp_option_mss_valid}
@@ -45,5 +48,8 @@ p4e_device_info_common:
 .align
 .assert $ < ASM_INSTRUCTION_OFFSET_MAX
 p4e_device_info_error:
+    sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
+    phvwr.c1        p.capri_intrinsic_tm_iq, k.capri_intrinsic_tm_oq
+    phvwr.!c1       p.capri_intrinsic_tm_oq, k.capri_intrinsic_tm_iq
     phvwr.e         p.capri_intrinsic_drop, 1
     phvwr.f         p.{tcp_option_eol_valid...tcp_option_generic_valid}, 0
