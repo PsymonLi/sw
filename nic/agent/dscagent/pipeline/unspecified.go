@@ -1795,3 +1795,8 @@ func (i *FakeAgentAPI) startDynamicWatch(kinds []string) {
 	}
 	go startWatcher()
 }
+
+func (a *FakeAgentAPI) StartAlertPoliciesWatch(ctx context.Context) {
+	log.Info("StartAlertPoliciesWatch not implemented by unspecified Pipeline")
+	return
+}

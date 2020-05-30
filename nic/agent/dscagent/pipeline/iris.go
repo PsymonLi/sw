@@ -2291,3 +2291,8 @@ func (i *IrisAPI) startDynamicWatch(kinds []string) {
 	}
 	go startWatcher()
 }
+
+func (a *IrisAPI) StartAlertPoliciesWatch(ctx context.Context) {
+	log.Info("StartAlertPoliciesWatch not implemented by Iris Pipeline")
+	return
+}

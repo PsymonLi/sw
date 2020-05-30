@@ -2088,8 +2088,6 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 				} else {
 					log.Infof("AggWatchers Start for kinds %s", types.InsertionKinds)
 					a.ControllerAPI.Start(kinds)
-					// start event/alert policies watcher
-					a.StartAlertPoliciesWatch()
 					return
 				}
 			}
@@ -2099,24 +2097,24 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	go startWatcher()
 }
 
-func (a *ApuluAPI) StartAlertPoliciesWatch() {
+func (a *ApuluAPI) StartAlertPoliciesWatch(ctx context.Context) {
 	log.Infof("Starting Alert policy Watch")
-	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		for {
-			select {
-			case <-ticker.C:
-				if a.ControllerAPI == nil {
-					log.Info("Waiting for controller registration")
-				} else {
-					err := a.ControllerAPI.WatchAlertPolicies()
-					if err == nil {
-						log.Infof("Watching Alert policies")
-						return
-					}
+	ticker := time.NewTicker(30 * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("Context done, alert policy watch exiting")
+			return
+		case <-ticker.C:
+			if a.ControllerAPI == nil {
+				log.Info("Waiting for controller registration")
+			} else {
+				err := a.ControllerAPI.WatchAlertPolicies()
+				if err == nil {
+					log.Infof("Watching Alert policies")
+					return
 				}
 			}
 		}
-
-	}()
+	}
 }

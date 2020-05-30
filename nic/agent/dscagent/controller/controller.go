@@ -305,6 +305,7 @@ func (c *API) start(ctx context.Context) error {
 
 		watchExited := make(chan bool)
 		netIfExited := make(chan bool)
+		alertsWatcherExited := make(chan bool)
 		go func() {
 			c.watchObjects()
 			watchExited <- true
@@ -318,10 +319,19 @@ func (c *API) start(ctx context.Context) error {
 			netIfExited <- true
 		}()
 
+		alertsCtx, cancelAlertsWatcher := context.WithCancel(ctx)
+		// Start Alerts watcher
+		go func() {
+			c.alertsWatcher(alertsCtx)
+			alertsWatcherExited <- true
+		}()
+
 		// TODO Watch for Mirror and NetflowSessions
 		<-watchExited
 		cancelNetIf()
 		<-netIfExited
+		cancelAlertsWatcher()
+		<-alertsWatcherExited
 
 		c.closeConnections()
 		time.Sleep(types.ControllerWaitDelay)
@@ -615,6 +625,11 @@ func (c *API) Stop() error {
 	c.nimbusClient = nil
 
 	return nil
+}
+
+func (c *API) alertsWatcher(ctx context.Context) {
+	log.Infof("Starting Alerts watcher")
+	c.PipelineAPI.StartAlertPoliciesWatch(ctx)
 }
 
 func (c *API) netIfWorker(ctx context.Context) {

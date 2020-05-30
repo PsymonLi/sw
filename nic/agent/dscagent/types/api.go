@@ -148,4 +148,7 @@ type PipelineAPI interface {
 
 	// HandleAlerts relays alerts from pen-oper to various exporters
 	HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher)
+
+	// StartAlertPoliciesWatch starts watcher for alert policies
+	StartAlertPoliciesWatch(ctx context.Context)
 }
