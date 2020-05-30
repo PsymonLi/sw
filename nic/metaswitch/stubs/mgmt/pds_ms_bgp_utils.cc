@@ -971,6 +971,14 @@ pds_ms_fill_amb_bgp_rm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
         // Enable ORF support
         data->orf_supported  = AMB_TRUE;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_ORF_SUPPORTED);
+
+        // Enable update-groups support
+        data->update_groups = AMB_TRUE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_UPDATE_GROUPS);
+
+        // Disable aggregate-split-horizon
+        data->agg_split_horizon = AMB_FALSE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_AGG_SPLT_HORIZON);
     }
 
     NBB_TRC_EXIT();
