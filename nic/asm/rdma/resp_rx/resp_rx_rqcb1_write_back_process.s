@@ -172,7 +172,7 @@ check_ack_nak:
      *  if ACK req bit is not set, do not ring doorbell
      */
     bcf         [!c3], invoke_stats
-    nop // BD Slot
+    seq         c1, CAPRI_KEY_FIELD(IN_TO_S_P, ack_nak_cmd_eop), 1 // BD Slot
 
     tblmincri   ACK_NAK_PROXY_P_INDEX, 16, 1 // BD Slot
     RESP_RX_POST_ACK_INFO_TO_TXDMA_HW_DB_ONLY(DMA_CMD_BASE,
@@ -181,6 +181,7 @@ check_ack_nak:
                                    K_GLOBAL_QID,
                                    ACK_NAK_PROXY_P_INDEX,
                                    DB_ADDR, DB_DATA)
+    DMA_SET_END_OF_CMDS_C(struct capri_dma_cmd_phv2mem_t, DMA_CMD_BASE, c1) // BD Slot
 
 invoke_stats:
     // invoke stats as mpu only

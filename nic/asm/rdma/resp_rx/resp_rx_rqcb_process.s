@@ -881,8 +881,11 @@ inv_req_nak:
     or          r7, r7, RESP_RX_FLAG_ERR_DIS_QP // BD Slot
 
 seq_err_nak:
+    setcf       c7, [c6 | c5 | c3]
+    RXDMA_DMA_CMD_PTR_SET_C(RESP_RX_DMA_CMD_RD_ATOMIC_START_FLIT_ID, 0, c7)
     phvwr       CAPRI_PHV_RANGE(TO_S_STATS_INFO_P, lif_error_id_vld, lif_error_id), \
                     ((1 << 4) | LIF_STATS_RDMA_RESP_STAT(LIF_STATS_RESP_RX_OUT_OF_SEQ_OFFSET))
+    phvwr       CAPRI_PHV_FIELD(TO_S_STATS_INFO_P, last_bth_opcode), CAPRI_APP_DATA_BTH_OPCODE
     b           nak_prune
     phvwr       p.s1.ack_info.syndrome, AETH_NAK_SYNDROME_INLINE_GET(NAK_CODE_SEQ_ERR) // BD Slot
 
@@ -911,6 +914,8 @@ nak_prune:
     // no further tblwr's in either path. so add .f
     tblwr.f     d.nak_prune, 1 // BD Slot
 
+    // if no ACK/NAK, drop the phv
+    phvwr       p.common.p4_intr_global_drop, 1
     b           skip_nak
     // turn off ACK req bit when skipping nak
     and         r7, r7, ~(RESP_RX_FLAG_ACK_REQ) // BD Slot
@@ -924,6 +929,11 @@ skip_nak:
     // common to both nak and skip_nak
     CAPRI_SET_FIELD_RANGE2(phv_global_common, _ud, _error_disable_qp, r7)
 
+    seq         c7, REM_PYLD_BYTES, 0
+    CAPRI_SET_FIELD2_C(TO_S_WB1_P, ack_nak_cmd_eop, 1, c7)
+    bcf         [c7], load_wb
+    CAPRI_SET_FIELD2_C(TO_S_WB1_P, ack_nak_cmd_eop, 0, c5) // BD Slot
+
     //Generate DMA command to skip to payload end
     DMA_CMD_STATIC_BASE_GET(DMA_CMD_BASE, RESP_RX_DMA_CMD_START_FLIT_ID, RESP_RX_DMA_CMD_SKIP_PLD)
 
@@ -931,6 +941,7 @@ skip_nak:
     DMA_SKIP_CMD_SETUP_C(DMA_CMD_BASE, 1 /*CMD_EOP*/, 1 /*SKIP_TO_EOP*/, !c5)
     DMA_SKIP_CMD_SETUP_C(DMA_CMD_BASE, 0 /*CMD_EOP*/, 1 /*SKIP_TO_EOP*/, c5)
 
+load_wb:
     // invoke an mpu-only program which will bubble down and eventually invoke write back
     CAPRI_NEXT_TABLE2_READ_PC_E(CAPRI_TABLE_LOCK_DIS, CAPRI_TABLE_SIZE_0_BITS, resp_rx_rqcb1_write_back_mpu_only_process, r0)
 

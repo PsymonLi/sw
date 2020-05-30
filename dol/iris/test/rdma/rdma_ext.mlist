@@ -953,6 +953,14 @@ modules:
         ignore  : False
 
     - module:
+        name    : RDMA_RX_READ_SEQ_ERR
+        enable  : True
+        package : test.rdma
+        module  : resp_rx_read_seq_err
+        spec    : resp_rx_read_seq_err.testspec
+        ignore  : False
+
+    - module:
         name    : RDMA_RX_WRITE_ONLY_INV_RKEY2
         enable  : True
         package : test.rdma

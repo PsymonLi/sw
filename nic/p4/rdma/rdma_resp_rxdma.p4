@@ -502,7 +502,7 @@ header_type resp_rx_to_stage_wb1_info_t {
         async_or_async_error_event       :    1;
         error_disable_qp                 :    1;
         send_sge_opt                     :    1;
-        rsvd                             :    1;
+        ack_nak_cmd_eop                  :    1;
         current_sge_id                   :    8;
         num_sges                         :    8;
     }
@@ -1976,7 +1976,7 @@ action resp_rx_rqcb1_write_back_process () {
     modify_field(to_s5_wb1_info_scr.async_or_async_error_event, to_s5_wb1_info.async_or_async_error_event);
     modify_field(to_s5_wb1_info_scr.error_disable_qp, to_s5_wb1_info.error_disable_qp);
     modify_field(to_s5_wb1_info_scr.send_sge_opt, to_s5_wb1_info.send_sge_opt);
-    modify_field(to_s5_wb1_info_scr.rsvd, to_s5_wb1_info.rsvd);
+    modify_field(to_s5_wb1_info_scr.ack_nak_cmd_eop, to_s5_wb1_info.ack_nak_cmd_eop);
     modify_field(to_s5_wb1_info_scr.current_sge_id, to_s5_wb1_info.current_sge_id);
     modify_field(to_s5_wb1_info_scr.num_sges, to_s5_wb1_info.num_sges);
 
