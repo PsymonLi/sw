@@ -257,6 +257,13 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 
 	// Update the mappings
 	mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()] = ruleIDs
+	log.Infof("MirrorSession: %v | flowMonitorIDs: %v", mirror, ruleIDs)
+	dat, _ = mirror.Marshal()
+
+	if err := infraAPI.Store(mirror.Kind, mirror.GetKey(), dat); err != nil {
+		log.Error(errors.Wrapf(types.ErrBoltDBStoreUpdate, "MirrorSession: %s | MirrorSession: %v", mirror.GetKey(), err))
+		return errors.Wrapf(types.ErrBoltDBStoreUpdate, "MirrorSession: %s | MirrorSession: %v", mirror.GetKey(), err)
+	}
 	return nil
 }
 
