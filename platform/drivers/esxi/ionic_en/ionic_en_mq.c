@@ -1972,7 +1972,7 @@ ionic_en_queue_remove_filter(vmk_AddrCookie driver_data,          // IN
 
         if (status != VMK_OK) {
                 ionic_en_err("ionic_en_rx_validate_filter_attrs() failed: %s",
-                          vmk_StatusToString(status));
+                             vmk_StatusToString(status));
                 goto out;
         }
 
@@ -1986,7 +1986,7 @@ ionic_en_queue_remove_filter(vmk_AddrCookie driver_data,          // IN
  
         if (rx_ring_idx >= uplink_handle->max_rx_queues) {
                 ionic_en_err("Failed to remove RX filter "
-                          "ring %u is out of range", rx_ring_idx);
+                             "ring %u is out of range", rx_ring_idx);
                 status = VMK_BAD_PARAM;
                 goto out;
         }
@@ -2003,10 +2003,10 @@ ionic_en_queue_remove_filter(vmk_AddrCookie driver_data,          // IN
                 if (!vmk_Memcmp(filter_info.mac_filter_info->mac,
                                 zero_mac_addr,
                                 VMK_ETH_ADDR_LENGTH)) {
-                        ionic_en_err("Failed to remove RX filter on %s ring %u. "
-                                  "Filter with zero MAC address is not applied",
-                                  ionic_en_get_ring_type(priv_data, shared_queue_data_idx),
-                                  rx_ring_idx);
+                        ionic_en_warn("Failed to remove RX filter on %s ring %u. "
+                                      "Filter with zero MAC address is not applied",
+                                      ionic_en_get_ring_type(priv_data, shared_queue_data_idx),
+                                      rx_ring_idx);
                         status = VMK_BAD_PARAM;
                         goto out;
                 }
@@ -2019,10 +2019,10 @@ ionic_en_queue_remove_filter(vmk_AddrCookie driver_data,          // IN
                         &priv_data->uplink_handle.rx_rss_ring.vlan_filter[vlan_filter_idx] :
                         &priv_data->uplink_handle.rx_rings[rx_ring_idx].vlan_filter[vlan_filter_idx];
                 if (filter_info.vlan_filter_info->vlanID == 0) {
-                        ionic_en_err("Failed to remove RX filter on %s ring %u. "
-                                  "Filter with zero VLAN ID is not applied  ",
-                                  ionic_en_get_ring_type(priv_data, shared_queue_data_idx),
-                                  rx_ring_idx);
+                        ionic_en_warn("Failed to remove RX filter on %s ring %u. "
+                                      "Filter with zero VLAN ID is not applied  ",
+                                      ionic_en_get_ring_type(priv_data, shared_queue_data_idx),
+                                      rx_ring_idx);
                         status = VMK_BAD_PARAM;
                         goto out;
                 }
