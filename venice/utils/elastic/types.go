@@ -70,6 +70,9 @@ type SettingsConfig struct {
 
 	// text analyzer settings
 	Analysis map[string]interface{} `json:"analysis,omitempty"`
+
+	// Allocation
+	Allocation *ShardAllocation `json:"allocation,omitempty"`
 }
 
 // Properties contains the mapping of all fields in
@@ -78,6 +81,11 @@ type Properties struct {
 
 	// Mapping is map of key-value pairs
 	Mapping `json:"properties"`
+}
+
+// ShardAllocation is used for setting shard allocation settings
+type ShardAllocation struct {
+	MaxRetries uint `json:"max_retries,omitempty"`
 }
 
 // JSONString generates the JSON string for the object

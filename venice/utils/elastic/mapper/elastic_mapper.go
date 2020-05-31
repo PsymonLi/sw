@@ -15,12 +15,13 @@ import (
 
 // Elastic mapper options
 type options struct {
-	shards          uint                   // Shard count
-	replicas        uint                   // Replica count
-	codec           string                 // Codec compression scheme
-	maxInnerResults uint                   // Max inner results
-	indexPatterns   string                 // index pattern for the template
-	textAnalysis    map[string]interface{} // character filter to be used in the index
+	shards               uint                   // Shard count
+	replicas             uint                   // Replica count
+	codec                string                 // Codec compression scheme
+	maxInnerResults      uint                   // Max inner results
+	indexPatterns        string                 // index pattern for the template
+	textAnalysis         map[string]interface{} // character filter to be used in the index
+	allocationMaxRetries uint                   // retry count for assigning unassigned shards
 }
 
 // Option fills the optional params for Mapper
@@ -161,6 +162,13 @@ func WithIndexPatterns(pattern string) Option {
 	}
 }
 
+// WithAllcationMaxRetries specifies the allocation max retry count
+func WithAllcationMaxRetries(retryCount uint) Option {
+	return func(o *options) {
+		o.allocationMaxRetries = retryCount
+	}
+}
+
 // WithCharFilter character filter to replace "-" to "_"
 func WithCharFilter() Option {
 	return func(o *options) {
@@ -267,6 +275,12 @@ func ElasticMapper(obj interface{}, docType string, opts ...Option) (elastic.Con
 	// add character filter if required
 	if options.textAnalysis != nil {
 		settings.Analysis = options.textAnalysis
+	}
+
+	if options.allocationMaxRetries != 0 {
+		settings.Allocation = &elastic.ShardAllocation{
+			MaxRetries: options.allocationMaxRetries,
+		}
 	}
 
 	// Generate mappings for Object

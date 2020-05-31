@@ -147,7 +147,8 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(2),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
-			mapper.WithCharFilter())
+			mapper.WithCharFilter(),
+			mapper.WithAllcationMaxRetries(10))
 		if err != nil {
 			idr.logger.Errorf("Failed to generate elastic mapping for docType: %d, err: %v",
 				dType, err)
@@ -169,7 +170,8 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 			mapper.WithReplicaCount(1),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
 			mapper.WithIndexPatterns(fmt.Sprintf("*.%s.*", elastic.GetDocType(dType))),
-			mapper.WithCharFilter())
+			mapper.WithCharFilter(),
+			mapper.WithAllcationMaxRetries(10))
 		if err != nil {
 			idr.logger.Errorf("Failed to generate elastic mapping for docType: %d, err: %v",
 				dType, err)
@@ -187,7 +189,8 @@ func (idr *Indexer) getIndexMapping(dType globals.DataType) (string, error) {
 			mapper.WithShardCount(3),
 			mapper.WithReplicaCount(2),
 			mapper.WithMaxInnerResults(globals.SpyglassMaxResults),
-			mapper.WithCharFilter())
+			mapper.WithCharFilter(),
+			mapper.WithAllcationMaxRetries(10))
 		if err != nil {
 			idr.logger.Errorf("Failed to generate elastic mapping for docType: %d, err: %v",
 				dType, err)
