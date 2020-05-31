@@ -1429,7 +1429,7 @@ class Topology(object):
             return
 
         for _, device in devices.items():
-            devices.SetMode(mode)
+            device.SetMode(mode)
         return
 
     def GetDeviceNames(self, node_name):

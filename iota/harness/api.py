@@ -531,7 +531,7 @@ def GetConfigNicMode():
     return store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode()
 
 def SetTestbedNicMode(mode, node_name=None, device_name=None): 
-    store.GetTestbed().GetCurrentTestsuite().GetTopology().SetNicMode(node_name, device_name)
+    store.GetTestbed().GetCurrentTestsuite().GetTopology().SetNicMode(mode, node_name, device_name)
     if not node_name:
         # Update default/testsuite level NicMode as well
         store.GetTestbed().GetCurrentTestsuite().SetDefaultNicMode(mode)

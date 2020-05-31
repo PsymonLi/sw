@@ -19,6 +19,8 @@ def Trigger(tc):
 
     # Change mode from unified => hostpin
     api.SetConfigNicMode("hostpin")
+    for node_name in api.GetWorkloadNodeHostnames():
+        api.SetTestbedNicMode("hostpin", node_name=node_name)
 
     # Change mode from TRANSPARENT, ENFORCED => INSERTION, ENFORCE
     ret = netagent_api.switch_profile("INSERTION", "ENFORCED")

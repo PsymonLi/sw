@@ -99,6 +99,7 @@ def Setup(tc):
     StoreCurrentHalLogLevel(tc)
     SetHalLogsLevelToError(tc)
     __modify_security_profile(tc)
+    utils.clearNaplesSessions()
     chooseWorkload(tc)
     server, client = tc.workload_pair[0], tc.workload_pair[1]
     api.Logger.info("Server: %s(%s)(%s) <--> Client: %s(%s)(%s)" %\

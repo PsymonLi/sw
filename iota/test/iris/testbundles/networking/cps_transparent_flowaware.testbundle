@@ -7,6 +7,7 @@ testcases:
     -   name    : Cps_Remote_Workloads
         testcase: testcases.networking.conn_per_sec
         stress  : True
+        ignore  : True
         args    :
             type     : remote_only
             drop_tol : 10.0 #percent

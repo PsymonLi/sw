@@ -229,8 +229,7 @@ class TRexIotaWrapper(ASTFClient):
         if client.get('tcps_drops', 0) != 0 or server.get('tcps_drops', 0) != 0:
             api.Logger.error("Packet DROP check failed client drop: %s, sever drop: %s"%
                              (client.get('tcps_drops', 0), server.get('tcps_drops', 0)))
-            return api.types.status.FAILURE
-        elif client.get('tcps_connects', 0) > client.get('tcps_closed', 0):
+        if client.get('tcps_connects', 0) > client.get('tcps_closed', 0):
             api.Logger.error("TCP connection check failed on client, tcp_connects: %s, tcp_closed: %s"%
                              (client.get('tcps_connects', 0), server.get('tcps_closed', 0)))
             return api.types.status.FAILURE
