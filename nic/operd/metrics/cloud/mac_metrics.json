@@ -17,7 +17,7 @@
         {
           "Name": "Frames Rx all",
           "DisplayName": "Rx All Frames",
-          "Description": "Frames Received All (Good and Bad Frames)",
+          "Description": "Frames Received all (Good and Bad Frames)",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -241,7 +241,7 @@
         {
           "Name": "Frames Tx all",
           "DisplayName": "Tx All Frames",
-          "Description": "Frames Transmitted All (Good/Bad Frames)",
+          "Description": "Frames Transmitted all (Good/Bad Frames)",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -638,8 +638,8 @@
     },
     {
       "Name": "MgmtMacMetrics",
-      "Description": "Key index - PORT ID",
-      "DisplayName": "Management Interface Packet Statistics",
+      "Description": "Management/out-of-band (OOB) interface metrics",
+      "DisplayName": "Management interface packet statistics",
       "Fields": [
         {
           "Name": "Frames Rx ok",
@@ -651,7 +651,7 @@
         {
           "Name": "Frames Rx all",
           "DisplayName": "Rx All Frames",
-          "Description": "Frames Received All (Good and Bad Frames)",
+          "Description": "Frames Received all (Good and Bad Frames)",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -812,7 +812,7 @@
         {
           "Name": "Frames Tx all",
           "DisplayName": "Tx All Frames",
-          "Description": "Frames Transmitted All (Good/Bad Frames)",
+          "Description": "Frames Transmitted all (Good/Bad Frames)",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -852,7 +852,7 @@
           "BaseType": "Counter"
         },
         {
-          "Name": "Frames Tx broadcast"",
+          "Name": "Frames Tx broadcast",
           "DisplayName": "Tx Broadcast Frames",
           "Description": "Frames Transmitted with Broadcast Address",
           "Units": "Count",
