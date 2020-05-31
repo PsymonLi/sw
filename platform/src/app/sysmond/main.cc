@@ -136,6 +136,7 @@ main(int argc, char *argv[])
 
     g_catalog = sdk::lib::catalog::factory();
 
+    memset(&sysmon_cfg, 0, sizeof(sysmon_cfg_t));
     sysmon_cfg.frequency_change_event_cb = frequency_change_event_cb;
     sysmon_cfg.cattrip_event_cb = cattrip_event_cb;
     sysmon_cfg.power_event_cb = power_event_cb;

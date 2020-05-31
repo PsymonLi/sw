@@ -367,6 +367,9 @@ memory_threshold_cfg_init (void)
 {
     sysmon_memory_threshold_cfg_t *cfg = g_sysmon_cfg.memory_threshold_cfg;
 
+    if (cfg == NULL) {
+        return;
+    }
     for (int i = 0 ; i < g_sysmon_cfg.num_memory_threshold_cfg ; i++) {
         memory_threshold_cfg_internal_t mem_cfg;
         mem_cfg.prev_mem_usage = 0;
@@ -403,6 +406,9 @@ check_memory_threshold (void)
     memory_threshold_cfg_internal_t  *mem_cfg;
     sysmon_mem_threshold_event_t     event;
 
+    if (cfg == NULL) {
+        return;
+    }
     for (int i = 0 ; i < g_sysmon_cfg.num_memory_threshold_cfg ; i++) {
         mem_cfg = &mem_threshold_info[cfg[i].path];
         
