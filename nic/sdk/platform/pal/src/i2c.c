@@ -80,8 +80,12 @@ static int pal_i2c_write(const uint8_t *buffer, uint32_t size,
     int i;
     int fd;
     char filename[64];
+    int ret;
     uint8_t *wbuf = malloc(size + 1);
 
+    if (wbuf == NULL) {
+        return -1;
+    }
     wbuf[0] = addr;
     memcpy(&wbuf[1], buffer, sizeof(size));
 
@@ -91,7 +95,8 @@ static int pal_i2c_write(const uint8_t *buffer, uint32_t size,
     snprintf(filename, 64, "%s%d", I2C_NODE, bus);
     if ((fd = open(filename, O_RDWR)) < 0) {
         pal_mem_trace("Failed to open the i2c bus, try again.\n");
-        return -1;
+        ret = -1;
+        goto cleanup;
     }
 
     for (i = 0; i < nretry; i++) {
@@ -99,7 +104,6 @@ static int pal_i2c_write(const uint8_t *buffer, uint32_t size,
             pal_mem_trace("Failed to acquire bus access and/or talk to slave.\n");
             continue;
         }
-    
         msgs[0].addr = slaveaddr;
         msgs[0].flags = 0;
         msgs[0].len = size + 1;
@@ -114,10 +118,15 @@ static int pal_i2c_write(const uint8_t *buffer, uint32_t size,
         }
 
         close(fd);
-        return 0;
+        ret = 0;
+        goto cleanup;
     }
     close(fd);
-    return -1;
+    ret = -1;
+
+cleanup:
+    free(wbuf);
+    return ret;
 }
 
 int pal_fru_read(const uint8_t *buffer, uint32_t size, uint32_t nretry)
