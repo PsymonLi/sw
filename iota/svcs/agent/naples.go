@@ -1895,11 +1895,18 @@ func (naples *naplesControlSimNode) bringUpNaples(name string, macAddress string
 	return "", errors.New("Mode Switch failed")
 }
 
+type simNetworkSpec struct {
+	dockerNW string
+	ipaddr   string
+	gw       string
+	parent   string
+}
+
 func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAddress string,
-	image string, dockerNW string, veniceIPs []string, defaultGW string, reload bool) (string, error) {
+	image string, nwSpec simNetworkSpec, veniceIPs []string, defaultGW string, reload bool) (string, error) {
 
 	maxAttempts := 3
-	var naplesContainer *Utils.Container
+	//var naplesContainer *Utils.Container
 	var err error
 
 	naplesHome := Common.DstIotaAgentDir + "/" + name
@@ -1944,13 +1951,13 @@ func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAd
 
 	time.Sleep(5 * time.Second)
 
-	if naplesContainer, err = Utils.GetContainer(name, "", name, "", Workload.ContainerPrivileged, nil); err != nil {
+	if _, err = Utils.GetContainer(name, "", name, "", Workload.ContainerPrivileged, nil); err != nil {
 		return "", errors.Wrap(err, "Naples sim not running!")
 	}
 
 	naples.logger.Println("Successfull naples bring up : ", name)
 
-	wload := Workload.NewWorkload(Workload.WorkloadTypeContainer, name, name, naples.logger)
+	wload := Workload.NewWorkload(Workload.WorkloadTypeContainerMacVlan, name, name, naples.logger)
 
 	wDir := Common.DstIotaEntitiesDir + "/" + name
 	wload.SetBaseDir(wDir)
@@ -1958,15 +1965,26 @@ func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAd
 		naples.logger.Errorf("Naples sim entity type add failed")
 		return "", err
 	}
+
+	intf, err := wload.AddInterface(Workload.InterfaceSpec{
+		IPV4Address: nwSpec.ipaddr,
+		Parent:      nwSpec.parent,
+		Name:        "eth1" + "_" + strconv.Itoa(int(index)),
+		IntfRename:  "eth1",
+	})
+	if err != nil {
+		naples.logger.Errorf("Failed ot add mac vlan %v %v", intf, err.Error())
+		return "", err
+	}
 	naples.dataNode.entityMap.Store(name, iotaWorkload{workload: wload, name: name})
-	i = 0
+	/*i = 0
 	for true {
 		//Try to delete eth1 as it might have been created by retry.
 		cmd = []string{"ip", "link", "del", "eth1"}
 
 		wload.RunCommand(cmd, "", 0, 0, false, false)
 
-		if err := Utils.ConnectToDockerNetwork(naplesContainer, dockerNW); err == nil {
+		if err := Utils.ConnectToDockerNetwork(naplesContainer, nwSpec.dockerNW, nwSpec.ipaddr, nwSpec.gw); err == nil {
 			break
 		}
 		if i+1 <= maxAttempts {
@@ -1976,6 +1994,29 @@ func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAd
 		}
 
 		return "", errors.Wrap(err, "Failed to connect to docker network")
+	}
+
+	/*
+		cmd = []string{"ifconfig", "eth1", nwSpec.ipaddr, "up"}
+		cmdResp, _, rerr := wload.RunCommand(cmd, "", 0, 0, false, false)
+		if rerr != nil || cmdResp.ExitCode != 0 {
+			msg := fmt.Sprintf("error setting the ip address of the interface %v : %v %v", name, cmdResp.Stdout, cmdResp.Stderr)
+			naples.logger.Println(msg)
+			return strings.TrimSuffix(strings.Split(cmdResp.Stdout, " ")[0], "\r\n"), nil
+		} */
+
+	cmd = []string{"ip", "route", "delete", "default"}
+	cmdResp, _, rerr := wload.RunCommand(cmd, "", 0, 0, false, false)
+	if rerr != nil || cmdResp.ExitCode != 0 {
+		msg := fmt.Sprintf("error deleting default route %v : %v %v", name, cmdResp.Stdout, cmdResp.Stderr)
+		naples.logger.Println(msg)
+	}
+	cmd = []string{"ip", "route", "add", "default", "via", nwSpec.gw, "dev", "eth1"}
+	cmdResp, _, rerr = wload.RunCommand(cmd, "", 0, 0, false, false)
+	if rerr != nil || cmdResp.ExitCode != 0 {
+		msg := fmt.Sprintf("error setting default route %v : %v %v", name, cmdResp.Stdout, cmdResp.Stderr)
+		naples.logger.Println(msg)
+		return strings.TrimSuffix(strings.Split(cmdResp.Stdout, " ")[0], "\r\n"), nil
 	}
 
 	getIPAddr := func() (string, error) {
@@ -2103,6 +2144,7 @@ type simInstance struct {
 	id         uint32
 	name       string
 	macAddress string
+	ipAddr     string
 }
 
 func (dnode *dataNode) getBaseMacAddresss() (string, error) {
@@ -2160,12 +2202,11 @@ func (naples *naplesMultiSimNode) init(in *iota.Node) (resp *iota.Node, err erro
 			parentIntf = hostIntfs[0]
 		}
 
-		dockerNW, err = Utils.CreateMacVlanDockerNetwork(in.GetName(), parentIntf,
-			in.GetNaplesMultiSimConfig().GetIpAddrRange(), in.GetNaplesMultiSimConfig().GetGateway(), in.GetNaplesMultiSimConfig().GetNetwork())
-
-		if err != nil {
-			return err
-		}
+		/*
+			dockerNW, err = Utils.CreateMacVlanDockerNetwork(in.GetName(), parentIntf, "", "", "")
+			if err != nil {
+				return err
+			} */
 
 		return nil
 	}
@@ -2223,6 +2264,7 @@ func (naples *naplesMultiSimNode) init(in *iota.Node) (resp *iota.Node, err erro
 	}
 
 	var macAddress string
+	var ipaddress, mask string
 	if in.GetNaplesMultiSimConfig().MacAddressStart == "" {
 		macAddress, err = naples.getBaseMacAddresss()
 		if err != nil {
@@ -2234,6 +2276,22 @@ func (naples *naplesMultiSimNode) init(in *iota.Node) (resp *iota.Node, err erro
 		macAddress = in.GetNaplesMultiSimConfig().MacAddressStart
 	}
 
+	splitIPs := strings.Split(in.GetNaplesMultiSimConfig().IpAddrRange, "/")
+	if len(splitIPs) != 2 {
+		resp := "IP address range not in right format"
+		naples.logger.Error(resp)
+		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: resp}}, err
+	}
+
+	splitNW := strings.Split(in.GetNaplesMultiSimConfig().Network, "/")
+	if len(splitNW) != 2 {
+		resp := "IP Network range not in right format"
+		naples.logger.Error(resp)
+		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: resp}}, err
+	}
+
+	ipaddress = splitIPs[0]
+	mask = splitNW[1]
 	pool, _ := errgroup.WithContext(context.Background())
 	maxParallelThreads := 50
 	currThreads := 0
@@ -2255,8 +2313,14 @@ func (naples *naplesMultiSimNode) init(in *iota.Node) (resp *iota.Node, err erro
 			naples.logger.Error(resp)
 			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: resp}}, err
 		}
+		ipaddress, err = Utils.IncrementIP(ipaddress, in.GetNaplesMultiSimConfig().GetIpAddrRange(), 1)
+		if err != nil {
+			resp := "Could not increment IP address "
+			naples.logger.Error(resp)
+			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: resp}}, err
+		}
 		scheduleInstances = append(scheduleInstances, &simInstance{id: (uint32)(i), name: in.GetName() + "-sim-" + strconv.Itoa(i),
-			macAddress: macAddress})
+			macAddress: macAddress, ipAddr: ipaddress + "/" + mask})
 
 		if currThreads == maxParallelThreads-1 || i+1 == (int)(in.GetNaplesMultiSimConfig().GetNumInstances()) {
 			for _, instance := range scheduleInstances {
@@ -2267,7 +2331,7 @@ func (naples *naplesMultiSimNode) init(in *iota.Node) (resp *iota.Node, err erro
 				pool.Go(func() error {
 					simInfo := simInfo
 					ip, err := naples.bringUpNaples(instance.id, instance.name, instance.macAddress,
-						in.GetImage(), dockerNW,
+						in.GetImage(), simNetworkSpec{dockerNW: dockerNW, parent: in.GetNaplesMultiSimConfig().Parent, gw: in.GetNaplesMultiSimConfig().Gateway, ipaddr: instance.ipAddr},
 						in.GetNaplesMultiSimConfig().GetVeniceIps(),
 						in.GetNaplesMultiSimConfig().Gateway, in.Reload)
 					simInfo.IpAddress = ip

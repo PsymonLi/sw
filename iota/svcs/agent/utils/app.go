@@ -156,13 +156,24 @@ func (ns *NS) Reset() {
 }
 
 //AttachInterface attach interface to name space
-func (ns *NS) AttachInterface(intfName string) error {
+func (ns *NS) AttachInterface(intfName string, newName string) error {
 	intf := NewInterface(intfName, 0, "")
 	cmdArgs := []string{"ip", "link", "set", "dev", intfName, "netns", ns.Name}
 	_, stdout, err := Run(cmdArgs, 0, false, false, nil)
 	if err != nil {
 		return errors.Wrap(err, stdout)
 	}
+
+	if newName != "" {
+		ifRename := []string{"ip", "link", "set", intfName, "name", newName}
+		stdout, err = ns.RunCommand(ifRename, 0, false)
+		if err != nil {
+			return errors.Wrap(err, stdout)
+		}
+		intfName = newName
+		intf.Name = intfName
+	}
+
 	ifconfigCmd := []string{"ifconfig", intfName, "up"}
 	stdout, err = ns.RunCommand(ifconfigCmd, 0, false)
 	if err != nil {
@@ -692,13 +703,16 @@ func createNetwork(name, parent, driver, ipRange, ipGateway, ipSubnet string) (s
 
 	nwOptions := types.NetworkCreate{Driver: driver}
 
-	ipamConfig := network.IPAMConfig{IPRange: ipRange, Gateway: ipGateway, Subnet: ipSubnet}
+	if ipRange != "" {
+		ipamConfig := network.IPAMConfig{IPRange: ipRange, Gateway: ipGateway, Subnet: ipSubnet}
+		nwOptions.IPAM.Config = append(nwOptions.IPAM.Config, ipamConfig)
+	} else {
+		nwOptions.IPAM = &network.IPAM{Driver: ""}
+	}
 
 	nwOptions.Options = make(map[string]string)
 
 	nwOptions.Options["parent"] = parent
-	nwOptions.IPAM = &network.IPAM{}
-	nwOptions.IPAM.Config = append(nwOptions.IPAM.Config, ipamConfig)
 	fmt.Printf("Create network %v \n", nwOptions)
 	resp, err := _DockerClient.NetworkCreate(_DockerCtx, name, nwOptions)
 
@@ -736,8 +750,10 @@ func CreateMacVlanDockerNetwork(name, parent, ipRange, ipGateway, ipSubnet strin
 }
 
 //ConnectToDockerNetwork connect container to network
-func ConnectToDockerNetwork(ctr *Container, networkID string) error {
-	return _DockerClient.NetworkConnect(_DockerCtx, networkID, ctr.ctrID, nil)
+func ConnectToDockerNetwork(ctr *Container, networkID, ip, gateway string) error {
+	return _DockerClient.NetworkConnect(_DockerCtx, networkID, ctr.ctrID, &network.EndpointSettings{
+		IPAddress: ip, Gateway: gateway,
+	})
 }
 
 //GetContainer handle

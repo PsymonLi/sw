@@ -66,6 +66,7 @@ type InterfaceSpec struct {
 	IntfType      string
 	Parent        string
 	Name          string
+	IntfRename    string
 	Mac           string
 	IPV4Address   string
 	IPV6Address   string
@@ -341,7 +342,7 @@ func (app *containerWorkload) MoveInterface(name string) error {
 		return errors.Errorf("Could not bring up parent interface %s : %s", name, stdout)
 	}
 
-	if err := app.containerHandle.AttachInterface(name); err != nil {
+	if err := app.containerHandle.AttachInterface(name, ""); err != nil {
 		return errors.Wrap(err, "Interface attach failed")
 	}
 
@@ -408,8 +409,12 @@ func (app *containerWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		intfToAttach = vlanintf
 	}
 
-	if err := app.containerHandle.AttachInterface(intfToAttach); err != nil {
+	if err := app.containerHandle.AttachInterface(intfToAttach, spec.IntfRename); err != nil {
 		return "", errors.Wrap(err, "Interface attach failed")
+	}
+
+	if spec.IntfRename != "" {
+		intfToAttach = spec.IntfRename
 	}
 
 	if spec.Mac != "" {
@@ -450,6 +455,8 @@ func (app *containerMacVlanWorkload) AddInterface(spec InterfaceSpec) (string, e
 	if err != nil {
 		return stdout, err
 	}
+
+	spec.Parent = spec.Name
 
 	return app.containerWorkload.AddInterface(spec)
 }
