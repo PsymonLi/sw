@@ -561,6 +561,43 @@ func (tn *topoNode) addNode(obj Object, objKey string) {
 	}
 }
 
+func (md *Memdb) sendIntfDetachEvent(obj Object, objKey string) error {
+	log.Infof("sendIntfDetachEvent for obj: %v | key: %s", obj.GetObjectMeta(), objKey)
+	od := md.getPObjectDBByType(obj.GetObjectKind())
+	od.Lock()
+
+	// if we dont have the object, return error
+	ostate := od.getObject(objKey)
+	if ostate == nil {
+		od.Unlock()
+		log.Errorf("Object {%s} not found", objKey)
+		return errObjNotFound
+	}
+
+	ostate.Lock()
+	od.Unlock()
+	curr := ostate.Object()
+	currObj := curr.(*netproto.Interface)
+	newObj := &netproto.Interface{
+		TypeMeta:   currObj.TypeMeta,
+		ObjectMeta: currObj.ObjectMeta,
+		Spec:       currObj.Spec,
+		Status:     currObj.Status,
+	}
+
+	// detach the interface
+	newObj.Spec.Network = ""
+	newObj.Spec.VrfName = ""
+	ostate.SetValue(newObj)
+
+	od.watchEvent(md, ostate, UpdateEvent)
+
+	// set it back to the original values
+	ostate.SetValue(currObj)
+	ostate.Unlock()
+	return nil
+}
+
 func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 	kind := obj.GetObjectKind()
 	switch kind {
@@ -606,6 +643,16 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 				// trigger an update to watchoptions of the effected kinds
 				opts := tn.evalWatchOptions(dsc, kind, objKey, tenant, obj.GetObjectMeta().Namespace, mod)
 				log.Infof("New watchoptions after topo update: %v", opts)
+
+				// send the interface detach event first before dependent objects are deleted
+				// this will result in sending the interface update twice, the duplicate update is
+				// handled in netagent as a no-op
+				err := tn.md.sendIntfDetachEvent(obj, objKey)
+				if err != nil {
+					log.Errorf("sendIntfDetachEvent failed for obj: %v | key: %s | err: %v", obj.GetObjectMeta(), objKey, err)
+					return
+				}
+
 				l := len(order)
 				for a := l; a > 0; a-- {
 					kind = order[a-1]

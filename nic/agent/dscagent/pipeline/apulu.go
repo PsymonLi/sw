@@ -2086,7 +2086,7 @@ func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 				if a.ControllerAPI == nil {
 					log.Info("Waiting for controller registration")
 				} else {
-					log.Infof("AggWatchers Start for kinds %s", types.InsertionKinds)
+					log.Infof("AggWatchers Start for kinds %s", kinds)
 					a.ControllerAPI.Start(kinds)
 					return
 				}

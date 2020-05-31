@@ -128,11 +128,6 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 			s, err := infraAPI.Read("Network", nw.GetKey())
 			if err != nil {
 				log.Errorf("Network: %s not found during update | Err: %s", nw.GetKey(), err)
-				if attach == false {
-					// in case of subnet being detached from host-pf, if subnet lookup fails, it is harmless
-					// because the subnet must have been already cleared up, don't return an error
-					return nil
-				}
 				return errors.Wrapf(types.ErrObjNotFound, "Network: %s not found during update | Err: %s", nw.GetKey(), err)
 			}
 			err = nw.Unmarshal(s)
@@ -141,7 +136,7 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 				return errors.Wrapf(types.ErrBoltDBStoreUpdate, "Network: %s could not unmarshal | Err: %s", nw.GetKey(), err)
 			}
 
-			updsubnet, err := convertNetworkToSubnet(infraAPI, nw, nil, !attach)
+			updsubnet, err := convertNetworkToSubnet(infraAPI, nw, nil)
 			if err != nil {
 				log.Errorf("Network: %s could not convert | Err: %s", nw.GetKey(), err)
 				return errors.Wrapf(types.ErrDatapathHandling, "Network: %s could not Convert | Err: %s", nw.GetKey(), err)

@@ -558,9 +558,10 @@ func evalFilterFns(obj memdb.Object, flt []memdb.FilterFn) bool {
 	return true
 }
 
-func (eh *AggregateTopic) handleReconcileEvent(aggKey string, ctx context.Context, evt memdb.Event, watchEvts netproto.AggObjectEventList, stream netproto.AggWatchApiV1_WatchObjectsServer) {
+func (eh *AggregateTopic) handleReconcileEvent(aggKey string, ctx context.Context, evt memdb.Event, stream netproto.AggWatchApiV1_WatchObjectsServer) {
 	nodeID := netutils.GetNodeUUIDFromCtx(ctx)
 	kind := evt.Obj.GetObjectKind()
+	watchEvts := netproto.AggObjectEventList{}
 
 	addAggObjectEvent := func(mobj *types.Any, meta *api.ObjectMeta, evtType api.EventType) {
 		watchEvt := netproto.AggObjectEvent{
@@ -741,7 +742,17 @@ func (eh *AggregateTopic) WatchObjects(kinds *api.AggWatchOptions, stream netpro
 
 			if evt.EventType == memdb.ReconcileEvent {
 				log.Infof("Received a reconcile event for: %v", evt)
-				eh.handleReconcileEvent(aggKey, ctx, evt, watchEvts, stream)
+				// send any pending events before processing the reconcile event
+				if len(watchEvts.AggObjectEvents) > 0 {
+					if err := sendToStream(); err != nil {
+						return err
+					}
+					if !timer.Stop() {
+						<-timer.C
+					}
+					timer.Reset(DefaultWatchHoldInterval)
+				}
+				eh.handleReconcileEvent(aggKey, ctx, evt, stream)
 			} else {
 				// convert the events
 				var etype api.EventType
