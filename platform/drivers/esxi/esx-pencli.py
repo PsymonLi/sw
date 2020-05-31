@@ -11,7 +11,7 @@ import textwrap
 import ssl
 import shutil
 
-TOOL_VERSION = '1.8'
+TOOL_VERSION = '1.11'
 
 CLI_UPLINKS = 'esxcfg-nics '
 CLI_VS = 'esxcfg-vswitch '
