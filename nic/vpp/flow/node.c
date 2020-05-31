@@ -987,17 +987,23 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             icmp0 = (icmp46_header_t *) (((u8 *) ip40) +
                     (vnet_buffer (p0)->l4_hdr_offset -
                     vnet_buffer (p0)->l3_hdr_offset));
-            sport = *((u16 *) (icmp0 + 1));
-            sport = clib_net_to_host_u16(sport);
-            r_sport = sport;
+            // for icmp flow keys are as below
+            // sport = ICMP identifier if echo else 0
+            // dport = ((u16) (icmp0->type << 8)) | icmp0->code
             dport = ((u16) (icmp0->type << 8)) | icmp0->code;
             if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
+                sport = *((u16 *) (icmp0 + 1));
+                sport = clib_net_to_host_u16(sport);
                 r_dport = (ICMP4_echo_reply << 8) | icmp0->code;
             } else if (icmp0->type == ICMP4_echo_reply) {
+                sport = *((u16 *) (icmp0 + 1));
+                sport = clib_net_to_host_u16(sport);
                 r_dport = (ICMP4_echo_request << 8) | icmp0->code;
             } else {
+                sport = 0;
                 r_dport = dport;
             }
+            r_sport = sport;
             ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_ICMPV4, 
                                           thread_index);
         } else {
@@ -1115,17 +1121,23 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
                 icmp0 = (icmp46_header_t *) (((u8 *) ip60) +
                         (vnet_buffer (p0)->l4_hdr_offset -
                          vnet_buffer (p0)->l3_hdr_offset));
-                sport = *((u16 *) (icmp0 + 1));
-                sport = clib_net_to_host_u16(sport);
-                r_sport = sport;
+                // for icmp flow keys are as below
+                // sport = ICMP identifier if echo else 0
+                // dport = ((u16) (icmp0->type << 8)) | icmp0->code
                 dport = ((u16) (icmp0->type << 8)) | icmp0->code;
                 if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
+                    sport = *((u16 *) (icmp0 + 1));
+                    sport = clib_net_to_host_u16(sport);
                     r_dport = (ICMP4_echo_reply << 8) | icmp0->code;
                 } else if (icmp0->type == ICMP4_echo_reply) {
+                    sport = *((u16 *) (icmp0 + 1));
+                    sport = clib_net_to_host_u16(sport);
                     r_dport = (ICMP4_echo_request << 8) | icmp0->code;
                 } else {
+                    sport = 0;
                     r_dport = dport;
                 }
+                r_sport = sport;
                 ftlv6_cache_set_counter_index(FLOW_TYPE_COUNTER_ICMPV6);
             } else {
                 sport = dport = r_sport = r_dport = 0;
