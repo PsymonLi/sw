@@ -53,16 +53,20 @@ type SysModelInterface interface {
 	Testbed() *testbed.TestBed
 	SetReporter(reporter.Reporter)
 	GetReporter() reporter.Reporter
+	DumpModelInfo() error
 	//deleteWorkload(wr *objects.Workload) error
 	//findWorkload(name string) *objects.Workload
 }
 
 type ConfigIntf interface {
 	SetupDefaultConfig(ctx context.Context, scale, scaleData bool) error
+	InitConfig(scale, scaleData bool) error
 	CleanupAllConfig() error
 	IsConfigPushComplete() (bool, error)
 	ConfigClient() objClient.ObjClient
 	SetConfigModel(testbed.ModelType) error
+	AssociateHosts() error
+	AssociateWorkloads() error
 }
 
 //ActionIntf defines all interfaces
@@ -84,7 +88,7 @@ type ClusterActionIntf interface {
 	VerifyTechsupport(techsupportName string) error
 	VerifyTechsupportStatus(techsupportName string) error
 
-	GetRolloutObject(bundleType string, scaleData bool) (*rollout.Rollout, error)
+	GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*rollout.Rollout, error)
 	CreateRolloutObject(bundleType, rolloutName, upgradeType string) (*rollout.Rollout, error)
 	PerformRollout(rollout *rollout.Rollout, scaleData bool, bundleType string) error
 	VerifyRolloutStatus(rolloutName string) error
@@ -227,18 +231,25 @@ type WorkloadActionIntf interface {
 
 //NewSysModel creates new model based on type
 func NewSysModel(tb *testbed.TestBed) (SysModelInterface, error) {
-
+	var nm SysModelInterface
+	var err error
 	modelType := getModelTypeFromTopo(tb.Topo.Model)
 	switch modelType {
 	case VcenterModel:
-		return factory.NewVcenterSysModel(tb, cfgModel.VcenterCfgType, false)
+		nm, err = factory.NewVcenterSysModel(tb, cfgModel.VcenterCfgType, false)
 	case CloudModel:
-		return factory.NewCloudSysModel(tb, cfgModel.CloudCfgType, false)
+		nm, err = factory.NewCloudSysModel(tb, cfgModel.CloudCfgType, false)
 	case BaseNetModel:
-		return factory.NewBasenetSysModel(tb, cfgModel.BasenetCfgType, false)
+		nm, err = factory.NewBasenetSysModel(tb, cfgModel.BasenetCfgType, false)
+	default:
+		nm, err = factory.NewDefaultSysModel(tb, cfgModel.GsCfgType, false)
 	}
-	return factory.NewDefaultSysModel(tb, cfgModel.GsCfgType, false)
 
+	if err == nil {
+		nm.DumpModelInfo()
+	}
+
+	return nm, err
 }
 
 func ReinitSysModel(model SysModelInterface, modelType common.ModelType) (SysModelInterface, error) {

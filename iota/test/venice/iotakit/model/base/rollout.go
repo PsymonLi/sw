@@ -21,6 +21,8 @@ import (
 	"github.com/pensando/sw/api/generated/rollout"
 	"github.com/pensando/sw/api/labels"
 	loginctx "github.com/pensando/sw/api/login/context"
+	cmd "github.com/pensando/sw/iota/svcs/agent/command"
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/venice/utils/log"
@@ -158,8 +160,16 @@ func (sm *SysModel) GetClusterVersion() string {
 	return vobj.Status.BuildVersion
 }
 
+//runCmd run shell command
+func runCmd(cmdArgs []string, env []string) (int, string) {
+
+	cmdInfo, _ := cmd.ExecCmd(cmdArgs, "", 0, false, true, env)
+	return int(cmdInfo.Ctx.ExitCode), cmdInfo.Ctx.Stdout
+
+}
+
 // GetRolloutObject gets rollout instance
-func (sm *SysModel) GetRolloutObject(bundleType string, scaleData bool) (*rollout.Rollout, error) {
+func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*rollout.Rollout, error) {
 
 	version := ""
 	seconds := time.Now().Unix()
@@ -168,62 +178,84 @@ func (sm *SysModel) GetRolloutObject(bundleType string, scaleData bool) (*rollou
 			Seconds: seconds + 30, //Add a scheduled rollout with 30 second delay
 		},
 	}
-	/*jsonUrl := []string{"http://pxe.pensando.io/kickstart/veniceImageForRollout/metadata.json", "--output", "/tmp/metadata.json"}
-
-	out, err := exec.Command("curl", jsonURL...).CombinedOutput()
-	outStr := strings.TrimSpace(string(out))
-	fmt.Println(fmt.Sprintf("curl output: %s, err: %v\n", outStr, err))
-	if err != nil {
-		fmt.Println(fmt.Sprintf("curl Error: %s, err: %v\n", outStr, err))
-		fmt.Println()
-	}*/
-
 	clusterVersion := sm.GetClusterVersion()
 
-	bundleLocalFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/%s/bundle.tar", os.Getenv("GOPATH"), bundleType)
+	bundleLocalFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/%s/bundle.tar", os.Getenv("GOPATH"), spec.BundleType)
 
-	versionPrefix, buildNumber, err := getLatestBuildVersionInfo("master")
-	if err != nil {
-		log.Errorf("ts:%s Unable to fetch latest build version information: %s", time.Now().String(), err)
-		return nil, errors.New("Unable to fetch latest build version information")
-	}
-	for b := buildNumber; b > 0; b-- {
-		version = versionPrefix + "-" + strconv.Itoa(b)
-		if version == clusterVersion {
-			log.Errorf("Cluster running the same version %s", version)
-			continue
+	bundleScript := fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/utils/bundle.sh", os.Getenv("GOPATH"))
+	if spec.Local {
+
+		cmd := []string{bundleScript, "--local"}
+		if spec.Pipeline != "" {
+			cmd = append(cmd, "--pipeline")
+			cmd = append(cmd, spec.Pipeline)
 		}
-		log.Errorf("ts:%s Trying to download bundle.tar, version: %s clusterVersion %s", time.Now().String(), version, clusterVersion)
-		url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
-		jsonUrl := []string{url, "--output", bundleLocalFilePath, "-f"}
 
-		fmt.Println(fmt.Sprintf("curl string: %v\n", jsonUrl))
-		out, err := exec.Command("curl", jsonUrl...).CombinedOutput()
-		outStr := strings.TrimSpace(string(out))
-		fmt.Println(fmt.Sprintf("curl output: %s, err: %v\n", outStr, err))
-		if strings.Contains(outStr, "404 Not Found") || strings.Contains(outStr, " error: ") {
-			log.Errorf("ts:%s Error when trying to download Bundle with version: %s, response: %s", time.Now().String(), version, outStr)
-			fmt.Println(fmt.Sprintf("curl Error: %s, err: %v\n", outStr, err))
-			fmt.Println()
-		} else {
-			fmt.Println(fmt.Sprintf("curl success: %s\n", outStr))
-			fmt.Println()
-			break
+		exitCode, stdoutStderr := runCmd(cmd, nil)
+		if exitCode != 0 {
+			return nil, fmt.Errorf("Error building local bundle %v", stdoutStderr)
 		}
+
+		exitCode, stdoutStderr = runCmd(strings.Split(`git describe --tags --dirty --always`, " "), nil)
+		if exitCode != 0 {
+			return nil, fmt.Errorf("Error getting version tag %v", stdoutStderr)
+		}
+
+		version = strings.Split(stdoutStderr, "\n")[0]
+		log.Infof("Successfully built local upgrade bundle : %v", stdoutStderr)
+	} else if spec.TargetVersion != "" {
+
+		cmd := []string{bundleScript, "--pull", "--version", spec.TargetVersion}
+
+		if spec.Pipeline != "" {
+			cmd = append(cmd, "--pipeline")
+			cmd = append(cmd, spec.Pipeline)
+		}
+		log.Infof("Downloading artifacts for version %v", spec.TargetVersion)
+		exitCode, stdoutStderr := runCmd(cmd, os.Environ())
+		if exitCode != 0 {
+			log.Infof("Downloading artifacts for version %v failed %v", spec.TargetVersion, stdoutStderr)
+			return nil, fmt.Errorf("Error building local upgrade bundle %v", stdoutStderr)
+		}
+		version = spec.TargetVersion
+		log.Infof("Successfully built target %v upgrade bundle", spec.TargetVersion)
+
+	} else if spec.TargetBranch != "" {
+		versionPrefix, buildNumber, err := getLatestBuildVersionInfo(spec.TargetBranch)
+		if err != nil {
+			log.Errorf("ts:%s Unable to fetch latest build version information: %s", time.Now().String(), err)
+			return nil, errors.New("Unable to fetch latest build version information")
+		}
+		for b := buildNumber; b > 0; b-- {
+			version = versionPrefix + "-" + strconv.Itoa(b)
+			if version == clusterVersion {
+				log.Errorf("Cluster running the same version %s", version)
+				continue
+			}
+			log.Errorf("ts:%s Trying to download bundle.tar, version: %s clusterVersion %s", time.Now().String(), version, clusterVersion)
+			url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
+			jsonUrl := []string{url, "--output", bundleLocalFilePath, "-f"}
+
+			fmt.Println(fmt.Sprintf("curl string: %v\n", jsonUrl))
+			out, err := exec.Command("curl", jsonUrl...).CombinedOutput()
+			outStr := strings.TrimSpace(string(out))
+			fmt.Println(fmt.Sprintf("curl output: %s, err: %v\n", outStr, err))
+			if strings.Contains(outStr, "404 Not Found") || strings.Contains(outStr, " error: ") {
+				log.Errorf("ts:%s Error when trying to download Bundle with version: %s, response: %s", time.Now().String(), version, outStr)
+				fmt.Println(fmt.Sprintf("curl Error: %s, err: %v\n", outStr, err))
+				fmt.Println()
+			} else {
+				fmt.Println(fmt.Sprintf("curl success: %s\n", outStr))
+				fmt.Println()
+				break
+			}
+		}
+		log.Infof("ts:%s Successfully downloaded bundle.tar for version: %s", time.Now().String(), version)
+	} else {
+		return nil, fmt.Errorf("Invalid arguments for rollout %#v", spec)
 	}
-
-	log.Infof("ts:%s Successfully downloaded bundle.tar for version: %s", time.Now().String(), version)
-
-	var req labels.Requirement
-	req.Key = "type"
-	req.Operator = "in"
-	req.Values = append(req.Values, "bm")
-
-	var orderelem labels.Selector
-	orderelem.Requirements = append(orderelem.Requirements, &req)
 
 	var order []*labels.Selector
-	order = append(order, &orderelem)
 
 	log.Errorf("rollout version %s", version)
 	if version == "" {
@@ -231,60 +263,50 @@ func (sm *SysModel) GetRolloutObject(bundleType string, scaleData bool) (*rollou
 		return nil, errors.New("Build Failure. Couldnt get version information")
 	}
 
-	if scaleData {
+	var orderelem labels.Selector
+	if spec.SkipSimDSC {
 		var req labels.Requirement
 		req.Key = "type"
 		req.Operator = "in"
 		req.Values = append(req.Values, "bm")
 
-		var orderelem labels.Selector
 		orderelem.Requirements = append(orderelem.Requirements, &req)
 
-		var order []*labels.Selector
 		order = append(order, &orderelem)
-
-		return &rollout.Rollout{
-			TypeMeta: api.TypeMeta{
-				Kind: "Rollout",
-			},
-			ObjectMeta: api.ObjectMeta{
-				Name: rolloutName,
-			},
-			Spec: rollout.RolloutSpec{
-				Version:                   version,
-				ScheduledStartTime:        scheduledStartTime,
-				ScheduledEndTime:          nil,
-				Strategy:                  "LINEAR",
-				MaxParallel:               10,
-				MaxNICFailuresBeforeAbort: 0,
-				OrderConstraints:          order,
-				Suspend:                   false,
-				DSCsOnly:                  true,
-				UpgradeType:               "Graceful",
-			},
-		}, nil
-	} else {
-		return &rollout.Rollout{
-			TypeMeta: api.TypeMeta{
-				Kind: "Rollout",
-			},
-			ObjectMeta: api.ObjectMeta{
-				Name: rolloutName,
-			},
-			Spec: rollout.RolloutSpec{
-				Version:                   version,
-				ScheduledStartTime:        scheduledStartTime,
-				ScheduledEndTime:          nil,
-				Strategy:                  "LINEAR",
-				MaxParallel:               1,
-				MaxNICFailuresBeforeAbort: 2,
-				OrderConstraints:          nil,
-				Suspend:                   false,
-				DSCsOnly:                  false,
-				UpgradeType:               "Graceful",
-			},
-		}, nil
 	}
+
+	if spec.SkipDSC {
+		var req labels.Requirement
+		req.Key = "type"
+		req.Operator = "in"
+		req.Values = append(req.Values, "no-one") //Something to make sure it does not match
+
+		orderelem.Requirements = append(orderelem.Requirements, &req)
+
+		order = append(order, &orderelem)
+	}
+
+	return &rollout.Rollout{
+		TypeMeta: api.TypeMeta{
+			Kind: "Rollout",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: rolloutName,
+		},
+		Spec: rollout.RolloutSpec{
+			Version:                   version,
+			ScheduledStartTime:        scheduledStartTime,
+			ScheduledEndTime:          nil,
+			Strategy:                  "LINEAR",
+			MaxParallel:               10,
+			MaxNICFailuresBeforeAbort: 2,
+			OrderConstraints:          order,
+			Suspend:                   false,
+			DSCsOnly:                  spec.SkipVenice,
+			DSCMustMatchConstraint:    true,
+			UpgradeType:               "Graceful",
+		},
+	}, nil
 
 }
 
@@ -476,6 +498,13 @@ outerLoop:
 			time.Sleep(time.Second * 5)
 			continue
 		}
+
+		if r1.Status.OperationalState == rollout.RolloutStatus_SUCCESS.String() {
+			log.Info("Rollout completed.")
+			numRetries = 0
+			break
+		}
+
 		status := r1.Status.GetDSCsStatus()
 		log.Infof("ts:%s Precheck smartNIC status len %d: status:  %+v", time.Now().String(), len(status), status)
 		var numNodes int
@@ -624,6 +653,13 @@ outerLoop:
 			time.Sleep(time.Second * 5)
 			continue
 		}
+
+		if r1.Status.OperationalState == rollout.RolloutStatus_SUCCESS.String() {
+			log.Info("Rollout completed.")
+			numRetries = 0
+			break
+		}
+
 		status := r1.Status.GetDSCsStatus()
 		log.Infof("ts:%s Overall Rollout status: %s", time.Now().String(), r1.Status.OperationalState)
 		log.Infof("ts:%s Rollout smartNIC status len %d: status:  %+v", time.Now().String(), len(status), status)

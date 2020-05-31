@@ -12,14 +12,14 @@ venice-e2e:
 	ln -s /sw/bin/venice.tgz /go/src/github.com/pensando/sw/bin/venice.tgz
 	cd ../../ && make
 	../../bin/iota_cmd run --suite firewall --topo default 
-	../../bin/iota_cmd run --suite monitor --topo default --skip-setup
-	../../bin/iota_cmd run --suite techsupport --topo default --skip-setup
-	../../bin/iota_cmd run --suite mirror --topo default --skip-setup
+	../../bin/iota_cmd run --suite monitor --skip-setup
+	../../bin/iota_cmd run --suite techsupport --skip-setup
+	../../bin/iota_cmd run --suite mirror --skip-setup
 	#../../bin/iota_cmd run --suite rollout --topo default --skip-setup
 	#../../bin/iota_cmd run --suite cluster --topo default --skip-setup
 upgrade:
 	mkdir -p ${GOPATH}/src/github.com/pensando/sw/upgrade-bundle
-	../../bin/iota_cmd run --suite rollout --topo default --skip-setup
+	../../bin/iota_cmd run --suite rollout --skip-setup
 
 rollout-apulu2apulu:
 	cd ../../../ && make ws-tools && make pull-assets
@@ -106,7 +106,7 @@ venice-e2e-regression:
 	ln -s /sw/bin/venice.tgz /go/src/github.com/pensando/sw/bin/venice.tgz
 	cd ../../ && make
 	../../bin/iota_cmd run --suite cluster --topo default --regression
-	../../bin/iota_cmd run --suite firewall --topo default --regression --skip-setup
+	../../bin/iota_cmd run --suite firewall  --regression --skip-setup
 
 vcenter-e2e:
 	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all.tgz -C .
@@ -125,7 +125,7 @@ venice-e2e-basenet:
 	asset-pull bundle_image 1.2.0-140 /go/src/github.com/pensando/sw/bin/upgrade-bundle/bundle.tar
 	#First run mirror suite in basenet
 	../../bin/iota_cmd run --suite basenet --topo basenet
-	../../bin/iota_cmd run --suite mirror --topo basenet --skip-setup --focus "Interface mirror tests"
+	../../bin/iota_cmd run --suite mirror --skip-setup --focus "Interface mirror tests"
 
 venice-e2e-cloud:
 	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all_apulu.tgz -C .
@@ -138,6 +138,6 @@ venice-sim-cloud:
 	ln -s /sw/bin/venice.apulu.tgz /go/src/github.com/pensando/sw/bin/venice.apulu.tgz
 	cd ../../ && make
 	../../bin/iota_cmd run --suite equinix --topo cloud_sim
-	../../bin/iota_cmd run --suite techsupport --topo cloud_sim --skip-setup 
+	../../bin/iota_cmd run --suite techsupport --skip-setup 
 
 all: venice-e2e upgrade

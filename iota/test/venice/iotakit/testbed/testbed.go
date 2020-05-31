@@ -262,6 +262,11 @@ func (n *TestNode) IsNaplesHW() bool {
 	return IsNaplesHW(n.Personality)
 }
 
+//IsNaplesSim is naples sim node
+func (n *TestNode) IsNaplesSim() bool {
+	return n.Personality == iota.PersonalityType_PERSONALITY_NAPLES_SIM || n.Personality == iota.PersonalityType_PERSONALITY_NAPLES_MULTI_SIM
+}
+
 type naplesData struct {
 	Naples string `json:"naples"`
 	ID     int    `json:"id"`
@@ -443,6 +448,14 @@ func (tb *TestBed) AllocatedVlans() []uint32 {
 // HasNaplesSim returns true if testbed is a Naples sim testbed
 func (tb *TestBed) HasNaplesSim() bool {
 	return tb.hasNaplesSim
+}
+
+func (tb *TestBed) TBFile() string {
+	return tb.warmdJsonFile
+}
+
+func (tb *TestBed) Topology() string {
+	return tb.Topo.File
 }
 
 //DoSkipSetup skip setup

@@ -2,8 +2,8 @@ package rollout2rela_test
 
 import (
 	"errors"
-	"time"
 	"os"
+	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/venice/utils/log"

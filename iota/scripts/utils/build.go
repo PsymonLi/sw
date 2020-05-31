@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	targetBranch, srcFile, dstFile string
+	targetBranch, version, srcFile, dstFile string
 )
 
 type buildMeta struct {
@@ -51,20 +51,12 @@ func getLatestBuildVersionInfo(targetBranch string) (string, int, error) {
 	return "", 0, fmt.Errorf("No build metadata found for targetBranch: %s", targetBranch)
 }
 
-func downloadBuildArtifcat(targetBranch, srcFile, dstFile string) error {
+func downloadBuildArtifcat(version, targetBranch, srcFile, dstFile string) error {
 
-	version := ""
+	localFilePath := dstFile
+	tryDownloadVersion := func(version string) error {
 
-	versionPrefix, buildNumber, err := getLatestBuildVersionInfo(targetBranch)
-	if err != nil {
-		log.Errorf("ts:%s Unable to fetch latest build version information: %s %s", time.Now().String(), targetBranch, err)
-		return errors.New("Unable to fetch latest build version information")
-	}
-
-	localFilePath := fmt.Sprintf("%s/src/github.com/pensando/sw/%s", os.Getenv("GOPATH"), dstFile)
-	for b := buildNumber; b > 0; b-- {
-		version = versionPrefix + "-" + strconv.Itoa(b)
-		log.Errorf("ts:%s Trying to download bundle.tar, version: %s", time.Now().String(), version)
+		log.Errorf("ts:%s Trying to download src artifcat %v , version: %s", time.Now().String(), srcFile, version)
 		url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/%s", version, srcFile)
 		jsonURL := []string{url, "--output", localFilePath, "-f"}
 
@@ -75,15 +67,30 @@ func downloadBuildArtifcat(targetBranch, srcFile, dstFile string) error {
 		if strings.Contains(outStr, "404 Not Found") || strings.Contains(outStr, " error: ") {
 			log.Errorf("ts:%s Error when trying to download Bundle with version: %s, response: %s", time.Now().String(), version, outStr)
 			fmt.Println(fmt.Sprintf("curl Error: %s, err: %v\n", outStr, err))
-			fmt.Println()
-		} else {
-			fmt.Println(fmt.Sprintf("curl success: %s\n", outStr))
-			fmt.Println()
-			break
+			return errors.New("Error downloading")
 		}
+		fmt.Println(fmt.Sprintf("curl success: %s\n", outStr))
+		fmt.Println()
+		return nil
 	}
 
-	return nil
+	if version == "" {
+
+		versionPrefix, buildNumber, err := getLatestBuildVersionInfo(targetBranch)
+		if err != nil {
+			log.Errorf("ts:%s Unable to fetch latest build version information: %s %s", time.Now().String(), targetBranch, err)
+			return errors.New("Unable to fetch latest build version information")
+		}
+		for b := buildNumber; b > 0; b-- {
+			version = versionPrefix + "-" + strconv.Itoa(b)
+			if err := tryDownloadVersion(version); err == nil {
+				return nil
+			}
+		}
+		return errors.New("Download build artifact failed")
+	}
+
+	return tryDownloadVersion(version)
 }
 
 // RootCmd represents the base command when called without any subcommands
@@ -93,12 +100,17 @@ var RootCmd = &cobra.Command{
 	Long:  `Build utility`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		if targetBranch == "" || srcFile == "" || dstFile == "" {
+		if srcFile == "" || dstFile == "" {
 			cmd.Usage()
 			return errors.New("Invalid command usage")
 		}
 
-		if err := downloadBuildArtifcat(targetBranch, srcFile, dstFile); err != nil {
+		if (targetBranch == "" && version == "") || (targetBranch != "" && version != "") {
+			cmd.Usage()
+			return errors.New("Either Target Branch or version should be specified")
+		}
+
+		if err := downloadBuildArtifcat(version, targetBranch, srcFile, dstFile); err != nil {
 			log.Error("Failed to clean up esx node")
 			return err
 		}
@@ -117,6 +129,7 @@ func main() {
 
 func init() {
 	RootCmd.Flags().StringVarP(&targetBranch, "target-branch", "", "", "Target Branch")
+	RootCmd.Flags().StringVarP(&version, "version", "", "", "Target Branch")
 	RootCmd.Flags().StringVarP(&srcFile, "src-file", "", "", "Source File")
 	RootCmd.Flags().StringVarP(&dstFile, "dst-file", "", "", "DestFile")
 }

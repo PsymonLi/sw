@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/metrics/genfields"
 	"github.com/pensando/sw/metrics/types"
@@ -42,7 +43,9 @@ var _ = Describe("rollout tests", func() {
 
 		It("Perform Rollout", func() {
 			var workloadPairs *objects.WorkloadPairCollection
-			rollout, err := ts.model.GetRolloutObject("upgrade-bundle", ts.scaleData)
+			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{
+				BundleType:   "upgrade-bundle",
+				TargetBranch: "master"}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			if *simOnlyFlag == false {

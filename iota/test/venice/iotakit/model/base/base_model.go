@@ -3,8 +3,10 @@ package base
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -676,8 +678,8 @@ func (sm *SysModel) AssociateHosts() error {
 					for _, obj := range objs {
 						objMac := strings.Replace(obj.GetSpec().DSCs[0].MACAddress, ".", "", -1)
 						if objMac == nodeMac {
-							log.Infof("Associating host %v(ip:%v) with %v(%v on %v)\n", obj.GetName(),
-								n.GetIotaNode().GetIpAddress(), simName, simNaples.GetIpAddress(), n.GetIotaNode().Name)
+							//log.Infof("Associating host %v(ip:%v) with %v(%v on %v)\n", obj.GetName(),
+							//n.GetIotaNode().GetIpAddress(), simName, simNaples.GetIpAddress(), n.GetIotaNode().Name)
 							bs := bitset.New(uint(4096))
 							bs.Set(0).Set(1).Set(4095)
 
@@ -757,6 +759,61 @@ func (sm *SysModel) AssociateHosts() error {
 	return nil
 }
 
+//AssociateWorkloads associates existing workloads
+func (sm *SysModel) AssociateWorkloads() error {
+
+	wc := objects.NewWorkloadCollection(sm.ObjClient(), sm.Tb)
+
+	for _, wload := range sm.WorkloadsObjs {
+		wc.Workloads = append(wc.Workloads, wload)
+	}
+
+	skipSetup := os.Getenv("SKIP_SETUP")
+
+	cfgWorkloads, _ := sm.CfgModel.ListWorkload()
+	// if we are skipping setup we dont need to bringup the workload
+	if skipSetup != "" {
+		// first get a list of all existing.Workloads from iota
+		gwlm := &iota.WorkloadMsg{
+			ApiResponse: &iota.IotaAPIResponse{},
+			WorkloadOp:  iota.Op_GET,
+		}
+		topoClient := iota.NewTopologyApiClient(sm.Tb.Client().Client)
+		getResp, err := topoClient.GetWorkloads(context.Background(), gwlm)
+		log.Debugf("Got get workload resp: %+v, err: %v", getResp, err)
+		if err != nil {
+			log.Errorf("Failed to instantiate Apps. Err: %v", err)
+			return fmt.Errorf("Error creating IOTA workload. err: %v", err)
+		} else if getResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+			log.Errorf("Failed to instantiate Apps. resp: %+v.", getResp.ApiResponse)
+			return fmt.Errorf("Error creating IOTA workload. Resp: %+v", getResp.ApiResponse)
+		}
+
+		hosts, _ := sm.ListRealHosts()
+		for _, gwrk := range getResp.Workloads {
+
+			for _, wrk := range cfgWorkloads {
+				if wrk.Name == gwrk.WorkloadName {
+					wobj := &objects.Workload{}
+					wobj.SetIotaWorkload(gwrk)
+					wobj.SetIotaNodeName(gwrk.NodeName)
+					wobj.SetMgmtIP(gwrk.MgmtIp)
+					wobj.SetIpPrefix(gwrk.Interfaces[0].IpPrefix)
+					wc.Workloads = append(wc.Workloads, wobj)
+
+					for _, host := range hosts {
+						if host.VeniceHost.Name == wrk.Spec.HostName {
+							sm.WorkloadsObjs[gwrk.WorkloadName] = objects.NewWorkload(host, wrk, gwrk.WorkloadType, gwrk.WorkloadImage, "", nil)
+						}
+					}
+					break
+				}
+			}
+		}
+	}
+
+	return nil
+}
 func getThirdPartyNic(name, mac string) *cluster.DistributedServiceCard {
 
 	return &cluster.DistributedServiceCard{
@@ -1066,6 +1123,51 @@ func getTechSupportRequest(name string, nodeNames []string) monitoring.TechSuppo
 			},
 		},
 	}
+}
+
+//DumpModelInfo dumps model info
+func (sm *SysModel) DumpModelInfo() error {
+	modeInfo := common.ModelInfo{
+		TestbedFile: sm.Tb.TBFile(),
+		TopoFile:    sm.Tb.Topology(),
+		TestbedID:   sm.Tb.ID(),
+	}
+
+	mkdirCmd := []string{"mkdir", "-p", modelLogsDir}
+
+	if retCode, stdout, err := Utils.RunCmd(mkdirCmd, 0, false, true, nil); err != nil || retCode != 0 {
+		log.Errorf("Failed to create directory %v", stdout)
+		return fmt.Errorf("Failed to create directory  %v", stdout)
+	}
+
+	ofile, err := os.OpenFile(common.ModelInfoFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0755)
+	if err != nil {
+		panic(err)
+	}
+	j, err := json.MarshalIndent(&modeInfo, "", "  ")
+	ofile.Write(j)
+	ofile.Close()
+
+	return nil
+}
+
+func (sm *SysModel) ReadModel() common.ModelInfo {
+
+	modeInfo := common.ModelInfo{}
+
+	jsonFile, err := os.OpenFile(common.ModelInfoFile, os.O_RDONLY, 0755)
+	if err != nil {
+		panic(err)
+	}
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	err = json.Unmarshal(byteValue, &modeInfo)
+	if err != nil {
+		panic(err)
+	}
+	jsonFile.Close()
+	return modeInfo
+
 }
 
 //DownloadTechsupport download techsuport

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/venice/utils/log"
 )
@@ -32,7 +33,7 @@ func (sm *SysModel) TriggerNaplesUpgrade(percent int) error {
 		return nil
 	})
 
-	rollout, err := sm.GetRolloutObject("upgrade-bundle", true)
+	rollout, err := sm.GetRolloutObject(common.RolloutSpec{Local: true, BundleType: "upgrade-bundle"}, true)
 	if err != nil {
 		return err
 	}

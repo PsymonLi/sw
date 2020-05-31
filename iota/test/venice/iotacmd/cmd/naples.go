@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/spf13/cobra"
 )
@@ -126,7 +127,7 @@ func doNaplesUpgrade(percent int) error {
 		return nil
 	})
 
-	rollout, err := setupModel.GetRolloutObject("upgrade-bundle", true)
+	rollout, err := setupModel.GetRolloutObject(common.RolloutSpec{Local: true, BundleType: "upgrade-bundle"}, true)
 	if err != nil {
 		return err
 	}

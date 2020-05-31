@@ -50,6 +50,7 @@ type Topology struct {
 	NumVlans       int                     // list of vlans
 	Model          ModelType               // model cfg type
 	WkldInfo       map[string]WorkloadInfo //workload info
+	File           string
 }
 
 type TopoMeta struct {
@@ -115,6 +116,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 
 	var topo Topology
 
+	topo.File = fileName
 	topo.WkldInfo = make(map[string]WorkloadInfo)
 
 	switch topoMeta.Model {
