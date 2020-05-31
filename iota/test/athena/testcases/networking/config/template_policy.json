@@ -174,5 +174,34 @@
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         }
+    ],
+
+    "v4_flows": [
+        {
+            "vnic_lo": "1",
+            "vnic_hi": "1",
+            "sip_lo": "10.0.0.1",
+            "sip_hi": "10.0.0.4",
+            "dip_lo": "20.0.0.1",
+            "dip_hi": "20.0.0.4",
+            "proto": "17",
+            "sport_lo": "100",
+            "sport_hi": "103",
+            "dport_lo": "200",
+            "dport_hi": "203"
+        },
+        {
+            "vnic_lo": "1",
+            "vnic_hi": "1",
+            "sip_lo": "30.0.0.1",
+            "sip_hi": "30.0.0.4",
+            "dip_lo": "40.0.0.1",
+            "dip_hi": "40.0.0.4",
+            "proto": "6",
+            "sport_lo": "300",
+            "sport_hi": "303",
+            "dport_lo": "400",
+            "dport_hi": "403"
+        }
     ]
 }

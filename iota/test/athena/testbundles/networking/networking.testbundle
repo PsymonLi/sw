@@ -36,6 +36,10 @@ testcases:
 #        testcase: testcases.networking.generate_dp_policy
 #        enable  : True
 #
+#    -   name    : Flow_Gen
+#        testcase: testcases.networking.config.flow_gen
+#        enable  : True
+#
 #    -   name    : Data_Path_Test
 #        testcase: testcases.networking.data_path
 #        enable  : True
