@@ -231,7 +231,7 @@ var scaleCfgenParams = &Cfgen{
 			Spec: network.VirtualRouterSpec{
 				Type:              "tenant",
 				RouterMACAddress:  "{{mac}}",
-				VxLanVNI:          998,
+				VxLanVNI:          9998,
 				DefaultIPAMPolicy: "vpc1DHCP0",
 				RouteImportExport: &network.RDSpec{
 					AddressFamily: "l2vpn-evpn",
@@ -239,20 +239,20 @@ var scaleCfgenParams = &Cfgen{
 					ImportRTs: []*network.RouteDistinguisher{
 						&network.RouteDistinguisher{
 							Type:          "type2",
-							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 100},
-							AssignedValue: 100,
+							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 9998},
+							AssignedValue: 9998,
 						},
 					},
 					ExportRTs: []*network.RouteDistinguisher{
 						&network.RouteDistinguisher{
 							Type:          "type2",
-							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 100},
-							AssignedValue: 100,
+							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 9998},
+							AssignedValue: 9998,
 						},
 						&network.RouteDistinguisher{
 							Type:          "type2",
-							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 200},
-							AssignedValue: 101,
+							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 9998},
+							AssignedValue: 9998,
 						},
 					},
 				},
@@ -292,7 +292,7 @@ var scaleCfgenParams = &Cfgen{
 				Type:        "routed",
 				IPv4Subnet:  "{{ipv4-subnet:10.x.0.0/24}}",
 				IPv4Gateway: "{{ipv4-gateway:10.x.0.1}}",
-				VxlanVNI:    998,
+				VxlanVNI:    9998,
 				RouteImportExport: &network.RDSpec{
 					AddressFamily: "l2vpn-evpn",
 					RDAuto:        true,
@@ -300,14 +300,14 @@ var scaleCfgenParams = &Cfgen{
 						&network.RouteDistinguisher{
 							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 998},
 							Type:          "type2",
-							AssignedValue: 998,
+							AssignedValue: 9998,
 						},
 					},
 					ImportRTs: []*network.RouteDistinguisher{
 						&network.RouteDistinguisher{
 							AdminValue:    api.RDAdminValue{Format: api.ASNFormatRD, Value: 998},
 							Type:          "type2",
-							AssignedValue: 998,
+							AssignedValue: 9998,
 						},
 					},
 				},

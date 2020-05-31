@@ -275,8 +275,7 @@ func (sm *SysModel) SetupWorkloadsOnHost(h *objects.Host) (*objects.WorkloadColl
 }
 
 //attachSimInterfacesToNetworks
-func (sm *SysModel) attachSimInterfacesToNetworks() error {
-
+func (sm *SysModel) attachSimInterfacesToNetworks(scale bool) error {
 	hosts, err := sm.ListFakeHosts()
 	if err != nil {
 		return err
@@ -290,39 +289,92 @@ func (sm *SysModel) attachSimInterfacesToNetworks() error {
 		return err
 	}
 
-	nws := []*network.Network{}
-	for _, ten := range tenants {
-		if ten.Name == globals.DefaultTenant {
-			continue
+	if scale {
+		type nwIter struct {
+			nws   []*network.Network
+			index int
 		}
+		tenNetwowks := make(map[string]*nwIter)
 
-		nws, err = sm.ListNetwork(ten.Name)
-		if err != nil {
-			log.Error("Error finding networks")
-			return err
-		}
-		//Pick the first tenant
-		break
-	}
-
-	for _, h := range hosts {
-		filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", h.Naples.Instances[0].Dsc.Status.PrimaryMAC)
-		hostNwIntfs, err := sm.ObjClient().ListNetowrkInterfacesByFilter(filter)
-		if err != nil {
-			return err
-		}
-
-		for index, nwIntf := range hostNwIntfs {
-			nwIntf.Spec.AttachNetwork = nws[index].Name
-			nwIntf.Spec.AttachTenant = nws[index].Tenant
-			err := sm.ObjClient().UpdateNetworkInterface(nwIntf)
-			if err != nil {
-				log.Errorf("Error attaching network to interface")
-				return err
+		for index, ten := range tenants {
+			if ten.Name == globals.DefaultTenant {
+				tenants[index] = tenants[len(tenants)-1]
+				tenants = tenants[:len(tenants)-1]
+				break
 			}
 		}
+		for _, ten := range tenants {
+			nws, err := sm.ListNetwork(ten.Name)
+			if err != nil {
+				log.Errorf("Error finding networks for tenant %v", ten.Name)
+				return err
+			}
+			tenNetwowks[ten.Name] = &nwIter{nws: nws}
+		}
 
+		tenIdx := 0
+		for _, h := range hosts {
+			//For now cloud has just 1 DSC
+			filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", h.Naples.Instances[0].Dsc.Status.PrimaryMAC)
+			hostNwIntfs, err := sm.ObjClient().ListNetowrkInterfacesByFilter(filter)
+			if err != nil {
+				return err
+			}
+
+			ten := tenants[tenIdx%len(tenants)]
+			//Lets attach network host intefaces
+			for _, nwIntf := range hostNwIntfs {
+				iter := tenNetwowks[ten.Name]
+				index := iter.index % len(iter.nws)
+				nw := iter.nws[index]
+				nwIntf.Spec.AttachNetwork = nw.Name
+				nwIntf.Spec.AttachTenant = nw.Tenant
+				err := sm.ObjClient().UpdateNetworkInterface(nwIntf)
+				if err != nil {
+					log.Errorf("Error attaching network to interface")
+					return err
+				}
+				iter.index++
+			}
+			tenIdx++
+		}
+
+	} else {
+		nws := []*network.Network{}
+		for _, ten := range tenants {
+			if ten.Name == globals.DefaultTenant {
+				continue
+			}
+
+			nws, err = sm.ListNetwork(ten.Name)
+			if err != nil {
+				log.Error("Error finding networks")
+				return err
+			}
+			//Pick the first tenant
+			break
+		}
+
+		for _, h := range hosts {
+			filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", h.Naples.Instances[0].Dsc.Status.PrimaryMAC)
+			hostNwIntfs, err := sm.ObjClient().ListNetowrkInterfacesByFilter(filter)
+			if err != nil {
+				return err
+			}
+
+			for index, nwIntf := range hostNwIntfs {
+				nwIntf.Spec.AttachNetwork = nws[index].Name
+				nwIntf.Spec.AttachTenant = nws[index].Tenant
+				err := sm.ObjClient().UpdateNetworkInterface(nwIntf)
+				if err != nil {
+					log.Errorf("Error attaching network to interface")
+					return err
+				}
+			}
+
+		}
 	}
+
 	return nil
 }
 
@@ -530,7 +582,7 @@ func (sm *SysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData boo
 		}
 	}
 
-	err = sm.attachSimInterfacesToNetworks()
+	err = sm.attachSimInterfacesToNetworks(scale)
 	if err != nil {
 		return err
 	}

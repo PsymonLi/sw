@@ -304,6 +304,12 @@ func (cfgen *Cfgen) genVPCs() []*network.VirtualRouter {
 			tVrf := netCtx.transform(cfgen.VRFConfigParams.VirtualRouterTemplate).(*network.VirtualRouter)
 			tVrf.ObjectMeta.Tenant = tenant.ObjectMeta.Name
 			tVrf.Spec.VxLanVNI = tVrf.Spec.VxLanVNI + 100
+			tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value = 3000 + tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
+			tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue = 3000 + tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue
+			tVrf.Spec.RouteImportExport.ExportRTs[1].AdminValue.Value = 4000 + tVrf.Spec.RouteImportExport.ExportRTs[1].AdminValue.Value
+			tVrf.Spec.RouteImportExport.ExportRTs[1].AssignedValue = 4000 + tVrf.Spec.RouteImportExport.ExportRTs[1].AssignedValue
+			tVrf.Spec.RouteImportExport.ImportRTs[0].AdminValue.Value = tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
+			tVrf.Spec.RouteImportExport.ImportRTs[0].AssignedValue = tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue
 			configs = append(configs, tVrf)
 		}
 	}
@@ -325,11 +331,11 @@ func (cfgen *Cfgen) genSubnets() []*network.Network {
 		//numOfipams := len(ipams)
 		ll := 0
 		for jj := 0; jj < cfgen.TenantConfigParams.NumOfVRFsPerTenant; jj++ {
-			vpc := cfgen.ConfigItems.VRFs[jj]
+			vpc := cfgen.ConfigItems.VRFs[ii+jj]
+			if vpc.Tenant != tenant.Name {
+				continue
+			}
 			for kk := 0; kk < cfgen.VRFConfigParams.NumOfSubnetsPerVpc; kk++ {
-				if vpc.Tenant != tenant.Name {
-					continue
-				}
 				subnet := netCtx.transform(cfgen.SubnetConfigParams.SubnetTemplate).(*network.Network)
 				subnet.Spec.VirtualRouter = vpc.Name
 				subnet.ObjectMeta.Tenant = tenant.Name
