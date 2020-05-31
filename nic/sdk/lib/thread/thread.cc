@@ -21,6 +21,9 @@ uint64_t thread::data_cores_mask_    = 0;
 bool     thread::super_user_ =
              (getenv("USER") && !strcmp(getenv("USER"), "root")) ? true : false;
 
+// initialize the thread store
+thread_store_t thread::g_thread_store_;
+
 //------------------------------------------------------------------------------
 // thread instance initialization
 //------------------------------------------------------------------------------
@@ -119,7 +122,7 @@ thread::factory(const char *name, uint32_t thread_id,
         SDK_FREE(SDK_MEM_ALLOC_LIB_THREAD, new_thread);
         return NULL;
     }
-
+    g_thread_store_[thread_id] = new_thread;
     return new_thread;
 }
 
@@ -140,8 +143,19 @@ thread::destroy(thread *th)
         return;
     }
     lfq::destroy(th->lfq_);
+    g_thread_store_.erase(th->thread_id_);
     th->~thread();
     SDK_FREE(SDK_MEM_ALLOC_LIB_THREAD, th);
+}
+
+thread *
+thread::find(uint32_t thread_id)
+{
+    auto it = g_thread_store_.find(thread_id);
+    if (it != g_thread_store_.end()) {
+        return it->second;
+    }
+    return NULL;
 }
 
 uint64_t

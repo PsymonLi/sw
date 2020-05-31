@@ -7,10 +7,13 @@
 #ifndef __SDK_THREAD_HPP__
 #define __SDK_THREAD_HPP__
 
+#include <unordered_map>
 #include <pthread.h>
 #include "include/sdk/base.hpp"
 #include "include/sdk/timestamp.hpp"
 #include "lib/lfq/lfq.hpp"
+
+using std::unordered_map;
 
 namespace sdk {
 namespace lib {
@@ -35,6 +38,12 @@ typedef void *(*thread_entry_func_t)(void *ctxt);
                     sdk::lib::thread::current_thread()->name());       \
 }
 
+// forward declaration
+class thread;
+
+// thread strore
+typedef unordered_map<uint32_t, thread *> thread_store_t;
+
 class thread {
 public:
     static thread *factory(const char *name, uint32_t thread_id,
@@ -42,6 +51,7 @@ public:
                            thread_entry_func_t entry_func,
                            uint32_t prio, int sched_policy, bool can_yield);
     static void destroy(thread *th);
+    static thread *find(uint32_t thread_id);
     static void *dummy_entry_func(void *ctxt) { return NULL; }
     virtual sdk_ret_t start(void *ctxt);
     virtual sdk_ret_t stop(void);
@@ -137,6 +147,9 @@ private:
     static uint64_t               data_cores_free_;
     static uint64_t               data_cores_mask_;
     static bool                   super_user_;
+
+protected:
+    static thread_store_t         g_thread_store_;
 
 protected:
     virtual int init(const char *name, uint32_t thread_id,

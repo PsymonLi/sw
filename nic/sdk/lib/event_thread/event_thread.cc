@@ -193,13 +193,14 @@ event_thread::factory(const char *name, uint32_t thread_id,
         SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, new_thread);
         return NULL;
     }
-
+    g_thread_store_[thread_id] = new_thread;
     return new_thread;
 }
 
 void
 event_thread::destroy(event_thread *thread)
 {
+    g_thread_store_.erase(thread->thread_id());
     thread->~event_thread();
     SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, thread);
 }
@@ -286,7 +287,7 @@ event_thread::process_lfq_(void) {
     lfq_msg *msg;
     clock_t start;
     double cpu_time_used;
-    
+
     while (true) {
         msg = (lfq_msg *)this->dequeue();
         if (msg == NULL) {
@@ -303,11 +304,11 @@ event_thread::process_lfq_(void) {
                 SDK_TRACE_DEBUG("message_callback %p took %f seconds",
                                 this->message_cb_, cpu_time_used);
             }
-            
+
         } else if (msg->type == lfq_msg::UPDOWN_MSG) {
             assert(this->updown_up_cbs_.count(msg->meta.updown.thread_id) > 0);
             start = clock();
-            
+
             this->updown_up_cbs_[msg->meta.updown.thread_id](
                 msg->meta.updown.thread_id,
                 this->updown_up_ctxs_[msg->meta.updown.thread_id]);
@@ -335,7 +336,7 @@ ipc_io_callback (struct ev_loop *loop, ev_io *watcher, int revents)
     start = clock();
     ipc_watcher->callback(watcher->fd, ipc_watcher->ctx);
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-    
+
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
         SDK_TRACE_DEBUG("ipc_io took %f seconds", cpu_time_used);
     }
@@ -443,7 +444,7 @@ ev_prepare_callback_ (struct ev_loop *loop, ev_prepare *watcher, int revents)
     start = clock();
     prepare->callback(prepare, prepare->ctx);
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-    
+
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
         SDK_TRACE_DEBUG("prepare_callback %p took %f seconds",
                         prepare->callback, cpu_time_used);
@@ -477,7 +478,7 @@ ev_io_callback_ (struct ev_loop *loop, ev_io *watcher, int revents)
     start = clock();
     io->callback(io, watcher->fd, ev_to_event(revents));
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-    
+
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
         SDK_TRACE_DEBUG("io_callback %p took %f seconds",
                         io->callback, cpu_time_used);
@@ -509,7 +510,7 @@ ev_timer_callback_ (struct ev_loop *loop, ev_timer *watcher, int revents)
     start = clock();
     timer->callback(timer);
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
-    
+
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
         SDK_TRACE_DEBUG("timer_callback %p took %f seconds",
                         timer->callback, cpu_time_used);
@@ -520,21 +521,18 @@ void
 event_thread::timer_start(timer_t *timer) {
     assert(t_event_thread_ == this);
     assert(timer->ev_watcher.cb == ev_timer_callback_);
-
     ev_timer_start(this->loop_, &timer->ev_watcher);
 }
 
 void
 event_thread::timer_stop(timer_t *timer) {
     assert(t_event_thread_ == this);
-
     ev_timer_stop(this->loop_, &timer->ev_watcher);
 }
 
 void
 event_thread::timer_again(timer_t *timer) {
     assert(t_event_thread_ == this);
-
     ev_timer_again(this->loop_, &timer->ev_watcher);
 }
 
@@ -551,7 +549,6 @@ void
 updown_up_subscribe (uint32_t thread_id, updown_up_cb cb, void *ctx)
 {
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->updown_up_subscribe(thread_id, cb, ctx);
 }
 
@@ -567,7 +564,6 @@ void
 prepare_start (prepare_t *prepare)
 {
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->prepare_start(prepare);
 }
 
@@ -575,7 +571,6 @@ void
 prepare_stop (prepare_t *prepare)
 {
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->prepare_stop(prepare);
 }
 
@@ -592,7 +587,6 @@ io_start (io_t *io)
 {
     // We can only add and remove events from inside the context of the thread
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->io_start(io);
 }
 
@@ -601,7 +595,6 @@ io_stop (io_t *io)
 {
     // We can only add and remove events from inside the context of the thread
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->io_stop(io);
 }
 
@@ -626,7 +619,6 @@ timer_start (timer_t *timer)
 {
     // We can only add and remove events from inside the context of the thread
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->timer_start(timer);
 }
 
@@ -635,7 +627,6 @@ timer_stop (timer_t *timer)
 {
     // We can only add and remove events from inside the context of the thread
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->timer_stop(timer);
 }
 
@@ -644,7 +635,6 @@ timer_again (timer_t *timer)
 {
     // We can only manipulate events from inside the context of the thread
     assert(t_event_thread_ != NULL);
-
     t_event_thread_->timer_again(timer);
 }
 
@@ -665,7 +655,6 @@ message_send (uint32_t thread_id, void *message)
 {
     assert(thread_id <= MAX_THREAD_ID);
     assert(g_event_thread_table[thread_id] != NULL);
-
     lfq_msg *msg = lfq_msg::factory();
     msg->type = lfq_msg::USER_MSG;
     msg->payload = message;
