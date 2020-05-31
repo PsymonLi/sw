@@ -279,7 +279,7 @@ nwsec_pd_pgm_l4_profile_table (pd_nwsec_profile_t *pd_nw, bool create,
     data.action_u.l4_profile_l4_profile.tcp_non_syn_first_pkt_drop =
         profile->tcp_non_syn_first_pkt_drop;
     data.action_u.l4_profile_l4_profile.ip_fragment_drop =
-        TRUE;
+        profile->ip_fragment_drop;
     data.action_u.l4_profile_l4_profile.ip_rsvd_flags_action =
         profile->ip_rsvd_flags_action;
     data.action_u.l4_profile_l4_profile.ip_df_action =

@@ -346,6 +346,10 @@ p4_nacl_drop_reason (drop_reason_codes_t *codes, uint8_t &drop_action_data)
         drop_action_data = DROP_ICMP_FRAGMENT_PKT;
         num_codes++;
     }
+    if (codes->drop_ip_frag_pkt) {
+        drop_action_data = DROP_IP_FRAGMENT_PKT;
+        num_codes++;
+    }
 
     return num_codes;
 }

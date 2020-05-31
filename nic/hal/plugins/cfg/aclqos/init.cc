@@ -158,6 +158,10 @@ hal_acl_create (uint32_t acl_id, uint32_t priority,
         ip_selector->set_ip_protocol(types::IPProtocol::IPPROTO_ICMPV6);
         action->mutable_internal_actions()->mutable_drop_reason()->set_drop_icmp_frag_pkt(true);
         break;
+    case ACL_IP_FRAGMENT_DROP_ENTRY_ID:
+        action->mutable_internal_actions()->mutable_drop_reason()->set_drop_ip_frag_pkt(true);
+        break;
+
     default:
         break;
     }

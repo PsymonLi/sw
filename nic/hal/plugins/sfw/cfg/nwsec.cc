@@ -286,6 +286,7 @@ nwsec_handle_update (SecurityProfileSpec& spec, nwsec_profile_t *nwsec,
         NWSEC_SPEC_CHECK(ip_df_action) ||
         NWSEC_SPEC_CHECK(ip_options_action) ||
         NWSEC_SPEC_CHECK(ip_invalid_len_action) ||
+        NWSEC_SPEC_CHECK(ip_fragment_drop) ||
         NWSEC_SPEC_CHECK(ip_spoof_pkt_drop) ||
         NWSEC_SPEC_CHECK(ip_loose_src_routing_pkt_drop) ||
         NWSEC_SPEC_CHECK(ip_malformed_option_pkt_drop) ||
@@ -405,6 +406,7 @@ nwsec_profile_init_from_spec (nwsec_profile_t *sec_prof,
     NWSEC_SPEC_ASSIGN(ip_df_action);
     NWSEC_SPEC_ASSIGN(ip_options_action);
     NWSEC_SPEC_ASSIGN(ip_invalid_len_action);
+    NWSEC_SPEC_ASSIGN(ip_fragment_drop);
     NWSEC_SPEC_ASSIGN(ip_spoof_pkt_drop);
     NWSEC_SPEC_ASSIGN(ip_loose_src_routing_pkt_drop);
     NWSEC_SPEC_ASSIGN(ip_malformed_option_pkt_drop);
@@ -731,7 +733,7 @@ security_profile_spec_dump (SecurityProfileSpec& spec)
     NWSEC_SPEC_FIELD_PRINT(ip_rsvd_flags_action);
     NWSEC_SPEC_FIELD_PRINT(ip_df_action);
     NWSEC_SPEC_FIELD_PRINT(ip_options_action);
-    NWSEC_SPEC_FIELD_PRINT(ip_invalid_len_action);
+    NWSEC_SPEC_FIELD_PRINT(ip_fragment_drop);
     NWSEC_SPEC_FIELD_PRINT(ip_spoof_pkt_drop);
     NWSEC_SPEC_FIELD_PRINT(ip_loose_src_routing_pkt_drop);
     NWSEC_SPEC_FIELD_PRINT(ip_malformed_option_pkt_drop);
@@ -1448,6 +1450,8 @@ nwsec_prof_process_get (nwsec_profile_t *sec_prof,
               static_cast<nwsec::NormalizationAction>(sec_prof->ip_options_action));
     spec->set_ip_invalid_len_action(
               static_cast<nwsec::NormalizationAction>(sec_prof->ip_invalid_len_action));
+    spec->set_ip_fragment_drop(
+              static_cast<nwsec::NormalizationAction>(sec_prof->ip_fragment_drop));
     spec->set_ip_normalize_ttl(sec_prof->ip_normalize_ttl);
 
     spec->set_icmp_invalid_code_action(

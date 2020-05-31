@@ -388,6 +388,7 @@ message DropReasons {
   bool      drop_vf_ip_label_mismatch               = 26;
   bool      drop_vf_bad_rr_dst_ip                   = 27;
   bool      drop_icmp_frag_pkt                      = 28;       // ICMP/ICMPv6 fragment packet.
+  bool      drop_ip_frag_pkt                        = 29;       // IP TCP/UDP fragment packet.
 }
 
 message EgressDropReasons {

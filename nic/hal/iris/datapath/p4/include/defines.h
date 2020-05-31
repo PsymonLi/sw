@@ -118,11 +118,12 @@
 #define DROP_VF_BAD_RR_DST_IP                   26
 #define DROP_IF_LABEL_MISMATCH                  27
 #define DROP_ICMP_FRAGMENT_PKT                  28
+#define DROP_IP_FRAGMENT_PKT                    29
 #define DROP_MIN                                DROP_MALFORMED_PKT
 /*****************************************************************************/
 /* Note: After adding a new drop code, update the system.proto file as well. */
 /*****************************************************************************/
-#define DROP_MAX                                DROP_ICMP_FRAGMENT_PKT
+#define DROP_MAX                                DROP_IP_FRAGMENT_PKT
 
 /*****************************************************************************/
 /* egress drop reasons - these are bit positions to be used in ASM           */

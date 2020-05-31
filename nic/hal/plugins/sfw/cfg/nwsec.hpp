@@ -79,6 +79,7 @@ typedef struct nwsec_profile_s {
     uint32_t              ip_df_action:2;
     uint32_t              ip_options_action:2;
     uint32_t              ip_invalid_len_action:2;
+    uint32_t              ip_fragment_drop:1;
     uint32_t              ip_spoof_pkt_drop:1;
     uint32_t              ip_loose_src_routing_pkt_drop:1;
     uint32_t              ip_malformed_option_pkt_drop:1;

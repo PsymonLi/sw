@@ -290,6 +290,7 @@ func convertSecurityProfile(profile netproto.SecurityProfile) *halapi.SecurityPr
 				TcpNormalizationEn:     true,
 				IpNormalizationEn:      true,
 				PolicyEnforceEn:        true,
+				IpFragmentDrop:         true,
 
 				// Default Normalization action allow
 				IpDfAction:            iristypes.IPDFAction,

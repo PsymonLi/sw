@@ -136,6 +136,7 @@ sfw_update_default_security_profile(uint32_t id, bool policy_enforce_en)
 
     prof.mutable_key_or_handle()->set_profile_id(id);
     prof.set_policy_enforce_en(policy_enforce_en);
+    prof.set_ip_fragment_drop(policy_enforce_en); 
 
     hal::hal_cfg_db_open(CFG_OP_WRITE);
     ret = securityprofile_update(prof, &rsp);

@@ -162,16 +162,17 @@ message SecurityProfileSpec {
   NormalizationAction          ip_df_action                       = 24 [(gogoproto.moretags) = "venice:default=nwsec.NormalizationAction.NORM_ACTION_ALLOW"];
   NormalizationAction          ip_options_action                  = 25 [(gogoproto.moretags) = "venice:default=nwsec.NormalizationAction.NORM_ACTION_ALLOW"];
   NormalizationAction          ip_invalid_len_action              = 26 [(gogoproto.moretags) = "venice:default=nwsec.NormalizationAction.NORM_ACTION_TRIM"];
-  bool                         ip_spoof_pkt_drop                  = 27 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_loose_src_routing_pkt_drop      = 28 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_malformed_option_pkt_drop       = 29 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_record_route_option_pkt_drop    = 30 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_strict_src_routing_pkt_drop     = 31 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_ts_option_pkt_drop              = 32 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_unknown_option_pkt_drop         = 33 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_stream_id_option_pkt_drop       = 34 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_rsvd_fld_set_pkt_drop           = 35 [(gogoproto.moretags) = "venice:default=false"];
-  bool                         ip_clear_df_bit                    = 36 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_fragment_drop                   = 27 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_spoof_pkt_drop                  = 28 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_loose_src_routing_pkt_drop      = 29 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_malformed_option_pkt_drop       = 30 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_record_route_option_pkt_drop    = 31 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_strict_src_routing_pkt_drop     = 32 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_ts_option_pkt_drop              = 33 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_unknown_option_pkt_drop         = 34 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_stream_id_option_pkt_drop       = 35 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_rsvd_fld_set_pkt_drop           = 36 [(gogoproto.moretags) = "venice:default=false"];
+  bool                         ip_clear_df_bit                    = 37 [(gogoproto.moretags) = "venice:default=false"];
 
   // IPv6 knobs
   bool                         ipv6_anycast_src_drop              = 40 [(gogoproto.moretags) = "venice:default=false"];;

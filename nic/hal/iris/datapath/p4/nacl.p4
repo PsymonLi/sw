@@ -75,6 +75,10 @@ action nacl_deny(stats_idx, drop_reason_valid, drop_reason) {
     modify_field(scratch_metadata.flag, drop_reason_valid);
     modify_field(scratch_metadata.size8, drop_reason);
     if ((drop_reason_valid == 1) and (drop_reason <= DROP_MAX)) {
+        if (((drop_reason == DROP_ICMP_FRAGMENT_PKT) or 
+            (drop_reason == DROP_IP_FRAGMENT_PKT)) and (l4_metadata.ip_fragment_drop == FALSE)) {
+            // return
+        }
         modify_field(control_metadata.drop_reason, scratch_metadata.size8);
     } else {
         modify_field(control_metadata.drop_reason, DROP_NACL);

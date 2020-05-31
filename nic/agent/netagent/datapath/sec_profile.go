@@ -196,6 +196,7 @@ func (hd *Datapath) CreateSecurityProfile(profile *netproto.SecurityProfile, att
 				TcpNormalizationEn:     true,
 				IpNormalizationEn:      true,
 				PolicyEnforceEn:        true,
+				IpFragmentDrop:         true,
 
 				// Default Normalization action allow
 				IpDfAction:            constants.IPDFAction,

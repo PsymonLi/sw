@@ -2173,6 +2173,9 @@ func dropReasonToString(reasons *halproto.DropReasons) string {
 	if reasons.GetDropIcmpFragPkt() {
 		return "Drop ICMP/ICMPv6 Fragment Pkt"
 	}
+	if reasons.GetDropIpFragPkt() {
+		return "Drop IP Fragment Pkt"
+	}
 	return "Invalid"
 }
 
