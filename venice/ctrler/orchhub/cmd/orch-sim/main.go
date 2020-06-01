@@ -35,6 +35,16 @@ type SimParams struct {
 	ConfigPath string
 	// Port on which the simulator must be started
 	Port int
+
+	// StartIdx is the start index in the WorkloadList
+	StartIdx int
+
+	// EndIdx is the end index in the WorkloadList
+	EndIdx int
+	// PensandoOUI seed value
+	PensandoOUI string
+	// StartMac
+	StartMac int
 }
 
 var (
@@ -46,7 +56,7 @@ var (
 
 const (
 	// PensandoOUI is pensando oui
-	PensandoOUI = "00ae.cd"
+	PensandoOUI = "00ae.cdff"
 	// RandomOUI is random oui for workload interfaces
 	RandomOUI     = "00be.ef"
 	orchBase      = "orchestrator"
@@ -262,7 +272,7 @@ func generateTopology() error {
 	fmt.Println("Generating Topology")
 	topology = make(map[string]Orchestrator)
 	allInterfaces = make(map[string]Host)
-	macSeed := 1000
+	macSeed := params.StartMac
 	ifSeed := 1000
 
 	for i := 0; i < params.Instances; i++ {
@@ -283,7 +293,7 @@ func generateTopology() error {
 
 			for k := 0; k < params.HostPerNamespace; k++ {
 				hostName := fmt.Sprintf("%v-%v-%d", namespace.Name, hostBase, k)
-				hostMac := fmt.Sprintf("%vff.%04x", PensandoOUI, macSeed)
+				hostMac := fmt.Sprintf("%v.%04x", params.PensandoOUI, macSeed)
 				macSeed++
 				host, err := createHost(hostName, hostMac, namespace)
 				if err != nil {
@@ -327,6 +337,7 @@ func generateTopology() error {
 func generateTopologyUsingConfig() error {
 	topology = make(map[string]Orchestrator)
 	allInterfaces = make(map[string]Host)
+	skipIdx := params.StartIdx == params.EndIdx
 
 	fmt.Printf("\nGenerating Topology using config file %v", params.ConfigPath)
 	jsonFile, err := os.Open(params.ConfigPath)
@@ -363,7 +374,14 @@ func generateTopologyUsingConfig() error {
 
 	fmt.Println(namespace)
 	hosts := result["Hosts"].([]interface{})
-	for _, host := range hosts {
+	for idx, host := range hosts {
+		if !skipIdx && idx < params.StartIdx {
+			continue
+		}
+
+		if !skipIdx && idx > params.EndIdx {
+			break
+		}
 		hostName := host.(map[string]interface{})["meta"].(map[string]interface{})["name"].(string)
 		hostMac := host.(map[string]interface{})["spec"].(map[string]interface{})["dscs"].([]interface{})[0].(map[string]interface{})["mac-address"].(string)
 		h, err := createHost(hostName, hostMac, namespace)
@@ -379,8 +397,14 @@ func generateTopologyUsingConfig() error {
 		workloadName := workload.(map[string]interface{})["meta"].(map[string]interface{})["name"].(string)
 		workloadSpec := workload.(map[string]interface{})["spec"].(map[string]interface{})
 		hostName := workloadSpec["host-name"].(string)
+		host, ok := namespace.Hosts[hostName]
+		if !ok {
+			fmt.Printf("\nSkipping Host : %s\n", hostName)
+			continue
+		}
 		fmt.Printf("\nWorkload Name : %v", workloadName)
 		fmt.Printf("\nHost Name : %v\n", hostName)
+
 		ifs := workloadSpec["interfaces"].([]interface{})
 		interfaces := []Interface{}
 		for _, i := range ifs {
@@ -391,14 +415,13 @@ func generateTopologyUsingConfig() error {
 			vlanID := int32(i.(map[string]interface{})["external-vlan"].(float64))
 			ifc.PGName = vchub.CreatePGName(networks[vlanID].Name)
 			interfaces = append(interfaces, ifc)
-
-			host := namespace.Hosts[hostName]
-			w, err := createWorkload(workloadName, &host, interfaces, namespace)
-			if err != nil {
-				return err
-			}
-			host.Workloads[w.Name] = *w
 		}
+
+		w, err := createWorkload(workloadName, &host, interfaces, namespace)
+		if err != nil {
+			return err
+		}
+		host.Workloads[w.Name] = *w
 	}
 
 	orch.Namespaces[namespace.Name] = *namespace
@@ -444,8 +467,12 @@ func listAllPensandoInterfaces() {
 
 func validateParams() error {
 	if len(params.ConfigPath) > 0 {
-		fmt.Println("All scale parameters other then port and network name will be ignored as IOTA configuration is passed")
+		fmt.Println("All scale parameters other then port, host start/end index and network name will be ignored as IOTA configuration is passed")
 		return nil
+	}
+
+	if params.StartIdx != params.EndIdx || params.StartIdx != 0 {
+		return fmt.Errorf("Host indices are to be passed only when using the scale config parameter")
 	}
 
 	if params.Instances < 1 || params.NamespacesPerOrch < 1 || params.HostPerNamespace < 1 || params.WorkloadsPerHost < 1 || params.InterfacesPerWorkload < 1 {
@@ -474,8 +501,12 @@ func main() {
 	printTopoPtr := flag.Bool("p", false, "print topology")
 	printInterfacesPtr := flag.Bool("l", false, "print interface list")
 	flag.StringVar(&params.NetworkName, "n", "Network-Vlan-1", "Venice Network Name")
+	flag.StringVar(&params.PensandoOUI, "o", PensandoOUI, "Seed OUI (e.g. 00ae.cd00) value")
+	macPtr := flag.Int("m", 0, "Seed MAC value in decimal (e.g. 101)")
 	portPtr := flag.Int("port", 20000, "port to start vcsim on")
 	flag.StringVar(&params.ConfigPath, "c", "", "IOTA generated config file")
+	startIdxPtr := flag.Int("s", 0, "start index of the hosts in the host list within the scale config")
+	endIdxPtr := flag.Int("e", 0, "end index of the hosts in the host list within the scale config")
 
 	flag.Parse()
 
@@ -487,6 +518,9 @@ func main() {
 	params.WorkloadsPerHost = *workloadPtr
 	params.InterfacesPerWorkload = *ifcPtr
 	params.Port = *portPtr
+	params.StartIdx = *startIdxPtr
+	params.EndIdx = *endIdxPtr
+	params.StartMac = *macPtr
 
 	if err := validateParams(); err != nil {
 		fmt.Printf("\nParameter validation failed. Err : %v", err)
