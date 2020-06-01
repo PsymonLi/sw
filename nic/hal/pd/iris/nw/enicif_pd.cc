@@ -1906,8 +1906,14 @@ pd_if_inp_mac_vlan_pgm(pd_func_args_t *pd_func_args)
         mask.control_metadata_uplink_mask = ~(mask.control_metadata_uplink_mask & 0);
 
         if (enc_type == types::ENCAP_TYPE_DOT1Q) {
-            key.vlan_tag_valid = 1;
             key.vlan_tag_vid = l2seg_get_wire_encap_val((l2seg_t *)pi_l2seg);
+            mask.vlan_tag_vid_mask = ~(mask.vlan_tag_vid_mask & 0);
+            if (key.vlan_tag_vid == NATIVE_VLAN_ID) {
+                key.vlan_tag_vid = 0;
+            } else {
+                key.vlan_tag_valid = 1;
+                mask.vlan_tag_valid_mask = ~(mask.vlan_tag_valid_mask & 0);
+            }
         } else {
             // TODO: What if wire encap is Tunnel ...
             HAL_TRACE_ERR("WireEncap = VXLAN - NOT IMPLEMENTED");
@@ -2133,8 +2139,15 @@ pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
         key.control_metadata_uplink = 1;
         mask.control_metadata_uplink_mask = ~(mask.control_metadata_uplink_mask & 0);
         if (enc_type == types::ENCAP_TYPE_DOT1Q) {
-            key.vlan_tag_valid = 1;
             key.vlan_tag_vid = l2seg_get_wire_encap_val((l2seg_t *)pi_l2seg);
+            mask.vlan_tag_vid_mask = ~(mask.vlan_tag_vid_mask & 0);
+            if (key.vlan_tag_vid == NATIVE_VLAN_ID) {
+                // mask is already set in the earlier entry.
+                key.vlan_tag_vid = 0;
+            } else {
+                key.vlan_tag_valid = 1;
+                mask.vlan_tag_valid_mask = ~(mask.vlan_tag_valid_mask & 0);
+            }
         } else {
             // TODO: What if wire encap is Tunnel ...
             HAL_TRACE_ERR("WireEncap = VXLAN - NOT IMPLEMENTED");
@@ -2251,6 +2264,7 @@ pd_enicif_inp_prop_mac_vlan_form_data (pd_enicif_t *pd_enicif,
         }
 #endif
     } else {
+        data.action_id = INPUT_PROPERTIES_MAC_VLAN_INPUT_PROPERTIES_MAC_VLAN_ID;
         inp_prop_mac_vlan_data.skip_flow_update = 1;
 #if 0
         uint32_t hw_lif_id = 0;

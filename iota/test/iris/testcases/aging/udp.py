@@ -6,6 +6,26 @@ import pdb
 
 GRACE_TIME=5
 
+def addPktFltrRuleOnEp(tc, enable=True):
+    '''
+    On endpoint, DROP rule is installed to prevent ICMP Unreachable
+    '''
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    for w in [tc.client, tc.server]:
+        if w == None:
+            continue
+        api.Trigger_AddCommand(req, w.node_name, w.workload_name,
+                               "iptables -%s INPUT -p udp -i eth1 -j DROP"%
+                               ("A" if enable else "D"))
+
+    trig_resp = api.Trigger(req)
+    result = 0
+    for cmd in trig_resp.commands:
+        api.PrintCommandResults(cmd)
+        result |= cmd.exit_code
+
+    return False if result else True
+
 def Setup(tc):
     return api.types.status.SUCCESS
 
@@ -24,26 +44,34 @@ def Trigger(tc):
        else:
           client, server = pairs[0]
 
+    tc.client = client
+    tc.server = server
+ 
+    addPktFltrRuleOnEp(tc, True)
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd_cookie = "%s(%s) --> %s(%s)" %\
                 (server.workload_name, server.ip_address, client.workload_name, client.ip_address)
-    api.Logger.info("Starting Iperf test from %s" % (cmd_cookie))
+    api.Logger.info("Starting UDP Aging test from %s" % (cmd_cookie))
 
     cmd_cookie = "halctl clear session"
     api.Trigger_AddNaplesCommand(req, server.node_name, "/nic/bin/halctl clear session")
     tc.cmd_cookies.append(cmd_cookie)
 
     server_port = api.AllocateUdpPort()
-    basecmd = 'iperf -u '
     timeout_str = 'udp-timeout'
-    if not tc.args.skip_security_prof:
+    if tc.args.skip_security_prof == False:
         timeout = get_timeout(timeout_str)
     else:
         timeout = DEFAULT_UDP_TIMEOUT
 
     #Step 0: Update the timeout in the config object
-    if not tc.args.skip_security_prof:
+    if tc.args.skip_security_prof == False:
         update_timeout(timeout_str, tc.iterators.timeout)
+
+    if tc.args.skip_security_prof == False:
+        timeout = get_timeout(timeout_str)
+    else:
+        timeout = DEFAULT_UDP_TIMEOUT
 
     #profilereq = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     #api.Trigger_AddNaplesCommand(profilereq, naples.node_name, "/nic/bin/halctl show nwsec profile --id 11")
@@ -58,12 +86,12 @@ def Trigger(tc):
 
     cmd_cookie = "start server"
     api.Trigger_AddCommand(req, server.node_name, server.workload_name,
-                           "%s -p %s -s -t 300" % (basecmd, server_port), background = True)
+                           "sudo hping3 -9 %s" % (server_port), background = True)
     tc.cmd_cookies.append(cmd_cookie)
 
     cmd_cookie = "start client"
     api.Trigger_AddCommand(req, client.node_name, client.workload_name,
-                           "%s -p %s -c %s" % (basecmd, server_port, server.ip_address))
+                           "sudo hping3 -2 %s -p %s -c 1" % (server.ip_address, server_port))
     tc.cmd_cookies.append(cmd_cookie)
 
     cmd_cookie = "Before aging show session"

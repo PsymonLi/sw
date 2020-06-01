@@ -3347,8 +3347,8 @@ tcp_tickle_timeout_cb (void *timer, uint32_t timer_id, void *timer_ctxt)
     }
 
     if (unlikely(g_hal_state->is_age_debug_enabled())) {
-        HAL_TRACE_DEBUG("Iflow Packets: {} context iflow packets: {} rflow packets: {} context rflow packets: {}"
-                 "ret: {}", session_state.iflow_state.packets, ctx->session_state.iflow_state.packets,
+        HAL_TRACE_DEBUG("Aged Flow: {} Iflow Packets: {} context iflow packets: {} rflow packets: {} context rflow packets: {}"
+                 "ret: {}", ctx->aged_flow, session_state.iflow_state.packets, ctx->session_state.iflow_state.packets,
                   session_state.rflow_state.packets, ctx->session_state.rflow_state.packets, ret);
     }
 
