@@ -95,6 +95,6 @@ session:
             delay    :    1
             descriptors:
                 - descriptor:
-                    negtest : callback://networking/packets/IsNegativeTestCase
+                    negtest : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_SERVER_ACK_PKT,epkt_pass=TO_HOST_ACK_PKT,direction=RX
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=RX

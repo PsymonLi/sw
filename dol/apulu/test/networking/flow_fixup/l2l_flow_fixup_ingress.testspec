@@ -220,7 +220,7 @@ session:
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
                 - descriptor:
-                    negtest : callback://networking/packets/IsNegativeTestCase
+                    negtest : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_LOCAL_MAPPING_PKT,epkt_pass=TO_REMOTE_MAPPING_PKT,direction=TX
                     object  : ref://testcase/descriptors/id=DESC4
                     ring    : callback://networking/packets/GetRingFromMapping/type=remote,qid=RX
 
@@ -332,7 +332,7 @@ session:
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
                 - descriptor:
-                    negtest : callback://networking/packets/IsNegativeTestCase
+                    negtest : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_LOCAL_MAPPING_PKT,epkt_pass=TO_REMOTE_MAPPING_PKT,direction=TX
                     object  : ref://testcase/descriptors/id=DESC4
                     ring    : callback://networking/packets/GetRingFromMapping/type=remote,qid=RX
 
@@ -354,7 +354,7 @@ session:
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
                 - descriptor:
-                    negtest : callback://networking/packets/IsNegativeTestCase
+                    negtest : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_LOCAL_MAPPING_PKT,epkt_pass=TO_REMOTE_MAPPING_PKT,direction=TX
                     object  : ref://testcase/descriptors/id=DESC4
                     ring    : callback://networking/packets/GetRingFromMapping/type=remote,qid=RX
 
@@ -376,6 +376,6 @@ session:
                     object  : ref://testcase/descriptors/id=DESC6
                     ring    : callback://networking/packets/GetRingFromMapping/type=remote,qid=TX
                 - descriptor:
-                    negtest : callback://networking/packets/IsNegativeTestCase
+                    negtest : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_REMOTE_MAPPING_PKT,epkt_pass=TO_LOCAL_MAPPING_PKT,direction=RX
                     object  : ref://testcase/descriptors/id=DESC8
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=RX

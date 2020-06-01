@@ -124,6 +124,33 @@ class VnicObject(base.ConfigObjectBase):
         self.RxPolicer = PolicerClient.GetPolicerObject(node, policerid)
         policerid = getattr(spec, 'txpolicer', 0)
         self.TxPolicer = PolicerClient.GetPolicerObject(node, policerid)
+
+        #specific vnic policy attachment case, autogen will be handled below
+        v4ingrpolicies = getattr(spec, 'v4ingrpolicies', None)
+        v6ingrpolicies = getattr(spec, 'v6ingrpolicies', None)
+        v4egrpolicies = getattr(spec, 'v4egrpolicies', None)
+        v6egrpolicies = getattr(spec, 'v6egrpolicies', None)
+
+        if v4ingrpolicies != None:
+            self.IngV4SecurityPolicyIds = []
+            for policyid in v4ingrpolicies:
+                self.IngV4SecurityPolicyIds.append(policyid)
+
+        if v6ingrpolicies != None:
+            self.IngV6SecurityPolicyIds = []
+            for policyid in v6ingrpolicies:
+                self.IngV6SecurityPolicyIds.append(policyid)
+
+        if v4egrpolicies != None:
+            self.EgV4SecurityPolicyIds = []
+            for policyid in v4egrpolicies:
+                self.EgV4SecurityPolicyIds.append(policyid)
+
+        if v6egrpolicies != None:
+            self.EgV6SecurityPolicyIds = []
+            for policyid in v6egrpolicies:
+                self.EgV6SecurityPolicyIds.append(policyid)
+
         ################# PRIVATE ATTRIBUTES OF VNIC OBJECT #####################
         vnicPolicySpec = getattr(spec, 'policy', None)
         if vnicPolicySpec and utils.IsVnicPolicySupported():

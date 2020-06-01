@@ -490,7 +490,7 @@ def __rule_dump(tc_rule, match_rule):
         match_rule.Show()
 
 def __get_final_result(tc_rule, match_rule, testcase):
-    policy = testcase.config.policy
+    policy = getattr(testcase.config, 'policy', None)
     securityprofile = testcase.config.securityprofile
     iterelem = testcase.module.iterator.Get()
     result = getattr(iterelem, "result", None) if iterelem else None
@@ -501,7 +501,7 @@ def __get_final_result(tc_rule, match_rule, testcase):
     elif match_rule:
         final_result = match_rule.Action
         logger.info(f"Matching to rule action: {final_result}")
-    elif policy.DefaultFWAction != "none":
+    elif policy and (policy.DefaultFWAction != "none"):
         final_result = utils.GetRpcSecurityRuleAction(policy.DefaultFWAction)
         logger.info(f"Matching to policy default action: {final_result}")
     elif not securityprofile:
@@ -566,16 +566,24 @@ def __get_security_policies_from_lmapping(lmapping, direction):
 
 def GetExpectedCPSPacket(testcase, args):
     device = testcase.config.devicecfg
-    tc_rule = testcase.config.tc_rule
+    tc_rule = getattr(testcase.config, 'tc_rule', None)
     # get nacl which we selected for testing
-    policy = testcase.config.policy
+    policy = getattr(testcase.config, 'policy', None)
+    direction = None
+    if policy:
+        direction = policy.Direction
+    else:
+        if args.direction == 'TX':
+            direction = 'egress'
+        elif args.direction == 'RX':
+            direction = 'ingress'
     # get all security policies which needs to be applied
-    policies = __get_security_policies_from_lmapping(testcase.config.localmapping, policy.Direction)
+    policies = __get_security_policies_from_lmapping(testcase.config.localmapping, direction)
     pkt = testcase.packets.Get(args.ipkt).GetScapyPacket()
     if device.PolicyAnyDeny:
-        final_result = __match_and_get_final_result(policies, pkt, policy.Direction, testcase)
+        final_result = __match_and_get_final_result(policies, pkt, direction, testcase)
     else:
-        match_rule = __get_matching_rule(policies, pkt, policy.Direction, testcase)
+        match_rule = __get_matching_rule(policies, pkt, direction, testcase)
         final_result = __get_final_result(tc_rule, match_rule, testcase)
     if final_result == types_pb2.SECURITY_RULE_ACTION_DENY:
         logger.info("GetExpectedCPSPacket: packet denied")
@@ -852,7 +860,10 @@ def GetExpectedPacket(testcase, args):
     if __is_any_cfg_deleted(testcase):
         logger.info("one or more cfgs deleted - no packet expected")
         return None
-    return testcase.packets.Get(args.pkt)
+    if utils.IsPipelineApulu():
+        return GetExpectedCPSPacket(testcase, args)
+    else:
+        return testcase.packets.Get(args.pkt)
 
 def IsARPProxyNegativeTestCase(testcase):
     if "IPV4_ARP_PROXY_OUTSIDE_SUBNET" == testcase.module.name or \
@@ -882,11 +893,14 @@ def IsVRIPNegativeTestCase(tc):
 # used to check if packets are expected on the lif queue
 # True  - no packets expected
 # False - descriptor on expect is valid
-def IsNegativeTestCase(testcase):
+def IsNegativeTestCase(testcase, args):
     # if no packet is expected, return True otherwise False
     if __is_any_cfg_deleted(testcase):
         logger.info("one or more cfgs deleted - negative testcase")
         return True
+    if utils.IsPipelineApulu():
+        if IsCPSPacketExpected(testcase, args):
+            return True
     return False
 
 def __is_nat_enabled(routeTable):

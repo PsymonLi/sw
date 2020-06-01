@@ -46,6 +46,10 @@ node:
              - count : 1
                v4prefixlen : 24
                v6prefixlen : 64
+               v4ingrpolicycount: 1        # default 0
+               v4egrpolicycount : 1        # default 0
+               v6ingrpolicycount: 1        # default 0
+               v6egrpolicycount : 1        # default 0
           routetbl:
              - type: specific # route table with only default routes
                routetype: only_default
@@ -83,6 +87,10 @@ node:
             - count     : 1
               v4prefixlen : 24
               v6prefixlen : 64
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               vnic:
                 - count   : 1             # 1 untagged VNIC
                   ipcount : 4             # Local IP mapping per vnic
@@ -97,6 +105,10 @@ node:
             - count     : 1
               v4prefixlen : 26
               v6prefixlen : 96
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               vnic:
                 - count   : 1             # 1 tagged VNIC
                   ipcount : 4
@@ -123,6 +135,10 @@ node:
             - count     : 1
               v4prefixlen : 26
               v6prefixlen : 96
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               vnic:
                 - count   : 2             # 2 tagged VNICs
                   ipcount : 2

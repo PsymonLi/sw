@@ -35,6 +35,31 @@ class SubnetStatus(base.StatusObjectBase):
 
 class SubnetObject(base.ConfigObjectBase):
     def __init__(self, node, parent, spec, poolid):
+        def __get_policies(spec, node, parent, af, direction):
+            attr = ""
+            attr += "v4" if af == "V4" else "v6"
+            attr += "ingr" if direction == "ingress" else "egr"
+            specific_attr = attr + "policies"
+            auto_attr = attr + "policycount"
+            count = getattr(spec, auto_attr, 0)
+            cb = "Get"
+            cb += "Ing" if direction == "ingress" else "Eg"
+            cb += "V4" if af == "V4" else "V6"
+            cb += "SecurityPolicyId"
+            policyids = getattr(spec, specific_attr, None)
+
+            if policyids:
+                return policyids
+            else:
+                if count == 0:
+                    return []
+                policy_id = getattr(PolicyClient, cb)(node, parent.VPCId)
+                if af == 'V6':
+                    is_v6 = True
+                else:
+                    is_v6 = False
+                return PolicyClient.GenerateSubnetPolicies(self, policy_id, count, direction, is_v6)
+
         super().__init__(api.ObjectTypes.SUBNET, node)
         if hasattr(spec, 'origin'):
             self.SetOrigin(spec.origin)
@@ -64,19 +89,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, parent.VPCId)
 
-        v4ingrpolicycount = getattr(spec, 'v4ingrpolicycount', 0)
-        v6ingrpolicycount = getattr(spec, 'v6ingrpolicycount', 0)
-        v4egrpolicycount = getattr(spec, 'v4egrpolicycount', 0)
-        v6egrpolicycount = getattr(spec, 'v6egrpolicycount', 0)
-
-        policy_id = PolicyClient.GetIngV4SecurityPolicyId(node, parent.VPCId)
-        self.IngV4SecurityPolicyIds = PolicyClient.GenerateSubnetPolicies(self, policy_id, v4ingrpolicycount, 'ingress')
-        policy_id = PolicyClient.GetIngV6SecurityPolicyId(node, parent.VPCId)
-        self.IngV6SecurityPolicyIds = PolicyClient.GenerateSubnetPolicies(self, policy_id, v6ingrpolicycount, 'ingress', True)
-        policy_id = PolicyClient.GetEgV4SecurityPolicyId(node, parent.VPCId)
-        self.EgV4SecurityPolicyIds = PolicyClient.GenerateSubnetPolicies(self, policy_id, v4egrpolicycount, 'egress')
-        policy_id = PolicyClient.GetEgV6SecurityPolicyId(node, parent.VPCId)
-        self.EgV6SecurityPolicyIds = PolicyClient.GenerateSubnetPolicies(self, policy_id, v6egrpolicycount, 'egress', True)
+        self.IngV4SecurityPolicyIds = __get_policies(spec, node, parent, "V4", "ingress")
+        self.IngV6SecurityPolicyIds = __get_policies(spec, node, parent, "V6", "ingress")
+        self.EgV4SecurityPolicyIds = __get_policies(spec, node, parent, "V4", "egress")
+        self.EgV6SecurityPolicyIds = __get_policies(spec, node, parent, "V6", "egress")
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
@@ -385,14 +401,11 @@ class SubnetObject(base.ConfigObjectBase):
             return False
         if spec.V6RouteTableId != utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, ObjectTypes.ROUTE):
             return False
-        if spec.IngV4SecurityPolicyId[0] != utils.PdsUuid.GetUUIDfromId(self.IngV4SecurityPolicyIds[0], ObjectTypes.POLICY):
-            return False
-        if spec.IngV6SecurityPolicyId[0] != utils.PdsUuid.GetUUIDfromId(self.IngV6SecurityPolicyIds[0], ObjectTypes.POLICY):
-            return False
-        if spec.EgV4SecurityPolicyId[0] != utils.PdsUuid.GetUUIDfromId(self.EgV4SecurityPolicyIds[0], ObjectTypes.POLICY):
-            return False
-        if spec.EgV6SecurityPolicyId[0] != utils.PdsUuid.GetUUIDfromId(self.EgV6SecurityPolicyIds[0], ObjectTypes.POLICY):
-            return False
+        policySpecAttrs = ['IngV4SecurityPolicyId', 'IngV6SecurityPolicyId', 'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
+        policyConfigAttrs = ['IngV4SecurityPolicyIds', 'IngV6SecurityPolicyIds', 'EgV4SecurityPolicyIds', 'EgV6SecurityPolicyIds']
+        for cattr,sattr in zip(policyConfigAttrs, policySpecAttrs):
+            if not utils.ValidatePolicyAttr(getattr(self, cattr, None), getattr(spec, sattr, None)):
+                return False
         if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
             return False
         if utils.IsPipelineApulu():
@@ -596,7 +609,9 @@ class SubnetObjectClient(base.ConfigClientBase):
         InterfaceClient.UpdateHostInterfaces(node, self.Objects(node))
 
     def IsReadSupported(self):
-        return False
+        if utils.IsNetAgentMode():
+            return False
+        return True
 
 client = SubnetObjectClient()
 

@@ -1,0 +1,164 @@
+# Subnet Topology Specification with nopolicy attachment
+meta:
+    id: SPECIFIC_CONFIG_POLICY
+
+dutnode : 1
+node:
+  - id : 1
+    uplink:
+        - entry:
+            id      : uplink0
+            port    : 1
+            mode    : auto # host, switch, auto (default, depending on device mode)
+            status  : UP
+
+        - entry:
+            id      : uplink1
+            port    : 2
+            mode    : auto
+            status  : UP
+
+    hostinterface:
+        lif         : ref://store/specs/id=LIF_ETH
+
+    device:
+        mode        : auto # auto (default, based on pipeline), host, bitw
+        stack       : ipv4 # ipv4 (default), ipv6
+        bridging    : false # false (default), true
+        learning    : false # false (default), true
+        ipaddress   : None # Taken from resmgr
+        gateway     : None # Taken from resmgr
+        encap       : vxlan # vxlan or mplsodup
+        tunnel      :
+            - count : 16
+              type  : underlay
+
+    vpc:
+        # If dual stack true, VPC and Subnet will have both v4 & v6 based on the prefixlen.
+        - stack  : dual # dual, ipv4 , ipv6
+          count : 1
+          type  : underlay  # This VPC is applicable only for ARTEMIS pipeline.
+          nexthop:
+            - type : underlay
+              count : 2
+          interface:
+            - iid           : 1
+              iftype        : l3
+              ifadminstatus : UP
+              ipprefix      : '1.1.0.102\24'
+              macaddress    : macaddr/00ae.cd00.4fde
+              portid        : 1
+              encap         : none
+            - iid           : 2
+              iftype        : l3
+              ifadminstatus : UP
+              ipprefix      : '1.2.0.102\24'
+              macaddress    : macaddr/00ae.cd00.4fdd
+              portid        : 2
+              encap         : none
+        - stack  : dual
+          count : 1
+          type  : tenant
+          subnet:
+            - id               : 1
+              count            : 1
+              v4prefixlen      : 24
+              v6prefixlen      : 64
+              v4prefix         : '2.1.0.0\24'
+              fabricencap      : vxlan # vxlan or mplsodup
+              fabricencapvalue : 202
+              v4routerip       : '2.1.0.1'
+              vroutermac       : macaddr/0055.0100.0001
+              dhcppolicy       : 10
+              vnic:
+                - id        : 1
+                  count     : 1             # 1 untagged VNIC
+                  vmac      : macaddr/00ae.cd00.000a
+                  ipcount : 1             # Local IP mapping per vnic
+                  lmap    :
+                    - id       : 1
+                      count    : 1
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.000a
+                      lipaddr  : '2.1.0.3'
+                    - id       : 2
+                      count    : 1
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.000b
+                      lipaddr  : '2.1.0.4'
+                  srcguard: false         # true or false (default false)
+                  public  : false
+                  tagged  : false         # true or false (default true)
+                  remoteroutes :
+                      - '3.1.0.0\24'
+                      - '9.0.0.0\24'
+                      - '10.0.200.0\24'
+                      - '64.0.0.0\24'
+              rmap:                       # Remote IP mappings per subnet
+                - id       : 3
+                  count    : 1
+                  keytype  : l3
+                  rmacaddr : macaddr/00ae.cd00.0811
+                  ripaddr  : '2.1.0.2'
+                  tunnelid : 1
+            - id               : 3
+              count            : 1
+              v4prefixlen      : 24
+              v4prefix         : '9.0.0.0\24'
+              fabricencap      : vxlan # vxlan or mplsodup
+              fabricencapvalue : 902
+              v4routerip       : '9.0.0.1'
+              vroutermac       : macaddr/0055.0100.0004
+              dhcppolicy       : 13
+              vnic:
+                - id        : 3
+                  count     : 1             # 1 untagged VNIC
+                  vmac      : macaddr/00ae.cd00.000d
+                  ipcount : 1             # Local IP mapping per vnic
+                  lmap    :
+                    - id       : 3
+                      count    : 1
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.000d
+                      lipaddr  : '9.0.0.3'
+                    - id       : 4
+                      count    : 1
+                      keytype  : l3
+                      lmacaddr : macaddr/00ae.cd00.000e
+                      lipaddr  : '9.0.0.4'
+                  srcguard: false         # true or false (default false)
+                  public  : false
+                  tagged  : true         # true or false (default true)
+                  vnicencapvalue : 999
+                  vnictype : "local"
+                  remoteroutes :
+                     - '3.1.0.0\24'
+                     - '2.1.0.0\24'
+                     - '10.0.200.0\24'
+                     - '64.0.0.0\24'
+              rmap:                       # Remote IP mappings per subnet
+                - id       : 4
+                  count    : 1
+                  keytype  : l3
+                  rmacaddr : macaddr/00ae.cd00.0813
+                  ripaddr  : '9.0.0.2'
+                  tunnelid : 1
+          routetbl:
+                 - type: base
+                   routetype: fulloverlap_max
+                   count : 8
+                   teptype : underlay
+                   v4base: '66.0.0.0\16'
+                   v4prefixlen: 24
+                   nv4routes   : 1023     # Max routes per route table
+                   v6base: '2002::\65'
+                   v6prefixlen: 120
+                   nv6routes   : 1023
+                   v4routes:
+                       - '1.0.0.0\32'
+                   v6routes:
+                       - '1::\64'
+          nexthop:
+                 - type : underlay
+                   count : 2
+

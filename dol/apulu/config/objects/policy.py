@@ -11,9 +11,15 @@ class PolicyObjectHelper:
 
     def __get_policyID_from_subnet(self, subnet, af, direction):
         if af == 'IPV6':
-            return subnet.IngV6SecurityPolicyIds[0] if direction == 'ingress' else subnet.EgV6SecurityPolicyIds[0]
+            if direction == 'ingress':
+                return subnet.IngV6SecurityPolicyIds[0] if len(subnet.IngV6SecurityPolicyIds) else None
+            else:
+                return subnet.EgV6SecurityPolicyIds[0] if len(subnet.EgV6SecurityPolicyIds) else None
         else:
-            return subnet.IngV4SecurityPolicyIds[0] if direction == 'ingress' else subnet.EgV4SecurityPolicyIds[0]
+            if direction == 'ingress':
+                return subnet.IngV4SecurityPolicyIds[0] if len(subnet.IngV4SecurityPolicyIds) else None
+            else:
+                return subnet.EgV4SecurityPolicyIds[0] if len(subnet.EgV4SecurityPolicyIds) else None
 
     def __is_lmapping_match(self, policyobj, lobj):
         if lobj.VNIC.SUBNET.VPC.VPCId != policyobj.VPCId:

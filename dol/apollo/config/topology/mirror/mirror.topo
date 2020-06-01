@@ -96,6 +96,10 @@ node:
             - count     : 20
               v4prefixlen : 24
               v6prefixlen : 64
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               vnic:
                 - count   : 1             # VNICs per subnet
                   ipcount : 4             # Local IP mapping per vnic
@@ -139,6 +143,10 @@ node:
             - count     : 2
               v4prefixlen : 28
               v6prefixlen : 96
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               rmap:                       # Remote IP mappings per subnet
                 - count : 2
 

@@ -76,7 +76,7 @@ session:
             delay    :    1
             packets:
                 - packet:
-                    object  : callback://networking/packets/GetExpectedPacket/pkt=TO_SERVER_DISCOVER_PKT
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_DISCOVER_PKT,epkt_pass=TO_SERVER_DISCOVER_PKT,direction=TX
                     port    : callback://networking/packets/GetExpectedEgressUplinkPort
             descriptors:
                 - descriptor:

@@ -100,7 +100,7 @@ session:
             delay    :    1
             packets:
                 - packet:
-                    object  : callback://networking/packets/GetExpectedPacket/pkt=TO_SWITCH_PKT
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
                     port    : callback://networking/packets/GetExpectedEgressUplinkPort
             descriptors:
                 - descriptor:
@@ -109,4 +109,4 @@ session:
             configs:
                 - object    : ref://testcase/config/localmapping/VNIC
                   method    : VerifyVnicStats
-                  fields    : callback://common/config/GetExpectedStats/dir=TX,npkts=1,pkt=FROM_HOST_PKT
+                  fields    : callback://common/config/GetExpectedStats/direction=TX,npkts=1,ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT

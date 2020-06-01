@@ -117,6 +117,6 @@ session:
                     object  : ref://testcase/descriptors/id=DESC2
                     ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
                 - descriptor    :
-                    negtest     : callback://networking/packets/IsNegativeTestCase
+                    negtest     : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_HOST_PKT,epkt_pass=TO_HOST_PKT,direction=TX
                     object      : ref://testcase/descriptors/id=DESC4
                     ring        : callback://networking/packets/GetRingFromMapping/type=remote,qid=RX

@@ -1125,3 +1125,35 @@ def CopySpec(spec, ifspec):
     for attr in ifspec.__dict__:
         setattr(spec, attr, getattr(ifspec, attr))
     return spec
+
+def ValidatePolicyAttr(obj, spec):
+    if len(obj) != len(spec):
+        return False
+    spolicies = []
+    cpolicies = []
+    for i in range(len(obj)):
+        spolicies.append(spec[i])
+        cpolicies.append(PdsUuid.GetUUIDfromId(obj[i], ObjectTypes.POLICY))
+    spolicies.sort()
+    cpolicies.sort()
+    if spolicies != cpolicies:
+        return False
+    return True
+
+    if len(obj.IngV4SecurityPolicyIds) != 0:
+        for i in  range(len(obj.IngV4SecurityPolicyIds)):
+            if spec.IngV4SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.IngV4SecurityPolicyIds[i], ObjectTypes.POLICY):
+                return False
+    if len(obj.IngV6SecurityPolicyIds) != 0:
+        for i in  range(len(obj.IngV6SecurityPolicyIds)):
+            if spec.IngV6SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.IngV6SecurityPolicyIds[i], ObjectTypes.POLICY):
+                return False
+    if len(obj.EgV4SecurityPolicyIds) != 0:
+        for i in  range(len(obj.EgV4SecurityPolicyIds)):
+            if spec.EgV4SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.EgV4SecurityPolicyIds[i], ObjectTypes.POLICY):
+                return False
+    if len(obj.EgV6SecurityPolicyIds) != 0:
+        for i in  range(len(obj.EgV6SecurityPolicyIds)):
+            if spec.EgV6SecurityPolicyId[0] != PdsUuid.GetUUIDfromId(obj.EgV6SecurityPolicyIds[0], ObjectTypes.POLICY):
+                return False
+    return True

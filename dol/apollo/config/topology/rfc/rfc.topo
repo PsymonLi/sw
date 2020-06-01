@@ -48,6 +48,10 @@ node:
              - count : 1
                v4prefixlen : 24
                v6prefixlen : 64
+               v4ingrpolicycount: 1        # default 0
+               v4egrpolicycount : 1        # default 0
+               v6ingrpolicycount: 1        # default 0
+               v6egrpolicycount : 1        # default 0
           routetbl:
              - type: specific
                routetype: only_default
@@ -70,6 +74,10 @@ node:
             - count     :  48             # should be same as total routetbl / policy
               v4prefixlen : 24
               v6prefixlen : 64
+              v4ingrpolicycount: 1        # default 0
+              v4egrpolicycount : 1        # default 0
+              v6ingrpolicycount: 1        # default 0
+              v6egrpolicycount : 1        # default 0
               vnic:
                 - count   : 1             # VNICs per subnet
                   ipcount : 2             # Local IP mapping per vnic

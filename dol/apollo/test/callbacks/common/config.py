@@ -68,8 +68,13 @@ def GetCfgFields(tc):
 
 def GetExpectedStats(tc, args):
     spec = dict()
-    pktdir = getattr(args, 'dir', None)
-    pktid = getattr(args, 'pkt', None)
+    pktdir = getattr(args, 'direction', None)
+    if pktdir == 'TX':
+        pktid = getattr(args, 'ipkt', None)
+    elif pktdir == 'RX':
+        pktid = getattr(args, 'epkt_pass', None)
+    else:
+        None
     npkts = getattr(args, 'npkts', None)
     if pktdir == "TX":
         spec['txpackets'] = npkts
@@ -81,7 +86,7 @@ def GetExpectedStats(tc, args):
         spec['rxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
         spec['txpackets'] = 0
         spec['txbytes'] = 0
-    if packets.IsNegativeTestCase(tc) == True:
+    if packets.IsNegativeTestCase(tc, args) == True:
         spec['txpackets'] = 0
         spec['txbytes'] = 0
         spec['rxpackets'] = 0

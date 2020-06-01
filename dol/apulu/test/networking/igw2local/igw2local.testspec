@@ -115,10 +115,10 @@ session:
             delay               : 1
             descriptors         :
                 - descriptor    :
-                    negtest     : callback://networking/packets/IsNegativeTestCase
+                    negtest     : callback://networking/packets/IsNegativeTestCase/ipkt=FROM_SWITCH_PKT,epkt_pass=TO_HOST_PKT,direction=RX
                     object      : ref://testcase/descriptors/id=DESC2
                     ring        : callback://networking/packets/GetRingFromMapping/type=local,qid=RX
             configs             :
                 - object        : ref://testcase/config/localmapping/VNIC
                   method        : VerifyVnicStats
-                  fields        : callback://common/config/GetExpectedStats/dir=RX,npkts=1,pkt=TO_HOST_PKT
+                  fields        : callback://common/config/GetExpectedStats/direction=RX,npkts=1,epkt_pass=TO_HOST_PKT,ipkt=FROM_SWITCH_PKT

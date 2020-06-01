@@ -81,7 +81,7 @@ session:
             delay    :    1
             packets:
                 - packet:
-                    object  : callback://networking/packets/GetExpectedPacket/pkt=TO_SWITCH_PKT
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
                     port    : callback://networking/packets/GetExpectedEgressUplinkPort
             descriptors:
                 - descriptor:

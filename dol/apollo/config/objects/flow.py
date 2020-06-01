@@ -62,6 +62,7 @@ class FlowMapObject(base.ConfigObjectBase):
         obj.hostport = EzAccessStoreClient[self.Node].GetHostPort()
         obj.switchport = EzAccessStoreClient[self.Node].GetSwitchPort()
         obj.dhcprelay = dhcprelay.client.GetDhcpRelayObject(EzAccessStore.GetDUTNode())
+        obj.securityprofile = EzAccessStoreClient[self.Node].GetSecurityProfile()
         utils.DumpTestcaseConfig(obj)
         return
 
