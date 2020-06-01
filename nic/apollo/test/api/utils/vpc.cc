@@ -19,7 +19,8 @@ void
 vpc_feeder::init(pds_obj_key_t key, pds_vpc_type_t type,
                  std::string v4_cidr_str, int num_vpc, std::string vr_mac_str,
                  std::string v6_cidr_str, std::string fabric_encap_str,
-                 pds_obj_key_t v4_rttbl, pds_obj_key_t v6_rttbl, uint8_t tos) {
+                 pds_obj_key_t v4_rttbl, pds_obj_key_t v6_rttbl, uint8_t tos,
+                 bool stash) {
     memset(&spec, 0, sizeof(pds_vpc_spec_t));
 
     spec.key = key;
@@ -33,6 +34,7 @@ vpc_feeder::init(pds_obj_key_t key, pds_vpc_type_t type,
     spec.v6_route_table = v6_rttbl;
     spec.tos = tos;
     num_obj = num_vpc;
+    stash_ = stash;
 }
 
 void
@@ -88,7 +90,7 @@ vpc_feeder::spec_compare(const pds_vpc_spec_t *spec) const {
 bool
 vpc_feeder::status_compare(const pds_vpc_status_t *status1,
                            const pds_vpc_status_t *status2) const {
-    return true;
+    return ((status1->hw_id == status2->hw_id));
 }
 
 //----------------------------------------------------------------------------

@@ -9,6 +9,7 @@
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
+#include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/include/pds_nexthop.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/nexthop.hpp"
@@ -18,6 +19,7 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/api/vnic.hpp"
+#include "nic/apollo/api/vpc.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 
 namespace api {
@@ -54,6 +56,11 @@ backup_stateful_obj_cb (void *obj, void *info)
     case OBJ_ID_VNIC:
         keystr = ((vnic_entry *)obj)->key2str();
         ret = ((vnic_entry *)obj)->backup(upg_info);
+        break;
+
+    case OBJ_ID_VPC:
+        keystr = ((vpc_entry *)obj)->key2str();
+        ret = ((vpc_entry *)obj)->backup(upg_info);
         break;
 
     default:
@@ -101,8 +108,7 @@ backup_statless_obj_cb (void *key, void *val, void *info)
         SDK_ASSERT(0);
     }
 
-    if (ret == SDK_RET_OK &&
-        upg_info->size  == PDS_UPGRADE_API_OBJ_RSRVD_SIZE) {
+    if (ret == SDK_RET_OK && upg_info->skipped) {
         PDS_TRACE_VERBOSE("Stateless obj id %u key %s intentionally skipped",
                           obj_id, pkey->str());
         return;
@@ -173,6 +179,20 @@ backup_vnic (upg_obj_info_t *info)
 
     vnic_ht = vnic_db()->vnic_ht();
     ret = (vnic_ht->walk(backup_stateful_obj_cb, (void *)info));
+    // adjust the offset in persistent storage in the end of walk
+    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    return ret;
+}
+
+static inline sdk_ret_t
+backup_vpc (upg_obj_info_t *info)
+{
+    sdk_ret_t ret;
+    ht *vpc_ht;
+    upg_shm *shm = api::g_upg_state->backup_shm();
+
+    vpc_ht = vpc_db()->vpc_ht();
+    ret = (vpc_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
     shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
     return ret;
@@ -268,6 +288,13 @@ upg_ev_backup (upg_ev_params_t *params)
             PDS_TRACE_INFO("Stashed %u vnic objs", hdr[id].obj_count);
             break;
 
+        case OBJ_ID_VPC:
+            ret = backup_vpc(&info);
+            // update total number of vpc objs stashed
+            hdr[id].obj_count = info.backup.stashed_obj_count;
+            PDS_TRACE_INFO("Stashed %u vpc objs", hdr[id].obj_count);
+            break;
+
         default:
             break;
         }
@@ -285,6 +312,25 @@ upg_ev_backup (upg_ev_params_t *params)
     return ret;
 }
 
+// dont have spec yet, trying to bypass spec' field specific checks during factory
+static inline void
+create_obj_spec (api_ctxt_t *api_ctxt, uint32_t obj_id)
+{
+    pds_vpc_spec_t spec;
+
+    switch (obj_id) {
+    case OBJ_ID_VPC:
+        memset(&spec, 0, sizeof(pds_vpc_spec_t));
+        // apulu doesn't support any other encap type
+        spec.fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
+        api_ctxt->api_params->vpc_spec = spec;
+        break;
+
+    default:
+        break;
+    }
+}
+
 static inline sdk_ret_t
 restore_obj (upg_obj_info_t *info)
 {
@@ -298,6 +344,7 @@ restore_obj (upg_obj_info_t *info)
     }
     // create base obj assuming api_ctxt->api_param->spec is 0'd and
     // invoke restore, attributes to be filled down the line in same flow
+    create_obj_spec(api_ctxt, info->obj_id);
     api_obj = api_base::factory(api_ctxt);
     SDK_ASSERT(api_obj != NULL);
     ret = api_obj->restore(info);

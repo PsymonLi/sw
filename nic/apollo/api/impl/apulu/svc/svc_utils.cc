@@ -24,6 +24,11 @@ pds_svc_serialize_proto_msg (upg_obj_info_t *upg_info, upg_obj_tlv_t *tlv,
     bool serialize_ret;
     uint32_t obj_size, meta_size, size_left;
 
+    // check if this obj is intentional skip
+    if (upg_info->skipped == 1) {
+        return SDK_RET_OK;
+    }
+
     meta_size = sizeof(upg_obj_tlv_t);
     size_left = upg_info->backup.size_left;
     obj_size = proto_msg->ByteSizeLong();

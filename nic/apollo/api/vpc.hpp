@@ -55,6 +55,16 @@ public:
     /// \return   sdk_ret_ok or error code
     static sdk_ret_t free(vpc_entry *vpc);
 
+    /// \brief    stash this object into persistent storage
+    /// \param[in] upg_info contains location to put stashed object
+    /// \return   SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t backup(upg_obj_info_t *upg_info) override;
+
+    /// \brief     restore stashed object from persistent storage
+    /// \param[in] upg_info contains location to read stashed object
+    /// \return    SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t restore(upg_obj_info_t *upg_info) override;
+
     /// \brief     initialize a VPC entry with the given config
     /// \param[in] api_ctxt API context carrying the configuration
     /// \return    SDK_RET_OK on success, failure status code on error

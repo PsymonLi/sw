@@ -2488,7 +2488,7 @@ sdk_ret_t
 mapping_impl::fill_status_(upg_obj_info_t *upg_info,
                            pds_mapping_status_t *status) {
     if (to_public_ip_nat_idx_ == PDS_IMPL_RSVD_NAT_HW_ID) {
-        upg_info->size = PDS_UPGRADE_API_OBJ_RSRVD_SIZE;
+        upg_info->skipped = 1;
         return SDK_RET_OK;
     }
 
@@ -2514,7 +2514,7 @@ mapping_impl::fill_info_(upg_obj_info_t *upg_info,
     return SDK_RET_OK;
 
 exit:
-    upg_info->size = PDS_UPGRADE_API_OBJ_RSRVD_SIZE;
+    upg_info->skipped = 1;
     return SDK_RET_OK;
 }
 

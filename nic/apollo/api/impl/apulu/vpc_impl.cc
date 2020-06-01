@@ -8,16 +8,18 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/vpc.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
-#include "nic/apollo/api/pds_state.hpp"
-#include "nic/sdk/lib/p4/p4_api.hpp"
-#include "nic/sdk/lib/utils/utils.hpp"
+#include "nic/apollo/api/impl/apulu/svc/vpc_svc.hpp"
+#include "nic/apollo/api/impl/apulu/svc/svc_utils.hpp"
 
 #define vni_info    action_u.vni_vni_info
 #define vpc_info    action_u.vpc_vpc_info
@@ -159,14 +161,19 @@ vpc_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         // NOTE: even if we partially acquire resources and fail eventually,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
-        // reserve a hw id for this vpc
-        ret = vpc_impl_db()->vpc_idxr()->alloc(&idx);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to allocate hw id for vpc %s, err %u",
-                          spec->key.str(), ret);
-            return ret;
+
+        // if this object is restored from persistent storage
+        // resources are reserved already
+        if (!api_obj->in_restore_list()) {
+            // reserve a hw id for this vpc
+            ret = vpc_impl_db()->vpc_idxr()->alloc(&idx);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Failed to allocate hw id for vpc %s, err %u",
+                              spec->key.str(), ret);
+                return ret;
+            }
+            hw_id_ = idx;
         }
-        hw_id_ = idx;
 
         // reserve a bd id for this vpc
         ret = subnet_impl_db()->subnet_idxr()->alloc(&idx);
@@ -646,6 +653,110 @@ vpc_impl::release_tag(uint32_t tag, bool local) {
 sdk_ret_t
 vpc_impl::find_tag(uint32_t class_id, uint32_t *tag, bool local) {
     return vpc_impl_db()->find_tag(class_id, tag, local);
+}
+
+sdk_ret_t
+vpc_impl::fill_status_(upg_obj_info_t *upg_info,  pds_vpc_status_t *vpc_status) {
+    vpc_status->hw_id = hw_id_;
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+vpc_impl::fill_info_(upg_obj_info_t *upg_info, pds_vpc_info_t *vpcinfo) {
+    sdk_ret_t ret;
+    pds_vpc_spec_t *spec;
+
+    spec = &vpcinfo->spec;
+    if (spec->type != PDS_VPC_TYPE_UNDERLAY) {
+        upg_info->skipped = 1;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+vpc_impl::backup(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::VPCGetResponse proto_msg;
+    pds_vpc_info_t *vpcinfo;
+    upg_obj_tlv_t *tlv;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    vpcinfo = (pds_vpc_info_t *)info;
+
+    ret = fill_info_(upg_info, vpcinfo);
+    if (ret != SDK_RET_OK) {
+       return ret;
+    }
+    ret = fill_status_(upg_info, &vpcinfo->status);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+    // convert api info to proto
+    pds_vpc_api_info_to_proto(vpcinfo, (void *)&proto_msg);
+    ret = pds_svc_serialize_proto_msg(upg_info, tlv, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to backup vpc %s, err %u",
+                      vpcinfo->spec.key.str(), ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+vpc_impl::restore_resources(obj_info_t *info) {
+    sdk_ret_t ret;
+    pds_vpc_info_t *vpcinfo;
+    pds_vpc_spec_t *spec;
+    pds_vpc_status_t *status;
+
+    vpcinfo = (pds_vpc_info_t *)info;
+    spec = &vpcinfo->spec;
+    status = &vpcinfo->status;
+
+    // restore hw id for this vpc
+    ret = vpc_impl_db()->vpc_idxr()->alloc(status->hw_id);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore hw id for vpc %s, "
+                      "err %u, hw id %u", spec->key.str(), ret,
+                      status->hw_id);
+        return ret;
+    }
+    hw_id_ = status->hw_id;
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+vpc_impl::restore(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::VPCGetResponse proto_msg;
+    pds_vpc_info_t *vpcinfo;
+    upg_obj_tlv_t *tlv;
+    uint32_t obj_size, meta_size;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    vpcinfo = (pds_vpc_info_t *)info;
+    obj_size = tlv->len;
+    meta_size = sizeof(upg_obj_tlv_t);
+    // fill up the size, even if it fails later. to try and restore next obj
+    upg_info->size = obj_size + meta_size;
+    // de-serialize proto msg
+    if (proto_msg.ParseFromArray(tlv->obj, tlv->len) == false) {
+        PDS_TRACE_ERR("Failed to de-serialize vpc");
+        return SDK_RET_OOM;
+    }
+    // convert proto msg to vpc info
+    ret = pds_vpc_proto_to_api_info(vpcinfo, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to convert proto msg to info for vpc %s, err %u",
+                      vpcinfo->spec.key.str(), ret);
+        return ret;
+    }
+    // now restore hw resources
+    ret = restore_resources((obj_info_t *)vpcinfo);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore hw resources for vpc %s, err %u",
+                      vpcinfo->spec.key.str(), ret);
+    }
+    return ret;
 }
 
 /// \@}    // end of PDS_VPC_IMPL

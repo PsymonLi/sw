@@ -96,6 +96,18 @@ public:
     /// \return   sdk_ret_ok or error code
     static sdk_ret_t free(vpc_impl *impl);
 
+    /// \brief     stash this object into persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to put stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t backup(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
+    /// \brief     restore stashed object from persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to read stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t restore(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
     /// \brief      allocate/reserve h/w resources for this object
     /// \param[in]  api_obj  object for which resources are being reserved
     /// \param[in]  orig_obj old version of the unmodified object
@@ -314,6 +326,25 @@ private:
     /// \param[in]  vpc    vpc obj being programmed
     /// \return     #SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_delete_(pds_epoch_t epoch, vpc_entry *vpc);
+
+    /// \brief      restore h/w resources for this obj from persistent storage
+    /// \param[in]  info pointer to the info object
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t restore_resources(obj_info_t *info) override;
+
+    /// \brief      populate status with operational state only for
+    ///             underlay vpc
+    /// \param[out] upgrade information
+    /// \param[out] status status
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_status_(upg_obj_info_t *upg_info, pds_vpc_status_t *status);
+
+    /// \brief      populate info with operational state only for
+    ///             underlay vpc
+    /// \param[out] upgrade information
+    /// \param[out] info information
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_info_(upg_obj_info_t *upg_info, pds_vpc_info_t *vpc_info);
 
 private:
     ///< h/w id allocated for this VPC

@@ -17,7 +17,6 @@
 // api objects
 #define PDS_UPGRADE_API_OBJ_STORE_NAME "pds_upg_api_objs_info"
 #define PDS_UPGRADE_API_OBJ_STORE_SIZE (1 * 1024 * 1024)
-#define PDS_UPGRADE_API_OBJ_RSRVD_SIZE UINT_MAX
 // nicmgr objects
 #define PDS_UPGRADE_NICMGR_OBJ_STORE_NAME "pds_upg_nicmgr_objs_info"
 #define PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE (20 * 1024)
@@ -48,6 +47,7 @@ typedef struct upg_backup_info_s {
 /// to point/fetch data in/from persistent storage. 
 //  it helps objs to navigate to its correct position inside persistent storage
 typedef struct upg_obj_info_s {
+    uint32_t skipped:1;             ///< object is intentionally skipped
     char *mem;                      ///< reference into persistent storage
     uint32_t obj_id ;               ///< obj id
     size_t   size;                  ///< bytes written/read

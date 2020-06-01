@@ -350,4 +350,53 @@ vpc_entry::delay_delete(void) {
     return delay_delete_to_slab(PDS_SLAB_ID_VPC, this);
 }
 
+sdk_ret_t
+vpc_entry::backup(upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds_vpc_info_t info;
+
+    memset(&info, 0, sizeof(pds_vpc_info_t));
+    if (!impl_) {
+        upg_info->skipped = 1;
+        return SDK_RET_OK;
+    }
+    fill_spec_(&info.spec);
+    ret = impl_->backup((impl::obj_info_t *)&info, upg_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to backup vpc %s, err %u", key_.str(), ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+vpc_entry::restore(upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    api_ctxt_t *api_ctxt;
+    pds_vpc_info_t info;
+
+    SDK_ASSERT(impl_ != NULL);
+    memset(&info, 0, sizeof(pds_vpc_info_t));
+    // fetch info from proto buf
+    ret = impl_->restore((impl::obj_info_t *)&info, upg_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore vpc %s, err %u",
+                      info.spec.key.str(), ret);
+        return ret;
+    }
+    // restore PI fields
+    api_ctxt = api::api_ctxt_alloc((obj_id_t)upg_info->obj_id, API_OP_NONE);
+    if (api_ctxt == NULL) {
+        return SDK_RET_OOM;
+    }
+    api_ctxt->api_params->vpc_spec = info.spec;
+    ret = init_config(api_ctxt);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore vpc %s, err %u",
+                      info.spec.key.str(), ret);
+        return ret;
+    }
+    api_ctxt_free(api_ctxt);
+    return ret;
+}
+
 }    // namespace api

@@ -32,6 +32,7 @@ enum vpc_attrs {
 class vpc_feeder : public feeder {
 public:
     pds_vpc_spec_t spec;
+    vector <pds_vpc_info_t *> vec;
 
     // Constructor
     vpc_feeder() { };
@@ -42,7 +43,8 @@ public:
               std::string v6_cidr_str = "1000::1/64",
               std::string fabric_encap_str = "VxLAN 9999",
               pds_obj_key_t v4_rttbl = int2pdsobjkey(4000),
-              pds_obj_key_t v6_rttbl = int2pdsobjkey(6000), uint8_t tos = 0);
+              pds_obj_key_t v6_rttbl = int2pdsobjkey(6000), uint8_t tos = 0,
+              bool stash_ = false);
 
     // Iterate helper routines
     void iter_next(int width = 1);
@@ -96,6 +98,7 @@ operator<<(std::ostream& os, const vpc_feeder& obj) {
 // CRUD prototypes
 API_CREATE(vpc);
 API_READ(vpc);
+API_READ_CMP(vpc);
 API_UPDATE(vpc);
 API_DELETE(vpc);
 
