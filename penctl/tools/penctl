@@ -23,10 +23,12 @@ if [ $? -ne 0 ] ; then
 fi
 
 
+help_requested=""
 if [ "$1" == "-h" -o "$1" == "--help" ] ; then
 	echo "Usage: $PROG [-i ethX | -s pci ] args ..."
 	echo "  or export DSC_URL=http://169.254.<pcibus>.1 to specify DSC device"
-	exit 1
+	help_requested="-h"
+	shift
 fi
 
 if [ "$1" == "-i" ] ; then
@@ -97,6 +99,6 @@ if [ -n "$pci" ] ; then
 	DSC_URL=http://169.254.$bus.1
 fi
 
-echo DSC_URL=$DSC_URL $PENCTL_LINUX $@
-DSC_URL=$DSC_URL $PENCTL_LINUX $@
+echo DSC_URL=$DSC_URL $PENCTL_LINUX $help_requested $@
+DSC_URL=$DSC_URL $PENCTL_LINUX $help_requested $@
 
