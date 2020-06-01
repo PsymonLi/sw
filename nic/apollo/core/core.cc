@@ -28,18 +28,7 @@ using boost::property_tree::ptree;
 #define SYSTEM_INTR_SCAN_INTVL          5     // in seconds
 #define SYSTEM_SCAN_INTVL               10    // in seconds
 
-// TODO: create a "system" class and move all this into that class
 namespace core {
-
-thread *g_thread_store[PDS_THREAD_ID_MAX];
-
-thread *
-thread_get (uint32_t thread_id) {
-    if (thread_id >= PDS_THREAD_ID_MAX) {
-        return NULL;
-    }
-    return g_thread_store[thread_id];
-}
 
 static sdk_ret_t
 parse_cores_config (ptree &pt, pds_state *state)
@@ -150,16 +139,17 @@ thread_create (const char *name, uint32_t thread_id,
                sdk::lib::thread_entry_func_t entry_func,
                uint32_t thread_prio, int sched_policy, void *data)
 {
-    g_thread_store[thread_id] =
+    static sdk::lib::thread * new_thread;
+
+    new_thread =
         sdk::lib::thread::factory(name, thread_id, thread_role, cores_mask,
                                   entry_func, thread_prio, sched_policy,
                                   (thread_role == sdk::lib::THREAD_ROLE_DATA) ?
                                        false : true);
-    if (g_thread_store[thread_id]) {
-        g_thread_store[thread_id]->set_data(data);
+    if (new_thread) {
+        new_thread->set_data(data);
     }
-
-    return g_thread_store[thread_id];
+    return new_thread;
 }
 
 // spawn all the necessary threads
@@ -228,7 +218,6 @@ spawn_nicmgr_thread (pds_state *state)
         SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                                 "nicmgr thread create failure");
         new_thread->set_data(state);
-        g_thread_store[PDS_THREAD_ID_NICMGR] = new_thread;
         new_thread->start(new_thread);
     }
     return SDK_RET_OK;
@@ -237,16 +226,16 @@ spawn_nicmgr_thread (pds_state *state)
 bool
 is_nicmgr_ready (void)
 {
-    return g_thread_store[PDS_THREAD_ID_NICMGR]->ready();
+    return sdk::lib::thread::find(PDS_THREAD_ID_NICMGR)->ready();
 }
 
 void
 stop_learn_thread (void)
 {
     PDS_TRACE_INFO("Stopping learn thread");
-    core::g_thread_store[PDS_THREAD_ID_LEARN]->stop();
+    sdk::lib::thread::find(PDS_THREAD_ID_LEARN)->stop();
     PDS_TRACE_INFO("Waiting learn thread to stop");
-    core::g_thread_store[PDS_THREAD_ID_LEARN]->wait();
+    sdk::lib::thread::find(PDS_THREAD_ID_LEARN)->wait();
 }
 
 sdk_ret_t
@@ -267,7 +256,6 @@ spawn_api_thread (pds_state *state)
             true);
      SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                              "cfg thread create failure");
-     g_thread_store[PDS_THREAD_ID_API] = new_thread;
      new_thread->set_data(state);
      new_thread->start(new_thread);
      return SDK_RET_OK;
@@ -298,40 +286,47 @@ spawn_learn_thread (pds_state *state)
             true, true);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "learn thread create failure");
-    g_thread_store[PDS_THREAD_ID_LEARN] = new_thread;
     new_thread->start(new_thread);
     return SDK_RET_OK;
+}
+
+static bool
+thread_stop_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        PDS_TRACE_DEBUG("Stopping thread %s", thr->name());
+        thr->stop();
+    }
+    // continue the walk
+    return false;
 }
 
 // stop the threads
 void
 threads_stop (void)
 {
-    int thread_id;
+    sdk::lib::thread::walk(thread_stop_cb_, NULL);
+}
 
-    for (thread_id = 0; thread_id < PDS_THREAD_ID_MAX; thread_id++) {
-        if (g_thread_store[thread_id] != NULL) {
-            // stop the thread
-            PDS_TRACE_DEBUG("Stopping thread %s", g_thread_store[thread_id]->name());
-            g_thread_store[thread_id]->stop();
-        }
+static bool
+thread_wait_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        PDS_TRACE_DEBUG("Waiting for thread %s to exit", thr->name());
+        thr->wait();
+        // free the allocated thread
+        sdk::lib::thread::destroy(thr);
     }
+    // continue the walk
+    return false;
 }
 
 void
 threads_wait (void)
 {
-    int thread_id;
-
-    for (thread_id = 0; thread_id < PDS_THREAD_ID_MAX; thread_id++) {
-        if (g_thread_store[thread_id] != NULL) {
-            PDS_TRACE_DEBUG("Waiting thread %s to exit", g_thread_store[thread_id]->name());
-            g_thread_store[thread_id]->wait();
-            // free the allocated thread
-            sdk::lib::thread::destroy(g_thread_store[thread_id]);
-            g_thread_store[thread_id] = NULL;
-        }
-    }
+    sdk::lib::thread::walk(thread_wait_cb_, NULL);
 }
 
 // install signal handler for given signal

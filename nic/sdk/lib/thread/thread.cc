@@ -359,5 +359,25 @@ thread::punch_heartbeat(void)
     clock_gettime(CLOCK_MONOTONIC, &hb_ts_);
 }
 
+sdk_ret_t
+thread::walk(thread_walk_cb_t walk_cb, void *ctxt)
+{
+    sdk::lib::thread *thr;
+
+    for (auto it = g_thread_store_.begin();
+         it != g_thread_store_.end(); ) {
+        thr = it->second;
+        it++;
+        if (walk_cb(thr, ctxt)) {
+            // break the walk
+            goto end;
+        }
+    }
+
+end:
+
+    return SDK_RET_OK;
+}
+
 }    // namespace lib
 }    // namespace sdk

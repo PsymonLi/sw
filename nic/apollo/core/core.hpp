@@ -48,7 +48,6 @@ bool is_nicmgr_ready(void);
 void stop_learn_thread(void);
 void threads_stop(void);
 void threads_wait(void);
-sdk::lib::thread *thread_get(uint32_t thread_id);
 sdk_ret_t parse_global_config(string pipeline, string cfg_file,
                               pds_state *state);
 sdk_ret_t parse_pipeline_config(string pipeline, pds_state *state);

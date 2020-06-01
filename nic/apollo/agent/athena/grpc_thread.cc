@@ -56,7 +56,7 @@ svc_reg() {
     core::trace_logger()->flush();
     std::unique_ptr<Server> server(server_builder->BuildAndStart());
     server->Wait();
-} 
+}
 
 void
 grpc_reg_thread_init (void *ctxt)
@@ -66,6 +66,6 @@ grpc_reg_thread_init (void *ctxt)
 }
 
 void
-grpc_reg_thread_exit (void *ctxt) {}
+grpc_reg_thread_exit (void *ctxt) { }
 
 }    // namespace core

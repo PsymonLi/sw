@@ -44,6 +44,9 @@ class thread;
 // thread strore
 typedef unordered_map<uint32_t, thread *> thread_store_t;
 
+// walk callback function type
+typedef bool (thread_walk_cb_t)(sdk::lib::thread *thr, void *ctxt);
+
 class thread {
 public:
     static thread *factory(const char *name, uint32_t thread_id,
@@ -75,6 +78,7 @@ public:
     thread_role_t thread_role(void) const { return thread_role_; }
     uint64_t cores_mask(void) const { return cores_mask_; }
     uint64_t get_cpu_mask(void);
+    static sdk_ret_t walk(thread_walk_cb_t walk_cb, void *ctxt);
 
     // set the current thread instance
     static void set_current_thread(thread *curr_thread) {

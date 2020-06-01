@@ -8,6 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
@@ -34,7 +35,7 @@ event_dequeue (uint32_t thread_id)
 {
     thread *thr;
 
-    thr = thread_get(thread_id);
+    thr = sdk::lib::thread::find(thread_id);
     if (thr) {
         return (event_t *)thr->dequeue();
     }
@@ -46,7 +47,7 @@ event_enqueue (event_t *event, uint32_t thread_id)
 {
     thread *thr;
 
-    thr = thread_get(thread_id);
+    thr = sdk::lib::thread::find(thread_id);
     if (thr) {
         return thr->enqueue(event);
     }
