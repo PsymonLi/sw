@@ -674,6 +674,7 @@ func (ws *WorkloadState) handleMigration() error {
 			ws.moveWg.Wait()
 		}
 
+		log.Infof("Migration of all EPs of %v aborted", ws.Workload.Name)
 		ws.Workload.Status.MigrationStatus.CompletedAt = &api.Timestamp{}
 		ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
 		ws.Workload.Write()

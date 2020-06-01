@@ -373,7 +373,7 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		return
 	}
 	// Check new host
-	if v.pCache.GetHostByName(hostName) == nil {
+	if v.pCache.GetHostByName(hostName) == nil || v.StateMgr.CheckHostMigrationCompliance(hostName) != nil {
 		v.Log.Infof("Ignore VMotion Event for VM %s - to non-pensando host %s", m.VMKey, hostName)
 		// Workload delete will happen as part of WL watch when vMotion is complete
 		return
@@ -386,7 +386,8 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		v.Log.Infof("Ignore VMotionStart Event for VM %s - same host %s", m.VMKey, curHostName)
 		return
 	}
-	if curHostName == "" || v.pCache.GetHostByName(hostName) == nil {
+
+	if curHostName == "" || v.pCache.GetHostByName(hostName) == nil || v.StateMgr.CheckHostMigrationCompliance(curHostName) != nil {
 		// VMs coming from non-pensando hosts requires special flow state handling
 		v.Log.Infof("VMotionStart Event for VM %s from non-pensando host %s", m.VMKey, curHostName)
 		// This will be new WL creation, which will happen when we receive WL watch with new host and
@@ -395,6 +396,7 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		v.migrateFromNonPensandoHost(workloadObj, destDc, hostName)
 		return
 	}
+
 	if v.isWorkloadMigrating(workloadObj) {
 		// TODO: need to work thru' cases on when this happens and how to handle it, corner case
 		v.Log.Errorf("Back to Back vMotion for %s is not supported - must wait for first migration to complete",

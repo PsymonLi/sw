@@ -3,8 +3,6 @@
 package statemgr
 
 import (
-	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -47,7 +45,6 @@ const (
 // EndpointState is a wrapper for endpoint object
 type EndpointState struct {
 	smObjectTracker
-	sync.Mutex
 	Endpoint        *ctkit.Endpoint                `json:"-"` // embedding endpoint object
 	groups          map[string]*SecurityGroupState // list of security groups
 	stateMgr        *Statemgr                      // state manager
@@ -446,8 +443,8 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 		return ErrEndpointNotFound
 	}
 
-	eps.Lock()
-	defer eps.Unlock()
+	eps.Endpoint.Lock()
+	defer eps.Endpoint.Unlock()
 
 	ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
 	if err != nil {
@@ -472,7 +469,9 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 		newEP := convertEndpoint(&epinfo.Endpoint)
 		newEP.Spec.Migration = netproto.MigrationState_DONE.String()
 		sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), newEP, references(epinfo))
-		eps.Endpoint.Write()
+		if err := eps.Write(); err != nil {
+			log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+		}
 
 		return nil
 	}
@@ -550,7 +549,7 @@ func (sm *Statemgr) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
 }
 
 func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint, ws *WorkloadState) {
-	log.Infof("Moving Endpoint. %v from DSC %v to DSC %v", nep.Name, nep.Status.NodeUUID, nep.Spec.NodeUUID)
+	log.Infof("Moving Endpoint %v from DSC %v to DSC %v", nep.Name, nep.Status.NodeUUID, nep.Spec.NodeUUID)
 	defer ws.epMoveWg.Done()
 
 	lastSyncRetryCount := 0
@@ -587,13 +586,11 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 		},
 	}
 
-	log.Infof("EP object for the new host is : %v", newEP)
-	log.Infof("EP object for the old host is : %v", oldEP)
+	log.Infof("[%v] EP object for the new host is : %v", nep.Name, newEP)
+	log.Infof("[%v] EP object for the old host is : %v", nep.Name, oldEP)
 
 	sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
 	checkDataplaneMigration := time.NewTicker(defaultMigrationPollInterval)
-	// The generationID for the new netproto object
-	generationID := 1
 	for {
 		select {
 		case <-ws.moveCtx.Done():
@@ -604,7 +601,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 				log.Errorf("Failed to get endpoint state. Err : %v", err)
 				return
 			}
-			eps.Lock()
+			eps.Endpoint.Lock()
 
 			// Get WorkloadState object
 			ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
@@ -614,13 +611,13 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 
 			if ws.Workload.Status.MigrationStatus == nil {
-				log.Errorf("Workload [%v] has not migration status.", ws.Workload.Name)
+				log.Errorf("Workload [%v] has no migration status.", ws.Workload.Name)
 				return
 			}
 
 			// We perform a negative check here, to avoid any race condition in setting of the Status in workload
 			if ws.Workload.Status.MigrationStatus.Stage != workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
-				log.Infof("Move timed out. Sending delete EP to old DSC. Traffic flows might be affected. [%v]", oldEP.Spec.NodeUUID)
+				log.Infof("Move timed out for EP %v. Sending delete EP to old DSC. Traffic flows might be affected. [%v]", eps.Endpoint.Name, oldEP.Spec.NodeUUID)
 
 				newEP.Spec.Migration = netproto.MigrationState_DONE.String()
 
@@ -650,18 +647,20 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 				eps.Endpoint.Status.HomingHostName = ws.Workload.Status.HostName
 				eps.Endpoint.Status.HomingHostAddr = eps.Endpoint.Spec.HomingHostAddr
 
-				eps.stateMgr.ctrler.Endpoint().SyncUpdate(&eps.Endpoint.Endpoint)
-				log.Infof("EP [%v] migrated to [%v].", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
+				if err := eps.Write(); err != nil {
+					log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+				}
 
 				oldDSC, err := sm.FindDistributedServiceCard(eps.Endpoint.Tenant, oldEP.Spec.NodeUUID)
 				if err == nil {
 					eps.stopDSCTracking(oldDSC.DistributedServiceCard.DistributedServiceCard.Name)
 				}
 				eps.moveEP = nil
+				log.Infof("EP [%v] migrated to [%v] after timeout.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 				return
 			}
 
-			log.Errorf("Error while moving Endpoint [%v]. Expected [done] state, got [%v].", eps.Endpoint.Name, eps.Endpoint.Status.Migration.Status)
+			log.Errorf("Error while moving Endpoint [%v]. Expected [done] state, got [%v]. Aborting migration.", eps.Endpoint.Name, eps.Endpoint.Status.Migration.Status)
 			newEP.Spec.Migration = netproto.MigrationState_ABORT.String()
 			newEP.Spec.HomingHostAddr = ""
 
@@ -671,7 +670,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 			//sm.mbus.UpdateObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
 
-			// Send delete to the appropriate host
+			// Send delete to the NEW DSC
 			//sm.mbus.DeleteObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
 			sm.DeleteObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
@@ -683,39 +682,33 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			eps.Endpoint.Spec.MicroSegmentVlan = eps.Endpoint.Status.MicroSegmentVlan
 			eps.Endpoint.Spec.HomingHostAddr = eps.Endpoint.Status.HomingHostAddr
 
-			// Update the in-memory reference for a particular object name, kind
+			// Update the in-memory reference for EP to point to the OLD DSC
 			eps.moveEP = &oldEP
 			eps.Endpoint.Spec.NodeUUID = oldEP.Spec.NodeUUID
 			//sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
 			sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
-			eps.stateMgr.ctrler.Endpoint().SyncUpdate(&eps.Endpoint.Endpoint)
+			if err := eps.Write(); err != nil {
+				log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+			}
 			eps.moveEP = nil
+			log.Infof("Migration aborted for %v", eps.Endpoint.Name)
 			eps.Unlock()
 			return
 		case <-checkDataplaneMigration.C:
 			eps, _ := EndpointStateFromObj(epinfo)
 			if eps != nil {
-				eps.Lock()
+				eps.Endpoint.Lock()
 				if eps.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_FINAL_SYNC.String() {
 					log.Infof("Waiting for last sync to finish for EP [%v].", eps.Endpoint.Name)
 					lastSyncRetryCount = lastSyncRetryCount + 1
-
-					// Query the new host netagent if the move was successful in the dataplane
-					// Update the generation ID so that netagent does not ignore the update call
-					generationID = generationID + 1
-					newEP.ObjectMeta.GenerationID = fmt.Sprintf("%d", generationID)
-
-					newEP.Spec.Migration = netproto.MigrationState_NONE.String()
-					eps.moveEP = &newEP
-					sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 					//sm.mbus.UpdateObjectWithReferences(epinfo.MakeKey("cluster"), &newEP, references(epinfo))
 					// TODO : use the DONE instead of just using the lastsync timer
 					//if eps.migrationState == DONE || lastSyncRetryCount > defaultLastSyncRetries
 
 					// If the EP has already moved or has finished last sync retries
 					if lastSyncRetryCount > defaultLastSyncRetries || eps.Endpoint.Status.NodeUUID == eps.Endpoint.Spec.NodeUUID {
-						log.Infof("Move was successful. Sending delete EP to old DSC. [%v]", oldEP.Spec.NodeUUID)
+						log.Infof("Move was successful for %v. Sending delete EP to old DSC. [%v]", eps.Endpoint.Name, oldEP.Spec.NodeUUID)
 						oldEP.Spec.Migration = netproto.MigrationState_NONE.String()
 						oldEP.Spec.HomingHostAddr = ""
 						//sm.mbus.UpdateObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
@@ -744,8 +737,9 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						eps.Endpoint.Status.HomingHostName = ws.Workload.Status.HostName
 						eps.Endpoint.Status.HomingHostAddr = eps.Endpoint.Spec.HomingHostAddr
 
-						eps.stateMgr.ctrler.Endpoint().SyncUpdate(&eps.Endpoint.Endpoint)
-						log.Infof("EP [%v] migrated to [%v] successfully. EP [%v]", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID, eps)
+						if err := eps.Write(); err != nil {
+							log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+						}
 
 						oldDSC, err := sm.FindDistributedServiceCard(eps.Endpoint.Tenant, oldEP.Spec.NodeUUID)
 						if err == nil {
@@ -755,6 +749,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						ws.incrMigrationSuccess()
 						eps.migrationState = NONE
 						eps.moveEP = nil
+						log.Infof("EP [%v] migrated to [%v] successfully.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 						eps.Unlock()
 						return
 					}
@@ -762,7 +757,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 					// TODO : Move the last sync retry check here instead of for success once the feedback from netagent is built
 					// We would want to declare dataplane success only if the dataplane declares success, it should be failed otherwise
 					if eps.migrationState == FAILED {
-						log.Infof("Migration of of EP [%v] failed in Dataplane. Traffic to the EP will be affected.", eps.Endpoint.Name)
+						log.Infof("Migration of EP [%v] failed in Dataplane. Traffic to the EP will be affected.", eps.Endpoint.Name)
 						// TODO : Generate an event here
 
 						// Set the migration of workload to failed
@@ -778,11 +773,14 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						// This is to ensure we have enough information for debugging and communicate what went wrong
 						// during migration
 						eps.Endpoint.Status.Migration.Status = workload.EndpointMigrationStatus_FAILED.String()
-						eps.stateMgr.ctrler.Endpoint().SyncUpdate(&eps.Endpoint.Endpoint)
+						if err := eps.Write(); err != nil {
+							log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+						}
 
 						ws.incrMigrationFailure()
 						eps.migrationState = NONE
 						eps.moveEP = nil
+						log.Infof("EP [%v] migration to [%v] failed.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 						eps.Unlock()
 						return
 					}

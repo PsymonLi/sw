@@ -344,7 +344,7 @@ func TestWorkloadCreateList(t *testing.T) {
 }
 
 // createHost utility function to create a Host
-func createHost(stateMgr *Statemgr, tenant, name string, labels map[string]string) error {
+func createHost(stateMgr *Statemgr, tenant, name, dscMac string, labels map[string]string) error {
 	// Host params
 	np := cluster.Host{
 		TypeMeta: api.TypeMeta{Kind: "Host"},
@@ -354,7 +354,13 @@ func createHost(stateMgr *Statemgr, tenant, name string, labels map[string]strin
 			Tenant:    tenant,
 			Labels:    labels,
 		},
-		Spec:   cluster.HostSpec{},
+		Spec: cluster.HostSpec{
+			DSCs: []cluster.DistributedServiceCardID{
+				{
+					MACAddress: dscMac,
+				},
+			},
+		},
 		Status: cluster.HostStatus{},
 	}
 
@@ -381,14 +387,14 @@ func TestHostCreateList(t *testing.T) {
 	prodMap[utils.OrchNameKey] = "prod"
 	prodMap[utils.NamespaceKey] = "dev"
 
-	err = createHost(sm, "default", "prod-beef", prodMap)
+	err = createHost(sm, "default", "prod-beef", "", prodMap)
 	Assert(t, (err == nil), "Host could not be created")
 
-	err = createHost(sm, "default", "prod-bebe", prodMap)
+	err = createHost(sm, "default", "prod-bebe", "", prodMap)
 	Assert(t, (err == nil), "Host could not be created")
 
 	labels := map[string]string{"color": "green"}
-	err = createHost(sm, "default", "dev-caca", labels)
+	err = createHost(sm, "default", "dev-caca", "", labels)
 	Assert(t, (err == nil), "Host could not be created")
 
 	nw, err := sm.ctrler.Host().List(context.Background(), &api.ListWatchOptions{})
@@ -830,6 +836,97 @@ func TestWorkload(t *testing.T) {
 	np.Status.MigrationStatus = &workload.WorkloadMigrationStatus{Status: "DONE"}
 	err = sm.ctrler.Workload().Update(&np)
 	Assert(t, (err == nil), "Could not update workload object")
+}
+
+func TestHostMigrationCompat(t *testing.T) {
+	sm, _, err := NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed creating state manager. Err : %v", err)
+		return
+	}
+
+	dscMac := "00ae.cd00.1234"
+	hostName := "test-host"
+
+	prodMap := make(map[string]string)
+	prodMap[utils.OrchNameKey] = "prod"
+	prodMap[utils.NamespaceKey] = "dev"
+
+	err = createHost(sm, "default", hostName, dscMac, prodMap)
+	Assert(t, (err == nil), "Host could not be created")
+
+	err = sm.CheckHostMigrationCompliance(hostName)
+	Assert(t, err != nil, fmt.Sprintf("host %v was expected to be non-compliant", hostName))
+
+	dscProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "default",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:       cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+		},
+	}
+
+	// create DSC Profile
+	sm.ctrler.DSCProfile().Create(&dscProfile)
+	AssertEventually(t, func() (bool, interface{}) {
+
+		_, err := sm.FindDSCProfile("", "default")
+		if err == nil {
+			return true, nil
+		}
+		fmt.Printf("Error find ten %v\n", err)
+		return false, nil
+	}, "Profile not found", "1ms", "1s")
+
+	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+	Assert(t, (err == nil), "DistributedServiceCard could not be created")
+
+	meta := api.ObjectMeta{
+		Name:      dscMac,
+		Namespace: "default",
+	}
+
+	nobj, err := sm.Controller().DistributedServiceCard().Find(&meta)
+	Assert(t, err == nil, "did not find the DistributedServiceCard")
+
+	// ADMIT DSC
+	nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+	err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
+	Assert(t, err == nil, "unable to update the DistributedServiceCard object")
+
+	err = sm.CheckHostMigrationCompliance(hostName)
+	Assert(t, err == nil, fmt.Sprintf("host %v was expected to be compliant", hostName))
+
+	// DE-ADMIT and retry
+	nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_PENDING.String()
+	err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
+	Assert(t, err == nil, "unable to update the DistributedServiceCard object")
+
+	err = sm.CheckHostMigrationCompliance(hostName)
+	Assert(t, err != nil, fmt.Sprintf("host %v was expected to be non-compliant", hostName))
+	Assert(t, fmt.Sprintf("%v", err) == "DSC for host test-host is not admitted", "Got wrong error message")
+
+	// ADMIT DSC
+	nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+	err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
+	Assert(t, err == nil, "unable to update the DistributedServiceCard object")
+
+	err = sm.CheckHostMigrationCompliance(hostName)
+	Assert(t, err == nil, fmt.Sprintf("host %v was expected to be compliant", hostName))
+
+	// Change Profile to be FLOWAWARE
+	dscProfile.Spec.FeatureSet = cluster.DSCProfileSpec_FLOWAWARE.String()
+	err = sm.ctrler.DSCProfile().Create(&dscProfile)
+	AssertOk(t, err, fmt.Sprintf("DSCProfile update should have worked, but failed with %v", err))
+
+	err = sm.CheckHostMigrationCompliance(hostName)
+	Assert(t, err != nil, fmt.Sprintf("host %v was expected to be non-compliant", hostName))
+	Assert(t, fmt.Sprintf("%v", err) == "dsc 00ae.cd00.1234 is not orchestration compatible", "wrong error message received")
 }
 
 func TestStateMgr(t *testing.T) {

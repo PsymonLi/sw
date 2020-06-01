@@ -71,13 +71,13 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 		}
 		err := snic.stateMgr.ctrler.DistributedServiceCard().Label(labelObj)
 		if err != nil {
-			sm.logger.Errorf("Failed to update orchhub label for DSC [%v]. Err : %v", snic.DistributedServiceCard.Name, apierrors.FromError(err))
+			sm.logger.Errorf("Failed to update orchhub label for DSC %v [%v]. Err : %v", snic.DistributedServiceCard.Name, snic.DistributedServiceCard.Spec.ID, apierrors.FromError(err))
 		}
 
 		if !snic.isOrchestratorCompatible() {
 			sm.AddIncompatibleDSCToOrch(snic.DistributedServiceCard.Name, orchNameValue)
 			recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-				fmt.Sprintf("DSC [%v] mode is incompatible for orchestration feature", snic.DistributedServiceCard.Name),
+				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature", snic.DistributedServiceCard.Spec.ID),
 				nil)
 		}
 	}
@@ -234,6 +234,59 @@ func (sm *Statemgr) DeleteHostByNamespace(orchName, namespace string) error {
 		}
 
 		hostState.stateMgr.ctrler.Host().Delete(&host.Host)
+	}
+
+	return nil
+}
+
+// FindHost Find host object
+func (sm *Statemgr) FindHost(hostName string) *HostState {
+	ometa := api.ObjectMeta{
+		Tenant: "",
+		Name:   hostName,
+	}
+	obj, err := sm.ctrler.FindObject("Host", &ometa)
+	if err != nil {
+		return nil
+	}
+
+	host, err := HostStateFromObj(obj)
+	if err != nil {
+		return nil
+	}
+
+	return host
+}
+
+// CheckHostMigrationCompliance checks if the Host's DSC are admitted and in migration safe profile
+func (sm *Statemgr) CheckHostMigrationCompliance(hostName string) error {
+	hostState := sm.FindHost(hostName)
+	if hostState == nil {
+		return fmt.Errorf("could not find host %v in ctkit", hostName)
+	}
+
+	_, isHostOrchhubManaged := hostState.Host.Labels[utils.OrchNameKey]
+	if !isHostOrchhubManaged {
+		return fmt.Errorf("host %v is not managed by orchhub", hostName)
+	}
+
+	var snic *DistributedServiceCardState
+	for jj := range hostState.Host.Spec.DSCs {
+		snic = sm.FindDSC(hostState.Host.Spec.DSCs[jj].MACAddress, hostState.Host.Spec.DSCs[jj].ID)
+		if snic != nil {
+			// We look for the first DSC in the list of DSCs
+			break
+		}
+	}
+
+	if snic == nil || snic.DistributedServiceCard.Status.AdmissionPhase != cluster.DistributedServiceCardStatus_ADMITTED.String() {
+		sm.logger.Infof("DSC for host %v is not admitted", hostState.Host.Name)
+		return fmt.Errorf("DSC for host %v is not admitted", hostState.Host.Name)
+	}
+
+	if !snic.isOrchestratorCompatible() {
+		sm.logger.Infof("DSC %v is not orchestration compatible.", snic.DistributedServiceCard.Name)
+		return fmt.Errorf("dsc %v is not orchestration compatible", snic.DistributedServiceCard.Name)
 	}
 
 	return nil
