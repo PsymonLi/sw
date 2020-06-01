@@ -9,14 +9,13 @@ from iota.test.athena.utils.flow import FlowInfo
 import iota.harness.infra.store as store
 from collections import defaultdict
 
-vnic_to_vlan_offset = { '1' : { "up0" : 2, "up1" : 3},
-                        '2' : { "up0" : 4, "up1" : 5}}
+NUM_VLANS_PER_VNIC = 2
 
-def get_uplink_vlan(tc, vnic_id, uplink):
-    if uplink != "up0" and uplink != "up1":
-        raise Exception("Invalid uplink str %s" % uplink)
+def get_uplink_vlan(vnic_id, uplink):
+    if uplink < 0 or uplink > 1:
+        raise Exception("Invalid uplink {}".format(uplink))
 
-    vlan_offset = vnic_to_vlan_offset[vnic_id][uplink]
+    vlan_offset = (vnic_id * NUM_VLANS_PER_VNIC) + uplink
     return (api.Testbed_GetVlanBase() + vlan_offset)
 
 def Setup(tc):
@@ -81,13 +80,11 @@ def Setup(tc):
         tc.flow_type = 'L2' if "vnic_type" in vnic and vnic['vnic_type'] == 'L2' else 'L3'
         tc.nat = 'yes' if "nat" in vnic else 'no'
 
-        if tc.flow_type == 'L2':
-            continue
         api.Logger.info('Setup policy.json file for No.%s vnic' % (vnic_id))
 
         # get uplink vlans
-        tc.up0_vlan = get_uplink_vlan(tc, vnic_id, "up0")
-        tc.up1_vlan = get_uplink_vlan(tc, vnic_id, "up1")
+        tc.up0_vlan = get_uplink_vlan(int(vnic_id), 0)
+        tc.up1_vlan = get_uplink_vlan(int(vnic_id), 1)
 
         tc.up0_mac, tc.up1_mac = None, None
 
@@ -142,25 +139,32 @@ def Trigger(tc):
     
     cmd = "mv /policy.json /data/policy.json"
     api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
-    
-    resp = api.Trigger(req)
-    cmd = resp.commands[0]
-    api.PrintCommandResults(cmd)
-    
-    if cmd.exit_code != 0:
-        api.Logger.error("moving policy.json to /data failed on node %s" % \
-                        tc.bitw_node_name)
+
+    trig_resp = api.Trigger(req)
+    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+
+    tc.resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+
+    return api.types.status.SUCCESS
+
+def Verify(tc):
+    if tc.resp is None:
         return api.types.status.FAILURE
-    
+
+    for cmd in tc.resp.commands:
+        api.PrintCommandResults(cmd)
+
+        if cmd.exit_code != 0:
+            api.Logger.error("moving policy.json to /data failed on node %s" % \
+                              tc.bitw_node_name)
+            return api.types.status.FAILURE
+
     ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name) 
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to restart athena sec app on node %s" % \
                         tc.bitw_node_name)
         return (ret)
 
-    return api.types.status.SUCCESS
-
-def Verify(tc):
     return api.types.status.SUCCESS
 
 def Teardown(tc):

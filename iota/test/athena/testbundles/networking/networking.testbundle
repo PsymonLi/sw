@@ -32,10 +32,10 @@ testcases:
     # Data Path Test
     #=======================================
 
-#    -   name    : Generate_DP_Policy
-#        testcase: testcases.networking.generate_dp_policy
-#        enable  : True
-#
+    -   name    : Generate_DP_Policy
+        testcase: testcases.networking.generate_dp_policy
+        enable  : True
+
 #    -   name    : Flow_Gen
 #        testcase: testcases.networking.config.flow_gen
 #        enable  : True
@@ -45,10 +45,9 @@ testcases:
 #        enable  : True
 #        iterators :
 #            type     : nested
-#            flow_type : ['L3']
+#            flow_type : ['L3','L2']
 #            nat       : ['no', 'yes']
 #            proto     : ['UDP']
 #            size      : [64]
 #            flow      : ['static']    
 #            bidir     : ['yes']    
-#    

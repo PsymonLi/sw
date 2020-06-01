@@ -25,7 +25,7 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 SNIFF_TIMEOUT = 5
-
+NUM_VLANS_PER_VNIC = 2
 
 # ======= TODO START: move flow gen to another module ========= #
 
@@ -41,38 +41,14 @@ NAT_FLOW_INFO = { 'proto' : 'UDP', 'src_port' : 100, 'dst_port' : 200 }
 PROTO_NUM = {'UDP' : 17, 'TCP': 6, 'ICMP': 1}
 NAT_PUBLIC_DST_IP = '100.0.0.1'
 
-
-class Feature(Enum):
-    L3          = 1
-    L3_w_NAT    = 2
-
-feat_to_vnic = { Feature.L3 : '1', Feature.L3_w_NAT : '2'}
-
-vnic_to_vlan_offset = { '1' : { "up0" : 2, "up1" : 3}, 
-                        '2' : { "up0" : 4, "up1" : 5}}
-
 nat_flows = {'h2s' : defaultdict(list), 's2h' : defaultdict(list)}
 
+def get_uplink_vlan(vnic_id, uplink):
+    if uplink < 0 or uplink > 1:
+        raise Exception("Invalid uplink {}".format(uplink))
 
-def get_test_feature(tc):
-    if getattr(tc.iterators, 'nat', None) == 'yes':
-        return (Feature.L3_w_NAT)
-    else:
-        return (Feature.L3)
-
-
-def get_test_vnic(tc):
-    return feat_to_vnic[get_test_feature(tc)]
-
-
-def get_uplink_vlan(tc, uplink):
-    if uplink != "up0" and uplink != "up1":
-        raise Exception("Invalid uplink str %s" % uplink)
-
-    vnic = get_test_vnic(tc) 
-    vlan_offset = vnic_to_vlan_offset[vnic][uplink]
+    vlan_offset = (vnic_id * NUM_VLANS_PER_VNIC) + uplink
     return (api.Testbed_GetVlanBase() + vlan_offset)
-
 
 def get_nat_flow_sip_dip(dp_dir = 'h2s', Rx = False, flow_id = 1):
     Rx_or_Tx = 'Rx' if Rx else 'Tx'   
@@ -137,23 +113,33 @@ def parse_args(tc):
 
     api.Logger.info('flow_type: {}, nat: {}'.format(tc.flow_type, tc.nat))
 
-def isL2Vnic(trg_vnic):
+def is_L2_vnic(_vnic):
 
-    return "vnic_type" in trg_vnic and trg_vnic['vnic_type'] == 'L2'
+    return "vnic_type" in _vnic and _vnic['vnic_type'] == 'L2'
 
-def get_vnic(tc, plcy_obj):
+def get_vnic(plcy_obj, _flow_type, _nat):
 
     vnics = plcy_obj['vnic']
 
     for vnic in vnics:
-        flow_type = 'L2' if isL2Vnic(vnic) else 'L3'
+        flow_type = 'L2' if is_L2_vnic(vnic) else 'L3'
         nat = 'yes' if "nat" in vnic else 'no'
 
-        if flow_type == tc.flow_type and \
-           nat == tc.nat:
+        if flow_type == _flow_type and \
+           nat == _nat:
             return vnic
 
     raise Exception("Matching vnic not found")
+
+def get_vnic_id(_flow_type, _nat):
+
+    template_policy_json_path = api.GetTestsuiteAttr("template_policy_json_path")
+    with open(template_policy_json_path) as fd:
+        plcy_obj = json.load(fd)
+
+    # get vnic
+    vnic = get_vnic(plcy_obj, _flow_type, _nat)
+    return int(vnic['vnic_id'])
 
 def craft_pkt(_types, _dicts):
 
@@ -330,7 +316,7 @@ def setup_pkt(_args):
         if _args._dir == 'h2s':
             ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
         elif _args._dir == 's2h':
-            if isL2Vnic(trg_vnic):
+            if is_L2_vnic(trg_vnic):
                 ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
             else:
                 if not rewrite_host_info:
@@ -374,55 +360,10 @@ def setup_pkt(_args):
     api.CopyToHost(_args.node.Name(), [pcap_fname], "")
     os.remove(pcap_fname)
 
-def parse_args(tc):
-    #==============================================================
-    # init cmd options
-    #==============================================================
-    tc.flow_type  = 'L3'
-    tc.nat        = 'no'
-    tc.size       = '64'
-    tc.proto      = 'UDP'
-    tc.bidir      = 'no'
-    tc.flow       = 'static'
-
-    #==============================================================
-    # update non-default cmd options
-    #==============================================================
-    if hasattr(tc.iterators, 'flow_type'):
-        tc.flow_type = tc.iterators.flow_type
-
-    if hasattr(tc.iterators, 'nat'):
-        tc.nat = tc.iterators.nat
-
-    if hasattr(tc.iterators, 'size'):
-        tc.size = tc.iterators.size
-
-    if hasattr(tc.iterators, 'proto'):
-        tc.proto = tc.iterators.proto
-
-    if hasattr(tc.iterators, 'bidir'):
-        tc.bidir = tc.iterators.bidir
-
-    if hasattr(tc.iterators, 'flow'):
-        tc.flow = tc.iterators.flow
-
-    api.Logger.info('flow_type: {}, nat: {}'.format(tc.flow_type, tc.nat))
-
-def get_vnic(tc, plcy_obj):
-
-    vnics = plcy_obj['vnic']
-
-    for vnic in vnics:
-        flow_type = 'L2' if "vnic_type" in vnic and vnic['vnic_type'] == 'L2' else 'L3'
-        nat = 'yes' if "nat" in vnic else 'no'
-
-        if flow_type == tc.flow_type and \
-           nat == tc.nat:
-            return vnic
-
-    raise Exception("Matching vnic not found")
-
 def Setup(tc):
+
+    # parse iterator args
+    parse_args(tc)
 
     # get node info
     tc.bitw_node_name = None
@@ -430,7 +371,7 @@ def Setup(tc):
     
     tc.wl_node_name = None
     tc.wl_node = None
-    
+
     # Assuming only one bitw node and one workload node
     nics =  store.GetTopology().GetNicsByPipeline("athena")
     for nic in nics:
@@ -463,8 +404,9 @@ def Setup(tc):
     tc.up1_intf = host_intfs[1] 
     
     # get uplink vlans
-    tc.up0_vlan = get_uplink_vlan(tc, "up0")
-    tc.up1_vlan = get_uplink_vlan(tc, "up1")
+    vnic_id = get_vnic_id(tc.flow_type, tc.nat)
+    tc.up0_vlan = get_uplink_vlan(vnic_id, 0)
+    tc.up1_vlan = get_uplink_vlan(vnic_id, 1)
     
     tc.up0_mac, tc.up1_mac = None, None
 
@@ -508,9 +450,6 @@ def Setup(tc):
 
         tc.flows.append(flow_info)
    
-    # parse iterator args
-    parse_args(tc)
-
     # setup policy.json file
     plcy_obj = None
     # read from template file
@@ -519,7 +458,7 @@ def Setup(tc):
         plcy_obj = json.load(fd)
 
     # get vnic
-    vnic = get_vnic(tc, plcy_obj)
+    vnic = get_vnic(plcy_obj, tc.flow_type, tc.nat)
     api.Logger.info('vnic id: {}'.format(vnic['vnic_id']))
 
     if tc.nat == 'yes':
@@ -595,8 +534,9 @@ def Setup(tc):
 
 def Trigger(tc):
 
-    # TODO handle L2 w/ & w/o NAT
-    if tc.flow_type != 'L3':
+    # TODO handle L2 w/ NAT
+    if tc.flow_type == 'L2' and \
+       tc.nat == 'yes':
         return api.types.status.SUCCESS
 
     for node in tc.nodes:
@@ -711,8 +651,10 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
-    # TODO handle L2 w/ & w/o NAT
-    if tc.flow_type != 'L3':
+
+    # TODO handle L2 w/ NAT
+    if tc.flow_type == 'L2' and \
+       tc.nat == 'yes':
         return api.types.status.SUCCESS
 
     if len(tc.resp) == 0:
