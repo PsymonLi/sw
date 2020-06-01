@@ -783,11 +783,11 @@ naples-firmware-iterative:
 
 naples-firmware-tarball:
 	@if [ "x${RELEASE}" = "x" ]; then echo "RELEASE is not set"; else cd ../; asset-push --remote-name sw-${PIPELINE}-${ASIC}.tar.gz builds hourly ${RELEASE} sw || cd sw; fi
-	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/naples_fw_*.tar --ignore-failed-read nic/naples_upg_fw*.tar --ignore-failed-read nic/naples_upg_fw_*.tar platform/gen/ipxe platform/gen/drivers-*.tar.xz platform/gen/drivers-*.zip platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
+	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/dsc_fw*.tar --ignore-failed-read nic/naples_upg_fw*.tar nic/dsc_upg_fw*.tar platform/gen/ipxe platform/gen/drivers-*.tar.xz platform/gen/drivers-*.zip platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
 
 naples-firmware-apulu-tarball:
 	@if [ "x${RELEASE}" = "x" ]; then echo "RELEASE is not set"; else cd ../ ; asset-push --assets-server-colo NULL --remote-name sw-${PIPELINE}.tar.gz builds hourly ${RELEASE} sw || cd sw; fi
-	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/naples_fw_venice.tar nic/naples_fw_*.tar --ignore-failed-read nic/naples_upg_fw*.tar --ignore-failed-read nic/naples_upg_fw_*.tar platform/gen/drivers-*.tar.xz platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz  nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
+	tar -zcf $(NAPLES_FW_TAR) nic/naples_fw*.tar nic/naples_fw_venice.tar nic/dsc_fw*.tar --ignore-failed-read nic/naples_upg_fw*.tar nic/dsc_upg_fw*.tar platform/gen/drivers-*.tar.xz platform/goldfw/naples/naples_fw.tar platform/hosttools nic/host.tar nic/test-utils.tgz  nic/box.rb nic/entrypoint.sh tools/test-build storage/gen/*.tar.xz
 
 naples-firmware-tarball-iris: NAPLES_FW_TAR=$(shell if [ "${ASIC}" = "capri" ]; then echo naples_fw_all.tgz; else echo naples_fw_all_${ASIC}.tgz; fi)
 naples-firmware-tarball-iris: naples-firmware-tarball
@@ -968,7 +968,7 @@ bundle-image:
 	@ #bundle.py creates metadata.json for the bundle image
 	@tools/scripts/bundle.py -v ${BUNDLE_VERSION}  -d ${BUILD_DATE}
 	ln -f bin/venice.tgz bin/bundle/venice.tgz
-	ln -f nic/naples_fw_.tar bin/bundle/naples_fw.tar
+	ln -fL nic/naples_fw.tar bin/bundle/naples_fw.tar
 	ln -f bin/venice-install/venice_appl_os.tgz bin/bundle/venice_appl_os.tgz
 	cd bin/bundle && tar -cf bundle.tar venice.tgz  naples_fw.tar venice_appl_os.tgz metadata.json
 	cd bin/bundle && rm -f venice.tgz naples_fw.tar venice_appl_os.tgz
@@ -998,7 +998,7 @@ bundle-upgrade-image:
 	mkdir -p upgrade-bundle/nic
 	mkdir -p upgrade-bundle/bin/venice-install
 	ln -f bin/venice.upg.tgz upgrade-bundle/bin/venice.tgz
-	ln -f nic/naples_fw_.tar upgrade-bundle/nic/naples_fw.tar
+	ln -fL nic/naples_fw.tar upgrade-bundle/nic/naples_fw.tar
 	ln -f bin/venice-install/venice_appl_os.tgz upgrade-bundle/bin/venice-install/venice_appl_os.tgz
 	@ #bundle.py creates metadata.json for the bundle image
 	@tools/scripts/bundle.py -v ${BUNDLE_UPGRADE_VERSION}  -d ${BUILD_DATE} -p "upgrade-bundle/"
@@ -1015,7 +1015,7 @@ bundle-same-upgrade-image:
 	mkdir -p upgrade-bundle/nic
 	mkdir -p upgrade-bundle/bin/venice-install
 	ln -f bin/venice.tgz upgrade-bundle/bin/venice.tgz
-	ln -f nic/naples_fw_.tar upgrade-bundle/nic/naples_fw.tar
+	ln -fL nic/naples_fw.tar upgrade-bundle/nic/naples_fw.tar
 	touch upgrade-bundle/bin/venice-install/venice_appl_os.tgz
 	@ #bundle.py creates metadata.json for the bundle image
 	@tools/scripts/bundle.py -v ${BUNDLE_UPGRADE_VERSION}  -d ${BUILD_DATE} -p "upgrade-bundle/"

@@ -13,6 +13,7 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+mv nic/dsc_fw*.tar /go/src/github.com/pensando/sw/nic
 mv nic/naples_fw*.tar /go/src/github.com/pensando/sw/nic
 rm -fr nic platform tools storage
 

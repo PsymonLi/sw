@@ -11,7 +11,7 @@ LinkMgrTest=$2
 LinkMgrTestPath=/home/diag/linkMGR
 LinkMgrTestScript=$LinkMgrTestPath/link_stress_run.py 
 
-sshpass -p lab123 scp -o StrictHostKeyChecking=no /sw/nic/naples_fw_.tar diag@192.168.69.245:$LinkMgrTestPath/$FW.tar
+sshpass -p lab123 scp -o StrictHostKeyChecking=no /sw/nic/naples_fw.tar diag@192.168.69.245:$LinkMgrTestPath/$FW.tar
 
 if   [ $LinkMgrTest = "100Gb" ]; then
 	sshpass -p lab123 ssh -o StrictHostKeyChecking=no diag@192.168.69.245 "$LinkMgrTestScript -s $LinkMgrTestPath/setup_6_100G_only.json -t 103 -v $LinkMgrTestPath/$FW.tar"

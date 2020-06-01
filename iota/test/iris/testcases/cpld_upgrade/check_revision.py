@@ -6,7 +6,7 @@ import iota.harness.api as api
 import iota.test.iris.testcases.penctl.common as common
 
 MANIFEST = "MANIFEST"
-SRC_FILE_NAME = "naples_fw_.tar"
+SRC_FILE_NAME = "naples_fw.tar"
 SRC_FILE_PATH = "/nic/"
 SRC_FILE = api.GetTopDir() + SRC_FILE_PATH + SRC_FILE_NAME
 def Setup(tc):

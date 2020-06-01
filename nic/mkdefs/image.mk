@@ -118,21 +118,21 @@ diag_env:
 .PHONY: firmware-normal
 firmware-normal: build-image
 	if [ ${ASIC} == "capri" ]; then \
-		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/naples_fw_${SW_VERSION}.tar; \
-		ln -frs ${NICDIR}/naples_fw_${SW_VERSION}.tar ${NICDIR}/${NAPLES_FW_NAME}; \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/dsc_fw_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_fw_${RELEASE}.tar ${NICDIR}/${NAPLES_FW_NAME}; \
 	else \
-		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/naples_fw_${ASIC}_${SW_VERSION}.tar; \
-		ln -frs ${NICDIR}/naples_fw_${ASIC}_${SW_VERSION}.tar ${NICDIR}/naples_fw_${ASIC}.tar; \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/${NAPLES_FW_NAME} ${NICDIR}/dsc_fw_${ASIC}_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_fw_${ASIC}_${RELEASE}.tar ${NICDIR}/naples_fw_${ASIC}.tar; \
 	fi
 
 .PHONY: firmware-upgrade
 firmware-upgrade: build-upg-image
 	if [ ${ASIC} == "capri" ]; then \
-		cp ${NICDIR}/buildroot/${OUT_DIR}/images/naples_upg_fw.tar ${NICDIR}/naples_upg_fw_${SW_VERSION}.tar; \
-		ln -frs ${NICDIR}/naples_upg_fw_${SW_VERSION}.tar ${NICDIR}/naples_upg_fw.tar; \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/naples_upg_fw.tar ${NICDIR}/dsc_upg_fw_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_upg_fw_${RELEASE}.tar ${NICDIR}/naples_upg_fw.tar; \
 	else \
-		cp ${NICDIR}/buildroot/${OUT_DIR}/images/naples_upg_fw.tar ${NICDIR}/naples_upg_fw_${ASIC}_${SW_VERSION}.tar; \
-		ln -frs ${NICDIR}/naples_upg_fw_${ASIC}_${SW_VERSION}.tar ${NICDIR}/naples_upg_fw_${ASIC}.tar; \
+		cp ${NICDIR}/buildroot/${OUT_DIR}/images/naples_upg_fw.tar ${NICDIR}/dsc_upg_fw_${ASIC}_${RELEASE}.tar; \
+		ln -frs ${NICDIR}/dsc_upg_fw_${ASIC}_${RELEASE}.tar ${NICDIR}/naples_upg_fw_${ASIC}.tar; \
 	fi
 
 .PHONY: penctl-version
@@ -147,7 +147,7 @@ ifeq ($(CUSTOMDOCKERCONTEXT), 1)
 endif
 ifneq ($(CUSTOMDOCKERCONTEXT), 1)
 	OUT_DIR=output/${ASIC} FLAVOR=-venice NAPLES_FW_NAME=naples_fw.tar FW_PACKAGE_DIR=${ASIC} make -C . firmware-normal
-	mv naples_fw_.tar naples_fw_venice.tar
+	mv dsc_fw_${RELEASE}.tar naples_fw_venice.tar
 endif
 endif
 	OUT_DIR=output/${ASIC} NAPLES_FW_NAME=naples_fw.tar FW_PACKAGE_DIR=${ASIC} make -C . firmware-normal
