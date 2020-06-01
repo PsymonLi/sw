@@ -176,7 +176,7 @@ func TestMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	}
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -311,7 +311,7 @@ func TestNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	Assert(t, oldTunCount == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -401,7 +401,7 @@ func TestMirrorSessionCreateUnknownCollector(t *testing.T) {
 	AssertEquals(t, []string{tun.Spec.Dst}, ep.Spec.IPv4Addresses, "Tunnel and EP objects did not correspond to each other.\nTun: %v\nEP: %v", tun, ep)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -490,7 +490,7 @@ func TestNetflowSessionCreateUnknownCollector(t *testing.T) {
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -617,7 +617,7 @@ func TestNetflowSessionAndMirrorSessionPointingToSameCollector(t *testing.T) {
 	AssertEquals(t, []string{tun.Spec.Dst}, ep.Spec.IPv4Addresses, "Tunnel and EP objects did not correspond to each other.\nTun: %v\nEP: %v", tun, ep)
 
 	//Call delete for mirror
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	_, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
@@ -626,7 +626,7 @@ func TestNetflowSessionAndMirrorSessionPointingToSameCollector(t *testing.T) {
 	dat, err = infraAPI.Read("Tunnel", getKey(tunnelObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -753,7 +753,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	// Ensure the venice created objects are not deleted
@@ -766,7 +766,7 @@ func TestTwoMirrorSessionCreateVeniceKnownCollector(t *testing.T) {
 	_, err = infraAPI.Read("Tunnel", getKey(lateralObjMeta))
 	AssertOk(t, err, "Tunnel has a mirror session referring to it. It should not be deleted")
 
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -935,7 +935,7 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	Assert(t, oldTunCount == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	// Ensure the venice created objects are not deleted
@@ -948,7 +948,7 @@ func TestTwoNetflowSessionCreateVeniceKnownCollector(t *testing.T) {
 	dat, err := infraAPI.Read("Tunnel", getKey(lateralObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1051,7 +1051,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorIP(t *testing.T) {
 	AssertEquals(t, []string{tun.Spec.Dst}, ep.Spec.IPv4Addresses, "Tunnel and EP objects did not correspond to each other.\nTun: %v\nEP: %v", tun, ep)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	_, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
@@ -1061,7 +1061,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorIP(t *testing.T) {
 	AssertOk(t, err, "Tunnels having pending references must not be deleted")
 
 	// Trigger the delete of the second mirror session
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1186,7 +1186,7 @@ func TestTwoNetflowSessionCreatesWithSameUnknownCollector(t *testing.T) {
 	AssertOk(t, err, "Lateral endpoint obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	// Ensure objects with pending references are not delted
@@ -1194,7 +1194,7 @@ func TestTwoNetflowSessionCreatesWithSameUnknownCollector(t *testing.T) {
 	AssertOk(t, err, "EPs having pending references by flow export policies must not be deleted")
 
 	// Delete the second flowexport policy
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1327,7 +1327,7 @@ func TestTwoNetflowSessionCreatesIdempotency(t *testing.T) {
 	AssertOk(t, err, "Lateral endpoint obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy1.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	// Ensure objects with pending references are not delted
@@ -1335,7 +1335,7 @@ func TestTwoNetflowSessionCreatesIdempotency(t *testing.T) {
 	Assert(t, err != nil, "Idempotent deletes must delete the endpoint")
 
 	// Delete the second flowexport policy
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1428,7 +1428,7 @@ func TestTwoMirrorSessionCreatesIdempotency(t *testing.T) {
 	AssertOk(t, err, "Lateral endpoint obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	// Ensure objects with pending references are not delted
@@ -1436,7 +1436,7 @@ func TestTwoMirrorSessionCreatesIdempotency(t *testing.T) {
 	Assert(t, err != nil, "Idempotent deletes must delete the endpoint")
 
 	// Delete the second flowexport policy
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1512,7 +1512,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithTunnel(t *testing.T) {
 	AssertEquals(t, []string{tun.Spec.Dst}, ep.Spec.IPv4Addresses, "Tunnel and EP objects did not correspond to each other.\nTun: %v\nEP: %v", tun, ep)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1597,7 +1597,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithoutTunnel(t *testing.T) {
 	dat, err := infraAPI.Read("Tunnel", getKey(tunnelObjMeta))
 	Assert(t, err != nil, "Lateral tunnel obj found, when it is not expected to be created. Found: %v", dat)
 
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, false)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1708,7 +1708,7 @@ func TestCreateDeleteLateralObjVeniceKnownCollectorWithTunnel(t *testing.T) {
 	Assert(t, oldTunCount+1 == newTunCount, "Tunnel count must increase by 1. Before: %v | After: %v", oldTunCount, newTunCount)
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1767,7 +1767,7 @@ func TestFailedARPResolution(t *testing.T) {
 		Assert(t, mac == "", "Lateral object creates must fail on failed arp resolutions %v", mac)
 	}
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 	waitForUnresolve(destIPOutSideSubnet)
 
@@ -1846,7 +1846,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 	AssertOk(t, err, "Lateral endpoint obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1953,7 +1953,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 	AssertOk(t, err, "Lateral tunnel obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)
@@ -1965,7 +1965,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 	Assert(t, err != nil, "Tunnels should have been deleted")
 
 	// Trigger the delete of the second mirror session
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet1, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 	waitForUnresolve(destIPOutSideSubnet1)
 
@@ -2062,7 +2062,7 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 	AssertOk(t, err, "Lateral tunnel obj not found")
 
 	// Call delete objs
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet1, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms1.GetKey(), destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	_, err = infraAPI.Read("Endpoint", getKey(lateralObjMeta))
@@ -2072,7 +2072,7 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 	AssertOk(t, err, "Tunnels should not have been deleted")
 
 	// Trigger the delete of the second mirror session
-	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet1, true)
+	err = DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Deleting lateral objects must succeed.")
 
 	waitForUnresolve(destIPOutSideSubnet)

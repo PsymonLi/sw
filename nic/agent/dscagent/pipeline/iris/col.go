@@ -89,7 +89,7 @@ func deleteColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 			return err
 		}
 	}
-	if err := DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, col.Name, col.Destination, true); err != nil {
+	if err := DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, col.Name, col.Destination, col.Gateway, true); err != nil {
 		log.Error(errors.Wrapf(types.ErrMirrorDeleteLateralObjects, "Collector: %s | Err: %v", col.Name, err))
 		return errors.Wrapf(types.ErrMirrorDeleteLateralObjects, "Collector: %s | Err: %v", col.Name, err)
 	}

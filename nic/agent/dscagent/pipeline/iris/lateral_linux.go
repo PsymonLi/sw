@@ -181,8 +181,8 @@ func CreateLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 }
 
 // DeleteLateralNetAgentObjects deletes lateral objects for telmetry objects and does refcounting. This is temporary code till HAL subsumes ARP'ing for dest IPs
-func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner string, destIP string, tunnelOp bool) error {
-	log.Infof("Deleting Lateral NetAgent objects. Owner: %v DestIP: %v TunnelOp: %v", owner, destIP, tunnelOp)
+func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner string, destIP, gwIP string, tunnelOp bool) error {
+	log.Infof("Deleting Lateral NetAgent objects. Owner: %v DestIP: %v gatewayIP: %v TunnelOp: %v", owner, destIP, gwIP, tunnelOp)
 
 	tunnelName := fmt.Sprintf("_internal-%s", destIP)
 	tunnelCompositeKey := fmt.Sprintf("tunnel|%s", tunnelName)
@@ -255,12 +255,29 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 		}
 	}
 
+	// Remove the destIPToMAC entry for the IP and remove the static route installed via gw IP
+	cleanup := func(IP, gIP string) {
+		destIPToMAC.Delete(IP)
+		if gIP != "" {
+			_, dest, _ := net.ParseCIDR(IP + "/32")
+			log.Infof("Removing route for %v via %s", dest, gIP)
+			route := &netlink.Route{
+				Dst: dest,
+				Gw:  net.ParseIP(gIP),
+			}
+			if err := netlink.RouteDel(route); err != nil {
+				log.Errorf("Failed to configure static route %v. Err: %v", route, err)
+			}
+		}
+	}
+
 	if lateralEP == nil {
 		log.Errorf("Lateral EP not found for destIP: %s", destIP)
 		cancel, ok := doneCache[destIP]
 		if ok {
 			log.Infof("Calling cancel for IP: %v", destIP)
 			cancel()
+			cleanup(destIP, gwIP)
 		}
 		//Todo check with abhi if we have to handle idemopotncy. for idempotency case to pass retun nil
 		return nil
@@ -290,6 +307,7 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 		if ok {
 			log.Infof("Calling cancel for IP: %v", destIP)
 			cancel()
+			cleanup(destIP, gwIP)
 		}
 		delete(lateralDB, destIP)
 		return nil
@@ -302,6 +320,7 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 		if ok {
 			log.Infof("Calling cancel for IP: %v", destIP)
 			cancel()
+			cleanup(destIP, gwIP)
 		}
 		delete(lateralDB, destIP)
 	}
@@ -361,18 +380,6 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 				destIPToMAC.Store(IP, mac)
 			case <-refreshCtx.Done():
 				log.Infof("Cancelling ARP refresh loop for %v ", IP)
-				destIPToMAC.Delete(destIP)
-				if gIP != "" {
-					_, dest, _ := net.ParseCIDR(IP + "/32")
-					log.Infof("Removing route for %v via %s", dest, gIP)
-					route := &netlink.Route{
-						Dst: dest,
-						Gw:  net.ParseIP(gIP),
-					}
-					if err := netlink.RouteDel(route); err != nil {
-						log.Errorf("Failed to configure static route %v. Err: %v", route, err)
-					}
-				}
 				return
 			}
 		}
