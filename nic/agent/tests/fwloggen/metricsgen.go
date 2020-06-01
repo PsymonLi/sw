@@ -716,6 +716,15 @@ func metricsInit() {
 		fmt.Printf("failed to init MgmtMacMetrics")
 	}
 
+	if it, err := goproto.NewMirrorMetricsIterator(); err == nil {
+		n := &goproto.MirrorMetrics{}
+		if fillKey(n.GetKey()) == true {
+			it.Create(n.GetKey())
+		}
+	} else {
+		fmt.Printf("failed to init MirrorMetrics")
+	}
+
 	if it, err := goproto.NewMsmsintmiscMetricsIterator(); err == nil {
 		n := &goproto.MsmsintmiscMetrics{}
 		if fillKey(n.GetKey()) == true {
