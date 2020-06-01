@@ -132,8 +132,26 @@ class InterfaceObject(base.ConfigObjectBase):
         if not resp:
             return
         for ifinst in resp:
-            if (ifinst['meta']['uuid'] != self.UUID.UuidStr):
+            if self.Type == topo.InterfaceTypes.L3:
+                if (not ifinst['spec']['type'] == 'L3'):	
+                    continue	
+                riid = ifinst['meta']['name']	
+                if (self.InterfaceId != int(riid[len(riid)-1])):	
+                    continue	
+            elif self.Type == topo.InterfaceTypes.LOOPBACK:	
+                if (not ifinst['spec']['type'] == 'LOOPBACK'):	
+                    continue	
+            elif self.Type == topo.InterfaceTypes.ETH:	
+                if (not ifinst['spec']['type'] == 'HOST_PF'):	
+                    continue	
+                if (ifinst['meta']['uuid'] != self.UUID.UuidStr):	
+                    continue	
+            else:	
                 continue
+            # Found matching interface, get basic info	
+            uuid_str = ifinst['meta']['uuid']	  
+            self.UUID = utils.PdsUuid(bytes.fromhex(uuid_str.replace('-','')),\
+                    self.ObjType)
 
             # instance found. Store meta info
             self.Tenant = ifinst['meta']['tenant']
