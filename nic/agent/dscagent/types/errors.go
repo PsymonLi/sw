@@ -152,6 +152,7 @@ const (
 	ErrMaxDHCPServersExceeded                            = Error("ErrMaxDHCPServersExceeded")
 	ErrMaxRulesPerSecurityPolicyExceeded                 = Error("ErrMaxRulesPerSecurityPolicyExceeded")
 	ErrICMPConfiguredWithPort                            = Error("ErrICMPConfiguredWithPort")
+	ErrEmptyResponse                                     = Error("ErrEmptyResponse")
 )
 
 // Const Info

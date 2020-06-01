@@ -59,6 +59,10 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.InterfaceClie
 
 	getResp, err := client.InterfaceGet(context.Background(), intfGetReq)
 	if getResp != nil || err != nil {
+		// When HAL is down due to crash or OOM, response received is empty
+		if len(getResp.GetResponse()) == 0 {
+			return errors.Wrapf(types.ErrEmptyResponse, "Interface: %s | Interface: %v", intf.GetKey(), err)
+		}
 		if err := utils.HandleErr(types.Get, getResp.GetResponse()[0].GetApiStatus(), err, fmt.Sprintf("Interface: %s", intf.GetKey())); err != nil {
 			return err
 		}
