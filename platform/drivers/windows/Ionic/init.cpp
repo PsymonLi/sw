@@ -650,6 +650,10 @@ exit:
 
     if (STATUS_SUCCESS == status) {
         EvLogInformational("%wZ adapter successfully initialized.", adapter->name);
+        PAGED_CODE();
+        NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
+        InsertTailList(&AdapterList, &adapter->list_entry);
+        NDIS_RELEASE_MUTEX(&AdapterListLock);
     }
     else {
         EvLogError("Failed to initialize new adapter. Err: 0x%08x", status);

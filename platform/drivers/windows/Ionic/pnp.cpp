@@ -74,12 +74,7 @@ ionic_add_device(NDIS_HANDLE miniport_adapter_handle,
     }
 
     if (status == NDIS_STATUS_SUCCESS) {
-        // Insert this new IONIC Device into the Global List
-        PAGED_CODE();
-        NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
-        InsertTailList(&AdapterList, &adapter->list_entry);
         port_cnt = InterlockedIncrement((long *)&port_count);
-        NDIS_RELEASE_MUTEX(&AdapterListLock);
 
         if (port_cnt == 1) {
             RegisterDevice(IonicDriver);
@@ -139,11 +134,7 @@ ionic_remove_device(NDIS_HANDLE miniport_add_device_context)
         set_event = TRUE;
     }
 
-    PAGED_CODE();
-    NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
-    RemoveEntryList(&ionic->list_entry);
     lPortCnt = InterlockedDecrement((long *)&port_count);
-    NDIS_RELEASE_MUTEX(&AdapterListLock);
 
     if (set_event) {
         KeSetEvent( &perfmon_event, 0, FALSE);

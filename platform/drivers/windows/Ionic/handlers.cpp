@@ -46,6 +46,11 @@ HaltEx(NDIS_HANDLE MiniportAdapterContext, NDIS_HALT_ACTION HaltAction)
 
     if (ionic != NULL) {
 
+        PAGED_CODE();
+        NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
+        RemoveEntryList(&ionic->list_entry);
+        NDIS_RELEASE_MUTEX(&AdapterListLock);
+
         EvLogInformational("%wZ - adapter is halting.", ionic->name);
 
         ionic->hardware_status = NdisHardwareStatusClosing;        
