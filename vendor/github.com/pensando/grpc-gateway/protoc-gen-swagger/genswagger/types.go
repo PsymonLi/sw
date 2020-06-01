@@ -151,8 +151,8 @@ type SchemaCore struct {
 	Default string   `json:"default,omitempty"`
 
 	// Extended Properties
-	Minimum   int      `json:"minimum,omitempty"`
-	Maximum   int      `json:"maximum,omitempty"`
+	Minimum   *int     `json:"minimum,omitempty"`
+	Maximum   *int     `json:"maximum,omitempty"`
 	MinLength int      `json:"minLength,omitempty"`
 	MaxLength int      `json:"maxLength,omitempty"`
 	Example   string   `json:"example,omitempty"`

@@ -322,9 +322,9 @@ export class SecurityFirewallProfileSpec extends BaseModel implements ISecurityF
                 'tcp-timeout': CustomFormControl(new FormControl(this['tcp-timeout'], [required, ]), SecurityFirewallProfileSpec.propInfo['tcp-timeout']),
                 'udp-timeout': CustomFormControl(new FormControl(this['udp-timeout'], [required, ]), SecurityFirewallProfileSpec.propInfo['udp-timeout']),
                 'icmp-timeout': CustomFormControl(new FormControl(this['icmp-timeout'], [required, ]), SecurityFirewallProfileSpec.propInfo['icmp-timeout']),
-                'tcp-half-open-session-limit': CustomFormControl(new FormControl(this['tcp-half-open-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['tcp-half-open-session-limit']),
-                'udp-active-session-limit': CustomFormControl(new FormControl(this['udp-active-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['udp-active-session-limit']),
-                'icmp-active-session-limit': CustomFormControl(new FormControl(this['icmp-active-session-limit'], [required, maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['icmp-active-session-limit']),
+                'tcp-half-open-session-limit': CustomFormControl(new FormControl(this['tcp-half-open-session-limit'], [required, minValueValidator(0), maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['tcp-half-open-session-limit']),
+                'udp-active-session-limit': CustomFormControl(new FormControl(this['udp-active-session-limit'], [required, minValueValidator(0), maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['udp-active-session-limit']),
+                'icmp-active-session-limit': CustomFormControl(new FormControl(this['icmp-active-session-limit'], [required, minValueValidator(0), maxValueValidator(128000), ]), SecurityFirewallProfileSpec.propInfo['icmp-active-session-limit']),
                 'detect-app': CustomFormControl(new FormControl(this['detect-app']), SecurityFirewallProfileSpec.propInfo['detect-app']),
             });
         }

@@ -951,6 +951,7 @@
         "from": {
           "type": "integer",
           "format": "int32",
+          "minimum": 0,
           "maximum": 1023,
           "description": "From represents the start offset (zero based), used in paginated search requests The results returned would be in the range [From ... From+MaxResults-1] This can be specified as URI parameter. Default value is 0 and valid range is 0..1023. Value should be between 0 and 1023."
         },
@@ -958,6 +959,7 @@
           "type": "integer",
           "format": "int32",
           "default": "50",
+          "minimum": 0,
           "maximum": 8192,
           "description": "MaxResults is the max-count of search results This can be specified as URI parameter. Default value is 50 and valid range is 0..8192. Value should be between 0 and 8192."
         },

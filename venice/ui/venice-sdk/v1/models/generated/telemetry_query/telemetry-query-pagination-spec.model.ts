@@ -91,7 +91,7 @@ export class Telemetry_queryPaginationSpec extends BaseModel implements ITelemet
     protected getFormGroup(): FormGroup {
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
-                'offset': CustomFormControl(new FormControl(this['offset'], [required, ]), Telemetry_queryPaginationSpec.propInfo['offset']),
+                'offset': CustomFormControl(new FormControl(this['offset'], [required, minValueValidator(0), ]), Telemetry_queryPaginationSpec.propInfo['offset']),
                 'count': CustomFormControl(new FormControl(this['count'], [required, minValueValidator(1), ]), Telemetry_queryPaginationSpec.propInfo['count']),
             });
         }

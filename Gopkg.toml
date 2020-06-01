@@ -144,7 +144,7 @@ ignored = ["github.com/minio/minio-go/*", "github.com/cespare/xxhash/*"]
   branch = "master"
 
 [[constraint]]
-  revision = "c851e5e1525d93917e37121f3aa6fcef28bff52f"
+  revision = "9e9815e5ac8ac513ca5090ebdf47a685378e6e0f"
   name = "github.com/pensando/grpc-gateway"
 
 [[constraint]]

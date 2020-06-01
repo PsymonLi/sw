@@ -155,8 +155,8 @@ export class NetworkBGPConfig extends BaseModel implements INetworkBGPConfig {
             this._formGroup = new FormGroup({
                 'router-id': CustomFormControl(new FormControl(this['router-id']), NetworkBGPConfig.propInfo['router-id']),
                 'as-number': CustomFormGroup(this['as-number'].$formGroup, NetworkBGPConfig.propInfo['as-number'].required),
-                'keepalive-interval': CustomFormControl(new FormControl(this['keepalive-interval'], [required, maxValueValidator(3600), ]), NetworkBGPConfig.propInfo['keepalive-interval']),
-                'holdtime': CustomFormControl(new FormControl(this['holdtime'], [required, maxValueValidator(3600), ]), NetworkBGPConfig.propInfo['holdtime']),
+                'keepalive-interval': CustomFormControl(new FormControl(this['keepalive-interval'], [required, minValueValidator(0), maxValueValidator(3600), ]), NetworkBGPConfig.propInfo['keepalive-interval']),
+                'holdtime': CustomFormControl(new FormControl(this['holdtime'], [required, minValueValidator(0), maxValueValidator(3600), ]), NetworkBGPConfig.propInfo['holdtime']),
                 'dsc-auto-config': CustomFormControl(new FormControl(this['dsc-auto-config']), NetworkBGPConfig.propInfo['dsc-auto-config']),
                 'neighbors': new FormArray([]),
             });

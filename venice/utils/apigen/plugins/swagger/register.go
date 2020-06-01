@@ -582,10 +582,12 @@ func fieldFinalizer(obj *genswagger.SwaggerSchemaObject, field *descriptor.Field
 			obj.XUiHints = profile.EnumHints["all"]
 		}
 		if val, ok := profile.MinInt["all"]; ok {
-			obj.Minimum = int(val)
+			valInt := int(val)
+			obj.Minimum = &valInt
 		}
 		if val, ok := profile.MaxInt["all"]; ok {
-			obj.Maximum = int(val)
+			valInt := int(val)
+			obj.Maximum = &valInt
 		}
 		if val, ok := profile.MinLen["all"]; ok {
 			obj.MinLength = int(val)

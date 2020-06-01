@@ -757,6 +757,7 @@
             "type": "integer",
             "format": "int64"
           },
+          "minimum": 0,
           "maximum": 65535,
           "description": "OR of source ports to be matched. Value should be between 0 and 65535."
         },
@@ -766,6 +767,7 @@
             "type": "integer",
             "format": "int64"
           },
+          "minimum": 0,
           "maximum": 65535,
           "description": "OR of dest ports to be matched. Value should be between 0 and 65535."
         },
@@ -1008,6 +1010,7 @@
           "type": "integer",
           "format": "int32",
           "default": "0",
+          "minimum": 0,
           "description": "Offset specifies the starting point when using Count. Value should be at least 0."
         },
         "count": {

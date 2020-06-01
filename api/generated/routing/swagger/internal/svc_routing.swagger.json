@@ -677,12 +677,14 @@
         "keepalive-interval": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 3600,
           "description": "KeepaliveInterval is time interval at which keepalive messages are sent. Value should be between 0 and 3600."
         },
         "holdtime": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 3600,
           "description": "Holdtime is time for which not receiving a keepalive message results in declaring the peer as dead. Value should be between 0 and 3600."
         }

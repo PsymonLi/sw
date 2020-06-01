@@ -4262,6 +4262,7 @@
         "external-vlan": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 4095,
           "description": "External vlan assigned for this interface. Value should be between 0 and 4095."
         },

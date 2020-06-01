@@ -205,7 +205,7 @@ export class ClusterDistributedServiceCardSpec extends BaseModel implements IClu
                 'ip-config': CustomFormGroup(this['ip-config'].$formGroup, ClusterDistributedServiceCardSpec.propInfo['ip-config'].required),
                 'mgmt-mode': CustomFormControl(new FormControl(this['mgmt-mode'], [required, enumValidator(ClusterDistributedServiceCardSpec_mgmt_mode), ]), ClusterDistributedServiceCardSpec.propInfo['mgmt-mode']),
                 'network-mode': CustomFormControl(new FormControl(this['network-mode'], [required, enumValidator(ClusterDistributedServiceCardSpec_network_mode), ]), ClusterDistributedServiceCardSpec.propInfo['network-mode']),
-                'mgmt-vlan': CustomFormControl(new FormControl(this['mgmt-vlan'], [required, maxValueValidator(4095), ]), ClusterDistributedServiceCardSpec.propInfo['mgmt-vlan']),
+                'mgmt-vlan': CustomFormControl(new FormControl(this['mgmt-vlan'], [required, minValueValidator(0), maxValueValidator(4095), ]), ClusterDistributedServiceCardSpec.propInfo['mgmt-vlan']),
                 'controllers': CustomFormControl(new FormControl(this['controllers']), ClusterDistributedServiceCardSpec.propInfo['controllers']),
                 'routing-config': CustomFormControl(new FormControl(this['routing-config']), ClusterDistributedServiceCardSpec.propInfo['routing-config']),
                 'dscprofile': CustomFormControl(new FormControl(this['dscprofile']), ClusterDistributedServiceCardSpec.propInfo['dscprofile']),

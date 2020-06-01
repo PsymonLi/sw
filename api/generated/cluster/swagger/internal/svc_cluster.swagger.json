@@ -7386,6 +7386,7 @@
         "mgmt-vlan": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 4095,
           "description": "MgmtVlan defines the vlan to be used in network managed mode. The default of 0 means we use untagged-vlan for doing inband management. Value should be between 0 and 4095."
         },

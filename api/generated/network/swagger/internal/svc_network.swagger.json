@@ -8197,6 +8197,7 @@
           "type": "integer",
           "format": "int64",
           "default": "60",
+          "minimum": 0,
           "maximum": 3600,
           "description": "KeepaliveInterval is time interval at which keepalive messages are sent. Value should be between 0 and 3600."
         },
@@ -8204,6 +8205,7 @@
           "type": "integer",
           "format": "int64",
           "default": "180",
+          "minimum": 0,
           "maximum": 3600,
           "description": "Holdtime is time for which not receiving a keepalive message results in declaring the peer as dead. Value should be between 0 and 3600."
         },
@@ -8278,12 +8280,14 @@
         "keepalive-interval": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 3600,
           "description": "KeepaliveInterval is time interval at which keepalive messages are sent. Value should be between 0 and 3600."
         },
         "holdtime": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 3600,
           "description": "Holdtime is time for which not receiving a keepalive message results in declaring the peer as dead. Value should be between 0 and 3600."
         }
@@ -8781,12 +8785,14 @@
         "vlan-id": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 4095,
           "description": "Vlan ID for the network. Value should be between 0 and 4095."
         },
         "vxlan-vni": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 16777215,
           "description": "Vxlan VNI for the network. Value should be between 0 and 16777215."
         },
@@ -9407,6 +9413,7 @@
         "vxlan-vni": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 16777215,
           "description": "VxlAN VNI for the Virtual Router. Value should be between 0 and 16777215."
         },

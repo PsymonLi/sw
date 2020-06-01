@@ -502,6 +502,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Tcp Half OpenSession Limit. Value should be between 0 and 128000."
         },
@@ -509,6 +510,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Udp Active Session Limit. Value should be between 0 and 128000."
         },
@@ -516,6 +518,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Icmp Active Session Limit. Value should be between 0 and 128000."
         },
@@ -523,6 +526,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Other Active Session Limit. Value should be between 0 and 128000."
         }

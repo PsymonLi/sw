@@ -637,6 +637,7 @@
         "multi-hop": {
           "type": "integer",
           "format": "int64",
+          "minimum": 0,
           "maximum": 256,
           "description": "Value should be between 0 and 256."
         },

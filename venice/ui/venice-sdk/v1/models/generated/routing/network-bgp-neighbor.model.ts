@@ -208,8 +208,8 @@ export class NetworkBGPNeighbor extends BaseModel implements INetworkBGPNeighbor
                 'enable-address-families': CustomFormControl(new FormControl(this['enable-address-families']), NetworkBGPNeighbor.propInfo['enable-address-families']),
                 'password': CustomFormControl(new FormControl(this['password'], [minLengthValidator(1), maxLengthValidator(128), ]), NetworkBGPNeighbor.propInfo['password']),
                 'dsc-auto-config': CustomFormControl(new FormControl(this['dsc-auto-config']), NetworkBGPNeighbor.propInfo['dsc-auto-config']),
-                'keepalive-interval': CustomFormControl(new FormControl(this['keepalive-interval'], [required, maxValueValidator(3600), ]), NetworkBGPNeighbor.propInfo['keepalive-interval']),
-                'holdtime': CustomFormControl(new FormControl(this['holdtime'], [required, maxValueValidator(3600), ]), NetworkBGPNeighbor.propInfo['holdtime']),
+                'keepalive-interval': CustomFormControl(new FormControl(this['keepalive-interval'], [required, minValueValidator(0), maxValueValidator(3600), ]), NetworkBGPNeighbor.propInfo['keepalive-interval']),
+                'holdtime': CustomFormControl(new FormControl(this['holdtime'], [required, minValueValidator(0), maxValueValidator(3600), ]), NetworkBGPNeighbor.propInfo['holdtime']),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('remote-as') as FormGroup).controls).forEach(field => {

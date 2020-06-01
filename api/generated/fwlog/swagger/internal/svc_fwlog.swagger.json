@@ -964,6 +964,7 @@
             "type": "integer",
             "format": "int64"
           },
+          "minimum": 0,
           "maximum": 65535,
           "description": "OR of source ports to be matched. Only one port can be specified and if present, source IP must also be specified. Value should be between 0 and 65535."
         },
@@ -973,6 +974,7 @@
             "type": "integer",
             "format": "int64"
           },
+          "minimum": 0,
           "maximum": 65535,
           "description": "OR of destination ports to be matched. Only one port can be specified and if present, destination IP must also be specified. Value should be between 0 and 65535."
         },
@@ -1033,6 +1035,7 @@
           "type": "integer",
           "format": "int32",
           "default": "50",
+          "minimum": 0,
           "maximum": 8192,
           "description": "MaxResults is the max-count of search results Default value is 50 and valid range is 0..8192. Value should be between 0 and 8192."
         },

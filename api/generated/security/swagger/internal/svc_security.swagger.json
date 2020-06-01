@@ -7328,6 +7328,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Tcp half open session limit config after which new open requests will be dropped. Value should be between 0 and 128000."
         },
@@ -7335,6 +7336,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Udp active session limit config after which new requests will be dropped. Value should be between 0 and 128000."
         },
@@ -7342,6 +7344,7 @@
           "type": "integer",
           "format": "int64",
           "default": "0",
+          "minimum": 0,
           "maximum": 128000,
           "description": "Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 128000."
         },

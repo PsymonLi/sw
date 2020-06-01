@@ -139,7 +139,7 @@ export class NetworkVirtualRouterSpec extends BaseModel implements INetworkVirtu
             this._formGroup = new FormGroup({
                 'type': CustomFormControl(new FormControl(this['type'], [required, enumValidator(NetworkVirtualRouterSpec_type), ]), NetworkVirtualRouterSpec.propInfo['type']),
                 'router-mac-address': CustomFormControl(new FormControl(this['router-mac-address']), NetworkVirtualRouterSpec.propInfo['router-mac-address']),
-                'vxlan-vni': CustomFormControl(new FormControl(this['vxlan-vni'], [required, maxValueValidator(16777215), ]), NetworkVirtualRouterSpec.propInfo['vxlan-vni']),
+                'vxlan-vni': CustomFormControl(new FormControl(this['vxlan-vni'], [required, minValueValidator(0), maxValueValidator(16777215), ]), NetworkVirtualRouterSpec.propInfo['vxlan-vni']),
                 'route-import-export': CustomFormGroup(this['route-import-export'].$formGroup, NetworkVirtualRouterSpec.propInfo['route-import-export'].required),
                 'default-ipam-policy': CustomFormControl(new FormControl(this['default-ipam-policy']), NetworkVirtualRouterSpec.propInfo['default-ipam-policy']),
             });

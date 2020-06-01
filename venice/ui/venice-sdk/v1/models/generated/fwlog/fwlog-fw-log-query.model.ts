@@ -267,7 +267,7 @@ export class FwlogFwLogQuery extends BaseModel implements IFwlogFwLogQuery {
                 'start-time': CustomFormControl(new FormControl(this['start-time']), FwlogFwLogQuery.propInfo['start-time']),
                 'end-time': CustomFormControl(new FormControl(this['end-time']), FwlogFwLogQuery.propInfo['end-time']),
                 'sort-order': CustomFormControl(new FormControl(this['sort-order'], [required, enumValidator(FwlogFwLogQuery_sort_order), ]), FwlogFwLogQuery.propInfo['sort-order']),
-                'max-results': CustomFormControl(new FormControl(this['max-results'], [required, maxValueValidator(8192), ]), FwlogFwLogQuery.propInfo['max-results']),
+                'max-results': CustomFormControl(new FormControl(this['max-results'], [required, minValueValidator(0), maxValueValidator(8192), ]), FwlogFwLogQuery.propInfo['max-results']),
                 'tenants': CustomFormControl(new FormControl(this['tenants']), FwlogFwLogQuery.propInfo['tenants']),
             });
         }
