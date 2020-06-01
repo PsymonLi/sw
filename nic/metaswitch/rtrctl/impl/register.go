@@ -53,10 +53,12 @@ func RegisterShowNodes(params *CLIParams, base *cobra.Command) {
 	bgpShowCmd.AddCommand(bgpIPShowCmd)
 	bgpIPShowCmd.AddCommand(bgpIPUnicastShowCmd)
 	bgpIPUnicastShowCmd.AddCommand(bgpIPUnicastNlriShowCmd)
+	bgpIPUnicastNlriShowCmd.PersistentFlags().StringVarP(&extCommFilter, "ext-comm-filter", "e", "", "extended community filter")
 
 	bgpShowCmd.AddCommand(bgpL2vpnShowCmd)
 	bgpL2vpnShowCmd.AddCommand(bgpL2vpnEvpnShowCmd)
 	bgpL2vpnEvpnShowCmd.AddCommand(bgpL2vpnEvpnNlriShowCmd)
+	bgpL2vpnEvpnNlriShowCmd.PersistentFlags().StringVarP(&extCommFilter, "ext-comm-filter", "e", "", "extended community filter")
 
 	//evpn commands
 	base.AddCommand(evpnShowCmd)

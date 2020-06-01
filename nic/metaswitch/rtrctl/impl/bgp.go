@@ -344,6 +344,10 @@ func bgpPeersAfShowCmdHandler(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+var (
+	extCommFilter string
+)
+
 const (
 	bgpNLRI = `      %s NextHop            : %v
         AS Path            : %v
@@ -377,8 +381,19 @@ func bgpNlriShowCmdHandler(cmd *cobra.Command, _afisafi string, args []string) e
 	defer c.Close()
 	client := types.NewBGPSvcClient(c)
 
-	req := &types.BGPNLRIPrefixGetRequest{}
-	respMsg, err := client.BGPNLRIPrefixGet(context.Background(), req)
+	var req types.BGPNLRIPrefixGetRequest
+
+	if extCommFilter != "" {
+		req = types.BGPNLRIPrefixGetRequest{
+			RequestsOrFilter: &types.BGPNLRIPrefixGetRequest_Filter{
+				Filter: &types.BGPNLRIPrefixFilter{
+					ExtComm: []byte(extCommFilter),
+				},
+			},
+		}
+	}
+
+	respMsg, err := client.BGPNLRIPrefixGet(context.Background(), &req)
 	if err != nil {
 		return errors.New("Getting NLRIPrefix failed")
 	}
