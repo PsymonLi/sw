@@ -60,25 +60,6 @@ learn_lif_name (void)
     }
 }
 
-bool
-untagged_vnic_exists_on_lif (uint16_t lif_id)
-{
-    pds_obj_key_t lif_key;
-    lif_impl *lif;
-
-    lif_key = api::uuid_from_objid(LIF_IFINDEX(lif_id));
-    lif = lif_impl_db()->find(&lif_key);
-
-    if (!lif || (lif->type() != sdk::platform::LIF_TYPE_HOST)) {
-        return true;
-    }
-    if (vnic_impl_db()->find(lif->vnic_hw_id()) != NULL) {
-        // untagged vnic already exists
-        return true;
-    }
-    return false;
-}
-
 // reverse lookup subnet from hw id
 static pds_obj_key_t
 bdid_to_subnet (uint16_t bd_hw_id)
@@ -223,6 +204,20 @@ remote_mapping_find (pds_mapping_key_t *key)
     pds_remote_mapping_info_t info;
 
     return api::pds_remote_mapping_read(key, &info);
+}
+
+uint16_t
+vnic_hw_id (pds_obj_key_t vnic_key)
+{
+    vnic_entry *vnic;
+    vnic_impl *vnic_impl_obj;
+
+    vnic = vnic_db()->find(&vnic_key);
+    if (vnic == nullptr) {
+        return 0xFFFF;
+    }
+    vnic_impl_obj = (vnic_impl *)vnic->impl();
+    return vnic_impl_obj->hw_id();
 }
 
 }    // namespace impl

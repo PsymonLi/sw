@@ -33,7 +33,7 @@ pds_session_get_timestamp (uint32_t session_id)
     volatile uint64_t ret;
 
     retval = session_info_entry.read(session_id);
-    
+
     assert(retval == SDK_RET_OK);
 
     timestamp = (uint64_t) session_info_entry.get_timestamp();
@@ -42,14 +42,22 @@ pds_session_get_timestamp (uint32_t session_id)
 }
 
 void
-pds_session_get_session_state (uint32_t session_id, uint8_t *iflow_state, 
+pds_session_get_session_info (uint32_t session_id,
+                              session_info_entry_t *session_info)
+{
+    sdk_ret_t retval = session_info->read(session_id);
+    assert(retval == SDK_RET_OK);
+}
+
+void
+pds_session_get_session_state (uint32_t session_id, uint8_t *iflow_state,
                                uint8_t *rflow_state)
 {
     session_track_info_entry_t session_track_info_entry;
     sdk_ret_t ret = SDK_RET_OK;
 
     ret = session_track_info_entry.read(session_id);
-    
+
     assert(ret == SDK_RET_OK);
 
     *iflow_state = session_track_info_entry.get_iflow_tcp_state();
@@ -86,7 +94,7 @@ pds_session_get_xlate_ids (uint32_t session_id, uint16_t *rx_xlate_id,
     sdk_ret_t retval = SDK_RET_OK;
 
     retval = session_info_entry.read(session_id);
-    
+
     if (retval != SDK_RET_OK) {
         return false;
     }
@@ -161,12 +169,12 @@ pds_session_track_get_info (uint32_t session_id, session_track_info_t *info)
     session_track_actiondata_t ses_data;
 
     key.p4e_i2e_session_id = session_id;
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_SESSION_TRACK, 
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_SESSION_TRACK,
                                       key.p4e_i2e_session_id,
                                       NULL, NULL, &ses_data);
     assert(p4pd_ret == P4PD_SUCCESS);
 
-    info->iflow_tcp_state = 
+    info->iflow_tcp_state =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_state;
     info->iflow_tcp_seq_num =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_seq_num;
@@ -174,13 +182,13 @@ pds_session_track_get_info (uint32_t session_id, session_track_info_t *info)
         ses_data.action_u.session_track_session_track_info.iflow_tcp_ack_num;
     info->iflow_tcp_win_size =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_win_size;
-    info->iflow_tcp_win_scale = 
+    info->iflow_tcp_win_scale =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_win_scale;
     info->iflow_tcp_mss =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_mss;
     info->iflow_tcp_exceptions =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_exceptions;
-    info->iflow_tcp_win_scale_option_sent = 
+    info->iflow_tcp_win_scale_option_sent =
         ses_data.action_u.session_track_session_track_info.iflow_tcp_win_scale_option_sent;
     info->rflow_tcp_state =
         ses_data.action_u.session_track_session_track_info.rflow_tcp_state;
@@ -196,7 +204,7 @@ pds_session_track_get_info (uint32_t session_id, session_track_info_t *info)
         ses_data.action_u.session_track_session_track_info.rflow_tcp_mss;
     info->rflow_tcp_exceptions =
         ses_data.action_u.session_track_session_track_info.rflow_tcp_exceptions;
-    
+
     return;
 }
 
@@ -214,10 +222,24 @@ pds_session_program(uint32_t ses_id, void *actiondata)
 
     if (ret != SDK_RET_OK) {
         ret = sdk::SDK_RET_HW_PROGRAM_ERR;;
-        return ret; 
+        return ret;
     }
 
     return 0;
+}
+
+int
+pds_session_update_rewrite_flags(uint32_t ses_id, uint16_t tx_rewrite,
+                                 uint16_t rx_rewrite)
+{
+    session_info_entry_t session_info_entry = {0};
+
+    pds_session_get_session_info(ses_id, &session_info_entry);
+
+    session_info_entry.tx_rewrite_flags = tx_rewrite;
+    session_info_entry.rx_rewrite_flags = rx_rewrite;
+
+    return pds_session_program(ses_id, (void *)&session_info_entry);
 }
 
 int

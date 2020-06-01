@@ -16,6 +16,7 @@
 #include "node.h"
 #include "pdsa_hdlr.h"
 #include "pdsa_uds_hdlr.h"
+#include "session_api.h"
 
 typedef void (flow_expiration_handler) (u32 ses_id);
 
@@ -26,15 +27,6 @@ typedef struct flow_age_setup_trace_s {
     u8 flags;
     u8 tcp_flags;
 } flow_age_setup_trace_t;
-
-// timer_hdl is 23 bits, so check against 0x7fffff
-#define FLOW_AGE_TIMER_STOP(_tw, _hdl)                  \
-{                                                       \
-    if (_hdl != 0x7fffff) {                             \
-        tw_timer_stop_16t_1w_2048sl(_tw, _hdl);         \
-        _hdl = ~0;                                      \
-    }                                                   \
-}                                                       \
 
 vlib_node_registration_t pds_flow_age_node,
                          pds_flow_age_setup_node;
@@ -48,7 +40,7 @@ pds_flow_age_setup_syn_x2 (u32 session_id0, u32 session_id1, u16 thread)
     ctx0 = pds_flow_get_hw_ctx(session_id0);
     ctx1 = pds_flow_get_hw_ctx(session_id1);
 
-    // If session is already in conn_setup state, then this is a duplicate packet, 
+    // If session is already in conn_setup state, then this is a duplicate packet,
     // so ignore
     if (PREDICT_FALSE(ctx0->flow_state >= PDS_FLOW_STATE_CONN_SETUP)) {
         goto ctx1;
@@ -58,7 +50,7 @@ pds_flow_age_setup_syn_x2 (u32 session_id0, u32 session_id1, u16 thread)
                                                    session_id0,
                                                    PDS_FLOW_CONN_SETUP_TIMER,
                                                    fm->tcp_con_setup_timeout);
-    
+
 ctx1:
     if (PREDICT_FALSE(ctx1->flow_state >= PDS_FLOW_STATE_CONN_SETUP)) {
         goto end;
@@ -91,7 +83,7 @@ pds_flow_age_setup_rst_x2 (u32 session_id0, u32 session_id1, u16 thread)
                                                    session_id0,
                                                    PDS_FLOW_CLOSE_TIMER,
                                                    fm->tcp_close_timeout);
-    
+
 ctx1:
     if (PREDICT_FALSE(ctx1->flow_state >= PDS_FLOW_STATE_CLOSE)) {
         goto end;
@@ -473,8 +465,8 @@ pds_flow_age_setup (vlib_main_t *vm,
                 counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
             } else if (tcp_flags0 & TCP_FLAG_FIN) {
                 rflow0 = pds_is_rflow(b0);
-                pds_flow_age_setup_fin_x1(session_id0, 
-                                          node->thread_index, rflow0);
+                pds_flow_age_setup_fin_x1(session_id0, node->thread_index,
+                                          rflow0);
                 counter[FLOW_AGE_SETUP_COUNTER_FIN]++;
             } else if (PREDICT_FALSE(tcp_flags0 & TCP_FLAG_RST)) {
                 pds_flow_age_setup_rst_x1(session_id0, node->thread_index);
@@ -541,7 +533,7 @@ pds_flow_age_session_expired (pds_flow_hw_ctx_t *session, u64 cur_time,
 
     // h/w timestamp is 48 bit wide. handle roll-over case.
     // note - capri frequncy is 416 MHz = 2.4038461538462 ns per tick.
-    // so for 48 bit roll-over it take over 6 days. 
+    // so for 48 bit roll-over it take over 6 days.
     // max configurable timeout is 2 days, so multiple roll-over
     // case not possible.
     // redo this check for elba and see if this holds good even there
@@ -558,146 +550,6 @@ pds_flow_age_session_expired (pds_flow_hw_ctx_t *session, u64 cur_time,
     *diff_time = (u64) (PDS_FLOW_SEC_TO_TIMER_TICK(
                         pds_system_get_secs(diff_tick)));
     return 0;
-}
-
-void
-pds_flow_start_keep_alive (pds_flow_hw_ctx_t *session)
-{
-    // TODO: start tcp keep-alive to both ends
-    return;
-}
-
-always_inline uint8_t
-pds_flow_get_ctr_idx (uint8_t proto, bool isv4)
-{
-    switch(proto) {
-    case PDS_FLOW_PROTO_TCP:
-        if (isv4) {
-            return FLOW_TYPE_COUNTER_TCPV4;
-        } else {
-            return FLOW_TYPE_COUNTER_TCPV6;
-        }
-    case PDS_FLOW_PROTO_UDP:
-        if (isv4) {
-            return FLOW_TYPE_COUNTER_UDPV4;
-        } else {
-            return FLOW_TYPE_COUNTER_UDPV6;
-        }
-    case PDS_FLOW_PROTO_ICMP:
-        if (isv4) {
-            return FLOW_TYPE_COUNTER_ICMPV4;
-        } else {
-            return FLOW_TYPE_COUNTER_ICMPV6;
-        }
-    default:
-        if (isv4) {
-            return FLOW_TYPE_COUNTER_OTHERV4;
-        } else {
-            return FLOW_TYPE_COUNTER_OTHERV6;
-        }
-    }
-    // TODO: what about L2?
-    return 0;
-}
-
-void
-pds_flow_delete_session (u32 ses_id)
-{
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
-    pds_flow_main_t *fm = &pds_flow_main;
-    int flow_log_enabled = 0;
-    int thread = vlib_get_thread_index();
-    uint8_t ctr_idx;
-
-    if (PREDICT_FALSE(session == NULL)) {
-        return;
-    }
-
-    pds_vnic_flow_log_en_get(session->vnic_id, &flow_log_enabled);
-    FLOW_AGE_TIMER_STOP(&fm->timer_wheel[thread], session->timer_hdl);
-    // Delete both iflow and rflow
-    if (session->v4) {
-        ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
-        if (flow_log_enabled) {
-            ftlv4_export_with_handle(table4, session->iflow.table_id,
-                                     session->iflow.primary,
-                                     session->rflow.table_id,
-                                     session->rflow.primary,
-                                     FLOW_EXPORT_REASON_DEL,
-                                     session->iflow_rx,
-                                     thread);
-        }
-        session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, 
-                                                session->iflow.table_id,
-                                                session->iflow.primary, 
-                                                thread) != 0)) {
-            goto end;
-        }
-        pds_flow_hw_ctx_unlock(session);
-        if (PREDICT_FALSE(session->nat)) {
-            ftlv4_update_iflow_nat_session(table4, thread);
-        }
-        if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            return;
-        }
-
-        session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, 
-                                                session->rflow.table_id,
-                                                session->rflow.primary, 
-                                                thread) != 0)) {
-            goto end;
-        }
-        pds_flow_hw_ctx_unlock(session);
-        if (PREDICT_FALSE(session->nat)) {
-            ftlv4_update_rflow_nat_session(table4, thread);
-        }
-        if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            return;
-        }
-        if (PREDICT_FALSE(session->nat)) {
-            u32 vpc_id = pds_vnic_vpc_id_get(session->vnic_id);
-            ftlv4_remove_nat_session(vpc_id, table4, thread);
-        }
-    } else {
-        ftl *table = (ftl *)pds_flow_get_table6_or_l2();
-        if (flow_log_enabled) {
-            ftl_export_with_handle(table, session->iflow.table_id,
-                                   session->iflow.primary,
-                                   FLOW_EXPORT_REASON_DEL);
-        }
-        session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.table_id,
-                                                session->iflow.primary) != 0)) {
-            goto end;
-        }
-        pds_flow_hw_ctx_unlock(session);
-        if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            return;
-        }
-
-        session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->rflow.table_id,
-                                                session->rflow.primary) != 0)) {
-           goto end;
-        }
-        pds_flow_hw_ctx_unlock(session);
-        if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            return;
-        }
-    }
-
-    pds_vnic_active_sessions_decrement(session->vnic_id);
-    ctr_idx = pds_flow_get_ctr_idx(session->proto, session->v4);
-    clib_atomic_fetch_add(&fm->stats.counter[ctr_idx], -1);
-    pds_session_id_dealloc(ses_id);
-    pds_session_stats_clear(ses_id);
-    return;
-
-end:
-    pds_flow_hw_ctx_unlock(session);
-    return;
 }
 
 static u8
@@ -724,14 +576,12 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
     if (PREDICT_FALSE(!h)) {
         return -1;
     }
-    
     b = vlib_get_buffer(vm, bi);
     if (pds_flow_packet_l2l(session->packet_type)) {
         to_host = true;
     } else {
         to_host = (iflow && session->iflow_rx) || (!iflow && !session->iflow_rx);
     }
-    
     if (iflow) {
         flow_index = session->iflow;
     } else {
@@ -745,7 +595,7 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
             return -1;
         }
 
-        ftlv4_get_last_read_session_info(&sip, &dip, &sport, &dport, 
+        ftlv4_get_last_read_session_info(&sip, &dip, &sport, &dport,
                                          &lkp_id, vm->thread_index);
         // Fill in IP and TCP header details
         h->ip4_hdr.src_address.as_u32 = clib_host_to_net_u32(sip);
@@ -772,7 +622,7 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
         h->tcp_hdr.src_port = sport;
         h->tcp_hdr.dst_port = dport;
     }
-#endif 
+#endif
 
     pds_session_track_get_info(ses_id, &info);
 
@@ -793,7 +643,7 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
     if (to_host) {
         u16 vnic_id = 0, vnic_nh_hw_id = 0;
         // Get the VNIC information
-        int ret = pds_dst_vnic_info_get(lkp_id, dip, &vnic_id, 
+        int ret = pds_dst_vnic_info_get(lkp_id, dip, &vnic_id,
                                                   &vnic_nh_hw_id);
         if (PREDICT_FALSE(ret == -1)) {
             return -1;
@@ -869,10 +719,10 @@ pds_flow_send_keep_alive (pds_flow_hw_ctx_t *session)
     if (ret1 != 0) {
         goto end;
     }
-    
+
     // if send for iflow succeeded, send keepalive for rflow
     ret2 = pds_flow_send_keep_alive_helper(session, false);
-    
+
     // if we successfully sent the packets, then start the keepalive timer to
     // retry if required, otherwise delete the session
     if (ret2 == 0) {
@@ -880,7 +730,7 @@ pds_flow_send_keep_alive (pds_flow_hw_ctx_t *session)
         // if send was successful, then start the keepalive timer to retry.
         session->timer_hdl = tw_timer_start_16t_1w_2048sl(&fm->timer_wheel[thread],
                                                           ses_id,
-                                                          PDS_FLOW_KEEP_ALIVE_TIMER, 
+                                                          PDS_FLOW_KEEP_ALIVE_TIMER,
                                                           fm->tcp_keep_alive_timeout);
         session->flow_state = PDS_FLOW_STATE_KEEPALIVE_SENT;
         return;
@@ -939,7 +789,7 @@ pds_flow_connection_timeout (u32 ses_id)
     // If not, then delete the session.
     session = pds_flow_get_hw_ctx(ses_id);
     pds_session_get_session_state(ses_id, &iflow_state, &rflow_state);
-    if (pds_session_state_established(iflow_state) && 
+    if (pds_session_state_established(iflow_state) &&
         pds_session_state_established(rflow_state)) {
         session->flow_state = PDS_FLOW_STATE_ESTABLISHED;
         session->timer_hdl = tw_timer_start_16t_1w_2048sl(&fm->timer_wheel[thread],
@@ -999,7 +849,7 @@ pds_flow_keep_alive_timeout (u32 ses_id)
     session = pds_flow_get_hw_ctx(ses_id);
     timestamp = pds_session_get_timestamp(ses_id);
     cur_time = pds_system_get_current_tick();
-    if (timestamp && 
+    if (timestamp &&
         !pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
         // restart idle timeout with the time left for timeout
         session->timer_hdl = tw_timer_start_16t_1w_2048sl(&fm->timer_wheel[thread],

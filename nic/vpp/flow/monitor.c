@@ -26,7 +26,7 @@ flow_monitor_export_session (pds_flow_hw_ctx_t *session, uint16_t thread_id)
 {
     int flow_log_enabled = 0;
 
-    pds_vnic_flow_log_en_get(session->vnic_id, &flow_log_enabled);
+    pds_vnic_flow_log_en_get(session->src_vnic_id, &flow_log_enabled);
     if (!flow_log_enabled) {
         return;
     }

@@ -274,9 +274,14 @@ typedef CLIB_PACKED(struct pds_flow_hw_ctx_s {
     u8 iflow_rx : 1; // true if iflow is towards the host
     u8 monitor_seen : 1; // 1 if monitor process has seen flow
     u8 nat : 1;
+
     u8 drop : 1;
-    u8 vnic_id : 7;
-    u8 reserved;
+    u8 src_vnic_id : 7;
+
+    u8 dst_vnic_id;
+
+    u16 thread_id : 2;
+    u16 reserved_1 : 6;
 }) pds_flow_hw_ctx_t;
 
 typedef struct pds_flow_session_id_thr_local_pool_s {
@@ -301,6 +306,14 @@ typedef CLIB_PACKED (struct
                         tcp_header_t tcp_hdr;
                      }) ip4_and_tcp_header_t;
 
+typedef struct pds_flow_fixup_data_s {
+    bool valid;
+    u32 ses_id;
+    bool iflow;
+    u16 bd_id;
+    u16 vnic_id;
+} pds_flow_fixup_data_t;
+
 typedef struct pds_flow_main_s {
     volatile u32 *flow_prog_lock;
     ftlv4 *table4;
@@ -324,12 +337,14 @@ typedef struct pds_flow_main_s {
     u32 monitor_interval;
     u8 no_threads;
     u8 con_track_en;
-    u8 *packet_types;
     pds_flow_stats_t stats;
     void *flow_metrics_hdl;
     u16 drop_nexthop;
     // packet template to send TCP keep alives
     vlib_packet_template_t tcp_keepalive_packet_template;
+    u32 *delete_sessions;
+    u32 ses_id_to_del;
+    pds_flow_fixup_data_t fixup_data;
 } pds_flow_main_t;
 
 // packet types - Any new addition should be handled in
@@ -587,7 +602,7 @@ always_inline void pds_session_set_data(u32 ses_id, u32 i_pindex,
                                         u32 r_sindex, pds_flow_protocol proto,
                                         uint8_t vnic_id, bool v4,
                                         bool host_origin, u8 packet_type,
-                                        bool drop)
+                                        bool drop, u8 thread_id)
 {
     pds_flow_main_t *fm = &pds_flow_main;
 
@@ -611,7 +626,7 @@ always_inline void pds_session_set_data(u32 ses_id, u32 i_pindex,
     data->proto = proto;
     data->v4 = v4;
     data->is_in_use = 1;
-    data->vnic_id = vnic_id;
+    data->src_vnic_id = vnic_id;
     data->iflow_rx = host_origin;
     data->packet_type = packet_type;
     if (PREDICT_FALSE(data->packet_type == PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT ||
@@ -621,6 +636,7 @@ always_inline void pds_session_set_data(u32 ses_id, u32 i_pindex,
         data->nat = 0;
     }
     data->drop = drop;
+    data->thread_id = thread_id;
     //pds_flow_prog_unlock();
     return;
 }
@@ -655,5 +671,17 @@ always_inline void pds_session_id_flush(void)
     pds_flow_prog_unlock();
     return;
 }
+
+// timer_hdl is 23 bits, so check against 0x7fffff
+#define FLOW_AGE_TIMER_STOP(_tw, _hdl)                  \
+{                                                       \
+    if (_hdl != 0x7fffff) {                             \
+        tw_timer_stop_16t_1w_2048sl(_tw, _hdl);         \
+        _hdl = ~0;                                      \
+    }                                                   \
+}                                                       \
+
+void pds_session_update_data(u32 ses_id, u32 pindex, u32 sindex,
+                             bool iflow, bool move_complete, bool lock);
 
 #endif    // __VPP_FLOW_NODE_H__

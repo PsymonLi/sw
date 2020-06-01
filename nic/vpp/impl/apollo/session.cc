@@ -13,7 +13,7 @@ pds_session_get_timestamp (uint32_t session_id)
 }
 
 void
-pds_session_get_session_state (uint32_t session_id, uint8_t *iflow_state, 
+pds_session_get_session_state (uint32_t session_id, uint8_t *iflow_state,
                                uint8_t *rflow_state)
 {
     return;
@@ -33,6 +33,12 @@ pds_session_active_on_vnic_get (uint16_t vnic_id, uint32_t *sess_count)
 
 int
 session_track_program(uint32_t ses_id, void *action)
+{
+    return 0;
+}
+
+int
+pds_session_update_rewrite_flags (uint32_t session_id, uint8_t pkt_type)
 {
     return 0;
 }

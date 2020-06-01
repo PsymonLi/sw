@@ -13,6 +13,7 @@ typedef uint8_t    mac_addr_t[ETH_ADDR_LEN];
 #define BIT(pos)                (1UL << (pos))
 #define BIT_SET(flags, pos)     ((flags) |= (pos))
 #define BIT_ISSET(flags, pos)   ((flags) & (pos))
+#define IP6_ADDR8_LEN           16
 
 static inline void
 pds_host_to_net_u24 (uint8_t *data)

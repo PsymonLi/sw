@@ -235,10 +235,10 @@ ftl_move_cb (base_table_entry_t *entry, handle_t old_handle,
 
     if (flow_entry->get_flow_role() == TCP_FLOW_INITIATOR) {
         g_ses_cb (ses_id, new_pindex, new_sindex, true,
-                  move_complete);
+                  move_complete, true);
     } else {
         g_ses_cb (ses_id, new_pindex, new_sindex, false,
-                  move_complete);
+                  move_complete, true);
     }
 }
 

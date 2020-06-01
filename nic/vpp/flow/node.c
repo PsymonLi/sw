@@ -5,6 +5,7 @@
 #include <vnet/buffer.h>
 #include <pkt.h>
 #include <session.h>
+#include "log.h"
 #include "node.h"
 #include <flow.h>
 #include "log.h"
@@ -557,7 +558,7 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
         }
 
         ftlv4_set_last_read_entry_miss_hit(miss_hit, thread_index);
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4, 
+        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
                                                     thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -624,7 +625,7 @@ pds_l2l_def_iflow_prog_internal (vlib_buffer_t *p0,
                                           nh_valid, nh_priority,
                                           thread_index);
 
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4, 
+        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
                                                     thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -798,7 +799,7 @@ pds_l2l_rx_flow_prog_internal (vlib_buffer_t *p0,
         epoch = pds_get_flow_epoch(p0);
         miss_hit = 0;
         ftlv4_set_last_read_entry_miss_hit(miss_hit, thread_index);
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4, 
+        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
                                                     thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -816,7 +817,7 @@ pds_l2l_rx_flow_prog_internal (vlib_buffer_t *p0,
 
         ftlv4_set_last_read_entry_epoch(epoch, thread_index);
         ftlv4_set_last_read_entry_miss_hit(miss_hit, thread_index);
-        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4, 
+        if (PREDICT_FALSE(ftlv4_update_cached_entry(table4,
                                                     thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -973,10 +974,10 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         if (PREDICT_TRUE(((ip40->protocol == IP_PROTOCOL_TCP) ||
                           (ip40->protocol == IP_PROTOCOL_UDP)))) {
             if (ip40->protocol == IP_PROTOCOL_TCP) {
-                ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_TCPV4, 
+                ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_TCPV4,
                                               thread_index);
             } else {
-                ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_UDPV4, 
+                ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_UDPV4,
                                               thread_index);
             }
             tcp0 = (tcp_header_t *)(((u8 *) ip40) +
@@ -1004,11 +1005,11 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
                 r_dport = dport;
             }
             r_sport = sport;
-            ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_ICMPV4, 
+            ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_ICMPV4,
                                           thread_index);
         } else {
             sport = dport = r_sport = r_dport = 0;
-            ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_OTHERV4, 
+            ftlv4_cache_set_counter_index(FLOW_TYPE_COUNTER_OTHERV4,
                                           thread_index);
         }
         ftlv4_cache_set_key(src_ip, dst_ip,
@@ -1064,9 +1065,20 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv4_cache_set_napt_flag(napt, thread_index);
         ftlv4_cache_advance_count(1, thread_index);
 
-        if (fm->con_track_en && tcp0) {
-            vnet_buffer(p0)->pds_flow_data.tcp_seq_no = clib_net_to_host_u32(tcp0->seq_number);
-            vnet_buffer(p0)->pds_flow_data.tcp_win_sz = clib_net_to_host_u16(tcp0->window);
+        if (ip40->protocol == IP_PROTOCOL_TCP) {
+            if (fm->con_track_en) {
+                vnet_buffer(p0)->pds_flow_data.tcp_seq_no =
+                    clib_net_to_host_u32(tcp0->seq_number);
+                vnet_buffer(p0)->pds_flow_data.tcp_win_sz =
+                    clib_net_to_host_u16(tcp0->window);
+            } else if (PREDICT_FALSE(!flow_exists &&
+                       !(vnet_buffer(p0)->pds_flow_data.tcp_flags & TCP_FLAG_SYN))) {
+                // If session in getting created due to a packet other than SYN,
+                // then move the session state to ESTABLISHED so that session
+                // ageing is handled. This is needed to handle VMotion wherein
+                // we might have to create flows for packets other than SYN.
+                ses->flow_state = PDS_FLOW_STATE_ESTABLISHED;
+            }
         }
     } else {
         ip6_header_t *ip60;
@@ -1179,8 +1191,8 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
 }
 
 always_inline void
-pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, 
-                         u32 *counter, u16 thread_index)
+pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
+                         u16 thread_index)
 {
     int i, ret, size = ftlv4_cache_get_count(thread_index);
     u32 i_pindex, i_sindex, r_pindex, r_sindex;
@@ -1198,12 +1210,12 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
             goto err;
         }
 
-        ret = ftlv4_cache_program_index(table, i, &i_pindex, 
+        ret = ftlv4_cache_program_index(table, i, &i_pindex,
                                         &i_sindex, thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             goto err_iflow;
         }
-        ret = ftlv4_cache_program_index(table, i+1, &r_pindex, 
+        ret = ftlv4_cache_program_index(table, i+1, &r_pindex,
                                         &r_sindex, thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             if (pds_is_flow_session_present(p0)) {
@@ -1216,12 +1228,13 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
         pds_session_set_data(session_id, i_pindex,
                              i_sindex, r_pindex,
                              r_sindex,
-                             pds_flow_trans_proto(ftlv4_cache_get_proto(i, 
+                             pds_flow_trans_proto(ftlv4_cache_get_proto(i,
                                                                 thread_index)),
                              vnet_buffer2(p0)->pds_nat_data.vnic_id,
                              true, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
-                             pds_is_flow_drop(p0));
+                             pds_is_flow_drop(p0),
+                             thread_index);
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv4_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD, thread_index);
@@ -1264,7 +1277,8 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next,
 }
 
 always_inline void
-pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter)
+pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
+                               u16 thread_index)
 {
     int i, ret, size = ftlv6_cache_get_count();
     ftlv6 *table = pds_flow_prog_get_table6_or_l2();
@@ -1303,7 +1317,8 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter)
                              vnet_buffer2(p0)->pds_nat_data.vnic_id,
                              false, pds_is_rx_pkt(p0),
                              vnet_buffer(p0)->pds_flow_data.packet_type,
-                             pds_is_flow_drop(p0));
+                             pds_is_flow_drop(p0),
+                             thread_index);
         counter[FLOW_PROG_COUNTER_FLOW_SUCCESS]++;
         next[i/2] = pds_flow_prog_get_next_node();
         ftlv6_cache_log_session(i, i+1, FLOW_EXPORT_REASON_ADD);
@@ -1378,7 +1393,7 @@ pds_flow_prog (vlib_main_t *vm,
                 }
             }
             pds_flow_extract_prog_args_x1(b0, session_id0, is_ip4, is_l2,
-                                          flow_exists0, ses_valid0, 
+                                          flow_exists0, ses_valid0,
                                           node->thread_index);
             if (0 == session_id1) {
                 session_id1 = pds_session_id_alloc();
@@ -1393,7 +1408,7 @@ pds_flow_prog (vlib_main_t *vm,
                 }
             }
             pds_flow_extract_prog_args_x1(b1, session_id1, is_ip4, is_l2,
-                                          flow_exists1, ses_valid1, 
+                                          flow_exists1, ses_valid1,
                                           node->thread_index);
             offset0 = pds_flow_prog_get_next_offset(b0, is_l2);
             offset1 = pds_flow_prog_get_next_offset(b1, is_l2);
@@ -1423,7 +1438,7 @@ pds_flow_prog (vlib_main_t *vm,
                 }
             }
             pds_flow_extract_prog_args_x1(b0, session_id0, is_ip4, is_l2,
-                                          flow_exists0, ses_valid0, 
+                                          flow_exists0, ses_valid0,
                                           node->thread_index);
             offset0 = pds_flow_prog_get_next_offset(b0, is_l2);
             vlib_buffer_advance(b0, offset0);
@@ -1435,7 +1450,8 @@ pds_flow_prog (vlib_main_t *vm,
                                 counter, node->thread_index);
     } else {
         pds_flow_program_hw_ip6_or_l2(PDS_PACKET_BUFFER_ARR,
-                                      PDS_PACKET_NEXT_NODE_ARR, counter);
+                                      PDS_PACKET_NEXT_NODE_ARR, counter,
+                                      node->thread_index);
     }
     vlib_buffer_enqueue_to_next(vm, node,
                                 PDS_PACKET_BUFFER_INDEX_PTR(0),
@@ -1735,15 +1751,15 @@ VLIB_REGISTER_NODE (pds_flow_classify_node) = {
     .format_trace = format_pds_flow_classify_trace,
 };
 
-static void
-pds_session_update_data(u32 ses_id, u32 pindex, u32 sindex,
-                        bool iflow, bool move_complete)
+void
+pds_session_update_data (u32 ses_id, u32 pindex, u32 sindex,
+                         bool iflow, bool move_complete, bool lock)
 {
-    pds_flow_hw_ctx_t *session;
-    pds_flow_index_t *index;
+    pds_flow_hw_ctx_t *session = NULL;
+    pds_flow_index_t *index = NULL;
+    session = pds_flow_get_hw_ctx(ses_id);
 
     if (move_complete) {
-        session = pds_flow_get_hw_ctx(ses_id);
         if (PREDICT_FALSE(NULL == session)) {
             return;
         }
@@ -1751,9 +1767,11 @@ pds_session_update_data(u32 ses_id, u32 pindex, u32 sindex,
         return;
     }
 
-    session = pds_flow_get_hw_ctx_lock(ses_id);
-    if (PREDICT_FALSE(NULL == session)) {
-        return;
+    if (lock) {
+        session = pds_flow_get_hw_ctx_lock(ses_id);
+        if (PREDICT_FALSE(NULL == session)) {
+            return;
+        }
     }
     index = iflow ? &session->iflow : &session->rflow;
     if (pindex != ((u32) (~0L))) {
@@ -1809,6 +1827,7 @@ pds_flow_init (vlib_main_t * vm)
     pds_flow_monitor_init();
 
     pds_flow_pipeline_init(vm);
+
     fm->flow_metrics_hdl = pdsa_flow_stats_init();
 
     /* Create the TCP keep alive packet template */

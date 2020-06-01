@@ -299,6 +299,7 @@ add_mac_to_event_list (learn_ctxt_t *ctxt, event_id_t learn_event)
 {
     event_t event;
     core::learn_event_info_t *info = &event.learn;
+    pds_obj_key_t vnic_key;
 
     event.event_id = learn_event;
     info->subnet = ctxt->mac_key.subnet;
@@ -306,6 +307,8 @@ add_mac_to_event_list (learn_ctxt_t *ctxt, event_id_t learn_event)
     info->ifindex = ctxt->ifindex;
     info->vpc.reset();
     info->ip_addr = { 0 };
+    vnic_key = api::uuid_from_objid(ctxt->mac_entry->vnic_obj_id());
+    info->vnic_hw_id = impl::vnic_hw_id(vnic_key);
     ctxt->lbctxt->bcast_events.push_back(event);
 }
 
@@ -316,6 +319,7 @@ add_ip_to_event_list (const ep_ip_key_t *ip_key, learn_ctxt_t *ctxt,
     event_t event;
     core::learn_event_info_t *info = &event.learn;
     const ep_mac_key_t *mac_key;
+    pds_obj_key_t vnic_key;
 
     SDK_ASSERT(ctxt->mac_entry);
     event.event_id = learn_event;
@@ -325,6 +329,8 @@ add_ip_to_event_list (const ep_ip_key_t *ip_key, learn_ctxt_t *ctxt,
     info->ifindex = ctxt->ifindex;
     info->vpc = ip_key->vpc;
     info->ip_addr = ip_key->ip_addr;
+    vnic_key = api::uuid_from_objid(ctxt->mac_entry->vnic_obj_id());
+    info->vnic_hw_id = impl::vnic_hw_id(vnic_key);
     ctxt->lbctxt->bcast_events.push_back(event);
 }
 

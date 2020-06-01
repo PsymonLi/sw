@@ -108,6 +108,12 @@ pds_session_get_nat_drop_next_offset (vlib_buffer_t *p0)
 }
 
 always_inline void
+pds_packet_type_fill (pds_flow_hw_ctx_t *ctx, u8 type)
+{
+    ctx->packet_type = type;
+}
+
+always_inline void
 pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
                      u16 thread_id, u16 *next, u32 *counter)
 {
@@ -162,7 +168,7 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
                 (P4_REWRITE_VLAN_DECAP << P4_REWRITE_VLAN_START));
         session_rx_rewrite_flags = rewrite_flags->rx_rewrite |
             (pds_is_flow_l2l_rx_vlan(b) ?
-                (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) : 
+                (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) :
                 (P4_REWRITE_VLAN_DECAP << P4_REWRITE_VLAN_START));
     } else {
         session_tx_rewrite_flags = rewrite_flags->tx_rewrite;
@@ -579,7 +585,7 @@ always_inline bool
 pds_flow_mapping_over_route_check (p4_rx_cpu_hdr_t *hdr,
                                    u8 is_rx)
 {
-    static pds_impl_db_device_entry_t *device = NULL; 
+    static pds_impl_db_device_entry_t *device = NULL;
 
     if (PREDICT_FALSE(NULL == device)) {
         device = pds_impl_db_device_get();
@@ -918,12 +924,14 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
             counter[FLOW_CLASSIFY_COUNTER_VNIC_NOT_FOUND] += 1;
             return;
         }
-        vnic = pds_impl_db_vnic_get(ctx->vnic_id);
+        vnic = pds_impl_db_vnic_get(ctx->src_vnic_id);
         if (PREDICT_FALSE(!vnic)) {
             *next = FLOW_CLASSIFY_NEXT_DROP;
             counter[FLOW_CLASSIFY_COUNTER_VNIC_NOT_FOUND] += 1;
             return;
         }
+        // Store the destination VNIC ID
+        ctx->dst_vnic_id = hdr->vnic_id;
         BIT_SET(vnet_buffer(p)->pds_flow_data.flags,
                 pds_get_l2l_cpu_flags_from_vnic(vnic));
         vnet_buffer(p)->pds_flow_data.lif = vnic->host_lif_hw_id;
@@ -945,6 +953,7 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
 always_inline void
 pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
 {
+    pds_flow_main_t *fm = &pds_flow_main;
     p4_rx_cpu_hdr_t *hdr = vlib_buffer_get_current(p);
     u8 flag_orig;
     u32 nexthop;
@@ -955,6 +964,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
     flag_orig = hdr->flags;
     u8 flags = BIT_ISSET(flag_orig, VPP_CPU_FLAGS_IP_VALID);
     vnic = pds_impl_db_vnic_get(hdr->vnic_id);
+
     vnet_buffer(p)->pds_flow_data.ses_id = hdr->session_id;
     vnet_buffer(p)->pds_flow_data.flow_hash = hdr->flow_hash;
     BIT_SET(vnet_buffer(p)->pds_flow_data.flags,
@@ -1014,6 +1024,14 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
     // If it's a TCP SYN packet, it should always go to FLOW_PROG node
     if (!hdr->defunct_flow && hdr->tcp_flags &&
         !(hdr->tcp_flags & TCP_FLAG_SYN)) {
+        // If connection tracking is not enabled and session is not present,
+        // then we should go to FLOW_PROG node, so that a session can be
+        // created. This is needed for VMotion where non SYN packets should be
+        // able to create a flow.
+        if (!fm->con_track_en && !pds_is_flow_session_present(p)) {
+            goto vnic_check;
+        }
+
         // IF flow ageing is not supported or session is not present, all other TCP
         // packets can be dropped
         if (PREDICT_FALSE(!pds_flow_age_supported() ||
@@ -1030,6 +1048,8 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
         counter[FLOW_CLASSIFY_COUNTER_TCP_PKT] += 1;
         goto end;
     }
+
+vnic_check:
     if (PREDICT_FALSE(!vnic)) {
         pds_flow_classify_no_vnic(p, hdr, next, counter);
         return;

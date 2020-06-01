@@ -13,6 +13,9 @@ extern "C" {
 
 // function prototypes
 int pds_vpp_ipc_init(void);
+void pds_vpp_worker_thread_barrier(void);
+void pds_vpp_worker_thread_barrier_release(void);
+void pds_vpp_set_suspend_resume_worker_threads(int suspend);
 
 // ipc log, to be used by CB functions
 int ipc_log_notice(const char *fmt, ...);
@@ -37,6 +40,7 @@ pds_id_set(u8 id1[PDS_MAX_KEY_LEN], const u8 id2[PDS_MAX_KEY_LEN])
 {
     clib_memcpy(id1, id2, PDS_MAX_KEY_LEN);
 }
+
 #endif
 
 

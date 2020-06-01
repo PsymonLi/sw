@@ -60,6 +60,5 @@ intf_remove (vnet_main_t *vnm, u32 hw_if_index, void *args)
 void
 pds_infra_remove_all_intfs (void)
 {
-    vlib_set_suspend_resume_worker_threads(1);
     vnet_hw_interface_walk(vnet_get_main(), intf_remove, NULL);
 }

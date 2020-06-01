@@ -82,6 +82,8 @@ typedef struct learn_event_info_s {
     if_index_t      ifindex;
     ip_addr_t       ip_addr;
     mac_addr_t      mac_addr;
+    // vnic hw id is needed by VPP for flow fixup, valid for move events
+    uint16_t        vnic_hw_id;
 } learn_event_info_t;
 
 // API batch commit/abort event information

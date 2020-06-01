@@ -6,6 +6,7 @@
 #include "infra/api/intf.h"
 #include "log.hpp"
 #include "upgrade_hdlr.hpp"
+#include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 
 static const char *grupg_str = "Graceful Upgrade";
 
@@ -39,6 +40,8 @@ vpp_graceful_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
         // Bring down all interfaces
         upg_log_notice("%s: %s: Bringing down all interfaces\n", __FUNCTION__,
                         grupg_str);
+        // All worker threads must be suspended
+        pds_vpp_set_suspend_resume_worker_threads(1);
         pds_infra_set_all_intfs_status(false);
         upg_log_notice("%s: %s: Remove all interfaces\n", __FUNCTION__,
                         grupg_str);
@@ -60,10 +63,13 @@ vpp_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
     ret = SDK_RET_OK;
     upg_log_notice("%s: %s: Handling Upgrade stage %u mode %u\n", __FUNCTION__,
                    grupg_str, params->id, params->mode);
+    pds_vpp_worker_thread_barrier();
     if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
         ret = vpp_graceful_upg_ev_hdlr(params);
     } else if (params->mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
     }
+    pds_vpp_worker_thread_barrier_release();
+
     return ret;
 }
 

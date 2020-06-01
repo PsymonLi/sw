@@ -5,6 +5,8 @@
 #ifndef __VPP_FLOW_PDSA_UDS_HDLR_H__
 #define __VPP_FLOW_PDSA_UDS_HDLR_H__
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

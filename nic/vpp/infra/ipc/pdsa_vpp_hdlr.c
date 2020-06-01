@@ -14,14 +14,26 @@
 // logging class
 static vlib_log_class_t pds_ipc_log = 0;
 
+void
+pds_vpp_worker_thread_barrier () {
+    vlib_worker_thread_barrier_sync(vlib_get_main());
+}
+
+void
+pds_vpp_worker_thread_barrier_release () {
+    vlib_worker_thread_barrier_release(vlib_get_main());
+}
+
+void
+pds_vpp_set_suspend_resume_worker_threads (int suspend) {
+    vlib_set_suspend_resume_worker_threads(suspend);
+}
+
 // callback function called from the main VPP poll loop.  Called when there's
 // data in the IPC fd
 static clib_error_t *
 pds_vpp_ipc_fd_read (clib_file_t * uf) {
-    vlib_worker_thread_barrier_sync(vlib_get_main());
     pds_ipc_read_fd(uf->file_descriptor);
-    vlib_worker_thread_barrier_release(vlib_get_main());
-
     return 0;
 }
 

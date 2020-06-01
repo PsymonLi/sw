@@ -50,10 +50,10 @@ remote_mapping_find (pds_mapping_key_t *key)
     return SDK_RET_ERR;
 }
 
-bool
-untagged_vnic_exists_on_lif (uint16_t lif_id)
+uint16_t
+vnic_hw_id (pds_obj_key_t vnic_key)
 {
-	return false;
+    return 0;
 }
 
 }    // namespace impl

@@ -67,16 +67,16 @@ int pds_session_program(uint32_t ses_id, void *action);
 
 uint64_t pds_session_get_timestamp(uint32_t session_id);
 
-void pds_session_get_session_state(uint32_t session_id, uint8_t *iflow_state, 
+void pds_session_get_session_state(uint32_t session_id, uint8_t *iflow_state,
                                    uint8_t *rflow_state);
+
+void pds_session_get_info(uint32_t session_id, session_info_t *info);
 
 bool pds_session_state_established(uint8_t state);
 
 bool pds_session_active_on_vnic_get(uint16_t vnic_id, uint32_t *sess_count);
 
 int session_track_program(uint32_t ses_id, void *action);
-
-void pds_session_get_info(uint32_t session_id, session_info_t *session_info);
 
 void pds_session_track_get_info(uint32_t session_id, session_track_info_t *info);
 
@@ -90,6 +90,8 @@ bool pds_session_get_xlate_ids(uint32_t ses, uint16_t *rx_xlate_id,
                                uint16_t *tx_xlate_id, uint16_t *rx_xlate_id2,
                                uint16_t *tx_xlate_id2);
 
+int pds_session_update_rewrite_flags(uint32_t session_id, uint16_t tx_rewrite,
+                                     uint16_t rx_rewrite);
 
 #ifdef __cplusplus
 }

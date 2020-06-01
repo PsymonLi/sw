@@ -130,11 +130,13 @@ pds_ipc_msglist_cb (sdk::ipc::ipc_msg_ptr ipc_msg, const void *ctx) {
         goto error;
     }
 
+    pds_vpp_worker_thread_barrier();
     // Stage 2: Publish
     ret = config_batch.commit();
     if (ret != sdk::SDK_RET_OK) {
         ipc_log_error("Commit failed [epoch:%u]", msglist->epoch);
     }
+    pds_vpp_worker_thread_barrier_release();
 
 error:
     // clear batch on both success and failure
