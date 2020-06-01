@@ -72,17 +72,13 @@ nacl_deny:
   seq           c2, d.u.nacl_deny_d.drop_reason, DROP_ICMP_FRAGMENT_PKT
   seq.!c2       c2, d.u.nacl_deny_d.drop_reason, DROP_IP_FRAGMENT_PKT
   seq.c2        c2, k.l4_metadata_ip_fragment_drop, FALSE
-  bcf           [c2], nacl_done 
+  nop.c2.e      
   phvwr.!c1     p.control_metadata_drop_reason[DROP_NACL], 1
   add           r1, offsetof(p, control_metadata_drop_reason), \
                     d.u.nacl_deny_d.drop_reason
   phvwrp.c1     r1, 0, 1, 1
   phvwr.e       p.control_metadata_nacl_stats_idx, d.u.nacl_deny_d.stats_idx
   phvwr.f       p.capri_intrinsic_drop, 1
-
-nacl_done:
-  nop.e
-  nop
 
 /*****************************************************************************/
 /* error function                                                            */

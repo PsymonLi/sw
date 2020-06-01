@@ -293,6 +293,12 @@ delphi_pub_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Error in updating port metrics, ret {}", ret);
     }
+
+    // Publish mirror stats to delphi
+    ret = mirror_session_stats_update();
+    if (unlikely(ret != HAL_RET_OK)) {
+        HAL_TRACE_ERR("Error publishing metrics, ret {}", ret);
+    }
 }
 
 static void

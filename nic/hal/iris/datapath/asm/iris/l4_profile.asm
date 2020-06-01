@@ -13,7 +13,7 @@ struct phv_          p;
 l4_profile:
     phvwrpair       p.l4_metadata_ip_fragment_drop, \
                         d.u.l4_profile_d.ip_fragment_drop, \
-						p.l4_metadata_ip_normalization_en, \
+                        p.l4_metadata_ip_normalization_en, \
                         d.u.l4_profile_d.ip_normalization_en
 
     phvwr           p.{l4_metadata_ip_rsvd_flags_action, \
