@@ -1213,29 +1213,26 @@ pd_mirror_stats_get (mirror_session_t *session,
         return HAL_RET_ERR;
     }
 
-    for (int i = 0; i < 8; i++) {
-        HAL_TRACE_DEBUG("Pkts[{}] : {}", i, 
-                        action_data.action_u.mirror_erspan_mirror.npkts[i]);
-        HAL_TRACE_DEBUG("Bytes[{}] : {}", i, 
-                        action_data.action_u.mirror_erspan_mirror.nbytes[i]);
-    }
-
     memrev(action_data.action_u.mirror_erspan_mirror.npkts, 8);
     memrev(action_data.action_u.mirror_erspan_mirror.nbytes, 8);
 
+#if 0
     for (int i = 0; i < 8; i++) {
         HAL_TRACE_DEBUG("After rev Pkts[{}] : {}", i, 
                         action_data.action_u.mirror_erspan_mirror.npkts[i]);
         HAL_TRACE_DEBUG("Bytes[{}] : {}", i, 
                         action_data.action_u.mirror_erspan_mirror.nbytes[i]);
     }
+#endif
 
     mirr_metrics->pkts = ARRAY_TO_UINT64(action_data.action_u.mirror_erspan_mirror.npkts);
     mirr_metrics->bytes = ARRAY_TO_UINT64(action_data.action_u.mirror_erspan_mirror.nbytes);
 
-    HAL_TRACE_DEBUG("Mirror session sw_id: {}, hw_id: {}, pkts: {}, bytes: {}",
-                    session->sw_id, hw_id, mirr_metrics->pkts,
-                    mirr_metrics->bytes);
+#if 0
+    HAL_TRACE_VERBOSE("Mirror session sw_id: {}, hw_id: {}, pkts: {}, bytes: {}",
+                      session->sw_id, hw_id, mirr_metrics->pkts,
+                      mirr_metrics->bytes);
+#endif
 
     return HAL_RET_OK;
 
