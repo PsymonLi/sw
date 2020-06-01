@@ -85,7 +85,7 @@ def __modify_security_profile(tc):
         obj.spec.timeouts.udp = "1s"
         obj.spec.timeouts.tcp_half_close = "1s"
         obj.spec.timeouts.tcp_close = "1s"
-        obj.spec.timeouts.tcp_connection_setup = "1s"
+        obj.spec.timeouts.tcp_connection_setup = "10s"
     return netagent_api.UpdateConfigObjects(sp_objects)
 
 def __restore_security_profile(tc):
