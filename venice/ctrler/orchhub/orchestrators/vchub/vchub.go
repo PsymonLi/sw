@@ -29,7 +29,7 @@ import (
 
 const (
 	storeQSize          = 64
-	defaultRetryCount   = 3
+	defaultRetryCount   = 1
 	defaultTagSyncDelay = 2 * time.Minute
 	retryDelay          = 30 * time.Second
 )

@@ -495,6 +495,23 @@ func (v *VCHub) handleVMotionFailed(m defs.VMotionFailedMsg) {
 			evtMsg := fmt.Sprintf("%v : Could not cancel migration of VM %s (%s). %s", v.OrchConfig.Name, vmName, wlObj.Name, err)
 			recorder.Event(eventtypes.MIGRATION_FAILED, evtMsg, wlObj)
 			v.Log.Errorf("%s", evtMsg)
+			// If workload is gone, delete pcache workload and let it get reprocessed
+			_, err := v.StateMgr.Controller().Workload().Find(wlObj.GetObjectMeta())
+			if err != nil {
+				v.Log.Infof("Workload gone on apiserver, deleting workload from pcache %s", wlObj.Name)
+				v.deleteWorkload(wlObj)
+			} else {
+				// Check if host no longer exists
+				hostMeta := &api.ObjectMeta{
+					Name: wlObj.Status.HostName,
+				}
+				_, err := v.StateMgr.Controller().Host().Find(hostMeta)
+				if err != nil {
+					// Delete workload
+					v.Log.Infof("Old host no longer exists, deleting workload from pcache %s", wlObj.Name)
+					v.deleteWorkload(wlObj)
+				}
+			}
 			// If workload has finished migration, but the call hasn't finished
 			// executing when we got the object from the cache, call might fail
 			v.resyncWorkload(wlObj)
@@ -639,19 +656,11 @@ func (v *VCHub) handleVMotionDone(m defs.VMotionDoneMsg) {
 func (v *VCHub) finalSyncMigration(wlObj *workload.Workload) {
 	v.Log.Infof("Performing final sync migration....")
 	wlName := wlObj.Name
-	newDCName := v.getDCNameForHost(wlObj.Spec.HostName)
-	newDC := v.GetDC(newDCName)
-	if newDC == nil {
-		errMsg := fmt.Errorf("Cannot Complete vMotion for %s - destination DC %s not found", wlName, newDCName)
-		v.Log.Errorf("%s", errMsg)
-		return
-	}
 	// There is no need to remove vlan overrides from old DVS. If old and new DVSs are the same
 	// those will get overwritten. If they are different, we can leave them on old DVS and those
 	// will get overwritten when the same port gets used again. Also vCenter seems to clearing it
 	// anyway
-	newDcID := newDC.dcRef.Value
-	if err := v.setVlanOverride(newDcID, wlObj); err != nil {
+	if err := v.setVlanOverride(wlObj, true, true); err != nil {
 		v.Log.Errorf("Cannot Complete vMotion for %s - not set vlan overrides", wlName)
 		// This should never happen, go ahead and continue doing other things
 	}
@@ -740,31 +749,83 @@ func (v *VCHub) releaseUsegVlans(wlObj *workload.Workload, old bool) error {
 	return nil
 }
 
-func (v *VCHub) setVlanOverride(dcID string, wlObj *workload.Workload) error {
+func (v *VCHub) setVlanOverride(wlObj *workload.Workload, forceWrite bool, withDelayWrite bool) error {
 	// for every microseg vlan of workload interfaces set it override vlan on
 	// corresponding interface of the DVS
-	dc := v.GetDCFromID(dcID)
-	dvs := dc.GetPenDVS(CreateDVSName(dc.Name))
+	if v.isWorkloadMigrating(wlObj) && !v.validateVnicInformation(wlObj) {
+		v.Log.Infof("SetVlanOverride call skipped for %s because workload's vnic information is invalid.", wlObj.Name)
+	}
+	wlName := wlObj.Name
+	dcName := v.getDCNameForHost(wlObj.Spec.HostName)
+	dc := v.GetDC(dcName)
+	if dc == nil {
+		errMsg := fmt.Errorf("Cannot Complete override for %s - host DC %s not found", wlName, dcName)
+		v.Log.Errorf("%s", errMsg)
+		return errMsg
+	}
+	// There is no need to remove vlan overrides from old DVS. If old and new DVSs are the same
+	// those will get overwritten. If they are different, we can leave them on old DVS and those
+	// will get overwritten when the same port gets used again. Also vCenter seems to clearing it anyway
+
+	dvsName := CreateDVSName(dc.Name)
+	dvs := dc.GetPenDVS(dvsName)
+	overrides := []overrideReq{}
 	for _, inf := range wlObj.Spec.Interfaces {
 		entry := v.getVnicInfoForWorkload(wlObj.Name, inf.MACAddress)
 		if entry == nil {
 			errMsg := fmt.Errorf("Vnic port information not found for workload %s, mac %s", wlObj.Name, inf.MACAddress)
 			v.Log.Errorf("%s", errMsg)
-			return errMsg
+			continue
 		}
-		// TODO: Handle retries if it fails
-		v.Log.Infof("setVlanOverride on dvs %s port %s vlan %d", dvs.DvsName, entry.Port, inf.MicroSegVlan)
-		err := dvs.SetVlanOverride(entry.Port, int(inf.MicroSegVlan), wlObj.Name, inf.MACAddress)
-		// vCenter has an issue although the config is correct, the proxy switch on the host is not correctly programmed
-		// Schedule a task to rewrite the same config 10s later
-		v.scheduleOverrideRewrite(dvs)
+		if !forceWrite && entry.portOverrideSet {
+			continue
+		}
+		overrides = append(overrides, overrideReq{
+			port: entry.Port,
+			vlan: int(inf.MicroSegVlan),
+			mac:  inf.MACAddress,
+		})
+	}
 
-		if err != nil {
-			v.Log.Errorf("Override vlan failed for workload %s, %s", wlObj.Name, err)
-			return err
+	if len(overrides) == 0 {
+		return nil
+	}
+
+	err := dvs.SetVMVlanOverrides(overrides, wlObj.Name, forceWrite)
+	if err != nil {
+		v.Log.Errorf("Override vlan failed for workload %s, %s", wlObj.Name, err)
+	} else {
+		for _, inf := range wlObj.Spec.Interfaces {
+			entry := v.getVnicInfoForWorkload(wlObj.Name, inf.MACAddress)
+			if entry != nil {
+				entry.portOverrideSet = true
+				v.addVnicInfoForWorkload(wlObj.Name, entry)
+			}
 		}
 	}
-	return nil
+
+	if withDelayWrite {
+		v.TimerQ.Add(func() {
+			v.Log.Infof("1s delayed override call for %s...", wlObj.Name)
+			evt := defs.Probe2StoreMsg{
+				MsgType: defs.RetryEvent,
+				Val: defs.RetryMsg{
+					Oper:      defs.WorkloadOverride,
+					ObjectKey: wlObj.Name,
+				},
+			}
+			select {
+			case <-v.Ctx.Done():
+				return
+			case v.vcReadCh <- evt:
+			}
+		}, time.Second)
+
+	}
+
+	v.scheduleOverrideRewrite(dvs)
+
+	return err
 }
 
 func (v *VCHub) scheduleOverrideRewriteHelper(dvs *PenDVS, count int) {
@@ -797,7 +858,7 @@ func (v *VCHub) scheduleOverrideRewrite(dvs *PenDVS) {
 		v.Log.Infof("scheduling override...")
 		dvs.writeTaskScheduled = true
 		v.TimerQ.Add(func() {
-			v.scheduleOverrideRewriteHelper(dvs, defaultRetryCount)
+			v.scheduleOverrideRewriteHelper(dvs, 1)
 		}, overrideRewriteDelay)
 	}
 	dvs.Unlock()
@@ -986,6 +1047,8 @@ func (v *VCHub) assignUsegs(workload *workload.Workload) {
 		return
 	}
 
+	overridesList := []overrideReq{}
+	dvs := penDC.GetPenDVS(CreateDVSName(dcName))
 	for i, inf := range workload.Spec.Interfaces {
 		v.Log.Debugf("processing inf %s", inf.MACAddress)
 		entry := v.getVnicInfoForWorkload(workload.Name, inf.MACAddress)
@@ -1000,8 +1063,6 @@ func (v *VCHub) assignUsegs(workload *workload.Workload) {
 			v.Log.Debugf("inf %s is already assigned %d", inf.MACAddress, inf.MicroSegVlan)
 			continue
 		}
-
-		dvs := penDC.GetPenDVS(CreateDVSName(dcName))
 
 		vlan, err := dvs.UsegMgr.GetVlanForVnic(inf.MACAddress, host)
 		if err == nil {
@@ -1022,18 +1083,15 @@ func (v *VCHub) assignUsegs(workload *workload.Workload) {
 			// Set useg
 			workload.Spec.Interfaces[i].MicroSegVlan = uint32(vlan)
 			v.Log.Debugf("inf %s assigned %d", inf.MACAddress, vlan)
-
-			// TODO: Handle retries if it fails
-			err = dvs.SetVlanOverride(entry.Port, vlan, workload.Name, inf.MACAddress)
-			v.scheduleOverrideRewrite(dvs)
-			if err != nil {
-				v.Log.Errorf("Override vlan failed for workload %s, %s", workload.Name, err)
-			} else {
-				entry.portOverrideSet = true
-				v.addVnicInfoForWorkload(workload.Name, entry)
-			}
+			overridesList = append(overridesList, overrideReq{
+				port: entry.Port,
+				vlan: vlan,
+				mac:  inf.MACAddress,
+			})
 		}
 	}
+
+	v.setVlanOverride(workload, false, false)
 }
 
 func (v *VCHub) processTags(prop types.PropertyChange, vcID string, dcID string, dcName string, workload *workload.Workload) {
@@ -1248,11 +1306,13 @@ func (v *VCHub) extractInterfaces(workloadName string, dcID string, dcName strin
 func (v *VCHub) validateVnicInformation(wlObj *workload.Workload) bool {
 	wlVnics := v.getWorkloadVnics(wlObj.Name)
 	if wlVnics == nil {
+		v.Log.Errorf("no vnics for workload %s", wlObj)
 		return false
 	}
 	dcName := v.getDCNameForHost(wlObj.Spec.HostName)
 	dc := v.GetDC(dcName)
 	if dc == nil {
+		v.Log.Errorf("No DC object for %s, workload %s", dcName, wlObj.Name)
 		return false
 	}
 	for _, entry := range wlVnics.Interfaces {

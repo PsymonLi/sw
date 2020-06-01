@@ -18,6 +18,7 @@ import (
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/session"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 )
 
@@ -55,6 +56,8 @@ func (v *VCHub) startEventsListener() {
 			case defs.VCEvent:
 				// These are watch events
 				v.handleVCEvent(m.Val.(defs.VCEventMsg))
+			case defs.RetryEvent:
+				v.handleRetryEvent(m.Val.(defs.RetryMsg))
 			case defs.VCConnectionStatus:
 				// we've reconnected, trigger sync
 				connStatus := m.Val.(session.ConnectionState)
@@ -220,6 +223,31 @@ func (v *VCHub) handleVCEvent(m defs.VCEventMsg) {
 		v.handleDC(m)
 	default:
 		v.Log.Errorf("Unknown object %s", m.VcObject)
+	}
+}
+
+func (v *VCHub) handleRetryEvent(m defs.RetryMsg) {
+	v.Log.Infof("Retry msg oper: %s object: %s", m.Oper, m.ObjectKey)
+	v.syncLock.RLock()
+	defer v.syncLock.RUnlock()
+	switch m.Oper {
+	case defs.WorkloadOverride:
+		// Rewrites the individual workload
+		// Fetch workload
+		meta := &api.ObjectMeta{
+			Name: m.ObjectKey,
+			// TODO: Don't use default tenant
+			Tenant:    globals.DefaultTenant,
+			Namespace: globals.DefaultNamespace,
+		}
+		wlObj := v.pCache.GetWorkload(meta)
+		if wlObj == nil {
+			v.Log.Infof("retry request for %s skipped since workload no longer exists", m.ObjectKey)
+			return
+		}
+		v.setVlanOverride(wlObj, true, false)
+	default:
+		v.Log.Errorf("Unknown rewrite oper %s", m.Oper)
 	}
 }
 

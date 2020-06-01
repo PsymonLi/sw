@@ -1371,12 +1371,24 @@ func TestHostDeleteFromDVS(t *testing.T) {
 
 	verifyHosts(dcHostMap)
 	verifyWorkloadCount(0)
+
+	endMsg := defs.VMotionFailedMsg{
+		VMKey:      vm2.Self.Value,
+		DstHostKey: hostSystem.Obj.Self.Value,
+		DcID:       dc1.Obj.Self.Value,
+	}
+	m = defs.VCNotificationMsg{
+		Type: defs.VMotionFailed,
+		Msg:  endMsg,
+	}
+	vchub.handleVCNotification(m)
+
 	// after sync the vm2 should still be on host2
 	// remove host1 from DVS
 	dvs.RemoveHost(hostSystem)
 	vchub.Sync()
 	verifyHosts(dcHostMap)
-	// verifyWorkloadCount(1)
+	verifyWorkloadCount(1)
 }
 
 func setupTestVCHub(vcURL *url.URL, stateMgr *statemgr.Statemgr, config *orchestration.Orchestrator, logger log.Logger, opts ...Option) *VCHub {

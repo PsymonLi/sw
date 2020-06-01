@@ -120,8 +120,8 @@ func (v *VCProbe) getPenPG(dcName string, pgName string, client *govmomi.Client)
 
 	net, err := finder.Network(v.ClientCtx, pgName)
 	if err != nil {
-		v.Log.Errorf("Port group for %s is not present in vCenter", pgName)
-		return nil, fmt.Errorf("Port group for %s is not present in vCenter", pgName)
+		v.Log.Errorf("Port group for %s is not present in vCenter: %s", pgName, err)
+		return nil, fmt.Errorf("Port group for %s is not present in vCenter, %s", pgName, err)
 	}
 	objPg, ok := net.(*object.DistributedVirtualPortgroup)
 	if !ok {

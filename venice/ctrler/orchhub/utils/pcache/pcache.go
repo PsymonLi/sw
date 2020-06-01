@@ -390,9 +390,22 @@ func (p *PCache) writeStateMgr(in interface{}) error {
 			}
 			obj.Labels = labels
 			// Object exists and is changed
-			if !reflect.DeepEqual(&currObj.Workload.Spec, obj.Spec) ||
-				!reflect.DeepEqual(&currObj.Workload.Status, obj.Status) ||
-				!reflect.DeepEqual(&currObj.Workload.Labels, obj.Labels) {
+			// Set nil arrays to be arrays of length 0
+			currWorkload := currObj.Workload
+			for i := range currWorkload.Spec.Interfaces {
+				if len(currWorkload.Spec.Interfaces[i].IpAddresses) == 0 {
+					currWorkload.Spec.Interfaces[i].IpAddresses = []string{}
+				}
+			}
+			for i := range obj.Spec.Interfaces {
+				if len(obj.Spec.Interfaces[i].IpAddresses) == 0 {
+					obj.Spec.Interfaces[i].IpAddresses = []string{}
+				}
+			}
+
+			if !reflect.DeepEqual(currWorkload.Spec, obj.Spec) ||
+				!reflect.DeepEqual(currWorkload.Status, obj.Status) ||
+				!reflect.DeepEqual(currWorkload.Labels, obj.Labels) {
 				for i := 0; i < writeRetries; i++ {
 					// CAS check is needed in case user adds labels to an object
 					obj.ResourceVersion = currObj.ResourceVersion
@@ -436,9 +449,9 @@ func (p *PCache) writeStateMgr(in interface{}) error {
 			}
 			obj.Labels = labels
 			// Object exists and is changed
-			if !reflect.DeepEqual(&currObj.Host.Spec, obj.Spec) ||
-				!reflect.DeepEqual(&currObj.Host.Status, obj.Status) ||
-				!reflect.DeepEqual(&currObj.Host.Labels, obj.Labels) {
+			if !reflect.DeepEqual(currObj.Host.Spec, obj.Spec) ||
+				!reflect.DeepEqual(currObj.Host.Status, obj.Status) ||
+				!reflect.DeepEqual(currObj.Host.Labels, obj.Labels) {
 				for i := 0; i < writeRetries; i++ {
 					// CAS check is needed in case user adds labels to an object
 					obj.ResourceVersion = currObj.ResourceVersion

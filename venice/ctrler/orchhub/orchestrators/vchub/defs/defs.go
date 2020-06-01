@@ -59,6 +59,8 @@ var DefaultDVSPrefix = fmt.Sprintf("%sDVS-", DefaultPrefix)
 const (
 	// VCEvent indicates a vc event
 	VCEvent = Probe2StoreMsgType("VCEvent")
+	// RetryEvent indicates a vchub retry event
+	RetryEvent = Probe2StoreMsgType("RetryEvent")
 	// VCNotification indicates a notification (event) received from vCenter
 	VCNotification = Probe2StoreMsgType("VCNotification")
 	// VCConnectionStatus indicates probe has re-established connection
@@ -142,6 +144,20 @@ type VCEventMsg struct {
 	DcID       string
 	DcName     string
 	Originator string // Identifier for the VC that originated the update
+}
+
+// RetryMsgOper identifies the type of retry operation
+type RetryMsgOper string
+
+const (
+	// WorkloadOverride identifies a request to rewrite the override for the workload
+	WorkloadOverride = RetryMsgOper("workloadOverride")
+)
+
+// RetryMsg specifies a retry event
+type RetryMsg struct {
+	Oper      RetryMsgOper
+	ObjectKey string
 }
 
 // VCNotificationType indicates notification types

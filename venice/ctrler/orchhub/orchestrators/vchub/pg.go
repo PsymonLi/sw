@@ -49,7 +49,7 @@ func (d *PenDVS) AddPenPG(pgName string, networkMeta api.ObjectMeta) error {
 	if err != nil {
 		evtMsg := fmt.Sprintf("%v : Failed to set configuration for port group %s in Datacenter %s. %v", d.State.OrchConfig.Name, networkMeta.Name, d.DcName, err)
 		d.Log.Errorf("%s, err %s", evtMsg, err)
-		if d.Ctx.Err() == nil {
+		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
 		}
 	}
@@ -336,7 +336,9 @@ func (v *VCHub) handlePG(m defs.VCEventMsg) {
 		v.Log.Errorf("Failed to set vlan config for PG %s, %s", pgConfig.Name, err)
 
 		evtMsg := fmt.Sprintf("%v : Failed to set vlan config for PG %s. %s", v.State.OrchConfig.Name, pgConfig.Name, err)
-		recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
+		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
+			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
+		}
 		return
 	}
 

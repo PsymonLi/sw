@@ -64,6 +64,13 @@ func TestPcache(t *testing.T) {
 			APIVersion: "v1",
 		},
 		ObjectMeta: *expMeta,
+		Spec: workload.WorkloadSpec{
+			Interfaces: []workload.WorkloadIntfSpec{
+				workload.WorkloadIntfSpec{
+					MACAddress: "aaaa.bbbb.cccc",
+				},
+			},
+		},
 	}
 	err = pCache.Set("Workload", expWorkload)
 	AssertOk(t, err, "Failed to write workload")

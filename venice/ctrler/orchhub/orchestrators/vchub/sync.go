@@ -504,8 +504,8 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 	v.Log.Debugf("Overrides currently set %+v", overrides)
 
 	// Set assignments.
+	overridesList := []overrideReq{}
 	for _, vm := range vms {
-		workloadName := v.createVMWorkloadName(dc.Self.Value, vm.Self.Value)
 		for _, d := range vm.Config.Hardware.Device {
 			macStr, port, _, ok := v.parseVnic(d)
 			if !ok {
@@ -518,36 +518,39 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 				// We didn't assign this vm a useg yet.
 			}
 			if vlan != overrides[port].vlan {
+				// We have an assignment for this vnic that is different, change the override to the right value
+				overridesList = append(overridesList, overrideReq{
+					port: port,
+					vlan: vlan,
+					mac:  macStr,
+				})
 				// assign the right override value
 				v.Log.Errorf("Reassigning vlan to have the override of %v", vlan)
-				// We have an assignment for this vnic that is different, change the override to the right value
-				err := penDvs.SetVlanOverride(port, vlan, workloadName, macStr)
-				if err != nil {
-					v.Log.Errorf("Failed to set vlan override. DC %s DVS %s port %s vlan %s. Err %s", penDvs.DcName, penDvs.DvsName, port, vlan, err)
-					continue // Don't delete from overrides as it has the wrong vlan still. We'll try to reset the vlan completely
-				}
 			}
 			delete(overrides, port)
 		}
 	}
-
-	// Any ports left should be reset
-	resetMap := map[string][]string{}
-	for port, entry := range overrides {
-		if entry.pg == "" {
-			// Don't know what to set this PG back to, so we reset to 0
-			// This should never happen
-			continue
-		}
-		pgName := pgKeyToName[entry.pg]
-		ports, ok := resetMap[pgName]
-		if !ok {
-			ports = []string{}
-		}
-		resetMap[pgName] = append(ports, port)
+	err = penDvs.SetVMVlanOverrides(overridesList, "", true)
+	if err != nil {
+		v.Log.Errorf("Failed to set vlan override. DC %s DVS %s. Err %s", penDvs.DcName, penDvs.DvsName, err)
 	}
+
 	// Resetting vlan overrides is not needed. As soon as port is disconnected,
 	// the pvlan settings are restored.
+	// resetMap := map[string][]string{}
+	// for port, entry := range overrides {
+	// 	if entry.pg == "" {
+	// 		// Don't know what to set this PG back to, so we reset to 0
+	// 		// This should never happen
+	// 		continue
+	// 	}
+	// 	pgName := pgKeyToName[entry.pg]
+	// 	ports, ok := resetMap[pgName]
+	// 	if !ok {
+	// 		ports = []string{}
+	// 	}
+	// 	resetMap[pgName] = append(ports, port)
+	// }
 	// v.Log.Debugf("Resetting vlan overrides for unused ports %v", resetMap)
 	// err = penDvs.SetPvlanForPorts(resetMap)
 	// if err != nil {

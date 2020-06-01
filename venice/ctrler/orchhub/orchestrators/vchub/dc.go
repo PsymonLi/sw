@@ -73,7 +73,7 @@ func (v *VCHub) NewPenDC(dcName, dcID string) (*PenDC, error) {
 		evtMsg := fmt.Sprintf("%v : Failed to create DVS in Datacenter %s. %v", v.State.OrchConfig.Name, dcName, err)
 		v.Log.Errorf(evtMsg)
 
-		if v.Ctx.Err() == nil {
+		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 		}
 
@@ -193,7 +193,9 @@ func (d *PenDC) AddPG(pgName string, networkMeta api.ObjectMeta, dvsName string)
 		evtMsg := fmt.Sprintf("%v : Failed to add network %s in Datacenter %s due to missing DVS. Please check vCenter account permissions.", d.State.OrchConfig.Name, networkMeta.Name, d.Name)
 		err := fmt.Errorf(evtMsg)
 		errs = append(errs, err)
-		recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
+		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
+			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
+		}
 
 		return errs
 	}

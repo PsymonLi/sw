@@ -8,6 +8,7 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 
+	apiserverutils "github.com/pensando/sw/api/hooks/apiserver/utils"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/useg"
@@ -218,13 +219,13 @@ func (d *PenDVS) GetPortSettings() ([]types.DistributedVirtualPort, error) {
 	return d.probe.GetPenDVSPorts(d.DcName, d.DvsName, &types.DistributedVirtualSwitchPortCriteria{}, 1)
 }
 
-// SetVlanOverride overrides the port settings with the given vlan
-func (d *PenDVS) SetVlanOverride(port string, vlan int, workloadName string, mac string) error {
+// SetPortVlanOverride overrides the port settings with the given vlan
+func (d *PenDVS) SetPortVlanOverride(port string, vlan int, workloadName string, mac string) error {
 	// Get lock to prevent two different threads
 	// configuring the dvs at the same time.
 	d.Lock()
 	defer d.Unlock()
-	d.Log.Debugf("SetVlanOverride called with port: %v vlan:%v", port, vlan)
+	d.Log.Debugf("SetPortVlanOverride called with port: %v vlan:%v", port, vlan)
 	ports := vcprobe.PenDVSPortSettings{
 		port: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
 			VlanId: int32(vlan),
@@ -236,7 +237,46 @@ func (d *PenDVS) SetVlanOverride(port string, vlan int, workloadName string, mac
 
 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s interface %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, mac, err)
 
-		if d.Ctx.Err() == nil {
+		if d.Ctx.Err() == nil && d.probe.IsSessionReady() {
+			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
+		}
+		return err
+	}
+	return nil
+}
+
+type overrideReq struct {
+	port string
+	vlan int
+	mac  string
+}
+
+// SetVMVlanOverrides sets all overrides for the given workload
+func (d *PenDVS) SetVMVlanOverrides(interfaces []overrideReq, workloadName string, force bool) error {
+	if len(interfaces) == 0 {
+		return nil
+	}
+	// Get lock to prevent two different threads
+	// configuring the dvs at the same time.
+	d.Lock()
+	defer d.Unlock()
+	ports := vcprobe.PenDVSPortSettings{}
+	d.Log.Infof("SetVMVlanOverrides called for workload %s", workloadName)
+	d.Log.Debugf("SetVMVlanOverrides called for workload %s with %+v", workloadName, interfaces)
+	for _, inf := range interfaces {
+		port := inf.port
+		vlan := inf.vlan
+		ports[port] = &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+			VlanId: int32(vlan),
+		}
+	}
+	err := d.probe.UpdateDVSPortsVlan(d.DcName, d.DvsName, ports, force, defaultRetryCount)
+	if err != nil {
+		d.Log.Errorf("Failed to set vlan override for DC %s - dvs %s, err %s", d.DcName, d.DvsName, err)
+
+		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s for workload %s. Traffic may be impacted. %v", d.State.OrchConfig.Name, d.DcName, workloadName, err)
+
+		if workloadName != "" && d.Ctx.Err() == nil && d.probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, d.State.OrchConfig)
 		}
 		return err
@@ -303,6 +343,12 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 
 		host := workload.Spec.HostName
 
+		// if workload is migrating, skip processing
+		if apiserverutils.IsWorkloadMigrating(workload) {
+			v.Log.Debugf("Skipping migrating workload %s", workload.Name)
+			continue
+		}
+
 		vnics := v.getWorkloadVnics(workload.Name)
 		if vnics == nil {
 			v.Log.Debugf("No VNIC info for workload %s", workload.Name)
@@ -340,7 +386,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		// Error message doesn't have workload name since we don't know which overrides failed
 		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s. Traffic may be impacted. %v", v.OrchConfig.Name, dcName, err)
 
-		if v.Ctx.Err() == nil {
+		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 		}
 	}
@@ -447,7 +493,7 @@ func (v *VCHub) handleDVS(m defs.VCEventMsg) {
 		if err != nil {
 			v.Log.Errorf("Failed to recreate DVS for DC %s, %s", m.DcName, err)
 			// Generate event
-			if v.Ctx.Err() == nil {
+			if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
 				evtMsg := fmt.Sprintf("%v : Failed to recreate DVS in Datacenter %s. %v", v.State.OrchConfig.Name, m.DcName, err)
 				recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 			}
@@ -514,7 +560,7 @@ func (v *VCHub) handleDVS(m defs.VCEventMsg) {
 		v.Log.Errorf("Failed to write DVS %s config back, err %s ", dvs.DvsName, err)
 
 		// Generate event
-		if v.Ctx.Err() == nil {
+		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
 			evtMsg := fmt.Sprintf("%v : Failed to write DVS %s config back to Datacenter %v. %v", v.State.OrchConfig.Name, dvs.DvsName, m.DcName, err)
 			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
 		}

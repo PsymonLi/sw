@@ -623,6 +623,8 @@ func (v *VCProbe) withRetry(fn func() (interface{}, error), count int) (interfac
 		if i < count {
 			v.Log.Errorf("oper failed: %s, retrying...", err)
 			v.CheckSession = true
+		} else if i == count {
+			return ret, err
 		}
 		select {
 		case <-ctx.Done():
