@@ -1,13 +1,25 @@
 ---
 version: 2.0
 targets:
+  linux-rpm-build:
+    commands: [ "sh", "-c", "if [ x$RELEASE = x ] ; then echo RELEASE is not set ; else tar zxf /sw/naples_fw_all.tgz -C /sw && cd /sw && TOPDIR=/sw /sw/platform/tools/drivers-linux-eth/generate-rpms.sh && asset-push builds hourly $RELEASE /sw/platform/gen/linux-rpms.tar.xz ; fi" ]
+    owners: ["email:dbarsky@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+      - build-iris-arm
+
   linux-versions-build-test:
     commands: [ "sh", "-c", "/sw/platform/tools/drivers-linux-build-test.sh" ]
     owners: ["email:allenbh@pensando.io"]
     area:
     sub-area:
     feature:
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/platform"
 
+logfiles:
+  - /sw/platform/gen/linux-rpms.tar.xz

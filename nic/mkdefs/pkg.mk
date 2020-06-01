@@ -69,6 +69,8 @@ package-ionic:
 	${TOPDIR}/platform/tools/drivers-linux.sh
 	@echo "Building IONIC driver package (Ethernet Only)."
 	${TOPDIR}/platform/tools/drivers-linux-eth.sh
+#	@echo "Building IONIC driver RPMs (Ethernet Only)."
+#	${TOPDIR}/platform/tools/drivers-linux-eth/generate-rpms.sh
 
 .PHONY: package-esx
 package-esx:

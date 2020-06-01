@@ -1,40 +1,50 @@
-%define kernel %(uname -r)
+%define kernel KERNEL
+%define kernel_release %(uname -r)
+%define ionic_version 0.0.0
+
 %define debug_package %{nil}
 
-Name:		ionic
-Version:	0.0.0
-Release:	1%{?dist}
-Summary:	Pensando IONIC Driver
+%define release RELEASE
+%define distro DISTRO
 
-#Group:		
+Name:		RPM
+Vendor:		Pensando Systems
+Version:	%{ionic_version}
+Release:	%{release}.%{distro}
+Summary:	Pensando Systems IONIC Driver
+URL:		https://pensando.io
+
+Group:		System Environment/Kernel
 License:	GPLv2
-#URL:		
-Source:		ionic-0.0.0.tar.gz
+Source:		RPM-%{ionic_version}.tar.gz
 
-BuildRequires:	kernel-devel
-#Requires:	
+BuildRequires:	REQUIRES-devel = %{kernel}
+Requires:	REQUIRES = %{kernel}
 
 %description
-Pensando IONIC Driver
+This package provides the Pensando Systems IONIC kernel driver (ionic.ko).
 
 %prep
 
 %setup -q
 
 %build
+sh build.sh
+echo "ionic" > ionic.conf
 
 %install
 mkdir -p %{buildroot}/etc/modules-load.d
-mkdir -p %{buildroot}/lib/modules/%{kernel}/kernel/drivers/net
+mkdir -p %{buildroot}/lib/modules/%{kernel_release}/kernel/drivers/net
 install -m 644 ionic.conf %{buildroot}/etc/modules-load.d
-install -m 644 ionic.ko %{buildroot}/lib/modules/%{kernel}/kernel/drivers/net
+install -m 644 drivers/eth/ionic/ionic.ko %{buildroot}/lib/modules/%{kernel_release}/kernel/drivers/net
 
 %files
-%defattr(0644, root, -)
+%defattr(0644, root, root)
 /etc/modules-load.d/ionic.conf
-/lib/modules/%{kernel}/kernel/drivers/net/ionic.ko
+/lib/modules/%{kernel_release}/kernel/drivers/net/ionic.ko
 
 %post
+echo 'SUBSYSTEM=="net", ENV{ID_VENDOR_ID}=="0x1dd8", NAME="$env{ID_NET_NAME_PATH}"' > /etc/udev/rules.d/81-pensando-net.rules
 depmod -a
 modprobe ionic
 
@@ -42,3 +52,5 @@ modprobe ionic
 rmmod ionic
 
 %changelog
+* Thu Apr 16 2020 Drew Michaels <dmichaels@pensando.io>
+- First package release.

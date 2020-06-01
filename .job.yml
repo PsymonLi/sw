@@ -271,7 +271,7 @@ jobs:
   platform:
     labels: ["precommit", "hourly"]
   platform/drivers/linux:
-    labels: ["precommit", "hourly"]
+    labels: ["precommit", "2xhourly"]
   platform/src/app/pciemgrd:
     labels: ["precommit", "hourly"]
   storage/offload:
