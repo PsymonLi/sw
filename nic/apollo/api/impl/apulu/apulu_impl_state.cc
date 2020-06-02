@@ -53,11 +53,11 @@ apulu_impl_state::apulu_impl_state(pds_state *state) {
                     false);
 
     // allocate indexer for DHCP relay specific NACLs
-    dhcp_nacl_idxr_ =
+    high_prio_nacl_idxr_ =
         rte_indexer::factory(PDS_IMPL_NACL_BLOCK_HIGH_PRIO_DYNAMIC_MAX -
                              PDS_IMPL_NACL_BLOCK_HIGH_PRIO_DYNAMIC_MIN + 1,
                              true, false);
-    SDK_ASSERT(dhcp_nacl_idxr_ != NULL);
+    SDK_ASSERT(high_prio_nacl_idxr_ != NULL);
 
     // bookkeeping for CoPP table
     p4pd_global_table_properties_get(P4TBL_ID_COPP, &tinfo);
@@ -81,7 +81,7 @@ apulu_impl_state::~apulu_impl_state() {
     sltcam::destroy(ingress_drop_stats_tbl_);
     sltcam::destroy(egress_drop_stats_tbl_);
     rte_indexer::destroy(nacl_idxr_);
-    rte_indexer::destroy(dhcp_nacl_idxr_);
+    rte_indexer::destroy(high_prio_nacl_idxr_);
     rte_indexer::destroy(copp_idxr_);
     rte_indexer::destroy(nat_idxr_);
     rte_indexer::destroy(dnat_idxr_);

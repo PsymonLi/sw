@@ -656,10 +656,26 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
                       "host lifs not associated with any subnet", nacl_idx);
         ret = sdk::SDK_RET_HW_PROGRAM_ERR;
         goto error;
-    } else {
-        PDS_TRACE_DEBUG("Programmed NACL entry idx %u to drop traffic from "
-                        "host lifs not associated with any subnet", nacl_idx);
     }
+
+    // drop IP fragments received on uplinks
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.control_metadata_rx_packet = 1;
+    key.control_metadata_lif_type = P4_LIF_TYPE_UPLINK;
+    key.control_metadata_ip_fragment = 1;
+    key.control_metadata_tunneled_packet = 1;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.control_metadata_rx_packet_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    mask.control_metadata_ip_fragment_mask = ~0;
+    mask.control_metadata_tunneled_packet_mask = ~0;
+    data.action_id = NACL_NACL_DROP_ID;
+    SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // cap ARP requests from host lifs to 256/sec
     ret = apulu_impl_db()->copp_idxr()->alloc(&idx);

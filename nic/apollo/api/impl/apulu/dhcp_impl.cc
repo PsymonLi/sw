@@ -73,7 +73,7 @@ dhcp_policy_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         // NOTE: even if we partially acquire resources and fail eventually,
         //       this will ensure that proper release of resources will happen
         api_obj->set_rsvd_rsc();
-        ret = apulu_impl_db()->dhcp_nacl_idxr()->alloc_block(&idx, 2);
+        ret = apulu_impl_db()->high_prio_nacl_idxr()->alloc_block(&idx, 2);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to allocate NACL entries for %s, "
                           "err %u", spec->key.str(), ret);
@@ -93,7 +93,7 @@ dhcp_policy_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
 sdk_ret_t
 dhcp_policy_impl::release_resources(api_base *api_obj) {
     if (nacl_idx_ != 0xFFFF) {
-        apulu_impl_db()->dhcp_nacl_idxr()->free(nacl_idx_, 2);
+        apulu_impl_db()->high_prio_nacl_idxr()->free(nacl_idx_, 2);
     }
     return SDK_RET_OK;
 }
@@ -101,7 +101,7 @@ dhcp_policy_impl::release_resources(api_base *api_obj) {
 sdk_ret_t
 dhcp_policy_impl::nuke_resources(api_base *api_obj) {
     if (nacl_idx_ != 0xFFFF) {
-        apulu_impl_db()->dhcp_nacl_idxr()->free(nacl_idx_, 2);
+        apulu_impl_db()->high_prio_nacl_idxr()->free(nacl_idx_, 2);
     }
     return SDK_RET_OK;
 }

@@ -197,7 +197,7 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME);
@@ -211,21 +211,21 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_PAGE_ADDR_TX;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_DEC_PAGE_BIG_TX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_BIG_RNMPR_TABLE_BASE;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMPR_BIG_RX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMPR_BIG_TX_NAME);
@@ -239,14 +239,14 @@ apulu_impl::txdma_symbols_init_(void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_DEC_NMDR_CI;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_CI;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= TXDMA_SYMBOLS_MAX);
-     
+
     symbols[i].name = IPSEC_RNMPR_TABLE_BASE;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMPR_RX_NAME);
@@ -495,14 +495,23 @@ apulu_impl::nacl_init_(void) {
     mask.key_metadata_ktype_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program NACL entry for ipv6 drop");
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
-    } else {
-        PDS_TRACE_DEBUG("Programmed NACL entry idx %d, ktype %d, lif %d",
-                        idx - 1, key.key_metadata_ktype,
-                        key.capri_intrinsic_lif);
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
+
+    // drop all IP fragments from host lifs
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.control_metadata_rx_packet = 0;
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
+    key.control_metadata_ip_fragment = 1;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.control_metadata_rx_packet_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    mask.control_metadata_ip_fragment_mask = ~0;
+    data.action_id = NACL_NACL_DROP_ID;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
 #if 0
     // TODO: we need this for EP aging probes !!!
@@ -558,16 +567,7 @@ apulu_impl::nacl_init_(void) {
     mask.key_metadata_proto_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program drop entry for DHCP responses on "
-                      "host lifs");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    } else {
-        PDS_TRACE_DEBUG("Programmed NACL entry idx %d, ktype %d, lif %d",
-                        idx - 1, key.key_metadata_ktype,
-                        key.capri_intrinsic_lif);
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
     // install a NACL to use nexthop information from the ARM header for packets
     // that are re-injected by vpp or learn thread
@@ -580,23 +580,10 @@ apulu_impl::nacl_init_(void) {
     mask.arm_to_p4i_nexthop_valid_mask = ~0;
     data.action_id = NACL_NACL_REDIRECT_ID;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program redirect entry for re-injected pkts "
-                      "from s/w datapath");
-        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
-        goto error;
-    } else {
-        PDS_TRACE_DEBUG("Programmed NACL entry idx %d, ktype %d, lif %d",
-                        idx - 1, key.key_metadata_ktype,
-                        key.capri_intrinsic_lif);
-    }
+    SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
     // make sure we stayed with in the global entry range in the TCAM table
     SDK_ASSERT(idx <= PDS_IMPL_NACL_BLOCK_LEARN_MIN);
     return SDK_RET_OK;
-
-error:
-
-    return ret;
 }
 
 sdk_ret_t
