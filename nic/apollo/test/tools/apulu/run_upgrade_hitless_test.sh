@@ -14,42 +14,48 @@ rm -rf /root/.pcie*  # pciemgrd saves here in sim mode
 rm -rf /sw/nic/*.log /sw/nic/core.*
 mkdir -p /update
 
-function kill_process() {
-    pid=`pgrep -f $1`
+function terminate() {
+    pid=`pgrep -f "$1"`
     if [ -n "$pid" ];then
         kill -TERM $pid
         sleep $2
     fi
 }
 
+function check_status() {
+    file=$1
+    count=0
+    while [ ! -f $file ];do
+        echo "waiting for file $f"
+        sleep 1
+        count=`expr $count + 1`
+        if [ $count -ge 240 ];then
+            echo "Time exceeded"
+            exit 1
+        fi
+    done
+}
+
 function trap_finish () {
-    kill_process 'start_upgrade_hitless_process.sh' 5
-    kill_process 'cap_model' 0
-    kill_process 'main.py' 0
-    kill_process 'dhcpd' 0
+    terminate 'start_upgrade_hitless_process.sh' 5
+    terminate 'cap_model' 0
+    terminate 'main.py' 0
+    terminate 'dhcpd' 0
 }
 trap trap_finish EXIT SIGTERM
 
 # start the model
 # model used the current directory in sim. this cannot be avoided
-$MY_DIR/start-model.sh &
+$MY_DIR/start-model.sh /dev/null &
 sudo $MY_DIR/../../../tools/$PIPELINE/start-dhcpd-sim.sh -p apulu
 
 # set the upgrade domain id
-rm -f  /tmp/agent_up
+rm -f /tmp/agent_up
+rm -f /tmp/start_new
 # set the domain. but this bringup is in default mode
 sh $MY_DIR/start_upgrade_hitless_process.sh $UPGRADE_DOMAIN_A "0" &
 # wait for this to be up
-count=0
-while [ ! -f /tmp/agent_up ];do
-    echo "waiting for agent up"
-    sleep 1
-    count=`expr $count + 1`
-    if [ $count -ge 240 ];then
-        echo "Agent bringup time exceeded"
-        exit 1
-    fi
-done
+check_status '/tmp/agent_up'
 
 # start DOL now
 # dol required the below for device config and log access
@@ -59,4 +65,11 @@ export PDSPKG_TOPDIR="/tmp/$UPGRADE_DOMAIN_A"
 #/sw/dol/main.py $DOL_ARGS 2>&1 | tee dol.log
 #status=${PIPESTATUS[0]}
 
-$BUILD_DIR/bin/pdsupgclient -m hitless
+$BUILD_DIR/bin/pdsupgclient -m hitless &
+
+# wait for second process request
+check_status /tmp/start_new
+dom=`cat /tmp/start_new`
+sh $MY_DIR/start_upgrade_hitless_process.sh $dom "1" &
+
+wait

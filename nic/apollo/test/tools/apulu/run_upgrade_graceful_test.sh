@@ -6,6 +6,8 @@ MY_DIR=$( readlink -f $( dirname $0 ))
 DOL_ARGS='--pipeline apulu --topo learn --feature learn'
 source $MY_DIR/../../../tools/setup_dol.sh $DOL_ARGS
 
+set -x
+
 # setup upgrade
 source $MY_DIR/../setup_upgrade_gtests.sh
 upg_operd_init
@@ -15,9 +17,9 @@ upg_wait_for_pdsagent
 # override trap
 function trap_finish () {
     rm -rf /update/*     # upgrade init mode
+    upg_finish upgmgr
     stop_processes
     stop_model
-    upg_finish upgmgr
 }
 trap trap_finish EXIT
 
@@ -30,7 +32,7 @@ status=${PIPESTATUS[0]}
 sleep 2
 
 # start upgrade manager
-upg_setup $BUILD_DIR/gen/upgrade_graceful.json upgrade_graceful.json
+upg_setup $BUILD_DIR/gen/upgrade_graceful_sim.json upgrade_graceful.json
 $BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > upgrade_mgr.log 2>&1 &
 sleep 2
 

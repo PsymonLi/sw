@@ -332,7 +332,7 @@ class ExecutePdsUpgradeFsmTest(object):
         execute(cmd="pkill pdsupgmgr", return_check=False)
         execute(cmd="source {0} && upg_finish upgmgr".format(
             self.setup_upgrade_gtests),
-            return_check=True)
+            return_check=False)
 
     def __start_pds_upgrade_client__(self):
         Log("", "INFO", message(9).format(self.pdsupgclient), call_stack=False)

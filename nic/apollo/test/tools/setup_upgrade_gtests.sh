@@ -36,6 +36,18 @@ function upg_setup() {
     cp $1 $CONFIG_PATH/gen/$2
 }
 
+function collect_techsupport () {
+    echo "======> Recording captain's logs, stardate `date +%x_%H:%M:%S:%N`"
+    if ls ${PDSPKG_TOPDIR}/core.* 1> /dev/null 2>&1; then
+        echo " *** waiting for the core to be produced"
+        sleep 60
+    fi
+    echo " *** Collecting Techsupport ${PDSPKG_TOPDIR}/${TS_NAME} - Please wait..."
+    techsupport -c ${CONFIG_PATH}/${PIPELINE}/techsupport_dol.json -d ${PDSPKG_TOPDIR} -o nic_sanity_logs.tar.gz >/dev/null 2>&1
+    [[ $? -ne 0 ]] && echo "ERR: Failed to collect techsupport" && return
+    return 0
+}
+
 function upg_finish() {
     echo "===== Collecting logs for $1 ====="
     for f in "/tmp/upgrade_*.log"; do
@@ -44,7 +56,10 @@ function upg_finish() {
         fi
     done
     operdctl dump $OPERD_REGION > upgrade.log
-    ${PDSPKG_TOPDIR}/apollo/test/tools/savelogs.sh
+    operdctl dump $OPERD_REGION # dump to the console
+
+    collect_techsupport $1
+    ${PDSPKG_TOPDIR}/tools/print-cores.sh
     rm -f $CONFIG_PATH/operd-regions.json
     rm -f ${CONFIG_PATH}/pipeline.json
 }

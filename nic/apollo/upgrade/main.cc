@@ -24,6 +24,7 @@ static sdk::ipc::ipc_msg_ptr g_ipc_msg_in_ptr;
 static upg_event_msg_t g_upg_event_msg_in;
 
 #define UPGRADE_IPC_PEER_SOCK_NAME "/tmp/upgrade_ipc_peer.sock"
+#define UPGRADE_PEER_BRINGUP_WAIT_CNT 300 // 300 seconds considering sim
 
 namespace sdk {
 namespace upg {
@@ -115,6 +116,7 @@ static sdk_ret_t
 upg_peer_init (bool client)
 {
     sdk_ret_t ret;
+    uint32_t count = 0;
 
     g_ipc_peer_ctx = ipc_peer_ctx::factory(NULL,
                                            PDS_IPC_PEER_TCP_PORT_UPGMGR,
@@ -133,9 +135,17 @@ upg_peer_init (bool client)
         g_ipc_peer_ctx->recv_cb = upg_interactive_request;
     } else {
         UPG_TRACE_INFO("Connecting to the peer");
-        ret = g_ipc_peer_ctx->connect();
-        if (ret != SDK_RET_OK) {
-            UPG_TRACE_ERR("Peer IPC connection failed");
+        while (count < UPGRADE_PEER_BRINGUP_WAIT_CNT) {
+            ret = g_ipc_peer_ctx->connect();
+            if (ret == SDK_RET_OK) {
+                break;
+            }
+            UPG_TRACE_ERR("Peer IPC connection failed, try-count %u, ret %u",
+                          count, ret);
+            sleep(1);
+            count++;
+        }
+        if (count >= UPGRADE_PEER_BRINGUP_WAIT_CNT) {
             goto err_exit;
         }
         g_ipc_peer_ctx->recv_cb = upg_interactive_response;

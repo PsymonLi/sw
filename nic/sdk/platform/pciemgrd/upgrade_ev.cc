@@ -61,10 +61,14 @@ upg_ev_backup_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     pciesys_loginfo("Upgrade handler, event %s mode %u\n",
                     sdk::upg::upg_event2str(params->id), params->mode);
+// on simulator both backup and restore are in same location
+// it causes issues as state_save over-writes the file.
+#ifdef __aarch64__
     if (upgrade_state_save() < 0) {
         pciesys_logerror("Upgrade handler, state save failed\n");
         return SDK_RET_ERR;
     }
+#endif
     return SDK_RET_OK;
 }
 
