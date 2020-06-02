@@ -64,6 +64,8 @@ func establishConn() bool {
 // intervals; this keeps the collection and distribution overhead lower
 func periodicTransmit() {
 	defer global.wg.Done()
+	atomic.StoreInt64(&global.lastSent, time.Now().Unix())
+
 	for {
 		if global.mc == nil && !establishConn() {
 			return
@@ -149,6 +151,8 @@ func sendAllObjs(ctx context.Context) error {
 		}
 		atomic.AddUint64(&global.numPoints, uint64(len(mb.Metrics)))
 	}
+
+	atomic.StoreInt64(&global.lastSent, time.Now().Unix())
 	return nil
 }
 
@@ -186,12 +190,6 @@ func createNewMetricPoint(obj *iObj, ts time.Time) {
 	// - current timestamp for the obj is zero then the point is empty and can be filled in by the field
 	// - if timestamp is same as specified by the caller, then two fields can be part of the same point
 	if obj.atomic || obj.ts.IsZero() || obj.ts == ts {
-		return
-	}
-
-	// limit number of points stored in TSDB client
-	if len(obj.metricPoints) >= maxMetricsPoints {
-		atomic.AddUint64(&global.ignoredPoints, 1)
 		return
 	}
 
@@ -239,6 +237,12 @@ func createNewMetricPoint(obj *iObj, ts time.Time) {
 		return
 	}
 
+	// limit number of points stored in TSDB client, for debug metrics
+	if len(obj.metricPoints) >= maxMetricsPoints {
+		atomic.AddUint64(&global.ignoredPoints, 1)
+		return
+	}
+
 	mp := &metric.MetricPoint{
 		Name:   obj.tableName,
 		Tags:   obj.keys,
@@ -267,9 +271,12 @@ func createNewMetricPointFromKeysFields(obj *iObj, keys map[string]string, field
 	// limit number of points stored in TSDB client
 	obj.Lock()
 	if len(obj.metricPoints) >= maxMetricsPoints {
-		obj.Unlock()
-		atomic.AddUint64(&global.ignoredPoints, 1)
-		return
+		d := time.Duration(time.Now().Unix()-atomic.LoadInt64(&global.lastSent)) * time.Second
+		if d > maxRetention {
+			obj.Unlock()
+			atomic.AddUint64(&global.ignoredPoints, 1)
+			return
+		}
 	}
 	obj.Unlock()
 
@@ -333,10 +340,13 @@ func Debug() interface{} {
 		return map[string]uint64{}
 	}
 
-	return map[string]uint64{
+	ts := time.Unix(atomic.LoadInt64(&global.lastSent), 0)
+	return map[string]interface{}{
 		"numPointsReported": atomic.LoadUint64(&global.numPoints),
 		"numSendErrors":     atomic.LoadUint64(&global.sendErrors),
-		"numIgnoredPoints":  atomic.LoadUint64(&global.ignoredPoints)}
+		"numIgnoredPoints":  atomic.LoadUint64(&global.ignoredPoints),
+		"lastSent":          ts.Format(time.RFC3339),
+	}
 }
 
 // collectionTimer is responsible for generating points from objects that

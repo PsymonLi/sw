@@ -20,16 +20,18 @@ import (
 
 const (
 	defaultRanges                  = 10
-	defaultSendInterval            = 10 * time.Second
+	defaultSendInterval            = 30 * time.Second
 	defaultConnectionRetryInterval = 100 * time.Millisecond
+	defaultRetention               = 5 * time.Minute
 	// rule-stats alone can have 2500 entries (rules), drop-stats can grow to 100s
-	// ~20 metrics with  approx. 5 instance in each
-	defaultNumPoints = 3000
+	// keep metrics points for defaultRetention period
+	defaultNumPoints = int(defaultRetention / defaultSendInterval)
 )
 
 var (
 	maxMetricsPoints      = defaultNumPoints
 	minCollectionInterval = 5 * time.Second
+	maxRetention          = defaultRetention
 )
 
 // global information is maintained per client during Init time
@@ -39,6 +41,7 @@ type globalInfo struct {
 	wg            sync.WaitGroup         // waitgroup for threads
 	rpcClient     *rpckit.RPCClient      // rpc connection to collector
 	mc            metric.MetricApiClient // metric client object (to write points)
+	lastSent      int64                  // last sent time
 	context       context.Context        // global context (used for cancellation)
 	objs          map[string]*iObj       // cache for various objs
 	deletedObjs   []*iObj                // deleted list of objs

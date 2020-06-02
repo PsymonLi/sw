@@ -445,8 +445,8 @@ func TestMaxPoints(t *testing.T) {
 			},
 		}, time.Now())
 		AssertOk(t, err, "unable to create point")
-		Assert(t, len(obj.(*iObj).metricPoints) <= maxMetricsPoints, "exceeded number of points %d", len(obj.(*iObj).metricPoints))
 	}
+	Assert(t, len(obj.(*iObj).metricPoints) == maxMetricsPoints+5, "invalid number of points %d", len(obj.(*iObj).metricPoints))
 
 	err = obj.Points([]*Point{
 		{
@@ -456,7 +456,7 @@ func TestMaxPoints(t *testing.T) {
 	}, time.Now())
 	AssertOk(t, err, "unable to create point")
 
-	Assert(t, len(obj.(*iObj).metricPoints) <= maxMetricsPoints, "exceeded number of points %d", len(obj.(*iObj).metricPoints))
+	Assert(t, len(obj.(*iObj).metricPoints) == maxMetricsPoints+6, "invalid number of points %d", len(obj.(*iObj).metricPoints))
 }
 
 func TestAttributeChangeWithAggregation(t *testing.T) {
