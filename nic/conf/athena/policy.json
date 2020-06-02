@@ -119,9 +119,9 @@
             "slot_id": "2000",
             "l2_flows_range": {
                 "h2s_mac_lo": "00:00:F1:D0:D1:D0",
-                "h2s_mac_hi": "00:00:F1:D0:D1:D0",
-                "s2h_mac_lo": "00:00:00:40:08:01",
-                "s2h_mac_hi": "00:00:00:40:08:01",
+                "h2s_mac_hi": "00:00:F1:D0:D1:FF",
+                "s2h_mac_lo": "00:00:00:40:08:00",
+                "s2h_mac_hi": "00:00:00:40:08:FF",
                 "_comment": "In both directions, it is the dmac in pkt"
             },
             "session": {
@@ -209,9 +209,9 @@
             "slot_id": "2002",
             "l2_flows_range": {
                 "h2s_mac_lo": "00:00:F1:D0:D1:D0",
-                "h2s_mac_hi": "00:00:F1:D0:D1:D0",
-                "s2h_mac_lo": "00:00:00:40:08:01",
-                "s2h_mac_hi": "00:00:00:40:08:01",
+                "h2s_mac_hi": "00:00:F1:D0:D1:FF",
+                "s2h_mac_lo": "00:00:00:40:08:00",
+                "s2h_mac_hi": "00:00:00:40:08:FF",
                 "_comment": "In both directions, it is the dmac in pkt"
             },
             "session": {

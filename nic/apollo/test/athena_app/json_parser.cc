@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdio.h>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "fte_athena.hpp"
 #include "json_parser.hpp"
@@ -43,6 +44,10 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
     v4_flows_info_t *v4_flows_info;
     uint16_t vnic_id;
     boost::optional<std::string> vnic_type;
+    uint8_t h2s_mac_lo[ETH_ADDR_LEN];
+    uint8_t h2s_mac_hi[ETH_ADDR_LEN];
+    uint8_t s2h_mac_lo[ETH_ADDR_LEN];
+    uint8_t s2h_mac_hi[ETH_ADDR_LEN];
 
     cfg_file = std::string(cfgfile);
     // make sure cfg file exists
@@ -77,14 +82,38 @@ parse_flow_cache_policy_cfg (const char *cfgfile)
 
             if (policy->vnic_type == VNIC_L2) {
                 pt::ptree& l2_flows_range = vnic.second.get_child("l2_flows_range");
+
+                memset(h2s_mac_lo, 0, ETH_ADDR_LEN);
+                memset(h2s_mac_hi, 0, ETH_ADDR_LEN);
+                memset(s2h_mac_lo, 0, ETH_ADDR_LEN);
+                memset(s2h_mac_hi, 0, ETH_ADDR_LEN);
+
                 str2mac(l2_flows_range.get<std::string>("h2s_mac_lo").c_str(),
-                        policy->l2_flows_range.h2s_mac_lo);
+                        h2s_mac_lo);
                 str2mac(l2_flows_range.get<std::string>("h2s_mac_hi").c_str(),
-                        policy->l2_flows_range.h2s_mac_hi);
+                        h2s_mac_hi);
                 str2mac(l2_flows_range.get<std::string>("s2h_mac_lo").c_str(),
-                        policy->l2_flows_range.s2h_mac_lo);
+                        s2h_mac_lo);
                 str2mac(l2_flows_range.get<std::string>("s2h_mac_hi").c_str(),
-                        policy->l2_flows_range.s2h_mac_hi);
+                        s2h_mac_hi);
+
+                policy->l2_flows_range.h2s_mac_lo = MAC_TO_UINT64(h2s_mac_lo);
+                policy->l2_flows_range.h2s_mac_hi = MAC_TO_UINT64(h2s_mac_hi);
+                if (policy->l2_flows_range.h2s_mac_lo > 
+                    policy->l2_flows_range.h2s_mac_hi) {
+                    printf("Please check l2_flows_range config: VNIC:%u "
+                           "(h2s_mac_lo > h2s_mac_hi).\n", vnic_id);
+                    return SDK_RET_ERR;
+                }
+                    
+                policy->l2_flows_range.s2h_mac_lo = MAC_TO_UINT64(s2h_mac_lo);
+                policy->l2_flows_range.s2h_mac_hi = MAC_TO_UINT64(s2h_mac_hi);
+                if (policy->l2_flows_range.s2h_mac_lo > 
+                    policy->l2_flows_range.s2h_mac_hi) {
+                    printf("Please check l2_flows_range config: VNIC:%u "
+                           "(s2h_mac_lo > s2h_mac_hi).\n", vnic_id);
+                    return SDK_RET_ERR;
+                }
             }
 
             pt::ptree& session = vnic.second.get_child("session");

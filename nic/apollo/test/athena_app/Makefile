@@ -48,7 +48,7 @@ LDLIBS += -lpal -lpdsframework -lpdscore -lpdslearn -lpdsapi -lpdsapi_impl -lsdk
 		-lsdklinkmgrcsr -lnicmgr_athena -lmnet -levutils \
 		-lpciemgr_if -lpciemgr -lpciemgrutils -lpciehdevices \
 		-lpcietlp -lcfgspace -lintrutils -lmisc -lpdsupg_nicmgr_stubs \
-		-lev -lrte_indexer \
+		-lev -lrte_indexer -lbitmap \
 		-lmpuobj -lcapisa -lisa -lsknobs -lsdkcapri_csrint -lAAPL \
 		-lpthread -lz -lrt -lJudy -ldl -lzmq -ledit -lncurses \
 		-lstdc++ -lm -lgcc -lc

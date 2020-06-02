@@ -7,6 +7,7 @@
 #include "boost/property_tree/json_parser.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
+#include "nic/sdk/lib/bitmap/bitmap.hpp"
 
 namespace fte_ath {
 
@@ -23,10 +24,12 @@ namespace fte_ath {
 #define ENCAP_GENEVE   2
 
 typedef struct l2_flows_range_info_s {
-    uint8_t h2s_mac_lo[ETH_ADDR_LEN];
-    uint8_t h2s_mac_hi[ETH_ADDR_LEN];
-    uint8_t s2h_mac_lo[ETH_ADDR_LEN];
-    uint8_t s2h_mac_hi[ETH_ADDR_LEN];
+    uint64_t h2s_mac_lo;
+    uint64_t h2s_mac_hi;
+    uint64_t s2h_mac_lo;
+    uint64_t s2h_mac_hi;
+    bitmap *h2s_bmap;
+    bitmap *s2h_bmap;
 } l2_flows_range_info_t;
  
 typedef struct session_info_s {

@@ -41,6 +41,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/sdk/lib/table/ftl/ftl_base.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
+#include "nic/sdk/lib/bitmap/bitmap.hpp"
 #include "fte_athena.hpp"
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_vnic.h"
@@ -170,6 +171,26 @@ static inline uint8_t
 fte_is_vnic_type_l2 (uint16_t vnic_id)
 {
     return (g_flow_cache_policy[vnic_id].vnic_type == VNIC_L2);
+}
+
+void
+fte_l2_flow_range_bmap_destroy (void)
+{
+    l2_flows_range_info_t *flow_range;
+    uint16_t vnic_id, i;
+
+    for (i = 0; i < g_num_policies; i++) {
+        vnic_id = g_vnic_id_list[i];
+        if (!fte_is_vnic_type_l2(vnic_id)) {
+            continue;
+        }
+
+        flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
+        bitmap::destroy(flow_range->h2s_bmap);
+        bitmap::destroy(flow_range->s2h_bmap);
+    }
+
+    return;
 }
 
 sdk_ret_t
@@ -870,6 +891,55 @@ fte_session_info_create (uint32_t session_index,
 }
 
 static sdk_ret_t
+fte_l2_flow_check_macaddr (uint16_t vnic_id, uint8_t flow_dir,
+                           l2_flows_range_info_t *flow_range,
+                           struct ether_hdr *eth_hdr,
+                           uint32_t *h2s_bmap_posn,
+                           uint32_t *s2h_bmap_posn)
+{
+    uint64_t h2s_mac = 0, s2h_mac = 0;
+
+    if (flow_dir == HOST_TO_SWITCH) {
+        h2s_mac = MAC_TO_UINT64(eth_hdr->d_addr.addr_bytes);
+        if ((h2s_mac < flow_range->h2s_mac_lo) ||
+            (h2s_mac > flow_range->h2s_mac_hi)) {
+            PDS_TRACE_DEBUG("H2S: VNIC:%u: DMAC is out of range.\n",
+                            vnic_id);
+            return SDK_RET_OOB;
+        }
+
+        s2h_mac = MAC_TO_UINT64(eth_hdr->s_addr.addr_bytes);
+        if ((s2h_mac < flow_range->s2h_mac_lo) ||
+            (s2h_mac > flow_range->s2h_mac_hi)) {
+            PDS_TRACE_DEBUG("H2S: VNIC:%u: SMAC is out of range.\n",
+                            vnic_id);
+            return SDK_RET_OOB;
+        }
+    } else {
+        s2h_mac = MAC_TO_UINT64(eth_hdr->d_addr.addr_bytes);
+        if ((s2h_mac < flow_range->s2h_mac_lo) ||
+            (s2h_mac > flow_range->s2h_mac_hi)) {
+            PDS_TRACE_DEBUG("S2H: VNIC:%u: DMAC is out of range.\n",
+                            vnic_id);
+            return SDK_RET_OOB;
+        }
+
+        h2s_mac = MAC_TO_UINT64(eth_hdr->s_addr.addr_bytes);
+        if ((h2s_mac < flow_range->h2s_mac_lo) ||
+            (h2s_mac > flow_range->h2s_mac_hi)) {
+            PDS_TRACE_DEBUG("S2H: VNIC:%u: SMAC is out of range.\n",
+                            vnic_id);
+            return SDK_RET_OOB;
+        }
+    }
+
+    *h2s_bmap_posn = (h2s_mac - flow_range->h2s_mac_lo);
+    *s2h_bmap_posn = (s2h_mac - flow_range->s2h_mac_lo);
+
+    return SDK_RET_OK;
+}
+    
+static sdk_ret_t
 fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
                                 struct ether_hdr *eth_hdr,
                                 uint32_t h2s_rewrite_id,
@@ -878,6 +948,18 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
     sdk_ret_t ret = SDK_RET_OK;
     pds_l2_flow_spec_t spec_h2s;
     pds_l2_flow_spec_t spec_s2h;
+    l2_flows_range_info_t *flow_range;
+    uint32_t h2s_bmap_posn = 0;
+    uint32_t s2h_bmap_posn = 0;
+
+    flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
+    ret = fte_l2_flow_check_macaddr(vnic_id, flow_dir,
+                                    flow_range, eth_hdr,
+                                    &h2s_bmap_posn, &s2h_bmap_posn);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed.\n");
+        return ret;
+    }
 
     memset(&spec_h2s, 0, sizeof(pds_l2_flow_spec_t));
     memset(&spec_s2h, 0, sizeof(pds_l2_flow_spec_t));
@@ -900,19 +982,25 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
     spec_h2s.data.index = h2s_rewrite_id;
     spec_s2h.data.index = s2h_rewrite_id;
 
-    ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_h2s);
-    if ((ret != SDK_RET_OK) && (ret != SDK_RET_ENTRY_EXISTS)) {
-        PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
-                        "H2S failed. \n");
-        return ret;
+    if (!(flow_range->h2s_bmap->is_set(h2s_bmap_posn))) {
+        ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_h2s);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
+                            "H2S failed. \n");
+            return ret;
+        }
     }
+    flow_range->h2s_bmap->set(h2s_bmap_posn);
 
-    ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_s2h);
-    if ((ret != SDK_RET_OK) && (ret != SDK_RET_ENTRY_EXISTS)) {
-        PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
-                        "S2H failed. \n");
-        return ret;
+    if (!(flow_range->s2h_bmap->is_set(s2h_bmap_posn))) {
+        ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_s2h);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
+                            "S2H failed. \n");
+            return ret;
+        }
     }
+    flow_range->s2h_bmap->set(s2h_bmap_posn);
 
     return SDK_RET_OK;
 }
@@ -1721,6 +1809,7 @@ fte_setup_flow (void)
     flow_cache_policy_info_t *policy;
     rewrite_underlay_info_t *rewrite_underlay;
     rewrite_host_info_t *rewrite_host;
+    uint32_t h2s_bmap_size = 0, s2h_bmap_size = 0;
     uint16_t vnic_id;
     uint16_t i;
 
@@ -1741,6 +1830,28 @@ fte_setup_flow (void)
         if (ret != SDK_RET_OK) {
             PDS_TRACE_DEBUG("fte_mpls_label_to_vnic_map failed.\n");
             return ret;
+        }
+
+        if (policy->vnic_type == VNIC_L2) {
+            h2s_bmap_size = ((policy->l2_flows_range.h2s_mac_hi -
+                             policy->l2_flows_range.h2s_mac_lo) + 1);
+            policy->l2_flows_range.h2s_bmap =
+                bitmap::factory(h2s_bmap_size, 1);
+            if (policy->l2_flows_range.h2s_bmap == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.h2s_bmap "
+                                "init failed. \n", vnic_id);
+                return SDK_RET_ERR;
+            }
+
+            s2h_bmap_size = ((policy->l2_flows_range.s2h_mac_hi -
+                             policy->l2_flows_range.s2h_mac_lo) + 1);
+            policy->l2_flows_range.s2h_bmap =
+                bitmap::factory(s2h_bmap_size, 1);
+            if (policy->l2_flows_range.s2h_bmap == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.s2h_bmap "
+                                "init failed. \n", vnic_id);
+                return SDK_RET_ERR;
+            }
         }
 
         if (policy->nat_enabled) {
