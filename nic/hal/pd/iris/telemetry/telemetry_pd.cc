@@ -1302,7 +1302,11 @@ pd_mirror_stats_update (pd_func_args_t *pd_func_args)
         return false;
     };
 
+    hal_handle_cfg_db_lock(true, true); // Acquire read lock
+
     ms_ht->walk_safe(walk_cb, NULL);
+
+    hal_handle_cfg_db_lock(true, false); // Release read lock
 
     for (int i = 0; i < MAX_MIRROR_SESSIONS; i++) {
         if (g_mirr_metrics[i].tag != 0) {

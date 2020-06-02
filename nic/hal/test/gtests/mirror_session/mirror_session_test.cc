@@ -142,7 +142,9 @@ protected:
         MirrorSessionDeleteResponse rsp;
 
         req.mutable_key_or_handle()->set_mirrorsession_id(session_id);
+        hal::hal_cfg_db_open(hal::CFG_OP_WRITE);
         mirror_session_delete(req, &rsp);
+        hal::hal_cfg_db_close();
         return rsp;
     }
 

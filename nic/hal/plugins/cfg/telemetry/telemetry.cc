@@ -731,6 +731,9 @@ mirror_session_delete (MirrorSessionDeleteRequest &req, MirrorSessionDeleteRespo
 
     hal_api_trace(" API Begin: Mirror Session delete ");
 
+    hal_handle_cfg_db_lock(true, false); // Release read lock
+    hal_handle_cfg_db_lock(false, true); // Acquire write lock
+
     // check if mirror session already exists
     sw_id = req.key_or_handle().mirrorsession_id();
     HAL_TRACE_INFO("Delete Mirror Session ID {}", sw_id);
@@ -739,7 +742,8 @@ mirror_session_delete (MirrorSessionDeleteRequest &req, MirrorSessionDeleteRespo
     if (session == NULL) {
         HAL_TRACE_ERR("Mirror session ID {} not found.", sw_id);
         rsp->set_api_status(types::API_STATUS_NOT_FOUND);
-        return HAL_RET_ENTRY_NOT_FOUND;
+        ret = HAL_RET_ENTRY_NOT_FOUND;
+        goto end;
     }
 
     // PD call to delete mirror session
@@ -749,14 +753,20 @@ mirror_session_delete (MirrorSessionDeleteRequest &req, MirrorSessionDeleteRespo
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("PD API failed {}", ret);
         rsp->set_api_status(hal_prepare_rsp(ret));
-        return ret;
+        goto end;
     }
 
     session = (mirror_session_t*)ms_ht->remove(&sw_id);
     SDK_ASSERT(session != NULL);
     mirror_session_free(session);
+
+
     rsp->set_api_status(hal_prepare_rsp(ret));
     rsp->mutable_key_or_handle()->set_mirrorsession_id(sw_id);
+
+end:
+    hal_handle_cfg_db_lock(false, false); // Release write lock
+    hal_handle_cfg_db_lock(true, true); // Acquire read lock
     return ret;
 }
 
