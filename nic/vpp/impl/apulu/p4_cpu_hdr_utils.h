@@ -221,4 +221,10 @@ format_pds_p4_tx_cpu_hdr (u8 * s, va_list * args)
     return s;
 }
 
+always_inline bool
+pds_is_flow_rx_vlan_from_flags (u16 flags)
+{
+    return BIT_ISSET(flags, VPP_CPU_FLAGS_VLAN_ENCAP);
+}
+
 #endif     // __VPP_IMPL_APULU_P4_CPU_HDR_UTILS_H__

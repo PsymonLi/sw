@@ -389,6 +389,14 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
 }
 
 int
+ftlv4_get_flow_entry (ftlv4 *obj, uint32_t flow_index, bool flow_primary,
+                      v4_flow_entry *entry, uint16_t thread_id)
+{
+    return ftlv4_read_with_handle(obj, flow_index, flow_primary, *entry,
+                                  thread_id);
+}
+
+int
 ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
                           uint32_t rflow_index, bool rflow_primary,
                           uint8_t reason, bool host_origin, uint16_t thread_id)

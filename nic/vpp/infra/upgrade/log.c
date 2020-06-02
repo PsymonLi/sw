@@ -44,7 +44,7 @@ upg_log_error (const char *fmt, ...) {
 void
 upg_log_facility_init (void)
 {
-    vpp_upg_log_fcl = vlib_log_register_class("vpp-upgrade", 0);
+    vpp_upg_log_fcl = vlib_log_register_class("pds-upgrade-ipc", 0);
 
     assert(vpp_upg_log_fcl != 0);
     upg_log_notice("Upgrade log facility Initialized");

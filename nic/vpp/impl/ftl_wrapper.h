@@ -33,6 +33,9 @@ extern "C" {
 // max 256 packets are processed by VPP, so 512 flows
 #define MAX_FLOW_ENTRIES_PER_BATCH 512
 
+// max sessions in a batch during upgrade.
+#define MAX_SESSION_ENTRIES_PER_BATCH (MAX_FLOW_ENTRIES_PER_BATCH/2)
+
 typedef struct flow_flags_s {
     uint8_t log : 1;
     uint8_t update : 1;
@@ -389,6 +392,8 @@ int ftlv4_export_with_entry(v4_flow_entry *iv4entry,
                             v4_flow_entry *rv4entry,
                             uint8_t reason, bool host_origin);
 
+int ftlv4_get_flow_entry(ftlv4 *obj, uint32_t flow_index, bool flow_primary,
+                         v4_flow_entry *entry, uint16_t thread_id);
 int ftlv4_cache_log_session(uint16_t iid, uint16_t rid,
                             uint8_t reason, uint16_t thread_id);
 

@@ -9,8 +9,11 @@
 #include <vnet/plugin/plugin.h>
 #include <session.h>
 #include <system.h>
+#include <time.h>
+#include <nic/vpp/infra/shm_ipc/shm_ipc.h>
 #include "node.h"
 #include "cli_helper.h"
+#include "pdsa_hdlr.h"
 
 // *INDENT-OFF*
 VLIB_PLUGIN_REGISTER () = {
@@ -1030,3 +1033,207 @@ VLIB_CLI_COMMAND (show_pds_flow_session_command, static) =
     .function = show_pds_flow_session_info_command_fn,
     .is_mp_safe = 1,
 };
+
+static bool g_first;
+static int  g_count;
+typedef struct siter_ {
+    struct timespec ts;
+    sess_iter_t sess_iter;
+} siter_t;
+
+
+static bool
+pds_session_recvcb (const uint8_t *data, const uint8_t len, void *opaq)
+{
+    if (!g_first) {
+        g_first = true;
+        struct timespec *ts = &((siter_t *)opaq)->ts;
+        clock_gettime(CLOCK_MONOTONIC_RAW, ts);
+    }
+    g_count++;
+    ASSERT(pds_session_v4_recv_cb(data, len));
+    return true;
+}
+
+static bool
+pds_session_sendcb (uint8_t *data, uint8_t *len, void *opaq)
+{
+    if (!g_first) {
+        g_first = true;
+        struct timespec *ts = &((siter_t *)opaq)->ts;
+        clock_gettime(CLOCK_MONOTONIC_RAW, ts);
+    }
+    g_count++;
+    return (pds_session_v4_send_cb(data, len, &((siter_t *)opaq)->sess_iter));
+}
+
+static clib_error_t *
+sessionxfer_download_command_fn (vlib_main_t * vm,
+                             unformat_input_t * input,
+                             vlib_cli_command_t * cmd)
+{
+    struct timespec end, dtime;
+    siter_t siter;
+
+    int qempty = 0;
+    int qfull = 0;
+    int session_upload_or_download = 0;
+    pds_flow_main_t *fm = &pds_flow_main;
+
+    if (!fm->sessq) {
+        vlib_cli_output(vm, "ERROR: sessionxfer setup needs to be done.\n");
+        return 0;
+    }
+
+    while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT) {
+        if (unformat(input, "upload")) {
+            session_upload_or_download = 1;
+        } else if (unformat(input, "download")) {
+            session_upload_or_download = 2;
+        } else {
+            vlib_cli_output(vm, "ERROR: Invalid command.\n");
+            return 0;
+        }
+    }
+
+    vlib_cli_output(vm, "Session %s\n", session_upload_or_download == 1 ?
+                    "upload" : "download");
+
+    g_count = 0;
+    g_first = false;
+    switch (session_upload_or_download) {
+        case 1:
+            vlib_worker_thread_barrier_sync(vm);
+            vlib_set_suspend_resume_worker_threads(1);
+            vlib_worker_thread_barrier_release(vm);
+
+            pds_session_send_begin(&siter.sess_iter, true);
+            while (siter.sess_iter.ctx) {
+                if ((shm_ipc_send_start(fm->sessq, pds_session_sendcb,
+                                        &siter) == false)
+                     && g_first) {
+                    qfull++;
+                }
+            }
+            // Flush end-of-record marker
+            while (shm_ipc_send_eor(fm->sessq) == false);
+            pds_session_send_end(&siter.sess_iter);
+
+            vlib_worker_thread_barrier_sync(vm);
+            vlib_set_suspend_resume_worker_threads(0);
+            vlib_worker_thread_barrier_release(vm);
+            break;
+        case 2:
+            vlib_worker_thread_barrier_sync(vm);
+            vlib_set_suspend_resume_worker_threads(1);
+            vlib_worker_thread_barrier_release(vm);
+
+            pds_session_recv_begin();
+            int ret;
+            while ((ret = shm_ipc_recv_start(fm->sessq, pds_session_recvcb,
+                                             &siter)) != -1) {
+                if (ret == 0) {
+                    qempty++;
+                }
+            }
+            pds_session_recv_end();
+
+            vlib_worker_thread_barrier_sync(vm);
+            vlib_set_suspend_resume_worker_threads(0);
+            vlib_worker_thread_barrier_release(vm);
+            break;
+        default:
+            vlib_cli_output(vm, "ERROR: Invalid command.\n");
+            return 0;
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+
+    if (end.tv_nsec < siter.ts.tv_nsec) {
+        end.tv_sec--;
+        end.tv_nsec += 1000000000;
+    }
+    dtime.tv_sec = end.tv_sec - siter.ts.tv_sec;
+    dtime.tv_nsec = end.tv_nsec - siter.ts.tv_nsec;
+    vlib_cli_output(vm, "Session Recv/Send: %d Qempty: %d Qfull: %d "
+                    "Time: %lu : %lu", g_count, qempty, qfull,
+                    dtime.tv_sec, dtime.tv_nsec);
+    return 0;
+}
+
+VLIB_CLI_COMMAND (sessionxfer_download_command, static) =
+{
+    .path = "sessionxfer",
+    .short_help = "sessionxfer <download <count> | upload>",
+    .function = sessionxfer_download_command_fn,
+    .is_mp_safe = 1,
+};
+
+static clib_error_t *
+sessionxfer_setup_command_fn (vlib_main_t * vm,
+                             unformat_input_t * input,
+                             vlib_cli_command_t * cmd)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+    int session_upload_or_download = 0;
+
+    while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT) {
+        if (unformat(input, "upload")) {
+            session_upload_or_download = 1;
+        } else if (unformat(input, "download")) {
+            session_upload_or_download = 2;
+        } else {
+            vlib_cli_output(vm, "ERROR: Invalid command.\n");
+            return 0;
+        }
+    }
+
+    if (!session_upload_or_download) {
+        vlib_cli_output(vm, "ERROR: Invalid command.\n");
+        return 0;
+    }
+
+    vlib_cli_output(vm,
+                    "Setting up to %s\n", (session_upload_or_download == 1) ?
+                    "upload" : "download");
+
+    if (fm->sessq) {
+        shm_ipc_destroy("testq");
+        fm->sessq = NULL;
+    }
+    shm_ipc_init();
+    if (session_upload_or_download == 1) {
+        fm->sessq = shm_ipc_create("testq");
+    } else {
+        fm->sessq = shm_ipc_attach("testq");
+    }
+
+    return 0;
+}
+
+VLIB_CLI_COMMAND (sessionxfer_setup_command, static) =
+{
+    .path = "sessionxfer setup",
+    .short_help = "sessionxfer setup <upload|download>",
+    .function = sessionxfer_setup_command_fn,
+    .is_mp_safe = 1,
+};
+
+static clib_error_t *
+sessionxfer_clear_command_fn (vlib_main_t * vm,
+                              unformat_input_t * input,
+                              vlib_cli_command_t * cmd)
+{
+    vlib_cli_output(vm, "Clearing all internal state and freeing up sessions");
+    pds_session_cleanup_all();
+    vlib_cli_output(vm, "sessionxfer setup can be issued again");
+    return 0;
+}
+
+VLIB_CLI_COMMAND (sessionxfer_clear_command, static) =
+{
+    .path = "sessionxfer clear",
+    .short_help = "Clear internal state of sessionxfer command",
+    .function = sessionxfer_clear_command_fn,
+    .is_mp_safe = 1,
+};
+

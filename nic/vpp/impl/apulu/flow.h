@@ -1409,4 +1409,90 @@ pds_flow_pipeline_init (vlib_main_t *vm)
     return;
 }
 
+always_inline void
+pds_program_cached_sessions(void)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+    u16 thread_index = vlib_get_thread_index();
+    int i,j, size = ftlv4_cache_get_count(thread_index);
+    u32 i_pindex, i_sindex, r_pindex, r_sindex;
+    ftlv4 *table = pds_flow_prog_get_table4();
+    pds_flow_rewrite_flags_t *rewrite_flags;
+
+    // Program the flows
+    for (i = 0, j = 0; i < size; i+=2, j++) {
+        struct session_info_entry_t actiondata = {0};
+        sess_info_t *sess = sess_info_cache_batch_get_entry_index(j,
+                                                                  thread_index);
+        u32 session_index = sess->session_id;
+        pds_impl_db_vnic_entry_t *vnic;
+        pds_flow_hw_ctx_t *ctx;
+        int ret;
+
+        ret = ftlv4_cache_program_index(table, i, &i_pindex, &i_sindex,
+                                        thread_index);
+        if (PREDICT_FALSE(ret != 0)) {
+            continue;
+        }
+        ret = ftlv4_cache_program_index(table, i+1, &r_pindex, &r_sindex,
+                                        thread_index);
+        if (PREDICT_FALSE(ret != 0)) {
+            ftlv4_cache_delete_index(table, i, thread_index);
+            continue;
+        }
+        if (i_pindex != (u32) (~0L)) {
+            sess->iflow_index = i_pindex;
+            sess->iflow_primary = 1;
+        } else {
+            sess->iflow_index = i_sindex;
+            sess->iflow_primary = 0;
+        }
+        if (r_pindex != (u32) (~0L)) {
+            sess->rflow_index = r_pindex;
+            sess->rflow_primary = 1;
+        } else {
+            sess->rflow_index = r_sindex;
+            sess->rflow_primary = 0;
+        }
+
+        // Program the sessions and set pds_flow_hw_ctx_t too.
+        // Create the pds_flow_hw_ctx_t
+        ctx = pds_flow_get_hw_ctx_no_check(session_index);
+        //ASSERT(ctx->is_in_use == 0);
+        ctx->is_in_use = 1;
+        ctx->proto = pds_flow_trans_proto(sess->proto);
+        ctx->v4 = sess->v4;
+        ctx->flow_state = pds_decode_flowstate(sess->flow_state);
+        ctx->ingress_bd = sess->ingress_bd;
+        ctx->iflow.primary = sess->iflow_primary;
+        ctx->iflow.table_id = sess->iflow_index;
+        ctx->rflow.primary = sess->rflow_primary;
+        ctx->rflow.table_id = sess->rflow_index;
+        ctx->packet_type = pds_decode_flow_pkt_type(sess->packet_type);
+        ctx->iflow_rx = sess->iflow_rx;
+        ctx->monitor_seen = 0;
+        ctx->nat = sess->nat;
+        ctx->drop = sess->drop;
+        ctx->src_vnic_id = sess->vnic_id;
+
+        // FIXME: Need to fill Nat related fields in actiondata
+        vnic = pds_impl_db_vnic_get(ctx->src_vnic_id);
+        rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
+                                         ctx->packet_type);
+        actiondata.tx_rewrite_flags = rewrite_flags->tx_rewrite;
+        actiondata.rx_rewrite_flags = rewrite_flags->rx_rewrite |
+            (pds_is_flow_rx_vlan_from_flags(pds_get_cpu_flags_from_vnic(vnic)) ?
+                (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) : 0);
+        actiondata.session_tracking_en = fm->con_track_en &&
+            (ctx->proto == PDS_FLOW_PROTO_TCP);
+        actiondata.drop = ctx->drop;
+        actiondata.qid_en = true;
+        // qid starts from 0 and worker thread id from 1.
+        // fm->no_threads includes main thread so use fm->no_threads - 1
+        actiondata.qid = session_index % (fm->no_threads - 1);
+        sess->thread_id = actiondata.qid + 1;
+        pds_session_program(session_index, (void *)&actiondata);
+    }
+}
+
 #endif    // __VPP_IMPL_APULU_FLOW_H__

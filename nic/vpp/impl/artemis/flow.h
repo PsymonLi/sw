@@ -329,4 +329,9 @@ pds_flow_pipeline_init (vlib_main_t *vm)
     return;
 }
 
+always_inline void
+pds_program_cached_sessions(void)
+{
+    // To be implemented
+}
 #endif    // __VPP_IMPL_ARTEMIS_FLOW_H__

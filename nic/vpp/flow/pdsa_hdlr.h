@@ -33,6 +33,43 @@ typedef enum {
     PDS_FLOW_PROTO_END,
 } pds_flow_protocol;
 
+typedef enum {
+    PDS_FLOW_STATE_CONN_INIT,
+    PDS_FLOW_STATE_CONN_SETUP,
+    PDS_FLOW_STATE_ESTABLISHED,
+    PDS_FLOW_STATE_KEEPALIVE_SENT,
+    PDS_FLOW_STATE_HALF_CLOSE_IFLOW,
+    PDS_FLOW_STATE_HALF_CLOSE_RFLOW,
+    PDS_FLOW_STATE_CLOSE,
+} pds_flow_state;
+
+// packet types - Any new addition should be handled in
+// pds_packet_type_flags_build ()
+typedef enum {
+    PDS_FLOW_L2L_INTRA_SUBNET = 0,
+    PDS_FLOW_L2L_INTER_SUBNET,
+    PDS_FLOW_L2R_INTRA_SUBNET,
+    PDS_FLOW_L2R_INTER_SUBNET,
+    PDS_FLOW_L2N_ASYMMETRIC_ROUTE,
+    PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAPT,
+    PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT,
+    PDS_FLOW_L2N_SYMMETRIC_ROUTE,
+    PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT,
+    PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAT,
+    PDS_FLOW_L2N_SYMMETRIC_ROUTE_TWICE_NAT,
+    PDS_FLOW_L2N_INTRA_VCN_ROUTE,
+    PDS_FLOW_R2L_INTRA_SUBNET,
+    PDS_FLOW_R2L_INTER_SUBNET,
+    PDS_FLOW_N2L_ASYMMETRIC_ROUTE,
+    PDS_FLOW_N2L_ASYMMETRIC_ROUTE_NAT,
+    PDS_FLOW_N2L_SYMMETRIC_ROUTE,
+    PDS_FLOW_N2L_SYMMETRIC_ROUTE_NAT,
+    PDS_FLOW_N2L_ASYMMETRIC_ROUTE_SVC_NAT,
+    PDS_FLOW_N2L_SYMMETRIC_ROUTE_SVC_NAT,
+    PDS_FLOW_N2L_INTRA_VCN_ROUTE,
+    PDS_FLOW_PKT_TYPE_MAX,
+} pds_flow_pkt_type;
+
 // function prototypes
 
 // pdsa_hdlr.cc
@@ -53,6 +90,10 @@ int clear_all_flow_entries();
 uint16_t get_vlib_thread_index();
 void flow_stats_summary_get (void *ctxt_v4, void *ctxt_v6);
 int flow_vnic_active_ses_count_get(uint16_t vnic_id, uint32_t *active_sessions);
+uint32_t pds_encode_flowstate(pds_flow_state flowstate);
+pds_flow_state pds_decode_flowstate(uint32_t flowstate);
+uint32_t pds_encode_flow_pkt_type(pds_flow_pkt_type flowtype);
+pds_flow_pkt_type pds_decode_flow_pkt_type(uint32_t flowtype);
 
 #ifdef __cplusplus
 }

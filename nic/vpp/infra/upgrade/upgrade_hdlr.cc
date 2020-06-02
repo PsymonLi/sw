@@ -3,10 +3,12 @@
 //
 
 #include "nic/apollo/include/globals.hpp"
+#include <nic/sdk/include/sdk/platform.hpp>
 #include "infra/api/intf.h"
 #include "log.hpp"
 #include "upgrade_hdlr.hpp"
 #include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
+#include "hitless_upg_hdlr.hpp"
 
 static const char *grupg_str = "Graceful Upgrade";
 
@@ -64,9 +66,10 @@ vpp_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
     upg_log_notice("%s: %s: Handling Upgrade stage %u mode %u\n", __FUNCTION__,
                    grupg_str, params->id, params->mode);
     pds_vpp_worker_thread_barrier();
-    if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
+    if (upgrade_mode_graceful(params->mode)) {
         ret = vpp_graceful_upg_ev_hdlr(params);
-    } else if (params->mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
+    } else if (upgrade_mode_hitless(params->mode)) {
+        ret = vpp_hitless_upg_ev_hdlr(params);
     }
     pds_vpp_worker_thread_barrier_release();
 

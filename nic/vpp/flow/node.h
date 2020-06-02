@@ -226,16 +226,6 @@ typedef enum
 } flow_age_setup_counter_t;
 
 typedef enum {
-    PDS_FLOW_STATE_CONN_INIT,
-    PDS_FLOW_STATE_CONN_SETUP,
-    PDS_FLOW_STATE_ESTABLISHED,
-    PDS_FLOW_STATE_KEEPALIVE_SENT,
-    PDS_FLOW_STATE_HALF_CLOSE_IFLOW,
-    PDS_FLOW_STATE_HALF_CLOSE_RFLOW,
-    PDS_FLOW_STATE_CLOSE,
-} pds_flow_state;
-
-typedef enum {
     PDS_FLOW_CONN_SETUP_TIMER,
     PDS_FLOW_IDLE_TIMER,
     PDS_FLOW_KEEP_ALIVE_TIMER,
@@ -345,34 +335,8 @@ typedef struct pds_flow_main_s {
     u32 *delete_sessions;
     u32 ses_id_to_del;
     pds_flow_fixup_data_t fixup_data;
+    void *sessq;
 } pds_flow_main_t;
-
-// packet types - Any new addition should be handled in
-// pds_packet_type_flags_build ()
-typedef enum {
-    PDS_FLOW_L2L_INTRA_SUBNET = 0,
-    PDS_FLOW_L2L_INTER_SUBNET,
-    PDS_FLOW_L2R_INTRA_SUBNET,
-    PDS_FLOW_L2R_INTER_SUBNET,
-    PDS_FLOW_L2N_ASYMMETRIC_ROUTE,
-    PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAPT,
-    PDS_FLOW_L2N_ASYMMETRIC_ROUTE_NAT,
-    PDS_FLOW_L2N_SYMMETRIC_ROUTE,
-    PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAPT,
-    PDS_FLOW_L2N_SYMMETRIC_ROUTE_NAT,
-    PDS_FLOW_L2N_SYMMETRIC_ROUTE_TWICE_NAT,
-    PDS_FLOW_L2N_INTRA_VCN_ROUTE,
-    PDS_FLOW_R2L_INTRA_SUBNET,
-    PDS_FLOW_R2L_INTER_SUBNET,
-    PDS_FLOW_N2L_ASYMMETRIC_ROUTE,
-    PDS_FLOW_N2L_ASYMMETRIC_ROUTE_NAT,
-    PDS_FLOW_N2L_SYMMETRIC_ROUTE,
-    PDS_FLOW_N2L_SYMMETRIC_ROUTE_NAT,
-    PDS_FLOW_N2L_ASYMMETRIC_ROUTE_SVC_NAT,
-    PDS_FLOW_N2L_SYMMETRIC_ROUTE_SVC_NAT,
-    PDS_FLOW_N2L_INTRA_VCN_ROUTE,
-    PDS_FLOW_PKT_TYPE_MAX,
-} pds_flow_pkt_type;
 
 extern pds_flow_main_t pds_flow_main;
 
@@ -537,6 +501,17 @@ always_inline void pds_session_id_dealloc(u32 ses_id)
     return;
 }
 
+always_inline pds_flow_hw_ctx_t *
+pds_flow_get_hw_ctx_no_check (u32 index)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+    pds_flow_hw_ctx_t *ctx;
+
+    index -= 1;
+    ctx = pool_elt_at_index(fm->session_index_pool, index);
+    return ctx;
+}
+
 always_inline pds_flow_hw_ctx_t * pds_flow_get_hw_ctx (u32 ses_id)
 {
     pds_flow_main_t *fm = &pds_flow_main;
@@ -684,4 +659,20 @@ always_inline void pds_session_id_flush(void)
 void pds_session_update_data(u32 ses_id, u32 pindex, u32 sindex,
                              bool iflow, bool move_complete, bool lock);
 
+void pds_session_recv_begin();
+void pds_session_recv_end();
+bool pds_session_v4_recv_cb (const uint8_t *data, const uint8_t len);
+void pds_session_cleanup_all();
+
+typedef struct sess_iter_ {
+    bool v4;
+    int32_t read_index;
+    void *flow_table;
+    pds_flow_hw_ctx_t *pool;
+    pds_flow_hw_ctx_t *ctx;
+} sess_iter_t;
+
+void pds_session_send_begin(sess_iter_t *iter, bool v4);
+void pds_session_send_end(sess_iter_t *iter);
+bool pds_session_v4_send_cb (uint8_t *data, uint8_t *len, void *opaq);
 #endif    // __VPP_FLOW_NODE_H__
