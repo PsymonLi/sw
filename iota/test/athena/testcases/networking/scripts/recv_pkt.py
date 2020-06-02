@@ -43,6 +43,10 @@ def validate_recv_pkt(recv_pkts, gen_pkts):
 
 
     for r_pkt in recv_pkts:
+        # ignore DHCP packets in the capture
+        if r_pkt.haslayer('DHCP'):
+            continue
+
         r_pkt.getlayer(IP, nb=1).chksum = 0
         r_pkt.getlayer(UDP, nb=1).chksum = 0
 

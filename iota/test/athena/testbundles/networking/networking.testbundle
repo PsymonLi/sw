@@ -32,27 +32,27 @@ testcases:
     # Data Path Test
     #=======================================
 
-    -   name    : Generate_DP_Policy
-        testcase: testcases.networking.generate_dp_policy
-        enable  : True
-
-        # UDP/TCP/ICMP max dyn flows = 4M
-        # NAT UDP/TCP max dyn flows = 1M, ICMP = 4K 
-
-    -   name    : Flow_Gen
-        testcase: testcases.networking.config.flow_gen
-        enable  : True
-        args    :
-            max_dyn_flow_count : 64
-
+#    -   name    : Generate_DP_Policy
+#        testcase: testcases.networking.generate_dp_policy
+#        enable  : True
+#
+#        # UDP/TCP/ICMP max dyn flows = 4M
+#        # NAT UDP/TCP max dyn flows = 1M, ICMP = 4K 
+#
+#    -   name    : Flow_Gen
+#        testcase: testcases.networking.config.flow_gen
+#        enable  : True
+#        args    :
+#            max_dyn_flow_count : 64
+#
 #    -   name    : Data_Path_Test
 #        testcase: testcases.networking.data_path
 #        enable  : True
 #        iterators :
 #            type     : nested
 #            flow_type : ['L3','L2']
-#            nat       : ['no', 'yes']
+#            nat       : ['no','yes']
 #            proto     : ['UDP']
 #            size      : [64]
-#            flow      : ['static']    
-#            bidir     : ['yes']    
+#            flow      : ['dynamic']
+#            bidir     : ['yes']

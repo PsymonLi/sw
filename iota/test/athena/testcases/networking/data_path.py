@@ -534,11 +534,6 @@ def Setup(tc):
 
 def Trigger(tc):
 
-    # TODO handle L2 w/ NAT
-    if tc.flow_type == 'L2' and \
-       tc.nat == 'yes':
-        return api.types.status.SUCCESS
-
     for node in tc.nodes:
         if node is not tc.wl_node:
             continue
@@ -651,11 +646,6 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
-
-    # TODO handle L2 w/ NAT
-    if tc.flow_type == 'L2' and \
-       tc.nat == 'yes':
-        return api.types.status.SUCCESS
 
     if len(tc.resp) == 0:
         return api.types.status.FAILURE
