@@ -319,7 +319,7 @@ print_hex_dump(const char *prefix_str, int prefix_type,
 			const void *buf, size_t len, bool ascii);
 
 void
-IoPrint(IN char *Format,
+IoPrintEx(IN char *Format,
 		...);
 
 void ionic_indicate_status(struct ionic *ionic, NDIS_STATUS code,
@@ -415,6 +415,12 @@ oid_set_vlan(struct ionic *ionic,
 
 NTSTATUS
 ConfigureRxBudget( IN ULONG Budget);
+
+NTSTATUS
+ConfigureRxMiniBudget( IN ULONG Budget);
+
+NTSTATUS
+ConfigureTxBudget( IN ULONG Budget);
 
 NTSTATUS
 ConfigureTxMode( IN ULONG TxMode);
@@ -577,12 +583,6 @@ ionic_register_interrupts(struct ionic *ionic,
     PNDIS_MINIPORT_INIT_PARAMETERS init_params);
 
 
-PPROCESSOR_NUMBER
-get_processor_number(struct ionic *ionic, ULONG node_id, ULONG proc_idx);
-
-void
-set_processor_number(struct ionic *ionic, ULONG proc_num, bool inuse, struct qcq *qcq);
-
 BOOLEAN 
 ionic_msi_handler(PVOID miniport_interrupt_context,
   ULONG message_id, PBOOLEAN queue_default_interrupt_dpc,
@@ -641,13 +641,7 @@ void
 unuse_intr_msgs_rss(struct ionic *ionic, struct lif *lif);
 
 struct intr_msg*
-is_tx_entry(struct ionic *ionic, ULONG proc_idx);
-
-struct intr_msg*
-find_intr_msg(struct ionic *ionic, ULONG proc_idx);
-
-struct intr_msg*
-find_intr_msg_not_idx(struct ionic *ionic, ULONG proc_idx, bool any_core);
+find_intr_msg(struct ionic *ionic, ULONG proc_idx, ULONG proximity);
 
 BOOLEAN
 sync_intr_msg(NDIS_HANDLE SynchronizeContext);
@@ -760,7 +754,7 @@ NDIS_STATUS
 ionic_lif_stop(struct lif *lif);
 
 NDIS_STATUS
-ionic_stop(struct ionic *ionic);
+ionic_stop(struct ionic *ionic, bool pause);
 
 NDIS_STATUS
 ionic_lif_open(struct lif *lif,
@@ -833,7 +827,8 @@ GetPortTypeString(ULONG PortType);
 NDIS_STATUS
 oid_multicast_list_set(struct ionic *ionic,
                        VOID *info_buffer,
-                       ULONG info_buffer_length);
+                       ULONG info_buffer_length,
+					   ULONG *bytes_read, ULONG *bytes_needed);
 
 NDIS_STATUS
 oid_packet_filter_set(struct ionic *ionic,
@@ -1067,15 +1062,16 @@ ionic_return_rxq_pkt(struct qcq *qcq,
 
 void ionic_rx_flush(struct cq *cq);
 
-void ionic_rx_fill(struct qcq *qcq);
-
 NDIS_STATUS ionic_rx_init(struct lif *lif, struct qcqst *qcqst);
+
+void
+ionic_rx_fill(struct qcq *qcq);
 
 void ionic_rx_filters_deinit(struct lif *lif);
 
 void
-ionic_rx_napi( struct intr_msg *int_info, 
-               unsigned int budget, 
+ionic_rx_napi( struct lif *lif,
+			   struct qcq *qcq,
 			   NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params);
 
 void ionic_rq_indicate_bufs(struct lif *lif,
@@ -1351,8 +1347,8 @@ ionic_send_packets(NDIS_HANDLE adapter_context,
     PNET_BUFFER_LIST pnetlist,
     NDIS_PORT_NUMBER port_number, ULONG send_flags);
 
-bool
-ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits);
+ULONG
+ionic_tx_flush(struct qcq *qcq, unsigned int budget);
 
 NDIS_STATUS 
 ionic_alloc_txq_pkts(struct ionic *ionic, struct qcq *qcq);
@@ -1376,15 +1372,12 @@ comp_data(NET_BUFFER *packet,
 void ionic_tx_empty(struct queue *q);
 
 void 
-tx_packet_dpc_callback( _KDPC *Dpc,
-					    PVOID DeferredContext,
-					    PVOID SystemArgument1,
-					    PVOID SystemArgument2);
+tx_packet_dpc_callback( struct qcq *qcq,
+					    NDIS_RECEIVE_THROTTLE_PARAMETERS *throttle_params);
 
 ULONG
 get_tx_queue_id(struct lif *lif,
-				PNET_BUFFER_LIST nbl,
-				PNET_BUFFER nb);
+				PNET_BUFFER_LIST nbl);
 
 //
 // vmq.cpp prototypes

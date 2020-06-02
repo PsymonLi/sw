@@ -101,8 +101,26 @@ oid_set_rss_parameters(struct ionic *ionic,
         PPROCESSOR_NUMBER proc_array = (PPROCESSOR_NUMBER)(
             ((UCHAR *)pParameters) + pParameters->IndirectionTableOffset);
 
+		// Need to stop io activity while we change mappings. Since this is
+		// an Oid request, we have an added ref on the instance so remove it
+		// before trying to stop, otherwise we won't stop
+		deref_request(lif, 1);
+		ntStatus = ionic_stop(lif->ionic, false);
+		// Now that we're stopped, or attempted to stop, add the ref back to the instance
+		ref_request(lif);
+
+        if (ntStatus != NDIS_STATUS_SUCCESS) {
+            goto cleanup;
+        }
+
         // program the indirection table
         ntStatus = map_rss_cpu_ind_tbl(lif, proc_array, tbl_len);
+
+		if (ionic_start(lif->ionic) != NDIS_STATUS_SUCCESS) {
+			ntStatus = NDIS_STATUS_RESOURCES;
+			goto cleanup;
+		}
+
         if (ntStatus != NDIS_STATUS_SUCCESS) {
             goto cleanup;
         }
@@ -466,7 +484,7 @@ check_rss_cpu_ind_tbl(struct lif *lif, PPROCESSOR_NUMBER proc_array, ULONG tbl_l
             __FUNCTION__, lif->index,
             i, proc, proc->Group, proc->Number, proc_idx));
 
-        if (find_intr_msg(lif->ionic, proc_idx) == NULL) {
+        if (find_intr_msg(lif->ionic, proc_idx, MATCH_PROCESSOR_INDEX) == NULL) {
             IoPrint("%s did not find any interrupts assigned to processor %d\n",
                 __FUNCTION__, proc_idx);
             return NDIS_STATUS_INVALID_PARAMETER;
@@ -485,12 +503,12 @@ NDIS_STATUS
 map_rss_cpu_ind_tbl(struct lif *lif, PPROCESSOR_NUMBER proc_array, ULONG tbl_len)
 {
     ULONG q_idx = 0;
+	ULONG last_rx_q_idx = 0;
     ULONG q_reuse_idx = 0;
     NDIS_STATUS status;
-    struct intr_msg* intr_msg;
 	struct intr_msg* intr_tx_msg;
+	struct intr_msg* intr_rx_msg;
     PPROCESSOR_NUMBER proc;
-	PPROCESSOR_NUMBER new_proc_num = NULL;
     RTL_BITMAP proc_used;
     char buffer[BITS_TO_LONGS(INTR_CTRL_REGS_MAX)] = { 0 };
     u8 proc_to_q_map[INTR_CTRL_REGS_MAX] = { 0 };
@@ -537,225 +555,151 @@ map_rss_cpu_ind_tbl(struct lif *lif, PPROCESSOR_NUMBER proc_array, ULONG tbl_len
             lif->rss_ind_tbl[i] = (u8)q_idx;
             proc_to_q_map[proc_idx] = (u8)q_idx;
 
-			if( BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
-
-				intr_tx_msg = get_intr_msg( lif->ionic, lif->txqcqs[q_idx].qcq->intr_msg_id);
-				intr_msg = NULL;
-				if( BooleanFlagOn( StateFlags, IONIC_STATE_FLAG_TXRX_DIFF_CORE)) {
-
-					if (intr_tx_msg->proc_idx <= proc_idx) {
-						intr_msg = find_intr_msg_not_idx(lif->ionic, proc_idx, false);
-						if (intr_msg == NULL) {
-							intr_msg = find_intr_msg_not_idx(lif->ionic, proc_idx, true);
-						}
-					}
-				}
-				else {
-
-					if (intr_tx_msg->proc_idx != proc_idx) {
-						intr_msg = find_intr_msg(lif->ionic, proc_idx);
-					}
-				}
-
-				if( intr_msg != NULL) {
-
-					intr_msg->inuse = true;
-					intr_msg->tx_entry = true;
-
-					intr_tx_msg->inuse = false;
-					intr_tx_msg->tx_entry = false;
-
-					lif->txqcqs[q_idx].qcq->intr_msg_id = intr_msg->id;
-
-					set_processor_number( lif->ionic, intr_tx_msg->proc_idx, false, NULL);
-					set_processor_number( lif->ionic, intr_msg->proc_idx, true, lif->txqcqs[q_idx].qcq);
-					lif->txqcqs[q_idx].qcq->proc_idx = intr_msg->proc_idx;
-
-					DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_VERBOSE,
-										"%s Moving tx queue %d to core %d\n",
-										__FUNCTION__,
-										q_idx,
-										intr_msg->proc_idx));
-
-					// update the table for entry to use the msg
-					struct intr_sync_ctx ctx = { 0 };
-					ctx.lif = lif;
-					ctx.id = intr_msg->id;
-					ctx.index = lif->txqcqs[q_idx].qcq->cq.bound_intr->index;
-
-					NdisMSynchronizeWithInterruptEx(lif->ionic->intr_obj,
-													intr_msg->id, sync_intr_msg, &ctx);
-
-					/* Adjust the Tx DPC affinity */
-					status = KeSetTargetProcessorDpcEx( &lif->txqcqs[q_idx].qcq->tx_packet_dpc,
-														&intr_msg->proc);
-					if (status != STATUS_SUCCESS) {
-						DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-											"%s KeSetTargetProcessorDpcEx() for Tx ISR failed status %08lX\n",
-											__FUNCTION__,
-											status));
-					}
-				}
-			}
-			else {
-
-				if( BooleanFlagOn( StateFlags, IONIC_STATE_FLAG_TXRX_DIFF_CORE)) {
-
-					if (lif->ionic->proc_tbl[proc_idx].inuse) {
-						new_proc_num = NULL;
-						new_proc_num = get_processor_number( lif->ionic, lif->ionic->numa_node, proc_idx);
-
-						if( new_proc_num != NULL) {
-							status = KeSetTargetProcessorDpcEx( &lif->ionic->proc_tbl[proc_idx].qcq->tx_packet_dpc,
-																new_proc_num);
-							if (status != STATUS_SUCCESS) {
-								DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-													"%s KeSetTargetProcessorDpcEx() failed status %08lX\n",
-													__FUNCTION__,
-													status));
-							}
-							else {
-								DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-													"%s Shift tx queue dpc from different core %d to %d\n",
-													__FUNCTION__,
-													lif->ionic->proc_tbl[proc_idx].qcq->proc_idx,
-													KeGetProcessorIndexFromNumber(new_proc_num)));
-
-								lif->ionic->proc_tbl[proc_idx].qcq->proc_idx = KeGetProcessorIndexFromNumber(new_proc_num);
-								set_processor_number( lif->ionic, lif->ionic->proc_tbl[proc_idx].qcq->proc_idx, true, lif->ionic->proc_tbl[proc_idx].qcq);
-								set_processor_number( lif->ionic, proc_idx, false, NULL);
-							}
-						}
-					}
-					
-					if( lif->txqcqs[q_idx].qcq->proc_idx <= proc_idx) {
-						new_proc_num = NULL;
-						new_proc_num = get_processor_number( lif->ionic, lif->ionic->numa_node, proc_idx);
-
-						if( new_proc_num != NULL) {
-							status = KeSetTargetProcessorDpcEx( &lif->txqcqs[q_idx].qcq->tx_packet_dpc,
-																new_proc_num);
-							if (status != STATUS_SUCCESS) {
-								DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-													"%s KeSetTargetProcessorDpcEx() failed status %08lX\n",
-													__FUNCTION__,
-													status));
-							}
-							else {
-								DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-													"%s Shift tx queue %d dpc from different core %d to %d\n",
-													__FUNCTION__,
-													q_idx,
-													lif->txqcqs[q_idx].qcq->proc_idx,
-													KeGetProcessorIndexFromNumber(new_proc_num)));
-
-								set_processor_number( lif->ionic, lif->txqcqs[q_idx].qcq->proc_idx, false, NULL);
-								lif->txqcqs[q_idx].qcq->proc_idx = KeGetProcessorIndexFromNumber(new_proc_num);
-								set_processor_number( lif->ionic, lif->txqcqs[q_idx].qcq->proc_idx, true, lif->txqcqs[q_idx].qcq);
-							}
-						}
-						else {
-							DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-												"%s No available proc entry, leaving tx queue %d dpc on core %d\n",
-												__FUNCTION__,
-												q_idx,
-												lif->txqcqs[q_idx].qcq->proc_idx));
-							set_processor_number( lif->ionic, lif->txqcqs[q_idx].qcq->proc_idx, true, lif->txqcqs[q_idx].qcq);
-						}
-					}
-					else {
-						DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-											"%s Leaving tx queue %d dpc on core %d\n",
-											__FUNCTION__,
-											q_idx,
-											lif->txqcqs[q_idx].qcq->proc_idx));
-						set_processor_number( lif->ionic, lif->txqcqs[q_idx].qcq->proc_idx, true, lif->txqcqs[q_idx].qcq);
-					}
-				}
-				else {
-
-					status = KeSetTargetProcessorDpcEx( &lif->txqcqs[q_idx].qcq->tx_packet_dpc,
-														proc);
-					if (status != STATUS_SUCCESS) {
-						DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-											"%s KeSetTargetProcessorDpcEx() failed status %08lX\n",
-											__FUNCTION__,
-											status));
-					}
-					else {
-
-						DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-											"%s Shift tx queue %d dpc from same core %d to %d\n",
-											__FUNCTION__,
-											q_idx,
-											lif->txqcqs[q_idx].qcq->proc_idx,
-											proc_idx));
-
-						set_processor_number( lif->ionic, lif->txqcqs[q_idx].qcq->proc_idx, false, NULL);
-						set_processor_number( lif->ionic, proc_idx, true, lif->txqcqs[q_idx].qcq);
-						lif->txqcqs[q_idx].qcq->proc_idx = proc_idx;
-					}
-				}
-			}
-
             // find a message with matching cpu affinity
-            intr_msg = find_intr_msg(lif->ionic, proc_idx);
-            if (intr_msg == NULL) {
+            intr_rx_msg = find_intr_msg(lif->ionic, proc_idx, MATCH_PROCESSOR_INDEX);
+            if (intr_rx_msg == NULL) {
                 DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
 						"%s did not find interrupt message affinitized to proc %d\n",
                         __FUNCTION__, proc_idx));
                 return NDIS_STATUS_INVALID_PARAMETER;
             }
 
-            intr_msg->inuse = true;
-
+            intr_rx_msg->inuse = true;
+			lif->rxqcqs[q_idx].qcq->intr_msg_id = intr_rx_msg->id;
+			lif->rxqcqs[q_idx].qcq->proc = *proc;
+			
 			DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
 								"%s Moving rx queue %d to core %d\n",
 								__FUNCTION__,
 								q_idx,
-								intr_msg->proc_idx));
-
-			set_processor_number( lif->ionic, intr_msg->proc_idx, true, lif->rxqcqs[q_idx].qcq);
+								intr_rx_msg->proc_idx));
+			IoPrint("%s Moving rx queue %d to core %d msi %d\n",
+								__FUNCTION__,
+								q_idx,
+								intr_rx_msg->proc_idx,
+								intr_rx_msg->id);
 
             // update the table for entry to use the msg
             struct intr_sync_ctx ctx = { 0 };
             ctx.lif = lif;
-            ctx.id = intr_msg->id;
+            ctx.id = intr_rx_msg->id;
             ctx.index = lif->rxqcqs[q_idx].qcq->cq.bound_intr->index;
 
             NdisMSynchronizeWithInterruptEx(lif->ionic->intr_obj,
-                                            intr_msg->id, sync_intr_msg, &ctx);
+                                            intr_rx_msg->id, sync_intr_msg, &ctx);
 
-			lif->rxqcqs[q_idx].qcq->proc_idx = proc_idx;
+			if( !BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
+			
+				DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
+									"%s Shift tx queue %d dpc from same core %d to %d\n",
+									__FUNCTION__,
+									q_idx,
+									KeGetProcessorIndexFromNumber(&lif->txqcqs[q_idx].qcq->proc),
+									proc_idx));
+				IoPrint("%s Shift tx queue %d dpc from same core %d to %d\n",
+									__FUNCTION__,
+									q_idx,
+									KeGetProcessorIndexFromNumber(&lif->txqcqs[q_idx].qcq->proc),
+									proc_idx);
 
-            q_idx++;
-            RtlSetBit(&proc_used, proc_idx);			
+				intr_rx_msg->tx_qcq = lif->txqcqs[q_idx].qcq;
+				lif->txqcqs[q_idx].qcq->proc = *proc;
+				lif->txqcqs[q_idx].qcq->intr_msg_id = intr_rx_msg->id;
+            }
+
+			q_idx++;
+            RtlSetBit(&proc_used, proc_idx);
         }
     }
 
+	last_rx_q_idx = q_idx;
+
+	// If we have a tx interrupt then need to remap these with available resources
+
+	if( BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
+
+		// As during lif init time, when the tx/rx queues are allocated, the core algorithm may
+		// not match exactly what we want, though opposite. We track the current tx core as compared to the
+		// matching rx queue's core. This means that the other rx queues could have be on a core
+		// that contradicts what we are trying to accomplish. That said, if the number of queues
+		// force us to wrap the core count on the system then we are going to be limited anyway.
+
+		for( q_idx = 0; q_idx < lif->ntxqs; q_idx++) {
+
+			intr_rx_msg = get_intr_msg( lif->ionic, lif->rxqcqs[q_idx].qcq->intr_msg_id);
+			if( BooleanFlagOn( StateFlags, IONIC_STATE_FLAG_TXRX_DIFF_CORE)) {
+				intr_tx_msg = find_intr_msg(lif->ionic, intr_rx_msg->proc_idx, NOT_PROCESSOR_CLOSE_INDEX);
+				if (intr_tx_msg == NULL) {
+					intr_tx_msg = find_intr_msg(lif->ionic, intr_rx_msg->proc_idx, NOT_PROCESSOR_INDEX);
+				}
+			}
+			else {
+				intr_tx_msg = find_intr_msg(lif->ionic, intr_rx_msg->proc_idx, MATCH_PROCESSOR_INDEX);
+			}
+
+			if( intr_tx_msg == NULL) {
+				intr_tx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_CLOSE_INDEX);
+				if (intr_tx_msg == NULL) {
+					intr_tx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX);
+					// Do we want to fail this? Seems extreme that we have no resources.
+				}
+			}
+
+			if( intr_tx_msg != NULL) {
+
+				intr_tx_msg->inuse = true;
+
+				lif->txqcqs[q_idx].qcq->intr_msg_id = intr_tx_msg->id;
+				lif->txqcqs[q_idx].qcq->proc = intr_tx_msg->proc;
+
+				DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_VERBOSE,
+									"%s Moving tx queue %d to core %d\n",
+									__FUNCTION__,
+									q_idx,
+									intr_tx_msg->proc_idx));
+				IoPrint("%s Moving tx queue %d to core %d msi %d\n",
+									__FUNCTION__,
+									q_idx,
+									intr_tx_msg->proc_idx,
+									intr_tx_msg->id);
+
+				// update the table for entry to use the msg
+				struct intr_sync_ctx ctx = { 0 };
+				ctx.lif = lif;
+				ctx.id = intr_tx_msg->id;
+				ctx.index = lif->txqcqs[q_idx].qcq->cq.bound_intr->index;
+
+				NdisMSynchronizeWithInterruptEx(lif->ionic->intr_obj,
+												intr_tx_msg->id, sync_intr_msg, &ctx);
+			}
+		}
+	}
+
 	dump_intr_tbl( lif->ionic);
     
-	// for remaining queues not in rss indir table, assocaite any unsed msg
-    for (; q_idx < lif->nrxqs; ++q_idx) {
+	// for remaining queues not in rss indir table, associate any unsed msg
+    for ( q_idx = last_rx_q_idx; q_idx < lif->nrxqs; ++q_idx) {
         // find any unused message, don't care about affinity
-        intr_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_INDEX);
-        if (intr_msg == NULL) {
+        intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX);
+        if (intr_rx_msg == NULL) {
             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
 					"%s did not find any unused interrupt message\n",
                     __FUNCTION__));
             return NDIS_STATUS_INVALID_PARAMETER;
         }
 
-        intr_msg->inuse = true;
+        intr_rx_msg->inuse = true;
+		lif->rxqcqs[q_idx].qcq->intr_msg_id = intr_rx_msg->id;
+		lif->rxqcqs[q_idx].qcq->proc = intr_rx_msg->proc;
 
         // update the table for this entry to use the msg
         struct intr_sync_ctx ctx = { 0 };
         ctx.lif = lif;
-        ctx.id = intr_msg->id;
+        ctx.id = intr_rx_msg->id;
         ctx.index = lif->rxqcqs[q_idx].qcq->cq.bound_intr->index;
 
         NdisMSynchronizeWithInterruptEx(lif->ionic->intr_obj,
-                                        intr_msg->id, sync_intr_msg, &ctx);
+                                        intr_rx_msg->id, sync_intr_msg, &ctx);
     }
 
     // During update, interrupts may have been serviced for the wrong queue

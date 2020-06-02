@@ -17,7 +17,9 @@ wmain(int argc, wchar_t* argv[])
     info.cmds.push_back(CmdGetTrace());
     info.cmds.push_back(CmdPort());
     info.cmds.push_back(CmdTxMode());
+    info.cmds.push_back(CmdTxBudget());
     info.cmds.push_back(CmdRxBudget());
+    info.cmds.push_back(CmdRxMiniBudget());
     info.cmds.push_back(CmdDevStats());
     info.cmds.push_back(CmdLifStats());
     info.cmds.push_back(CmdPortStats());
@@ -985,12 +987,14 @@ DumpQueueInfo(void *info_buffer, ULONG Size)
 		printf("\tlif: %s\n", info->lif);
 		printf("\trx queue cnt: %d\n", info->rx_queue_cnt);
 		printf("\ttx queue cnt: %d\n", info->tx_queue_cnt);
+		printf("\ttx mode: %d\n", info->tx_mode);
 
 		for (unsigned int queue_cnt = 0; queue_cnt < info->rx_queue_cnt; queue_cnt++) {
-			printf("\t\tRx Queue %d isr %s core %d msi %d\n",
+			printf("\t\tRx Queue %d isr %s group %d core %d msi %d\n",
 					info->rx_queue_info[ queue_cnt].id,
 					info->rx_queue_info[ queue_cnt].isr?"yes":"no",
-					info->rx_queue_info[ queue_cnt].core_idx,
+					info->rx_queue_info[ queue_cnt].group,
+					info->rx_queue_info[ queue_cnt].core,
 					info->rx_queue_info[ queue_cnt].isr?info->rx_queue_info[ queue_cnt].msi_id:-1);
 			printf("\t\tQueue head %d tail %d CompQueue head %d tail %d\n",
 					info->rx_queue_info[ queue_cnt].q_head_index,
@@ -1002,10 +1006,11 @@ DumpQueueInfo(void *info_buffer, ULONG Size)
 		printf("\n");
 
 		for (unsigned int queue_cnt = 0; queue_cnt < info->tx_queue_cnt; queue_cnt++) {
-			printf("\t\tTx Queue %d isr %s core %d msi %d\n",
+			printf("\t\tTx Queue %d isr %s group %d core %d msi %d\n",
 					info->tx_queue_info[ queue_cnt].id,
 					info->tx_queue_info[ queue_cnt].isr?"yes":"no",
-					info->tx_queue_info[ queue_cnt].core_idx,
+					info->tx_queue_info[ queue_cnt].group,
+					info->tx_queue_info[ queue_cnt].core,
 					info->tx_queue_info[ queue_cnt].isr?info->tx_queue_info[ queue_cnt].msi_id:-1);
 			printf("\t\tQueue head %d tail %d CompQueue head %d tail %d\n",
 					info->tx_queue_info[ queue_cnt].q_head_index,
@@ -1701,6 +1706,118 @@ CmdRxBudget()
     cmd.opts = CmdRxBudgetOpts;
     cmd.pos = CmdRxBudgetPos;
     cmd.run = CmdRxBudgetRun;
+
+    return cmd;
+}
+
+//
+// -RxMiniBudget
+//
+
+static
+po::options_description
+CmdRxMiniBudgetOpts(bool hidden)
+{
+    po::options_description opts("IonicConfig.exe [-h] RxMiniBudget [-m] <rxminibudget>");
+
+    opts.add_options()
+        ("RxMiniBudget,m", optype_long()->required(), "Receive polling mini budget");
+
+    return opts;
+}
+
+static
+po::positional_options_description
+CmdRxMiniBudgetPos()
+{
+    po::positional_options_description pos;
+
+    pos.add("RxMiniBudget", 1);
+
+    return pos;
+}
+
+static
+int
+CmdRxMiniBudgetRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+
+    DWORD dwRxMiniBudget = opval_long(info.vm, "RxMiniBudget");
+
+    return DoIoctl(IOCTL_IONIC_SET_RX_MINI_BUDGET, &dwRxMiniBudget, sizeof(dwRxMiniBudget), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
+}
+
+command
+CmdRxMiniBudget()
+{
+    command cmd;
+
+    cmd.name = "RxMiniBudget";
+    cmd.desc = "Set receive polling mini budget";
+
+    cmd.opts = CmdRxMiniBudgetOpts;
+    cmd.pos = CmdRxMiniBudgetPos;
+    cmd.run = CmdRxMiniBudgetRun;
+
+    return cmd;
+}
+
+//
+// -TxBudget
+//
+
+static
+po::options_description
+CmdTxBudgetOpts(bool hidden)
+{
+    po::options_description opts("IonicConfig.exe [-h] TxBudget [-r] <txbudget>");
+
+    opts.add_options()
+        ("TxBudget,t", optype_long()->required(), "Receive polling budget");
+
+    return opts;
+}
+
+static
+po::positional_options_description
+CmdTxBudgetPos()
+{
+    po::positional_options_description pos;
+
+    pos.add("TxBudget", 1);
+
+    return pos;
+}
+
+static
+int
+CmdTxBudgetRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+
+    DWORD dwTxBudget = opval_long(info.vm, "TxBudget");
+
+    return DoIoctl(IOCTL_IONIC_SET_TX_BUDGET, &dwTxBudget, sizeof(dwTxBudget), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
+}
+
+command
+CmdTxBudget()
+{
+    command cmd;
+
+    cmd.name = "TxBudget";
+    cmd.desc = "Set receive polling budget";
+
+    cmd.opts = CmdTxBudgetOpts;
+    cmd.pos = CmdTxBudgetPos;
+    cmd.run = CmdTxBudgetRun;
 
     return cmd;
 }

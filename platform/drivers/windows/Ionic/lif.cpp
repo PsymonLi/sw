@@ -500,7 +500,7 @@ ionic_qcqs_alloc(struct lif *lif)
     if (status != NDIS_STATUS_SUCCESS)
         return status;
 
-    intr_msg = find_intr_msg(lif->ionic, INVALID_PROCESSOR_INDEX);
+    intr_msg = find_intr_msg(lif->ionic, 0, ALL_CLOSE_PROCESSORS);
     if (intr_msg == NULL)
         return NDIS_STATUS_FAILURE;
 
@@ -756,14 +756,6 @@ ionic_qcq_alloc(struct lif *lif,
     ionic_q_map(&newqcq->q, q_base, q_base_pa);
     ionic_cq_map(&newqcq->cq, cq_base, cq_base_pa);
     ionic_cq_bind(&newqcq->cq, &newqcq->q);
-
-	if (type == IONIC_QTYPE_TXQ) {							 
-		KeInitializeDpc( &newqcq->tx_packet_dpc,
-								 tx_packet_dpc_callback,
-								 (void *)newqcq);
-		KeSetImportanceDpc( &newqcq->tx_packet_dpc,
-							MediumHighImportance);
-	}
 
     *qcq = newqcq;
 
@@ -1910,8 +1902,6 @@ ionic_txrx_alloc(struct lif *lif,
     BOOLEAN default_port = FALSE;
 	struct intr_msg *intr_rx_msg = NULL;
 	struct intr_msg *intr_tx_msg = NULL;
-	PPROCESSOR_NUMBER new_proc_num = NULL;
-	ULONG proc_idx = 0;
 
 	if (queue_id == (ULONG)-1 && vport_id == (ULONG)-1) {
         q_index = 0;
@@ -1976,9 +1966,9 @@ ionic_txrx_alloc(struct lif *lif,
 		if( BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
 
 			/* Affinitize the int */
-			intr_tx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_CLOSE_INDEX);
+			intr_tx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_CLOSE_INDEX);
 			if (intr_tx_msg == NULL) {
-				intr_tx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_INDEX);
+				intr_tx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX);
 				if( intr_tx_msg == NULL) {
 					status = NDIS_STATUS_FAILURE;
 					goto err_out_free_txqcqs;
@@ -1986,25 +1976,11 @@ ionic_txrx_alloc(struct lif *lif,
 			}
 
 			intr_tx_msg->inuse = true;
-			intr_tx_msg->tx_entry = true;
 			
 			ionic_intr_affinitize(lif->ionic, lif->txqcqs[i].qcq->cq.bound_intr->index, intr_tx_msg->id);
 
 			lif->txqcqs[i].qcq->intr_msg_id = intr_tx_msg->id;
-
-			set_processor_number( lif->ionic, intr_tx_msg->proc_idx, true, lif->txqcqs[i].qcq);
-			lif->txqcqs[i].qcq->proc_idx = intr_tx_msg->proc_idx;
-
-			/* Need to be sure the DPC we allocated has the same affinity as the ISR*/
-			status = KeSetTargetProcessorDpcEx( &lif->txqcqs[i].qcq->tx_packet_dpc,
-												&intr_tx_msg->proc);
-			if (status != STATUS_SUCCESS) {
-				IoPrint("%s KeSetTargetProcessorDpcEx() for Tx ISR failed status %08lX\n",
-									__FUNCTION__,
-									status);
-				status = NDIS_STATUS_FAILURE;
-				goto err_out_free_rxqcqs;
-			}
+			lif->txqcqs[i].qcq->proc = intr_tx_msg->proc;
 
 			/* If enabled, set the coalescing timer */	
 			if( BooleanFlagOn(ionic->ConfigStatus, IONIC_INTERRUPT_MOD_ENABLED)) {
@@ -2024,6 +2000,11 @@ ionic_txrx_alloc(struct lif *lif,
 									i,
 									intr_tx_msg->id,
 									intr_tx_msg->proc_idx));
+			IoPrint("%s Setting tx queue %d ISR Id %d to core %d\n",
+									__FUNCTION__,
+									i,
+									intr_tx_msg->id,
+									intr_tx_msg->proc_idx);
 		}
     }
 
@@ -2085,14 +2066,27 @@ ionic_txrx_alloc(struct lif *lif,
 
 		if( BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
 
+			// Note that in the following logic, we track the current rx core as compared to the
+			// matching tx queue's core. This means that the other tx queues could have be on a core
+			// that contradicts what we are trying to accomplish. That said, if the number of queues
+			// force us to wrap the core count on teh system then we are going to be limited anyway.
+
+			intr_tx_msg = get_intr_msg( ionic, lif->txqcqs[i].qcq->intr_msg_id);
 			// Are the rx and tx on the same or different cores
 			if (BooleanFlagOn(StateFlags, IONIC_STATE_FLAG_TXRX_DIFF_CORE)) {
-				intr_rx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_CLOSE_INDEX);
+
+				intr_rx_msg = find_intr_msg(lif->ionic, intr_tx_msg->proc_idx, NOT_PROCESSOR_CLOSE_INDEX);
 				if (intr_rx_msg == NULL) {
-					intr_rx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_INDEX);
+					intr_rx_msg = find_intr_msg(lif->ionic, intr_tx_msg->proc_idx, NOT_PROCESSOR_INDEX);
 					if( intr_rx_msg == NULL) {
-						status = NDIS_STATUS_FAILURE;
-						goto err_out_free_rxqcqs;
+						intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_CLOSE_INDEX);
+						if (intr_rx_msg == NULL) {
+							intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX);
+							if( intr_rx_msg == NULL) {
+								status = NDIS_STATUS_FAILURE;
+								goto err_out_free_rxqcqs;
+							}
+						}
 					}
 				}
 
@@ -2102,12 +2096,16 @@ ionic_txrx_alloc(struct lif *lif,
 								i,
 								intr_rx_msg->id,
 								intr_rx_msg->proc_idx));
+				IoPrint("%s Affinitize rx queue %d msi %d to different core %d\n",
+								__FUNCTION__,
+								i,
+								intr_rx_msg->id,
+								intr_rx_msg->proc_idx);
 			}
 			else {
-				intr_tx_msg = get_intr_msg( ionic, lif->txqcqs[i].qcq->intr_msg_id);
-				intr_rx_msg = find_intr_msg(lif->ionic, intr_tx_msg->proc_idx);
+				intr_rx_msg = find_intr_msg(lif->ionic, intr_tx_msg->proc_idx, MATCH_PROCESSOR_INDEX);
 				if (intr_rx_msg == NULL) {
-					intr_rx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_INDEX); // Do we want to get ANY core or fail?
+					intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX); // Do we want to get ANY core or fail?
 					if( intr_rx_msg == NULL) {
 						status = NDIS_STATUS_FAILURE;
 						goto err_out_free_rxqcqs;
@@ -2120,20 +2118,24 @@ ionic_txrx_alloc(struct lif *lif,
 								i,
 								intr_rx_msg->id,
 								intr_rx_msg->proc_idx));
+				IoPrint("%s Affinitize rx queue %d msi %d to same core %d\n",
+								__FUNCTION__,
+								i,
+								intr_rx_msg->id,
+								intr_rx_msg->proc_idx);
 			}
 
 			intr_rx_msg->inuse = true;
 			ionic_intr_affinitize(lif->ionic, lif->rxqcqs[i].qcq->cq.bound_intr->index, intr_rx_msg->id);
-			set_processor_number( lif->ionic, intr_rx_msg->proc_idx, true, lif->rxqcqs[i].qcq);
-			lif->rxqcqs[i].qcq->proc_idx = intr_rx_msg->proc_idx;
+			lif->rxqcqs[i].qcq->proc = intr_rx_msg->proc;
 			lif->rxqcqs[i].qcq->intr_msg_id = intr_rx_msg->id;
 		}
 		else {
 
 			/* Affinitize the int */
-			intr_rx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_CLOSE_INDEX);
+			intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_CLOSE_INDEX);
 			if (intr_rx_msg == NULL) {
-				intr_rx_msg = find_intr_msg(lif->ionic, ANY_PROCESSOR_INDEX);
+				intr_rx_msg = find_intr_msg(lif->ionic, 0, ANY_PROCESSOR_INDEX);
 				if( intr_rx_msg == NULL) {
 					status = NDIS_STATUS_FAILURE;
 					goto err_out_free_rxqcqs;
@@ -2142,9 +2144,13 @@ ionic_txrx_alloc(struct lif *lif,
 
 			intr_rx_msg->inuse = true;
 			ionic_intr_affinitize(lif->ionic, lif->rxqcqs[i].qcq->cq.bound_intr->index, intr_rx_msg->id);
-			set_processor_number( lif->ionic, intr_rx_msg->proc_idx, true, lif->rxqcqs[i].qcq);
-			lif->rxqcqs[i].qcq->proc_idx = intr_rx_msg->proc_idx;
+			lif->rxqcqs[i].qcq->proc = intr_rx_msg->proc;
 			lif->rxqcqs[i].qcq->intr_msg_id = intr_rx_msg->id;
+
+			lif->txqcqs[i].qcq->intr_msg_id = intr_rx_msg->id;
+			lif->txqcqs[i].qcq->proc = intr_rx_msg->proc;
+
+			intr_rx_msg->tx_qcq = lif->txqcqs[i].qcq;
 
 			DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
 									"%s Setting rx queue %d msi %d to core %d\n",
@@ -2152,38 +2158,11 @@ ionic_txrx_alloc(struct lif *lif,
 									i,
 									intr_rx_msg->id,
 									intr_rx_msg->proc_idx));
-	
-			if( BooleanFlagOn( StateFlags, IONIC_STATE_FLAG_TXRX_DIFF_CORE)) {
-				/* Set the processor affniity for the tx packet dpc */
-				new_proc_num = get_processor_number( lif->ionic, lif->ionic->numa_node, intr_rx_msg->proc_idx);
-				if (new_proc_num == NULL) {
-					new_proc_num = &intr_rx_msg->proc;
-				}
-			}
-			else {
-				new_proc_num = &intr_rx_msg->proc;
-			}
-
-			proc_idx = KeGetProcessorIndexFromNumber(new_proc_num);
-
-			DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-									"%s Setting tx queue %d to core %d\n",
+			IoPrint("%s Setting rx queue %d msi %d to core %d\n",
 									__FUNCTION__,
 									i,
-									proc_idx));
-
-			status = KeSetTargetProcessorDpcEx( &lif->txqcqs[i].qcq->tx_packet_dpc,
-												new_proc_num);
-			if (status != STATUS_SUCCESS) {
-				DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_ERROR,
-									"%s KeSetTargetProcessorDpcEx() failed status %08lX\n",
-									__FUNCTION__,
-									status));
-				status = NDIS_STATUS_FAILURE;
-				goto err_out_free_rxqcqs;
-			}
-			lif->txqcqs[i].qcq->proc_idx = proc_idx;
-			set_processor_number( lif->ionic, proc_idx, true, lif->txqcqs[i].qcq);
+									intr_rx_msg->id,
+									intr_rx_msg->proc_idx);
 		}
     }
 
@@ -2346,7 +2325,7 @@ ionic_lif_stop(struct lif *lif)
     return status;
 }
 NDIS_STATUS
-ionic_stop(struct ionic *ionic)
+ionic_stop(struct ionic *ionic, bool pause)
 {
     NDIS_STATUS status = NDIS_STATUS_SUCCESS;
     struct lif *lif = ionic->master_lif;
@@ -2367,7 +2346,9 @@ ionic_stop(struct ionic *ionic)
     }
 
     ionic->hardware_status = NdisHardwareStatusNotReady;
-    ionic_indicate_status(ionic, NDIS_STATUS_MEDIA_DISCONNECT, 0, 0);
+	if (!pause) {
+		ionic_indicate_status(ionic, NDIS_STATUS_MEDIA_DISCONNECT, 0, 0);
+	}
 
     ionic_slaves_stop(lif->ionic);
 
@@ -2571,8 +2552,7 @@ ionic_start(struct ionic *ionic)
                         (void *)ionic);
 
     ionic->hardware_status = NdisHardwareStatusReady;
-    ionic_indicate_status(ionic, NDIS_STATUS_MEDIA_CONNECT, 0, 0);
-
+	ionic_indicate_status(ionic, NDIS_STATUS_MEDIA_CONNECT, 0, 0);
 exit:
 
     if( set_event) {
@@ -2580,7 +2560,7 @@ exit:
     }
 
     if (status != NDIS_STATUS_SUCCESS) {
-        ionic_stop(ionic);
+        ionic_stop(ionic, false);
     }
 
     return status;
@@ -2838,18 +2818,20 @@ dump_queue_info(struct lif *lif)
 
     for (q_idx = 0; q_idx < (int)lif->nrxqs; ++q_idx) {
 		DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-						"%s Rx %d core %d\n",
+						"%s Rx %d core %d group %d\n",
 						__FUNCTION__,
 						q_idx,
-						lif->rxqcqs[q_idx].qcq->proc_idx));
+						lif->rxqcqs[q_idx].qcq->proc.Number,
+						lif->rxqcqs[q_idx].qcq->proc.Group));
 	}
 
     for (q_idx = 0; q_idx < (int)lif->ntxqs; ++q_idx) {
 		DbgTrace((TRACE_COMPONENT_QUEUE_INIT, TRACE_LEVEL_VERBOSE,
-						"%s Tx %d core %d\n",
+						"%s Tx %d core %d group %d\n",
 						__FUNCTION__,
 						q_idx,
-						lif->txqcqs[q_idx].qcq->proc_idx));
+						lif->txqcqs[q_idx].qcq->proc.Number,
+						lif->txqcqs[q_idx].qcq->proc.Group));
 	}
 
 	return;

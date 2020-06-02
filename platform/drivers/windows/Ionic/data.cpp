@@ -36,6 +36,10 @@ LONG port_count = 0;
 
 ULONG RxBudget = 0;
 
+ULONG RxMiniBudget = 0;
+
+ULONG TxBudget = 0;
+
 KEVENT  perfmon_event;
 
 LIST_ENTRY memory_block_list;

@@ -196,6 +196,36 @@ DeviceIoControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
         break;
     }
 
+    case IOCTL_IONIC_SET_RX_MINI_BUDGET: {
+
+        if (Irp->AssociatedIrp.SystemBuffer == NULL ||
+            pIrpSp->Parameters.DeviceIoControl.InputBufferLength <
+                sizeof(ULONG)) {
+            ntStatus = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+
+        ntStatus =
+            ConfigureRxMiniBudget(*((ULONG *)Irp->AssociatedIrp.SystemBuffer));
+
+        break;
+    }
+
+    case IOCTL_IONIC_SET_TX_BUDGET: {
+
+        if (Irp->AssociatedIrp.SystemBuffer == NULL ||
+            pIrpSp->Parameters.DeviceIoControl.InputBufferLength <
+                sizeof(ULONG)) {
+            ntStatus = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+
+        ntStatus =
+            ConfigureTxBudget(*((ULONG *)Irp->AssociatedIrp.SystemBuffer));
+
+        break;
+    }
+
 	case IOCTL_IONIC_SET_TX_MODE: {
 
         if (Irp->AssociatedIrp.SystemBuffer == NULL ||

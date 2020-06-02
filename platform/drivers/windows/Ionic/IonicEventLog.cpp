@@ -65,13 +65,13 @@ void FmtMsgWriteToEventLog(PVOID IoObject, ULONG Signature, SEVERITY_EVENTLOG_MS
 		if (STATUS_BUFFER_OVERFLOW == status) {
 			AnsiString[MAX_LOG_BUFFER_CHAR-1] = 0;
 		} else if (!NT_SUCCESS(status)) {
-            KdPrint((": RtlStringCbVPrintfA failed 0x%x\n", status));
+            IoPrint(": RtlStringCbVPrintfA failed 0x%x\n", status);
             return;
         }
 
 		status = ConvertCharToWideChar(AnsiString, EvLogMessageBuffer, MAX_LOG_BUFFER_CHAR);
 		if (STATUS_SUCCESS != status) {
-            KdPrint((": ConvertCharToWideChar failed 0x%x\n", status));
+            IoPrint(": ConvertCharToWideChar failed 0x%x\n", status);
             return;
 		}
 		switch(EvType) {
@@ -83,7 +83,7 @@ void FmtMsgWriteToEventLog(PVOID IoObject, ULONG Signature, SEVERITY_EVENTLOG_MS
 			status = IONICEVLOG_GENERIC_ERROR; break;
 		}
 
-		KdPrint(("Log message: %s\n", AnsiString));
+		IoPrint("Log message: %s\n", AnsiString);
 
 		WriteToEventLog(IoObject, Signature, status, EvLogMessageBuffer);
     }
@@ -99,12 +99,12 @@ PIO_ERROR_LOG_PACKET p;
 	PacketLen = sizeof(IO_ERROR_LOG_PACKET) + DumpDataLen;
 
 	if (PacketLen > ERROR_LOG_MAXIMUM_SIZE){
-		KdPrint(("Size to big: %d, max: %d\n", PacketLen, ERROR_LOG_MAXIMUM_SIZE));
+		IoPrint("Size to big: %d, max: %d\n", PacketLen, ERROR_LOG_MAXIMUM_SIZE);
 		return;
 	}
 	p = (PIO_ERROR_LOG_PACKET)IoAllocateErrorLogEntry(IoObject, (UCHAR)PacketLen);
 	if (!p){
-		KdPrint(("IoAllocateErrorLogEntry failed\n"));
+		IoPrint("IoAllocateErrorLogEntry failed\n");
 		return;
 	}
 	RtlZeroMemory(p, PacketLen);

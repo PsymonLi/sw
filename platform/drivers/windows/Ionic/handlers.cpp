@@ -62,11 +62,11 @@ HaltEx(NDIS_HANDLE MiniportAdapterContext, NDIS_HALT_ACTION HaltAction)
 
         ionic_link_down(ionic);
        
-        ionic_stop(ionic);
-
-		deinit_dma( ionic);
+        ionic_stop(ionic, false);
 
         ionic_lifs_deinit(ionic);
+
+		deinit_dma( ionic);
 
 		if( ionic->intr_obj != NULL) {
 			NdisMDeregisterInterruptEx(ionic->intr_obj);
@@ -100,17 +100,29 @@ Pause(NDIS_HANDLE MiniportAdapterContext,
 
     NDIS_STATUS ntStatus = NDIS_STATUS_SUCCESS;
     struct ionic *ionic = (struct ionic *)MiniportAdapterContext;
+	NDIS_OPER_STATE state;
 
     UNREFERENCED_PARAMETER(PauseParameters);
 
     DbgTrace((TRACE_COMPONENT_HANDLERS_ENT_EX, TRACE_LEVEL_VERBOSE,
               "%s Enter adapter %p\n", __FUNCTION__, ionic));
 
-    //ionic->hardware_status = NdisHardwareStatusReset;
     SetFlag(ionic->Flags, IONIC_FLAG_PAUSED);
-	ionic_stop(ionic);
+	ionic_stop(ionic, true);
 
-    return ntStatus;
+	state.Header.Revision = NDIS_OPER_STATE_REVISION_1;
+	state.Header.Size = NDIS_SIZEOF_OPER_STATE_REVISION_1;
+	state.Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
+
+	state.OperationalStatus = NET_IF_OPER_STATUS_DORMANT;
+	state.OperationalStatusFlags = NET_IF_OPER_STATUS_DORMANT_PAUSED;
+
+	ionic_indicate_status(ionic,
+                      NDIS_STATUS_OPER_STATUS,
+                      &state,
+                      sizeof(NDIS_OPER_STATE));
+
+	return ntStatus;
 }
 
 NDIS_STATUS

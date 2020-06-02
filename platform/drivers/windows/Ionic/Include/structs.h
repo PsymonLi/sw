@@ -221,16 +221,18 @@ struct intr_msg {
 	USHORT				numa_node;
 
     bool				inuse;
-	bool				rss_entry;
-	bool				tx_entry;
     struct lif*			lif;
-    struct qcq*			qcq;
+
+    struct qcq*			admin_qcq;
+    struct qcq*			rx_qcq;
+    struct qcq*			tx_qcq;
+
+	ULONG				int_index;
 
     /* stats */
 #ifdef DBG
     LONG64				isr_cnt;
     LONG64				dpc_cnt;
-    LONG64				spurious_cnt;
 #endif
 };
 
@@ -293,7 +295,7 @@ struct qcq {
     struct txq_pkt *txq_base;
 
 	ULONG intr_msg_id;
-	ULONG proc_idx;
+	PROCESSOR_NUMBER proc;
 
 #ifdef DBG
     LONG tx_pkts_free_count;
@@ -303,24 +305,9 @@ struct qcq {
 	
 	NDIS_HANDLE		ring_alloc_handle;
 
-	/* tx packet processing */
-	KDPC			tx_packet_dpc;
-
 #ifdef DBG
 	LONG outstanding_rx_count;
     LONG outstanding_tx_count;
-
-	LARGE_INTEGER dpc_start_time;
-	LARGE_INTEGER dpc_end_time;
-	LARGE_INTEGER dpc_last_time;
-	LONGLONG dpc_indicate_time;
-	LONGLONG dpc_to_dpc_total_time;
-	LONGLONG dpc_total_time;
-	LONGLONG dpc_latency;
-	LONGLONG dpc_walk_time;
-	LONGLONG dpc_fill_time;
-	LONG	 dpc_count;
-
 #endif
 
 	// cache aligned elements
@@ -634,19 +621,6 @@ struct vf_info
 	struct ionic_dev_bar BAR[2];
 };
 
-struct proc_info
-{
-
-	bool	inuse;
-
-	ULONG	numa_id;
-
-	PROCESSOR_NUMBER proc;
-
-	struct qcq *qcq;
-
-};
-
 struct filter_info
 {
 	
@@ -822,8 +796,6 @@ struct ionic {
 
 	/* Registry parameters specific to this interface */
 	struct registry_entry *registry_config;
-
-	struct proc_info *proc_tbl;
 
 	// Cache aligned elements
 	CACHE_ALIGN NDIS_SPIN_LOCK	dev_cmd_lock;

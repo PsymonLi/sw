@@ -1373,111 +1373,71 @@ ionic_rx_filters_deinit(struct lif *lif)
 }
 
 void
-ionic_rx_napi(struct intr_msg *int_info,
-              unsigned int budget,
+ionic_rx_napi(struct lif *lif,
+			  struct qcq *qcq,
               NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params)
 {
-    struct lif *lif = int_info->lif;
-    struct qcq* qcq = int_info->qcq;
     struct cq *rxcq = &qcq->cq;
-    unsigned int qi = rxcq->bound_q->index;
-    struct ionic_dev *idev = &lif->ionic->idev;
     u32 rx_work_done = 0;
+	u32 rx_tot_work_done = 0;
     u32 rx_indicate_count = 0;
-    u32 flags = 0;
     PNET_BUFFER_LIST packets_to_indicate = NULL;
-#ifdef DBG
-	LARGE_INTEGER start_time;
-	LARGE_INTEGER end_time;
-#endif
-
-	if( !BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
-		KeInsertQueueDpc(&lif->txqcqs[qi].qcq->tx_packet_dpc,
-			NULL,
-			NULL);
-	}
+	unsigned int tot_budget = receive_throttle_params->MaxNblsToIndicate;
+	unsigned int mini_budget = RxMiniBudget;
+	unsigned int budget = 0;
 
     NdisDprAcquireSpinLock(&qcq->rx_ring_lock);
 
-    if (budget == 0) {
-        if (receive_throttle_params->MaxNblsToIndicate == 0) {
-            budget = IONIC_RX_BUDGET_DEFAULT;
-        }
-        else {
-            budget = receive_throttle_params->MaxNblsToIndicate;
-        }
-    }
+	if (mini_budget != 0) {
+		budget = mini_budget;
+	}
+	else {
+		budget = tot_budget;
+	}
 
-    rx_work_done = ionic_rx_walk_cq(rxcq, budget, &packets_to_indicate, &rx_indicate_count);
+	while ( tot_budget != 0) {
 
-#ifdef DBG
-	start_time = KeQueryPerformanceCounter( NULL);
-	InterlockedAdd64( &qcq->dpc_walk_time,
-						(LONG64)(start_time.QuadPart - qcq->dpc_last_time.QuadPart));
-#endif
-
-    if (rx_work_done) {
-#ifdef DBG
-		InterlockedAdd( (LONG *)&qcq->rx_stats->queue_len,
-						  rx_work_done);
-		InterlockedIncrement( (LONG *)&qcq->rx_stats->dpc_count);
-		if (rx_work_done > qcq->rx_stats->max_queue_len) {
-			qcq->rx_stats->max_queue_len = rx_work_done;
+		if (budget > tot_budget) {
+			budget = tot_budget;
 		}
-#endif
 
-        ionic_rx_fill(qcq);
-#ifdef DBG
-		end_time = KeQueryPerformanceCounter( NULL);
-		InterlockedAdd64( &qcq->dpc_fill_time,
-						(LONG64)(end_time.QuadPart - start_time.QuadPart));
-#endif
-    }
+		packets_to_indicate = NULL;
+		rx_indicate_count = 0;
+
+		rx_work_done = ionic_rx_walk_cq(rxcq, budget, &packets_to_indicate, &rx_indicate_count);
+
+		if (rx_work_done) {
+			ionic_rx_fill(qcq);
+
+			ionic_rq_indicate_bufs(lif, &lif->rxqcqs[qcq->q.index], qcq, rx_indicate_count,
+					packets_to_indicate);
+		}
+		else {
+			DbgTrace((
+				TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
+				"%s Found nothing to process on lif %d ******************\n",
+				__FUNCTION__, lif->index));
+		}
+
+		rx_tot_work_done += rx_work_done;
+
+		if (rx_work_done < budget) {
+			break;
+		}
+
+		tot_budget -= budget;
+	}
 
     NdisDprReleaseSpinLock(&qcq->rx_ring_lock);
 
-    if (rx_work_done == 0) {
-#ifdef DBG
-        InterlockedIncrement64(&int_info->spurious_cnt);
-#endif
-        DbgTrace((
-            TRACE_COMPONENT_IO, TRACE_LEVEL_VERBOSE,
-            "%s Found nothing to process on lif %d ******************\n",
-            __FUNCTION__, lif->index));
-    }
-	else {
-#ifdef DBG
-		start_time = KeQueryPerformanceCounter( NULL);
-#endif
-		ionic_rq_indicate_bufs(lif, &lif->rxqcqs[qcq->q.index], qcq, rx_indicate_count,
-			packets_to_indicate);
-#ifdef DBG
-		end_time = KeQueryPerformanceCounter( NULL);
-		InterlockedAdd64( &qcq->dpc_indicate_time,
-						(LONG64)(end_time.QuadPart - start_time.QuadPart));
-#endif
-	}
-
-	if (rx_work_done < (u32)budget) {
-		flags |= IONIC_INTR_CRED_UNMASK;
-		receive_throttle_params->MoreNblsPending = FALSE;
-	}
-	else {
+	if (rx_tot_work_done == (u32)receive_throttle_params->MaxNblsToIndicate &&
+		receive_throttle_params->MaxNblsToIndicate < lif->nrxq_descs) {
 		receive_throttle_params->MoreNblsPending = TRUE;
 	}
 
-    if (rx_work_done || flags) {
-        flags |= IONIC_INTR_CRED_RESET_COALESCE;
-        ionic_intr_credits(idev->intr_ctrl, rxcq->bound_intr->index, rx_work_done,
-                           flags);
-    }
-#ifdef DBG
-	end_time = KeQueryPerformanceCounter( NULL);
-	InterlockedAdd64( &qcq->dpc_total_time,
-						(LONG64)(end_time.QuadPart - qcq->dpc_end_time.QuadPart));
-#endif
-
-    return;
+	receive_throttle_params->MaxNblsToIndicate -= rx_tot_work_done;
+    
+	return;
 }
 
 void
@@ -1573,8 +1533,8 @@ ionic_return_packet(NDIS_HANDLE adapter_context,
 			
             ionic_return_rxq_pkt(qcq->q.lif, rxq_pkt);
 
-	    // deref the adapter
-	    deref_request(qcq->q.lif, 1);
+			// deref the adapter
+			deref_request(qcq->q.lif, 1);
         }
 
         nbl = nbl_next;

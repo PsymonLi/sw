@@ -1508,6 +1508,7 @@ ionic_send_packets(NDIS_HANDLE adapter_context,
     ULONG nb_ref;
 	struct txq_pkt_private * txq_pkt_private = NULL;
 	struct txq_nbl_private *nbl_private = NULL;
+	GROUP_AFFINITY affinity;
 
     UNREFERENCED_PARAMETER(port_number);
 
@@ -1618,7 +1619,7 @@ ionic_send_packets(NDIS_HANDLE adapter_context,
 
 			ref_request(lif);
 
-			tx_queue = get_tx_queue_id( lif, nbl, NET_BUFFER_LIST_FIRST_NB(nbl));
+			tx_queue = get_tx_queue_id( lif, nbl);
 
 			qcq = lif->txqcqs[tx_queue].qcq;
 
@@ -1626,9 +1627,16 @@ ionic_send_packets(NDIS_HANDLE adapter_context,
 			ionic_txq_nbl_list_push_tail(&qcq->txq_nbl_list, nbl);
 			NdisReleaseSpinLock(&qcq->txq_nbl_lock);
 
-			KeInsertQueueDpc(&qcq->tx_packet_dpc,
-				NULL,
-				NULL);
+			NdisZeroMemory( &affinity,
+							sizeof(GROUP_AFFINITY));
+
+			affinity.Mask = (ULONG_PTR)1 << qcq->proc.Number;
+			affinity.Group = qcq->proc.Group;
+
+			NdisMQueueDpcEx( qcq->q.lif->ionic->intr_obj,
+							 qcq->intr_msg_id,
+							 &affinity,
+							 NULL);
 		}
 	}
     
@@ -1647,11 +1655,10 @@ get_queue_len(struct qcq *qcq)
     return len;
 }
 
-bool
-ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits)
+ULONG
+ionic_tx_flush(struct qcq *qcq, unsigned int budget)
 {
     struct cq *cq = &qcq->cq;
-    struct ionic_dev *idev = &cq->lif->ionic->idev;
     struct txq_comp *comp = NULL;
     struct queue *q = cq->bound_q;
     struct desc_info *desc_info;
@@ -1659,7 +1666,6 @@ ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits)
     void *cb_arg;
     desc_cb cb;
     ULONG desc_cnt = 0;
-    ULONG flags = 0;
 
 #ifdef DBG
     ULONG queue_len = 0;
@@ -1674,10 +1680,6 @@ ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits)
     }
 #endif
 
-	if (credits) {
-		flags = IONIC_INTR_CRED_UNMASK | IONIC_INTR_CRED_RESET_COALESCE;
-	}
-
     comp = (struct txq_comp *)cq->tail->cq_desc;
 
     /* walk the completed cq entries */
@@ -1690,22 +1692,17 @@ ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits)
         do {
             desc_info = q->tail;
             q->tail = desc_info->next;
-            if (cleanup) {
-                desc_info->cb = NULL;
-                desc_info->cb_arg = NULL;
-            } else {
 
-                cb = desc_info->cb;
-                cb_arg = desc_info->cb_arg;
+            cb = desc_info->cb;
+            cb_arg = desc_info->cb_arg;
 
-                desc_info->cb = NULL;
-                desc_info->cb_arg = NULL;
+            desc_info->cb = NULL;
+            desc_info->cb_arg = NULL;
 
-                if (cb)
-                    cb(q, desc_info, cq->tail, cb_arg, NULL, NULL);
+            if (cb)
+                ionic_txq_complete_pkt(q, desc_info, cq->tail, cb_arg, NULL, NULL);
 
-                desc_cnt++;
-            }
+            desc_cnt++;
 
         } while (desc_info->index != le16_to_cpu(comp->comp_index));
 
@@ -1722,12 +1719,7 @@ ionic_tx_flush(struct qcq *qcq, unsigned int budget, bool cleanup, bool credits)
         work_done++;
     }
 
-    if (credits &&
-        ((work_done != 0) || (flags != 0)))
-        ionic_intr_credits(idev->intr_ctrl, cq->bound_intr->index, work_done,
-                           flags);
-
-    return (work_done == budget);
+    return work_done;
 }
 
 NDIS_STATUS
@@ -2172,51 +2164,31 @@ ionic_tx_empty(struct queue *q)
 
 
 void 
-tx_packet_dpc_callback( _KDPC *Dpc,
-					    PVOID DeferredContext,
-					    PVOID SystemArgument1,
-					    PVOID SystemArgument2)
+tx_packet_dpc_callback( struct qcq *qcq,
+					    NDIS_RECEIVE_THROTTLE_PARAMETERS *throttle_params)
 {
 
-	struct qcq *qcq = (struct qcq *)DeferredContext;
-#ifdef DBG
-	LARGE_INTEGER start_time;
-#endif
-
-	UNREFERENCED_PARAMETER( Dpc);
-	UNREFERENCED_PARAMETER(SystemArgument1);
-	UNREFERENCED_PARAMETER(SystemArgument2);
+	ULONG budget = IONIC_TX_BUDGET_DEFAULT;
+	ULONG work_done = 0;
 
 	// In the event our targeting of the DPC failed, or we are changing the affinity for the DPC,
 	// check there is only 1 instance running
 	if (InterlockedIncrement(&qcq->dpc_exec_cnt) == 1) {
-#ifdef DBG
-		InterlockedIncrement( &qcq->dpc_count);
-		start_time = KeQueryPerformanceCounter( NULL);
-		if( qcq->dpc_last_time.QuadPart != 0) {
-			InterlockedAdd64( &qcq->dpc_to_dpc_total_time,
-							  (LONG64)(start_time.QuadPart - qcq->dpc_last_time.QuadPart));
-		}
-		qcq->dpc_last_time = start_time;
-#endif
+
+		budget = throttle_params->MaxNblsToIndicate;
 
 		ionic_service_nbl_requests( qcq->q.lif->ionic, qcq, false);
 
 		ionic_service_nb_requests(qcq, false);
 
-		if(ionic_tx_flush(qcq, qcq->q.num_descs,
-				false, BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) &&
-		   RtlCheckBit(&qcq->q.lif->state, LIF_UP) &&
-		   !BooleanFlagOn( StateFlags, IONIC_STATE_TX_INTERRUPT)) {
-			KeInsertQueueDpc(&qcq->tx_packet_dpc,
-					NULL,
-					NULL);
+		work_done = ionic_tx_flush(qcq, budget);
+
+		if( (work_done == budget) &&
+		   RtlCheckBit(&qcq->q.lif->state, LIF_UP)) {
+			throttle_params->MoreNblsPending = 1;
 		}
-#ifdef DBG
-		qcq->dpc_end_time = KeQueryPerformanceCounter( NULL);
-		InterlockedAdd64( &qcq->dpc_total_time,
-						  (LONG64)(qcq->dpc_end_time.QuadPart - start_time.QuadPart));
-#endif
+
+		throttle_params->MaxNblsToIndicate -= work_done;
 
 	}
 	else {
@@ -2230,115 +2202,23 @@ tx_packet_dpc_callback( _KDPC *Dpc,
 
 ULONG
 get_tx_queue_id(struct lif *lif,
-	PNET_BUFFER_LIST nbl,
-	PNET_BUFFER nb)
+	PNET_BUFFER_LIST nbl)
 {
 
 	ULONG queue_id = 0;
 	ULONG_PTR hash_val = 0;
-	ULONG packet_len = 0;
-	ULONG data_offset = 0;
-	void *hdr_buffer = NULL;
-	ULONG buffer_len = 0;
-	struct ethhdr *ethr_hdr = NULL;
-	USHORT ethr_proto = 0;
-	struct ipv4hdr *ipv4_hdr = NULL;
-	void *first_hdr = NULL;
-	struct tcphdr *tcp_hdr = NULL;
-	struct udphdr *udp_hdr = NULL;
-	struct ipv6hdr *ipv6_hdr = NULL;
+	ULONG table_index = 0;
 
-	if (BooleanFlagOn(StateFlags, IONIC_STATE_TX_QUEUE_TO_PORT_ID)) {
-
-		packet_len = NET_BUFFER_DATA_LENGTH(nb);
-
-		data_offset = (UINT)NET_BUFFER_CURRENT_MDL_OFFSET(nb);
-
-		hdr_buffer = MmGetSystemAddressForMdlSafe(nb->CurrentMdl, NormalPagePriority);
-
-		if (hdr_buffer == NULL ||
-			nb->CurrentMdl->ByteCount <= data_offset) {
-			goto exit;
-		}
-
-		buffer_len = nb->CurrentMdl->ByteCount - data_offset;
-
-	    hdr_buffer = (void *)((char *)hdr_buffer + data_offset);
-
-		if (buffer_len <= sizeof(struct ethhdr)) {
-			goto exit;
-		}
-
-		ethr_hdr = (struct ethhdr *)hdr_buffer;
-
-		if( is_1q_hdr_present( hdr_buffer)) {
-			ethr_proto = *((USHORT *)((char *)hdr_buffer + sizeof(struct ethhdr)));
-			first_hdr = (void *)((char *)hdr_buffer + sizeof(struct ethhdr) + sizeof( USHORT));
-		}
-		else {
-			ethr_proto = ethr_hdr->h_proto;
-			first_hdr = (void *)((char *)hdr_buffer + sizeof(struct ethhdr));
-		}
-
-		buffer_len -= sizeof(struct ethhdr);
-
-		switch( ethr_proto) {
-
-			case 0x0008: { // IPv4
-
-				ipv4_hdr = (struct ipv4hdr *)first_hdr;
-
-				if( ipv4_hdr->protocol == IPPROTO_TCP) {
-					if( buffer_len >= (ipv4_hdr->ihl * sizeof( ULONG)) + sizeof( struct tcphdr)) {
-						tcp_hdr = (struct tcphdr *)((char *)ipv4_hdr + (ipv4_hdr->ihl * sizeof( ULONG)));
-						queue_id = _byteswap_ushort(tcp_hdr->dest) & 0xFF;
-					}
-				}
-				else if( ipv4_hdr->protocol == IPPROTO_UDP) {
-					if( buffer_len >= (ipv4_hdr->ihl * sizeof( ULONG)) + sizeof( struct udphdr)) {
-						udp_hdr = (struct udphdr *)((char *)ipv4_hdr + (ipv4_hdr->ihl * sizeof( ULONG)));
-						queue_id = _byteswap_ushort(udp_hdr->dest) & 0xFF;
-					}
-				}
-
-				queue_id = queue_id % lif->ntxqs;
-				
-				break;
-			}
-
-			case 0xDD86: { // IPv6
-
-				ipv6_hdr = (struct ipv6hdr *)first_hdr;
-
-				if( ipv6_hdr->nexthdr == IPPROTO_TCP) {
-					if( buffer_len >= sizeof( struct ipv6hdr) + sizeof( struct tcphdr)) {
-						tcp_hdr = (struct tcphdr *)((char *)ipv6_hdr + sizeof( struct ipv6hdr));
-						queue_id = _byteswap_ushort(tcp_hdr->dest) & 0xFF;
-					}
-				}
-				else if( ipv6_hdr->nexthdr == IPPROTO_UDP) {
-					if( buffer_len >= sizeof( struct ipv6hdr) + sizeof( struct udphdr)) {
-						udp_hdr = (struct udphdr *)((char *)ipv6_hdr + sizeof( struct ipv6hdr));
-						queue_id = _byteswap_ushort(udp_hdr->dest) & 0xFF;
-					}
-				}
-
-				queue_id = queue_id % lif->ntxqs;
-				
-				break;
-			}
-
-			default: {
-				break;
-			}
-		}
-	}
-	else {
+	// No need to do this if we have no RSS IT
+	if( lif->rss_ind_tbl != NULL &&
+		lif->ionic->ident.lif.eth.rss_ind_tbl_sz != 0) {
 		hash_val = (ULONG_PTR)NET_BUFFER_LIST_INFO( nbl, NetBufferListHashValue);
-		queue_id = hash_val % lif->ntxqs;
+		if( hash_val != 0) {
+			table_index = hash_val & (lif->ionic->ident.lif.eth.rss_ind_tbl_sz - 1);
+			queue_id = lif->rss_ind_tbl[ table_index];
+			ASSERT( queue_id < lif->ntxqs);
+		}
 	}
-
-exit:
 
 	return queue_id;
 }

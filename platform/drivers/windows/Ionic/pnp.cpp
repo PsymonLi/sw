@@ -156,10 +156,6 @@ ionic_remove_device(NDIS_HANDLE miniport_add_device_context)
         NdisFreeMemoryWithTagPriority_internal(ionic->adapterhandle, ionic->sys_proc_info, IONIC_ADAPTER_TAG);
     }
 
-    if (ionic->proc_tbl != NULL) {
-        NdisFreeMemoryWithTagPriority_internal(ionic->adapterhandle, ionic->proc_tbl, IONIC_ADAPTER_TAG);
-    }
-
     NdisFreeMemoryWithTagPriority_internal(ionic->adapterhandle, ionic, IONIC_ADAPTER_TAG);
 
     DbgTrace((TRACE_COMPONENT_PNP, TRACE_LEVEL_VERBOSE,
@@ -249,11 +245,6 @@ ionic_set_proc_info(NDIS_HANDLE miniport_add_device_context)
 		ionic->sys_proc_info = NULL;
 	}
 
-    if (ionic->proc_tbl != NULL) {
-        NdisFreeMemoryWithTagPriority_internal(ionic->adapterhandle, ionic->proc_tbl, IONIC_ADAPTER_TAG);
-		ionic->proc_tbl = NULL;
-    }
-
     ionic->sys_proc_info = (PNDIS_SYSTEM_PROCESSOR_INFO_EX)NdisAllocateMemoryWithTagPriority_internal(
         miniport_add_device_context, (UINT)sys_proc_info_sz, IONIC_ADAPTER_TAG, NormalPoolPriority);
     if (ionic->sys_proc_info == NULL) {
@@ -277,19 +268,6 @@ ionic_set_proc_info(NDIS_HANDLE miniport_add_device_context)
         return status;
 
     }
-
-    ionic->proc_tbl = (struct proc_info *)NdisAllocateMemoryWithTagPriority_internal(
-        miniport_add_device_context, (UINT)(ionic->sys_proc_info->NumberOfProcessors * sizeof(struct proc_info)), IONIC_ADAPTER_TAG, NormalPoolPriority);
-    if (ionic->proc_tbl == NULL) {
-        DbgTrace((TRACE_COMPONENT_PNP, TRACE_LEVEL_ERROR,
-            "%s failed to allocate memory for processor table\n",
-            __FUNCTION__));
-		status = NDIS_STATUS_RESOURCES;
-        return status;
-    }
-
-	NdisZeroMemory( ionic->proc_tbl,
-					(ionic->sys_proc_info->NumberOfProcessors * sizeof(struct proc_info)));
 
     DbgTrace((TRACE_COMPONENT_PNP, TRACE_LEVEL_VERBOSE,
         "%s sockets %d cores %d cores/socket %d num_procs %d\n",
@@ -316,8 +294,6 @@ ionic_set_proc_info(NDIS_HANDLE miniport_add_device_context)
             proc->ProcNum.Group, proc->ProcNum.Number,
             proc->SocketId, proc->CoreId,
             proc->NodeId, proc->NodeDistance));
-		ionic->proc_tbl[i].numa_id = proc->NodeId;
-		ionic->proc_tbl[i].proc = proc->ProcNum;
     }
 
     return NDIS_STATUS_SUCCESS;

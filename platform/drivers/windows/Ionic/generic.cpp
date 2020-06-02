@@ -1868,7 +1868,7 @@ ionic_link_status_check(struct lif *lif, u16 link_status)
         EvLogWarning("%wZ - Link state changed to DOWN.", ionic->name);
         DbgTrace((TRACE_COMPONENT_LINK, TRACE_LEVEL_VERBOSE,
                   "%s Link down\n", __FUNCTION__));
-        ionic_stop(lif->ionic);
+        ionic_stop(lif->ionic, false);
         ionic_link_down(lif->ionic);
     }
 
@@ -2076,7 +2076,7 @@ print_hex_dump(const char *prefix_str,
 }
 
 void
-IoPrint(IN char *Format, ...)
+IoPrintEx(IN char *Format, ...)
 {
     va_list vaArgPtr;
 
@@ -2175,7 +2175,8 @@ ReadConfigParams()
     }
 
     NdisInitUnicodeString(&uniValue, REG_STATE_FLAGS);
-
+	
+	StateFlags = IONIC_DEFAULT_STATE;
     NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
                           NdisParameterInteger);
 
@@ -2259,6 +2260,24 @@ ReadConfigParams()
 
     if (ndisStatus == NDIS_STATUS_SUCCESS) {
         RxBudget = pConfigParam->ParameterData.IntegerData;
+    }
+
+    NdisInitUnicodeString(&uniValue, REG_RX_MINI_BUDGET);
+
+    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
+                          NdisParameterInteger);
+
+    if (ndisStatus == NDIS_STATUS_SUCCESS) {
+        RxMiniBudget = pConfigParam->ParameterData.IntegerData;
+    }
+
+    NdisInitUnicodeString(&uniValue, REG_TX_BUDGET);
+
+    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
+                          NdisParameterInteger);
+
+    if (ndisStatus == NDIS_STATUS_SUCCESS) {
+        TxBudget = pConfigParam->ParameterData.IntegerData;
     }
 
     ndisStatus = NDIS_STATUS_SUCCESS;
@@ -2687,7 +2706,6 @@ ConfigureRxBudget(IN ULONG Budget)
 
     NTSTATUS ntStatus = STATUS_SUCCESS;
     UNICODE_STRING uniString;
-    BOOLEAN bUpdateBudget = FALSE;
 
     //
     // Go update the registry with the new entries
@@ -2695,10 +2713,6 @@ ConfigureRxBudget(IN ULONG Budget)
 
     if (Budget != RxBudget) {
         RxBudget = Budget;
-        bUpdateBudget = TRUE;
-    }
-
-    if (bUpdateBudget) {
 
         RtlInitUnicodeString(&uniString, REG_RX_BUDGET);
 
@@ -2708,6 +2722,64 @@ ConfigureRxBudget(IN ULONG Budget)
         if (!NT_SUCCESS(ntStatus)) {
              DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
 					"%s Failed to set RxBudget in registry Status %08lX\n",
+                    ntStatus));
+        }
+    }
+
+    return ntStatus;
+}
+
+NTSTATUS
+ConfigureRxMiniBudget(IN ULONG Budget)
+{
+
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    UNICODE_STRING uniString;
+
+    //
+    // Go update the registry with the new entries
+    //
+
+    if (Budget != RxMiniBudget) {
+        RxMiniBudget = Budget;
+
+        RtlInitUnicodeString(&uniString, REG_RX_MINI_BUDGET);
+
+        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &Budget,
+                                           sizeof(ULONG));
+
+        if (!NT_SUCCESS(ntStatus)) {
+             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
+					"%s Failed to set RxMiniBudget in registry Status %08lX\n",
+                    ntStatus));
+        }
+    }
+
+    return ntStatus;
+}
+
+NTSTATUS
+ConfigureTxBudget(IN ULONG Budget)
+{
+
+    NTSTATUS ntStatus = STATUS_SUCCESS;
+    UNICODE_STRING uniString;
+
+    //
+    // Go update the registry with the new entries
+    //
+
+    if (Budget != TxBudget) {
+        TxBudget = Budget;
+
+        RtlInitUnicodeString(&uniString, REG_TX_BUDGET);
+
+        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &Budget,
+                                           sizeof(ULONG));
+
+        if (!NT_SUCCESS(ntStatus)) {
+             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
+					"%s Failed to set TxBudget in registry Status %08lX\n",
                     ntStatus));
         }
     }
@@ -2871,11 +2943,6 @@ get_perfmon_stats(AdapterCB *cb, ULONG maxlen, struct _PERF_MON_CB **perfmon_sta
     ULONG lut_index;
     LARGE_INTEGER perf_frequ;
 	ULONGLONG last_call = 0;
-
-#ifdef DBG
-	LONG  dpc_count = 0;
-	LONG  entry_count = 0;
-#endif
 
     status = KeWaitForSingleObject(&perfmon_event,
                                    Executive,
@@ -3106,89 +3173,9 @@ get_perfmon_stats(AdapterCB *cb, ULONG maxlen, struct _PERF_MON_CB **perfmon_sta
                     }
 #ifdef DBG
 					if( counter_mask != IONIC_PERF_MON_NO_STATS) {
-					
-						dpc_count = InterlockedExchange( (LONG *)&lif->rxqcqs[ queue_cnt].qcq->dpc_count,
-														 0);
-						
+										
 						rx_stats->max_queue_len = InterlockedExchange( (LONG *)&lif->rxqcqs[ queue_cnt].qcq->rx_stats->max_queue_len,
 																	   0);
-
-						entry_count = InterlockedExchange( (LONG *)&lif->rxqcqs[ queue_cnt].qcq->rx_stats->queue_len,
-															0);
-
-						if( dpc_count != 0) {	
-							rx_stats->queue_len = entry_count / dpc_count;													
-						}
-
-						rx_stats->dpc_total_time = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_total_time,
-																		  0);
-						if( rx_stats->dpc_total_time != 0) {
-							rx_stats->dpc_total_time *= 1000000000;
-							rx_stats->dpc_total_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_total_time /= dpc_count;
-							}
-						}
-
-						rx_stats->dpc_latency = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_latency,
-																		  0);
-						if( rx_stats->dpc_latency != 0) {
-							rx_stats->dpc_latency *= 1000000000;
-							rx_stats->dpc_latency /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_latency /= dpc_count;
-							}
-						}
-
-						rx_stats->dpc_to_dpc_time = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_to_dpc_total_time,
-																		  0);
-						if( rx_stats->dpc_to_dpc_time != 0) {
-							rx_stats->dpc_to_dpc_time *= 1000000000;
-							rx_stats->dpc_to_dpc_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_to_dpc_time /= dpc_count;
-							}
-						}
-
-						rx_stats->dpc_indicate_time = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_indicate_time,
-																		  0);
-						if( rx_stats->dpc_indicate_time != 0) {
-							rx_stats->dpc_indicate_time *= 1000000000;
-							rx_stats->dpc_indicate_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_indicate_time /= dpc_count;
-							}
-						}
-
-						rx_stats->dpc_walk_time = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_walk_time,
-																		  0);
-						if( rx_stats->dpc_walk_time != 0) {
-							rx_stats->dpc_walk_time *= 1000000000;
-							rx_stats->dpc_walk_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_walk_time /= dpc_count;
-							}
-						}
-
-						rx_stats->dpc_fill_time = InterlockedExchange64( (LONG64 *)&lif->rxqcqs[ queue_cnt].qcq->dpc_fill_time,
-																		  0);
-						if( rx_stats->dpc_fill_time != 0) {
-							rx_stats->dpc_fill_time *= 1000000000;
-							rx_stats->dpc_fill_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								rx_stats->dpc_fill_time /= dpc_count;
-							}
-						}
-
-						if( last_call != 0) {
-							rx_stats->dpc_rate = (ULONGLONG)((ULONGLONG)dpc_count * (ULONGLONG)1000000)/last_call;
-						}
 					}
 #endif
 
@@ -3209,10 +3196,7 @@ get_perfmon_stats(AdapterCB *cb, ULONG maxlen, struct _PERF_MON_CB **perfmon_sta
 
 #ifdef DBG
 					if( counter_mask != IONIC_PERF_MON_NO_STATS) {
-					
-						dpc_count = InterlockedExchange( (LONG *)&lif->txqcqs[ queue_cnt].qcq->dpc_count,
-														  0);
-					
+									
 						tx_stats->max_queue_len = lif->txqcqs[ queue_cnt].qcq->tx_stats->descriptor_max;
 						lif->txqcqs[ queue_cnt].qcq->tx_stats->descriptor_max = 0;
 					
@@ -3230,32 +3214,6 @@ get_perfmon_stats(AdapterCB *cb, ULONG maxlen, struct _PERF_MON_CB **perfmon_sta
 																		   0);
 
 						tx_stats->outstanding_nb_count = lif->txqcqs[ queue_cnt].qcq->outstanding_tx_count;
-
-						tx_stats->dpc_total_time = InterlockedExchange64( (LONG64 *)&lif->txqcqs[ queue_cnt].qcq->dpc_total_time,
-																		  0);
-						if( tx_stats->dpc_total_time != 0) {
-							tx_stats->dpc_total_time *= 1000000000;
-							tx_stats->dpc_total_time /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								tx_stats->dpc_total_time /= dpc_count;
-							}
-						}
-
-						tx_stats->dpc_to_dpc = InterlockedExchange64( (LONG64 *)&lif->txqcqs[ queue_cnt].qcq->dpc_to_dpc_total_time,
-																		  0);
-						if( tx_stats->dpc_to_dpc != 0) {
-							tx_stats->dpc_to_dpc *= 1000000000;
-							tx_stats->dpc_to_dpc /= perf_frequ.QuadPart;
-
-							if( dpc_count != 0) {
-								tx_stats->dpc_to_dpc /= dpc_count;
-							}
-						}
-
-						if( last_call != 0) {
-							tx_stats->dpc_rate = (ULONGLONG)((ULONGLONG)dpc_count * (ULONGLONG)1000000)/last_call;
-						}
 					}
 #endif
                     tx_stats = (struct _PERF_MON_TX_QUEUE_STATS *)((char *)tx_stats + sizeof( struct _PERF_MON_TX_QUEUE_STATS));
@@ -3767,18 +3725,20 @@ IoctlQueueInfo(PVOID buf, ULONG inlen, ULONG outlen, PULONG outbytes)
 			status = NDIS_STATUS_BUFFER_OVERFLOW;
 			break;
 		}
-
+		wcscpy_s( entry->name, ADAPTER_NAME_MAX_SZ, ionic->name.Buffer);
 		strcpy_s( entry->lif,
 				  LIF_NAME_MAX_SZ,
 				  ionic->master_lif->name);
 		entry->rx_queue_cnt = ionic->master_lif->nrxqs;
 		entry->tx_queue_cnt = ionic->master_lif->ntxqs;
+		entry->tx_mode = (StateFlags & IONIC_STATE_VALID_TX_MODE_FLAGS);
 
 		for (unsigned int queue_cnt = 0; queue_cnt < ionic->master_lif->nrxqs; queue_cnt++) {
 
 			entry->rx_queue_info[queue_cnt].id = queue_cnt;
 			entry->rx_queue_info[queue_cnt].isr = true;
-			entry->rx_queue_info[queue_cnt].core_idx = ionic->master_lif->rxqcqs[queue_cnt].qcq->proc_idx;
+			entry->rx_queue_info[queue_cnt].core = ionic->master_lif->rxqcqs[queue_cnt].qcq->proc.Number;
+			entry->rx_queue_info[queue_cnt].group = ionic->master_lif->rxqcqs[queue_cnt].qcq->proc.Group;
 			entry->rx_queue_info[queue_cnt].msi_id = ionic->master_lif->rxqcqs[queue_cnt].qcq->intr_msg_id;
 
 			NdisAcquireSpinLock(&ionic->master_lif->rxqcqs[queue_cnt].qcq->rx_ring_lock);
@@ -3798,7 +3758,8 @@ IoctlQueueInfo(PVOID buf, ULONG inlen, ULONG outlen, PULONG outbytes)
 				entry->tx_queue_info[queue_cnt].msi_id = ionic->master_lif->txqcqs[queue_cnt].qcq->intr_msg_id;
 			}
 
-			entry->tx_queue_info[queue_cnt].core_idx = ionic->master_lif->txqcqs[queue_cnt].qcq->proc_idx;
+			entry->tx_queue_info[queue_cnt].core = ionic->master_lif->txqcqs[queue_cnt].qcq->proc.Number;
+			entry->tx_queue_info[queue_cnt].group = ionic->master_lif->txqcqs[queue_cnt].qcq->proc.Group;
 
 			entry->tx_queue_info[queue_cnt].q_head_index = ionic->master_lif->txqcqs[queue_cnt].qcq->q.head->index;
 			entry->tx_queue_info[queue_cnt].q_tail_index = ionic->master_lif->txqcqs[queue_cnt].qcq->q.tail->index;

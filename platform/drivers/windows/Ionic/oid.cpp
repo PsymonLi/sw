@@ -263,7 +263,8 @@ GetPortTypeString(ULONG PortType)
 NDIS_STATUS
 oid_multicast_list_set(struct ionic *ionic,
                        VOID *info_buffer,
-                       ULONG info_buffer_length)
+                       ULONG info_buffer_length,
+					   ULONG *bytes_read, ULONG *bytes_needed)
 {
     NDIS_STATUS ntStatus = NDIS_STATUS_SUCCESS;
     ULONG mc_count;
@@ -274,6 +275,28 @@ oid_multicast_list_set(struct ionic *ionic,
     LIST_ENTRY *next;
     struct rx_filter *f;
     unsigned int i;
+
+    *bytes_needed = ETH_ALEN;
+    *bytes_read = info_buffer_length;
+
+    if ( info_buffer_length % ETH_ALEN)
+    {
+        ntStatus = NDIS_STATUS_INVALID_LENGTH;
+        DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_ERROR,
+                    "%s Invalid length %d Status %08lX\n",
+                    __FUNCTION__, info_buffer_length, ntStatus));
+        goto cleanup;
+    }
+
+    if (info_buffer_length > (IONIC_MULTICAST_PERFECT_FILTERS * ETH_ALEN))
+    {
+        ntStatus = NDIS_STATUS_MULTICAST_FULL;
+        DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
+                    "%s Length too long %d Status %08lX\n",
+                    __FUNCTION__, info_buffer_length, ntStatus));
+        *bytes_needed = IONIC_MULTICAST_PERFECT_FILTERS * ETH_ALEN;
+        goto cleanup;
+    }
 
     //
     // Clear the current mc list in the adapter
@@ -325,7 +348,7 @@ oid_multicast_list_set(struct ionic *ionic,
         ntStatus = ionic_lif_addr(lif, currentFilter, true);
 
         if (ntStatus != NDIS_STATUS_SUCCESS) {
-            DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
+            DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_ERROR,
                       "%s Failed to set rx filter Status %08lX\n", __FUNCTION__,
                       ntStatus));
             break;
@@ -483,7 +506,7 @@ oid_packet_filter_set(struct ionic *ionic,
         } else {
 
             DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
-                      "%s Removing any mcast filters for rx mode %08lX\n",
+                      "%s Restoring mcast filters for rx mode %08lX\n",
                       __FUNCTION__, rx_mode));
 
             oid_multicast_list_restore(ionic);
@@ -1355,7 +1378,7 @@ oid_set_information(struct ionic *ionic,
     case OID_802_3_MULTICAST_LIST: {
 
         ntStatus =
-            oid_multicast_list_set(ionic, info_buffer, info_buffer_length);
+            oid_multicast_list_set(ionic, info_buffer, info_buffer_length, bytes_read, bytes_needed);
 
         break;
     }
@@ -2427,9 +2450,7 @@ OidRequest(NDIS_HANDLE MiniportAdapterContext, PNDIS_OID_REQUEST OidRequest)
     PULONG bytes_written;
     PULONG bytes_needed;
 
-    KIRQL start_irql;
-
-    start_irql = KeGetCurrentIrql();
+	ref_request(ionic->master_lif);
 
     DbgTrace((TRACE_COMPONENT_OID, TRACE_LEVEL_VERBOSE,
               "%s Entered OidRequest() request %p Type %s Oid %08lX\n",
@@ -2552,7 +2573,7 @@ OidRequest(NDIS_HANDLE MiniportAdapterContext, PNDIS_OID_REQUEST OidRequest)
 
 exit:
 
-    ASSERT(start_irql == KeGetCurrentIrql());
+	deref_request(ionic->master_lif, 1);
 
     return ntStatus;
 }

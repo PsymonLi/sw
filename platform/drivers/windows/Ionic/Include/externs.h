@@ -46,6 +46,10 @@ extern LONG				port_count;
 
 extern ULONG			RxBudget;
 
+extern ULONG			RxMiniBudget;
+
+extern ULONG			TxBudget;
+
 extern ULONG            StateFlags;
 
 extern KEVENT           perfmon_event;

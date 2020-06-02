@@ -89,7 +89,7 @@ DbgLogMsg(IN ULONG Component, IN ULONG Level, IN PCCH Format, ...)
     va_end(va_args);
 
     if (BooleanFlagOn(TraceFlags, TRACE_TO_DEBUGGER) && pCurrentTrace != NULL) {
-        IoPrint(pCurrentTrace);
+        IoPrintEx(pCurrentTrace);
     }
 
 cleanup:
