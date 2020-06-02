@@ -32,6 +32,9 @@ RPMDIR=$(pwd)/rpmbuild
 # determine ionic driver version and build number
 VERSION=$(cat drivers/eth/ionic/ionic.h | grep VERSION | awk '{print $3}' | awk -F- '{print $1 "." $2}' | sed 's/"//g')
 
+# clean the RELEASE string of unwanted characters
+RELEASE=$(echo $RELEASE | tr - . )
+
 # update spec file
 sed -i "s/ionic_version [0-9].[0-9].[0-9]/ionic_version $VERSION/" ionic.spec
 sed -i "s/RELEASE/$RELEASE/" ionic.spec
