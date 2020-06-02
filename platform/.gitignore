@@ -5,4 +5,5 @@ src/third-party/lib/gmp/
 src/third-party/lib/ncurses/
 hosttools
 drivers/esxi/vib/
+drivers/esxi/signed_drivers/
 goldfw
