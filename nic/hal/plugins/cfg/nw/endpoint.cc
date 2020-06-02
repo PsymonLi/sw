@@ -2761,7 +2761,7 @@ find_ep_by_mac (mac_addr_t mac)
         ep_t                     *tmp_ep = (ep_t *)hal_handle_get_obj(entry->handle_id);
         struct ep_get_t          *ep_ctx = (struct ep_get_t *)ctxt;
 
-        if (!(memcmp(&tmp_ep->l2_key.mac_addr, &ep_ctx->mac, ETH_ADDR_LEN))) {
+        if (tmp_ep && !(memcmp(&tmp_ep->l2_key.mac_addr, &ep_ctx->mac, ETH_ADDR_LEN))) {
             ep_ctx->ep = tmp_ep;
             return true;
         }

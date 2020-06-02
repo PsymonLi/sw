@@ -67,12 +67,89 @@ def get_session_info(tc, wl):
     api.Logger.info('session_info for {} sessions'.format(len(sessions)))
     return sessions
 
+
+def verify_dir_in_sessions(tc, wl, sessions, direction):
+    ret = api.types.status.SUCCESS
+    sessions = sessions[:-1]
+    for session in sessions:
+        v4_session = False
+        #import pdb; pdb.set_trace()
+        if 'spec' not in session:
+             continue
+        if ('flowkey' not in session['spec']['initiatorflow']) or ('flowkey' not in session['spec']['initiatorflow']['flowkey']):
+             continue
+        if 'v4key' in session['spec']['initiatorflow']['flowkey']['flowkey']:
+             i_flow_key  = session['spec']['initiatorflow']['flowkey']['flowkey']['v4key']
+             i_flow_sip = i_flow_key['sip']
+             v4_session = True
+        if 'v4key' in session['spec']['responderflow']['flowkey']['flowkey']:
+             r_flow_key  = session['spec']['responderflow']['flowkey']['flowkey']['v4key']
+             r_flow_sip = r_flow_key['sip']
+             v4_session = True
+        if not v4_session:
+             continue
+        if (str(ipaddress.ip_address(i_flow_sip)) == wl.ip_address):
+             i_flow_dir = session['status']['iflowstatus']['flowdirection']
+             #FLOW_DIRECTION_FROM_HOST   = 1 & FLOW_DIRECTION_FROM_UPLINK = 2;
+             if i_flow_dir != direction:
+                  #import pdb; pdb.set_trace()
+                  sip = i_flow_key['sip']
+                  dip = i_flow_key['dip']
+                  sip = str(ipaddress.ip_address(sip))
+                  dip = str(ipaddress.ip_address(dip))
+                  proto = i_flow_key['ipproto']
+                  if proto == 6:
+                       sport = i_flow_key['l4fields']['tcpudp']['sport']
+                       dport = i_flow_key['l4fields']['tcpudp']['dport']
+                       api.Logger.info('flow key sip:{} dip:{} proto:{} sport:{} dport:{} '.format(sip, dip, proto, sport, dport))
+                  elif proto == 1:
+                       icmp_id = i_flow_key['l4fields']['icmp']['id']
+                       api.Logger.info('flow key sip:{} dip:{} proto:{} icmp_id :{} i_flow_dir {}'.format(sip, dip, proto, icmp_id, i_flow_dir))
+                       api.Logger.info('flow_direction is not expected') 
+                  ret = api.types.status.FAILURE
+        elif (str(ipaddress.ip_address(r_flow_sip)) == wl.ip_address):
+             r_flow_dir = session['status']['rflowstatus']['flowdirection']
+             #FLOW_DIRECTION_FROM_HOST   = 1 & FLOW_DIRECTION_FROM_UPLINK = 2;
+             if r_flow_dir != direction:
+                  #import pdb; pdb.set_trace()
+                  sip = r_flow_key['sip']
+                  dip = i_flow_key['dip']
+                  sip = str(ipaddress.ip_address(sip))
+                  dip = str(ipaddress.ip_address(dip))
+                  proto = r_flow_key['ipproto']
+                  if proto == 6:
+                       sport = r_flow_key['l4fields']['tcpudp']['sport']
+                       dport = r_flow_key['l4fields']['tcpudp']['dport']
+                       api.Logger.info('flow key sip:{} dip:{} proto:{} sport:{} dport:{} '.format(sip, dip, proto, sport, dport))
+                       api.Logger.info('flow_direction is not expected') 
+                  elif proto == 1:
+                       icmp_id = r_flow_key['l4fields']['icmp']['id']
+                       api.Logger.info('flow key sip:{} dip:{} proto:{} icmp_id :{} r_flow_dir {} '.format(sip, dip, proto, icmp_id, r_flow_dir))
+                  ret = api.types.status.FAILURE
+    return ret
+
+
+def verify_flow_dir(tc):
+    ret = api.types.status.SUCCESS
+    for wl_info in tc.move_info:
+        api.Logger.info("verifying flow_dir for wl ip {}".format(wl_info.wl.ip_address))
+        new_node_sessions = get_sessions_per_src_ip(tc, wl_info.wl, wl_info.new_node)
+        ret = verify_dir_in_sessions(tc, wl_info.wl, new_node_sessions, 1)
+        if ret != api.types.status.SUCCESS:
+            api.Logger.info("flow_dir failed for wl ip {} on new node".format(wl_info.wl.ip_address))
+        old_node_sessions = get_sessions_per_src_ip(tc, wl_info.wl, wl_info.old_node)
+        ret = verify_dir_in_sessions(tc, wl_info.wl, old_node_sessions, 2)
+        if ret != api.types.status.SUCCESS:
+            api.Logger.info("flow_dir failed for wl ip {} on old node".format(wl_info.wl.ip_address))
+    api.Logger.info('verify_flow_dir result {}'.format(ret))
+    return ret 
+
 def get_session_per_node_info(tc, wl, node):
     tc.cmd_cookies = []
     sessions       = []
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
     cmd_cookie = "hal show session"
-    api.Trigger_AddNaplesCommand(req, node_name, "/nic/bin/halctl show session --dstip %s --yaml" % (wl.ip_address))
+    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show session --dstip %s --yaml" % (wl.ip_address))
     tc.cmd_cookies.append(cmd_cookie)
     trig_resp = api.Trigger(req)
     term_resp = api.Trigger_TerminateAllCommands(trig_resp)
@@ -89,6 +166,27 @@ def get_session_per_node_info(tc, wl, node):
     api.Logger.info('session_info for {} sessions'.format(len(sessions)))
     return sessions
 
+def get_sessions_per_src_ip(tc, wl, node):
+    tc.cmd_cookies = []
+    sessions       = []
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    cmd_cookie = "hal show session"
+    api.Trigger_AddNaplesCommand(req, node, "/nic/bin/halctl show session --srcip %s --yaml" % (wl.ip_address))
+    tc.cmd_cookies.append(cmd_cookie)
+    trig_resp = api.Trigger(req)
+    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+    tc.resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+    cookie_idx = 0
+    for cmd in tc.resp.commands:
+        if tc.cmd_cookies[cookie_idx].find("hal show session") != -1 and cmd.stdout == '':
+           api.Logger.info("hal show session returned no sessions")
+           return None
+        else:
+           yaml_out = yaml.load_all(cmd.stdout, Loader=yaml.FullLoader)
+           for session_info in yaml_out:
+                sessions.append(session_info)
+    api.Logger.info('session_info for {} sessions'.format(len(sessions)))
+    return sessions
 
 def build_dict(session, sess_dict):
     # v4 key assumed
@@ -187,7 +285,8 @@ def verify_session_info(tc, wl_info):
     ret = compare_session_info(sess_before_dict, sess_after_dict, tc.detailed)
     if ret != api.types.status.SUCCESS:
         api.Logger.info('session compare failed for wl {}'.format(wl_info.wl.workload_name))
-    api.Logger.info('session compare successful for wl {}'.format(wl_info.wl.workload_name))
+    else:
+        api.Logger.info('session compare for wl {} '.format(wl_info.wl.workload_name))
     return ret 
 
 def pick_new_node(tc):

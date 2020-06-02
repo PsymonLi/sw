@@ -112,6 +112,8 @@ def Verify(tc):
         return api.types.status.FAILURE
     if vm_utils.verify_dbg_vmotion(tc, new_node) != api.types.status.SUCCESS:
         return api.types.status.FAILURE
+    if vm_utils.verify_flow_dir(tc) != api.types.status.SUCCESS:
+        return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def Teardown(tc):
