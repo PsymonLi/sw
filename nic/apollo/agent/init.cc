@@ -13,7 +13,6 @@
 #include "nic/apollo/agent/core/state.hpp"
 #include "nic/apollo/agent/core/event.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
-#include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
@@ -22,7 +21,6 @@ namespace core {
 
 //TODO: Move these to global store
 static sdk::event_thread::event_thread *g_svc_server_thread;
-static sdk::lib::thread *g_routing_thread;
 
 #define DEVICE_CONF_FILE    "/sysconfig/config0/device.conf"
 
@@ -319,29 +317,6 @@ spawn_svc_server_thread (void)
 }
 
 //------------------------------------------------------------------------------
-// spawn thread for metaswitch control plane stack
-//------------------------------------------------------------------------------
-static sdk_ret_t
-spawn_routing_thread (void)
-{
-    // spawn control plane routing thread
-    g_routing_thread =
-        sdk::lib::thread::factory(
-            "routing", PDS_AGENT_THREAD_ID_ROUTING,
-            sdk::lib::THREAD_ROLE_CONTROL, 0x0,
-            pds_ms::pds_ms_thread_init,
-            sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-            false);
-
-    SDK_ASSERT_TRACE_RETURN((g_routing_thread != NULL), SDK_RET_ERR,
-                            "Routing thread create failure");
-    g_routing_thread->start(g_routing_thread);
-
-    return SDK_RET_OK;
-}
-
-//------------------------------------------------------------------------------
 // initialize the agent
 //------------------------------------------------------------------------------
 sdk_ret_t
@@ -376,15 +351,6 @@ agent_init (std::string cfg_file, std::string memory_profile,
     ret = spawn_svc_server_thread();
     if (ret != SDK_RET_OK) {
         return ret;
-    }
-
-    // spawn metaswitch control plane thread
-    ret = spawn_routing_thread();
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-    while (!g_routing_thread->ready()) {
-         pthread_yield();
     }
 
     if (std::getenv("PDS_MOCK_MODE")) {

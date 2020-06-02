@@ -82,7 +82,7 @@ nbase_init ()
 //    SMSI_INITIALIZE("I3", i3_initialize);
 //    SMSI_INITIALIZE("BD", bd_initialize);
     SMSI_INITIALIZE("MAL", mal_init);
-    SMSI_INITIALIZE("DCAMH", amh_initialize); 
+    SMSI_INITIALIZE("DCAMH", amh_initialize);
     SMSI_INITIALIZE("DCCSS", css_initialize);
 //    SMSI_INITIALIZE("DCLMGR", rl0_initialize);
     SMSI_INITIALIZE("DCSMS", sms_initialize);
@@ -244,7 +244,7 @@ nbase_init ()
     /* Create Metaswitch Stubs and Processes                                 */
     /*************************************************************************/
     pds_ms_stubs_create();
-    
+
     /***************************************************************************/
     /* Spin N-Base Again, its stopped in _cs_create_cpi_stub                   */
     /***************************************************************************/
@@ -301,6 +301,11 @@ bool pds_ms_mgmt_init()
     // Start nbase - blocking call
     nbase_init();
     return true;
+}
+
+void pds_ms_terminate()
+{
+    nbs_pen_spin_exit();
 }
 
 namespace pds_ms {

@@ -13,6 +13,7 @@ export BUILD_DIR=${NICDIR}/build/x86_64/apulu/${ASIC}
 export GEN_TEST_RESULTS_DIR=${BUILD_DIR}/gtest_results
 export CONFIG_PATH=${NICDIR}/conf
 export IPC_MOCK_MODE=1
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PDSPKG_TOPDIR/third-party/metaswitch/output/x86_64/
 #export GDB='gdb --args'
 
 cfgfile=apulu/scale_cfg.json

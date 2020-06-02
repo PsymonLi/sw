@@ -24,6 +24,4 @@ MODULE_PREREQS  = pen_dpdk.submake
 MODULE_LDLIBS   =  ${NIC_COMMON_LDLIBS} \
                    ${NIC_CAPSIM_LDLIBS} ${SDK_THIRDPARTY_CAPRI_LDLIBS} \
                    AAPL edit ncurses dpdk lmdb zmq
-
 include ${MKDEFS}/post.mk
-

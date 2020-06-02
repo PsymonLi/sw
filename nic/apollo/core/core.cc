@@ -21,6 +21,7 @@
 #include "nic/apollo/nicmgr/nicmgr.hpp"
 #include "nic/apollo/pciemgr/pciemgr.hpp"
 #include "nic/apollo/learn/learn_thread.hpp"
+#include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 
 using boost::property_tree::ptree;
 
@@ -171,7 +172,6 @@ spawn_periodic_thread (pds_state *state)
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "Periodic thread create failure");
     new_thread->start(new_thread);
-
     return SDK_RET_OK;
 }
 
@@ -288,6 +288,32 @@ spawn_learn_thread (pds_state *state)
                             "learn thread create failure");
     new_thread->start(new_thread);
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+spawn_routing_thread (pds_state *state)
+{
+    sdk::lib::thread    *new_thread;
+
+    // spawn control plane routing thread
+    PDS_TRACE_DEBUG("Spawning routing thread");
+    new_thread =
+        thread_create("routing", PDS_THREAD_ID_ROUTING,
+            sdk::lib::THREAD_ROLE_CONTROL, 0x0,
+            pds_ms::pds_ms_thread_init,
+            sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            state);
+    SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
+                            "Routing thread create failure");
+    new_thread->start(new_thread);
+    return SDK_RET_OK;
+}
+
+bool
+is_routing_thread_ready (void)
+{
+    return sdk::lib::thread::find(PDS_THREAD_ID_ROUTING)->ready();
 }
 
 static bool

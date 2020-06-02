@@ -45,9 +45,9 @@ const pds_obj_key_t k_pds_obj_key_invalid = { 0 };
  * (in this case, 85 MB), this would trigger alarm
  */
 #define PDS_SYSMON_LOGDIR                 "/var/log/pensando"
-#define PDS_SYSMON_LOGDIR_THRESHOLD       85 
+#define PDS_SYSMON_LOGDIR_THRESHOLD       85
 
-static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = { 
+static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = {
     {
         .path = PDS_SYSMON_LOGDIR,
         .mem_threshold_percent = PDS_SYSMON_LOGDIR_THRESHOLD
@@ -175,7 +175,7 @@ sysmon_init (void)
     sysmon_cfg.postdiag_event_cb = postdiag_event_cb;
     sysmon_cfg.pciehealth_event_cb = pciehealth_event_cb;
     sysmon_cfg.memory_threshold_event_cb = memory_threshold_event_cb;
-    
+
     sysmon_cfg.num_memory_threshold_cfg = SDK_ARRAY_SIZE(mem_threshold_cfg);
     sysmon_cfg.memory_threshold_cfg = mem_threshold_cfg;
 
@@ -195,7 +195,7 @@ system_mac_init (void)
 {
     std::string       mac_str;
     mac_addr_t        mac_addr;
-    
+
     int ret = sdk::platform::readfrukey(BOARD_MACADDRESS_KEY, mac_str);
     if (ret < 0) {
         // invalid fru. set system MAC to default
@@ -276,10 +276,11 @@ mpartition_init (pds_init_params_t *params, std::string mem_str)
     return SDK_RET_OK;
 }
 
+// spawn core infra threads during init time
 static void
-spawn_threads (void)
+spawn_core_threads (void)
 {
-    // for Apulu, pciemgr is started as a separate process
+    // for apulu, pciemgr is started as a separate process
     if (g_pds_state.pipeline() != "apulu") {
         // spawn pciemgr thread
         core::spawn_pciemgr_thread(&api::g_pds_state);
@@ -297,9 +298,23 @@ spawn_threads (void)
 
     // spawn periodic thread, have to be before linkmgr init
     core::spawn_periodic_thread(&api::g_pds_state);
-
 }
 
+static void
+spawn_feature_threads (void)
+{
+    // spawn learn thread
+    core::spawn_learn_thread(&api::g_pds_state);
+
+    // spawn routing thread
+    core::spawn_routing_thread(&api::g_pds_state);
+    while (!core::is_routing_thread_ready()) {
+        pthread_yield();
+    }
+}
+
+// @ksmurty please remove these hacks and move to athena specific
+// code
 static void
 spawn_soft_threads (void)
 {
@@ -421,7 +436,7 @@ pds_init (pds_init_params_t *params)
         SDK_ASSERT(ret == SDK_RET_OK);
 
         // spawn threads
-        api::spawn_threads();
+        api::spawn_core_threads();
 
         // linkmgr init
         api::linkmgr_init(asic_cfg.catalog, asic_cfg.cfg_path.c_str());
@@ -438,16 +453,16 @@ pds_init (pds_init_params_t *params)
         // initialize all the signal handlers
         core::sig_init(SIGUSR1, api::sig_handler);
 
-        // initialize and start system monitoring
-        api::sysmon_init();
-
         // don't interfere with nicmgr
         while (!core::is_nicmgr_ready()) {
             pthread_yield();
         }
 
-        // spin learn thread
-        core::spawn_learn_thread(&api::g_pds_state);
+        // spawn rest of the threads
+        api::spawn_feature_threads();
+
+        // initialize and start system monitoring
+        api::sysmon_init();
 
         // raise HAL_UP event
         sdk::ipc::broadcast(EVENT_ID_PDS_HAL_UP, NULL, 0);
@@ -456,6 +471,8 @@ pds_init (pds_init_params_t *params)
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
 
         // spawn soft init threads, if any
+        // @ksmurty please remove these hacks and move to athena specific
+        // code
         api::spawn_soft_threads();
 
     }

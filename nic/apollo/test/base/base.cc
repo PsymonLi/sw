@@ -99,6 +99,7 @@ void
 pds_test_base::TearDownTestCase(void)
 {
     pds_teardown();
+    _Exit(0);
 }
 
 //----------------------------------------------------------------------------

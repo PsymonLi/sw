@@ -7,6 +7,7 @@
 #include "nic/apollo/agent/svc/service.hpp"
 
 bool pds_ms_mgmt_init();
+void pds_ms_terminate();
 
 namespace pds_ms {
 void mgmt_svc_init (grpc::ServerBuilder* server_builder);

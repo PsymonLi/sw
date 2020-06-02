@@ -8,6 +8,7 @@ export PDSPKG_TOPDIR=$NICDIR
 export PERSISTENT_LOG_DIR=/tmp/
 export IPC_MOCK_MODE=1
 echo $NICDIR
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PDSPKG_TOPDIR/third-party/metaswitch/output/x86_64/
 
 cleanup() {
     pkill agent

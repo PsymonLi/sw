@@ -12,7 +12,8 @@
 
 namespace pds_ms {
 
-int pds_ms_init ()
+int
+pds_ms_init (void)
 {
     if (!pds_ms::state_init()) {
         return -1;
@@ -28,15 +29,23 @@ error:
     return -1;
 }
 
-void *pds_ms_thread_init (void *ctxt)
+static void
+pds_ms_thread_cleanup (void *arg)
+{
+    pds_ms_terminate();
+}
+
+void *
+pds_ms_thread_init (void *ctxt)
 {
     // opting for graceful termination
     SDK_THREAD_INIT(ctxt);
+    pthread_cleanup_push(pds_ms_thread_cleanup, NULL);
 
     if (pds_ms_init() < 0) {
         SDK_ASSERT("pds_ms_init failed!");
     }
-
+    pthread_cleanup_pop(1);
     return NULL;
 }
 

@@ -4,6 +4,9 @@ include ${MKDEFS}/pre.mk
 MODULE_TARGET   = ${PIPELINE}_mapping_upg_test.gtest
 MODULE_PIPELINE = apulu
 MODULE_ARCH     = x86_64
+MODULE_PREREQS  = metaswitch.submake
+MODULE_INCS     = ${BLD_PROTOGEN_DIR} $(TOPDIR)/nic/metaswitch/stubs/hals \
+                  $(addprefix $(MS_ROOT)/,$(MS_INCLPATH))
 MODULE_SOLIBS   = pal pdsframework pdscore pdsapi pdsapi_impl \
                   pdstest pdstestapiutils pdsproto \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \
@@ -12,11 +15,13 @@ MODULE_SOLIBS   = pal pdsframework pdscore pdsapi pdsapi_impl \
                   sdkplatformutils sdkxcvrdriver sdkasicpd \
                   lpmitree_${PIPELINE} rfc_${PIPELINE} pdsrfc penmetrics \
                   bm_allocator sdklinkmgr sdklinkmgrcsr kvstore_lmdb \
-                  memhash sltcam slhash ${NIC_${PIPELINE}_NICMGR_LIBS}
+                  memhash sltcam slhash ${NIC_${PIPELINE}_NICMGR_LIBS} shmmgr \
+                  pdsmsmgmt pdsmscommon pdsmshals pdsmsstubs pdsmsmgmtsvc
+MODULE_LDFLAGS  = -L$(MS_LIB_DIR)
 MODULE_LDLIBS   = ${NIC_COMMON_LDLIBS} ${NIC_CAPSIM_LDLIBS} \
                   ${${PIPELINE}_GTEST_COMMON_LDLIBS} \
-                  AAPL edit ncurses lmdb
-MODULE_FLAGS    = ${NIC_CSR_FLAGS}
+                  AAPL edit ncurses lmdb rt $(MS_LD_LIBS)
+MODULE_FLAGS    = ${NIC_CSR_FLAGS} $(addprefix -D,$(MS_COMPILATION_SWITCH))
 MODULE_DEFS     = -DCAPRI_SW ${NIC_CSR_DEFINES}
 MODULE_SRCS     = ${MODULE_SRC_DIR}/main.cc ${MODULE_SRC_DIR}/../helper.cc
 include ${MKDEFS}/post.mk
