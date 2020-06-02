@@ -36,7 +36,7 @@ def runPdsctlCmd(tc, cmd):
     return api.types.status.SUCCESS
 
 def Trigger(tc):
-    cmd_list = ['port transceiver', 'system statistics drop', 'system --power', 'system --temperature', 'system statistics packet-buffer', 'interrupts', 'lif']
+    cmd_list = ['port transceiver', 'system statistics drop', 'system --power', 'system --temperature', 'system statistics packet-buffer', 'interrupts', 'lif', 'techsupport']
     for cmd in cmd_list:
         ret = runPdsctlCmd(tc, cmd)
         if ret != api.types.status.SUCCESS:
