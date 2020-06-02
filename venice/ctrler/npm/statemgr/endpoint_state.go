@@ -443,9 +443,6 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 		return ErrEndpointNotFound
 	}
 
-	eps.Endpoint.Lock()
-	defer eps.Endpoint.Unlock()
-
 	ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
 	if err != nil {
 		log.Errorf("Failed to get workload for EP [%v]. Err : %v", eps.Endpoint.Name, err)
@@ -693,7 +690,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 			eps.moveEP = nil
 			log.Infof("Migration aborted for %v", eps.Endpoint.Name)
-			eps.Unlock()
+			eps.Endpoint.Unlock()
 			return
 		case <-checkDataplaneMigration.C:
 			eps, _ := EndpointStateFromObj(epinfo)
@@ -727,7 +724,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						if err != nil {
 							log.Errorf("Could not find workload for EP [%v]. Err : %v", eps.Endpoint.Name, err)
 							eps.moveEP = nil
-							eps.Unlock()
+							eps.Endpoint.Unlock()
 							return
 						}
 
@@ -750,7 +747,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						eps.migrationState = NONE
 						eps.moveEP = nil
 						log.Infof("EP [%v] migrated to [%v] successfully.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
-						eps.Unlock()
+						eps.Endpoint.Unlock()
 						return
 					}
 
@@ -765,7 +762,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						if err != nil {
 							log.Errorf("Could not find workload for EP [%v]. Err : %v", eps.Endpoint.Name, err)
 							eps.moveEP = nil
-							eps.Unlock()
+							eps.Endpoint.Unlock()
 							return
 						}
 
@@ -781,13 +778,13 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						eps.migrationState = NONE
 						eps.moveEP = nil
 						log.Infof("EP [%v] migration to [%v] failed.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
-						eps.Unlock()
+						eps.Endpoint.Unlock()
 						return
 					}
 				}
 				// Unlock if the EP sync is still not complete or failed
 				eps.moveEP = nil
-				eps.Unlock()
+				eps.Endpoint.Unlock()
 			}
 		}
 	}

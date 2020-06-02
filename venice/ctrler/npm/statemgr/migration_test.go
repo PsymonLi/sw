@@ -979,7 +979,7 @@ func TestMigrationStartFinalSyncAbortAfterDone(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not in correct stage", "1s", "15s")
+	}, "Endpoint not in correct stage", "1s", "20s")
 
 	// Send final sync
 	nwr.Status.MigrationStatus.Stage = workload.WorkloadMigrationStatus_MIGRATION_ABORT.String()
