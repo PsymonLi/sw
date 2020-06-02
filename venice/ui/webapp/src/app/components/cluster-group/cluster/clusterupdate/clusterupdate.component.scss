@@ -35,7 +35,7 @@ body {
 }
 
 .clusterupdate-leftmargin {
-  margin-left: 10px;
+  margin-left: 46px;
 }
 
 .clusterupdate-heading {
@@ -54,6 +54,7 @@ body {
   width: 250px;
   height: 31px;
   padding: 6px !important;
+  padding-left: 10px !important;
   border-top: 0px;
   border-left: 0px;
   border-right: 0px;
@@ -64,5 +65,26 @@ body {
 }
 
 .clusterupdate-toggle {
-  @include global-mat-toggle(rgb(209, 209, 208), rgb(103, 103, 99), rgba(139, 195, 74, 0.5), rgb(139, 195, 74));
+  @include global-mat-toggle(rgb(209, 209, 208), rgb(103, 103, 99), rgb(211, 226, 246), rgb(101, 169, 227));
+}
+
+.clusterupdate-outer {
+  .mat-dialog-actions {
+    margin-bottom: 0px;
+    padding-bottom: 0px;
+    min-height: inherit;
+  }
+
+  .mat-dialog-container {
+    background: #fff !important;
+  }
+
+  .global-button-primary,
+  .global-button-neutral {
+    border: none;
+  }
+}
+
+.clusterupdate-ntp-servers-parent {
+  padding-left: 4px;
 }

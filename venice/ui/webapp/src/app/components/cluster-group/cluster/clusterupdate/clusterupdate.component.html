@@ -1,12 +1,12 @@
 <div fxFlex="auto" fxLayout="column" class="clusterupdate-outer">
   <app-modalheader modal-header title="Edit Cluster Details" [icon]="editicon"
                    class="clusterupdate-heading"
-                   subtitle="Update the quorum nodes, NTP servers, virtual IP, and auto admit NICs"
+                   subtitle="Update the NTP servers and auto admit DSCs"
                    (cancelClick)="onNoClick()">
   </app-modalheader>
   <div fxFlex="80%" fxLayout="row" [formGroup]="form">
     <div fxFlex="nogrow" fxLayout="column" class="clusterupdate-leftmargin">
-      <div fxFlex formGroupName="spec" fxLayout="column">
+      <!-- <div fxFlex formGroupName="spec" fxLayout="column">
         <div class="clusterupdate-quorum-title">Quorum Nodes:</div>
         <p-multiSelect formControlName="quorum-nodes"
                        class="clusterupdate-multiselect"
@@ -27,11 +27,11 @@
             </div>
           </div>
         </div>
-      </div>
-      <div fxFlex fxLayout="column">
+      </div> -->
+      <div fxFlex fxLayout="column" class="clusterupdate-ntp-servers-parent">
         <div class="clusterupdate-quorum-title">NTP Servers:</div>
         <div fxFlex="nogrow" fxLayout="row">
-          <input appFloatLabel="Unique NTP Server Name..." appErrorTooltip
+          <input placeholder="Unique NTP Server Name..." appErrorTooltip
                  spellcheck="false" pInputText
                  class="clusterupdate-input" [formControl]="addNTP">
           <div fxFlex="7px"></div>
@@ -56,12 +56,13 @@
     </div>
     <div fxFlex="150px"></div>
     <div fxLayout="column" formGroupName="spec">
-      <div fxFlex="nogrow">
+      <!-- <div fxFlex="nogrow">
         <div class="clusterupdate-ip-title">Virtual IP:</div>
         <input appFloatLabel="Edit Virtual IP.." appErrorTooltip
                spellcheck="false" formControlName="virtual-ip"
                pInputText class="clusterupdate-input">
       </div>
+     -->
       <div fxFlex="20px"></div>
       <div fxFlex="nogrow" fxLayout="column">
         <div class="cluterupdate-quorum-title">Auto Admit DSCs: </div>
@@ -73,16 +74,17 @@
     </div>
   </div>
   <div fxFlex="10px"></div>
-  <div fxFlex="nogrow"
-       fxLayout="row" fxLayoutAlign="end start">
-    <div fxFlex="nogrow">
-      <button (click)="saveChanges()" [ngClass]="validateInputs()"
-              class="global-button-primary clusterupdate-button ">COMMIT CHANGES</button>
+  <mat-dialog-actions>
+    <div fxFlex="100" fxLayout="row" fxLayoutAlign="end start">
+      <div fxFlex="nogrow">
+        <button (click)="saveChanges()" [ngClass]="validateInputs()"
+                class="global-button-primary clusterupdate-button ">COMMIT CHANGES</button>
+      </div>
+      <div fxFlex="10px"></div>
+      <div fxFlex="nogrow">
+        <button (click)="onNoClick()"
+                class="global-button-neutral clusterupdate-button">CANCEL</button>
+      </div>
     </div>
-    <div fxFlex="10px"></div>
-    <div fxFlex="nogrow">
-      <button (click)="onNoClick()"
-              class="global-button-neutral clusterupdate-button">CANCEL</button>
-    </div>
-  </div>
+  </mat-dialog-actions>
 </div>

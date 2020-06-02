@@ -217,7 +217,6 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   showUpdateCluster() {
     this.dialogRef = this.dialog.open(ClusterupdateComponent, {
       width: '800px',
-      height: '500px',
       hasBackdrop : true,
       data : {
         nodes : this.nodes,
