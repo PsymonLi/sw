@@ -234,6 +234,7 @@ func buildDSCMirrorSession(mss *MirrorSessionState) *netproto.MirrorSession {
 		}
 		tSpec.Collectors = append(tSpec.Collectors, tc)
 	}
+	anyIP := []string{"any"}
 	for _, mr := range ms.Spec.MatchRules {
 		tmr := netproto.MatchRule{}
 		if mr.Src == nil && mr.Dst == nil {
@@ -243,31 +244,39 @@ func buildDSCMirrorSession(mss *MirrorSessionState) *netproto.MirrorSession {
 		if mr.Src != nil {
 			tmr.Src = &netproto.MatchSelector{}
 			tmr.Src.Addresses = mr.Src.IPAddresses
+			if len(tmr.Src.Addresses) == 0 {
+				tmr.Src.Addresses = anyIP
+			}
 			//tmr.Src.MACAddresses = mr.Src.MACAddresses
+
 		}
 		if mr.Dst != nil {
 			tmr.Dst = &netproto.MatchSelector{}
 			tmr.Dst.Addresses = mr.Dst.IPAddresses
-			if mr.AppProtoSel != nil {
-				for _, pp := range mr.AppProtoSel.ProtoPorts {
-					var protoPort netproto.ProtoPort
-					components := strings.Split(pp, "/")
-					switch len(components) {
-					case 1:
-						protoPort.Protocol = components[0]
-					case 2:
-						protoPort.Protocol = components[0]
-						protoPort.Port = components[1]
-					case 3:
-						protoPort.Protocol = components[0]
-						protoPort.Port = fmt.Sprintf("%s/%s", components[1], components[2])
-					default:
-						continue
-					}
-					tmr.Dst.ProtoPorts = append(tmr.Dst.ProtoPorts, &protoPort)
-				}
+			if len(tmr.Dst.Addresses) == 0 {
+				tmr.Dst.Addresses = anyIP
 			}
+
 			//tmr.Dst.MACAddresses = mr.Dst.MACAddresses
+		}
+		if mr.AppProtoSel != nil {
+			for _, pp := range mr.AppProtoSel.ProtoPorts {
+				var protoPort netproto.ProtoPort
+				components := strings.Split(pp, "/")
+				switch len(components) {
+				case 1:
+					protoPort.Protocol = components[0]
+				case 2:
+					protoPort.Protocol = components[0]
+					protoPort.Port = components[1]
+				case 3:
+					protoPort.Protocol = components[0]
+					protoPort.Port = fmt.Sprintf("%s/%s", components[1], components[2])
+				default:
+					continue
+				}
+				tmr.Dst.ProtoPorts = append(tmr.Dst.ProtoPorts, &protoPort)
+			}
 		}
 		//if mr.AppProtoSel != nil {
 		//	tmr.AppProtoSel = &netproto.AppProtoSelector{}
