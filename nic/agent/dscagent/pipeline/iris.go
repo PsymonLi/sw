@@ -1642,7 +1642,7 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 
 	// Profile changes to restricted profiles warrant a purge of all configs. Clean up the watches first to prevent
 	// updates on objects after they are purged. Also, take a lock to ensure a single HAL API is active at any given point.
-	if utils.IsSafeProfileMove(existingProfile, profile) != true {
+	if oper == types.Update && utils.IsSafeProfileMove(existingProfile, profile) != true {
 		i.startDynamicWatch(*kinds)
 		purgeConfigs(i, false)
 		if err := iris.HandleProfile(i.InfraAPI, i.SystemClient, types.Create, profile); err != nil {
