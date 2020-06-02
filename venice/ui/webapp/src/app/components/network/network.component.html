@@ -10,10 +10,16 @@
                   [createTemplate]="createTemplate"
                   [enableCheckbox]="false"
                   [loading]="tableLoading"
-                  [numRows]="10"
+                  [numRows]="25"
                   [rowHeight]="46"
                   [exportFilename]="exportFilename"
-                  [exportMap]="exportMap">
+                  [exportMap]="exportMap"
+                  [searchable]="true"
+                  (searchCancelledEmitter)="onCancelSearch()"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchNetworks()"
+                  [searchFormArray]="fieldFormArray"
+                  searchKind="Network">
     </app-pentable>
   </div>
 </app-pagebody>

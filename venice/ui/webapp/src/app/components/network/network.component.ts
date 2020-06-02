@@ -18,7 +18,11 @@ import { WorkloadService } from '@app/services/generated/workload.service';
 import { NetworkWorkloadsTuple, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
-import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
+import { FormArray } from '@angular/forms';
+import { FieldsRequirement } from '@sdk/v1/models/generated/search';
+import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
+import { SearchUtil } from '@app/components/search/SearchUtil';
+import * as _ from 'lodash';
 
 interface NetworkUIModel {
   associatedWorkloads: WorkloadWorkload[];
@@ -63,6 +67,8 @@ export class NetworkComponent extends DataComponent implements OnInit {
     }
   };
 
+  maxSearchRecords: number = 8000;
+
   vcenters: ReadonlyArray<OrchestrationOrchestrator> = [];
   vcenterOptions: SelectItem[] = [];
 
@@ -86,6 +92,10 @@ export class NetworkComponent extends DataComponent implements OnInit {
     { field: 'associatedWorkloads', header: 'Workloads', class: '', sortable: false, width: 35 },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'vcenter-integration-column-date', sortable: true, width: '180px' }
   ];
+
+  // advance search variables
+  advSearchCols: TableCol[] = [];
+  fieldFormArray = new FormArray([]);
 
   constructor(private networkService: NetworkService,
     protected cdr: ChangeDetectorRef,
@@ -213,6 +223,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
     this.getNetworks();
     this.getVcenterIntegrations();
     this.watchWorkloads();
+    this.buildAdvSearchCols();
   }
 
   creationFormClose() {
@@ -254,7 +265,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
       ObjectsRelationsUtility.buildNetworkWorkloadsMap(this.workloadList || [], responseData);
     return responseData.map(network => {
       const associatedWorkloads: WorkloadWorkload[] =
-        networkWorkloadsTuple[network.meta.name] || [];
+      networkWorkloadsTuple[network.meta.name] || [];
       const uiModel: NetworkUIModel = { associatedWorkloads };
       network._ui = uiModel;
       return network;
@@ -284,5 +295,83 @@ export class NetworkComponent extends DataComponent implements OnInit {
   clearSelectedDataObjects() {
     this.networkTable.selectedDataObjects = [];
   }
-}
 
+  // api overrides for pentable and adv search
+
+  // advance search columns
+  buildAdvSearchCols() {
+    this.advSearchCols = this.cols.filter((col: TableCol) => {
+      return (col.field !== 'meta.creation-time' && col.field !== 'associatedWorkloads' && col.field !== 'spec.orchestrators');
+    });
+    this.advSearchCols.push({
+      field: 'associatedWorkloads', header: 'Workloads', localSearch: true, kind: 'Workload',
+      filterfunction: this.searchWorkloadNames,
+      advancedSearchOperator: SearchUtil.stringOperators
+    });
+    this.advSearchCols.push({
+      field: 'spec.orchestrators', header: 'Orchestrators', localSearch: true, kind: 'Orchestrator',
+      filterfunction: this.searchOrchestrators,
+      advancedSearchOperator: SearchUtil.stringOperators
+    });
+  }
+
+  onCancelSearch() {
+    this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
+    this.dataObjects = this.dataObjectsBackup;
+  }
+
+  searchWorkloadNames(requirement: FieldsRequirement, data = this.dataObjects): any[] {
+    const outputs: any[] = [];
+    for (let i = 0; data && i < data.length; i++) {
+      const workloads = (data[i]._ui as NetworkUIModel).associatedWorkloads;
+      for (let k = 0; k < workloads.length; k++) {
+        const recordValueName = _.get(workloads[k], ['meta', 'name']);
+        const searchValues = requirement.values;
+        let operator = String(requirement.operator);
+        operator = TableUtility.convertOperator(operator);
+        for (let j = 0; j < searchValues.length; j++) {
+          const activateFunc = TableUtility.filterConstraints[operator];
+          if (activateFunc && activateFunc(recordValueName, searchValues[j])) {
+            outputs.push(data[i]);
+          }
+        }
+      }
+    }
+    return outputs;
+  }
+
+  searchOrchestrators(requirement: FieldsRequirement, data = this.dataObjects): any[] {
+    const outputs: any[] = [];
+    for (let i = 0; data && i < data.length; i++) {
+      const orchestrators = data[i].spec.orchestrators;
+      for (let k = 0; k < orchestrators.length; k++) {
+        const recordValuevCenter = _.get(orchestrators[k], ['orchestrator-name']);
+        const recordValueHostDataCenter = _.get(orchestrators[k], ['namespace']);
+        const searchValues = requirement.values;
+        let operator = String(requirement.operator);
+        operator = TableUtility.convertOperator(operator);
+        for (let j = 0; j < searchValues.length; j++) {
+          const activateFunc = TableUtility.filterConstraints[operator];
+          if (activateFunc && activateFunc(recordValuevCenter, searchValues[j])) {
+            outputs.push(data[i]);
+          } else if (activateFunc && activateFunc(recordValueHostDataCenter, searchValues[j])) {
+            outputs.push(data[i]);
+          }
+        }
+      }
+     }
+    return outputs;
+  }
+      /**
+   * Execute table search
+   * @param field
+   * @param order
+   */
+  onSearchNetworks(field = this.networkTable.sortField, order = this.networkTable.sortOrder) {
+    const searchResults = this.onSearchDataObjects(field, order, 'Network', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.networkTable.advancedSearchComponent);
+    if (searchResults && searchResults.length > 0) {
+      this.dataObjects = [];
+      this.dataObjects = searchResults;
+    }
+  }
+}
