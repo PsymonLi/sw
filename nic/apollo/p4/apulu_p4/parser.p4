@@ -251,13 +251,20 @@ parser parse_ipv4_1_split {
     extract(ipv4_1);
     set_metadata(ohi.ipv4_1_len, ipv4_1.ihl << 2);
     set_metadata(ohi.l4_1_len, ipv4_1.totalLen - (ipv4_1.ihl << 2));
-    return select(latest.fragOffset, latest.protocol) {
-        IP_PROTO_ICMP : parse_icmp;
-        IP_PROTO_TCP : parse_tcp;
-        IP_PROTO_UDP : parse_udp_1;
-        default : ingress;
+    return select(latest.flags, latest.fragOffset, latest.protocol) {
+        IP_PROTO_ICMP mask 0x3fffff : parse_icmp;
+        IP_PROTO_TCP mask 0x3fffff : parse_tcp;
+        IP_PROTO_UDP mask 0x3fffff : parse_udp_1;
+        0x0 mask 0x3fff00 : ingress;
+        default : parse_ipv4_1_fragment;
     }
 }
+
+parser parse_ipv4_1_fragment {
+    set_metadata(control_metadata.ip_fragment, 1);
+    return ingress;
+}
+
 
 parser parse_ipv6_1 {
     extract(ipv6_1);
@@ -360,12 +367,18 @@ parser parse_ipv4_2_split {
     extract(ipv4_2);
     set_metadata(ohi.ipv4_2_len, ipv4_2.ihl << 2);
     set_metadata(ohi.l4_2_len, ipv4_2.totalLen - (ipv4_2.ihl << 2));
-    return select(latest.fragOffset, latest.protocol) {
-        IP_PROTO_ICMP : parse_icmp;
-        IP_PROTO_TCP : parse_tcp;
-        IP_PROTO_UDP : parse_udp_2;
-        default : ingress;
+    return select(latest.flags, latest.fragOffset, latest.protocol) {
+        IP_PROTO_ICMP mask 0x3fffff : parse_icmp;
+        IP_PROTO_TCP mask 0x3fffff : parse_tcp;
+        IP_PROTO_UDP mask 0x3fffff : parse_udp_2;
+        0x0 mask 0x3fff00 : ingress;
+        default : parse_ipv4_2_fragment;
     }
+}
+
+parser parse_ipv4_2_fragment {
+    set_metadata(control_metadata.ip2_fragment, 1);
+    return ingress;
 }
 
 parser parse_ipv6_2 {

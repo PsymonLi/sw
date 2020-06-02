@@ -264,6 +264,7 @@ device_impl::fill_ing_drop_stats_(pds_device_drop_stats_t *ing_drop_stats) {
     const char idrop[][PDS_MAX_DROP_NAME_LEN] = {
         "vni_invalid",
         "tagged_pkt_from_vnic",
+        "ip_fragment",
         "nacl",
     };
 

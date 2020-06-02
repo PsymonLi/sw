@@ -46,47 +46,30 @@ p4pd_utils_copy_into_hwentry(uint8_t *dest,
             bits_in_src_byte1 = (*src >> src_start_bit % 8);
         }
         src_byte = bits_in_src_byte1 | bits_in_src_byte2;
-        if (dest_start_bit % 8) {
-            assert(0);
-            // the following code can be enabled if we hit the assert later
-            // copying a byte starting from non byte aligned destination start bit.
-            for (int q = 0; q < 8; q++) {
-                if (((dest_start_bit % 8) + q) == 8) {
-                    //use next byte
-                    dest++;
-                }
-                dest_byte = *dest;
-                dest_byte_mask = 0xFF ^ ( 1 << ((dest_start_bit + q) % 8));
-                dest_byte &= dest_byte_mask;
-                // get that single bit from source
-                src_byte = (*src >> ((src_start_bit + q) % 8)) & 0x1;
-                // position src bit at place where it should go in dest
-                src_byte <<= ((dest_start_bit + q) % 8);
-                dest_byte |= src_byte;
-                *dest |= dest_byte;
-            }
-        } else {
-            // When copying a byte from source to destination,
-            // destination start bit is on byte aligned boundary.
-            // So just copy the entire byte.
-            *dest = src_byte;
-        }
+        // When copying a byte from source to destination,
+        // destination start bit is on byte aligned boundary.
+        // So just copy the entire byte.
+        *dest = src_byte;
     } else {
-        // copying a single bit from src to destination
-        // clear out single bit in destination where a bit
-        // from source will be copied into.
-        dest_byte = *dest;
-        dest_byte_mask = 0xFF ^ ( 1 << (dest_start_bit % 8));
-        dest_byte &= dest_byte_mask;
-        // get that single bit from source
-        src_byte = (*src >> (src_start_bit % 8)) & 0x1;
-        // position src bit at place where it should go in dest
-        src_byte <<= (dest_start_bit % 8);
-        dest_byte |= src_byte;
-        *dest |= dest_byte;
+        if (num_bits == 1) {
+            // copying a single bit from src to destination
+            // clear out single bit in destination where a bit
+            // from source will be copied into.
+            dest_byte = *dest;
+            dest_byte_mask = 0xFF ^ ( 1 << (dest_start_bit % 8));
+            dest_byte &= dest_byte_mask;
+            // get that single bit from source
+            src_byte = (*src >> (src_start_bit % 8)) & 0x1;
+            // position src bit at place where it should go in dest
+            src_byte <<= (dest_start_bit % 8);
+            dest_byte |= src_byte;
+            *dest |= dest_byte;
+        } else {
+            p4pd_utils_copy_le_src_to_be_dest(dest, dest_start_bit,
+                                              src, src_start_bit, num_bits);
+        }
     }
 }
-
 
 
 /* dest_start bit is 0 - 7 within dest

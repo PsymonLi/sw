@@ -42,8 +42,8 @@ extern sdk_ret_t service_lif_upg_verify(uint32_t lif_id, const char *cfg_path);
 #define MEM_REGION_LIF_STATS_BASE     "lif_stats_base"
 #define MEM_REGION_SESSION_STATS_NAME "session_stats"
 
-#define RXDMA_SYMBOLS_MAX            13 
-#define TXDMA_SYMBOLS_MAX            15 
+#define RXDMA_SYMBOLS_MAX            13
+#define TXDMA_SYMBOLS_MAX            15
 
 #define IPSEC_N2H_GLOBAL_STATS_OFFSET 512
 
@@ -126,21 +126,21 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_PAD_BYTES_HBM_TABLE_BASE;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_PAD_TABLE_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
- 
+
     symbols[i].name = IPSEC_ENC_NMDR_PI;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_ENC_NMDR_ALLOC_PI;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_DEC_NMDR_PI;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_TLS_PROXY_PAD_TABLE_NAME) + CAPRI_IPSEC_DEC_NMDR_ALLOC_PI;
@@ -154,21 +154,20 @@ apulu_impl::rxdma_symbols_init_(void **p4plus_symbols,
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_BIG_TNMPR_TABLE_BASE;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_NMPR_BIG_TX_NAME);
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-    
+
     symbols[i].name = IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H;
     symbols[i].val =
         api::g_pds_state.mempartition()->start_addr(MEM_REGION_IPSEC_GLOBAL_DROP_STATS_NAME) + IPSEC_N2H_GLOBAL_STATS_OFFSET;
     SDK_ASSERT(symbols[i].val != INVALID_MEM_ADDRESS);
     i++;
     SDK_ASSERT(i <= RXDMA_SYMBOLS_MAX);
-
 
     return i;
 }

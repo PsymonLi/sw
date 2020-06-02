@@ -54,6 +54,7 @@ action tunneled_ipv4_packet() {
     modify_field(key_metadata.proto, ipv4_2.protocol);
     modify_field(key_metadata.sport, key_metadata.parsed_sport);
     modify_field(key_metadata.dport, key_metadata.parsed_dport);
+    modify_field(control_metadata.ip_fragment, control_metadata.ip2_fragment);
 }
 
 action tunneled_ipv6_packet() {

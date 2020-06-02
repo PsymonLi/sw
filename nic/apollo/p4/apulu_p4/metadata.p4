@@ -83,6 +83,8 @@ header_type control_metadata_t {
         tcp_option_ws_valid     : 1;
         tcp_option_mss_valid    : 1;
         is_local                : 1;
+        ip_fragment             : 1;
+        ip2_fragment            : 1;
         lif_tx_stats_id         : 16;
     }
 }
@@ -153,6 +155,7 @@ header_type scratch_metadata_t {
         priority            : 5;
         erspan_type         : 2;
         pad6                : 6;
+        drop_reason         : 8;
 
         // policer
         policer_valid       : 1;

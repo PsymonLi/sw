@@ -43,8 +43,13 @@ nacl_redirect_to_arm:
 
 .align
 nacl_drop:
-    phvwr.e         p.capri_intrinsic_drop, 1
-    phvwr.f         p.control_metadata_p4i_drop_reason[P4I_DROP_NACL], 1
+    seq             c1, d.u.nacl_drop_d.drop_reason_valid, TRUE
+    sle.c1          c1, d.u.nacl_drop_d.drop_reason, P4I_DROP_REASON_MAX
+    phvwr.!c1.e     p.control_metadata_p4i_drop_reason[P4I_DROP_NACL], 1
+    phvwr           p.capri_intrinsic_drop, 1
+    add.e           r1, offsetof(p, control_metadata_p4i_drop_reason), \
+                        d.u.nacl_drop_d.drop_reason
+    phvwrp.c1       r1, 0, 1, 1
 
 /*****************************************************************************/
 /* error function                                                            */

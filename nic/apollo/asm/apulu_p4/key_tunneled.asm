@@ -19,6 +19,8 @@ tunneled_nonip_packet:
     phvwr.f         p.key_metadata_dport, k.ethernet_2_etherType
 
 tunneled_ipv4_packet:
+    phvwr           p.control_metadata_ip_fragment, \
+                        k.control_metadata_ip2_fragment
     phvwr           p.key_metadata_ktype, KEY_TYPE_IPV4
     phvwr           p.key_metadata_dport, k.key_metadata_parsed_dport
     phvwr           p.key_metadata_sport, k.key_metadata_parsed_sport

@@ -31,7 +31,8 @@
 #define P4I_DROP_REASON_MIN                         0
 #define P4I_DROP_VNI_INVALID                        0
 #define P4I_DROP_TAGGED_PKT_FROM_VNIC               1
-#define P4I_DROP_NACL                               2
+#define P4I_DROP_IP_FRAGMENT                        2
+#define P4I_DROP_NACL                               3
 #define P4I_DROP_REASON_MAX                         P4I_DROP_NACL
 
 #define P4E_DROP_REASON_MIN                         0

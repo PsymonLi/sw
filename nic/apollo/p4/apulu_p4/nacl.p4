@@ -4,8 +4,15 @@
 action nacl_permit() {
 }
 
-action nacl_drop() {
-    ingress_drop(P4I_DROP_NACL);
+action nacl_drop(drop_reason_valid, drop_reason) {
+    modify_field(scratch_metadata.flag, drop_reason_valid);
+    modify_field(scratch_metadata.drop_reason, drop_reason);
+    if ((scratch_metadata.flag == TRUE) and
+        (scratch_metadata.drop_reason <= P4I_DROP_REASON_MAX)) {
+        ingress_drop(scratch_metadata.drop_reason);
+    } else{
+        ingress_drop(P4I_DROP_NACL);
+    }
 }
 
 action nacl_redirect(nexthop_type, nexthop_id, copp_policer_id) {
@@ -52,6 +59,7 @@ table nacl {
         control_metadata.local_mapping_miss : ternary;
         control_metadata.learn_enabled      : ternary;
         control_metadata.lif_type           : ternary;
+        control_metadata.ip_fragment        : ternary;
         arm_to_p4i.learning_done            : ternary;
         arm_to_p4i.nexthop_valid            : ternary;
         ingress_recirc.defunct_flow         : ternary;
