@@ -708,9 +708,6 @@ delphi::error {{$msgName}}::Publish({{$msgName | ToLower}}_t *mptr) {
         return NULL;
     }
       {{if $msg.HasExtOption "delphi.datapath_metrics" }}
-    if (tbl == NULL) {
-        return NULL;
-    }
     uint64_t *pal_addr = (uint64_t *)tbl->Find((char *)&key, sizeof(key));
     if (pal_addr == NULL) {
         return NULL;
@@ -736,6 +733,7 @@ void {{$msgName}}::Release({{$msgName}}Ptr ptr) {
     assert(shm != NULL);
 
     delphi::shm::TableMgrUptr tbl = shm->Kvstore()->Table("{{$msgName}}");
+    assert(tbl != NULL);
     tbl->Release(ptr->Raw());
 }
 
@@ -773,9 +771,6 @@ delphi::error {{$msgName}}::Publish({{$pkgName}}::{{.GetCppTypeName}} key, {{$ms
         return NULL;
     }
           {{if $msg.HasExtOption "delphi.datapath_metrics" }}
-    if (tbl == NULL) {
-        return NULL;
-    }
     uint64_t *pal_addr = (uint64_t *)tbl->Find((char *)keystr.c_str(), keystr.length());
     if (pal_addr == NULL) {
         return NULL;
@@ -817,6 +812,8 @@ void {{$msgName}}::Release({{$msgName}}Ptr ptr) {
     assert(shm != NULL);
 
     delphi::shm::TableMgrUptr tbl = shm->Kvstore()->Table("{{$msgName}}");
+    assert(tbl != NULL);
+
     tbl->Release(ptr->Raw());
 }
 
@@ -843,10 +840,10 @@ delphi::error {{$msgName}}::Publish({{.GetCppTypeName}} key, {{$msgName | ToLowe
 
     // find the key
     delphi::shm::TableMgrUptr tbl = shm->Kvstore()->Table("{{$msgName}}");
-          {{if $msg.HasExtOption "delphi.datapath_metrics" }}
     if (tbl == NULL) {
         return NULL;
     }
+          {{if $msg.HasExtOption "delphi.datapath_metrics" }}
     uint64_t *pal_addr = (uint64_t *)tbl->Find((char *)&key, sizeof(key));
     if (pal_addr == NULL) {
         return NULL;
