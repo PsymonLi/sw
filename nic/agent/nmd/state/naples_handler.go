@@ -236,6 +236,7 @@ func (n *NMD) UpdateNaplesConfig(cfg nmd.DistributedServiceCard) error {
 
 	case nmd.MgmtMode_NETWORK.String():
 		if err := isNetworkModeValid(cfg.Spec); err != nil {
+			log.Errorf("Failed to validate network mode. Err : %v", err)
 			return errBadRequest(err)
 		}
 
@@ -414,12 +415,19 @@ func (n *NMD) PostStatusToAgent() (err error) {
 
 func (n *NMD) handleNetworkModeTransition() error {
 	log.Info("Handling network mode transition")
+	err := n.StopManagedMode()
+	if err != nil {
+		log.Errorf("Failed to stop network mode control loop. Err: %v", err)
+		return err
+	}
 
 	// If we reach here, then either the user has triggered a mode transition using penctl
 	// with tokens, or the DSC has not yet been admitted.
 	// Stop all registration requests, if any, already in progress
 	log.Info("Stopping any registration requests in progress")
-	if n.GetRegStatus() {
+
+	if err := n.StartDSCReg(); err != nil {
+		log.Errorf("Failed to setup context for new DSC registration. Err : %v", err)
 	}
 
 	spec := n.config.Spec
@@ -485,24 +493,21 @@ func (n *NMD) handleHostModeTransition() error {
 		return err
 	}
 
-	if !n.GetRegStatus() {
-		n.config.Status.IPConfig = &cmd.IPConfig{}
-		n.config.Status.Controllers = []string{}
-		n.config.Status.TransitionPhase = ""
-		n.config.Status.AdmissionPhase = ""
-		n.config.Status.AdmissionPhaseReason = ""
+	n.config.Status.IPConfig = &cmd.IPConfig{}
+	n.config.Status.Controllers = []string{}
+	n.config.Status.TransitionPhase = ""
+	n.config.Status.AdmissionPhase = ""
+	n.config.Status.AdmissionPhaseReason = ""
 
-		//if n.rebootNeeded {
-		//	n.config.Status.TransitionPhase = nmd.DistributedServiceCardStatus_REBOOT_PENDING.String()
-		//}
+	//if n.rebootNeeded {
+	//	n.config.Status.TransitionPhase = nmd.DistributedServiceCardStatus_REBOOT_PENDING.String()
+	//}
 
-		if err := n.PersistState(true); err != nil {
-			log.Errorf("Failed to persist Naples Config. Err : %v", err)
-			return err
-		}
-		return nil
+	if err := n.PersistState(true); err != nil {
+		log.Errorf("Failed to persist Naples Config. Err : %v", err)
+		return err
 	}
-	log.Error("Failed to stop network mode control loop")
+
 	return nil
 }
 
@@ -644,13 +649,13 @@ func (n *NMD) setRegistrationErrorStatus(reason string) {
 // AdmitNaples performs NAPLES admission
 func (n *NMD) AdmitNaples() {
 	log.Info("Starting Managed Mode")
+	defer n.dscRegWaitGrp.Done()
 	currentVeniceIdx := 0
 
 	n.modeChange.Lock()
 
 	// Set Registration in progress flag
 	log.Infof("NIC in managed mode, mac: %v", n.config.Status.Fru.MacStr)
-	n.setRegStatus(true)
 
 	// The mode change is completed when we start the registration loop.
 	n.modeChange.Unlock()
@@ -659,12 +664,9 @@ func (n *NMD) AdmitNaples() {
 		select {
 
 		// Check if registration loop should be stopped
-		case <-n.stopNICReg:
+		case <-n.dscRegCtx.Done():
 
 			log.Infof("Registration stopped, exiting.")
-
-			// Clear Registration in progress flag
-			n.setRegStatus(false)
 			return
 
 		// Register NIC
@@ -753,7 +755,6 @@ func (n *NMD) AdmitNaples() {
 
 					// Rule #2 - abort retry, clear registration status flag
 					log.Errorf("Invalid NIC, Admission rejected, mac: %s reason: %s", mac, resp.Reason)
-					n.setRegStatus(false)
 					return
 
 				case cmd.DistributedServiceCardStatus_PENDING.String():
@@ -816,7 +817,6 @@ func (n *NMD) AdmitNaples() {
 					// Rule #4 - registration is success, clear registration status
 					// and move on to next stage
 					log.Infof("NIC admitted into cluster, mac: %s", mac)
-					n.setRegStatus(false)
 					n.nicRegInterval = n.nicRegInitInterval
 
 					// Start certificates proxy
@@ -956,8 +956,12 @@ func (n *NMD) StopManagedMode() error {
 	n.Unlock()
 
 	// stop ongoing NIC registration, if any
-	if n.GetRegStatus() {
-		n.stopNICReg <- true
+	if err := n.StopDSCReg(); err != nil {
+		log.Errorf("Failed to stop DSC registration. Err : %v", err)
+	}
+
+	if n.IPClient != nil {
+		n.IPClient.StopDHCPConfig()
 	}
 
 	// stop ongoing NIC updates, if any

@@ -5,10 +5,6 @@ package state
 import (
 	"bytes"
 	"context"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,367 +13,18 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/pensando/sw/api"
 	cmd "github.com/pensando/sw/api/generated/cluster"
-	nmdapi "github.com/pensando/sw/nic/agent/nmd/api"
 	"github.com/pensando/sw/nic/agent/protos/nmd"
-	"github.com/pensando/sw/venice/cmd/grpc"
-	"github.com/pensando/sw/venice/cmd/grpc/server/certificates/certapi"
 	roprotos "github.com/pensando/sw/venice/ctrler/rollout/rpcserver/protos"
-	"github.com/pensando/sw/venice/utils/certs"
-	"github.com/pensando/sw/venice/utils/events/recorder"
-	mockevtsrecorder "github.com/pensando/sw/venice/utils/events/recorder/mock"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/netutils"
 	"github.com/pensando/sw/venice/utils/resolver/mock"
 	. "github.com/pensando/sw/venice/utils/testutils"
 	"github.com/pensando/sw/venice/utils/tsdb"
 )
-
-// Test params
-var (
-	// Bolt DB file
-	emDBPath = "/tmp/nmd.db"
-
-	// NIC to be admitted
-	nicKey1 = "00ae.cd01.0203"
-
-	// NIC to be in pending state
-	nicKey2 = "4444.4444.4444"
-
-	// NIC to be rejected
-	nicKey3 = "6666.6666.6666"
-
-	logger = log.GetNewLogger(log.GetDefaultConfig("nmd_state_test"))
-
-	// NIC registration interval
-	nicRegInterval = time.Second
-
-	// NIC update interval
-	nicUpdInterval = 100 * time.Millisecond
-
-	// create mock events recorder
-	_ = recorder.Override(mockevtsrecorder.NewRecorder("nmd_state_test", logger))
-)
-
-// Mock platform agent
-type mockAgent struct {
-	sync.Mutex
-	nicDB map[string]*cmd.DistributedServiceCard
-}
-
-// RegisterNMD registers NMD with PlatformAgent
-func (m *mockAgent) RegisterNMD(nmdapi nmdapi.NmdPlatformAPI) error {
-	return nil
-}
-
-// CreateSmartNIC creates a smart NIC object
-func (m *mockAgent) CreateSmartNIC(nic *cmd.DistributedServiceCard) error {
-	m.Lock()
-	defer m.Unlock()
-
-	key := objectKey(nic.ObjectMeta)
-	m.nicDB[key] = nic
-	return nil
-}
-
-// UpdateSmartNIC updates a smart NIC object
-func (m *mockAgent) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
-	m.Lock()
-	defer m.Unlock()
-
-	key := objectKey(nic.ObjectMeta)
-	m.nicDB[key] = nic
-	return nil
-}
-
-// DeleteSmartNIC deletes a smart NIC object
-func (m *mockAgent) DeleteSmartNIC(nic *cmd.DistributedServiceCard) error {
-	m.Lock()
-	defer m.Unlock()
-
-	key := objectKey(nic.ObjectMeta)
-	delete(m.nicDB, key)
-	return nil
-}
-
-func (m *mockAgent) GetPlatformCertificate(nic *cmd.DistributedServiceCard) ([]byte, error) {
-	return nil, nil
-}
-
-func (m *mockAgent) GetPlatformSigner(nic *cmd.DistributedServiceCard) (crypto.Signer, error) {
-	return nil, nil
-}
-
-type mockCtrler struct {
-	sync.Mutex
-	nicDB                     map[string]*cmd.DistributedServiceCard
-	numUpdateSmartNICReqCalls int
-	smartNICWatcherRunning    bool
-}
-
-func (m *mockCtrler) RegisterSmartNICReq(nic *cmd.DistributedServiceCard) (grpc.RegisterNICResponse, error) {
-	m.Lock()
-	defer m.Unlock()
-
-	key := objectKey(nic.ObjectMeta)
-	m.nicDB[key] = nic
-	if strings.HasPrefix(nic.Spec.ID, nicKey1) {
-		// we don't have the actual csr from the NIC request, so we just make up
-		// a certificate on the spot
-		key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-		if err != nil {
-			return grpc.RegisterNICResponse{}, fmt.Errorf("Error generating CA key: %v", err)
-		}
-		cert, err := certs.SelfSign("nmd_state_test_ca", key, certs.WithValidityDays(1))
-		if err != nil {
-			return grpc.RegisterNICResponse{}, fmt.Errorf("Error generating CA cert: %v", err)
-		}
-		resp := grpc.RegisterNICResponse{
-			AdmissionResponse: &grpc.NICAdmissionResponse{
-				Phase: cmd.DistributedServiceCardStatus_ADMITTED.String(),
-				ClusterCert: &certapi.CertificateSignResp{
-					Certificate: &certapi.Certificate{
-						Certificate: cert.Raw,
-					},
-				},
-				CaTrustChain: &certapi.CaTrustChain{
-					Certificates: []*certapi.Certificate{
-						{
-							Certificate: cert.Raw,
-						},
-					},
-				},
-				TrustRoots: &certapi.TrustRoots{
-					Certificates: []*certapi.Certificate{
-						{
-							Certificate: cert.Raw,
-						},
-					},
-				},
-			},
-		}
-		return resp, nil
-	}
-
-	if strings.HasPrefix(nic.Spec.ID, nicKey2) {
-		return grpc.RegisterNICResponse{
-			AdmissionResponse: &grpc.NICAdmissionResponse{
-				Phase: cmd.DistributedServiceCardStatus_PENDING.String(),
-			},
-		}, nil
-	}
-
-	return grpc.RegisterNICResponse{
-		AdmissionResponse: &grpc.NICAdmissionResponse{
-			Phase:  cmd.DistributedServiceCardStatus_REJECTED.String(),
-			Reason: string("Invalid Cert"),
-		},
-	}, nil
-}
-
-func (m *mockCtrler) UpdateSmartNICReq(nic *cmd.DistributedServiceCard) error {
-	m.Lock()
-	defer m.Unlock()
-	m.numUpdateSmartNICReqCalls++
-	key := objectKey(nic.ObjectMeta)
-	m.nicDB[key] = nic
-	return nil
-}
-
-func (m *mockCtrler) WatchSmartNICUpdates() {
-	m.Lock()
-	defer m.Unlock()
-	m.smartNICWatcherRunning = true
-}
-
-func (m *mockCtrler) Stop() {
-	m.Lock()
-	defer m.Unlock()
-	m.smartNICWatcherRunning = false
-	m.numUpdateSmartNICReqCalls = 0
-}
-
-func (m *mockCtrler) IsSmartNICWatcherRunning() bool {
-	return m.smartNICWatcherRunning
-}
-
-func (m *mockCtrler) GetNIC(meta *api.ObjectMeta) *cmd.DistributedServiceCard {
-	m.Lock()
-	defer m.Unlock()
-
-	key := objectKey(*meta)
-	return m.nicDB[key]
-}
-
-func (m *mockCtrler) GetNumUpdateSmartNICReqCalls() int {
-	m.Lock()
-	defer m.Unlock()
-	return m.numUpdateSmartNICReqCalls
-}
-
-type mockRolloutCtrler struct {
-	sync.Mutex
-	status                 []roprotos.DSCOpStatus
-	smartNICWatcherRunning bool
-}
-
-func (f *mockRolloutCtrler) UpdateDSCRolloutStatus(status *roprotos.DSCRolloutStatusUpdate) error {
-	f.status = status.Status.OpStatus
-	log.Errorf("Got status %#v", f.status)
-	return nil
-}
-
-func (f *mockRolloutCtrler) WatchDSCRolloutUpdates() error {
-	f.Lock()
-	defer f.Unlock()
-	f.smartNICWatcherRunning = true
-	return nil
-}
-
-func (f *mockRolloutCtrler) Stop() {
-	f.Lock()
-	defer f.Unlock()
-	f.smartNICWatcherRunning = false
-}
-
-func (f *mockRolloutCtrler) IsSmartNICWatcherRunning() bool {
-	f.Lock()
-	defer f.Unlock()
-	return f.smartNICWatcherRunning
-}
-
-type mockUpgAgent struct {
-	n         nmdapi.NmdRolloutAPI
-	forceFail bool
-}
-
-func (f *mockUpgAgent) RegisterNMD(n nmdapi.NmdRolloutAPI) error {
-	f.n = n
-	return nil
-}
-func (f *mockUpgAgent) StartDisruptiveUpgrade(firmwarePkgName string) error {
-	if f.forceFail {
-		go f.n.UpgFailed(&[]string{"ForceFailDisruptive"})
-	} else {
-		go f.n.UpgSuccessful()
-	}
-	return nil
-}
-func (f *mockUpgAgent) StartUpgOnNextHostReboot(firmwarePkgName string) error {
-	if f.forceFail {
-		go f.n.UpgFailed(&[]string{"ForceFailUpgOnNextHostReboot"})
-	} else {
-		go f.n.UpgSuccessful()
-	}
-	return nil
-}
-func (f *mockUpgAgent) IsUpgClientRegistered() error {
-	return nil
-}
-func (f *mockUpgAgent) IsUpgradeInProgress() bool {
-	return false
-}
-func (f *mockUpgAgent) StartPreCheckDisruptive(version string) error {
-	if f.forceFail {
-		go f.n.UpgNotPossible(&[]string{"ForceFailpreCheckDisruptive"})
-	} else {
-		go f.n.UpgPossible()
-	}
-	return nil
-}
-func (f *mockUpgAgent) StartPreCheckForUpgOnNextHostReboot(version string) error {
-	if f.forceFail {
-		go f.n.UpgNotPossible(&[]string{"ForceFailpreCheckForUpgOnNextHostReboot"})
-	} else {
-		go f.n.UpgPossible()
-	}
-	return nil
-}
-
-// createNMD creates a NMD server
-func createNMD(t *testing.T, dbPath, mode, nodeID string) (*NMD, *mockAgent, *mockCtrler, *mockUpgAgent, *mockRolloutCtrler) {
-	// Start a fake delphi hub
-	log.Info("Creating NMD")
-	// Hardcode the MacAddress for now. If we want multiple instances of fru.json with unique MAC, then a getMac() function can be written.
-	err := CreateFruJSON("00:AE:CD:01:02:03")
-	if err != nil {
-		log.Errorf("Error creating /tmp/fru.json file. Err: %v", err)
-		return nil, nil, nil, nil, nil
-	}
-
-	ag := &mockAgent{
-		nicDB: make(map[string]*cmd.DistributedServiceCard),
-	}
-	ct := &mockCtrler{
-		nicDB: make(map[string]*cmd.DistributedServiceCard),
-	}
-	roC := &mockRolloutCtrler{}
-	upgAgt := &mockUpgAgent{}
-
-	// create new NMD
-	nm, err := NewNMD(nil,
-		//ag,
-		//upgAgt,
-		//nil, // no resolver
-		dbPath,
-		//nodeID,
-		"localhost:0",
-		"", // no revproxy endpoint
-		//"", // no local certs endpoint
-		//"", // no remote certs endpoint
-		//"", // no cmd registration endpoint
-		//mode,
-		nicRegInterval,
-		nicUpdInterval,
-		WithCMDAPI(ct),
-		WithRolloutAPI(roC))
-
-	if err != nil {
-		log.Errorf("Error creating NMD. Err: %v", err)
-		return nil, nil, nil, nil, nil
-	}
-	Assert(t, nm.GetAgentID() == nodeID, "Failed to match nodeUUID", nm)
-
-	// Ensure the NMD's rest server is started
-	nm.CreateMockIPClient()
-	cfg := nm.GetNaplesConfig()
-
-	if cfg.Spec.IPConfig == nil {
-		cfg.Spec.IPConfig = &cmd.IPConfig{}
-	}
-
-	if mode == "network" {
-		// Add a fake controller to the spec so that mock IPClient starts managed mode
-		cfg.Spec.Controllers = []string{"127.0.0.1"}
-	}
-
-	nm.SetNaplesConfig(cfg.Spec)
-	err = nm.UpdateNaplesConfig(nm.GetNaplesConfig())
-	nm.Upgmgr = upgAgt
-	nm.cmd = ct
-	nm.Platform = ag
-
-	return nm, ag, ct, upgAgt, roC
-}
-
-// stopNMD stops NMD server and optionally deleted emDB file
-func stopNMD(t *testing.T, nm *NMD, cleanupDB bool) {
-	if nm != nil {
-		nm.Stop()
-	}
-
-	if cleanupDB {
-		err := os.Remove(emDBPath)
-		if err != nil {
-			t.Fatalf("Error deleting emDB file, err: %v", err)
-		}
-	}
-}
 
 func TestSmartNICCreateUpdateDelete(t *testing.T) {
 
@@ -469,7 +116,6 @@ func TestCtrlrSmartNICRegisterAndUpdate(t *testing.T) {
 }
 
 func TestNaplesDefaultNetworkMode(t *testing.T) {
-
 	// Cleanup any prior DB file
 	os.Remove(emDBPath)
 
@@ -483,12 +129,13 @@ func TestNaplesDefaultNetworkMode(t *testing.T) {
 
 		cfg := nm.GetNaplesConfig()
 		if cfg.Spec.Mode == nmd.MgmtMode_NETWORK.String() && nm.GetListenURL() != "" &&
-			nm.GetUpdStatus() == false && nm.GetRegStatus() == false && nm.GetRestServerStatus() == true {
+			nm.GetUpdStatus() == false && nm.GetRegStatus() == true && nm.GetRestServerStatus() == true {
 			return true, nil
 		}
-		return false, nil
+
+		return false, fmt.Errorf("Mode[%v] URL[%v] Update Status[%v] Registration Status[%v]", cfg.Spec.Mode, nm.GetListenURL(), nm.GetUpdStatus(), nm.GetRegStatus())
 	}
-	AssertEventually(t, f1, "Failed to verify mode is in host")
+	AssertEventually(t, f1, "Failed to verify mode is in Network", string("1s"), string("30s"))
 
 	var naplesCfg nmd.DistributedServiceCard
 
@@ -534,6 +181,7 @@ func TestNaplesNetworkMode(t *testing.T) {
 			PrimaryMAC:  "42:42:42:42:42:42",
 			ID:          "42:42:42:42:42:42",
 			DSCProfile:  "default",
+			Controllers: []string{"4.4.4.2"},
 			IPConfig: &cmd.IPConfig{
 				IPAddress:  "4.4.4.4/16",
 				DefaultGW:  "",
@@ -954,7 +602,6 @@ func TestNaplesRestartNetworkMode(t *testing.T) {
 
 // Test invalid mode
 func TestNaplesInvalidMode(t *testing.T) {
-
 	// Cleanup any prior DB file
 	os.Remove(emDBPath)
 
@@ -962,30 +609,167 @@ func TestNaplesInvalidMode(t *testing.T) {
 	nm, _, _, _, _ := createNMD(t, emDBPath, "network", nicKey1)
 	defer stopNMD(t, nm, true)
 	Assert(t, (nm != nil), "Failed to start NMD", nm)
+	type testCase struct {
+		name     string
+		cfg      nmd.DistributedServiceCard
+		errorMsg error
+	}
 
-	cfg := nmd.DistributedServiceCard{
-		ObjectMeta: api.ObjectMeta{
-			Name: "DistributedServiceCardConfig",
-		},
-		TypeMeta: api.TypeMeta{
-			Kind: "DistributedServiceCard",
-		},
-		Spec: nmd.DistributedServiceCardSpec{
-			Mode:        "Invalid Mode",
-			NetworkMode: nmd.NetworkMode_INBAND.String(),
-			PrimaryMAC:  "42:42:42:42:42:42",
-			ID:          "42:42:42:42:42:42",
-			DSCProfile:  "default",
-			IPConfig: &cmd.IPConfig{
-				IPAddress:  "4.4.4.4/16",
-				DefaultGW:  "",
-				DNSServers: nil,
+	testCases := []testCase{
+		testCase{
+			name: "invalid mode",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:        "Invalid Mode",
+					NetworkMode: nmd.NetworkMode_INBAND.String(),
+					PrimaryMAC:  "42:42:42:42:42:42",
+					ID:          "42:42:42:42:42:42",
+					DSCProfile:  "default",
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "4.4.4.4/16",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
 			},
+			errorMsg: fmt.Errorf("request validation failed: invalid mode Invalid Mode specified"),
+		},
+		testCase{
+			name: "No Controllers",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:        nmd.MgmtMode_NETWORK.String(),
+					NetworkMode: nmd.NetworkMode_INBAND.String(),
+					PrimaryMAC:  "42:42:42:42:42:42",
+					ID:          "42:42:42:42:42:42",
+					DSCProfile:  "default",
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "4.4.4.4/24",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
+			},
+			errorMsg: fmt.Errorf("request validation failed: controllers must be passed when statically configuring management IP. Use --controllers option"),
+		},
+		testCase{
+			name: "Invalid IP - No Subnet",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:        nmd.MgmtMode_NETWORK.String(),
+					NetworkMode: nmd.NetworkMode_INBAND.String(),
+					PrimaryMAC:  "42:42:42:42:42:42",
+					ID:          "42:42:42:42:42:42",
+					DSCProfile:  "default",
+					Controllers: []string{"4.4.4.1"},
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "4.4.4.4",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
+			},
+			errorMsg: fmt.Errorf("request validation failed: invalid management IP 4.4.4.4 specified. Must be in CIDR Format"),
+		},
+		testCase{
+			name: "Invalid IP - No Default GW",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:        nmd.MgmtMode_NETWORK.String(),
+					NetworkMode: nmd.NetworkMode_INBAND.String(),
+					PrimaryMAC:  "42:42:42:42:42:42",
+					ID:          "42:42:42:42:42:42",
+					DSCProfile:  "default",
+					Controllers: []string{"4.4.4.1"},
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "5.4.4.4/24",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
+			},
+			errorMsg: fmt.Errorf("request validation failed: controller 4.4.4.1 is not in the same subnet as the Management IP 5.4.4.4/24. Add default gateway using --default-gw option"),
+		},
+		testCase{
+			name: "Invalid HOST - with INBAND",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:        nmd.MgmtMode_HOST.String(),
+					NetworkMode: nmd.NetworkMode_INBAND.String(),
+					PrimaryMAC:  "42:42:42:42:42:42",
+					ID:          "42:42:42:42:42:42",
+					DSCProfile:  "default",
+					Controllers: []string{"4.4.4.1"},
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "4.4.4.4",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
+			},
+			errorMsg: fmt.Errorf("request validation failed: network mode must not be specified when naples is in host managed mode. Found: INBAND"),
+		},
+		testCase{
+			name: "Invalid HOST - with IP",
+			cfg: nmd.DistributedServiceCard{
+				ObjectMeta: api.ObjectMeta{
+					Name: "DistributedServiceCardConfig",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind: "DistributedServiceCard",
+				},
+				Spec: nmd.DistributedServiceCardSpec{
+					Mode:       nmd.MgmtMode_HOST.String(),
+					PrimaryMAC: "42:42:42:42:42:42",
+					ID:         "42:42:42:42:42:42",
+					DSCProfile: "default",
+					IPConfig: &cmd.IPConfig{
+						IPAddress:  "4.4.4.4",
+						DefaultGW:  "",
+						DNSServers: nil,
+					},
+				},
+			},
+			errorMsg: fmt.Errorf("request validation failed: ip config must be empty when naples is in host managed mode. Found: IPAddress:\"4.4.4.4\" "),
 		},
 	}
 
-	err := nm.UpdateNaplesConfig(cfg)
-	Assert(t, err != nil, "Invalid mode should have been rejected")
+	for _, tc := range testCases {
+		log.Infof("Running test : %v", tc.name)
+		err := nm.UpdateNaplesConfig(tc.cfg)
+		Assert(t, err != nil, fmt.Sprintf("Testcase : %v posting the config %v failed", tc.name, tc.cfg))
+		Assert(t, err.Error() == tc.errorMsg.Error(), fmt.Sprintf("Incorrect error message. Expected [%v] got [%v]", tc.errorMsg, err))
+	}
 }
 
 func TestNaplesRollout(t *testing.T) {

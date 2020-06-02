@@ -54,7 +54,9 @@ type NMD struct {
 	DelphiClient    clientAPI.Client
 	IPClient        *ipif.IPClient
 
-	stopNICReg         chan bool     // channel to stop NIC registration
+	dscRegCtx          context.Context
+	dscRegCancel       context.CancelFunc
+	dscRegWaitGrp      sync.WaitGroup
 	nicRegInitInterval time.Duration // the initial time interval between nic registration in seconds
 	nicRegInterval     time.Duration // time interval between nic registration in seconds. Gets adjusted dynamically with exponential backoff
 	isRegOngoing       bool          // status of ongoing nic registration task

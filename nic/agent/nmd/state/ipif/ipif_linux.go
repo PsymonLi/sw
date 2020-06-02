@@ -116,9 +116,9 @@ func (c *IPClient) DoStaticConfig() (string, string, error) {
 }
 
 // DoDHCPConfig performs dhcp on the management interface and obtains venice co-ordinates
-func (c *IPClient) DoDHCPConfig() error {
+func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 
-	dhcpCtx, cancel := context.WithCancel(context.Background())
+	dhcpCtx, cancel := context.WithCancel(ctx)
 	if c.dhcpState.DhcpCancel != nil {
 		log.Info("Clearing existing dhcp go routines")
 		c.dhcpState.DhcpCancel()
@@ -133,7 +133,9 @@ func (c *IPClient) DoDHCPConfig() error {
 	}
 
 	ticker := time.NewTicker(AdmissionRetryDuration)
+	c.dhcpState.DhcpWaitGroup.Add(1)
 	go func(ctx context.Context) {
+		c.dhcpState.DhcpWaitGroup.Done()
 		c := c
 		for {
 			select {
@@ -165,9 +167,10 @@ func (c *IPClient) DoDHCPConfig() error {
 
 // StopDHCPConfig will stops the DHCP Control Loop
 func (c *IPClient) StopDHCPConfig() {
-	if c.dhcpState.DhcpCancel != nil {
+	if c.dhcpState != nil && c.dhcpState.DhcpCancel != nil {
 		log.Info("Cancelling DHCP Control loop")
 		c.dhcpState.DhcpCancel()
+		c.dhcpState.DhcpWaitGroup.Wait()
 	}
 }
 
@@ -312,7 +315,7 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 	d.Hostname = string(opts[dhcp4.OptionHostName])
 
-	renewCtx, renewCancel := context.WithCancel(context.Background())
+	renewCtx, renewCancel := context.WithCancel(d.DhcpCtx)
 	if d.RenewCancel != nil {
 		log.Info("Clearing existing dhcp go routines")
 		d.RenewCancel()
@@ -326,6 +329,7 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 	// Start renewal routine
 	// Kick off a renewal process.
+	d.DhcpWaitGroup.Add(1)
 	go d.startRenewLoop(d.AckPacket, mgmtLink)
 	// Set NMDIPConfig here and then call static assignments
 	log.Infof("YIADDR: %s", d.IPNet.IP.String())
@@ -403,6 +407,7 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 
 func (d *DHCPState) startRenewLoop(ackPacket dhcp4.Packet, mgmtLink netlink.Link) {
 	log.Infof("Starting DHCP renewal loop for interface: %v", mgmtLink.Attrs().Name)
+	defer d.DhcpWaitGroup.Done()
 	ticker := time.NewTicker(d.LeaseDuration)
 	for {
 		select {
@@ -423,9 +428,6 @@ func (d *DHCPState) startRenewLoop(ackPacket dhcp4.Packet, mgmtLink netlink.Link
 
 		case <-d.RenewCtx.Done():
 			log.Info("Got cancel for renewals")
-			return
-		case <-d.DhcpCtx.Done():
-			log.Info("Killing renewal loop")
 			return
 		}
 	}

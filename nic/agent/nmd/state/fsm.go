@@ -58,7 +58,7 @@ func NewNMDStateMachine() *NMDStateMachine {
 						return
 					}
 
-					if err := nmd.IPClient.DoDHCPConfig(); err != nil {
+					if err := nmd.IPClient.DoDHCPConfig(nmd.dscRegCtx); err != nil {
 						log.Errorf("Failed to do DHCP Config. Err: %v", err)
 						e.Err = err
 						return
@@ -155,7 +155,7 @@ func NewNMDStateMachine() *NMDStateMachine {
 						SendInterval:            time.Duration(30) * time.Second,
 						ConnectionRetryInterval: 100 * time.Millisecond,
 					}
-					ctx, cancel := context.WithCancel(context.Background())
+					ctx, cancel := context.WithCancel(nmd.dscRegCtx)
 					tsdb.Init(ctx, opts)
 					nmd.tsdbCancel = cancel
 
@@ -179,6 +179,8 @@ func NewNMDStateMachine() *NMDStateMachine {
 						e.Err = fmt.Errorf("error initializing TLS provider: %v", err)
 						return
 					}
+
+					nmd.dscRegWaitGrp.Add(1)
 					go nmd.AdmitNaples()
 					return
 				},

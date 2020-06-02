@@ -17,7 +17,7 @@ import (
 // IPClientIf Implements NMD IP Client
 type IPClientIf interface {
 	DoStaticConfig() (string, string, error)
-	DoDHCPConfig() error
+	DoDHCPConfig(context.Context) error
 	DoNTPSync() error
 	GetIPClientIntf() string
 	GetDHCPState() string
@@ -64,6 +64,7 @@ type DHCPState struct {
 	LeaseDuration           time.Duration
 	AckPacket               dhcp4.Packet
 	CurState                string
+	DhcpWaitGroup           sync.WaitGroup
 	DhcpCtx, RenewCtx       context.Context
 	DhcpCancel, RenewCancel context.CancelFunc
 	Hostname                string

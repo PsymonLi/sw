@@ -3,6 +3,7 @@
 package state
 
 import (
+	"context"
 	"crypto/x509"
 	"encoding/binary"
 	"encoding/json"
@@ -280,12 +281,10 @@ func NewNMD(pipeline Pipeline,
 		certsListenURL:      globals.Localhost + ":" + globals.CMDUnauthCertAPIPort,
 		nicRegInitInterval:  regInterval,
 		nicRegInterval:      regInterval,
-		isRegOngoing:        false,
 		nicUpdInterval:      updInterval,
 		isUpdOngoing:        false,
 		isRestSrvRunning:    false,
 		listenURL:           listenURL,
-		stopNICReg:          make(chan bool, 1),
 		stopNICUpd:          make(chan bool, 1),
 		config:              config,
 		ro:                  ro,
@@ -380,6 +379,7 @@ func (n *NMD) RegisterCMD(cmd nmdapi.CmdAPI) error {
 	// ensure two controller plugins dont register
 	if n.cmd != nil {
 		log.Errorf("Attempt to register multiple controllers with NMD.")
+		return nil
 	}
 
 	// initialize cmd
@@ -1302,17 +1302,30 @@ func (n *NMD) NaplesVersionGetHandler(r *http.Request) (interface{}, error) {
 	return n.GetNaplesSoftwareInfo()
 }
 
-// GetRegStatus returns the current status of NIC registration task
+// StopDSCReg stop ongoing registration, if any
+func (n *NMD) StopDSCReg() error {
+	log.Info("Stopping any existing DSC registration")
+	if n.dscRegCancel != nil {
+		n.dscRegCancel()
+		n.dscRegWaitGrp.Wait()
+		n.dscRegCancel = nil
+	}
+	return nil
+}
+
+// StartDSCReg stops any existing registration and sets up new context for registration
+func (n *NMD) StartDSCReg() error {
+	log.Info("Setting up context for new DSC registration")
+	n.dscRegCtx, n.dscRegCancel = context.WithCancel(context.Background())
+	return nil
+}
+
+// GetRegStatus returns if there is a currently running registration
 func (n *NMD) GetRegStatus() bool {
 	n.Lock()
 	defer n.Unlock()
-	return n.isRegOngoing
-}
 
-func (n *NMD) setRegStatus(value bool) {
-	n.Lock()
-	defer n.Unlock()
-	n.isRegOngoing = value
+	return n.dscRegCancel != nil
 }
 
 // GetUpdStatus returns the current running status of NIC update task

@@ -3,6 +3,8 @@
 package ipif
 
 import (
+	"context"
+
 	"github.com/pensando/netlink"
 
 	"github.com/pensando/sw/nic/agent/nmd/api"
@@ -10,12 +12,10 @@ import (
 
 // NewIPClient returns the instance of IPClient for non-linux platforms
 func NewIPClient(nmd api.NmdAPI, intf string, pipeline string) (*IPClient, error) {
-	var dhcpState DHCPState
 	mgmtIntf, _ := netlink.LinkByName(intf)
 	ipClient := IPClient{
 		nmd:         nmd,
 		primaryIntf: mgmtIntf,
-		dhcpState:   &dhcpState,
 	}
 	return &ipClient, nil
 }
@@ -28,7 +28,7 @@ func (c *IPClient) DoStaticConfig() (string, string, error) {
 }
 
 // DoDHCPConfig performs dhcp configuration. Stubbed out for darwin
-func (c *IPClient) DoDHCPConfig() error {
+func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 	return nil
 }
 

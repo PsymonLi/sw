@@ -269,6 +269,7 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 					if err != nil {
 						log.Errorf("Error updating NMD state %+v: %v", nic, err)
 					}
+					n.dscRegWaitGrp.Add(1)
 					go n.AdmitNaples()
 				}
 			}()

@@ -82,7 +82,7 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -90,7 +90,7 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "5s")
+	}, "Endpoint not found", "1s", "5s")
 
 	// verify we can find the endpoint associated with the workload
 	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -122,7 +122,7 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "10s")
+	}, "Endpoint not found", "1s", "10s")
 
 	// Send final sync
 	nwr.Status.MigrationStatus.Stage = "migration-final-sync"
@@ -136,7 +136,7 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not in correct stage", "1ms", "1s")
+	}, "Endpoint not in correct stage", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -152,7 +152,7 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Workload not found", "1ms", "10s")
+	}, "Workload not found", "1s", "10s")
 }
 
 // TestMigrationWorkloadMigrationAbort starts migration and later aborts it.
@@ -205,7 +205,7 @@ func TestMigrationWorkloadMigrationAbort(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -213,7 +213,7 @@ func TestMigrationWorkloadMigrationAbort(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "5s")
+	}, "Endpoint not found", "1s", "5s")
 
 	// verify we can find the endpoint associated with the workload
 	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -245,7 +245,7 @@ func TestMigrationWorkloadMigrationAbort(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	eventRecorder.ClearEvents()
 	// Abort Migration
@@ -276,7 +276,7 @@ func TestMigrationWorkloadMigrationAbort(t *testing.T) {
 		}
 
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
@@ -337,7 +337,7 @@ func TestMigrationWorkloadMigrationTimeout(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -345,7 +345,7 @@ func TestMigrationWorkloadMigrationTimeout(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "5s")
+	}, "Endpoint not found", "1s", "5s")
 
 	// verify we can find the endpoint associated with the workload
 	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -377,7 +377,7 @@ func TestMigrationWorkloadMigrationTimeout(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	eventRecorder.ClearEvents()
 	time.Sleep(10 * time.Second)
@@ -388,7 +388,7 @@ func TestMigrationWorkloadMigrationTimeout(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
@@ -400,7 +400,7 @@ func TestMigrationWorkloadMigrationTimeout(t *testing.T) {
 			}
 		}
 		return false, nil
-	}, "Workload not found", "1ms", "1s")
+	}, "Workload not found", "1s", "1s")
 }
 
 func setupTopo(stateMgr *Statemgr, sourceHost, destHost string, t *testing.T) {
@@ -429,7 +429,7 @@ func setupTopo(stateMgr *Statemgr, sourceHost, destHost string, t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Did not find DSCProfile", "1ms", "2s")
+	}, "Did not find DSCProfile", "1s", "2s")
 
 	dscprof = cluster.DSCProfile{
 		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
@@ -450,7 +450,7 @@ func setupTopo(stateMgr *Statemgr, sourceHost, destHost string, t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Did not find DSCProfile", "1ms", "2s")
+	}, "Did not find DSCProfile", "1s", "2s")
 
 	// smartNic params
 	snic := cluster.DistributedServiceCard{
@@ -605,7 +605,7 @@ func TestMigrationOnCreateWithMigrationStageFinalSync(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -613,7 +613,7 @@ func TestMigrationOnCreateWithMigrationStageFinalSync(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	wrFound, err := stateMgr.FindWorkload("default", "testWorkload")
 	AssertOk(t, err, "Did not find workload")
@@ -713,7 +713,7 @@ func TestMigrationStartTimeoutLastSync(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -721,7 +721,7 @@ func TestMigrationStartTimeoutLastSync(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	// Wait for timer to expire
 	time.Sleep(10 * time.Second)
@@ -830,7 +830,7 @@ func TestMigrationStartTimeoutAbort(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -838,7 +838,7 @@ func TestMigrationStartTimeoutAbort(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	// Wait for timer to expire
 	time.Sleep(10 * time.Second)
@@ -947,7 +947,7 @@ func TestMigrationStartFinalSyncAbortAfterDone(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Network not foud", "1ms", "1s")
+	}, "Network not foud", "1s", "1s")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
@@ -955,7 +955,7 @@ func TestMigrationStartFinalSyncAbortAfterDone(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "1s", "1s")
 
 	nwr := ref.DeepCopy(wr).(workload.Workload)
 	// Send final sync
@@ -994,4 +994,117 @@ func TestMigrationStartFinalSyncAbortAfterDone(t *testing.T) {
 		}
 		return false, nil
 	}, "Endpoint not in correct stage", "1s", "5s")
+}
+
+func TestMigrationWorkloadBackToBack(t *testing.T) {
+	// create network state manager
+	stateMgr, err := newStatemgr()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	sourceHost := "testHost"
+	destHost := "testHost-2"
+
+	setupTopo(stateMgr, sourceHost, destHost, t)
+
+	// workload params
+	wr := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "testWorkload",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: "testHost",
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   "1001.0203.0405",
+					MicroSegVlan: 100,
+					ExternalVlan: 1,
+				},
+			},
+		},
+	}
+
+	// create the workload
+	err = stateMgr.ctrler.Workload().Create(&wr)
+	AssertOk(t, err, "Could not create the workload")
+	start := time.Now()
+
+	done := false
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1")
+		if err == nil {
+			if !done {
+				timeTrack(start, "Network create took")
+				done = true
+			}
+			return true, nil
+		}
+		return false, nil
+	}, "Network not foud", "1s", "1s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "5s")
+
+	// verify we can find the endpoint associated with the workload
+	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+	AssertOk(t, err, "Could not find the endpoint")
+	Assert(t, (foundEp.Endpoint.Status.WorkloadName == wr.Name), "endpoint params did not match")
+
+	// update workload external vlan
+	nwr := ref.DeepCopy(wr).(workload.Workload)
+	nwr.Spec.HostName = "testHost-2"
+	nwr.Spec.Interfaces[0].MicroSegVlan = 200
+	nwr.Status.HostName = "testHost"
+	nwr.Status.MigrationStatus = &workload.WorkloadMigrationStatus{
+		Stage:  "migration-start",
+		Status: workload.WorkloadMigrationStatus_NONE.String(),
+	}
+	nwr.Status.Interfaces = []workload.WorkloadIntfStatus{
+		{
+			MACAddress:   "1001.0203.0405",
+			MicroSegVlan: 100,
+			ExternalVlan: 1,
+		},
+	}
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
+		if err == nil && wrk.Workload.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Workload not found", "1s", "10s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil && ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_START.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "10s")
+
+	// retrigger move - must be rejected
+	nwr.Spec.HostName = "testHost"
+	nwr.Status.HostName = "testHost-2"
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
+		if err == nil && wrk.Workload.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() && wrk.Workload.Spec.HostName == "testHost-2" {
+			return true, nil
+		}
+		return false, nil
+	}, "Workload not found", "1s", "10s")
 }
