@@ -322,6 +322,10 @@ generate_hash_ (void *key, uint32_t key_len, uint32_t crc_init_val)
 
 static uint32_t
 entry_write (uint32_t tbl_id, uint32_t index, void *key, void *mask, void *data,
+             bool hash_table, uint32_t table_size) __attribute__((unused));
+
+static uint32_t
+entry_write (uint32_t tbl_id, uint32_t index, void *key, void *mask, void *data,
              bool hash_table, uint32_t table_size)
 {
     uint32_t hash = 0;

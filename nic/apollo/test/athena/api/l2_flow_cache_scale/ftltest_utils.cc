@@ -36,10 +36,10 @@ dump_flow (pds_l2_flow_iter_cb_arg_t *iter_cb_arg)
     pds_l2_flow_key_t *key = &iter_cb_arg->l2_flow_key;
     pds_l2_flow_data_t *data = &iter_cb_arg->l2_flow_appdata;
 
-    printf("Dmac:%06x "
-	   " VNICID:%u "
+    printf("Dmac:%s "
+           " VNICID:%u "
            "index:%u \n\n",
-           key->dmac,   key->vnic_id,
+           macaddr2str(key->dmac),   key->vnic_id,
            data->index);
     return;
 }

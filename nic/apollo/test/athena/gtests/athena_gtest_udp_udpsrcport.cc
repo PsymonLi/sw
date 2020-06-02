@@ -281,7 +281,6 @@ sdk_ret_t
 athena_gtest_test_flows_udp_udpsrcport(void)
 {
     sdk_ret_t           ret = SDK_RET_OK;
-    uint32_t             mask_start_pos = 38;
 
     ret = send_packet("UDP-IPv4-UDP-SrcPort: h2s pkt", g_snd_pkt_ipv4_udp_udp_srcport_h2s,
             sizeof(g_snd_pkt_ipv4_udp_udp_srcport_h2s), g_h_port,
