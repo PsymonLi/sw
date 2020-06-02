@@ -15,7 +15,6 @@ import { SearchService } from '@app/services/generated/search.service';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { ClusterDistributedServiceCard, ClusterHost } from '@sdk/v1/models/generated/cluster';
 import { SearchSearchRequest } from '@sdk/v1/models/generated/search';
-import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
 import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 
 @Component({
@@ -277,29 +276,21 @@ export class WorkloaddetailComponent extends DataComponent implements OnInit, On
     }
   }
 
-  handleEditSave(updatedWorkloads: WorkloadWorkload[]) {
-    this.bulkeditLabels(updatedWorkloads);
+  handleEditSave(updatedWorkload: WorkloadWorkload[]) {
+    if (updatedWorkload.length > 0) {
+      const sub = this.workloadService.LabelWorkload(updatedWorkload[0].meta.name, {'labels': updatedWorkload[0].meta.labels}).subscribe(
+        response => {
+          this._controllerService.invokeSuccessToaster(Utility.UPDATE_SUCCESS_SUMMARY, `Successflly updated ${updatedWorkload[0].meta.name}'s labels`);
+          this.inLabelEditMode = false;
+        },
+        this._controllerService.restErrorHandler(Utility.UPDATE_FAILED_SUMMARY)
+      );
+      this.subscriptions.push(sub);
+    }
   }
 
   handleEditCancel($event) {
     this.inLabelEditMode = false;
-  }
-
-  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
-    this.inLabelEditMode = false;
-  }
-
-  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {}
-
-  /**
-   * Invoke changing meta.lablels using bulkedit API
-   * @param updatedWorkloads
-   */
-  bulkeditLabels(updatedWorkloads: WorkloadWorkload[]) {
-    const successMsg: string = 'Updated workload labels';
-    const failureMsg: string = 'Failed to update workload labels';
-    const stagingBulkEditAction = this.buildBulkEditLabelsPayload(updatedWorkloads);
-    this.bulkEditHelper(updatedWorkloads, stagingBulkEditAction, successMsg, failureMsg );
   }
 
   clearSelectedDataObjects() {}

@@ -178,9 +178,6 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
       return ['ip-addresses'];
     }
   }
-
-
-
   constructor(
     private workloadService: WorkloadService,
     protected _controllerService: ControllerService,
@@ -567,8 +564,36 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   }
 
   handleEditSave(updatedWorkloads: WorkloadWorkload[]) {
-    // this.updateWithForkjoin(updatedWorkloads);
-    this.bulkeditLabels(updatedWorkloads); // Use bulkedit to update meta.labels
+    let performBulkEdit = true;
+    for (const workload of updatedWorkloads) {
+      if (Utility.isWorkloadSystemGenerated(workload) === true) {
+        performBulkEdit = false;
+        break;
+      }
+    }
+    if (performBulkEdit === true) {
+      this.bulkeditLabels(updatedWorkloads); // Use bulkedit to update workload labels
+    } else {
+      const observables: Observable<any>[] = [];
+      for (const workload of updatedWorkloads) {
+        const sub = this.workloadService.LabelWorkload(workload.meta.name, {'labels': workload.meta.labels});
+        observables.push(sub);
+      }
+      if (observables.length > 0) {
+        const allSuccessSummary = 'Update';
+        const partialSuccessSummary = 'Partially update';
+        const msg = 'Updated workload labels.';
+        this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg); // use forkjoin to update workload labels
+      }
+    }
+}
+
+  onInvokeAPIonMultipleRecordsSuccess () {
+    this.inLabelEditMode = false;
+  }
+
+  onInvokeAPIonMultipleRecordsFailure() {
+      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
@@ -611,7 +636,6 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
     return observables;
   }
 
-
   handleEditCancel($event) {
     this.inLabelEditMode = false;
   }
@@ -634,7 +658,6 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
       this.dataObjects = searchResults;
     }
   }
-
 
   /* commont it out for now
     private _callSearchRESTAPI(searchSearchRequest: SearchSearchRequest) {
