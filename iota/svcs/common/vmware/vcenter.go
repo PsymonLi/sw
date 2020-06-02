@@ -122,21 +122,27 @@ func (vc *Vcenter) DisconnectHost(ip string) error {
 					if err != nil {
 						return err
 					}
-					// Remove all vmk nics on the host
-					ns, err := host.ConfigManager().NetworkSystem(vc.Ctx())
-					if err != nil {
-						return err
-					}
-					for _, vnic := range h.Config.Network.Vnic {
-						// HACK skip vmk0 as it is used for host communication
-						if vnic.Device == "vmk0" {
+
+					if h.Config != nil && h.Config.Network != nil {
+						// Remove all vmk nics on the host
+						ns, err := host.ConfigManager().NetworkSystem(vc.Ctx())
+						if err != nil {
+							log.Warnf("Not able to query network system")
 							continue
 						}
-						log.Infof("Remove vmk %v from host %v", vnic.Device, host.Name())
-						if err := ns.RemoveVirtualNic(vc.Ctx(), vnic.Device); err != nil {
-							log.Errorf("%v", err)
-							// return err
+						for _, vnic := range h.Config.Network.Vnic {
+							// HACK skip vmk0 as it is used for host communication
+							if vnic.Device == "vmk0" {
+								continue
+							}
+							log.Infof("Remove vmk %v from host %v", vnic.Device, host.Name())
+							if err := ns.RemoveVirtualNic(vc.Ctx(), vnic.Device); err != nil {
+								log.Errorf("%v", err)
+								// return err
+							}
 						}
+					} else {
+						log.Warnf("Not able to find any Virtual nics to remove as part of clean up")
 					}
 
 					remove := host.Destroy
@@ -1608,6 +1614,7 @@ func (dc *DataCenter) DeleteAllHosts() error {
 	hosts, err := dc.Finder().HostSystemList(dc.vc.Ctx(), "*")
 	if err == nil {
 		for _, host := range hosts {
+			log.Infof("Disconnecting host : %v path : %v", host.Name(), host.InventoryPath)
 			remove := host.Destroy
 
 			task, err := host.Disconnect(dc.vc.Ctx())
@@ -1616,6 +1623,7 @@ func (dc *DataCenter) DeleteAllHosts() error {
 			}
 			_, err = task.WaitForResult(dc.vc.Ctx(), nil)
 			if err != nil {
+				log.Infof("Failed to disconnect host : %v path : %v", host.Name(), host.InventoryPath)
 				return err
 			}
 			task, err = remove(dc.vc.Ctx())
@@ -1625,6 +1633,7 @@ func (dc *DataCenter) DeleteAllHosts() error {
 
 			_, err = task.WaitForResult(dc.vc.Ctx(), nil)
 			if err != nil {
+				log.Infof("Failed to remove host : %v path : %v", host.Name(), host.InventoryPath)
 				return err
 			}
 

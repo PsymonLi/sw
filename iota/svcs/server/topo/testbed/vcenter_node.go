@@ -66,9 +66,7 @@ func (n *VcenterNode) cleanUpVcenter() error {
 
 		err = dc.DeleteAllHosts()
 		if err != nil {
-			fmt.Printf("Initing 1 fialed %v.\n", err.Error())
-			log.Errorf("TOPO SVC | CleanTestBed | deleting all hosts from datacenter failed  %v", err.Error())
-			return err
+			log.Warnf("TOPO SVC | CleanTestBed | deleting all hosts from datacenter failed, ignoring  %v", err.Error())
 		}
 
 		err = vc.DestroyDataCenter(n.DCName)
