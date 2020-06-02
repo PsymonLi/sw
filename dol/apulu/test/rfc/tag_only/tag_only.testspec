@@ -48,7 +48,7 @@ packets:
         headers     :
             outereth:
                 src     : callback://networking/packets/GetUplinkPortMac
-                dst     : callback://networking/packets/GetUnderlayRemoteMac
+                dst     : callback://networking/packets/GetUnderlayRemoteMacV2
             outeripv4:
                 src     : ref://testcase/config/devicecfg/IP
                 dst     : callback://networking/packets/GetTunnelIPFromMapping

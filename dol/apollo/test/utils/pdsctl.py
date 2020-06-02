@@ -22,6 +22,14 @@ def __get_pdsctl_path():
     return abs_path
 
 def __execute_pdsctl(cmd):
+    def __print_output(cmd, output, retval):
+        logger.header("COMMAND")
+        logger.info(f"{cmd} (retval = {retval})")
+        logger.header('-------')
+        lines = output.split('\n')
+        for line in lines:
+            logger.info(line)
+
     retval = True
     output = ""
     try:
@@ -35,7 +43,7 @@ def __execute_pdsctl(cmd):
     except subprocess.CalledProcessError as e:
         output = "Command execution failed."
         retval = False
-    logger.info(f"pdsctl: command[{cmd}], output[{output}], retval[{retval}]")
+    __print_output(cmd, output, retval)
     return retval, output
 
 def ExecutePdsctlCommand(cmd, args=None, yaml=True):

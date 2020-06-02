@@ -543,8 +543,11 @@ jobd/dol/apulu/rfc_egress: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/rfc_tags
 jobd/dol/apulu/rfc_tags: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_pfx_range --sub ipv4_ingress_tag_pfx_range,ipv4_egress_tag_pfx_range
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_pfx_range --sub ipv4_ingress_tag_pfx_range
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_pfx_range --sub ipv4_egress_tag_pfx_range
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_crud --sub ltag_crud,rtag_crud
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_any --sub ipv4_ingress_tag_any
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature rfc --topo rfc_tags_any --sub ipv4_egress_tag_any
 
 .PHONY: jobd/dol/apulu/lpm
 jobd/dol/apulu/lpm: ${JOBD_PREREQS}

@@ -328,6 +328,9 @@ def __is_matching_ip(matchtype, ipaddr, ippfx=None, ipaddrLow=None, ipaddrHigh=N
         for tagpfx in tagpfxlist:
             if ipaddr in tagpfx:
                 return True
+    elif matchtype == topo.L3MatchType.NONE:
+        return True
+
     return False
 
 def __is_matching_src_ip(src_ip, l3matchobj, direction, testcase):
@@ -783,6 +786,11 @@ def __get_matching_route_tep(routetbl, addr):
         nh_objid = matching_route.PeerVPCId
     return __getTunObject(nh_type, nh_objid)
 
+def __get_tunnel_from_rmapping(tc):
+    robj = tc.config.remotemapping
+    if not robj:
+        return None
+    return robj.TUNNEL
 
 def __get_tunnel_from_route(tc, args):
     routetbl = tc.config.route
@@ -812,6 +820,16 @@ def GetUplinkPortMacFromRoute(tc, pkt, args=None):
     l3if = nh.L3Interface
     mac = l3if.GetInterfaceMac().get()
     return mac
+
+def GetUnderlayRemoteMacV2(tc, pkt, args=None):
+    tep = __get_tunnel_from_rmapping(tc)
+    tep = tep if tep else __get_tunnel_from_route(tc, args)
+    assert(tep)
+    if tep.IsUnderlay():
+        nh = tep.NEXTHOP
+    else:
+        assert(0)
+    return nh.underlayMACAddr.get()
 
 def GetUnderlayRemoteMacFromRoute(tc, pkt, args=None):
     tep = __get_tunnel_from_route(tc, args)
@@ -1017,8 +1035,7 @@ def GetDstMac(testcase, packet, args=None):
     else:
         if fwdmode == 'L2L':
             return robj.VNIC.MACAddr
-        else:
-            return robj.MACAddr
+        return robj.MACAddr
 
 def GetSrcMac(testcase, packet, args=None):
     lobj = testcase.config.localmapping

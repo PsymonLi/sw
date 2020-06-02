@@ -106,9 +106,7 @@ node:
                         action  : deny       # picks random choice of allow/deny
                         srctype : tag
                         srctag  : 1
-                        dsttype : pfxrange
-                        v4dstiplow : '99.88.77.66'
-                        v4dstiphigh : '99.88.77.66'
+                        dsttype : none
                         icmptype : any
                         icmpcode : any
 
@@ -125,9 +123,7 @@ node:
                       - protocol: icmp
                         priority: 'MAXPRIO'
                         action  : random      # picks random choice of allow/deny
-                        srctype : pfxrange
-                        v4srciplow : '99.88.77.66'
-                        v4srciphigh : '99.88.77.66'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 1
                         icmptype : any
@@ -148,11 +144,7 @@ node:
                         action  : deny
                         srctype : tag
                         srctag  : 8
-                        dsttype : pfxrange
-                        v4dstiplow : '99.88.77.66'
-                        v4dstiphigh : '99.88.77.66'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00c::bade'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00c::bade'
+                        dsttype : none
                         sportlow: 9999
                         sporthigh: 9999
                         dportlow: 8888
@@ -163,11 +155,7 @@ node:
                         action  : deny
                         srctype : tag
                         srctag  : 2
-                        dsttype : pfxrange
-                        v4dstiplow : '66.77.88.99'
-                        v4dstiphigh : '66.77.88.99'
-                        v6dstiplow : '1234:a11:bad:b075:d1e::90d'
-                        v6dstiphigh : '1234:a11:bad:b075:d1e::90d'
+                        dsttype : none 
                         sportlow: 13579
                         sporthigh: 13579
                         dportlow: 24680
@@ -186,11 +174,7 @@ node:
                       - protocol: tcp
                         priority: 'MAXPRIO'
                         action  : deny
-                        srctype : pfxrange
-                        v4srciplow : '99.88.77.66'
-                        v4srciphigh : '99.88.77.66'
-                        v6srciplow : 'e1ba:aced:a11:face:b00c::bade'
-                        v6srciphigh : 'e1ba:aced:a11:face:b00c::bade'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 8
                         sportlow: 9999
@@ -201,11 +185,7 @@ node:
                       - protocol: udp
                         priority: 'MAXPRIO * 0.5'
                         action  : deny
-                        srctype : pfxrange
-                        v4srciplow : '66.77.88.99'
-                        v4srciphigh : '66.77.88.99'
-                        v6srciplow : '1234:a11:bad:b075:d1e::90d'
-                        v6srciphigh : '1234:a11:bad:b075:d1e::90d'
+                        srctype : none 
                         dsttype : tag
                         dsttag  : 2
                         sportlow: 13579
@@ -229,11 +209,7 @@ node:
                         action  : allow
                         srctype : tag
                         srctag  : 10
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.10.0'
-                        v4dstiphigh : '10.10.10.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00a::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:ffff'
+                        dsttype : none 
                         sportlow: 10
                         sporthigh: 20
                         dportlow: 10
@@ -244,11 +220,7 @@ node:
                         action  : deny
                         srctype : tag
                         srctag  : 11
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.11.0'
-                        v4dstiphigh : '10.10.11.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00b::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00b:ffff:ffff:ffff'
+                        dsttype : none 
                         sportlow: 21
                         sporthigh: 30
                         dportlow: 21
@@ -259,11 +231,7 @@ node:
                         action  : allow
                         srctype : tag
                         srctag  : 12
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.12.0'
-                        v4dstiphigh : '10.10.12.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00c::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00c:ffff:ffff:ffff'
+                        dsttype : none
                         sportlow: 31
                         sporthigh: 40
                         dportlow: 31
@@ -274,11 +242,7 @@ node:
                         action  : deny
                         srctype : tag
                         srctag  : 13
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.13.0'
-                        v4dstiphigh : '10.10.13.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00d::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00d:ffff:ffff:ffff'
+                        dsttype : none
                         sportlow: 41
                         sporthigh: 50
                         dportlow: 41
@@ -289,11 +253,7 @@ node:
                         action  : allow
                         srctype : tag
                         srctag  : 14
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.14.0'
-                        v4dstiphigh : '10.10.14.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00e::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00e:ffff:ffff:ffff'
+                        dsttype : none
                         sportlow: 51
                         sporthigh: 60
                         dportlow: 51
@@ -307,11 +267,7 @@ node:
                       - protocol: udp        # src - pfxrange but dst - tag
                         priority: 'MAXPRIO'
                         action: allow
-                        srctype : pfxrange
-                        v4srciplow : '10.10.10.0'
-                        v4srciphigh : '10.10.10.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b010::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b010:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 1
                         sportlow: 1
@@ -322,11 +278,7 @@ node:
                       - protocol: udp        # src - pfxrange but dst - tag
                         priority: 'MAXPRIO - 1'
                         action : deny
-                        srctype : pfxrange
-                        v4srciplow : '10.10.11.0'
-                        v4srciphigh : '10.10.11.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b011::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b011:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 2
                         sportlow: 11
@@ -337,11 +289,7 @@ node:
                       - protocol: udp        # src - pfxrange but dst - tag
                         priority: 'MAXPRIO - 2'
                         action : allow
-                        srctype : pfxrange
-                        v4srciplow : '10.10.12.0'
-                        v4srciphigh : '10.10.12.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b012::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b012:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 3
                         sportlow: 21
@@ -352,11 +300,7 @@ node:
                       - protocol: udp        # src - pfxrange but dst - tag
                         priority: 'MAXPRIO - 3'
                         action : deny
-                        srctype : pfxrange
-                        v4srciplow : '10.10.31.0'
-                        v4srciphigh : '10.10.31.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b013::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b013:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 4
                         sportlow: 31
@@ -367,11 +311,7 @@ node:
                       - protocol: udp        # src - pfxrange but dst - tag
                         priority: 'MAXPRIO - 4'
                         action : allow
-                        srctype : pfxrange
-                        v4srciplow : '10.10.14.0'
-                        v4srciphigh : '10.10.14.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b014::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b014:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 5
                         sportlow: 41
@@ -388,11 +328,7 @@ node:
                         action  : allow
                         srctype : tag
                         srctag  : 10
-                        dsttype : pfxrange
-                        v4dstiplow : '10.10.10.0'
-                        v4dstiphigh : '10.10.10.255'
-                        v6dstiplow : 'e1ba:aced:a11:face:b00a::0'
-                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:ffff'
+                        dsttype : none
 
                   - type : specific
                     policytype : stateless
@@ -401,10 +337,6 @@ node:
                     rule:
                       - protocol: any
                         action : allow
-                        srctype : pfxrange
-                        v4srciplow : '10.10.14.0'
-                        v4srciphigh : '10.10.14.255'
-                        v6srciplow : 'e1ba:aced:a11:face:b014::0'
-                        v6srciphigh : 'e1ba:aced:a11:face:b014:ffff:ffff:ffff'
+                        srctype : none
                         dsttype : tag
                         dsttag  : 5

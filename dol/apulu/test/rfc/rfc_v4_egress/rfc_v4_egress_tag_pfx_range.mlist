@@ -59,7 +59,7 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_LEFT
-        ignore  : True
+        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - sport  : left
@@ -78,7 +78,7 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_RIGHT
-        ignore  : True
+        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - sport  : right
@@ -97,21 +97,21 @@ modules:
 
     - module:
         name    : SRC_TAG_ANY_PROTO
-        spec    : rfc_ingress.testspec
+        spec    : rfc_egress.testspec
         iterate :
             - policy : filter://AddrFamily=IPV4,OverlapType=any_proto_src_tag
 
     - module:
         name    : DST_SPECIFIC
-        ignore  : True
-        spec    : rfc_egress.testspec
+        ignore  : False
+        spec    : tag_only.testspec
         iterate :
             - policy : filter://AddrFamily=IPV4,PolicyType=user_specific_dst_tag
             - policy : filter://AddrFamily=IPV4,PolicyType=icmp_specific_dst_tag
 
     - module:
         name    : DST_TAG_ADJCENT_FIRST
-        ignore  : True
+        ignore  : False
         spec    : tag_only.testspec
         args    :
             - prefix : first
@@ -131,7 +131,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LAST
-        ignore  : True
+        ignore  : False
         spec    : tag_only.testspec
         args    :
             - prefix : last
@@ -151,7 +151,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LEFT
-        ignore  : True
+        ignore  : False
         spec    : tag_only.testspec
         args    :
             - sport  : left
@@ -170,7 +170,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_RIGHT
-        ignore  : True
+        ignore  : False
         spec    : tag_only.testspec
         args    :
             - sport  : right
@@ -189,7 +189,6 @@ modules:
 
     - module:
         name    : DST_TAG_ANY_PROTO
-        spec    : rfc_ingress.testspec
+        spec    : tag_only.testspec
         iterate :
             - policy : filter://AddrFamily=IPV4,OverlapType=any_proto_dst_tag
-

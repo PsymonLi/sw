@@ -83,6 +83,7 @@ class L3MatchType(enum.IntEnum):
     PFX = 0
     PFXRANGE = 1
     TAG = 2
+    NONE = 3
 
 class OriginTypes(enum.IntEnum):
      FIXED = 0

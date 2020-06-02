@@ -113,6 +113,24 @@ class L4MatchObject:
         }
         return l4info_switcher.get(spec.WhichOneof("l4info"), default)(self, spec)
 
+    def PopulateSpec(self, spec, proto):
+        if utils.IsICMPProtocol(proto):
+            if self.IcmpType == types_pb2.MATCH_ANY:
+                spec.TypeCode.TypeWildcard = types_pb2.MATCH_ANY
+            else:
+                spec.TypeCode.TypeNum = self.IcmpType
+
+            if self.IcmpCode == types_pb2.MATCH_ANY:
+                spec.TypeCode.CodeWildcard = types_pb2.MATCH_ANY
+            else:
+                spec.TypeCode.CodeNum = self.IcmpCode
+        elif self.SportLow != None and self.SportHigh != None:
+            spec.Ports.SrcPortRange.PortLow  = self.SportLow
+            spec.Ports.SrcPortRange.PortHigh = self.SportHigh
+        elif self.DportLow != None and self.DportHigh != None:
+            spec.Ports.DstPortRange.PortLow  = self.DportLow
+            spec.Ports.DstPortRange.PortHigh = self.DportHigh
+
 class L3MatchObject:
     def __init__(self, valid=False, proto=utils.L3PROTO_MIN,\
                  srcpfx=None, dstpfx=None,\
@@ -231,6 +249,39 @@ class L3MatchObject:
             return False
         return True
 
+    def PopulateSpec(self, spec):
+        if self.Proto == utils.L3PROTO_MAX:
+            spec.ProtoWildcard = types_pb2.MATCH_ANY
+        else:
+            spec.ProtoNum = self.Proto
+
+        if self.SrcType == topo.L3MatchType.PFX:
+            assert(self.SrcPrefix)
+            utils.GetRpcIPPrefix(self.SrcPrefix, spec.SrcPrefix)
+        if self.DstType == topo.L3MatchType.PFX:
+            assert(self.DstPrefix)
+            utils.GetRpcIPPrefix(self.DstPrefix, spec.DstPrefix)
+
+        if self.SrcType == topo.L3MatchType.PFXRANGE:
+            assert(self.SrcIPLow and self.SrcIPHigh)
+            utils.GetRpcIPRange(self.SrcIPLow, self.SrcIPHigh, spec.SrcRange)
+        if self.DstType == topo.L3MatchType.PFXRANGE:
+            assert(self.DstIPLow and self.DstIPHigh)
+            utils.GetRpcIPRange(self.DstIPLow, self.DstIPHigh, spec.DstRange)
+
+        if self.SrcType == topo.L3MatchType.TAG:
+            assert(self.SrcTag)
+            if utils.IsPipelineArtemis():
+                spec.SrcTag = self.SrcTag.TagId
+            elif utils.IsPipelineApulu():
+                spec.SrcTag = self.SrcTag
+        if self.DstType == topo.L3MatchType.TAG:
+            assert(self.DstTag)
+            if utils.IsPipelineArtemis():
+                spec.DstTag = self.DstTag.TagId
+            elif utils.IsPipelineApulu():
+                spec.DstTag = self.DstTag
+
 AppIdx=1
 
 class RuleObject:
@@ -340,6 +391,21 @@ class RuleObject:
 
         return True
 
+    def PopulateSpec(self, spec):
+        spec = spec.Rules.add()
+        spec.Attrs.Stateful = self.Stateful
+        spec.Attrs.Priority = self.Priority
+        spec.Attrs.Action = self.Action
+        l3match = self.L3Match
+        l4match = self.L4Match
+        proto = 0
+
+        if l3match and l3match.valid:
+            l3match.PopulateSpec(spec.Attrs.Match.L3Match)
+            proto = l3match.Proto
+
+        if l4match and l4match.valid:
+            l4match.PopulateSpec(spec.Attrs.Match.L4Match, proto)
 
 class PolicyObject(base.ConfigObjectBase):
     def __init__(self, node, vpcid, af, direction, rules, policytype, overlaptype, level='subnet',
@@ -438,57 +504,6 @@ class PolicyObject(base.ConfigObjectBase):
         attrlist = ['DefaultFWAction', 'rules']
         self.RollbackMany(attrlist)
 
-    def FillRuleSpec(self, spec, rule):
-        proto = 0
-        specrule = spec.Rules.add()
-        specrule.Attrs.Stateful = rule.Stateful
-        specrule.Attrs.Priority = rule.Priority
-        specrule.Attrs.Action = rule.Action
-        l3match = rule.L3Match
-        if l3match and l3match.valid:
-            proto = l3match.Proto
-
-            if proto == utils.L3PROTO_MAX:
-                specrule.Attrs.Match.L3Match.ProtoWildcard = types_pb2.MATCH_ANY
-            else:
-                specrule.Attrs.Match.L3Match.ProtoNum = proto
-
-            if l3match.SrcIPLow and l3match.SrcIPHigh:
-                utils.GetRpcIPRange(l3match.SrcIPLow, l3match.SrcIPHigh, specrule.Attrs.Match.L3Match.SrcRange)
-            if l3match.DstIPLow and l3match.DstIPHigh:
-                utils.GetRpcIPRange(l3match.DstIPLow, l3match.DstIPHigh, specrule.Attrs.Match.L3Match.DstRange)
-            if l3match.SrcTag:
-                if utils.IsPipelineArtemis():
-                    specrule.Attrs.Match.L3Match.SrcTag = l3match.SrcTag.TagId
-                elif utils.IsPipelineApulu():
-                    specrule.Attrs.Match.L3Match.SrcTag = l3match.SrcTag
-            if l3match.DstTag:
-                if utils.IsPipelineArtemis():
-                    specrule.Attrs.Match.L3Match.DstTag = l3match.DstTag.TagId
-                elif utils.IsPipelineApulu():
-                    specrule.Attrs.Match.L3Match.DstTag = l3match.DstTag
-            if l3match.SrcPrefix is not None:
-                utils.GetRpcIPPrefix(l3match.SrcPrefix, specrule.Attrs.Match.L3Match.SrcPrefix)
-            if l3match.DstPrefix is not None:
-                utils.GetRpcIPPrefix(l3match.DstPrefix, specrule.Attrs.Match.L3Match.DstPrefix)
-        l4match = rule.L4Match
-        if l4match and l4match.valid:
-            if utils.IsICMPProtocol(proto):
-                if l4match.IcmpType == types_pb2.MATCH_ANY:
-                    specrule.Attrs.Match.L4Match.TypeCode.TypeWildcard = types_pb2.MATCH_ANY
-                else:
-                    specrule.Attrs.Match.L4Match.TypeCode.TypeNum = l4match.IcmpType
-
-                if l4match.IcmpCode == types_pb2.MATCH_ANY:
-                    specrule.Attrs.Match.L4Match.TypeCode.CodeWildcard = types_pb2.MATCH_ANY
-                else:
-                    specrule.Attrs.Match.L4Match.TypeCode.CodeNum = l4match.IcmpCode
-            else:
-                specrule.Attrs.Match.L4Match.Ports.SrcPortRange.PortLow = l4match.SportLow
-                specrule.Attrs.Match.L4Match.Ports.SrcPortRange.PortHigh = l4match.SportHigh
-                specrule.Attrs.Match.L4Match.Ports.DstPortRange.PortLow = l4match.DportLow
-                specrule.Attrs.Match.L4Match.Ports.DstPortRange.PortHigh = l4match.DportHigh
-
     def PopulateKey(self, grpcmsg):
         grpcmsg.Id.append(self.GetKey())
         return
@@ -499,7 +514,7 @@ class PolicyObject(base.ConfigObjectBase):
         spec.AddrFamily = utils.GetRpcIPAddrFamily(self.AddrFamily)
         spec.DefaultFWAction = utils.GetRpcSecurityRuleAction(self.DefaultFWAction)
         for rule in self.rules:
-            self.FillRuleSpec(spec, rule)
+            rule.PopulateSpec(spec)
         return
 
     def FillJsonRuleSpec(self):
@@ -998,6 +1013,8 @@ class PolicyObjectClient(base.ConfigClientBase):
                     matchtype = topo.L3MatchType.PFXRANGE
                 elif matchval == "tag":
                     matchtype = topo.L3MatchType.TAG
+                elif matchval == "none":
+                    matchtype = topo.L3MatchType.NONE
             return matchtype
 
         def __get_l3_match_type_from_rule(rulespec):
@@ -1063,6 +1080,8 @@ class PolicyObjectClient(base.ConfigClientBase):
                 elif matchtype == topo.L3MatchType.PFXRANGE:
                     return utils.IsPfxRangeSupported()
                 elif matchtype == topo.L3MatchType.PFX:
+                    return True
+                elif matchtype == topo.L3MatchType.NONE:
                     return True
                 return False
 
