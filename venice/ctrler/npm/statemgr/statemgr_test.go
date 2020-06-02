@@ -10831,7 +10831,7 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 	Assert(t, !IsObjInternal(nw1.Network.Labels), "Orchhub network must not have label")
 	nw2, err := stateMgr.FindNetwork("default", "networkToLable")
 	AssertOk(t, err, "Could not find updated network")
-	Assert(t, IsObjInternal(nw2.Network.Labels), "Other network must not have label")
+	Assert(t, IsObjInternal(nw2.Network.Labels), "Other network must have label")
 
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-0001.0203.0405")
@@ -10853,11 +10853,37 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Stale network still present", "10s", "20s")
+	}, "Stale network still present", "10s", "120s")
 
 	foundEp, ok := nw.FindEndpoint("testWorkload-0001.0203.0405")
 	Assert(t, ok, "Could not find the endpoint", "testWorkload-0001.0203.0405")
 	Assert(t, (foundEp.Endpoint.Status.Network == nw.Network.Name), "endpoint network did not match")
+	netwrk = &network.Network{
+		TypeMeta: api.TypeMeta{Kind: "Network"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "networkOrch",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: network.NetworkSpec{
+			Type:   network.NetworkType_Bridged.String(),
+			VlanID: 102,
+			Orchestrators: []*network.OrchestratorInfo{
+				&network.OrchestratorInfo{
+					Name: "orchtest",
+				},
+			},
+		},
+	}
+	// create network
+	err = stateMgr.ctrler.Network().Create(netwrk)
+	AssertOk(t, err, "Could not create the network")
+
+	// call labelInternalNetworkObject
+	stateMgr.labelInternalNetworkObjects()
+	nw3, err := stateMgr.FindNetwork("default", "networkOrch")
+	AssertOk(t, err, "Could not find updated network")
+	Assert(t, !IsObjInternal(nw3.Network.Labels), "Orchhub ref network must not have label")
 
 }
 

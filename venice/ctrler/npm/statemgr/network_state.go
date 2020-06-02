@@ -688,7 +688,7 @@ func (ns *NetworkState) isNetworkDeleted() bool {
 // with orchhub to be labled for garbage collection when they become
 // unused by npm
 func (sm *Statemgr) labelInternalNetworkObjects() {
-	// 1. get all network and create a networkMap
+	// 1. get all network and create a networkMap without any orch reference
 	// 2. find any workload owned by orchhub
 	// 3. remove associated networks from the networkMap
 	// 4. Mark all remaining networks which are in networkMap
@@ -699,6 +699,12 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 	netObjs, err := sm.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
 	if err == nil {
 		for _, nw := range netObjs {
+			if len(nw.Network.Spec.Orchestrators) > 0 {
+				// orchhub reference networks are not to be removed by garbage
+				// collector
+				log.Infof("network [%+v] with orch ref will not be labeled", nw.Network)
+				continue
+			}
 			networkMap[nw.Network.Spec.VlanID] = &nw.Network
 			networkVlanMap[nw.Network.Name] = nw.Network.Spec.VlanID
 		}
