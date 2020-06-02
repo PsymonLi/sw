@@ -955,7 +955,7 @@
               {{$castFn := getPdsaCastSetFilterFunc .Type $filterFieldOpt}}
               {{if (eq $castFn "")}}
                 {{if (eq .GetTypeName ".types.IPAddress")}}
-            if (req->filter().{{.GetName | ToLower}}() != "") {
+            if (req->filter().has_{{.GetName | ToLower}}()) {
                 ip_addr_t       outAddr_{{$filterFieldOpt.Field}};
 
                 ip_addr_spec_to_ip_addr(req->filter().{{.GetName | ToLower}}(), &outAddr_{{$filterFieldOpt.Field}});
@@ -1272,7 +1272,11 @@
           {{end}}
         {{end}}
         {{if not $fieldProcessed}}
+          {{if (eq .GetTypeName ".types.IPAddress")}}
+        out.set_allocated_{{.GetName | ToLower}}(new types::IPAddress(in.{{.GetName | ToLower}}()));
+          {{else}}
         out.set_{{.GetName | ToLower}}(in.{{.GetName | ToLower}}());
+          {{end}}
         {{end}}
       {{end}}
     } /* pds_ms_ext_to_int_{{$msgName | ToLower}} */
@@ -1317,7 +1321,11 @@
           {{end}}
         {{end}}
         {{if not $fieldProcessed}}
+          {{if (eq .GetTypeName ".types.IPAddress")}}
+        out.set_allocated_{{.GetName | ToLower}}(new types::IPAddress(in.{{.GetName | ToLower}}()));
+          {{else}}
         out.set_{{.GetName | ToLower}}(in.{{.GetName | ToLower}}());
+          {{end}}
         {{end}}
       {{end}}
     } /* pds_ms_ext_to_int_{{$msgName | ToLower}} */
@@ -1369,7 +1377,11 @@
           {{end}}
         {{end}}
         {{if not $fieldProcessed}}
+          {{if (eq .GetTypeName ".types.IPAddress")}}
+        out.set_allocated_{{.GetName | ToLower}}(new types::IPAddress(in.{{.GetName | ToLower}}()));
+          {{else}}
         out.set_{{.GetName | ToLower}}(in.{{.GetName | ToLower}}());
+          {{end}}
         {{end}}
       {{end}}
     } /* pds_ms_int_to_ext_{{$msgName | ToLower}} */
@@ -1414,7 +1426,11 @@
           {{end}}
         {{end}}
         {{if not $fieldProcessed}}
+          {{if (eq .GetTypeName ".types.IPAddress")}}
+        out.set_allocated_{{.GetName | ToLower}}(new types::IPAddress(in.{{.GetName | ToLower}}()));
+          {{else}}
         out.set_{{.GetName | ToLower}}(in.{{.GetName | ToLower}}());
+          {{end}}
         {{end}}
       {{end}}
     } /* pds_ms_int_to_ext_{{$msgName | ToLower}} */

@@ -347,7 +347,11 @@ Status
                     pds_ms::{{$filterMsg.GetName}} *pds_ms_filter = new pds_ms::{{$filterMsg.GetName}};
                             {{$fields := $filterMsg.Fields}}
                             {{range $fields}}
+                              {{if (eq .GetTypeName ".types.IPAddress")}}
+                    pds_ms_filter->set_allocated_{{.GetName | ToLower}}(new types::IPAddress(req->filter().{{.GetName | ToLower}}()));
+                              {{else}}
                     pds_ms_filter->set_{{.GetName | ToLower}}(req->filter().{{.GetName | ToLower}}());
+                              {{end}}
                             {{end}}
                     pds_ms_req.set_allocated_filter(pds_ms_filter);
                 }
@@ -382,7 +386,11 @@ Status
                         pds_ms::{{$filterMsg.GetName}} *pds_ms_filter = new pds_ms::{{$filterMsg.GetName}};
                             {{$fields := $filterMsg.Fields}}
                             {{range $fields}}
+                              {{if (eq .GetTypeName ".types.IPAddress")}}
+                        pds_ms_filter->set_allocated_{{.GetName | ToLower}}(new types::IPAddress(req->filter().{{.GetName | ToLower}}()));
+                              {{else}}
                         pds_ms_filter->set_{{.GetName | ToLower}}(req->filter().{{.GetName | ToLower}}());
+                              {{end}}
                             {{end}}
                         pds_ms_req.set_allocated_filter(pds_ms_filter);
                     }
@@ -412,7 +420,11 @@ Status
                     pds_ms::{{$filterMsg.GetName}} *pds_ms_filter = new pds_ms::{{$filterMsg.GetName}};
                             {{$fields := $filterMsg.Fields}}
                             {{range $fields}}
+                              {{if (eq .GetTypeName ".types.IPAddress")}}
+                    pds_ms_filter->set_allocated_{{.GetName | ToLower}}(new types::IPAddress(req->filter().{{.GetName | ToLower}}()));
+                              {{else}}
                     pds_ms_filter->set_{{.GetName | ToLower}}(req->filter().{{.GetName | ToLower}}());
+                              {{end}}
                             {{end}}
                     pds_ms_req.set_allocated_filter(pds_ms_filter);
                 }
