@@ -139,6 +139,28 @@ func DoAppliancePreCheck(version string) error {
 
 // PreCheck installation of given version
 func PreCheck(version string) error {
+
+	cInfo := utils.GetContainerInfo()
+	log.Infof("Precheck ContainerInfo %+v", cInfo)
+	var res string
+	for _, v := range cInfo {
+		lastIndex := strings.LastIndex(v.ImageName, ":")
+		imageName := v.ImageName[0:lastIndex]
+		tag := v.ImageName[lastIndex+1:]
+		out, err := exec.Command("docker", "images", imageName, "--format", "\"{{.Tag}}\"").Output()
+		log.Infof("Precheck Out %v, err %v imageName %v tag %v", string(out), err, imageName, tag)
+		if err != nil {
+			return fmt.Errorf("Precheck Failed to execute docker command err: %v, cmdOut %v", err, string(out))
+		}
+		if strings.Contains(string(out), tag) == false {
+			res += v.ImageName + " "
+		}
+	}
+
+	if len(res) > 0 {
+		return fmt.Errorf("Precheck failed. Following images are missing from local repo %v", res)
+	}
+
 	log.Infof("About to download image")
 
 	if utils.IsRunningOnVeniceAppl() {
