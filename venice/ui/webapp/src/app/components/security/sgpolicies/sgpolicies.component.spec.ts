@@ -81,8 +81,8 @@ describe('SgpoliciesComponent', () => {
     policy2 = new SecurityNetworkSecurityPolicy({
       meta: {
         name: 'policy2',
-        'mod-time': '2018-08-23T17:35:08.534909931Z',
-        'creation-time': '2018-08-23T17:30:08.534909931Z'
+        'mod-time': '2018-08-23T17:45:08.534909931Z',
+        'creation-time': '2018-08-23T17:40:08.534909931Z'
       }
     });
     sgPolicyObserver = new BehaviorSubject({

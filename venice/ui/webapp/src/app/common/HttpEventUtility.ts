@@ -10,9 +10,6 @@ import { EventTypes, ChangeEvent } from '@sdk/v1/services/generated/abstract.ser
  * ngOnChange will never be triggered for any bindings that use this array. Instead to detect a change
  * consumers should use an ngDoCheck with the trackBy method in this class. An example of how to do this
  * is in eventAlertPolicies and alertDestinations.
- *
- * In order to keep the array in chronological ordering, it
- * inserts new items into the beginning of the array.
  */
 export class HttpEventUtility<T> {
   private dataArray: Array<T> = [];
@@ -54,6 +51,7 @@ export class HttpEventUtility<T> {
   }
 
   public processEvents(eventChunk): ReadonlyArray<T> {
+    const kind = eventChunk.events[0].kind;
     try {
 
       this._updateRecordsMap = {};
@@ -63,6 +61,12 @@ export class HttpEventUtility<T> {
       if (events == null) {
         return;
       }
+
+      // Build current dataMap
+      this.dataMapping = {};
+      this.dataArray.forEach((s: any, i) => {
+        this.dataMapping[s.meta.name] = i;
+      });
       events.forEach(event => {
         let obj;
         if (this.objectConstructor != null) {
@@ -115,7 +119,7 @@ export class HttpEventUtility<T> {
             if (this.useResVer && obj != null && obj.meta != null && obj.meta['resource-version'] != null) {
               const resVer = parseInt(obj.meta['resource-version'], 10);
               // Get resVer of object in cache
-              const cacheObj: any = this.dataArray[this.getIndex(objName)];
+              const cacheObj: any = this.dataArray[this.dataMapping[objName]];
               let curResVer = 0;
               if (cacheObj.meta != null && cacheObj.meta['resource-version'] != null) {
                 curResVer = parseInt(cacheObj.meta['resource-version'], 10);
@@ -130,13 +134,11 @@ export class HttpEventUtility<T> {
               // to the one object we have
               index = 0;
             } else {
+              // this.f
               index = this.dataMapping[objName];
             }
             if (index != null) {
-              // We move the object to the end to maintain
-              // last modified time ordering.
-              this.deleteItem(objName);
-              this.addItem(obj, objName);
+              this.dataArray[index] = obj;
               this._updateRecordsMap[EventTypes.update].push(obj);
             } else {
               console.error('Update event received but object was not found ', JSON.stringify(event));
@@ -159,21 +161,15 @@ export class HttpEventUtility<T> {
    * @param objName Key to be used for the dataMapping
    */
   private addItem(obj: T, objName: string): void {
-    const index = this.dataArray.length;
-    this.dataArray.unshift(obj);
+    this.dataArray.push(obj);
     this.dataMapping[objName] = this.dataArray.length - 1;
   }
 
   private deleteItem(objName: string): void {
     const index = this.dataMapping[objName];
-    const spliceIndex = this.getIndex(objName);
-    this.dataArray.splice(spliceIndex, 1);
-    delete this.dataMapping[objName];
-    // Decrement index of every element before
+    this.dataArray.splice(index, 1);
+    // Decrement index of every element after
     // the one we removed in the array.
-    // since we flip indexes in getIndexes, we
-    // can just use indexes from dataMapping and
-    // remove any with a greater index.
     for (const key in this.dataMapping) {
       if (this.dataMapping.hasOwnProperty(key)) {
         const value = this.dataMapping[key];
@@ -182,16 +178,6 @@ export class HttpEventUtility<T> {
         }
       }
     }
-  }
-
-  /**
-   * Since we insert new elements in the front of the array,
-   * the mapping from objName to index is inverted, with the last
-   * element in the array having an index of 0.
-   */
-  private getIndex(objName: string): number {
-    const index = this.dataMapping[objName];
-    return this.dataArray.length - 1 - index;
   }
 
   public hasItem(objName: string): boolean {

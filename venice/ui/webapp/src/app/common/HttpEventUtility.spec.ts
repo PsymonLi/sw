@@ -136,23 +136,23 @@ describe('HttpEventUtility', () => {
     const data = serviceUtility.array;
     serviceUtility.processEvents(createEvents);
     expect(data.length).toBe(4);
-    expect(data[0].meta.name).toEqual('obj4');
-    expect(data[1].meta.name).toEqual('obj3');
-    expect(data[2].meta.name).toEqual('obj2');
-    expect(data[3].meta.name).toEqual('obj1');
+    expect(data[3].meta.name).toEqual('obj4');
+    expect(data[2].meta.name).toEqual('obj3');
+    expect(data[1].meta.name).toEqual('obj2');
+    expect(data[0].meta.name).toEqual('obj1');
 
     serviceUtility.processEvents(deleteEvent);
     expect(data.length).toBe(3);
-    expect(data[0].meta.name).toEqual('obj4');
+    expect(data[2].meta.name).toEqual('obj4');
     expect(data[1].meta.name).toEqual('obj3');
-    expect(data[2].meta.name).toEqual('obj1');
+    expect(data[0].meta.name).toEqual('obj1');
 
     serviceUtility.processEvents(putAndCreateEvents);
     expect(data.length).toBe(4);
-    expect(data[0].meta.name).toEqual('obj5');
+    expect(data[3].meta.name).toEqual('obj5');
     expect(data[1].meta.name).toEqual('obj3');
     expect(data[2].meta.name).toEqual('obj4');
-    expect(data[3].meta.name).toEqual('obj1');
+    expect(data[0].meta.name).toEqual('obj1');
     expect(data[1].meta['mod-time']).toEqual('6');
   });
 
@@ -168,32 +168,32 @@ describe('HttpEventUtility', () => {
 
     serviceUtilityFilter.processEvents(putAndCreateEvents);
     expect(data.length).toBe(2);
-    expect(data[0].meta.name).toEqual('obj5');
-    expect(data[1].meta.name).toEqual('obj1');
+    expect(data[1].meta.name).toEqual('obj5');
+    expect(data[0].meta.name).toEqual('obj1');
   });
 
   it('Should use constructor on all items', () => {
     const data = serviceUtilityConstructor.array;
     serviceUtilityConstructor.processEvents(createEvents);
     expect(data.length).toBe(4);
-    expect(data[0].data.meta.name).toEqual('obj4');
-    expect(data[1].data.meta.name).toEqual('obj3');
-    expect(data[2].data.meta.name).toEqual('obj2');
-    expect(data[3].data.meta.name).toEqual('obj1');
+    expect(data[3].data.meta.name).toEqual('obj4');
+    expect(data[2].data.meta.name).toEqual('obj3');
+    expect(data[1].data.meta.name).toEqual('obj2');
+    expect(data[0].data.meta.name).toEqual('obj1');
 
     serviceUtilityConstructor.processEvents(deleteEvent);
     expect(data.length).toBe(3);
-    expect(data[0].data.meta.name).toEqual('obj4');
+    expect(data[2].data.meta.name).toEqual('obj4');
     expect(data[1].data.meta.name).toEqual('obj3');
-    expect(data[2].data.meta.name).toEqual('obj1');
+    expect(data[0].data.meta.name).toEqual('obj1');
 
     serviceUtilityConstructor.processEvents(putAndCreateEvents);
     expect(data.length).toBe(4);
-    expect(data[0].data.meta.name).toEqual('obj5');
+    expect(data[3].data.meta.name).toEqual('obj5');
     expect(data[1].data.meta.name).toEqual('obj3');
     expect(data[2].data.meta.name).toEqual('obj4');
     expect(data[1].data.meta['mod-time']).toEqual('6');
-    expect(data[3].data.meta.name).toEqual('obj1');
+    expect(data[0].data.meta.name).toEqual('obj1');
   });
 
   it('should handle updates if service is singleton', () => {

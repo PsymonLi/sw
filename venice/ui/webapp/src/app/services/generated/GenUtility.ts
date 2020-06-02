@@ -157,7 +157,7 @@ export class GenServiceUtility {
       opts.objType = opts.objType.replace('List', '');
     } else if (opts.eventID.startsWith('Get')) {
       action = 'read';
-    } else if (opts.eventID.startsWith('Update')) {
+    } else if (opts.eventID.startsWith('Update') || opts.eventID.startsWith('Label'))  {
       action = 'update';
     } else if (opts.eventID.startsWith('Delete')) {
       if (opts.isStaging) {
@@ -286,7 +286,7 @@ export class GenServiceUtility {
             return;
           }
           observer.next({
-            data: eventUtility.array,
+            data: [...eventUtility.array],
             events: evts,
             connIsErrorState: false,
           });
