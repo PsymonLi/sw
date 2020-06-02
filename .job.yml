@@ -236,12 +236,66 @@ jobs:
     labels: ["daily"]
 #  iota/test/standalone/regression/linkmgr:
 #    labels: ["daily"]
-#  iota/test/standalone/compat/server-linux:
-#    labels: ["compat-linux"]
-#  iota/test/standalone/compat/server-esx:
-#    labels: ["compat-esx"]
-#  iota/test/standalone/os_coverage/linux:
-#    labels: ["daily"]
+  iota/test/standalone/compat/compat-server/esx6.7:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/windows2019:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel7u3:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel7u5:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel7u6:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel7u7:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel7u8:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel8u0:
+   labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/rhel8u1:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/sles12sp4:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/sles12sp5:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/sles15:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/sles15sp1:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/ubuntu18043:
+    labels: ["compat-server"]
+  iota/test/standalone/compat/compat-server/esx6.7-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/esx6.5-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/windows2019-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel7u3-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel7u5-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel7u6-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel7u7-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel7u8-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel8u0-reboot:
+   labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/rhel8u1-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/sles12sp4-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/sles12sp5-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/sles15-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/sles15sp1-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
+    labels: ["compat-server-reboot"]
+  iota/test/standalone/os_coverage/linux/.job.yml:
+    label: ["weekly"]
   iota/test/standalone/cnic_swm:
     labels: ["2xhourly"]
   iota/test/standalone/sanity/swm:

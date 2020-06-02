@@ -135,6 +135,22 @@ def Trigger(tc):
 
         api.Logger.info("PXE boot completed! Host is up.")
 
+        # check touched file is not present, to ensure this is a new OS instance
+        req = api.Trigger_CreateExecuteCommandsRequest()
+        api.Trigger_AddHostCommand(req, tc.test_node_name, "ls /naples/oldfs")
+        resp = api.Trigger(req)
+
+        if api.IsApiResponseOk(resp) is not True:
+            api.Logger.error(f"Failed to run command on host {tc.test_node_name}")
+            return api.types.status.FAILURE
+
+        cmd = resp.commands.pop()
+        if cmd.exit_code == 0:
+            api.Logger.error(f"Old file is present in FS after PXE install")
+            return api.types.status.FAILURE
+
+        api.Logger.info("PXE boot completed! Host is up.")
+
     return api.types.status.SUCCESS
 
 def Verify(tc):

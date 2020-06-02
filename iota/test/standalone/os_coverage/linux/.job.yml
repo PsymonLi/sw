@@ -10,6 +10,92 @@ queue_name: baremetal
 e2e-targets:
   # baremetal + baremetal Esx test cases
  
+# e2e-linux-bm-eth-ubuntu18:
+#   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+#   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+#   owners: ["email:dbarsky@pensando.io"]
+#   area:
+#   sub-area:
+#   feature:
+#   max-duration: 24h
+#   build-dependencies:
+#     - build-iris-arm
+#     - build-iota
+#   clusters:
+#     - image: build-17
+#       count: 2
+#       resources:
+#         servers:
+#           - type: server-a
+#           - type: hpe
+#         nic-type: naples
+#   provision:
+#       username: vm
+#       password: vm
+#       vars:
+#          BmOs: linux
+#          VmOs: linux
+#          EsxUsername: root
+#          EsxPassword: Pen0trl!
+#
+
+
+ e2e-linux-bm-eth-RHEL75:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-32
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL73:
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:dbarsky@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-33
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
  e2e-linux-bm-eth-RHEL76:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
    #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
@@ -25,11 +111,9 @@ e2e-targets:
      - image: build-9
        count: 2
        resources:
-         # Freebsd works with only server-d
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -42,7 +126,6 @@ e2e-targets:
 
  e2e-linux-bm-eth-RHEL77:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -55,11 +138,9 @@ e2e-targets:
      - image: build-28
        count: 2
        resources:
-         # Freebsd works with only server-d
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -85,11 +166,9 @@ e2e-targets:
      - image: build-29
        count: 2
        resources:
-         # Freebsd works with only server-d
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -117,7 +196,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -145,7 +223,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -158,7 +235,6 @@ e2e-targets:
 
  e2e-linux-bm-eth-SLES12SP4:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -174,7 +250,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -187,7 +262,6 @@ e2e-targets:
  
  e2e-linux-bm-eth-SLES12SP5:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -203,7 +277,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -216,7 +289,6 @@ e2e-targets:
 
  e2e-linux-bm-eth-SLES15:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -232,7 +304,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm
@@ -245,7 +316,6 @@ e2e-targets:
  
  e2e-linux-bm-eth-SLES15SP1:
    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet"]
-   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -261,7 +331,6 @@ e2e-targets:
          servers:
            - type: server-a
            - type: hpe
-         # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
          nic-type: naples
    provision:
        username: vm

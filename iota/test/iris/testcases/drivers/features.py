@@ -166,6 +166,8 @@ def Verify(tc):
     if tc.cli_resp is None:
         return api.types.status.FAILURE
 
+    sendGbps = []
+    recvGbps = []
     for cmd in tc.cli_resp.commands:
 
         if cmd.exit_code != 0:
@@ -184,10 +186,14 @@ def Verify(tc):
                 api.Logger.error("Iperf failed", iperf.Error(cmd.stdout))
                 return api.types.status.FAILURE
         elif not api.GlobalOptions.dryrun:
+            sendGbps.append(float(iperf.GetSentGbps(cmd.stdout)))
+            recvGbps.append(float(iperf.GetReceivedGbps(cmd.stdout)))
             api.Logger.info("Iperf Send Rate in Gbps ", iperf.GetSentGbps(cmd.stdout))
             api.Logger.info("Iperf Receive Rate in Gbps ", iperf.GetReceivedGbps(cmd.stdout))
 
-    api.Logger.info("iperf test successfull")
+    api.Logger.info("Iperf Send Rate in Gbps ", sendGbps)
+    api.Logger.info("Iperf Receive Rate in Gbps ", recvGbps)
+    api.Logger.info("iperf test successfull total send Gbps ", sum(sendGbps), " receive Gbps ", sum(recvGbps))
 
     return verify.driver_feature_verify(tc)
 

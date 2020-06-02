@@ -56,9 +56,8 @@ def run_command(command, node):
 
     return resp
 
-def log_lspci_err(node, device, std_err, std_out, command):
-    api.Logger.error(f"lspci exited with error on {node}:{device}")
-    api.Logger.info(f"{command}")
+def log_err(node, device, std_err, std_out, command):
+    api.Logger.error(f"{command} exited with error on {node}:{device}")
     api.Logger.info(f"stderr: {std_err}")
     api.Logger.info(f"stdout: {std_out}")
 
@@ -99,7 +98,7 @@ def checkpcirootbridge(node):
     if resp:
         cmd = resp.commands.pop()
         if cmd.exit_code != 0 or cmd.stdout == "":
-            log_lspci_err(node, pci_root_device, cmd.stderr, cmd.stdout, pci_verif_cmd)
+            log_err(node, pci_root_device, cmd.stderr, cmd.stdout, pci_verif_cmd)
             return api.types.status.CRITICAL
 
         if re.search('UncorrErr\+|FatalErr\+|TrErr\+|Train\+|RxErr\+|SDES\+|ECRC\+', cmd.stdout, re.I):
@@ -113,7 +112,7 @@ def checkpcirootbridge(node):
     if resp:
         cmd = resp.commands.pop()
         if cmd.exit_code == 0:
-            log_lspci_err(node, pci_root_device, cmd.stderr, cmd.stdout, pci_verif_cmd)
+            log_err(node, pci_root_device, cmd.stderr, cmd.stdout, pci_verif_cmd)
             return api.types.status.CRITICAL
     return api.types.status.SUCCESS
 
@@ -123,24 +122,26 @@ def checkrootporterrors(node):
     if resp:
         cmd = resp.commands.pop()
         if cmd.exit_code != 0:
-            log_lspci_err(node, "1dd8:1000", cmd.stderr, cmd.stdout, pci_verif_cmd)
+            log_err(node, "1dd8:1000", cmd.stderr, cmd.stdout, pci_verif_cmd)
             return api.types.status.CRITICAL
-    device = cmd.stdout.rstrip()
-    root_port_cmd = f"readlink /sys/bus/pci/devices/{device}"
-    resp = run_command(root_port_cmd, node)
-    if resp:
-        cmd = resp.commands.pop()
-        if cmd.exit_code != 0:
-            log_lspci_err(node, device, cmd.stderr, cmd.stdout, root_port_cmd)
-            return api.types.status.CRITICAL
-    port = cmd.stdout
-    port = port.split('/')[-2]
-    root_port_uerr_cmd = f"lspci -vvv -s {port} | grep UESta"
-    resp = run_command(root_port_uerr_cmd, node)
-    if resp:
-        cmd = resp.commands.pop()
-        if cmd.exit_code != 0:
-            log_lspci_err(node, port, cmd.stderr, cmd.stdout, root_port_uerr_cmd)
-            return api.types.status.CRITICAL
+    pcidevlist = cmd.stdout.splitlines()
+
+    for device in pcidevlist:
+        root_port_cmd = f"readlink /sys/bus/pci/devices/{device}"
+        resp = run_command(root_port_cmd, node)
+        if resp:
+            cmd = resp.commands.pop()
+            if cmd.exit_code != 0:
+                log_err(node, device, cmd.stderr, cmd.stdout, root_port_cmd)
+                return api.types.status.CRITICAL
+        port = cmd.stdout
+        port = port.split('/')[-2]
+        root_port_uerr_cmd = f"lspci -vvv -s {port} | grep UESta"
+        resp = run_command(root_port_uerr_cmd, node)
+        if resp:
+            cmd = resp.commands.pop()
+            if cmd.exit_code != 0:
+                log_err(node, port, cmd.stderr, cmd.stdout, root_port_uerr_cmd)
+                return api.types.status.CRITICAL
 
     return api.types.status.SUCCESS

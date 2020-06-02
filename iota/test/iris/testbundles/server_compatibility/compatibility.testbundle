@@ -1,26 +1,26 @@
 meta:
     name    : server
-    os      : [ linux, esx ]
+    os      : [ linux, esx, windows ]
     nics    : [ pensando ]
     targetcount : 1
 
 testcases:
 # assuming 14min per reboot
 
-    -   name    : pxe-install
-        testcase: testcases.server.pxeinstall
-        disable : False
-        ignore  : True
-        stress  : True
-        args    :
-            timeout: 360000
-            type: host
-            install_iterations: 1
+#    -   name    : pxe-install
+#        testcase: testcases.server.pxeinstall
+#        disable : False
+#        ignore  : True
+#        stress  : True
+#        args    :
+#            timeout: 360000
+#            type: host
+#            install_iterations: 1
 
     -   name    : APC-Reboot
         testcase: testcases.server.reboot
         disable : False
-        ignore  : True
+        ignore  : False
         stress  : True
         iterators :
             type            : nested
@@ -29,12 +29,12 @@ testcases:
             timeout: 360000
             type: host
             # 60% of the test cycle time spent on APC power cycle
-            reboots: 195
+            reboots: 10
 
     -   name    : IPMI-Reboot
         testcase: testcases.server.reboot
         disable : False
-        ignore  : True
+        ignore  : False
         stress  : True
         iterators :
             type            : nested
@@ -43,12 +43,12 @@ testcases:
             timeout: 360000
             type: host
             # 30% of the test cycle time spent on IPMI power cycle
-            reboots: 60
+            reboots: 10
 
     -   name    : OS-Reboot
         testcase: testcases.server.reboot
         disable : False
-        ignore  : True
+        ignore  : False
         stress  : True
         iterators :
             type            : nested
@@ -57,7 +57,7 @@ testcases:
             timeout: 360000
             type: host
             # 10% of the test cycle time spent on OS Reboot
-            reboots: 50
+            reboots: 10
 
     -   name    : CheckPcieId
         testcase: testcases.server.checkpcieid

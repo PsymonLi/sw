@@ -34,6 +34,22 @@ testcases:
             iperfthreads     :  1
             #capture_pcap : true
 
+    -   name    : UplinkIntf_PERF
+        testcase: testcases.drivers.features
+        enable  : False
+        iterators :
+            type               : nested
+           # Preserve the order of legacy value since last value is what will be used
+           # for rest of runs.
+            legacy             : ['off']
+            tx_queue_size      : [ 8 ]
+            proto              : [ 'udp', 'tcp']
+            ipproto            : [ 'v4']
+        args    :
+            test-type    : host
+            iperfthreads     :  8
+            #capture_pcap : true
+
     -   name    : IntfNames
         testcase: testcases.drivers.intf_names
         enable  : True
