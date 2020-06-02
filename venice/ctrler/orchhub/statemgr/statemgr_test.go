@@ -929,6 +929,290 @@ func TestHostMigrationCompat(t *testing.T) {
 	Assert(t, fmt.Sprintf("%v", err) == "dsc 00ae.cd00.1234 is not orchestration compatible", "wrong error message received")
 }
 
+func TestIncompatList(t *testing.T) {
+	sm, _, err := NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed creating state manager. Err : %v", err)
+		return
+	}
+
+	orchName := "prod"
+
+	dscProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "default",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:       cluster.DSCProfileSpec_FLOWAWARE.String(),
+		},
+	}
+
+	// create DSC Profile
+	sm.ctrler.DSCProfile().Create(&dscProfile)
+	AssertEventually(t, func() (bool, interface{}) {
+
+		_, err := sm.FindDSCProfile("", "default")
+		if err == nil {
+			return true, nil
+		}
+		fmt.Printf("Error find ten %v\n", err)
+		return false, nil
+	}, "Profile not found", "1ms", "1s")
+
+	err = createOrchestrator(sm, "default", orchName, nil)
+	AssertOk(t, err, "Orchestrator could not be created")
+
+	dscList := []string{"00ae.cd00.1234", "00ae.cd00.5678", "00ae.cd00.abcd"}
+	hostList := []string{"test-host-1", "test-host-2", "test-host-3"}
+
+	prodMap := make(map[string]string)
+	prodMap[utils.OrchNameKey] = orchName
+	prodMap[utils.NamespaceKey] = "dev"
+
+	for i, hostName := range hostList {
+		err := createHost(sm, "default", hostName, dscList[i], prodMap)
+		Assert(t, (err == nil), "Host could not be created")
+	}
+
+	for _, dscMac := range dscList {
+		err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+		Assert(t, (err == nil), "DistributedServiceCard could not be created")
+	}
+
+	orchMeta := api.ObjectMeta{
+		Name:      orchName,
+		Namespace: "default",
+	}
+
+	nobj, err := sm.Controller().Orchestrator().Find(&orchMeta)
+	Assert(t, err == nil, "did not find the Orchestrator object")
+	Assert(t, len(nobj.Orchestrator.Status.IncompatibleDSCs) == 0, fmt.Sprintf("Expected 0 in incompatible list, found %d", len(nobj.Orchestrator.Status.IncompatibleDSCs)))
+
+	for _, dscMac := range dscList {
+		orchMeta := api.ObjectMeta{
+			Name:      dscMac,
+			Namespace: "default",
+		}
+
+		nobj, err := sm.Controller().DistributedServiceCard().Find(&orchMeta)
+		Assert(t, err == nil, "did not find the DistributedServiceCard")
+
+		nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+		err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
+		Assert(t, err == nil, "Failed to admit DistributedServiceCard")
+	}
+
+	nobj, err = sm.Controller().Orchestrator().Find(&orchMeta)
+	Assert(t, err == nil, "did not find the Orchestrator object")
+	Assert(t, len(nobj.Orchestrator.Status.IncompatibleDSCs) == len(dscList), fmt.Sprintf("Expected %d in incompatible list, found %d", len(dscList), len(nobj.Orchestrator.Status.IncompatibleDSCs)))
+
+	// Change Profile to be FLOWAWARE_FIREWALL
+	dscProfile.Spec.FeatureSet = cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()
+	err = sm.ctrler.DSCProfile().Update(&dscProfile)
+	AssertOk(t, err, fmt.Sprintf("DSCProfile update should have worked, but failed with %v", err))
+
+	AssertEventually(t, func() (bool, interface{}) {
+		nobj, err = sm.Controller().Orchestrator().Find(&orchMeta)
+		if err != nil {
+			return false, err
+		}
+
+		if len(nobj.Orchestrator.Status.IncompatibleDSCs) != 0 {
+			return false, fmt.Errorf("Expected 0 in incompatible list, found %d", len(nobj.Orchestrator.Status.IncompatibleDSCs))
+		}
+
+		return true, nil
+	}, "1s", "10s")
+
+	// Change Profile to be FLOWAWARE
+	dscProfile.Spec.FeatureSet = cluster.DSCProfileSpec_FLOWAWARE.String()
+	err = sm.ctrler.DSCProfile().Update(&dscProfile)
+	AssertOk(t, err, fmt.Sprintf("DSCProfile update should have worked, but failed with %v", err))
+
+	AssertEventually(t, func() (bool, interface{}) {
+		nobj, err = sm.Controller().Orchestrator().Find(&orchMeta)
+		if err != nil {
+			return false, err
+		}
+
+		if len(nobj.Orchestrator.Status.IncompatibleDSCs) != len(dscList) {
+			return false, fmt.Errorf("Expected %v in incompatible list, found %d", len(dscList), len(nobj.Orchestrator.Status.IncompatibleDSCs))
+		}
+
+		return true, nil
+	}, "1s", "10s")
+
+	// Change Profile to be FLOWAWARE_FIREWALL
+	dscProfile.Spec.FeatureSet = cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()
+	err = sm.ctrler.DSCProfile().Update(&dscProfile)
+	AssertOk(t, err, fmt.Sprintf("DSCProfile update should have worked, but failed with %v", err))
+
+	AssertEventually(t, func() (bool, interface{}) {
+		nobj, err = sm.Controller().Orchestrator().Find(&orchMeta)
+		if err != nil {
+			return false, err
+		}
+
+		if len(nobj.Orchestrator.Status.IncompatibleDSCs) != 0 {
+			return false, fmt.Errorf("Expected 0 in incompatible list, found %d", len(nobj.Orchestrator.Status.IncompatibleDSCs))
+		}
+
+		return true, nil
+	}, "1s", "10s")
+
+	dscProfile2 := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "flowaware",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:       cluster.DSCProfileSpec_FLOWAWARE.String(),
+		},
+	}
+
+	// create DSC Profile
+	sm.ctrler.DSCProfile().Create(&dscProfile2)
+	AssertEventually(t, func() (bool, interface{}) {
+
+		_, err := sm.FindDSCProfile("", "flowaware")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Profile not found", "1ms", "1s")
+
+	meta := api.ObjectMeta{
+		Name:      dscList[0],
+		Namespace: "default",
+	}
+
+	dscObj, err := sm.Controller().DistributedServiceCard().Find(&meta)
+	Assert(t, err == nil, "did not find the DistributedServiceCard")
+
+	dscObj.DistributedServiceCard.Spec.DSCProfile = "flowaware"
+	err = sm.Controller().DistributedServiceCard().Update(&dscObj.DistributedServiceCard)
+	Assert(t, err == nil, "Failed to update DistributedServiceCard")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		nobj, err = sm.Controller().Orchestrator().Find(&orchMeta)
+		if err != nil {
+			return false, err
+		}
+
+		if len(nobj.Orchestrator.Status.IncompatibleDSCs) != 1 && nobj.Orchestrator.Status.IncompatibleDSCs[0] != dscList[0] {
+			return false, fmt.Errorf("Expected 1 in incompatible list, found %d. Expected DSC %v found %v", len(nobj.Orchestrator.Status.IncompatibleDSCs), dscList[0], nobj.Orchestrator.Status.IncompatibleDSCs[0])
+		}
+		return true, nil
+	}, "1s", "10s")
+}
+
+func TestIncompat2(t *testing.T) {
+	sm, _, err := NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed creating state manager. Err : %v", err)
+		return
+	}
+
+	orchName := "prod"
+
+	dscProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "default",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:       cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+		},
+	}
+
+	// create DSC Profile
+	sm.ctrler.DSCProfile().Create(&dscProfile)
+	AssertEventually(t, func() (bool, interface{}) {
+
+		_, err := sm.FindDSCProfile("", "default")
+		if err == nil {
+			return true, nil
+		}
+		fmt.Printf("Error find ten %v\n", err)
+		return false, nil
+	}, "Profile not found", "1ms", "1s")
+
+	dscList := []string{"00ae.cd00.1234", "00ae.cd00.5678", "00ae.cd00.abcd"}
+	hostList := []string{"test-host-1", "test-host-2", "test-host-3"}
+
+	prodMap := make(map[string]string)
+	prodMap[utils.OrchNameKey] = orchName
+	prodMap[utils.NamespaceKey] = "dev"
+
+	for i, hostName := range hostList {
+		err := createHost(sm, "default", hostName, dscList[i], prodMap)
+		Assert(t, (err == nil), "Host could not be created")
+	}
+
+	for _, dscMac := range dscList {
+		err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+		Assert(t, (err == nil), "DistributedServiceCard could not be created")
+	}
+
+	for _, dscMac := range dscList {
+		orchMeta := api.ObjectMeta{
+			Name:      dscMac,
+			Namespace: "default",
+		}
+
+		nobj, err := sm.Controller().DistributedServiceCard().Find(&orchMeta)
+		Assert(t, err == nil, "did not find the DistributedServiceCard")
+
+		nobj.DistributedServiceCard.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_ADMITTED.String()
+		err = sm.Controller().DistributedServiceCard().Update(&nobj.DistributedServiceCard)
+		Assert(t, err == nil, "Failed to admit DistributedServiceCard")
+	}
+
+	np := orchestration.Orchestrator{
+		TypeMeta: api.TypeMeta{Kind: "Orchestrator"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      orchName,
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: orchestration.OrchestratorSpec{},
+		Status: orchestration.OrchestratorStatus{
+			IncompatibleDSCs: dscList,
+		},
+	}
+
+	err = sm.ctrler.Orchestrator().Create(&np)
+	AssertOk(t, err, "failed to create orchestrator")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		obj, err := sm.FindObject("Orchestrator", "", "", orchName)
+		if err != nil {
+			return false, err
+		}
+
+		nobj, err := OrchestratorStateFromObj(obj)
+		if err != nil {
+			return false, err
+		}
+
+		if len(nobj.incompatibleDscs) != 0 {
+			return false, fmt.Errorf("Expected 0 in incompatible list, found %d", len(nobj.incompatibleDscs))
+		}
+
+		return true, nil
+	}, "1s", "10s")
+}
+
 func TestStateMgr(t *testing.T) {
 	sm, _, err := NewMockStateManager()
 	if err != nil {

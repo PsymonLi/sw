@@ -44,9 +44,12 @@ func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
 		return err
 	}
 	sm.instanceManagerCh <- &kvstore.WatchEvent{Object: &w.Orchestrator, Type: kvstore.Created}
-	_, err = NewOrchestratorState(w, sm)
+	o, err := NewOrchestratorState(w, sm)
+	if err != nil {
+		return err
+	}
 
-	return err
+	return o.checkAndUpdateDSCList()
 }
 
 // OnOrchestratorUpdate handles update event
@@ -103,23 +106,23 @@ func NewOrchestratorState(wrk *ctkit.Orchestrator, stateMgr *Statemgr) (*Orchest
 	return w, nil
 }
 
+func (o *OrchestratorState) updateIncompatibleList() error {
+	newList := []string{}
+	for d := range o.incompatibleDscs {
+		newList = append(newList, d)
+	}
+
+	o.Orchestrator.Status.IncompatibleDSCs = newList
+	return o.Orchestrator.Write()
+}
+
 // AddIncompatibleDSC adds DSC MAC address to orchestrator incompatible list
 func (o *OrchestratorState) AddIncompatibleDSC(dsc string) error {
 	o.Lock()
 	defer o.Unlock()
 
-	_, ok := o.incompatibleDscs[dsc]
-	if !ok {
-		o.incompatibleDscs[dsc] = true
-		if o.Orchestrator.Status.IncompatibleDSCs == nil {
-			o.Orchestrator.Status.IncompatibleDSCs = []string{}
-		}
-
-		o.Orchestrator.Status.IncompatibleDSCs = append(o.Orchestrator.Status.IncompatibleDSCs, dsc)
-		return o.Orchestrator.Write()
-	}
-
-	return nil
+	o.incompatibleDscs[dsc] = true
+	return o.updateIncompatibleList()
 }
 
 // RemoveIncompatibleDSC removes DSC from orchestrator incompatible list
@@ -127,24 +130,20 @@ func (o *OrchestratorState) RemoveIncompatibleDSC(dsc string) error {
 	o.Lock()
 	defer o.Unlock()
 
-	_, ok := o.incompatibleDscs[dsc]
-	if ok {
-		delete(o.incompatibleDscs, dsc)
-		if o.Orchestrator.Status.IncompatibleDSCs == nil {
-			return nil
+	delete(o.incompatibleDscs, dsc)
+	return o.updateIncompatibleList()
+}
+
+func (o *OrchestratorState) checkAndUpdateDSCList() error {
+	for dsc := range o.incompatibleDscs {
+		dscState := o.stateMgr.FindDSC(dsc, "")
+		// If DSC is now compatible, remove from the Incompatible list
+		if dscState.isOrchestratorCompatible() {
+			delete(o.incompatibleDscs, dsc)
 		}
-
-		newList := []string{}
-
-		for d := range o.incompatibleDscs {
-			newList = append(newList, d)
-		}
-
-		o.Orchestrator.Status.IncompatibleDSCs = newList
-		return o.Orchestrator.Write()
 	}
 
-	return nil
+	return o.updateIncompatibleList()
 }
 
 // AddIncompatibleDSCToOrch add incompat dsc to orch

@@ -99,11 +99,6 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 	dps.DSCProfile.ObjectMeta = nfwp.ObjectMeta
 	dps.DSCProfile.Status = cluster.DSCProfileStatus{}
 
-	if dps.isOrchestrationCompatible() {
-		sm.logger.Infof("Profile %v is in desired state. No need to reevaluate compatibility of DSCs.", dps.DSCProfile.Name)
-		return nil
-	}
-
 	dps.Lock()
 	defer dps.Unlock()
 	for dsc := range dps.dscs {
@@ -113,10 +108,14 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 		}
 
 		orchNameValue, ok := dscState.DistributedServiceCard.Labels[utils.OrchNameKey]
-		if ok && !dscState.isOrchestratorCompatible() {
-			sm.AddIncompatibleDSCToOrch(dscState.DistributedServiceCard.Name, orchNameValue)
-			recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-				fmt.Sprintf("DSC %v mode must be updated to work with orchestrator", dscState.DistributedServiceCard.Spec.ID), nil)
+		if ok {
+			if !dscState.isOrchestratorCompatible() {
+				sm.AddIncompatibleDSCToOrch(dscState.DistributedServiceCard.Name, orchNameValue)
+				recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
+					fmt.Sprintf("DSC %v mode must be updated to work with orchestrator", dscState.DistributedServiceCard.Spec.ID), nil)
+			} else {
+				sm.RemoveIncompatibleDSCFromOrch(dscState.DistributedServiceCard.Name, orchNameValue)
+			}
 		}
 	}
 
