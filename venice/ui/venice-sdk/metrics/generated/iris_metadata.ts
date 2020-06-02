@@ -7,28 +7,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   "displayName": "ASIC Ingress Drop Statistics",
   "fields": [
     {
-      "name": "DropMalformedPkt",
-      "displayName": "Malformed Packet Drops",
-      "description": " malformed pkt drop",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "DropParserIcrcError",
-      "displayName": "RDMA ICRC Errors",
-      "description": "number of packets dropped due to RDMA ICRC Errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
       "name": "DropParseLenError",
       "displayName": "Packet Length Errors",
       "description": "number of packets dropped due to parse length errors",
@@ -54,17 +32,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "DropInputMapping",
       "displayName": "Input Mapping Table Drops",
       "description": "number of packets dropped due to missing lookup in input mapping table",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "DropInputMappingDejavu",
-      "displayName": "Input Mapping Deja-vu Drops",
-      "description": "number of packets dropped due to dejavu in input mapping table",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -274,28 +241,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "name": "DropSrcLifMismatch",
       "displayName": "Source-LIF-mismatch Drops",
       "description": "number of packets dropped due to packets received on unexpected source LIF",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "DropVfIpLabelMismatch",
-      "displayName": "VF-IP-Label-mismatch Drops",
-      "description": "number of packets dropped due to packets VF IP Label mismatch",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "DropVfBadRrDstIp",
-      "displayName": "VF-Bad-RR-Destination-IP Drops",
-      "description": "number of packets dropped due to packets VF bad RR destination IP",
       "units": "Count",
       "baseType": "Counter",
       "tags": [

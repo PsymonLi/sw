@@ -16,12 +16,12 @@ message DropMetrics {
     };
 
     fixed64          Key                              = 1;        // Global id 0
-    delphi.Counter   drop_malformed_pkt               = 2  [(venice.metricsField) = {DisplayName: "Malformed Packet Drops" Description: " malformed pkt drop"}];
-    delphi.Counter   drop_parser_icrc_error           = 3  [(venice.metricsField) = {DisplayName: "RDMA ICRC Errors" Description: "number of packets dropped due to RDMA ICRC Errors"}];
+    delphi.Counter   drop_malformed_pkt               = 2  [json_name="-"];
+    delphi.Counter   drop_parser_icrc_error           = 3  [json_name="-"];
     delphi.Counter   drop_parse_len_error             = 4  [(venice.metricsField) = {DisplayName: "Packet Length Errors" Description: "number of packets dropped due to parse length errors"}];
     delphi.Counter   drop_hardware_error              = 5  [(venice.metricsField) = {DisplayName: "Hardware Errors" Description: "number of packets dropped due to hardware errors seen"}];
     delphi.Counter   drop_input_mapping               = 6  [(venice.metricsField) = {DisplayName: "Input Mapping Table Drops" Description: "number of packets dropped due to missing lookup in input mapping table"}];
-    delphi.Counter   drop_input_mapping_dejavu        = 7  [(venice.metricsField) = {DisplayName: "Input Mapping Deja-vu Drops" Description: "number of packets dropped due to dejavu in input mapping table"}];
+    delphi.Counter   drop_input_mapping_dejavu        = 7  [json_name="-"];
     delphi.Counter   drop_multi_dest_not_pinned_uplink  = 8  [(venice.metricsField) = {DisplayName: "Multi-dest-not-pinned-uplink Drops" Description: "number of multi-destination (multicast) packets dropped because they were not seen on right pinned uplink"}];
     delphi.Counter   drop_flow_hit                    = 9  [(venice.metricsField) = {DisplayName: "Drop-flow-hit Drops" Description: "number of packets dropped due to hitting drop flows"}];
     delphi.Counter   drop_flow_miss                   = 10  [(venice.metricsField) = {DisplayName: "Flow-miss Drops" Description: "number of packets dropped due to missing a flow-hit"}];
@@ -41,8 +41,8 @@ message DropMetrics {
     delphi.Counter   drop_tcp_invalid_responder_first_pkt = 24  [(venice.metricsField) = {DisplayName: "TCP-responder-first-packet Drops" Description: "number of TCP packets dropped due to invalid first packet seen from responder"}];
     delphi.Counter   drop_tcp_unexpected_pkt          = 25  [(venice.metricsField) = {DisplayName: "TCP-unexpected-packet Drops" Description: "number of TCP packets dropped due to unexpected packet seen"}];
     delphi.Counter   drop_src_lif_mismatch            = 26  [(venice.metricsField) = {DisplayName: "Source-LIF-mismatch Drops" Description: "number of packets dropped due to packets received on unexpected source LIF"}];
-    delphi.Counter   drop_vf_ip_label_mismatch        = 27  [(venice.metricsField) = {DisplayName: "VF-IP-Label-mismatch Drops" Description: "number of packets dropped due to packets VF IP Label mismatch"}];
-    delphi.Counter   drop_vf_bad_rr_dst_ip            = 28  [(venice.metricsField) = {DisplayName: "VF-Bad-RR-Destination-IP Drops" Description: "number of packets dropped due to packets VF bad RR destination IP"}];
+    delphi.Counter   drop_vf_ip_label_mismatch        = 27  [json_name="-"];
+    delphi.Counter   drop_vf_bad_rr_dst_ip            = 28  [json_name="-"];
     delphi.Counter   drop_icmp_frag_pkt               = 29  [(venice.metricsField) = {DisplayName: "ICMP/ICMPv6-Fragment Drops" Description: "ICMP/ICMPv6 fragmented packet drops"}];
 }
 

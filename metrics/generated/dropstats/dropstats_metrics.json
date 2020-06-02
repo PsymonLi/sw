@@ -9,20 +9,6 @@
       "DisplayName": "ASIC Ingress Drop Statistics",
       "Fields": [
         {
-          "Name": "DropMalformedPkt",
-          "DisplayName": "Malformed Packet Drops",
-          "Description": " malformed pkt drop",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropParserIcrcError",
-          "DisplayName": "RDMA ICRC Errors",
-          "Description": "number of packets dropped due to RDMA ICRC Errors",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
           "Name": "DropParseLenError",
           "DisplayName": "Packet Length Errors",
           "Description": "number of packets dropped due to parse length errors",
@@ -40,13 +26,6 @@
           "Name": "DropInputMapping",
           "DisplayName": "Input Mapping Table Drops",
           "Description": "number of packets dropped due to missing lookup in input mapping table",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropInputMappingDejavu",
-          "DisplayName": "Input Mapping Deja-vu Drops",
-          "Description": "number of packets dropped due to dejavu in input mapping table",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -180,20 +159,6 @@
           "Name": "DropSrcLifMismatch",
           "DisplayName": "Source-LIF-mismatch Drops",
           "Description": "number of packets dropped due to packets received on unexpected source LIF",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropVfIpLabelMismatch",
-          "DisplayName": "VF-IP-Label-mismatch Drops",
-          "Description": "number of packets dropped due to packets VF IP Label mismatch",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropVfBadRrDstIp",
-          "DisplayName": "VF-Bad-RR-Destination-IP Drops",
-          "Description": "number of packets dropped due to packets VF bad RR destination IP",
           "Units": "Count",
           "BaseType": "Counter"
         },

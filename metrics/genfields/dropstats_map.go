@@ -6,12 +6,9 @@ func init() {
 	globalMetricsMap["dropstats"] = make(map[string][]string)
 
 	kindToFieldNameMap["DropMetrics"] = []string{
-		"DropMalformedPkt",
-		"DropParserIcrcError",
 		"DropParseLenError",
 		"DropHardwareError",
 		"DropInputMapping",
-		"DropInputMappingDejavu",
 		"DropMultiDestNotPinnedUplink",
 		"DropFlowHit",
 		"DropFlowMiss",
@@ -31,8 +28,6 @@ func init() {
 		"DropTcpInvalidResponderFirstPkt",
 		"DropTcpUnexpectedPkt",
 		"DropSrcLifMismatch",
-		"DropVfIpLabelMismatch",
-		"DropVfBadRrDstIp",
 		"DropIcmpFragPkt",
 	}
 	globalMetricsMap["dropstats"]["DropMetrics"] = kindToFieldNameMap["DropMetrics"]

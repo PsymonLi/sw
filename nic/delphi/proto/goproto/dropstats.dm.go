@@ -13,9 +13,9 @@ type DropMetrics struct {
 
 	key uint64
 
-	DropMalformedPkt metrics.Counter
+	DropMalformedPkt metrics.Counter `structs:"-"`
 
-	DropParserIcrcError metrics.Counter
+	DropParserIcrcError metrics.Counter `structs:"-"`
 
 	DropParseLenError metrics.Counter
 
@@ -23,7 +23,7 @@ type DropMetrics struct {
 
 	DropInputMapping metrics.Counter
 
-	DropInputMappingDejavu metrics.Counter
+	DropInputMappingDejavu metrics.Counter `structs:"-"`
 
 	DropMultiDestNotPinnedUplink metrics.Counter
 
@@ -63,9 +63,9 @@ type DropMetrics struct {
 
 	DropSrcLifMismatch metrics.Counter
 
-	DropVfIpLabelMismatch metrics.Counter
+	DropVfIpLabelMismatch metrics.Counter `structs:"-"`
 
-	DropVfBadRrDstIp metrics.Counter
+	DropVfBadRrDstIp metrics.Counter `structs:"-"`
 
 	DropIcmpFragPkt metrics.Counter
 
