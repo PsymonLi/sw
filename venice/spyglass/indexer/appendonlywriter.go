@@ -49,7 +49,7 @@ func (idr *Indexer) startAppendOnlyWriter(id int,
 
 			// check if batchSize is reached and call the bulk API
 			if len(idr.requests[id]) >= batchSize {
-				helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, idr.requests[id], pushWorkers)
+				helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl, idr.requests[id], pushWorkers)
 				idr.updateIndexer(id)
 				idr.requests[id] = make([]*elastic.BulkRequest, 0, batchSize)
 			}
@@ -57,7 +57,7 @@ func (idr *Indexer) startAppendOnlyWriter(id int,
 		// timer callback that fires every index-interval
 		case <-time.After(idr.indexIntvl):
 			if len(idr.requests[id]) != 0 {
-				helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, idr.requests[id], pushWorkers)
+				helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl, idr.requests[id], pushWorkers)
 				idr.updateIndexer(id)
 				idr.requests[id] = make([]*elastic.BulkRequest, 0, batchSize)
 			}
@@ -67,7 +67,7 @@ func (idr *Indexer) startAppendOnlyWriter(id int,
 
 func helper(ctx context.Context,
 	id int, logger log.Logger, elasticClient elastic.ESClient, timeout int,
-	reqs []*elastic.BulkRequest, pushWorkers *workers) {
+	retryIntvl time.Duration, reqs []*elastic.BulkRequest, pushWorkers *workers) {
 	failedBulkCount := 0
 	// Batch any pending requests.
 	if len(reqs) > 0 {
@@ -87,10 +87,10 @@ func helper(ctx context.Context,
 
 					result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
 						return elasticClient.Bulk(ctx, reqs)
-					}, indexRetryIntvl, indexMaxRetries)
+					}, retryIntvl, indexMaxRetries)
 
 					if err != nil {
-						logger.Errorf("Writer: %d Failed to perform bulk indexing, resp: %+v err: %+v",
+						logger.Errorf("Writer: %d Retry again, failed to perform bulk indexing, resp: %+v err: %+v",
 							id, result, err)
 						failedBulkCount++
 						metric.addRetries(failedBulkCount)

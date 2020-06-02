@@ -572,7 +572,7 @@ func (e *Client) Bulk(ctx context.Context, objs []*BulkRequest) (*es.BulkRespons
 			// execute the bulk request
 			bulkResp, err := bulkReq.Do(ctxWithDeadline)
 			if err != nil {
-				e.logger.Infof("bulk request failed with err: %v, Index %s, ID %s", err, objs[0].Index, objs[0].ID)
+				e.logger.Debugf("bulk request failed with err: %v, Index %s, ID %s", err, objs[0].Index, objs[0].ID)
 				return nil, err
 			}
 

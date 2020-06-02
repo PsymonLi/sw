@@ -246,7 +246,7 @@ func (vw *vosDiskWatcher) cleanupOldObjects() {
 			if len(reqs) != 0 {
 				vw.logger.Infof("VosDiskMonitor: Calling Bulk Delete Api reached batchsize len: %d",
 					len(reqs))
-				helper(vw.ctx, vosDiskMonitorID, vw.logger, vw.elasticClient, bulkTimeout, reqs, nil)
+				helper(vw.ctx, vosDiskMonitorID, vw.logger, vw.elasticClient, bulkTimeout, indexRetryIntvl, reqs, nil)
 			}
 		}
 	}
