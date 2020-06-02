@@ -70,10 +70,10 @@
                 "_comment": "VNIC vlan_id drives the VLAN Tag towards Host"
             },
             "nat": {
-                "local_ip_lo": "2.0.0.1",
-                "local_ip_hi": "2.0.0.5",
-                "nat_ip_lo": "3.0.0.1",
-                "nat_ip_hi": "3.0.0.5",
+                "local_ip_lo": "2.0.0.0",
+                "local_ip_hi": "2.0.0.255",
+                "nat_ip_lo": "3.0.0.0",
+                "nat_ip_hi": "3.0.0.255",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         },
@@ -167,10 +167,10 @@
                 "_comment": "Here dst_slot_id would be the remote VNIC slot_id"
             },
             "nat": {
-                "local_ip_lo": "2.0.0.1",
-                "local_ip_hi": "2.0.0.5",
-                "nat_ip_lo": "3.0.0.1",
-                "nat_ip_hi": "3.0.0.5",
+                "local_ip_lo": "5.0.0.0",
+                "local_ip_hi": "5.0.0.255",
+                "nat_ip_lo": "6.0.0.0",
+                "nat_ip_hi": "6.0.0.255",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         }
@@ -180,23 +180,23 @@
         {
             "vnic_lo": "1",
             "vnic_hi": "1",
-            "sip_lo": "10.0.0.1",
-            "sip_hi": "10.0.0.4",
-            "dip_lo": "20.0.0.1",
-            "dip_hi": "20.0.0.4",
+            "sip_lo": "192.168.0.1",
+            "sip_hi": "192.168.0.4",
+            "dip_lo": "100.100.0.1",
+            "dip_hi": "100.100.0.4",
             "proto": "17",
-            "sport_lo": "100",
-            "sport_hi": "103",
+            "sport_lo": "80",
+            "sport_hi": "93",
             "dport_lo": "200",
             "dport_hi": "203"
         },
         {
             "vnic_lo": "1",
             "vnic_hi": "1",
-            "sip_lo": "30.0.0.1",
-            "sip_hi": "30.0.0.4",
-            "dip_lo": "40.0.0.1",
-            "dip_hi": "40.0.0.4",
+            "sip_lo": "192.168.1.1",
+            "sip_hi": "192.168.1.4",
+            "dip_lo": "100.100.1.1",
+            "dip_hi": "100.100.1.4",
             "proto": "6",
             "sport_lo": "300",
             "sport_hi": "303",

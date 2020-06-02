@@ -36,10 +36,15 @@ testcases:
         testcase: testcases.networking.generate_dp_policy
         enable  : True
 
-#    -   name    : Flow_Gen
-#        testcase: testcases.networking.config.flow_gen
-#        enable  : True
-#
+        # UDP/TCP/ICMP max dyn flows = 4M
+        # NAT UDP/TCP max dyn flows = 1M, ICMP = 4K 
+
+    -   name    : Flow_Gen
+        testcase: testcases.networking.config.flow_gen
+        enable  : True
+        args    :
+            max_dyn_flow_count : 64
+
 #    -   name    : Data_Path_Test
 #        testcase: testcases.networking.data_path
 #        enable  : True
