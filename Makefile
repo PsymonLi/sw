@@ -69,7 +69,7 @@ TO_INSTALL := ./vendor/github.com/pensando/grpc-gateway/protoc-gen-grpc-gateway 
 							./vendor/github.com/mgechev/revive
 
 # Lists the binaries to be containerized
-TO_DOCKERIZE ?= apigw apiserver npm cmd tpm netagent spyglass evtsmgr tsm evtsproxy vos citadel rollout vtsa orchhub vcsim pegasus perseus
+TO_DOCKERIZE ?= apigw apiserver npm cmd tpm netagent spyglass evtsmgr tsm evtsproxy vos citadel rollout vtsa orchhub vcsim pegasus perseus alertmgr
 
 GOIMPORTS_CMD := goimports -local "github.com/pensando/sw" -l
 SHELL := /bin/bash

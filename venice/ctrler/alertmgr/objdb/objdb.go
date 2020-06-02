@@ -9,7 +9,7 @@ import (
 
 // Interface for objectdb package
 type Interface interface {
-	// Add the given object to db. Return error if the object is already there.
+	// Add the given object to db. Overwrite object if it is already there.
 	Add(object Object) error
 	// Delete the given object from db. Return error if the object is not there.
 	Delete(object Object) error
@@ -55,10 +55,6 @@ func (objdb *Objdb) Add(obj Object) error {
 	if _, found := objdb.objects[kind]; !found {
 		db := make(map[string]Object)
 		objdb.objects[kind] = db
-	}
-
-	if _, found := objdb.objects[kind][key]; found {
-		return fmt.Errorf("object %v already in db", key)
 	}
 
 	objdb.objects[kind][key] = obj

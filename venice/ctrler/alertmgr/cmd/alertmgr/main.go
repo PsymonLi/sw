@@ -48,14 +48,11 @@ func main() {
 		Servers: strings.Split(*flag.String("resolver-addrs", ":"+globals.CMDResolverPort, "comma separated list of resolver URLs <IP:Port>"), ",")})
 
 	// Create the controller.
-	// TODO - uncomment after tests
-	// amgr, err := alertmgr.New(logger, rslvr)
-	_, err := alertmgr.New(logger, rslvr)
+	amgr, err := alertmgr.New(logger, rslvr)
 	if err != nil {
 		log.Fatalf("Failed to create alertmgr, err %v", err)
 	}
 
-	// TODO - uncomment after tests
-	// amgr.Run()
-	// defer amgr.Stop()
+	amgr.Run(nil)
+	defer amgr.Stop()
 }

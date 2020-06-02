@@ -669,6 +669,7 @@ func (tu *TestUtils) populateVeniceModules() {
 		globals.Npm:       {false},
 		globals.Tpm:       {false},
 		globals.Tsm:       {false},
+		globals.AlertMgr:  {false},
 	}
 
 	// remove disabled modules

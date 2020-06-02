@@ -244,6 +244,9 @@ const (
 	PerseusGRPCPort    = "9060"
 	PerseusMonitorPort = "9061"
 
+	// Alertmgr
+	AlertMgrRPCPort = "9050"
+
 	// DefaultClusterVersionName
 	DefaultVersionName = "clusterVersion"
 
