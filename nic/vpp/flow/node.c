@@ -1084,9 +1084,9 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ip6_header_t *ip60;
         ethernet_header_t *e0;
         static u8 src[16], dst[16];
-        u16 sport, dport, r_sport, r_dport;
+        u16 sport, dport, r_sport = 0, r_dport = 0;
         u8 protocol;
-        u16 lkp_id, ether_type;
+        u16 lkp_id, ether_type = 0;
 
         if (!flow_exists) {
             lkp_id = vnet_buffer(p0)->sw_if_index[VLIB_TX];

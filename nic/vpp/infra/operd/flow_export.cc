@@ -93,13 +93,12 @@ pds_operd_export_flow_l2 (uint8_t *smac,
         SDK_ASSERT(g_operd_region);
     }
 
-    if (unlikely(flow == NULL)) {
-        return;
-    }
-
     flow = (operd_flow_t *)g_operd_region->get_raw_chunk(OPERD_DECODER_VPP,
                                                          sdk::operd::INFO,
                                                          sizeof(operd_flow_t));
+    if (unlikely(flow == NULL)) {
+        return;
+    }
 
     flow->type = OPERD_FLOW_TYPE_L2;
     flow->action = allow ? OPERD_FLOW_ACTION_ALLOW : OPERD_FLOW_ACTION_DENY;
