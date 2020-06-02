@@ -29,7 +29,7 @@ testcases:
             workload_scope : [ intra-subnet, inter-subnet ]
             ipconfig : [ dhcp ]
             oper    : [ [update] ]
-            objtype : [ dhcp_relay ]
+            objtype : [ dhcp_proxy ]
 
     -   name    : DHCP_Workload_Connectivity_Update
         testcase: testcases.networking.dhcp_connectivity

@@ -1,5 +1,4 @@
 #! /usr/bin/python3
-import pdb
 import ipaddress
 from infra.common.logging import logger
 
@@ -29,6 +28,7 @@ class DhcpProxyObject(base.ConfigObjectBase):
         self.filename = getattr(dhcpspec, 'filename', None)
         self.leasetimeout = getattr(dhcpspec, 'leasetimeout', 3600)
         self.interfacemtu = dhcpspec.interfacemtu
+        self.Mutable = utils.IsUpdateSupported()
         return
 
     def __repr__(self):
@@ -45,10 +45,17 @@ class DhcpProxyObject(base.ConfigObjectBase):
         return
 
     def UpdateAttributes(self, spec):
-        self.ServerIp = self.ServerIp + 1
+        self.ntpserver = self.ntpserver + 1
+        self.serverip = self.serverip + 1
+        self.routers = self.routers + 1
+        self.dnsserver = self.dnsserver + 1
+        self.domainname = 'test.com'
+        self.filename = 'filename'
+        self.leasetimeout = 2400
+        self.interfacemtu = 1500
 
     def RollbackAttributes(self):
-        attrlist = ["ServerIp"]
+        attrlist = ["ntpserver", "serverip", "routers", "dnsserver", "domainname", "filename", "leasetimeout", "interfacemtu"]
         self.RollbackMany(attrlist)
         return
 
