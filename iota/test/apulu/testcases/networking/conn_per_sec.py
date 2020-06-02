@@ -245,16 +245,9 @@ def chooseWorkload(tc):
             tc.workload_pairs = api.GetRemoteWorkloadPairs()
 
     naples_node_name_list = api.GetNaplesHostnames()
-    random.seed(tc.seed)
 
-    while 1:
-        w1, w2 = random.choice(tc.workload_pairs)
-        tc.workload_pair = [w1, w2]
-
-        if w1.node_name in naples_node_name_list or \
-           w2.node_name in naples_node_name_list:
-            tc.workload_pair = (w1, w2)
-            return
+    w1, w2 = tc.workload_pairs[0]
+    tc.workload_pair = (w1, w2)
     return
 
 
@@ -267,7 +260,8 @@ def getTunables(tc):
     if tc.iterators.proto == 'tcp':
         tunables['pcap_file'] = "http_gzip.pcap" #mtu is less than 1K
     elif tc.iterators.proto == 'udp':
-        tunables['pcap_file'] = "chargen-udp.pcap" #"sip_0.pcap"
+        tunables['pcap_file'] = "chargen-udp.pcap" 
+
     else:
         raise Exception("Pcap file not defined for proto: %s"%
                         tc.iterators.proto)
@@ -321,9 +315,9 @@ def Setup(tc):
         tc.clientHandle.connect()
 
         api.Logger.info("reset connection...")
-        tc.serverHandle.reset()
-        tc.clientHandle.reset()
-
+        tc.serverHandle.reset(True)
+        tc.clientHandle.reset(True)
+        
         api.Logger.info("setting profile...")
         profile_path = getProfilePath(tc)
         tc.serverHandle.load_profile(getProfilePath(tc), getTunables(tc))
@@ -337,9 +331,11 @@ def Setup(tc):
 
     api.Logger.info("Clear hardware state before trex trigger...")
     flowutils.clearFlowTable(tc.workload_pairs)
-    #__clearVPPEntity("errors")
+    __clearVPPEntity("errors")
+    flowutils.clearFlowTable(tc.workload_pairs)
     __clearVPPEntity("flow statistics")
     __clearVPPEntity("flow entries")
+    __clearVPPEntity("runtime")
 
     return api.types.status.SUCCESS
 
@@ -381,7 +377,7 @@ def Trigger(tc):
         return api.types.status.FAILURE
 
 def Verify(tc):
-    udp_tolerance = 0.1
+    udp_tolerance = 0.5
     server, client = tc.workload_pair[0], tc.workload_pair[1]
 
     ret = pds_utils.isPdsAlive()
@@ -391,6 +387,8 @@ def Verify(tc):
         api.Logger.info("PDS Agent is ALIVE...")
 
     try:
+        tc.serverHandle.stop()
+        tc.clientHandle.stop()
 
         cstat = tc.clientHandle.get_stats()
         sstat = tc.serverHandle.get_stats()
@@ -503,8 +501,12 @@ def Teardown(tc):
         for obj in tc.selected_sec_profile_objs:
             obj.RollbackUpdate()
 
-    flowutils.clearFlowTable(tc.workload_pairs)
-    __clearVPPEntity("flow statistics")
-    __clearVPPEntity("flow entries")
+    tc.serverHandle.clear_profile()
+    tc.clientHandle.clear_profile()
+    tc.serverHandle.release(True)
+    tc.clientHandle.release(True)
+    #flowutils.clearFlowTable(tc.workload_pairs)
+    #__clearVPPEntity("flow statistics")
+    #__clearVPPEntity("flow entries")
     api.Logger.info("Teardown done")
     return api.types.status.SUCCESS

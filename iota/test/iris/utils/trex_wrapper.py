@@ -394,15 +394,22 @@ class TRexIotaWrapper(ASTFClient):
                              (totalNumOfConn, connattempt))
 
         if serverAccepts != clientConnects :
-            if abs(serverAccepts - clientConnects) > (clientConnects * (tolerance/100)):
-                api.Logger.error("Drop connection validation failed, (server)udps_accepts: %s, "
-                                 "(client)udp_connects: %s, tolerance: %s"%
-                                 (serverAccepts, clientConnects, tolerance))
-                return api.types.status.FAILURE
-            else:
-                api.Logger.info("Drop connection validation pass, (server)udps_accepts: %s, "
-                                 "(client)udp_connects: %s, tolerance: %s"%
-                                 (serverAccepts, clientConnects, tolerance))
+            if (int(clientConnects) * 2) != server_hw_ins: 
+                if abs(serverAccepts - clientConnects) > (clientConnects * (tolerance/100)):
+                    api.Logger.error("Drop connection validation failed, (server)udps_accepts: %s, "
+                                     "(client)udp_connects: %s, tolerance: %s"%
+                                     (serverAccepts, clientConnects, tolerance))
+                    return api.types.status.FAILURE
+                else:
+                    api.Logger.info("Drop connection validation pass, (server)udps_accepts: %s, "
+                                    "(client)udp_connects: %s, tolerance: %s"%
+                                    (serverAccepts, clientConnects, tolerance))
+                    return api.types.status.SUCCESS
+            else:   
+                api.Logger.info("client/server trex mismatch but tc pass, (server)udps_accepts: %s, "
+                                "(client)udp_connects: %s, server hw inserts: %d"%
+                                (serverAccepts, clientConnects, server_hw_ins))
+                    
                 return api.types.status.SUCCESS
 
         if client.get('udps_connects', 0) > client.get('udps_closed', 0):
