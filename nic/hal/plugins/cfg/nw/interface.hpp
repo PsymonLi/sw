@@ -295,6 +295,7 @@ typedef struct if_update_app_ctxt_s {
 
             // host-pin: lif change
             bool            lif_change;
+            hal_handle_t    lif_handle;
             lif_t           *lif;
 
             // host-pin: encap vlan change

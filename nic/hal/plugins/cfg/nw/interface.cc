@@ -1877,7 +1877,8 @@ enic_if_update_check_for_change (InterfaceSpec& spec, if_t *hal_if,
             }
             if (hal_if->lif_handle != lif_handle) {
                 app_ctxt->lif_change = true;
-                app_ctxt->lif = find_lif_by_handle(lif_handle);
+                app_ctxt->lif_handle = lif_handle;
+                // app_ctxt->lif = find_lif_by_handle(lif_handle);
                 *has_changed = true;
                 HAL_TRACE_DEBUG("updating lif hdl from {} -> {}",
                                 hal_if->lif_handle, lif_handle);
@@ -2222,6 +2223,10 @@ if_update_upd_cb (cfg_op_ctxt_t *cfg_ctxt)
     hal_if_clone = (if_t *)dhl_entry->cloned_obj;
 
     HAL_TRACE_DEBUG("update upd cb {}", hal_if->if_id);
+
+    if (app_ctxt->lif_change && app_ctxt->lif_handle != HAL_HANDLE_INVALID) {
+        app_ctxt->lif = find_lif_by_handle(app_ctxt->lif_handle);
+    }
 
     // Update MirrorSessions info, as needed
     ret = if_update_mirror_sessions(hal_if_clone, app_ctxt->mirror_spec);
@@ -2911,7 +2916,17 @@ enic_update_lif (if_t *hal_if,
                     new_lif ? new_lif->hal_handle : HAL_HANDLE_INVALID);
 
     app_ctxt.lif_change = true;
-    app_ctxt.lif = new_lif;
+    app_ctxt.lif_handle = new_lif ? new_lif->hal_handle : HAL_HANDLE_INVALID;
+    /*
+     * Populated in if_update_upd_cb. 
+     * Lif update from nicmgr and Learn in FTE thread.
+     * Both took read locks and FTE thread got lif pointer.
+     * Both released read locks in hal_handle_upd_obj but gRPC got 
+     * write lock. The new lif in fte thread is obsolete. 
+     * So passing lif handle in app_ctxt so that FTE thread will
+     * get new lif.
+     */
+    // app_ctxt.lif = new_lif;
 
     if_make_clone(hal_if, (if_t **)&dhl_entry.cloned_obj);
     *new_hal_if = (if_t *)dhl_entry.cloned_obj;
@@ -3015,9 +3030,8 @@ interface_update (InterfaceSpec& spec, InterfaceResponse *rsp)
     }
 
     if_make_clone(hal_if, (if_t **)&dhl_entry.cloned_obj);
-    if (app_ctxt.lif) {
-        ((if_t *)(dhl_entry.cloned_obj))->lif_handle = app_ctxt.lif->
-                                                       hal_handle;
+    if (app_ctxt.lif_change) {
+        ((if_t *)(dhl_entry.cloned_obj))->lif_handle = app_ctxt.lif_handle;
     }
 
     // form ctxt and call infra update object
