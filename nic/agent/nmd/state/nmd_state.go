@@ -532,6 +532,10 @@ func (n *NMD) NaplesRolloutGetHandler(r *http.Request) (interface{}, error) {
 	if val, ok := os.LookupEnv("NAPLES_PIPELINE"); ok {
 		log.Infof("NAPLES_PIPELINE is %v", val)
 		if val == globals.NaplesPipelineApollo {
+			if n.ro.InProgressOp.Op == roprotos.DSCOp_DSCNoOp {
+				log.Infof("No pending Rollout Op")
+				return n.GetDSCRolloutStatus(), nil
+			}
 			var status string
 			result := utils.ProcessPdsUpgStatus()
 			switch result {
@@ -542,7 +546,19 @@ func (n *NMD) NaplesRolloutGetHandler(r *http.Request) (interface{}, error) {
 			default:
 				status = "progressing"
 			}
-			n.UpdUpgStatus(status)
+
+			opStatus := []roprotos.DSCOpStatus{
+				{OpStatus: status, Op: 4},
+			}
+
+			st := roprotos.DSCRolloutStatusUpdate{
+				ObjectMeta: n.ro.ObjectMeta,
+				Status: roprotos.DSCRolloutStatus{
+					OpStatus: opStatus,
+				},
+			}
+			log.Infof("Apulu Rollout Get Response: %+v", st)
+			return st, nil
 		}
 	}
 	st := n.GetDSCRolloutStatus()
