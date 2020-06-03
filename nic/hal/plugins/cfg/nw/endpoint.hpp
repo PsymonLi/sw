@@ -297,6 +297,8 @@ hal_ret_t filter_delete(FilterDeleteRequest& spec,
 hal_ret_t filter_get(FilterGetRequest& spec,
                      FilterGetResponseMsg *rsp);
 
+hal_ret_t endpoint_install_swm_control_qos(ep_t *ep, if_t *ep_if, if_t *uplink_if);
+hal_ret_t endpoint_uninstall_swm_control_qos(ep_t *ep, if_t *ep_if, if_t *uplink_if);
 }    // namespace hal
 
 #endif    // __ENDPOINT_HPP__

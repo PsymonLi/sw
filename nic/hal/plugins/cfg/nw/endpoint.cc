@@ -456,12 +456,224 @@ validate_endpoint_create (EndpointSpec& spec, EndpointResponse *rsp)
     return HAL_RET_OK;
 }
 
+//-----------------------------------------------------------------------------
+// Installs mac TCAM entries for QoS traffic separation
+// - Assumptions:
+//   - Inband: 
+//     - EPs are only created with untag l2seg.
+//     - In bond, the bond's mac is created on both uplinks. Each uplink
+//       will have only one EP with bond's mac.
+//     - Its possible that 2 EPs with its mac and bond's mac can be created
+//       on an uplink and this take up 2 entries in tcam
+//   - SWM:
+//     - EPs are created for either untag or vlan but only one at a time
+//     - Since there is only one swm mac, we have to make sure only 1 entry is
+//       taken in TCAM
+//
+//  - g_hal_state
+//    - First of either (num_inband_eps + num_swm_eps):
+//      - Install Control queues
+//    - First of num_swm_eps:
+//      - Install SWM queues 
+//    - Last of either (num_inband_eps + num_swm_eps):
+//      - Remove Control queues
+//    - Last of num_swm_eps:
+//      - Remove SWM queues 
+//  - per uplink num_swm_eps:
+//    - First of swm ep on uplink
+//      - Install swm mac in TCAM
+//    - Last of swm ep on uplink
+//      - Remove swm mac in TCAM
+//
+//-----------------------------------------------------------------------------
 hal_ret_t
-endpoint_uninstall_swm_qos (void)
+endpoint_install_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
 {
     hal_ret_t ret = HAL_RET_OK;
+    uint32_t num_eps = 0;
 
-    ret = qos_swm_queue_deinit(g_hal_state->swm_qos_port_num());
+    if (enicif_is_swm(ep_if)) {
+        if (g_hal_state->num_inband_eps() + g_hal_state->num_swm_eps() == 0) {
+            ret = qos_swm_control_queue_init(true, true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to program Control Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("Control Qos queues programmed during port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+#if 0
+        } else if (g_hal_state->num_swm_eps() == 0) {
+            ret = qos_swm_control_queue_init(true, false);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to program SWM Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("SWM Qos queues programmed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+#endif
+        }
+
+        if (uplink_if->num_swm_eps == 0) {
+            // Install the mac in tcam
+            ret = qos_swm_control_add_del_mac(uplink_if->uplink_port_num,
+                                              MAC_TO_UINT64(ep->l2_key.mac_addr),
+                                              true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to program SWM Qos TCAM mac: {}, uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("SWM Qos TCAM programmed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        }
+        uplink_if->num_swm_eps++;
+        num_eps = g_hal_state->num_swm_eps();
+        g_hal_state->set_num_swm_eps(++num_eps);
+    }
+
+    if (enicif_is_inband(ep_if)) {
+        if (g_hal_state->num_inband_eps() + g_hal_state->num_swm_eps() == 0) {
+            ret = qos_swm_control_queue_init(false, true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to program Control Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("Control Qos queues programmed during port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        }
+
+        // Install the mac in tcam
+        ret = qos_swm_control_add_del_mac(uplink_if->uplink_port_num,
+                                          MAC_TO_UINT64(ep->l2_key.mac_addr),
+                                          true);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Failed to program Inband Qos TCAM mac: {}, uplink: {}. ret: {}", 
+                          macaddr2str(ep->l2_key.mac_addr),
+                          uplink_if->uplink_port_num,
+                          ret);
+            goto end;
+        }
+        HAL_TRACE_DEBUG("Inband Qos TCAM programmed for port: {}, mac: {}",
+                        uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        num_eps = g_hal_state->num_inband_eps();
+        g_hal_state->set_num_inband_eps(++num_eps);
+    }
+
+
+#if 0
+    g_hal_state->set_swm_qos_en(true);
+    g_hal_state->set_swm_qos_port_num(uplink_if->uplink_port_num);
+#endif
+
+end:
+    return ret;
+}
+
+
+hal_ret_t
+endpoint_uninstall_swm_control_qos (ep_t *ep, if_t *ep_if, if_t *uplink_if)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    uint32_t num_eps = 0;
+
+    if (enicif_is_swm(ep_if)) {
+        if (g_hal_state->num_inband_eps() + g_hal_state->num_swm_eps() == 1) {
+            ret = qos_swm_control_queue_deinit(false, true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to deprogram Control Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("Control Qos queues deprogrammed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+#if 0
+        } else if (g_hal_state->num_swm_eps() == 1) {
+            ret = qos_swm_control_queue_deinit(true, false);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to deprogram SWM Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("SWM Qos queues deprogrammed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+#endif
+        }
+
+        if (uplink_if->num_swm_eps == 1) {
+            // UnInstall the mac in tcam
+            ret = qos_swm_control_add_del_mac(uplink_if->uplink_port_num,
+                                              MAC_TO_UINT64(ep->l2_key.mac_addr),
+                                              false);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to deprogram SWM Qos TCAM mac: {}, uplink: {}. "
+                              "ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("SWM Qos TCAM deprogrammed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        }
+        uplink_if->num_swm_eps--;
+        num_eps = g_hal_state->num_swm_eps();
+        g_hal_state->set_num_swm_eps(--num_eps);
+    }
+
+    if (enicif_is_inband(ep_if)) {
+        if (g_hal_state->num_inband_eps() + g_hal_state->num_swm_eps() == 1) {
+            ret = qos_swm_control_queue_deinit(false, true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Failed to deprogram Control Qos queues mac: {}, "
+                              "uplink: {}. ret: {}", 
+                              macaddr2str(ep->l2_key.mac_addr),
+                              uplink_if->uplink_port_num,
+                              ret);
+                goto end;
+            }
+            HAL_TRACE_DEBUG("Control Qos queues deprogrammed for port: {}, mac: {}",
+                            uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        }
+
+        // UnInstall the mac in tcam
+        ret = qos_swm_control_add_del_mac(uplink_if->uplink_port_num,
+                                          MAC_TO_UINT64(ep->l2_key.mac_addr),
+                                          false);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Failed to deprogram Inband Qos TCAM mac: {}, uplink: {}. ret: {}", 
+                          macaddr2str(ep->l2_key.mac_addr),
+                          uplink_if->uplink_port_num,
+                          ret);
+            goto end;
+        }
+        HAL_TRACE_DEBUG("Inband Qos TCAM deprogrammed for port: {}, mac: {}",
+                        uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
+        num_eps = g_hal_state->num_inband_eps();
+        g_hal_state->set_num_inband_eps(--num_eps);
+    }
+
+#if 0
+    //ret = qos_swm_queue_deinit(g_hal_state->swm_qos_port_num());
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Unable to denit qos swm for port: {}. ret: {}",
                       g_hal_state->swm_qos_port_num(), ret);
@@ -471,6 +683,7 @@ endpoint_uninstall_swm_qos (void)
                     g_hal_state->swm_qos_port_num());
     g_hal_state->set_swm_qos_en(false);
     g_hal_state->set_swm_qos_port_num(0);
+#endif
 
 end:
     return ret;
@@ -495,26 +708,6 @@ endpoint_update_tunnel_if (dllist_ctxt_t *list_head, ep_t *ep, bool add)
             goto end;
         }
     }
-
-end:
-    return ret;
-}
-
-hal_ret_t
-endpoint_install_swm_qos (ep_t *ep, if_t *uplink_if)
-{
-    hal_ret_t ret = HAL_RET_OK;
-
-    ret = qos_swm_queue_init(uplink_if->uplink_port_num, MAC_TO_UINT64(ep->l2_key.mac_addr));
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Unable to swm qos init. ret: {}", ret);
-        goto end;
-    }
-    HAL_TRACE_DEBUG("SWM Qos programmed for port: {}, mac: {}",
-                    uplink_if->uplink_port_num, macaddr2str(ep->l2_key.mac_addr));
-
-    g_hal_state->set_swm_qos_en(true);
-    g_hal_state->set_swm_qos_port_num(uplink_if->uplink_port_num);
 
 end:
     return ret;
@@ -582,8 +775,22 @@ endpoint_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
 
     // Create qos for SWM EP
     if (app_ctxt->hal_if->if_type == intf::IF_TYPE_ENIC && 
-        enicif_is_swm(app_ctxt->hal_if)) {
+        (enicif_is_swm(app_ctxt->hal_if) || enicif_is_inband(app_ctxt->hal_if))) {
 
+        ret = if_enicif_get_pinned_if(app_ctxt->hal_if, &uplink_if);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to get pinned if for enic: {}",
+                          app_ctxt->hal_if->if_id);
+            goto end;
+        }
+
+        ret = endpoint_install_swm_control_qos(ep, app_ctxt->hal_if, uplink_if);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to qos programming. ret: {}", ret);
+            goto end;
+        }
+
+#if 0
         if (g_hal_state->swm_qos_en()) {
             // Remove the qos configuration
             ret = endpoint_uninstall_swm_qos();
@@ -605,6 +812,7 @@ endpoint_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
             HAL_TRACE_ERR("Unable to swm qos init. ret: {}", ret);
             goto end;
         }
+#endif
     }
 
     // Update mirror sessions
@@ -2287,7 +2495,7 @@ endpoint_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
     dhl_entry_t                 *dhl_entry = NULL;
     ep_t                        *ep = NULL;
     if_t                        *hal_if = NULL, *uplink_if = NULL;
-    uint32_t                    log_port = 0;
+    // uint32_t                    log_port = 0;
     pd::pd_func_args_t          pd_func_args = {0};
 
     SDK_ASSERT(cfg_ctxt != NULL);
@@ -2334,18 +2542,24 @@ endpoint_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
 
     hal_if = find_if_by_handle(ep->if_handle);
     if (hal_if && hal_if->if_type == intf::IF_TYPE_ENIC && 
-        enicif_is_swm(hal_if)) {
+        (enicif_is_swm(hal_if) || enicif_is_inband(hal_if))) {
         ret = if_enicif_get_pinned_if(hal_if, &uplink_if);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Unable to get pinned if for enic: {}",
                           hal_if->if_id);
             goto end;
         }
-        log_port = g_hal_state->catalog()->ifindex_to_logical_port(uplink_if->fp_port_num);
+        // log_port = g_hal_state->catalog()->ifindex_to_logical_port(uplink_if->fp_port_num);
+        ret = endpoint_uninstall_swm_control_qos(ep, hal_if, uplink_if);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to denit qos swm/inband ret: {}", ret);
+            goto end;
+        }
+#if 0
         if (g_hal_state->swm_qos_en()) {
             if (log_port == g_hal_state->swm_qos_port_num()) {
                 // Remove the qos configuration
-                ret = endpoint_uninstall_swm_qos();
+                ret = endpoint_uninstall_swm_control_qos(ep, hal_if, uplink_if);
                 if (ret != HAL_RET_OK) {
                     HAL_TRACE_ERR("Unable to denit qos swm for port: {}. ret: {}",
                                   g_hal_state->swm_qos_port_num(), ret);
@@ -2353,6 +2567,7 @@ endpoint_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
                 }
             }
         }
+#endif
     }
 
 end:

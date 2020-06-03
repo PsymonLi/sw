@@ -4602,6 +4602,14 @@ if_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
         hal_handle_cfg_db_lock(true, false);
          // Take write lock
         hal_handle_cfg_db_lock(false, true);
+
+        // Remove NCSI queues on oob
+        ret = acl_uninstall_ncsi_queues();
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to uninstall ncsi queues on oob. err {}", ret);
+            // For gtests, this may fail
+            ret = HAL_RET_OK;
+        }
     }
 
 end:
@@ -5087,6 +5095,12 @@ if_handle_lif_update (pd::pd_if_lif_update_args_t *args)
             HAL_TRACE_ERR("Unable to install ncsi nacls. err: {}", ret);
             goto end;
         }
+        // Install ncsi queues
+        ret = acl_install_ncsi_queues();
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to install ncsi queues on oob. err: {}", ret);
+            goto end;
+        }
     }
 
     pd_func_args.pd_if_lif_update = args;
@@ -5425,6 +5439,13 @@ enicif_is_swm (if_t *hal_if)
 {
     lif_t *lif = find_lif_by_handle(hal_if->lif_handle);
     return (lif && lif->type == types::LIF_TYPE_SWM);
+}
+
+bool
+enicif_is_inband (if_t *hal_if)
+{
+    lif_t *lif = find_lif_by_handle(hal_if->lif_handle);
+    return (lif && lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT);
 }
 
 hal_ret_t

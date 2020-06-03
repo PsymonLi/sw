@@ -440,6 +440,12 @@ public:
     bool is_age_debug_enabled(void) { return age_debug_en_; }
     void set_age_debug_enable(bool en) { age_debug_en_ = en; } 
 
+    uint32_t num_inband_eps(void) const { return num_inband_eps_; }
+    void set_num_inband_eps(uint32_t num) { num_inband_eps_ = num; }
+
+    uint32_t num_swm_eps(void) const { return num_swm_eps_; }
+    void set_num_swm_eps(uint32_t num) { num_swm_eps_ = num; }
+
 private:
     // following can come from shared memory or non-linux HBM memory
     // NOTE: strictly shmnot required as we can rebuild this from slab elements,
@@ -555,6 +561,8 @@ private:
     bond_mode_t   inband_bond_mode_;
     hal_handle_t  customer_default_securityprof_hdl_;
     bool          age_debug_en_;
+    uint32_t      num_inband_eps_;
+    uint32_t      num_swm_eps_;
 
 private:
     bool init_pss(hal_cfg_t *hal_cfg, shmmgr *mmgr);
@@ -955,6 +963,12 @@ public:
 
     bool is_age_debug_enabled(void) { return oper_db_->is_age_debug_enabled(); }
     void set_age_debug_enable(bool en) { return oper_db_->set_age_debug_enable(en); }
+
+    uint32_t num_inband_eps(void) const { return oper_db_->num_inband_eps(); }
+    void set_num_inband_eps(uint32_t num) { oper_db_->set_num_inband_eps(num); }
+
+    uint32_t num_swm_eps(void) const { return oper_db_->num_swm_eps(); }
+    void set_num_swm_eps(uint32_t num) { oper_db_->set_num_swm_eps(num); }
    
 private:
     // following come from shared memory or non-linux HBM memory

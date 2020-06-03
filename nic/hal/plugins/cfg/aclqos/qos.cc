@@ -2205,45 +2205,72 @@ end:
 
 
 hal_ret_t
-qos_swm_queue_init(uint32_t swm_uplink_port, uint64_t dmac)
+qos_swm_control_queue_init(bool swm_init, bool control_init)
 {
     hal_ret_t ret = HAL_RET_OK;
-    pd::pd_qos_swm_queue_init_args_t pd_qos_swm_args = {0};
+    pd::pd_qos_swm_control_queue_init_args_t pd_qos_swm_control_args = {0};
     pd::pd_func_args_t pd_func_args = {0};
 
-    HAL_TRACE_DEBUG("invoked SWM queue init for uplink port {} dmac {}",
-                    swm_uplink_port, dmac);
+    HAL_TRACE_DEBUG("invoked SWM/Control queue init, swm_init {}",
+                    swm_init);
 
-   // PD Call to init SWM queue
-    pd_qos_swm_args.swm_uplink_port = swm_uplink_port; // tmport 0, 1
-    pd_qos_swm_args.dmac = dmac;
-    pd_func_args.pd_qos_swm_queue_init = &pd_qos_swm_args;
-    ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_SWM_QUEUE_INIT, &pd_func_args);
+   // PD Call to init SWM/Control queue
+    pd_qos_swm_control_args.swm_init = swm_init;
+    pd_qos_swm_control_args.control_init = control_init;
+    pd_func_args.pd_qos_swm_control_queue_init = &pd_qos_swm_control_args;
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_INIT, &pd_func_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("FAILED to init SWM Queues for uplink {}, err {}",
-                      swm_uplink_port, ret);
+        HAL_TRACE_ERR("FAILED to init SWM/Control Queues, err {}",
+                      ret);
     }
 
     return ret;
 }
 
 hal_ret_t
-qos_swm_queue_deinit(uint32_t swm_uplink_port)
+qos_swm_control_queue_deinit(bool swm_deinit, bool control_deinit)
 {
     hal_ret_t ret = HAL_RET_OK;
-    pd::pd_qos_swm_queue_deinit_args_t pd_qos_swm_args = {0};
+    pd::pd_qos_swm_control_queue_deinit_args_t pd_qos_swm_control_args = {0};
     pd::pd_func_args_t pd_func_args = {0};
 
-    HAL_TRACE_DEBUG("invoked SWM queue de-init for uplink port {}",
-                    swm_uplink_port);
+    HAL_TRACE_DEBUG("invoked SWM/Control queue de-init, swm_deinit {}",
+                    swm_deinit);
 
-    // PD Call to de-init SWM queue
-    pd_qos_swm_args.swm_uplink_port = swm_uplink_port;  // tmport 0, 1
-    pd_func_args.pd_qos_swm_queue_deinit = &pd_qos_swm_args;
-    ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_SWM_QUEUE_DEINIT, &pd_func_args);
+    // PD Call to de-init SWM/Control queue
+    pd_qos_swm_control_args.swm_deinit = swm_deinit;
+    pd_qos_swm_control_args.control_deinit = control_deinit;
+    pd_func_args.pd_qos_swm_control_queue_deinit = &pd_qos_swm_control_args;
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_DEINIT, &pd_func_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("FAILED to deinit SWM Queues for uplink {}, err {}",
-                      swm_uplink_port, ret);
+        HAL_TRACE_ERR("FAILED to deinit SWM/Control Queues, err {}",
+                      ret);
+    }
+
+    return ret;
+}
+
+hal_ret_t
+qos_swm_control_add_del_mac(uint32_t uplink_port, uint64_t dmac, bool add)
+{
+    hal_ret_t ret = HAL_RET_OK;
+    pd::pd_qos_swm_control_add_del_mac_args_t pd_qos_swm_control_args = {0};
+    pd::pd_func_args_t pd_func_args = {0};
+
+    const char *op = (add ? "add" : "delete");
+
+    HAL_TRACE_DEBUG("invoked SWM/Control {} mac {}",
+                    op, dmac);
+
+    // PD Call to add SWM/Control mac
+    pd_qos_swm_control_args.uplink_port = uplink_port;
+    pd_qos_swm_control_args.dmac = dmac;
+    pd_qos_swm_control_args.add = add;
+    pd_func_args.pd_qos_swm_control_add_del_mac = &pd_qos_swm_control_args;
+    ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_SWM_CONTROL_ADD_DEL_MAC, &pd_func_args);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("FAILED to {} SWM/Control mac {}, err {}",
+                      op, dmac, ret);
     }
 
     return ret;

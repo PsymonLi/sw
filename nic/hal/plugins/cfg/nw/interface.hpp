@@ -142,6 +142,7 @@ typedef struct if_s {
             // doesnt have to exist. hence storing the id. have to exist only
             //    on add_l2seg_to_uplink
             l2seg_id_t          native_l2seg;       // native (vlan) on uplink (pc).
+            uint32_t            num_swm_eps;
 
             // TOOD: List of L2segs on this Uplink
             // uplink if
@@ -463,6 +464,7 @@ sdk_ret_t port_event_timer_cb (void *timer, uint32_t timer_id, void *ctxt);
 void port_event_cb (port_event_info_t *port_event_info);
 uint32_t uplink_if_get_idx (if_t *hal_if);
 bool enicif_is_swm(if_t *hal_if);
+bool enicif_is_inband(if_t *hal_if);
 hal_ret_t enicif_update_host_prom(bool add);
 hal_ret_t hal_if_reprogram_telemetry_l2seg(void);
 hal_ret_t hal_if_pick_inb_bond_active(if_t *hal_if, IfStatus new_status, bool *changed);

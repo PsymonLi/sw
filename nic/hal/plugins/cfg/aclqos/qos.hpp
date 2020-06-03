@@ -332,8 +332,9 @@ hal_ret_t qos_reset(qos::QosResetRequest& req,
                     qos::QosResetResponseMsg *rsp);
 
 // SWM related APIs
-hal_ret_t qos_swm_queue_init(uint32_t swm_uplink_port, uint64_t dmac);
-hal_ret_t qos_swm_queue_deinit(uint32_t swm_uplink_port);
+hal_ret_t qos_swm_control_queue_init(bool swm_init, bool control_init);
+hal_ret_t qos_swm_control_queue_deinit(bool swm_deinit, bool control_deinit);
+hal_ret_t qos_swm_control_add_del_mac(uint32_t uplink_port, uint64_t dmac, bool add);
 uint32_t qos_get_span_tm_oq(void);
 
 

@@ -39,6 +39,47 @@ acl_get_priority(acl_t *pi_acl)
     return pi_acl->priority;
 }
 
+// ----------------------------------------------------------------------------
+// Set up ncsi/swm queues
+// - These queues are for OOB -> ARM for differentiating
+//   - NCSI protocol packets
+//   - BMC Pass through traffic
+// ----------------------------------------------------------------------------
+hal_ret_t
+acl_install_ncsi_queues (void)
+{
+    hal_ret_t ret = HAL_RET_OK;
+
+    ret = qos_swm_control_queue_init(true, false);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed to program SWM Qos ret: {}", ret);
+        goto end;
+    }
+    HAL_TRACE_DEBUG("SWM Qos queues programmed");
+    
+end:
+    return ret;
+}
+
+// ----------------------------------------------------------------------------
+// UnInstall NCSI redirect to oob_mnic0
+// ----------------------------------------------------------------------------
+hal_ret_t
+acl_uninstall_ncsi_queues (void)
+{
+    hal_ret_t ret = HAL_RET_OK;
+
+    ret = qos_swm_control_queue_deinit(true, false);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Failed to deprogram SWM Qos ret: {}", ret);
+        goto end;
+    }
+    HAL_TRACE_DEBUG("SWM Qos queues deprogrammed");
+
+end:
+    return ret;
+}
+
 
 // ----------------------------------------------------------------------------
 // Install NCSI redirect to oob_mnic0
