@@ -355,6 +355,160 @@ threads_wait (void)
     sdk::lib::thread::walk(thread_wait_cb_, NULL);
 }
 
+// suspend the threads
+static bool
+thread_suspend_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    sdk_ret_t *ret = (sdk_ret_t *)ctxt;
+
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+            PDS_TRACE_DEBUG("Suspending thread %s", thr->name());
+            *ret = thr->suspend();
+            if (*ret != SDK_RET_OK) {
+                return true; // stop the walk
+            }
+        }
+    }
+    // continue the walk
+    return false;
+}
+
+sdk_ret_t
+threads_suspend (void)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    sdk::lib::thread::walk(thread_suspend_cb_, (void *)&ret);
+    return ret;
+}
+
+// resume the threads
+static bool
+thread_resume_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    sdk_ret_t *ret = (sdk_ret_t *)ctxt;
+
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+            PDS_TRACE_DEBUG("Resuming thread %s", thr->name());
+            *ret = thr->resume();
+            if (*ret != SDK_RET_OK) {
+                return true; // stop the walk
+            }
+        }
+    }
+    // continue the walk
+    return false;
+}
+
+sdk_ret_t
+threads_resume (void)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    sdk::lib::thread::walk(thread_resume_cb_, (void *)&ret);
+    return ret;
+}
+
+// check if the threads are ready
+static bool
+thread_ready_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    bool *rv = (bool *)ctxt;
+    bool ready;
+
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+            ready = thr->ready();
+            SDK_TRACE_DEBUG("Thread %s ready %u", thr->name(), ready);
+            if (!ready) {
+                *rv = false;
+            }
+    }
+    // continue the walk
+    return false;
+}
+
+bool
+threads_ready (void)
+{
+    bool rv = true;
+
+    sdk::lib::thread::walk(thread_ready_cb_, (void *)&rv);
+    return rv;
+}
+
+// check if the threads are suspended
+static bool
+thread_suspended_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    bool *rv = (bool *)ctxt;
+    bool suspended;
+
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+            suspended = thr->suspended();
+            SDK_TRACE_DEBUG("Thread %s suspended %u", thr->name(), suspended);
+            if (!suspended) {
+                *rv = false;
+            }
+        }
+    }
+    // continue the walk
+    return false;
+}
+
+bool
+threads_suspended (void)
+{
+    bool rv = true;
+
+    sdk::lib::thread::walk(thread_suspended_cb_, (void *)&rv);
+    return rv;
+}
+
+// check if the threads are resumed
+static bool
+thread_resumed_cb_ (sdk::lib::thread *thr, void *ctxt)
+{
+    bool *rv = (bool *)ctxt;
+    bool suspended;
+
+    if ((thr->thread_id() > PDS_THREAD_ID_MIN) &&
+        (thr->thread_id() < PDS_THREAD_ID_MAX)) {
+        // TODO periodic thread. all modules should un-register their timers
+        // and g_twheel num entries should be zero
+        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+            suspended = thr->suspended();
+            SDK_TRACE_DEBUG("Thread %s resumed %u", thr->name(), !suspended);
+            if (suspended) {   // still in suspended state
+                *rv = false;
+            }
+        }
+    }
+    // continue the walk
+    return false;
+}
+
+bool
+threads_resumed (void)
+{
+    bool rv = true;
+
+    sdk::lib::thread::walk(thread_resumed_cb_, (void *)&rv);
+    return rv;
+}
+
 // install signal handler for given signal
 sdk_ret_t
 sig_init (int signal, sig_handler_t sig_handler)

@@ -172,6 +172,8 @@ private:
     static void create_ipc_watcher(int fd, sdk::ipc::handler_cb cb,
                                    const void *ctx,
                                    const void *ipc_poll_fd_ctx);
+    static sdk_ret_t suspend_cb_(void *arg);
+    static sdk_ret_t resume_cb_(void *arg);
 };
 
 } // namespace sdk

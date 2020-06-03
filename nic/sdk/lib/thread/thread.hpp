@@ -27,6 +27,8 @@ typedef enum thread_role_e {
 // thread entry function
 //------------------------------------------------------------------------------
 typedef void *(*thread_entry_func_t)(void *ctxt);
+typedef sdk_ret_t (*thread_suspend_cb_t)(void *arg);
+typedef sdk_ret_t (*thread_resume_cb_t)(void *arg);
 
 #define SDK_MAX_THREAD_NAME_LEN        30
 
@@ -130,6 +132,17 @@ public:
         return lfq_->dequeue();
     }
 
+    void register_suspend_cb(thread_suspend_cb_t suspend_cb,
+                             thread_resume_cb_t resume_cb, void *arg) {
+        suspend_cb_ = suspend_cb;
+        resume_cb_ =  resume_cb;
+        suspend_cb_arg_ =  arg;
+    }
+    sdk_ret_t suspend(void); // called from other thread context
+    sdk_ret_t resume(void);  // called from other thread context
+    void check_and_suspend(void); // should be called from current thread context
+    bool suspended(void) { return suspended_; }
+
 private:
     char                          name_[SDK_MAX_THREAD_NAME_LEN];
     uint32_t                      thread_id_;
@@ -151,6 +164,12 @@ private:
     static uint64_t               data_cores_free_;
     static uint64_t               data_cores_mask_;
     static bool                   super_user_;
+    bool                          suspended_;
+    thread_suspend_cb_t           suspend_cb_;
+    thread_resume_cb_t            resume_cb_;
+    pthread_cond_t                suspend_cond_;
+    pthread_mutex_t               suspend_cond_lock_;
+    void                          *suspend_cb_arg_;
 
 protected:
     static thread_store_t         g_thread_store_;
@@ -160,6 +179,7 @@ protected:
         thread_role_t thread_role, uint64_t cores_mask,
         thread_entry_func_t entry_func,
         uint32_t prio, int sched_policy, bool can_yield);
+    bool suspend_;
     thread() {};
     ~thread();
 

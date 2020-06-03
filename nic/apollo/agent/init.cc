@@ -323,7 +323,8 @@ sdk_ret_t
 agent_init (std::string cfg_file, std::string memory_profile,
             std::string device_profile, std::string pipeline)
 {
-    sdk_ret_t    ret;
+    sdk_ret_t        ret;
+    sdk::lib::thread *thread;
 
     // initialize the logger instance
     logger_init();
@@ -360,6 +361,18 @@ agent_init (std::string cfg_file, std::string memory_profile,
     // install signal handlers
     pds_sig_init(pds_sig_handler);
 
+    // create a placeholder thread object for this main thread
+    thread =
+        sdk::lib::thread::factory("grpc_svc", PDS_AGENT_THREAD_ID_GRPC_SVC,
+                                  sdk::lib::THREAD_ROLE_CONTROL,
+                                  0x0, sdk::lib::thread::dummy_entry_func,
+                                  sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+                                  sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+                                  true);
+    if (!thread) {
+        PDS_TRACE_ERR("Agent thread creation failed");
+        ret = SDK_RET_ERR;
+    }
     // install atexit() handler
     atexit(atexit_handler);
     return ret;

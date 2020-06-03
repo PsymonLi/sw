@@ -529,6 +529,97 @@ linkmgr_threads_wait (void)
 }
 
 sdk_ret_t
+linkmgr_threads_suspend (void)
+{
+    int thread_id;
+    sdk_ret_t ret;
+
+    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
+        if (g_linkmgr_threads[thread_id] != NULL) {
+            ret = g_linkmgr_threads[thread_id]->suspend();
+            if (ret != SDK_RET_OK) {
+                return ret;
+            }
+        }
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+linkmgr_threads_resume (void)
+{
+    int thread_id;
+    sdk_ret_t ret;
+
+    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
+        if (g_linkmgr_threads[thread_id] != NULL) {
+            ret = g_linkmgr_threads[thread_id]->resume();
+            if (ret != SDK_RET_OK) {
+                return ret;
+            }
+        }
+    }
+    return SDK_RET_OK;
+}
+
+bool
+linkmgr_threads_ready (void)
+{
+    int thread_id;
+    bool ready;
+
+    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
+        if (g_linkmgr_threads[thread_id] != NULL) {
+            ready = g_linkmgr_threads[thread_id]->ready();
+            SDK_TRACE_DEBUG("Linkmgr thread %s ready %u",
+                            g_linkmgr_threads[thread_id]->name(), ready);
+            if (!ready) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// check for thread suspended or not
+static bool
+linkmgr_threads_suspended_ (bool status)
+{
+    int thread_id;
+    bool suspended;
+    bool rv = true;
+
+    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
+        if (g_linkmgr_threads[thread_id] != NULL) {
+            suspended = g_linkmgr_threads[thread_id]->suspended();
+            if (status) {
+                SDK_TRACE_DEBUG("Linkmgr thread %s suspended %u",
+                                g_linkmgr_threads[thread_id]->name(), suspended);
+            } else {
+                SDK_TRACE_DEBUG("Linkmgr thread %s resumed %u",
+                                g_linkmgr_threads[thread_id]->name(), !suspended);
+            }
+            if ((status ? suspended : !suspended) == false) {
+                rv = false;
+            }
+        }
+    }
+    return rv;
+}
+
+bool
+linkmgr_threads_suspended (void)
+{
+    return linkmgr_threads_suspended_(true);
+}
+
+bool
+linkmgr_threads_resumed (void)
+{
+    return linkmgr_threads_suspended_(false);
+}
+
+sdk_ret_t
 linkmgr_init (linkmgr_cfg_t *cfg)
 {
     sdk_ret_t    ret = SDK_RET_OK;

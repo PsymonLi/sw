@@ -10,6 +10,7 @@
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/svc/svc_thread.hpp"
 #include "nic/apollo/agent/trace.hpp"
+#include "nic/apollo/agent/init.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/core/mem.hpp"
@@ -91,13 +92,74 @@ svc_server_accept_cb (sdk::event_thread::io_t *io, int fd, int events)
     sdk::event_thread::io_start(cmd_read_io);
 }
 
+static sdk_ret_t
+grpc_svc_upgrade_event (bool suspend)
+{
+    sdk_ret_t ret;
+    uint32_t wait_in_ms = 10 * 1000; // 10 seconds
+    bool status;
+    sdk::lib::thread *thr =  sdk::lib::thread::find(PDS_AGENT_THREAD_ID_GRPC_SVC);
+
+    if (thr) {
+        ret = suspend ? thr->suspend() : thr->resume();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Agent gRPC service suspend/resume request failed, ret %u", ret);
+            return ret;
+        }
+        // wait for to suspended
+        while (wait_in_ms > 0) {
+            status = suspend ? thr->suspended() : !thr->suspended();
+            if (status) {
+                break;
+            }
+            usleep(1000);
+            wait_in_ms--;
+        }
+        if (wait_in_ms == 0) {
+            PDS_TRACE_ERR("Agent gRPC service suspend/resume failed due to timeout");
+            return SDK_RET_ERR;
+        }
+    }
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
+pds_upgrade_start_hdlr (sdk::upg::upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+
+    // disable grpc service in hitless upgrade. no new configs are allowed
+    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+        ret = grpc_svc_upgrade_event(true);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+    return pds_upgrade(params);
+}
+
+static sdk_ret_t
+pds_upgrade_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+
+    // enable back the grpc service if there is a upgrade failure
+    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+        ret = grpc_svc_upgrade_event(false);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+    return pds_upgrade(params);
+}
+
 static void
 upg_ev_fill (sdk::upg::upg_ev_t *ev)
 {
     ev->svc_ipc_id = PDS_AGENT_THREAD_ID_SVC_SERVER;
     strncpy(ev->svc_name, UPG_EV_PDS_AGENT_NAME, sizeof(ev->svc_name));
     ev->compat_check_hdlr = pds_upgrade;
-    ev->start_hdlr = pds_upgrade;
+    ev->start_hdlr = pds_upgrade_start_hdlr;
     ev->backup_hdlr = pds_upgrade;
     ev->prepare_hdlr = pds_upgrade;
     ev->pre_switchover_hdlr = pds_upgrade;
@@ -106,7 +168,7 @@ upg_ev_fill (sdk::upg::upg_ev_t *ev)
     ev->ready_hdlr = pds_upgrade;
     ev->config_replay_hdlr = pds_upgrade;
     ev->sync_hdlr = pds_upgrade;
-    ev->repeal_hdlr = pds_upgrade;
+    ev->repeal_hdlr = pds_upgrade_repeal_hdlr;
     ev->respawn_hdlr = pds_upgrade;
     ev->pre_respawn_hdlr = pds_upgrade;
     ev->finish_hdlr = pds_upgrade;

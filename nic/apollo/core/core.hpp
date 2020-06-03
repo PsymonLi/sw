@@ -51,6 +51,12 @@ bool is_routing_thread_ready(void);
 void stop_learn_thread(void);
 void threads_stop(void);
 void threads_wait(void);
+sdk_ret_t threads_suspend(void);
+sdk_ret_t threads_resume(void);
+bool threads_ready(void);
+bool threads_suspended(void);
+bool threads_resumed(void);
+sdk::lib::thread *thread_get(uint32_t thread_id);
 sdk_ret_t parse_global_config(string pipeline, string cfg_file,
                               pds_state *state);
 sdk_ret_t parse_pipeline_config(string pipeline, pds_state *state);

@@ -73,6 +73,7 @@ periodic_thread_run (void *ctxt)
     pthread_cleanup_push(periodic_thread_cleanup, NULL);
     // mark periodic thread as ready
     g_periodic_thread_ready = true;
+    curr_thread->set_ready(true);
     while (TRUE) {
         // wait for timer to fire
         if (sdk::lib::timerfd_wait(&timerfd_info, &missed) < 0) {

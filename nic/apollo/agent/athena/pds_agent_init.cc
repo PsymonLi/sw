@@ -62,7 +62,7 @@ spawn_grpc_reg_thread (void)
     // spawn periodic thread that does background tasks
     g_grpc_reg_thread =
         sdk::event_thread::event_thread::factory(
-            "grpc", core::PDS_AGENT_THREAD_ID_GRPC_REG,
+            "grpc", core::PDS_AGENT_THREAD_ID_GRPC_SVC,
             sdk::lib::THREAD_ROLE_CONTROL, 0x0, core::grpc_reg_thread_init,
             core::grpc_reg_thread_exit, NULL, // message
             sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),

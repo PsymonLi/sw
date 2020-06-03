@@ -289,6 +289,21 @@ EXIT_LABEL:
     return;
 }
 
+// called from other thread context to suspend the metaswitch service
+static sdk_ret_t
+pds_ms_suspend_cb (void *arg)
+{
+    // TODO
+    return SDK_RET_ERR;
+}
+
+// called from other thread context to resume the metaswitch service
+static sdk_ret_t
+pds_ms_resume_cb (void *arg)
+{
+    // TODO
+    return SDK_RET_ERR;
+}
 
 bool pds_ms_mgmt_init()
 {
@@ -298,6 +313,10 @@ bool pds_ms_mgmt_init()
         auto ctx = mgmt_state_t::thread_context();
         ctx.state()->set_nbase_thread(sdk::lib::thread::current_thread());
     }
+    // register for suspend and resume handlers
+    sdk::lib::thread::current_thread()->register_suspend_cb(pds_ms_suspend_cb,
+                                                            pds_ms_resume_cb,
+                                                            NULL);
     // Start nbase - blocking call
     nbase_init();
     return true;

@@ -7,6 +7,7 @@
 #include <limits.h>
 #include <string>
 #include "nic/apollo/include/globals.hpp"
+#include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/svc/batch.hpp"
 #include "nic/apollo/agent/svc/device.hpp"
 #include "nic/apollo/agent/svc/vpc.hpp"
@@ -46,9 +47,31 @@ using grpc::ServerContext;
 using grpc::Status;
 
 std::string g_grpc_server_addr;
+static std::unique_ptr<Server> g_server = NULL;
+static bool g_server_ready = false;
 namespace hooks {
 hooks_func_t hooks_func = NULL;
 }     // namespace hooks
+
+// called from other thread context to suspend the grpc service
+static sdk_ret_t
+grpc_svc_suspend_cb (void *arg)
+{
+    // as the caller thread is the svc(upgrade) event thread (single)
+    // we don't need protection here for accessing server_ready
+    if (g_server_ready) {
+        g_server->Shutdown();
+        g_server_ready = false;
+    }
+    return SDK_RET_OK;
+}
+
+// called from other thread context to resume the grpc service
+static sdk_ret_t
+grpc_svc_resume_cb (void *arg)
+{
+    return SDK_RET_OK;
+}
 
 static void
 svc_reg (void)
@@ -116,8 +139,10 @@ svc_reg (void)
     PDS_TRACE_INFO("gRPC server listening on ... {}",
                    g_grpc_server_addr.c_str());
     core::trace_logger()->flush();
-    std::unique_ptr<Server> server(server_builder->BuildAndStart());
-    server->Wait();
+    g_server = server_builder->BuildAndStart();
+    g_server_ready = true;
+    g_server->Wait();
+    PDS_TRACE_INFO("gRPC server exited");
 }
 
 static void inline
@@ -133,6 +158,7 @@ main (int argc, char **argv)
     string       cfg_path, cfg_file, memory_profile, device_profile, pipeline, file;
     boost::property_tree::ptree pt;
     sdk_ret_t    ret;
+    sdk::lib::thread *thr;
 
     struct option longopts[] = {
        { "config",          required_argument, NULL, 'c' },
@@ -245,12 +271,15 @@ main (int argc, char **argv)
 
     hooks::agent_init_done(pipeline.c_str());
 
-    // register for all gRPC services
-    svc_reg();
+    // regiter for suspend/resume callbacks
+    thr = sdk::lib::thread::find(core::PDS_AGENT_THREAD_ID_GRPC_SVC);
+    thr->register_suspend_cb(grpc_svc_suspend_cb, grpc_svc_resume_cb, NULL);
 
-    // wait forver
-    printf("Initialization done ...");
-    while (1);
+    // register for all gRPC services
+    while (1) {
+        svc_reg();
+        thr->check_and_suspend();
+    }
 
     return 0;
 }

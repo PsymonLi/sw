@@ -107,6 +107,11 @@ void port_store_user_config(port_args_t *port_args);
 // TODO : below better to use linkmgr events
 sdk_ret_t port_shutdown (void *port_p);
 sdk_ret_t port_pb_shutdown (void *port_p);
+sdk_ret_t linkmgr_threads_suspend(void);
+sdk_ret_t linkmgr_threads_resume(void);
+bool linkmgr_threads_suspended(void);
+bool linkmgr_threads_resumed(void);
+bool linkmgr_threads_ready(void);
 
 /// \brief  returns the number of uplinks with physical link up
 /// \return number of uplinks with physical link up

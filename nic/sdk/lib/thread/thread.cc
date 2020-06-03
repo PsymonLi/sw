@@ -53,6 +53,11 @@ thread::init(const char *name, uint32_t thread_id,
     running_ = false;
     memset(&hb_ts_, 0, sizeof(hb_ts_));
     lfq_ = lfq::factory(32);
+    suspend_cond_ = PTHREAD_COND_INITIALIZER;
+    suspend_cond_lock_ = PTHREAD_MUTEX_INITIALIZER;
+    suspend_ = false;
+    suspend_cb_ = NULL;
+    resume_cb_ = NULL;
     return 0;
 }
 
@@ -377,6 +382,71 @@ thread::walk(thread_walk_cb_t walk_cb, void *ctxt)
 end:
 
     return SDK_RET_OK;
+}
+
+void
+thread::check_and_suspend(void) {
+    while (suspend_) {
+        pthread_mutex_lock(&suspend_cond_lock_);
+        suspended_ = true;
+        pthread_cond_wait(&suspend_cond_, &suspend_cond_lock_);
+        suspended_ = false;
+        pthread_mutex_unlock(&suspend_cond_lock_);
+    }
+}
+
+sdk_ret_t
+thread::suspend(void) {
+    sdk_ret_t ret;
+
+    if (!suspend_cb_) {
+        SDK_TRACE_ERR("Failed to suspend thread %s", name_);
+        return SDK_RET_INVALID_OP;
+    }
+    SDK_TRACE_INFO("Suspend request for thread %s", name_);
+    // ignore if there is a pending request
+    if (suspend_ == true) {
+        SDK_TRACE_INFO("Suspend request for thread %s, prev request pending",
+                       name_);
+        return SDK_RET_OK;
+    }
+    suspend_ = true;
+    ret = suspend_cb_(suspend_cb_arg_);
+    if (ret != SDK_RET_OK) {
+        suspend_ = false;
+        SDK_TRACE_ERR("Suspend request for thread %s failed ret %u", name_, ret);
+        return ret;
+    }
+    return ret;
+}
+
+sdk_ret_t
+thread::resume(void) {
+    sdk_ret_t ret;
+
+    if (!resume_cb_) {
+        SDK_TRACE_ERR("Failed to resume thread %s", name_);
+        return SDK_RET_INVALID_OP;
+    }
+    SDK_TRACE_INFO("Resume request for thread %s", name_);
+    // ignore if there is no pending suspend request
+    if (suspend_ == false) {
+        SDK_TRACE_INFO("Resume request for thread %s, but not in suspended state",
+                       name_);
+        return SDK_RET_OK;
+    }
+    ret = resume_cb_(suspend_cb_arg_);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_INFO("Resume request for thread %s failed ret %u", name_, ret);
+        return ret;
+    }
+    suspend_ = false;
+    pthread_mutex_lock(&suspend_cond_lock_);
+    if (suspended_ == true) {
+        pthread_cond_signal(&suspend_cond_);
+    }
+    pthread_mutex_unlock(&suspend_cond_lock_);
+    return ret;
 }
 
 }    // namespace lib
