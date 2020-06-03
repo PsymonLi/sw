@@ -8,6 +8,7 @@ meta:
 
 packages:
     - iota.test.apulu
+    - iota.test.common
 
 image_manifest:
     spec        : images/latest.json
@@ -25,6 +26,9 @@ setup:
                 node2 : 2naples_bm_static_node2.cfgyml
         - step : config.bringup_workloads
         - step : config.add_routes
+        - step : utils.naples_upgrade.install
+          args :
+             naples_upgr_pkgs : ["naples_fw.tar"]
 
 common:
     verifs:
@@ -46,6 +50,7 @@ testbundles:
         - api_crud/dhcp_crud.testbundle
         - p4ctl/p4ctl.testbundle
         - techsupport/techsupport.testbundle
+        - naples_upgrade/upgrade_direct.testbundle
 
     regression:
         # Relative paths from iota/test/apulu/testbundles/

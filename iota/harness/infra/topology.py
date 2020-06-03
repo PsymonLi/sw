@@ -248,6 +248,18 @@ class Node(object):
            else:
               print("No static routes to configure on naples")
 
+        # Restore static-routes after naples reload/switch-over
+        def RestoreNicStaticRoutes(self):
+           if GlobalOptions.dryrun:
+               return
+           if self.__nic_static_routes:
+              for rt in self.__nic_static_routes:
+                  print("Restoring static route %s via %s " % (rt.Route, rt.Nexthop))
+                  self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
+                  self.__console_hdl.RunCmdGetOp("ip route add " + rt.Route + " via " + rt.Nexthop)
+           else:
+              print("No static routes to configure on naples")
+
         def SetNicFirewallRules(self):
             if GlobalOptions.dryrun:
                 return
@@ -573,6 +585,10 @@ class Node(object):
     def GetNicUnderlayIPs(self, device = None):
         dev = self.__get_device(device)
         return dev.GetNicUnderlayIPs()
+
+    def RestoreNicStaticRoutes(self, device = None):
+        dev = self.__get_device(device)
+        return dev.RestoreNicStaticRoutes()
 
     def Name(self):
         return self.__name
@@ -1399,6 +1415,9 @@ class Topology(object):
 
     def GetNicUnderlayIPs(self, node_name, device = None):
         return self.__nodes[node_name].GetNicUnderlayIPs(device)
+
+    def RestoreNicStaticRoutes(self, node_name, device = None):
+        return self.__nodes[node_name].RestoreNicStaticRoutes(device)
 
     def GetEsxHostIpAddress(self, node_name):
         return self.__nodes[node_name].EsxHostIpAddress()

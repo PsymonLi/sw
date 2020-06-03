@@ -35,6 +35,7 @@ import bgp_pb2_grpc as bgp_pb2_grpc
 import cp_route_pb2_grpc as cp_route_pb2_grpc
 import evpn_pb2_grpc as evpn_pb2_grpc
 import policer_pb2_grpc as policer_pb2_grpc
+import upgrade_pb2_grpc as upgrade_pb2_grpc
 
 import device_pb2 as device_pb2
 import interface_pb2 as interface_pb2
@@ -56,6 +57,7 @@ import cp_route_pb2 as cp_route_pb2
 import evpn_pb2 as evpn_pb2
 import policer_pb2 as policer_pb2
 import types_pb2 as types_pb2
+import upgrade_pb2 as upgrade_pb2
 from types_pb2 import ServiceRequestOp as ServiceOp
 
 from infra.common.glopts  import GlobalOptions
@@ -74,6 +76,7 @@ class AgentPorts(enum.IntEnum):
     NONE = 0
     NMDREST = 8888
     PDSAGENT = 11357
+    UPGRADE  = 11358
     OPERD = 11359
     PEN_OPER = 11360
 
@@ -121,7 +124,8 @@ class ObjectTypes(enum.IntEnum):
     STATIC_ROUTE = 29
     SECURITY_PROFILE = 30
     DHCP_PROXY = 31
-    MAX = 32
+    UPGRADE = 32
+    MAX = 33
 
 class OperdObjectTypes(enum.IntEnum):
     NONE = 0
@@ -430,6 +434,28 @@ class AgentClientBase:
     def Request(self, objtype, rpcname, objs):
         if GlobalOptions.dryrun: return
         return self.Stubs[objtype].DoRpc(rpcname, objs)
+
+class UpgradeClient(AgentClientBase):
+    def __init__(self, ip = None):
+        super().__init__('upg', ObjectTypes.UPGRADE, ip)
+        return
+
+    def GetAgentPort(self):
+        try:
+            port = os.environ['PDS_GRPC_PORT_UPGMGR']
+        except:
+            port = f'{AgentPorts.UPGRADE.value}'
+        return port;
+
+    def CreateStubs(self):
+        if GlobalOptions.dryrun: return
+        self.Stubs[ObjectTypes.UPGRADE] = ClientStub(upgrade_pb2_grpc.UpgSvcStub,
+                                                    self.Channel, 'Upg')
+        return
+
+    def CreateMsgReqTable(self):
+        return
+
 
 class OperdClient(AgentClientBase):
     def __init__(self, ip = None):
@@ -744,6 +770,7 @@ class PdsAgentClient(AgentClientBase):
 client = dict()
 operdclient = dict()
 penOperClient = dict()
+upgradeClient = dict()
 def Init(node, ip=None):
     global client
     global operdclient
@@ -751,3 +778,7 @@ def Init(node, ip=None):
     client[node] = PdsAgentClient(ip)
     operdclient[node] = OperdClient(ip)
     penOperClient[node] = PenOperClient(ip)
+
+def UpgradeClientInit(node, ip=None):
+    global upgradeClient
+    upgradeClient[node] = UpgradeClient(ip)

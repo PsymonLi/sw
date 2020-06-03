@@ -36,6 +36,7 @@ class NicmgrInterface:
 class Resmgr(base.ConfigObjectBase):
     #TODO: read from PDS header files / naples mem & init
     MAX_OPER = 1
+    MAX_UPGRADE = 1
     MAX_DEVICE = 1
     MAX_INTERFACE = 4
     MAX_TUNNEL = 2048 if utils.IsPipelineApulu() else 1023

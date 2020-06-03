@@ -1,0 +1,18 @@
+meta:
+    name    : upgrade_direct
+    os      : [ linux ]
+    nics    : [ pensando, mellanox, intel ]
+    targetcount : 1
+
+testcases:
+    -   name: UPGRADE_DIRECT
+        testcase    : testcases.naples_upgrade.upgrade
+        disable     : True
+        ignore      : True
+        stress      : True
+        iterators   :
+            type    : nested
+            selection : [ any ]  # upgrade all or any
+        args        :
+            naples_upgr_pkg : "naples_fw.tar"
+            upgrade_mode : "hitless"   # mode can be graceful or hitless
