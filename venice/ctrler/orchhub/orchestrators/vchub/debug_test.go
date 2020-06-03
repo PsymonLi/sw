@@ -66,7 +66,7 @@ func TestDebug(t *testing.T) {
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
 
-	vchub := LaunchVCHub(sm, orchConfig, logger)
+	vchub := LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		return vchub.watchStarted, nil
@@ -77,7 +77,7 @@ func TestDebug(t *testing.T) {
 	Assert(t, ok, "failed dvs create")
 	err = dvs.AddHost(host)
 	AssertOk(t, err, "failed to add Host to DVS")
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	defer func() {
 		vchub.Destroy(false)
@@ -92,11 +92,13 @@ func TestDebug(t *testing.T) {
 	}
 	smmock.CreateNetwork(sm, "default", "n1", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo1)
 
+	pgID := ""
 	AssertEventually(t, func() (bool, interface{}) {
-		_, err := vchub.probe.GetPenPG(defaultTestParams.TestDCName, CreatePGName("n1"), 1)
+		pg, err := vchub.probe.GetPenPG(defaultTestParams.TestDCName, CreatePGName("n1"), 1)
 		if err != nil {
 			return false, err
 		}
+		pgID = pg.Reference().Value
 		return true, nil
 	}, "failed to find PG")
 
@@ -119,7 +121,7 @@ func TestDebug(t *testing.T) {
 
 	testDebug(DebugCache, params, debugString)
 	params = map[string]string{}
-	testDebug(DebugState, params, `{"PenTestDC":{"ID":"datacenter-2","DVS":{"#Pen-DVS-PenTestDC":{"ID":"`+dvs.Obj.Self.Value+`","PGs":{"#Pen-PG-n1":{"ID":"dvportgroup-34","Network":"n1"}}}}}}`)
+	testDebug(DebugState, params, `{"PenTestDC":{"ID":"datacenter-2","DVS":{"#Pen-DVS-PenTestDC":{"ID":"`+dvs.Obj.Self.Value+`","PGs":{"#Pen-PG-n1":{"ID":"`+pgID+`","Network":"n1"}}}}}}`)
 
 	params = map[string]string{}
 	testDebug(DebugSync, params, "null")

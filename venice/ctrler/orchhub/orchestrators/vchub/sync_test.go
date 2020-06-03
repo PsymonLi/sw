@@ -1219,9 +1219,15 @@ func TestHostDeleteFromDVS(t *testing.T) {
 	AssertOk(t, err, "failed to add Host to DVS")
 
 	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x01)
+	dscMac := conv.MacString(pNicMac)
 	// Make it Pensando host
 	hostSystem.ClearNics()
-	err = hostSystem.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = hostSystem.AddNic("vmnic0", dscMac)
+
+	err = createDSCProfile(sm)
+	AssertOk(t, err, "Failed to create DSC profile")
+	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	hName2 := "Host2"
 	hostSystem2, err := dc1.AddHost(hName2)
@@ -1230,9 +1236,13 @@ func TestHostDeleteFromDVS(t *testing.T) {
 	AssertOk(t, err, "failed to add Host2 to DVS")
 
 	pNicMac2 := append(createPenPnicBase(), 0xaa, 0x00, 0x02)
+	dscMac2 := conv.MacString(pNicMac2)
 	// Make it Pensando host
 	hostSystem2.ClearNics()
-	err = hostSystem2.AddNic("vmnic0", conv.MacString(pNicMac2))
+	err = hostSystem2.AddNic("vmnic0", dscMac2)
+
+	err = createDistributedServiceCard(sm, "default", dscMac2, dscMac2, map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create vmkNIC
 	var spec types.HostVirtualNicSpec

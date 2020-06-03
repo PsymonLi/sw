@@ -3323,3 +3323,41 @@ func createURL(host, user, pass string) *url.URL {
 	u.User = url.UserPassword(user, pass)
 	return u
 }
+
+func createDSCProfile(stateMgr *smmock.Statemgr) error {
+	dscProfile := cluster.DSCProfile{
+		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "default",
+			Namespace: "",
+			Tenant:    "",
+		},
+		Spec: cluster.DSCProfileSpec{
+			DeploymentTarget: cluster.DSCProfileSpec_VIRTUALIZED.String(),
+			FeatureSet:       cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(),
+		},
+	}
+
+	// create DSC Profile
+	return stateMgr.Controller().DSCProfile().Create(&dscProfile)
+}
+
+func createDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name, id string, labels map[string]string) error {
+	np := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      name,
+			Namespace: "default",
+			Tenant:    tenant,
+			Labels:    labels,
+		},
+		Spec: cluster.DistributedServiceCardSpec{DSCProfile: "default", ID: id},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC:     name,
+			AdmissionPhase: cluster.DistributedServiceCardStatus_ADMITTED.String(),
+		},
+	}
+
+	// create a DistributedServiceCard
+	return stateMgr.Controller().DistributedServiceCard().Create(&np)
+}

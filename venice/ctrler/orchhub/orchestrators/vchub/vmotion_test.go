@@ -529,9 +529,16 @@ func TestVmotionWithWatchers(t *testing.T) {
 	AssertOk(t, err, "failed to add Host to DVS")
 
 	pNicMac := append(createPenPnicBase(), 0xbb, 0x00, 0x00)
+	dscMac := conv.MacString(pNicMac)
 	// Make it Pensando host
-	err = penHost1.AddNic("vmnic0", conv.MacString(pNicMac))
+	err = penHost1.AddNic("vmnic0", dscMac)
 	AssertOk(t, err, "failed to add pNic")
+
+	err = createDSCProfile(sm)
+	AssertOk(t, err, "Failed to create DSC profile")
+
+	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create Host2 (pensando)
 	penHost2, err := dc1.AddHost("host2")
@@ -541,9 +548,13 @@ func TestVmotionWithWatchers(t *testing.T) {
 	AssertOk(t, err, "failed to add Host to DVS")
 
 	pNicMac2 := append(createPenPnicBase(), 0xcc, 0x00, 0x00)
+	dscMac2 := conv.MacString(pNicMac2)
 	// Make it Pensando host
-	err = penHost2.AddNic("vmnic0", conv.MacString(pNicMac2))
+	err = penHost2.AddNic("vmnic0", dscMac2)
 	AssertOk(t, err, "failed to add pNic")
+
+	err = createDistributedServiceCard(sm, "default", dscMac2, dscMac2, map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create Host3 (pensando) on DC2
 	penHost3, err := dc2.AddHost("host3")
@@ -553,9 +564,13 @@ func TestVmotionWithWatchers(t *testing.T) {
 	AssertOk(t, err, "failed to add Host to DVS")
 
 	pNicMac3 := append(createPenPnicBase(), 0xdd, 0x00, 0x00)
+	dscMac3 := conv.MacString(pNicMac3)
 	// Make it Pensando host
-	err = penHost3.AddNic("vmnic0", conv.MacString(pNicMac3))
+	err = penHost3.AddNic("vmnic0", dscMac3)
 	AssertOk(t, err, "failed to add pNic")
+
+	err = createDistributedServiceCard(sm, "default", dscMac3, dscMac3, map[string]string{})
+	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	penHost1.ClearVmkNics()
 	penHost2.ClearVmkNics()

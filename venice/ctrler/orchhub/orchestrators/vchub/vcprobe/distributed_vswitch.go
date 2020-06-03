@@ -267,6 +267,10 @@ func (v *VCProbe) isOverrideEqual(portsSetting PenDVSPortSettings, ports []types
 		expMap[key] = portInfo.(*types.VmwareDistributedVirtualSwitchVlanIdSpec).VlanId
 	}
 
+	// If ports is missing entries from expMap, we don't return false.
+	// This is to handle cases where VM config gives an invalid port key.
+	// For ports that don't match override we set the value in expMap to -1
+
 	for _, port := range ports {
 		key := port.Key
 		expVlan := expMap[key]
@@ -276,11 +280,18 @@ func (v *VCProbe) isOverrideEqual(portsSetting PenDVSPortSettings, ports []types
 			if ok {
 				if expVlan == vlanSpec.VlanId {
 					delete(expMap, key)
+					continue
 				}
 			}
 		}
+		expMap[key] = -1
 	}
-	return len(expMap) == 0
+	for _, v := range expMap {
+		if v == -1 {
+			return false
+		}
+	}
+	return true
 }
 
 // UpdateDVSPortsVlan updates the port settings
@@ -289,7 +300,8 @@ func (v *VCProbe) UpdateDVSPortsVlan(dcName, dvsName string, portsSetting PenDVS
 	getAndCheck := func(client *govmomi.Client) ([]types.DVPortConfigSpec, bool, error) {
 		numPorts := len(portsSetting)
 		portKeys := make([]string, numPorts)
-		portSpecs := make([]types.DVPortConfigSpec, numPorts)
+		portSpecs := []types.DVPortConfigSpec{}
+		portUsedMap := map[string]bool{}
 
 		for k := range portsSetting {
 			portKeys = append(portKeys, k)
@@ -302,17 +314,26 @@ func (v *VCProbe) UpdateDVSPortsVlan(dcName, dvsName string, portsSetting PenDVS
 			return nil, false, err
 		}
 
-		for i := range portSpecs {
-			portSpecs[i].ConfigVersion = ports[i].Config.ConfigVersion
-			portSpecs[i].Key = ports[i].Key
-			portSpecs[i].Operation = string("edit")
-			portSpecs[i].Scope = ports[i].Config.Scope
-			setting, ok := portSpecs[i].Setting.(*types.VMwareDVSPortSetting)
-			if !ok {
-				setting = &types.VMwareDVSPortSetting{}
+		for i := range ports {
+			portConfig := types.DVPortConfigSpec{
+				ConfigVersion: ports[i].Config.ConfigVersion,
+				Key:           ports[i].Key,
+				Operation:     string("edit"),
+				Scope:         ports[i].Config.Scope,
+				Setting: &types.VMwareDVSPortSetting{
+					Vlan: portsSetting[ports[i].Key],
+				},
 			}
-			setting.Vlan = portsSetting[ports[i].Key]
-			portSpecs[i].Setting = setting
+			portSpecs = append(portSpecs, portConfig)
+			portUsedMap[ports[i].Key] = true
+		}
+
+		if len(ports) != len(portsSetting) {
+			for key := range portsSetting {
+				if _, ok := portUsedMap[key]; !ok {
+					v.Log.Errorf("GetDVSorts did not return an entry for port %s.", key)
+				}
+			}
 		}
 
 		return portSpecs, !forceWrite && v.isOverrideEqual(portsSetting, ports), nil

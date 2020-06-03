@@ -84,6 +84,29 @@ func TestIsOverrideEqual(t *testing.T) {
 			},
 			ret: false,
 		},
+		{ // test mismatching array lengths
+			spec: PenDVSPortSettings{
+				"10": &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+					VlanId: int32(10),
+				},
+				"c-88": &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+					VlanId: int32(11),
+				},
+			},
+			ports: []types.DistributedVirtualPort{
+				types.DistributedVirtualPort{
+					Key: "10",
+					Config: types.DVPortConfigInfo{
+						Setting: &types.VMwareDVSPortSetting{
+							Vlan: &types.VmwareDistributedVirtualSwitchVlanIdSpec{
+								VlanId: 10,
+							},
+						},
+					},
+				},
+			},
+			ret: true,
+		},
 	}
 
 	config := log.GetDefaultConfig("dvs_override_test")

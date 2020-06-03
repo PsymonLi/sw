@@ -525,7 +525,7 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 					mac:  macStr,
 				})
 				// assign the right override value
-				v.Log.Errorf("Reassigning vlan to have the override of %v", vlan)
+				v.Log.Errorf("Reassigning port % to have override of %v instead of %s", port, vlan, overrides[port].vlan)
 			}
 			delete(overrides, port)
 		}
