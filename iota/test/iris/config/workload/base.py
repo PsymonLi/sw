@@ -451,6 +451,7 @@ def __get_l2segment_vlan_for_endpoint(ep):
     return objects[0].spec.vlan_id
 
 def AddConfigWorkloads(req, target_node = None):
+    mva = api.GetMultiVlanAllocators()
     third_party_workload_count = 0
     ep_objs = netagent_api.QueryConfigs(kind='Endpoint')
     ep_ref = None
@@ -498,7 +499,10 @@ def AddConfigWorkloads(req, target_node = None):
 
         elif api.GetTestbedNicMode(node_name) == 'classic':
             global classic_vlan_map
-            node_vlan = classic_vlan_map.get(node_name)
+            if mva:
+                node_vlan = api.Testbed_AllocateVlan()
+            else:
+                node_vlan = classic_vlan_map.get(node_name)
             if not node_vlan:
                 node_vlan = NodeVlan(node_name)
                 classic_vlan_map[node_name] = node_vlan

@@ -141,10 +141,6 @@ def RestoreNodes(req):
     Logger.debug("Restore Nodes:")
     return __rpc(req, gl_topo_svc_stub.RestoreNodes)
 
-def DoSwitchOperation(req):
-    Logger.debug("Doing Switch operation:")
-    return __rpc(req, gl_topo_svc_stub.DoSwitchOperation)
-
 def IsWorkloadRunning(wl):
     return store.IsWorkloadRunning(wl)
 
@@ -244,7 +240,6 @@ def Trigger(req):
         req_cmd.exit_code = resp_cmd.exit_code
         req_cmd.timed_out = resp_cmd.timed_out
     return resp
-
 
 def DoSwitchOperation(req):
     Logger.debug("Doing Switch operation:")
@@ -1206,4 +1201,7 @@ def UpdateNaplesPipeline(node, nicNumber, version, pipeline, mode):
     pl = {'node':node, 'nicNumber':nicNumber, 'version':version, 'pipeline':pipeline, 'mode':mode}
     pl = [parser.Dict2Object(pl)]
     store.GetTestbed().GetCurrentTestsuite().UpdateNaplesPipelines(pl)
+
+def GetMultiVlanAllocators():
+    return store.GetTestbed().GetMultiVlanAllocators()
 

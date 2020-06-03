@@ -401,10 +401,10 @@ class TestSuite:
             ret = self.__topology.Setup(self)
             if ret != types.status.SUCCESS:
                 return ret
+        store.GetTestbed().SetupVlanGroups()
         ret = self.__setup_config()
         if ret != types.status.SUCCESS:
             return ret
-
         self.__setup_complete = True
         return types.status.SUCCESS
 
@@ -654,8 +654,6 @@ class TestSuite:
         if status != types.status.SUCCESS:
             self.__timer.Stop()
             return status
-
-        # self.UpdateNaplesPipelines()
 
         self.result = self.__execute_testbundles()
         self.__update_stats()

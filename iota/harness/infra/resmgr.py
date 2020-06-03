@@ -172,6 +172,40 @@ class TestbedVlanManager(object):
         self.__count = len(self.__vlans)
 
 
+class TestbedVlanManagerByNodeNicPort(object):
+    def __init__(self, groupId, vlans):
+        self.__groupId = groupId
+        self.__vlans = vlans
+        self.__pool = None
+        self.__count = 0
+        self.__members = {}
+        self.Reset()
+
+    def Alloc(self):
+        return next(self.__pool)
+
+    def Count(self):
+        return self.__count
+
+    def Reset(self):
+        self.__pool = iter(self.__vlans)
+        self.__count = len(self.__vlans)
+
+    def GetId(self):
+        return self.__groupId
+
+    def getMembers(self):
+        return self.__members
+ 
+    def addMember(self, node, nic, port):
+        key = "{0}-{1}-{2}".format(node, nic, port)
+        self.__members[key] = {"node":node, "nic":nic, "port":port}
+
+    def isMember(self, node, nic, port):
+        key = "{0}-{1}-{2}".format(node, nic, port)
+        return key in self.__members
+
+
 TESTBED_NUM_PORTS = 32000
 class TestbedPortAllocator():
     def __init__(self, start = 6000):

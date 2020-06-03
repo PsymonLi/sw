@@ -567,6 +567,9 @@ class _Testbed:
         self.__tbid = getattr(self.__tbspec, 'TestbedID', 1)
         self.__vlan_base = getattr(self.__tbspec, 'TestbedVlanBase', 1)
         self.__vlan_allocator = resmgr.TestbedVlanAllocator(self.__vlan_base, self.curr_ts.GetDefaultNicMode()) 
+        #TODO: merge single allocator into list below
+        self.__multi_vlan_allocators = []
+        self.__nextVlanAllocator = 0
         self.__image_manifest_file = self.curr_ts.GetImageManifestFile()
         resp = None
         msg = self.__prepare_TestBedMsg(self.curr_ts)
@@ -605,7 +608,6 @@ class _Testbed:
                 tbvlans.append(vlan)
             self.__vlan_allocator = resmgr.TestbedVlanManager(tbvlans)
         self.__instpool = copy.deepcopy(self.__tbspec.Instances)
-
 
         return types.status.SUCCESS
 
@@ -701,7 +703,14 @@ class _Testbed:
         self.__vlan_allocator = resmgr.TestbedVlanManager(vlans)
 
     def AllocateVlan(self):
-        return self.__vlan_allocator.Alloc()
+        mva = api.GetMultiVlanAllocators()
+        if mva:
+            alloc = self.__getNextVlanAllocator()
+            if not alloc:
+                raise Exception("failed to find vlan allocator")
+            return alloc.Alloc()
+        else:
+            return self.__vlan_allocator.Alloc()
 
     def ResetVlanAlloc(self):
         self.__vlan_allocator.Reset()
@@ -764,7 +773,6 @@ class _Testbed:
         switch_ips = {}
         for instance in self.__tbspec.Instances:
             self.__prepare_SwitchMsg(setMsg, instance, switch_ips, setup_qos=True)
-
         vlans = self.GetVlanRange()
         for ip, switch in switch_ips.items():
              setMsg.vlan_config.unset = False
@@ -775,6 +783,78 @@ class _Testbed:
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
         setMsg = topo_pb2.SwitchMsg()
+        return types.status.SUCCESS
+
+    def __addMultiVlanAllocator(self, alloc):
+        self.__multi_vlan_allocators.append(alloc)
+
+    def __getVlanAllocatorByPort(self, node, nic, port):
+        for alloc in self.__multi_vlan_allocators:
+            if alloc.isMember(node, nic, port):
+                return alloc
+
+    def __getVlanAllocatorByGroupId(self, groupId):
+        for alloc in self.__multi_vlan_allocators:
+            if alloc.GetId() == groupId:
+                return alloc
+
+    def __getNextVlanAllocator(self):
+        self.__nextVlanAllocator += 1
+        if self.__nextVlanAllocator >= len(self.__multi_vlan_allocators):
+            self.__nextVlanAllocator = 0
+
+    def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset):
+        setMsg = topo_pb2.SwitchMsg()
+        setMsg.op = topo_pb2.VLAN_CONFIG
+        switch_ctx = setMsg.data_switches.add()
+        switch_ctx.username = username
+        switch_ctx.password = password
+        switch_ctx.ip = switchIp
+        switch_ctx.speed = topo_pb2.DataSwitch.Speed_auto
+        switch_ctx.igmp_disabled = True
+        switch_ctx.ports.append("e1/" + str(port))
+        setMsg.vlan_config.unset = unset
+        setMsg.vlan_config.vlan_range = vlans
+        setMsg.vlan_config.native_vlan = self.GetNativeVlan()
+        return api.DoSwitchOperation(setMsg)
+
+    def __splitVlans(self, vlans, size):
+        final = []
+        for x in range(0, len(vlans), size):
+            #final.append(self.__buildVlanRangeString(vlans[x:x+size]))
+            final.append(vlans[x:x+size])
+        return final
+
+    def __buildVlanRangeString(self, vlans):
+        return "{0}-{1}".format(vlans[0], vlans[-1])
+
+    def GetMultiVlanAllocators(self):
+        return self.__multi_vlan_allocators
+
+    def SetupVlanGroups(self):
+        topo = store.GetTopology()
+        vmps = topo.GetVlanMappings()
+        if vmps:
+            origVlans = store.GetTestbed()._Testbed__vlan_allocator._TestbedVlanManager__vlans[1:]
+            origVlanRangeString = self.__buildVlanRangeString(origVlans)
+            vmo = int(len(origVlans)/len(vmps.items()))
+            vlans = self.__splitVlans(origVlans, vmo)
+            for x, (vgId, vmp) in enumerate(vmps.items()):
+                vlanRange = vlans[x]
+                vlanRangeString = self.__buildVlanRangeString(vlanRange)
+                for entry in vmp:
+                    if not self.__getVlanAllocatorByPort(entry.node, entry.nic, entry.port):
+                        allocator = resmgr.TestbedVlanManagerByNodeNicPort(vgId,vlanRange)
+                        allocator.addMember(entry.node, entry.nic, entry.port)
+                        self.__addMultiVlanAllocator(allocator)
+                    node = topo.GetNodeByName(entry.node) #this returns topo node object
+                    port = node.GetPortByIndex(entry.nic, entry.port)
+                    self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),
+                                              origVlanRangeString, port.get("SwitchUsername"), 
+                                              port.get("SwitchPassword"), True)
+                    self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),
+                                              vlanRangeString, port.get("SwitchUsername"), 
+                                              port.get("SwitchPassword"), False)
         return types.status.SUCCESS
 
 __testbed = _Testbed()

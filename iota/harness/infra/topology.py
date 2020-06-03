@@ -499,6 +499,19 @@ class Node(object):
                 return nic
         raise Exception("failed to find nic number {0}. len of devices is {1}".format(nicNumber, len(nics)))
 
+    def GetPortByIndex(self, nicNum, portNum):
+        with open(GlobalOptions.testbed_json, "r") as warmdFile:
+            warmd = json.load(warmdFile)
+            instId = self.GetNodeInfo()["InstanceID"]
+            for node in warmd['Instances']:
+                if instId == node.get('ID',None):
+                    for nic in node.get('Nics',[]):
+                        ports = nic.get('Ports',[])
+                        if len(ports) < portNum:
+                            raise Exception("port number {0} is > len of port list ({1})".format(portNum, len(ports)))
+                        return ports[portNum]
+        raise Exception("failed to find port index in warmd.json for node {0}, nic {1}, port {2}".format(topoNode, nicNum, port))
+
     def GetApcInfo(self):
         return self.__apcInfo
 
@@ -953,6 +966,12 @@ class Topology(object):
                     nics.append(nic)
         return nics
 
+    def GetNodeByName(self, nodeName):
+        node = [node for node in self.__nodes.values() if node._Node__name == nodeName]
+        if node == []:
+            return None
+        return node[0]
+
     def IpmiNodes(self, node_names, ipmiMethod, useNcsi=False):
         if ipmiMethod not in self.IpmiMethods:
             raise ValueError('ipmiMethod must be one of {0}'.format(self.IpmiMethods))
@@ -1281,7 +1300,6 @@ class Topology(object):
             for vlan in resp.allocated_vlans:
                 tbvlans.append(vlan)
             store.GetTestbed().SetVlans(tbvlans)
-
         return types.status.SUCCESS
 
     def __convert_to_roles(self, nics, mode=None):
@@ -1473,3 +1491,8 @@ class Topology(object):
 
     def GetBondIp(self, node_name):
         return self.__nodes[node_name].GetBondIp()
+
+    def GetVlanMappings(self):
+        if hasattr(self.__spec, "vlan_mappings"):
+            return self.__spec.vlan_mappings.__dict__
+        return {}
