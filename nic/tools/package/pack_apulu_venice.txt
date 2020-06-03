@@ -12,6 +12,11 @@ nic/conf/$PIPELINE/device-pf6.json                                /nic/conf/
 nic/conf/$PIPELINE/device-pf6.json                                /nic/conf/device.json
 nic/conf/$PIPELINE/device-pf8.json                                /nic/conf/
 
+# metrics schema
+nic/operd/metrics/cloud/flowstats.json                            /nic/conf/
+nic/operd/metrics/venice/lif_metrics.json                         /nic/conf/
+nic/operd/metrics/venice/mac_metrics.json                         /nic/conf/
+
 # system level tools
 nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs_venice.sh             /nic/tools/bringup_mgmt_ifs.sh
 

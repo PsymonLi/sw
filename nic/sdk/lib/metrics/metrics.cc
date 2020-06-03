@@ -1,6 +1,9 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
 
 #include <assert.h>
+#include <boost/foreach.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +17,8 @@
 #include "metrics.hpp"
 #include "lib/pal/pal.hpp"
 #include "shm.hpp"
+
+namespace pt = boost::property_tree;
 
 namespace sdk {
 namespace metrics {
@@ -93,59 +98,93 @@ get_meta_table (void)
     return tbl;
 }
 
+static inline std::string
+get_schema_file (std::string name)
+{
+    std::string cfg_path;
+
+    cfg_path = std::string(std::getenv("CONFIG_PATH"));
+    if (cfg_path.empty()) {
+        cfg_path = std::string("./");
+    } else {
+        cfg_path += "/";
+    }
+
+    return cfg_path + name;
+}
+
 static void
 save_schema_ (metrics_table_t *tbl, schema_t *schema)
 {
-    const char *cntr_name;
+    pt::ptree root;
+    std::string schema_file;
     serialized_spec_t *srlzd;
     int16_t srlzd_len;
-    int i;
+    int cnt = 0;
 
     // todo
     // check if it already exists and crash if mismatch
 
-    for (i = 0; (cntr_name = schema->counters[i]), cntr_name != NULL; i++) {
-        std::string key = tbl->name + ":" + std::to_string(i);
-        serialized_counter_spec_t *srlzd_counter;
-        int16_t srlzd_counter_len =  sizeof(serialized_counter_spec_t *) +
-            strlen(cntr_name) + 1;
-        metrics_counter_type_t type;
-
-        if (tbl->type == SW) {
-            type = METRICS_COUNTER_VALUE64;
-        } else {
-            if (cntr_name[0] == '_') {
-                type = METRICS_COUNTER_RSVD64;
-            } else {
-                type = METRICS_COUNTER_POINTER64;
-            }
-        }
-
-        srlzd_counter = (serialized_counter_spec_t *)malloc(srlzd_counter_len);
-        srlzd_counter->name_length = strlen(cntr_name);
-        memcpy(srlzd_counter->name, cntr_name,
-               srlzd_counter->name_length + 1);
-        srlzd_counter->type = type;
-
-        error err = get_meta_table()->Publish(
-            key.c_str(), key.size(), (char *)srlzd_counter, srlzd_counter_len);
-        assert(err == error::OK());
-
-        free(srlzd_counter);
-
-        tbl->counters.push_back({
-            name: cntr_name,
-            type: type,
-            });
+    schema_file = get_schema_file(schema->filename);
+    if (access(schema_file.c_str(), R_OK) < 0) {
+        fprintf(stderr, "%s doesn't exist or not accessible\n", schema_file.c_str());
+        assert(0);
+        return;
     }
-    tbl->row_size = tbl->counters.size() * sizeof(uint64_t);
 
-    srlzd_len = sizeof(*srlzd) + strlen(schema->name) + 1;
+    read_json(schema_file, root);
+    BOOST_FOREACH(boost::property_tree::ptree::value_type &msgs,
+                  root.get_child("Messages")) {
+        std::string msg_name = msgs.second.get<std::string>("Name");
+        if (msg_name != schema->name) {
+            continue;
+        }
+        BOOST_FOREACH(boost::property_tree::ptree::value_type &fields,
+                      msgs.second.get_child("Fields")) {
+            std::string key = tbl->name + ":" + std::to_string(cnt++);
+            // get the counter name
+            std::string cntr_name = fields.second.get<std::string>("Name");
+            serialized_counter_spec_t *srlzd_counter;
+            int16_t srlzd_counter_len =  sizeof(serialized_counter_spec_t *) +
+                                         cntr_name.size() + 1;
+            metrics_counter_type_t type;
+
+            if (tbl->type == SW) {
+                type = METRICS_COUNTER_VALUE64;
+            } else {
+                if (cntr_name.at(0) == '_') {
+                    type = METRICS_COUNTER_RSVD64;
+                } else {
+                    type = METRICS_COUNTER_POINTER64;
+                }
+            }
+
+            srlzd_counter = (serialized_counter_spec_t *)
+                            malloc(srlzd_counter_len);
+            srlzd_counter->name_length = cntr_name.size();
+            memcpy(srlzd_counter->name, cntr_name.c_str(),
+                   srlzd_counter->name_length + 1);
+            srlzd_counter->type = type;
+
+            error err = get_meta_table()->Publish(key.c_str(), key.size(),
+                                                  (char *)srlzd_counter,
+                                                  srlzd_counter_len);
+            assert(err == error::OK());
+
+            free(srlzd_counter);
+
+            tbl->counters.push_back({name: cntr_name.c_str(), type: type,});
+        }
+        break;
+    }
+
+    tbl->row_size = tbl->counters.size() * sizeof(uint64_t);
+    srlzd_len = sizeof(*srlzd) + schema->name.size() + 1;
     srlzd = (serialized_spec_t *)malloc(srlzd_len);
-    srlzd->name_length = strlen(schema->name);
+    srlzd->name_length = schema->name.size();
     srlzd->type = tbl->type;
-    memcpy(&srlzd->name, schema->name, srlzd->name_length + 1);
-    srlzd->counter_count = i;
+    memcpy(&srlzd->name, schema->name.c_str(), srlzd->name_length + 1);
+    srlzd->counter_count = cnt;
 
     error err = get_meta_table()->Publish(
         tbl->name.c_str(), tbl->name.size(), (char *)srlzd, srlzd_len);
@@ -193,17 +232,17 @@ create (schema_t *schema)
     TableMgrUptr tbmgr;
 
 
-    tbmgr = get_shm()->Kvstore()->Table(schema->name);
+    tbmgr = get_shm()->Kvstore()->Table(schema->name.c_str());
     if (tbmgr == nullptr) {
         tbl = new metrics_table_t();
         tbl->tbl = get_shm()->Kvstore()->CreateTable(
-            schema->name, SDK_METRICS_DEFAULT_TBL_SIZE);
+            schema->name.c_str(), SDK_METRICS_DEFAULT_TBL_SIZE);
         assert(tbl->tbl != nullptr);
         tbl->name = schema->name;
         tbl->type = schema->type;
         save_schema_(tbl, schema);
     } else {
-        tbl = load_table_(schema->name);
+        tbl = load_table_(schema->name.c_str());
         tbl->tbl = std::move(tbmgr);
     }
 

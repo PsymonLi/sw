@@ -24,23 +24,14 @@ static
 sdk::metrics::schema_t schema = {
     "utTable",
     sdk::metrics::SW,
-    {
-        "counter1",
-        "counter2",
-        NULL,
-    }
+    "test_metrics.json"
 };
 
 static
 sdk::metrics::schema_t schema_hbm = {
     "utTableHBM",
     sdk::metrics::HBM,
-    {
-        "counter1",
-        "_reserved",
-        "counter2",
-        NULL,
-    }
+    "test_metrics.json"
 };
 
 TEST_F (sdk_metrics_test, basic_test) {

@@ -22,9 +22,9 @@ typedef enum metrics_type_ {
 } metrics_type_t;
 
 typedef struct schema_ {
-    const char *name; // e.g. Port
+    std::string name;     // e.g. Port
     metrics_type_t type;
-    const char *counters[]; // to finish the last counter should have NULL name
+    std::string filename; // json schema file
 } schema_t;
 
 typedef std::pair<std::string, uint64_t> metrics_counter_pair_t;

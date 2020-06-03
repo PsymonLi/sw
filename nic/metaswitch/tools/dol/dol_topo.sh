@@ -45,6 +45,17 @@ for (( j=0; j<argc; j++ )); do
     fi
 done
 
+function remove_conf_files () {
+    find ${NICDIR}/operd/metrics/common/ -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
+    find ${NICDIR}/operd/metrics/cloud/ -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
+}
+
+function setup_metrics_conf_files () {
+    cp $NICDIR/operd/metrics/common/*.json ${NICDIR}/conf/
+    cp $NICDIR/operd/metrics/cloud/*.json ${NICDIR}/conf/
+}
+setup_metrics_conf_files
+
 if [ $DOL_RUN == 1 ]; then
    DUTDIR=$NICDIR
 else
@@ -351,7 +362,7 @@ else
     fi
     exit $ret
 fi
-
+remove_conf_files
 
 
 # Older way to create Type 5

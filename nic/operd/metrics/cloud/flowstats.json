@@ -1,6 +1,5 @@
 {
-    "Package": "api",
-    "Pipeline": "apulu",
+    "Package": "flowstats",
     "Messages": [
     {
         "Name": "FlowStatsSummary",

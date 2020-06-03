@@ -1,11 +1,14 @@
 {
   "Package": "sysmond",
-  "Prefix": "sysmond",
   "Messages": [
     {
       "Name": "MemoryMetrics",
       "Description": "System Memory",
       "DisplayName": "System Memory",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerASIC",
       "Fields": [
         {
           "Name": "Totalmemory",
@@ -28,16 +31,16 @@
           "Units": "KB",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerASIC"
+      ]
     },
     {
       "Name": "PowerMetrics",
       "Description": "Asic Power",
       "DisplayName": "Asic Power",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerASIC",
       "Fields": [
         {
           "Name": "Pin",
@@ -60,16 +63,16 @@
           "Units": "MilliWatts",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerASIC"
+      ]
     },
     {
       "Name": "AsicTemperatureMetrics",
       "Description": "Asic Temperature",
       "DisplayName": "Asic Temperature",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerASIC",
       "Fields": [
         {
           "Name": "LocalTemperature",
@@ -92,16 +95,16 @@
           "Units": "Celsius",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerASIC"
+      ]
     },
     {
       "Name": "PortTemperatureMetrics",
       "Description": "Port Transceiver Temperature",
       "DisplayName": "Port Transceiver Temperature",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerPort",
       "Fields": [
         {
           "Name": "Temperature",
@@ -124,11 +127,7 @@
           "Units": "Celsius",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerPort"
+      ]
     }
   ]
 }

@@ -136,16 +136,16 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
 },
   MacMetrics: {
   "name": "MacMetrics",
-  "description": "Key index - PORT ID",
+  "description": "Uplink Metrics",
   "displayName": "Uplink Interface Packet Statistics",
   "tags": [
     "Level4"
   ],
-  "scope": "PerPort",
+  "scope": "PerEthPort",
   "fields": [
     {
-      "name": "Frames Rx ok",
-      "displayName": "Frames Rx ok",
+      "name": "FramesRxOk",
+      "displayName": "Rx OK Frames",
       "description": "Frames received OK",
       "units": "Count",
       "baseType": "Counter",
@@ -155,8 +155,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx all",
-      "displayName": "Frames Rx all",
+      "name": "FramesRxAll",
+      "displayName": "Rx All Frames",
       "description": "Frames Received All (Good and Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -166,8 +166,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad fcs",
-      "displayName": "Frames Rx bad fcs",
+      "name": "FramesRxBadFcs",
+      "displayName": "Rx Bad FCS Frames",
       "description": "Frames Received with Bad FCS",
       "units": "Count",
       "baseType": "Counter",
@@ -177,8 +177,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad all",
-      "displayName": "Frames Rx bad all",
+      "name": "FramesRxBadAll",
+      "displayName": "Rx All Bad Frames",
       "description": "Frames with any bad (CRC, Length, Align)",
       "units": "Count",
       "baseType": "Counter",
@@ -188,8 +188,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx ok",
-      "displayName": "Octets Rx ok",
+      "name": "OctetsRxOk",
+      "displayName": "Rx OK Octets",
       "description": "Octets Received in Good Frames",
       "units": "Count",
       "baseType": "Counter",
@@ -199,8 +199,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx all",
-      "displayName": "Octets Rx all",
+      "name": "OctetsRxAll",
+      "displayName": "Rx All Octets",
       "description": "Octets Received (Good/Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -210,8 +210,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx unicast",
-      "displayName": "Frames Rx unicast",
+      "name": "FramesRxUnicast",
+      "displayName": "Rx Unicast Frames",
       "description": "Frames Received with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -221,8 +221,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx multicast",
-      "displayName": "Frames Rx multicast",
+      "name": "FramesRxMulticast",
+      "displayName": "Rx Multicast Frames",
       "description": "Frames Received with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -232,8 +232,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx broadcast",
-      "displayName": "Frames Rx broadcast",
+      "name": "FramesRxBroadcast",
+      "displayName": "Rx Broadcast Frames",
       "description": "Frames Received with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -243,8 +243,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx pause",
-      "displayName": "Frames Rx pause",
+      "name": "FramesRxPause",
+      "displayName": "Rx Pause Frames",
       "description": "Frames Received of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
@@ -254,8 +254,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad length",
-      "displayName": "Frames Rx bad length",
+      "name": "FramesRxBadLength",
+      "displayName": "Rx Bad Length Frames",
       "description": "Frames Received with Bad Length",
       "units": "Count",
       "baseType": "Counter",
@@ -265,8 +265,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx undersized",
-      "displayName": "Frames Rx undersized",
+      "name": "FramesRxUndersized",
+      "displayName": "Rx Undersized Frames",
       "description": "Frames Received Undersized",
       "units": "Count",
       "baseType": "Counter",
@@ -276,8 +276,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx oversized",
-      "displayName": "Frames Rx oversized",
+      "name": "FramesRxOversized",
+      "displayName": "Rx Oversized Frames",
       "description": "Frames Received Oversized",
       "units": "Count",
       "baseType": "Counter",
@@ -287,8 +287,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx fragments",
-      "displayName": "Frames Rx fragments",
+      "name": "FramesRxFragments",
+      "displayName": "Rx Fragment Frames",
       "description": "Fragments Received",
       "units": "Count",
       "baseType": "Counter",
@@ -298,8 +298,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx jabber",
-      "displayName": "Frames Rx jabber",
+      "name": "FramesRxJabber",
+      "displayName": "Rx Jabber Frames",
       "description": "Jabber Received",
       "units": "Count",
       "baseType": "Counter",
@@ -309,8 +309,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority pause",
-      "displayName": "Frames Rx priority pause",
+      "name": "FramesRxPripause",
+      "displayName": "Rx Priority Pause Frames",
       "description": "Priority Pause Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -320,8 +320,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx stomped crc",
-      "displayName": "Frames Rx stomped crc",
+      "name": "FramesRxStompedCrc",
+      "displayName": "Rx Stomped CRC Frames",
       "description": "Stomped CRC Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -331,8 +331,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx too long",
-      "displayName": "Frames Rx too long",
+      "name": "FramesRxTooLong",
+      "displayName": "Rx Too long Frames",
       "description": "Received Frames Too Long",
       "units": "Count",
       "baseType": "Counter",
@@ -342,8 +342,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx vlan good",
-      "displayName": "Frames Rx vlan good",
+      "name": "FramesRxVlanGood",
+      "displayName": "Rx Good VLAN Frames",
       "description": "Received VLAN Frames (Good)",
       "units": "Count",
       "baseType": "Counter",
@@ -353,8 +353,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx drop",
-      "displayName": "Frames Rx drop",
+      "name": "FramesRxDropped",
+      "displayName": "Rx Dropped Frames",
       "description": "Received Frames Dropped (Buffer Full)",
       "units": "Count",
       "baseType": "Counter",
@@ -364,8 +364,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx less than 64B",
-      "displayName": "Frames Rx less than 64B",
+      "name": "FramesRxLessThan_64B",
+      "displayName": "Rx Less than 64b Frames",
       "description": "Frames Received Length less than 64",
       "units": "Count",
       "baseType": "Counter",
@@ -375,8 +375,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 64B",
-      "displayName": "Frames Rx 64B",
+      "name": "FramesRx_64B",
+      "displayName": "Rx 64b Frames",
       "description": "Frames Received Length=64",
       "units": "Count",
       "baseType": "Counter",
@@ -386,8 +386,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 65B-127B",
-      "displayName": "Frames Rx 65B-127B",
+      "name": "FramesRx_65B_127B",
+      "displayName": "Rx 65b_127b Frames",
       "description": "Frames Received Length=65~127",
       "units": "Count",
       "baseType": "Counter",
@@ -397,8 +397,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 128B-255B",
-      "displayName": "Frames Rx 128B-255B",
+      "name": "FramesRx_128B_255B",
+      "displayName": "Rx 128b_255b Frames",
       "description": "Frames Received Length=128~255",
       "units": "Count",
       "baseType": "Counter",
@@ -408,8 +408,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 256B-511B",
-      "displayName": "Frames Rx 256B-511B",
+      "name": "FramesRx_256B_511B",
+      "displayName": "Rx 256b_511b Frames",
       "description": "Frames Received Length=256~511",
       "units": "Count",
       "baseType": "Counter",
@@ -419,8 +419,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 512B-1023B",
-      "displayName": "Frames Rx 512B-1023B",
+      "name": "FramesRx_512B_1023B",
+      "displayName": "Rx 512b_1023b Frames",
       "description": "Frames Received Length=512~1023",
       "units": "Count",
       "baseType": "Counter",
@@ -430,8 +430,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 1024B-1518B",
-      "displayName": "Frames Rx 1024B-1518B",
+      "name": "FramesRx_1024B_1518B",
+      "displayName": "Rx 1024b_1518b Frames",
       "description": "Frames Received Length=1024~1518",
       "units": "Count",
       "baseType": "Counter",
@@ -441,8 +441,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 1519B-2047B",
-      "displayName": "Frames Rx 1519B-2047B",
+      "name": "FramesRx_1519B_2047B",
+      "displayName": "Rx 1519b_2047b Frames",
       "description": "Frames Received Length=1519~2047",
       "units": "Count",
       "baseType": "Counter",
@@ -452,8 +452,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 2048B-4095B",
-      "displayName": "Frames Rx 2048B-4095B",
+      "name": "FramesRx_2048B_4095B",
+      "displayName": "Rx 2048b_4095b Frames",
       "description": "Frames Received Length=2048~4095",
       "units": "Count",
       "baseType": "Counter",
@@ -463,8 +463,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 4096B-8191B",
-      "displayName": "Frames Rx 4096B-8191B",
+      "name": "FramesRx_4096B_8191B",
+      "displayName": "Rx 4096b_8191b Frames",
       "description": "Frames Received Length=4096~8191",
       "units": "Count",
       "baseType": "Counter",
@@ -474,8 +474,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 8192B-9215B",
-      "displayName": "Frames Rx 8192B-9215B",
+      "name": "FramesRx_8192B_9215B",
+      "displayName": "Rx 8192b_9215b Frames",
       "description": "Frames Received Length=8192~9215",
       "units": "Count",
       "baseType": "Counter",
@@ -485,8 +485,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx other",
-      "displayName": "Frames Rx other",
+      "name": "FramesRxOther",
+      "displayName": "Rx Other Frames",
       "description": "Frames Received Length greater than 9215",
       "units": "Count",
       "baseType": "Counter",
@@ -496,8 +496,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx ok",
-      "displayName": "Frames Tx ok",
+      "name": "FramesTxOk",
+      "displayName": "Tx OK Frames",
       "description": "Frames Transmitted OK",
       "units": "Count",
       "baseType": "Counter",
@@ -507,8 +507,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx all",
-      "displayName": "Frames Tx all",
+      "name": "FramesTxAll",
+      "displayName": "Tx All Frames",
       "description": "Frames Transmitted All (Good/Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -518,8 +518,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx bad",
-      "displayName": "Frames Tx bad",
+      "name": "FramesTxBad",
+      "displayName": "Tx Bad Frames",
       "description": "Frames Transmitted Bad",
       "units": "Count",
       "baseType": "Counter",
@@ -529,8 +529,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx ok",
-      "displayName": "Octets Tx ok",
+      "name": "OctetsTxOk",
+      "displayName": "Tx OK Octets",
       "description": "Octets Transmitted Good",
       "units": "Count",
       "baseType": "Counter",
@@ -540,8 +540,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx total",
-      "displayName": "Octets Tx total",
+      "name": "OctetsTxTotal",
+      "displayName": "Tx All Octets",
       "description": "Octets Transmitted Total (Good/Bad)",
       "units": "Count",
       "baseType": "Counter",
@@ -551,8 +551,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx unicast",
-      "displayName": "Frames Tx unicast",
+      "name": "FramesTxUnicast",
+      "displayName": "Tx Unicast Frames",
       "description": "Frames Transmitted with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -562,8 +562,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx multicast",
-      "displayName": "Frames Tx multicast",
+      "name": "FramesTxMulticast",
+      "displayName": "Tx Multicast Frames",
       "description": "Frames Transmitted with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -573,8 +573,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx broadcast",
-      "displayName": "Frames Tx broadcast",
+      "name": "FramesTxBroadcast",
+      "displayName": "Tx Broadcast Frames",
       "description": "Frames Transmitted with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -584,8 +584,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx pause",
-      "displayName": "Frames Tx pause",
+      "name": "FramesTxPause",
+      "displayName": "Tx Pause Frames",
       "description": "Frames Transmitted of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
@@ -595,8 +595,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority pause",
-      "displayName": "Frames Tx priority pause",
+      "name": "FramesTxPripause",
+      "displayName": "Tx Priority Pause Frames",
       "description": "Frames Transmitted of type PriPAUSE",
       "units": "Count",
       "baseType": "Counter",
@@ -606,8 +606,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx vlan",
-      "displayName": "Frames Tx vlan",
+      "name": "FramesTxVlan",
+      "displayName": "Tx VLAN Frames",
       "description": "Frames Transmitted VLAN",
       "units": "Count",
       "baseType": "Counter",
@@ -617,8 +617,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx less than 64B",
-      "displayName": "Frames Tx less than 64B",
+      "name": "FramesTxLessThan_64B",
+      "displayName": "Tx Less than 64b Frames",
       "description": "Frames Transmitted Length<64",
       "units": "Count",
       "baseType": "Counter",
@@ -628,8 +628,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 64B",
-      "displayName": "Frames Tx 64B",
+      "name": "FramesTx_64B",
+      "displayName": "Tx 64b Frames",
       "description": "Frames Transmitted Length=64",
       "units": "Count",
       "baseType": "Counter",
@@ -639,8 +639,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 65B-127B",
-      "displayName": "Frames Tx 65B-127B",
+      "name": "FramesTx_65B_127B",
+      "displayName": "Tx 65b_127b Frames",
       "description": "Frames Transmitted Length=65~127",
       "units": "Count",
       "baseType": "Counter",
@@ -650,8 +650,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 128B-255B",
-      "displayName": "Frames Tx 128B-255B",
+      "name": "FramesTx_128B_255B",
+      "displayName": "Tx 128b_255b Frames",
       "description": "Frames Transmitted Length=128~255",
       "units": "Count",
       "baseType": "Counter",
@@ -661,8 +661,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 256B-511B",
-      "displayName": "Frames Tx 256B-511B",
+      "name": "FramesTx_256B_511B",
+      "displayName": "Tx 256b_511b Frames",
       "description": "Frames Transmitted Length=256~511",
       "units": "Count",
       "baseType": "Counter",
@@ -672,8 +672,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 512B-1023B",
-      "displayName": "Frames Tx 512B-1023B",
+      "name": "FramesTx_512B_1023B",
+      "displayName": "Tx 512b_1023b Frames",
       "description": "Frames Transmitted Length=512~1023",
       "units": "Count",
       "baseType": "Counter",
@@ -683,8 +683,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 1024B-1518B",
-      "displayName": "Frames Tx 1024B-1518B",
+      "name": "FramesTx_1024B_1518B",
+      "displayName": "Tx 1024b_1518b Frames",
       "description": "Frames Transmitted Length=1024~1518",
       "units": "Count",
       "baseType": "Counter",
@@ -694,8 +694,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 1519B-2047B",
-      "displayName": "Frames Tx 1519B-2047B",
+      "name": "FramesTx_1519B_2047B",
+      "displayName": "Tx 1519b_2047b Frames",
       "description": "Frames Transmitted Length=1519~2047",
       "units": "Count",
       "baseType": "Counter",
@@ -705,8 +705,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 2048B-4095B",
-      "displayName": "Frames Tx 2048B-4095B",
+      "name": "FramesTx_2048B_4095B",
+      "displayName": "Tx 2048b_4095b Frames",
       "description": "Frames Transmitted Length=2048~4095",
       "units": "Count",
       "baseType": "Counter",
@@ -716,8 +716,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 4096B-8191B",
-      "displayName": "Frames Tx 4096B-8191B",
+      "name": "FramesTx_4096B_8191B",
+      "displayName": "Tx 4096b_8191b Frames",
       "description": "Frames Transmitted Length=4096~8191",
       "units": "Count",
       "baseType": "Counter",
@@ -727,8 +727,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx 8192B-9215B",
-      "displayName": "Frames Tx 8192B-9215B",
+      "name": "FramesTx_8192B_9215B",
+      "displayName": "Tx 8192b_9215b Frames",
       "description": "Frames Transmitted Length=8192~9215",
       "units": "Count",
       "baseType": "Counter",
@@ -738,8 +738,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx other",
-      "displayName": "Frames Tx other",
+      "name": "FramesTxOther",
+      "displayName": "Tx Other Frames",
       "description": "Frames Transmitted Length greater than 9215",
       "units": "Count",
       "baseType": "Counter",
@@ -749,8 +749,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 0",
-      "displayName": "Frames Tx priority 0",
+      "name": "FramesTxPri_0",
+      "displayName": "Tx Pri0 Frames",
       "description": "Pri#0 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -760,8 +760,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 1",
-      "displayName": "Frames Tx priority 1",
+      "name": "FramesTxPri_1",
+      "displayName": "Tx Pri1 Frames",
       "description": "Pri#1 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -771,8 +771,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 2",
-      "displayName": "Frames Tx priority 2",
+      "name": "FramesTxPri_2",
+      "displayName": "Tx Pri2 Frames",
       "description": "Pri#2 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -782,8 +782,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 3",
-      "displayName": "Frames Tx priority 3",
+      "name": "FramesTxPri_3",
+      "displayName": "Tx Pri3 Frames",
       "description": "Pri#3 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -793,8 +793,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 4",
-      "displayName": "Frames Tx priority 4",
+      "name": "FramesTxPri_4",
+      "displayName": "Tx Pri4 Frames",
       "description": "Pri#4 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -804,8 +804,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 5",
-      "displayName": "Frames Tx priority 5",
+      "name": "FramesTxPri_5",
+      "displayName": "Tx Pri5 Frames",
       "description": "Pri#5 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -815,8 +815,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 6",
-      "displayName": "Frames Tx priority 6",
+      "name": "FramesTxPri_6",
+      "displayName": "Tx Pri6 Frames",
       "description": "Pri#6 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -826,8 +826,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx priority 7",
-      "displayName": "Frames Tx priority 7",
+      "name": "FramesTxPri_7",
+      "displayName": "Tx Pri7 Frames",
       "description": "Pri#7 Frames Transmitted",
       "units": "Count",
       "baseType": "Counter",
@@ -837,8 +837,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 0",
-      "displayName": "Frames Rx priority 0",
+      "name": "FramesRxPri_0",
+      "displayName": "Rx Pri0 Frames",
       "description": "Pri#0 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -848,8 +848,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 1",
-      "displayName": "Frames Rx priority 1",
+      "name": "FramesRxPri_1",
+      "displayName": "Rx Pri1 Frames",
       "description": "Pri#1 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -859,8 +859,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 2",
-      "displayName": "Frames Rx priority 2",
+      "name": "FramesRxPri_2",
+      "displayName": "Rx Pri2 Frames",
       "description": "Pri#2 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -870,8 +870,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 3",
-      "displayName": "Frames Rx priority 3",
+      "name": "FramesRxPri_3",
+      "displayName": "Rx Pri3 Frames",
       "description": "Pri#3 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -881,8 +881,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 4",
-      "displayName": "Frames Rx priority 4",
+      "name": "FramesRxPri_4",
+      "displayName": "Rx Pri4 Frames",
       "description": "Pri#4 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -892,8 +892,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 5",
-      "displayName": "Frames Rx priority 5",
+      "name": "FramesRxPri_5",
+      "displayName": "Rx Pri5 Frames",
       "description": "Pri#5 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -903,8 +903,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 6",
-      "displayName": "Frames Rx priority 6",
+      "name": "FramesRxPri_6",
+      "displayName": "Rx Pri6 Frames",
       "description": "Pri#6 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -914,8 +914,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx priority 7",
-      "displayName": "Frames Rx priority 7",
+      "name": "FramesRxPri_7",
+      "displayName": "Rx Pri7 Frames",
       "description": "Pri#7 Frames Received",
       "units": "Count",
       "baseType": "Counter",
@@ -925,8 +925,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 0 1us count",
-      "displayName": "Tx priority pause 0 1us count",
+      "name": "TxPripause_0_1UsCount",
+      "displayName": "Tx Pri0Pause1US Count",
       "description": "Transmit Pri#0 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -936,8 +936,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 1 1us count",
-      "displayName": "Tx priority pause 1 1us count",
+      "name": "TxPripause_1_1UsCount",
+      "displayName": "Tx Pri1Pause1US Count",
       "description": "Transmit Pri#1 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -947,8 +947,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 2 1us count",
-      "displayName": "Tx priority pause 2 1us count",
+      "name": "TxPripause_2_1UsCount",
+      "displayName": "Tx Pri2Pause1US Count",
       "description": "Transmit Pri#2 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -958,8 +958,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 3 1us count",
-      "displayName": "Tx priority pause 3 1us count",
+      "name": "TxPripause_3_1UsCount",
+      "displayName": "Tx Pri3Pause1US Count",
       "description": "Transmit Pri#3 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -969,8 +969,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 4 1us count",
-      "displayName": "Tx priority pause 4 1us count",
+      "name": "TxPripause_4_1UsCount",
+      "displayName": "Tx Pri4Pause1US Count",
       "description": "Transmit Pri#4 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -980,8 +980,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 5 1us count",
-      "displayName": "Tx priority pause 5 1us count",
+      "name": "TxPripause_5_1UsCount",
+      "displayName": "Tx Pri5Pause1US Count",
       "description": "Transmit Pri#5 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -991,8 +991,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 6 1us count",
-      "displayName": "Tx priority pause 6 1us count",
+      "name": "TxPripause_6_1UsCount",
+      "displayName": "Tx Pri6Pause1US Count",
       "description": "Transmit Pri#6 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1002,8 +1002,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx priority pause 7 1us count",
-      "displayName": "Tx priority pause 7 1us count",
+      "name": "TxPripause_7_1UsCount",
+      "displayName": "Tx Pri7Pause1US Count",
       "description": "Transmit Pri#7 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1013,8 +1013,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 0 1us count",
-      "displayName": "Rx priority pause 0 1us count",
+      "name": "RxPripause_0_1UsCount",
+      "displayName": "Rx Pri0Pause1US Count",
       "description": "Receive Pri#0 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1024,8 +1024,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 1 1us count",
-      "displayName": "Rx priority pause 1 1us count",
+      "name": "RxPripause_1_1UsCount",
+      "displayName": "Rx Pri1Pause1US Count",
       "description": "Receive Pri#1 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1035,8 +1035,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 2 1us count",
-      "displayName": "Rx priority pause 2 1us count",
+      "name": "RxPripause_2_1UsCount",
+      "displayName": "Rx Pri2Pause1US Count",
       "description": "Receive Pri#2 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1046,8 +1046,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 3 1us count",
-      "displayName": "Rx priority pause 3 1us count",
+      "name": "RxPripause_3_1UsCount",
+      "displayName": "Rx Pri3Pause1US Count",
       "description": "Receive Pri#3 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1057,8 +1057,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 4 1us count",
-      "displayName": "Rx priority pause 4 1us count",
+      "name": "RxPripause_4_1UsCount",
+      "displayName": "Rx Pri4Pause1US Count",
       "description": "Receive Pri#4 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1068,8 +1068,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 5 1us count",
-      "displayName": "Rx priority pause 5 1us count",
+      "name": "RxPripause_5_1UsCount",
+      "displayName": "Rx Pri5Pause1US Count",
       "description": "Receive Pri#5 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1079,8 +1079,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 6 1us count",
-      "displayName": "Rx priority pause 6 1us count",
+      "name": "RxPripause_6_1UsCount",
+      "displayName": "Rx Pri6Pause1US Count",
       "description": "Receive Pri#6 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1090,8 +1090,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx priority pause 7 1us count",
-      "displayName": "Rx priority pause 7 1us count",
+      "name": "RxPripause_7_1UsCount",
+      "displayName": "Rx Pri7Pause1US Count",
       "description": "Receive Pri#7 Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1101,8 +1101,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx pause 1us count",
-      "displayName": "Rx pause 1us count",
+      "name": "RxPause_1UsCount",
+      "displayName": "Rx Pause1US Count",
       "description": "Receive Standard Pause 1US Count",
       "units": "Count",
       "baseType": "Counter",
@@ -1112,8 +1112,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx truncated",
-      "displayName": "Frames Tx truncated",
+      "name": "FramesTxTruncated",
+      "displayName": "Tx Truncated Frames",
       "description": "Frames Truncated",
       "units": "Count",
       "baseType": "Counter",
@@ -1134,20 +1134,21 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ]
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "NetworkInterface",
+  "interfaceType": "uplink-eth"
 },
   MgmtMacMetrics: {
   "name": "MgmtMacMetrics",
-  "description": "Key index - PORT ID",
+  "description": "Management Interface Metrics",
   "displayName": "Management Interface Packet Statistics",
   "tags": [
     "Level4"
   ],
-  "scope": "PerPort",
+  "scope": "PerMgmtPort",
   "fields": [
     {
-      "name": "Frames Rx ok",
-      "displayName": "Frames Rx ok",
+      "name": "FramesRxOk",
+      "displayName": "Rx OK Frames",
       "description": "Frames received OK",
       "units": "Count",
       "baseType": "Counter",
@@ -1157,8 +1158,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx all",
-      "displayName": "Frames Rx all",
+      "name": "FramesRxAll",
+      "displayName": "Rx All Frames",
       "description": "Frames Received All (Good and Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -1168,8 +1169,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad fcs",
-      "displayName": "Frames Rx bad fcs",
+      "name": "FramesRxBadFcs",
+      "displayName": "Rx Bad FCS Frames",
       "description": "Frames Received with Bad FCS",
       "units": "Count",
       "baseType": "Counter",
@@ -1179,8 +1180,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad all",
-      "displayName": "Frames Rx bad all",
+      "name": "FramesRxBadAll",
+      "displayName": "Rx All Bad Frames",
       "description": "Frames with any bad (CRC, Length, Align)",
       "units": "Count",
       "baseType": "Counter",
@@ -1190,8 +1191,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx ok",
-      "displayName": "Octets Rx ok",
+      "name": "OctetsRxOk",
+      "displayName": "Rx OK Octets",
       "description": "Octets Received in Good Frames",
       "units": "Count",
       "baseType": "Counter",
@@ -1201,8 +1202,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx all",
-      "displayName": "Octets Rx all",
+      "name": "OctetsRxAll",
+      "displayName": "Rx All Octets",
       "description": "Octets Received (Good/Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -1212,8 +1213,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx unicast",
-      "displayName": "Frames Rx unicast",
+      "name": "FramesRxUnicast",
+      "displayName": "Rx Unicast Frames",
       "description": "Frames Received with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1223,8 +1224,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx multicast",
-      "displayName": "Frames Rx multicast",
+      "name": "FramesRxMulticast",
+      "displayName": "Rx Multicast Frames",
       "description": "Frames Received with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1234,8 +1235,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx broadcast",
-      "displayName": "Frames Rx broadcast",
+      "name": "FramesRxBroadcast",
+      "displayName": "Rx Broadcast Frames",
       "description": "Frames Received with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1245,8 +1246,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx pause",
-      "displayName": "Frames Rx pause",
+      "name": "FramesRxPause",
+      "displayName": "Rx Pause Frames",
       "description": "Frames Received of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
@@ -1256,8 +1257,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx bad length",
-      "displayName": "Frames Rx bad length",
+      "name": "FramesRxBadLength",
+      "displayName": "Rx Bad Length Frames",
       "description": "Frames Received with Bad Length",
       "units": "Count",
       "baseType": "Counter",
@@ -1267,8 +1268,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx undersized",
-      "displayName": "Frames Rx undersized",
+      "name": "FramesRxUndersized",
+      "displayName": "Rx Undersized Frames",
       "description": "Frames Received Undersized",
       "units": "Count",
       "baseType": "Counter",
@@ -1278,8 +1279,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx oversized",
-      "displayName": "Frames Rx oversized",
+      "name": "FramesRxOversized",
+      "displayName": "Rx Oversized Frames",
       "description": "Frames Received Oversized",
       "units": "Count",
       "baseType": "Counter",
@@ -1289,8 +1290,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx fragments",
-      "displayName": "Frames Rx fragments",
+      "name": "FramesRxFragments",
+      "displayName": "Rx Fragment Frames",
       "description": "Fragments Received",
       "units": "Count",
       "baseType": "Counter",
@@ -1300,8 +1301,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx jabber",
-      "displayName": "Frames Rx jabber",
+      "name": "FramesRxJabber",
+      "displayName": "Rx Jabber Frames",
       "description": "Jabber Received",
       "units": "Count",
       "baseType": "Counter",
@@ -1311,8 +1312,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 64B",
-      "displayName": "Frames Rx 64B",
+      "name": "FramesRx_64B",
+      "displayName": "Rx 64b Frames",
       "description": "Frames Received Length=64",
       "units": "Count",
       "baseType": "Counter",
@@ -1322,8 +1323,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 65B-127B",
-      "displayName": "Frames Rx 65B-127B",
+      "name": "FramesRx_65B_127B",
+      "displayName": "Rx 65b_127b Frames",
       "description": "Frames Received Length=65~127",
       "units": "Count",
       "baseType": "Counter",
@@ -1333,8 +1334,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 128B-255B",
-      "displayName": "Frames Rx 128B-255B",
+      "name": "FramesRx_128B_255B",
+      "displayName": "Rx 128b_255b Frames",
       "description": "Frames Received Length=128~255",
       "units": "Count",
       "baseType": "Counter",
@@ -1344,8 +1345,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 256B-511B",
-      "displayName": "Frames Rx 256B-511B",
+      "name": "FramesRx_256B_511B",
+      "displayName": "Rx 256b_511b Frames",
       "description": "Frames Received Length=256~511",
       "units": "Count",
       "baseType": "Counter",
@@ -1355,8 +1356,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 512B-1023B",
-      "displayName": "Frames Rx 512B-1023B",
+      "name": "FramesRx_512B_1023B",
+      "displayName": "Rx 512b_1023b Frames",
       "description": "Frames Received Length=512~1023",
       "units": "Count",
       "baseType": "Counter",
@@ -1366,8 +1367,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx 1024B-1518B",
-      "displayName": "Frames Rx 1024B-1518B",
+      "name": "FramesRx_1024B_1518B",
+      "displayName": "Rx 1024b_1518b Frames",
       "description": "Frames Received Length=1024~1518",
       "units": "Count",
       "baseType": "Counter",
@@ -1377,8 +1378,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx > 1518B",
-      "displayName": "Frames Rx > 1518B",
+      "name": "FramesRxGt_1518B",
+      "displayName": "Rx Greater than 1518b Frames",
       "description": "Frames Received Length greater than 1518",
       "units": "Count",
       "baseType": "Counter",
@@ -1388,8 +1389,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx fifo full",
-      "displayName": "Frames Rx fifo full",
+      "name": "FramesRxFifoFull",
+      "displayName": "Rx FIFO Full Frames",
       "description": "Frames Received FIFO Full",
       "units": "Count",
       "baseType": "Counter",
@@ -1399,8 +1400,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx ok",
-      "displayName": "Frames Tx ok",
+      "name": "FramesTxOk",
+      "displayName": "Tx OK Frames",
       "description": "Frames Transmitted OK",
       "units": "Count",
       "baseType": "Counter",
@@ -1410,8 +1411,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx all",
-      "displayName": "Frames Tx all",
+      "name": "FramesTxAll",
+      "displayName": "Tx All Frames",
       "description": "Frames Transmitted All (Good/Bad Frames)",
       "units": "Count",
       "baseType": "Counter",
@@ -1421,8 +1422,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx bad",
-      "displayName": "Frames Tx bad",
+      "name": "FramesTxBad",
+      "displayName": "Tx Bad Frames",
       "description": "Frames Transmitted Bad",
       "units": "Count",
       "baseType": "Counter",
@@ -1432,8 +1433,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx ok",
-      "displayName": "Octets Tx ok",
+      "name": "OctetsTxOk",
+      "displayName": "Tx OK Octets",
       "description": "Octets Transmitted Good",
       "units": "Count",
       "baseType": "Counter",
@@ -1443,8 +1444,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx total",
-      "displayName": "Octets Tx total",
+      "name": "OctetsTxTotal",
+      "displayName": "Tx All Octets",
       "description": "Octets Transmitted Total (Good/Bad)",
       "units": "Count",
       "baseType": "Counter",
@@ -1454,8 +1455,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx unicast",
-      "displayName": "Frames Tx unicast",
+      "name": "FramesTxUnicast",
+      "displayName": "Tx Unicast Frames",
       "description": "Frames Transmitted with Unicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1465,8 +1466,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx multicast",
-      "displayName": "Frames Tx multicast",
+      "name": "FramesTxMulticast",
+      "displayName": "Tx Multicast Frames",
       "description": "Frames Transmitted with Multicast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1476,8 +1477,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx broadcast",
-      "displayName": "Frames Tx broadcast",
+      "name": "FramesTxBroadcast",
+      "displayName": "Tx Broadcast Frames",
       "description": "Frames Transmitted with Broadcast Address",
       "units": "Count",
       "baseType": "Counter",
@@ -1487,8 +1488,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx pause",
-      "displayName": "Frames Tx pause",
+      "name": "FramesTxPause",
+      "displayName": "Tx Pause Frames",
       "description": "Frames Transmitted of type PAUSE",
       "units": "Count",
       "baseType": "Counter",
@@ -1509,11 +1510,12 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ]
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "NetworkInterface",
+  "interfaceType": "uplink-mgmt"
 },
   LifMetrics: {
   "name": "LifMetrics",
-  "description": "Key index - LIF IfIndex",
+  "description": "Logical Interface Metrics",
   "displayName": "Logical Interface Statistics",
   "tags": [
     "Level4"
@@ -1521,9 +1523,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   "scope": "PerLIF",
   "fields": [
     {
-      "name": "Octets Rx unicast",
-      "displayName": "Octets Rx unicast",
-      "description": "Octets Rx unicast",
+      "name": "RxUnicastBytes",
+      "displayName": "Rx Unicast Bytes",
+      "description": "Rx Unicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1532,9 +1534,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx unicast",
-      "displayName": "Frames Rx unicast",
-      "description": "Frames Rx unicast",
+      "name": "RxUnicastPackets",
+      "displayName": "Rx Unicast Packets",
+      "description": "Rx Unicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1543,9 +1545,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx multicast",
-      "displayName": "Octets Rx multicast",
-      "description": "Octets Rx multicast",
+      "name": "RxMulticastBytes",
+      "displayName": "Rx Multicast Bytes",
+      "description": "Rx Multicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1554,9 +1556,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx multicast",
-      "displayName": "Frames Rx multicast",
-      "description": "Frames Rx multicast",
+      "name": "RxMulticastPackets",
+      "displayName": "Rx Multicast Packets",
+      "description": "Rx Multicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1565,9 +1567,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx broadcast",
-      "displayName": "Octets Rx broadcast",
-      "description": "Octets Rx broadcast",
+      "name": "RxBroadcastBytes",
+      "displayName": "Rx Broadcast Bytes",
+      "description": "Rx Broadcast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1576,9 +1578,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx broadcast",
-      "displayName": "Frames Rx broadcast",
-      "description": "Frames Rx broadcast",
+      "name": "RxBroadcastPackets",
+      "displayName": "Rx Broadcast Packets",
+      "description": "Rx Broadcast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1587,9 +1589,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx unicast drop",
-      "displayName": "Octets Rx unicast drop",
-      "description": "Octets Rx unicast drop",
+      "name": "RxDropUnicastBytes",
+      "displayName": "Rx Drop Unicast Bytes",
+      "description": "Rx Drop Unicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1598,9 +1600,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx unicast drop",
-      "displayName": "Frames Rx unicast drop",
-      "description": "Frames Rx unicast drop",
+      "name": "RxDropUnicastPackets",
+      "displayName": "Rx Drop Unicast Packets",
+      "description": "Rx Drop Unicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1609,9 +1611,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx multicast drop",
-      "displayName": "Octets Rx multicast drop",
-      "description": "Octets Rx multicast drop",
+      "name": "RxDropMulticastBytes",
+      "displayName": "Rx Drop Multicast Bytes",
+      "description": "Rx Drop Multicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1620,9 +1622,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx multicast drop",
-      "displayName": "Frames Rx multicast drop",
-      "description": "Frames Rx multicast drop",
+      "name": "RxDropMulticastPackets",
+      "displayName": "Rx Drop Multicast Packets",
+      "description": "Rx Drop Multicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1631,9 +1633,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Rx broadcast drop",
-      "displayName": "Octets Rx broadcast drop",
-      "description": "Octets Rx broadcast drop",
+      "name": "RxDropBroadcastBytes",
+      "displayName": "Rx Drop Broadcast Bytes",
+      "description": "Rx Drop Broadcast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1642,9 +1644,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx broadcast drop",
-      "displayName": "Frames Rx broadcast drop",
-      "description": "Frames Rx broadcast drop",
+      "name": "RxDropBroadcastPackets",
+      "displayName": "Rx Drop Broadcast Packets",
+      "description": "Rx Drop Broadcast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1653,9 +1655,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Rx DMA error",
-      "displayName": "Rx DMA error",
-      "description": "Rx DMA error",
+      "name": "TxUnicastBytes",
+      "displayName": "Tx Unicast Bytes",
+      "description": "Tx Unicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1664,9 +1666,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx unicast",
-      "displayName": "Octets Tx unicast",
-      "description": "Octets Tx unicast",
+      "name": "TxUnicastPackets",
+      "displayName": "Tx Unicast Packets",
+      "description": "Tx Unicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1675,9 +1677,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx unicast",
-      "displayName": "Frames Tx unicast",
-      "description": "Frames Tx unicast",
+      "name": "TxMulticastBytes",
+      "displayName": "Tx Multicast Bytes",
+      "description": "Tx Multicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1686,9 +1688,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx multicast",
-      "displayName": "Octets Tx multicast",
-      "description": "Octets Tx multicast",
+      "name": "TxMulticastPackets",
+      "displayName": "Tx Multicast Packets",
+      "description": "Tx Multicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1697,9 +1699,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx multicast",
-      "displayName": "Frames Tx multicast",
-      "description": "Frames Tx multicast",
+      "name": "TxBroadcastBytes",
+      "displayName": "Tx Broadcast Bytes",
+      "description": "Tx Broadcast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1708,9 +1710,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx broadcast",
-      "displayName": "Octets Tx broadcast",
-      "description": "Octets Tx broadcast",
+      "name": "TxBroadcastPackets",
+      "displayName": "Tx Broadcast Packets",
+      "description": "Tx Broadcast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1719,9 +1721,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx broadcast",
-      "displayName": "Frames Tx broadcast",
-      "description": "Frames Tx broadcast",
+      "name": "TxDropUnicastBytes",
+      "displayName": "Tx Drop Unicast Bytes",
+      "description": "Tx Drop Unicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1730,9 +1732,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx unicast drop",
-      "displayName": "Octets Tx unicast drop",
-      "description": "Octets Tx unicast drop",
+      "name": "TxDropUnicastPackets",
+      "displayName": "Tx Drop Unicast Packets",
+      "description": "Tx Drop Unicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1741,9 +1743,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx unicast drop",
-      "displayName": "Frames Tx unicast drop",
-      "description": "Frames Tx unicast drop",
+      "name": "TxDropMulticastBytes",
+      "displayName": "Tx Drop Multicast Bytes",
+      "description": "Tx Drop Multicast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1752,9 +1754,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx multicast drop",
-      "displayName": "Octets Tx multicast drop",
-      "description": "Octets Tx multicast drop",
+      "name": "TxDropMulticastPackets",
+      "displayName": "Tx Drop Multicast Packets",
+      "description": "Tx Drop Multicast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1763,9 +1765,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx multicast drop",
-      "displayName": "Frames Tx multicast drop",
-      "description": "Frames Tx multicast drop",
+      "name": "TxDropBroadcastBytes",
+      "displayName": "Tx Drop Broadcast Bytes",
+      "description": "Tx Drop Broadcast Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1774,9 +1776,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Octets Tx broadcast drop",
-      "displayName": "Octets Tx broadcast drop",
-      "description": "Octets Tx broadcast drop",
+      "name": "TxDropBroadcastPackets",
+      "displayName": "Tx Drop Broadcast Packets",
+      "description": "Tx Drop Broadcast Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1785,9 +1787,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Tx broadcast drop",
-      "displayName": "Frames Tx broadcast drop",
-      "description": "Frames Tx broadcast drop",
+      "name": "TxPkts",
+      "displayName": "Tx Pkts",
+      "description": "Total Transmit Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1796,9 +1798,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Tx DMA error",
-      "displayName": "Tx DMA error",
-      "description": "Tx DMA error",
+      "name": "TxBytes",
+      "displayName": "Tx Bytes",
+      "description": "Total Transmit Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1807,9 +1809,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx queue disable drops",
-      "displayName": "Frames Rx queue disable drops",
-      "description": "Frames Rx queue disable drops",
+      "name": "RxPkts",
+      "displayName": "Rx Pkts",
+      "description": "Total Receive Packets",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1818,504 +1820,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Frames Rx queue empty drops",
-      "displayName": "Frames Rx queue empty drops",
-      "description": "Frames Rx queue empty drops",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx queue scheduling errors",
-      "displayName": "Rx queue scheduling errors",
-      "description": "Rx queue scheduling errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx descriptor fetch errors",
-      "displayName": "Rx descriptor fetch errors",
-      "description": "Rx descriptor fetch errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx descriptor data fetch errors",
-      "displayName": "Rx descriptor data fetch errors",
-      "description": "Rx descriptor data fetch errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Tx queue disabled drops",
-      "displayName": "Frames Tx queue disabled drops",
-      "description": "Frames Tx queue disabled drops",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx queue scheduling errors",
-      "displayName": "Tx queue scheduling errors",
-      "description": "Tx queue scheduling errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx descriptor fetch errors",
-      "displayName": "Tx descriptor fetch errors",
-      "description": "Tx descriptor fetch errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx descriptor data fetch errors",
-      "displayName": "Tx descriptor data fetch errors",
-      "description": "Tx descriptor data fetch errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Octets Tx RDMA unicast",
-      "displayName": "Octets Tx RDMA unicast",
-      "description": "Octets Tx RDMA unicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Tx RDMA unicast",
-      "displayName": "Frames Tx RDMA unicast",
-      "description": "Frames Tx RDMA unicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Octets Tx RDMA multicast",
-      "displayName": "Octets Tx RDMA multicast",
-      "description": "Octets Tx RDMA multicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Tx RDMA multicast",
-      "displayName": "Frames Tx RDMA multicast",
-      "description": "Frames Tx RDMA multicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Tx RDMA CNP",
-      "displayName": "Frames Tx RDMA CNP",
-      "description": "Frames Tx RDMA CNP",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Octets Rx RDMA unicast",
-      "displayName": "Octets Rx RDMA unicast",
-      "description": "Octets Rx RDMA unicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA unicast",
-      "displayName": "Frames Rx RDMA unicast",
-      "description": "Frames Rx RDMA unicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Octets Rx RDMA multicast",
-      "displayName": "Octets Rx RDMA multicast",
-      "description": "Octets Rx RDMA multicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA multicast",
-      "displayName": "Frames Rx RDMA multicast",
-      "description": "Frames Rx RDMA multicast",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA CNP",
-      "displayName": "Frames Rx RDMA CNP",
-      "description": "Frames Rx RDMA CNP",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA ECN",
-      "displayName": "Frames Rx RDMA ECN",
-      "description": "Frames Rx RDMA ECN",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA request sequence errors",
-      "displayName": "Frames Rx RDMA request sequence errors",
-      "description": "Frames Rx RDMA request sequence errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request RNR retry errors",
-      "displayName": "Rx RDMA request RNR retry errors",
-      "description": "Rx RDMA request RNR retry errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request remote access errors",
-      "displayName": "Rx RDMA request remote access errors",
-      "description": "Rx RDMA request remote access errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request remote invalid request errors",
-      "displayName": "Rx RDMA request remote invalid request errors",
-      "description": "Rx RDMA request remote invalid request errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request remote operation errors",
-      "displayName": "Rx RDMA request remote operation errors",
-      "description": "Rx RDMA request remote operation errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request implied NACK sequence errors",
-      "displayName": "Rx RDMA request implied NACK sequence errors",
-      "description": "Rx RDMA request implied NACK sequence errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request CQE errors",
-      "displayName": "Rx RDMA request CQE errors",
-      "description": "Rx RDMA request CQE errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request CQE flush errors",
-      "displayName": "Rx RDMA request CQE flush errors",
-      "description": "Rx RDMA request CQE flush errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA request duplicate responses",
-      "displayName": "Rx RDMA request duplicate responses",
-      "description": "Rx RDMA request duplicate responses",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Frames Rx RDMA request invalid",
-      "displayName": "Frames Rx RDMA request invalid",
-      "description": "Frames Rx RDMA request invalid",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA request local access errors",
-      "displayName": "Tx RDMA request local access errors",
-      "description": "Tx RDMA request local access errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA request local operation errors",
-      "displayName": "Tx RDMA request local operation errors",
-      "description": "Tx RDMA request local operation errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA request memory management errors",
-      "displayName": "Tx RDMA request memory management errors",
-      "description": "Tx RDMA request memory management errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response duplicate request errors",
-      "displayName": "Rx RDMA response duplicate request errors",
-      "description": "Rx RDMA response duplicate request errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response out of buffer errors",
-      "displayName": "Rx RDMA response out of buffer errors",
-      "description": "Rx RDMA response out of buffer errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response out of sequence errors",
-      "displayName": "Rx RDMA response out of sequence errors",
-      "description": "Rx RDMA response out of sequence errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response CQE errors",
-      "displayName": "Rx RDMA response CQE errors",
-      "description": "Rx RDMA response CQE errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response CQE flush errors",
-      "displayName": "Rx RDMA response CQE flush errors",
-      "description": "Rx RDMA response CQE flush errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response local length errors",
-      "displayName": "Rx RDMA response local length errors",
-      "description": "Rx RDMA response local length errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response invalid request errors",
-      "displayName": "Rx RDMA response invalid request errors",
-      "description": "Rx RDMA response invalid request errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response local QP operation errors",
-      "displayName": "Rx RDMA response local QP operation errors",
-      "description": "Rx RDMA response local QP operation errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Rx RDMA response out of atomic resources errors",
-      "displayName": "Rx RDMA response out of atomic resources errors",
-      "description": "Rx RDMA response out of atomic resources errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA response packet sequence errors",
-      "displayName": "Tx RDMA response packet sequence errors",
-      "description": "Tx RDMA response packet sequence errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA response remote invalid request errors",
-      "displayName": "Tx RDMA response remote invalid request errors",
-      "description": "Tx RDMA response remote invalid request errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA response remote access errors",
-      "displayName": "Tx RDMA response remote access errors",
-      "description": "Tx RDMA response remote access errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA response remote operation errors",
-      "displayName": "Tx RDMA response remote operation errors",
-      "description": "Tx RDMA response remote operation errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "Tx RDMA response RNR retry errors",
-      "displayName": "Tx RDMA response RNR retry errors",
-      "description": "Tx RDMA response RNR retry errors",
+      "name": "RxBytes",
+      "displayName": "Rx Bytes",
+      "description": "Total Receive Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [

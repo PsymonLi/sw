@@ -10,6 +10,7 @@ export PATH=${PATH}:${BIN_PATH}
 export PLATFORM_DIR=/naples/platform
 export LOG_DIR=/naples/data/logs
 export HAL_CONFIG_PATH=$NIC_DIR/conf/
+export CONFIG_PATH=$HAL_CONFIG_PATH
 export PERSISTENT_LOG_DIR=/obfl
 export NON_PERSISTENT_LOG_DIR=$LOG_DIR
 export LD_LIBRARY_PATH=$NIC_DIR/lib64:$NIC_DIR/lib:$HAL_CONFIG_PATH/plugins/lif:$HAL_CONFIG_PATH/linkmgr:$HAL_CONFIG_PATH/sdk:$HAL_CONFIG_PATH/sdk/external:usr/local/lib:/usr/lib::$LD_LIBRARY_PATH

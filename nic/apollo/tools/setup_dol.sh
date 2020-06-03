@@ -105,18 +105,31 @@ function remove_interfaces () {
     done
 }
 
+function remove_metrics_conf_files () {
+    find $PDSPKG_TOPDIR/operd/metrics/common/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        find $PDSPKG_TOPDIR/operd/metrics/venice/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    fi
+}
+
+function remove_conf_files () {
+    sudo rm -f $CONFIG_PATH/pipeline.json
+    sudo rm -f $CONFIG_PATH/vpp_startup.conf
+    remove_metrics_conf_files
+}
+
 function remove_stale_files () {
     echo "======> Cleaning debris"
     rm -f $PDSPKG_TOPDIR/out.sh
     rm -f $PDSPKG_TOPDIR/ipstrc.bak
-    rm -f $PDSPKG_TOPDIR/conf/pipeline.json
     rm -f $PDSPKG_TOPDIR/conf/gen/dol_agentcfg.json
     rm -f $PDSPKG_TOPDIR/conf/gen/device_info.txt
-    rm -f $CONFIG_PATH/vpp_startup.conf
     rm -f /var/run/pds_svc_server_sock
     remove_db
     remove_ipc_files
     remove_shm_files
+    remove_conf_files
     if [[ $DSCAGENTMODE == 1 ]]; then
         remove_interfaces
     fi
@@ -187,6 +200,22 @@ function check_health () {
     exit 1
 }
 
+function setup_metrics_conf_files () {
+    ln -s $PDSPKG_TOPDIR/operd/metrics/common/*.json $CONFIG_PATH/ | echo -n ""
+    ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/ | echo -n ""
+    if [[ $DSCAGENTMODE == 1 ]]; then
+        ln -s $PDSPKG_TOPDIR/operd/metrics/venice/*.json $CONFIG_PATH/ | echo -n ""
+    fi
+}
+
+function setup_conf_files () {
+    # TODO Remove this once agent code is fixed
+    # Create dummy device.conf - agent is trying to update it when device object is updated.
+    # Without this, pdsagent crashes since config file is not found.
+    sudo touch /sysconfig/config0/device.conf
+    setup_metrics_conf_files
+}
+
 function setup_interfaces () {
     echo "======> Hailing frequencies"
     # nmd waits for these interfaces
@@ -216,10 +245,7 @@ function setup_fru () {
 
 function setup_env () {
     sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/
-    # TODO Remove this once agent code is fixed
-    # Create dummy device.conf - agent is trying to update it when device object is updated.
-    # Without this, pdsagent crashes since config file is not found.
-    sudo touch /sysconfig/config0/device.conf
+    setup_conf_files
     setup_fru
     if [[ $DSCAGENTMODE == 1 ]]; then
         setup_interfaces

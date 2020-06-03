@@ -1,11 +1,14 @@
 {
   "Package": "metrics",
-  "Prefix": "nicmgr",
   "Messages": [
     {
       "Name": "LifMetrics",
-      "Description": "Key index - LIF IfIndex",
+      "Description": "Logical Interface Metrics",
       "DisplayName": "Logical Interface Statistics",
+      "Tags": [
+        "Level4"
+      ],
+      "Scope": "PerLIF",
       "Fields": [
         {
           "Name": "RxUnicastBytes",
@@ -203,11 +206,7 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerLIF"
+      ]
     }
   ]
 }

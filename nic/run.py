@@ -648,6 +648,15 @@ def run_offload_test(port, args):
     p = Popen(cmd)
     return check_for_completion(p, None, model_process, hal_process, args)
 
+
+def setup_conf_files():
+    DST_DIR = os.environ['CONFIG_PATH'] + "/"
+    METRICS_SRC_FILES_1 = os.environ['PDSPKG_TOPDIR'] + "/operd/metrics/common/*.json"
+    METRICS_SRC_FILES_2 = os.environ['PDSPKG_TOPDIR'] + "/operd/metrics/cloud/*.json"
+    os.system("ln -s " + METRICS_SRC_FILES_1 + " " + DST_DIR)
+    os.system("ln -s " + METRICS_SRC_FILES_2 + " " + DST_DIR)
+    return
+
 # Run athena app
 def run_athena_app(args):
     bin_dir = nic_dir + "/../nic/build/x86_64/athena/" + asic + "/bin"
@@ -669,6 +678,7 @@ def run_athena_app(args):
     except:
         pass
     os.symlink(nic_dir + "/conf/athena/pipeline.json", nic_dir + "/conf/pipeline.json")
+    setup_conf_files()
 
     cmd = ['./athena_app', '-c', 'hal.json']
 
@@ -708,6 +718,8 @@ def run_athena_gtests(args):
     except:
         pass
     os.symlink(nic_dir + "/conf/athena/pipeline.json", nic_dir + "/conf/pipeline.json")
+    setup_conf_files()
+
     cmd = ['./athena_gtests', '-c', 'hal.json']
     os.chdir(bin_dir)
 
@@ -853,6 +865,7 @@ def run_apulu_test(args):
     except:
         pass
     os.symlink(nic_dir + "/conf/apulu/pipeline.json", nic_dir + "/conf/pipeline.json")
+    setup_conf_files()
     cmd = ['build/x86_64/apulu/' + asic + '/bin/apulu_test']
     p = Popen(cmd)
     return check_for_completion(p, None, model_process, hal_process, args)

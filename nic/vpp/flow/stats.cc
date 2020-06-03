@@ -11,12 +11,7 @@
 static sdk::metrics::schema_t vpp_schema = {
     FLOW_STATS_SCHEMA_NAME,
     sdk::metrics::SW,
-    {
-#define _(n,s) s,
-        foreach_flow_type_counter
-#undef _
-        NULL,
-    }
+    "flowstats.json"
 };
 
 void *

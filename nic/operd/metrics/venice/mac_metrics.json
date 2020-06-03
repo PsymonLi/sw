@@ -1,11 +1,14 @@
 {
   "Package": "metrics",
-  "Prefix": "linkmgr",
   "Messages": [
     {
       "Name": "MacMetrics",
-      "Description": "Uplink metrics",
-      "DisplayName": "Uplink interface packet statistics",
+      "Description": "Uplink Metrics",
+      "DisplayName": "Uplink Interface Packet Statistics",
+      "Tags": [
+        "Level4"
+      ],
+      "Scope": "PerEthPort",
       "Fields": [
         {
           "Name": "FramesRxOk",
@@ -630,16 +633,16 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerEthPort"
+      ]
     },
     {
       "Name": "MgmtMacMetrics",
-      "Description": "Key index - PORT ID",
+      "Description": "Management Interface Metrics",
       "DisplayName": "Management Interface Packet Statistics",
+      "Tags": [
+        "Level4"
+      ],
+      "Scope": "PerMgmtPort",
       "Fields": [
         {
           "Name": "FramesRxOk",
@@ -865,11 +868,7 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerMgmtPort"
+      ]
     }
   ]
 }

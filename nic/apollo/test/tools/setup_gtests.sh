@@ -11,12 +11,17 @@ export GEN_TEST_RESULTS_DIR=${BUILD_DIR}/gtest_results
 export VAL_CMD=valgrind
 export IPC_MOCK_MODE=1
 
+function remove_conf_files () {
+    find $PDSPKG_TOPDIR/operd/metrics/common/ -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
+    sudo rm -f ${CONFIG_PATH}/pipeline.json ${CONFIG_PATH}/vpp_startup.conf
+}
+
 function finish () {
     # auto invoked on any exit
     ${PDSPKG_TOPDIR}/tools/print-cores.sh
     echo "===== Collecting logs ====="
     ${PDSPKG_TOPDIR}/apollo/test/tools/savelogs.sh
-    rm -f ${PDSPKG_TOPDIR}/conf/pipeline.json
     sudo rm -f /tmp/*.db /tmp/pen_* /dev/shm/pds_* /dev/shm/ipc_*
     sudo rm -f /dev/shm/metrics_*
     if [ $PIPELINE == 'apulu' ]; then
@@ -25,20 +30,30 @@ function finish () {
         fi
         sudo pkill -9 dhcpd
     fi
+    remove_conf_files
 }
 trap finish EXIT
 
+function setup_metrics_conf_files () {
+    ln -s $PDSPKG_TOPDIR/operd/metrics/common/*.json $CONFIG_PATH/
+    ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/
+}
+
+function setup_conf_files () {
+    ln -s ${CONFIG_PATH}/${PIPELINE}/pipeline.json ${CONFIG_PATH}/pipeline.json
+    setup_metrics_conf_files
+}
+
 function setup () {
     sudo rm -rf ${PDSPKG_TOPDIR}/*log* ${PDSPKG_TOPDIR}/core*
-    sudo rm -rf ${PDSPKG_TOPDIR}/conf/pipeline.json
     sudo rm -rf /tmp/pen_* /dev/shm/pds_* /dev/shm/ipc_*
-    ln -s ${PDSPKG_TOPDIR}/conf/${PIPELINE}/pipeline.json ${PDSPKG_TOPDIR}/conf/pipeline.json
+    remove_conf_files
+    setup_conf_files
 
-    echo "xxx"
     if [ $PIPELINE == 'apulu' ]; then
         if [ -z "$IPC_MOCK_MODE" ]; then
             echo "Starting VPP"
-            sudo ${PDSPKG_TOPDIR}/vpp/tools/start-vpp-mock.sh --pipeline apulu
+            sudo ${PDSPKG_TOPDIR}/vpp/tools/start-vpp-mock.sh --pipeline ${PIPELINE}
             if [[ $? != 0 ]]; then
                 echo "Failed to bring up VPP"
                 exit -1
@@ -46,7 +61,7 @@ function setup () {
         fi
 
         echo "Starting dhcpd"
-        sudo ${PDSPKG_TOPDIR}/apollo/tools/apulu/start-dhcpd-sim.sh -p apulu
+        sudo ${PDSPKG_TOPDIR}/apollo/tools/${PIPELINE}/start-dhcpd-sim.sh -p ${PIPELINE}
         if [[ $? != 0 ]]; then
             echo "Failed to bring up dhcpd"
             exit -1
