@@ -79,7 +79,7 @@ Bucket::create_(Apictx *ctx) {
 
     FTL_TRACE_VERBOSE("%s: Meta: [%s]", ctx->idstr(), ctx->metastr());
     ctx->entry->copy_key_data(ctx->params->entry);
-    ctx->tstats->insert(!ctx->is_main());
+    ctx->tstats->insert(ctx->level);
 
     // Set the Handle
     if (ctx->is_main()) {
@@ -517,7 +517,7 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
         // when we remove an entry from main table, we decrement the stats using
         // the main table level (0), however after defragmentation, we will move
         // some hint to this entry, but we never account that stats.
-        tctx->tstats->remove(!tctx->is_main());
+        tctx->tstats->remove(tctx->level);
         FTL_TRACE_VERBOSE("decrementing table stats for %s", tctx->idstr());
 
         // second notification - move complete

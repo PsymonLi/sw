@@ -398,10 +398,12 @@ hint_table::get_with_handle_(Apictx *ctx) {
     SDK_ASSERT(initctx_with_handle_(ctx) == SDK_RET_OK);
 
     lock_(ctx);
-    ctx->bucket->read_(ctx);
+    auto ret = ctx->bucket->read_(ctx);
+    FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
     ctx->params->entry->copy_key_data(ctx->entry);
+done:
     unlock_(ctx);
-    return SDK_RET_OK;
+    return ret;
 }
 
 //---------------------------------------------------------------------------
