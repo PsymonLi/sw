@@ -1779,6 +1779,12 @@ message VmotionDebugEp {
   uint32            vmotion_state        = 4;
   uint32            flags                = 5;
   uint32            state                = 6;
+  string            start_time           = 7;
+  string            end_time             = 8;
+  uint32            sync_cnt             = 9;
+  uint32            term_sync_cnt        = 10;
+  uint32            sync_sess_cnt        = 11;
+  uint32            term_sync_sess_cnt   = 12;
 }
 
 message VmotionActiveEp {
@@ -1793,6 +1799,7 @@ message VmotionDebugResponse {
   VmotionStats             stats          = 3;
   repeated VmotionDebugEp  ep             = 4;
   repeated VmotionActiveEp active_ep      = 5;
+  repeated VmotionDebugEp  history_ep     = 6;
 }
 
 // Debug test to send FIN on local EPs

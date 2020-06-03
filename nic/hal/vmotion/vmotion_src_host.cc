@@ -171,6 +171,10 @@ vmotion_src_host_fsm_def::proc_sync_begin(fsm_state_ctx ctx, fsm_event_data data
                 ret = HAL_RET_ERR;
                 goto end;
             }
+
+            vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::sync_cnt, 1);
+            vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::sync_sess_cnt, sess_count); 
+
             cur_sessions += sess_count;
         }
     } while (sess_count == VMOTION_MAX_SESS_PER_MSG);
@@ -247,6 +251,10 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
                 ret = false;
                 goto end;
             }
+
+            vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::term_sync_cnt, 1);
+            vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::term_sync_sess_cnt, sess_count); 
+
             cur_sessions += sess_count;
         }
     } while(sess_count ==  VMOTION_MAX_SESS_PER_MSG);

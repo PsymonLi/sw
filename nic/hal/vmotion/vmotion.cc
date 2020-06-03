@@ -131,6 +131,8 @@ vmotion::init(uint32_t max_threads, uint32_t vmotion_port)
 hal_ret_t
 vmotion::deinit()
 {
+    std::vector<vmotion_ep_dbg_t *>::iterator it = vmotion_dbg_history_.begin();
+
     HAL_TRACE_DEBUG("vMotion Deinit. Active VMN_EPs:{}", vmn_eps_.size());
 
     // Exit master thread
@@ -161,6 +163,12 @@ vmotion::deinit()
         return HAL_RET_RETRY;
     }
 
+    // Free vMotion debug history
+    while (it != vmotion_dbg_history_.end()) {
+        HAL_FREE(HAL_MEM_ALLOC_VMOTION, *it);
+        it = vmotion_dbg_history_.erase(it);
+    }
+
     // Free threads indexer
     rte_indexer::destroy(vmotion_.threads_idxr);
     vmotion_.threads_idxr = NULL;
@@ -171,6 +179,8 @@ vmotion::deinit()
 hal_ret_t
 vmotion::delay_deinit()
 {
+    std::vector<vmotion_ep_dbg_t *>::iterator it = vmotion_dbg_history_.begin();
+
     HAL_TRACE_DEBUG("vMotion Delay Deinit Attempt:{}", delay_del_attempt_cnt_);
 
     if (!vmn_eps_.empty() && delay_del_attempt_cnt_ < VMOTION_DELAY_DEL_MAX_ATTEMPT) {
@@ -183,6 +193,12 @@ vmotion::delay_deinit()
     for (std::vector<vmotion_ep *>::iterator vmn_ep = vmn_eps_.begin();
          vmn_ep != vmn_eps_.end(); vmn_ep++) {
         vmotion_ep::destroy(*vmn_ep);
+    }
+
+    // Free vMotion debug history
+    while (it != vmotion_dbg_history_.end()) {
+        HAL_FREE(HAL_MEM_ALLOC_VMOTION, *it);
+        it = vmotion_dbg_history_.erase(it);
     }
 
     // Free threads indexer
@@ -358,6 +374,11 @@ vmotion::delete_vmotion_ep(vmotion_ep *vmn_ep)
     vmn_eps_.erase(it);
     VMOTION_WUNLOCK
 
+    // Record vMotion end time
+    vmn_ep->debug_record_time(&vmotion_ep_dbg_t::end_time);
+
+    vmotion_dbg_history_entry_add(vmn_ep);
+
     // Destroy EP
     vmotion_ep::destroy(vmn_ep);
 
@@ -448,6 +469,10 @@ vmotion_ep::init(ep_t *ep, ep_vmotion_type_t type)
     } else {
         get_vmotion()->incr_stats(&vmotion_stats_t::mig_out_vmotion);
     }
+
+    // Record vMotion start time
+    debug_record_time(&vmotion_ep_dbg_t::start_time);
+
     return HAL_RET_OK;
 }
 
@@ -483,6 +508,18 @@ vmotion_ep::set_last_sync_time() {
     sdk::timestamp_to_nsecs(&ctime, &last_sync_time_);
 }
 
+void
+vmotion_ep::incr_dbg_cnt(uint32_t vmotion_ep_dbg_t::* field, uint32_t count)
+{
+    vmotion_ep_dbg_.*field += count;
+}
+
+void
+vmotion_ep::debug_record_time(timespec_t vmotion_ep_dbg_t::* field)
+{
+    clock_gettime(CLOCK_REALTIME, &(vmotion_ep_dbg_.*field));
+}
+
 static bool
 vmotion_endpoint_dump (void *ht_entry, void *ctxt)
 {
@@ -506,6 +543,8 @@ vmotion_endpoint_dump (void *ht_entry, void *ctxt)
 void
 vmotion_ep::populate_vmotion_ep_dump (internal::VmotionDebugEp *rsp)
 {
+    char      timebuf[30];
+
     auto ep = get_ep();
 
     rsp->set_mac_address(macaddr2str(mac_));
@@ -514,12 +553,49 @@ vmotion_ep::populate_vmotion_ep_dump (internal::VmotionDebugEp *rsp)
     rsp->set_vmotion_state(ep ? ep->vmotion_state : 0);
     rsp->set_flags(flags_);
     rsp->set_state(sm_->get_state());
+    rsp->set_sync_cnt(vmotion_ep_dbg_.sync_cnt);
+    rsp->set_term_sync_cnt(vmotion_ep_dbg_.term_sync_cnt);
+    rsp->set_sync_sess_cnt(vmotion_ep_dbg_.sync_sess_cnt);
+    rsp->set_term_sync_sess_cnt(vmotion_ep_dbg_.term_sync_sess_cnt);
+
+    strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
+             localtime(&vmotion_ep_dbg_.start_time.tv_sec));
+    rsp->set_start_time(timebuf);
 }
+
+void
+vmotion::populate_vmotion_history_dump (internal::VmotionDebugEp *rsp, vmotion_ep_dbg_t *entry)
+{
+    char      timebuf[30];
+
+    rsp->set_mac_address(macaddr2str(entry->ep_mac));
+    rsp->set_old_homing_host_ip(ipv4addr2str(entry->old_homing_host_ip.addr.v4_addr));
+    rsp->set_migration_type(entry->vmotion_type);
+    rsp->set_vmotion_state(entry->vmotion_state);
+    rsp->set_flags(entry->flags);
+    rsp->set_state(entry->sm_state);
+    rsp->set_sync_cnt(entry->sync_cnt);
+    rsp->set_term_sync_cnt(entry->term_sync_cnt);
+    rsp->set_sync_sess_cnt(entry->sync_sess_cnt);
+    rsp->set_term_sync_sess_cnt(entry->term_sync_sess_cnt);
+
+    strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
+             localtime(&entry->start_time.tv_sec));
+    rsp->set_start_time(timebuf);
+    strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
+             localtime(&entry->end_time.tv_sec));
+    rsp->set_end_time(timebuf);
+}
+
 
 void
 vmotion::populate_vmotion_dump (internal::VmotionDebugResponse *rsp)
 {
     rsp->set_vmotion_enable(1);
+
+    for (auto e : vmotion_dbg_history_) {
+        populate_vmotion_history_dump(rsp->add_history_ep(), e);
+    }
 
     for (std::vector<vmotion_ep *>::iterator ep = vmn_eps_.begin(); ep != vmn_eps_.end(); ep++) {
         (*ep)->populate_vmotion_ep_dump(rsp->add_ep());
@@ -641,6 +717,34 @@ vmotion::vmotion_ep_migration_if_update(ep_t *ep)
     VMOTION_PD_UNLOCK
 
     return ret;
+}
+
+void
+vmotion::vmotion_dbg_history_entry_add(vmotion_ep *vmn_ep)
+{
+    vmotion_ep_dbg_t *entry;
+    ep_t             *ep = vmn_ep->get_ep();
+
+    VMOTION_WLOCK
+
+    if (vmotion_dbg_history_.size() == VMOTION_MAX_HISTORY_ENTRIES) {
+        entry = vmotion_dbg_history_.front();
+        vmotion_dbg_history_.erase(vmotion_dbg_history_.begin());
+    } else {
+        entry = (vmotion_ep_dbg_t *) HAL_CALLOC(HAL_MEM_ALLOC_VMOTION, sizeof(vmotion_ep_dbg_t));
+    }
+
+    vmotion_dbg_history_.push_back(entry);
+
+    VMOTION_WUNLOCK
+
+    memcpy(entry, vmn_ep->get_vmotion_ep_dbg(), sizeof(vmotion_ep_dbg_t));
+    memcpy(&entry->ep_mac, vmn_ep->get_ep_mac(), ETH_ADDR_LEN);
+    memcpy(&entry->old_homing_host_ip, &vmn_ep->get_old_homing_host_ip(), sizeof(ip_addr_t));
+    entry->vmotion_type  = vmn_ep->get_vmotion_type();
+    entry->vmotion_state = (ep ? ep->vmotion_state : MigrationState::NONE);
+    entry->flags         = *vmn_ep->get_flags(); 
+    entry->sm_state      = vmn_ep->get_sm()->get_state();
 }
 
 } // namespace hal

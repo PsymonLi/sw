@@ -263,13 +263,17 @@ vmotion_dst_host_fsm_def::process_sync(fsm_state_ctx ctx, fsm_event_data data)
     pd_func_args.pd_l2seg_get_flow_lkupid = &args;
     hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, &pd_func_args);
 
-    HAL_TRACE_DEBUG("Dest Host Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{}",
+    HAL_TRACE_DEBUG("Dest Host Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{} Cnt:{}",
                     macaddr2str(ep->l2_key.mac_addr), ep->l2seg_handle, ep->vrf_handle,
-                    l2seg->vrf_handle, args.hwid);
+                    l2seg->vrf_handle, args.hwid, ((VmotionMessage *)data)->sync().sessions_size());
 
     sess_args.l2seg_id   = l2seg->seg_id;
     sess_args.vrf_handle = args.hwid;
-    sess_args.sync_msg   =  ((VmotionMessage *)data)->sync();
+    sess_args.sync_msg   = ((VmotionMessage *)data)->sync();
+
+    vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::sync_cnt, 1);
+    vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::sync_sess_cnt,
+                         ((VmotionMessage *)data)->sync().sessions_size());
 
     fte::sync_session(sess_args);
 
@@ -315,7 +319,11 @@ vmotion_dst_host_fsm_def::process_term_sync(fsm_state_ctx ctx, fsm_event_data da
 
     sess_args.l2seg_id   = l2seg->seg_id;
     sess_args.vrf_handle = args.hwid;
-    sess_args.sync_msg   =  ((VmotionMessage *)data)->sync();
+    sess_args.sync_msg   = ((VmotionMessage *)data)->sync();
+
+    vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::term_sync_cnt, 1);
+    vmn_ep->incr_dbg_cnt(&vmotion_ep_dbg_t::term_sync_sess_cnt, 
+                         ((VmotionMessage *)data)->sync().sessions_size());
 
     fte::sync_session(sess_args);
 

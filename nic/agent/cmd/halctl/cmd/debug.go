@@ -503,16 +503,34 @@ func vmotionShowResp(resp *halproto.VmotionDebugResponse) {
 
 	hdrLine := strings.Repeat("-", 70)
 
-	// Endpoints
+	// History vMotions
 	fmt.Println(hdrLine)
-	fmt.Printf("%-20s%-18s%-7s%-8s%-8s%-11s\n",
-		"EndPoint", "HomingHost", "Type", "State", "Flags", "SM State")
+	fmt.Println("History of vMotions")
+	fmt.Println(hdrLine)
+	for _, ep := range resp.GetHistoryEp() {
+		fmt.Printf("EndPoint: %s\n", ep.GetMacAddress())
+		fmt.Printf("  HomingHost:%s, Type:%d, State:%d, Flags:0x%x, SM State:%d\n",
+			ep.GetOldHomingHostIp(), ep.GetMigrationType(), ep.GetVmotionState(), ep.GetFlags(),
+			ep.GetState())
+		fmt.Printf("  SyncCnt:%d (Msg:%d) TermSyncCnt:%d (Msg:%d)\n",
+			ep.GetSyncSessCnt(), ep.GetSyncCnt(), ep.GetTermSyncSessCnt(), ep.GetTermSyncCnt())
+		fmt.Printf("  StartTime:[%s], EndTime:[%s]\n", ep.GetStartTime(), ep.GetEndTime())
+		fmt.Println(hdrLine)
+	}
 	fmt.Println(hdrLine)
 
+	// Active vMotions
+	fmt.Println("\n\nActive vMotions")
+	fmt.Println(hdrLine)
 	for _, ep := range resp.GetEp() {
-		fmt.Printf("%-20s%-18s%-7d%-8d0x%-8x%-11d\n",
-			ep.GetMacAddress(), ep.GetOldHomingHostIp(), ep.GetMigrationType(),
-			ep.GetVmotionState(), ep.GetFlags(), ep.GetState())
+		fmt.Printf("EndPoint: %s\n", ep.GetMacAddress())
+		fmt.Printf("  HomingHost:%s, Type:%d, State:%d, Flags:0x%x, SM State:%d\n",
+			ep.GetOldHomingHostIp(), ep.GetMigrationType(), ep.GetVmotionState(), ep.GetFlags(),
+			ep.GetState())
+		fmt.Printf("  SyncCnt:%d (Msg:%d) TermSyncCnt:%d (Msg:%d)\n",
+			ep.GetSyncSessCnt(), ep.GetSyncCnt(), ep.GetTermSyncSessCnt(), ep.GetTermSyncCnt())
+		fmt.Printf("  StartTime:[%s]\n", ep.GetStartTime())
+		fmt.Println(hdrLine)
 	}
 	fmt.Println(hdrLine)
 

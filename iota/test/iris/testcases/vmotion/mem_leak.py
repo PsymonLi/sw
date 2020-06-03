@@ -56,10 +56,15 @@ def Verify(tc):
         vm_memtrack.append(vm_utils.get_memtrack(memtrack_cmd, 90))
         vm_memtrack.append(vm_utils.get_memtrack(memtrack_cmd, 91))
 
+        vm_dbg_stats = vm_utils.get_dbg_vmotion_stats(tc, node)
+        tot_vmotions = int(vm_dbg_stats['vMotion'])
+        # 3 chunks of vMotion alloc assigned for global usage
+        chunks_in_use = tot_vmotions + 3
+
         # Subtract -3 in vMotion Init, 3 chunks of vMotion alloc will be done
         for info in vm_memtrack:
            if 'allocs' in info and 'frees' in info:
-               if ((info['allocs'] - 3) != info['frees']):
+               if ((info['allocs'] - chunks_in_use) != info['frees']):
                    api.Logger.info("Memleak detected in Mtrack %d %d" %(info['allocs'], info['frees']))
                    tc.memleak = 1
 

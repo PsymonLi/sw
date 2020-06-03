@@ -28,6 +28,7 @@ namespace hal {
 #define VMOTION_THR_DELAY_DEL_TIME   1000         // (in Milliseconds) - 1 Sec
 #define VMOTION_DESTROY_DELAY_TIME   250          // (in Milliseconds) - 1 Sec
 #define VMOTION_DELAY_DEL_MAX_ATTEMPT  3
+#define VMOTION_MAX_HISTORY_ENTRIES  40
 
 #define VMOTION_WLOCK   vmotion_.rwlock.wlock();
 #define VMOTION_WUNLOCK vmotion_.rwlock.wunlock();
@@ -104,6 +105,21 @@ typedef struct vmotion_stats_s {
     uint32_t    mig_cold;
 } vmotion_stats_t;
 
+typedef struct vmotion_ep_dbg_s {
+    mac_addr_t        ep_mac;
+    ip_addr_t         old_homing_host_ip;
+    ep_vmotion_type_t vmotion_type;
+    MigrationState    vmotion_state; 
+    uint32_t          flags;
+    uint32_t          sm_state;
+    timespec_t        start_time;
+    timespec_t        end_time;
+    uint32_t          sync_cnt;
+    uint32_t          term_sync_cnt;
+    uint32_t          sync_sess_cnt;
+    uint32_t          term_sync_sess_cnt;
+} vmotion_ep_dbg_t;
+
 class vmotion_ep {
 public:
     // Factory methods
@@ -126,6 +142,7 @@ public:
     uint32_t                         get_thread_id(void) { return thread_id_; }
     MigrationState                   get_migration_state(void) { return migration_state_; }
     SSL*                             get_ssl(void) { return tls_connection_->get_ssl(); }
+    vmotion_ep_dbg_t *               get_vmotion_ep_dbg(void) { return &vmotion_ep_dbg_; } 
 
     // Set methods
     void                set_socket_fd(int fd) { sock_fd_ = fd; }
@@ -136,6 +153,8 @@ public:
     void                set_migration_state(MigrationState state) { migration_state_ = state; }
     void                set_expiry_timer(void *tmr) { expiry_timer_ = tmr; }
     void                set_tls_connection(TLSConnection *conn) { tls_connection_ = conn; }
+    void                incr_dbg_cnt(uint32_t vmotion_ep_dbg_t::* field, uint32_t count);
+    void                debug_record_time(timespec_t vmotion_ep_dbg_t::* field);
 
     // Methods
     hal_ret_t           spawn_dst_host_thread(void);
@@ -163,6 +182,7 @@ private:
     void                            *expiry_timer_;
     MigrationState                   migration_state_;
     TLSConnection                   *tls_connection_; 
+    vmotion_ep_dbg_t                 vmotion_ep_dbg_; 
 };
 
 class vmotion {
@@ -218,6 +238,9 @@ private:
     static void master_thread_exit(void *ctxt);
     static void master_thread_cb(sdk::event_thread::io_t *io, int sock_fd, int events);
     void        vmotion_schedule_delay_destroy(void);
+    void        vmotion_dbg_history_entry_add(vmotion_ep *vmn_ep);
+    void        populate_vmotion_history_dump(internal::VmotionDebugEp *rsp,
+                                              vmotion_ep_dbg_t *entry); 
 
     typedef struct vmotion_s {
         sdk::event_thread::event_thread *vmotion_master;
@@ -231,6 +254,7 @@ private:
     vmotion_t                  vmotion_;
     std::vector<vmotion_ep *>  vmn_eps_;
     vmotion_stats_t            stats_; 
+    std::vector<vmotion_ep_dbg_t *> vmotion_dbg_history_;
     TLSContext                *tls_context_; 
     int                        master_sock_fd_;
     int                        delay_del_attempt_cnt_ = 0;
@@ -246,7 +270,6 @@ typedef struct vmotion_thread_ctx_s {
     void                            *expiry_timer;
     TLSConnection                   *tls_connection;
 } vmotion_thread_ctx_t;
-
 
 hal_ret_t vmotion_init(int vmotion_port);
 hal_ret_t vmotion_deinit();
