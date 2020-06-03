@@ -30,7 +30,7 @@
             "//": "prepare for B bringup",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "pdsagent" ],
+                "names": [ "pdsagent", "vpp" ],
                 "rsp_timeout": "300000ms",
                 "domain": "A"
             },
@@ -104,7 +104,9 @@
         "sync": {
             "//": "opearational states syncing",
             "svc": {
-              "domain": "B"
+                "event_sequence": "serial",
+                "names": [ "vpp" ],
+                "domain": "B"
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "pre_switchover" },
