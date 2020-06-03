@@ -74,6 +74,41 @@ extern const char *g_upg_log_pfx;
 {                                                                         \
 }
 
+#define LOG_STAGE_TRANSITION(from, to)                                         \
+    UPG_TRACE_INFO("Stage is transitioning from %s to %s", from, to);
+
+#define LOG_INVALID_OBJ(obj, obj_name)                                         \
+    UPG_TRACE_ERR("Not a valid %s %s", obj, obj_name);
+
+#define LOG_SCRIPT(hook)                                                       \
+    UPG_TRACE_INFO("Executing script %s", hook);
+
+#define LOG_SCRIPT_STATUS(ret)                                                 \
+    UPG_TRACE_INFO("Executed script, exit status %d", ret);
+
+#define LOG_UPDATE_SVC_IPC_MAP(svc, ipc_id)                                    \
+    UPG_TRACE_INFO("Updating service %s with ipc id %d", svc, ipc_id);
+
+#define LOG_BROADCAST_MSG(domain)                                              \
+    UPG_TRACE_INFO("Sending broadcast message, domain %s", domain);
+
+#define LOG_SEND_MSG(svc, timeout, domain)                                     \
+    UPG_TRACE_INFO("Sending request to service %s, timeout %f, domain %s",     \
+                   svc, timeout, domain);
+
+#define LOG_RESPONSE_MSG(svc, status)                                          \
+    UPG_TRACE_INFO("Received response from service %s, status %s",             \
+                    svc, status);
+
+#define LOG_WRONG_RESPONSE_ERR_MSG(svc, status, stage)                         \
+    UPG_TRACE_ERR("Received response from service %s, status %s, stage %s",    \
+                    svc, status, stage);
+
+#define LOG_STAGE_START(evseq_type, svcs, timeout, domain)                     \
+    UPG_TRACE_INFO("Triggering %s event sequence to service(es) %s, "          \
+                    "timeout %f in domain %s", evseq_type, svcs, timeout,      \
+                    domain);
+
 }    // namespace upg
 }    // namespace sdk
 

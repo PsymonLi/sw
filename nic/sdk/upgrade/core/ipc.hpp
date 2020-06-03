@@ -24,6 +24,18 @@ typedef enum ipc_svc_dom_id_s {
     IPC_SVC_DOM_ID_B    = 2, ///< second domain
 } ipc_svc_dom_id_t;
 
+static const char *ipc_svc_dom_id_name[] =  {
+    [IPC_SVC_DOM_ID_NONE] = "none",
+    [IPC_SVC_DOM_ID_A] = "A",
+    [IPC_SVC_DOM_ID_B] = "B"
+};
+
+static inline const char *
+ipc_svc_dom_id_to_name (ipc_svc_dom_id_t id)
+{
+    return ipc_svc_dom_id_name[id];
+}
+
 /// ipc callback which expects service name and id filled by the endpoint
 typedef void (*upg_async_response_cb_t)(upg_event_msg_t *event);
 /// broadcast to a domain

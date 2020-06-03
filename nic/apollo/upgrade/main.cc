@@ -172,8 +172,7 @@ upg_event_send_to_peer_hdlr (upg_stage_t stage, std::string svc_name,
     sdk_ret_t ret;
     upg_event_msg_t *msg = &g_upg_event_msg_in;
 
-    UPG_TRACE_INFO("Request peer notification stage %s, svcname %s, svcid %u",
-                   upg_stage2str(stage), svc_name.c_str(), svc_id);
+    UPG_TRACE_INFO("Request peer notification stage %s", upg_stage2str(stage));
     // new process should be booted up now and also upgmgr
     // is ready to recieve
     memset(msg, 0, sizeof(*msg));

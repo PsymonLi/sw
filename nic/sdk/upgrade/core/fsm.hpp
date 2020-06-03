@@ -87,6 +87,7 @@ public:
     void update_stage_progress_interactive(const svc_rsp_code_t rsp);
     bool is_serial_event_sequence(void) const;
     bool is_parallel_event_sequence(void) const;
+    const char* get_event_sequence_type(void) const;
     bool is_discovery(void) const;
     bool is_pre_hooks_done(void) const { return is_pre_hooks_done_; };
     bool is_post_hooks_done(void) const { return is_post_hooks_done_; };

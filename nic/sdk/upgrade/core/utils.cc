@@ -43,9 +43,11 @@ svc_sequence_to_str (const svc_sequence_list svcs)
 {
     std::string str = "";
     for (auto x: svcs) {
-        str += x + "," ;
+        str += x + ", " ;
     }
     if (!str.empty()) {
+        str.pop_back();
+        str.pop_back();
         str.pop_back();
     }
     return str;
@@ -259,13 +261,10 @@ is_valid_script (std::string tools_dir, const std::string script)
 {
     std::string file = tools_dir + "/" + script;
     if (access(file.c_str(), F_OK) != 0) {
-        UPG_TRACE_ERR("Script %s doesn't exist !", file.c_str());
         return false;
     }
 
     if (access(file.c_str(), X_OK) != 0) {
-        UPG_TRACE_ERR("Script %s doesn't have execute permission !",
-                      file.c_str());
         return false;
     }
     return true;
@@ -276,10 +275,10 @@ execute (const char *cmd)
 {
     bool result=true;
 
-    UPG_TRACE_INFO("Executing script  %s", cmd);
+    LOG_SCRIPT(cmd);
     auto pipefp = popen(cmd, "r");
     if (pipefp == NULL) {
-        UPG_TRACE_ERR("Failed to execute script, return code is %d", errno);
+        LOG_SCRIPT_STATUS(errno);
         return false;
     }
 
@@ -288,7 +287,7 @@ execute (const char *cmd)
         auto buf = fgets(buffer, 4096, pipefp);
         if (buf == NULL) {
             if (errno == EWOULDBLOCK) {
-                UPG_TRACE_ERR("No response from script, return code is %d", errno);
+                LOG_SCRIPT_STATUS(errno);
                 pclose(pipefp);
                 return false;
             }
@@ -300,12 +299,11 @@ execute (const char *cmd)
     auto status = pclose(pipefp);
     if (WIFEXITED(status)) {
         if (WEXITSTATUS(status) == 0) {
-            UPG_TRACE_INFO("Successfully executed script");
+            result = true;
         } else {
-            UPG_TRACE_ERR("Script execution failure, return code is %d",
-                    WEXITSTATUS(status));
             result = false;
         }
+        LOG_SCRIPT_STATUS(WEXITSTATUS(status));
     } else if (WIFSIGNALED(status)) {
         UPG_TRACE_ERR("Abnormal termination, signal number is %d",
                 WTERMSIG(status));
@@ -329,16 +327,11 @@ execute_hook (const std::string tools_dir, const std::string script,
         cmd = tools_dir + "/" + script;
         cmd = cmd + " -f " + fw_pkgname;
         if (hook_type == PRE_STAGE) {
-            UPG_TRACE_INFO("Executing pre-hook %s, in stage %s",
-                           script.c_str(), stage_name.c_str());
             cmd = cmd + " -s " + stage_name;
             cmd = cmd + " -t PRE" ;
             return execute(cmd.c_str());
         } else {
             SDK_ASSERT(status != SVC_RSP_MAX);
-            UPG_TRACE_INFO("Executing post-hook %s, in stage %s, with stage "
-                           "status %d", script.c_str(), stage_name.c_str(),
-                           status);
             cmd = cmd + " -s " + stage_name;
             cmd = cmd + " -t POST";
             cmd = cmd + " -r " + std::string(svc_rsp_code_name[status]);
