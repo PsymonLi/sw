@@ -569,6 +569,7 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
         VMK_ReturnStatus status;
         vmk_AddrCookie driver_data;
         vmk_UplinkState init_state;
+        vmk_Name new_fw_version;
         struct lif *lif;
 
         driver_data.ptr = priv_data;
@@ -637,6 +638,14 @@ ionic_dev_recover(struct ionic_en_priv_data *priv_data)
         ionic_en_uplink_default_coal_params_set(priv_data);
 
         ionic_clean_priv_sw_stats(lif);
+
+        vmk_NameInitialize(&new_fw_version,
+                           lif->ionic->en_dev.idev.dev_info_regs->fw_version);
+        IONIC_EN_SHARED_AREA_BEGIN_WRITE(lif->uplink_handle);
+        vmk_NameCopy(&lif->uplink_handle->uplink_shared_data.driverInfo.firmwareVersion,
+                     &new_fw_version);
+        IONIC_EN_SHARED_AREA_END_WRITE(lif->uplink_handle);
+
         status = ionic_en_uplink_start_io(driver_data);
         if (status != VMK_OK) {
                 ionic_en_err("ionic_en_uplink_start_io() failed, status: %s",
