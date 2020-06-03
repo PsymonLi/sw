@@ -17,8 +17,8 @@ def Main(step):
         if api.GetNodeOs(naples_host) == host.OS_TYPE_BSD: 
             api.CopyToHost(naples_host, [IONIC_STATS_SCRIPT], "")
             api.Trigger_AddHostCommand(req, naples_host, "cp  ionic_stats.sh " + api.HOST_NAPLES_DIR)
-        api.CopyToNaples(naples_host, [IPERF_BINARY], "")
-        api.Trigger_AddNaplesCommand(req, naples_host, "mv /iperf3_aarch64 /usr/bin/iperf3")
+        api.CopyToNaples(naples_host, [IPERF_BINARY], "", naples_dir="/usr/bin/")
+        api.Trigger_AddNaplesCommand(req, naples_host, "ln -s /usr/bin/iperf3_aarch64 /usr/bin/iperf3")
 
     resp = api.Trigger(req)
 

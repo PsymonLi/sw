@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -49,6 +50,31 @@ func SSHKeygen() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	// Copy the generated key file to 'root' as well
+	currentUser, err := user.Current()
+	if err != nil {
+		log.Println("Could not get currentUser")
+		return
+	}
+
+	if os.Getenv("HOME") != currentUser.HomeDir {
+		sshDir = currentUser.HomeDir + "/.ssh"
+		os.Mkdir(sshDir, 0755)
+		savePrivateFileTo = sshDir + "/id_rsa"
+		savePublicFileTo = sshDir + "/id_rsa.pub"
+
+		err = writeKeyToFile(privateKeyBytes, savePrivateFileTo, 0600)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		err = writeKeyToFile([]byte(publicKeyBytes), savePublicFileTo, 0644)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
 }
 
 // generatePrivateKey creates a RSA Private Key of specified byte size
