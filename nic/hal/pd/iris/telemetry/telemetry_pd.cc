@@ -1289,7 +1289,7 @@ pd_mirror_stats_update (pd_func_args_t *pd_func_args)
 
     memset(g_mirr_metrics, 0, sizeof(g_mirr_metrics));
 
-    HAL_TRACE_DEBUG("Update mirror stats in delphi");
+    HAL_TRACE_VERBOSE("Update mirror stats in delphi");
 
     auto walk_cb = [](void *entry, void *ctxt) {
         hal_ret_t ret = HAL_RET_OK;
@@ -1326,7 +1326,7 @@ pd_mirror_stats_update (pd_func_args_t *pd_func_args)
             metrics.pps = pps;
             metrics.bytesps = bytesps;
 
-            HAL_TRACE_DEBUG("Publish mirror stats for tag: {}, "
+            HAL_TRACE_VERBOSE("Publish mirror stats for tag: {}, "
                             "pkts: {}->{}, bytes: {}->{}, pps: {}, bps: {}",
                             g_mirr_metrics[i].tag, pkts,
                             metrics.pkts, bytes, metrics.bytes, 
