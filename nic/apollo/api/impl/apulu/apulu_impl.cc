@@ -476,6 +476,7 @@ apulu_impl::stats_init_(void) {
     return SDK_RET_OK;
 }
 
+#define nacl_drop_action                action_u.nacl_nacl_drop
 sdk_ret_t
 apulu_impl::nacl_init_(void) {
     sdk_ret_t ret;
@@ -494,6 +495,8 @@ apulu_impl::nacl_init_(void) {
     mask.key_metadata_entry_valid_mask = ~0;
     mask.key_metadata_ktype_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IPV6;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
@@ -510,6 +513,8 @@ apulu_impl::nacl_init_(void) {
     mask.control_metadata_lif_type_mask = ~0;
     mask.control_metadata_ip_fragment_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IP_FRAGMENT;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 
@@ -566,6 +571,8 @@ apulu_impl::nacl_init_(void) {
     mask.key_metadata_sport_mask = ~0;
     mask.key_metadata_proto_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_DHCP_SERVER_SPOOFING;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, idx++, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
 

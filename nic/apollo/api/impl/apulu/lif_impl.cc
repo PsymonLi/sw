@@ -546,6 +546,7 @@ error:
 }
 
 #define nacl_redirect_to_arm_action     action_u.nacl_nacl_redirect_to_arm
+#define nacl_drop_action                action_u.nacl_nacl_drop
 sdk_ret_t
 lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     sdk_ret_t ret;
@@ -595,6 +596,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mac_str_to_addr((char *)"FF:FF:FF:00:00:00", mac_addr);
     sdk::lib::memrev(mask.ethernet_1_dstAddr_mask, mac_addr, ETH_ADDR_LEN);
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_L2_MULTICAST;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -620,6 +623,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     v4_addr = 0xF0000000;
     memcpy(mask.key_metadata_dst_mask, &v4_addr, sizeof(v4_addr));
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IP_MULTICAST;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -649,6 +654,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mask.control_metadata_tunneled_packet_mask = ~0;
     mask.key_metadata_flow_lkp_id_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_PF_SUBNET_BINDING;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -673,6 +680,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mask.control_metadata_ip_fragment_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_IP_FRAGMENT;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     SDK_ASSERT(p4pd_ret == P4PD_SUCCESS);
@@ -902,6 +911,8 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     mask.control_metadata_flow_miss_mask = ~0;
     mask.control_metadata_tunneled_packet_mask = ~0;
     data.action_id = NACL_NACL_DROP_ID;
+    data.nacl_drop_action.drop_reason_valid = 1;
+    data.nacl_drop_action.drop_reason = P4I_DROP_PROTOCOL_NOT_SUPPORTED;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {

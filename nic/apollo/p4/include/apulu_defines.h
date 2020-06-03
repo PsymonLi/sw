@@ -32,7 +32,13 @@
 #define P4I_DROP_VNI_INVALID                        0
 #define P4I_DROP_TAGGED_PKT_FROM_VNIC               1
 #define P4I_DROP_IP_FRAGMENT                        2
-#define P4I_DROP_NACL                               3
+#define P4I_DROP_IPV6                               3
+#define P4I_DROP_DHCP_SERVER_SPOOFING               4
+#define P4I_DROP_L2_MULTICAST                       5
+#define P4I_DROP_IP_MULTICAST                       6
+#define P4I_DROP_PF_SUBNET_BINDING                  7
+#define P4I_DROP_PROTOCOL_NOT_SUPPORTED             8
+#define P4I_DROP_NACL                               9
 #define P4I_DROP_REASON_MAX                         P4I_DROP_NACL
 
 #define P4E_DROP_REASON_MIN                         0

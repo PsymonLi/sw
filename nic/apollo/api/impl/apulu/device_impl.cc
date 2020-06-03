@@ -265,6 +265,12 @@ device_impl::fill_ing_drop_stats_(pds_device_drop_stats_t *ing_drop_stats) {
         "vni_invalid",
         "tagged_pkt_from_vnic",
         "ip_fragment",
+        "ipv6",
+        "dhcp_server_spoofing",
+        "l2_multicast",
+        "ip_multicast",
+        "pf_subnet_binding",
+        "protocol_unsupported",
         "nacl",
     };
 
