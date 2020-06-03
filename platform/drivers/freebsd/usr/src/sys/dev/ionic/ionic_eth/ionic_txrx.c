@@ -3245,7 +3245,6 @@ err_out:
 	return (error);
 }
 
-#ifdef notyet
 static int
 ionic_qos_tc_bw_perc_sysctl(SYSCTL_HANDLER_ARGS)
 {
@@ -3303,7 +3302,6 @@ err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
 }
-#endif
 
 static int
 ionic_qos_pcp_to_tc_sysctl(SYSCTL_HANDLER_ARGS)
@@ -3611,12 +3609,10 @@ ionic_qos_sysctl(struct ionic_lif *lif, struct sysctl_ctx_list *ctx,
 			CTLTYPE_U8 | CTLFLAG_RW | CTLFLAG_SKIP, lif, 0,
 			ionic_qos_tc_sched_type_sysctl, "QU",
 			"Scheduling policy for TCs - 0(strict)/1(DWRR)");
-#ifdef notyet
 	SYSCTL_ADD_PROC(ctx, queue_list, OID_AUTO, "tc_bw_perc",
 			CTLTYPE_U8 | CTLFLAG_RW, lif, 0,
 			ionic_qos_tc_bw_perc_sysctl, "QU",
 			"Bandwidth percent for TCs");
-#endif
 	SYSCTL_ADD_PROC(ctx, queue_list, OID_AUTO, "pcp_to_tc",
 			CTLTYPE_U8 | CTLFLAG_RW, lif, 0,
 			ionic_qos_pcp_to_tc_sysctl, "QU",

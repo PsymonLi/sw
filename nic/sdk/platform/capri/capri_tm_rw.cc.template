@@ -105,6 +105,10 @@ typedef struct capri_tm_ctx_s {
 capri_tm_ctx_t g_tm_ctx_;
 capri_tm_ctx_t *g_tm_ctx;
 
+static
+void cap_pb_cfg_sched_node(int chip_id, int inst_id, int level,
+                           int oport, int queue_node, int quota);
+
 static void
 set_tm_ctx (capri_tm_cfg_profile_t *tm_cfg_profile,
             capri_tm_asic_profile_t *asic_profile)
@@ -1325,18 +1329,8 @@ capri_tm_scheduler_map_update_l${level} (uint32_t port,
             return sdk::SDK_RET_ERR;
     }
 
-    pbc_csr.cfg_sched.read();
-    pbc_csr.cfg_sched.dhs_selection( ${level}*2 );
-    if (tm_sw_cfg_write_enabled()) {
-        ${trace_register("pbc_csr.cfg_sched")}
-        pbc_csr.cfg_sched.write();
-    }
-
-    pbc_csr.cfg_dhs_mem.address(port*max_nodes + node);
-    if (tm_sw_cfg_write_enabled()) {
-        ${trace_register("pbc_csr.cfg_dhs_mem")}
-        pbc_csr.cfg_dhs_mem.write();
-    }
+    SDK_TRACE_DEBUG("%s", data.str().c_str());
+    data.str("");
 
     uint64_t scheduler_rate;
     if (node_params->sched_type == TM_SCHED_TYPE_STRICT) {
@@ -1348,20 +1342,14 @@ capri_tm_scheduler_map_update_l${level} (uint32_t port,
         }
     }
 
-    uint32_t quota = (node_params->sched_type == TM_SCHED_TYPE_STRICT ?
-                      scheduler_rate : node_params->dwrr.weight);
+    uint32_t quota = (node_params->sched_type == TM_SCHED_TYPE_STRICT ? scheduler_rate : 
+                            ((node_params->dwrr.weight / 10.0) * 100 * CAPRI_TM_DWRR_UNIT));
 
-    pbc_csr.dhs_sched.entry[0].command(1);   //1: overwrite quota and credits
-    pbc_csr.dhs_sched.entry[0].current_credit(quota);
-    pbc_csr.dhs_sched.entry[0].quota(quota);
-    if (tm_sw_cfg_write_enabled()) {
-        ${trace_register("pbc_csr.dhs_sched.entry[0]")}
-        pbc_csr.dhs_sched.entry[0].write();
-    }
-    SDK_TRACE_DEBUG("%s", data.str().c_str());
+    cap_pb_cfg_sched_node(0, 0, 1, port, node, quota);
+
     SDK_TRACE_DEBUG("Updated the output queue scheduler on port %u "
-                    "level %u, node %u",
-                    port, ${level}, node);
+                    "level %u, node %u wt %u quota %u",
+                    port, ${level}, node, node_params->dwrr.weight, quota);
 
     return sdk::SDK_RET_OK;
 }

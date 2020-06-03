@@ -328,6 +328,18 @@ hal_grpc::qos_class_create(QosClassRequestMsg& req_msg,
 }
 
 Status
+hal_grpc::qos_class_update(QosClassRequestMsg& req_msg,
+                           QosClassResponseMsg& rsp_msg)
+{
+    grpc::ClientContext context;
+    grpc::Status        status;
+
+    SET_TIMEOUT();
+    status = qos_stub_->QosClassUpdate(&context, req_msg, &rsp_msg);
+    return status;
+}
+
+Status
 hal_grpc::qos_class_delete(QosClassDeleteRequestMsg& req_msg,
                            QosClassDeleteResponseMsg& rsp_msg)
 {

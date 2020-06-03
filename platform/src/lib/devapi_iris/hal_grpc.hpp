@@ -256,6 +256,8 @@ public:
     // QoS APIs
     Status qos_class_create(QosClassRequestMsg& req_msg,
                             QosClassResponseMsg& rsp_msg);
+    Status qos_class_update(QosClassRequestMsg& req_msg,
+                            QosClassResponseMsg& rsp_msg);
     Status qos_class_delete(QosClassDeleteRequestMsg& req_msg,
                             QosClassDeleteResponseMsg& rsp_msg);
     Status qos_clear_stats(QosClearStatsRequestMsg& req_msg,

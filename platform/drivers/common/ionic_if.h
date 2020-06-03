@@ -1939,6 +1939,7 @@ enum ionic_qos_sched_type {
  *	IONIC_QOS_CONFIG_F_NO_DROP		drop/nodrop
  *	IONIC_QOS_CONFIG_F_RW_DOT1Q_PCP		enable dot1q pcp rewrite
  *	IONIC_QOS_CONFIG_F_RW_IP_DSCP		enable ip dscp rewrite
+ *	IONIC_QOS_CONFIG_F_NON_DISRUPTIVE 	Non-disruptive TC update
  * @sched_type:		QoS class scheduling type (enum ionic_qos_sched_type)
  * @class_type:		QoS class type (enum ionic_qos_class_type)
  * @pause_type:		QoS pause type (enum ionic_qos_pause_type)
@@ -1960,6 +1961,8 @@ union ionic_qos_config {
 /* Used to rewrite PCP or DSCP value. */
 #define IONIC_QOS_CONFIG_F_RW_DOT1Q_PCP		BIT(2)
 #define IONIC_QOS_CONFIG_F_RW_IP_DSCP		BIT(3)
+/* Non-disruptive TC update */
+#define IONIC_QOS_CONFIG_F_NON_DISRUPTIVE 	BIT(4)
 		u8      flags;
 		u8      sched_type;
 		u8      class_type;

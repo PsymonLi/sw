@@ -57,6 +57,7 @@ struct ionic_lif;
 
 
 #define IONIC_QUEUE_NAME_MAX_SZ	8
+#define IONIC_MAX_BW_PERC	100
 MALLOC_DECLARE(M_IONIC);
 
 extern int ionic_qos_reset_on_dev_reset;
@@ -246,9 +247,7 @@ int ionic_qos_enable_update(struct ionic_lif *lif, uint8_t *enable);
 int ionic_qos_no_drop_update(struct ionic_lif *lif, uint8_t *no_drop);
 int ionic_qos_pfc_cos_update(struct ionic_lif *lif, uint8_t *pfc_cos);
 int ionic_qos_sched_type_update(struct ionic_lif *lif, uint8_t *sched);
-#ifdef notyet
 int ionic_qos_bw_update(struct ionic_lif *lif, uint8_t *bw_perc);
-#endif
 int ionic_qos_pcp_to_tc_update(struct ionic_lif *lif, uint8_t *pcp);
 int ionic_qos_dscp_to_tc_update(struct ionic_lif *lif, uint8_t *pcp);
 bool ionic_qos_is_tc_dscp_updated(union ionic_qos_config *qos, int new_ndscp, uint8_t *new_dscp);

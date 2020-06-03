@@ -216,6 +216,78 @@ end:
 }
 
 sdk_ret_t
+devapi_qos::qos_class_update(qos_class_info_t *info)
+{
+    sdk_ret_t                   ret = SDK_RET_OK;
+    grpc::Status                status;
+    qos::QosClassRequestMsg     req_msg;
+    qos::QosClassResponseMsg    rsp_msg;
+
+    auto req = req_msg.add_request();
+    req->mutable_key_or_handle()->set_qos_group((kh::QosGroup)info->group);
+    req->set_mtu(info->mtu);
+    req->set_no_drop(info->no_drop);
+
+    /* flowcontrol configuration */
+    req->mutable_pause()->set_type((qos::QosPauseType)info->pause_type);
+    req->mutable_pause()->set_pfc_cos(info->pause_dot1q_pcp);
+    req->mutable_pause()->set_xon_threshold(info->pause_xon_threshold);
+    req->mutable_pause()->set_xoff_threshold(info->pause_xoff_threshold);
+
+    /* scheduler configuration */
+    if (info->sched_type == sdk::platform::QOS_SCHED_TYPE_STRICT) {
+        req->mutable_sched()->mutable_strict()->set_bps(info->sched_strict_rlmt);
+    } else if (info->sched_type == sdk::platform::QOS_SCHED_TYPE_DWRR) {
+        req->mutable_sched()->mutable_dwrr()->set_bw_percentage(info->sched_dwrr_weight);
+    } else {
+        NIC_LOG_ERR("Unknown scheduler type {}", info->sched_type);
+        ret = SDK_RET_ERR;
+        goto end;
+    }
+
+    /* class map configuration */
+    req->mutable_class_map()->set_type((qos::QosClassMapType)info->class_type);
+    if (info->class_type == sdk::platform::QOS_CLASS_TYPE_PCP) {
+        req->mutable_class_map()->set_dot1q_pcp(info->class_dot1q_pcp);
+    } else if (info->class_type == sdk::platform::QOS_CLASS_TYPE_DSCP) {
+        for (uint8_t i = 0; i < info->class_ndscp; i++) {
+            req->mutable_class_map()->mutable_ip_dscp()->Add(info->class_ip_dscp[i]);
+        }
+    } else {
+        NIC_LOG_ERR("Unknown class map type {}", info->class_type);
+        ret = SDK_RET_ERR;
+        goto end;
+    }
+
+    /* marking configuration */
+    req->mutable_marking()->set_dot1q_pcp_rewrite_en(info->rewrite_dot1q_pcp_en);
+    req->mutable_marking()->set_dot1q_pcp(info->rewrite_dot1q_pcp);
+    req->mutable_marking()->set_ip_dscp_rewrite_en(info->rewrite_ip_dscp_en);
+    req->mutable_marking()->set_ip_dscp(info->rewrite_ip_dscp);
+
+    VERIFY_HAL();
+    status = hal->qos_class_update(req_msg, rsp_msg);
+    if (status.ok()) {
+        auto rsp = rsp_msg.response(0);
+        if (rsp.api_status() == types::API_STATUS_OK) {
+            NIC_LOG_DEBUG("qos class {} updated", info->group);
+        } else {
+            NIC_LOG_ERR("qos class {} update failed", info->group);
+            ret = SDK_RET_ERR;
+            goto end;
+        }
+    } else {
+        NIC_LOG_ERR("qos class {} update failed. err: {}:{}",
+            info->group, status.error_code(), status.error_message());
+        ret = SDK_RET_ERR;
+        goto end;
+    }
+
+end:
+    return ret;
+}
+
+sdk_ret_t
 devapi_qos::qos_class_delete(uint8_t group, bool clear_stats)
 {
     sdk_ret_t                         ret = SDK_RET_OK;

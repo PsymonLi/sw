@@ -732,6 +732,7 @@ ionic_qos_init(struct ionic *ionic)
 	memset(ionic->qos.pfc_cos, 0, sizeof(ionic->qos.pfc_cos));
 	memset(ionic->qos.pcp_to_tc, 0, sizeof(ionic->qos.pcp_to_tc));
 	memset(ionic->qos.dscp_to_tc, 0, sizeof(ionic->qos.dscp_to_tc));
+	memset(ionic->qos.dwrr_bw_perc, 0, sizeof(ionic->qos.dwrr_bw_perc));
 
 	if (ionic->qos.class_type == IONIC_QOS_CLASS_TYPE_NONE)
 		ionic->qos.class_type = IONIC_QOS_CLASS_TYPE_PCP;
@@ -801,7 +802,7 @@ ionic_qos_tc_update(struct ionic_lif *lif, int tc, union ionic_qos_config *qos)
 	struct ionic_dev *idev = &ionic->idev;
 	int i, err, nwords;
 
-	if (tc == 0) {
+	if ( (tc == 0) && !(qos->flags & IONIC_QOS_CONFIG_F_NON_DISRUPTIVE) ) {
 		IONIC_NETDEV_WARN(lif->netdev, "TC0 is read only\n");
 		return (ENXIO);
 	}
@@ -1004,12 +1005,16 @@ ionic_qos_set_default(struct ionic_lif *lif, int tc, union ionic_qos_config *qos
 
 	qos->pause_type = ionic->idev.port_info->config.pause_type & IONIC_PAUSE_TYPE_MASK;
 	qos->sched_type = IONIC_QOS_SCHED_TYPE_DWRR;
-	qos->dwrr_weight = 25; /* TODO: set this to 0 when bw_perc is enabled */
+	if (qos->dwrr_weight == 0)
+		/* will be 0 only when TC is being enabled */
+		qos->dwrr_weight = IONIC_MAX_BW_PERC/lif->ionic->qos.max_tcs;
+	if (qos->class_type == IONIC_QOS_CLASS_TYPE_NONE)
+		/* can happen for TC0 (bw_update) */
+		qos->class_type = lif->ionic->qos.class_type;
 
 	ionic_qos_print(ionic, qos, tc, "Default");
 }
 
-#ifdef notyet
 int
 ionic_qos_bw_update(struct ionic_lif *lif, uint8_t *bw_perc)
 {
@@ -1020,7 +1025,7 @@ ionic_qos_bw_update(struct ionic_lif *lif, uint8_t *bw_perc)
 	int tc, error;
 
 	ionic_qos_class_identify(ionic);
-	for (tc = 1; tc < ionic->qos.max_tcs; tc++) {
+	for (tc = 0; tc < ionic->qos.max_tcs; tc++) {
 		qos = &ident->qos.config[tc];
 		if ((qos->flags & IONIC_QOS_CONFIG_F_ENABLE) == 0) {
 			continue;
@@ -1037,6 +1042,7 @@ ionic_qos_bw_update(struct ionic_lif *lif, uint8_t *bw_perc)
 
 		ionic_qos_set_default(lif, tc, qos);
 		qos->dwrr_weight = bw_perc[tc];
+		qos->flags |= IONIC_QOS_CONFIG_F_NON_DISRUPTIVE;
 
 		error = ionic_qos_tc_update(lif, tc, qos);
 		if (error) {
@@ -1049,7 +1055,7 @@ ionic_qos_bw_update(struct ionic_lif *lif, uint8_t *bw_perc)
 
 	return (0);
 }
-#endif
+
 int
 ionic_qos_pcp_to_tc_update(struct ionic_lif *lif, uint8_t *pcp)
 {

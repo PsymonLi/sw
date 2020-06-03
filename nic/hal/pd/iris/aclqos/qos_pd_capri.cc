@@ -1308,7 +1308,12 @@ qos_class_pd_program_hw (pd_qos_class_t *pd_qos_class)
         return ret;
     }
 
-    ret = qos_class_pd_sched_pgm(pd_qos_class);
+    if ( (qos_class_get_qos_group(qos_class) == QOS_GROUP_DEFAULT) ||
+         (qos_is_user_defined_class(qos_class_get_qos_group(qos_class))) ) {
+        ret = qos_class_pd_program_scheduler(pd_qos_class);
+    } else {
+        ret = qos_class_pd_sched_pgm(pd_qos_class);
+    }
     if (ret != HAL_RET_OK) {
         // TODO: What to do in case of hw programming error ?
         HAL_TRACE_ERR("Error programming the scheduler for "
@@ -1479,16 +1484,16 @@ qos_class_pd_deprogram_hw (pd_qos_class_t *pd_qos_class)
         return ret;
     }
 
-#if 0
-    ret = qos_class_pd_program_scheduler(pd_qos_class);
-    if (ret != HAL_RET_OK) {
-        // TODO: What to do in case of hw programming error ?
-        HAL_TRACE_ERR("Error deprogramming the p4 ports for "
-                      "Qos-class {} ret {}",
-                      qos_class->key, ret);
-        return ret;
+    if (qos_is_user_defined_class(qos_class_get_qos_group(pd_qos_class->pi_qos_class))) {
+        ret = qos_class_pd_program_scheduler(pd_qos_class);
+        if (ret != HAL_RET_OK) {
+            // TODO: What to do in case of hw programming error ?
+            HAL_TRACE_ERR("Error deprogramming the p4 ports for "
+                          "Qos-class {} ret {}",
+                          qos_class->key, ret);
+            return ret;
+        }
     }
-#endif
 
     ret = qos_class_pd_deprogram_qos_table(pd_qos_class);
     if (ret != HAL_RET_OK) {
@@ -2439,11 +2444,20 @@ pd_qos_class_update (pd_func_args_t *pd_func_args)
     pd_qos_class_t *pd_qos_class;
     qos_class_t *qos_class;
 
-    HAL_TRACE_DEBUG("updating pd state for qos_class:{}",
-                    args->qos_class->key);
+    HAL_TRACE_DEBUG("updating pd state for qos_class:{} mtu_changed {} "
+                    "threshold_changed {} dot1q_pcp_changed {} "
+                    "ip_dscp_changed {} pfc_cos_changed {} "
+                    "scheduler_changed {} marking_changed {}",
+                    args->qos_class->key, args->mtu_changed,
+                    args->threshold_changed, args->dot1q_pcp_changed,
+                    args->ip_dscp_changed, args->pfc_cos_changed,
+                    args->scheduler_changed, args->marking_changed);
 
     qos_class = args->qos_class;
     pd_qos_class = args->qos_class->pd;
+
+    // default MTU, XOFF and XON thresholds (if 0)
+    pd_qos_class_defaults_set(args->qos_class);
 
     if (args->mtu_changed || args->threshold_changed) {
         ret = qos_class_pd_program_uplink_iq_params(pd_qos_class);
@@ -2487,7 +2501,6 @@ pd_qos_class_update (pd_func_args_t *pd_func_args)
         }
     }
 
-#if 0
     if (args->scheduler_changed) {
         ret = qos_class_pd_program_scheduler(pd_qos_class);
         if (ret != HAL_RET_OK) {
@@ -2497,7 +2510,6 @@ pd_qos_class_update (pd_func_args_t *pd_func_args)
             return ret;
         }
     }
-#endif
 
     if (args->marking_changed) {
         ret = qos_class_pd_program_qos_table(pd_qos_class);
@@ -2531,6 +2543,10 @@ pd_qos_class_delete (pd_func_args_t *pd_func_args)
     oq = qos_class_pd->dest_oq;
     HAL_TRACE_DEBUG("deleting pd state for qos_class {}, iq {}, oq {}",
                     args->qos_class->key, qos_class_pd->uplink.iq, qos_class_pd->dest_oq);
+
+    // Reset to DWRR with wt 10 while deleting the userdefined TC
+    qos_class_pd->pi_qos_class->sched.type = QOS_SCHED_TYPE_DWRR;
+    qos_class_pd->pi_qos_class->sched.dwrr.bw = 10;
 
     // TODO: deprogram hw
     qos_class_pd_deprogram_hw(qos_class_pd);

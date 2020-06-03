@@ -1448,6 +1448,7 @@ qos_class_handle_update (QosClassSpec& spec, qos_class_t *qos_class,
         }
     }
     if (spec.has_pause()) {
+#if 0
         // pause type change not allowed
         if ((spec.pause().type() == qos::QOS_PAUSE_TYPE_PFC &&
                 qos_class->pause.pfc_enable == false) ||
@@ -1455,6 +1456,7 @@ qos_class_handle_update (QosClassSpec& spec, qos_class_t *qos_class,
                 qos_class->pause.pfc_enable == true)) {
                 return HAL_RET_QOS_CLASS_PAUSE_TYPE_INVALID;
         }
+#endif
         if ((spec.pause().xon_threshold() != qos_class->pause.xon_threshold) ||
             (spec.pause().xoff_threshold() != qos_class->pause.xoff_threshold)) {
             app_ctxt->threshold_changed = true;
@@ -1495,11 +1497,13 @@ qosclass_update (QosClassSpec& spec, QosClassResponse *rsp)
     qos_class_spec_dump(spec);
 
     // validate the request message
-    ret = validate_qos_class_update(spec, rsp);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("qos_class delete validation failed, ret : {}",
-                      ret);
-        goto end;
+    if (spec.key_or_handle().qos_group() != kh::DEFAULT) {
+        ret = validate_qos_class_update(spec, rsp);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("qos_class update validation failed, ret : {}",
+                          ret);
+            goto end;
+        }
     }
 
     qos_class = find_qos_class_by_key_handle(kh);

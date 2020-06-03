@@ -1935,21 +1935,25 @@ Eth::_CmdQosUpdate(void *req, void *req_data, void *resp, void *resp_data)
         return (IONIC_RC_ERROR);
     }
 
-    rs = dev_api->qos_class_delete(cmd->group, false);
-    if (rs != SDK_RET_OK) {
-        NIC_LOG_ERR("{}: Failed to delete qos group for update {}", spec->name, cmd->group);
-        return (IONIC_RC_ERROR);
+    if (!(cfg->flags & IONIC_QOS_CONFIG_F_NON_DISRUPTIVE)) {
+        rs = dev_api->qos_class_delete(cmd->group, false);
+        if (rs != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to delete qos group for update {}", spec->name, cmd->group);
+            return (IONIC_RC_ERROR);
+        }
     }
 
     info.group = cmd->group;
     info.mtu = cfg->mtu;
     info.class_type = cfg->class_type;
-    if (info.class_type == sdk::platform::QOS_CLASS_TYPE_PCP) {
-        info.class_dot1q_pcp = cfg->dot1q_pcp;
-    } else if (info.class_type == sdk::platform::QOS_CLASS_TYPE_DSCP) {
-        info.class_ndscp = cfg->ndscp;
-        for (uint8_t i = 0; i < info.class_ndscp; i++)
-            info.class_ip_dscp[i] = cfg->ip_dscp[i];
+    if (cmd->group != IONIC_QOS_CLASS_DEFAULT) {
+        if (info.class_type == sdk::platform::QOS_CLASS_TYPE_PCP) {
+            info.class_dot1q_pcp = cfg->dot1q_pcp;
+        } else if (info.class_type == sdk::platform::QOS_CLASS_TYPE_DSCP) {
+            info.class_ndscp = cfg->ndscp;
+            for (uint8_t i = 0; i < info.class_ndscp; i++)
+                info.class_ip_dscp[i] = cfg->ip_dscp[i];
+        }
     }
 
     if (cfg->pause_type == IONIC_PORT_PAUSE_TYPE_LINK) {
@@ -1980,15 +1984,29 @@ Eth::_CmdQosUpdate(void *req, void *req_data, void *resp, void *resp_data)
         info.no_drop = false;
     }
 
-    NIC_LOG_DEBUG("group: {} mtu: {} class_type: {} pcp: {} pause_type: {} "
-                  "pfc_cos: {} no_drop {} flags: {}",
+    NIC_LOG_DEBUG("group: {} mtu: {} class_type: {} pcp/ndscp: {}/{} "
+                  "pause_type: {} pfc_cos: {} no_drop {} sched_type {} "
+                  "rate-limit/DWRR wt {}/{} flags: {}",
                   info.group, info.mtu, info.class_type, info.class_dot1q_pcp,
-                  info.pause_type, info.pause_dot1q_pcp, info.no_drop, cfg->flags);
+                  info.class_ndscp, info.pause_type, info.pause_dot1q_pcp,
+                  info.no_drop, info.sched_type, info.sched_strict_rlmt,
+                  info.sched_dwrr_weight, cfg->flags);
 
-    rs = dev_api->qos_class_create(&info);
-    if (rs != SDK_RET_OK) {
-        NIC_LOG_ERR("{}: Failed to update qos group {}", spec->name, cmd->group);
-        return (IONIC_RC_ERROR);
+    if (cfg->flags & IONIC_QOS_CONFIG_F_NON_DISRUPTIVE) {
+        NIC_LOG_DEBUG("{}: Non-Disruptive update for qos group {}",
+                      spec->name, qos_class_to_str(cmd->group));
+        rs = dev_api->qos_class_update(&info);
+        if (rs != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Non-Disruptive Update failed for qos group {}; rs {}",
+                        spec->name, cmd->group, rs);
+            return (IONIC_RC_ERROR);
+        }
+    } else {
+        rs = dev_api->qos_class_create(&info);
+        if (rs != SDK_RET_OK) {
+            NIC_LOG_ERR("{}: Failed to update qos group {}", spec->name, cmd->group);
+            return (IONIC_RC_ERROR);
+        }
     }
 
     return (IONIC_RC_SUCCESS);
