@@ -1370,6 +1370,12 @@ ionic_rx_filters_deinit(struct lif *lif)
             } while (cur != head);
         }
     }
+
+    lif->mc_overflow = false;
+    lif->nmcast = 0;
+    lif->uc_overflow = false;
+    lif->nucast = 0;
+    lif->vlanfltcount = 0;
 }
 
 void
