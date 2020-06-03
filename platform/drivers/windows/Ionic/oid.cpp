@@ -1712,6 +1712,7 @@ ionic_query_gen_stat(struct ionic *ionic,
                      PNDIS_STATISTICS_INFO psi)
 {
     struct lif *lif = ionic->master_lif;
+    struct lif_stats* pLifStats = &lif->info->stats;
 
     NdisZeroMemory(psi, sizeof(NDIS_STATISTICS_INFO));
     psi->Header.Type = NDIS_OBJECT_TYPE_DEFAULT;
@@ -1720,80 +1721,123 @@ ionic_query_gen_stat(struct ionic *ionic,
 
     if (lif->rxqcqs != NULL && lif->txqcqs != NULL) {
         // OID_GEN_DIRECTED_FRAMES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_DIRECTED_FRAMES_RCV;
-        psi->ifHCInUcastPkts = ionic->idev.port_info->stats.frames_rx_unicast;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_DIRECTED_FRAMES_RCV;
+        psi->ifHCInUcastPkts = pLifStats->rx_ucast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_ucast_drop_packets
+
         // OID_GEN_MULTICAST_FRAMES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_MULTICAST_FRAMES_RCV;
-        psi->ifHCInMulticastPkts =
-            ionic->idev.port_info->stats.frames_rx_multicast;
+        psi->SupportedStatistics |=  NDIS_STATISTICS_FLAGS_VALID_MULTICAST_FRAMES_RCV;
+        psi->ifHCInMulticastPkts = pLifStats->rx_mcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_mcast_drop_packets
+
         // OID_GEN_BROADCAST_FRAMES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_BROADCAST_FRAMES_RCV;
-        psi->ifHCInBroadcastPkts =
-            ionic->idev.port_info->stats.frames_rx_broadcast;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BROADCAST_FRAMES_RCV;
+        psi->ifHCInBroadcastPkts = pLifStats->rx_bcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_bcast_drop_packets
+
         // OID_GEN_BYTES_RCV
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BYTES_RCV;
-        psi->ifHCInOctets =
-            ionic->idev.port_info->stats.octets_rx_ok;
+        psi->ifHCInOctets = pLifStats->rx_ucast_bytes + pLifStats->rx_mcast_bytes + pLifStats->rx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - (pLifStats->rx_ucast_drop_bytes + pLifStats->rx_mcast_drop_bytes + pLifStats->rx_bcast_drop_bytes)
+
         // OID_GEN_RCV_ERROR
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_RCV_ERROR;
-        psi->ifInErrors = ionic->idev.port_info->stats.frames_rx_dropped +
-                            ionic->idev.port_info->stats.frames_rx_bad_all;
+        psi->ifInErrors = pLifStats->rx_ucast_drop_packets + pLifStats->rx_mcast_drop_packets + pLifStats->rx_bcast_drop_packets;
+
         // OID_GEN_RCV_DISCARDS
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_RCV_DISCARDS;
-        psi->ifInDiscards = psi->ifInErrors +
-                            ionic->master_lif->info->stats.rx_queue_empty;
+        psi->ifInDiscards = psi->ifInErrors + ionic->master_lif->info->stats.rx_queue_empty;
+
         // OID_GEN_DIRECTED_FRAMES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_DIRECTED_FRAMES_XMIT;
-        psi->ifHCOutUcastPkts =
-            ionic->idev.port_info->stats
-                .frames_tx_unicast;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_DIRECTED_FRAMES_XMIT;
+        psi->ifHCOutUcastPkts = pLifStats->tx_ucast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_ucast_drop_packets
+
         // OID_GEN_MULTICAST_FRAMES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_MULTICAST_FRAMES_XMIT;
-        psi->ifHCOutMulticastPkts = lif->txqcqs[0].tx_stats->mcast_packets;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_MULTICAST_FRAMES_XMIT;
+        psi->ifHCOutMulticastPkts = pLifStats->tx_mcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_mcast_drop_packets
+
         // OID_GEN_BROADCAST_FRAMES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_BROADCAST_FRAMES_XMIT;
-        psi->ifHCOutBroadcastPkts = lif->txqcqs[0].tx_stats->bcast_packets;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BROADCAST_FRAMES_XMIT;
+        psi->ifHCOutBroadcastPkts = pLifStats->tx_bcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_bcast_drop_packets
+
         // OID_GEN_BYTES_XMIT
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BYTES_XMIT;
-        psi->ifHCOutOctets =
-            ionic->idev.port_info->stats
-                .octets_tx_ok;
+        psi->ifHCOutOctets = pLifStats->tx_ucast_bytes + pLifStats->tx_mcast_bytes + pLifStats->tx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - (pLifStats->tx_ucast_drop_bytes + pLifStats->tx_mcast_drop_bytes + pLifStats->tx_bcast_drop_bytes)
+
         // OID_GEN_XMIT_ERROR
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_XMIT_ERROR;
         psi->ifOutErrors = lif->txqcqs[0].tx_stats->no_descs;
+        //psi->ifOutErrors = lif->txqcqs[0].tx_stats->dma_map_error;
+
         // OID_GEN_XMIT_DISCARDS
         psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_XMIT_DISCARDS;
         psi->ifOutDiscards = 0;
+
         // OID_GEN_DIRECTED_BYTES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_DIRECTED_BYTES_RCV;
-        psi->ifHCInUcastOctets = lif->rxqcqs[0].rx_stats->directed_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_DIRECTED_BYTES_RCV;
+        psi->ifHCInUcastOctets = pLifStats->rx_ucast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_ucast_drop_bytes
+        if (0 == psi->ifHCInUcastOctets) {
+            psi->ifHCInUcastOctets = lif->rxqcqs[0].rx_stats->directed_bytes;
+        }
+
         // OID_GEN_MULTICAST_BYTES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_MULTICAST_BYTES_RCV;
-        psi->ifHCInMulticastOctets = lif->rxqcqs[0].rx_stats->mcast_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_MULTICAST_BYTES_RCV;
+        psi->ifHCInMulticastOctets = pLifStats->rx_mcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_mcast_drop_bytes
+        if (0 == psi->ifHCInMulticastOctets) {
+            psi->ifHCInMulticastOctets = lif->rxqcqs[0].rx_stats->mcast_bytes;
+        }
+
         // OID_GEN_BROADCAST_BYTES_RCV
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_BROADCAST_BYTES_RCV;
-        psi->ifHCInBroadcastOctets = lif->rxqcqs[0].rx_stats->bcast_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BROADCAST_BYTES_RCV;
+        psi->ifHCInBroadcastOctets = pLifStats->rx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_bcast_drop_bytes
+        if (0 == psi->ifHCInBroadcastOctets) {
+            psi->ifHCInBroadcastOctets = lif->rxqcqs[0].rx_stats->bcast_bytes;
+        }
+
         // OID_GEN_DIRECTED_BYTES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_DIRECTED_BYTES_XMIT;
-        psi->ifHCOutUcastOctets = lif->txqcqs[0].tx_stats->directed_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_DIRECTED_BYTES_XMIT;
+        psi->ifHCOutUcastOctets = pLifStats->tx_ucast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_ucast_drop_bytes
+        if (0 == psi->ifHCOutUcastOctets) {
+            psi->ifHCOutUcastOctets = lif->txqcqs[0].tx_stats->directed_bytes;
+        }
+
         // OID_GEN_MULTICAST_BYTES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_MULTICAST_BYTES_XMIT;
-        psi->ifHCOutMulticastOctets = lif->txqcqs[0].tx_stats->mcast_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_MULTICAST_BYTES_XMIT;
+        psi->ifHCOutMulticastOctets = pLifStats->tx_mcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_mcast_drop_bytes
+        if (0 == psi->ifHCOutMulticastOctets) {
+            psi->ifHCOutMulticastOctets = lif->txqcqs[0].tx_stats->mcast_bytes;
+        }
+
         // OID_GEN_BROADCAST_BYTES_XMIT
-        psi->SupportedStatistics |=
-            NDIS_STATISTICS_FLAGS_VALID_BROADCAST_BYTES_XMIT;
-        psi->ifHCOutBroadcastOctets = lif->txqcqs[0].tx_stats->bcast_bytes;
+        psi->SupportedStatistics |= NDIS_STATISTICS_FLAGS_VALID_BROADCAST_BYTES_XMIT;
+        psi->ifHCOutBroadcastOctets = pLifStats->tx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_bcast_drop_bytes
+        if (0 == psi->ifHCOutBroadcastOctets) {
+            psi->ifHCOutBroadcastOctets = lif->txqcqs[0].tx_stats->bcast_bytes;
+        }
     }
 
     *buf_len = sizeof(NDIS_STATISTICS_INFO);
@@ -1826,6 +1870,7 @@ oid_query_information(struct ionic *ionic,
 
     NDIS_STATUS ntStatus = NDIS_STATUS_SUCCESS;
     struct lif *lif = ionic->master_lif;
+    struct lif_stats* pLifStats = &lif->info->stats;
     UCHAR buf_copy = 1;
     UCHAR using_64bit_stat = 0;
     NDIS_MEDIUM medium = NdisMedium802_3;
@@ -2024,146 +2069,225 @@ oid_query_information(struct ionic *ionic,
         buf_ptr = ionic_query_gen_stat(ionic, &buf_len, &var.si);
         break;
     }
-
+    // OID_GEN_XMIT_OK OID specifies the number of frames that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-xmit-ok
     case OID_GEN_XMIT_OK: {
-        buf_u64 = ionic->idev.port_info->stats.octets_tx_ok;
+        buf_u64 = pLifStats->tx_ucast_packets + pLifStats->tx_mcast_packets + pLifStats->tx_bcast_packets;
+        //
+        // should the drop packets be substracted?
+                    // - (pLifStats->tx_ucast_drop_packets + pLifStats->tx_mcast_drop_packets + pLifStats->tx_bcast_drop_packets);
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_RCV_OK OID specifies the number of frames that the NIC receives without errors and indicates to bound protocols.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-rcv-ok
     case OID_GEN_RCV_OK: {
-        buf_u64 = ionic->idev.port_info->stats.octets_rx_ok;
+        buf_u64 = pLifStats->rx_ucast_packets + pLifStats->rx_mcast_packets + pLifStats->rx_bcast_packets;
+        //
+        // should the drop packets be substracted?
+            // - (pLifStats->rx_ucast_drop_packets + pLifStats->rx_mcast_drop_packets + pLifStats->rx_bcast_drop_packets);
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_XMIT_ERROR OID specifies the number of frames that a NIC fails to transmit.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-xmit-error
     case OID_GEN_XMIT_ERROR: {
-        buf_u64 = lif->txqcqs[0].tx_stats->dma_map_error;
+        //buf_u64 = lif->txqcqs[0].tx_stats->dma_map_error;
+        buf_u64 = lif->txqcqs[0].tx_stats->no_descs;
         using_64bit_stat = 1;
         break;
     }
-
+    // NDIS and overlying drivers use the OID_GEN_XMIT_DISCARDS OID to determine the number of transmit discards on a miniport adapter.
+    // !!! NDIS handles this OID for miniport drivers.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-xmit-discards
     case OID_GEN_XMIT_DISCARDS: {
         buf_u64 = 0;
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_RCV_ERROR OID specifies the number of frames that a NIC receives but does not indicate to the protocols due to errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-rcv-error
     case OID_GEN_RCV_ERROR: {
-        buf_u64 = ionic->idev.port_info->stats.frames_rx_dropped +
-                            ionic->idev.port_info->stats.frames_rx_bad_all;
+        buf_u64 = pLifStats->rx_ucast_drop_packets + pLifStats->rx_mcast_drop_packets + pLifStats->rx_bcast_drop_packets;
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_RCV_NO_BUFFER OID specifies the number of frames that the NIC cannot receive due to lack of NIC receive buffer space.
+    // Some NICs do not provide the exact number of missed frames; they provide only the number of times at least one frame is missed.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-rcv-no-buffer
     case OID_GEN_RCV_NO_BUFFER: {
         buf_u64 = ionic->master_lif->info->stats.rx_queue_empty;
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_RCV_CRC_ERROR OID specifies the number of frames that are received with checksum errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-rcv-crc-error
     case OID_GEN_RCV_CRC_ERROR: {
         buf_u64 = ionic->idev.port_info->stats.frames_rx_bad_fcs;
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_DIRECTED_BYTES_XMIT OID specifies the number of bytes in directed packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-directed-bytes-xmit
     case OID_GEN_DIRECTED_BYTES_XMIT: {
-        buf_u64 = lif->txqcqs[0].tx_stats->directed_bytes;
+        buf_u64 = pLifStats->tx_ucast_bytes; 
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_ucast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->txqcqs[0].tx_stats->directed_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_DIRECTED_FRAMES_XMIT OID specifies the number of directed packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-directed-frames-xmit
     case OID_GEN_DIRECTED_FRAMES_XMIT: {
-        buf_u64 = ionic->idev.port_info->stats.frames_tx_unicast;
+        buf_u64 = pLifStats->tx_ucast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_ucast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_MULTICAST_BYTES_XMIT OID specifies the number of bytes in multicast/functional packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-multicast-bytes-xmit
     case OID_GEN_MULTICAST_BYTES_XMIT: {
-        buf_u64 = lif->txqcqs[0].tx_stats->mcast_bytes;
+        buf_u64 = pLifStats->tx_mcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_mcast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->txqcqs[0].tx_stats->mcast_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_MULTICAST_FRAMES_XMIT OID specifies the number of multicast/functional packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-multicast-frames-xmit
     case OID_GEN_MULTICAST_FRAMES_XMIT: {
-        buf_u64 = ionic->idev.port_info->stats.frames_tx_multicast;
+        buf_u64 = pLifStats->tx_mcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_mcast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_BROADCAST_BYTES_XMIT OID specifies the number of bytes in broadcast packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-broadcast-bytes-xmit
     case OID_GEN_BROADCAST_BYTES_XMIT: {
-        buf_u64 = lif->txqcqs[0].tx_stats->bcast_bytes;
+        buf_u64 = pLifStats->tx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->tx_bcast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->txqcqs[0].tx_stats->bcast_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_BROADCAST_FRAMES_XMIT OID specifies the number of broadcast packets that are transmitted without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-broadcast-frames-xmit
     case OID_GEN_BROADCAST_FRAMES_XMIT: {
-        buf_u64 = ionic->idev.port_info->stats.frames_tx_broadcast;
+        buf_u64 = pLifStats->tx_bcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->tx_bcast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_TRANSMIT_QUEUE_LENGTH OID specifies the number of packets that are currently queued for transmission, whether on the NIC or in a driver-internal queue.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-transmit-queue-length
     case OID_GEN_TRANSMIT_QUEUE_LENGTH: {
         buf_u64 = 0;
         // return the Pending Queue Depth
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_DIRECTED_BYTES_RCV OID specifies the number of bytes in directed packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-directed-bytes-rcv
     case OID_GEN_DIRECTED_BYTES_RCV: {
-        buf_u64 = lif->rxqcqs[0].rx_stats->directed_bytes;
+        buf_u64 = pLifStats->rx_ucast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_ucast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->rxqcqs[0].rx_stats->directed_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_DIRECTED_FRAMES_RCV OID specifies the number of directed packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-directed-frames-rcv
     case OID_GEN_DIRECTED_FRAMES_RCV: {
-        buf_u64 = ionic->idev.port_info->stats.frames_rx_unicast;
+        buf_u64 = pLifStats->rx_ucast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_ucast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_MULTICAST_BYTES_RCV OID specifies the number of bytes in multicast/functional packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-multicast-bytes-rcv
     case OID_GEN_MULTICAST_BYTES_RCV: {
-        buf_u64 = lif->rxqcqs[0].rx_stats->mcast_bytes;
+        buf_u64 = pLifStats->rx_mcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_mcast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->rxqcqs[0].rx_stats->mcast_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_MULTICAST_FRAMES_RCV OID specifies the number of multicast/functional packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-multicast-frames-rcv
     case OID_GEN_MULTICAST_FRAMES_RCV: {
-        buf_u64 = ionic->idev.port_info->stats.frames_rx_multicast;
+        buf_u64 = pLifStats->rx_mcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_mcast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_BROADCAST_BYTES_RCV OID specifies the number of bytes in broadcast packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-broadcast-bytes-rcv
     case OID_GEN_BROADCAST_BYTES_RCV: {
-        buf_u64 = lif->rxqcqs[0].rx_stats->bcast_bytes;
+        buf_u64 = pLifStats->rx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - pLifStats->rx_bcast_drop_bytes
+        if (0 == buf_u64) {
+            buf_u64 = lif->rxqcqs[0].rx_stats->bcast_bytes;
+        }
         using_64bit_stat = 1;
         break;
     }
-
+    // OID_GEN_BROADCAST_FRAMES_RCV OID specifies the number of broadcast packets that are received without errors.
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-broadcast-frames-rcv
     case OID_GEN_BROADCAST_FRAMES_RCV: {
-        buf_u64 = ionic->idev.port_info->stats.frames_rx_broadcast;
+        buf_u64 = pLifStats->rx_bcast_packets;
+        // should the drop packets be substracted ?
+            //  - pLifStats->rx_bcast_drop_packets
         using_64bit_stat = 1;
         break;
     }
-
+    // NDIS and overlying drivers use the OID_GEN_BYTES_RCV OID to determine the total number of bytes that a miniport adapter received.
+    // !!! NDIS handles this OID for miniport drivers. 
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-bytes-rcv
     case OID_GEN_BYTES_RCV: {
-        buf_u64 = ionic->idev.port_info->stats.octets_rx_ok;
+        buf_u64 = pLifStats->rx_ucast_bytes + pLifStats->rx_mcast_bytes + pLifStats->rx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - (pLifStats->rx_ucast_drop_bytes + pLifStats->rx_mcast_drop_bytes + pLifStats->rx_bcast_drop_bytes)
         using_64bit_stat = 1;
         break;
     }
-
+    // NDIS and overlying drivers use the OID_GEN_RCV_DISCARDS OID to determine the number of receive discards on a miniport adapter.
+    // !!! NDIS handles this OID for miniport drivers. 
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-rcv-discards
     case OID_GEN_RCV_DISCARDS: {
-        buf_u64 = ionic->idev.port_info->stats.frames_rx_dropped +
-                            ionic->idev.port_info->stats.frames_rx_bad_all +
+        buf_u64 = pLifStats->rx_ucast_drop_packets + pLifStats->rx_mcast_drop_packets + pLifStats->rx_bcast_drop_packets +
                             ionic->master_lif->info->stats.rx_queue_empty;
 
         using_64bit_stat = 1;
         break;
     }
-
+    // NDIS and overlying drivers use the OID_GEN_BYTES_XMIT OID to determine the total bytes that a miniport adapter transmitted.
+    // !!! NDIS handles this OID for miniport drivers. 
+    // https://docs.microsoft.com/en-us/windows-hardware/drivers/network/oid-gen-bytes-xmit
     case OID_GEN_BYTES_XMIT: {
-        buf_u64 = ionic->idev.port_info->stats.octets_tx_ok;
+        buf_u64 = pLifStats->tx_ucast_bytes + pLifStats->tx_mcast_bytes + pLifStats->tx_bcast_bytes;
+        // should the drop bytes be substracted ?
+            //  - (pLifStats->tx_ucast_drop_bytes + pLifStats->tx_mcast_drop_bytes + pLifStats->tx_bcast_drop_bytes)
         using_64bit_stat = 1;
         break;
     }
