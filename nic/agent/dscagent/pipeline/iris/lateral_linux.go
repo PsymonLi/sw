@@ -257,7 +257,7 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 
 	// Remove the destIPToMAC entry for the IP and remove the static route installed via gw IP
 	cleanup := func(IP, gIP string) {
-		destIPToMAC.Delete(IP)
+		destIPToMAC.Delete(IP + "-" + gIP)
 		if gIP != "" {
 			_, dest, _ := net.ParseCIDR(IP + "/32")
 			log.Infof("Removing route for %v via %s", dest, gIP)
@@ -271,11 +271,12 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 		}
 	}
 
+	arpResolverKey := destIP + "-" + gwIP
 	if lateralEP == nil {
 		log.Errorf("Lateral EP not found for destIP: %s", destIP)
-		cancel, ok := doneCache[destIP]
+		cancel, ok := doneCache[arpResolverKey]
 		if ok {
-			log.Infof("Calling cancel for IP: %v", destIP)
+			log.Infof("Calling cancel for IP: %v gw: %v", destIP, gwIP)
 			cancel()
 			cleanup(destIP, gwIP)
 		}
@@ -303,9 +304,9 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 			return err
 		}
 		// Cancel ARP loop if we are removing lateral objects
-		cancel, ok := doneCache[destIP]
+		cancel, ok := doneCache[arpResolverKey]
 		if ok {
-			log.Infof("Calling cancel for IP: %v", destIP)
+			log.Infof("Calling cancel for IP: %v gw: %v", destIP, gwIP)
 			cancel()
 			cleanup(destIP, gwIP)
 		}
@@ -316,9 +317,9 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 	// if not internal ep and created by venice
 	if len(lateralDB[destIP]) == 0 {
 		// Cancel ARP loop if we are removing lateral objects
-		cancel, ok := doneCache[destIP]
+		cancel, ok := doneCache[arpResolverKey]
 		if ok {
-			log.Infof("Calling cancel for IP: %v", destIP)
+			log.Infof("Calling cancel for IP: %v gw: %v", destIP, gwIP)
 			cancel()
 			cleanup(destIP, gwIP)
 		}
@@ -333,6 +334,7 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 	var oldMAC string
 	ticker := time.NewTicker(refreshDuration)
 	go func(refreshCtx context.Context, IP, gIP string) {
+		arpResolverKey := IP + "-" + gIP
 		mac := resolveIPAddress(refreshCtx, IP, gIP)
 		log.Infof("Resolved MAC 1st Tick: %s", mac)
 		nic := &cluster.DistributedServiceCard{
@@ -353,8 +355,8 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 			recorder.Event(eventtypes.COLLECTOR_UNREACHABLE, fmt.Sprintf("DSC %s %s not reachable from DSC", nic.Name, IP), nic)
 		}
 		// Populate the ARPCache.
-		log.Infof("Populate ARP %s -> %s", IP, mac)
-		destIPToMAC.Store(IP, mac)
+		log.Infof("Populate ARP %s -> %s", arpResolverKey, mac)
+		destIPToMAC.Store(arpResolverKey, mac)
 		for {
 			select {
 			case <-ticker.C:
@@ -376,10 +378,10 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 				}
 				oldMAC = mac
 				// Populate the ARPCache.
-				log.Infof("Populate ARP %s -> %s", IP, mac)
-				destIPToMAC.Store(IP, mac)
+				log.Infof("Populate ARP %s -> %s", arpResolverKey, mac)
+				destIPToMAC.Store(arpResolverKey, mac)
 			case <-refreshCtx.Done():
-				log.Infof("Cancelling ARP refresh loop for %v ", IP)
+				log.Infof("Cancelling ARP refresh loop for IP: %v gw: %v", IP, gIP)
 				return
 			}
 		}
@@ -764,14 +766,15 @@ func generateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClien
 	var dMAC string
 	epIP := destIP
 
-	log.Infof("Resolving for: %s", destIP)
+	log.Infof("Resolving for IP: %s, gw: %v", destIP, gwIP)
 
+	arpResolverKey := destIP + "-" + gwIP
 	// Make sure only one loop for an IP
-	mac, ok := destIPToMAC.Load(destIP)
+	mac, ok := destIPToMAC.Load(arpResolverKey)
 	if !ok {
 		// Cache the handler for outer done. This needs to be called during the object deletes
 		refreshCtx, done := context.WithCancel(context.Background())
-		doneCache[destIP] = done
+		doneCache[arpResolverKey] = done
 
 		if gwIP != "" {
 			_, dest, _ := net.ParseCIDR(destIP + "/32")

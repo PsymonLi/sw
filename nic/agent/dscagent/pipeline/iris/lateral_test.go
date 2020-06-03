@@ -39,7 +39,7 @@ func getKey(meta api.ObjectMeta) string {
 
 func waitForUnresolve(ip string) {
 	for {
-		_, ok := destIPToMAC.Load(ip)
+		_, ok := destIPToMAC.Load(ip + "-")
 		if !ok {
 			break
 		}
@@ -365,7 +365,7 @@ func TestMirrorSessionCreateUnknownCollector(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp did not resolve ")
 	}
@@ -462,7 +462,7 @@ func TestNetflowSessionCreateUnknownCollector(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -569,7 +569,7 @@ func TestNetflowSessionAndMirrorSessionPointingToSameCollector(t *testing.T) {
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1013,7 +1013,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorIP(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1162,7 +1162,7 @@ func TestTwoNetflowSessionCreatesWithSameUnknownCollector(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy2.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1303,7 +1303,7 @@ func TestTwoNetflowSessionCreatesIdempotency(t *testing.T) {
 
 	AssertEquals(t, epCountAfter1stCreate, epCountAfter2ndCreate, "For idempotent netflow session creates, EP count must remain same")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1405,7 +1405,7 @@ func TestTwoMirrorSessionCreatesIdempotency(t *testing.T) {
 	AssertEquals(t, epCountAfter1stCreate, epCountAfter2ndCreate, "For idempotent mirror session creates, EP count must remain same")
 	AssertEquals(t, tunnelCountAfter1stCreate, tunnelCountAfter2ndCreate, "For idempotent mirror session creates, EP count must remain same")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1475,7 +1475,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithTunnel(t *testing.T) {
 
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), MgmtIP, destIPOutSideSubnet, "", true)
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1574,7 +1574,7 @@ func TestCreateDeleteLateralObjUnknownCollectorWithoutTunnel(t *testing.T) {
 	err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, fePolicy.GetKey(), MgmtIP, destIPOutSideSubnet, "", false)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
 
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1762,7 +1762,7 @@ func TestFailedARPResolution(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), mgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Creating lateral objects must succeed.")
-	mac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	mac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if ok {
 		Assert(t, mac == "", "Lateral object creates must fail on failed arp resolutions %v", mac)
 	}
@@ -1805,7 +1805,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms.GetKey(), mgmtIP, destIPOutSideSubnet, "", true)
 	AssertOk(t, err, "Creating lateral objects must succeed.")
-	mac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	mac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if ok {
 		Assert(t, mac == "", "Lateral object creates must fail on failed arp resolutions %v", mac)
 	}
@@ -1822,7 +1822,7 @@ func TestFailedARPResolutionRetry(t *testing.T) {
 
 	// Wait for next loop to run
 	time.Sleep(time.Second * 70)
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if ok {
 		Assert(t, dmac != "", "Arp Not resolved ")
 	}
@@ -1902,7 +1902,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), MgmtIP, destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet)
+	dmac, ok := destIPToMAC.Load(destIPOutSideSubnet + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -1919,7 +1919,7 @@ func TestTwoMirrorSessionCreatesWithSameUnknownCollectorMac(t *testing.T) {
 		Name:      fmt.Sprintf("_internal-%s", destIPOutSideSubnet),
 	}
 
-	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1)
+	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1 + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
@@ -2031,7 +2031,7 @@ func TestTwoMirrorSessionCreatesWithSameIP(t *testing.T) {
 
 	err = CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, 65, ms2.GetKey(), mgmtIP, destIPOutSideSubnet1, "", true)
 	AssertOk(t, err, "Failed to create lateral objects in netagent")
-	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1)
+	dmac1, ok := destIPToMAC.Load(destIPOutSideSubnet1 + "-")
 	if !ok {
 		Assert(t, ok, "Arp Not resolved")
 	}
