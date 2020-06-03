@@ -1662,10 +1662,12 @@ static
 po::options_description
 CmdRxBudgetOpts(bool hidden)
 {
-    po::options_description opts("IonicConfig.exe [-h] RxBudget [-r] <rxbudget>");
+    po::options_description opts("IonicConfig.exe [-h] RxBudget [options ...]");
 
-    opts.add_options()
-        ("RxBudget,r", optype_long()->required(), "Receive polling budget");
+    OptAddDevName(opts);
+    
+	opts.add_options()
+        ("Budget,b", optype_long()->required(), "Receive polling budget");
 
     return opts;
 }
@@ -1676,7 +1678,8 @@ CmdRxBudgetPos()
 {
     po::positional_options_description pos;
 
-    pos.add("RxBudget", 1);
+    pos.add("Name", 1);
+    pos.add("Budget", 2);
 
     return pos;
 }
@@ -1690,9 +1693,13 @@ CmdRxBudgetRun(command_info& info)
         return info.status;
     }
 
-    DWORD dwRxBudget = opval_long(info.vm, "RxBudget");
+    SetBudgetCB cb = {};
+    OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
 
-    return DoIoctl(IOCTL_IONIC_SET_RX_BUDGET, &dwRxBudget, sizeof(dwRxBudget), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
+    cb.Budget = opval_long(info.vm, "Budget");
+	cb.Type = BUDGET_TYPE_RX;
+
+    return DoIoctl(IOCTL_IONIC_SET_BUDGET, &cb, sizeof(SetBudgetCB), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
 }
 
 command
@@ -1718,10 +1725,13 @@ static
 po::options_description
 CmdRxMiniBudgetOpts(bool hidden)
 {
-    po::options_description opts("IonicConfig.exe [-h] RxMiniBudget [-m] <rxminibudget>");
 
-    opts.add_options()
-        ("RxMiniBudget,m", optype_long()->required(), "Receive polling mini budget");
+    po::options_description opts("IonicConfig.exe [-h] RxMiniBudget [options ...]");
+
+    OptAddDevName(opts);
+    
+	opts.add_options()
+        ("Budget,b", optype_long()->required(), "Receive polling mini budget");
 
     return opts;
 }
@@ -1732,7 +1742,8 @@ CmdRxMiniBudgetPos()
 {
     po::positional_options_description pos;
 
-    pos.add("RxMiniBudget", 1);
+    pos.add("Name", 1);
+    pos.add("Budget", 2);
 
     return pos;
 }
@@ -1746,9 +1757,13 @@ CmdRxMiniBudgetRun(command_info& info)
         return info.status;
     }
 
-    DWORD dwRxMiniBudget = opval_long(info.vm, "RxMiniBudget");
+    SetBudgetCB cb = {};
+    OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
 
-    return DoIoctl(IOCTL_IONIC_SET_RX_MINI_BUDGET, &dwRxMiniBudget, sizeof(dwRxMiniBudget), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
+    cb.Budget = opval_long(info.vm, "Budget");
+	cb.Type = BUDGET_TYPE_RX_MINI;
+
+    return DoIoctl(IOCTL_IONIC_SET_BUDGET, &cb, sizeof(SetBudgetCB), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
 }
 
 command
@@ -1774,12 +1789,15 @@ static
 po::options_description
 CmdTxBudgetOpts(bool hidden)
 {
-    po::options_description opts("IonicConfig.exe [-h] TxBudget [-r] <txbudget>");
 
-    opts.add_options()
-        ("TxBudget,t", optype_long()->required(), "Receive polling budget");
+    po::options_description opts("IonicConfig.exe [-h] TxBudget [options ...]");
 
-    return opts;
+    OptAddDevName(opts);
+    
+	opts.add_options()
+        ("Budget,b", optype_long()->required(), "Transmit polling budget");
+    
+	return opts;
 }
 
 static
@@ -1788,7 +1806,8 @@ CmdTxBudgetPos()
 {
     po::positional_options_description pos;
 
-    pos.add("TxBudget", 1);
+    pos.add("Name", 1);
+    pos.add("Budget", 2);
 
     return pos;
 }
@@ -1802,9 +1821,13 @@ CmdTxBudgetRun(command_info& info)
         return info.status;
     }
 
-    DWORD dwTxBudget = opval_long(info.vm, "TxBudget");
+    SetBudgetCB cb = {};
+    OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
 
-    return DoIoctl(IOCTL_IONIC_SET_TX_BUDGET, &dwTxBudget, sizeof(dwTxBudget), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
+    cb.Budget = opval_long(info.vm, "Budget");
+	cb.Type = BUDGET_TYPE_TX;
+
+    return DoIoctl(IOCTL_IONIC_SET_BUDGET, &cb, sizeof(SetBudgetCB), NULL, 0, NULL, info.dryrun) != ERROR_SUCCESS;
 }
 
 command

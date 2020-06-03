@@ -90,6 +90,32 @@ DriverEntry(void* DriverObject, void* RegistryPath)
     NdisMoveMemory(AdapterRegistryPath.Buffer, puniRegistry->Buffer,
                    AdapterRegistryPath.Length);
 
+	NdisZeroMemory( &IonicOSVersion,
+					sizeof( OSVERSIONINFOEXW));
+	IonicOSVersion.dwOSVersionInfoSize = sizeof( OSVERSIONINFOEXW);
+	RtlGetVersion( (PRTL_OSVERSIONINFOW)&IonicOSVersion);
+	// Check for 2016 or 2019
+	if (IonicOSVersion.dwMajorVersion == 10 &&
+		IonicOSVersion.dwMinorVersion == 0 &&
+		IonicOSVersion.wProductType == VER_NT_SERVER) {
+		if( IonicOSVersion.dwBuildNumber < 17763) {
+			SetFlag( DriverFlags, IONIC_STATE_SERVER_2016);
+		}
+		IoPrint("OS Version Major %d Minor %d Type %d Build %d 2016 %s\n", 
+						IonicOSVersion.dwMajorVersion,
+						IonicOSVersion.dwMinorVersion,
+						IonicOSVersion.wProductType,
+						IonicOSVersion.dwBuildNumber,
+						BooleanFlagOn( DriverFlags, IONIC_STATE_SERVER_2016)?"Yes":"No");
+
+	}
+	else {
+		IoPrint("Unrecognized OS Version Major %d Minor %d Type %d\n", 
+						IonicOSVersion.dwMajorVersion,
+						IonicOSVersion.dwMinorVersion,
+						IonicOSVersion.wProductType);
+	}
+
     NdisZeroMemory(&stDriverChar, sizeof(NDIS_MINIPORT_DRIVER_CHARACTERISTICS));
 
     stDriverChar.Header.Type = NDIS_OBJECT_TYPE_MINIPORT_DRIVER_CHARACTERISTICS;
@@ -464,7 +490,7 @@ InitializeEx(NDIS_HANDLE AdapterHandle,
             __FUNCTION__, ionic_dev_asic_name(adapter->idev.dev_info.asic_type),
             adapter->idev.dev_info.asic_rev, adapter->idev.dev_info.serial_num,
             adapter->idev.dev_info.fw_version, adapter->ident.dev.nlifs,
-            adapter->ident.dev.ndbpgs_per_lif, RxBudget, RxMiniBudget,
+            adapter->ident.dev.ndbpgs_per_lif, adapter->RxBudget, adapter->RxMiniBudget,
             adapter->rx_pool_factor, adapter->numa_node,
 			BooleanFlagOn(adapter->ConfigStatus, IONIC_INTERRUPT_MOD_ENABLED)?"Enabled":"Disabled",
 			adapter->registry_config[ IONIC_REG_RX_INT_MOD_TO].current_value,
@@ -478,7 +504,7 @@ InitializeEx(NDIS_HANDLE AdapterHandle,
             __FUNCTION__, ionic_dev_asic_name(adapter->idev.dev_info.asic_type),
             adapter->idev.dev_info.asic_rev, adapter->idev.dev_info.serial_num,
             adapter->idev.dev_info.fw_version, adapter->ident.dev.nlifs,
-            adapter->ident.dev.ndbpgs_per_lif, RxBudget, RxMiniBudget,
+            adapter->ident.dev.ndbpgs_per_lif, adapter->RxBudget, adapter->RxMiniBudget,
             adapter->rx_pool_factor, adapter->numa_node,
 			BooleanFlagOn(adapter->ConfigStatus, IONIC_INTERRUPT_MOD_ENABLED)?"Enabled":"Disabled",
 			adapter->registry_config[ IONIC_REG_RX_INT_MOD_TO].current_value,

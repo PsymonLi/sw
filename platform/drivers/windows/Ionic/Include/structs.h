@@ -797,6 +797,10 @@ struct ionic {
 	/* Registry parameters specific to this interface */
 	struct registry_entry *registry_config;
 
+	ULONG			RxBudget;
+	ULONG			RxMiniBudget;
+	ULONG			TxBudget;
+
 	// Cache aligned elements
 	CACHE_ALIGN NDIS_SPIN_LOCK	dev_cmd_lock;
 	CACHE_ALIGN NDIS_SPIN_LOCK	tx_frag_pool_lock;

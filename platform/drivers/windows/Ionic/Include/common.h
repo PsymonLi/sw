@@ -414,13 +414,7 @@ oid_set_vlan(struct ionic *ionic,
 	ULONG *bytes_read);
 
 NTSTATUS
-ConfigureRxBudget( IN ULONG Budget);
-
-NTSTATUS
-ConfigureRxMiniBudget( IN ULONG Budget);
-
-NTSTATUS
-ConfigureTxBudget( IN ULONG Budget);
+ConfigureBudget( IN void *buffer, ULONG inlen);
 
 NTSTATUS
 ConfigureTxMode( IN ULONG TxMode);

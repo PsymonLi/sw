@@ -529,10 +529,13 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 
 		if (int_tbl->rx_qcq != NULL) {
 			budget = IONIC_RX_BUDGET_DEFAULT;
-			if (RxBudget != 0) {
-				budget = RxBudget;
+			if (ionic->RxBudget != 0) {
+				budget = ionic->RxBudget;
 			} else if (ndis_budget != 0) {
 				budget = ndis_budget;
+			}
+			if (budget > int_tbl->rx_qcq->cq.num_descs) {
+				budget = int_tbl->rx_qcq->cq.num_descs;
 			}
 			throttle_params->MaxNblsToIndicate = budget;
 
@@ -545,8 +548,8 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 
 		if (int_tbl->tx_qcq != NULL) {
 			budget = IONIC_TX_BUDGET_DEFAULT;
-			if (TxBudget != 0) {
-				budget = TxBudget;
+			if (ionic->TxBudget != 0) {
+				budget = ionic->TxBudget;
 			} else if (ndis_budget != 0) {
 				budget = ndis_budget;
 			}

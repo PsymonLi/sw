@@ -640,6 +640,49 @@ ReadRegParameters(struct ionic *Adapter)
               Adapter->rscv4_enabled ? "Yes" : "No",
               Adapter->rscv6_enabled ? "Yes" : "No"));
 
+	// RxBudget
+	Adapter->RxBudget = ionic_registry[ IONIC_REG_RX_BUDGET].default_value;
+	ionic_registry[ IONIC_REG_RX_BUDGET].maximum_value = Adapter->nrx_buffers; // Set the max value for this instance
+	NdisInitUnicodeString( &uniKeyWord,
+						   ionic_registry[ IONIC_REG_RX_BUDGET].name);
+    NdisReadConfiguration(&ntStatus, &pParameters, hConfig, &uniKeyWord,
+                          NdisParameterInteger);
+
+    if (ntStatus == NDIS_STATUS_SUCCESS) {
+        Adapter->RxBudget = pParameters->ParameterData.IntegerData;
+    }
+	else if( BooleanFlagOn( DriverFlags, IONIC_STATE_SERVER_2016)) {
+		Adapter->RxBudget = Adapter->nrx_buffers;
+	}
+
+	// TxBudget
+	Adapter->TxBudget = ionic_registry[ IONIC_REG_TX_BUDGET].default_value;
+	ionic_registry[ IONIC_REG_TX_BUDGET].maximum_value = Adapter->ntx_buffers; // Set the max value for this instance
+	NdisInitUnicodeString( &uniKeyWord,
+						   ionic_registry[ IONIC_REG_TX_BUDGET].name);
+    NdisReadConfiguration(&ntStatus, &pParameters, hConfig, &uniKeyWord,
+                          NdisParameterInteger);
+
+    if (ntStatus == NDIS_STATUS_SUCCESS) {
+        Adapter->TxBudget = pParameters->ParameterData.IntegerData;
+    }
+	else if( BooleanFlagOn( DriverFlags, IONIC_STATE_SERVER_2016)) {
+		// When we get the descriptor ring size, we need to update the TxBudget to that value
+		Adapter->TxBudget = Adapter->ntx_buffers;
+	}
+
+	// RxMiniBudget
+	Adapter->RxMiniBudget = ionic_registry[ IONIC_REG_RX_MINI_BUDGET].default_value;
+	ionic_registry[ IONIC_REG_RX_MINI_BUDGET].maximum_value = Adapter->nrx_buffers; // Set the max value for this instance
+	NdisInitUnicodeString( &uniKeyWord,
+						   ionic_registry[ IONIC_REG_RX_MINI_BUDGET].name);
+    NdisReadConfiguration(&ntStatus, &pParameters, hConfig, &uniKeyWord,
+                          NdisParameterInteger);
+
+    if (ntStatus == NDIS_STATUS_SUCCESS) {
+        Adapter->RxMiniBudget = pParameters->ParameterData.IntegerData;
+    }
+
     NdisReadConfiguration(&ntStatus, &pParameters, hConfig,
                           &uniSriovPreferredKeyword, NdisParameterInteger);
 
@@ -2253,33 +2296,6 @@ ReadConfigParams()
     }
 #endif
 
-    NdisInitUnicodeString(&uniValue, REG_RX_BUDGET);
-
-    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
-                          NdisParameterInteger);
-
-    if (ndisStatus == NDIS_STATUS_SUCCESS) {
-        RxBudget = pConfigParam->ParameterData.IntegerData;
-    }
-
-    NdisInitUnicodeString(&uniValue, REG_RX_MINI_BUDGET);
-
-    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
-                          NdisParameterInteger);
-
-    if (ndisStatus == NDIS_STATUS_SUCCESS) {
-        RxMiniBudget = pConfigParam->ParameterData.IntegerData;
-    }
-
-    NdisInitUnicodeString(&uniValue, REG_TX_BUDGET);
-
-    NdisReadConfiguration(&ndisStatus, &pConfigParam, hConfig, &uniValue,
-                          NdisParameterInteger);
-
-    if (ndisStatus == NDIS_STATUS_SUCCESS) {
-        TxBudget = pConfigParam->ParameterData.IntegerData;
-    }
-
     ndisStatus = NDIS_STATUS_SUCCESS;
 
 cleanup:
@@ -2701,90 +2717,66 @@ cleanup:
 }
 
 NTSTATUS
-ConfigureRxBudget(IN ULONG Budget)
+ConfigureBudget(IN void *buf,
+				  IN ULONG inlen)
 {
+    struct ionic *ionic = NULL;
+    NDIS_STRING AdapterNameString = {};
+    SetBudgetCB *cb = (SetBudgetCB *)buf;
+    NDIS_STATUS status = NDIS_STATUS_SUCCESS;
+    bool found = false;
 
-    NTSTATUS ntStatus = STATUS_SUCCESS;
-    UNICODE_STRING uniString;
-
-    //
-    // Go update the registry with the new entries
-    //
-
-    if (Budget != RxBudget) {
-        RxBudget = Budget;
-
-        RtlInitUnicodeString(&uniString, REG_RX_BUDGET);
-
-        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &Budget,
-                                           sizeof(ULONG));
-
-        if (!NT_SUCCESS(ntStatus)) {
-             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-					"%s Failed to set RxBudget in registry Status %08lX\n",
-                    ntStatus));
-        }
+    if (inlen < sizeof(*cb)) {
+        return STATUS_BUFFER_TOO_SMALL;
     }
 
-    return ntStatus;
-}
+    InitAdapterNameString(&AdapterNameString, cb->AdapterName);
 
-NTSTATUS
-ConfigureRxMiniBudget(IN ULONG Budget)
-{
+    PAGED_CODE();
+    NDIS_WAIT_FOR_MUTEX(&AdapterListLock);
 
-    NTSTATUS ntStatus = STATUS_SUCCESS;
-    UNICODE_STRING uniString;
-
-    //
-    // Go update the registry with the new entries
-    //
-
-    if (Budget != RxMiniBudget) {
-        RxMiniBudget = Budget;
-
-        RtlInitUnicodeString(&uniString, REG_RX_MINI_BUDGET);
-
-        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &Budget,
-                                           sizeof(ULONG));
-
-        if (!NT_SUCCESS(ntStatus)) {
-             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-					"%s Failed to set RxMiniBudget in registry Status %08lX\n",
-                    ntStatus));
+    ListForEachEntry(ionic, &AdapterList, struct ionic, list_entry) {
+        if (!MatchesAdapterNameIonic(&AdapterNameString, ionic)) {
+            continue;
         }
+        found = true;
+
+		switch( cb->Type) {
+			case BUDGET_TYPE_RX: {
+				if( ionic->RxBudget != cb->Budget) {
+					ionic->RxBudget = cb->Budget;
+					ionic->registry_config[ IONIC_REG_RX_BUDGET].current_value = cb->Budget;
+					UpdateRegistryKeyword(ionic, IONIC_REG_RX_BUDGET);
+				}
+				break;
+			}
+			case BUDGET_TYPE_RX_MINI: {
+				if( ionic->RxMiniBudget != cb->Budget) {
+					ionic->RxMiniBudget = cb->Budget;
+					ionic->registry_config[ IONIC_REG_RX_MINI_BUDGET].current_value = cb->Budget;
+					UpdateRegistryKeyword(ionic, IONIC_REG_RX_MINI_BUDGET);
+				}
+				break;
+			}
+			case BUDGET_TYPE_TX: {
+				if( ionic->TxBudget != cb->Budget) {
+					ionic->TxBudget = cb->Budget;
+					ionic->registry_config[ IONIC_REG_TX_BUDGET].current_value = cb->Budget;
+					UpdateRegistryKeyword(ionic, IONIC_REG_TX_BUDGET);
+				}
+				break;
+			}
+		}
     }
 
-    return ntStatus;
-}
+    NDIS_RELEASE_MUTEX(&AdapterListLock);
 
-NTSTATUS
-ConfigureTxBudget(IN ULONG Budget)
-{
-
-    NTSTATUS ntStatus = STATUS_SUCCESS;
-    UNICODE_STRING uniString;
-
-    //
-    // Go update the registry with the new entries
-    //
-
-    if (Budget != TxBudget) {
-        TxBudget = Budget;
-
-        RtlInitUnicodeString(&uniString, REG_TX_BUDGET);
-
-        ntStatus = UpdateRegistryParameter(&uniString, REG_DWORD, &Budget,
-                                           sizeof(ULONG));
-
-        if (!NT_SUCCESS(ntStatus)) {
-             DbgTrace((TRACE_COMPONENT_INIT, TRACE_LEVEL_ERROR,
-					"%s Failed to set TxBudget in registry Status %08lX\n",
-                    ntStatus));
-        }
+    // If specific device was requested but not found
+    if (AdapterNameString.Length != 0 && !found) {
+        status = NDIS_STATUS_INVALID_PARAMETER;
     }
 
-    return ntStatus;
+    return status;
 }
 
 NTSTATUS

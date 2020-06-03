@@ -81,10 +81,6 @@ NTSTATUS
 #define REG_TRACE_BUFFER_LENGTH			L"TraceBufferLength"
 #define REG_STATE_FLAGS					L"StateFlags"
 
-#define REG_RX_BUDGET					L"RxBudget"
-#define REG_RX_MINI_BUDGET				L"RxMiniBudget"
-#define REG_TX_BUDGET					L"TxBudget"
-
 #define IONIC_LINKNAME_STRING             L"\\DosDevices\\IonicControl"
 #define IONIC_NTDEVICE_STRING             L"\\Device\\IonicCntrlDev"
 
@@ -198,6 +194,7 @@ NTSTATUS
 //
 
 #define IONIC_STATE_PERFMON_INITED				0x00000001
+#define IONIC_STATE_SERVER_2016					0x00000002
 
 //
 // Flow control options

@@ -12,6 +12,8 @@ PDRIVER_OBJECT IonicDriverObject;
 
 NDIS_HANDLE IonicDriver = NULL;
 
+OSVERSIONINFOEXW	IonicOSVersion;
+
 ULONG	StateFlags = 0;
 
 ULONG	DriverFlags = 0;
@@ -33,12 +35,6 @@ LIST_ENTRY AdapterList;
 NDIS_MUTEX AdapterListLock;
 
 LONG port_count = 0;
-
-ULONG RxBudget = 0;
-
-ULONG RxMiniBudget = 0;
-
-ULONG TxBudget = 0;
 
 KEVENT  perfmon_event;
 

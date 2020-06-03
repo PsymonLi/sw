@@ -34,8 +34,11 @@
 #define IONIC_REG_RSCV6	        31
 #define IONIC_REG_VLANFILTERS   32
 #define IONIC_REG_PROMISCMODE   33
+#define IONIC_REG_RX_BUDGET		34
+#define IONIC_REG_RX_MINI_BUDGET 35
+#define IONIC_REG_TX_BUDGET		36
 
-#define IONIC_REG_ENTRY_COUNT	34 // Include the 0th entry
+#define IONIC_REG_ENTRY_COUNT	37 // Include the 0th entry
 
 #ifndef DEFINITIONS_ONLY
 struct registry_entry ionic_registry[] = {
@@ -72,6 +75,9 @@ struct registry_entry ionic_registry[] = {
 		{L"*RscIPv4",                   0,              1,              1,              1, NdisParameterString},
 		{L"*RscIPv6",                   0,              1,              1,              1, NdisParameterString},
 		{L"VlanFilters",                0,              0,              0,              0, NdisParameterString},
-		{L"PromiscMode",                0,              1,              0,              0, NdisParameterString}
+		{L"PromiscMode",                0,              1,              0,              0, NdisParameterString},
+		{L"RxBudget",					0,              0,				0,              0, NdisParameterString},
+		{L"RxMiniBudget",               0,              0,				0,              0, NdisParameterString},
+		{L"TxBudget",                   0,              0,				0,              0, NdisParameterString}
 		};
 #endif

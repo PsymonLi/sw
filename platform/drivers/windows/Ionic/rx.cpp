@@ -1383,7 +1383,7 @@ ionic_rx_napi(struct lif *lif,
     u32 rx_indicate_count = 0;
     PNET_BUFFER_LIST packets_to_indicate = NULL;
 	unsigned int tot_budget = receive_throttle_params->MaxNblsToIndicate;
-	unsigned int mini_budget = RxMiniBudget;
+	unsigned int mini_budget = lif->ionic->RxMiniBudget;
 	unsigned int budget = 0;
 
     NdisDprAcquireSpinLock(&qcq->rx_ring_lock);

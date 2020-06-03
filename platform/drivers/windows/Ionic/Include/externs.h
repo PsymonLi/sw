@@ -44,12 +44,6 @@ extern NDIS_MUTEX	AdapterListLock;
 
 extern LONG				port_count;
 
-extern ULONG			RxBudget;
-
-extern ULONG			RxMiniBudget;
-
-extern ULONG			TxBudget;
-
 extern ULONG            StateFlags;
 
 extern KEVENT           perfmon_event;
@@ -67,3 +61,5 @@ extern NDIS_HANDLE		perfmon_timer;
 extern LONG				perfmon_counter_cnt;
 
 extern ULONG			DriverFlags;
+
+extern OSVERSIONINFOEXW	IonicOSVersion;
