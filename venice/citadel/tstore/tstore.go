@@ -75,7 +75,7 @@ func NewTstore(dbPath string) (*Tstore, error) {
 	ts.EngineOptions.Config.Index = "tsi1"
 
 	// update tag/series limits, TODO: check mem. utilization
-	ts.EngineOptions.Config.MaxSeriesPerDatabase = 5 * tsdb.DefaultMaxSeriesPerDatabase
+	ts.EngineOptions.Config.MaxSeriesPerDatabase = 0
 	ts.EngineOptions.Config.MaxValuesPerTag = 0
 
 	// open the tsdb store
