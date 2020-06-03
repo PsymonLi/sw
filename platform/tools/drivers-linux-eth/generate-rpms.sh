@@ -17,17 +17,17 @@ fi
 
 # list of live VMs for building the RPMs
 hosts="
-rhel73-build
-rhel75-build
-rhel76-build
-rhel77-build
-rhel78-build
-rhel80-build
-rhel81-build
-sles12sp4-build
-sles12sp5-build
-sles15-build
-sles15sp1-build
+rhel73-build.pensando.io
+rhel75-build.pensando.io
+rhel76-build.pensando.io
+rhel77-build.pensando.io
+rhel78-build.pensando.io
+rhel80-build.pensando.io
+rhel81-build.pensando.io
+sles12sp4-build.pensando.io
+sles12sp5-build.pensando.io
+sles15-build.pensando.io
+sles15sp1-build.pensando.io
 "
 
 if [ -z "$TOPDIR" ] ; then
@@ -63,6 +63,7 @@ do
 	if [ $? -ne 0 ] ; then
 		echo "$PROG: FAIL: ping failed for $vm, quitting"
 		retcode=1
+		continue
 	fi
 
 	# copy bits to build machine
@@ -89,6 +90,8 @@ if [ $retcode -eq 0 ] ; then
 	rm -f $TOPDIR/platform/gen/linux-rpms.tar $TOPDIR/platform/gen/linux-rpms.tar.xz
 	tar cf $TOPDIR/platform/gen/linux-rpms.tar $TOPDIR/platform/gen/*.rpm
 	xz $TOPDIR/platform/gen/linux-rpms.tar
+else
+	echo "$PROG: errors seen, so not creating final tar of RPMs."
 fi
 
 # clean up our local mess
