@@ -18,6 +18,7 @@ import (
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	utils "github.com/pensando/sw/iota/test/venice/iotakit/model/utils"
 	"github.com/pensando/sw/iota/test/venice/iotakit/testbed"
+	testUtils "github.com/pensando/sw/test/utils"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 	"golang.org/x/sync/errgroup"
@@ -893,6 +894,70 @@ func (sm *SysModel) AddVenice(venice *objects.VeniceNodeCollection) error {
 	if err := sm.AddVeniceNodes(names); err != nil {
 		log.Errorf("Failed to add venice node %v, err : %v", names, err)
 		return err
+	}
+
+	return nil
+}
+
+// EnableSSH enable ssh on naples
+func (sm *SysModel) EnableSSH(naples *objects.NaplesCollection) error {
+
+	nodes := []*testbed.TestNode{}
+	for _, node := range naples.Nodes {
+		nodes = append(nodes, node.GetTestNode())
+	}
+
+	if len(nodes) == 0 {
+		return nil
+	}
+	// get token ao authenticate to agent
+	veniceCtx, err := sm.VeniceLoggedInCtx(context.Background())
+	if err != nil {
+		nerr := fmt.Errorf("Could not get Venice logged in context: %v", err)
+		log.Errorf("%v", nerr)
+		return nerr
+	}
+
+	ctx, cancel := context.WithTimeout(veniceCtx, 180*time.Second)
+	defer cancel()
+	var token string
+
+	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancelFunc()
+
+L:
+	for true {
+		select {
+		case <-bkCtx.Done():
+			nerr := fmt.Errorf("Could not get naples authentication token from Venice: %v", err)
+			log.Errorf("%v", nerr)
+			return nerr
+		default:
+			token, err = testUtils.GetNodeAuthToken(ctx, sm.GetVeniceURL()[0], []string{"*"})
+			if err == nil {
+				break L
+			}
+			time.Sleep(3 * time.Second)
+		}
+	}
+
+	bkCtx, cancelFunc = context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancelFunc()
+
+L1:
+	for true {
+		select {
+		case <-bkCtx.Done():
+			nerr := fmt.Errorf("Could not enable ssh on naples: %v", err)
+			log.Errorf("%v", nerr)
+			return nerr
+		default:
+			err = sm.enableSSH(nodes, token)
+			if err == nil {
+				break L1
+			}
+			time.Sleep(3 * time.Second)
+		}
 	}
 
 	return nil

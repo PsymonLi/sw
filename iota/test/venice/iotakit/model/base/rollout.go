@@ -264,6 +264,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 	}
 
 	var orderelem labels.Selector
+	dscMatchContstraint := false
 	if spec.SkipSimDSC {
 		var req labels.Requirement
 		req.Key = "type"
@@ -273,6 +274,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 		orderelem.Requirements = append(orderelem.Requirements, &req)
 
 		order = append(order, &orderelem)
+		dscMatchContstraint = true
 	}
 
 	if spec.SkipDSC {
@@ -284,6 +286,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 		orderelem.Requirements = append(orderelem.Requirements, &req)
 
 		order = append(order, &orderelem)
+		dscMatchContstraint = true
 	}
 
 	return &rollout.Rollout{
@@ -303,7 +306,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 			OrderConstraints:          order,
 			Suspend:                   false,
 			DSCsOnly:                  spec.SkipVenice,
-			DSCMustMatchConstraint:    true,
+			DSCMustMatchConstraint:    dscMatchContstraint,
 			UpgradeType:               "Graceful",
 		},
 	}, nil
@@ -824,7 +827,9 @@ outerLoop:
 	if numRetries != 0 {
 		return fmt.Errorf("Error: rollout list returned objects")
 	}
-	return nil
+
+	//enable SSH
+	return sm.EnableSSH(sm.Naples())
 }
 
 // PerformRollout performs a rollout in the cluster

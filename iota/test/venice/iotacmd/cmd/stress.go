@@ -30,6 +30,7 @@ var (
 type testsuite struct {
 	name             string
 	focus            string
+	nofocus          string
 	path             string
 	stopOnError      bool
 	scaleData        bool
@@ -149,6 +150,11 @@ func (suite testsuite) run(skipSetup, skipInstall, skipConfig, rebootOnly bool, 
 	if !suite.regression {
 		cmd = append(cmd, "-ginkgo.skip")
 		cmd = append(cmd, "regression=true")
+	}
+
+	if suite.nofocus != "" {
+		cmd = append(cmd, "-ginkgo.skip")
+		cmd = append(cmd, "\""+suite.nofocus+"\"")
 	}
 
 	if suite.scaleData {

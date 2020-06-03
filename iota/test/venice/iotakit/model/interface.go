@@ -165,6 +165,7 @@ type NaplesActionIntf interface {
 	PortFlap(npc *objects.NaplesCollection) error
 	VerifyPortFlapEvents(since time.Time, npc *objects.NaplesCollection) error
 	VerifyFwlogErrors() error
+	EnableSSH(naples *objects.NaplesCollection) error
 }
 
 //VeniceNodeActionIntf All actions related to venice
