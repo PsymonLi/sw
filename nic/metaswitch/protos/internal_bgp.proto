@@ -681,13 +681,20 @@ message BGPNLRIPrefixKeyHandle {
   BGPNLRIPrefixKey Key = 1;
 }
 
+// BGP NLRI prefix filter object
 message BGPNLRIPrefixFilter {
   option (venice.pdsaGetGlobOpts) = {
     FilterMib: "QB_UE_SEARCH_CRITERIA",
     FilterTypeField: "filter_type"
   };
-  bytes ExtComm      = 1 [(venice.pdsaFields) = {Field: "ext_comm_id", FilterType: "QB_UE_SEARCH_FILT_EXT_COMM_ID"}];
-  bytes AsPathRegexp = 2 [(venice.pdsaFields) = {Field: "as_path_regexp", FilterFieldLen: "as_path_regexp_len", FilterType: "QB_UE_SEARCH_FILT_AS_PATH_REGEX"}];
+  // filter based on extended communities
+  bytes           ExtComm   = 1 [(venice.pdsaFields) = {Field: "ext_comm_id", FilterType: "QB_UE_SEARCH_FILT_EXT_COMM_ID"}];
+  // filter based on l2vni/l3vni
+  uint32          Vnid      = 2 [(venice.pdsaFields) = {Field: "mpls_label", FilterType: "QB_UE_SEARCH_FILT_MPLS_LABEL"}];
+  // filter based on route type
+  uint32          RouteType = 3 [(venice.pdsaFields) = {Field: "route_type", FilterType: "QB_UE_SEARCH_FILT_ROUTE_TYPE"}];
+  // filter based on next-hop address
+  types.IPAddress NextHop   = 4 [(venice.pdsaFields) = {Field: "next_hop", FilterType: "QB_UE_SEARCH_FILT_NEXT_HOP", AddrTypeFieldName: "next_hop_type", AddrLenFieldName: "next_hop_len"}];
 }
 
 // BGPNLRIPrefix GET Requests

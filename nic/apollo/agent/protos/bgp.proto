@@ -602,9 +602,13 @@ message BGPNLRIPrefixKey {
 // BGP NLRI prefix filter object
 message BGPNLRIPrefixFilter {
   // filter based on extended communities
-  bytes ExtComm      = 1;
-  // filter based on as-path regexp
-  bytes AsPathRegexp = 2;
+  bytes           ExtComm   = 1;
+  // filter based on l2vni/l3vni
+  uint32          Vnid      = 2;
+  // filter based on route type
+  uint32          RouteType = 3;
+  // filter based on next-hop address
+  types.IPAddress NextHop   = 4;
 }
 
 // BGP NLRI prefix object

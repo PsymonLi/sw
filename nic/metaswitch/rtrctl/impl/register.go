@@ -54,11 +54,17 @@ func RegisterShowNodes(params *CLIParams, base *cobra.Command) {
 	bgpIPShowCmd.AddCommand(bgpIPUnicastShowCmd)
 	bgpIPUnicastShowCmd.AddCommand(bgpIPUnicastNlriShowCmd)
 	bgpIPUnicastNlriShowCmd.PersistentFlags().StringVarP(&extCommFilter, "ext-comm-filter", "e", "", "extended community filter")
+	bgpIPUnicastNlriShowCmd.PersistentFlags().StringVarP(&vnidFilter, "vni-id", "v", "", "l2vni or l3vni filter")
+	bgpIPUnicastNlriShowCmd.PersistentFlags().StringVarP(&typeFilter, "type", "t", "", "route type filter")
+	bgpIPUnicastNlriShowCmd.PersistentFlags().StringVarP(&nextHopFilter, "next-hop", "n", "", "next hop filter")
 
 	bgpShowCmd.AddCommand(bgpL2vpnShowCmd)
 	bgpL2vpnShowCmd.AddCommand(bgpL2vpnEvpnShowCmd)
 	bgpL2vpnEvpnShowCmd.AddCommand(bgpL2vpnEvpnNlriShowCmd)
 	bgpL2vpnEvpnNlriShowCmd.PersistentFlags().StringVarP(&extCommFilter, "ext-comm-filter", "e", "", "extended community filter")
+	bgpL2vpnEvpnNlriShowCmd.PersistentFlags().StringVarP(&vnidFilter, "vni-id", "v", "", "l2vni or l3vni filter")
+	bgpL2vpnEvpnNlriShowCmd.PersistentFlags().StringVarP(&typeFilter, "type", "t", "", "route type filter")
+	bgpL2vpnEvpnNlriShowCmd.PersistentFlags().StringVarP(&nextHopFilter, "next-hop", "n", "", "next hop filter")
 
 	//evpn commands
 	base.AddCommand(evpnShowCmd)

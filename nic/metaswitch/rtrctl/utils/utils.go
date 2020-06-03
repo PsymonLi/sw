@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -87,4 +88,20 @@ func TimeStr(sec uint32) (res string) {
 		res += fmt.Sprintf("%d sec", sec)
 	}
 	return
+}
+
+func ExtCommToBytes(ec string) []byte {
+    var ret = make([]byte, 8)
+    b := strings.Split(ec, ":")
+    if len(b) != 8 {
+        return nil
+    }
+    for i:= 0; i<len(b); i++ {
+        a, err := strconv.ParseUint(b[i], 10, 32)
+        if err != nil {
+            return nil
+        }
+        ret[i] = byte(uint32(a))
+    }
+    return ret
 }

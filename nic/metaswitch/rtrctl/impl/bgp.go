@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -345,7 +346,7 @@ func bgpPeersAfShowCmdHandler(cmd *cobra.Command, args []string) error {
 }
 
 var (
-	extCommFilter string
+	extCommFilter, vnidFilter, typeFilter, nextHopFilter string
 )
 
 const (
@@ -382,12 +383,51 @@ func bgpNlriShowCmdHandler(cmd *cobra.Command, _afisafi string, args []string) e
 	client := types.NewBGPSvcClient(c)
 
 	var req types.BGPNLRIPrefixGetRequest
+	var rType uint32
+	var vnid uint32
+	var nhip *types.IPAddress
+	ec := []byte{}
+	filter := false
 
 	if extCommFilter != "" {
+		filter = true
+		ec = utils.ExtCommToBytes(extCommFilter)
+		if ec == nil {
+			return fmt.Errorf("Invalid extended community ID %s", extCommFilter)
+		}
+	}
+	if vnidFilter != "" {
+		filter = true
+		v, ok := strconv.ParseUint(vnidFilter, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid vni-id %s", vnidFilter)
+		}
+		vnid = uint32(v)
+	}
+	if typeFilter != "" {
+		filter = true
+		t, ok := strconv.ParseUint(typeFilter, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
+		}
+		if t < 1 || t > 5 {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
+		}
+		rType = uint32(t)
+	}
+	if nextHopFilter != "" {
+		filter = true
+		nhip = utils.IPAddrStrToPdsIPAddr(nextHopFilter)
+	}
+
+	if filter == true {
 		req = types.BGPNLRIPrefixGetRequest{
 			RequestsOrFilter: &types.BGPNLRIPrefixGetRequest_Filter{
 				Filter: &types.BGPNLRIPrefixFilter{
-					ExtComm: []byte(extCommFilter),
+					ExtComm:   ec,
+					Vnid:      vnid,
+					RouteType: rType,
+					NextHop:   nhip,
 				},
 			},
 		}
