@@ -754,7 +754,7 @@ ionic_qos_init(struct ionic *ionic)
 			if (qos->dot1q_pcp >= 0 && qos->dot1q_pcp < IONIC_QOS_PCP_MAX)
 				ionic->qos.pcp_to_tc[qos->dot1q_pcp] = tc;
 		}
-		else if (qos->class_type == IONIC_QOS_CLASS_TYPE_DSCP){
+		else if (qos->class_type == IONIC_QOS_CLASS_TYPE_DSCP) {
 			for (i = 0; i < qos->ndscp; i++) {
 				dscp = qos->ip_dscp[i];
 				if (dscp >= 0 && dscp < IONIC_QOS_DSCP_MAX)

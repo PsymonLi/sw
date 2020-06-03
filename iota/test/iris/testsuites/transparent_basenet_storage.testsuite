@@ -27,6 +27,7 @@ setup:
 
         #- step : testcases.frequency.clock_settings
         #- step : utils.reboot_all
+        - step : testcases.penctl.enable_ssh
         - step : utils.naples_workloads
         - step : config.config_link_flap
         - step : config.workload.api
