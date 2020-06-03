@@ -2204,8 +2204,8 @@ Eth::_CmdLifInit(void *req, void *req_data, void *resp, void *resp_data)
 
     // TODO: Workaround for linkmgr not setting port id
     port_status->id = spec->uplink_port_num;
-    dev_api->uplink_available_count(&uplink_count);
-    if (spec->uplink_port_num == 0 && uplink_count > 0) {
+    if (spec->uplink_port_num == 0 && (uplink_count > 0 ||
+        spec->eth_type != ETH_HOST)) {
         port_status->status = IONIC_PORT_OPER_STATUS_UP;
         port_config->state = IONIC_PORT_OPER_STATUS_UP;
     }

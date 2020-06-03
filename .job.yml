@@ -641,6 +641,7 @@ dependencies:
     - reference: iota/test/standalone/sanity/swm
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: nic/apollo/tools/athena/sanity/base
+    - reference: iota/test/standalone/precheckin/athena
   platform/src/lib/devapi_iris:
     - reference: iota/test/standalone/precheckin/linux
     - reference: iota/test/standalone/sanity/swm
