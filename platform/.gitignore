@@ -7,3 +7,4 @@ hosttools
 drivers/esxi/vib/
 drivers/esxi/signed_drivers/
 goldfw
+minigoldfw

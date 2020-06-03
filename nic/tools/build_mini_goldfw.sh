@@ -8,8 +8,8 @@ TOPDIR=$(dirname `pwd`)
 USERNAME=$(id -nu)
 BUILDROOT_HASH=`grep buildroot $TOPDIR/minio/VERSIONS | cut -d' ' -f2`
 
-#max goldimg size is 60MiB
-max_gold_img_sz=62914560
+#max mini_goldimg size is 10MiB
+max_gold_img_sz=$((0xa00000))
 
 echo "BUILDROOT_HASH is: $BUILDROOT_HASH"
 
@@ -33,7 +33,7 @@ cleanup() {
 
 check_pen_lib_deps() {
     PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/
-    bin_list=`file $TOPDIR/nic/buildroot/output_gold/target/nic/bin/* $TOPDIR/nic/buildroot/output_gold/target/platform/bin/* | grep ELF | cut -d':' -f1`
+    bin_list=`file $TOPDIR/nic/buildroot/output_minigold/target/nic/bin/* $TOPDIR/nic/buildroot/output_minigold/target/platform/bin/* | grep ELF | cut -d':' -f1`
     rm -f /tmp/libs_list.txt /tmp/pen_libs_deps.txt
 
     for bin in $bin_list 
@@ -42,7 +42,7 @@ check_pen_lib_deps() {
     done
     sort -u < /tmp/libs_list.txt > /tmp/pen_libs_deps.txt
 
-    $TOPDIR/nic/tools/check_gold_libs_deps.py -f /tmp/pen_libs_deps.txt -s $TOPDIR/nic/buildroot/output_gold/target/ > /tmp/missing_libs.txt
+    $TOPDIR/nic/tools/check_gold_libs_deps.py -f /tmp/pen_libs_deps.txt -s $TOPDIR/nic/buildroot/output_minigold/target/ > /tmp/missing_libs.txt
 }
 
 if [ "x${JOB_ID}" = "x" ] || [ "x${IGNORE_BUILD_PIPELINE}" != "x" ]; then
@@ -77,33 +77,36 @@ else
 fi
 
 echo 'Cleaning old files'
-docker_exec "rm -rf /sw/nic/buildroot/output_gold"
+docker_exec "rm -rf /sw/nic/buildroot/output_minigold"
 
-echo 'Generating gold config'
-docker_exec "cd /sw/nic/buildroot && make capri_goldimg_defconfig O=output_gold"
+echo 'Generating minigold config'
+docker_exec "cd /sw/nic/buildroot && make capri_mini_goldimg_defconfig O=output_minigold"
 
 echo 'Copying u-boot files'
-docker_exec "cd /sw/nic/buildroot && mkdir -p output_gold/images && cp output/capri/images/u-boot* output_gold/images/"
+docker_exec "cd /sw/nic/buildroot && mkdir -p output_minigold/images && cp output/capri/images/u-boot* output_minigold/images/"
 
 echo 'Copying fwupdate'
-docker_exec "cd /sw/nic && cp tools/fwupdate buildroot/output_gold/images/"
+docker_exec "cd /sw/nic && cp tools/fwupdate buildroot/output_minigold/images/"
 
+echo 'Generating sw_whitelist.txt from pack_minigold.txt'
+docker_exec "echo nic/etc/VERSION.json > /sw/nic/buildroot/board/pensando/capri-mini-goldimg/sw_whitelist.txt"
+docker_exec "cd /sw/nic && tools/pack_to_whitelist.py tools/package/pack_minigold.txt >> buildroot/board/pensando/capri-mini-goldimg/sw_whitelist.txt"
 
-echo 'Building gold buildroot'
+echo 'Building minigold buildroot'
 PLATFORM_LINUX_DIR=/sw/nic/buildroot/output/capri/build/platform-linux/
 docker_exec "rm -rf $PLATFORM_LINUX_DIR && mkdir -p $PLATFORM_LINUX_DIR && cd $PLATFORM_LINUX_DIR && tar -xf /sw/nic/buildroot/output/capri/build/platform-linux.tar.gz"
 
 #Build the buildroot with LINUX_OVERRIDE
-docker_exec "cd /sw/nic/buildroot && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make -j 24 LINUX_OVERRIDE_SRCDIR=$PLATFORM_LINUX_DIR O=output_gold"
+docker_exec "cd /sw/nic/buildroot && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make -j 24 LINUX_OVERRIDE_SRCDIR=$PLATFORM_LINUX_DIR O=output_minigold"
 
 #Replace the make and gmake to default
 docker_root "cp /bin/make_default /bin/make"
 docker_root "cp /bin/gmake_default /bin/gmake"
 
-echo 'Building Naples gold firmware'
+echo 'Building Naples minigold firmware'
 docker_exec "cd /usr/src/github.com/pensando/sw/nic && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make ARCH=aarch64 PLATFORM=hw clean"
 docker_exec "cd /usr/src/github.com/pensando/sw/ && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make ws-tools"
-docker_exec "cd /usr/src/github.com/pensando/sw/nic && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make ARCH=aarch64 PIPELINE=iris PLATFORM=hw FWTYPE=gold PKG_TARGET=gold gold-firmware"
+docker_exec "cd /usr/src/github.com/pensando/sw/nic && PATH=$PATH:/tool/toolchain/aarch64-1.1/bin/ make ARCH=aarch64 PIPELINE=iris PLATFORM=hw FWTYPE=gold PKG_TARGET=minigold minigold-firmware"
 
 rm -f /tmp/missing_libs.txt
 
@@ -115,34 +118,34 @@ if [ -f "/tmp/missing_libs.txt" ]; then
     set -e
 else
     echo ""
-    echo "Error in checking goldfw libs dependency"
+    echo "Error in checking mini_goldfw libs dependency"
     echo ""
     echo "!!! Goldfw Build Failed !!!"
     exit 1
 fi
 
 if [ $ret -eq 0 ]; then
-    echo "Some libs are missing in goldfw filesystem"
+    echo "Some libs are missing in mini_goldfw filesystem"
     echo ""
     echo "Missing libs are: `cat /tmp/missing_libs.txt`"
     echo ""
-    echo "!!! Goldfw Build Failed !!!"
+    echo "!!! Mini Goldfw Build Failed !!!"
 
     exit 1
 fi
 
 echo ""
-echo "lib dependency check for goldfw is successful"
+echo "lib dependency check for mini_goldfw is successful"
 echo ""
 
-image_sz=`stat -c %s $TOPDIR/nic/buildroot/output_gold/images/kernel.img`
+image_sz=`stat -c %s $TOPDIR/nic/buildroot/output_minigold/images/kernel.img`
 
 if [ $image_sz -gt $max_gold_img_sz ]; then
-    echo "Error: GoldFW size($image_sz bytes) is more than allowed size($max_gold_img_sz bytes) for Naples"
+    echo "Error: MiniGoldFW size($image_sz bytes) is more than allowed size($max_gold_img_sz bytes) for Naples"
     exit 1;
 else
-    echo "GoldFW is ready under sw/nic/buildroot/output_gold/images/naples_goldfw.tar. Goldfw Size: $image_sz bytes"
-    echo 'Please check goldfw sanity before publishing it'
+    echo "Mini GoldFW is ready under sw/nic/buildroot/output_minigold/images/naples_minigoldfw.tar. Mini Goldfw Size: $image_sz bytes"
+    echo 'Please check mini_goldfw sanity before publishing it'
 
     #Publish the artifacts if RELEASE is non-zero
     if [ -z $RELEASE ]
@@ -151,14 +154,9 @@ else
         exit 0
     fi
 
-    docker_exec "cd /usr/src/github.com/pensando/sw/nic && make package-drivers"
-    gold_ver=`jq -r .software_version $TOPDIR/nic/buildroot/output_gold/images/MANIFEST`
-    cd $TOPDIR/platform/tools && ./update_gold_drv.sh $gold_ver
-    cd $TOPDIR/platform && tar -czf gold_drv.tar.gz hosttools
     docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
     cd $TOPDIR
-    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/nic/buildroot/output_gold/images/naples_goldfw.tar
-    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/platform/gold_drv.tar.gz
+    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/nic/buildroot/output_minigold/images/naples_minigoldfw.tar
 
     exit 0
 fi

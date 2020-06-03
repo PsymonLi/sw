@@ -48,7 +48,13 @@ build-rootfs: copy-overlay
 	printf '        sshd -1 sshd -1 * - - - SSH drop priv user\n\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/users_table.txt
 	$(HOSTPATH) ${NICDIR}/buildroot/support/scripts/mkusers ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/users_table.txt ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/target >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/fakeroot.fs
 	cat ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/device_table.txt > ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt
-	printf '        /bin/busybox                     f 4755 0  0 - - - - -\n        /bin/ping        f 4755 0 0 - - - - -\n /bin/traceroute6 f 4755 0 0 - - - - -\n\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt
+	printf '        /bin/busybox                     f 4755 0  0 - - - - -\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt
+	if [ -f ${NICDIR}/buildroot/${OUT_DIR}/target/bin/ping ]; then \
+		printf '        /bin/ping        f 4755 0 0 - - - - -\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt; \
+	fi
+	if [ -f ${NICDIR}/buildroot/${OUT_DIR}/target/bin/traceroute6 ]; then \
+		printf '        /bin/traceroute6 f 4755 0 0 - - - - -\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt; \
+	fi
 	echo "${NICDIR}/buildroot/host/bin/makedevs -d ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/device_table.txt ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/target" >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/fakeroot.fs
 	printf '        tar cf ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/rootfs.common.tar --numeric-owner --exclude=THIS_IS_NOT_YOUR_ROOT_FILESYSTEM -C ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/target .\n' >> ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/fakeroot.fs
 	chmod a+x ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/fakeroot.fs
@@ -86,6 +92,13 @@ build-image: build-squashfs
 
 .PHONY: build-gold-image
 build-gold-image: gold_env build-rootfs.cpio
+	$(eval KERNEL_DIR=linux-custom)
+	$(HOSTPATH) BR_BINARIES_DIR=${NICDIR}/buildroot/${OUT_DIR}/images /bin/make -j HOSTCC="/bin/gcc -O2 -I${NICDIR}/buildroot/host/include -L${NICDIR}/buildroot/host/lib -Wl,-rpath,${NICDIR}/buildroot/host/lib" ARCH=arm64 INSTALL_MOD_PATH=${NICDIR}/buildroot/${OUT_DIR}/target CROSS_COMPILE="${NICDIR}/buildroot/host/bin/aarch64-linux-gnu-" DEPMOD=${NICDIR}/buildroot/host/sbin/depmod INSTALL_MOD_STRIP=1 -C ${NICDIR}/buildroot/${OUT_DIR}/build/${KERNEL_DIR} Image -j 24
+	/usr/bin/install -m 0644 -D ${NICDIR}/buildroot/${OUT_DIR}/build/${KERNEL_DIR}/arch/arm64/boot/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image
+	$(HOSTPATH) ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/post-image.sh
+
+.PHONY: build-minigold-image
+build-minigold-image: minigold_env build-rootfs.cpio
 	$(eval KERNEL_DIR=linux-custom)
 	$(HOSTPATH) BR_BINARIES_DIR=${NICDIR}/buildroot/${OUT_DIR}/images /bin/make -j HOSTCC="/bin/gcc -O2 -I${NICDIR}/buildroot/host/include -L${NICDIR}/buildroot/host/lib -Wl,-rpath,${NICDIR}/buildroot/host/lib" ARCH=arm64 INSTALL_MOD_PATH=${NICDIR}/buildroot/${OUT_DIR}/target CROSS_COMPILE="${NICDIR}/buildroot/host/bin/aarch64-linux-gnu-" DEPMOD=${NICDIR}/buildroot/host/sbin/depmod INSTALL_MOD_STRIP=1 -C ${NICDIR}/buildroot/${OUT_DIR}/build/${KERNEL_DIR} Image -j 24
 	/usr/bin/install -m 0644 -D ${NICDIR}/buildroot/${OUT_DIR}/build/${KERNEL_DIR}/arch/arm64/boot/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image
@@ -167,5 +180,16 @@ gold_env:
 
 .PHONY: gold-firmware
 gold-firmware: build-gold-image
+
+.PHONY: minigold_env
+minigold_env:
+	$(eval OUT_DIR = output_minigold)
+	$(eval NAPLES_FW_NAME := naples_minigoldfw.tar)
+	$(eval FW_PACKAGE_DIR := capri-mini-goldimg)
+	$(eval AARCH64_LINUX_HEADERS := ${NICDIR}/buildroot/output_minigold/build/linux-custom)
+	@echo OUT_DIR=${OUT_DIR} NAPLES_FW_NAME=${NAPLES_FW_NAME} FW_PACKAGE_DIR=${FW_PACKAGE_DIR} AARCH64_LINUX_HEADERS=${AARCH64_LINUX_HEADERS}
+
+.PHONY: minigold-firmware
+minigold-firmware: build-minigold-image
 
 diag-firmware: build-diag-image

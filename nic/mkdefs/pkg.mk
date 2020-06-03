@@ -15,7 +15,7 @@ ifeq ($(ARCH),aarch64)
 ifeq ($(FWTYPE),gold)
 	ARCH=${ARCH} ${TOPDIR}/nic/tools/upgrade_version.sh
 	cd $(NICDIR)/../ && python2 $(NICDIR)/tools/package/package.py \
-	--pipeline $(PIPELINE) --target gold $(PKG_ARGS)
+	--pipeline $(PIPELINE) --target $(PKG_TARGET) $(PKG_ARGS)
 else
 	ARCH=${ARCH} ${TOPDIR}/nic/tools/upgrade_version.sh
 	$(eval STRIP := )

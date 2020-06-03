@@ -767,10 +767,12 @@ e2e-naples:
 	$(MAKE) -C nic release
 
 naples-firmware-gold:
-	$(MAKE) -C nic PLATFORM=hw ARCH=aarch64 clean
-	$(MAKE) ws-tools
-	$(MAKE) -C nic PLATFORM=hw ARCH=aarch64 FWTYPE=gold firmware
-	$(MAKE) -C nic PLATFORM=hw ARCH=aarch64 package-drivers
+	@printf "#\n# Use the nic/tools/build_goldfw.sh script\n#\n" >&2
+	@exit 1
+
+naples-firmware-minigold:
+	@printf "#\n# Use the nic/tools/build_mini_goldfw.sh script\n#\n" >&2
+	@exit 1
 
 naples-firmware:
 	$(MAKE) -C nic PLATFORM=hw ARCH=aarch64 clean

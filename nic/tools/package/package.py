@@ -34,7 +34,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--target', dest='target',
                     default='haps',
-                    help='Package for sim, haps, zebu, debug, debug-arm, gold, pegasus')
+                    help='Package for sim, haps, zebu, debug, debug-arm, gold, minigold, pegasus')
 
 # Do not strip the target shared libs and binaries
 parser.add_argument('--no-strip', dest='no_strip',
@@ -146,7 +146,11 @@ elif args.target == 'pegasus':
     files = []
     files.append('nic/tools/package/pack_pegasus.txt')
 elif args.target == 'gold':
+    print ("Packaging for gold")
     files.append('nic/tools/package/pack_gold.txt')
+elif args.target == 'minigold':
+    print ("Packaging for minigold")
+    files.append('nic/tools/package/pack_minigold.txt')
 else:
     print ("Packaging for hardware")
 

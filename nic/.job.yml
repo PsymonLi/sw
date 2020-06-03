@@ -547,6 +547,12 @@ targets:
     area:
     sub-area:
     feature:
+  minigoldfw:
+    commands: ["sh", "-c", "cd $GOPATH/src/github.com/pensando/sw/nic && ./tools/build_mini_goldfw.sh" ]
+    owners: ["email:dac2@pensando.io"]
+    area:
+    sub-area:
+    feature:
 #  goldfw:
 #    commands: ["sh", "-c", "cd $GOPATH/src/github.com/pensando/sw/nic && ./tools/build_goldfw.sh" ]
 #    owners: ["email:dpshah@pensando.io"]
