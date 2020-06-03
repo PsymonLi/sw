@@ -1,2 +1,3 @@
 platform/drivers/pxe/ipxe-1cdf56f.tar.gz
 platform/drivers/esxi/signed_drivers/6.5/Driver_CD_1.8.zip
+platform/drivers/esxi/signed_drivers/6.5/Driver_CD_1.3.zip
