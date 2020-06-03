@@ -250,14 +250,16 @@ func buildDSCMirrorSession(mss *MirrorSessionState) *netproto.MirrorSession {
 			//tmr.Src.MACAddresses = mr.Src.MACAddresses
 
 		}
+		tmr.Dst = &netproto.MatchSelector{}
 		if mr.Dst != nil {
-			tmr.Dst = &netproto.MatchSelector{}
 			tmr.Dst.Addresses = mr.Dst.IPAddresses
 			if len(tmr.Dst.Addresses) == 0 {
 				tmr.Dst.Addresses = anyIP
 			}
 
 			//tmr.Dst.MACAddresses = mr.Dst.MACAddresses
+		} else {
+			tmr.Dst.Addresses = anyIP
 		}
 		if mr.AppProtoSel != nil {
 			for _, pp := range mr.AppProtoSel.ProtoPorts {
