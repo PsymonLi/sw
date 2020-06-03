@@ -217,7 +217,7 @@ jobs:
   iota/test/standalone/precheckin/apulu-sdn-pds:
     labels: ["precommit"]
   iota/test/standalone/precheckin/athena:
-    labels: ["precommit"]
+    labels: ["precommit", "2xhourly"]
   iota/test/standalone/sanity/apulu:
     labels: ["2xhourly"]
   iota/test/standalone/regression/esx:
@@ -443,9 +443,12 @@ dependencies:
     - reference: iota/test/standalone/precheckin/apulu-sdn-pds
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: nic/apollo/tools/apulu/sanity/base
+      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: nic/apollo/tools/athena/sanity/base
     - reference: test/ci_targets/cloud-e2e
+      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: test/ci_targets/controlplane-dol
+      exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
   nic/apollo/tools/dev-docker:
     - reference: nic/apollo/tools/apulu/sanity/customer-docker
     # - reference: nic/apollo/tools/athena/sanity/customer-docker
