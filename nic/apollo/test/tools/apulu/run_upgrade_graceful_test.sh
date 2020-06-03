@@ -1,7 +1,7 @@
 #! /bin/bash
 
 MY_DIR=$( readlink -f $( dirname $0 ))
-
+UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
 # setup dol
 DOL_ARGS='--pipeline apulu --topo learn --feature learn'
 source $MY_DIR/../../../tools/setup_dol.sh $DOL_ARGS
@@ -39,6 +39,11 @@ sleep 2
 # run client
 pdsupgclient
 [[ $? -ne 0 ]] && echo "upgrade command failed" && exit 1
+
+#sleep 10
+#grep -i "success" $UPGRADE_STATUS_FILE
+#[[ $? -ne 0 ]] && echo "upgrade command failed" && exit 1
+
 echo "upgrade command successful"
 
 # kill testing services

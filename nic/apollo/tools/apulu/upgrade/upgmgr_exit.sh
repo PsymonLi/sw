@@ -18,10 +18,14 @@ function usage() {
     exit 1;
 }
 
-while getopts ":r:" o; do
+while getopts ":r:s" o; do
     case "${o}" in
         r)
             response=${OPTARG}
+            ;;
+        s)
+            upgmgr_check_and_update_upgrade_status
+            exit 0;
             ;;
         *)
             usage

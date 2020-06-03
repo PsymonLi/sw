@@ -30,7 +30,6 @@
 
 #define UPGRADE_GRACEFUL "upgrade_graceful.json"
 #define UPGRADE_HITLESS  "upgrade_hitless.json"
-#define UPGMGR_EXIT_SCRIPT "upgmgr_exit.sh"
 
 namespace sdk {
 namespace upg {
@@ -214,7 +213,7 @@ send_ipc_to_next_service (void)
     }
 }
 
-static void
+void
 execute_exit_script (upg_status_t status)
 {
     if (UPG_STATUS_OK != status) {

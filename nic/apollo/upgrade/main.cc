@@ -2,6 +2,7 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
+#include <signal.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -9,6 +10,7 @@
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/sdk/upgrade/core/fsm.hpp"
+#include "nic/sdk/upgrade/core/utils.hpp"
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/apollo/upgrade/svc/upgrade.hpp"
 #include "nic/apollo/upgrade/ipc_peer/ipc_peer.hpp"
@@ -22,9 +24,11 @@ static ipc_peer_ctx *g_ipc_peer_ctx;
 static sdk::ipc::ipc_msg_ptr g_ipc_msg_in_ptr;
 // for interactive stage handling
 static upg_event_msg_t g_upg_event_msg_in;
+typedef void (*sig_handler_t)(int sig, siginfo_t *info, void *ptr);
 
 #define UPGRADE_IPC_PEER_SOCK_NAME "/tmp/upgrade_ipc_peer.sock"
 #define UPGRADE_PEER_BRINGUP_WAIT_CNT 300 // 300 seconds considering sim
+#define NIC_TOOLS "/nic/tools/"
 
 namespace sdk {
 namespace upg {
@@ -354,6 +358,68 @@ print_usage (char **argv)
     fprintf(stdout, "Usage : %s -t <tools-directory>\n", argv[0]);
 }
 
+static void
+atexit_handler (void)
+{
+
+    std::string exit_script(UPGMGR_EXIT_SCRIPT);
+    std::string tools_dir = sdk::upg::fsm_states.init_params()->tools_dir ;
+    if (!tools_dir.empty()) {
+     exit_script = tools_dir + "/" + exit_script + " -s";
+    } else  {
+        exit_script = "NIC_TOOLS" + exit_script + " -s";
+    }
+    if (!sdk::upg::execute(exit_script.c_str())) {
+        UPG_TRACE_ERR("Failed to execute exit script !");
+    }
+    return;
+}
+
+sdk_ret_t
+sig_init (sig_handler_t handler)
+{
+    struct sigaction act;
+
+    if (handler == NULL) {
+        return SDK_RET_ERR;
+    }
+
+    memset(&act, 0, sizeof(act));
+    act.sa_sigaction = handler;
+    act.sa_flags = SA_SIGINFO;
+    sigaction(SIGHUP, &act, NULL);
+    sigaction(SIGQUIT, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+    sigaction(SIGUSR1, &act, NULL);
+    sigaction(SIGCHLD, &act, NULL);
+    sigaction(SIGURG, &act, NULL);
+    sigaction(SIGUSR2, &act, NULL);
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGPIPE, &act, NULL);
+
+    return SDK_RET_OK;
+}
+
+static void
+sig_handler (int sig, siginfo_t *info, void *ptr)
+{
+    switch (sig) {
+    case SIGINT:
+    case SIGTERM:
+    case SIGQUIT:
+        atexit_handler();
+        raise(SIGKILL);
+        break;
+    case SIGUSR1:
+    case SIGUSR2:
+    case SIGHUP:
+    case SIGCHLD:
+    case SIGURG:
+    case SIGPIPE:
+    default:
+        break;
+    }
+}
 
 int
 main (int argc, char **argv)
@@ -389,6 +455,8 @@ main (int argc, char **argv)
         fprintf(stderr, "tools directory is not specified\n");
         exit(1);
     }
+    atexit(atexit_handler);
+    sig_init(sig_handler);
     grpc_svc_init();
 }
 

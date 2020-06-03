@@ -13,6 +13,11 @@ function upgmgr_set_upgrade_status() {
     echo "$time_stamp::$status" > $UPGRADE_STATUS_FILE
 }
 
+function upgmgr_check_and_update_upgrade_status() {
+    grep -ie "in-progress\|failed\|success" $UPGRADE_STATUS_FILE
+    [[ $? -ne 0 ]] && upgmgr_set_upgrade_status "failed"
+}
+
 function upgmgr_clear_upgrade_status() {
     rm -f $UPGRADE_STATUS_FILE
 }
