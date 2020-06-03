@@ -327,6 +327,8 @@ func (h Hal) LifGet(ctx context.Context, req *irisproto.LifGetRequestMsg) (*iris
 			{
 				ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
 				Spec: &irisproto.LifSpec{
+					Type:        irisproto.LifType_LIF_TYPE_HOST,
+					AdminStatus: irisproto.IfStatus_IF_STATUS_UP,
 					KeyOrHandle: &irisproto.LifKeyHandle{
 						KeyOrHandle: &irisproto.LifKeyHandle_LifId{
 							LifId: 1,
@@ -336,11 +338,14 @@ func (h Hal) LifGet(ctx context.Context, req *irisproto.LifGetRequestMsg) (*iris
 				},
 				Status: &irisproto.LifStatus{
 					LifStatus: irisproto.IfStatus_IF_STATUS_UP,
+					HwLifId:   69,
 				},
 			},
 			{
 				ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
 				Spec: &irisproto.LifSpec{
+					Type:        irisproto.LifType_LIF_TYPE_HOST,
+					AdminStatus: irisproto.IfStatus_IF_STATUS_UP,
 					KeyOrHandle: &irisproto.LifKeyHandle{
 						KeyOrHandle: &irisproto.LifKeyHandle_LifId{
 							LifId: 2,
@@ -350,6 +355,7 @@ func (h Hal) LifGet(ctx context.Context, req *irisproto.LifGetRequestMsg) (*iris
 				},
 				Status: &irisproto.LifStatus{
 					LifStatus: irisproto.IfStatus_IF_STATUS_UP,
+					HwLifId:   70,
 				},
 			},
 		},
@@ -477,7 +483,7 @@ func (h Hal) PortGet(ctx context.Context, req *irisproto.PortGetRequestMsg) (*ir
 					},
 				},
 				Status: &irisproto.PortStatus{
-					IfIndex: 1 << ifTypeShift,
+					IfIndex: 1<<ifTypeShift | 1<<ifParentPortShift,
 					LinkStatus: &irisproto.PortLinkStatus{
 						OperState: irisproto.PortOperState_PORT_OPER_STATUS_UP,
 					},
@@ -494,7 +500,25 @@ func (h Hal) PortGet(ctx context.Context, req *irisproto.PortGetRequestMsg) (*ir
 					},
 				},
 				Status: &irisproto.PortStatus{
-					IfIndex: 1 << ifTypeShift,
+					IfIndex: 1<<ifTypeShift | 2<<ifParentPortShift,
+					LinkStatus: &irisproto.PortLinkStatus{
+						OperState: irisproto.PortOperState_PORT_OPER_STATUS_UP,
+					},
+				},
+				ApiStatus: irisproto.ApiStatus_API_STATUS_OK,
+			},
+			{
+				Spec: &irisproto.PortSpec{
+					PortType: irisproto.PortType_PORT_TYPE_MGMT,
+					KeyOrHandle: &irisproto.PortKeyHandle{
+						KeyOrHandle: &irisproto.PortKeyHandle_PortId{
+							PortId: 9,
+						},
+					},
+					AdminState: irisproto.PortAdminState_PORT_ADMIN_STATE_UP,
+				},
+				Status: &irisproto.PortStatus{
+					IfIndex: 1<<ifTypeShift | 1<<ifParentPortShift,
 					LinkStatus: &irisproto.PortLinkStatus{
 						OperState: irisproto.PortOperState_PORT_OPER_STATUS_UP,
 					},

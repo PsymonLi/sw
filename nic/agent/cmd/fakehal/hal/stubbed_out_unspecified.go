@@ -266,15 +266,6 @@ func (h Hal) PortDelete(ctx context.Context, req *irisproto.PortDeleteRequestMsg
 	return nil, nil
 }
 
-// PortGet stubbed out
-func (h Hal) PortGet(ctx context.Context, req *irisproto.PortGetRequestMsg) (*irisproto.PortGetResponseMsg, error) {
-	dat, _ := json.MarshalIndent(req, "", "  ")
-	log.Info("Got PortGet Request:")
-	fmt.Println(string(dat))
-
-	return nil, nil
-}
-
 // StartAacsServer stubbed out
 func (h Hal) StartAacsServer(ctx context.Context, req *irisproto.AacsRequestMsg) (*irisproto.Empty, error) {
 	dat, _ := json.MarshalIndent(req, "", "  ")
