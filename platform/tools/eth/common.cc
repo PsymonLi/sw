@@ -24,6 +24,7 @@
 
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/device/device.hpp"
+#include "nic/sdk/platform/pal/include/pal.h"
 #include "platform/utils/mpartition.hpp"
 
 #include "gen/platform/mem_regions.hpp"
@@ -141,17 +142,23 @@ mpart_cfg_path (void)
 {
     std::string mpart_json;
     std::string hal_cfg_path_ = hal_cfg_path();
+    std::string capacity_str;
+
+    if (pal_mem_get_phys_totalsize() == 0x80000000)
+        capacity_str = "4g";
+    else
+        capacity_str = "8g";
 
     // WARNING -- this must be picked based on profile, this is guaranteed to be
     // broken soon
 #if defined(APOLLO)
-    mpart_json = hal_cfg_path_ + "/apollo/hbm_mem.json";
+    mpart_json = hal_cfg_path_ + "/apollo/" + capacity_str + "/hbm_mem.json";
 #elif defined(ARTEMIS)
-    mpart_json = hal_cfg_path_ + "/artemis/hbm_mem.json";
+    mpart_json = hal_cfg_path_ + "/artemis/" + capacity_str + "/hbm_mem.json";
 #elif defined(APULU)
-    mpart_json = hal_cfg_path_ + "/apulu/8g/hbm_mem.json";
+    mpart_json = hal_cfg_path_ + "/apulu/" + capacity_str + "/hbm_mem.json";
 #elif defined(ATHENA)
-    mpart_json = hal_cfg_path_ + "/athena/4g/hbm_mem.json";
+    mpart_json = hal_cfg_path_ + "/athena/" + capacity_str + "/hbm_mem.json";
 #else
     std::string profile_name;
     sdk::lib::dev_feature_profile_t feature_profile;
@@ -164,7 +171,7 @@ mpart_cfg_path (void)
     std::transform(profile_name.begin(), profile_name.end(),
                    profile_name.begin(), ::tolower);
     mpart_json =  hal_cfg_path_ + "/" +
-        "iris" + "/hbm_mem" + profile_name + ".json";
+        "iris" + "/hbm_mem_" + profile_name + ".json";
 #endif
 
     return mpart_json;

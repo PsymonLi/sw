@@ -293,9 +293,8 @@ DeviceManager::GetConfigFiles(devicemgr_cfg_t *cfg, string &hbm_mem_json_file,
         (cfg->memory_profile.compare("default") == 0)) {
         hbm_mem_json_file += "hbm_mem.json";
     } else {
-         hbm_mem_json_file += "hbm_mem_" + cfg->memory_profile + ".json";
+        hbm_mem_json_file += "hbm_mem_" + cfg->memory_profile + ".json";
     }
-    hbm_mem_json_file = hal_cfg_dir + "/apulu/8g/hbm_mem.json";
 
     if (cfg->platform_type == platform_type_t::PLATFORM_TYPE_SIM) {
         device_json_file = hal_cfg_dir + "/" + cfg->pipeline + "/device.json";
