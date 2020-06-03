@@ -39,12 +39,14 @@ flow_monitor_export_session (pds_flow_hw_ctx_t *session, uint16_t thread_id)
                                  session->rflow.primary,
                                  FLOW_EXPORT_REASON_ACTIVE,
                                  session->iflow_rx,
+                                 session->drop,
                                  thread_id);
     } else {
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
         ftl_export_with_handle(table, session->iflow.table_id,
                                session->iflow.primary,
-                               FLOW_EXPORT_REASON_ACTIVE);
+                               FLOW_EXPORT_REASON_ACTIVE,
+                               session->drop);
     }
 }
 

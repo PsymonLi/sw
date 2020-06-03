@@ -23,7 +23,7 @@ void pds_operd_export_flow_ip6(uint8_t *sip,
                                const operd_flow_stats_t *flow_stats,
                                uint32_t session_id,
                                uint8_t logtype,
-                               uint8_t allow);
+                               uint8_t drop);
 
 void pds_operd_export_flow_l2(uint8_t *smac,
                               uint8_t *dmac,
@@ -32,7 +32,7 @@ void pds_operd_export_flow_l2(uint8_t *smac,
                               const operd_flow_stats_t *flow_stats,
                               uint32_t session_id,
                               uint8_t logtype,
-                              uint8_t allow);
+                              uint8_t drop);
 
 #ifdef __cplusplus
 }

@@ -66,6 +66,7 @@ pds_flow_delete_session (u32 ses_id)
                                      session->rflow.primary,
                                      FLOW_EXPORT_REASON_DEL,
                                      session->iflow_rx,
+                                     session->drop,
                                      thread);
         }
         session = pds_flow_get_hw_ctx_lock(ses_id);
@@ -102,7 +103,8 @@ pds_flow_delete_session (u32 ses_id)
         if (flow_log_enabled) {
             ftl_export_with_handle(table, session->iflow.table_id,
                                    session->iflow.primary,
-                                   FLOW_EXPORT_REASON_DEL);
+                                   FLOW_EXPORT_REASON_DEL,
+                                   session->drop);
         }
         session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.table_id,

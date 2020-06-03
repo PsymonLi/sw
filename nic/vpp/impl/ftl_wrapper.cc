@@ -293,7 +293,7 @@ ftl_remove_with_handle(ftl *obj, uint32_t index, bool primary)
 }
 
 int
-ftl_export_with_entry(flow_hash_entry_t *entry, uint8_t reason)
+ftl_export_with_entry(flow_hash_entry_t *entry, uint8_t reason, bool drop)
 {
     pds_session_stats_t session_stats;
     uint32_t session_idx = entry->get_session_index();
@@ -326,21 +326,22 @@ ftl_export_with_entry(flow_hash_entry_t *entry, uint8_t reason)
                                   entry->get_key_metadata_sport(),
                                   ftl_get_lookup_id(entry),
                                   (operd_flow_stats_t *)&session_stats,
-                                  session_idx, logtype, 1);
+                                  session_idx, logtype, drop);
     } else {
         // Key type MAC
         pds_operd_export_flow_l2(src, dst,
                                  entry->get_key_metadata_dport(),
                                  ftl_get_lookup_id(entry),
                                  (operd_flow_stats_t *)&session_stats,
-                                 session_idx, logtype, 1);
+                                 session_idx, logtype, drop);
     }
 
     return 0;
 }
 
 int
-ftl_export_with_handle (ftl *obj, uint32_t index, bool primary, uint8_t reason)
+ftl_export_with_handle (ftl *obj, uint32_t index, bool primary,
+                        uint8_t reason, bool drop)
 {
     sdk_table_api_params_t params = {0};
     flow_hash_entry_t entry;
@@ -360,7 +361,7 @@ ftl_export_with_handle (ftl *obj, uint32_t index, bool primary, uint8_t reason)
         return -1;
     }
 
-    return ftl_export_with_entry(&entry, reason);
+    return ftl_export_with_entry(&entry, reason, drop);
 }
 
 int

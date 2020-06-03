@@ -336,7 +336,8 @@ ftlv4_read_snat_info (uint32_t session_id, bool host_origin,
 int
 ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
                          ipv4_flow_hash_entry_t *rv4entry,
-                         uint8_t reason, bool host_origin)
+                         uint8_t reason, bool host_origin,
+                         bool drop)
 {
     operd_flow_t *flow;
     pds_session_stats_t session_stats;
@@ -383,7 +384,7 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
     }
 
     flow->type = OPERD_FLOW_TYPE_IP4;
-    flow->action = OPERD_FLOW_ACTION_ALLOW;
+    flow->action = drop ? OPERD_FLOW_ACTION_DENY : OPERD_FLOW_ACTION_ALLOW;
 
     return 0;
 }
@@ -399,7 +400,8 @@ ftlv4_get_flow_entry (ftlv4 *obj, uint32_t flow_index, bool flow_primary,
 int
 ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
                           uint32_t rflow_index, bool rflow_primary,
-                          uint8_t reason, bool host_origin, uint16_t thread_id)
+                          uint8_t reason, bool host_origin,
+                          bool drop, uint16_t thread_id)
 {
     ipv4_flow_hash_entry_t iv4entry, rv4entry;
     sdk_ret_t ret;
@@ -419,7 +421,7 @@ ftlv4_export_with_handle (ftlv4 *obj, uint32_t iflow_index, bool iflow_primary,
         return -1;
     }
 
-    ftlv4_export_with_entry(&iv4entry, &rv4entry, reason, host_origin);
+    ftlv4_export_with_entry(&iv4entry, &rv4entry, reason, host_origin, drop);
 
     return 0;
 }
@@ -717,6 +719,13 @@ ftlv4_cache_set_host_origin (uint8_t host_origin, uint16_t tid)
 }
 
 void
+ftlv4_cache_set_drop (uint8_t drop, uint16_t tid)
+{
+    g_ip4_flow_cache[tid].flags[g_ip4_flow_cache[tid].count].drop =
+                                                               drop & 1;
+}
+
+void
 ftlv4_cache_set_flow_miss_hit (uint8_t val, uint16_t thread_id)
 {
     ftlv4_set_entry_flow_miss_hit(g_ip4_flow_cache[thread_id].ip4_flow + g_ip4_flow_cache[thread_id].count,
@@ -842,7 +851,8 @@ ftlv4_cache_log_session(uint16_t iid, uint16_t rid, uint8_t reason, uint16_t tid
     }
     return ftlv4_export_with_entry(g_ip4_flow_cache[tid].ip4_flow + iid,
                                    g_ip4_flow_cache[tid].ip4_flow + rid, reason,
-                                   g_ip4_flow_cache[tid].flags[iid].host_origin);
+                                   g_ip4_flow_cache[tid].flags[iid].host_origin,
+                                   g_ip4_flow_cache[tid].flags[iid].drop);
 }
 
 void

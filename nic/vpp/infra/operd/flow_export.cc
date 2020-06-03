@@ -37,7 +37,7 @@ pds_operd_export_flow_ip6 (uint8_t *sip,
                            const operd_flow_stats_t *flow_stats,
                            uint32_t session_id,
                            uint8_t logtype,
-                           uint8_t allow)
+                           uint8_t drop)
 {
     operd_flow_t *flow;
     uint64_t *src, *dst;
@@ -55,7 +55,7 @@ pds_operd_export_flow_ip6 (uint8_t *sip,
     }
 
     flow->type = OPERD_FLOW_TYPE_IP6;
-    flow->action = allow ? OPERD_FLOW_ACTION_ALLOW : OPERD_FLOW_ACTION_DENY;
+    flow->action = drop ? OPERD_FLOW_ACTION_DENY: OPERD_FLOW_ACTION_ALLOW;
     flow->logtype = logtype;
     flow->session_id = session_id;
     dst = (uint64_t *) flow->v6.src;
@@ -83,7 +83,7 @@ pds_operd_export_flow_l2 (uint8_t *smac,
                           const operd_flow_stats_t *flow_stats,
                           uint32_t session_id,
                           uint8_t logtype,
-                          uint8_t allow)
+                          uint8_t drop)
 {
     operd_flow_t *flow;
 
@@ -101,7 +101,7 @@ pds_operd_export_flow_l2 (uint8_t *smac,
     }
 
     flow->type = OPERD_FLOW_TYPE_L2;
-    flow->action = allow ? OPERD_FLOW_ACTION_ALLOW : OPERD_FLOW_ACTION_DENY;
+    flow->action = drop ? OPERD_FLOW_ACTION_DENY: OPERD_FLOW_ACTION_ALLOW;
     flow->logtype = logtype;
     flow->session_id = session_id;
     memcpy(flow->l2.src, smac, ETH_ADDR_LEN);

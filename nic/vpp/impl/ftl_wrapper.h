@@ -42,6 +42,8 @@ typedef struct flow_flags_s {
     uint8_t napt : 1;
     uint8_t host_origin : 1;
     uint8_t ctr_idx : 4;
+    uint8_t drop : 1;
+    uint8_t reserve : 7;
 } flow_flags_t;
 
 typedef struct v4_flow_info_s {
@@ -87,7 +89,7 @@ int ftl_remove(ftl *obj, flow_entry *entry, uint32_t hash);
 int ftl_remove_with_handle(ftl *obj, uint32_t index, bool primary);
 
 int ftl_export_with_handle(ftl *obj, uint32_t index, bool primary,
-                           uint8_t reason);
+                           uint8_t reason, bool drop);
 
 int ftl_clear(ftl *obj, bool clear_global_state, bool clear_thread_local_state);
 
@@ -386,11 +388,13 @@ enum flow_export_reason_e {
 int ftlv4_export_with_handle(ftlv4 *obj, uint32_t iflow_index,
                              bool iflow_primary, uint32_t rflow_index,
                              bool rflow_primary, uint8_t reason,
-                             bool host_origin, uint16_t thread_id);
+                             bool host_origin, bool drop,
+                             uint16_t thread_id);
 
 int ftlv4_export_with_entry(v4_flow_entry *iv4entry,
                             v4_flow_entry *rv4entry,
-                            uint8_t reason, bool host_origin);
+                            uint8_t reason, bool host_origin,
+                            bool drop);
 
 int ftlv4_get_flow_entry(ftlv4 *obj, uint32_t flow_index, bool flow_primary,
                          v4_flow_entry *entry, uint16_t thread_id);
@@ -399,9 +403,11 @@ int ftlv4_cache_log_session(uint16_t iid, uint16_t rid,
 
 void ftlv4_cache_set_host_origin(uint8_t host_origin, uint16_t thread_id);
 
+void ftlv4_cache_set_drop(uint8_t drop, uint16_t tid);
+
 int ftlv6_cache_log_session(uint16_t iid, uint16_t rid, uint8_t reason);
 
-int ftl_export_with_entry(flow_entry *entry, uint8_t reason);
+int ftl_export_with_entry(flow_entry *entry, uint8_t reason, bool drop);
 
 int ftlv6_remove(ftlv6 *obj, flow_entry *entry, uint32_t hash);
 

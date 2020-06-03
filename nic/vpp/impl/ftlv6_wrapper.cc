@@ -257,7 +257,8 @@ ftlv6_cache_log_session(uint16_t iid, uint16_t rid, uint8_t reason)
         return 0;
     }
     // rid not logged, since it's iid reversed
-    return ftl_export_with_entry(g_ip6_flow_cache.flow + iid, reason);
+    return ftl_export_with_entry(g_ip6_flow_cache.flow + iid, reason,
+                                 g_ip6_flow_cache.flags[iid].drop);
 }
 
 int

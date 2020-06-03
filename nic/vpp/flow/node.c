@@ -1030,6 +1030,7 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
         ftlv4_cache_set_hash_log(vnet_buffer(p0)->pds_flow_data.flow_hash,
                                  pds_get_flow_log_en(p0), thread_index);
         ftlv4_cache_set_host_origin(pds_is_rx_pkt(p0), thread_index);
+        ftlv4_cache_set_drop(pds_is_flow_drop(p0), thread_index);
 
         if (pds_is_flow_napt_en(p0)) {
             // NAPT - both port and ip are changed
