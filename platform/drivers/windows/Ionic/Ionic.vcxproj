@@ -111,6 +111,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>ionic64</TargetName>
+    <Inf2CatWindowsVersionList>8_$(DDKPlatform),Server6_3_$(DDKPlatform),Server8_$(DDKPlatform),10_$(DDKPlatform),10_RS2_$(DDKPlatform),10_RS3_$(DDKPlatform),10_RS4_$(DDKPlatform),Server10_$(DDKPlatform),Server2016_$(DDKPlatform),ServerRS2_$(DDKPlatform),ServerRS3_$(DDKPlatform),ServerRS4_$(DDKPlatform),ServerRS5_$(DDKPlatform)</Inf2CatWindowsVersionList>
   </PropertyGroup>
   <PropertyGroup>
     <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
@@ -134,6 +135,15 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>ionic64</TargetName>
+    <Inf2CatWindowsVersionList>8_$(DDKPlatform),Server6_3_$(DDKPlatform),Server8_$(DDKPlatform),10_$(DDKPlatform),10_RS2_$(DDKPlatform),10_RS3_$(DDKPlatform),10_RS4_$(DDKPlatform),Server10_$(DDKPlatform),Server2016_$(DDKPlatform),ServerRS2_$(DDKPlatform),ServerRS3_$(DDKPlatform),ServerRS4_$(DDKPlatform),ServerRS5_$(DDKPlatform)</Inf2CatWindowsVersionList>
+    <TimeStampServer>
+    </TimeStampServer>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Inf2CatWindowsVersionList>8_$(DDKPlatform),Server6_3_$(DDKPlatform),Server8_$(DDKPlatform),10_$(DDKPlatform),10_RS2_$(DDKPlatform),10_RS3_$(DDKPlatform),10_RS4_$(DDKPlatform),Server10_$(DDKPlatform),Server2016_$(DDKPlatform),ServerRS2_$(DDKPlatform),ServerRS3_$(DDKPlatform),ServerRS4_$(DDKPlatform),ServerRS5_$(DDKPlatform)</Inf2CatWindowsVersionList>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Inf2CatWindowsVersionList>8_$(DDKPlatform),Server6_3_$(DDKPlatform),Server8_$(DDKPlatform),10_$(DDKPlatform),10_RS2_$(DDKPlatform),10_RS3_$(DDKPlatform),10_RS4_$(DDKPlatform),Server10_$(DDKPlatform),Server2016_$(DDKPlatform),ServerRS2_$(DDKPlatform),ServerRS3_$(DDKPlatform),ServerRS4_$(DDKPlatform),ServerRS5_$(DDKPlatform)</Inf2CatWindowsVersionList>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -168,6 +178,10 @@
       <AdditionalIncludeDirectories>$(UM_IncludePath);Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN64;_AMD64_;AMD64;NDIS_WDM=1;NDIS_MINIPORT_DRIVER=1;IONIC_VERSIONINFO_EXTENSION=$(IonicMpVersionExt);IONIC_MAJOR_DRIVER_VERSION=$(IonicMpVerMaj);IONIC_MINOR_DRIVER_VERSION=$(IonicMpVerMin);IONIC_SP_DRIVER_VERSION=$(IonicMpVerSP);IONIC_BUILD_DRIVER_VERSION=$(IonicMpVerBuild);NDIS$(IonicMpNDISVersion)_MINIPORT=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
+    <DriverSign>
+      <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
+      <AdditionalOptions>/tr http://timestamp.digicert.com /td sha256 %(AdditionalOptions)</AdditionalOptions>
+    </DriverSign>
   </ItemDefinitionGroup>
   <Target Name="Run Ctrpp" BeforeTargets="ClCompile">
     <PropertyGroup>
