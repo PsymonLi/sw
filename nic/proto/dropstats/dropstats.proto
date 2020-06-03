@@ -49,12 +49,6 @@ message DropMetrics {
 message EgressDropMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "ASIC Egress Drop Statistics",
-        Description: "Key index - Global ID",
-        Scope: PerASIC,
-        Tags: [ Level4 ]
-    };
 
     fixed64          Key                              = 1;        // Global id 0
     delphi.Counter   drop_output_mapping              = 2  [(venice.metricsField) = {DisplayName: "Output-mapping-miss Drops" Description: "number of packets dropped due to output mapping miss"}];

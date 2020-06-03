@@ -21,7 +21,6 @@ var CQMeasurementGroupByMap = map[string]int{
 	"FteLifQMetrics":         1,
 	"MgmtMacMetrics":         1,
 	"MacMetrics":             1,
-	"EgressDropMetrics":      1,
 	"MemoryMetrics":          1,
 	"PowerMetrics":           1,
 	"PortTemperatureMetrics": 1,

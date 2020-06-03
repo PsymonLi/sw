@@ -174,59 +174,6 @@
         "Level4"
       ],
       "Scope": "PerASIC"
-    },
-    {
-      "Name": "EgressDropMetrics",
-      "Description": "Key index - Global ID",
-      "DisplayName": "ASIC Egress Drop Statistics",
-      "Fields": [
-        {
-          "Name": "DropOutputMapping",
-          "DisplayName": "Output-mapping-miss Drops",
-          "Description": "number of packets dropped due to output mapping miss",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropPruneSrcPort",
-          "DisplayName": "Source-port-prune Drops",
-          "Description": "number of packets dropped due to source port pruning",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropMirror",
-          "DisplayName": "Mirror-hit Drops",
-          "Description": "number of packets dropped due to mirror hit",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropPolicer",
-          "DisplayName": "Policer Drops",
-          "Description": "number of packets dropped due to policer",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropCopp",
-          "DisplayName": "COPP Drops",
-          "Description": "number of packets dropped due to COPP",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "DropChecksumErr",
-          "DisplayName": "Checksum-error Drops",
-          "Description": "number of packets dropped due to checksum errors",
-          "Units": "Count",
-          "BaseType": "Counter"
-        }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerASIC"
     }
   ]
 }

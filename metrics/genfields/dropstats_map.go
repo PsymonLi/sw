@@ -32,14 +32,4 @@ func init() {
 	}
 	globalMetricsMap["dropstats"]["DropMetrics"] = kindToFieldNameMap["DropMetrics"]
 
-	kindToFieldNameMap["EgressDropMetrics"] = []string{
-		"DropOutputMapping",
-		"DropPruneSrcPort",
-		"DropMirror",
-		"DropPolicer",
-		"DropCopp",
-		"DropChecksumErr",
-	}
-	globalMetricsMap["dropstats"]["EgressDropMetrics"] = kindToFieldNameMap["EgressDropMetrics"]
-
 }
