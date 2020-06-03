@@ -15,6 +15,7 @@ import (
 
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/sim"
+	"github.com/pensando/sw/venice/utils/log"
 )
 
 // SimParams are the parameters passed to simulator
@@ -52,6 +53,7 @@ var (
 	topology      map[string]Orchestrator
 	allInterfaces map[string]Host
 	networks      map[int32]Network
+	logger        log.Logger
 )
 
 const (
@@ -118,7 +120,7 @@ type Orchestrator struct {
 // Destroy is used to shut down all simulators
 func Destroy() {
 	if topology == nil {
-		fmt.Printf("\ntopology not set")
+		logger.Infof("topology not set")
 		return
 	}
 
@@ -135,7 +137,7 @@ func createNamespace(name string, orch *Orchestrator) (*Namespace, error) {
 	namespace.Hosts = make(map[string]Host)
 	dc, err := orch.Sim.AddDC(namespace.Name)
 	if err != nil {
-		fmt.Printf("\nFailed to add DC %v to simulator. Err : %v", namespace.Name, err)
+		logger.Errorf("Failed to add DC %v to simulator. Err : %v", namespace.Name, err)
 		return nil, fmt.Errorf("Failed to add DC %v to simulator. Err : %v", namespace.Name, err)
 	}
 
@@ -151,13 +153,13 @@ func createNamespace(name string, orch *Orchestrator) (*Namespace, error) {
 
 	_, err = dc.AddDVS(&dvsCreateSpec)
 	if err != nil {
-		fmt.Printf("\nFailed to add DVS %v to DC. Err : %v", dvsConfigSpec.GetDVSConfigSpec().Name, err)
+		logger.Errorf("Failed to add DVS %v to DC. Err : %v", dvsConfigSpec.GetDVSConfigSpec().Name, err)
 		return nil, fmt.Errorf("Failed to add DVS %v to DC. Err : %v", dvsConfigSpec.GetDVSConfigSpec().Name, err)
 	}
 
 	dvs, _ := dc.GetDVS(vchub.CreateDVSName(namespace.Name))
 	if dvs == nil {
-		fmt.Printf("\nFailed to retrieve DVS from DC")
+		logger.Errorf("Failed to retrieve DVS from DC")
 		return nil, fmt.Errorf("Failed to retrieve DVS %v from DC", vchub.CreateDVSName(namespace.Name))
 	}
 
@@ -194,7 +196,7 @@ func createHost(hostName, hostMAC string, namespace *Namespace) (*Host, error) {
 	host.Mac = hostMAC
 	h, err := namespace.DC.AddHost(host.Name)
 	if err != nil {
-		fmt.Printf("\nFailed to add host %v to DC. Err : %v", host.Name, err)
+		logger.Errorf("Failed to add host %v to DC. Err : %v", host.Name, err)
 		return nil, fmt.Errorf("Failed to add host %v to DC. Err : %v", host.Name, err)
 	}
 
@@ -202,13 +204,13 @@ func createHost(hostName, hostMAC string, namespace *Namespace) (*Host, error) {
 	h.ClearVmkNics()
 	err = h.AddNic("vmnic0", host.Mac)
 	if err != nil {
-		fmt.Printf("\nFailed to add NIC %v to host. Err : %v", host.Mac, err)
+		logger.Errorf("Failed to add NIC %v to host. Err : %v", host.Mac, err)
 		return nil, fmt.Errorf("Failed to add NIC %v to host. Err : %v", host.Mac, err)
 	}
 
 	err = namespace.DVS.AddHost(h)
 	if err != nil {
-		fmt.Printf("\nfailed to add host %v to DVS. Err : %v", host.Name, err)
+		logger.Errorf("failed to add host %v to DVS. Err : %v", host.Name, err)
 	}
 
 	host.SimHost = h
@@ -233,7 +235,7 @@ func createWorkload(workloadName string, host *Host, interfaces []Interface, nam
 	}
 	vm, err := namespace.DC.AddVM(workload.Name, workload.Host, vnics)
 	if err != nil {
-		fmt.Printf("\nFailed to add VM %v to DC. Err : %v", workload.Name, err)
+		logger.Errorf("Failed to add VM %v to DC. Err : %v", workload.Name, err)
 		return nil, fmt.Errorf("Failed to add VM %v to DC. Err : %v", workload.Name, err)
 	}
 
@@ -260,7 +262,7 @@ func createOrchestrator(orchName, URI string) (*Orchestrator, error) {
 	u.User = url.UserPassword(orch.User, orch.Password)
 	s, err := sim.NewVcSim(sim.Config{Addr: u.String()})
 	if err != nil {
-		fmt.Printf("\nFailed to start simulator : %v", err)
+		logger.Errorf("Failed to start simulator : %v", err)
 		return nil, fmt.Errorf("failed to start simulator : %v", err)
 	}
 	orch.Sim = s
@@ -330,7 +332,7 @@ func generateTopology() error {
 
 		topology[orch.Name] = *orch
 	}
-	fmt.Println("Topology Generated")
+	logger.Info("Topology Generated")
 	return nil
 }
 
@@ -339,7 +341,7 @@ func generateTopologyUsingConfig() error {
 	allInterfaces = make(map[string]Host)
 	skipIdx := params.StartIdx == params.EndIdx
 
-	fmt.Printf("\nGenerating Topology using config file %v", params.ConfigPath)
+	logger.Infof("Generating Topology using config file %v", params.ConfigPath)
 	jsonFile, err := os.Open(params.ConfigPath)
 	if err != nil {
 		return err
@@ -399,11 +401,11 @@ func generateTopologyUsingConfig() error {
 		hostName := workloadSpec["host-name"].(string)
 		host, ok := namespace.Hosts[hostName]
 		if !ok {
-			fmt.Printf("\nSkipping Host : %s\n", hostName)
+			logger.Infof("Skipping Host : %s\n", hostName)
 			continue
 		}
-		fmt.Printf("\nWorkload Name : %v", workloadName)
-		fmt.Printf("\nHost Name : %v\n", hostName)
+		logger.Infof("Workload Name : %v", workloadName)
+		logger.Infof("Host Name : %v\n", hostName)
 
 		ifs := workloadSpec["interfaces"].([]interface{})
 		interfaces := []Interface{}
@@ -432,23 +434,23 @@ func generateTopologyUsingConfig() error {
 
 func printTopology() {
 	for orchKey, orchValue := range topology {
-		fmt.Println("\n======================================================================================")
-		fmt.Printf("\nORCHESTRATOR : %v URL : %v", orchKey, orchValue.URI)
+		fmt.Println("======================================================================================")
+		logger.Infof("ORCHESTRATOR : %v URL : %v", orchKey, orchValue.URI)
 		for namespaceKey, namespaceValue := range orchValue.Namespaces {
-			fmt.Printf("\nNAMESPACE : %v", namespaceKey)
+			logger.Infof("NAMESPACE : %v", namespaceKey)
 			for hostKey, hostValue := range namespaceValue.Hosts {
-				fmt.Printf("\n\tHOST : %v\t\tMac : %v", hostKey, hostValue.Mac)
+				logger.Infof("\tHOST : %v\t\tMac : %v", hostKey, hostValue.Mac)
 
 				for workloadKey, workloadValue := range hostValue.Workloads {
-					fmt.Printf("\n\t\t WORKLOAD : %v", workloadKey)
-					fmt.Printf("\n\t\t\t IFS : %v", workloadValue.Interfaces)
+					logger.Infof("\t\t WORKLOAD : %v", workloadKey)
+					logger.Infof("\t\t\t IFS : %v", workloadValue.Interfaces)
 				}
 			}
-			fmt.Println("\n======================================================================================")
+			fmt.Println("======================================================================================")
 		}
-		fmt.Printf("\n\n")
+		logger.Infof("\n")
 	}
-	fmt.Printf("\nEnsure networks : %v are created on Venice\n", networks)
+	logger.Infof("Ensure networks : %v are created on Venice\n", networks)
 }
 
 func listAllPensandoInterfaces() {
@@ -461,7 +463,7 @@ func listAllPensandoInterfaces() {
 	sort.Strings(keyList)
 
 	for _, k := range keyList {
-		fmt.Printf("\n%v  \tHOST : %v", k, allInterfaces[k].Name)
+		logger.Infof("%v  \tHOST : %v", k, allInterfaces[k].Name)
 	}
 }
 
@@ -488,6 +490,10 @@ func validateParams() error {
 
 func main() {
 	defer Destroy()
+	config := log.GetDefaultConfig("orchsim")
+	config.LogToStdout = true
+	config.Filter = log.AllowAllFilter
+	logger = log.SetConfig(config)
 
 	instPtr := flag.Int("orch", 1, "instances of compute orchestrator simulator to be created")
 	// TODO : fix multiple namespaces in sim issue
@@ -523,19 +529,19 @@ func main() {
 	params.StartMac = *macPtr
 
 	if err := validateParams(); err != nil {
-		fmt.Printf("\nParameter validation failed. Err : %v", err)
+		logger.Infof("Parameter validation failed. Err : %v", err)
 		return
 	}
 	networks = make(map[int32]Network)
 
 	if len(params.ConfigPath) > 0 {
 		if err := generateTopologyUsingConfig(); err != nil {
-			fmt.Printf("\nTopology generation failed. Err : %v", err)
+			logger.Infof("Topology generation failed. Err : %v", err)
 		}
 	} else {
 		networks[1] = Network{Name: params.NetworkName, VlanID: 1}
 		if err := generateTopology(); err != nil {
-			fmt.Printf("\nTopology generation failed. Err : %v", err)
+			logger.Infof("Topology generation failed. Err : %v", err)
 			return
 		}
 	}
@@ -548,6 +554,6 @@ func main() {
 		listAllPensandoInterfaces()
 	}
 
-	fmt.Printf("Orchestrators running on port : %v", params.Port)
+	logger.Infof("Orchestrators running on port : %v", params.Port)
 	select {}
 }

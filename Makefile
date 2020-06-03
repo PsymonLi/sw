@@ -201,6 +201,7 @@ netagent-build:
 # orchestrator-sim builds orchestrator simulator
 orchestrator-sim:
 	$(MAKE) -C venice/ctrler/orchhub/cmd/orch-sim/
+	$(MAKE) -C venice/ctrler/orchhub/cmd/orchrunner/
 
 
 # build installs all go binaries. Use VENICE_CCOMPILE_FORCE=1 to force a rebuild of all packages

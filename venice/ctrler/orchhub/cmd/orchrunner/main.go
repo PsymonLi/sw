@@ -8,6 +8,9 @@ import (
 
 	"os"
 	"os/exec"
+	"sync"
+
+	"github.com/pensando/sw/venice/utils/log"
 )
 
 // RunnerParams are the parameters passed to simulator
@@ -26,7 +29,9 @@ type RunnerParams struct {
 }
 
 var (
-	params RunnerParams
+	params       RunnerParams
+	backgroundWg sync.WaitGroup
+	logger       log.Logger
 )
 
 func validateParams() error {
@@ -45,18 +50,35 @@ func validateParams() error {
 	return nil
 }
 
-func runCmd(cmd string, background bool) error {
+func runCmdBackground(cmd string) error {
+	defer backgroundWg.Done()
 	bin := exec.Command("sh", "-c", cmd)
-
-	if background {
-		return bin.Start()
+	if err := bin.Start(); err != nil {
+		logger.Errorf("Failed to start background process %v. Err : %v", cmd, err)
+		return err
 	}
+
+	if err := bin.Wait(); err != nil {
+		logger.Errorf("Failed to start background process %v. Err : %v", cmd, err)
+		return err
+	}
+
+	return nil
+}
+
+func runCmd(cmd string) error {
+	bin := exec.Command("sh", "-c", cmd)
 
 	_, err := bin.Output()
 	return err
 }
 
 func main() {
+	config := log.GetDefaultConfig("orchsim-runner")
+	config.LogToStdout = true
+	config.Filter = log.AllowAllFilter
+	logger = log.SetConfig(config)
+
 	instPtr := flag.Int("n", 1, "instances of compute orchestrator simulator to be created")
 	startPortPtr := flag.Int("p", 10000, "Start port")
 	flag.StringVar(&params.ConfigPath, "c", "", "IOTA generated config file")
@@ -68,18 +90,15 @@ func main() {
 	params.StartPort = *startPortPtr
 
 	if err := validateParams(); err != nil {
-		fmt.Printf("\nParameter validation failed. Err : %v\n", err)
+		logger.Errorf("\nParameter validation failed. Err : %v\n", err)
 		return
 	}
 
-	err := runCmd("pkill -SIGKILL orch-sim", false)
-	if err != nil {
-		fmt.Printf("Failed to kill all orch-sim. Err : %v", err)
-	}
+	runCmd("pkill -SIGKILL orch-sim")
 
 	jsonFile, err := os.Open(params.ConfigPath)
 	if err != nil {
-		fmt.Printf("Err : %v", err)
+		logger.Errorf("Failed to open config path : %v. Err : %v", params.ConfigPath, err)
 		return
 	}
 
@@ -98,13 +117,14 @@ func main() {
 		port := params.StartPort + i
 		hostStartIdx := curHostIdx
 		hostEndIdx := curHostIdx + hostPerSim - 1
-		cmd := fmt.Sprintf("%v -port %d -c %s -s %d -e %d 1>orch-%d.stdout 2>orch-%d.stderr", params.OrchSimPath, port, params.ConfigPath, hostStartIdx, hostEndIdx, port, port)
+		cmd := fmt.Sprintf("%v -p -port %d -c %s -s %d -e %d 1>orch-%d.stdout 2>orch-%d.stderr", params.OrchSimPath, port, params.ConfigPath, hostStartIdx, hostEndIdx, port, port)
 		fmt.Printf("\n%s\n", cmd)
-		err := runCmd(cmd, true)
-		if err != nil {
-			fmt.Printf("failed to run command. Err : %v", err)
-		}
+		backgroundWg.Add(1)
+		go runCmdBackground(cmd)
 		curHostIdx = curHostIdx + hostPerSim
 	}
 
+	logger.Infof("%v orchsim processes started in the background. Seed Port is %v.", params.Instances, params.StartPort)
+	backgroundWg.Wait()
+	logger.Infof("Orchim-runner exited")
 }
