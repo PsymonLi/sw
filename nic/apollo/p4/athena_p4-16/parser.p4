@@ -27,7 +27,8 @@ parser AthenaIngressParser(packet_in packet,
   bit<12> default_vlan;
   bit <16> geneve_options_len;
   bit <16> geneve_prototype;
-  
+  bit<16> geneve_unk_opt_len; 
+ 
   
   state start {
     //    metadata.cntrl.tm_iport  = intr_global.tm_iport;
@@ -553,15 +554,13 @@ state parse_txdma_gso {
     bit<8> opt_type = packet.lookahead<bit<24>>()[7:0];
     //    bit<8> opt_len = (bit<8>)packet.lookahead<bit<32>>()[4:0];
     transition select(geneve_options_len, opt_type) {
-      (0x80 &&& 0x80, 0x00 &&& 0x00)              : parse_geneve_option_error;
-      (0x00 &&& 0xFF, 0x00 &&& 0x00)              : parse_geneve_ulp;
-      (0x00 &&& 0x00, GENEVE_OPTION_SRC_SLOT_ID ) : parse_geneve_option_src_slot_id; 
-      (0x00 &&& 0x00, GENEVE_OPTION_DST_SLOT_ID ) : parse_geneve_option_dst_slot_id; 
-      (0x00 &&& 0x00, GENEVE_OPTION_ORIGINATOR_PHYSICAL_IP ) : parse_geneve_option_originator_physical_ip; 
-      (0x00 &&& 0x00, GENEVE_OPTION_SRC_SECURITY_GRP_LIST &&& 0xfe ) : parse_geneve_option_src_security_grp_list;
+      (0x8000 &&& 0x8000, 0x00 &&& 0x00)              : parse_geneve_option_error;
+      (0x0000 &&& 0xFFFF, 0x00 &&& 0x00)              : parse_geneve_ulp;
+      (0x0000 &&& 0x0000, GENEVE_OPTION_SRC_SLOT_ID ) : parse_geneve_option_src_slot_id; 
+      (0x0000 &&& 0x0000, GENEVE_OPTION_DST_SLOT_ID ) : parse_geneve_option_dst_slot_id; 
+      (0x0000 &&& 0x0000, GENEVE_OPTION_ORIGINATOR_PHYSICAL_IP ) : parse_geneve_option_originator_physical_ip; 
+      (0x0000 &&& 0x0000, GENEVE_OPTION_SRC_SECURITY_GRP_LIST &&& 0xfe ) : parse_geneve_option_src_security_grp_list;
       default : parse_geneve_option_unknown;
-      //      (0x00 &&& 0x00, GENEVE_OPTION_SRC_SECURITY_GRP_LIST_EVEN ) : parse_geneve_option_src_security_grp_list_even;
-      //      (0x00 &&& 0x00, GENEVE_OPTION_SRC_SECURITY_GRP_LIST_ODD ) : parse_geneve_option_src_security_grp_list_odd;
 
     }   
   }
@@ -575,8 +574,8 @@ state parse_txdma_gso {
     packet.extract(hdr.geneve_option_srcSlotId);
     geneve_options_len = geneve_options_len - 8;
     transition select(geneve_options_len) {
-       0x80 : parse_geneve_option_error;
-       0x00 : parse_geneve_ulp;
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
        default : parse_geneve_options;
     }
   }
@@ -590,8 +589,8 @@ state parse_txdma_gso {
     metadata.cntrl.mpls_label_b3_b0 = hdr.geneve_option_dstSlotIdSplit.dstSlotId_b3_b0;
     geneve_options_len = geneve_options_len - 8;
     transition select(geneve_options_len) {
-        0x80 : parse_geneve_option_error;
-        0x00 :  parse_geneve_ulp;
+        0x8000 &&& 0x8000: parse_geneve_option_error;
+        0x0000 &&& 0xFFFF:  parse_geneve_ulp;
        default : parse_geneve_options;
     }
   }
@@ -601,34 +600,105 @@ state parse_txdma_gso {
     packet.extract(hdr.geneve_option_origPhysicalIp);
     geneve_options_len = geneve_options_len - 8;
     transition select(geneve_options_len) {
-       0x80 : parse_geneve_option_error;
-       0x00 : parse_geneve_ulp;
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
        default : parse_geneve_options;
     }
   }
 
+  /* 
   state parse_geneve_option_src_security_grp_list {
-    bit<8> src_sec_grp_list_opt_len = (bit<8>)(packet.lookahead<bit<32>>()[4:0]) << 3; 
-    packet.extract_bytes(hdr.geneve_option_srcSecGrpList, (bit<16>)src_sec_grp_list_opt_len);
-    geneve_options_len = geneve_options_len - (bit<16>)src_sec_grp_list_opt_len;
+    bit<8> src_sec_grp_list_opt_len = ((bit<8>)(packet.lookahead<bit<32>>()[4:0]) << 2) + 4; 
+    packet.advance_bytes((bit<16>)src_sec_grp_list_opt_len);
+
+    //   packet.extract_bytes(hdr.geneve_option_srcSecGrpList, (bit<16>)src_sec_grp_list_opt_len);
+    //    geneve_options_len = geneve_options_len - (bit<16>)src_sec_grp_list_opt_len;
+    geneve_options_len = geneve_options_len - 16;
     transition select(geneve_options_len) {
-       0x80 : parse_geneve_option_error;
-       0x00 : parse_geneve_ulp;
+       0x8000 : parse_geneve_option_error;
+       0x0000 : parse_geneve_ulp;
+       default : parse_geneve_options;
+    }
+  }
+  */
+
+
+  state parse_geneve_option_src_security_grp_list{
+    packet.extract(hdr.geneve_options_generic);
+    geneve_options_len = geneve_options_len - 4; 
+    transition select(geneve_options_len, hdr.geneve_options_generic.Lenght) {
+      (0x8000 &&& 0x8000,  0x00 &&& 0x00) : parse_geneve_option_error;
+      (0x0000 &&& 0x0000,  0x01 &&& 0x03) : parse_geneve_option_src_sec_grp_list_1;
+      (0x0000 &&& 0x0000,  0x02 &&& 0x03) : parse_geneve_option_src_sec_grp_list_2;
+      (0x0000 &&& 0x0000,  0x03 &&& 0x03) : parse_geneve_option_src_sec_grp_list_3;
+       default : parse_geneve_option_error;
+    }
+  }
+
+  state parse_geneve_option_src_sec_grp_list_1 {
+    packet.advance_bytes (4);
+    geneve_options_len = geneve_options_len - 4;
+    transition select(geneve_options_len) {
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
        default : parse_geneve_options;
     }
   }
 
+  state parse_geneve_option_src_sec_grp_list_2 {
+    packet.advance_bytes (8);
+    geneve_options_len = geneve_options_len - 8;
+    transition select(geneve_options_len) {
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
+       default : parse_geneve_options;
+    }
+  }
+
+  state parse_geneve_option_src_sec_grp_list_3 {
+    packet.advance_bytes (12);
+    geneve_options_len = geneve_options_len - 12;
+    transition select(geneve_options_len) {
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
+       default : parse_geneve_options;
+    }
+  }
+
+  /*
   state parse_geneve_option_unknown {
-    bit<8> unk_opt_len = (bit<8>)(packet.lookahead<bit<32>>()[4:0]) << 2;
-    packet.extract_bytes(hdr.geneve_option_unknown, (bit<16>)unk_opt_len);
+    bit<8> unk_opt_len = ((bit<8>)(packet.lookahead<bit<32>>()[4:0]) << 2) + 4;
+    //    packet.extract_bytes(hdr.geneve_option_unknown, (bit<16>)unk_opt_len);
+    packet.advance_bytes((bit<16>)unk_opt_len);
     geneve_options_len = geneve_options_len - (bit<16>)unk_opt_len;
     transition select(geneve_options_len) {
-       0x80 : parse_geneve_option_error;
-       0x00 : parse_geneve_ulp;
+       0x8000 : parse_geneve_option_error;
+       0x0000 : parse_geneve_ulp;
        default : parse_geneve_options;
     }
   }
+  */
 
+  state parse_geneve_option_unknown{
+    geneve_unk_opt_len = ((bit<16>)(packet.lookahead<bit<32>>()[4:0]) << 2);
+    packet.advance_bytes(4);
+    geneve_options_len = geneve_options_len - 4; 
+    transition select(geneve_options_len, geneve_unk_opt_len) {
+      (0x8000 &&& 0x8000,  0x0000 &&& 0x0000) : parse_geneve_option_error;
+       default : parse_geneve_option_unknown_body;
+    }
+  }
+
+
+  state parse_geneve_option_unknown_body{
+    packet.advance_bytes(geneve_unk_opt_len);
+    geneve_options_len = geneve_options_len - geneve_unk_opt_len; 
+    transition select(geneve_options_len) {
+       0x8000 &&& 0x8000: parse_geneve_option_error;
+       0x0000 &&& 0xFFFF: parse_geneve_ulp;
+       default : parse_geneve_options;
+    }
+  }
 
   state parse_geneve_ulp {
     //  metadata.cntrl.geneve_prototype = geneve_prototype;

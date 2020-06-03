@@ -8,8 +8,14 @@ control p4i_statistics(inout cap_phv_intr_global_h capri_intrinsic,
 					   @__ref bit<64>  rx_from_switch,
 					   @__ref bit<64>  rx_from_arm,
 					   @__ref bit<64>  rx_user_csum_err,
-					   @__ref bit<64> rx_substrate_csum_err
+					   @__ref bit<64> rx_substrate_csum_err,
+					   @__ref bit<64> rx_malformed
 					 ) {
+      if((capri_intrinsic.error_bits != 0) || (metadata.prs.geneve_option_len_error == 1)) {
+	rx_malformed = rx_malformed + 1;	            
+	capri_intrinsic.drop = 1;
+      }
+      
       if(metadata.cntrl.from_arm == TRUE) {
 	rx_from_arm = rx_from_arm + 1;
       } else {
@@ -40,9 +46,6 @@ control p4i_statistics(inout cap_phv_intr_global_h capri_intrinsic,
 	  
 	} else {
 	  rx_from_switch = rx_from_switch + 1;
-	  if(metadata.prs.geneve_option_len_error == 1) {
-	    capri_intrinsic.drop = 1;
-	  } 
 	  // check if no csum and return otherwise update counters
 	  if(csum_err == false) {
 	    return;
@@ -97,6 +100,17 @@ control p4i_statistics(inout cap_phv_intr_global_h capri_intrinsic,
     }
 
 
+ @name(".p4i_stats_error")
+  action p4i_stats_error() {
+    intr_p4.setValid();
+    capri_intrinsic.drop = 1;
+ //   capri_intrinsic.debug_trace = 1;
+    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
+      capri_intrinsic.tm_iq = capri_intrinsic.tm_oq;
+    }
+    
+  }
+ 
     @name(".p4i_stats") table p4i_stats {
         key = {
 	  metadata.cntrl.stats_id : table_index;
@@ -107,6 +121,7 @@ control p4i_statistics(inout cap_phv_intr_global_h capri_intrinsic,
         size = 1;
         placement = HBM;
         default_action = p4i_stats_a;
+	error_action = p4i_stats_error;
         stage = 5;
     }
 
@@ -122,8 +137,9 @@ control p4e_statistics(inout cap_phv_intr_global_h capri_intrinsic,
 
 
     @name(".p4e_stats") action p4e_stats_a(@__ref bit<64>  tx_to_host,
-					 @__ref bit<64>  tx_to_switch,
-					 @__ref bit<64>  tx_to_arm
+  					 @__ref bit<64>  tx_to_switch,
+ 					   @__ref bit<64>  tx_to_arm,
+					   @__ref bit<64>  nacl_drop
 					 ) {
       if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_HOST) == P4E_STATS_FLAG_TX_TO_HOST) {
 	tx_to_host = tx_to_host + 1;
@@ -134,22 +150,37 @@ control p4e_statistics(inout cap_phv_intr_global_h capri_intrinsic,
       if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_ARM) == P4E_STATS_FLAG_TX_TO_ARM) {
 	tx_to_arm = tx_to_arm + 1;
       } 
+
+      if(capri_intrinsic.drop == 1) {
+        nacl_drop = nacl_drop + 1;
+      } 
+
     }
 
-
-    @name(".p4e_stats") table p4e_stats {
-        key = {
-	  metadata.cntrl.stats_id : table_index;
-        }
-        actions = {
-            p4e_stats_a;
-        }
-        size = 1;
-        placement = HBM;
-        default_action = p4e_stats_a;
-        stage = 5;
+ @name(".p4i_stats_error")
+  action p4i_stats_error() {
+    intr_p4.setValid();
+    capri_intrinsic.drop = 1;
+ //   capri_intrinsic.debug_trace = 1;
+    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
+      capri_intrinsic.tm_iq = capri_intrinsic.tm_oq;
     }
+    
+  }
 
+ @name(".p4e_stats") table p4e_stats {
+   key = {
+     metadata.cntrl.stats_id : table_index;
+   }
+   actions = {
+     p4e_stats_a;
+   }
+   size = 1;
+   placement = HBM;
+   default_action = p4e_stats_a;
+   stage = 5;
+ }
+ 
     apply {
       p4e_stats.apply();
     }

@@ -95,6 +95,19 @@ control dnat_lookup(inout cap_phv_intr_global_h capri_intrinsic,
        }
     }
 
+    @name(".dnat_ohash_error")
+      action dnat_ohash_error() {
+      capri_intrinsic.drop = 1;
+      
+    }
+    
+    @name(".dnat_error")
+      action dnat_error() {
+      capri_intrinsic.drop = 1;
+      
+    }
+    
+
     @hbm_table
     @name(".dnat_ohash")
      table dnat_ohash {
@@ -108,6 +121,7 @@ control dnat_lookup(inout cap_phv_intr_global_h capri_intrinsic,
       size = DNAT_OHASH_TABLE_SIZE;
       placement = HBM;
       default_action = dnat_a;
+      error_action = dnat_ohash_error;
       stage = 2;
 
 
@@ -129,44 +143,21 @@ control dnat_lookup(inout cap_phv_intr_global_h capri_intrinsic,
         placement = HBM;
         stage = 1;
         default_action = dnat_a;
+	error_action = dnat_error;
         hash_collision_table = dnat_ohash;
 	
     }
 
-    /*    
-    @name(".key_fix")
-      action key_fix_a() {
-        metadata.key.vnic_id = metadata.cntrl.vnic_id;
-	if(metadata.cntrl.l2_fwd == FALSE) {
-	  metadata.key.smac = (bit<48>)0;
-	  metadata.key.dmac = (bit<48>)0;
-	}
-     }
-      
-    @name(".key_fix")
-    table key_fix {
-        actions  = {
-           key_fix_a;
-        }
-        default_action = key_fix_a;
-        stage = 1;
-    }
-    */
 
     apply {
-      //    if(!hdr.ingress_recirc_header.isValid()) {
 	if(metadata.cntrl.skip_dnat_lkp == FALSE) {
 	  dnat.apply();
 	}
-	//      }
 
       if(metadata.cntrl.dnat_ohash_lkp == TRUE) {
 	dnat_ohash.apply();
       }
       
-      //      if(metadata.cntrl.direction == RX_FROM_SWITCH) {
-      //	key_fix.apply();
-      // }
     }
 }
 

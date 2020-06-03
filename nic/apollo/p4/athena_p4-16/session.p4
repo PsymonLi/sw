@@ -264,7 +264,13 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
       }	
     }
 
-      @hbm_table
+
+    @name(".session_info_error")
+      action session_info_error() {
+      intr_global.drop = 1; 
+    }
+
+    @hbm_table
     @capi_bitfields_struct
       @name(".session_info")
 	table session_info {
@@ -277,130 +283,12 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	  session_info_a;
         }
         size  = SESSION_TABLE_SIZE;
-	default_action = session_info_a; 
+	default_action = session_info_a;
+	error_action = session_info_error;
         stage = 0;
         placement = HBM;
     }
 
-      /*
-    @name(".l2_session_info")
-    action l2_session_info_a(
-				        bit<1>  skip_flow_log,
-				        bit<22> conntrack_id,
-				 @__ref bit<18> timestamp,
-				        bit<48> smac,
-				 bit<16> h2s_epoch_vnic_value,
-				 bit<20> h2s_epoch_vnic_id,
-				 bit<16> h2s_epoch_mapping_value,
-				 bit<20> h2s_epoch_mapping_id,
-				 bit<13>     h2s_throttle_bw1_id,
-				 bit<13>     h2s_throttle_bw2_id,
-				        bit<9>     h2s_vnic_statistics_id,
-				        bit<32>     h2s_vnic_statistics_mask,
-				        bit<9>     h2s_vnic_histogram_packet_len_id,
-				        bit<9>     h2s_vnic_histogram_latency_id,
-				        bit<8>     h2s_slow_path_tcp_flags_match,
-				 bit<22> h2s_session_rewrite_id,
-				 bit<3> h2s_egress_action,
-				 bit<10> h2s_allowed_flow_state_bitmap,
-
-
-				 bit<16> s2h_epoch_vnic_value,
-				 bit<20> s2h_epoch_vnic_id,
-				 bit<16> s2h_epoch_mapping_value,
-				 bit<20> s2h_epoch_mapping_id,
-				 bit<13>     s2h_throttle_bw1_id,
-				 bit<13>     s2h_throttle_bw2_id,
-				        bit<9>     s2h_vnic_statistics_id,
-				        bit<32>     s2h_vnic_statistics_mask,
-				        bit<9>     s2h_vnic_histogram_packet_len_id,
-				        bit<9>     s2h_vnic_histogram_latency_id,
-				        bit<8>     s2h_slow_path_tcp_flags_match,
-				 bit<22> s2h_session_rewrite_id,
-				 bit<3> s2h_egress_action,
-					bit<10> s2h_allowed_flow_state_bitmap,
-				        bit<1>  valid_flag
-
-						       ) {
-      if(valid_flag == TRUE) {
-	timestamp = intr_global.timestamp[47:30];
-	__unlock();
-	
-	if(metadata.cntrl.direction == TX_FROM_HOST) {
-	  if(metadata.cntrl.l2_vnic == TRUE) {
-	    if(h2s_session_rewrite_id != 0) {
-	      metadata.cntrl.session_rewrite_id_valid = TRUE;      
-	      metadata.cntrl.session_rewrite_id = h2s_session_rewrite_id;      
-					     
-	    } else {
-	      metadata.cntrl.flow_miss = TRUE;
-	      return;
-	    }
-	  }
-	  	    
-	  if(h2s_epoch_vnic_id != 0) {
-	    metadata.cntrl.l2_epoch1_id = h2s_epoch_vnic_id;
-	    metadata.cntrl.l2_epoch1_value = h2s_epoch_vnic_value;
-	    metadata.cntrl.l2_epoch1_id_valid = TRUE;
-	  }
-
-	  if(h2s_epoch_mapping_id != 0) {
-	    metadata.cntrl.l2_epoch2_id = h2s_epoch_mapping_id;
-	    metadata.cntrl.l2_epoch2_value = h2s_epoch_mapping_value;
-	    metadata.cntrl.l2_epoch2_id_valid = TRUE;
-	  }
-
-	}
-
-	if(metadata.cntrl.direction == RX_FROM_SWITCH) {
-	  if(metadata.cntrl.l2_vnic == TRUE) {
-	    if(s2h_session_rewrite_id != 0) {
-	      metadata.cntrl.session_rewrite_id_valid = TRUE;  				     
-	      metadata.cntrl.session_rewrite_id = s2h_session_rewrite_id;
-					     
-	    } else {
-	      metadata.cntrl.flow_miss = TRUE;
-	      return;
-	    }
-	  }
-
-	  if(s2h_epoch_vnic_id != 0) {
-	    metadata.cntrl.l2_epoch1_id = s2h_epoch_vnic_id;
-	    metadata.cntrl.l2_epoch1_value = s2h_epoch_vnic_value;
-	    metadata.cntrl.l2_epoch1_id_valid = TRUE;
-	  }
-
-	  if(s2h_epoch_mapping_id != 0) {
-	    metadata.cntrl.l2_epoch2_id = s2h_epoch_mapping_id;
-	    metadata.cntrl.l2_epoch2_value = s2h_epoch_mapping_value;
-	    metadata.cntrl.l2_epoch2_id_valid = TRUE;
-	  }
-
-
-	}
-
-      } else {
-	metadata.cntrl.flow_miss = TRUE;
-      }	
-    }
-
-      @hbm_table
-    @capi_bitfields_struct
-      @name(".l2_session_info")
-	table l2_session_info {
-        key = {
-	  //	metadata.cntrl.l2_session_index  : exact;
-	   hdr.p4i_to_p4e_header.l2_index  : table_index;
-        } 
-        actions  = {
-	  l2_session_info_a;
-        }
-        size  = SESSION_TABLE_SIZE;
-	default_action = l2_session_info_a; 
-        stage = 0;
-        placement = HBM;
-    }
-      */
 
 #define SESSION_REWRITE_COMMON_FIELDS       bit<1> strip_outer_encap_flag, \
                                             bit<1> strip_l2_header_flag, \
@@ -560,6 +448,11 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
    }
 
 
+    @name(".session_rewrite_error")
+      action session_rewrite_error() {
+      intr_global.drop = 1; 
+    }
+
       @hbm_table
     @capi_bitfields_struct
    @name(".session_rewrite")
@@ -578,6 +471,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
         }
         size  = SESSION_TABLE_SIZE;
 	default_action = session_rewrite;
+	error_action = session_rewrite_error;
         stage = 4;
         placement = HBM;
     }
@@ -828,6 +722,8 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
       if(sg_id6 != 0 || sg_id5 != 0) {
 	hdr.geneve_option_srcSecGrpList_3.setValid();
 	hdr.geneve_option_srcSecGrpList_3.optionClass = GENEVE_OPTION_OPTION_CLASS;
+	hdr.geneve_0.critical = 1;
+
 	if(sg_id6 != 0) { 
 	  hdr.geneve_option_srcSecGrpList_3.type = GENEVE_OPTION_SRC_SECURITY_GRP_LIST_EVEN;
 	} else {
@@ -845,6 +741,8 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
       } else if (sg_id4 != 0 || sg_id3 != 0) {
 	hdr.geneve_option_srcSecGrpList_2.setValid();
 	hdr.geneve_option_srcSecGrpList_2.optionClass = GENEVE_OPTION_OPTION_CLASS;
+	hdr.geneve_0.critical = 1;
+
 	if(sg_id4 != 0) { 
 	  hdr.geneve_option_srcSecGrpList_2.type = GENEVE_OPTION_SRC_SECURITY_GRP_LIST_EVEN;
 	} else {
@@ -860,6 +758,8 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
       } else if (sg_id2 != 0 || sg_id1 != 0) {
 	hdr.geneve_option_srcSecGrpList_1.setValid();
 	hdr.geneve_option_srcSecGrpList_1.optionClass = GENEVE_OPTION_OPTION_CLASS;
+	hdr.geneve_0.critical = 1;
+
 	if(sg_id2 != 0) { 
 	  hdr.geneve_option_srcSecGrpList_1.type = GENEVE_OPTION_SRC_SECURITY_GRP_LIST_EVEN;
 	} else {
@@ -889,6 +789,11 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
       session_rewrite_encap_ip(ipv4_sa, ipv4_da,IP_PROTO_UDP, hdr.ip_0.ipv4.totalLen);
    }
 
+   @name(".session_rewrite_encap_error")
+      action session_rewrite_encap_error() {
+      intr_global.drop = 1; 
+    }
+
       @hbm_table
     @capi_bitfields_struct
     @name(".session_rewrite_encap")
@@ -903,6 +808,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	  session_rewrite_insert_ctag;	  
         }
 	default_action = session_rewrite_encap_l2;
+	error_action = session_rewrite_encap_error;
         size  = SESSION_TABLE_SIZE;
         stage = 4;
         placement = HBM;

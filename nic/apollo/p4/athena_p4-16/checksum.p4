@@ -104,6 +104,11 @@ control update_checksums(inout cap_phv_intr_global_h capri_intrinsic,
 	icmpv6CsumDepEg_1.enable_update(hdr.ip_2.ipv6);
     }
 
+   @name(".checksum_error")
+     action checksum_error() {
+     capri_intrinsic.drop = 1;
+    
+   }
 
 
     @name(".checksum") table checksum {
@@ -138,6 +143,7 @@ control update_checksums(inout cap_phv_intr_global_h capri_intrinsic,
 
 	size = CHECKSUM_TABLE_SIZE;
 	default_action = update_ipv4_checksum;
+	error_action = checksum_error;
         stage = 5;
     }
 

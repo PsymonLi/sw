@@ -80,11 +80,24 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
   }
 
 
+  @name(".p4i_to_p4e_state_error")
+  action p4i_to_p4e_state_error() {
+    capri_intrinsic.drop = 1;
+//    capri_intrinsic.debug_trace = 1;
+    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
+      capri_intrinsic.tm_iq = capri_intrinsic.tm_oq;
+    }
+
+    
+  }
+
+
   @name(".p4i_to_p4e_state") table p4i_to_p4e_state {
         actions  = {
             p4i_to_p4e_state_a;
         }
 	  default_action = p4i_to_p4e_state_a;
+	  error_action = p4i_to_p4e_state_error;
 	stage = 1;
     }
 

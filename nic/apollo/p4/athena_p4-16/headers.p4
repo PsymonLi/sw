@@ -346,6 +346,7 @@ header geneve_option_srcSecGrpList_h {
     varbit<96>  srcSecGrpList;
 }
 
+
 header geneve_option_srcSecGrpList_1_h {
     bit<16>     optionClass;
     bit<8>      type;
@@ -541,6 +542,7 @@ struct headers {
     encap_uh encapl4_1;
     geneve_h geneve_1;
     geneve_options_blob_h geneve_options_blob;
+  geneve_options_generic_h geneve_options_generic;
     geneve_option_srcSlotId_h geneve_option_srcSlotId;
     geneve_option_dstSlotId_h geneve_option_dstSlotId;
     geneve_option_dstSlotId_split_h geneve_option_dstSlotIdSplit;

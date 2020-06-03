@@ -30,6 +30,14 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
       }
     }
 
+    @name(".mpls_label_to_vnic_error")
+      action mpls_label_to_vnic_error() {
+      capri_intrinsic.drop = 1;
+ //     capri_intrinsic.debug_trace = 1;
+      
+    }
+    
+
     @hbm_table
     @name(".mpls_label_to_vnic")
     @capi_bitfields_struct
@@ -47,6 +55,7 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
         size =  MPLS_LABEL_VNIC_MAP_TABLE_SIZE;
         placement = HBM;
         default_action = mpls_label_to_vnic_a;
+	error_action = mpls_label_to_vnic_error;
         stage = 0;
     }
 
@@ -78,6 +87,13 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
       }
     }
 
+   @name(".vlan_to_vnic_error")
+      action vlan_to_vnic_error() {
+      capri_intrinsic.drop = 1;
+//      capri_intrinsic.debug_trace = 1;
+      
+    }
+ 
     @hbm_table
     @capi_bitfields_struct
     @name(".vlan_to_vnic")
@@ -91,6 +107,7 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
         size =  VLAN_VNIC_MAP_TABLE_SIZE;
         placement = HBM;
         default_action = vlan_to_vnic_a;
+	error_action = vlan_to_vnic_error;
         stage = 0;
     }
 

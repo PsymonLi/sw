@@ -47,6 +47,7 @@ struct l2_key_metadata_t {
     }
 
 struct control_metadata_t {
+        bit<1> nacl_permit;
         bit<16> geneve_prototype;
         bit<1> conn_track_tcp;
         bit<4> conn_track_prev_state;

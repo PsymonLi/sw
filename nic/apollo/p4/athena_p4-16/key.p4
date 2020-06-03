@@ -160,7 +160,31 @@ control key_init(inout cap_phv_intr_global_h intr_global,
 	metadata.cntrl.flow_miss = TRUE;
     }
 
-    
+
+   @name(".key_native_error")
+     action key_native_error() {
+     intr_p4.setValid();
+     intr_global.drop = 1;
+     //   intr_global.debug_trace = 1;
+     if (intr_global.tm_oq != TM_P4_RECIRC_QUEUE) {
+       intr_global.tm_iq = intr_global.tm_oq;
+     }
+     
+   }
+   
+
+   @name(".key_tunneled_error")
+     action key_tunneled_error() {
+     intr_p4.setValid();
+     intr_global.drop = 1;
+     //   intr_global.debug_trace = 1;
+     if (intr_global.tm_oq != TM_P4_RECIRC_QUEUE) {
+       intr_global.tm_iq = intr_global.tm_oq;
+     }
+     
+   }
+   
+   
     @name(".key_native") table key_native {
         key = {
             hdr.ip_1.ipv4.isValid()                   : ternary;
@@ -178,6 +202,8 @@ control key_init(inout cap_phv_intr_global_h intr_global,
         size  = KEY_MAPPING_TABLE_SIZE;
         stage = 0;
         default_action = nop;
+	error_action = key_native_error;
+
     }
 
     @name(".key_tunneled") table key_tunneled {
@@ -197,6 +223,7 @@ control key_init(inout cap_phv_intr_global_h intr_global,
         size  = KEY_MAPPING_TABLE_SIZE;
         stage = 0;
         default_action = nop;
+	error_action = key_tunneled_error;
     }
 
 
@@ -240,10 +267,11 @@ control key_init(inout cap_phv_intr_global_h intr_global,
     
   }
 
-  @name(".err_handler_init_config_a")
-  action err_handler_init_config_a() {
+  @name(".init_config_error")
+  action init_config_error() {
     intr_p4.setValid();
     intr_global.drop = 1;
+ //   intr_global.debug_trace = 1;
     if (intr_global.tm_oq != TM_P4_RECIRC_QUEUE) {
       intr_global.tm_iq = intr_global.tm_oq;
     }
@@ -255,7 +283,7 @@ control key_init(inout cap_phv_intr_global_h intr_global,
      init_config_a;
    }
    default_action = init_config_a;
-   error_action = err_handler_init_config_a;
+   error_action = init_config_error;
    stage = 0;
    
  }

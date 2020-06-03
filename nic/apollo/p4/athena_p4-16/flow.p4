@@ -96,6 +96,18 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
         
     }
 
+   @name(".flow_ohash_error")
+     action flow_ohash_error() {
+     intr_global.drop = 1;
+    
+   }
+
+   @name(".flow_error")
+     action flow_error() {
+     intr_global.drop = 1;
+    
+   }
+
     @hbm_table    
     @name(".flow_ohash") 
     table flow_ohash {
@@ -105,8 +117,9 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
         actions = {
             flow_hash;
         }
-	  size = FLOW_OHASH_TABLE_SIZE;
+	size = FLOW_OHASH_TABLE_SIZE;
         default_action = flow_hash;
+	error_action = flow_ohash_error;
         stage = 4;
         placement = HBM;
     }
@@ -129,6 +142,7 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
         size = FLOW_TABLE_SIZE;
         placement = HBM;
         default_action = flow_hash;
+	error_action = flow_error;
         stage = 3;
         hash_collision_table = flow_ohash;
     }
@@ -137,11 +151,9 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
 
 
     apply {
-      //    if (!hdr.ingress_recirc_header.isValid()) {
       if(metadata.cntrl.skip_flow_lkp == FALSE) {
 	flow.apply();	  
       }
-	// }
       
       if (metadata.cntrl.flow_ohash_lkp == TRUE) {
 	 flow_ohash.apply();
