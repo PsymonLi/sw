@@ -418,7 +418,7 @@ func (sm *Statemgr) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.Endpo
 		sm.UpdateObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 	}
 
-	if nep.Status.Migration == nil || nep.Status.Migration.Status == workload.EndpointMigrationStatus_DONE.String() {
+	if nep.Status.Migration == nil || nep.Status.Migration.Status == workload.EndpointMigrationStatus_DONE.String() || nep.Status.Migration.Status == workload.EndpointMigrationStatus_FAILED.String() || nep.Status.Migration.Status == workload.EndpointMigrationStatus_ABORTED.String() {
 		return nil
 	}
 
@@ -599,6 +599,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 				return
 			}
 			eps.Endpoint.Lock()
+			defer eps.Endpoint.Unlock()
 
 			// Get WorkloadState object
 			ws, err := sm.FindWorkload(eps.Endpoint.Tenant, getWorkloadNameFromEPName(eps.Endpoint.Name))
@@ -613,7 +614,8 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 
 			// We perform a negative check here, to avoid any race condition in setting of the Status in workload
-			if ws.Workload.Status.MigrationStatus.Stage != workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
+			// Treat force stop migration caused by DSC profile update while migration is in flight as ABORT
+			if !ws.forceStopMigration && ws.Workload.Status.MigrationStatus.Stage != workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
 				log.Infof("Move timed out for EP %v. Sending delete EP to old DSC. Traffic flows might be affected. [%v]", eps.Endpoint.Name, oldEP.Spec.NodeUUID)
 
 				newEP.Spec.Migration = netproto.MigrationState_DONE.String()
@@ -678,6 +680,7 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			eps.Endpoint.Spec.NodeUUID = eps.Endpoint.Status.NodeUUID
 			eps.Endpoint.Spec.MicroSegmentVlan = eps.Endpoint.Status.MicroSegmentVlan
 			eps.Endpoint.Spec.HomingHostAddr = eps.Endpoint.Status.HomingHostAddr
+			eps.Endpoint.Status.Migration.Status = workload.EndpointMigrationStatus_ABORTED.String()
 
 			// Update the in-memory reference for EP to point to the OLD DSC
 			eps.moveEP = &oldEP
@@ -690,7 +693,6 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 			eps.moveEP = nil
 			log.Infof("Migration aborted for %v", eps.Endpoint.Name)
-			eps.Endpoint.Unlock()
 			return
 		case <-checkDataplaneMigration.C:
 			eps, _ := EndpointStateFromObj(epinfo)

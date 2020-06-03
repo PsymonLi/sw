@@ -291,3 +291,26 @@ func (sm *Statemgr) CheckHostMigrationCompliance(hostName string) error {
 
 	return nil
 }
+
+// IsHostOrchestratorCompatible checks if the host is compatible for orchestration operations
+// Currently compatibility for host is checked during migration
+func (sm *Statemgr) IsHostOrchestratorCompatible(hostName string) bool {
+	var err error
+	var host *ctkit.Host
+	hostMeta := &api.ObjectMeta{
+		Name: hostName,
+	}
+
+	if host, err = sm.Controller().Host().Find(hostMeta); err != nil {
+		return false
+	}
+
+	for jj := range host.Host.Spec.DSCs {
+		snic := sm.FindDSC(host.Host.Spec.DSCs[jj].MACAddress, host.Host.Spec.DSCs[jj].ID)
+		if snic != nil {
+			return snic.isOrchestratorCompatible()
+		}
+	}
+
+	return false
+}

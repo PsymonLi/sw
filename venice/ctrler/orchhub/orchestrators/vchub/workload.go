@@ -406,6 +406,21 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 			m.VMKey)
 		return
 	}
+
+	curHostMigrationCompat := v.isHostMigrationCompatible(curHostName)
+	destHostMigrationCompat := v.isHostMigrationCompatible(hostName)
+
+	if !curHostMigrationCompat && destHostMigrationCompat {
+		v.Log.Infof("Current host %v is no longer vmotion compatible.", curHostName)
+		v.migrateFromNonPensandoHost(workloadObj, destDc, hostName)
+		return
+	}
+
+	if !destHostMigrationCompat {
+		v.Log.Infof("Ignore VMotionStart Event for VM %s. Destination host %v is no longer vmotion compatible.", m.VMKey, hostName)
+		return
+	}
+
 	// Both src and destination hosts are pensando, Trigger vMotion
 	v.Log.Infof("Trigger vMotion for %s from %s to %s host", wlName, curHostName, hostName)
 
@@ -1512,4 +1527,9 @@ func (v *VCHub) addWorkloadLabels(workloadObj *workload.Workload, name, dcName s
 	}
 	utils.AddOrchNamespaceLabel(workloadObj.Labels, dcName)
 	utils.AddOrchNameLabel(workloadObj.Labels, v.OrchConfig.GetName())
+}
+
+func (v *VCHub) isHostMigrationCompatible(hostName string) bool {
+	v.Log.Infof("Checking migration compatibility for host : %v", hostName)
+	return v.StateMgr.IsHostOrchestratorCompatible(hostName)
 }

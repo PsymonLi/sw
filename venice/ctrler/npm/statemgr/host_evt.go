@@ -158,3 +158,29 @@ func (sm *Statemgr) FindHost(tenant, name string) (*HostState, error) {
 
 	return HostStateFromObj(obj)
 }
+
+func (hst *HostState) getDSCs() []*DistributedServiceCardState {
+	dscs := []*DistributedServiceCardState{}
+	for jj := range hst.Host.Spec.DSCs {
+		var err error
+		var snic *DistributedServiceCardState
+		if hst.Host.Spec.DSCs[jj].ID != "" {
+			snic, err = hst.stateMgr.FindDistributedServiceCardByHname(hst.Host.Spec.DSCs[jj].ID)
+			if err != nil {
+				log.Warnf("Error finding smart nic for name %v", hst.Host.Spec.DSCs[jj].ID)
+				continue
+			}
+		} else if hst.Host.Spec.DSCs[jj].MACAddress != "" {
+			snicMac := hst.Host.Spec.DSCs[jj].MACAddress
+			snic, err = hst.stateMgr.FindDistributedServiceCardByMacAddr(snicMac)
+			if err != nil {
+				log.Warnf("Error finding smart nic for mac add %v", snicMac)
+				continue
+			}
+		}
+
+		dscs = append(dscs, snic)
+	}
+
+	return dscs
+}

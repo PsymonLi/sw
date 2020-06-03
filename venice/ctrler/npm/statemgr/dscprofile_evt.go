@@ -48,6 +48,9 @@ func (dps *DSCProfileState) initNodeVersions() error {
 
 	return nil
 }
+func (dps *DSCProfileState) isOrchestratorCompatible() bool {
+	return dps.DSCProfile.Spec.DeploymentTarget == cluster.DSCProfileSpec_VIRTUALIZED.String() && dps.DSCProfile.Spec.FeatureSet == cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()
+}
 
 // DSCProfileStateFromObj converts from memdb object to dscProfile state
 func DSCProfileStateFromObj(obj runtime.Object) (*DSCProfileState, error) {
@@ -166,6 +169,25 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 	dps.DSCProfile.Spec = nfwp.Spec
 	dps.DSCProfile.ObjectMeta = nfwp.ObjectMeta
 	dps.DSCProfile.Status = cluster.DSCProfileStatus{}
+
+	// Stop all migration for DSCs associated with this Profile if profile is no longer compatible
+	if !dps.isOrchestratorCompatible() {
+		for dsc := range dps.DscList {
+			dscState, err := dps.stateMgr.FindDistributedServiceCardByMacAddr(dsc)
+			if err != nil {
+				log.Errorf("Failed to get DSC state for %v", dsc)
+				continue
+			}
+
+			for _, w := range dscState.workloadsMigratingIn {
+				w.stopMigration()
+			}
+
+			for _, w := range dscState.workloadsMigratingOut {
+				w.stopMigration()
+			}
+		}
+	}
 
 	log.Infof("Sending update received")
 

@@ -45,6 +45,7 @@ type WorkloadState struct {
 	migrationEPCount      int
 	migrationSuccessCount int
 	migrationFailureCount int
+	forceStopMigration    bool
 }
 
 // WorkloadStateFromObj conerts from ctkit object to workload state
@@ -128,28 +129,11 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 		return nil
 	}
 
-	var snic *DistributedServiceCardState
-	// find the smart nic by name or mac addr
-	for jj := range hsts.Host.Spec.DSCs {
-		if hsts.Host.Spec.DSCs[jj].ID != "" {
-			snic, err = sm.FindDistributedServiceCardByHname(hsts.Host.Spec.DSCs[jj].ID)
-			if err == nil {
-				break
-			}
-			log.Errorf("Error finding smart nic for name %v", hsts.Host.Spec.DSCs[jj].ID)
-		} else if hsts.Host.Spec.DSCs[jj].MACAddress != "" {
-			snicMac := hsts.Host.Spec.DSCs[jj].MACAddress
-			snic, err = sm.FindDistributedServiceCardByMacAddr(snicMac)
-			if err == nil {
-				break
-			}
-			log.Errorf("Error finding smart nic for mac add %v", snicMac)
-		}
-	}
+	snic := hsts.getDSCs()
 
 	// Upon restart, if a migration is in progress and not timed out
-	if ws.isMigrating() {
-		err = sm.reconcileWorkload(w, hsts, snic)
+	if ws.isMigrating() && len(snic) > 0 {
+		err = sm.reconcileWorkload(w, hsts, snic[0])
 		// For Workloads moving from non_pensando to pensando host, ensure the appropriate state is slected
 		if err != nil {
 			log.Errorf("Failed to reconcile workload [%v]. Err : %v", ws.Workload.Name, err)
@@ -364,25 +348,16 @@ func (ws *WorkloadState) createEndpoints() error {
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
 		nodeUUID := ""
-		// find the smart nic by name or mac addr
-		for jj := range host.Host.Spec.DSCs {
-			if host.Host.Spec.DSCs[jj].ID != "" {
-				snic, err := ws.stateMgr.FindDistributedServiceCardByHname(host.Host.Spec.DSCs[jj].ID)
-				if err != nil {
-					log.Warnf("Error finding smart nic for name %v for workload %v", host.Host.Spec.DSCs[jj].ID, ws.Workload.Name)
-					continue
-				}
-				nodeUUID = snic.DistributedServiceCard.Name
-			} else if host.Host.Spec.DSCs[jj].MACAddress != "" {
-				snicMac := host.Host.Spec.DSCs[jj].MACAddress
-				snic, err := ws.stateMgr.FindDistributedServiceCardByMacAddr(snicMac)
-				if err != nil {
-					log.Warnf("Error finding smart nic for mac add %v  for workload %v", snicMac, ws.Workload.Name)
-					continue
-				}
-				nodeUUID = snic.DistributedServiceCard.Name
-			}
+		dscs := host.getDSCs()
+		if len(dscs) == 0 {
+			log.Errorf("Failed to find DSC on host %v", host.Host.Name)
+			return fmt.Errorf("No DSC found for Host %v", host.Host.Name)
 		}
+
+		// TODO : Here, an implicit assumption of each Host having one DSC is here
+		// This will have to be updated once we start supporting Workloads on
+		// Multi DSC per host deployment
+		nodeUUID = dscs[0].DistributedServiceCard.Name
 
 		/* FIXME: comment out this code till CMD publishes associated NICs in host
 		// check if the host has associated smart nic
@@ -603,6 +578,8 @@ func (sm *Statemgr) RemoveStaleEndpoints() error {
 
 func (ws *WorkloadState) handleMigration() error {
 	log.Infof("Handling migration stage [%v] status [%v] for workload [%v] ", ws.Workload.Status.MigrationStatus.Stage, ws.Workload.Status.MigrationStatus.Status, ws.Workload.Name)
+	var sourceDSCs []*DistributedServiceCardState
+	var destDSCs []*DistributedServiceCardState
 
 	switch ws.Workload.Status.MigrationStatus.Stage {
 	case workload.WorkloadMigrationStatus_MIGRATION_START.String():
@@ -616,6 +593,30 @@ func (ws *WorkloadState) handleMigration() error {
 		fallthrough
 	case workload.WorkloadMigrationStatus_MIGRATION_DONE.String():
 		log.Infof("Orchestrator set workload [%v] to migration stage [%v].", ws.Workload.Name, ws.Workload.Status.MigrationStatus.Stage)
+		destHost, err := ws.stateMgr.FindHost("", ws.Workload.Spec.HostName)
+		if err != nil {
+			log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Spec.HostName, ws.Workload.Name, err)
+			return kvstore.NewKeyNotFoundError(ws.Workload.Spec.HostName, 0)
+		}
+
+		destDSCs = destHost.getDSCs()
+		if len(destDSCs) == 0 {
+			log.Errorf("Failed to get DSCs on Host %v", destHost.Host.Name)
+			return fmt.Errorf("Failed to get DSCs on Host %v", destHost.Host.Name)
+		}
+
+		sourceHost, err := ws.stateMgr.FindHost("", ws.Workload.Status.HostName)
+		if err != nil {
+			log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Status.HostName, ws.Workload.Name, err)
+			return kvstore.NewKeyNotFoundError(ws.Workload.Status.HostName, 0)
+		}
+
+		// find the smart nic by name or mac addr
+		sourceDSCs = sourceHost.getDSCs()
+		if len(sourceDSCs) == 0 {
+			log.Errorf("Failed to get DSCs on Host %v", sourceHost.Host.Name)
+			return fmt.Errorf("Failed to get DSCs on Host %v", sourceHost.Host.Name)
+		}
 
 		// if moveCancel is nil for FINAL_SYNC and DONE state, it would mean that we got here after
 		// restart, all the variables have to be appropriately initialized in this case
@@ -658,8 +659,9 @@ func (ws *WorkloadState) handleMigration() error {
 			ws.moveCtx, ws.moveCancel = context.WithDeadline(context.Background(), deadline)
 			log.Infof("deadline set to %v", deadline)
 
+			ws.forceStopMigration = false
 			ws.moveWg.Add(1)
-			go ws.trackMigration()
+			go ws.trackMigration(sourceDSCs, destDSCs)
 
 		}
 		ws.Workload.Write()
@@ -684,23 +686,13 @@ func (ws *WorkloadState) handleMigration() error {
 		return fmt.Errorf("unknown migration stage %v", ws.Workload.Status.MigrationStatus.Stage)
 	}
 
-	return ws.updateEndpoints()
+	return ws.updateEndpoints(sourceDSCs, destDSCs)
 }
 
 // updateEndpoints tries to update all endpoints for a workload
-func (ws *WorkloadState) updateEndpoints() error {
-	var ns *NetworkState
-	// find the host for the workload
-	destHost, err := ws.stateMgr.FindHost("", ws.Workload.Spec.HostName)
-	if err != nil {
-		log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Spec.HostName, ws.Workload.Name, err)
-		return kvstore.NewKeyNotFoundError(ws.Workload.Spec.HostName, 0)
-	}
-
-	sourceHost, err := ws.stateMgr.FindHost("", ws.Workload.Status.HostName)
-	if err != nil {
-		log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Status.HostName, ws.Workload.Name, err)
-		return kvstore.NewKeyNotFoundError(ws.Workload.Status.HostName, 0)
+func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServiceCardState) error {
+	if len(sourceDSCs) == 0 || len(destDSCs) == 0 {
+		return fmt.Errorf("DSC list is empty, cannot update endpoints")
 	}
 
 	// loop over each interface of the workload
@@ -716,7 +708,7 @@ func (ws *WorkloadState) updateEndpoints() error {
 			netName = ws.stateMgr.networkName(ws.Workload.Spec.Interfaces[ii].ExternalVlan)
 		}
 
-		ns, err = ws.stateMgr.FindNetwork(ws.Workload.Tenant, netName)
+		ns, err := ws.stateMgr.FindNetwork(ws.Workload.Tenant, netName)
 		if err != nil {
 			log.Errorf("Error finding network. Err: %v", err)
 			return err
@@ -725,65 +717,12 @@ func (ws *WorkloadState) updateEndpoints() error {
 		// check if we already have the endpoint for this workload
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
-		sourceNodeUUID := ""
-		sourceHostAddress := ""
-		// find the smart nic by name or mac addr
-		for jj := range sourceHost.Host.Spec.DSCs {
-			if sourceHost.Host.Spec.DSCs[jj].ID != "" {
-				snic, err := ws.stateMgr.FindDistributedServiceCardByHname(sourceHost.Host.Spec.DSCs[jj].ID)
-				if err == nil {
-					sourceNodeUUID = snic.DistributedServiceCard.Name
-					sourceHostAddress = snic.DistributedServiceCard.Status.IPConfig.IPAddress
-					continue
-				}
 
-				log.Warnf("Error finding DSC for name %v", sourceHost.Host.Spec.DSCs[jj].ID)
-			}
+		sourceNodeUUID := sourceDSCs[0].DistributedServiceCard.Name
+		sourceHostAddress := sourceDSCs[0].DistributedServiceCard.Status.IPConfig.IPAddress
 
-			if sourceHost.Host.Spec.DSCs[jj].MACAddress != "" {
-				snicMac := sourceHost.Host.Spec.DSCs[jj].MACAddress
-				log.Infof("Finding source mac : %v", snicMac)
-				snic, err := ws.stateMgr.FindDistributedServiceCardByMacAddr(snicMac)
-				if err == nil {
-					sourceNodeUUID = snic.DistributedServiceCard.Name
-					sourceHostAddress = snic.DistributedServiceCard.Status.IPConfig.IPAddress
-					continue
-				}
-
-				log.Warnf("Error finding DSC for mac add %v", snicMac)
-				return fmt.Errorf("could not find DSC for mac %v", snicMac)
-			}
-		}
-
-		destNodeUUID := ""
-		destHostAddress := ""
-		// find the smart nic by name or mac addr
-		for jj := range destHost.Host.Spec.DSCs {
-			if destHost.Host.Spec.DSCs[jj].ID != "" {
-				snic, err := ws.stateMgr.FindDistributedServiceCardByHname(destHost.Host.Spec.DSCs[jj].ID)
-				if err == nil {
-					destNodeUUID = snic.DistributedServiceCard.Name
-					destHostAddress = snic.DistributedServiceCard.Status.IPConfig.IPAddress
-					continue
-				}
-
-				log.Warnf("Error finding DSC for name %v", destHost.Host.Spec.DSCs[jj].ID)
-			}
-
-			if destHost.Host.Spec.DSCs[jj].MACAddress != "" {
-				snicMac := destHost.Host.Spec.DSCs[jj].MACAddress
-				log.Infof("Finding destination mac : %v", snicMac)
-				snic, err := ws.stateMgr.FindDistributedServiceCardByMacAddr(snicMac)
-				if err == nil {
-					destNodeUUID = snic.DistributedServiceCard.Name
-					destHostAddress = snic.DistributedServiceCard.Status.IPConfig.IPAddress
-					continue
-				}
-
-				log.Warnf("Error finding DSC for mac add %v", snicMac)
-				return fmt.Errorf("could not find DSC for mac %v", snicMac)
-			}
-		}
+		destNodeUUID := destDSCs[0].DistributedServiceCard.Name
+		destHostAddress := destDSCs[0].DistributedServiceCard.Status.IPConfig.IPAddress
 
 		if ws.Workload.Status.MigrationStatus == nil {
 			log.Errorf("migration status is nil. cannot proceed")
@@ -892,13 +831,24 @@ func (ws *WorkloadState) isMigrationSuccess() bool {
 	return ret
 }
 
-func (ws *WorkloadState) trackMigration() {
+func (ws *WorkloadState) trackMigration(sourceDSCs, destDSCs []*DistributedServiceCardState) {
 	log.Infof("Tracking migration for Workload. %v", ws.Workload.Name)
 	checkDataplaneMigration := time.NewTicker(time.Second)
 	defer ws.moveWg.Done()
+	if len(sourceDSCs) == 0 || len(destDSCs) == 0 {
+		log.Errorf("DSC list is empty. Exiting migration tracking for workload  %v", ws.Workload.Name)
+		return
+	}
+
+	// Add the workloads to DSCs for tracking
+	sourceDSCs[0].workloadsMigratingOut[ws.Workload.Name] = ws
+	destDSCs[0].workloadsMigratingIn[ws.Workload.Name] = ws
+
 	defer func() {
 		ws.moveCtx = nil
 		ws.moveCancel = nil
+		delete(sourceDSCs[0].workloadsMigratingOut, ws.Workload.Name)
+		delete(destDSCs[0].workloadsMigratingIn, ws.Workload.Name)
 	}()
 
 	for {
@@ -906,7 +856,9 @@ func (ws *WorkloadState) trackMigration() {
 		case <-ws.moveCtx.Done():
 			log.Infof("Migration context for workload %v was cancelled.", ws.Workload.Name)
 			ws.epMoveWg.Wait()
-			if ws.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() {
+
+			// Treat force stopping of migration caused by dsc profile downgrade as a Abort
+			if ws.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_ABORT.String() || ws.forceStopMigration {
 				ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_FAILED.String()
 				log.Errorf("Workload [%v] migration aborted.", ws.Workload.Name)
 			} else if ws.Workload.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() {
@@ -1033,4 +985,14 @@ func (ws *WorkloadState) isInterfaceChanged(nwrk *workload.Workload) bool {
 	}
 
 	return false
+}
+
+func (ws *WorkloadState) stopMigration() error {
+	log.Infof("Stopping migration for Workload %v", ws.Workload.Name)
+	ws.forceStopMigration = true
+	if ws.moveCancel != nil {
+		ws.moveCancel()
+	}
+
+	return nil
 }

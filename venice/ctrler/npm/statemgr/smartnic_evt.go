@@ -26,6 +26,8 @@ type DistributedServiceCardState struct {
 	// ToRevisit: Should DSC be updated with correct profile, then we need
 	//  below code
 	//NodeVersion            cluster.DSCProfileVersion
+	workloadsMigratingIn  map[string]*WorkloadState
+	workloadsMigratingOut map[string]*WorkloadState
 }
 
 // GetKey returns the key of DSCProfile
@@ -63,11 +65,7 @@ func (sns *DistributedServiceCardState) isOrchestratorCompatible() bool {
 		return false
 	}
 
-	if dscProfileState.DSCProfile.Spec.DeploymentTarget != cluster.DSCProfileSpec_VIRTUALIZED.String() || dscProfileState.DSCProfile.Spec.FeatureSet != cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String() {
-		return false
-	}
-
-	return true
+	return dscProfileState.isOrchestratorCompatible()
 }
 
 //GetDistributedServiceCardWatchOptions gets options
@@ -105,6 +103,8 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 		DistributedServiceCard: smartNic,
 		stateMgr:               stateMgr,
 		recvHandle:             recvHandle,
+		workloadsMigratingIn:   make(map[string]*WorkloadState),
+		workloadsMigratingOut:  make(map[string]*WorkloadState),
 	}
 	smartNic.HandlerCtx = hs
 
@@ -237,6 +237,14 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_DECOMMISSIONED.String() {
 			sns.decommissioned = true
 			sm.deleteDsc(smartNic)
+			// Stop all migration from/to this DSC
+			for _, w := range sns.workloadsMigratingIn {
+				w.stopMigration()
+			}
+
+			for _, w := range sns.workloadsMigratingOut {
+				w.stopMigration()
+			}
 		}
 	} else {
 		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String() {
