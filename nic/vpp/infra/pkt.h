@@ -47,8 +47,10 @@
 
 #define PDS_PACKET_LOOP_END                                                 \
     }                                                                       \
-    vlib_buffer_enqueue_to_next(vm, node, _from,                            \
-                                _nexts, from_frame->n_vectors);
+    if (PREDICT_TRUE(from_frame->n_vectors)) {                              \
+        vlib_buffer_enqueue_to_next(vm, node, _from,                        \
+                                    _nexts, from_frame->n_vectors);         \
+    }                                                                       \
 
 #define PDS_PACKET_LOOP_END_NO_ENQUEUE                                      \
     }                                                                       \
