@@ -7,7 +7,6 @@ package cmd
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/spf13/cobra"
 
@@ -47,14 +46,6 @@ var getSystemCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 }
 
-var getSystemStatusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "show current system status",
-	Long:  "\n------------------------------------\n show current system status \n------------------------------------\n",
-	Args:  cobra.NoArgs,
-	RunE:  getSystemStatusCmdCmdHandler,
-}
-
 var getSystemQueueStatsCmd = &cobra.Command{
 	Use:   "queue-statistics",
 	Short: "show system queue-statistics",
@@ -76,7 +67,6 @@ func init() {
 	showCmd.AddCommand(getProcMemInfoCmd)
 	showCmd.AddCommand(getSystemCmd)
 	showCmd.AddCommand(getNaplesInfoCmd)
-	getSystemCmd.AddCommand(getSystemStatusCmd)
 	getSystemCmd.AddCommand(getAlomPresentCmd)
 	getSystemCmd.AddCommand(getSystemQueueStatsCmd)
 	showCmd.PersistentFlags().BoolVarP(&tabularFormat, "tabular", "t", false, "display in table format")
@@ -96,40 +86,6 @@ func getProcMemInfoCmdHandler(cmd *cobra.Command, args []string) error {
 		Opts:       strings.Join([]string{""}, ""),
 	}
 	return naplesExecCmd(v)
-}
-
-func getSystemStatusCmdCmdHandler(cmd *cobra.Command, args []string) error {
-	resp, err := restGet("monitoring/v1/naples/obfl/pciemgrd.log")
-	if err != nil {
-		return err
-	}
-
-	var pciemgrd, port0 string
-	var pyr, phr, pmin, psec, pmilsec int
-	var eyr, ehr, emin, esec, emilsec int
-	var starttime, endtime time.Duration
-	for _, line := range strings.Split(string(resp), "\n") {
-		if strings.Contains(line, "pciemgrd ready") {
-			fmt.Sscanf(line, "[%d-%d:%d:%d.%d]%s", &pyr, &phr, &pmin, &psec, &pmilsec, &pciemgrd)
-			starttime = time.Duration(phr)*time.Hour +
-				time.Duration(pmin)*time.Minute +
-				time.Duration(psec)*time.Second +
-				time.Duration(pmilsec)*time.Millisecond
-		} else if strings.Contains(line, "port 0 ready") {
-			fmt.Sscanf(line, "[%d-%d:%d:%d.%d]%s", &eyr, &ehr, &emin, &esec, &emilsec, &port0)
-			endtime = time.Duration(ehr)*time.Hour +
-				time.Duration(emin)*time.Minute +
-				time.Duration(esec)*time.Second +
-				time.Duration(emilsec)*time.Millisecond
-		}
-	}
-	pcietime := endtime - starttime
-	fmt.Printf("The PCIE up time duration is %d:%d:%d.%d\n",
-		int64(pcietime/time.Hour),
-		int64(pcietime/time.Minute),
-		int64(pcietime/time.Second),
-		int64(pcietime/time.Millisecond))
-	return nil
 }
 
 func getSystemQueueStatsCmdHandler(cmd *cobra.Command, args []string) {
