@@ -6,6 +6,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 #include "nic/sdk/lib/logger/logger.hpp"
 #include <utility>
 
@@ -195,6 +196,20 @@ void mgmt_state_t::set_vni(pds_vnid_id_t vni, mgmt_obj_type_e obj_type,
 
 void mgmt_state_t::reset_vni(pds_vnid_id_t vni) {
     vni_store_.erase(vni);
+}
+
+bool mgmt_state_t::bgp_gr_supported() {
+    // BGP GR is supported for hitless upgrade
+    struct stat buf;
+    if (hal_hitless_upg_supp()) {
+        return true;
+    }
+#ifdef SIM
+    char bgp_gr_test[] = "/sw/nic/conf/bgp-gr-test";
+#else
+    char bgp_gr_test[] = "/data/bgp-gr-test";
+#endif
+    return stat(bgp_gr_test, &buf) == 0;
 }
 
 static std::string mgmt_obj_str(mgmt_obj_type_e obj_type) {

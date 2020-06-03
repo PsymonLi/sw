@@ -209,6 +209,9 @@ public:
     bool is_amx_open() {return amx_open_;}
     void set_amx_open(bool open) {amx_open_ = open;}
 
+    // Should we advertise BGP Graceful restart capaility
+    static bool bgp_gr_supported();
+
 private:
     static mgmt_state_t* g_state_;
     // Predicate to avoid spurious wake-up calls
@@ -218,6 +221,7 @@ private:
     static std::recursive_mutex g_state_mtx_;
     static std::condition_variable g_cv_resp_;
     static types::ApiStatus g_ms_response_;
+
     uint32_t epoch_;
     bool pds_mock_mode_ = false;
     bool rr_mode_ = false;

@@ -20,11 +20,21 @@
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 #include <li_fte.hpp>
 
 extern NBB_ULONG li_proc_id;
 
 namespace pds_ms {
+
+bool hal_hitless_upg_supp()
+{
+    if (api::g_pds_state.catalogue()->memory_capacity() == 8) {
+        // Hitless upgrade supported on 8G HBM
+        return true;
+    }
+    return false;
+}
 
 void
 hal_callback (sdk_ret_t status, const void *cookie)

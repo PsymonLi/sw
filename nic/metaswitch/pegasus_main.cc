@@ -162,7 +162,7 @@ void *pds_ms_nbase_thread_init (void *ctxt)
     // opting for graceful termination
     SDK_THREAD_INIT(ctxt);
 
-    if (!pds_ms_mgmt_init()) {
+    if (!pds_ms_mgmt_init(true)) {
         SDK_ASSERT("pdsa init failed!");
     }
 
@@ -193,7 +193,7 @@ log_file (const char *logdir, const char *logfile)
     struct stat st = { 0 };
 
     if (!logdir) {
-        return std::string(logfile);
+        return "./" + std::string(logfile);
     }
 
     // check if this log dir exists
@@ -226,8 +226,8 @@ logger_init (void)
 {
     std::string logfile, err_logfile;
 
-    logfile = log_file(std::getenv("LOG_DIR"), "./pegasus.log");
-    err_logfile = log_file(std::getenv("LOG_DIR"), "./pegasus-err.log");
+    logfile = log_file(std::getenv("LOG_DIR"), "pegasus.log");
+    err_logfile = log_file(std::getenv("LOG_DIR"), "pegasus-err.log");
 
     if (logfile.empty() || err_logfile.empty()) {
         return SDK_RET_ERR;
@@ -288,11 +288,6 @@ int main(void)
     // Wait for nbase to be ready
     while (!g_nbase_thread->ready()) {
         pthread_yield();
-    }
-    // set rr_mode
-    {
-        auto mgmt_ctxt = pds_ms::mgmt_state_t::thread_context();
-        mgmt_ctxt.state()->set_rr_mode(true);
     }
     svc_reg();
 

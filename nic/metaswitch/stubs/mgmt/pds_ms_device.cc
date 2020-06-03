@@ -3,6 +3,7 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_device.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_stubs_utils.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
 
 namespace pds_ms {
 void device_create (pds_device_spec_t *spec)
@@ -15,6 +16,10 @@ void device_create (pds_device_spec_t *spec)
                        spec->overlay_routing_en);
     }
     pds_ms_hals_stub_init();
+
+    if (spec->overlay_routing_en) {
+        bgp_enable_l2vpn_evpn();
+    }
 }
 
 } // End namespace

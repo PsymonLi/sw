@@ -6,7 +6,7 @@
 
 #include "nic/apollo/agent/svc/service.hpp"
 
-bool pds_ms_mgmt_init();
+bool pds_ms_mgmt_init(bool rr_mode = false);
 void pds_ms_terminate();
 
 namespace pds_ms {

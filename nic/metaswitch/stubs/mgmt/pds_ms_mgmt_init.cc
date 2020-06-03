@@ -305,13 +305,15 @@ pds_ms_resume_cb (void *arg)
     return SDK_RET_ERR;
 }
 
-bool pds_ms_mgmt_init()
+bool pds_ms_mgmt_init(bool rr_mode)
 {
     mgmt_state_init();
     // Enter thread-safe context to cache nbase thread ptr
     {
         auto ctx = mgmt_state_t::thread_context();
         ctx.state()->set_nbase_thread(sdk::lib::thread::current_thread());
+        ctx.state()->set_rr_mode(rr_mode);
+        PDS_TRACE_DEBUG("Set RR mode %d", rr_mode);
     }
     // register for suspend and resume handlers
     sdk::lib::thread::current_thread()->register_suspend_cb(pds_ms_suspend_cb,

@@ -4,6 +4,7 @@
 //---------------------------------------------------------------
 
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 
 namespace pds_ms {
 int init() 
@@ -19,6 +20,11 @@ bool hal_init(void)
 void hal_deinit(void)
 {
     return;
+}
+
+bool hal_hitless_upg_supp()
+{
+    return false;
 }
 
 }

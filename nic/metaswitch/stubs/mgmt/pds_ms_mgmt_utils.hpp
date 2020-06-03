@@ -338,6 +338,7 @@ void populate_lim_addr_spec (ip_prefix_t           *ip_prefix,
                              LimInterfaceAddrSpec& req,
                              uint32_t              if_type,
                              uint32_t              if_id);
+void bgp_enable_l2vpn_evpn(void);
 } // end namespace pds_ms
 
 namespace pds_ms_test {

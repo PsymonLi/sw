@@ -972,13 +972,40 @@ pds_ms_fill_amb_bgp_rm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
         data->orf_supported  = AMB_TRUE;
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_ORF_SUPPORTED);
 
-        // Enable update-groups support
-        data->update_groups = AMB_TRUE;
-        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_UPDATE_GROUPS);
+        if (mgmt_state_t::thread_context().state()->rr_mode()) {
+            // Enable update-groups support
+            PDS_TRACE_DEBUG("Enable BGP update groups");
+            data->update_groups = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_UPDATE_GROUPS);
 
-        // Disable aggregate-split-horizon
-        data->agg_split_horizon = AMB_FALSE;
-        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_AGG_SPLT_HORIZON);
+            // Disable aggregate-split-horizon
+            data->agg_split_horizon = AMB_FALSE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_AGG_SPLT_HORIZON);
+        }
+#if 0 // TODO Enable GR Helper mode even on 4G HBM
+      // Currently this causes delay in establishing overlay peering since
+      // overlay peer config consists of 2 steps - a) peer table b) peer afi safi table
+      // TCP connection can get established before step 2 and then gets torn down and
+      // then tries to form a new connection.
+      // With Helper mode enabled this looks like restart attempt - but the peer rejects
+      // this since new EVPN capability is added - resulting in a wait for 15 seconds.
+        data->restart_supported = AMB_TRUE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_RESTART_SUPP);
+
+        if (!mgmt_state_t::bgp_gr_supported()) {
+            PDS_TRACE_INFO("BGP GR Helper mode support detected");
+            data->helper_only = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_HELPER_ONLY);
+        } else {
+            PDS_TRACE_INFO("BGP GR full support detected");
+        }
+#else
+        if (mgmt_state_t::bgp_gr_supported()) {
+            data->restart_supported = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_RESTART_SUPP);
+            PDS_TRACE_INFO("BGP GR full support detected");
+        }
+#endif
     }
 
     NBB_TRC_EXIT();
@@ -1058,25 +1085,34 @@ pds_ms_fill_amb_bgp_rm_afi_safi (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
     data->ent_index                     = conf->entity_index;
     AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_ENT_INDEX);
 
-    oid[AMB_BGP_AFI_AFI_INDEX]  = AMB_BGP_AFI_L2VPN;
-    data->afi                   = AMB_BGP_AFI_L2VPN;
+    oid[AMB_BGP_AFI_AFI_INDEX]  = conf->afi;
+    data->afi                   = conf->afi;
     AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_AFI);
 
-    oid[AMB_BGP_AFI_SAFI_INDEX] = AMB_BGP_EVPN;
-    data->safi                  = AMB_BGP_EVPN;
+    oid[AMB_BGP_AFI_SAFI_INDEX] = conf->safi;
+    data->safi                  = conf->safi;
     AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_SAFI);
-
-    data->next_hop_safi = AMB_BGP_UNICAST;
-    AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_NEXT_HOP_SAFI);
 
     data->admin_status = AMB_BGP_ADMIN_STATUS_UP;
     AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_ADMIN_STATUS);
 
-    data->state_kept = AMB_FALSE;
-    AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
+    if (conf->afi == AMB_BGP_AFI_L2VPN && conf->safi == AMB_BGP_EVPN) {
+        data->next_hop_safi = AMB_BGP_UNICAST;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_NEXT_HOP_SAFI);
 
-    data->afm_required = AMB_FALSE;
-    AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_AFM_REQUIRED);
+        data->afm_required = AMB_FALSE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_AFM_REQUIRED);
+
+        data->state_kept = AMB_FALSE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
+
+    } else if (conf->afi == AMB_BGP_AFI_IPV4 && conf->safi == AMB_BGP_UNICAST) {
+        // Set state_kept by default for IPv4 - it is only used when 
+        // coming up in hitless upgrade mode - i.e. do_graceful_restart is set
+        PDS_TRACE_DEBUG("Set state_kept for IPv4 unicast");
+        data->state_kept = AMB_TRUE;
+        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
+    }
 
     NBB_TRC_EXIT();
     return;
@@ -1338,6 +1374,23 @@ pds_ms_row_update_bgp_orf_cap (pds_ms_config_t *conf)
     return;
 }
 
+static void bgp_enable_l2vpn_evpn_(pds_ms_config_t* conf)
+{
+    conf->row_status    = AMB_ROW_ACTIVE;
+    conf->entity_index  = PDS_MS_BGP_RM_ENT_INDEX;
+
+    // AFM: AMB_BGP_AFI_L2VPN
+    conf->join_index         = 2;
+    conf->afi                = AMB_BGP_AFI_L2VPN;
+    conf->safi               = AMB_BGP_EVPN;
+    conf->partner_index      = PDS_MS_EVPN_ENT_INDEX;
+    conf->admin_status       = AMB_ADMIN_STATUS_UP;
+
+    pds_ms_row_update_bgp_rm_afm_join (conf);
+    pds_ms_row_update_bgp_orf_cap (conf);
+    pds_ms_row_update_bgp_rm_afi_safi (conf);
+}
+
 NBB_VOID
 pds_ms_bgp_create (pds_ms_config_t *conf)
 {
@@ -1363,18 +1416,14 @@ pds_ms_bgp_create (pds_ms_config_t *conf)
     conf->afi                = AMB_BGP_AFI_IPV4;
     conf->safi               = AMB_BGP_UNICAST;
     pds_ms_row_update_bgp_rm_afm_join (conf);
-
-    // AFM: AMB_BGP_AFI_L2VPN
-    conf->join_index         = 2;
-    conf->afi                = AMB_BGP_AFI_L2VPN;
-    conf->safi               = AMB_BGP_EVPN;
-    conf->partner_index      = PDS_MS_EVPN_ENT_INDEX;
-    pds_ms_row_update_bgp_rm_afm_join (conf);
-    pds_ms_row_update_bgp_orf_cap (conf);
-
-    // bgpRmAfiSafiTable
-    conf->entity_index      = 1;
     pds_ms_row_update_bgp_rm_afi_safi (conf);
+
+    // On Naples wait for Device object to enable EVPN address family
+    // On Pegasus enable EVPN address family by default
+    if (mgmt_state_t::thread_context().state()->rr_mode()) {
+        PDS_TRACE_INFO("RR - Enable EVPN address family");
+        bgp_enable_l2vpn_evpn_(conf);
+    }
 
     // bgpNmListenTable
     conf->entity_index       = PDS_MS_BGP_NM_ENT_INDEX;
@@ -1384,4 +1433,23 @@ pds_ms_bgp_create (pds_ms_config_t *conf)
     NBB_TRC_EXIT();
     return;
 }
+
+void bgp_enable_l2vpn_evpn()
+{
+    // lock to allow only one grpc thread processing at a time
+    std::lock_guard<std::mutex> lck(mgmt_state_t::grpc_lock());
+
+    pds_ms_config_t conf;
+
+    PDS_MS_START_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
+
+    conf.correlator    = PDS_MS_CTM_GRPC_CORRELATOR;
+    bgp_enable_l2vpn_evpn_(&conf);
+
+    PDS_MS_END_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
+    pds_ms::mgmt_state_t::ms_response_wait();
+
+    PDS_TRACE_INFO("Enabled BGP RM L2VPN-EVPN AFI SAFI");
 }
+
+} // End Namespace
