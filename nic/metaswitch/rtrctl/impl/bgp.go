@@ -425,7 +425,7 @@ func bgpNlriShowCmdHandler(cmd *cobra.Command, _afisafi string, args []string) e
 		if !doJSON {
 			var plen string
 			plen = fmt.Sprint(nlri.PrefixLen)
-			if nlri.Prefix != nil && network != nlri.Prefix.String()+"/"+plen {
+			if nlri.Prefix.String() != "<nil>" && network != nlri.Prefix.String()+"/"+plen {
 				network = nlri.Prefix.String() + "/" + plen
 				fmt.Printf("%s\n", network)
 			}
