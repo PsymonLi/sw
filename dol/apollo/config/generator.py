@@ -150,13 +150,19 @@ def __create(node):
     # Create Interface Objects
     InterfaceClient.CreateObjects(node)
 
+    # Create Nexthop Objects
+    NexthopClient.CreateObjects(node)
+
+    # Create Tunnel Objects
+    TunnelClient.CreateObjects(node)
+
+    # Create NexthopGroup Objects
+    NHGroupClient.CreateObjects(node)
+
     # Create VPC Objects
     VpcClient.CreateObjects(node)
 
     SecurityProfileClient.CreateObjects(node)
-
-    NHGroupClient.CreateObjects(node)
-    TunnelClient.CreateObjects(node)
 
     # Commit the Batch
     BatchClient.Commit(node)

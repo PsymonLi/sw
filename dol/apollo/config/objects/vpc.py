@@ -1,7 +1,5 @@
 #! /usr/bin/python3
-import pdb
 import json
-import requests
 import ipaddress
 
 from infra.common.logging import logger
@@ -17,7 +15,6 @@ from apollo.config.objects.dhcpproxy import client as DHCPProxyClient
 from apollo.config.objects.nexthop import client as NhClient
 from apollo.config.objects.nexthop_group import client as NhGroupClient
 from apollo.config.objects.interface import client as InterfaceClient
-from apollo.config.objects.port import client as PortClient
 from apollo.config.objects.metaswitch.bgp import client as BGPClient
 from apollo.config.objects.metaswitch.bgp_peer import client as BGPPeerClient
 from apollo.config.objects.metaswitch.bgp_peeraf import client as BGPPeerAfClient
@@ -29,7 +26,6 @@ import apollo.config.objects.policer as policer
 import apollo.config.objects.route as route
 import apollo.config.objects.subnet as subnet
 import apollo.config.objects.tunnel as tunnel
-import apollo.config.objects.nexthop_group as nexthop_group
 import apollo.config.objects.tag as tag
 import apollo.config.objects.meter as meter
 import artemis.config.objects.cfgjson as cfgjson
@@ -505,9 +501,6 @@ class VpcObjectClient(base.ConfigClientBase):
 
         # Create DHCP Relay Objects
         DHCPProxyClient.CreateObjects(node)
-
-        # Create Nexthop object
-        NhClient.CreateObjects(node)
 
         # Create Tag object.
         tag.client.CreateObjects(node)

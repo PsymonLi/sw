@@ -118,6 +118,15 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/vxlan_uds:
+    commands: ["make", "PIPELINE=apulu", "jobd/apulu/dol/vxlan_uds"]
+    owners: ["email:amritapatole@pensando.io" ]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
   apulu/valgrind:
     # build-apulu-valgrind runs valgrind gtests and creates the file
     commands: ["sh", "-c", "while [ ! -f /tmp/apulu_gtests_valgrind.done ]; do sleep 60; done"]

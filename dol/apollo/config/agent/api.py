@@ -661,6 +661,7 @@ class PdsAgentClient(AgentClientBase):
         resps = list()
         server_address = SVC_SERVER_SOCKET_PATH
 
+        logger.info(f"Sent UDS Request with {ApiOps(oper).name} for {len(objs)} {ObjectTypes(objtype).name.lower()}")
         def __triggerRequest(message):
             #Initialize unix socket
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -673,7 +674,6 @@ class PdsAgentClient(AgentClientBase):
                     raise socket.error(ret)
                 nbytes = message.SerializeToString()
                 sock.sendall(nbytes)
-                logger.verbose(f"Sent a UDS request with message: {message}")
                 bytes_read = sock.recv(int(SOCK_BUF_LEN))
                 if not bytes_read:
                     logger.info(f"No response received from remote socket")

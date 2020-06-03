@@ -15,6 +15,11 @@ DryRunSanity dsc_hostvxlan operd DSCAGENTMODE
 DryRunSanity hostvxlan networking
 DryRunSanity l2_hostvxlan networking
 DryRunSanity learn learn
+export USE_UDS=1
+export BATCHING_DISABLED=1
+DryRunSanity hostvxlan networking
+unset USE_UDS
+unset BATCHING_DISABLED
 #DryRunSanity overlay networking SUB="local2remote,remote2local"
 
 # operd jobs

@@ -1,5 +1,4 @@
 #! /usr/bin/python3
-import pdb
 from collections import defaultdict
 
 from infra.common.logging import logger
@@ -16,6 +15,7 @@ import apollo.config.objects.base as base
 from apollo.config.agent.api import ObjectTypes as ObjectTypes
 from apollo.config.objects.interface import client as InterfaceClient
 from apollo.config.objects.tunnel    import client as TunnelClient
+from apollo.config.objects.nexthop_group import client as NHGroupClient
 import copy
 import nh_pb2 as nh_pb2
 
@@ -370,6 +370,10 @@ class NexthopObjectClient(base.ConfigClientBase):
             msgs = list(map(lambda x: x.GetGrpcCreateMessage(cookie), self.Objects(node)))
             list(map(lambda x: x.SetHwHabitant(True), self.Objects(node)))
         api.client[node].Create(self.ObjType, msgs)
+
+        # Note: Tunnel objects depends on nhgroup with underlay ecmp, hence create those nhgroups
+        # along with nexthop objects. Since nh objects are always created before tunnel objects
+        NHGroupClient.CreateObjectsOfType(node, nh_pb2.NEXTHOP_GROUP_TYPE_UNDERLAY_ECMP)
         return
 
     def GetGrpcReadAllMessage(self, node):

@@ -491,6 +491,10 @@ jobd/apulu/pds_scale_test_mock: ${JOBD_PREREQS}
 jobd/apulu/pds_uds_testapp: ${JOBD_PREREQS}
 	${NICDIR}/apollo/test/scale/apulu/runudstestapp.sh
 
+.PHONY: jobd/apulu/dol/vxlan_uds
+jobd/apulu/dol/vxlan_uds: ${JOBD_PREREQS}
+	USE_UDS=1 BATCHING_DISABLED=1 ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature networking
+
 .PHONY: jobd/apulu/gtest_1
 jobd/apulu/gtest_1: ${JOBD_PREREQS}
 	${NICDIR}/run.py ${COVERAGE_OPTS} --apulu_gtest

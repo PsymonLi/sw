@@ -1,6 +1,4 @@
 #! /usr/bin/python3
-import enum
-import pdb
 import infra.config.base as base
 from apollo.config.resmgr import client as ResmgrClient
 import apollo.config.utils as utils
@@ -101,6 +99,8 @@ class BatchObjectClient:
         return
 
     def Start(self, node):
+        if utils.IsBatchingDisabled():
+            return None
         batchObj = self.GetObjectByKey(node)
         batchObj.SetNextEpoch()
         logger.info(f"Starting a batch for config objects with epoch {batchObj.Epoch()}")
@@ -110,6 +110,8 @@ class BatchObjectClient:
         return status
 
     def Commit(self, node):
+        if utils.IsBatchingDisabled():
+            return None
         batchObj = self.GetObjectByKey(node)
         if self.__commit_for_flows:
             api.client[node].Start(api.ObjectTypes.BATCH, batchObj.GetInvalidBatchSpec())

@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 import copy
-import pdb
 from collections import defaultdict
 
 from infra.common.logging import logger
@@ -11,9 +10,7 @@ from apollo.config.resmgr import Resmgr
 
 import apollo.config.agent.api as api
 import apollo.config.utils as utils
-import apollo.config.topo as topo
 import apollo.config.objects.base as base
-import apollo.config.objects.nexthop as nexthop
 
 import nh_pb2 as nh_pb2
 
@@ -37,7 +34,7 @@ class NexthopGroupObject(base.ConfigObjectBase):
         self.UUID = utils.PdsUuid(self.Id, self.ObjType)
         self.Nexthops = {}
         self.DualEcmp = utils.IsDualEcmp(spec)
-        self.Type = None
+        self.Type = nh_pb2.NEXTHOP_GROUP_TYPE_NONE
         if spec.type == 'overlay':
             self.Type = nh_pb2.NEXTHOP_GROUP_TYPE_OVERLAY_ECMP
             self.NumNexthops = ResmgrClient[node].OverlayNumNexthopsAllocator.rrnext()
@@ -75,10 +72,10 @@ class NexthopGroupObject(base.ConfigObjectBase):
     def Show(self):
         logger.info("NexthopGroup object:", self)
         logger.info("- %s" % repr(self))
-        type = ""
+        type = "NONE"
         if self.Type == nh_pb2.NEXTHOP_GROUP_TYPE_OVERLAY_ECMP:
             type = "OVERLAY ECMP"
-        else:
+        elif self.Type == nh_pb2.NEXTHOP_GROUP_TYPE_UNDERLAY_ECMP:
             type = "UNDERLAY ECMP"
         logger.info("- Type %s" % type)
         if self.DualEcmp:
@@ -230,6 +227,46 @@ class NexthopGroupObjectClient(base.ConfigClientBase):
             self.__v6iter[node][vpcid] = utils.rrobiniter(self.__v6objs[node][vpcid])
         self.__num_nhgs_per_vpc.append(nhg_spec_obj.count)
         return
+
+    def CreateObjectsOfType(self, node, nh_type):
+        if (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):
+            logger.info("Skipping creating nexthop-group objects")
+            return True
+
+        res = True
+        nhgrp_objs = list()
+        if nh_type == nh_pb2.NEXTHOP_GROUP_TYPE_NONE:
+            nhgrps = filter(lambda x:x.Type == nh_type, self.Objects(node))
+            nhgrp_objs.extend(nhgrps)
+        elif nh_type == nh_pb2.NEXTHOP_GROUP_TYPE_OVERLAY_ECMP:
+            overlay_nhgrps = filter(lambda x:x.Type == nh_type, self.Objects(node))
+            nhgrp_objs.extend(overlay_nhgrps)
+        elif nh_type == nh_pb2.NEXTHOP_GROUP_TYPE_UNDERLAY_ECMP:
+            underlay_nhgrps = filter(lambda x:x.Type == nh_type, self.Objects(node))
+            nhgrp_objs.extend(underlay_nhgrps)
+        else:
+            assert(0)
+
+        logger.info(f"Creating {len(nhgrp_objs)} of type {nh_type} {self.ObjType.name} Objects in {node}")
+        if utils.IsNetAgentMode():
+            res = api.client[node].Create(self.ObjType, nhgrp_objs)
+        else:
+            cookie = utils.GetBatchCookie(node)
+            msgs = list(map(lambda x: x.GetGrpcCreateMessage(cookie), nhgrp_objs))
+            res = api.client[node].Create(self.ObjType, msgs)
+            #TODO: Add validation for create & based on that set HW habitant
+        list(map(lambda x: x.SetHwHabitant(True), nhgrp_objs))
+        return res
+
+    def CreateObjects(self, node):
+        if (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):
+            logger.info("Skipping creating nexthop-group objects")
+            return True
+
+        # underlay ecmp nh-group objects are created as part of nexthop objects
+        res = self.CreateObjectsOfType(node, nh_pb2.NEXTHOP_GROUP_TYPE_OVERLAY_ECMP)
+        res_ = self.CreateObjectsOfType(node, nh_pb2.NEXTHOP_GROUP_TYPE_NONE)
+        return (res and res_)
 
     def GetGrpcReadAllMessage(self, node):
         grpcmsg = nh_pb2.NhGroupGetRequest()

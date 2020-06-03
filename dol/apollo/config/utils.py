@@ -1064,6 +1064,12 @@ class rrobiniter:
     def size(self):
         return self.size
 
+def IsBatchingDisabled():
+    no_batching = os.environ.get("BATCHING_DISABLED", 0)
+    if int(no_batching) == 1:
+        return True
+    return False
+
 def IsDol():
     return defs.TEST_TYPE == "DOL"
 
