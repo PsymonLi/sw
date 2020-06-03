@@ -10,6 +10,7 @@
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
 
 namespace api {
 
@@ -80,6 +81,13 @@ upg_init (pds_init_params_t *params)
     }
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade nicmgr graceful/hitless init failed");
+        return ret;
+    }
+
+    // ms stub registers for upgrade events.
+    ret = pds_ms::pds_ms_upg_hitless_init();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Upgrade pds ms graceful/hitless init failed");
         return ret;
     }
 
