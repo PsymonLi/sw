@@ -22,6 +22,8 @@ import { FormArray } from '@angular/forms';
 import { FieldsRequirement } from '@sdk/v1/models/generated/search';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
 import { SearchUtil } from '@app/components/search/SearchUtil';
+import { IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
+import { LabelEditorMetadataModel } from '@app/components/shared/labeleditor';
 import * as _ from 'lodash';
 
 interface NetworkUIModel {
@@ -64,6 +66,9 @@ export class NetworkComponent extends DataComponent implements OnInit {
     },
     'spec.orchestrators': (opts): string => {
       return (opts.data.spec.orchestrators) ? opts.data.spec.orchestrators.map(or => or['orchestrator-name'] + ' Datacenter: ' + or.namespace).join(', ') : '';
+    },
+    'meta.labels': (opts): string => {
+      return this.formatLabels(opts.data.meta.labels);
     }
   };
 
@@ -81,6 +86,9 @@ export class NetworkComponent extends DataComponent implements OnInit {
 
   disableTableWhenRowExpanded: boolean = true;
   isTabComponent: boolean = false;
+  inLabelEditMode: boolean = false;
+  labelEditorMetaData: LabelEditorMetadataModel;
+
 
   // Used for the table - when true there is a loading icon displayed
   tableLoading: boolean = false;
@@ -90,6 +98,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
     { field: 'spec.vlan-id', header: 'VLAN', class: 'network-column-vlan', sortable: true, width: '80px'},
     { field: 'spec.orchestrators', header: 'Orchestrators', class: 'network-column-orchestrators', sortable: false, width: 35 },
     { field: 'associatedWorkloads', header: 'Workloads', class: '', sortable: false, width: 35 },
+    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'vcenter-integration-column-date', sortable: true, width: '180px' }
   ];
 
@@ -190,6 +199,8 @@ export class NetworkComponent extends DataComponent implements OnInit {
         return this.displayColumn_orchestrators(value);
       case 'spec.vlan-id':
         return value ? value : 0;
+      case 'meta.labels':
+            return this.formatLabels(rowData.meta.labels);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
@@ -374,4 +385,65 @@ export class NetworkComponent extends DataComponent implements OnInit {
       this.dataObjects = searchResults;
     }
   }
+
+  onDeleteSelectedNetworks(event) {
+    this.onDeleteSelectedRows(event);
+  }
+
+  /**
+   * Override super's API.
+   *
+   * @param vObject
+   * @param model
+   * @param previousVal
+   * @param trimDefaults
+   */
+  trimObjectForBulkeditItem(vObject: any, model, previousVal = null, trimDefaults = true ): any {
+    const body = (vObject.hasOwnProperty('getModelValue')) ? vObject.getModelValues() : vObject;
+    return Utility.trimDefaultsAndEmptyFieldsByModel( body, vObject, previousVal, trimDefaults);
+  }
+
+  editLabels() {
+    this.labelEditorMetaData = {
+      title: 'Edit Network Labels',
+      keysEditable: true,
+      valuesEditable: true,
+      propsDeletable: true,
+      extendable: true,
+      save: true,
+      cancel: true,
+    };
+
+    if (!this.inLabelEditMode) {
+      this.inLabelEditMode = true;
+    }
+  }
+
+  handleEditSave(networks: NetworkNetwork[]) {
+    this.bulkeditLabels(networks);
+  }
+    /**
+   * Invoke changing meta.lablels using bulkedit API
+   * @param networkinterfaces
+   */
+  bulkeditLabels(networks: NetworkNetwork[]) {
+
+    const successMsg: string = 'Updated ' + networks.length + ' network labels';
+    const failureMsg: string = 'Failed to update network labels';
+    const stagingBulkEditAction = this.buildBulkEditLabelsPayload(networks);
+    this.bulkEditHelper(networks, stagingBulkEditAction, successMsg, failureMsg );
+  }
+
+  handleEditCancel($event) {
+    this.inLabelEditMode = false;
+  }
+
+  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
+    this.inLabelEditMode = false;
+  }
+
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
+      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
+  }
+
 }

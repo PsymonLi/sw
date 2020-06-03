@@ -8,7 +8,7 @@
                   [actionTemplate]="actionTemplate"
                   [expandTemplate]="expandTemplate"
                   [createTemplate]="createTemplate"
-                  [enableCheckbox]="false"
+                  [enableCheckbox]="true"
                   [loading]="tableLoading"
                   [numRows]="25"
                   [rowHeight]="46"
@@ -33,11 +33,11 @@
                        [total]="dataObjects.length" [icon]="headerIcon"
                        [enableColumnSelect]="true"
                        [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+        <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
       </app-tableheader>
     </div>
   </div>
 </ng-template>
-
 <ng-template #createTemplate>
   <app-newnetwork (formClose)="creationFormClose()" fxFlex="none" [vcenters]="vcenters"
                   [existingObjects]='dataObjects' [vcenterOptions]='vcenterOptions'>
@@ -87,4 +87,44 @@
                   [existingObjects]='dataObjects'
                   [vcenters]="vcenters" [vcenterOptions]='vcenterOptions'>
   </app-newnetwork>
+</ng-template>
+
+<ng-template #actionButtonsTemplate>
+  <div *ngIf="!tableLoading" class="networks-action-template" fxLayout="row">
+    <div fxFlex="1 0 50%">
+      <div *ngIf="dataObjects.length !== dataObjectsBackup.length"
+           class="networks-table-header-title-append">
+        <span matTooltip="Total networks">
+          | System has ({{ dataObjectsBackup.length }})
+        </span>
+      </div>
+    </div>
+    <div *roleGuard="'networknetwork_update'" fxFlex="1 0 50%">
+      <div *ngIf="dataObjects.length > 0" fxFlex="none" fxLayoutAlign="start center">
+        <mat-icon [ngClass]="{
+          'global-multi-records-delete-icon': true,
+          'global-button-disabled': !hasSelectedRows()
+        }"
+                  (click)="editLabels()"
+                  [matTooltip]="hasSelectedRows() ? 'Edit labels of selected networks' : 'Select networks to edit labels'">
+          label
+        </mat-icon>
+        <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
+                         (saveEmitter)="handleEditSave($event)"
+                         [inLabelEditMode]="inLabelEditMode"
+                         [metadata]="labelEditorMetaData"
+                         [nameKey]="'meta.name'"
+                         [objects]="getSelectedDataObjects()">
+        </app-labeleditor>
+        <mat-icon [ngClass]="{
+            'global-multi-records-delete-icon': true,
+            'global-button-disabled': !hasSelectedRows()
+          }"
+                  (click)="onDeleteSelectedNetworks($event)"
+                  [matTooltip]="hasSelectedRows() ? 'Delete selected networks' : 'Select networks to delete'">
+          delete
+        </mat-icon>
+      </div>
+    </div>
+  </div>
 </ng-template>

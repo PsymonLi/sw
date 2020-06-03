@@ -4,3 +4,18 @@
   padding-left: 10px;
   padding-right: 10px;
 }
+
+.networks-action-template {
+  width: 100%;
+}
+
+.networks-table-header-title-append {
+  @include primary-font(20px, #484848);
+  margin-right: 5px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.network-table-caption .tableheader-title-container {
+  flex: 0 0 auto !important;
+}

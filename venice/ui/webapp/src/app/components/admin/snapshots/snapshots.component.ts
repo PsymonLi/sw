@@ -480,6 +480,7 @@ export class SnapshotsComponent extends TablevieweditAbstract<IObjstoreObject, O
   * Overrides callback function
   */
   onInvokeAPIonMultipleRecordsSuccess () {
+    this.clearSelectedDataObjects();  // we have to clear table selected objects after deleting records
     this.refresh();
   }
 
