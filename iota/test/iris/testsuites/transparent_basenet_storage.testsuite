@@ -57,6 +57,7 @@ testbundles:
         - rx_mode/rx_mode.testbundle
         - classic/driver-features-sanity.testbundle
         - system/obfl_check.testbundle
+        - system/ssh_check.testbundle
         - sysmon/interrupts.testbundle
         - cpld/cpldupgrade.testbundle
         - hpe_ilo/hpe_ilo.testbundle
@@ -69,6 +70,7 @@ testbundles:
         - rdma/qos.testbundle
         - linktest/linktest.testbundle
         - storage/storage.testbundle
+        - system/ssh_check.testbundle
 
     extended:
         # Relative paths from iota/test/iris/testbundles/

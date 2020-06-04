@@ -1,0 +1,90 @@
+meta:
+    name    : ssh_check
+    os      : [ linux, freebsd, esx, windows ]
+    nics    : [ pensando, mellanox, intel ]
+    targetcount : 1
+
+testcases:
+    -   name    : SSH_DELETE_KEYS
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [penctl]
+            use_token : [Yes]
+            subcmd : ["delete ssh-pub-key"]
+        args    :
+            exp_ret  : Pass
+
+    -   name    : SSH_DISABLE
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [penctl]
+            use_token : [Yes]
+            subcmd : ["system disable-sshd"]
+        args    :
+            exp_ret  : Pass
+            verification: "Disabled.*Stopping sshd: OK"
+            verify_in   : "stdout"
+
+    -   name    : SSH_NO_ACCESS
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [ssh]
+            use_token : [No]
+            subcmd : ["None"]
+        args    :
+            exp_ret  : Fail
+            verification: "ssh:.*Connection refused"
+            verify_in   : "stderr"
+
+    -   name    : SSH_ENABLE
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [penctl]
+            use_token : [Yes]
+            subcmd : ["system enable-sshd"]
+        args    :
+            exp_ret  : Pass
+            verification: "Enabled.*Starting sshd:.*OK"
+            verify_in   : "stdout"
+
+    -   name    : SSH_ACCESS_ON_ENABLE
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [ssh]
+            use_token : [No]
+            subcmd : ["none"]
+        args    :
+            exp_ret  : Fail
+            verification: ".*Permission denied [(]publickey,keyboard-interactive[)].*"
+            verify_in   : "stderr"
+
+    -   name    : SSH_LOAD_KEYS
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [penctl]
+            use_token : [Yes]
+            subcmd : ["update ssh-pub-key -f ~/.ssh/id_rsa.pub"]
+        args    :
+            exp_ret  : Pass
+
+    -   name    : SSH_ACCESS
+        testcase: testcases.system.ssh
+        iterators :
+            type   : simple
+            command : [ssh]
+            use_token : [No]
+            subcmd : ["none"]
+        args    :
+            exp_ret  : Pass
+            verification: ".*sysconfig.*"
+            verify_in   : "stdout"
+
+#    To be added testcase
+#    -   name    : SSH_STATE_ON_BOOTUP
+#        testcase: testcases.system.ssh

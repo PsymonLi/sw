@@ -55,6 +55,7 @@ testbundles:
         - rx_mode/rx_mode.testbundle
         #- classic/driver-features-sanity.testbundle
         #- system/obfl_check.testbundle
+        - system/ssh_check.testbundle
         #- sysmon/interrupts.testbundle
         #- cpld/cpldupgrade.testbundle
         #- hpe_ilo/hpe_ilo.testbundle
@@ -87,6 +88,7 @@ testbundles:
         - post_diag/post_diag.testbundle
         - asic_tools/asic_tools.testbundle
         - system/obfl_check.testbundle
+        - system/ssh_check.testbundle
         - sysmon/interrupts.testbundle
         - cpld/cpldupgrade.testbundle
         - hpe_ilo/hpe_ilo.testbundle

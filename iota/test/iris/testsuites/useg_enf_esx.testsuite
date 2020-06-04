@@ -61,6 +61,7 @@ testbundles:
         - p4ctl/p4ctl_precheckin.testbundle
         - naples_upgrade/naples_upgrade_hostpin.testbundle
         - system/obfl_check.testbundle
+        - system/ssh_check.testbundle
         - sysmon/interrupts.testbundle
         - cpld/cpldupgrade.testbundle
         - hpe_ilo/hpe_ilo.testbundle
@@ -87,6 +88,7 @@ testbundles:
         - p4ctl/p4ctl.testbundle
         - naples_upgrade/naples_upgrade_hostpin.testbundle
         - system/obfl_check.testbundle
+        - system/ssh_check.testbundle
         - sysmon/interrupts.testbundle
         - cpld/cpldupgrade.testbundle
         - hpe_ilo/hpe_ilo.testbundle
