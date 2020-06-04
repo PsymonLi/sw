@@ -40,6 +40,7 @@ type jwtMgr struct {
 	secret     []byte
 	expiration time.Duration
 	header     string
+	logger     log.Logger
 }
 
 type jwtHeader struct {
@@ -51,7 +52,7 @@ type jwtHeader struct {
 //  secret: secret used to sign JWT. It should be at least 64 bytes(512 bits) for HS512. We will use 128 bytes generated
 //          using a secure random number generator.
 //  expiration: expiration time duration (nanoseconds) for which token is valid
-func NewJWTManager(secret []byte, expiration time.Duration) (TokenManager, error) {
+func NewJWTManager(secret []byte, expiration time.Duration, logger log.Logger) (TokenManager, error) {
 	// pre-create JWT header
 	header, err := createJWTHeader()
 	if err != nil {
@@ -60,7 +61,7 @@ func NewJWTManager(secret []byte, expiration time.Duration) (TokenManager, error
 	// pre-create signer to sign tokens
 	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: signatureAlgorithm, Key: secret}, (&jose.SignerOptions{}).WithType(headerTypeValue))
 	if err != nil {
-		log.Errorf("Unable to create a signer: Err: %v", err)
+		logger.Errorf("Unable to create a signer: Err: %v", err)
 		return nil, err
 	}
 	return &jwtMgr{
@@ -68,6 +69,7 @@ func NewJWTManager(secret []byte, expiration time.Duration) (TokenManager, error
 		secret:     secret,
 		expiration: expiration,
 		header:     header,
+		logger:     logger,
 	}, nil
 }
 
@@ -85,7 +87,7 @@ func (t *jwtMgr) createJWTToken(user *auth.User, privateClaims map[string]interf
 	currTime := time.Now()
 	exp := currTime.Add(t.expiration)
 	if user == nil || user.Name == "" {
-		log.Errorf("User information is required to create a JWT token")
+		t.logger.Errorf("User information is required to create a JWT token")
 		return "", exp, ErrMissingUserInfo
 	}
 	// standard jwt claims like sub, iss, exp
@@ -104,7 +106,7 @@ func (t *jwtMgr) createJWTToken(user *auth.User, privateClaims map[string]interf
 	// create signed JWT
 	token, err := jwt.Signed(t.signer).Claims(claims).Claims(privateClaims).CompactSerialize()
 	if err != nil {
-		log.Errorf("Unable to create JWT token: Err: %v", err)
+		t.logger.Errorf("Unable to create JWT token: Err: %v", err)
 		return "", exp, err
 	}
 	return token, exp, err
@@ -163,17 +165,17 @@ func (t *jwtMgr) ValidateToken(token string) (map[string]interface{}, bool, erro
 func (t *jwtMgr) validateJWTToken(token string) (*jwt.Claims, map[string]interface{}, bool, error) {
 	tok, err := jwt.ParseSigned(token)
 	if err != nil {
-		log.Errorf("Unable to parse JWT token: Err: %v", err)
+		t.logger.Errorf("Unable to parse JWT token: Err: %v", err)
 		return nil, nil, false, err
 	}
 	// there should be only one signature
 	if len(tok.Headers) != 1 {
-		log.Errorf("Multiple signatures present in JWT")
+		t.logger.Errorf("Multiple signatures present in JWT")
 		return nil, nil, false, ErrInvalidSignature
 	}
 	// signature algorithm type should be HS512
 	if jose.SignatureAlgorithm(tok.Headers[0].Algorithm) != signatureAlgorithm {
-		log.Errorf("Incorrect signature algorithm type")
+		t.logger.Errorf("Incorrect signature algorithm type")
 		return nil, nil, false, ErrInvalidSignature
 	}
 	// standard jwt claims like sub, iss, exp
@@ -181,7 +183,7 @@ func (t *jwtMgr) validateJWTToken(token string) (*jwt.Claims, map[string]interfa
 	// venice custom claims
 	privateClaims := make(map[string]interface{})
 	if err := tok.Claims(t.secret, &standardClaims, &privateClaims); err != nil {
-		log.Errorf("Unable to parse claims in JWT token: Err: %v", err)
+		t.logger.Errorf("Unable to parse claims in JWT token: Err: %v", err)
 		return nil, nil, false, err
 	}
 	// check if token is not expired and has correct issuer

@@ -813,7 +813,8 @@ func (a *apiGw) isRequestAuthenticated(ctx context.Context) (*auth.User, bool) {
 	// Validate JWT
 	user, ok, csrfTok, err := a.authnMgr.ValidateToken(token)
 	if !ok {
-		a.logger.Debugf("invalid JWT token (%s), err (%v)", token, err)
+		a.logger.Errorf("invalid JWT token, err (%v)", err)
+		a.logger.Debugf("invalid JWT token (%s)", token)
 		return nil, false
 	}
 	// get request method

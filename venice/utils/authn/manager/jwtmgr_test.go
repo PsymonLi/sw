@@ -16,6 +16,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/auth"
+	"github.com/pensando/sw/venice/utils/log"
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
 
@@ -77,6 +78,7 @@ func createHeadlessToken(alg jose.SignatureAlgorithm, secret []byte, expiration 
 }
 
 func createJwtMgr() *jwtMgr {
+	logger := log.GetNewLogger(log.GetDefaultConfig("jwtmgr_test"))
 	// pre-create JWT header
 	header, err := createJWTHeader()
 	if err != nil {
@@ -92,6 +94,7 @@ func createJwtMgr() *jwtMgr {
 		secret:     secret,
 		expiration: time.Duration(expiration),
 		header:     header,
+		logger:     logger,
 	}
 }
 
@@ -233,11 +236,13 @@ func TestValidateTokenWithModifiedClaims(t *testing.T) {
 }
 
 func TestValidateTokenWithNoneAlg(t *testing.T) {
+	logger := log.GetNewLogger(log.GetDefaultConfig("jwtmgr_test"))
 	// token with "none" alg
 	token := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJleHAiOjE1MTY3MzUzMDQsImlzcyI6InZlbmljZSIsInN1YiI6InRlc3QiLCJ1c2VyIjp7IktpbmQiOiJVc2VyIiwibWV0YSI6eyJDcmVhdGlvblRpbWUiOiIxOTcwLTAxLTAxVDAwOjAwOjAwWiIsIk1vZFRpbWUiOiIxOTcwLTAxLTAxVDAwOjAwOjAwWiIsIk5hbWUiOiJ0ZXN0IiwiVGVuYW50IjoiZGVmYXVsdCJ9LCJzcGVjIjp7ImVtYWlsIjoidGVzdHVzZXJAcGVuc2FuZGlvLmlvIiwiZnVsbG5hbWUiOiJUZXN0IFVzZXIiLCJwYXNzd29yZCI6InBlbnNhbmRvbzAiLCJ0eXBlIjoiTE9DQUwifSwic3RhdHVzIjp7InJvbGVzIjpbIk5ldHdvcmtBZG1pblJvbGUiLCJTZWN1cml0eUFkbWluUm9sZSJdfX19."
 	jwtMgr := &jwtMgr{
 		secret:     secret,
 		expiration: time.Duration(expiration),
+		logger:     logger,
 	}
 	_, privateClaims, ok, err := jwtMgr.validateJWTToken(token)
 	Assert(t, !ok, "Token validation should fail for token with 'none' alg type")
@@ -257,7 +262,8 @@ func BenchmarkValidateToken(b *testing.B) {
 }
 
 func TestCreateHeadlessJWTToken(t *testing.T) {
-	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration))
+	logger := log.GetNewLogger(log.GetDefaultConfig(t.Name()))
+	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration), logger)
 	AssertOk(t, err, "Error creating JWT token manager")
 	currTime := time.Now()
 	headlessToken, exp, err := jwtMgr.CreateToken(&testUserObj, nil)
@@ -312,7 +318,8 @@ func erroneousTokenData() map[string]string {
 }
 
 func TestErroneousTokens(t *testing.T) {
-	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration))
+	logger := log.GetNewLogger(log.GetDefaultConfig(t.Name()))
+	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration), logger)
 	AssertOk(t, err, "Error creating JWT token manager")
 	for testtype, token := range erroneousTokenData() {
 		tokenInfo, ok, err := jwtMgr.ValidateToken(token)
@@ -332,7 +339,8 @@ func TestRemoveJWTHeader(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration))
+	logger := log.GetNewLogger(log.GetDefaultConfig(t.Name()))
+	jwtMgr, err := NewJWTManager(secret, time.Duration(expiration), logger)
 	AssertOk(t, err, "Error creating JWT token manager")
 	tests := []struct {
 		claim              string

@@ -117,7 +117,7 @@ func (ug *defaultAuthGetter) GetTokenManager() (TokenManager, error) {
 		return nil, err
 	}
 	// instantiate token manager
-	tokenManager, err := NewJWTManager(policy.Spec.GetSecret(), exp)
+	tokenManager, err := NewJWTManager(policy.Spec.GetSecret(), exp, ug.logger)
 	if err != nil {
 		ug.logger.Errorf("Error creating TokenManager: %v", err)
 		return nil, err
