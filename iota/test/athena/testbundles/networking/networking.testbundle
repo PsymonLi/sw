@@ -50,9 +50,9 @@ testcases:
 #        enable  : True
 #        iterators :
 #            type     : nested
-#            flow_type : ['L3','L2']
+#            vnic_type : ['L3','L2']
 #            nat       : ['no','yes']
 #            proto     : ['UDP']
-#            size      : [64]
-#            flow      : ['dynamic']
+#            size      : [64,1024]
+#            flow_type : ['dynamic']
 #            bidir     : ['yes']

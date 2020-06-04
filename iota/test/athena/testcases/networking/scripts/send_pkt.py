@@ -29,7 +29,7 @@ def send_packet(intf, fname):
 
     pkts = rdpcap(fname)
     for pkt in pkts:
-        #print("Tx packet: {}".format(pkt.show()))
+        #logging.debug("Tx packet: {}".format(pkt.show()))
         logging.info('[%s] Sending %d packets on interface %s' % (get_curr_time(), int(DEFAULT_NUM_SEND_PKTS), intf))    
         sendp(pkt, iface=intf, count=DEFAULT_NUM_SEND_PKTS)
 

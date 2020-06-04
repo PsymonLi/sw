@@ -16,10 +16,10 @@ from scapy.all import *
 from scapy.contrib.mpls import MPLS
 from scapy.contrib.geneve import GENEVE
 
-logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
-
 DEFAULT_NUM_RECV_PKTS = 10
 DEFAULT_UNMATCHED_RECV_PKTS_FILENAME = './unmatched_recv_pkts.pcap'
+
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
 def get_curr_time():
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
@@ -44,25 +44,32 @@ def validate_recv_pkt(recv_pkts, gen_pkts):
 
     for r_pkt in recv_pkts:
         # ignore DHCP packets in the capture
-        if r_pkt.haslayer('DHCP'):
+        if r_pkt.haslayer('DHCP') or r_pkt.haslayer('ICMPv6ND_RS'):
             continue
 
-        r_pkt.getlayer(IP, nb=1).chksum = 0
-        r_pkt.getlayer(UDP, nb=1).chksum = 0
+        if r_pkt.getlayer(IP, nb=1) is not None:
+            r_pkt.getlayer(IP, nb=1).chksum = 0
+        if r_pkt.getlayer(UDP, nb=1) is not None:
+            r_pkt.getlayer(UDP, nb=1).chksum = 0
 
         if MPLS in r_pkt: 
             # TODO: check if it's a bug
-            r_pkt.getlayer(MPLS, nb=1).ttl = 0
-            r_pkt.getlayer(MPLS, nb=2).ttl = 0
+            if r_pkt.getlayer(MPLS, nb=1) is not None:
+                r_pkt.getlayer(MPLS, nb=1).ttl = 0
+            if r_pkt.getlayer(MPLS, nb=2) is not None:
+                r_pkt.getlayer(MPLS, nb=2).ttl = 0
             if UDP in r_pkt['MPLS'].underlayer:
                 # ignore randomly generated sport when comparing mpls-in-udp pkts
                 r_pkt.getlayer(UDP, nb=1).sport = 0
             
-            r_pkt.getlayer(IP, nb=2).chksum = 0
-            r_pkt.getlayer(UDP, nb=2).chksum = 0
+            if r_pkt.getlayer(IP, nb=2) is not None:
+                r_pkt.getlayer(IP, nb=2).chksum = 0
+            if r_pkt.getlayer(UDP, nb=2) is not None:
+                r_pkt.getlayer(UDP, nb=2).chksum = 0
 
         elif GENEVE in r_pkt:
-            r_pkt.getlayer(UDP, nb=1).sport = 0
+            if UDP in r_pkt['GENEVE'].underlayer:
+                r_pkt.getlayer(UDP, nb=1).sport = 0
 
             if r_pkt.getlayer(IP, nb=2) is not None:
                 r_pkt.getlayer(IP, nb=2).chksum = 0
@@ -72,8 +79,8 @@ def validate_recv_pkt(recv_pkts, gen_pkts):
         if r_pkt == gen_pkts[0]:
             count += 1    
         else:
-            #print("Received pkt: {}".format(r_pkt.show()))
-            #print("Generated pkt: {}".format(gen_pkts[0].show()))
+            logging.debug("Received pkt: {}".format(r_pkt.show()))
+            logging.debug("Generated pkt: {}".format(gen_pkts[0].show()))
             unmatched_pkts.append(r_pkt)  
 
     if count != DEFAULT_NUM_RECV_PKTS:

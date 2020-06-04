@@ -70,10 +70,10 @@
                 "_comment": "VNIC vlan_id drives the VLAN Tag towards Host"
             },
             "nat": {
-                "local_ip_lo": "2.0.0.0",
-                "local_ip_hi": "2.0.0.255",
-                "nat_ip_lo": "3.0.0.0",
-                "nat_ip_hi": "3.0.0.255",
+                "local_ip_lo": "2.0.0.1",
+                "local_ip_hi": "2.0.0.2",
+                "nat_ip_lo": "3.0.0.1",
+                "nat_ip_hi": "3.0.0.2",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         },
@@ -167,10 +167,10 @@
                 "_comment": "Here dst_slot_id would be the remote VNIC slot_id"
             },
             "nat": {
-                "local_ip_lo": "5.0.0.0",
-                "local_ip_hi": "5.0.0.255",
-                "nat_ip_lo": "6.0.0.0",
-                "nat_ip_hi": "6.0.0.255",
+                "local_ip_lo": "4.0.0.1",
+                "local_ip_hi": "4.0.0.2",
+                "nat_ip_lo": "5.0.0.1",
+                "nat_ip_hi": "5.0.0.2",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         }

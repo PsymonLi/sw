@@ -3,6 +3,7 @@
 import json
 import os
 import time
+import logging
 from scapy.all import *
 from scapy.contrib.mpls import MPLS
 from scapy.contrib.geneve import GENEVE
@@ -26,6 +27,8 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 SNIFF_TIMEOUT = 5
 NUM_VLANS_PER_VNIC = 2
+
+logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
 # ======= TODO START: move flow gen to another module ========= #
 
@@ -69,6 +72,7 @@ class Args():
         self._dir = None
         self.proto = None
         self.nat = None
+        self.size = None
 
         self.flow_id = None
         self.smac = None
@@ -83,18 +87,18 @@ def parse_args(tc):
     #==============================================================
     # init cmd options
     #==============================================================
-    tc.flow_type  = 'L3'
+    tc.vnic_type  = 'L3'
     tc.nat        = 'no'
-    tc.size       = '64'
+    tc.size       = 64
     tc.proto      = 'UDP'
     tc.bidir      = 'no'
-    tc.flow       = 'static'
+    tc.flow_type  = 'dynamic'
 
     #==============================================================
     # update non-default cmd options
     #==============================================================
-    if hasattr(tc.iterators, 'flow_type'):
-        tc.flow_type = tc.iterators.flow_type
+    if hasattr(tc.iterators, 'vnic_type'):
+        tc.vnic_type = tc.iterators.vnic_type
 
     if hasattr(tc.iterators, 'nat'):
         tc.nat = tc.iterators.nat
@@ -108,38 +112,50 @@ def parse_args(tc):
     if hasattr(tc.iterators, 'bidir'):
         tc.bidir = tc.iterators.bidir
 
-    if hasattr(tc.iterators, 'flow'):
-        tc.flow = tc.iterators.flow
+    if hasattr(tc.iterators, 'flow_type'):
+        tc.flow_type = tc.iterators.flow_type
 
-    api.Logger.info('flow_type: {}, nat: {}'.format(tc.flow_type, tc.nat))
+    api.Logger.info('vnic_type: {}, nat: {}, size: {} '
+                    'proto: {}, bidir: {}, flow_type: {}'
+                    .format(tc.vnic_type, tc.nat, tc.size,
+                    tc.proto, tc.bidir, tc.flow_type))
 
 def is_L2_vnic(_vnic):
 
     return "vnic_type" in _vnic and _vnic['vnic_type'] == 'L2'
 
-def get_vnic(plcy_obj, _flow_type, _nat):
+def get_vnic(plcy_obj, _vnic_type, _nat):
 
     vnics = plcy_obj['vnic']
 
     for vnic in vnics:
-        flow_type = 'L2' if is_L2_vnic(vnic) else 'L3'
+        vnic_type = 'L2' if is_L2_vnic(vnic) else 'L3'
         nat = 'yes' if "nat" in vnic else 'no'
 
-        if flow_type == _flow_type and \
+        if vnic_type == _vnic_type and \
            nat == _nat:
             return vnic
 
     raise Exception("Matching vnic not found")
 
-def get_vnic_id(_flow_type, _nat):
+def get_vnic_id(_vnic_type, _nat):
 
     template_policy_json_path = api.GetTestsuiteAttr("template_policy_json_path")
     with open(template_policy_json_path) as fd:
         plcy_obj = json.load(fd)
 
     # get vnic
-    vnic = get_vnic(plcy_obj, _flow_type, _nat)
+    vnic = get_vnic(plcy_obj, _vnic_type, _nat)
     return int(vnic['vnic_id'])
+
+def get_payload(pkt_size):
+
+    size = 0
+    pyld = ""
+    while (size < pkt_size):
+        pyld += DEFAULT_PAYLOAD[size % len(DEFAULT_PAYLOAD)]
+        size += 1
+    return pyld
 
 def craft_pkt(_types, _dicts):
 
@@ -147,7 +163,7 @@ def craft_pkt(_types, _dicts):
     for i in range(len(_types)):
         _type = _types[i]
         _dict = _dicts[i]
-        #print("type: {}, dict: {}".format(_type, _dict))
+        logging.debug("type: {}, dict: {}".format(_type, _dict))
 
         if _type == "Ether":
             if 'smac' not in _dict.keys() or \
@@ -205,7 +221,7 @@ def setup_pkt(_args):
     types = []
     dicts = []
 
-    #print("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args._dir, _args.Rx))
+    logging.debug("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args._dir, _args.Rx))
     with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME) as json_fd:
         plcy_obj = json.load(json_fd)
 
@@ -342,8 +358,8 @@ def setup_pkt(_args):
     dicts.append(udp)
 
     pkt = craft_pkt(types, dicts)
-    pkt = pkt/DEFAULT_PAYLOAD
-    #print(pkt.show())
+    pkt = pkt/get_payload(_args.size)
+    #logging.debug("Crafted pkt: {}".format(pkt.show()))
 
     if _args._dir == 'h2s':
         fname = DEFAULT_H2S_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_H2S_GEN_PKT_FILENAME
@@ -351,7 +367,7 @@ def setup_pkt(_args):
         fname = DEFAULT_S2H_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_S2H_GEN_PKT_FILENAME
 
     with open(CURR_DIR + '/config/' + fname, 'w+') as fd:
-        logging.info('Writing crafted pkt to pcap file %s' % fd.name)
+        logging.debug('Writing crafted pkt to pcap file %s' % fd.name)
         wrpcap(fd.name, pkt)
 
     pcap_fname = fd.name
@@ -364,6 +380,9 @@ def Setup(tc):
 
     # parse iterator args
     parse_args(tc)
+
+    global nat_flows 
+    nat_flows = {'h2s' : defaultdict(list), 's2h' : defaultdict(list)}
 
     # get node info
     tc.bitw_node_name = None
@@ -404,7 +423,7 @@ def Setup(tc):
     tc.up1_intf = host_intfs[1] 
     
     # get uplink vlans
-    vnic_id = get_vnic_id(tc.flow_type, tc.nat)
+    vnic_id = get_vnic_id(tc.vnic_type, tc.nat)
     tc.up0_vlan = get_uplink_vlan(vnic_id, 0)
     tc.up1_vlan = get_uplink_vlan(vnic_id, 1)
     
@@ -458,7 +477,7 @@ def Setup(tc):
         plcy_obj = json.load(fd)
 
     # get vnic
-    vnic = get_vnic(plcy_obj, tc.flow_type, tc.nat)
+    vnic = get_vnic(plcy_obj, tc.vnic_type, tc.nat)
     api.Logger.info('vnic id: {}'.format(vnic['vnic_id']))
 
     if tc.nat == 'yes':
@@ -551,6 +570,7 @@ def Trigger(tc):
             args.dport = flow.dst_port
             args.nat = tc.nat
             args.flow_id = idx
+            args.size = tc.size
 
             # ==========================================
             # Send and Receive packets in H2S direction
@@ -564,7 +584,7 @@ def Trigger(tc):
             args.encap =  True
             args.Rx = True
             args.vlan = tc.up0_vlan
-            if tc.flow_type == 'L2':
+            if tc.vnic_type == 'L2':
                 args.smac = tc.up1_mac
                 args.dmac = tc.up0_mac
 
