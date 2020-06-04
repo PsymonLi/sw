@@ -351,6 +351,7 @@ func (ws *WorkloadState) createEndpoints() error {
 		dscs := host.getDSCs()
 		if len(dscs) == 0 {
 			log.Errorf("Failed to find DSC on host %v", host.Host.Name)
+			ws.stateMgr.Unlock()
 			return fmt.Errorf("No DSC found for Host %v", host.Host.Name)
 		}
 
