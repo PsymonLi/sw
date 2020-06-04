@@ -17,6 +17,23 @@ using namespace core;
 
 extern "C" {
 
+static uint32_t
+pds_event_id_to_vpp_event_id (event_id_t event_id)
+{
+    switch (event_id) {
+    case EVENT_ID_IP_MOVE_L2R:
+        return PDS_FLOW_IP_MOVE_L2R;
+    case EVENT_ID_IP_MOVE_R2L:
+        return PDS_FLOW_IP_MOVE_R2L;
+    case EVENT_ID_IP_DELETE:
+    case EVENT_ID_IP_AGE:
+        return PDS_FLOW_IP_DELETE;
+    default:
+        flow_log_error("unhandled move event %u", event_id);
+        return -1;
+    }
+}
+
 int
 pds_vpp_bd_hw_id_get (pds_obj_key_t key, uint16_t *bd_hw_id)
 {
@@ -48,7 +65,7 @@ pds_ipc_ip_move_handle (core::event_t *event)
                            event->event_id, move_evt->ip_addr);
             return -1;
         }
-        pds_ip_flow_fixup((uint32_t)event->event_id, ipv4_addr,
+        pds_ip_flow_fixup(pds_event_id_to_vpp_event_id(event->event_id), ipv4_addr,
                           bd_hw_id, move_evt->vnic_hw_id);
         flow_log_notice("received ip move event %u %u %u", ipv4_addr, bd_hw_id,
                         move_evt->vnic_hw_id);

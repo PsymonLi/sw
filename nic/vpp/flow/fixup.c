@@ -13,15 +13,6 @@
 #include <nic/vpp/infra/utils.h>
 #include "fixup.h"
 
-typedef enum
-{
-    // should match with what is defined in event.hpp
-    PDS_FLOW_IP_AGE = 35,
-    PDS_FLOW_IP_DELETE = 36,
-    PDS_FLOW_IP_MOVE_L2R = 39,
-    PDS_FLOW_IP_MOVE_R2L = 41,
-} pds_flow_learn_move_id;
-
 typedef struct ipv4_flow_params_s {
     u32 sip;
     u32 dip;
@@ -495,8 +486,7 @@ pds_each_flow_fixup (u32 event_id, u32 addr, u32 ses_id, u16 bd_id, u16 vnic_id)
         return 0;
     }
 
-    if (event_id == PDS_FLOW_IP_DELETE ||
-        event_id == PDS_FLOW_IP_AGE) {
+    if (event_id == PDS_FLOW_IP_DELETE) {
         vec_add1(fm->delete_sessions, ses_id);
         return 0;
     }
