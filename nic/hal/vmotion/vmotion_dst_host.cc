@@ -447,6 +447,7 @@ dst_host_thread_rcv_sock_msg(sdk::event_thread::io_t *io, int sock_fd, int event
     if (ret == HAL_RET_CONN_CLOSED) {
         vmn_ep->set_migration_state(MigrationState::FAILED);
         dst_host_end(vmn_ep);
+        sdk::event_thread::io_stop(io);
         return;
     }
 

@@ -60,7 +60,8 @@ vmotion_recv_msg (VmotionMessage& msg, SSL *ssl)
     char      *buff_msg = NULL;
 
     if ((byte_count = SSL_peek(ssl, buff, VMOTION_MSG_HDR_LEN)) <= 0) {
-        HAL_TRACE_ERR("vmotion msg recv error error: {}", SSL_get_error(ssl, byte_count));
+        HAL_TRACE_ERR("vmotion msg recv error byte: {} error: {}", byte_count, 
+                      SSL_get_error(ssl, byte_count));
         HAL_FREE(HAL_MEM_ALLOC_VMOTION_BUFFER, buff);
         return HAL_RET_CONN_CLOSED;
     }

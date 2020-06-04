@@ -338,12 +338,14 @@ src_host_proc_init_msg(vmotion *vmn, VmotionMessage msg, vmotion_thread_ctx_t *t
     auto ep = find_ep_by_mac(mac);
     if (!ep) {
         HAL_TRACE_ERR("EP Not exists in Init Msg. MAC: {}", init_msg.mac_address());
+        SDK_ASSERT(0);
         return NULL;
     }
 
     auto vmn_ep = vmn->get_vmotion_ep(ep);
     if (vmn_ep) {
         HAL_TRACE_ERR("unexpected. EP Already exists MAC: {}", init_msg.mac_address());
+        SDK_ASSERT(0);
         return vmn_ep;
     }
 
@@ -376,11 +378,12 @@ src_host_thread_rcv_sock_msg (sdk::event_thread::io_t *io, int sock_fd, int even
 
     ret = vmotion_recv_msg(msg, thread_ctx->tls_connection->get_ssl());
 
-    HAL_TRACE_DEBUG("source host thread recvd sock msg: {} Ret: {}",
-                    VmotionMessageType_Name(msg.type()), ret);
+    HAL_TRACE_DEBUG("source host thread recvd sock msg: {} Ret: {} Events: {}",
+                    VmotionMessageType_Name(msg.type()), ret, events);
 
     if (ret == HAL_RET_CONN_CLOSED) {
         src_host_end(vmn_ep, MigrationState::FAILED, thread_ctx);
+        sdk::event_thread::io_stop(io);
         return;
     }
 
@@ -392,8 +395,10 @@ src_host_thread_rcv_sock_msg (sdk::event_thread::io_t *io, int sock_fd, int even
         }
         new_ep = src_host_proc_init_msg(g_hal_state->get_vmotion(), msg, thread_ctx);
 
-        if (!new_ep)
+        if (!new_ep) {
+            src_host_end(NULL, MigrationState::FAILED, thread_ctx);
             return;
+        }
         thread_ctx->vmn_ep = new_ep;
         break;
 

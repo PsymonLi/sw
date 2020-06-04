@@ -2639,7 +2639,7 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
                     ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
                     if (ret != HAL_RET_OK) {
                         HAL_TRACE_ERR("Failed to post update to FTE");
-                        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+                        HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
                     }
 
                     count   = 0;
@@ -2670,10 +2670,10 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
         ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to post update to FTE");
-            HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+            HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
         }
     } else {
-        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+        HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
     }
 
     HAL_FREE(HAL_MEM_ALLOC_EP_SESS_DELETE_CTXT, args);
@@ -3686,7 +3686,7 @@ endpoint_vmotion_sessions_update (ep_t *ep, bool reset_sync_session_only)
                 ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
                 if (ret != HAL_RET_OK) {
                     HAL_TRACE_ERR("Failed to post update to FTE");
-                    HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+                    HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
                 }
 
                 count = 0;
@@ -3703,10 +3703,10 @@ endpoint_vmotion_sessions_update (ep_t *ep, bool reset_sync_session_only)
         ret = fte::fte_softq_enqueue(0, fte_session_update_list, (void *) ep_updt);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to post update to FTE");
-            HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+            HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
         }
     } else {
-        HAL_FREE(HAL_MEM_ALLOC_EP_SESS_UPD_LIST, ep_updt);
+        HAL_FREE(HAL_MEM_ALLOC_SESS_UPD_LIST, ep_updt);
     }
 }
 
