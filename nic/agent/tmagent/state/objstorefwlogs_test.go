@@ -85,6 +85,7 @@ func TestProcessFWEventForObjStore(t *testing.T) {
 	ps, err := NewTpAgent(ctx, strings.Split(types.DefaultAgentRestURL, ":")[1])
 	AssertOk(t, err, "failed to create tp agent")
 	Assert(t, ps != nil, "invalid policy state received")
+	ps.configuredID = "simulated_DSC_1"
 
 	err = ps.FwlogInit(FwlogIpcShm)
 	AssertOk(t, err, "failed to init FwLog")
@@ -198,6 +199,7 @@ func TestProcessFWEventForObjStore(t *testing.T) {
 	AssertOk(t, err, "failed to create tp agent")
 	Assert(t, ps != nil, "invalid policy state received")
 	defer ps.Close()
+	ps.configuredID = "simulated_DSC_1"
 
 	err = ps.FwlogInit(FwlogIpcShm)
 	AssertOk(t, err, "failed to init FwLog")
@@ -254,7 +256,7 @@ func verifyLog(t *testing.T, testObject TestObject) {
 	Assert(t, testObject.Meta["endts"] != "", "object meta's endts is empty")
 	Assert(t, testObject.Meta["logcount"] == "1",
 		"object meta's log count is not correct, expectecd 1, received %d", testObject.Meta["logcount"])
-	Assert(t, testObject.Meta["nodeid"] == "1",
+	Assert(t, testObject.Meta["nodeid"] == "simulated_DSC_1",
 		"object meta's nodeid is not correct, expectecd 1, received %d", testObject.Meta["nodeid"])
 	Assert(t, testObject.Meta["csvversion"] == "v1",
 		"object meta's data csv version is not correct, expectecd v1, received %d", testObject.Meta["csvversion"])

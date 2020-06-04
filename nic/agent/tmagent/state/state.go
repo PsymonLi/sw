@@ -48,6 +48,7 @@ type PolicyState struct {
 	fwLogCollectors                          sync.Map
 	fwTable                                  tsdb.Obj
 	objStoreClients                          map[string]objstore.Client // map[bucketName]Client
+	configuredID                             string
 	hostname                                 string
 	appName                                  string
 	shm                                      *ipc.SharedMem
@@ -568,6 +569,11 @@ func (s *PolicyState) UpdateHostName(hostname string) {
 	if s.hostname != hostname {
 		s.hostname = hostname
 	}
+
+	// The Card's Spec ID gets sent as hostname
+	// Not suing the origibal s.hostname property because that gets defaulted to linux hostname.
+	// We dont want to use that in absence of user configured DSC's ID.
+	s.configuredID = hostname
 }
 
 // UpdateFwlogPolicy is the PUT entry point

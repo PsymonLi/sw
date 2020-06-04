@@ -35,7 +35,7 @@ const (
 		"when the number of flow log records across the PSM cluster is higher than the maximum number of records that can be published " +
 		"within a specific timeframe"
 
-	droppedWarnEventDescrMessage = "Flow logs rate limited at the PSM, DSC %s. This error can occur if flow logs " +
+	droppedWarnEventDescrMessage = "Flow logs rate limited at the PSM, DSC %s(%s). This error can occur if flow logs " +
 		"throttling has been applied — when the number of flow log records across the PSM cluster is higher than the maximum number of records " +
 		"that can be published within a specific timeframe"
 )
@@ -108,6 +108,7 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 			return
 		}
 
+		nodeUUID := strings.Split(key, "/")[0]
 		kind := req.object.(runtime.Object).GetObjectKind()
 		uuid := getUUIDForFwlogObject(kind, ometa.GetTenant(), ometa.GetNamespace(), key)
 		idr.logger.Debugf("Writer %d, processing object: <%s %s %v %v>", id, kind, key, uuid, req.evType)
@@ -142,8 +143,8 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 				},
 			}
 
-			if shouldRaiseWarnEvent(ometa.GetTenant(), meta["Nodeid"]) {
-				descr := fmt.Sprintf(droppedWarnEventDescrMessage, meta["Nodeid"])
+			if shouldRaiseWarnEvent(ometa.GetTenant(), nodeUUID) {
+				descr := fmt.Sprintf(droppedWarnEventDescrMessage, meta["Nodeid"], nodeUUID)
 				recorder.Event(eventtypes.FLOWLOGS_REPORTING_ERROR, descr, tenant)
 			}
 
@@ -156,7 +157,7 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 
 		var fwlogsMetaReq *elastic.BulkRequest
 		if meta["Metaversion"] == "v1" {
-			fwlogsMetaReq, err = idr.parseFwLogsMetaV1(id, meta, key, ometa, timeFormat, uuid)
+			fwlogsMetaReq, err = idr.parseFwLogsMetaV1(id, meta, key, ometa, timeFormat, uuid, nodeUUID)
 			if err != nil {
 				idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
 				return
@@ -200,7 +201,7 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 		data := output.([][]string)
 
 		if meta["Csvversion"] == "v1" {
-			output, err := idr.parseFwLogsCsvV1(id, key, data, uuid, meta)
+			output, err := idr.parseFwLogsCsvV1(id, key, data, uuid, nodeUUID, meta)
 			if err != nil {
 				idr.logger.Errorf("Writer %d, object %s, error %s", id, key, err.Error())
 				return
@@ -238,7 +239,8 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 	return nil
 }
 
-func (idr *Indexer) parseFwLogsCsvV1(id int, key string, data [][]string, uuid string, meta map[string]string) ([][]*elastic.BulkRequest, error) {
+func (idr *Indexer) parseFwLogsCsvV1(id int,
+	key string, data [][]string, uuid, nodeUUID string, meta map[string]string) ([][]*elastic.BulkRequest, error) {
 	output := [][]*elastic.BulkRequest{}
 	fwlogs := []*elastic.BulkRequest{}
 	for i := 1; i < len(data); i++ {
@@ -315,7 +317,7 @@ func (idr *Indexer) parseFwLogsCsvV1(id int, key string, data [][]string, uuid s
 			Direction:  line[9],
 			RuleID:     line[10],
 			SessionID:  line[11],
-			ReporterID: meta["Nodeid"],
+			ReporterID: nodeUUID,
 			FlowAction: line[12],
 			IcmpType:   uint32(icmpType),
 			IcmpID:     uint32(icmpID),
@@ -348,7 +350,7 @@ func (idr *Indexer) parseFwLogsCsvV1(id int, key string, data [][]string, uuid s
 }
 
 func (idr *Indexer) parseFwLogsMetaV1(id int,
-	meta map[string]string, key string, ometa *api.ObjectMeta, timeFormat string, uuid string) (*elastic.BulkRequest, error) {
+	meta map[string]string, key string, ometa *api.ObjectMeta, timeFormat, uuid, nodeUUID string) (*elastic.BulkRequest, error) {
 	count, err := strconv.Atoi(meta["Logcount"])
 	if err != nil {
 		idr.logger.Errorf("Writer %d, object %s, logcount err %s", id, key, err.Error())
@@ -374,7 +376,7 @@ func (idr *Indexer) parseFwLogsMetaV1(id int,
 		CreationTs: time.Now(),
 		StartTs:    startTs,
 		EndTs:      endTs,
-		DSCID:      meta["Nodeid"],
+		DSCID:      nodeUUID,
 	}
 	// prepare the index request
 	request := &elastic.BulkRequest{

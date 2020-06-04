@@ -52,11 +52,11 @@ const (
 	flowlogsDroppedCriticalEventReportingPeriod = 60
 	flowlogsWarnEventReportingPeriod            = 60
 
-	droppedCriticalEventDescrMessage = "Flow logs dropped at DSC %s. It could be due to connectivity issue between the DSC and PSM or " +
+	droppedCriticalEventDescrMessage = "Flow logs dropped at DSC %s(%s). It could be due to connectivity issue between the DSC and PSM or " +
 		"due to sudden increase of flow logs influx into PSM. Please check that the flow logs are getting generated at the supported rate " +
 		"across the PSM cluster"
 
-	reportingErrEventDescrMessage = "Flow logs could not be reported to PSM from DSC %s. This event " +
+	reportingErrEventDescrMessage = "Flow logs could not be reported to PSM from DSC %s(%s). This event " +
 		"can occur if the PSM is experiencing heavy load during flow logs ingestion. The increased load could be a result of a sudden spike " +
 		"in connections per second seen across the PSM cluster. It does not mean that the logs have been dropped, but if the condition " +
 		"persists then it can lead to dropping of flow logs in which case another event called flow logs dropped will get raised"
@@ -151,15 +151,15 @@ func (s *PolicyState) ObjStoreInit(nodeUUID string,
 	}
 
 	go periodicTransmit(s.ctx, rc, s.logsChannel,
-		periodicTransmitTime, testChannel, nodeUUID,
-		s.objStoreFileFormat, s.zipObjects, w,
-		shouldRaiseEvent)
+		periodicTransmitTime, testChannel, s.configuredID,
+		nodeUUID, s.objStoreFileFormat, s.zipObjects,
+		w, shouldRaiseEvent)
 	return nil
 }
 
 func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan singleLog,
 	periodicTransmitTime time.Duration, testChannel chan<- TestObject,
-	nodeUUID string, ff fileFormat, zip bool, w *workers,
+	nodeID, nodeUUID string, ff fileFormat, zip bool, w *workers,
 	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 
 	var c objstore.Client
@@ -194,7 +194,7 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 				len(perVrfBufferedLogs[vrf].bufferedLogs),
 				perVrfBufferedLogs[vrf].startTs,
 				perVrfBufferedLogs[vrf].endTs,
-				testChannel, nodeUUID, ff, zip,
+				testChannel, nodeID, nodeUUID, ff, zip,
 				shouldRaiseEvent))
 		}
 
@@ -285,7 +285,7 @@ func transmitLogs(ctx context.Context,
 	index map[string]string,
 	trends map[string]interface{},
 	numLogs int, startTs time.Time, endTs time.Time,
-	testChannel chan<- TestObject, nodeUUID string, ff fileFormat,
+	testChannel chan<- TestObject, nodeID, nodeUUID string, ff fileFormat,
 	zip bool, shouldRaiseEvent func(string, eventattrs.Severity) bool) func() {
 	return func() {
 		// TODO: this can be optimized. Bucket name should be calcualted only once per hour.
@@ -327,10 +327,12 @@ func transmitLogs(ctx context.Context,
 		meta["startts"] = fStartTs
 		meta["endts"] = fEndTs
 		meta["logcount"] = strconv.Itoa(numLogs)
-		meta["nodeid"] = nodeUUID
 		meta["csvversion"] = fwLogCSVVersion
 		meta["metaversion"] = fwLogMetaVersion
 		meta["creation-Time"] = time.Now().Format(time.RFC3339Nano)
+		if nodeID != "" {
+			meta["nodeid"] = nodeID
+		}
 		populateMetaWithTrends(meta, trends)
 
 		// Send the file on to the channel for testing
@@ -357,27 +359,30 @@ func transmitLogs(ctx context.Context,
 				Name:   nodeUUID,
 				Tenant: tenantName,
 			},
+			Spec: cluster.DistributedServiceCardSpec{
+				ID: nodeID,
+			},
 		}
 
 		// PutObject uploads an object to the object store
 		r := bytes.NewReader(objBuffer.Bytes())
 		putObjectHelper(ctx, c, bucketName,
 			objNameBuffer.String(), r, len(objBuffer.Bytes()),
-			meta, meta["logcount"], nodeUUID, nic, true,
+			meta, meta["logcount"], nodeID, nodeUUID, nic, true,
 			tenantName, shouldRaiseEvent)
 
 		// The index's object name is same as the data object name
 		ir := bytes.NewReader(indexBuffer.Bytes())
 		putObjectHelper(ctx, c, indexBucketName,
 			objNameBuffer.String(), ir, len(indexBuffer.Bytes()),
-			map[string]string{}, "", nodeUUID, nic, false,
+			map[string]string{}, "", nodeID, nodeUUID, nic, false,
 			tenantName, shouldRaiseEvent)
 	}
 }
 
 func putObjectHelper(ctx context.Context,
 	c objstore.Client, bucketName string, objectName string, reader io.Reader,
-	size int, metaData map[string]string, logcount string, nodeUUID string,
+	size int, metaData map[string]string, logcount string, nodeID, nodeUUID string,
 	nic *cluster.DistributedServiceCard, dolog bool, tenantName string,
 	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 	tries := 0
@@ -394,7 +399,7 @@ func putObjectHelper(ctx context.Context,
 			if strings.Contains(err.Error(), maxedOutError) &&
 				shouldRaiseEvent(tenantName, eventattrs.Severity_WARN) && !rateLimitedEventRaised {
 				rateLimitedEventRaised = true
-				descr := fmt.Sprintf(reportingErrEventDescrMessage, nodeUUID)
+				descr := fmt.Sprintf(reportingErrEventDescrMessage, nodeID, nodeUUID)
 				recorder.Event(eventtypes.FLOWLOGS_REPORTING_ERROR, descr, nic)
 			}
 		}
@@ -406,7 +411,7 @@ func putObjectHelper(ctx context.Context,
 			bucketName, time.Now().String(), logcount, size, tries, err)
 
 		if shouldRaiseEvent(tenantName, eventattrs.Severity_CRITICAL) {
-			descr := fmt.Sprintf(droppedCriticalEventDescrMessage, nodeUUID)
+			descr := fmt.Sprintf(droppedCriticalEventDescrMessage, nodeID, nodeUUID)
 			recorder.Event(eventtypes.FLOWLOGS_DROPPED, descr, nic)
 		}
 

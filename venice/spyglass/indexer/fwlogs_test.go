@@ -45,6 +45,7 @@ import (
 const (
 	fwlogsSystemMetaBucketName  = "fwlogssystemmeta"
 	lastProcessedKeysObjectName = "lastProcessedKeys"
+	dscID                       = "simulated_DSC_1"
 )
 
 var (
@@ -465,7 +466,7 @@ func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T) {
 			if ev.EventType == eventtypes.FLOWLOGS_REPORTING_ERROR.String() &&
 				ev.Category == "system" &&
 				ev.Severity == "warn" &&
-				strings.Contains(ev.Message, "Flow logs rate limited at the PSM") &&
+				strings.Contains(ev.Message, "Flow logs rate limited at the PSM, DSC "+dscID+"(1)") &&
 				ev.ObjRef.(*cluster.Tenant).ObjectMeta.Tenant != "" {
 				return true, ev
 			}
@@ -503,7 +504,7 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 			if ev.EventType == eventtypes.FLOWLOGS_REPORTING_ERROR.String() &&
 				ev.Category == "system" &&
 				ev.Severity == "warn" &&
-				strings.Contains(ev.Message, "Flow logs could not be reported") &&
+				strings.Contains(ev.Message, "Flow logs could not be reported to PSM from DSC "+dscID+"(1)") &&
 				ev.ObjRef.(*cluster.DistributedServiceCard).ObjectMeta.Tenant != "" {
 				return true, ev
 			}
@@ -514,6 +515,7 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 
 func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface) {
 	ps, err := tmagentstate.NewTpAgent(ctx, strings.Split(types.DefaultAgentRestURL, ":")[1])
+	ps.UpdateHostName(dscID)
 	AssertOk(t, err, "failed to create tp agent")
 	Assert(t, ps != nil, "invalid policy state received")
 
