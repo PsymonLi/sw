@@ -18,13 +18,13 @@ export interface IMonitoringAppProtoSelector {
 export class MonitoringAppProtoSelector extends BaseModel implements IMonitoringAppProtoSelector {
     /** Field for holding arbitrary ui state */
     '_ui': any = {};
-    /** Ports - Includes protocol name and port Eg ["tcp/1234", "udp"]. Should be a valid layer 3 or layer 4 protocol and port range. */
+    /** Ports - Includes protocol name and port Eg ["tcp/1234", "udp"]. Should be a valid layer 3 or layer 4 protocol and port range. any or any/2345 is also allowed. */
     'proto-ports': Array<string> = null;
     /** Apps - E.g. ["Redis"]. */
     'applications': Array<string> = null;
     public static propInfo: { [prop in keyof IMonitoringAppProtoSelector]: PropInfoItem } = {
         'proto-ports': {
-            description:  `Ports - Includes protocol name and port Eg ["tcp/1234", "udp"]. Should be a valid layer 3 or layer 4 protocol and port range.`,
+            description:  `Ports - Includes protocol name and port Eg ["tcp/1234", "udp"]. Should be a valid layer 3 or layer 4 protocol and port range. any or any/2345 is also allowed.`,
             hint:  'udp/1234-1235',
             required: false,
             type: 'Array<string>'

@@ -396,7 +396,7 @@ func knownIcmpTypeCodeVldtr(l3l4Info []string) bool {
 	return false
 }
 
-func strProtoPortVldtr(in string, allowRange bool) error {
+func strProtoPortVldtr(in string, allowRange bool, allowAny bool) error {
 	// Acceptable string formats are -
 	// L4_proto/port E.g. tcp/1234
 	// L3proto E.g. arp
@@ -410,7 +410,7 @@ func strProtoPortVldtr(in string, allowRange bool) error {
 	l4Info, l4ok := l4ProtoMap[l3l4proto]
 	l3Info, l3ok := l3ProtoMap[l3l4proto]
 
-	if !l3ok && !l4ok {
+	if !l3ok && !l4ok && !(allowAny && l3l4proto == "any") {
 		return fmt.Errorf("Protocol must be a valid L3 or L4 <protocol>/<port>")
 	}
 	l4proto := l4Info
@@ -514,14 +514,19 @@ func strProtoPortVldtr(in string, allowRange bool) error {
 	return nil
 }
 
+// ProtoPortAnyRange validates L3/L4 protocol and port range
+func ProtoPortAnyRange(port string) error {
+	return strProtoPortVldtr(port, true, true)
+}
+
 // ProtoPortRange validates L3/L4 protocol and port range
 func ProtoPortRange(port string) error {
-	return strProtoPortVldtr(port, true)
+	return strProtoPortVldtr(port, true, false)
 }
 
 // ProtoPort validates L3/L4 protocol and port
 func ProtoPort(port string) error {
-	return strProtoPortVldtr(port, false)
+	return strProtoPortVldtr(port, false, false)
 }
 
 // ValidKind validates that the kind is one of the registered Kinds
