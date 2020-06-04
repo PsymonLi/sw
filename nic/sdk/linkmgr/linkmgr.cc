@@ -1041,8 +1041,8 @@ port_create (port_args_t *args)
     port_p->set_port_num(args->port_num);
     port_p->set_port_type(args->port_type);
     port_p->set_port_speed(args->port_speed);
-    port_p->set_mac_id(args->mac_id);
-    port_p->set_mac_ch(args->mac_ch);
+    port_p->set_mac_id(g_linkmgr_cfg.catalog->mac_id(args->port_num, 0));
+    port_p->set_mac_ch(g_linkmgr_cfg.catalog->mac_ch(args->port_num, 0));
     port_p->set_num_lanes(args->num_lanes);
     port_p->set_debounce_time(args->debounce_time);
     port_p->set_auto_neg_enable(args->auto_neg_enable);
@@ -1080,7 +1080,8 @@ port_create (port_args_t *args)
 
     // use the configured num_lanes for setting sbus_addr
     for (uint32_t i = 0; i < args->num_lanes_cfg; ++i) {
-        port_p->sbus_addr_set(i, args->sbus_addr[i]);
+        port_p->sbus_addr_set(i, g_linkmgr_cfg.catalog->sbus_addr(
+                              args->port_num, i));
     }
 
     // set the source mac addr for pause frames

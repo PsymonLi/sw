@@ -268,15 +268,60 @@ private:
     /// \brief destructor
     ~if_entry();
 
-    /// \brief      fill the interface sw spec
-    /// \param[out] spec specification
-    /// \return     SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_spec_(pds_if_spec_t *spec);
-
     /// \brief    free h/w resources used by this object, if any
     ///           (this API is invoked during object deletes)
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t nuke_resources_(void);
+
+    /// \brief get the eth port information
+    /// \param[out] port_args port information
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t port_get_(port_args_t *port_args);
+
+    /// \brief create the eth port
+    /// \param[out] spec port interface specification
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t port_create_(pds_if_spec_t *spec);
+
+    /// \brief      populate port info based on port interface specification
+    /// \param[in]  spec port interface specification
+    /// \param[out] port_args port information
+    /// \return     SDK_RET_OK on success, failure status code on error
+    void port_api_spec_to_args_(port_args_t *port_args,
+                                pds_if_spec_t *spec);
+
+    /// \brief      fill the interface sw spec
+    /// \param[in]  port_args port information
+    /// \param[out] spec specification
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_spec_(pds_if_spec_t *spec, port_args_t *port_args);
+
+    /// \brief      fill the interface sw status
+    /// \param[in]  port_args port information
+    /// \param[out] status status information
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_status_(pds_if_status_t *status, port_args_t *port_args);
+
+    /// \brief      fill the interface sw statistics
+    /// \param[in]  port_args port information
+    /// \param[out] stats statistics information
+    /// \return     SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_stats_(pds_if_stats_t *stats, port_args_t *port_args);
+
+    /// \brief      fill the port interface sw spec
+    /// \param[in]  port_args port information
+    /// \param[out] spec specification
+    void fill_port_if_spec_(pds_if_spec_t *spec, port_args_t *port_args);
+
+    /// \brief      fill the port interface sw status
+    /// \param[in]  port_args port information
+    /// \param[out] status status information
+    void fill_port_if_status_(pds_if_status_t *status, port_args_t *port_args);
+
+    /// \brief      fill the port interface sw statistics
+    /// \param[in]  port_args port information
+    /// \param[out] stats statistics information
+    void fill_port_if_stats_(pds_if_stats_t *stats, port_args_t *port_args);
 
 private:
     pds_obj_key_t  key_;           ///< interface key

@@ -371,29 +371,28 @@ devapi_impl::uplink_available_count(uint8_t *count) {
 
 
 void
-devapi_impl::port_get_config_(sdk::linkmgr::port_args_t *port_args,
-                              void *ctxt) {
-    port_config_t *config = (port_config_t *)ctxt;
+devapi_impl::port_get_config_(pds_if_info_t *info, port_config_t *config) {
+    pds_port_info_t *port_info = &info->spec.port_info;
 
     config->state =
-        sdk::lib::port_admin_state_enum_to_uint(port_args->user_admin_state);
-    config->speed = sdk::lib::port_speed_enum_to_mbps(port_args->port_speed);
-    config->mtu = port_args->mtu;
-    config->an_enable = port_args->auto_neg_cfg;
-    config->fec_type = (uint8_t)port_args->user_fec_type;
-    config->pause_type = (uint8_t)port_args->pause;
-    if (port_args->tx_pause_enable == true) {
+        sdk::lib::port_admin_state_enum_to_uint(port_info->admin_state);
+    config->speed = sdk::lib::port_speed_enum_to_mbps(port_info->speed);
+    config->mtu = port_info->mtu;
+    config->an_enable = port_info->autoneg_en;
+    config->fec_type = (uint8_t)port_info->fec_type;
+    config->pause_type = (uint8_t)port_info->pause_type;
+    if (port_info->tx_pause_en == true) {
         config->pause_type |= PORT_CFG_PAUSE_F_TX;
     }
-    if (port_args->rx_pause_enable == true) {
+    if (port_info->rx_pause_en == true) {
         config->pause_type |= PORT_CFG_PAUSE_F_RX;
     }
-    config->loopback_mode = (uint8_t)port_args->loopback_mode;
+    config->loopback_mode = (uint8_t)port_info->loopback_mode;
 
     PDS_TRACE_VERBOSE(
             "if 0x%x, speed %u, mtu %u, state %u, an_enable %u, "
             "fec_type %u, pause_type %u, loopback_mode %u",
-            sdk::lib::catalog::logical_port_to_ifindex(port_args->port_num),
+            info->status.ifindex,
             config->speed, config->mtu, config->state,
             config->an_enable, config->fec_type, config->pause_type,
             config->loopback_mode);
@@ -401,36 +400,51 @@ devapi_impl::port_get_config_(sdk::linkmgr::port_args_t *port_args,
 
 sdk_ret_t
 devapi_impl::port_get_config(if_index_t ifidx, port_config_t *config) {
-    return api::port_get(&ifidx, devapi_impl::port_get_config_, config);
+    sdk_ret_t ret;
+    pds_if_info_t info = { 0 };
+
+    ret = api::port_get(&ifidx, &info);
+    if (ret == SDK_RET_OK) {
+        port_get_config_(&info, config);
+    }
+    return ret;
 }
 
 void
-devapi_impl::port_get_status_(sdk::linkmgr::port_args_t *port_args,
-                              void *ctxt) {
-    port_status_t *status = (port_status_t *)ctxt;
+devapi_impl::port_get_status_(pds_if_info_t *info, port_status_t *status) {
+    pds_if_port_status_t *port_status = &info->status.port_status;
 
-    status->id = port_args->port_num;
+    status->id = info->status.ifindex;
     status->status =
-        sdk::lib::port_oper_state_enum_to_uint(port_args->oper_status);
-    status->speed = sdk::lib::port_speed_enum_to_mbps(port_args->port_speed);
-    status->fec_type = (uint8_t)port_args->fec_type;
+        sdk::lib::port_oper_state_enum_to_uint(
+            port_status->link_status.oper_state);
+    status->speed = sdk::lib::port_speed_enum_to_mbps(
+                        port_status->link_status.speed);
+    status->fec_type = (uint8_t)port_status->link_status.fec_type;
 
-    status->xcvr.state = port_args->xcvr_event_info.state;
-    status->xcvr.phy = port_args->xcvr_event_info.cable_type;
-    status->xcvr.pid = port_args->xcvr_event_info.pid;
-    memcpy(status->xcvr.sprom, port_args->xcvr_event_info.xcvr_sprom,
+    status->xcvr.state = port_status->xcvr_status.state;
+    status->xcvr.pid = port_status->xcvr_status.pid;
+    status->xcvr.phy = port_status->xcvr_status.media_type;
+    memcpy(status->xcvr.sprom, port_status->xcvr_status.xcvr_sprom,
            sizeof(status->xcvr.sprom));
 
     PDS_TRACE_VERBOSE(
             "if 0x%x, status %u, fec_type %u, xcvr state %u, pid %u",
-            sdk::lib::catalog::logical_port_to_ifindex(port_args->port_num),
+            info->status.ifindex,
             status->status, status->fec_type, status->xcvr.state,
             status->xcvr.pid);
 }
 
 sdk_ret_t
 devapi_impl::port_get_status(if_index_t ifidx, port_status_t *status) {
-    return api::port_get(&ifidx, devapi_impl::port_get_status_, status);
+    sdk_ret_t ret;
+    pds_if_info_t info = { 0 };
+
+    ret = api::port_get(&ifidx, &info);
+    if (ret == SDK_RET_OK) {
+        port_get_status_(&info, status);
+    }
+    return ret;
 }
 
 sdk_ret_t

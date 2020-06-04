@@ -217,6 +217,8 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 	pauseType := pds.PortPauseType_PORT_PAUSE_TYPE_NONE
 	loopbackMode := pds.PortLoopBackMode_PORT_LOOPBACK_MODE_NONE
 	portType := pds.PortType_PORT_TYPE_NONE
+	txPauseEn := false
+	rxPauseEn := false
 
 	if cmd.Flags().Changed("fec-type") == true {
 		if isFecTypeValid(portFecType) == false {
@@ -289,6 +291,8 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		loopbackMode = resp.GetSpec().GetLoopbackMode()
 		numLanes = resp.GetSpec().GetNumLanes()
 		portType = resp.GetSpec().GetType()
+		txPauseEn = resp.GetSpec().GetTxPauseEn()
+		rxPauseEn = resp.GetSpec().GetRxPauseEn()
 	}
 
 	var req *pds.PortUpdateRequest
@@ -304,6 +308,8 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			DeBounceTimeout: debounceTimeout,
 			Mtu:             mtu,
 			PauseType:       pauseType,
+			TxPauseEn:       txPauseEn,
+			RxPauseEn:       rxPauseEn,
 			LoopbackMode:    loopbackMode,
 			NumLanes:        numLanes,
 		},
