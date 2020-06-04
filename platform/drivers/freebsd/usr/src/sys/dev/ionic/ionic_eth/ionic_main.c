@@ -750,26 +750,23 @@ ionic_qos_init(struct ionic *ionic)
 		ionic->qos.dwrr_bw_perc[tc] = qos->dwrr_weight;
 		ionic->qos.pfc_cos[tc] = qos->pfc_cos;
 
-		if ( (qos->class_type == IONIC_QOS_CLASS_TYPE_NONE) ||
-		     (qos->class_type == IONIC_QOS_CLASS_TYPE_PCP) ) {
+		/* XXX: shouldn't be done for NONE */
+		if ((qos->class_type == IONIC_QOS_CLASS_TYPE_NONE) ||
+		     (qos->class_type == IONIC_QOS_CLASS_TYPE_PCP)) {
 			if (qos->dot1q_pcp >= 0 && qos->dot1q_pcp < IONIC_QOS_PCP_MAX)
 				ionic->qos.pcp_to_tc[qos->dot1q_pcp] = tc;
-		}
-		else if (qos->class_type == IONIC_QOS_CLASS_TYPE_DSCP) {
+		} else if (qos->class_type == IONIC_QOS_CLASS_TYPE_DSCP) {
 			for (i = 0; i < qos->ndscp; i++) {
 				dscp = qos->ip_dscp[i];
 				if (dscp >= 0 && dscp < IONIC_QOS_DSCP_MAX)
 					ionic->qos.dscp_to_tc[dscp] = tc;
 			}
-		}
-		else {
-			/*IONIC_NETDEV_ERROR(ifp,
-			    "Invalid class type for TC: %d,", tc);*/
+		} else {
 			return (EINVAL);
 		}
 
-		if ( (qos->class_type != ionic->qos.class_type) &&
-		     (qos->class_type != IONIC_QOS_CLASS_TYPE_NONE) )
+		if ((qos->class_type != ionic->qos.class_type) &&
+		     (qos->class_type != IONIC_QOS_CLASS_TYPE_NONE))
 			ionic->qos.class_type = qos->class_type;
 	}
 

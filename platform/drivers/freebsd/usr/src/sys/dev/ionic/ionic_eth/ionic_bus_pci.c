@@ -226,7 +226,7 @@ ionic_pci_deinit(struct pci_dev *pdev)
 {
 
 	pci_release_regions(pdev);
-	pci_clear_master(pdev);
+	pci_disable_device(pdev);
 }
 
 /*
@@ -414,16 +414,16 @@ err_out_clear_devdata:
 	return (error);
 }
 
+/*
+ * Common function to disable device as part of
+ * remove/detach and shutdown path.
+ */
 static void
-ionic_remove(struct pci_dev *pdev)
+ionic_disable(struct pci_dev *pdev)
 {
 	struct ionic *ionic = pci_get_drvdata(pdev);
 
 	KASSERT(ionic, ("ionic is NULL"));
-
-	if (ionic_qos_reset_on_dev_reset && !ionic->is_mgmt_nic) {
-		 ionic_qos_reset(ionic);
-	}
 	ionic_wdog_deinit(ionic);
 	ionic_lifs_unregister(ionic);
 	ionic_lifs_deinit(ionic);
@@ -440,9 +440,23 @@ ionic_remove(struct pci_dev *pdev)
 }
 
 static void
+ionic_remove(struct pci_dev *pdev)
+{
+	struct ionic *ionic = pci_get_drvdata(pdev);
+
+	KASSERT(ionic, ("ionic is NULL"));
+
+	if (ionic_qos_reset_on_dev_reset && !ionic->is_mgmt_nic) {
+		 ionic_qos_reset(ionic);
+	}
+	ionic_disable(pdev);
+}
+
+static void
 ionic_shutdown(struct pci_dev *pdev)
 {
-	pci_disable_device(pdev);
+
+	ionic_disable(pdev);
 }
 
 static struct pci_driver ionic_driver = {

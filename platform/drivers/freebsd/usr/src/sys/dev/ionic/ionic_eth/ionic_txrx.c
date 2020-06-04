@@ -2964,6 +2964,8 @@ ionic_lif_update_cos(struct ionic_lif *lif)
 
 	IONIC_LIF_LOCK(lif);
 
+	/* Read latest config from firmware. */
+	ionic_qos_init(lif->ionic);
 	cos = ionic_lif_cos(lif);
 	if (cos != lif->cos) {
 		lif->cos = cos;
@@ -2983,6 +2985,7 @@ ionic_qos_class_type_sysctl(SYSCTL_HANDLER_ARGS)
 	int value, error;
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(lif->ionic);
 	value = lif->ionic->qos.class_type;
 
 	error = sysctl_handle_int(oidp, &value, 0, req);
@@ -3007,8 +3010,6 @@ ionic_qos_class_type_sysctl(SYSCTL_HANDLER_ARGS)
 		lif->ionic->qos.class_type = value;
 	}
 
-	ionic_qos_init(lif->ionic);
-
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 
@@ -3031,6 +3032,7 @@ ionic_qos_tc_enable_sysctl(SYSCTL_HANDLER_ARGS)
 		("number of TC%d > %d", ionic->qos.max_tcs, IONIC_QOS_TC_MAX));
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.enable_flag, ionic->qos.max_tcs);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3074,7 +3076,15 @@ ionic_qos_tc_enable_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
+#if 0 /* XXX: missing from 1.4-E */
+	/* Update the DWRR weights if anything changed */
+	if (bw_perc[0] != ionic->qos.dwrr_bw_perc[0]) {
+		error = ionic_qos_bw_update(lif, bw_perc);
+		if (error) {
+			goto err_out;
+		}
+	}
+#endif
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 
@@ -3146,6 +3156,7 @@ ionic_qos_no_drop_sysctl(SYSCTL_HANDLER_ARGS)
 		("number of TC%d > %d", ionic->qos.max_tcs, IONIC_QOS_TC_MAX));
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.no_drop, ionic->qos.max_tcs);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3188,7 +3199,6 @@ ionic_qos_no_drop_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
@@ -3207,6 +3217,7 @@ ionic_qos_tc_sched_type_sysctl(SYSCTL_HANDLER_ARGS)
 		("number of TC%d > %d", ionic->qos.max_tcs, IONIC_QOS_TC_MAX));
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.sched_type, ionic->qos.max_tcs);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3239,7 +3250,6 @@ ionic_qos_tc_sched_type_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
@@ -3258,6 +3268,7 @@ ionic_qos_tc_bw_perc_sysctl(SYSCTL_HANDLER_ARGS)
 		("number of TC%d > %d", ionic->qos.max_tcs, IONIC_QOS_TC_MAX));
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.dwrr_bw_perc, ionic->qos.max_tcs);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3297,7 +3308,6 @@ ionic_qos_tc_bw_perc_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
@@ -3314,6 +3324,7 @@ ionic_qos_pcp_to_tc_sysctl(SYSCTL_HANDLER_ARGS)
 	uint8_t curr_tc = 0, new_tc = 0;
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.pcp_to_tc, max_pcps);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3370,7 +3381,6 @@ ionic_qos_pcp_to_tc_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
@@ -3386,6 +3396,7 @@ ionic_qos_pfc_cos_sysctl(SYSCTL_HANDLER_ARGS)
 	int i, error;
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.pfc_cos, ionic->qos.max_tcs);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3437,13 +3448,13 @@ ionic_qos_pfc_cos_sysctl(SYSCTL_HANDLER_ARGS)
 		goto err_out;
 	}
 
-	ionic_qos_init(ionic);
 err_out:
 	IONIC_LIF_UNLOCK(lif);
 	return (error);
 }
 
-static int ionic_qos_verify_dscp_to_tc(struct ionic_lif *lif, uint8_t *dscp_to_tc, int start)
+static int
+ionic_qos_verify_dscp_to_tc(struct ionic_lif *lif, uint8_t *dscp_to_tc, int start)
 {
 	int i, dscp, tc, error = 0;
 	uint8_t curr_tc, new_tc;
@@ -3461,7 +3472,8 @@ static int ionic_qos_verify_dscp_to_tc(struct ionic_lif *lif, uint8_t *dscp_to_t
 
 		/* Check if the DSCP is being assigned to a TC that is not enabled */
 		if (!ionic->qos.enable_flag[dscp_to_tc[i]]) {
-			if_printf(ifp, "DSCP %d cannot be assigned to disabled TC %d\n", i + start, dscp_to_tc[i]);
+			if_printf(ifp, "DSCP %d cannot be assigned to disabled TC %d\n",
+			    i + start, dscp_to_tc[i]);
 			error = EINVAL;
 			goto err_out;
 		}
@@ -3477,7 +3489,7 @@ static int ionic_qos_verify_dscp_to_tc(struct ionic_lif *lif, uint8_t *dscp_to_t
 		    new_tc != 0 && // No check needed if the dscp is already unassigned or being unassigned
 		    curr_tc != new_tc) {
 			if_printf(ifp, "Failed to assign DSCP %d to TC %d. It is already assigned to TC %d\n",
-					i + start, new_tc, curr_tc);
+			    i + start, new_tc, curr_tc);
 			error = EINVAL;
 			goto err_out;
 		}
@@ -3490,8 +3502,7 @@ static int ionic_qos_verify_dscp_to_tc(struct ionic_lif *lif, uint8_t *dscp_to_t
 	for (dscp = 0; dscp < IONIC_QOS_DSCP_MAX; dscp++) {
 		if (dscp >= start && dscp < start + IONIC_DSCP_BLOCK_SIZE) {
 			tc = dscp_to_tc[dscp-start];
-		}
-		else {
+		} else {
 			tc = ionic->qos.dscp_to_tc[dscp];
 		}
 		tc_dscp_found[tc] = true;
@@ -3519,6 +3530,7 @@ ionic_qos_dscp_to_tc_sysctl(SYSCTL_HANDLER_ARGS)
 	int start = oidp->oid_arg2;
 
 	IONIC_LIF_LOCK(lif);
+	ionic_qos_init(ionic);
 	error = SYSCTL_OUT(req, ionic->qos.dscp_to_tc + start, IONIC_DSCP_BLOCK_SIZE);
 	if (error || !req->newptr)
 		goto err_out;
@@ -3554,8 +3566,6 @@ ionic_qos_dscp_to_tc_sysctl(SYSCTL_HANDLER_ARGS)
 	if (error) {
 		goto err_out;
 	}
-
-	ionic_qos_init(ionic);
 
 err_out:
 	IONIC_LIF_UNLOCK(lif);
