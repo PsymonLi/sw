@@ -294,7 +294,7 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
     labels: ["compat-server-reboot"]
-  iota/test/standalone/os_coverage/linux/.job.yml:
+  iota/test/standalone/os_coverage/linux:
     label: ["weekly"]
   iota/test/standalone/cnic_swm:
     labels: ["2xhourly"]
