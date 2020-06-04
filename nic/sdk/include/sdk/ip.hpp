@@ -583,13 +583,9 @@ ip_prefix_ip_high (ip_prefix_t *pfx, ip_addr_t *ipaddr)
     }
 }
 
-// given an IP prefix, return the IP address next to the highest IP in the range
 static inline void
-ip_prefix_ip_next (ip_prefix_t *pfx, ip_addr_t *ipaddr)
+ip_addr_ip_next (ip_addr_t *ipaddr)
 {
-    // compute the higest IP address in this prefix/range
-    ip_prefix_ip_high(pfx, ipaddr);
-    // now add 1 to it
     if (ipaddr->af == IP_AF_IPV4) {
         if (likely(ipaddr->addr.v4_addr != 0xFFFFFFFF)) {
             ipaddr->addr.v4_addr += 1;
@@ -605,6 +601,16 @@ ip_prefix_ip_next (ip_prefix_t *pfx, ip_addr_t *ipaddr)
             }
         }
     }
+}
+
+// given an IP prefix, return the IP address next to the highest IP in the range
+static inline void
+ip_prefix_ip_next (ip_prefix_t *pfx, ip_addr_t *ipaddr)
+{
+    // compute the higest IP address in this prefix/range
+    ip_prefix_ip_high(pfx, ipaddr);
+    // now add 1 to it
+    ip_addr_ip_next(ipaddr);
 }
 
 static inline bool

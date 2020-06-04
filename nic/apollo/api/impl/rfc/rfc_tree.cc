@@ -48,6 +48,7 @@ itable_add_address_range_inodes (uint32_t rule, inode_t *addr_inode,
     addr_inode++;
     addr_inode->ipaddr.af = range->af;
     addr_inode->ipaddr.addr = range->ip_hi;
+    ip_addr_ip_next(&addr_inode->ipaddr); // Get the next IP
     addr_inode->rfc.class_id = 0;    // class id will be computed later on
     addr_inode->rfc.rule_no = rule;
     addr_inode->rfc.start = FALSE;
