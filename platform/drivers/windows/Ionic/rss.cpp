@@ -16,7 +16,8 @@ oid_set_rss_parameters(struct ionic *ionic,
     int tbl_len = 0;
     int key_len = 0;
 
-    if (!BooleanFlagOn(ionic->ConfigStatus, IONIC_RSS_ENABLED)) {
+    if (!BooleanFlagOn(ionic->ConfigStatus, IONIC_RSS_ENABLED) ||
+		ionic->hardware_status != NdisHardwareStatusReady) {
         ntStatus = NDIS_STATUS_NOT_SUPPORTED;
         goto cleanup;
     }

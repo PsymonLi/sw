@@ -555,21 +555,8 @@ PnpEventNotify(NDIS_HANDLE MiniportAdapterContext,
                     "%s NdisDevicePnPEventSurpriseRemoved Adapter %p\n", 
                             __FUNCTION__,
                             ionic));
-        SetFlag( ionic->Flags, IONIC_FLAG_SR_RECEIVED);
+        ionic_stop(ionic, false);
         ionic_link_down(ionic);
-
-        /* Reset the lifs on this adapter */
-        ionic_lifs_reset( ionic);
-
-        mask_all_interrupts( ionic);
-
-        deinit_dma( ionic);
-
-        if( ionic->intr_obj != NULL) {
-            NdisMDeregisterInterruptEx(ionic->intr_obj);
-            ionic->intr_obj = NULL;
-        }
-
         break;
     }
     }
