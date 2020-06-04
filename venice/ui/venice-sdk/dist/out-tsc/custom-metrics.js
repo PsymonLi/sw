@@ -262,7 +262,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level1"
                 ],
             },
             {
@@ -274,7 +274,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level1"
                 ],
             },
             {
@@ -286,7 +286,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level2"
                 ],
             },
             {
@@ -298,7 +298,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level2"
                 ],
             },
             {
@@ -310,7 +310,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level1"
                 ],
             },
             {
@@ -322,7 +322,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level1"
                 ],
             },
             {
@@ -334,7 +334,7 @@ exports.customMetrics = [
                 jsType: 'number',
                 scaleMin: 0,
                 tags: [
-                    "Level6"
+                    "Level2"
                 ],
             },
         ]

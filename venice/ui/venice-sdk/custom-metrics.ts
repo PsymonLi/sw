@@ -260,7 +260,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level1"
         ],
       },
       {
@@ -272,7 +272,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level1"
         ],
       },
       {
@@ -284,7 +284,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level2"
         ],
       },
       {
@@ -296,7 +296,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level2"
         ],
       },
       {
@@ -308,7 +308,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level1"
         ],
       },
       {
@@ -320,7 +320,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level1"
         ],
       },
       {
@@ -332,7 +332,7 @@ export const customMetrics  = [
         jsType: 'number',
         scaleMin: 0,
         tags: [
-          "Level6"
+          "Level2"
         ],
       },
     ]

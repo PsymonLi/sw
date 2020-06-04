@@ -5885,7 +5885,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level1"
       ]
     },
     {
@@ -5897,7 +5897,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level1"
       ]
     },
     {
@@ -5909,7 +5909,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level2"
       ]
     },
     {
@@ -5921,7 +5921,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level2"
       ]
     },
     {
@@ -5933,7 +5933,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level1"
       ]
     },
     {
@@ -5945,7 +5945,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level1"
       ]
     },
     {
@@ -5957,7 +5957,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number",
       "scaleMin": 0,
       "tags": [
-        "Level6"
+        "Level2"
       ]
     }
   ]
