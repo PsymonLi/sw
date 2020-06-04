@@ -229,10 +229,9 @@ var scaleCfgenParams = &Cfgen{
 				Name: "vpc{{iter}}",
 			},
 			Spec: network.VirtualRouterSpec{
-				Type:              "tenant",
-				RouterMACAddress:  "{{mac}}",
-				VxLanVNI:          9998,
-				DefaultIPAMPolicy: "vpc1DHCP0",
+				Type:             "tenant",
+				RouterMACAddress: "{{mac}}",
+				VxLanVNI:         9998,
 				RouteImportExport: &network.RDSpec{
 					AddressFamily: "l2vpn-evpn",
 					RDAuto:        true,

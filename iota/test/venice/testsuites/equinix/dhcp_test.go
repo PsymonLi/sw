@@ -235,7 +235,7 @@ var _ = Describe("IPAM Tests", func() {
 			selNetwork := nwc.Any(1)
 
 			// verify ipam on subnet
-			verifyNoIPAMonSubnet(selNetwork.Subnets()[0].Name, tenant)
+			//verifyNoIPAMonSubnet(selNetwork.Subnets()[0].Name, tenant)
 
 			// ping should fail as there no ipam policy configured to get DHCP ip for host
 			var wpc *objects.WorkloadPairCollection

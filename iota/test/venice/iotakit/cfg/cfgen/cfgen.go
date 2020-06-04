@@ -300,9 +300,19 @@ func (cfgen *Cfgen) genVPCs() []*network.VirtualRouter {
 	netCtx := newIterContext()
 	for ii := 0; ii < cfgen.TenantConfigParams.NumOfTenants; ii++ {
 		tenant := cfgen.ConfigItems.Tenants[ii]
+		ipams := []*network.IPAMPolicy{}
+		for _, ipam := range cfgen.ConfigItems.IPAMPs {
+			if ipam.ObjectMeta.Tenant == tenant.Name {
+				ipams = append(ipams, ipam)
+			}
+		}
+		numOfipams := len(ipams)
+		ipamC := 0
+
 		for jj := 0; jj < cfgen.TenantConfigParams.NumOfVRFsPerTenant; jj++ {
 			tVrf := netCtx.transform(cfgen.VRFConfigParams.VirtualRouterTemplate).(*network.VirtualRouter)
 			tVrf.ObjectMeta.Tenant = tenant.ObjectMeta.Name
+			tVrf.Spec.DefaultIPAMPolicy = ipams[ipamC%numOfipams].Name
 			tVrf.Spec.VxLanVNI = tVrf.Spec.VxLanVNI + 100
 			tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value = 3000 + tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
 			tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue = 3000 + tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue
@@ -311,6 +321,7 @@ func (cfgen *Cfgen) genVPCs() []*network.VirtualRouter {
 			tVrf.Spec.RouteImportExport.ImportRTs[0].AdminValue.Value = tVrf.Spec.RouteImportExport.ExportRTs[0].AdminValue.Value
 			tVrf.Spec.RouteImportExport.ImportRTs[0].AssignedValue = tVrf.Spec.RouteImportExport.ExportRTs[0].AssignedValue
 			configs = append(configs, tVrf)
+			ipamC++
 		}
 	}
 	return configs
