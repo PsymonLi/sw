@@ -61,6 +61,10 @@ func (sm *Statemgr) handleRolloutEvent(et kvstore.WatchEventType, ro *roproto.Ro
 
 	case kvstore.Deleted:
 		log.Infof("deleteRolloutState - %s\n", ro.Name)
+		if sm.writer.CheckRolloutInProgress() {
+			log.Errorf("Delete Rollout: Another rollout in progress, skip delete state.")
+			return
+		}
 
 		sm.deleteRolloutState(ro)
 	}

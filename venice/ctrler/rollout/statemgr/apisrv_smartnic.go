@@ -32,8 +32,17 @@ func (sm *Statemgr) performForceRollout(smartNIC *cluster.DistributedServiceCard
 		log.Errorf("ForceRollout: Build Version is empty")
 		return
 	}
+	if sm.writer.CheckRolloutInProgress() {
+		log.Errorf("ForceRollout: Another rollout is in progress")
+		return
+	}
 	log.Infof("ForceRollout: Build Version %s", buildVersion)
 
+	_, err := sm.GetDSCRolloutState(smartNIC.Tenant, smartNIC.Name)
+	if err == nil {
+		log.Errorf("ForceRollout: Another force rollout is in progress")
+		return
+	}
 	// smartNICRollout Object does not exist. Create it
 	snicRollout := protos.DSCRollout{
 		TypeMeta: api.TypeMeta{
