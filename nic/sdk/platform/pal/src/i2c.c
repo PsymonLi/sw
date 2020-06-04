@@ -138,7 +138,8 @@ int pal_fru_read(const uint8_t *buffer, uint32_t size, uint32_t nretry)
         return -1;
     }
     id = pal_get_cpld_id();
-    if (id == CPLD_ID_NAPLES25_SWM || id == CPLD_ID_NAPLES25_OCP)
+    if (id == CPLD_ID_NAPLES25_SWM || id == CPLD_ID_NAPLES25_OCP ||
+        id == CPLD_NAPLES_VOMERO_2_ID)
         return pal_i2c_read(buffer, FRU_SIZE, 0, nretry, I2C_BUS, FRU_SLAVE_ADDRESS,
                             ADDR_LEN_16BIT);
      else

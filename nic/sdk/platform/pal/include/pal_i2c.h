@@ -22,7 +22,7 @@
 
 #define I2C_BUS 2
 #define FRU_SLAVE_ADDRESS 0x50
-#define FRU_SIZE 256
+#define FRU_SIZE 512
 
 /*
  * FRU, QSFP read/write API's

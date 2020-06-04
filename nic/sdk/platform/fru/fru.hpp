@@ -17,7 +17,8 @@ namespace platform {
 #endif
 
 #define FRU_FILE "/tmp/fru.json"
-#define FRU_SIZE 256
+#define FRU_READ_SIZE 512
+#define FRU_DATA_SIZE 256
 #define MAC_LENGTH 18
 #define UPPER_BYTE_MULTIPLIER 256
 #define BYTE_MULTIPLIER 8

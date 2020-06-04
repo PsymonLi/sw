@@ -286,6 +286,7 @@ static int parseboardarea(uint8_t *board_fru_data, uint32_t startoffset, uint32_
                            board_fru_length - (i + BOARD_INFO_AREA_MANUFACTURING_OFFSET));
         if (vlen == -1) {
             // incorrect FRU
+            SDK_TRACE_ERR("Unable to parse standard board info area");
             return -1;
         }
         i += vlen;
@@ -301,6 +302,7 @@ static int parseboardarea(uint8_t *board_fru_data, uint32_t startoffset, uint32_
 
     // New part number starts with "DSC"
     if (part_num.find("DSC") == 0) {
+        SDK_TRACE_ERR("DSC board type");
         // parse custom board info ver2
         for (counter = 0;
             counter < ARRAY_SIZE(PENSANDO_VER2_CUSTOM_BOARD_INFO_AREA);
@@ -309,19 +311,22 @@ static int parseboardarea(uint8_t *board_fru_data, uint32_t startoffset, uint32_
                            board_fru_length - (i + BOARD_INFO_AREA_MANUFACTURING_OFFSET));
             if (vlen == -1) {
                 // incorrect FRU
+                SDK_TRACE_ERR("Unable to parse custom board info area");
                 return -1;
             }
             i += vlen;
         }
     } else {
+        SDK_TRACE_ERR("Old board");
         // parse custom board info
         for (counter = 0;
             counter < ARRAY_SIZE(PENSANDO_CUSTOM_BOARD_INFO_AREA);
             counter++) {
-            vlen = store_customboard_field(PENSANDO_VER2_CUSTOM_BOARD_INFO_AREA[counter], p + i,
+            vlen = store_customboard_field(PENSANDO_CUSTOM_BOARD_INFO_AREA[counter], p + i,
                            board_fru_length - (i + BOARD_INFO_AREA_MANUFACTURING_OFFSET));
             if (vlen == -1) {
                 // incorrect FRU
+                SDK_TRACE_ERR("Unable to parse custom board info area");
                 return -1;
             }
             i += vlen;
@@ -335,7 +340,7 @@ err:
 
 static int parsefru(uint8_t *fru_data, uint32_t size)
 {
-    if (size < FRU_SIZE) {
+    if (size < FRU_DATA_SIZE) {
         SDK_TRACE_ERR("Size of the buffer is too small");
         goto err;
     }
@@ -380,6 +385,8 @@ static int parsefru(uint8_t *fru_data, uint32_t size)
         }
     }
 
+    SDK_TRACE_ERR("returning success from parsing fru");
+
     return 0;
 
 err:
@@ -391,19 +398,34 @@ static int initFru()
     uint8_t *buffer;
     uint32_t nretry = MAX_FRU_RETRIES;
 
-    buffer = (uint8_t *)calloc(1,FRU_SIZE);
+    buffer = (uint8_t *)calloc(1, FRU_READ_SIZE);
+    if (buffer == NULL) {
+        return -1;
+    }
 
     // read the FRU data
-    if (pal_fru_read(buffer, FRU_SIZE, nretry) != 0) {
+    if (pal_fru_read(buffer, FRU_READ_SIZE, nretry) != 0) {
+        free(buffer);
         return -1;
     }
 
     // parse fru
-    if (parsefru(buffer, FRU_SIZE) != 0) {
+    if (parsefru(buffer, FRU_DATA_SIZE) != 0) {
         // unable to parse FRU exiting
-        SDK_TRACE_ERR("Unable to parse FRU, exiting.");
-        free(buffer);
-        return -1;
+        SDK_TRACE_ERR("Unable to parse FRU, try to check if it is a Vomero.");
+        if (pal_get_cpld_id() == CPLD_NAPLES_VOMERO_2_ID) {
+            // Vomero Pensando FRU data starts at offset 256
+            SDK_TRACE_INFO("Vomero card - special parsing.");
+            if (parsefru(&buffer[256], FRU_DATA_SIZE) != 0) {
+                SDK_TRACE_ERR("Vomero card - unable to do special parsing.");
+                free(buffer);
+                return -1;
+            }
+        } else {
+            SDK_TRACE_ERR("Not a Vomero card.");
+            free(buffer);
+            return -1;
+        }
     }
     boost::property_tree::write_json(FRU_FILE, output);
 
