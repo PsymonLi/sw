@@ -21,7 +21,7 @@ export interface IMonitoringExportConfig {
 export class MonitoringExportConfig extends BaseModel implements IMonitoringExportConfig {
     /** Field for holding arbitrary ui state */
     '_ui': any = {};
-    /** IP address or URL of the collector/entity to which the data is to be exported. Length of string should be between 1 and 2048. */
+    /** IP address of the collector/entity to which the data is to be exported. Should be a valid IPv4 address. */
     'destination': string = null;
     /** Gateway of the dest IP address or URL of the collector/entity to which the data is to be exported. Length of string should be between 0 and 2048. */
     'gateway': string = null;
@@ -31,7 +31,8 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
     'credentials': MonitoringExternalCred = null;
     public static propInfo: { [prop in keyof IMonitoringExportConfig]: PropInfoItem } = {
         'destination': {
-            description:  `IP address or URL of the collector/entity to which the data is to be exported. Length of string should be between 1 and 2048.`,
+            description:  `IP address of the collector/entity to which the data is to be exported. Should be a valid IPv4 address.`,
+            hint:  '10.1.1.1 ',
             required: true,
             type: 'string'
         },
@@ -121,7 +122,7 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
     protected getFormGroup(): FormGroup {
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
-                'destination': CustomFormControl(new FormControl(this['destination'], [required, minLengthValidator(1), maxLengthValidator(2048), ]), MonitoringExportConfig.propInfo['destination']),
+                'destination': CustomFormControl(new FormControl(this['destination'], [required, ]), MonitoringExportConfig.propInfo['destination']),
                 'gateway': CustomFormControl(new FormControl(this['gateway'], [maxLengthValidator(2048), ]), MonitoringExportConfig.propInfo['gateway']),
                 'transport': CustomFormControl(new FormControl(this['transport']), MonitoringExportConfig.propInfo['transport']),
                 'credentials': CustomFormGroup(this['credentials'].$formGroup, MonitoringExportConfig.propInfo['credentials'].required),

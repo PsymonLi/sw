@@ -674,13 +674,10 @@ func init() {
 	})
 
 	validatorMapExport["ExportConfig"] = make(map[string][]func(string, interface{}) error)
+
 	validatorMapExport["ExportConfig"]["all"] = append(validatorMapExport["ExportConfig"]["all"], func(path string, i interface{}) error {
 		m := i.(*ExportConfig)
-		args := make([]string, 0)
-		args = append(args, "1")
-		args = append(args, "2048")
-
-		if err := validators.StrLen(m.Destination, args); err != nil {
+		if err := validators.IPv4(m.Destination); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"Destination", err.Error())
 		}
 		return nil
