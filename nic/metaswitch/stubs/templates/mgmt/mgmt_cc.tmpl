@@ -944,6 +944,7 @@
           {{if (eq .GetName "Filter")}}
             {{$hasFilter = true}}
         if (req->has_filter()) {
+            bool setFlag;
             {{$filterMsg := (getMsg $file $pkg (TrimPrefix .GetTypeName $pkg))}}
             {{$filterParam := (getPdsaGetGlobalOpts $filterMsg $cam)}}
             {{$filterMib := $filterParam.FilterMib}}
@@ -953,12 +954,13 @@
             {{range $filterFields}}
               {{$filterFieldOpt := (getPdsaFieldOpt . $cam $struct)}}
               {{$castFn := getPdsaCastSetFilterFunc .Type $filterFieldOpt}}
+            setFlag = true;
               {{if (eq $castFn "")}}
                 {{if (eq .GetTypeName ".types.IPAddress")}}
             if (req->filter().has_{{.GetName | ToLower}}()) {
                 ip_addr_t       outAddr_{{$filterFieldOpt.Field}};
 
-                ip_addr_spec_to_ip_addr(req->filter().{{.GetName | ToLower}}(), &outAddr_{{$filterFieldOpt.Field}});
+                setFlag = ip_addr_spec_to_ip_addr(req->filter().{{.GetName | ToLower}}(), &outAddr_{{$filterFieldOpt.Field}});
                 pds_ms_convert_ip_addr_to_amb_ip_addr(outAddr_{{$filterFieldOpt.Field}},
                                                       &(filter_data.{{$filterFieldOpt.AddrTypeFieldName}}),
                                                       &(filter_data.{{$filterFieldOpt.AddrLenFieldName}}),
@@ -981,7 +983,9 @@
                   {{end}}
                 {{end}}
               {{end}}
-                filter_data.{{$filterParam.FilterTypeField}} |= {{$filterFieldOpt.FilterType}};
+                if (setFlag) {
+                    filter_data.{{$filterParam.FilterTypeField}} |= {{$filterFieldOpt.FilterType}};
+                }
             }
             {{end}}
             /***************************************************************************/
