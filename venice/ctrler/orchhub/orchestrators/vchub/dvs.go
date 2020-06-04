@@ -382,13 +382,6 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 	err := v.probe.UpdateDVSPortsVlan(dcName, dvsName, portSetting, forceWrite, defaultRetryCount)
 	if err != nil {
 		v.Log.Errorf("Failed to set vlan overrides for DC %s - dvs %s, err %s", dcName, dvsName, err)
-
-		// Error message doesn't have workload name since we don't know which overrides failed
-		evtMsg := fmt.Sprintf("%v : Failed to set vlan override in Datacenter %s. Traffic may be impacted. %v", v.OrchConfig.Name, dcName, err)
-
-		if v.Ctx.Err() == nil && v.probe.IsSessionReady() {
-			recorder.Event(eventtypes.ORCH_CONFIG_PUSH_FAILURE, evtMsg, v.State.OrchConfig)
-		}
 	}
 }
 
