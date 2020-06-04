@@ -164,7 +164,7 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
       if (res[0].valueType !== ValueType.multiSelect) {
         res[0].valueType = ValueType.multiSelect;
         // for release A, only equals is allowed.
-        res[0].operators = res[0].operators.filter(op => op.label === 'equals');
+        res[0].operators = res[0].operators.filter(op => op.label === 'contains');
         const metaData = this.getMeasurementMetadata(transform.measurement);
         if (metaData && metaData.objectKind === 'NetworkInterface') {
           res = this.getCardFieldDataForNetworkInterfaces(res, metaData.interfaceType);

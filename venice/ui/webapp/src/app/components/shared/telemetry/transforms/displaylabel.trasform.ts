@@ -9,7 +9,8 @@ export class DisplayLabelTransform extends MetricTransform<{}> {
   transformName = TransformNames.DisplayLabelTransform;
 
   transformDataset(opts: TransformDataset) {
-    opts.dataset.label = this.getFieldData(opts.measurement, opts.field).displayName;
+    const fieldData = this.getFieldData(opts.measurement, opts.field);
+    opts.dataset.label = fieldData ? fieldData.displayName : null;
     if (this.labelFormat) {
       opts.dataset.label = this.labelFormat(opts.dataset.label);
     }

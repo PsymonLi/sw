@@ -55,7 +55,7 @@ export class FieldSelectorTransform extends MetricTransform<FieldSelectorTransfo
 
   handleValueChange(event) {
     let values = Utility.formatRepeaterData(event);
-    if (!Utility.getLodash().isEqual(values, this.currValue)) {
+    if (values && !Utility.getLodash().isEqual(values, this.currValue)) {
       this.currValue = values;
       // Replace key values with the displayName
       const fields = MetricsMetadata[this.measurement].fields;

@@ -72,7 +72,10 @@ export class SearchUtil {
     { label: 'not equals', value: 'notequals' }
   ];
 
-  public static stringOperators = Utility.getLodash().union(SearchUtil.stringOperators_contains, SearchUtil.stringOperators_equals);
+  public static stringOperators = [
+    ...SearchUtil.stringOperators_contains,
+    ...SearchUtil.stringOperators_equals
+  ];
 
   public static numberOperators = [
     { label: '=', value: 'in' },

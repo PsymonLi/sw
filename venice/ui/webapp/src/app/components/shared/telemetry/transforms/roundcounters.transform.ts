@@ -15,7 +15,7 @@ export class RoundCountersTransform extends MetricTransform<{}> {
       // For each series, each field that we have needs to be rounded
       this.fields.forEach( (f) => {
         const fieldData = this.getFieldData(this.measurement, f);
-        if (fieldData.baseType !== 'Counter') {
+        if (!fieldData || fieldData.baseType !== 'Counter') {
           return;
         }
         const index = MetricsUtility.findFieldIndex(s.columns, f);

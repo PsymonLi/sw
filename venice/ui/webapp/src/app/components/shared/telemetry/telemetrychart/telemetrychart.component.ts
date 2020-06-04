@@ -792,6 +792,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
         source.fields.forEach((field) => {
           const fieldIndex = MetricsUtility.findFieldIndex(s.columns, field);
           const data = MetricsUtility.transformToChartjsTimeSeries(s, field);
+          const fieldData = getFieldData(source.measurement, field);
           const dataset: ChartDataSets = {
             data: data,
             pointRadius: 2,
@@ -812,7 +813,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
             // We put unit in here. Transforms are allowed
             // to change the unit type (kb -> mb), and should update this unit
             // property if they do
-            units: getFieldData(source.measurement, field).units,
+            units: fieldData ? fieldData.units : null,
             fieldIndex: fieldIndex
           };
           source.transformDataset(opt);
