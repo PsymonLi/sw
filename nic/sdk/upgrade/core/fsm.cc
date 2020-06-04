@@ -782,6 +782,7 @@ init_fsm (fsm_init_params_t *params)
     SDK_ASSERT (fsm_states.is_discovery() == true);
     fsm_states.set_init_params(params);
     if (!execute_pre_hooks(fsm_states.current_stage())) {
+        fsm_states.update_stage_progress(SVC_RSP_FAIL);
         execute_exit_script(get_exit_status());
         return SDK_RET_ERR;
     } else {
