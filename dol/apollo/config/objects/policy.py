@@ -6,6 +6,7 @@ import ipaddress
 import random
 import json
 import requests
+import itertools
 from collections import defaultdict
 
 from infra.common.logging import logger
@@ -124,12 +125,14 @@ class L4MatchObject:
                 spec.TypeCode.CodeWildcard = types_pb2.MATCH_ANY
             else:
                 spec.TypeCode.CodeNum = self.IcmpCode
-        elif self.SportLow != None and self.SportHigh != None:
-            spec.Ports.SrcPortRange.PortLow  = self.SportLow
-            spec.Ports.SrcPortRange.PortHigh = self.SportHigh
-        elif self.DportLow != None and self.DportHigh != None:
-            spec.Ports.DstPortRange.PortLow  = self.DportLow
-            spec.Ports.DstPortRange.PortHigh = self.DportHigh
+        else:
+            if self.SportLow != None and self.SportHigh != None:
+                spec.Ports.SrcPortRange.PortLow  = self.SportLow
+                spec.Ports.SrcPortRange.PortHigh = self.SportHigh
+
+            if self.DportLow != None and self.DportHigh != None:
+                spec.Ports.DstPortRange.PortLow  = self.DportLow
+                spec.Ports.DstPortRange.PortHigh = self.DportHigh
 
 class L3MatchObject:
     def __init__(self, valid=False, proto=utils.L3PROTO_MIN,\
@@ -779,8 +782,9 @@ class PolicyObjectClient(base.ConfigClientBase):
                 subnettag_list = [tag.client.GetCreateTag(policy.VPCId, af, subnetpfx)]
             elif utils.IsPipelineApulu():
                 subnettag_list = LmappingClient.GetTagsBySubnet(node, subnetobj, "v4" if af == utils.IP_VERSION_4 else "v6")
+        subnettag_it = itertools.cycle(subnettag_list) if subnettag_list else None
         for rule in policy.rules:
-            subnettag = random.choice(subnettag_list) if subnettag_list else None
+            subnettag = next(subnettag_it) if subnettag_it else None
             __modify_l3_match(direction, rule.L3Match, subnetpfx, subnettag)
         return
 
