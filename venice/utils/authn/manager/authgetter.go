@@ -28,6 +28,7 @@ import (
 const (
 	defaultTokenExpiry = "144h" // default to 6 days
 	policyKey          = "AuthenticationPolicy"
+	apiTimeout         = 30 * time.Second // timeout for RPC call to API server
 )
 
 var (
@@ -41,17 +42,18 @@ var once sync.Once
 
 type defaultAuthGetter struct {
 	sync.RWMutex
-	name      string // module name using the watcher
-	apiServer string // api server address
-	resolver  resolver.Interface
-	cache     *memdb.Memdb
-	watcher   *watcher.Watcher
-	logger    log.Logger
-	stopped   bool
-	client    apiclient.Services
-	ctx       context.Context
-	cancel    context.CancelFunc
-	wg        sync.WaitGroup
+	name         string // module name using the watcher
+	apiServer    string // api server address
+	resolver     resolver.Interface
+	cache        *memdb.Memdb
+	watcher      *watcher.Watcher
+	logger       log.Logger
+	stopped      bool
+	client       apiclient.Services
+	ctx          context.Context
+	cancel       context.CancelFunc
+	wg           sync.WaitGroup
+	initClientCh chan error
 }
 
 func (ug *defaultAuthGetter) GetUser(name, tenant string) (*auth.User, bool) {
@@ -140,6 +142,8 @@ func (ug *defaultAuthGetter) GetAuthenticators() ([]authn.Authenticator, error) 
 		case auth.Authenticators_LOCAL.String():
 			authenticators = append(authenticators, password.NewPasswordAuthenticator(
 				ug.client,
+				ug.initClientCh,
+				apiTimeout,
 				policy.Spec.Authenticators.GetLocal(), ug.logger))
 		case auth.Authenticators_LDAP.String():
 			authenticators = append(authenticators, ldap.NewLdapAuthenticator(policy.Spec.Authenticators.Ldap))
@@ -197,7 +201,6 @@ func (ug *defaultAuthGetter) start(name, apiServer string, rslver resolver.Inter
 		ug.cancel = cancel
 		ug.wg.Add(1)
 		go ug.initializeAPIClient()
-		ug.wg.Wait()
 		ug.stopped = false
 	}
 }
@@ -211,24 +214,30 @@ func (ug *defaultAuthGetter) addObj(kind auth.ObjKind, objMeta *api.ObjectMeta) 
 		ug.logger.ErrorLog("method", "addObj", "msg", fmt.Sprintf("Ignoring add of object %v as AuthGetter is in stopped state", *objMeta))
 		return nil, errors.New("API server client not initialized")
 	}
+	ug.RLock()
 	apicl := ug.client
+	ug.RUnlock()
 	if apicl == nil {
 		ug.logger.ErrorLog("method", "addObj", "msg", "API server client not initialized")
 		return nil, errors.New("API server client not initialized")
 	}
+	ctx, cancel := context.WithTimeout(ug.ctx, apiTimeout)
+	defer cancel()
 	var err error
 	var val memdb.Object
 	switch kind {
 	case auth.KindUser:
-		val, err = apicl.AuthV1().User().Get(context.Background(), objMeta)
+		val, err = apicl.AuthV1().User().Get(ctx, objMeta)
 		if err != nil {
 			ug.logger.Errorf("Error getting user [%s|%s] from API server: %v", objMeta.Tenant, objMeta.Name, err)
+			ug.initClientCh <- err
 			return nil, err
 		}
 	case auth.KindAuthenticationPolicy:
-		policy, err := apicl.AuthV1().AuthenticationPolicy().Get(context.Background(), objMeta)
+		policy, err := apicl.AuthV1().AuthenticationPolicy().Get(ctx, objMeta)
 		if err != nil {
 			ug.logger.Errorf("Error getting authentication policy [%s] from API server: %v", objMeta.Name, err)
+			ug.initClientCh <- err
 			return nil, err
 		}
 		policy.Name = policyKey
@@ -306,14 +315,31 @@ func (ug *defaultAuthGetter) initializeAPIClient() {
 	for {
 		var err error
 		b := balancer.New(ug.resolver)
-		ug.client, err = apiclient.NewGrpcAPIClient(ug.name, ug.apiServer, ug.logger, rpckit.WithBalancer(b))
+		apicl, err := apiclient.NewGrpcAPIClient(ug.name, ug.apiServer, ug.logger, rpckit.WithBalancer(b))
 		if err == nil {
+			ug.Lock()
+			if ug.client != nil {
+				ug.client.Close()
+			}
+			ug.client = apicl
+			ug.Unlock()
 			ug.logger.InfoLog("method", "initializeAPIClient", "msg", "created grpc API client")
-			return
+			select {
+			case <-ug.ctx.Done():
+				return
+			case err = <-ug.initClientCh:
+				ug.logger.ErrorLog("method", "initializeAPIClient", "msg", "re-initializing API client", "error", err)
+				continue
+			}
 		}
 		ug.logger.ErrorLog("method", "initializeAPIClient", "msg", fmt.Sprintf("Error connecting to gRPC server [%s]: %v", ug.apiServer, err))
 		b.Close()
-		ug.client = nil
+		ug.Lock()
+		if ug.client != nil {
+			ug.client.Close()
+			ug.client = nil
+		}
+		ug.Unlock()
 		select {
 		case <-ug.ctx.Done():
 			return
@@ -336,14 +362,15 @@ func GetAuthGetter(name, apiServer string, rslver resolver.Interface, logger log
 		ctx, cancel := context.WithCancel(context.Background())
 
 		gAuthGetter = &defaultAuthGetter{
-			name:      module,
-			apiServer: apiServer,
-			resolver:  rslver,
-			cache:     cache,
-			logger:    logger,
-			stopped:   false,
-			ctx:       ctx,
-			cancel:    cancel,
+			name:         module,
+			apiServer:    apiServer,
+			resolver:     rslver,
+			cache:        cache,
+			logger:       logger,
+			stopped:      false,
+			ctx:          ctx,
+			cancel:       cancel,
+			initClientCh: make(chan error),
 		}
 		// start watcher
 		// Use a custom TLS client identity so that secret field TLS key is not zeroized by ApiServer on watch

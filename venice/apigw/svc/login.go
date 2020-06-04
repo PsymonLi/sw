@@ -19,6 +19,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	k8snet "k8s.io/apimachinery/pkg/util/net"
 
 	"github.com/pensando/sw/api"
@@ -68,6 +70,7 @@ var (
 )
 
 type loginV1GwService struct {
+	sync.RWMutex
 	defSvcProf      apigw.ServiceProfile
 	svcProf         map[string]apigw.ServiceProfile
 	logger          log.Logger
@@ -76,6 +79,7 @@ type loginV1GwService struct {
 	csrfTokenLength int
 	authnMgr        *manager.AuthenticationManager
 	permGetter      rbac.PermissionGetter
+	apicl           apiclient.Services
 }
 
 func (s *loginV1GwService) setupSvcProfile() {
@@ -132,6 +136,7 @@ func (s *loginV1GwService) CompleteRegistration(ctx context.Context,
 			b := balancer.New(s.rslvr)
 			client, err := apiclient.NewGrpcAPIClient(globals.APIGw, s.apiserver, s.logger, rpckit.WithBalancer(b))
 			if err == nil {
+				s.apicl = client
 				defer func() {
 					go func() {
 						<-ctx.Done()
@@ -183,7 +188,7 @@ func (s *loginV1GwService) CompleteRegistration(ctx context.Context,
 					}
 
 					// update user, create CSRF and session token
-					user, sessionToken, csrfToken, exp, err := s.postLogin(ctx, client, user, cred.Password)
+					user, sessionToken, csrfToken, exp, err := s.postLogin(ctx, user, cred.Password)
 					switch err {
 					case ErrUsernameConflict:
 						s.httpErrorHandler(w, req, fmt.Sprintf("%s|%s %s", user.Tenant, user.Name, err.Error()), http.StatusConflict)
@@ -256,10 +261,10 @@ func (s *loginV1GwService) login(ctx context.Context, in *auth.PasswordCredentia
 	return user, nil
 }
 
-func (s *loginV1GwService) postLogin(ctx context.Context, apicl apiclient.Services, in *auth.User, password string) (*auth.User, string, string, time.Time, error) {
+func (s *loginV1GwService) postLogin(ctx context.Context, in *auth.User, password string) (*auth.User, string, string, time.Time, error) {
 	var exp time.Time
 	// updates user status with role info. Needs to be called before creating jwt
-	user, err := s.updateUserStatus(apicl, in, password)
+	user, err := s.updateUserStatus(in, password)
 	if err != nil {
 		s.logger.Errorf("Error updating status for user [%s|%s], Err: %v", in.Tenant, in.Name, err)
 		if strings.Contains(err.Error(), context.DeadlineExceeded.Error()) {
@@ -286,7 +291,7 @@ func (s *loginV1GwService) postLogin(ctx context.Context, apicl apiclient.Servic
 
 // updateUserStatus updates user object with status(user groups, last successful login, authenticators used) in API server.
 // User role information is not saved in API server
-func (s *loginV1GwService) updateUserStatus(apicl apiclient.Services, user *auth.User, password string) (*auth.User, error) {
+func (s *loginV1GwService) updateUserStatus(user *auth.User, password string) (*auth.User, error) {
 	m, err := types.TimestampProto(time.Now())
 	if err != nil {
 		return nil, err
@@ -294,12 +299,17 @@ func (s *loginV1GwService) updateUserStatus(apicl apiclient.Services, user *auth
 	user.Status.LastLogin = &api.Timestamp{
 		Timestamp: *m,
 	}
+	s.RLock()
+	apicl := s.apicl
+	s.RUnlock()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 	var storedUser *auth.User
-	if storedUser, err = apicl.AuthV1().User().Get(context.Background(), user.GetObjectMeta()); err != nil {
+	if storedUser, err = apicl.AuthV1().User().Get(ctx, user.GetObjectMeta()); err != nil {
 		status := apierrors.FromError(err)
 		//  Create user if it is external and not found
 		if user.Spec.Type == auth.UserSpec_External.String() && status.Code == http.StatusNotFound {
-			user1, err := apicl.AuthV1().User().Create(context.Background(), user)
+			user1, err := apicl.AuthV1().User().Create(ctx, user)
 			if err != nil {
 				s.logger.Errorf("Error creating external user [%s|%s], Err: %v", user.Tenant, user.Name, err)
 				return nil, err
@@ -308,6 +318,7 @@ func (s *loginV1GwService) updateUserStatus(apicl apiclient.Services, user *auth
 			s.logger.Infof("External user [%s|%s] created.", user.Tenant, user.Name)
 		} else {
 			s.logger.Errorf("Error fetching user [%s|%s] of type [%s]): %v", user.Tenant, user.Name, user.Spec.Type, err)
+			s.initializeAPIClient(err)
 			return nil, err
 		}
 	} else {
@@ -318,22 +329,16 @@ func (s *loginV1GwService) updateUserStatus(apicl apiclient.Services, user *auth
 			return nil, ErrUsernameConflict
 		}
 
-		if user.Spec.Type == auth.UserSpec_Local.String() { // update local user with retries as ResourceVersion could have changed
-			result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
-				storedUser, err = apicl.AuthV1().User().Get(ctx, user.GetObjectMeta())
-				if err != nil {
-					return nil, err
-				}
-				storedUser.Status = user.Status
-				return apicl.AuthV1().User().UpdateStatus(ctx, storedUser)
-			}, 100*time.Millisecond, 20)
+		if user.Spec.Type == auth.UserSpec_Local.String() {
+			user, err = apicl.AuthV1().User().UpdateStatus(ctx, user) // UpdateStatus has in-built retries for changing resource
 			if err != nil {
+				s.initializeAPIClient(err)
 				return nil, err
 			}
-			user = result.(*auth.User)
 		} else { // update external user. We are not retrying as ResourceVersion is not set by external authenticators. We always update externally authenticated user info in kvstore
 			user, err = apicl.AuthV1().User().Update(context.Background(), user)
 			if err != nil {
+				s.initializeAPIClient(err)
 				return nil, err
 			}
 		}
@@ -427,6 +432,32 @@ func (s *loginV1GwService) httpErrorHandler(w http.ResponseWriter, _ *http.Reque
 	}
 	w.WriteHeader(code)
 	w.Write(buf)
+}
+
+func (s *loginV1GwService) initializeAPIClient(err error) error {
+	grpcStatus, ok := status.FromError(err)
+	if ok && (grpcStatus.Code() == codes.Unavailable || grpcStatus.Code() == codes.DeadlineExceeded) {
+		b := balancer.New(s.rslvr)
+		result, err := utils.ExecuteWithRetry(func(ctx context.Context) (interface{}, error) {
+			apicl, err := apiclient.NewGrpcAPIClient(globals.APIGw, s.apiserver, s.logger, rpckit.WithBalancer(b))
+			if err != nil {
+				return nil, err
+			}
+			return apicl, nil
+		}, time.Second, 5)
+		if err != nil {
+			b.Close()
+			return err
+		}
+		apicl := result.(apiclient.Services)
+		s.Lock()
+		if s.apicl != nil {
+			s.apicl.Close()
+		}
+		s.apicl = apicl
+		s.Unlock()
+	}
+	return nil
 }
 
 func createCookie(token string, expiration time.Time) *http.Cookie {

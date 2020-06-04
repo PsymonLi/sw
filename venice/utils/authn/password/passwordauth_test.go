@@ -1,8 +1,14 @@
 package password_test
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"testing"
+	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/auth"
@@ -104,8 +110,9 @@ func TestAuthenticate(t *testing.T) {
 	setupAuth()
 	defer cleanupAuth()
 
+	ch := make(chan error)
 	// create password authenticator
-	authenticator := NewPasswordAuthenticator(apicl, policy.Spec.Authenticators.GetLocal(), logger)
+	authenticator := NewPasswordAuthenticator(apicl, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
 
 	// authenticate
 	autheduser, ok, err := authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
@@ -119,8 +126,9 @@ func TestIncorrectPasswordAuthentication(t *testing.T) {
 	setupAuth()
 	defer cleanupAuth()
 
+	ch := make(chan error)
 	// create password authenticator
-	authenticator := NewPasswordAuthenticator(apicl, policy.Spec.Authenticators.GetLocal(), logger)
+	authenticator := NewPasswordAuthenticator(apicl, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
 
 	// authenticate
 	autheduser, ok, err := authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: "wrongpassword"})
@@ -134,8 +142,9 @@ func TestIncorrectUserAuthentication(t *testing.T) {
 	setupAuth()
 	defer cleanupAuth()
 
+	ch := make(chan error)
 	// create password authenticator
-	authenticator := NewPasswordAuthenticator(apicl, policy.Spec.Authenticators.GetLocal(), logger)
+	authenticator := NewPasswordAuthenticator(apicl, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
 
 	// authenticate
 	autheduser, ok, err := authenticator.Authenticate(&auth.PasswordCredential{Username: "test1", Tenant: "default", Password: "password"})
@@ -149,9 +158,9 @@ func TestIncorrectUserAuthentication(t *testing.T) {
 func TestAPIServerDown(t *testing.T) {
 	setupAuth()
 	defer cleanupAuth()
-
+	ch := make(chan error)
 	// create password authenticator
-	authenticator := NewPasswordAuthenticator(nil, policy.Spec.Authenticators.GetLocal(), logger)
+	authenticator := NewPasswordAuthenticator(nil, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
 
 	// authenticate
 	autheduser, ok, err := authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
@@ -159,15 +168,47 @@ func TestAPIServerDown(t *testing.T) {
 	Assert(t, !ok, "Successful local user authentication")
 	Assert(t, autheduser == nil, "User returned while authenticating with un-initialized API client")
 	Assert(t, err == ErrAPIServerClientNotInitialized, "Incorrect error type returned")
+
+	// test context timeout
+	ch = make(chan error)
+	authenticator = NewPasswordAuthenticator(apicl, ch, time.Nanosecond, policy.Spec.Authenticators.GetLocal(), logger)
+
+	go readInitClientChanel(t, ch, status.Error(codes.DeadlineExceeded, context.DeadlineExceeded.Error()), 5*time.Second)
+
+	// authenticate
+	autheduser, ok, err = authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
+
+	Assert(t, !ok, "Successful local user authentication")
+	Assert(t, autheduser == nil, "User returned when expecting context to timeout")
+	Assert(t, err == ErrAPIServerUnavailable, "Incorrect error type returned")
+
 	// stop API server
 	apiSrv.Stop()
 	defer setup()
+
+	ch = make(chan error)
 	// create password authenticator
-	authenticator = NewPasswordAuthenticator(apicl, policy.Spec.Authenticators.GetLocal(), logger)
+	authenticator = NewPasswordAuthenticator(apicl, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
+
+	go readInitClientChanel(t, ch, status.Error(codes.Unavailable, "grpc: the connection is unavailable"), 45*time.Second)
 	// authenticate
 	autheduser, ok, err = authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
 
 	Assert(t, !ok, "Successful local user authentication")
 	Assert(t, autheduser == nil, "User returned while authenticating when API server is down")
 	Assert(t, err == ErrAPIServerUnavailable, "Incorrect error type returned")
+}
+
+func readInitClientChanel(t *testing.T, ch <-chan error, expectedErr error, timeout time.Duration) {
+	for {
+		select {
+		case <-time.After(timeout):
+			if expectedErr != nil {
+				Assert(t, false, fmt.Sprintf("expected error: %v, got none", expectedErr))
+			}
+		case err := <-ch:
+			Assert(t, err.Error() == expectedErr.Error(), fmt.Sprintf("expected error: %v, got: %v", expectedErr, err))
+		}
+		return
+	}
 }

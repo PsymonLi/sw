@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,17 +28,21 @@ var (
 
 // authenticator is used for authenticating local user. It implements authn.Authenticator interface.
 type authenticator struct {
-	authConfig *auth.Local
-	logger     log.Logger
-	client     apiclient.Services
+	authConfig   *auth.Local
+	logger       log.Logger
+	client       apiclient.Services
+	initClientCh chan<- error
+	apiTimeout   time.Duration
 }
 
 // NewPasswordAuthenticator returns an instance of Authenticator
-func NewPasswordAuthenticator(client apiclient.Services, config *auth.Local, logger log.Logger) authn.Authenticator {
+func NewPasswordAuthenticator(client apiclient.Services, initClientCh chan<- error, apiTimeout time.Duration, config *auth.Local, logger log.Logger) authn.Authenticator {
 	return &authenticator{
-		authConfig: config,
-		logger:     logger,
-		client:     client,
+		authConfig:   config,
+		logger:       logger,
+		client:       client,
+		initClientCh: initClientCh,
+		apiTimeout:   apiTimeout,
 	}
 }
 
@@ -64,11 +69,14 @@ func (a *authenticator) Authenticate(credential authn.Credential) (*auth.User, b
 		Tenant:    passwdcred.Tenant,
 		Namespace: globals.DefaultNamespace,
 	}
-	user, err := apicl.AuthV1().User().Get(context.Background(), objMeta)
+	ctx, cancel := context.WithTimeout(context.Background(), a.apiTimeout)
+	defer cancel()
+	user, err := apicl.AuthV1().User().Get(ctx, objMeta)
 	if err != nil {
 		a.logger.ErrorLog("method", "Authenticate", "msg", fmt.Sprintf("Error fetching user [%s]", passwdcred.Username), "error", err)
 		grpcStatus, ok := status.FromError(err)
-		if ok && grpcStatus.Code() == codes.Unavailable {
+		if ok && (grpcStatus.Code() == codes.Unavailable || grpcStatus.Code() == codes.DeadlineExceeded) {
+			a.initClientCh <- err
 			return nil, false, ErrAPIServerUnavailable
 		}
 		return nil, false, ErrInvalidCredential
