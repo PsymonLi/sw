@@ -14,7 +14,6 @@ var groupbyFieldType = map[int][]string{
 var CQMeasurementGroupByMap = map[string]int{
 	"AsicPowerMetrics":       1,
 	"AsicTemperatureMetrics": 1,
-	"IPv4FlowDropMetrics":    1,
 	"FteCPSMetrics":          1,
 	"LifMetrics":             1,
 	"SessionSummaryMetrics":  1,

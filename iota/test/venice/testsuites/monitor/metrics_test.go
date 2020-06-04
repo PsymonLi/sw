@@ -34,6 +34,7 @@ var _ = Describe("metrics test", func() {
 
 	Context("Verify flowdropmetrics ", func() {
 		It("Flow drops should increament", func() {
+			Skip("IPv4FlowDropMetrics is disabled")
 			if !ts.tb.HasNaplesHW() {
 				Skip("Disabling flow drop stats on naples sim")
 			}

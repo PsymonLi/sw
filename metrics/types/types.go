@@ -5,7 +5,6 @@ var DscMetricsList = []string{
 	"AsicPowerMetrics",
 	"AsicTemperatureMetrics",
 	"DropMetrics",
-	"IPv4FlowDropMetrics",
 	"FteCPSMetrics",
 	"FteLifQMetrics",
 	"MacMetrics",

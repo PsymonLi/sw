@@ -138,12 +138,6 @@ message L2FlowDropMetrics {
 message IPv4FlowDropMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv4-Flow Drop-Metrics",
-        Description: "Key index - IPv4-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv4FlowKey    Key                  = 1;
     delphi.Counter instances            = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];

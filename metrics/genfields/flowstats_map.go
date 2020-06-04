@@ -18,16 +18,6 @@ func init() {
 	}
 	globalMetricsMap["flowstats"]["IPv4FlowBehavioralMetrics"] = kindToFieldNameMap["IPv4FlowBehavioralMetrics"]
 
-	kindToFieldNameMap["IPv4FlowDropMetrics"] = []string{
-		"Instances",
-		"DropPackets",
-		"DropBytes",
-		"DropFirstTimestamp",
-		"DropLastTimestamp",
-		"DropReason",
-	}
-	globalMetricsMap["flowstats"]["IPv4FlowDropMetrics"] = kindToFieldNameMap["IPv4FlowDropMetrics"]
-
 	kindToFieldNameMap["IPv4FlowLatencyMetrics"] = []string{
 		"Instances",
 		"MinSetupLatency",

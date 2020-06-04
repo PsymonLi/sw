@@ -148,41 +148,7 @@ func (s *RestServer) listIPv4FlowDropMetricsHandler(r *http.Request) (interface{
 // getIPv4FlowDropMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv4FlowDropMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv4FlowDropMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv4FlowDropMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv4FlowDropMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
