@@ -1,0 +1,81 @@
+{
+    "network" : {
+        "uplink" : [
+            { "id" : 128, "port": 285278209 },
+            { "id" : 129, "port": 285343745 },
+            { "id" : 130, "port": 285409281, "oob" : "true" }
+        ]
+    },
+
+    "mnic_dev" : [
+        {
+            "name" : "inb_mnic0",
+            "dev_uuid" : 11,
+            "type": "inband_mgmt",
+            "lif_count" : 1,
+            "rxq_count" : 1,
+            "txq_count" : 1,
+            "eq_count" : 0,
+            "adminq_count" : 1,
+            "intr_count" : 4,
+            "network" : {
+                "uplink" : 285278209
+            }
+        },
+        {
+            "name" : "inb_mnic1",
+            "dev_uuid" : 12,
+            "type": "inband_mgmt",
+            "lif_count" : 1,
+            "rxq_count" : 1,
+            "txq_count" : 1,
+            "eq_count" : 0,
+            "adminq_count" : 1,
+            "intr_count" : 4,
+            "network" : {
+                "uplink" : 285343745
+            }
+        },
+        {
+            "name" : "int_mnic0",
+            "dev_uuid" : 13,
+            "type": "internal_mgmt",
+            "lif_count" : 1,
+            "rxq_count" : 1,
+            "txq_count" : 1,
+            "adminq_count" : 1,
+            "intr_count" : 4
+        }
+    ],
+    "eth_dev" : [
+        {
+            "name" : "eth_mgmt0",
+            "dev_uuid" : 3,
+            "type": "host_mgmt",
+            "lif_count" : 1,
+            "rxq_count" : 1,
+            "txq_count" : 1,
+            "eq_count" : 0,
+            "adminq_count" : 1,
+            "intr_count" : 4,
+            "pcie" : {
+                "port" : 0,
+                "num_vfs" : 0
+            }
+        }
+    ],
+    "ftl_dev" : [
+        {
+            "name" : "ftl",
+            "session_hw_scanners" : 4096,
+            "session_burst_size" : 2048,
+            "session_burst_resched_time_us" : 10,
+            "conntrack_hw_scanners" : 0,
+            "conntrack_burst_size" : 4096,
+            "conntrack_burst_resched_time_us" : 10,
+            "sw_pollers" : 4,
+            "sw_poller_qdepth" : 4096,
+            "qos_group" : "DEFAULT"
+        }
+    ]
+}
