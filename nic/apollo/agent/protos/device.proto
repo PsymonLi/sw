@@ -104,6 +104,10 @@ message DeviceSpec {
   //       affect the flows/sessions that are already created, but it will take
   //       affect only on the new sessions/flows created after such an update
   bool                SymmetricRoutingEn  = 13 [(gogoproto.moretags) = "meta:default=false"];
+  // TxPolicerId, if configured, will rate limit the Tx bandwidth (bytes per
+  // second) or PPS (packets per second) of all host interfaces put together
+  // to the configured value
+  bytes               TxPolicerId         = 14;
 }
 
 // device operational status

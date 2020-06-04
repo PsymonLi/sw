@@ -108,6 +108,7 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
     proto_spec->set_fwpolicyxposnscheme(
                     pds_fw_policy_xposn_api_spec_to_proto(
                         api_spec->fw_action_xposn_scheme));
+    proto_spec->set_txpolicerid(api_spec->tx_policer.id, PDS_MAX_KEY_LEN);
 }
 
 // populate proto buf status from device API status
@@ -243,6 +244,8 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
     api_spec->ip_mapping_priority = proto_spec.ipmappingpriority() & 0x3FF;
     api_spec->fw_action_xposn_scheme =
         pds_fw_policy_xposn_to_api_spec(proto_spec.fwpolicyxposnscheme());
+    pds_obj_key_proto_to_api_spec(&api_spec->tx_policer,
+                                  proto_spec.txpolicerid());
     return SDK_RET_OK;
 }
 

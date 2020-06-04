@@ -429,8 +429,8 @@ private:
     uint8_t       num_rx_mirror_session_;
     /// Rx mirror sessions
     pds_obj_key_t rx_mirror_session_[PDS_MAX_MIRROR_SESSION];
-    pds_obj_key_t tx_policer_;           ///< egress policer index
-    pds_obj_key_t rx_policer_;           ///< ingress policer index
+    pds_obj_key_t tx_policer_;           ///< Tx policer
+    pds_obj_key_t rx_policer_;           ///< Rx policer
     bool          primary_;              ///< primary vnic
     bool          meter_en_;             ///< true if metering is enabled
     /// hostname of this workload

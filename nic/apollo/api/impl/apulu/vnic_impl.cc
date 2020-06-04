@@ -603,11 +603,11 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     vpc_entry *vpc;
     device_entry *device;
     subnet_entry *subnet;
-    pds_obj_key_t vpc_key;
     pds_vnic_spec_t *spec;
     p4pd_error_t p4pd_ret;
     nexthop_info_entry_t nh_data;
     vnic_actiondata_t vnic_data = { 0 };
+    pds_obj_key_t vpc_key, tx_policer_key;
     policer_entry *rx_policer, *tx_policer;
     binding_info_entry_t ip_mac_binding_data;
     rx_vnic_actiondata_t rx_vnic_data = { 0 };
@@ -637,6 +637,14 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         if (unlikely(tx_policer == NULL)) {
             PDS_TRACE_ERR("Failed to find vnic %s tx policer %s",
                           spec->key.str(), spec->tx_policer.str());
+            return sdk::SDK_RET_INVALID_ARG;
+        }
+    } else if ((tx_policer_key = device_find()->tx_policer()) !=
+                   k_pds_obj_key_invalid) {
+        tx_policer = policer_db()->find(&tx_policer_key);
+        if (unlikely(tx_policer == NULL)) {
+            PDS_TRACE_ERR("Failed to find device tx policer %s",
+                          tx_policer_key.str());
             return sdk::SDK_RET_INVALID_ARG;
         }
     } else {

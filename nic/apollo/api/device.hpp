@@ -210,8 +210,13 @@ public:
     uint32_t learn_age_timeout(void) const { return learn_age_timeout_; }
 
     /// \brief return true if control plane stack is enabled or else false
-    /// \return  true or false based on whether control plane stack is enabled or not
+    /// \return  true or false based on whether control plane stack is enabled
+    ///          or not
     bool overlay_routing_enabled(void) const { return overlay_routing_en_; }
+
+    /// \brief return tx policer key
+    /// \return  key of the tx policer object
+    const pds_obj_key_t& tx_policer(void) const { return tx_policer_; }
 
 private:
     /// \brief constructor
@@ -252,6 +257,8 @@ private:
     uint32_t learn_age_timeout_;
     ///< true if control plane stack is enabled
     bool overlay_routing_en_;
+    ///< Tx policer
+    pds_obj_key_t tx_policer_;
     ///< impl object instance
     impl_base *impl_;
 } __PACK__;

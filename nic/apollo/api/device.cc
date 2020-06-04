@@ -104,6 +104,7 @@ device_entry::init_config(api_ctxt_t *api_ctxt) {
     learning_en_ = spec->learning_en;
     learn_age_timeout_ = spec->learn_age_timeout;
     overlay_routing_en_ = spec->overlay_routing_en;
+    tx_policer_ = spec->tx_policer;
     return SDK_RET_OK;
 }
 
@@ -155,6 +156,7 @@ device_entry::fill_spec_(pds_device_spec_t *spec) {
     spec->learn_age_timeout = learn_age_timeout_;
     spec->device_profile = api::g_pds_state.device_profile();
     spec->memory_profile = api::g_pds_state.memory_profile();
+    spec->tx_policer = tx_policer_;
 }
 
 void

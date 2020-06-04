@@ -331,4 +331,5 @@ func printDeviceDetail(resp *pds.DeviceGetResponse) {
 	fmt.Printf("%-26s : %s\n", "Serial Number", status.GetSerialNumber())
 	fmt.Printf("%-26s : %s\n", "Part Number", status.GetSku())
 	fmt.Printf("%-26s : %d\n", "IP Mapping Priority", spec.GetIPMappingPriority())
+	fmt.Printf("%-26s : %s\n", "Tx Policer", utils.IdToStr(spec.GetTxPolicerId()))
 }

@@ -103,6 +103,8 @@ typedef struct pds_device_s {
     uint16_t               ip_mapping_priority;
     /// firewall action transposition scheme
     fw_policy_xposn_t      fw_action_xposn_scheme;
+    /// Tx policer, if any
+    pds_obj_key_t tx_policer;
 } __PACK__ pds_device_spec_t;
 
 /// \brief device status
