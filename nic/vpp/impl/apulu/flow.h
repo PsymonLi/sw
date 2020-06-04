@@ -1415,7 +1415,7 @@ pds_program_cached_sessions(void)
     pds_flow_main_t *fm = &pds_flow_main;
     u16 thread_index = vlib_get_thread_index();
     int i,j, size = ftlv4_cache_get_count(thread_index);
-    u32 i_pindex, i_sindex, r_pindex, r_sindex;
+    u64 i_handle, r_handle;
     ftlv4 *table = pds_flow_prog_get_table4();
     pds_flow_rewrite_flags_t *rewrite_flags;
 
@@ -1429,31 +1429,19 @@ pds_program_cached_sessions(void)
         pds_flow_hw_ctx_t *ctx;
         int ret;
 
-        ret = ftlv4_cache_program_index(table, i, &i_pindex, &i_sindex,
+        ret = ftlv4_cache_program_index(table, i, &i_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             continue;
         }
-        ret = ftlv4_cache_program_index(table, i+1, &r_pindex, &r_sindex,
+        ret = ftlv4_cache_program_index(table, i+1, &r_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             ftlv4_cache_delete_index(table, i, thread_index);
             continue;
         }
-        if (i_pindex != (u32) (~0L)) {
-            sess->iflow_index = i_pindex;
-            sess->iflow_primary = 1;
-        } else {
-            sess->iflow_index = i_sindex;
-            sess->iflow_primary = 0;
-        }
-        if (r_pindex != (u32) (~0L)) {
-            sess->rflow_index = r_pindex;
-            sess->rflow_primary = 1;
-        } else {
-            sess->rflow_index = r_sindex;
-            sess->rflow_primary = 0;
-        }
+        sess->iflow_handle = i_handle;
+        sess->rflow_handle = r_handle;
 
         // Program the sessions and set pds_flow_hw_ctx_t too.
         // Create the pds_flow_hw_ctx_t
@@ -1464,10 +1452,8 @@ pds_program_cached_sessions(void)
         ctx->v4 = sess->v4;
         ctx->flow_state = pds_decode_flowstate(sess->flow_state);
         ctx->ingress_bd = sess->ingress_bd;
-        ctx->iflow.primary = sess->iflow_primary;
-        ctx->iflow.table_id = sess->iflow_index;
-        ctx->rflow.primary = sess->rflow_primary;
-        ctx->rflow.table_id = sess->rflow_index;
+        ctx->iflow.handle = sess->iflow_handle;
+        ctx->rflow.handle = sess->rflow_handle;
         ctx->packet_type = pds_decode_flow_pkt_type(sess->packet_type);
         ctx->iflow_rx = sess->iflow_rx;
         ctx->monitor_seen = 0;

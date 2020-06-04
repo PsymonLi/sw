@@ -20,7 +20,7 @@ MODULE_SRCS  = $(wildcard ${MODULE_DIR}/*.cc) \
                $(wildcard ${MODULE_DIR}/${PIPELINE}/p4pd_mock/*.cc)
 MODULE_FLAGS    = -O3 ${NIC_CSR_FLAGS}
 MODULE_ARCH     = x86_64
-MODULE_PIPELINE = iris apulu
+MODULE_PIPELINE = iris apulu athena
 MODULE_INCS     = utils/ftl/test/${PIPELINE}
 MODULE_DEFS     = -DCAPRI_SW ${NIC_CSR_DEFINES}
 include ${MKDEFS}/post.mk

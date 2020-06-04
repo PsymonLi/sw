@@ -75,7 +75,7 @@ _session_start:
     sne         c1, d.cb_activate, SCANNER_SESSION_CB_ACTIVATE
     bcf         [c1], _scanner_cb_cfg_discard
     phvwr       p.poller_slot_data_scanner_qtype, HW_MPU_TXDMA_INTRINSIC_QTYPE // delay slot
-    
+
     SCANNER_DB_DATA_TIMER_WITH_RING(HW_MPU_TXDMA_INTRINSIC_QTYPE,
                                     r_qid, SCANNER_RING_TIMER,
                                     d.scan_resched_ticks)

@@ -529,8 +529,7 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
 
         pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
-                                    session->rflow.table_id,
-                                    session->rflow.primary,
+                                    session->rflow.handle,
                                     thread_index);
         pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
@@ -549,8 +548,7 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
 
         pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
-                                    session->iflow.table_id,
-                                    session->iflow.primary,
+                                    session->iflow.handle,
                                     thread_index);
         pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
@@ -607,8 +605,7 @@ pds_l2l_def_iflow_prog_internal (vlib_buffer_t *p0,
 
         pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
-                                    session->iflow.table_id,
-                                    session->iflow.primary,
+                                    session->iflow.handle,
                                     thread_index);
         pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
@@ -790,8 +787,7 @@ pds_l2l_rx_flow_prog_internal (vlib_buffer_t *p0,
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
 
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4,
-                                                session->iflow.table_id,
-                                                session->iflow.primary,
+                                                session->iflow.handle,
                                                 thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -809,8 +805,7 @@ pds_l2l_rx_flow_prog_internal (vlib_buffer_t *p0,
         }
 
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4,
-                                                session->rflow.table_id,
-                                                session->rflow.primary,
+                                                session->rflow.handle,
                                                 thread_index) != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -1198,7 +1193,7 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
                          u16 thread_index)
 {
     int i, ret, size = ftlv4_cache_get_count(thread_index);
-    u32 i_pindex, i_sindex, r_pindex, r_sindex;
+    u64 i_handle, r_handle;
     ftlv4 *table = pds_flow_prog_get_table4();
     vlib_buffer_t *p0;
     pds_flow_main_t *fm = &pds_flow_main;
@@ -1213,13 +1208,13 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
             goto err;
         }
 
-        ret = ftlv4_cache_program_index(table, i, &i_pindex,
-                                        &i_sindex, thread_index);
+        ret = ftlv4_cache_program_index(table, i, &i_handle, 
+                                        thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             goto err_iflow;
         }
-        ret = ftlv4_cache_program_index(table, i+1, &r_pindex,
-                                        &r_sindex, thread_index);
+        ret = ftlv4_cache_program_index(table, i+1, &r_handle, 
+                                        thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             if (pds_is_flow_session_present(p0)) {
                 // no need to delete flow as delete session will take care
@@ -1228,10 +1223,9 @@ pds_flow_program_hw_ip4 (vlib_buffer_t **b, u16 *next, u32 *counter,
             goto err_rflow;
         }
         ses_ctr[ftlv4_cache_get_counter_index(i, thread_index)]++;
-        pds_session_set_data(session_id, i_pindex,
-                             i_sindex, r_pindex,
-                             r_sindex,
-                             pds_flow_trans_proto(ftlv4_cache_get_proto(i,
+        pds_session_set_data(session_id, i_handle,
+                             r_handle,
+                             pds_flow_trans_proto(ftlv4_cache_get_proto(i, 
                                                                 thread_index)),
                              vnet_buffer2(p0)->pds_nat_data.vnic_id,
                              true, pds_is_rx_pkt(p0),
@@ -1285,7 +1279,7 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
 {
     int i, ret, size = ftlv6_cache_get_count();
     ftlv6 *table = pds_flow_prog_get_table6_or_l2();
-    u32 i_pindex, i_sindex, r_pindex, r_sindex;
+    u64 i_handle, r_handle;
     vlib_buffer_t *p0;
     pds_flow_main_t *fm = &pds_flow_main;
     uint8_t ctr_idx;
@@ -1299,11 +1293,11 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
             goto err;
         }
 
-        ret = ftlv6_cache_program_index(table, i, &i_pindex, &i_sindex);
+        ret = ftlv6_cache_program_index(table, i, &i_handle);
         if (PREDICT_FALSE(ret != 0)) {
             goto err_iflow;
         }
-        ret = ftlv6_cache_program_index(table, i+1, &r_pindex, &r_sindex);
+        ret = ftlv6_cache_program_index(table, i+1, &r_handle);
         if (PREDICT_FALSE(ret != 0)) {
             if (pds_is_flow_session_present(p0)) {
                 // no need to delete flow as delete session will take care
@@ -1313,9 +1307,8 @@ pds_flow_program_hw_ip6_or_l2 (vlib_buffer_t **b, u16 *next, u32 *counter,
         }
         ses_ctr[ftlv6_cache_get_counter_index(i)]++;
         p0 = b[i/2];
-        pds_session_set_data(session_id, i_pindex,
-                             i_sindex, r_pindex,
-                             r_sindex,
+        pds_session_set_data(session_id, i_handle,
+                             r_handle,
                              pds_flow_trans_proto(ftlv6_cache_get_proto(i)),
                              vnet_buffer2(p0)->pds_nat_data.vnic_id,
                              false, pds_is_rx_pkt(p0),
@@ -1755,8 +1748,8 @@ VLIB_REGISTER_NODE (pds_flow_classify_node) = {
 };
 
 void
-pds_session_update_data (u32 ses_id, u32 pindex, u32 sindex,
-                         bool iflow, bool move_complete, bool lock)
+pds_session_update_data(u32 ses_id, u64 new_handle,
+                        bool iflow, bool move_complete, bool lock)
 {
     pds_flow_hw_ctx_t *session = NULL;
     pds_flow_index_t *index = NULL;
@@ -1777,13 +1770,7 @@ pds_session_update_data (u32 ses_id, u32 pindex, u32 sindex,
         }
     }
     index = iflow ? &session->iflow : &session->rflow;
-    if (pindex != ((u32) (~0L))) {
-        index->table_id = pindex;
-        index->primary = 1;
-    } else {
-        index->table_id = sindex;
-        index->primary = 0;
-    }
+    index->handle = new_handle;
 }
 
 static clib_error_t *
@@ -1930,10 +1917,8 @@ pds_session_v4_send_cb (uint8_t *data, uint8_t *len, void *opaq)
     sess.session_id = iter->read_index + 1;
     sess.v4 = hw_ctx->v4;
     sess.flow_state = pds_encode_flowstate(hw_ctx->flow_state);
-    sess.iflow_primary = hw_ctx->iflow.primary;
-    sess.iflow_index = hw_ctx->iflow.table_id;
-    sess.rflow_primary = hw_ctx->rflow.primary;
-    sess.rflow_index = hw_ctx->rflow.table_id;
+    sess.iflow_handle = hw_ctx->iflow.handle;
+    sess.rflow_handle = hw_ctx->rflow.handle;
     sess.packet_type = pds_encode_flow_pkt_type(hw_ctx->packet_type);
     sess.iflow_rx = hw_ctx->iflow_rx;
     sess.nat = hw_ctx->nat;
@@ -2129,10 +2114,8 @@ pds_session_v4_walk_cb (uint8_t *data, uint8_t *len, void *opaq)
             sess.v4 = hw_ctx->v4;
             sess.flow_state = hw_ctx->flow_state;
             sess.packet_type = hw_ctx->packet_type;
-            sess.iflow_primary = hw_ctx->iflow.primary;
-            sess.iflow_index = hw_ctx->iflow.table_id;
-            sess.rflow_primary = hw_ctx->rflow.primary;
-            sess.rflow_index = hw_ctx->rflow.table_id;
+            sess.iflow_handle = hw_ctx->iflow.handle;
+            sess.rflow_handle = hw_ctx->rflow.handle;
             sess.flow_table = iter->flow_table;
             pds_encode_one_v4_session(data, len, &sess, vlib_get_thread_index());
         }

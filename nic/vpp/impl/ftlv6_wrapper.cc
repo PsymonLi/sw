@@ -30,7 +30,7 @@ ftlv6_set_thread_id (ftlv6 *obj, uint32_t thread_id)
 }
 
 int
-ftlv6_get_with_handle(ftl *obj, uint32_t index, bool primary)
+ftlv6_get_with_handle(ftl *obj, uint64_t handle)
 {
     sdk_table_api_params_t params = {0};
     flow_hash_entry_t entry;
@@ -39,11 +39,7 @@ ftlv6_get_with_handle(ftl *obj, uint32_t index, bool primary)
         return 0;
     }
 
-    if (primary) {
-        params.handle.pindex(index);
-    } else {
-        params.handle.sindex(index);
-    }
+    params.handle.tohandle(handle);
     params.entry = &entry;
 
     if (SDK_RET_OK != obj->get_with_handle(&params)) {
@@ -242,11 +238,10 @@ ftlv6_cache_advance_count (int val)
 }
 
 int
-ftlv6_cache_program_index (ftlv6 *obj, uint16_t id, uint32_t *pindex, 
-                           uint32_t *sindex)
+ftlv6_cache_program_index (ftlv6 *obj, uint16_t id, uint64_t *handle)
 {
     return ftl_insert(obj, g_ip6_flow_cache.flow + id,
-                      g_ip6_flow_cache.hash[id], pindex, sindex,
+                      g_ip6_flow_cache.hash[id], handle,
                       g_ip6_flow_cache.flags[id].update);
 }
 

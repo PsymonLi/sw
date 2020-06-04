@@ -15,8 +15,9 @@ typedef struct flow_hash_entry_t flow_entry;
 
 typedef char* (*key2str_t)(void *key);
 typedef char* (*appdata2str_t)(void *data);
-typedef void (*session_update_cb) (uint32_t ses_id, uint32_t pindex,
-                                   uint32_t sindex, bool iflow,
+typedef void (*session_update_cb) (uint32_t ses_id, 
+                                   uint64_t new_handle64,
+                                   bool iflow, 
                                    bool move_complete, bool lock);
 typedef int (*nat_flow_dealloc_cb) (uint32_t vpc_id, uint32_t dip, uint16_t dport,
              uint8_t protocol, uint32_t sip, uint16_t sport);
@@ -81,14 +82,14 @@ void ftl_dump_stats(ftl *obj, char *buf, int max_len);
 
 ftl * ftl_create(void *key2str, void *appdata2str);
 
-int ftl_insert(ftl *obj, flow_entry *entry, uint32_t hash, uint32_t *pindex,
-               uint32_t *sindex, uint8_t update);
+int ftl_insert(ftl *obj, flow_entry *entry, uint32_t hash, uint64_t *handle,
+               uint8_t update);
 
 int ftl_remove(ftl *obj, flow_entry *entry, uint32_t hash);
 
-int ftl_remove_with_handle(ftl *obj, uint32_t index, bool primary);
+int ftl_remove_with_handle(ftl *obj, uint64_t handle);
 
-int ftl_export_with_handle(ftl *obj, uint32_t index, bool primary,
+int ftl_export_with_handle(ftl *obj, uint64_t handle,
                            uint8_t reason, bool drop);
 
 int ftl_clear(ftl *obj, bool clear_global_state, bool clear_thread_local_state);
@@ -157,7 +158,7 @@ int ftlv4_dump_hw_entry(ftlv4 *obj, uint32_t src, uint32_t dst,
                         uint16_t dport, uint16_t lookup_id,
                         char *buf, int max_len, uint16_t thread_id);
 
-int ftlv4_dump_entry_with_handle(ftlv4 *obj, uint32_t index, bool primary,
+int ftlv4_dump_entry_with_handle(ftlv4 *obj, uint64_t handle,
                                  v4_flow_info_t *flow_info, uint16_t thread_id);
 
 int ftlv4_read_session_index(ftlv4 *obj, uint32_t src, uint32_t dst,
@@ -203,8 +204,7 @@ int ftlv4_cache_get_count(uint16_t thread_id);
 void ftlv4_cache_advance_count(int val, uint16_t thread_id);
 
 int ftlv4_cache_program_index(ftlv4 *obj, uint16_t id,
-                              uint32_t *pindex,
-                              uint32_t *sindex,
+                              uint64_t *handle, 
                               uint16_t thread_id);
 
 int ftlv4_cache_delete_index(ftlv4 *obj, uint16_t id, uint16_t thread_id);
@@ -292,7 +292,7 @@ int ftlv6_cache_get_count(void);
 void ftlv6_cache_advance_count(int val);
 
 int ftlv6_cache_program_index(ftlv6 *obj, uint16_t id,
-                              uint32_t *pindex, uint32_t *sindex);
+                              uint64_t *handle);
 
 int ftlv6_cache_delete_index(ftlv6 *obj, uint16_t id);
 
@@ -353,8 +353,8 @@ int ftlv4_remove_nat_session(uint32_t vpc_id, ftlv4 *obj, uint16_t thread_id);
 
 int ftlv4_update_cached_entry(ftlv4 *obj, uint16_t thread_id);
 
-int ftlv4_get_with_handle(ftlv4 *obj, uint32_t index,
-                          bool primary, uint16_t thread_id);
+int ftlv4_get_with_handle(ftlv4 *obj, uint64_t handle, 
+                          uint16_t thread_id);
 
 void ftlv4_get_last_read_session_info(uint32_t *sip,
                                       uint32_t *dip,
@@ -385,9 +385,9 @@ enum flow_export_reason_e {
     FLOW_EXPORT_REASON_ACTIVE,
 };
 
-int ftlv4_export_with_handle(ftlv4 *obj, uint32_t iflow_index,
-                             bool iflow_primary, uint32_t rflow_index,
-                             bool rflow_primary, uint8_t reason,
+int ftlv4_export_with_handle(ftlv4 *obj, uint64_t iflow_handle,
+                             uint64_t rflow_handle,
+                             uint8_t reason,
                              bool host_origin, bool drop,
                              uint16_t thread_id);
 
@@ -396,7 +396,7 @@ int ftlv4_export_with_entry(v4_flow_entry *iv4entry,
                             uint8_t reason, bool host_origin,
                             bool drop);
 
-int ftlv4_get_flow_entry(ftlv4 *obj, uint32_t flow_index, bool flow_primary,
+int ftlv4_get_flow_entry(ftlv4 *obj, uint64_t flow_handle,
                          v4_flow_entry *entry, uint16_t thread_id);
 int ftlv4_cache_log_session(uint16_t iid, uint16_t rid,
                             uint8_t reason, uint16_t thread_id);
@@ -411,13 +411,13 @@ int ftl_export_with_entry(flow_entry *entry, uint8_t reason, bool drop);
 
 int ftlv6_remove(ftlv6 *obj, flow_entry *entry, uint32_t hash);
 
-int ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint32_t index, bool primary,
-                                     uint32_t *pindex, uint32_t *sindex,
+int ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
+                                     uint64_t *ret_handle,
                                      uint16_t lookup_id, bool l2l);
 
 int ftlv6_remove_cached_entry(ftlv6 *obj);
 
-int ftlv6_get_with_handle(ftlv6 *obj, uint32_t index, bool primary);
+int ftlv6_get_with_handle(ftlv6 *obj, uint64_t handle);
 
 void ftlv6_get_last_read_session_info (uint8_t *sip,
                                        uint8_t *dip,

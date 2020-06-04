@@ -182,7 +182,7 @@ ftl_create (void *key2str, void *appdata2str)
 
 int
 ftl_insert (ftl *obj, flow_hash_entry_t *entry, uint32_t hash,
-            uint32_t *pindex, uint32_t *sindex, uint8_t update)
+            uint64_t *handle, uint8_t update)
 {
     sdk_table_api_params_t params = {0};
 
@@ -208,13 +208,7 @@ ftl_insert (ftl *obj, flow_hash_entry_t *entry, uint32_t hash,
     }
 
 done:
-    if (params.handle.svalid()) {
-        *pindex = (uint32_t) (~0L);
-        *sindex = params.handle.sindex();
-    } else {
-        *pindex = params.handle.pindex();
-    }
-
+    *handle = params.handle.tou64();
     return 0;
 }
 
@@ -224,20 +218,12 @@ ftl_move_cb (base_table_entry_t *entry, handle_t old_handle,
 {
     flow_hash_entry_t *flow_entry = (flow_hash_entry_t *)entry;
     uint32_t ses_id = flow_entry->get_session_index();
-    uint32_t new_pindex, new_sindex = ~0;
-
-    if (new_handle.svalid()) {
-        new_pindex = (uint32_t) (~0L);
-        new_sindex = new_handle.sindex();
-    } else {
-        new_pindex = new_handle.pindex();
-    }
 
     if (flow_entry->get_flow_role() == TCP_FLOW_INITIATOR) {
-        g_ses_cb (ses_id, new_pindex, new_sindex, true,
+        g_ses_cb (ses_id, new_handle.tou64(), true,
                   move_complete, true);
     } else {
-        g_ses_cb (ses_id, new_pindex, new_sindex, false,
+        g_ses_cb (ses_id, new_handle.tou64(), false,
                   move_complete, true);
     }
 }
@@ -265,7 +251,7 @@ ftl_remove (ftl *obj, flow_hash_entry_t *entry, uint32_t hash)
 }
 
 int
-ftl_remove_with_handle(ftl *obj, uint32_t index, bool primary)
+ftl_remove_with_handle(ftl *obj, uint64_t handle)
 {
     sdk_table_api_params_t params = {0};
     flow_hash_entry_t entry;
@@ -274,11 +260,7 @@ ftl_remove_with_handle(ftl *obj, uint32_t index, bool primary)
         return 0;
     }
 
-    if (primary) {
-        params.handle.pindex(index);
-    } else {
-        params.handle.sindex(index);
-    }
+    params.handle.tohandle(handle);
     params.entry = &entry;
 
     if (SDK_RET_OK != obj->get_with_handle(&params)) {
@@ -340,7 +322,7 @@ ftl_export_with_entry(flow_hash_entry_t *entry, uint8_t reason, bool drop)
 }
 
 int
-ftl_export_with_handle (ftl *obj, uint32_t index, bool primary,
+ftl_export_with_handle (ftl *obj, uint64_t handle,
                         uint8_t reason, bool drop)
 {
     sdk_table_api_params_t params = {0};
@@ -350,11 +332,7 @@ ftl_export_with_handle (ftl *obj, uint32_t index, bool primary,
         return 0;
     }
 
-    if (primary) {
-        params.handle.pindex(index);
-    } else {
-        params.handle.sindex(index);
-    }
+    params.handle.tohandle(handle);
     params.entry = &entry;
 
     if (SDK_RET_OK != obj->get_with_handle(&params)) {

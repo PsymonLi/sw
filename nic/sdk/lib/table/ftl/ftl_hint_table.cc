@@ -96,6 +96,9 @@ hint_table::alloc_(Apictx *ctx) {
         thr_local_pool->pool_count--;
     }
     else {
+        if (unlikely(indexer_.full() == true)) {
+            return SDK_RET_NO_RESOURCE;
+        }
         /* refill pool */
         refill_count = PDS_FLOW_HINT_POOL_COUNT_MAX;
         spin_lock_();
@@ -158,6 +161,7 @@ hint_table::initctx_(Apictx *ctx) {
 
     // Make the hint from parent context as table_index
     ctx->table_index = ctx->pctx->hint;
+    ctx->pindex = ctx->pctx->pindex;
     // Save the table_id
     ctx->table_id = table_id_;
     // Save the bucket for this context
@@ -171,14 +175,17 @@ hint_table::initctx_(Apictx *ctx) {
 sdk_ret_t
 hint_table::initctx_with_handle_(Apictx *ctx) {
     ctx->table_index = ctx->params->handle.sindex();
+    ctx->pindex = ctx->pctx->pindex;
     // Save the table_id
     ctx->table_id = table_id_;
+    // Set validate epoch bit
+    ctx->validate_epoch = 1;
     // Save the bucket for this context
     ctx->bucket = &buckets_[ctx->table_index];
     ctx->level++;
 
-    FTL_TRACE_VERBOSE("%s: TID:%d Idx:%d", ctx->idstr(),
-                      ctx->table_id, ctx->table_index);
+    FTL_TRACE_VERBOSE("%s: TID:%d Idx:%d ValEpoch:%d", ctx->idstr(),
+                      ctx->table_id, ctx->table_index, ctx->validate_epoch);
     return SDK_RET_OK;
 }
     
@@ -395,14 +402,15 @@ done:
 
 sdk_ret_t
 hint_table::get_with_handle_(Apictx *ctx) {
-    SDK_ASSERT(initctx_with_handle_(ctx) == SDK_RET_OK);
+    auto hctx = ctxnew_(ctx);
+    SDK_ASSERT(initctx_with_handle_(hctx) == SDK_RET_OK);
 
-    lock_(ctx);
-    auto ret = ctx->bucket->read_(ctx);
+    lock_(hctx);
+    auto ret = hctx->bucket->read_(hctx);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
-    ctx->params->entry->copy_key_data(ctx->entry);
+    hctx->params->entry->copy_key_data(hctx->entry);
 done:
-    unlock_(ctx);
+    unlock_(hctx);
     return ret;
 }
 

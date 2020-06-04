@@ -60,18 +60,16 @@ pds_flow_delete_session (u32 ses_id)
     if (session->v4) {
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
         if (flow_log_enabled) {
-            ftlv4_export_with_handle(table4, session->iflow.table_id,
-                                     session->iflow.primary,
-                                     session->rflow.table_id,
-                                     session->rflow.primary,
+            ftlv4_export_with_handle(table4, session->iflow.handle,
+                                     session->rflow.handle,
                                      FLOW_EXPORT_REASON_DEL,
                                      session->iflow_rx,
                                      session->drop,
                                      thread);
         }
         session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->iflow.table_id,
-                                                session->iflow.primary, thread) != 0)) {
+        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->iflow.handle,
+                                                thread) != 0)) {
             goto end;
         }
         pds_flow_hw_ctx_unlock(session);
@@ -83,8 +81,8 @@ pds_flow_delete_session (u32 ses_id)
         }
 
         session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->rflow.table_id,
-                                                session->rflow.primary, thread) != 0)) {
+        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->rflow.handle,
+                                                thread) != 0)) {
             goto end;
         }
         pds_flow_hw_ctx_unlock(session);
@@ -101,14 +99,12 @@ pds_flow_delete_session (u32 ses_id)
     } else {
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
         if (flow_log_enabled) {
-            ftl_export_with_handle(table, session->iflow.table_id,
-                                   session->iflow.primary,
+            ftl_export_with_handle(table, session->iflow.handle,
                                    FLOW_EXPORT_REASON_DEL,
                                    session->drop);
         }
         session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.table_id,
-                                                session->iflow.primary) != 0)) {
+        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.handle) != 0)) {
             goto end;
         }
         pds_flow_hw_ctx_unlock(session);
@@ -117,8 +113,7 @@ pds_flow_delete_session (u32 ses_id)
         }
 
         session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->rflow.table_id,
-                                                session->rflow.primary) != 0)) {
+        if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->rflow.handle) != 0)) {
            goto end;
         }
         pds_flow_hw_ctx_unlock(session);

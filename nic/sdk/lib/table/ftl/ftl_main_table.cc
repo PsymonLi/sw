@@ -82,6 +82,7 @@ main_table::initctx_(Apictx *ctx) {
 
     // Derive the table_index
     ctx->table_index = ctx->params->hash_32b % table_size_;
+    ctx->pindex = ctx->table_index;
     ctx->hash_msbits = (ctx->params->hash_32b >> num_table_index_bits_) & MASK(num_hash_bits_);
     FTL_TRACE_VERBOSE("M: TID:%d Idx:%d", ctx->table_id, ctx->table_index);
     ctx->bucket = &buckets_[ctx->table_index];
@@ -94,13 +95,14 @@ main_table::initctx_with_handle_(Apictx *ctx) {
 
     ctx->table_id = table_id_;
 
-    // Derive the table_index
-    if (ctx->params->handle.pvalid()) {
-        ctx->table_index = ctx->params->handle.pindex();
-    } else if (ctx->params->handle.svalid()) {
-        ctx->table_index = ctx->params->handle.sindex();
-    }
-    FTL_TRACE_VERBOSE("M: TID:%d Idx:%d", ctx->table_id, ctx->table_index);
+    // Always start out using the primary index which must be valid.
+    SDK_ASSERT(ctx->params->handle.pvalid());
+    ctx->table_index = ctx->params->handle.pindex();
+    ctx->pindex = ctx->table_index;
+    // Set validate epoch bit 
+    ctx->validate_epoch = 1;
+    FTL_TRACE_VERBOSE("M: TID:%d Idx:%d ValEpoch:%d", ctx->table_id,
+                      ctx->table_index, ctx->validate_epoch);
     ctx->bucket = &buckets_[ctx->table_index];
 
     return SDK_RET_OK;
@@ -145,12 +147,7 @@ main_table::insert_(Apictx *ctx) {
         //         written. we can update the main entry. This will ensure
         //         make before break for any downstream changes.
         ret = buckets_[ctx->table_index].write_(ctx);
-
-        // Note: Do not set handle.pindex() here! The correct index, pindex
-        // or sindex as the case may be, was already correctly set by the final
-        // recursion into buckets insert above, and that would be the value
-        // we want to return in handle.
-        //ctx->params->handle.pindex(ctx->table_index);
+        ctx->params->handle.pindex(ctx->table_index);
     } else {
         FTL_TRACE_ERR("main_table: insert failed: ret:%d", ret);
     }
@@ -249,11 +246,7 @@ __label__ done;
     FTL_RET_CHECK_AND_GOTO(ret, done, "find r:%d", ret);
 
     ret = match_ctx->bucket->update_(match_ctx);
-
-    // Note: Do not set handle.pindex() here! The correct index, pindex
-    // or sindex as the case may be, was already correctly set by buckets
-    // update above, and that would be the value we want to return in handle.a
-    //ctx->params->handle.pindex(ctx->table_index);
+    ctx->params->handle.pindex(ctx->table_index);
     FTL_RET_CHECK_AND_GOTO(ret, done, "bucket update r:%d", ret);
 
 done:
@@ -296,17 +289,19 @@ main_table::get_with_handle_(Apictx *ctx) {
     sdk_ret_t ret = SDK_RET_OK;
     SDK_ASSERT(initctx_with_handle_(ctx) == SDK_RET_OK);
 
-    if (ctx->params->handle.svalid()) {
-        return hint_table_->get_with_handle_(ctx);
-    }
-
     lock_(ctx);
 
+    if (ctx->params->handle.svalid()) {
+        ret = hint_table_->get_with_handle_(ctx);
+        goto done;
+    }
+
     ret = ctx->bucket->read_(ctx);
-    SDK_ASSERT(ret == SDK_RET_OK);
+    FTL_RET_CHECK_AND_GOTO(ret, done, "bucket read r:%d", ret);
 
     ctx->params->entry->copy_key_data(ctx->entry);
 
+done:
     unlock_(ctx);
     return ret;
 }

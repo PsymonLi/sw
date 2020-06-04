@@ -441,7 +441,7 @@ dump_single_flow(pds_flow_iter_cb_arg_t *iter_cb_arg)
 {
     pds_flow_key_t *key = &iter_cb_arg->flow_key;
     pds_flow_data_t *data = &iter_cb_arg->flow_appdata;
-    sdk::table::handle_t handle(iter_cb_arg->handle);
+    sdk::table::handle_t handle(iter_cb_arg->handle64);
     int prmry = handle.pvalid() ? handle.pindex() : -1;
     int scdry = handle.svalid() ? handle.sindex() : -1;
 
@@ -450,7 +450,7 @@ dump_single_flow(pds_flow_iter_cb_arg_t *iter_cb_arg)
                         "DstIP:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x "
                         "Dport:%u Sport:%u Proto:%u "
                         "Ktype:%u VNICID:%u "
-                        "index:%u index_type:%u prmry:%d scdry:%d\n",
+                        "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
                         key->ip_saddr[0], key->ip_saddr[1], key->ip_saddr[2], key->ip_saddr[3],
                         key->ip_saddr[4], key->ip_saddr[5], key->ip_saddr[6], key->ip_saddr[7],
                         key->ip_saddr[8], key->ip_saddr[9], key->ip_saddr[10], key->ip_saddr[11],
@@ -462,19 +462,19 @@ dump_single_flow(pds_flow_iter_cb_arg_t *iter_cb_arg)
                         key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
                         key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
                         data->index, (uint8_t)data->index_type,
-                        prmry, scdry);
+                        prmry, scdry, handle.epoch());
     } else {
         CACHE_DUMP_LOG("SrcIP:%d.%d.%d.%d "
                         "DstIP:%d.%d.%d.%d "
                         "Dport:%u Sport:%u Proto:%u "
                         "Ktype:%u VNICID:%u "
-                        "index:%u index_type:%u prmry:%d scdry:%d\n",
+                        "index:%u index_type:%u prmry:%d scdry:%d epoch:%u\n",
                         key->ip_saddr[3], key->ip_saddr[2], key->ip_saddr[1], key->ip_saddr[0],
                         key->ip_daddr[3], key->ip_daddr[2], key->ip_daddr[1], key->ip_daddr[0],
                         key->l4.tcp_udp.dport, key->l4.tcp_udp.sport,
                         key->ip_proto, (uint8_t)key->key_type, key->vnic_id,
                         data->index, (uint8_t)data->index_type,
-                        prmry, scdry);
+                        prmry, scdry, handle.epoch());
     }
     return;
 }
@@ -686,14 +686,16 @@ dump_session_info(FILE *fp,
 {
     const pds_flow_session_flow_data_t *h2s = &info->spec.data.host_to_switch_flow_info;
     const pds_flow_session_flow_data_t *s2h = &info->spec.data.switch_to_host_flow_info;
-    uint32_t cache_id = 0;
-    bool primary = false;
+    uint64_t handle64 = 0;
+ 
+    pds_flow_session_ctx_get(key->session_info_id, &handle64);
+    sdk::table::handle_t handle(handle64);
+    int prmry = handle.pvalid() ? handle.pindex() : -1;
+    int scdry = handle.svalid() ? handle.sindex() : -1;
 
-    pds_flow_session_ctx_get(key->session_info_id, &cache_id, &primary);
-
-    SESSION_DUMP_LOG("ID:%u dir:0x%x cacheID:%u primary:%u timestamp:%u\n",
-                     key->session_info_id, key->direction, cache_id,
-                     primary, info->status.timestamp);
+    SESSION_DUMP_LOG("ID:%u dir:0x%x prmry:%d scdry:%d epoch:%u timestamp:%u\n",
+                     key->session_info_id, key->direction, prmry,
+                     scdry, handle.epoch(), info->status.timestamp);
     SESSION_DUMP_LOG("  conntrackID:%u skipLog:%u "
                      "hostMac:%02x:%02x:%02x:%02x:%02x:%02x\n",
                      info->spec.data.conntrack_id, info->spec.data.skip_flow_log,

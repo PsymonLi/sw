@@ -50,32 +50,39 @@ public:
     uint32_t pindex() { return pindex_; }
     // Handle's Secondary Index (GET)
     uint32_t sindex() { return sindex_; }
+    // Handle's Epoch (GET)
+    uint8_t epoch() { return epoch_; }
     // Handle's Primary Index (SET)
     void pindex(uint32_t p) { pindex_ = p; pvalid_ = 1; }
     // Handle's Secondary Index (SET)
     void sindex(uint32_t s) { sindex_ = s; svalid_ = 1; }
+    // Handle's Epoch (SET)
+    void epoch(uint8_t e) { epoch_ = e; }
     bool operator ==(const handle_t& h) { return value_ == h.value_; }
     bool operator !=(const handle_t& h) { return value_ != h.value_; }
     char *tostr(char *buff, uint32_t len) {
         assert(len >= SDK_TABLE_HANDLE_STR_LEN);
-        snprintf(buff, len, "%d.%d.%d.%d", pvalid_, pindex_, svalid_, sindex_);
+        snprintf(buff, len, "%lu.%lu.%lu.%lu.%lu", pvalid_, pindex_, svalid_, sindex_, epoch_);
         return buff;
     }
     char *tostr() {
         static char hdlstr[SDK_TABLE_HANDLE_STR_LEN];
-        sprintf(hdlstr, "%d.%d.%d.%d", pvalid_, pindex_, svalid_, sindex_);
+        sprintf(hdlstr, "%lu.%lu.%lu.%lu.%lu", pvalid_, pindex_, svalid_, sindex_, epoch_);
         return hdlstr;
     }
     uint64_t tou64() { return value_; }
+    void tohandle(uint64_t v) { value_ = v; }
     void clear() { value_ = 0; }
 
 private:
     union {
         struct {
-            uint32_t pindex_ : 32;
-            uint32_t sindex_ : 30;
-            uint32_t pvalid_ : 1;
-            uint32_t svalid_ : 1;
+            uint64_t pindex_ : 28;
+            uint64_t sindex_ : 26;
+            uint64_t pvalid_ : 1;
+            uint64_t svalid_ : 1;
+            uint64_t epoch_  : 7;
+            uint64_t rsvd_   : 1;
         };
         uint64_t value_;
     } __attribute__((__packed__));

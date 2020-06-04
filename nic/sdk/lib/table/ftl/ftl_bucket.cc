@@ -17,6 +17,14 @@ Bucket::read_(Apictx *ctx, bool force_hwread) {
         SDK_ASSERT(ctx->table_index);
     }
 
+    if (ctx->validate_epoch) {
+        if (epoch_ != ctx->params->handle.epoch()) {
+            FTL_TRACE_DEBUG("Epoch mismatch: handle:%d, actual:%d",
+                            ctx->params->handle.epoch(), epoch_);
+            return SDK_RET_RETRY;
+        }
+    }
+
     if (valid_ || force_hwread) {
         auto p4pdret = memrd(ctx);
         SDK_ASSERT_RETURN(p4pdret == P4PD_SUCCESS, SDK_RET_HW_READ_ERR);
@@ -92,6 +100,9 @@ Bucket::create_(Apictx *ctx) {
 
     // Update the bucket meta data
     valid_ = true;
+
+    ctx->params->handle.epoch(epoch_);
+    FTL_TRACE_VERBOSE("epoch: %d", ctx->params->handle.epoch());
     // New entry, write required.
     ctx->write_pending = true;
 
@@ -379,6 +390,8 @@ Bucket::remove_(Apictx *ctx) {
         // This bucket has no hints, we can now write to HW and
         // finish the remove processing.
         valid_ = false;
+        // Update epoch
+        epoch_++;
         ret = write_(ctx);
         if (ret != SDK_RET_OK) {
             FTL_TRACE_ERR("HW write failed. ret:%d", ret);
@@ -478,10 +491,21 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
     // reason for 2 notifications is application can invoke its locking
     // mechanism before start move and unlock after move.
     if ((ectx != tctx) && ectx->params->movecb) {
-        tctx->is_main() ? old_handle.pindex(tctx->table_index) :
-                          old_handle.sindex(tctx->table_index);
-        ectx->is_main() ? new_handle.pindex(ectx->table_index) :
-                          new_handle.sindex(ectx->table_index);
+
+        // Handles must supply pindex, plus sindex if applicable.
+        // Sindex is easy to determine but pindex has to be taken
+        // from its initial propagation in main_table initctx.
+        old_handle.pindex(tctx->pindex);
+        new_handle.pindex(ectx->pindex);
+        if (!tctx->is_main()) {
+            old_handle.sindex(tctx->table_index);
+        }
+        if (!ectx->is_main()) {
+            new_handle.sindex(ectx->table_index);
+        }
+        // Update epoch
+        old_handle.epoch(++tctx->bucket->epoch_);
+        new_handle.epoch(ectx->bucket->epoch_);
         ectx->params->movecb(tctx->entry, old_handle, new_handle, false);
     }
 

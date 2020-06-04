@@ -30,7 +30,7 @@ ftll2_remove (ftll2 *obj, flow_hash_entry_t *entry, uint32_t hash)
 }
 
 int
-ftll2_get_with_handle(ftl *obj, uint32_t index, bool primary)
+ftll2_get_with_handle(ftl *obj, uint64_t handle)
 {
     sdk_table_api_params_t params = {0};
     flow_hash_entry_t entry;
@@ -40,11 +40,7 @@ ftll2_get_with_handle(ftl *obj, uint32_t index, bool primary)
         return 0;
     }
 
-    if (primary) {
-        params.handle.pindex(index);
-    } else {
-        params.handle.sindex(index);
-    }
+    params.handle.tohandle(handle);
     params.entry = &entry;
 
     if (SDK_RET_OK != obj->get_with_handle(&params)) {
@@ -201,12 +197,11 @@ ftll2_cache_advance_count (int val)
 }
 
 int
-ftll2_cache_program_index (ftll2 *obj, uint16_t id, uint32_t *pindex, 
-                           uint32_t *sindex)
+ftll2_cache_program_index (ftll2 *obj, uint16_t id, uint64_t *handle)
 {
     return ftl_insert(obj, g_l2_flow_cache.flow + id,
                       g_l2_flow_cache.hash[id],
-                      pindex, sindex,
+                      handle,
                       g_l2_flow_cache.flags[id].update);
 }
 
@@ -270,12 +265,12 @@ void
 ftll2_cache_batch_flush (ftll2 *obj, int *status)
 {
     int i;
-    uint32_t pindex, sindex;
+    uint64_t handle;
 
     for (i = 0; i < g_l2_flow_cache.count; i++) {
        status[i] = ftl_insert(obj, g_l2_flow_cache.flow + i,
                               g_l2_flow_cache.hash[i],
-                              &pindex, &sindex,
+                              &handle,
                               g_l2_flow_cache.flags[i].update);
     }
 }

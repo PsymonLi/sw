@@ -1897,7 +1897,6 @@ ftl_lif_queues_ctl_t::init(const mpu_timestamp_init_cmd_t *cmd)
         }
 
         qstate.qstate_2ring.pc_offset = pc_offset;
-        qstate.qstate_2ring.eval_last = 1 << MPU_TIMESTAMP_RING_TIMER;
         qstate.qstate_2ring.cosB = cmd->cos_override ? cmd->cos : lif.cosB;
         qstate.qstate_2ring.host_wrings = 0;
         qstate.qstate_2ring.total_wrings = MPU_TIMESTAMP_RING_MAX;
@@ -2392,7 +2391,6 @@ ftl_lif_queues_ctl_t::scanner_init_single(const scanner_init_single_cmd_t *cmd)
             return status;
         }
         qstate.cb.qstate_2ring.pc_offset = pc_offset;
-        qstate.cb.qstate_2ring.eval_last = 1 << SCANNER_RING_TIMER;
         qstate.cb.qstate_2ring.cosB = cmd->cos_override ? cmd->cos : lif.cosB;
         qstate.cb.qstate_2ring.host_wrings = 0;
         qstate.cb.qstate_2ring.total_wrings = SCANNER_RING_MAX;

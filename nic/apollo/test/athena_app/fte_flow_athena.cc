@@ -1954,7 +1954,13 @@ fte_flows_aging_expiry_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_SESSION:
         ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
-        fte_session_index_free(expiry_id);
+
+        /*
+         * Let aging scanners find the entry again if retry needed.
+         */
+        if (ret != PDS_RET_RETRY) {
+            fte_session_index_free(expiry_id);
+        }
         break;
 
     case EXPIRY_TYPE_CONNTRACK:

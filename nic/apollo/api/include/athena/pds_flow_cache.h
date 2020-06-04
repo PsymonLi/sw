@@ -89,7 +89,7 @@ typedef struct pds_flow_iter_cb_arg_s {
     bool               force_read;
     pds_flow_key_t     flow_key;
     pds_flow_data_t    flow_appdata;
-    uint64_t           handle;
+    uint64_t           handle64;
     void               *appctx;
 } pds_flow_iter_cb_arg_t;
 

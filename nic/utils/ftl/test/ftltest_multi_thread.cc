@@ -169,3 +169,19 @@ TEST_F(multi_thread, remove1M_with_hash)
     insert_bulk_async(1024*1024, sdk::SDK_RET_OK, WITH_HASH);
     remove_bulk_async(1024*1024, sdk::SDK_RET_OK, WITH_HASH);
 }
+
+TEST_F(multi_thread, test_overflow_full_with_hash)
+{
+    std::string pipeline;
+
+    if (!std::getenv("PIPELINE")) {
+        return;
+    }
+    pipeline = std::string(std::getenv("PIPELINE"));
+    if (pipeline != "athena") {
+        return;
+    }
+
+    insert_bulk_async(3145725, sdk::SDK_RET_OK, WITH_HASH);
+    insert_bulk_async(1, sdk::SDK_RET_NO_RESOURCE, WITH_HASH);
+}

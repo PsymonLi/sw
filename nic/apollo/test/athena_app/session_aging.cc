@@ -421,13 +421,14 @@ session_aging_expiry_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_SESSION:
         if (aging_expiry_dflt_fn) {
-
-            session_tolerance.expiry_count_inc();
-            session_tolerance.session_tmo_tolerance_check(expiry_id);
-            session_tolerance.create_id_map_find_erase(expiry_id);
             ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
-            if (session_tolerance.using_fte_indices()) {
-                fte_ret = fte_ath::fte_session_index_free(expiry_id);
+            if (ret != PDS_RET_RETRY) {
+                session_tolerance.expiry_count_inc();
+                session_tolerance.session_tmo_tolerance_check(expiry_id);
+                session_tolerance.create_id_map_find_erase(expiry_id);
+                if (session_tolerance.using_fte_indices()) {
+                    fte_ret = fte_ath::fte_session_index_free(expiry_id);
+                }
             }
         }
         break;
@@ -441,7 +442,8 @@ session_aging_expiry_fn(uint32_t expiry_id,
         break;
     }
 
-    if ((ret != PDS_RET_OK) || (fte_ret != SDK_RET_OK)) {
+    if (((ret != PDS_RET_OK) && (ret != PDS_RET_RETRY)) ||
+        (fte_ret != SDK_RET_OK)) {
         if (session_tolerance.delete_errors() == 0) {
             TEST_LOG_ERR("failed flow deletion on session_id %u: "
                          "ret %d fte_ret %d\n", expiry_id, ret, fte_ret);

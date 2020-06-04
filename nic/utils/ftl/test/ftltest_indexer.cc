@@ -78,3 +78,25 @@ TEST_F(FtlIndexerGtest, overflow) {
     ret = idx.alloc(index);
     ASSERT_TRUE(ret == SDK_RET_NO_RESOURCE);
 }
+
+TEST_F(FtlIndexerGtest, full) {
+    sdk_ret_t ret;
+    bool      is_full = false;
+    uint32_t index;
+
+    is_full = idx.full();
+    ASSERT_FALSE(is_full);
+
+    for(auto i=0; i < num_entries; i++) {
+        ret = idx.alloc(index);
+        ASSERT_TRUE(ret == sdk::SDK_RET_OK);
+    }
+
+    is_full = idx.full();
+    ASSERT_TRUE(is_full);
+
+    idx.free(num_entries-1);
+
+    is_full = idx.full();
+    ASSERT_FALSE(is_full);
+}

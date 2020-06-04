@@ -11,6 +11,7 @@
 #include <system.h>
 #include <time.h>
 #include <nic/vpp/infra/shm_ipc/shm_ipc.h>
+#include <inttypes.h>
 #include "node.h"
 #include "cli_helper.h"
 #include "pdsa_hdlr.h"
@@ -801,12 +802,10 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     vlib_cli_output(vm, "  %-21s: %d\n", "Ingress Subnet ID",
                     session->ingress_bd);
     vlib_cli_output(vm, "  %-21s: %lu\n", "Timer Handle", session->timer_hdl);
-    vlib_cli_output(vm, "  %-21s: %d : %s\n", "IFlow table index",
-                    session->iflow.table_id,
-                    session->iflow.primary ? "primary" : "secondary");
-    vlib_cli_output(vm, "  %-21s: %d : %s\n", "RFlow table index",
-                    session->rflow.table_id,
-                    session->rflow.primary ? "primary" : "secondary");
+    vlib_cli_output(vm, "  %-21s: 0x%" PRIx64 "\n", "IFlow handle",
+                    session->iflow.handle);
+    vlib_cli_output(vm, "  %-21s: 0x%" PRIx64 "\n", "RFlow handle",
+                    session->rflow.handle);
     vlib_cli_output(vm, "  %-21s: %s\n", "Packet type", 
                     pds_flow_pkt_type_str[session->packet_type]);
     vlib_cli_output(vm, "  %-21s: %s\n", "Flags",
@@ -825,9 +824,8 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     }
     vlib_cli_output(vm, "%s", delimiter);
     if (session->v4) {
-        ret = ftlv4_dump_entry_with_handle(fm->table4, session->iflow.table_id,
-                                           session->iflow.primary, &flow_info, 
-                                           vm->thread_index);
+        ret = ftlv4_dump_entry_with_handle(fm->table4, session->iflow.handle,
+                                           &flow_info, vm->thread_index);
         if (ret < 0) {
             vlib_cli_output(vm, "Iflow entry not found.");
         } else {
@@ -856,9 +854,8 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
             }
         }
 
-        ret = ftlv4_dump_entry_with_handle(fm->table4, session->rflow.table_id,
-                                           session->rflow.primary, &flow_info,
-                                           vm->thread_index);
+        ret = ftlv4_dump_entry_with_handle(fm->table4, session->rflow.handle,
+                                           &flow_info, vm->thread_index);
         if (ret < 0) {
             vlib_cli_output(vm, "Rflow entry not found.");
         } else {

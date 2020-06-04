@@ -71,7 +71,9 @@ public:
     
     // 32 Bits
     uint32_t table_index;
+    uint32_t pindex;
     uint32_t op;
+    uint32_t validate_epoch:1;
     uint32_t clear_global_state:1;
     uint32_t clear_thread_local_state:1;
     // 32 Bits

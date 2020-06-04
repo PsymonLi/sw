@@ -236,13 +236,7 @@ typedef enum {
 } pds_flow_timer;
 
 typedef CLIB_PACKED(union pds_flow_index_s_ {
-    union {
-        u8 index[3];
-        struct {
-            u32 table_id : 23;
-            u32 primary : 1;
-        };
-    };
+    u64 handle;
 }) pds_flow_index_t;
 
 // Store iflow and rflow index for each allocated session
@@ -572,9 +566,8 @@ always_inline pds_flow_protocol pds_flow_trans_proto(u8 proto)
     return PDS_FLOW_PROTO_OTHER;
 }
 
-always_inline void pds_session_set_data(u32 ses_id, u32 i_pindex,
-                                        u32 i_sindex, u32 r_pindex,
-                                        u32 r_sindex, pds_flow_protocol proto,
+always_inline void pds_session_set_data(u32 ses_id, u64 i_handle, u64 r_handle,
+                                        pds_flow_protocol proto,
                                         uint8_t vnic_id, bool v4,
                                         bool host_origin, u8 packet_type,
                                         bool drop, u8 thread_id)
@@ -584,20 +577,8 @@ always_inline void pds_session_set_data(u32 ses_id, u32 i_pindex,
     //pds_flow_prog_lock();
     pds_flow_hw_ctx_t *data = pool_elt_at_index(fm->session_index_pool,
                                                 (ses_id - 1));
-    if (i_pindex != ((u32) (~0L))) {
-        data->iflow.table_id = i_pindex;
-        data->iflow.primary = 1;
-    } else {
-        data->iflow.table_id = i_sindex;
-        data->iflow.primary = 0;
-    }
-    if (r_pindex != ((u32) (~0L))) {
-        data->rflow.table_id = r_pindex;
-        data->rflow.primary = 1;
-    } else {
-        data->rflow.table_id = r_sindex;
-        data->rflow.primary = 0;
-    }
+    data->iflow.handle = i_handle;
+    data->rflow.handle = r_handle;
     data->proto = proto;
     data->v4 = v4;
     data->is_in_use = 1;
@@ -656,7 +637,7 @@ always_inline void pds_session_id_flush(void)
     }                                                   \
 }                                                       \
 
-void pds_session_update_data(u32 ses_id, u32 pindex, u32 sindex,
+void pds_session_update_data(u32 ses_id, u64 new_handle,
                              bool iflow, bool move_complete, bool lock);
 
 void pds_session_recv_begin();

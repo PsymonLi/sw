@@ -59,9 +59,9 @@ pds_get_ipv4_flow_params (u32 ses_id, ipv4_flow_params_t *flow_params)
         return -1;
     }
 
-    flow_index = session->iflow;
-    if (ftlv4_get_with_handle(table4, flow_index.table_id,
-                              flow_index.primary, thread) != 0) {
+    flow_index.handle = session->iflow.handle;
+    if (ftlv4_get_with_handle(table4, flow_index.handle,
+                              thread) != 0) {
         ret = -1;
         goto end;
     }
@@ -100,25 +100,24 @@ pds_flow_lookup_id_update (pds_flow_hw_ctx_t *session, bool iflow,
                            u16 lookup_id)
 {
     ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
-    u32 pindex, sindex;
+    u64 new_handle;
     pds_flow_main_t *fm = &pds_flow_main;
     u32 ses_id = session - fm->session_index_pool + 1;
-    u32 table_id = iflow ? session->iflow.table_id : session->rflow.table_id;
-    bool primary = iflow ? session->iflow.primary : session->rflow.primary;
+    u64 handle = iflow ? session->iflow.handle : session->rflow.handle;
     bool l2l = (session->packet_type == PDS_FLOW_L2L_INTER_SUBNET ||
                 session->packet_type == PDS_FLOW_L2L_INTRA_SUBNET) ? true : false;
-    if (PREDICT_FALSE(ftlv4_insert_with_new_lookup_id(table4, table_id,
-                                                      primary, &pindex, &sindex,
+    if (PREDICT_FALSE(ftlv4_insert_with_new_lookup_id(table4, handle,
+                                                      &new_handle,
                                                       lookup_id, l2l) != 0)) {
         flow_log_error("%s ftlv4 insert failed", __FUNCTION__);
         return -1;
     }
-    pds_session_update_data(ses_id, pindex, sindex, iflow, false, false);
+    pds_session_update_data(ses_id, new_handle, iflow, false, false);
     return 0;
 }
 
 int
-pds_flow_delete (pds_flow_hw_ctx_t *session, u32 index, bool primary)
+pds_flow_delete (pds_flow_hw_ctx_t *session, u64 handle)
 {
     int thread = vlib_get_thread_index();
 
@@ -126,7 +125,7 @@ pds_flow_delete (pds_flow_hw_ctx_t *session, u32 index, bool primary)
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
 
         pds_flow_hw_ctx_lock(session);
-        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, index, primary, thread) !=0)) {
+        if (PREDICT_FALSE(ftlv4_get_with_handle(table4, handle, thread) !=0)) {
             goto end;
         }
         pds_flow_hw_ctx_unlock(session);
@@ -137,7 +136,7 @@ pds_flow_delete (pds_flow_hw_ctx_t *session, u32 index, bool primary)
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
 
         pds_flow_hw_ctx_lock(session);
-        if (PREDICT_FALSE(ftlv6_get_with_handle(table, index, primary) !=0)) {
+        if (PREDICT_FALSE(ftlv6_get_with_handle(table, handle) !=0)) {
             goto end;
         }
         pds_flow_hw_ctx_unlock(session);
@@ -156,9 +155,9 @@ static void
 pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
 {
     int ret;
-    u32 index;
+    u64 handle;
     u16 bd_id, tx_rewrite, rx_rewrite;
-    bool primary, l2l;
+    bool l2l;
     u16 thread_id = vlib_get_thread_index();
     ftlv4 *table4 = pds_flow_prog_get_table4();
     pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(data->ses_id);
@@ -176,8 +175,7 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
             // In this case, get bd_id from iflow
             pds_flow_hw_ctx_lock(session);
             ret = ftlv4_get_with_handle(table4,
-                                        session->iflow.table_id,
-                                        session->iflow.primary,
+                                        session->iflow.handle,
                                         thread_id);
             pds_flow_hw_ctx_unlock(session);
 
@@ -192,13 +190,12 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
 
         // We need to insert the rflow with the new bd_id and then delete
         // the old flow
-        index = session->rflow.table_id;
-        primary = session->rflow.primary;
+        handle = session->rflow.handle;
         if (PREDICT_FALSE(pds_flow_lookup_id_update(session, data->iflow,
                                                     bd_id) != 0)) {
             return;
         }
-        if (PREDICT_FALSE(pds_flow_delete(session, index, primary) != 0)) {
+        if (PREDICT_FALSE(pds_flow_delete(session, handle) != 0)) {
             return;
         }
         break;
@@ -216,8 +213,7 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
         // In this case, we only need to update l2l flag in the rflow.
         pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
-                                    session->rflow.table_id,
-                                    session->rflow.primary,
+                                    session->rflow.handle,
                                     thread_id);
         pds_flow_hw_ctx_unlock(session);
 
@@ -252,8 +248,7 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
 
     pds_flow_hw_ctx_lock(session);
     ret = ftlv4_get_with_handle(table4,
-                                session->iflow.table_id,
-                                session->iflow.primary,
+                                session->iflow.handle,
                                 thread_id);
     pds_flow_hw_ctx_unlock(session);
 
@@ -278,9 +273,9 @@ static void
 pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
 {
     int ret;
-    u32 index;
+    u64 handle;
     u16 bd_id, tx_rewrite, rx_rewrite;
-    bool primary, l2l;
+    bool l2l;
     ftlv4 *table4 = pds_flow_prog_get_table4();
     u16 thread_id = vlib_get_thread_index();
     pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(data->ses_id);
@@ -298,8 +293,7 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
             // In this case, get bd_id from rflow
             pds_flow_hw_ctx_lock(session);
             ret = ftlv4_get_with_handle(table4,
-                                        session->rflow.table_id,
-                                        session->rflow.primary,
+                                        session->rflow.handle,
                                         thread_id);
             pds_flow_hw_ctx_unlock(session);
 
@@ -314,13 +308,12 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
 
         // We need to insert the iflow with the new bd_id and then delete
         // the old flow
-        index = session->iflow.table_id;
-        primary = session->iflow.primary;
+        handle = session->iflow.handle;
         if (PREDICT_FALSE(pds_flow_lookup_id_update(session, data->iflow,
                                                     bd_id) != 0)) {
             return;
         }
-        if (PREDICT_FALSE(pds_flow_delete(session, index, primary) != 0)) {
+        if (PREDICT_FALSE(pds_flow_delete(session, handle) != 0)) {
             return;
         }
         break;
@@ -338,8 +331,7 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
         // In this case, we only need to update l2l flag in the iflow.
         pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
-                                    session->iflow.table_id,
-                                    session->iflow.primary,
+                                    session->iflow.handle,
                                     thread_id);
         pds_flow_hw_ctx_unlock(session);
 
@@ -376,8 +368,7 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
 
     pds_flow_hw_ctx_lock(session);
     ret = ftlv4_get_with_handle(table4,
-                                session->rflow.table_id,
-                                session->rflow.primary,
+                                session->rflow.handle,
                                 thread_id);
     pds_flow_hw_ctx_unlock(session);
 

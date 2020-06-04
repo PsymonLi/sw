@@ -411,8 +411,6 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
     case EXPIRY_TYPE_SESSION: {
         pds_flow_data_t         data;
         pds_flow_session_key_t  key = {0};
-        pds_ret_t               cache_ret;
-        pds_ret_t               session_ret;
 
         if (expiry_log_en) {
             PDS_TRACE_DEBUG("session_id %u expired", expiry_id);
@@ -424,12 +422,23 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
          */
         data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
         data.index = expiry_id;
-        cache_ret = pds_flow_cache_entry_delete_by_flow_info(&data);
+        ret = pds_flow_cache_entry_delete_by_flow_info(&data);
 
+        /*
+         * A PDS_RET_RETRY here means the flow cache was still in flux
+         * with movements. Leave this entry alone and let scanners
+         * catch it again in the next scan.
+         */
+        if (ret == PDS_RET_RETRY) {
+            break;
+        }
+
+        /*
+         * Other errors are not recoverable so clean up the session.
+         */
         key.session_info_id = expiry_id;
         key.direction = HOST_TO_SWITCH | SWITCH_TO_HOST;
-        session_ret = pds_flow_session_info_delete(&key);
-        ret = cache_ret != PDS_RET_OK ? cache_ret : session_ret;
+        ret = pds_flow_session_info_delete(&key);
         break;
     }
 

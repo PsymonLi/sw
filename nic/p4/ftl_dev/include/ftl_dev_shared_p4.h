@@ -32,7 +32,7 @@ header_type scanner_session_cb_t {
     
 #define SCANNER_SESSION_CB_PRAGMA                                               \
 @pragma little_endian pi_0 ci_0 pi_1 ci_1                                       \
-    scan_resched_time normal_tmo_cb_addr accel_tmo_cb_addr cb_activate          \
+    scan_resched_ticks normal_tmo_cb_addr accel_tmo_cb_addr cb_activate         \
 
 #define SCANNER_SESSION_CB_USE(scratch)                                         \
     modify_field(scratch.rsvd, rsvd);                                           \

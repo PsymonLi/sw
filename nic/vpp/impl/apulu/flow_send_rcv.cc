@@ -89,10 +89,10 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
     info.Clear();
 
     // Read the iflow and rflow entries
-    ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->iflow_index,
-                         sess->iflow_primary, &iflow, thread_index);
-    ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->rflow_index,
-                         sess->rflow_primary, &rflow, thread_index);
+    ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->iflow_handle,
+                         &iflow, thread_index);
+    ftlv4_get_flow_entry((ftlv4 *)sess->flow_table, sess->rflow_handle,
+                         &rflow, thread_index);
 
     info.set_sessid(iflow.session_index);
     info.set_state(::vppinternal::FlowState(sess->flow_state));

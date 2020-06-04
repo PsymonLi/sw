@@ -590,8 +590,8 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
 
     if (session->v4) {
         ftlv4 *table4 = pds_flow_prog_get_table4();
-        if (ftlv4_get_with_handle(table4, flow_index.table_id,
-                                  flow_index.primary, vm->thread_index) != 0) {
+        if (ftlv4_get_with_handle(table4, flow_index.handle,
+                                  vm->thread_index) != 0) {
             return -1;
         }
 
@@ -610,8 +610,7 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
     } else {
 
         ftlv6 *table = pds_flow_prog_get_table6_or_l2();
-        if (ftlv6_get_with_handle(table, flow_index.table_id,
-                                  flow_index.primary) != 0) {
+        if (ftlv6_get_with_handle(table, flow_index.handle) != 0) {
             return -1;
         }
 
