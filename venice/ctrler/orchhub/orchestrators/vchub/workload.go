@@ -373,7 +373,7 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		return
 	}
 	// Check new host
-	if v.pCache.GetHostByName(hostName) == nil || v.StateMgr.CheckHostMigrationCompliance(hostName) != nil {
+	if v.StateMgr.CheckHostMigrationCompliance(hostName) != nil {
 		v.Log.Infof("Ignore VMotion Event for VM %s - to non-pensando host %s", m.VMKey, hostName)
 		// Workload delete will happen as part of WL watch when vMotion is complete
 		return
@@ -387,10 +387,7 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		return
 	}
 
-	if curHostName == "" || v.pCache.GetHostByName(hostName) == nil || v.StateMgr.CheckHostMigrationCompliance(curHostName) != nil {
-		if err := v.StateMgr.CheckHostMigrationCompliance(curHostName); err != nil {
-			v.Log.Infof("VMotion: Current host is not pensando host: %s", err)
-		}
+	if curHostName == "" || v.StateMgr.CheckHostMigrationCompliance(curHostName) != nil {
 		// VMs coming from non-pensando hosts requires special flow state handling
 		v.Log.Infof("VMotionStart Event for VM %s from non-pensando host %s", m.VMKey, curHostName)
 		// This will be new WL creation, which will happen when we receive WL watch with new host and
