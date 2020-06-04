@@ -150,12 +150,12 @@ def get_vnic_id(_vnic_type, _nat):
 
 def get_payload(pkt_size):
 
-    size = 0
-    pyld = ""
-    while (size < pkt_size):
-        pyld += DEFAULT_PAYLOAD[size % len(DEFAULT_PAYLOAD)]
-        size += 1
-    return pyld
+    pyld=[]
+    size = len(DEFAULT_PAYLOAD)
+    for i in range(pkt_size):
+        pyld.append(DEFAULT_PAYLOAD[i % size])
+
+    return ''.join(pyld)
 
 def craft_pkt(_types, _dicts):
 
