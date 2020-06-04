@@ -377,6 +377,26 @@ $sidenavPartialWidth: #{$sidenavPartialWidthNum}px;
   @include adjust-inlinebuttons-boundry-screensize(#{$maxWidth - $sidenavWidthNum}px, menuclosed, $formClass);
 }
 
+@mixin global-mat-checkbox($checkboxChecked) {
+  .mat-checkbox-label {
+    @include primary-font(18px);
+  }
+
+  .mat-checkbox-ripple .mat-ripple-element {
+    background-color: $checkboxChecked !important;
+  }
+
+  &.mat-checkbox-checked {
+    .mat-checkbox-layout .mat-checkbox-inner-container .mat-checkbox-background {
+      background-color: $checkboxChecked;
+    }
+  }
+
+  &.mat-checkbox-inner-container {
+    margin-right: 10px;
+  }
+}
+
 // CSS for cards in object detail view
 
 $mediumGray: #676763;

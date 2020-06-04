@@ -226,6 +226,10 @@
   line-height: normal;
   letter-spacing: normal;
   text-align: center;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
 }
 
 .login-error {
@@ -246,6 +250,15 @@
   margin-top: 80px;
   left: 0%;
   right: 0%;
+}
+
+.login-tenant-checkbox-container {
+  margin-bottom: 5px;
+}
+
+.login-tenant-checkbox {
+  font-size: 18px;
+  @include global-mat-checkbox(#17a2b8);
 }
 
 @media (max-height: 700px) {

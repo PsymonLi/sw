@@ -3,24 +3,39 @@
     <div class="row login-center-div">
 
       <div *ngIf="successMessage" class="alert alert-success login-progress"></div>
-      <form (ngSubmit)="login()" class="login-form">
+      <form [formGroup]="loginForm" (ngSubmit)="login()" class="login-form">
         <div class="logo-container">
           <img class="login-image" src="../../../assets/images/Pensando-Logo.jpg"
                alt="Pensando PSM" />
         </div>
         <div class="form-group">
-          <input type="text" class="form-control login-input" name="username" placeholder="Username"
-                 [(ngModel)]="credentials.username">
+          <input type="text" class="form-control login-input" formControlName='username'
+                 name="username" placeholder="Username">
         </div>
 
         <div class="form-group">
-          <input type="password" class="form-control login-input" name="password"
-                 placeholder="Password" [(ngModel)]="credentials.password">
+          <input type="password" class="form-control login-input" formControlName='password'
+                 name="password"
+                 placeholder="Password">
           <!-- <span>
                         <img class="login-image" src="../../../assets/images/login/login-hidepassword.svg" alt="Hide password">  
                         <img class="login-image" src="../../../assets/images/login/login-showpassword.svg" alt="Show password">  
                     </span> -->
         </div>
+        <div class="form-group login-tenant-checkbox-container" formGroupName="showtenant">
+          <mat-checkbox class="login-tenant-checkbox"
+                        #tooltip="matTooltip"
+                        matTooltip="{{loginForm.value.showtenant.enable ? '' : 'Enable checkbox to enter tenant information' }}"
+                        [matTooltipPosition]="'above'"
+                        formControlName="enable" [checked]=false
+                        (change)="onTenantToggle()">Add Tenant</mat-checkbox>
+        </div>
+        <div class="form-group" *ngIf="loginForm.value.showtenant.enable">
+          <input type="text" class="form-control login-input" formControlName='tenant'
+                 name="tenant"
+                 placeholder="Tenant Name">
+        </div>
+
         <div class="form-group">
           <button type="submit" class="btn btn-info button-bg login-signin-btn"
                   [disabled]="loginInProgress || !isLoginInputValided()">SIGN IN</button>

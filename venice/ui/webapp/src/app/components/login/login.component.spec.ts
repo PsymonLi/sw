@@ -1,8 +1,9 @@
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import {  ComponentFixture, TestBed } from '@angular/core/testing';
 import { configureTestSuite } from 'ng-bullet';
-import { FormsModule } from '@angular/forms';
+import { ReactiveFormsModule } from '@angular/forms';
 import { MatIconRegistry } from '@angular/material';
+import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CoreModule } from '@app/core';
 
@@ -26,9 +27,10 @@ describe('LoginComponent', () => {
       declarations: [LoginComponent],
       imports: [
         RouterTestingModule,
-        FormsModule,
         HttpClientTestingModule,
-        CoreModule
+        CoreModule,
+        MaterialdesignModule,
+        ReactiveFormsModule
       ],
       providers: [
         ControllerService,

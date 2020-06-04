@@ -9,6 +9,7 @@ import { ControllerService } from '../../services/controller.service';
 import { Router } from '@angular/router';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LocalStorageService } from '@app/core';
+import { FormGroup, FormControl, Validators } from '@angular/forms';
 
 @Component({
   selector: 'app-login',
@@ -18,7 +19,15 @@ import { LocalStorageService } from '@app/core';
   encapsulation: ViewEncapsulation.None
 })
 export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
-  credentials = { username: '', password: '' };
+  loginForm = new FormGroup({
+    username: new FormControl('', Validators.required),
+    password: new FormControl('', Validators.required),
+    showtenant: new FormGroup({
+      enable: new FormControl(false)
+    }),
+    tenant: new FormControl(),
+  });
+
   successMessage = '';
   errorMessage = '';
   returnUrl: string;
@@ -44,7 +53,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
    * Component enters init stage. It is about to show up
    */
   ngOnInit() {
-     Utility.getInstance().clearAllVeniceObjectCacheData(); // clear all cached data
+    Utility.getInstance().clearAllVeniceObjectCacheData(); // clear all cached data
     if (this._controllerService.isUserLogin()) {
       this.redirect();
       return;
@@ -90,7 +99,7 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
    * This api serves html template
    */
   isLoginInputValided(): boolean {
-    return (!Utility.isEmpty(this.credentials.username) && !Utility.isEmpty(this.credentials.password));
+    return (!Utility.isEmpty(this.loginForm.get('username').value) && !Utility.isEmpty(this.loginForm.get('password').value) && (this.loginForm.get(['showtenant', 'enable']).value ? !Utility.isEmpty(this.loginForm.get('tenant').value) : true));
   }
 
   /**
@@ -104,13 +113,15 @@ export class LoginComponent extends BaseComponent implements OnInit, OnDestroy {
     }
     this.loginInProgress = true;
     const payload = {
-      username: this.credentials.username,
-      password: this.credentials.password,
-      tenant: Utility.getInstance().getTenant()
+      username: this.loginForm.get('username').value,
+      password: this.loginForm.get('password').value,
+      tenant: this.loginForm.get('tenant').value ? this.loginForm.get('tenant').value : Utility.getInstance().getTenant()
     };
     this.store$.dispatch(authActions.login(payload));
   }
-
+  onTenantToggle() {
+    this.loginForm.controls['tenant'].setValue('');
+  }
   onLoginFailure(errPayload) {
     this.loginInProgress = false;
     this.successMessage = '';
