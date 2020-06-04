@@ -225,10 +225,7 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 
 						idr.updateLastProcessedkeys(key)
 
-						// Changing retry intvl to 500ms.
-						// If the retryIntvl is very small (current value is 100ms) and elastic is overloaded then
-						// quick retry results into more load since the whole batch is retried again.
-						helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl*5, fwlogs, pushWorkers)
+						helper(idr.ctx, id, idr.logger, idr.elasticClient, bulkTimeout, indexRetryIntvl, fwlogs, pushWorkers)
 					}
 				}
 			}

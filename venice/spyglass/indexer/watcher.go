@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	indexRetryIntvl = (100 * time.Millisecond)
+	indexRetryIntvl = (500 * time.Millisecond)
 	indexMaxRetries = 5
 	// Time in minutes to tolerate continuous write failures
 	// before we drop the request
@@ -176,7 +176,6 @@ func (idr *Indexer) addWatcher(key string, watch kvstore.Watcher, err error) err
 // Start watch handlers for api-server objects
 func (idr *Indexer) startWatchers() {
 	idr.logger.Info("Starting watchers")
-	activateIndices := false
 	idr.wg.Add(1)
 	go func() {
 
@@ -261,16 +260,6 @@ func (idr *Indexer) startWatchers() {
 			apiGroup := apiGroupMappings[chosen]
 			event := value.Interface().(*kvstore.WatchEvent)
 			idr.handleWatcherEvent(apiGroup, event.Type, event.Object)
-
-			// Launch the index refresher function first time
-			// when there are objects ready to be indexed.
-			// refreshIndices checks if a refresher is already running before
-			// starting of a go routine,
-			// so the watcher group restarting won't cause a leak
-			if activateIndices == false {
-				idr.refreshIndices()
-				activateIndices = true
-			}
 		}
 	}()
 }
