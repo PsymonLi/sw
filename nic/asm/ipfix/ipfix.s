@@ -73,6 +73,8 @@ ipfix_flow_hash_setup:
                     d.{u.ipfix_start_d.flow_hash_index_next}.wx
 
     // save info to global
+    phvwr       p.ipfix_metadata_export_zombie, \
+                    d.u.ipfix_start_d.export_zombie[0:0]
     phvwr       p.ipfix_metadata_qstate_addr, \
                     k.{p4_txdma_intr_qstate_addr_sbit0_ebit1, \
                        p4_txdma_intr_qstate_addr_sbit2_ebit33}

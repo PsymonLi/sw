@@ -49,9 +49,10 @@ typedef struct __attribute__((__packed__)) ipfix_qstate_  {
     uint64_t flow_hash_index_max : 32;
     uint64_t flow_hash_overflow_index_max : 32;
 
+    uint64_t export_zombie : 8;
     uint64_t export_time : 32;
 
-    uint8_t  pad[(512-408)/8];
+    uint8_t  pad[(512-416)/8];
 } ipfix_qstate_t;
 
 static void

@@ -213,8 +213,17 @@ action flow_miss() {
     }
 }
 
-action flow_hit_drop(start_timestamp, mirror_on_drop_overwrite,
-                     mirror_on_drop_en, mirror_on_drop_session_id) {
+action flow_hit_drop(flow_only_policy, dst_lport_en, dst_lport,
+                     multicast_ptr, multicast_en, ingress_mirror_overwrite,
+                     ingress_mirror_session_id, egress_mirror_session_id,
+                     mirror_on_drop_overwrite, mirror_on_drop_en,
+                     mirror_on_drop_session_id,
+                     rewrite_index, tunnel_en, tunnel_rewrite_index, tunnel_vnid,
+                     tunnel_originate, qid_en, log_en, rewrite_flags,
+                     flow_conn_track, flow_ttl, flow_role,
+                     session_state_index, start_timestamp,
+                     qos_class_en, qos_class_id,
+                     export_id1, export_id2, export_id3, export_id4, zombie) {
     /* mirror on drop */
     if (mirror_on_drop_overwrite == TRUE) {
         modify_field(control_metadata.mirror_on_drop_en, mirror_on_drop_en);
@@ -229,6 +238,35 @@ action flow_hit_drop(start_timestamp, mirror_on_drop_overwrite,
     /* dummy ops to keep compiler happy */
     modify_field(scratch_metadata.flag, mirror_on_drop_overwrite);
     modify_field(scratch_metadata.flow_start_timestamp, start_timestamp);
+
+    /* p4 only code to keep d-vectors the same for all exportable actions */
+    modify_field(scratch_metadata.flag, flow_only_policy);
+    modify_field(scratch_metadata.flag, dst_lport_en);
+    modify_field(control_metadata.dst_lport, dst_lport);
+    modify_field(capri_intrinsic.tm_replicate_ptr, multicast_ptr);
+    modify_field(capri_intrinsic.tm_replicate_en, multicast_en);
+    modify_field(scratch_metadata.flag, ingress_mirror_overwrite);
+    modify_field(capri_intrinsic.tm_span_session, ingress_mirror_session_id);
+    modify_field(capri_intrinsic.tm_span_session, egress_mirror_session_id);
+    modify_field(rewrite_metadata.rewrite_index, rewrite_index);
+    modify_field(scratch_metadata.flag, tunnel_en);
+    modify_field(rewrite_metadata.tunnel_rewrite_index, tunnel_rewrite_index);
+    modify_field(rewrite_metadata.tunnel_vnid, tunnel_vnid);
+    modify_field(tunnel_metadata.tunnel_originate, tunnel_originate);
+    modify_field(scratch_metadata.qid_en, qid_en);
+    modify_field(scratch_metadata.log_en, log_en);
+    modify_field(rewrite_metadata.flags, rewrite_flags);
+    modify_field(l4_metadata.flow_conn_track, flow_conn_track);
+    modify_field(scratch_metadata.ttl, flow_ttl);
+    modify_field(flow_info_metadata.flow_role, flow_role);
+    modify_field(flow_info_metadata.session_state_index, session_state_index);
+    modify_field(scratch_metadata.qos_class_en, qos_class_en);
+    modify_field(qos_metadata.qos_class_id, qos_class_id);
+    modify_field(scratch_metadata.export_id, export_id1);
+    modify_field(scratch_metadata.export_id, export_id2);
+    modify_field(scratch_metadata.export_id, export_id3);
+    modify_field(scratch_metadata.export_id, export_id4);
+    modify_field(scratch_metadata.flag, zombie);
 }
 
 action flow_info(flow_only_policy, dst_lport_en, dst_lport,
@@ -241,7 +279,7 @@ action flow_info(flow_only_policy, dst_lport_en, dst_lport,
                  flow_conn_track, flow_ttl, flow_role,
                  session_state_index, start_timestamp,
                  qos_class_en, qos_class_id,
-                 export_id1, export_id2, export_id3, export_id4) {
+                 export_id1, export_id2, export_id3, export_id4, zombie) {
 
     if (multicast_en == TRUE) {
         modify_field(capri_intrinsic.tm_replicate_en, multicast_en);
@@ -342,9 +380,9 @@ action flow_info(flow_only_policy, dst_lport_en, dst_lport,
     // Flow Connection Tracking enabled
     modify_field(l4_metadata.flow_conn_track, flow_conn_track);
 
-     /* rewrite index */
-     modify_field(rewrite_metadata.rewrite_index, rewrite_index);
-     modify_field(rewrite_metadata.flags, rewrite_flags);
+    /* rewrite index */
+    modify_field(rewrite_metadata.rewrite_index, rewrite_index);
+    modify_field(rewrite_metadata.flags, rewrite_flags);
 
     /* tunnel info */
     if (tunnel_en == TRUE) {
@@ -354,7 +392,6 @@ action flow_info(flow_only_policy, dst_lport_en, dst_lport,
     }
 
     /* dummy ops to keep compiler happy */
-    modify_field(scratch_metadata.flag, capri_intrinsic.tm_replicate_en);
     modify_field(scratch_metadata.tm_replicate_ptr, capri_intrinsic.tm_replicate_ptr);
     modify_field(scratch_metadata.flag, flow_only_policy);
     modify_field(scratch_metadata.flag, dst_lport_en);
@@ -370,6 +407,7 @@ action flow_info(flow_only_policy, dst_lport_en, dst_lport,
     modify_field(scratch_metadata.export_id, export_id2);
     modify_field(scratch_metadata.export_id, export_id3);
     modify_field(scratch_metadata.export_id, export_id4);
+    modify_field(scratch_metadata.flag, zombie);
 }
 
 // We can add new parameters as we need. For now if none of the
@@ -400,25 +438,6 @@ action recirc_packet(recirc_reason) {
      */
 }
 
-action flow_hit_from_vm_bounce(src_lif) {
-    remove_header(ethernet);
-    remove_header(ipv4);
-    //remove_header(udp);
-    remove_header(vxlan_gpe);
-    recirc_packet(RECIRC_VM_BOUNCE);
-    modify_field(capri_intrinsic.lif, src_lif);
-}
-
-action flow_hit_to_vm_bounce(dst_lport, qos_class_id) {
-    remove_header(ethernet);
-    remove_header(ipv4);
-    //remove_header(udp);
-    remove_header(vxlan_gpe);
-    modify_field(control_metadata.dst_lport, dst_lport);
-    modify_field(capri_intrinsic.tm_oport, TM_PORT_DMA);
-    modify_field(qos_metadata.qos_class_id, qos_class_id);
-}
-
 @pragma stage 3
 @pragma hbm_table
 @pragma numthreads 2
@@ -433,8 +452,6 @@ table flow_info {
         flow_info_from_cpu;
         flow_miss;
         flow_hit_drop;
-        flow_hit_from_vm_bounce;
-        flow_hit_to_vm_bounce;
     }
     default_action : flow_miss;
     size : FLOW_TABLE_SIZE;

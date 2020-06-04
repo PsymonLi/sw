@@ -7,7 +7,8 @@ header_type ipfix_metadata_t {
         export_en : 4;
         flow_role : 1;
         scan_complete : 1;
-        pad : 12;
+        export_zombie : 1;
+        pad : 11;
         qstate_addr : 34;
     }
 }
@@ -129,8 +130,9 @@ header_type ipfix_pad_t {
 
 header_type ipfix_scratch_metadata_t {
     fields {
-        scan_complete : 1;
         flow_role : 1;
+        scan_complete : 1;
+        export_zombie : 1;
         flow_type : 4;
         export_id : 4;
         export_en : 4;
@@ -169,6 +171,7 @@ header_type ipfix_qstate_metadata_t {
         flow_hash_index_max : 32;
         flow_hash_overflow_index_max : 32;
 
+        export_zombie : 8;
         export_time : 32;
     }
 }

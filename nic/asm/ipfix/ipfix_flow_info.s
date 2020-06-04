@@ -25,11 +25,14 @@ ipfix_flow_info:
     seq.c4      c4, k.ipfix_metadata_export_id, d.u.flow_info_d.export_id4
     bcf         [!c1&!c2&!c3&!c4], ipfix_flow_info_exit
 
+    seq         c6, k.ipfix_metadata_export_zombie, 1
+    seq         c7, d.u.flow_info_d.zombie, 1
+    bcf         [c6 & !c7], ipfix_flow_info_exit
+
     phvwr       p.ipfix_metadata_session_index, d.u.flow_info_d.session_state_index
     phvwr       p.ipfix_metadata_flow_role, d.u.flow_info_d.flow_role
 
     phvwr       p.ipfix_record_common_egress_interface, d.u.flow_info_d.dst_lport
-    // phvwr       p.ipfix_record_common_egress_interface_type, d.u.flow_info_d.multicast_en
     phvwr       p.ipfix_record_common_start_timestamp, d.u.flow_info_d.start_timestamp
     phvwr       p.ipfix_record_ip_role, d.u.flow_info_d.flow_role
     phvwr       p.ipfix_record_ip_ttl, d.u.flow_info_d.flow_ttl
