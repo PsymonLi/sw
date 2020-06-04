@@ -122,7 +122,7 @@ typedef enum pf_tcam_key_fld_pos {
 
 
 void elba_table_rw_cleanup(void);
-
+sdk_ret_t elba_flush_shadow_mem(void);
 sdk_ret_t elba_table_entry_write(uint32_t tableid, uint32_t index,
                                  uint8_t  *hwentry, uint8_t  *hwentry_mask,
                                  uint16_t hwentry_bit_len,

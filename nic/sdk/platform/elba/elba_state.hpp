@@ -27,7 +27,8 @@ public:
     mpartition *mempartition(void) const { return cfg_.mempartition; }
     elb_top_csr_t& elb_top(void) { return *elb_top_; }
     asic_cfg_t *cfg(void) { return &cfg_; }
-
+    void set_write_to_hw(bool val) { write_to_hw_ = val; }
+    bool write_to_hw(void) const { return write_to_hw_; }
 private:
     // TXS scheduler related state
     struct {
@@ -36,6 +37,7 @@ private:
     } __PACK__;
     asic_cfg_t cfg_; // config
     elb_top_csr_t *elb_top_;
+    bool write_to_hw_;
 
 private:
     elba_state_pd();
@@ -45,6 +47,13 @@ private:
 extern class elba_state_pd *g_elba_state_pd;
 
 extern sdk_ret_t elba_state_pd_init(asic_cfg_t *cfg);
+void elba_set_write_to_hw(bool val);
+
+static inline bool
+elba_write_to_hw (void)
+{
+    return g_elba_state_pd->write_to_hw();
+}
 
 }    // namespace elba
 }    // namespace platform

@@ -1098,6 +1098,133 @@ capri_global_pics_get (uint32_t tableid)
     return ((cap_pics_csr_t*)nullptr);
 }
 
+static sdk_ret_t
+capri_flush_sram_shadow_mem (void)  {
+    // assuming word is 16bit
+    uint32_t __attribute__((unused)) size = CAPRI_SRAM_ROWS * CAPRI_SRAM_BLOCK_COUNT * CAPRI_SRAM_WORDS_PER_BLOCK * 2;
+    sdk_ret_t ret = SDK_RET_OK;
+
+    //ret = xyz(&g_shadow_sram_p4[0]->mem, size, P4_PIPELINE_INGRESS);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush ingress sram shadow, err %u", ret);
+        return ret;
+    }
+
+    //ret = xyz(&g_shadow_sram_p4[1]->mem, size, P4_PIPELINE_EGRESS);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush egress sram shadow, err %u", ret);
+        return ret;
+    }
+
+    //ret = xyz(&g_shadow_sram_rxdma->mem, size, P4_PIPELINE_RXDMA);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush rxdma sram shadow, err %u", ret);
+        return ret;
+    }
+
+    //ret = xyz(&g_shadow_sram_txdma->mem, size, P4_PIPELINE_TXDMA);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush txdma sram shadow, err %u", ret);
+        return ret;
+    }
+    return ret;
+}
+
+static sdk_ret_t
+capri_flush_tcam_shadow (p4pd_table_dir_en gress)
+{
+    asic_cfg_t *capri_cfg = g_capri_state_pd->cfg();
+
+    if (!capri_cfg ||
+        ((capri_cfg->platform != platform_type_t::PLATFORM_TYPE_HAPS) &&
+        (capri_cfg->platform != platform_type_t::PLATFORM_TYPE_HW))) {
+        return SDK_RET_OK;
+    }
+
+    // Get actual width in 32-bit words
+    int32_t  width = (CAP_PICT_CSR_DHS_TCAM_XY_WIDTH + 31) >> 5;
+    uint64_t pa = 0;
+    void    *va = 0;
+
+    uint32_t data[width] = {0};
+    // TODO. change to write only valid shadow entries.
+    // maintain meta for valid shadow entries during the upgrade time period and use that meta to write only valid entries.
+    data[width-1] = 0xFFFFFFFF;
+
+    uint32_t num_blocks_in_stage = 0;
+    if (gress == P4_GRESS_INGRESS) {
+        pa = CAP_ADDR_BASE_TSI_PICT_OFFSET + offsetof(Cap_pict_csr, dhs_tcam_xy);
+        num_blocks_in_stage = 8;
+
+    } else if (gress == P4_GRESS_EGRESS) {
+        pa = CAP_ADDR_BASE_TSE_PICT_OFFSET + offsetof(Cap_pict_csr, dhs_tcam_xy);
+        num_blocks_in_stage = 4;
+    } else {
+        return SDK_RET_ERR;
+    }
+
+    if ((CAPRI_TCAM_BLOCK_WIDTH - 1) != (2*CAPRI_TCAM_BLOCK_WIDTH)) {
+        SDK_TRACE_ERR("CAP_PICT_CSR_DHS_TCAM_XY_WIDTH(%d) is not twice of "
+                      "CAPRI_TCAM_BLOCK_WIDTH(%d)...bailing out...!!!",
+                      CAP_PICT_CSR_DHS_TCAM_XY_WIDTH, CAPRI_TCAM_BLOCK_WIDTH);
+        return SDK_RET_ERR;
+    }
+    va = sdk::lib::pal_mem_map(pa, CAPRI_TCAM_ROWS * num_blocks_in_stage);
+
+    uint32_t bytes_in_a_block = (CAPRI_TCAM_BLOCK_WIDTH / 8);
+    for (uint32_t blk = 0; blk < num_blocks_in_stage; blk++) {
+        for (uint32_t tcam_row = 0; tcam_row < CAPRI_TCAM_ROWS; tcam_row++) {
+
+            uint8_t *tcam_block_data_x = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_x[tcam_row][blk]);
+            memcpy((uint8_t *) data, tcam_block_data_x, bytes_in_a_block);
+
+            uint8_t *tcam_block_data_y = (uint8_t*)(g_shadow_tcam_p4[gress]->mem_y[tcam_row][blk]);
+            memcpy((((uint8_t *) data) + bytes_in_a_block), tcam_block_data_y, bytes_in_a_block);
+
+            sdk::lib::pal_reg_write(pa, data, width);
+            pa += sizeof(Cap_pict_csr_dhs_tcam_xy_entry);
+        }
+    }
+    sdk::lib::pal_mem_unmap(va);
+
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
+capri_flush_tcam_shadow_mem (void)  {
+    sdk_ret_t ret = SDK_RET_OK;
+
+    ret = capri_flush_tcam_shadow(P4_GRESS_INGRESS);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush shadow for P4_GRESS_INGRESS");
+        return ret;
+    }
+
+    ret = capri_flush_tcam_shadow(P4_GRESS_EGRESS);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to flush shadow for P4_GRESS_EGRESS");
+        return ret;
+    }
+    return ret;
+}
+
+sdk_ret_t
+capri_flush_shadow_mem (void)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    ret = capri_flush_sram_shadow_mem();
+    if (ret != SDK_RET_OK) {
+        return SDK_RET_OK;
+    }
+
+    ret = capri_flush_tcam_shadow_mem();
+    if (ret != SDK_RET_OK) {
+        return SDK_RET_OK;
+    }
+    return  ret;
+}
+
 int
 capri_table_entry_write (uint32_t tableid, uint32_t index,
                          uint8_t  *hwentry, uint8_t  *hwentry_mask,
@@ -1184,6 +1311,10 @@ capri_table_entry_write (uint32_t tableid, uint32_t index,
             block++;
             entry_start_word = 0;
         }
+    }
+
+    if (unlikely(capri_write_to_hw() == false)) {
+        return (CAPRI_OK);
     }
 
     cap_top_csr_t & cap0 = g_capri_state_pd->cap_top();
@@ -1303,6 +1434,13 @@ capri_table_hw_entry_read (uint32_t tableid, uint32_t index,
                            bool is_oflow_table, bool ingress,
                            uint32_t ofl_parent_tbl_depth)
 {
+    if (unlikely(capri_write_to_hw() == false)) {
+        return capri_table_entry_read(tableid, index, hwentry,
+                                      hwentry_bit_len, tbl_info,
+                                      gress, is_oflow_table,
+                                      ofl_parent_tbl_depth);
+    }
+
     /*
      * Unswizzing of the bytes into readable format is
      * expected to be done by caller of the API.
@@ -1490,6 +1628,10 @@ capri_tcam_table_entry_write (uint32_t tableid, uint32_t index,
         }
     }
 
+    if (unlikely(capri_write_to_hw() == false)) {
+        return (CAPRI_OK);
+    }
+
     cap_top_csr_t & cap0 = g_capri_state_pd->cap_top();
     // Push to HW/Capri from entry_start_block to block
     pu_cpp_int<128> tcam_block_data_x;
@@ -1608,6 +1750,12 @@ capri_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
                                 p4_table_mem_layout_t &tbl_info,
                                 bool ingress)
 {
+    if (unlikely(capri_write_to_hw() == false)) {
+        return capri_tcam_table_entry_read(tableid, index, trit_x, trit_y,
+                                           hwentry_bit_len, tbl_info,
+                                           (ingress ? P4_GRESS_INGRESS : P4_GRESS_EGRESS));
+    }
+
     int tcam_row, entry_start_block, entry_end_block;
     int entry_start_word;
 

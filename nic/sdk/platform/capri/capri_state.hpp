@@ -25,7 +25,8 @@ public:
     mpartition *mempartition(void) const { return cfg_.mempartition; }
     cap_top_csr_t& cap_top() { return *cap_top_; }
     asic_cfg_t *cfg(void) { return &cfg_; }
-
+    void set_write_to_hw(bool val) { write_to_hw_ = val; }
+    bool write_to_hw(void) const { return write_to_hw_; }
 private:
     // TXS scheduler related state
     struct {
@@ -33,6 +34,7 @@ private:
     } __PACK__;
     asic_cfg_t cfg_; // config
     cap_top_csr_t *cap_top_;
+    bool write_to_hw_;
 
 private:
     capri_state_pd();
@@ -42,6 +44,13 @@ private:
 extern class capri_state_pd *g_capri_state_pd;
 
 extern sdk_ret_t capri_state_pd_init(asic_cfg_t *cfg);
+void capri_set_write_to_hw(bool val);
+
+static inline bool
+capri_write_to_hw (void)
+{
+    return g_capri_state_pd->write_to_hw();
+}
 
 }    // namespace capri
 }    // namespace platform

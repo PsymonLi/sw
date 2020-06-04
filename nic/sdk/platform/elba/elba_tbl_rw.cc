@@ -976,6 +976,13 @@ elba_global_pics_get (uint32_t tableid)
 }
 
 sdk_ret_t
+elba_flush_shadow_mem (void)
+{
+    // TODO. revisit for elba upgrade support
+    return SDK_RET_ERR;
+}
+
+sdk_ret_t
 elba_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
                         uint8_t  *hwentry_mask, uint16_t hwentry_bit_len,
                         p4_table_mem_layout_t &tbl_info, int gress,

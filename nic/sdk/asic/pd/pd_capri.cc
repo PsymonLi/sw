@@ -140,6 +140,15 @@ asicpd_tcam_table_hw_entry_read (uint32_t tableid, uint32_t index,
     return ret;
 }
 
+sdk_ret_t
+asicpd_flush_shadow_mem (void)
+{
+    sdk_ret_t ret;
+
+    ret = capri_flush_shadow_mem();
+    return ret;
+}
+
 int
 asicpd_table_entry_write (uint32_t tableid, uint32_t index, uint8_t  *hwentry,
                           uint16_t hwentry_bit_len, uint8_t  *hwentry_mask)
@@ -1555,6 +1564,12 @@ asicpd_hbm_table_entry_cache_invalidate (p4pd_table_cache_t cache,
 {
     return capri_hbm_table_entry_cache_invalidate(cache, entry_addr,
                                                   entry_width, base_mem_pa);
+}
+
+void
+asicpd_write_to_hw (bool val)
+{
+    capri_set_write_to_hw(val);
 }
 
 }    // namespace pd

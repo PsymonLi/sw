@@ -42,6 +42,8 @@ capri_state_pd::init (asic_cfg_t *cfg)
     }
 
     cap_top_ = &CAP_BLK_REG_MODEL_ACCESS(cap_top_csr_t, 0, 0);
+    // allow hw write/read by default
+    write_to_hw_ = true;
 
     return true;
 }
@@ -75,6 +77,12 @@ capri_state_pd_init (asic_cfg_t *cfg)
     SDK_ASSERT_TRACE_RETURN((g_capri_state_pd != NULL), SDK_RET_INVALID_ARG,
                             "Failed to instantiate Capri PD");
     return SDK_RET_OK;
+}
+
+void
+capri_set_write_to_hw (bool val)
+{
+    g_capri_state_pd->set_write_to_hw(val);
 }
 
 }    // namespace capri

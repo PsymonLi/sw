@@ -32,7 +32,7 @@ sdk_ret_t capri_p4plus_table_rw_init(void);
 void capri_mpu_icache_invalidate(void);
 
 void capri_table_rw_cleanup(void);
-
+sdk_ret_t capri_flush_shadow_mem(void);
 int capri_table_entry_write(uint32_t tableid, uint32_t index,
                             uint8_t  *hwentry, uint8_t  *hwentry_mask,
                             uint16_t hwentry_bit_len,

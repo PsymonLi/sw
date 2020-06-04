@@ -113,6 +113,7 @@ sdk_ret_t asicpd_set_hbm_table_base_addr (int tableid, int stage_tableid,
                                           char *tablename, int stage, int pipe);
 uint8_t asicpd_get_action_pc(uint32_t tableid, uint8_t actionid);
 uint8_t asicpd_get_action_id(uint32_t tableid, uint8_t actionpc);
+sdk_ret_t asicpd_flush_shadow_mem(void);
 int asicpd_table_entry_write(uint32_t tableid, uint32_t index,
                              uint8_t  *hwentry, uint16_t hwentry_bit_len,
                              uint8_t  *hwentry_mask);
@@ -257,6 +258,7 @@ void asicpd_set_table_txdma_asm_base(int tableid, uint64_t asm_base);
 sdk_ret_t asicpd_init(asic_cfg_t *cfg);
 sdk_ret_t asicpd_soft_init(asic_cfg_t *cfg);
 sdk_ret_t asicpd_upgrade_init(asic_cfg_t *cfg);
+void asicpd_write_to_hw(bool val);
 void asicpd_cleanup(void);
 sdk_ret_t asicpd_pgm_init(void);
 sdk_ret_t asicpd_p4plus_table_rw_init(void);

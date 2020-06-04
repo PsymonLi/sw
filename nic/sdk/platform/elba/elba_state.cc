@@ -47,6 +47,8 @@ elba_state_pd::init (asic_cfg_t *cfg)
     }
 
     elb_top_ = &ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    // allow hw write/read by default
+    write_to_hw_ = true;
 
     return true;
 }
@@ -80,6 +82,13 @@ elba_state_pd_init (asic_cfg_t *cfg)
     SDK_ASSERT_TRACE_RETURN((g_elba_state_pd != NULL), SDK_RET_INVALID_ARG,
                             "Failed to instantiate Capri PD");
     return SDK_RET_OK;
+}
+
+void
+elba_set_write_to_hw (bool val)
+{
+    g_elba_state_pd->set_write_to_hw(val);
+    return;
 }
 
 }    // namespace elba
