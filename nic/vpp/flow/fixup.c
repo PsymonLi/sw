@@ -525,21 +525,21 @@ pds_flow_delete_sessions_fixup ()
     {
         fm->ses_id_to_del = *ses_id;
         session = pds_flow_get_hw_ctx(*ses_id);
+        if (PREDICT_FALSE(session == NULL)) {
+            continue;
+        }
         i = session->thread_id;
-        if (pds_flow_ses_id_valid(*ses_id)) {
-            clib_callback_enable_disable
-              (vlib_mains[i]->worker_thread_main_loop_callbacks,
-               vlib_mains[i]->worker_thread_main_loop_callback_tmp,
-               vlib_mains[i]->worker_thread_main_loop_callback_lock,
-               (void *) pds_flow_delete_session_cb, 1 /* enable */ );
-            while (clib_callback_is_set
-                (vlib_mains[i]->worker_thread_main_loop_callbacks,
-                 vlib_mains[i]->worker_thread_main_loop_callback_lock,
-                 (void *) pds_flow_delete_session_cb)) {
-                usleep(100000);
-            }
+        clib_callback_enable_disable(vlib_mains[i]->worker_thread_main_loop_callbacks,
+                                     vlib_mains[i]->worker_thread_main_loop_callback_tmp,
+                                     vlib_mains[i]->worker_thread_main_loop_callback_lock,
+                                     (void *) pds_flow_delete_session_cb, 1 /* enable */ );
+        while (clib_callback_is_set(vlib_mains[i]->worker_thread_main_loop_callbacks,
+                                    vlib_mains[i]->worker_thread_main_loop_callback_lock,
+                                    (void *) pds_flow_delete_session_cb)) {
+            usleep(100000);
         }
     }
+    vec_free(fm->delete_sessions);
 }
 
 void
