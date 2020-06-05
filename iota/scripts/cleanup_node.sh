@@ -15,6 +15,7 @@ sudo docker rmi -f $(docker images -aq)
 sudo rm -rf /pensando/run/naples
 sudo iptables -F
 sudo systemctl restart docker
+if command -v kubeadm ; then sudo kubeadm reset; fi
 
 for i in `ip link show type vlan | grep UP | cut -d : -f 2 | cut -d @ -f 1`
 do 

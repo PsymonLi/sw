@@ -522,6 +522,11 @@ func (tb *TestBed) getAvailableInstance(instType iota.TestBedNodeType) *Instance
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
 				return inst
 			}
+		case iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER:
+			if inst.Type == "vm" {
+				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
+				return inst
+			}
 		}
 	}
 
@@ -752,6 +757,12 @@ func (tb *TestBed) preapareNodeParams(nodeType iota.TestBedNodeType, personality
 				ControlIp:   fmt.Sprintf("172.16.100.%d", len(tb.Nodes)+1), //FIXME
 				VenicePeers: []*iota.VenicePeer{},
 			}
+		default:
+			return fmt.Errorf("unsupported node personality %v", personality)
+		}
+	case iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER:
+		switch personality {
+		case iota.PersonalityType_PERSONALITY_K8S_MASTER:
 		default:
 			return fmt.Errorf("unsupported node personality %v", personality)
 		}

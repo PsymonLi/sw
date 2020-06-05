@@ -80,6 +80,9 @@ type TopoMeta struct {
 			Instances int `yaml:"instances"`
 			Naples    int `yaml:"naples"`
 		} `yaml:"vcenter"`
+		K8sMaster struct {
+			Instances int    `yaml:"instances"`
+		} `yaml:"k8s-master"`
 	} `yaml:"nodes"`
 	Workload struct {
 		Esx struct {
@@ -210,6 +213,17 @@ func ParseTopology(fileName string) (*Topology, error) {
 		})
 	}
 
+	for i := 0; i < topoMeta.Nodes.K8sMaster.Instances; i++ {
+		topo.Nodes = append(topo.Nodes, TopoNode{
+			NodeName:    "k8s-master-" + fmt.Sprintf("%v", i+1),
+			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER,
+			Personality: iota.PersonalityType_PERSONALITY_K8S_MASTER,
+		})
+
+		// TODO: start from 1
+		break
+	}
+
 	if topoMeta.Workload.Esx.Image != "" {
 		topo.WkldInfo["esx"] = WorkloadInfo{
 			WorkloadImage: topoMeta.Workload.Esx.Image,
@@ -225,5 +239,4 @@ func ParseTopology(fileName string) (*Topology, error) {
 	}
 
 	return &topo, nil
-
 }

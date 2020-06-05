@@ -60,7 +60,7 @@ def GetNodePersonalityByNicType(nic_type, mode = None):
 
 
 def GetNodeType(role):
-    if role in ['PERSONALITY_NAPLES_SIM', 'PERSONALITY_VENICE', 'PERSONALITY_VCENTER_NODE']:
+    if role in ['PERSONALITY_NAPLES_SIM', 'PERSONALITY_VENICE', 'PERSONALITY_VCENTER_NODE', 'PERSONALITY_K8S_MASTER']:
         return "vm"
     return "bm"
 
@@ -638,8 +638,9 @@ class Node(object):
         return self.__role in [ topo_pb2.PERSONALITY_INTEL, topo_pb2.PERSONALITY_THIRD_PARTY_NIC_DVS]
     def IsThirdParty(self):
         return self.IsMellanox() or self.IsBroadcom() or self.IsIntel()
+
     def IsWorkloadNode(self):
-        return self.__role != topo_pb2.PERSONALITY_VENICE and self.__role != topo_pb2.PERSONALITY_VCENTER_NODE
+        return self.__role != topo_pb2.PERSONALITY_VENICE and self.__role != topo_pb2.PERSONALITY_VCENTER_NODE and self.__role != topo_pb2.PERSONALITY_K8S_MASTER
 
     def GetDeviceNames(self):
         return sorted(self.__devices.keys())
@@ -767,6 +768,8 @@ class Node(object):
                     peer_msg.ip_address = str(n.ControlIpAddress())
                 else:
                     peer_msg.ip_address = str(n.MgmtIpAddress())
+        elif self.Role() == topo_pb2.PERSONALITY_K8S_MASTER:
+            pass # TODO
         else:
             if self.IsThirdParty() and not self.IsNaplesHwWithBumpInTheWire():
                 msg.third_party_nic_config.nic_type = self.GetNicType()
@@ -1254,7 +1257,7 @@ class Topology(object):
         req = topo_pb2.NodeMsg()
         req.node_op = topo_pb2.ADD
 
-        for name,node in self.__nodes.items():
+        for name, node in self.__nodes.items():
             msg = req.nodes.add()
             ret = node.AddToNodeMsg(msg, self, testsuite)
             assert(ret == types.status.SUCCESS)

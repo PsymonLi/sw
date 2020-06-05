@@ -389,7 +389,7 @@ func (tb *TestBed) CopyFromWorkload(nodeName, workloadName string, files []strin
 	return tb.CopyToFromWorkload(iota.CopyDirection_DIR_OUT, nodeName, workloadName, files, destDir)
 }
 
-// CopyToWorkload copies files from naples
+// CopyToWorkload copies files to naples
 func (tb *TestBed) CopyToWorkload(nodeName, workloadName string, files []string, destDir string) error {
 	return tb.CopyToFromWorkload(iota.CopyDirection_DIR_IN, nodeName, workloadName, files, destDir)
 }

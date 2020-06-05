@@ -88,7 +88,7 @@ func (agent *Service) AddNode(ctx context.Context, in *iota.Node) (*iota.Node, e
 	resp, err := agent.node.Init(in)
 
 	if err != nil {
-		/* Init file and no point pretentding to have a personality */
+		/* Init file and no point pretending to have a personality */
 		agent.logger.Errorf("Personality Init failed for type %d: %v", in.Type, err)
 		agent.node = nil
 	}
@@ -340,6 +340,7 @@ var iotaNodes = map[iota.PersonalityType]func() IotaNode{
 	iota.PersonalityType_PERSONALITY_NAPLES_SIM_WITH_QEMU: newNaplesQemu,
 	iota.PersonalityType_PERSONALITY_THIRD_PARTY_NIC:      newThirdPartyNic,
 	iota.PersonalityType_PERSONALITY_COMMAND_NODE:         newCommandNode,
+	iota.PersonalityType_PERSONALITY_K8S_MASTER:           newKubeMaster,
 }
 
 func newNaples() IotaNode {
@@ -401,6 +402,10 @@ func newVeniceBM() IotaNode {
 
 func newNaplesQemu() IotaNode {
 	return &naplesQemuNode{naplesSimNode: naplesSimNode{dataNode: dataNode{iotaNode: iotaNode{name: "naples-qemu"}}}}
+}
+
+func newKubeMaster() IotaNode {
+	return &kubeMasterNode{commandNode: commandNode{iotaNode: iotaNode{name: "kube-master"}}}
 }
 
 func newIotaNode(nodeType iota.PersonalityType, os iota.TestBedNodeOs) IotaNode {
