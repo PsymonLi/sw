@@ -314,7 +314,6 @@ private:
     void LifQInit(bool mem_clr);
     void QinfoInit(void);
     void FwBufferInit(void);
-    void StatsEnable(void);
     void LifStatsInit();
     void LifStatsClear();
 

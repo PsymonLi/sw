@@ -122,6 +122,12 @@ EthLif::EthLif(Eth *dev, devapi *dev_api, const void *dev_spec,
     EthLif::admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
     EthLif::proxy_admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
     EthLif::port_status = IONIC_PORT_OPER_STATUS_DOWN;
+
+    // Init stats timer
+    ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, 0.1);
+    stats_timer.data = this;
+    ev_timer_init(&sched_eval_timer, &EthLif::SchedBulkEvalHandler, 0.0, 0.02);
+    sched_eval_timer.data = this;
 }
 
 void
@@ -168,8 +174,6 @@ EthLif::Init(void) {
     if (dev_api != NULL) {
         Create();
     }
-
-    StatsEnable();
 }
 
 void
@@ -216,8 +220,6 @@ EthLif::UpgradeGracefulInit(void) {
     if (dev_api != NULL) {
         Create();
     }
-
-    StatsEnable();
 }
 
 void
@@ -261,8 +263,6 @@ EthLif::UpgradeHitlessInit(void) {
     if (dev_api != NULL) {
         Create();
     }
-
-    StatsEnable();
 }
 
 
@@ -460,16 +460,6 @@ EthLif::FwBufferInit(void) {
     };
 }
 
-void
-EthLif::StatsEnable(void) {
-
-    // Init stats timer
-    ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, 0.1);
-    ev_timer_init(&sched_eval_timer, &EthLif::SchedBulkEvalHandler, 0.0, 0.02);
-
-    stats_timer.data = this;
-    sched_eval_timer.data = this;
-}
 
 void
 EthLif::Create()
@@ -637,11 +627,8 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         host_lif_stats_addr = cmd->info_pa + offsetof(struct ionic_lif_info, stats);
         NIC_LOG_INFO("{}: host_lif_stats_addr {:#x}",
                     hal_lif_info_.name, host_lif_stats_addr);
-        if (!stats_timer_init_done) {
-            // Start stats timer
-            ev_timer_start(EV_A_ & stats_timer);
-            stats_timer_init_done = true;
-        }
+        // Start stats timer
+        ev_timer_start(EV_A_ & stats_timer);
     }
 
     // Workaround for Capri Scheduler bug.
@@ -814,12 +801,9 @@ EthLif::Reset()
     // Reset ADMINQ service
     adminq->Reset();
 
-    // Disable Stats
-    if (host_lif_stats_addr != 0 || pf_lif_stats_addr != 0) {
-        host_lif_stats_addr = 0;
-        pf_lif_stats_addr = 0;
-        ev_timer_stop(EV_A_ & stats_timer);
-    }
+    // Disable Stats timer
+    host_lif_stats_addr = 0;
+    ev_timer_stop(EV_A_ & stats_timer);
 
     if (spec->enable_rdma) {
         ev_timer_stop(EV_A_ & sched_eval_timer);
@@ -3308,13 +3292,11 @@ EthLif::SetHalClient(devapi *dapi)
 void
 EthLif::SetPfStatsAddr(uint64_t addr)
 {
-    pf_lif_stats_addr = addr;
     NIC_FUNC_INFO("{}: pf_lif_stats_addr {:#x}", hal_lif_info_.name, addr);
+    pf_lif_stats_addr = addr;
 
-    if (!stats_timer_init_done) {
-        ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, 0.1);
-        stats_timer_init_done = true;
-    }
+    // Start stats update timer if not started.
+    ev_timer_start(EV_A_ & stats_timer);
 }
 
 uint64_t
@@ -3332,7 +3314,7 @@ EthLif::StatsUpdate(EV_P_ ev_timer *w, int events)
 {
     EthLif *eth = (EthLif *)w->data;
     edma_opcode opcode;
-    struct edmaq_ctx ctx = { .cb = NULL, .obj = NULL };
+    struct edmaq_ctx ctx = { .cb = NULL, .obj = NULL }; // To enable async edma
 
     opcode = eth->spec->host_dev
                 ? EDMA_OPCODE_LOCAL_TO_HOST
@@ -3340,18 +3322,18 @@ EthLif::StatsUpdate(EV_P_ ev_timer *w, int events)
 
     if (eth->lif_stats_addr != 0) {
         if (eth->host_lif_stats_addr != 0) {
-            eth->edmaq->Post(opcode,
-                             eth->lif_stats_addr,
-                             eth->host_lif_stats_addr,
-                             sizeof(struct ionic_lif_stats),
-                             &ctx);
+            eth->edmaq_async->Post(opcode,
+                                   eth->lif_stats_addr,
+                                   eth->host_lif_stats_addr,
+                                   sizeof(struct ionic_lif_stats),
+                                   &ctx);
         }
         if (eth->pf_lif_stats_addr != 0) {
-            eth->edmaq->Post(opcode,
-                             eth->lif_stats_addr,
-                             eth->pf_lif_stats_addr,
-                             sizeof(struct ionic_lif_stats),
-                             &ctx);
+            eth->edmaq_async->Post(opcode,
+                                   eth->lif_stats_addr,
+                                   eth->pf_lif_stats_addr,
+                                   sizeof(struct ionic_lif_stats),
+                                   &ctx);
         }
     }
 }
