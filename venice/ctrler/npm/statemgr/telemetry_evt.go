@@ -356,6 +356,38 @@ func (smm *SmFlowExportPolicyInterface) GetFlowExportPolicyWatchOptions() *api.L
 	return opts
 }
 
+//OnFlowExportPolicyCreateReq create req
+func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyCreateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+	return nil
+}
+
+//OnFlowExportPolicyUpdateReq update req
+func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyUpdateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+	return nil
+}
+
+//OnFlowExportPolicyDeleteReq delete req
+func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyDeleteReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+	return nil
+}
+
+//OnFlowExportPolicyOperUpdate  oper update req
+func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyOperUpdate(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+
+	eps, err := smm.FindFlowExportPolicy(objinfo.Tenant, objinfo.Name)
+	if err != nil {
+		return err
+	}
+	eps.updateNodeVersion(nodeID, objinfo.ObjectMeta.GenerationID)
+	return nil
+
+}
+
+//OnFlowExportPolicyOperDelete delete request
+func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyOperDelete(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+	return nil
+}
+
 func init() {
 	initSmFlowExportPolicyInterface()
 }
