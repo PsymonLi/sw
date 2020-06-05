@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -61,7 +62,7 @@ func SvcWatch(ctx context.Context, watcher kvstore.Watcher, stream grpc.ServerSt
 			}
 			switch ev.Type {
 			case kvstore.Created, kvstore.Deleted, kvstore.Updated:
-				robj := ev.Object
+				robj := ev.Object.(runtime.Object)
 				l.DebugLog("msg", "received watch event from KV", "type", ev.Type)
 				if apiVersion != robj.GetObjectAPIVersion() {
 					i, err := txfnMap[robj.GetObjectKind()](robj.GetObjectAPIVersion(), apiVersion, robj)
@@ -70,6 +71,18 @@ func SvcWatch(ctx context.Context, watcher kvstore.Watcher, stream grpc.ServerSt
 						return err
 					}
 					robj = i.(runtime.Object)
+				}
+				mval := reflect.ValueOf(robj).MethodByName("ApplyStorageTransformer")
+				if mval.IsValid() {
+					toStorage := false
+					x, _ := robj.Clone(nil)
+					robj = x.(runtime.Object)
+					mval = reflect.ValueOf(robj).MethodByName("ApplyStorageTransformer")
+					terr := mval.Call([]reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(toStorage)})
+					if !terr[0].IsNil() {
+						err = terr[0].Interface().(error)
+						log.Errorf("failed to transform from storage (%s)", err)
+					}
 				}
 				obj, err := types.MarshalAny(robj.(proto.Message))
 				if err != nil {
