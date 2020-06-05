@@ -379,6 +379,13 @@ header geneve_option_srcSecGrpList_3_h {
     bit<16>     srcSecGrp5;
 }
 
+header_union geneve_option_srcSecGrpList_uh {
+  geneve_option_srcSecGrpList_1_h srcSecGrpList_1;
+  geneve_option_srcSecGrpList_2_h srcSecGrpList_2;
+  geneve_option_srcSecGrpList_3_h srcSecGrpList_3;
+
+}
+
 header geneve_option_origPhysicalIp_h {
     bit<16>     optionClass;
     bit<8>      type;
@@ -519,8 +526,8 @@ struct headers {
     ethernet_h ethernet_0;
     vlan_h ctag_0;
     encap_uh encapl4_0;
-    ip_1_uh  ip_0;
-    l4_uh  l4_0;
+    ipv4_h  ipv4_0;
+    udp_h  udp_0;
     
     vxlan_h vxlan_0;
     gre_h gre_0;
@@ -552,6 +559,7 @@ struct headers {
   geneve_option_srcSecGrpList_3_h geneve_option_srcSecGrpList_3;
   geneve_option_origPhysicalIp_h geneve_option_origPhysicalIp;
   geneve_option_unknown_hdr_h geneve_option_unknown;
+  geneve_option_srcSecGrpList_uh geneve_option_srcSecGrpList_u;
 
 
 

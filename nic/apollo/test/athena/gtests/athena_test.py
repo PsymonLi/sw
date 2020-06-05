@@ -983,3 +983,444 @@ dump_pkt(ipv4_tcp)
 ###############################################################################
 # end Athena Host-to-Switch IPv4 TCP
 ###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID1 injected packet
+###############################################################################
+print('H2S L2 TCP SGID1 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid1_inj = Ether(dst='00:00:F1:D0:D1:D1', src='00:00:00:40:08:02') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.2', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid1_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID1 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID1 expected packet
+###############################################################################
+print('H2S L2 TCP SGID1 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_12='\x00\x00\xa1\x01\xaa\xaa\x00\x00'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_12
+
+geneve_ipv4_tcp_sgid1_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D1', src='00:00:00:40:08:02') / \
+        IP(dst='192.0.2.1', src='2.0.0.2', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid1_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID1 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID2 injected packet
+###############################################################################
+print('H2S L2 TCP SGID2 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid2_inj = Ether(dst='00:00:F1:D0:D1:D2', src='00:00:00:40:08:03') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.3', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid2_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID2 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID2 expected packet
+###############################################################################
+print('H2S L2 TCP SGID2 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_12='\x00\x00\xa0\x01\xaa\xaa\xbb\xbb'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_12
+
+geneve_ipv4_tcp_sgid2_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D2', src='00:00:00:40:08:03') / \
+        IP(dst='192.0.2.1', src='2.0.0.3', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid2_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID2 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID3 injected packet
+###############################################################################
+print('H2S L2 TCP SGID3 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid3_inj = Ether(dst='00:00:F1:D0:D1:D3', src='00:00:00:40:08:04') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.4', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid3_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID3 injected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID3 expected packet
+###############################################################################
+print('H2S L2 TCP SGID3 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_1234='\x00\x00\xa1\x02\xaa\xaa\xbb\xbb\xcc\xcc\x00\x00'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_1234
+
+geneve_ipv4_tcp_sgid3_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D3', src='00:00:00:40:08:04') / \
+        IP(dst='192.0.2.1', src='2.0.0.4', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid3_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID3 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID4 injected packet
+###############################################################################
+print('H2S L2 TCP SGID4 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid4_inj = Ether(dst='00:00:F1:D0:D1:D4', src='00:00:00:40:08:05') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.5', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid4_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID4 injected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID4 expected packet
+###############################################################################
+print('H2S L2 TCP SGID4 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_1234='\x00\x00\xa0\x02\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_1234
+
+geneve_ipv4_tcp_sgid4_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D4', src='00:00:00:40:08:05') / \
+        IP(dst='192.0.2.1', src='2.0.0.5', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid4_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID4 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID5 injected packet
+###############################################################################
+print('H2S L2 TCP SGID5 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid5_inj = Ether(dst='00:00:F1:D0:D1:D5', src='00:00:00:40:08:06') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.6', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid5_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID5 injected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID5 expected packet
+###############################################################################
+print('H2S L2 TCP SGID5 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa1\x03\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd\xee\xee\x00\x00'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456
+
+geneve_ipv4_tcp_sgid5_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D5', src='00:00:00:40:08:06') / \
+        IP(dst='192.0.2.1', src='2.0.0.6', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid5_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID5 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID6 injected packet
+###############################################################################
+print('H2S L2 TCP SGID6 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid6_inj = Ether(dst='00:00:F1:D0:D1:D6', src='00:00:00:40:08:07') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.7', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid6_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID6 injected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID6 expected packet
+###############################################################################
+print('H2S L2 TCP SGID6 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x03\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd\xee\xee\xff\xff'
+
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456
+
+geneve_ipv4_tcp_sgid6_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D6', src='00:00:00:40:08:07') / \
+        IP(dst='192.0.2.1', src='2.0.0.7', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid6_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID6 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7 injected packet
+###############################################################################
+print('H2S L2 TCP SGID7 INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid7_inj = Ether(dst='00:00:F1:D0:D1:D7', src='00:00:00:40:08:08') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='192.0.2.1', src='2.0.0.8', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid7_inj)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID7 injected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7 expected packet
+###############################################################################
+print('H2S L2 TCP SGID7 EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x03\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd\xee\xee\xff\xff'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456 + opt_org_ip
+
+geneve_ipv4_tcp_sgid7_exp = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:F1:D0:D1:D7', src='00:00:00:40:08:08') / \
+        IP(dst='192.0.2.1', src='2.0.0.8', id=0, ttl=64) / \
+        TCP(sport=0x03e8, dport=0x2710) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID7 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7 injected S2H packet
+###############################################################################
+print('H2S L2 TCP SGID7 S2H INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x03\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd\xee\xee\xff\xff'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456 + opt_org_ip
+
+geneve_ipv4_tcp_sgid7_s2h_inj = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_s2h_inj)
+###############################################################################
+# end Athena Switch-to-Host IPv4 TCP SGID7 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Switch-to-Switch L2 TCP SGID7 expected packet
+###############################################################################
+print('H2S L2 TCP SGID7 S2H EXP')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+l2_ipv4_tcp_sgid7_s2h_exp = Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        Dot1Q(vlan=15) / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(l2_ipv4_tcp_sgid7_s2h_exp)
+###############################################################################
+# end Athena Host-to-Switch IPv4 TCP SGID7 S2H expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7 injected S2H packet
+###############################################################################
+print('H2S L2 TCP SGID7 S2H INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x02\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456 + opt_org_ip
+
+geneve_ipv4_tcp_sgid7_s2h_inj = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_s2h_inj)
+###############################################################################
+# end Athena Switch-to-Host IPv4 TCP SGID7 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7 injected S2H packet
+###############################################################################
+print('H2S L2 TCP SGID7 S2H INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x02\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+geneve_options=opt_src_slot_id + opt_dst_slot_id  + opt_org_ip
+
+geneve_ipv4_tcp_sgid7_s2h_inj = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_s2h_inj)
+###############################################################################
+# end Athena Switch-to-Host IPv4 TCP SGID7 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7_3 injected S2H packet
+###############################################################################
+print('H2S L2 TCP SGID7_2 S2H INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x01\xaa\xaa\xbb\xbb'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+geneve_options=opt_src_slot_id + opt_dst_slot_id + opt_dst_sgid_123456
+
+geneve_ipv4_tcp_sgid7_3_s2h_inj = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_3_s2h_inj)
+###############################################################################
+# end Athena Switch-to-Host IPv4 TCP SGID7_3 expected packet
+###############################################################################
+###############################################################################
+# begin Athena Host-to-Switch L2 TCP SGID7_4 injected S2H packet
+###############################################################################
+print('H2S L2 TCP SGID7_4 S2H INJ')
+
+payload = 'abcdefghijlkmnopqrstuvwzxyabcdefghijlkmnopqrstuvwzxy'
+
+opt_src_slot_id='\x00\x00\x21\x01\x00\x10\x20\x30'
+opt_dst_slot_id='\x00\x00\x22\x01\x00\x01\x23\x51'
+opt_dst_sgid_123456='\x00\x00\xa0\x02\xaa\xaa\xbb\xbb\xcc\xcc\xdd\xdd'
+opt_org_ip='\x00\x00\x24\x01\x11\x11\x22\x22'
+opt_unk='\x00\x00\x14\x02\x77\x77\x77\x77\x77\x77\x77\x77'
+geneve_options=opt_src_slot_id + opt_dst_slot_id  + opt_unk + opt_org_ip
+
+geneve_ipv4_tcp_sgid7_4_s2h_inj = Ether(dst='00:06:07:08:09:0A', src='00:01:02:03:04:05') / \
+        Dot1Q(vlan=2) / \
+        IP(dst='1.2.3.4', src='4.3.2.1', id=0, ttl=64) / \
+        UDP(sport=0x0, chksum=0) / \
+        GENEVE(vni=0xA0B0C0, options=geneve_options, critical=0) / \
+        Ether(dst='00:00:00:40:08:08', src='00:00:F1:D0:D1:D7') / \
+        IP(dst='2.0.0.8', src='192.0.2.1', id=0, ttl=64) / \
+        TCP(sport=0x2710, dport=0x03e8) / payload
+
+dump_pkt(geneve_ipv4_tcp_sgid7_4_s2h_inj)
+###############################################################################
+# end Athena Switch-to-Host IPv4 TCP SGID7_4 expected packet
+###############################################################################

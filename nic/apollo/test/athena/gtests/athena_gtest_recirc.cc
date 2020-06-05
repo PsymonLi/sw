@@ -10,11 +10,16 @@
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
 #include "nic/apollo/api/include/athena//pds_flow_session_rewrite.h"
+#include "gen/p4gen/p4/include/p4pd.h"
+#include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/apollo/p4/include/athena_table_sizes.h"
 
 #include "athena_gtest.hpp"
 
-static uint16_t    g_nat_vnic_id = VNIC_ID_L2_NAT;
-static uint32_t    g_h2s_nat_vlan = VLAN_ID_L2_NAT;
+#define LOG2_U32(x) (((x) == 0) ? 0 : (31 - __builtin_clz((x))))
+
+static uint16_t    g_recirc_vnic_id = VNIC_ID_RECIRC;
+static uint32_t    g_h2s_recirc_vlan = VLAN_ID_RECIRC;
 
 /*
  * Normalized IPv4 key
@@ -80,7 +85,7 @@ static uint32_t    substrate_dip = 0x01020304;
 
 static uint32_t    vni = 0xaabbcc;
 static uint32_t    source_slot_id = 0x112233;
-static uint32_t    destination_slot_id = GENEVE_DST_SLOT_ID_NAT;
+static uint32_t    destination_slot_id = GENEVE_DST_SLOT_ID_RECIRC;
 static uint32_t    sg_id1 = 0x0;
 static uint32_t    sg_id2 = 0x0;
 static uint32_t    sg_id3 = 0x0;
@@ -89,9 +94,8 @@ static uint32_t    sg_id5 = 0x0;
 static uint32_t    sg_id6 = 0x0;
 static uint32_t    originator_physical_ip = 0x0;
 
-
 static sdk_ret_t
-setup_l2_flow_nat(void)
+setup_l2_flow_recirc(void)
 {
     sdk_ret_t       ret = SDK_RET_OK;
     mac_addr_t      host_mac;
@@ -104,19 +108,20 @@ setup_l2_flow_nat(void)
     uint32_t        h2s_session_rewrite_encap_id;
 
     // Setup VNIC Mappings
-    ret = vlan_to_vnic_map(g_h2s_nat_vlan, g_nat_vnic_id, vnic_type);
+    ret = vlan_to_vnic_map(g_h2s_recirc_vlan, g_recirc_vnic_id, vnic_type);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
     // Setup VNIC Mappings
-    ret = mpls_label_to_vnic_map(destination_slot_id, g_nat_vnic_id, vnic_type);
+    ret = mpls_label_to_vnic_map(destination_slot_id, g_recirc_vnic_id, vnic_type);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
     /* DNAT mapping */
-    ret = create_dnat_map_ipv4(g_nat_vnic_id, g_h2s_nat_sip, g_h2s_sip, 0);
+    //   ret = create_dnat_map_ipv4(g_recirc_vnic_id, g_h2s_nat_sip, g_h2s_sip, 0);
+    p4pd_ipv4_dnat_insert(g_recirc_vnic_id, g_h2s_nat_sip, g_h2s_sip, 1, 1);
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -125,7 +130,7 @@ setup_l2_flow_nat(void)
     s2h_session_rewrite_encap_id = s2h_session_rewrite_id;
 
     ret = create_s2h_session_rewrite_nat_ipv4(s2h_session_rewrite_id,
-                    (mac_addr_t*)ep_dmac, (mac_addr_t*)ep_smac, g_h2s_nat_vlan,
+                    (mac_addr_t*)ep_dmac, (mac_addr_t*)ep_smac, g_h2s_recirc_vlan,
 		   REWRITE_NAT_TYPE_IPV4_DNAT, (ipv4_addr_t)g_h2s_sip, VNIC_TYPE_L2);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -181,16 +186,26 @@ setup_l2_flow_nat(void)
     }
 
     // Setup Normalized UDP IPv4 Flow entry
-    ret = create_flow_v4_tcp_udp(g_nat_vnic_id, g_h2s_sip, g_h2s_dip,
+    /*
+    ret = create_flow_v4_tcp_udp(g_recirc_vnic_id, g_h2s_sip, g_h2s_dip,
             g_h2s_proto_udp, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id);
+    */	    
+    p4pd_ipv4_flow_insert(g_recirc_vnic_id, g_h2s_sip, g_h2s_dip,
+            g_h2s_proto_udp, g_h2s_sport, g_h2s_dport,
+            PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id,1,2);
+    
+
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
     /* IPV6 flow and associated session */
     /* DNAT mapping */
-    ret = create_dnat_map_ipv6(g_nat_vnic_id, &g_h2s_nat_sipv6, &g_h2s_sipv6, 0);
+    
+    ret = create_dnat_map_ipv6(g_recirc_vnic_id, &g_h2s_nat_sipv6, &g_h2s_sipv6, 0);
+    
+    //   p4pd_ipv6_dnat_insert(g_recirc_vnic_id, &g_h2s_nat_sipv6, &g_h2s_sipv6, 1, 3);
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -198,7 +213,7 @@ setup_l2_flow_nat(void)
     s2h_ipv6_session_rewrite_id = g_session_rewrite_index++;
 
     ret = create_s2h_session_rewrite_nat_ipv6(s2h_ipv6_session_rewrite_id,
-                    (mac_addr_t*)ep_dmac, (mac_addr_t*)ep_smac, g_h2s_nat_vlan,
+                    (mac_addr_t*)ep_dmac, (mac_addr_t*)ep_smac, g_h2s_recirc_vlan,
 		    REWRITE_NAT_TYPE_IPV6_DNAT, &g_h2s_sipv6, VNIC_TYPE_L2);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -251,15 +266,21 @@ setup_l2_flow_nat(void)
     }
 
     // Setup Normalized UDP IPv6 Flow entry
-    ret = create_flow_v6_tcp_udp (g_nat_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
+    
+    ret = create_flow_v6_tcp_udp (g_recirc_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
             g_h2s_proto_udp, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_SESSION, ipv6_session_id);
+    /*
+    p4pd_ipv6_flow_insert(g_recirc_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
+			   g_h2s_proto_udp, g_h2s_sport, g_h2s_dport,
+			  PDS_FLOW_SPEC_INDEX_SESSION, ipv6_session_id, 1, 2);
+    */			  
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
     // Setup Normalized TCP IPv4 Flow entry
-    ret = create_flow_v4_tcp_udp(g_nat_vnic_id, g_h2s_sip, g_h2s_dip,
+    ret = create_flow_v4_tcp_udp(g_recirc_vnic_id, g_h2s_sip, g_h2s_dip,
             g_h2s_proto_tcp, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id);
     if (ret != SDK_RET_OK) {
@@ -267,7 +288,7 @@ setup_l2_flow_nat(void)
     }
 
     // Setup Normalized TCP IPv6 Flow entry
-    ret = create_flow_v6_tcp_udp (g_nat_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
+    ret = create_flow_v6_tcp_udp (g_recirc_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
             g_h2s_proto_tcp, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_SESSION, ipv6_session_id);
     if (ret != SDK_RET_OK) {
@@ -275,7 +296,7 @@ setup_l2_flow_nat(void)
     }
 
     // Setup Normalized ICMP Flow entry
-    ret = create_flow_v4_icmp(g_nat_vnic_id, g_h2s_sip, g_h2s_dip,
+    ret = create_flow_v4_icmp(g_recirc_vnic_id, g_h2s_sip, g_h2s_dip,
         g_h2s_proto_icmp, g_h2s_icmp_type, g_h2s_icmp_code, g_h2s_icmp_identifier,
         PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id);
     if (ret != SDK_RET_OK) {
@@ -283,7 +304,7 @@ setup_l2_flow_nat(void)
     }
 
     // Setup Normalized ICMPv6 Flow entry
-    ret = create_flow_v6_icmp(g_nat_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
+    ret = create_flow_v6_icmp(g_recirc_vnic_id, &g_h2s_sipv6, &g_h2s_dipv6,
         g_h2s_icmpv6_proto, 
         g_h2s_icmpv6_type, g_h2s_icmpv6_code, g_h2s_icmpv6_identifier,
         PDS_FLOW_SPEC_INDEX_SESSION, ipv6_session_id);
@@ -291,12 +312,14 @@ setup_l2_flow_nat(void)
         return ret;
     }
 
-    ret = create_l2_flow (g_nat_vnic_id, ep_dmac, s2h_session_rewrite_encap_id);
+    //    ret = create_l2_flow (g_recirc_vnic_id, ep_dmac, s2h_session_rewrite_encap_id);
+    p4pd_l2_flow_insert(g_recirc_vnic_id, (mac_addr_t*)ep_dmac, s2h_session_rewrite_encap_id);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-    ret = create_l2_flow (g_nat_vnic_id, ep_smac, h2s_session_rewrite_encap_id);
+    //    ret = create_l2_flow (g_recirc_vnic_id, ep_smac, h2s_session_rewrite_encap_id);
+    p4pd_l2_flow_insert(g_recirc_vnic_id, (mac_addr_t*)ep_smac, h2s_session_rewrite_encap_id,1,3);
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -306,11 +329,11 @@ setup_l2_flow_nat(void)
 }
 
 sdk_ret_t
-athena_gtest_setup_l2_flows_nat(void)
+athena_gtest_setup_l2_flows_recirc(void)
 {
     sdk_ret_t       ret = SDK_RET_OK;
 
-    ret = setup_l2_flow_nat();
+    ret = setup_l2_flow_recirc();
 
     if (ret != SDK_RET_OK) {
         return ret;
@@ -325,7 +348,7 @@ athena_gtest_setup_l2_flows_nat(void)
  */
 static uint8_t g_snd_pkt_ipv4_udp_h2s[] = {
     0x00, 0x00, 0xF1, 0xD0, 0xD1, 0xD0, 0x00, 0x00,
-    0x00, 0x40, 0x08, 0x01, 0x81, 0x00, 0x00, 0x0A,
+    0x00, 0x40, 0x08, 0x01, 0x81, 0x00, 0x00, 0x0E,
     0x08, 0x00, 0x45, 0x00, 0x00, 0x50, 0x00, 0x01,
     0x00, 0x00, 0x40, 0x11, 0xB6, 0x9A, 0x02, 0x00,
     0x00, 0x01, 0xC0, 0x00, 0x02, 0x01, 0x03, 0xE8,
@@ -354,7 +377,7 @@ static uint8_t g_rcv_pkt_ipv4_udp_h2s[] = {
     0x17, 0xC1, 0x00, 0x7E, 0x00, 0x00, 0x04, 0x00,
     0x65, 0x58, 0xAA, 0xBB, 0xCC, 0x00, 0x00, 0x00,
     0x21, 0x01, 0x00, 0x11, 0x22, 0x33, 0x00, 0x00,
-    0x22, 0x01, 0x00, 0x01, 0x23, 0x4E, 0x00, 0x00,
+    0x22, 0x01, 0x00, 0x01, 0x23, 0x50, 0x00, 0x00,
     0xF1, 0xD0, 0xD1, 0xD0, 0x00, 0x00, 0x00, 0x40,
     0x08, 0x01, 0x08, 0x00, 0x45, 0x00, 0x00, 0x50,
     0x00, 0x01, 0x00, 0x00, 0x40, 0x11, 0xB5, 0x9A,
@@ -381,7 +404,7 @@ static uint8_t g_snd_pkt_ipv4_udp_s2h[] = {
     0x17, 0xC1, 0x00, 0x7E, 0x00, 0x00, 0x04, 0x00,
     0x65, 0x58, 0xAA, 0xBB, 0xCC, 0x00, 0x00, 0x00,
     0x21, 0x01, 0x00, 0x11, 0x22, 0x33, 0x00, 0x00,
-    0x22, 0x01, 0x00, 0x01, 0x23, 0x4E, 0x00, 0x00,
+    0x22, 0x01, 0x00, 0x01, 0x23, 0x50, 0x00, 0x00,
     0x00, 0x40, 0x08, 0x01, 0x00, 0x00, 0xF1, 0xD0,
     0xD1, 0xD0, 0x08, 0x00, 0x45, 0x00, 0x00, 0x50,
     0x00, 0x01, 0x00, 0x00, 0x40, 0x11, 0xB5, 0x9A,
@@ -402,7 +425,7 @@ static uint8_t g_snd_pkt_ipv4_udp_s2h[] = {
  */
 static uint8_t g_rcv_pkt_ipv4_udp_s2h[] {
     0x00, 0x00, 0x00, 0x40, 0x08, 0x01, 0x00, 0x00,
-      0xF1, 0xD0, 0xD1, 0xD0, 0x81, 0x00, 0x00, 0x0A,
+      0xF1, 0xD0, 0xD1, 0xD0, 0x81, 0x00, 0x00, 0x0E,
       0x08, 0x00, 0x45, 0x00, 0x00, 0x50, 0x00, 0x01,
       0x00, 0x00, 0x40, 0x11, 0xB6, 0x9A, 0xC0, 0x00,
       0x02, 0x01, 0x02, 0x00, 0x00, 0x01, 0x27, 0x10,
@@ -421,7 +444,7 @@ static uint8_t g_rcv_pkt_ipv4_udp_s2h[] {
  */
 static uint8_t g_snd_pkt_ipv6_udp_h2s[] = {
     0x00, 0x00, 0xF1, 0xD0, 0xD1, 0xD0, 0x00, 0x00,
-    0x00, 0x40, 0x08, 0x01, 0x81, 0x00, 0x00, 0x0A,
+    0x00, 0x40, 0x08, 0x01, 0x81, 0x00, 0x00, 0x0E,
     0x86, 0xDD, 0x60, 0x00, 0x00, 0x00, 0x00, 0x3C,
     0x11, 0x40, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -450,7 +473,7 @@ static uint8_t g_rcv_pkt_ipv6_udp_h2s[] = {
     0x17, 0xC1, 0x00, 0x92, 0x00, 0x00, 0x04, 0x00,
     0x65, 0x58, 0xAA, 0xBB, 0xCC, 0x00, 0x00, 0x00,
     0x21, 0x01, 0x00, 0x11, 0x22, 0x33, 0x00, 0x00,
-    0x22, 0x01, 0x00, 0x01, 0x23, 0x4E, 0x00, 0x00,
+    0x22, 0x01, 0x00, 0x01, 0x23, 0x50, 0x00, 0x00,
     0xF1, 0xD0, 0xD1, 0xD0, 0x00, 0x00, 0x00, 0x40,
     0x08, 0x01, 0x86, 0xDD, 0x60, 0x00, 0x00, 0x00,
     0x00, 0x3C, 0x11, 0x40, 0x03, 0x00, 0x00, 0x00,
@@ -505,7 +528,7 @@ static uint8_t g_snd_pkt_ipv6_udp_s2h[] = {
     0x17, 0xC1, 0x00, 0x92, 0x00, 0x00, 0x04, 0x00,
     0x65, 0x58, 0xAA, 0xBB, 0xCC, 0x00, 0x00, 0x00,
     0x21, 0x01, 0x00, 0x11, 0x22, 0x33, 0x00, 0x00,
-    0x22, 0x01, 0x00, 0x01, 0x23, 0x4E, 0x00, 0x00,
+    0x22, 0x01, 0x00, 0x01, 0x23, 0x50, 0x00, 0x00,
     0x00, 0x40, 0x08, 0x01, 0x00, 0x00, 0xF1, 0xD0,
     0xD1, 0xD0, 0x86, 0xDD, 0x60, 0x00, 0x00, 0x00,
     0x00, 0x3C, 0x11, 0x40, 0x0C, 0x00, 0x00, 0x00,
@@ -527,7 +550,7 @@ static uint8_t g_snd_pkt_ipv6_udp_s2h[] = {
  */
 static uint8_t g_rcv_pkt_ipv6_udp_s2h[] = {
     0x00, 0x00, 0x00, 0x40, 0x08, 0x01, 0x00, 0x00,
-    0xF1, 0xD0, 0xD1, 0xD0, 0x81, 0x00, 0x00, 0x0A,
+    0xF1, 0xD0, 0xD1, 0xD0, 0x81, 0x00, 0x00, 0x0E,
     0x86, 0xDD, 0x60, 0x00, 0x00, 0x00, 0x00, 0x3C,
     0x11, 0x40, 0x0C, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -1014,17 +1037,17 @@ static uint8_t g_rcv_pkt_ipv6_icmp_s2h[] = {
 };
 
 sdk_ret_t
-athena_gtest_test_l2_flows_nat(void)
+athena_gtest_test_l2_flows_recirc(void)
 {
     sdk_ret_t           ret = SDK_RET_OK;
     uint32_t             mask_start_pos = 38;
 
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-L2-UDP-IPv4: h2s pkt", g_snd_pkt_ipv4_udp_h2s,
+    ret = send_packet_wmask("RECIRC-L2-UDP-IPv4: h2s pkt", g_snd_pkt_ipv4_udp_h2s,
             sizeof(g_snd_pkt_ipv4_udp_h2s), g_h_port,
 			    g_rcv_pkt_ipv4_udp_h2s, sizeof(g_rcv_pkt_ipv4_udp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-UDP-IPv4: h2s pkt", g_snd_pkt_ipv4_udp_h2s,
+    ret = send_packet("RECIRC-UDP-IPv4: h2s pkt", g_snd_pkt_ipv4_udp_h2s,
             sizeof(g_snd_pkt_ipv4_udp_h2s), g_h_port,
             g_rcv_pkt_ipv4_udp_h2s, sizeof(g_rcv_pkt_ipv4_udp_h2s), g_s_port);
 #endif
@@ -1033,7 +1056,7 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-L2-UDP-IPv4: s2h pkt", g_snd_pkt_ipv4_udp_s2h,
+    ret = send_packet("RECIRC-L2-UDP-IPv4: s2h pkt", g_snd_pkt_ipv4_udp_s2h,
             sizeof(g_snd_pkt_ipv4_udp_s2h), g_s_port,
             g_rcv_pkt_ipv4_udp_s2h, sizeof(g_rcv_pkt_ipv4_udp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
@@ -1041,11 +1064,11 @@ athena_gtest_test_l2_flows_nat(void)
     }
 
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-L2-UDP-IPv6: h2s pkt", g_snd_pkt_ipv6_udp_h2s,
+    ret = send_packet_wmask("RECIRC-L2-UDP-IPv6: h2s pkt", g_snd_pkt_ipv6_udp_h2s,
             sizeof(g_snd_pkt_ipv6_udp_h2s), g_h_port,
 			    g_rcv_pkt_ipv6_udp_h2s, sizeof(g_rcv_pkt_ipv6_udp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-UDP-IPv6: h2s pkt", g_snd_pkt_ipv6_udp_h2s,
+    ret = send_packet("RECIRC-UDP-IPv6: h2s pkt", g_snd_pkt_ipv6_udp_h2s,
             sizeof(g_snd_pkt_ipv6_udp_h2s), g_h_port,
             g_rcv_pkt_ipv6_udp_h2s, sizeof(g_rcv_pkt_ipv6_udp_h2s), g_s_port);
 #endif
@@ -1053,20 +1076,20 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-L2-UDP-IPv6: s2h pkt", g_snd_pkt_ipv6_udp_s2h,
+    ret = send_packet("RECIRC-L2-UDP-IPv6: s2h pkt", g_snd_pkt_ipv6_udp_s2h,
             sizeof(g_snd_pkt_ipv6_udp_s2h), g_s_port,
             g_rcv_pkt_ipv6_udp_s2h, sizeof(g_rcv_pkt_ipv6_udp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 
-#if 1
+#if 0
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-TCP-IPv4: h2s pkt", g_snd_pkt_ipv4_tcp_h2s,
+    ret = send_packet_wmask("RECIRC-TCP-IPv4: h2s pkt", g_snd_pkt_ipv4_tcp_h2s,
             sizeof(g_snd_pkt_ipv4_tcp_h2s), g_h_port,
 			    g_rcv_pkt_ipv4_tcp_h2s, sizeof(g_rcv_pkt_ipv4_tcp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-TCP-IPv4: h2s pkt", g_snd_pkt_ipv4_tcp_h2s,
+    ret = send_packet("RECIRC-TCP-IPv4: h2s pkt", g_snd_pkt_ipv4_tcp_h2s,
             sizeof(g_snd_pkt_ipv4_tcp_h2s), g_h_port,
             g_rcv_pkt_ipv4_tcp_h2s, sizeof(g_rcv_pkt_ipv4_tcp_h2s), g_s_port);
 #endif
@@ -1074,7 +1097,7 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-TCP-IPv4: s2h pkt", g_snd_pkt_ipv4_tcp_s2h,
+    ret = send_packet("RECIRC-TCP-IPv4: s2h pkt", g_snd_pkt_ipv4_tcp_s2h,
             sizeof(g_snd_pkt_ipv4_tcp_s2h), g_s_port,
             g_rcv_pkt_ipv4_tcp_s2h, sizeof(g_rcv_pkt_ipv4_tcp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
@@ -1082,11 +1105,11 @@ athena_gtest_test_l2_flows_nat(void)
     }
 
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-TCP-IPv6: h2s pkt", g_snd_pkt_ipv6_tcp_h2s,
+    ret = send_packet_wmask("RECIRC-TCP-IPv6: h2s pkt", g_snd_pkt_ipv6_tcp_h2s,
             sizeof(g_snd_pkt_ipv6_tcp_h2s), g_h_port,
 			    g_rcv_pkt_ipv6_tcp_h2s, sizeof(g_rcv_pkt_ipv6_tcp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-TCP-IPv6: h2s pkt", g_snd_pkt_ipv6_tcp_h2s,
+    ret = send_packet("RECIRC-TCP-IPv6: h2s pkt", g_snd_pkt_ipv6_tcp_h2s,
             sizeof(g_snd_pkt_ipv6_tcp_h2s), g_h_port,
             g_rcv_pkt_ipv6_tcp_h2s, sizeof(g_rcv_pkt_ipv6_tcp_h2s), g_s_port);
 #endif
@@ -1094,7 +1117,7 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-TCP-IPv6: s2h pkt", g_snd_pkt_ipv6_tcp_s2h,
+    ret = send_packet("RECIRC-TCP-IPv6: s2h pkt", g_snd_pkt_ipv6_tcp_s2h,
             sizeof(g_snd_pkt_ipv6_tcp_s2h), g_s_port,
             g_rcv_pkt_ipv6_tcp_s2h, sizeof(g_rcv_pkt_ipv6_tcp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
@@ -1102,11 +1125,11 @@ athena_gtest_test_l2_flows_nat(void)
     }
 
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-ICMP-IPv4: h2s pkt", g_snd_pkt_ipv4_icmp_h2s,
+    ret = send_packet_wmask("RECIRC-ICMP-IPv4: h2s pkt", g_snd_pkt_ipv4_icmp_h2s,
             sizeof(g_snd_pkt_ipv4_icmp_h2s), g_h_port,
 			    g_rcv_pkt_ipv4_icmp_h2s, sizeof(g_rcv_pkt_ipv4_icmp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-ICMP-IPv4: h2s pkt", g_snd_pkt_ipv4_icmp_h2s,
+    ret = send_packet("RECIRC-ICMP-IPv4: h2s pkt", g_snd_pkt_ipv4_icmp_h2s,
             sizeof(g_snd_pkt_ipv4_icmp_h2s), g_h_port,
             g_rcv_pkt_ipv4_icmp_h2s, sizeof(g_rcv_pkt_ipv4_icmp_h2s), g_s_port);
 #endif
@@ -1114,7 +1137,7 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-ICMP-IPv4: s2h pkt", g_snd_pkt_ipv4_icmp_s2h,
+    ret = send_packet("RECIRC-ICMP-IPv4: s2h pkt", g_snd_pkt_ipv4_icmp_s2h,
             sizeof(g_snd_pkt_ipv4_icmp_s2h), g_s_port,
             g_rcv_pkt_ipv4_icmp_s2h, sizeof(g_rcv_pkt_ipv4_icmp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
@@ -1122,11 +1145,11 @@ athena_gtest_test_l2_flows_nat(void)
     }
 
 #ifndef P4_14
-    ret = send_packet_wmask("NAT-ICMP-IPv6: h2s pkt", g_snd_pkt_ipv6_icmp_h2s,
+    ret = send_packet_wmask("RECIRC-ICMP-IPv6: h2s pkt", g_snd_pkt_ipv6_icmp_h2s,
             sizeof(g_snd_pkt_ipv6_icmp_h2s), g_h_port,
 			    g_rcv_pkt_ipv6_icmp_h2s, sizeof(g_rcv_pkt_ipv6_icmp_h2s), g_s_port, mask_start_pos);
 #else
-    ret = send_packet("NAT-ICMP-IPv6: h2s pkt", g_snd_pkt_ipv6_icmp_h2s,
+    ret = send_packet("RECIRC-ICMP-IPv6: h2s pkt", g_snd_pkt_ipv6_icmp_h2s,
             sizeof(g_snd_pkt_ipv6_icmp_h2s), g_h_port,
             g_rcv_pkt_ipv6_icmp_h2s, sizeof(g_rcv_pkt_ipv6_icmp_h2s), g_s_port);
 #endif
@@ -1134,14 +1157,13 @@ athena_gtest_test_l2_flows_nat(void)
         return ret;
     }
 
-    ret = send_packet("NAT-ICMP-IPv6: s2h pkt", g_snd_pkt_ipv6_icmp_s2h,
+    ret = send_packet("RECIRC-ICMP-IPv6: s2h pkt", g_snd_pkt_ipv6_icmp_s2h,
             sizeof(g_snd_pkt_ipv6_icmp_s2h), g_s_port,
             g_rcv_pkt_ipv6_icmp_s2h, sizeof(g_rcv_pkt_ipv6_icmp_s2h), g_h_port);
     if (ret != SDK_RET_OK) {
         return ret;
     }
 #endif
-
     return ret;
 }
 #endif

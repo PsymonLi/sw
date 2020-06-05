@@ -31,6 +31,7 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
 			    bit <11> lif,
 			    bit <3>  qtype,
  			    bit <24> qid) {
+
 	metadata.cntrl.redir_type = redir_type;
 	metadata.cntrl.redir_oport = oport;
 	metadata.cntrl.redir_lif = lif;
@@ -45,9 +46,10 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
     @name(".nacl_error")
       action nacl_error() {
       capri_intrinsic.drop = 1;
-    
+      
     }
-
+    
+    
     @name(".nacl") table nacl {
         key = {
             metadata.cntrl.direction        : ternary;

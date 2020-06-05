@@ -139,7 +139,8 @@ control p4e_statistics(inout cap_phv_intr_global_h capri_intrinsic,
     @name(".p4e_stats") action p4e_stats_a(@__ref bit<64>  tx_to_host,
   					 @__ref bit<64>  tx_to_switch,
  					   @__ref bit<64>  tx_to_arm,
-					   @__ref bit<64>  nacl_drop
+					   @__ref bit<64>  nacl_drop,
+					   @__ref bit<64> flow_hit
 					 ) {
       if((metadata.cntrl.p4e_stats_flag & P4E_STATS_FLAG_TX_TO_HOST) == P4E_STATS_FLAG_TX_TO_HOST) {
 	tx_to_host = tx_to_host + 1;
@@ -153,6 +154,10 @@ control p4e_statistics(inout cap_phv_intr_global_h capri_intrinsic,
 
       if(capri_intrinsic.drop == 1) {
         nacl_drop = nacl_drop + 1;
+      } 
+
+      if(metadata.cntrl.flow_miss == FALSE) {
+        flow_hit = flow_hit + 1;
       } 
 
     }

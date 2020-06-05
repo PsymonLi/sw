@@ -26,6 +26,8 @@ run_gtest flow_session_rewrite
 run_gtest flow_cache_scale
 run_gtest l2_flow_cache_scale
 run_gtest dnat_scale
+run_gtest flow_cache_scale_profile
+run_gtest flow_cache_scale_profile_1
 
 # end of script
 clean_exit

@@ -660,23 +660,23 @@ control AthenaEgressDeparser(packet_out packet,
 	packet.emit(hdr.ctag_0);
 
 
-	packet.emit(hdr.ip_0.ipv4);
-	packet.emit(hdr.ip_0.ipv6);
-	packet.emit(hdr.gre_0);
-	packet.emit(hdr.l4_0.udp);
+	packet.emit(hdr.ipv4_0);
+	//	packet.emit(hdr.gre_0);
+	packet.emit(hdr.udp_0);
 	packet.emit(hdr.mpls_label1_0);
 	packet.emit(hdr.mpls_label2_0);
 	packet.emit(hdr.mpls_label3_0);
         packet.emit(hdr.geneve_0);
 	packet.emit(hdr.geneve_option_srcSlotId);
 	packet.emit(hdr.geneve_option_dstSlotId);
-	packet.emit(hdr.geneve_option_srcSecGrpList_1);
-	packet.emit(hdr.geneve_option_srcSecGrpList_2);
-	packet.emit(hdr.geneve_option_srcSecGrpList_3);
+	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_1);
+	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_2);
+	packet.emit(hdr.geneve_option_srcSecGrpList_u.srcSecGrpList_3);
 	packet.emit(hdr.geneve_option_origPhysicalIp);
 	
-	ipv4HdrCsumDepEg_0.update_len(hdr.ip_0.ipv4, metadata.csum.ip_hdr_len_0);
-	hdr.ip_0.ipv4.hdrChecksum = ipv4HdrCsumDepEg_0.get();
+
+	ipv4HdrCsumDepEg_0.update_len(hdr.ipv4_0, metadata.csum.ip_hdr_len_0);
+	hdr.ipv4_0.hdrChecksum = ipv4HdrCsumDepEg_0.get();
 
 	packet.emit(hdr.ethernet_1);
 	packet.emit(hdr.ctag_1);
@@ -686,7 +686,7 @@ control AthenaEgressDeparser(packet_out packet,
 	ipv4HdrCsumDepEg_1.update_len(hdr.ip_1.ipv4, metadata.csum.ip_hdr_len_1);
 	hdr.ip_1.ipv4.hdrChecksum = ipv4HdrCsumDepEg_1.get();
 	
-	packet.emit(hdr.gre_1);
+	//	packet.emit(hdr.gre_1);
 	
 	packet.emit(hdr.udp);
 	packet.emit(hdr.mpls_src);

@@ -1,10 +1,10 @@
-#define PKT_IPV4_HDRLEN_0            ((bit<16>) hdr.ip_0.ipv4.ihl << 2)
+#define PKT_IPV4_HDRLEN_0            ((bit<16>) hdr.ipv4_0.ihl << 2)
 #define PKT_IPV4_HDRLEN_1            ((bit<16>) hdr.ip_1.ipv4.ihl << 2)
-#define PKT_IPV4_TOTAL_LEN_0         hdr.ip_0.ipv4.totalLen
+#define PKT_IPV4_TOTAL_LEN_0         hdr.ipv4_0.totalLen
 #define PKT_IPV4_TOTAL_LEN_1         hdr.ip_1.ipv4.totalLen
 #define PKT_IPV4_HDRLEN_2            ((bit<16>) hdr.ip_2.ipv4.ihl << 2)
 #define PKT_IPV4_TOTAL_LEN_2         hdr.ip_2.ipv4.totalLen
-#define PKT_IPV6_PAYLOAD_LEN_0       hdr.ip_0.ipv6.payloadLen
+//#define PKT_IPV6_PAYLOAD_LEN_0       hdr.ip_0.ipv6.payloadLen
 #define PKT_IPV6_PAYLOAD_LEN_1       hdr.ip_1.ipv6.payloadLen
 #define PKT_IPV6_PAYLOAD_LEN_2       hdr.ip_2.ipv6.payloadLen
 

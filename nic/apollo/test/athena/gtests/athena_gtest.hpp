@@ -16,6 +16,7 @@
 #define VNIC_ID_UDPSPORT    0x000c
 #define VNIC_ID_L2_UDPSPORT    0x000d
 #define VNIC_ID_RECIRC    0x000e
+#define VNIC_ID_GENEVE_ENCAP    0x000f
 
 #define VLAN_ID_VLAN0         0x0
 #define VLAN_ID_UDP         0x0001
@@ -33,6 +34,7 @@
 #define VLAN_ID_UDPSPORT    0x000c
 #define VLAN_ID_L2_UDPSPORT    0x000d
 #define VLAN_ID_RECIRC    0x000e
+#define VLAN_ID_GENEVE_ENCAP    0x000f
 
 
 //#define MPLS_LABEL_UDP      0x49440
@@ -51,6 +53,8 @@
 #define GENEVE_DST_SLOT_ID_NAT      0x1234e
 #define GENEVE_DST_SLOT_ID_UDPSPORT      0x1234f
 #define GENEVE_DST_SLOT_ID_RECIRC      0x12350
+#define GENEVE_DST_SLOT_ID_GENEVE_ENCAP      0x12351
+
 
 
 extern uint8_t     g_h_port;
@@ -58,6 +62,9 @@ extern uint8_t     g_s_port;
 extern uint32_t    g_session_index;
 extern uint32_t    g_session_rewrite_index;
 extern uint32_t    g_epoch_index;
+extern uint32_t    g_flow_ohash_index;
+extern uint32_t    g_l2_flow_ohash_index;
+extern uint32_t    g_dnat_ohash_index;
 
 void
 dump_pkt(std::vector<uint8_t> &pkt);
@@ -220,6 +227,39 @@ sdk_ret_t
 create_dnat_map_ipv6(uint16_t vnic_id, ipv6_addr_t *v6_nat_dip, 
         ipv6_addr_t *v6_orig_dip, uint16_t dnat_epoch);
 
+#ifndef P4_14
+static uint32_t
+generate_hash_ (void *key, uint32_t key_len, uint32_t crc_init_val);
+
+uint32_t
+entry_write (uint32_t tbl_id, uint32_t index, void *key, void *mask, void *data,
+             bool hash_table, uint32_t table_size);
+
+void
+p4pd_ipv4_flow_insert (uint16_t vnic_id, ipv4_addr_t v4_addr_sip, ipv4_addr_t v4_addr_dip,
+        uint8_t proto, uint16_t sport, uint16_t dport,
+		 pds_flow_spec_index_type_t index_type, uint32_t index, bool ovfl = 0, uint8_t recirc_num = 0);
+
+void
+p4pd_ipv6_flow_insert (uint16_t vnic_id, ipv6_addr_t v6_addr_sip, ipv6_addr_t v6_addr_dip,
+        uint8_t proto, uint16_t sport, uint16_t dport,
+		 pds_flow_spec_index_type_t index_type, uint32_t index, bool ovfl = 0, uint8_t recirc_num = 0);
+
+
+void
+p4pd_l2_flow_insert (uint16_t vnic_id, mac_addr_t *dmac,  uint32_t index, bool ovfl = 0, uint8_t recirc_num = 0);
+
+void
+p4pd_ipv4_dnat_insert (uint16_t vnic_id, ipv4_addr_t v4_nat_dip,
+		       ipv4_addr_t v4_orig_dip, uint16_t dnat_epoch,  bool ovfl = 0, uint8_t recirc_num = 0);
+
+void
+p4pd_ipv6_dnat_insert (uint16_t vnic_id, ipv6_addr_t v6_nat_dip,
+		       ipv6_addr_t v6_orig_dip, uint16_t dnat_epoch,  bool ovfl = 0, uint8_t recirc_num = 0);
+
+#endif
+
+
 /* VLAN0 Flows */
 sdk_ret_t
 athena_gtest_setup_flows_vlan0(void);
@@ -304,6 +344,20 @@ athena_gtest_setup_l2_flows_nat(void);
 
 sdk_ret_t
 athena_gtest_test_l2_flows_nat(void);
+
+/* Geneve encap option flows */
+sdk_ret_t
+athena_gtest_setup_l2_flows_geneve_encap(uint8_t test_case);
+
+sdk_ret_t
+athena_gtest_test_l2_flows_geneve_encap(void);
+
+/* RECIRC Flows */
+sdk_ret_t
+athena_gtest_setup_l2_flows_recirc(void);
+
+sdk_ret_t
+athena_gtest_test_l2_flows_recirc(void);
 
 #endif
 
