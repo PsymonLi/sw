@@ -7,6 +7,7 @@ import (
 	"expvar"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/go-martini/martini"
 	"github.com/minio/minio-go/v6"
+	jose "gopkg.in/square/go-jose.v2"
+	"gopkg.in/square/go-jose.v2/jwt"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/objstore"
@@ -43,7 +46,7 @@ func newHTTPHandler(instance *instance, client vos.BackendClient) (*httpHandler,
 	return &httpHandler{client: client, handler: mux, instance: instance}, nil
 }
 
-func (h *httpHandler) start(ctx context.Context, port string, config *tls.Config) {
+func (h *httpHandler) start(ctx context.Context, port, minioKey, minioSecret string, config *tls.Config) {
 	log.InfoLog("msg", "starting HTTP listener")
 	h.handler.Get(apiPrefix+downloadPath, h.downloadHandler)
 	log.InfoLog("msg", "adding path", "path", apiPrefix+uploadImagesPath)
@@ -52,6 +55,7 @@ func (h *httpHandler) start(ctx context.Context, port string, config *tls.Config
 	h.handler.Post(apiPrefix+uploadSnapshotsPath, h.uploadSnapshotsHandler)
 	log.InfoLog("msg", "adding path", "path", "/debug/vars")
 	h.handler.Get("/debug/vars", expvar.Handler())
+	h.handler.Get("/debug/minio/metrics", h.minioMetricsHandler(minioKey, minioSecret))
 
 	done := make(chan error)
 	var ln net.Listener
@@ -244,4 +248,62 @@ func (h *httpHandler) downloadHandler(params martini.Params, w http.ResponseWrit
 func (h *httpHandler) writeError(w http.ResponseWriter, code int, msg interface{}) {
 	w.WriteHeader(code)
 	w.Write([]byte(fmt.Sprintf("%v", msg)))
+}
+
+func (h *httpHandler) minioMetricsHandler(minioKey, minioSecret string) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		token, err := generateTokenForMetrics(minioKey, minioSecret)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in generating token (%s)", err))
+			return
+		}
+
+		metricsReq, err := http.NewRequest("GET",
+			fmt.Sprintf("http://%s:%s/minio/prometheus/metrics", "localhost", globals.VosMinioPort), nil)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in creating metrics request (%s)", err))
+			return
+		}
+
+		metricsReq.Header.Set("Authorization", "Bearer "+token)
+		client := &http.Client{Timeout: time.Second * 10}
+		resp, err := client.Do(metricsReq)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in collecting metrics request (%s)", err))
+			return
+		}
+
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in reading metrics (%s)", err))
+			return
+		}
+
+		metrics := map[string]interface{}{"miniometrics": string(body[:])}
+		b, err := json.Marshal(metrics)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in marshalling metrics (%s)", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(b)
+	}
+}
+
+func generateTokenForMetrics(accessKey, secretKey string) (string, error) {
+	expiry := 60 * time.Second
+	claims := jwt.Claims{
+		Subject:  accessKey,
+		Issuer:   "prometheus",
+		Expiry:   jwt.NewNumericDate(time.Now().UTC().Add(expiry)),
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+	}
+	signer, err := jose.NewSigner(jose.SigningKey{Algorithm: jose.HS512, Key: []byte(secretKey)}, nil)
+	if err != nil {
+		return "", err
+	}
+	return jwt.Signed(signer).Claims(claims).CompactSerialize()
 }

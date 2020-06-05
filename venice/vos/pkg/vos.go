@@ -234,7 +234,6 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 
 	os.Setenv("MINIO_ACCESS_KEY", minioKey)
 	os.Setenv("MINIO_SECRET_KEY", minioSecret)
-	os.Setenv("MINIO_PROMETHEUS_AUTH_TYPE", "public")
 
 	log.Infof("minio env: %+v", os.Environ())
 	if trace {
@@ -323,7 +322,7 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 	// Register all plugins
 	plugins.RegisterPlugins(inst)
 	grpcBackend.start(ctx)
-	httpBackend.start(ctx, globals.VosHTTPPort, tlsc)
+	httpBackend.start(ctx, globals.VosHTTPPort, minioKey, minioSecret, tlsc)
 	log.Infof("Initialization complete")
 	<-ctx.Done()
 	return inst, nil

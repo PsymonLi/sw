@@ -27,7 +27,7 @@ func TestNewHandler(t *testing.T) {
 	Assert(t, h != nil, "handler is nil")
 	ctx, cancel := context.WithCancel(context.Background())
 	// should start the server and return
-	h.start(ctx, "0", nil)
+	h.start(ctx, "0", "dummy", "dummy", nil)
 	cancel()
 }
 
@@ -225,4 +225,18 @@ func TestDownloadHandler(t *testing.T) {
 	wr = httptest.NewRecorder()
 	cbcalled1, cbcalled2, cnt = 0, 0, 0
 	srv.downloadHandler(params, wr, req)
+}
+
+func TestMetricsHandler(t *testing.T) {
+	fb := &mockBackend{}
+	inst := &instance{}
+	inst.Init(fb)
+	srv := httpHandler{client: fb, instance: inst}
+	req, err := http.NewRequest("GET", "/debug/minio/metrics", nil)
+	AssertOk(t, err, "failed to create request")
+
+	wr := httptest.NewRecorder()
+	handler := srv.minioMetricsHandler("dummy", "dummy")
+	handler(wr, req)
+	Assert(t, wr.Code == http.StatusInternalServerError, "expecting failure due to metrics path not implemented in mock backend")
 }
