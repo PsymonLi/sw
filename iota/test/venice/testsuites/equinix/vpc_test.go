@@ -341,18 +341,24 @@ func normalizePDSVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool
 func verifyPDSVpcState(vc *objects.VpcObjCollection) {
 	veniceVpc := normalizeVeniceVpcObj(vc)
 
-	nodes := ts.model.Naples().FakeNodes
+	tenant, err := defaultTenantName()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	nodes := npc.FakeNodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]pdsVpc {
-			log.Infof("DSC %v: Trying to verify VPC state in PDS agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify VPC state in PDS agent...", node.Name())
 			return normalizePDSVpcObj(vc.Objs, node, false)
 		}).Should(Equal(veniceVpc))
 	}
 
-	nodes = ts.model.Naples().Nodes
+	nodes = npc.Nodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]pdsVpc {
-			log.Infof("DSC %v: Trying to verify VPC statein PDS agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify VPC statein PDS agent...", node.IP())
 			return normalizePDSVpcObj(vc.Objs, node, true)
 		}).Should(Equal(veniceVpc))
 	}
@@ -472,18 +478,24 @@ func normalizeNAVpcObj(vpcs []*objects.Vpc, node *objects.Naples, isHWNode bool)
 func verifyNetAgentVpcState(vpcs *objects.VpcObjCollection) {
 	veniceVpc := normalizeVeniceVpcForNA(vpcs)
 
-	nodes := ts.model.Naples().FakeNodes
+	tenant, err := defaultTenantName()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	nodes := npc.FakeNodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]netAgentVpc {
-			log.Infof("DSC %v: Trying to verify VPC state in Net agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify VPC state in Net agent...", node.Name())
 			return normalizeNAVpcObj(vpcs.Objs, node, false)
 		}).Should(Equal(veniceVpc))
 	}
 
-	nodes = ts.model.Naples().Nodes
+	nodes = npc.Nodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]netAgentVpc {
-			log.Infof("DSC %v: Trying to verify VPC state in Net agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify VPC state in Net agent...", node.IP())
 			return normalizeNAVpcObj(vpcs.Objs, node, true)
 		}).Should(Equal(veniceVpc))
 	}

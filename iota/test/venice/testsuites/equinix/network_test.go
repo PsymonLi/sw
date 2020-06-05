@@ -416,18 +416,24 @@ func normalizePDSSubnetObj(subnets []*objects.Network, node *objects.Naples, isH
 func verifyPDSNwState(obj *objects.NetworkCollection) {
 	vSub := normalizeVeniceNetworkObj(obj)
 
-	nodes := ts.model.Naples().FakeNodes
+	tenant, err := defaultTenantName()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	nodes := npc.FakeNodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]pdsSubnet {
-			log.Infof("DSC %v: Trying to verify networks state in PDS agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify networks state in PDS agent...", node.Name())
 			return normalizePDSSubnetObj(obj.Subnets(), node, false)
 		}).Should(Equal(vSub))
 	}
 
-	nodes = ts.model.Naples().Nodes
+	nodes = npc.Nodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]pdsSubnet {
-			log.Infof("DSC %v: Trying to verify networks state in PDS agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify networks state in PDS agent...", node.IP())
 			return normalizePDSSubnetObj(obj.Subnets(), node, true)
 		}).Should(Equal(vSub))
 	}
@@ -531,18 +537,26 @@ func normalizeNASubnetObj(subnets []*objects.Network, node *objects.Naples, isHW
 func verifyNetAgentNwState(obj *objects.NetworkCollection) {
 	vSub := normalizeVeniceForNA(obj)
 
-	nodes := ts.model.Naples().FakeNodes
+	tenant, err := defaultTenantName()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	nodes := npc.FakeNodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]netAgentSubnet {
-			log.Infof("DSC %v: Trying to verify networks state in Net agent...", node.IP())
+			log.Infof("DSC %v : Trying to verify networks state in Net agent...",
+				node.Name())
 			return normalizeNASubnetObj(obj.Subnets(), node, false)
 		}).Should(Equal(vSub))
 	}
 
-	nodes = ts.model.Naples().Nodes
+	nodes = npc.Nodes
 	for _, node := range nodes {
 		EventuallyWithOffset(1, func() map[string]netAgentSubnet {
-			log.Infof("DSC %v: Trying to verify networks state in Net agent...", node.IP())
+			log.Infof("DSC IP %v : Trying to verify networks state in Net agent...",
+				node.IP())
 			return normalizeNASubnetObj(obj.Subnets(), node, true)
 		}).Should(Equal(vSub))
 	}

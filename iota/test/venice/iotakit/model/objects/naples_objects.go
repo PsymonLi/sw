@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	"github.com/pensando/sw/api/generated/cluster"
 	iota "github.com/pensando/sw/iota/protos/gogen"
@@ -556,7 +557,6 @@ func (npc *NaplesCollection) Refresh() error {
 	for _, node := range npc.Nodes {
 		for _, inst := range node.Instances {
 			dsc := inst.Dsc
-			log.Infof("Get DSC %v", dsc.GetName())
 
 			curDsc, err := npc.Client.GetSmartNIC(dsc.GetName())
 			if err != nil {
@@ -572,7 +572,6 @@ func (npc *NaplesCollection) Refresh() error {
 	for _, node := range npc.FakeNodes {
 		for _, inst := range node.Instances {
 			dsc := inst.Dsc
-			log.Infof("Get DSC %v", dsc.GetName())
 
 			curDsc, err := npc.Client.GetSmartNIC(dsc.GetName())
 			if err != nil {
@@ -586,4 +585,62 @@ func (npc *NaplesCollection) Refresh() error {
 	}
 
 	return nil
+}
+
+//DSCs - Get new naples collection where tenant subnets are deployed
+func (npc *NaplesCollection) SelectByTenant(tenantName string) (*NaplesCollection, error) {
+	if npc.HasError() {
+		return nil, npc.err
+	}
+
+	//Fetch all interfaces with pf filter and tenant as this tenant
+	pfIntfc, err := GetAllPFNetworkInterfacesForTenant(tenantName, npc.Client, npc.Testbed)
+
+	if err != nil {
+		return nil, err
+	}
+
+	newNpc := &NaplesCollection{Nodes: []*Naples{}, FakeNodes: []*Naples{},
+		CollectionCommon: CollectionCommon{
+			Client:  npc.Client,
+			Testbed: npc.Testbed},
+	}
+
+	HwNaples := make(map[string]*Naples)
+	FakeNaples := make(map[string]*Naples)
+
+	for _, n := range npc.FakeNodes {
+		FakeNaples[n.name] = n
+	}
+
+	if len(npc.Nodes) != 0 {
+		//Nodename for h/w nodes needs to be from DSC object which needs to be refreshed
+		npc.Refresh()
+	}
+
+	for _, n := range npc.Nodes {
+		nodeName := n.Instances[0].Dsc.GetName()
+		HwNaples[nodeName] = n
+	}
+
+	for _, pf := range pfIntfc.Interfaces {
+		dscid := pf.Status.GetDSCID()
+		dsc := pf.Status.GetDSC()
+		if strings.Contains(dscid, "naples-sim-") {
+			//lookup in map of fake naples
+			if node, ok := FakeNaples[dscid]; ok {
+				newNpc.FakeNodes = append(newNpc.FakeNodes, node)
+				//delete node entry from map so that it's not duplicated in newNpc.FakeNodes
+				delete(FakeNaples, dscid)
+			}
+		} else {
+			if node, ok := HwNaples[dsc]; ok {
+				newNpc.Nodes = append(newNpc.Nodes, node)
+				//delete node entry from map so that it's not duplicated in newNpc.Nodes
+				delete(HwNaples, dsc)
+			}
+		}
+	}
+
+	return newNpc, nil
 }

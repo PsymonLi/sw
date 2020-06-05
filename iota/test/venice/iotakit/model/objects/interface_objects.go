@@ -218,3 +218,25 @@ func GetPFNetworkInterfacesForTenant(tenant, naples string,
 
 	return intfc, nil
 }
+
+func GetAllPFNetworkInterfacesForTenant(tenant string,
+	client objClient.ObjClient, tb *testbed.TestBed) (*NetworkInterfaceCollection, error) {
+
+	filter := fmt.Sprintf("spec.type=host-pf,spec.attach-tenant=%v", tenant)
+	intfs, err := client.ListNetowrkInterfacesByFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(intfs) == 0 {
+		err = fmt.Errorf("no host-pf interfaces for tenant %v", tenant)
+		return nil, err
+	}
+
+	intfc := NewInterfaceCollection(client, tb)
+	for _, intf := range intfs {
+		intfc.Interfaces = append(intfc.Interfaces, intf)
+	}
+
+	return intfc, nil
+}
