@@ -201,6 +201,9 @@ func (i *IrisAPI) PipelineInit() error {
 				log.Errorf("Failed to unmarshal object to Profile. Err: %v", err)
 				continue
 			}
+			log.Infof("Purging from internal DB for idempotency. Kind: %v | Key: %v", profile.Kind, profile.GetKey())
+			i.InfraAPI.Delete(profile.Kind, profile.GetKey())
+
 			creator, ok := profile.ObjectMeta.Labels["CreatedBy"]
 			if ok && creator == "Venice" {
 				log.Info("Replaying persisted Profile object")
@@ -1532,6 +1535,7 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 	}
 
 	var existingProfile netproto.Profile
+	var isCreate bool
 	// Handle Get and LIST. This doesn't need any pipeline specific APIs
 	switch oper {
 	case types.Get:
@@ -1574,6 +1578,28 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 
 		return
 	case types.Create:
+		var (
+			dat [][]byte
+		)
+		dat, err = i.InfraAPI.List(profile.Kind)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "Profile: %s | Err: %v", profile.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "Profile: %s | Err: %v", profile.GetKey(), types.ErrObjNotFound)
+		}
+
+		log.Infof("Profile: Found %v profiles", len(dat))
+		for _, o := range dat {
+			err := proto.Unmarshal(o, &existingProfile)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", existingProfile.GetKey(), err))
+				continue
+			}
+			log.Infof("Profile: %s | Existing profile found, profile move validation will be checked", existingProfile.GetKey())
+			break
+		}
+		if len(dat) == 0 {
+			isCreate = true
+		}
 	case types.Update:
 		// Get to ensure that the object exists
 		dat, err := i.InfraAPI.Read(profile.Kind, profile.GetKey())
@@ -1642,7 +1668,9 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 
 	// Profile changes to restricted profiles warrant a purge of all configs. Clean up the watches first to prevent
 	// updates on objects after they are purged. Also, take a lock to ensure a single HAL API is active at any given point.
-	if oper == types.Update && utils.IsSafeProfileMove(existingProfile, profile) != true {
+	// Check profile move only if we already have a valid profile on DSC. In case there are no profile on DSC,
+	// we should create the profile with purging of watchers and objects.
+	if !isCreate && utils.IsSafeProfileMove(existingProfile, profile) != true {
 		i.startDynamicWatch(*kinds)
 		purgeConfigs(i, false)
 		if err := iris.HandleProfile(i.InfraAPI, i.SystemClient, types.Create, profile); err != nil {
