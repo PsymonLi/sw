@@ -15,3 +15,15 @@
   top: 8px;
   font-size: 18px;
 }
+
+.flowexportpolicy-hovered-row-item {
+  height: 100%;
+
+  span {
+    display: block;
+  }
+
+  .propagation-status-pending {
+    margin-left: 10px;
+  }
+}

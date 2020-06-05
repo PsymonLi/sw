@@ -45,3 +45,15 @@
 .mirrorsessions-column-txrx-icon {
   background: url(/assets/images/icons/ico-txrx-blk.svg) center center no-repeat;
 }
+
+.mirrorsessions-hovered-row-item {
+  height: 100%;
+
+  span {
+    display: block;
+  }
+
+  .propagation-status-pending {
+    margin-left: 10px;
+  }
+}

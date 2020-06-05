@@ -49,11 +49,13 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
 
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Name', sortable: true, width: '175px', notReorderable: true },
-    { field: 'spec.packet-size', header: 'Packet Size', sortable: true, width: '100px', },
+    { field: 'spec.span-id', header: 'ERSPAN ID', sortable: true, width: '80px' },
+    { field: 'spec.packet-size', header: 'Packet Size', sortable: true, width: '100px' },
     // { field: 'spec.packet-filters', header: 'Packet Filters', sortable: false, width: 10 },
     { field: 'spec.collectors', header: 'Collectors', sortable: false, width: '275px' },
-    { field: 'spec.interfaces.selectors', header: 'Uplink Interface Selectors', sortable: false, width: 20 },
     { field: 'spec.match-rules', header: 'Match Rules', sortable: false, width: 30 },
+    { field: 'spec.interfaces.selectors', header: 'Uplink Interface Selectors', sortable: false, width: 20 },
+    { field: 'status.propagation-status', header: 'Propagation Status', sortable: true, width: '195px' },
     { field: 'meta.creation-time', header: 'Creation Time', sortable: true, width: '180px', notReorderable: true },
     { field: 'meta.mod-time', header: 'Update Time', sortable: true, width: '180px', notReorderable: true },
     // { field: 'status.oper-state', header: 'OP Status', sortable: true, width: '175px' }
@@ -150,11 +152,15 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
         return this.displayColumn_collectors(value);
       case 'spec.match-rules':
         return this.displayColumn_matchRules(value);
+      case 'status.propagation-status':
+        return this.displayColumn_propagation(value);
       default:
          return Array.isArray(value) ? value.join(', ') : value;
     }
   }
-
+  displayColumn_propagation(data) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data));
+  }
   displayMatchRules(rule: MonitoringMatchRule): string {
     const arr: string[] = [];
     if (rule) {
@@ -233,7 +239,7 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
 
   displayListInColumn(list: string[]): string {
     return list.reduce((accum: string, item: string) =>
-      accum + '<div class="ellipsisText" title="' + item + '">' + item + '</div>', '');
+      accum + item );
   }
 
   deleteRecord(object: MonitoringMirrorSession): Observable<{ body: IMonitoringMirrorSession | IApiStatus | Error; statusCode: number; }> {

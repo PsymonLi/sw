@@ -34,11 +34,12 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'flowexportpolicy-column-name', sortable: false, width: 20 },
-    { field: 'spec.interval', header: 'Interval', class: 'flowexportpolicy-column-interval', sortable: false, width: 10 },
+    { field: 'meta.name', header: 'Name', class: 'flowexportpolicy-column-name', sortable: false, width: 25 },
+    { field: 'spec.interval', header: 'Interval', class: 'flowexportpolicy-column-interval', sortable: false, width: '100px' },
     { field: 'spec.template-interval', header: 'Template Refresh Rate', class: 'flowexportpolicy-template-interval', sortable: false, width: '145px' },
     { field: 'spec.match-rules', header: 'Match Rules', class: 'flowexportpolicy-column-match-rules', sortable: false, width: 25 },
-    { field: 'spec.exports', header: 'Targets', class: 'flowexportpolicy-column-targets', sortable: false, width: 35 },
+    { field: 'spec.exports', header: 'Targets', class: 'flowexportpolicy-column-targets', sortable: false, width: 25 },
+    { field: 'status.propagation-status', header: 'Propagation Status', sortable: true, width: 25 }
   ];
 
   exportFilename: string = 'PSM-flow-export-policies';
@@ -115,9 +116,18 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     switch (column) {
       case 'spec.exports':
         return this.formatTargets(value);
+      case 'status.propagation-status':
+        return this.displayColumn_propagation(value);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
+  }
+  displayColumn_propagation(data) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data));
+  }
+  displayListInColumn(list: string[]): string {
+    return list.reduce((accum: string, item: string) =>
+      accum + '<span>' + item + '</span>', '');
   }
   formatTargets(data: IMonitoringExportConfig[]) {
     if (data == null) {
@@ -140,7 +150,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       }
       retArr.push(targetStr);
     });
-    return retArr;
+    return this.displayListInColumn(retArr);
   }
 
   formatMatchRules(data: IMonitoringMatchRule[]) {

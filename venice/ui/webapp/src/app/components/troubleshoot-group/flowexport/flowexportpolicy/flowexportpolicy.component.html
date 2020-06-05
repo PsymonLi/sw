@@ -29,7 +29,7 @@
   </app-tableheader>
 </ng-template>
 
-<ng-template #bodyTemplate let-rowData let-col="col">
+<ng-template #bodyTemplate let-rowData let-col="col" let-hovered="hovered">
   <ng-container [ngSwitch]="col.field">
     <ng-container *ngSwitchCase="'spec.match-rules'">
       <ng-container *ngFor="let rule of formatMatchRules(rowData.spec['match-rules'])">
@@ -37,7 +37,11 @@
       </ng-container>
     </ng-container>
     <ng-container *ngSwitchDefault>
-      {{displayColumn(rowData, col)}}
+      <div *ngIf="!hovered" class="ellipsisText" [innerHTML]="displayColumn(rowData, col)">
+      </div>
+      <div class="flowexportpolicy-hovered-row-item" @fastSlideInOut *ngIf="hovered"
+           [innerHTML]="displayColumn(rowData, col)">
+      </div>
     </ng-container>
   </ng-container>
 </ng-template>

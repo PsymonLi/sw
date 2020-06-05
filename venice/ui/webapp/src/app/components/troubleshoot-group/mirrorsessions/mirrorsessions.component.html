@@ -25,7 +25,7 @@
   </app-tableheader>
 </ng-template>
 
-<ng-template #bodyTemplate let-rowData let-col="col">
+<ng-template #bodyTemplate let-rowData let-col="col" let-hovered="hovered">
   <ng-container [ngSwitch]="col.field">
     <ng-container *ngSwitchCase="'meta.name'">
       <div class="ellipsisText" [title]="rowData.meta.name">
@@ -39,7 +39,10 @@
       {{rowData.meta['creation-time'] | PrettyDate }}
     </ng-container>
     <ng-container *ngSwitchDefault>
-      <div [innerHTML]="displayColumn(rowData, col)">
+      <div class="ellipsisText" *ngIf="!hovered" [innerHTML]="displayColumn(rowData, col)">
+      </div>
+      <div class="mirrorsessions-hovered-row-item" @fastSlideInOut *ngIf="hovered"
+           [innerHTML]="displayColumn(rowData, col)">
       </div>
     </ng-container>
   </ng-container>

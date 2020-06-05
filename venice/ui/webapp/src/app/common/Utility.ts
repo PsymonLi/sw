@@ -2225,7 +2225,34 @@ export class Utility {
     }
     return false;
   }
-
+  public static formatPropagationColumn (data) {
+    const retArr = [];
+    if (data == null) {
+      return retArr;
+    }
+    let targetStr: string = '';
+    for (const k in data) {
+      if (data.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials' && k !== 'generation-id' && k !== 'min-version') {
+        if (typeof data[k] === 'number') {
+          targetStr += targetStr ? ', ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data[k]  + ' ' : ' ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data[k];
+        } else if (k === 'status' && data[k]) {
+          if (data[k].includes('on:')) {
+            targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ': </span> <span class="propagation-status-pending"> ' + data[k].split('on:')[0] + 'on ' + '</span>';
+            data[k].split('on:')[1].split(', ').forEach((macName) => {
+              targetStr += '<span class="propagation-status-pending"> ' + macName + ' </span>';
+            });
+          } else {
+            targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + '</span>';
+          }
+        }
+      }
+    }
+    if (targetStr.length === 0) {
+      targetStr += '*';
+    }
+    retArr.push(targetStr);
+    return retArr;
+  }
   setControllerService(controllerService: ControllerService) {
     this.myControllerService = controllerService;
   }
