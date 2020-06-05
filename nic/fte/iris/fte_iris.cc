@@ -393,6 +393,14 @@ ctx_t::create_session()
     if (valid_rflow_) {
         rdirection_ = (dep_ && (dep_->ep_flags & EP_FLAGS_LOCAL)) ?
             hal::FLOW_DIR_FROM_DMA : hal::FLOW_DIR_FROM_UPLINK;
+        // HACK Alert! For flow-aware mode there is no way
+        // for FTE to tell where the EP is located. Reverse the 
+        // direction until P4 has a way to notify this
+        if (hal::g_hal_state->is_flow_aware()) {
+            rdirection_ = (direction_ == hal::FLOW_DIR_FROM_UPLINK)?\
+                          hal::FLOW_DIR_FROM_DMA : hal::FLOW_DIR_FROM_UPLINK;
+        }
+
         if (cpu_rxhdr_ != NULL) {
             ethhdr = (ether_header_t *)(pkt_ + cpu_rxhdr_->l2_offset);
             memcpy(l2_info.smac, ethhdr->dmac, sizeof(l2_info.smac));
