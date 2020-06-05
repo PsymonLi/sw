@@ -56,19 +56,6 @@ func TestTelemetryOperationsHook(t *testing.T) {
 			err: false,
 		},
 		{
-			name: "fwlogs query operations hook test with no tenant",
-			user: testuser,
-			in:   &telemetry_query.FwlogsQueryList{},
-			expectedOperations: []authz.Operation{
-				authz.NewOperation(authz.NewResource("testTenant",
-					"", auth.Permission_FwLog.String(),
-					"", ""),
-					auth.Permission_Read.String()),
-			},
-			out: &telemetry_query.FwlogsQueryList{Tenant: "testTenant"},
-			err: false,
-		},
-		{
 			name: "metrics query operations hook test with different tenant than user's",
 			user: testuser,
 			in:   &telemetry_query.MetricsQueryList{Tenant: "differentTenant"},
@@ -79,19 +66,6 @@ func TestTelemetryOperationsHook(t *testing.T) {
 					auth.Permission_Read.String()),
 			},
 			out: &telemetry_query.MetricsQueryList{Tenant: "differentTenant"},
-			err: false,
-		},
-		{
-			name: "fwlogs query operations hook test with different tenant than user's",
-			user: testuser,
-			in:   &telemetry_query.FwlogsQueryList{Tenant: "differentTenant"},
-			expectedOperations: []authz.Operation{
-				authz.NewOperation(authz.NewResource("differentTenant",
-					"", auth.Permission_FwLog.String(),
-					"", ""),
-					auth.Permission_Read.String()),
-			},
-			out: &telemetry_query.FwlogsQueryList{Tenant: "differentTenant"},
 			err: false,
 		},
 		{
@@ -180,7 +154,7 @@ func TestTelemetryHooksRegistration(t *testing.T) {
 	err := registerTelemetryHooks(svc, l)
 	AssertOk(t, err, "apigw telemetry hook registration failed")
 
-	methods := []string{"Metrics", "Fwlogs"}
+	methods := []string{"Metrics"}
 	for _, method := range methods {
 		prof, err := svc.GetServiceProfile(method)
 		AssertOk(t, err, fmt.Sprintf("error getting service profile for method [%s]", method))

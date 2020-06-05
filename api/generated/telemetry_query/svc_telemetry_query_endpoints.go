@@ -39,7 +39,6 @@ type EndpointsTelemetryV1Client struct {
 	Client                          TelemetryV1Client
 	AutoWatchSvcTelemetryV1Endpoint endpoint.Endpoint
 
-	FwlogsEndpoint  endpoint.Endpoint
 	MetricsEndpoint endpoint.Endpoint
 }
 
@@ -51,7 +50,6 @@ type EndpointsTelemetryV1RestClient struct {
 	bufferId string
 
 	AutoWatchSvcTelemetryV1Endpoint endpoint.Endpoint
-	FwlogsEndpoint                  endpoint.Endpoint
 	MetricsEndpoint                 endpoint.Endpoint
 }
 
@@ -62,22 +60,7 @@ type MiddlewareTelemetryV1Server func(ServiceTelemetryV1Server) ServiceTelemetry
 type EndpointsTelemetryV1Server struct {
 	svcWatchHandlerTelemetryV1 func(options *api.AggWatchOptions, stream grpc.ServerStream) error
 
-	FwlogsEndpoint  endpoint.Endpoint
 	MetricsEndpoint endpoint.Endpoint
-}
-
-// Fwlogs is endpoint for Fwlogs
-func (e EndpointsTelemetryV1Client) Fwlogs(ctx context.Context, in *FwlogsQueryList) (*FwlogsQueryResponse, error) {
-	resp, err := e.FwlogsEndpoint(ctx, in)
-	if err != nil {
-		return &FwlogsQueryResponse{}, err
-	}
-	return resp.(*FwlogsQueryResponse), nil
-}
-
-type respTelemetryV1Fwlogs struct {
-	V   FwlogsQueryResponse
-	Err error
 }
 
 // Metrics is endpoint for Metrics
@@ -96,28 +79,6 @@ type respTelemetryV1Metrics struct {
 
 func (e EndpointsTelemetryV1Client) AutoWatchSvcTelemetryV1(ctx context.Context, in *api.AggWatchOptions) (TelemetryV1_AutoWatchSvcTelemetryV1Client, error) {
 	return e.Client.AutoWatchSvcTelemetryV1(ctx, in)
-}
-
-// Fwlogs implementation on server Endpoint
-func (e EndpointsTelemetryV1Server) Fwlogs(ctx context.Context, in FwlogsQueryList) (FwlogsQueryResponse, error) {
-	resp, err := e.FwlogsEndpoint(ctx, in)
-	if err != nil {
-		return FwlogsQueryResponse{}, err
-	}
-	return *resp.(*FwlogsQueryResponse), nil
-}
-
-// MakeTelemetryV1FwlogsEndpoint creates  Fwlogs endpoints for the service
-func MakeTelemetryV1FwlogsEndpoint(s ServiceTelemetryV1Server, logger log.Logger) endpoint.Endpoint {
-	f := func(ctx context.Context, request interface{}) (response interface{}, err error) {
-		req := request.(*FwlogsQueryList)
-		v, err := s.Fwlogs(ctx, *req)
-		return respTelemetryV1Fwlogs{
-			V:   v,
-			Err: err,
-		}, nil
-	}
-	return trace.ServerEndpoint("TelemetryV1:Fwlogs")(f)
 }
 
 // Metrics implementation on server Endpoint
@@ -159,7 +120,6 @@ func MakeTelemetryV1ServerEndpoints(s ServiceTelemetryV1Server, logger log.Logge
 	return EndpointsTelemetryV1Server{
 		svcWatchHandlerTelemetryV1: MakeAutoWatchSvcTelemetryV1Endpoint(s, logger),
 
-		FwlogsEndpoint:  MakeTelemetryV1FwlogsEndpoint(s, logger),
 		MetricsEndpoint: MakeTelemetryV1MetricsEndpoint(s, logger),
 	}
 }
@@ -194,19 +154,6 @@ type loggingTelemetryV1MiddlewareServer struct {
 	next   ServiceTelemetryV1Server
 }
 
-func (m loggingTelemetryV1MiddlewareClient) Fwlogs(ctx context.Context, in *FwlogsQueryList) (resp *FwlogsQueryResponse, err error) {
-	defer func(begin time.Time) {
-		var rslt string
-		if err == nil {
-			rslt = "Success"
-		} else {
-			rslt = err.Error()
-		}
-		m.logger.Audit(ctx, "service", "TelemetryV1", "method", "Fwlogs", "result", rslt, "duration", time.Since(begin), "error", err)
-	}(time.Now())
-	resp, err = m.next.Fwlogs(ctx, in)
-	return
-}
 func (m loggingTelemetryV1MiddlewareClient) Metrics(ctx context.Context, in *MetricsQueryList) (resp *MetricsQueryResponse, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -235,19 +182,6 @@ func (m loggingTelemetryV1MiddlewareClient) AutoWatchSvcTelemetryV1(ctx context.
 	return
 }
 
-func (m loggingTelemetryV1MiddlewareServer) Fwlogs(ctx context.Context, in FwlogsQueryList) (resp FwlogsQueryResponse, err error) {
-	defer func(begin time.Time) {
-		var rslt string
-		if err == nil {
-			rslt = "Success"
-		} else {
-			rslt = err.Error()
-		}
-		m.logger.Audit(ctx, "service", "TelemetryV1", "method", "Fwlogs", "result", rslt, "duration", time.Since(begin))
-	}(time.Now())
-	resp, err = m.next.Fwlogs(ctx, in)
-	return
-}
 func (m loggingTelemetryV1MiddlewareServer) Metrics(ctx context.Context, in MetricsQueryList) (resp MetricsQueryResponse, err error) {
 	defer func(begin time.Time) {
 		var rslt string
@@ -307,10 +241,6 @@ func (r *EndpointsTelemetryV1RestClient) getHTTPRequest(ctx context.Context, in 
 func makeURITelemetryV1AutoWatchSvcTelemetryV1WatchOper(in *api.AggWatchOptions) string {
 	return ""
 
-}
-
-func (r *EndpointsTelemetryV1RestClient) TelemetryV1FwlogsEndpoint(ctx context.Context, in *FwlogsQueryList) (*FwlogsQueryResponse, error) {
-	return nil, errors.New("not allowed")
 }
 
 func (r *EndpointsTelemetryV1RestClient) TelemetryV1MetricsEndpoint(ctx context.Context, in *MetricsQueryList) (*MetricsQueryResponse, error) {

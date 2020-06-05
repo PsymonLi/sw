@@ -35,14 +35,4 @@ service TelemetryV1 {
             }
         };
     }
-    //  Firewall logs query
-    rpc Fwlogs (FwlogsQueryList) returns (FwlogsQueryResponse) {
-        option (google.api.http) = {
-            post: "/fwlogs"
-            body: "*"
-            additional_bindings {
-                get: "/fwlogs"
-            }
-        };
-    }
 }

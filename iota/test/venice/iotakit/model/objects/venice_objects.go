@@ -547,43 +547,6 @@ func (vnc *VeniceNodeCollection) QueryMetricsByReporter(kind, reporter, timestr 
 	return result, err
 }
 
-// QueryFwlog queries firewall log
-func (vnc *VeniceNodeCollection) QueryFwlog(protocol, fwaction, timestr string, port uint32) (*telemetry_query.FwlogsQueryResponse, error) {
-	// validate parameters
-	_, ok := telemetry_query.FwlogActions_value[fwaction]
-	if !ok {
-		log.Errorf("Invalid firewall action %s", fwaction)
-		return nil, fmt.Errorf("Invalid fwaction")
-	}
-	stime := &api.Timestamp{}
-	stime.Parse(timestr)
-
-	// build the query
-	query := telemetry_query.FwlogsQueryList{
-		Tenant:    globals.DefaultTenant,
-		Namespace: globals.DefaultNamespace,
-		Queries: []*telemetry_query.FwlogsQuerySpec{
-			{
-				Protocols: []string{protocol},
-				DestPorts: []uint32{port},
-				Actions:   []string{fwaction},
-				StartTime: stime,
-			},
-		},
-	}
-
-	var err error
-	var result *telemetry_query.FwlogsQueryResponse
-	for _, tmc := range vnc.TelemetryCli {
-		result, err = tmc.Fwlogs(vnc.Client.Context(), &query)
-		if err == nil {
-			break
-		}
-	}
-
-	return result, err
-}
-
 // QueryMetricsSelector query metrics selector
 func (vnc *VeniceNodeCollection) QueryMetricsSelector(kind, timestr string, sel fields.Selector) (*telemetryclient.MetricsQueryResponse, error) {
 	stime := &api.Timestamp{}

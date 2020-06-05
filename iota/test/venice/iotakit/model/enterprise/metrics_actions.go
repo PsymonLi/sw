@@ -7,22 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pensando/sw/api/generated/telemetry_query"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/venice/utils/log"
 )
-
-func checkIPAddrInFwlog(ips []string, res []*telemetry_query.FwlogsQueryResult) bool {
-	for _, r := range res {
-		for _, l := range r.Logs {
-			if l.Dest == ips[0] && l.Src == ips[1] {
-				return true
-			}
-		}
-	}
-	log.Infof("failed to find %+v in fwlog", ips)
-	return false
-}
 
 // VerifyRuleStats verifies rule stats for policies
 func (sm *SysModel) VerifyRuleStats(timestr string, spc *objects.NetworkSecurityPolicyCollection, minCounts []map[string]float64) error {

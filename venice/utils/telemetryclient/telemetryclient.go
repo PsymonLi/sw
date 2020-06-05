@@ -69,41 +69,6 @@ func NewTelemetryClient(instance string) (*TelemetryClient, error) {
 	}, nil
 }
 
-// Fwlogs makes a fwlogs query and returns the Query Response
-func (r *TelemetryClient) Fwlogs(ctx context.Context, ql *telemetry_query.FwlogsQueryList) (*telemetry_query.FwlogsQueryResponse, error) {
-	path := "/telemetry/v1/fwlogs"
-	req, err := r.getHTTPRequest(ctx, ql, "POST", path)
-	if err != nil {
-		return nil, err
-	}
-	httpresp, err := r.client.Do(req.WithContext(ctx))
-
-	if err != nil {
-		return nil, fmt.Errorf("request failed (%s)", err)
-	}
-	defer httpresp.Body.Close()
-
-	ret, err := decodeHTTPFwlogsQueryResponse(ctx, httpresp)
-
-	if err != nil {
-		return nil, err
-	}
-	return ret, nil
-}
-
-// CheckIPAddrInFwlog checks ip address in the fwlog query result
-func (r *TelemetryClient) CheckIPAddrInFwlog(ips []string, res []*telemetry_query.FwlogsQueryResult) bool {
-	for _, r := range res {
-		for _, l := range r.Logs {
-			if l.Dest == ips[0] && l.Src == ips[1] {
-				return true
-			}
-		}
-	}
-	log.Infof("failed to find %+v in fwlog", ips)
-	return false
-}
-
 // Metrics makes a metrics query and returns the Query Response
 func (r *TelemetryClient) Metrics(ctx context.Context, ql *telemetry_query.MetricsQueryList) (*MetricsQueryResponse, error) {
 	path := "/telemetry/v1/metrics"
@@ -137,15 +102,6 @@ func (r *TelemetryClient) getHTTPRequest(ctx context.Context, qs interface{}, me
 		req.Header.Add("Authorization", val)
 	}
 	return req, nil
-}
-
-func decodeHTTPFwlogsQueryResponse(_ context.Context, r *http.Response) (*telemetry_query.FwlogsQueryResponse, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errorDecoder(r)
-	}
-	var resp telemetry_query.FwlogsQueryResponse
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return &resp, err
 }
 
 func decodeHTTPMetricsQueryResponse(_ context.Context, r *http.Response) (*MetricsQueryResponse, error) {

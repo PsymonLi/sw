@@ -19,7 +19,7 @@ type telemetryHooks struct {
 
 // operations is a pre authz hook to determine authz.Operation
 func (e *telemetryHooks) operations(ctx context.Context, in interface{}) (context.Context, interface{}, error) {
-	e.logger.Debugf("APIGw metrics/fwlogs operations authz hook called for obj [%#v]", in)
+	e.logger.Debugf("APIGw metrics/operations authz hook called for obj [%#v]", in)
 	// If tenant is not set in the request, we mutate the request to have the user's tenant
 	user, ok := apigwpkg.UserFromContext(ctx)
 	if !ok || user == nil {
@@ -29,10 +29,7 @@ func (e *telemetryHooks) operations(ctx context.Context, in interface{}) (contex
 	if req, ok := in.(*telemetry_query.MetricsQueryList); ok {
 		return metricOperations(ctx, req, user)
 	}
-	if req, ok := in.(*telemetry_query.FwlogsQueryList); ok {
-		return fwlogsOperations(ctx, req, user)
-	}
-	e.logger.Errorf("Unable to parse as either metric or fwlog query request")
+	e.logger.Errorf("Unable to parse metric query request")
 	return ctx, in, errors.New("invalid input type")
 
 }
@@ -74,28 +71,9 @@ func metricOperations(ctx context.Context, req *telemetry_query.MetricsQueryList
 	return nctx, req, nil
 }
 
-func fwlogsOperations(ctx context.Context, req *telemetry_query.FwlogsQueryList, user *auth.User) (context.Context, interface{}, error) {
-	if req.Tenant == "" {
-		req.Tenant = user.GetTenant()
-	}
-	// get existing operations from context
-	operations, _ := apigwpkg.OperationsFromContext(ctx)
-	resource := authz.NewResource(
-		req.Tenant,
-		"",
-		auth.Permission_FwLog.String(),
-		"",
-		"")
-	// append requested operation
-	operations = append(operations, authz.NewOperation(resource, auth.Permission_Read.String()))
-
-	nctx := apigwpkg.NewContextWithOperations(ctx, operations...)
-	return nctx, req, nil
-}
-
 func registerTelemetryHooks(svc apigw.APIGatewayService, l log.Logger) error {
 	r := &telemetryHooks{logger: l}
-	methods := []string{"Metrics", "Fwlogs"}
+	methods := []string{"Metrics"}
 	for _, method := range methods {
 		prof, err := svc.GetServiceProfile(method)
 		if err != nil {
