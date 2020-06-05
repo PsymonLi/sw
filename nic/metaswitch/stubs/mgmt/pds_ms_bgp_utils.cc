@@ -721,6 +721,10 @@ bgp_rm_ent_pre_set (BGPSpec &req, NBB_LONG row_status,
     req.set_state (state);
     PDS_TRACE_VERBOSE ("BGP Rm Ent admin status is updated to %s",
                         (state == ADMIN_STATE_DISABLE) ? "Disable" : "Enable");
+    if (mgmt_state_t::thread_context().state()->rr_mode()) {
+        // Set identical Cluster ID on RRs
+        req.set_clusterid(0x01010101);
+    }
 }
 
 NBB_VOID
