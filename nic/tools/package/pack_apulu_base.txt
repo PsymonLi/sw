@@ -152,6 +152,9 @@ nic/debug_cli/images/$ARCH/$PIPELINE/p4ctl                        /nic/bin
 # system level tools and binaries
 nic/tools/sysupdate.sh                                            /nic/tools/
 nic/apollo/tools/apulu/sysinit.sh                                 /nic/tools/
+nic/apollo/tools/apulu/start-sysmgr.sh                            /nic/tools/
+nic/apollo/tools/apulu/instinit.sh                                /nic/tools/
+nic/apollo/tools/apulu/inst_hooks.sh                              /nic/tools/
 nic/tools/clear_nic_config.sh                                     /nic/tools/
 nic/tools/syskill.sh                                              /nic/tools/
 nic/tools/sysreset.sh                                             /nic/tools/
@@ -189,6 +192,7 @@ nic/build/$ARCH/$PIPELINE/bin/eth_dbgtool_$PIPELINE               /nic/bin/eth_d
 nic/build/$ARCH/$PIPELINE/bin/memtun                              /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/capmon                              /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pcieutil                            /nic/bin/
+nic/build/$ARCH/$PIPELINE/bin/penvisorctl                         /nic/bin/
 nic/build/$ARCH/$PIPELINE/out/capviewdb_submake/capviewdb.bin     /nic/etc/
 nic/build/$ARCH/$PIPELINE/lib/libpciemgrutils.so                  /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libpciemgr.so                       /nic/lib/

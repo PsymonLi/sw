@@ -82,15 +82,6 @@ GIT_REMOTE_NAME="__upstream_buildroot"
 TOPDIR=$(dirname `pwd`)
 USERNAME=$(id -nu)
 
-update_submodule() {
-    cd $TOPDIR/nic/buildroot
-    git remote add $GIT_REMOTE_NAME git@github.com:/pensando/buildroot
-    git fetch $GIT_REMOTE_NAME
-    git checkout $BUILDROOT_HASH
-    return 0
-}
-
-
 start_shell() {
     cd $TOPDIR/nic
     make docker/background-shell | tail -n 1
@@ -98,11 +89,20 @@ start_shell() {
 
 cleanup() {
     # stop shell
-    docker stop $DOCKER_ID
+    [[ ! -z "$DOCKER_ID" ]] && docker stop $DOCKER_ID
     # remove submodule remote
     (cd $TOPDIR/nic/buildroot && git remote remove $GIT_REMOTE_NAME)
 }
 trap cleanup EXIT INT TERM
+
+update_submodule() {
+    cleanup || :;
+    cd $TOPDIR/nic/buildroot
+    git remote add $GIT_REMOTE_NAME git@github.com:/pensando/buildroot
+    git fetch $GIT_REMOTE_NAME
+    git checkout $BUILDROOT_HASH
+    return 0
+}
 
 echo "Creating buildroot remote $GIT_REMOTE_NAME"
 update_submodule
@@ -125,21 +125,21 @@ echo 'Copying ssh keys into container'
 cp -a ~/.ssh $TOPDIR/
 docker_exec "cp -a /sw/.ssh ~/"
 
-for target in capri elba
+for target in capri capri_ramfs elba
 do
     OUT_DIR=output/$target
     echo "Cleaning old files for $target in $OUT_DIR"
     docker_exec "rm -rf /sw/nic/buildroot/$OUT_DIR"
     docker_exec "rm -rf /sw/nic/buildroot/.config"
 
-    echo 'Generating config for $target'
+    echo "Generating config for $target"
     docker_exec "cd /sw/nic/buildroot && make ${target}_defconfig"
     docker_exec "mkdir -p /sw/nic/buildroot/$OUT_DIR"
     docker_exec "cp /sw/nic/buildroot/.config /sw/nic/buildroot/$OUT_DIR"
     docker_exec "ls -al /sw/nic/buildroot/$OUT_DIR"
 
-    echo 'Building buildroot for $target'
-    docker_exec "cd /sw/nic/buildroot; export BR2_DL_DIR=/sw/nic/buildroot/output/dl; BUILDROOT_ASSET=1 make O=${OUT_DIR} -j24"
+    echo "Building buildroot for $target"
+    docker_exec "cd /sw/nic/buildroot; export BR2_DL_DIR=/sw/nic/buildroot/output/dl; make clean; make clean O=${OUT_DIR}; BUILDROOT_ASSET=1 make O=${OUT_DIR} -j24"
 
     echo 'Preparing $target kernel headers for building external modules'
     docker_exec "sh /sw/nic/tools/prepare_kernel_headers.sh ${OUT_DIR}"

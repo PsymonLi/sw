@@ -30,13 +30,13 @@ static bool g_internal_endpoints[IPC_MAX_ID + 1];
 static std::string
 ipc_path_external (uint32_t id)
 {
-    return "ipc:///tmp/pen_sdk_ipc_" + std::to_string(id);
+    return ipc_env_suffix("ipc:///tmp/pen_sdk_ipc_" + std::to_string(id));
 }
 
 static std::string
 ipc_path_internal (uint32_t id)
 {
-    return "inproc://pen_sdk_ipc_" + std::to_string(id);
+    return ipc_env_suffix("inproc://pen_sdk_ipc_" + std::to_string(id));
 }
 
 zmq_ipc_msg::zmq_ipc_msg() {

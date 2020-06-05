@@ -14,6 +14,12 @@ nic/buildroot/output/capri/images/*
 nic/buildroot/output/capri/host
 nic/buildroot/output/capri/linux-headers/*
 nic/buildroot/output/capri/build/platform-linux.tar.gz
+nic/buildroot/output/capri_ramfs/.config
+nic/buildroot/output/capri_ramfs/target/*
+nic/buildroot/output/capri_ramfs/images/*
+nic/buildroot/output/capri_ramfs/host
+nic/buildroot/output/capri_ramfs/linux-headers/*
+nic/buildroot/output/capri_ramfs/build/platform-linux.tar.gz
 nic/buildroot/output/elba/.config
 nic/buildroot/output/elba/target/*
 nic/buildroot/output/elba/images/*

@@ -1,3 +1,5 @@
+// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+
 #include <assert.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -6,9 +8,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "subscribers.hpp"
-
 #include "include/sdk/base.hpp"
+#include "ipc_internal.hpp"
+#include "subscribers.hpp"
 
 const char *SUBS_SHM_FILE = "/ipc_subs";
 
@@ -41,7 +43,8 @@ subscribers::shmopen(void) {
     mode_t old_umask;
 
     old_umask = umask(0);
-    fd = shm_open(SUBS_SHM_FILE, O_RDWR | O_CREAT, 0666);
+    fd = shm_open(ipc_env_suffix(SUBS_SHM_FILE).c_str(),
+                  O_RDWR | O_CREAT, 0666);
     if (fd == -1) {
         printf("shm_open failed: %d\n", errno);
     }

@@ -365,7 +365,7 @@ load_decoders (std::string decoders_file)
     return decoders;
 }
 
-void
+static void
 sigchld_handler (int)
 {
     while (true) {
@@ -385,7 +385,7 @@ main (int argc, const char *argv[])
     std::map<uint8_t, decoder_fn> decoders;
     std::string config;
 
-    //signal(SIGCHLD, sigchld_handler);
+    signal(SIGCHLD, sigchld_handler);
 
     // Don't buffer stdout and stderr, so we read it in
     // sysmgr log files immediatelly

@@ -85,10 +85,21 @@ build-rootfs.cpio: build-rootfs
 	chmod a+x ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/cpio/fakeroot
 	 $(LIBRARYPATH) $(HOSTPATH) ${NICDIR}/buildroot/host/bin/fakeroot -- ${NICDIR}/buildroot/${OUT_DIR}/build/buildroot-fs/cpio/fakeroot
 
+ifeq ($(ISSU_IMAGE),)
 .PHONY: build-image
 build-image: build-squashfs
 	${NICDIR}/upgrade_manager/meta/upgrade_metadata_restore.sh
 	$(HOSTPATH) ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/post-image.sh
+else
+.PHONY: build-image
+build-image: build-squashfs
+	mv ${NICDIR}/buildroot/${OUT_DIR}/images/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image.orig
+	cp ${NICDIR}/buildroot/output/capri_ramfs/images/Image ${NICDIR}/buildroot/${OUT_DIR}/images/Image
+	${NICDIR}/upgrade_manager/meta/upgrade_metadata_restore.sh
+	$(HOSTPATH) ${NICDIR}/buildroot/board/pensando/${FW_PACKAGE_DIR}/post-image.sh
+	rm ${NICDIR}/buildroot/${OUT_DIR}/images/Image
+	mv ${NICDIR}/buildroot/${OUT_DIR}/images/Image.orig ${NICDIR}/buildroot/${OUT_DIR}/images/Image
+endif
 
 .PHONY: build-gold-image
 build-gold-image: gold_env build-rootfs.cpio
