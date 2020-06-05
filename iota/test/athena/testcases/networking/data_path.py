@@ -9,42 +9,31 @@ from scapy.contrib.mpls import MPLS
 from scapy.contrib.geneve import GENEVE
 from enum import Enum
 from ipaddress import ip_address
+import copy 
 
 import iota.harness.api as api
 import iota.test.athena.utils.athena_app as athena_app_utils
-from iota.test.athena.utils.flow import FlowInfo 
+import iota.test.athena.utils.flow as flow_utils 
 import iota.harness.infra.store as store
+import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
 
 DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
 DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
 DEFAULT_S2H_RECV_PKT_FILENAME = './s2h_recv_pkt.pcap'
 DEFAULT_S2H_GEN_PKT_FILENAME = './s2h_pkt.pcap'
-DEFAULT_POLICY_JSON_FILENAME = '/config/policy.json'
 SEND_PKT_SCRIPT_FILENAME = '/scripts/send_pkt.py'
 RECV_PKT_SCRIPT_FILENAME = '/scripts/recv_pkt.py'
 CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
-SNIFF_TIMEOUT = 5
+SNIFF_TIMEOUT = 3
 NUM_VLANS_PER_VNIC = 2
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
-# ======= TODO START: move flow gen to another module ========= #
+nat_flows_h2s_tx, nat_flows_h2s_rx = None, None
+nat_flows_s2h_tx, nat_flows_s2h_rx = None, None
 
-FLOWS = [ {'sip' : '10.0.0.1', 'dip' : '10.0.0.65', 'proto' : 'UDP', 
-            'src_port' : 100, 'dst_port' : 200},
-            {'sip' : '192.168.0.1', 'dip' : '192.168.0.100', 'proto' : 'UDP', 
-            'src_port' : 5000, 'dst_port' : 6000},
-            {'sip' : '100.0.0.1', 'dip' : '100.0.10.1', 'proto' : 'UDP', 
-            'src_port' : 60, 'dst_port' : 80} ]
-
-NAT_FLOW_INFO = { 'proto' : 'UDP', 'src_port' : 100, 'dst_port' : 200 }
-
-PROTO_NUM = {'UDP' : 17, 'TCP': 6, 'ICMP': 1}
-NAT_PUBLIC_DST_IP = '100.0.0.1'
-
-nat_flows = {'h2s' : defaultdict(list), 's2h' : defaultdict(list)}
 
 def get_uplink_vlan(vnic_id, uplink):
     if uplink < 0 or uplink > 1:
@@ -53,15 +42,23 @@ def get_uplink_vlan(vnic_id, uplink):
     vlan_offset = (vnic_id * NUM_VLANS_PER_VNIC) + uplink
     return (api.Testbed_GetVlanBase() + vlan_offset)
 
-def get_nat_flow_sip_dip(dp_dir = 'h2s', Rx = False, flow_id = 1):
-    Rx_or_Tx = 'Rx' if Rx else 'Tx'   
-    sip = nat_flows[dp_dir][Rx_or_Tx][flow_id].get_sip()
-    dip = nat_flows[dp_dir][Rx_or_Tx][flow_id].get_dip()
+
+def get_nat_flow_sip_dip(dir_ = 'h2s', Rx = False, proto = 'UDP', flow_id = 0):
+    if dir_ == 'h2s' and Rx:
+        sip = nat_flows_h2s_rx[proto][flow_id].sip
+        dip = nat_flows_h2s_rx[proto][flow_id].dip
+    elif dir_ == 'h2s' and not Rx:
+        sip = nat_flows_h2s_tx[proto][flow_id].sip
+        dip = nat_flows_h2s_tx[proto][flow_id].dip
+    elif dir_ == 's2h' and Rx:
+        sip = nat_flows_s2h_rx[proto][flow_id].sip
+        dip = nat_flows_s2h_rx[proto][flow_id].dip
+    else:
+        sip = nat_flows_s2h_tx[proto][flow_id].sip
+        dip = nat_flows_s2h_tx[proto][flow_id].dip
 
     return (sip, dip)
 
-
-# ======= TODO END: move flow gen to another module ========= #
 
 class Args():
 
@@ -69,10 +66,10 @@ class Args():
         self.encap = False
         self.node = None
         self.Rx = None
-        self._dir = None
+        self.dir_ = None
         self.proto = None
         self.nat = None
-        self.size = None
+        self.pyld_size = None
 
         self.flow_id = None
         self.smac = None
@@ -82,6 +79,9 @@ class Args():
         self.dip = None
         self.sport = None
         self.dport = None
+        self.icmp_type = None
+        self.icmp_code = None
+
 
 def parse_args(tc):
     #==============================================================
@@ -89,10 +89,12 @@ def parse_args(tc):
     #==============================================================
     tc.vnic_type  = 'L3'
     tc.nat        = 'no'
-    tc.size       = 64
+    tc.pyld_size  = 64
     tc.proto      = 'UDP'
     tc.bidir      = 'no'
     tc.flow_type  = 'dynamic'
+    tc.flow_cnt   = 1
+    tc.pkt_cnt    = 2
 
     #==============================================================
     # update non-default cmd options
@@ -103,8 +105,8 @@ def parse_args(tc):
     if hasattr(tc.iterators, 'nat'):
         tc.nat = tc.iterators.nat
 
-    if hasattr(tc.iterators, 'size'):
-        tc.size = tc.iterators.size
+    if hasattr(tc.iterators, 'pyld_size'):
+        tc.pyld_size = tc.iterators.pyld_size
 
     if hasattr(tc.iterators, 'proto'):
         tc.proto = tc.iterators.proto
@@ -115,10 +117,17 @@ def parse_args(tc):
     if hasattr(tc.iterators, 'flow_type'):
         tc.flow_type = tc.iterators.flow_type
 
-    api.Logger.info('vnic_type: {}, nat: {}, size: {} '
+    api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
                     'proto: {}, bidir: {}, flow_type: {}'
-                    .format(tc.vnic_type, tc.nat, tc.size,
+                    .format(tc.vnic_type, tc.nat, tc.pyld_size,
                     tc.proto, tc.bidir, tc.flow_type))
+
+    if hasattr(tc.args, 'flow_cnt'):
+        tc.flow_cnt = tc.args.flow_cnt
+
+    if hasattr(tc.args, 'pkt_cnt'):
+        tc.pkt_cnt = tc.args.pkt_cnt
+
 
 def is_L2_vnic(_vnic):
 
@@ -140,19 +149,18 @@ def get_vnic(plcy_obj, _vnic_type, _nat):
 
 def get_vnic_id(_vnic_type, _nat):
 
-    template_policy_json_path = api.GetTestsuiteAttr("template_policy_json_path")
-    with open(template_policy_json_path) as fd:
+    with open(api.GetTestsuiteAttr("dp_policy_json_path")) as fd:
         plcy_obj = json.load(fd)
 
     # get vnic
     vnic = get_vnic(plcy_obj, _vnic_type, _nat)
     return int(vnic['vnic_id'])
 
-def get_payload(pkt_size):
+def get_payload(pyld_size):
 
     pyld=[]
     size = len(DEFAULT_PAYLOAD)
-    for i in range(pkt_size):
+    for i in range(pyld_size):
         pyld.append(DEFAULT_PAYLOAD[i % size])
 
     return ''.join(pyld)
@@ -200,6 +208,22 @@ def craft_pkt(_types, _dicts):
                 pkt = pkt/UDP(sport=int(_dict['sport']),
                               dport=int(_dict['dport']))
 
+        elif _type == "TCP":
+            if 'sport' not in _dict.keys() or \
+               'dport' not in _dict.keys():
+                raise Exception('TCP: sport and/or dport not found')
+            else:
+                pkt = pkt/TCP(sport=int(_dict['sport']),
+                              dport=int(_dict['dport']))
+
+        elif _type == "ICMP":
+            if 'icmp_type' not in _dict.keys() or \
+               'icmp_code' not in _dict.keys():
+                raise Exception('ICMP: icmp_type and/or icmp_code not found')
+            else:
+                pkt = pkt/ICMP(type=int(_dict['icmp_type']),
+                              code=int(_dict['icmp_code']))
+
         elif _type == "MPLS":
             if 'label' not in _dict.keys() or \
                's' not in _dict.keys():
@@ -221,8 +245,8 @@ def setup_pkt(_args):
     types = []
     dicts = []
 
-    logging.debug("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args._dir, _args.Rx))
-    with open(CURR_DIR + DEFAULT_POLICY_JSON_FILENAME) as json_fd:
+    logging.debug("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args.dir_, _args.Rx))
+    with open(api.GetTestsuiteAttr("dp_policy_json_path")) as json_fd:
         plcy_obj = json.load(json_fd)
 
     vnics = plcy_obj['vnic']
@@ -250,12 +274,12 @@ def setup_pkt(_args):
         if not encap_info:
             raise Exception('vnic config not found encap vlan %s' % _args.vlan)
 
-        if _args._dir == 's2h':
+        if _args.dir_ == 's2h':
             outer_smac = _args.smac
             outer_dmac = _args.dmac
 
         if encap_info['type'] == 'mplsoudp':
-            if _args._dir == 'h2s':
+            if _args.dir_ == 'h2s':
                 outer_smac = encap_info['smac']
                 outer_dmac = encap_info['dmac']
             outer_sip = encap_info['ipv4_sip']
@@ -264,16 +288,16 @@ def setup_pkt(_args):
             mpls_lbl2 = encap_info['mpls_label2']
 
         elif encap_info['type'] == 'geneve':
-            if _args._dir == 'h2s':
+            if _args.dir_ == 'h2s':
                 outer_smac = encap_info['smac']
                 outer_dmac = encap_info['dmac']
             outer_sip = encap_info['ipv4_sip']
             outer_dip = encap_info['ipv4_dip']
             vni = encap_info['vni']
-            if _args._dir == 'h2s':
+            if _args.dir_ == 'h2s':
                 dst_slot_id = encap_info['dst_slot_id']
                 src_slot_id = trg_vnic['slot_id']
-            elif _args._dir == 's2h':
+            elif _args.dir_ == 's2h':
                 src_slot_id = encap_info['dst_slot_id']
                 dst_slot_id = trg_vnic['slot_id']
 
@@ -294,7 +318,7 @@ def setup_pkt(_args):
         dicts.append(ip)
         
         # append outer UDP
-        types.append(_args.proto)
+        types.append("UDP")             # outer is always UDP in mplsoudp
         dst_port = '6635' if encap_info['type'] == 'mplsoudp' else '6081'
         proto = {'sport' : '0', 'dport' : dst_port}
         dicts.append(proto)
@@ -321,17 +345,17 @@ def setup_pkt(_args):
             dicts.append(geneve)
 
             types.append("Ether")
-            if _args._dir == 'h2s':
+            if _args.dir_ == 'h2s':
                 ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-            elif _args._dir == 's2h':
+            elif _args.dir_ == 's2h':
                 ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
             dicts.append(ether)
 
     else:
         types.append("Ether")
-        if _args._dir == 'h2s':
+        if _args.dir_ == 'h2s':
             ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-        elif _args._dir == 's2h':
+        elif _args.dir_ == 's2h':
             if is_L2_vnic(trg_vnic):
                 ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
             else:
@@ -349,21 +373,26 @@ def setup_pkt(_args):
     types.append("IP")
     ip = {'sip' : _args.sip, 'dip' : _args.dip}
     if _args.nat == 'yes':
-       nat_sip, nat_dip = get_nat_flow_sip_dip(_args._dir, _args.Rx, _args.flow_id)
+       nat_sip, nat_dip = get_nat_flow_sip_dip(_args.dir_, _args.Rx, 
+                                        _args.proto, _args.flow_id)
        ip = {'sip' : nat_sip, 'dip' : nat_dip}
     dicts.append(ip)
 
-    types.append("UDP")
-    udp = {'sport' : _args.sport, 'dport' : _args.dport}
-    dicts.append(udp)
+    
+    types.append(_args.proto)
+    if _args.proto == 'UDP' or _args.proto == 'TCP':
+        dicts.append({'sport' : _args.sport, 'dport' : _args.dport})
+    else: # ICMP
+        dicts.append({'icmp_type' : _args.icmp_type, 
+                    'icmp_code' : _args.icmp_code})
 
     pkt = craft_pkt(types, dicts)
-    pkt = pkt/get_payload(_args.size)
+    pkt = pkt/get_payload(_args.pyld_size)
     #logging.debug("Crafted pkt: {}".format(pkt.show()))
 
-    if _args._dir == 'h2s':
+    if _args.dir_ == 'h2s':
         fname = DEFAULT_H2S_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_H2S_GEN_PKT_FILENAME
-    elif _args._dir == 's2h':
+    elif _args.dir_ == 's2h':
         fname = DEFAULT_S2H_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_S2H_GEN_PKT_FILENAME
 
     with open(CURR_DIR + '/config/' + fname, 'w+') as fd:
@@ -376,13 +405,146 @@ def setup_pkt(_args):
     api.CopyToHost(_args.node.Name(), [pcap_fname], "")
     os.remove(pcap_fname)
 
+
+
+def skip_curr_test(tc):
+
+    if tc.nat == 'yes' and tc.flow_type == 'static':
+        api.Logger.info("skipping nat test with static flows")
+        return True
+
+    if tc.proto == 'ICMP' and tc.flow_type == 'static':
+        api.Logger.info("skipping icmp test with static flows")
+        return True
+
+    return False
+
+
+def get_flows(tc):
+    
+    # create a flow req object
+    flows_req = flow_utils.FlowsReq()
+    flows_req.vnic_type = tc.vnic_type
+    flows_req.nat = tc.nat 
+    flows_req.proto = tc.proto
+    flows_req.flow_type = tc.flow_type
+    flows_req.flow_count = tc.flow_cnt
+
+    flows_resp = flow_gen.GetFlows(flows_req)
+    if not flows_resp:
+        raise Exception("Unable to fetch flows from flow_gen module for test "
+                "with params: vnic_type %s, nat %s, proto %s, flow_type %s, "
+                "flow count %d" % (tc.vnic_type, tc.nat, tc.proto, tc.flow_type,
+                    tc.flow_cnt))
+
+    if tc.nat == 'yes':
+        global nat_flows_h2s_tx, nat_flows_h2s_rx
+        global nat_flows_s2h_tx, nat_flows_s2h_rx
+
+        nat_flows_h2s_tx = {'UDP': [], 'TCP': [], 'ICMP': []}
+        nat_flows_h2s_rx = {'UDP': [], 'TCP': [], 'ICMP': []}
+        nat_flows_s2h_tx = {'UDP': [], 'TCP': [], 'ICMP': []}
+        nat_flows_s2h_rx = {'UDP': [], 'TCP': [], 'ICMP': []}
+
+        '''
+        process flows from NatFlowSet obj in flow_gen module
+        and build nat flows db for testing 
+        '''
+         
+        def _get_sip_dip(fl, dir_, Rx):
+            if dir_ == 'h2s':
+                if Rx is True:
+                    return (fl.nat_ip, fl.public_ip)
+                else:
+                    return (fl.local_ip, fl.public_ip)
+            else:
+                if Rx is True:
+                    return (fl.public_ip, fl.local_ip)
+                else:
+                    return (fl.public_ip, fl.nat_ip)
+
+        for fl in flows_resp:
+
+            if fl.proto == 'UDP':
+                udp_flow = flow_gen.UdpFlow()
+                udp_flow.proto = 'UDP'
+                udp_flow.proto_num = 17
+                udp_flow.sport = fl.flow.sport
+                udp_flow.dport = fl.flow.dport
+               
+                udp_flow.sip, udp_flow.dip = _get_sip_dip(fl, 'h2s', True)
+                nat_flows_h2s_rx['UDP'].append(udp_flow)
+                        
+                udp_flow = copy.deepcopy(udp_flow) 
+                udp_flow.sip, udp_flow.dip = _get_sip_dip(fl, 'h2s', False)
+                nat_flows_h2s_tx['UDP'].append(udp_flow)
+
+                udp_flow = copy.deepcopy(udp_flow) 
+                udp_flow.sip, udp_flow.dip = _get_sip_dip(fl, 's2h', True)
+                nat_flows_s2h_rx['UDP'].append(udp_flow)
+
+                udp_flow = copy.deepcopy(udp_flow) 
+                udp_flow.sip, udp_flow.dip = _get_sip_dip(fl, 's2h', False)
+                nat_flows_s2h_tx['UDP'].append(udp_flow)
+
+            elif fl.proto == 'TCP':
+                tcp_flow = flow_gen.TcpFlow()
+                tcp_flow.proto = 'TCP'
+                tcp_flow.proto_num = 6
+                tcp_flow.sport = fl.flow.sport
+                tcp_flow.dport = fl.flow.dport
+               
+                tcp_flow.sip, tcp_flow.dip = _get_sip_dip(fl, 'h2s', True)
+                nat_flows_h2s_rx['TCP'].append(tcp_flow)
+                        
+                tcp_flow = copy.deepcopy(tcp_flow) 
+                tcp_flow.sip, tcp_flow.dip = _get_sip_dip(fl, 'h2s', False)
+                nat_flows_h2s_tx['TCP'].append(tcp_flow)
+
+                tcp_flow = copy.deepcopy(tcp_flow) 
+                tcp_flow.sip, tcp_flow.dip = _get_sip_dip(fl, 's2h', True)
+                nat_flows_s2h_rx['TCP'].append(tcp_flow)
+
+                tcp_flow = copy.deepcopy(tcp_flow) 
+                tcp_flow.sip, tcp_flow.dip = _get_sip_dip(fl, 's2h', False)
+                nat_flows_s2h_tx['TCP'].append(tcp_flow)
+
+            else: #ICMP
+                icmp_flow = flow_gen.IcmpFlow()
+                icmp_flow.proto = 'ICMP'
+                icmp_flow.proto_num = 1
+                icmp_flow.icmp_type = fl.flow.icmp_type
+                icmp_flow.icmp_code = fl.flow.icmp_code
+               
+                icmp_flow.sip, icmp_flow.dip = _get_sip_dip(fl, 'h2s', True)
+                nat_flows_h2s_rx['ICMP'].append(icmp_flow)
+                        
+                icmp_flow = copy.deepcopy(icmp_flow) 
+                icmp_flow.sip, icmp_flow.dip = _get_sip_dip(fl, 'h2s', False)
+                nat_flows_h2s_tx['ICMP'].append(icmp_flow)
+
+                icmp_flow = copy.deepcopy(icmp_flow) 
+                icmp_flow.sip, icmp_flow.dip = _get_sip_dip(fl, 's2h', True)
+                nat_flows_s2h_rx['ICMP'].append(icmp_flow)
+
+                icmp_flow = copy.deepcopy(icmp_flow) 
+                icmp_flow.sip, icmp_flow.dip = _get_sip_dip(fl, 's2h', False)
+                nat_flows_s2h_tx['ICMP'].append(icmp_flow)
+
+
+        # setting up flows_resp with just nat (h2s, Tx) flows so that num flows
+        # are accurate. Actual sip/dip will be handled in setup_pkt
+        flows_resp = nat_flows_h2s_tx[tc.proto]
+
+
 def Setup(tc):
 
     # parse iterator args
     parse_args(tc)
 
-    global nat_flows 
-    nat_flows = {'h2s' : defaultdict(list), 's2h' : defaultdict(list)}
+    # skip some iterator cases
+    if skip_curr_test(tc):
+        return api.types.status.SUCCESS
 
     # get node info
     tc.bitw_node_name = None
@@ -446,97 +608,9 @@ def Setup(tc):
                     tc.up1_intf, tc.up1_vlan, tc.up1_mac))
 
 
-    # create flows for testing 
-    tc.flows = []
-
-    if not FLOWS:
-        api.Logger.error('Flow list is empty')
-        return api.types.status.FAILURE
-
-    for flow in FLOWS:
-        flow_info = FlowInfo()
-        flow_info.set_sip(flow['sip'])
-        flow_info.set_dip(flow['dip'])
-        flow_info.set_proto(flow['proto'])
-
-        if flow['proto'] == 'UDP':
-            flow_info.set_src_port(flow['src_port'])
-            flow_info.set_dst_port(flow['dst_port'])
-        
-        else:
-            api.Logger.error('flow protocol %s not supported' % flow['proto'])
-            return api.types.status.FAILURE
-
-        tc.flows.append(flow_info)
-   
-    # setup policy.json file
-    plcy_obj = None
-    # read from template file
-    tc.template_policy_json_path = api.GetTestsuiteAttr("template_policy_json_path")
-    with open(tc.template_policy_json_path) as fd:
-        plcy_obj = json.load(fd)
-
-    # get vnic
-    vnic = get_vnic(plcy_obj, tc.vnic_type, tc.nat)
-    api.Logger.info('vnic id: {}'.format(vnic['vnic_id']))
-
-    if tc.nat == 'yes':
-        local_ip_lo = vnic['nat']['local_ip_lo']
-        local_ip_hi = vnic['nat']['local_ip_hi']
-        nat_ip_lo = vnic['nat']['nat_ip_lo']
-        nat_ip_hi = vnic['nat']['nat_ip_hi']
-
-        local_ip_lo_obj = ip_address(local_ip_lo)
-        local_ip_hi_obj = ip_address(local_ip_hi)
-        nat_ip_lo_obj = ip_address(nat_ip_lo)
-        nat_ip_hi_obj = ip_address(nat_ip_hi)
-
-        if (int(nat_ip_hi_obj) - int(nat_ip_lo_obj) != 
-            int(local_ip_hi_obj) - int(local_ip_lo_obj)):
-            api.Logger.error("Invalid NAT ip addr translation config in "
-                                                    "policy.json file")    
-            return api.types.status.FAILURE
-
-        # generate flows
-        for dir in ['h2s', 's2h']:
-            for idx in range(int(local_ip_hi_obj) - int(local_ip_lo_obj) + 1):
-                
-                send_flow = FlowInfo()
-                send_flow.set_proto(NAT_FLOW_INFO['proto'])
-                send_flow.set_src_port(NAT_FLOW_INFO['src_port'])
-                send_flow.set_dst_port(NAT_FLOW_INFO['dst_port'])
-                
-                if dir == 'h2s':
-                    send_flow.set_sip(str(ip_address(
-                                            int(local_ip_lo_obj) + idx)))
-                    send_flow.set_dip(NAT_PUBLIC_DST_IP)
-                    nat_flows['h2s']['Tx'].append(send_flow) 
-                else:
-                    send_flow.set_sip(NAT_PUBLIC_DST_IP)
-                    send_flow.set_dip(str(ip_address(int(nat_ip_lo_obj) + idx)))
-                    nat_flows['s2h']['Tx'].append(send_flow) 
-         
-
-                recv_flow = FlowInfo()
-                recv_flow.set_proto(NAT_FLOW_INFO['proto'])
-                recv_flow.set_src_port(NAT_FLOW_INFO['src_port'])
-                recv_flow.set_dst_port(NAT_FLOW_INFO['dst_port'])
-                
-                if dir == 'h2s':
-                    recv_flow.set_sip(str(ip_address(int(nat_ip_lo_obj) + idx)))
-                    recv_flow.set_dip(NAT_PUBLIC_DST_IP)
-                    nat_flows['h2s']['Rx'].append(recv_flow) 
-                else:
-                    recv_flow.set_sip(NAT_PUBLIC_DST_IP)
-                    recv_flow.set_dip(str(ip_address(
-                                                int(local_ip_lo_obj) + idx)))
-                    nat_flows['s2h']['Rx'].append(recv_flow) 
-         
+    # fetch flows needed for the test
+    tc.flows = get_flows(tc)
     
-        # setting up tc.flows with just nat (h2s, tx) flows so that num flows
-        # are accurate. Actual sip/dip will be handled in setup_pkt
-        tc.flows = nat_flows['h2s']['Tx'][:]
-
     # copy send/recv scripts to node
     for node in tc.nodes:
         if node is tc.wl_node:
@@ -551,7 +625,12 @@ def Setup(tc):
 
     return api.types.status.SUCCESS
 
+
 def Trigger(tc):
+
+    # skip some iterator cases
+    if skip_curr_test(tc):
+        return api.types.status.SUCCESS
 
     for node in tc.nodes:
         if node is not tc.wl_node:
@@ -563,19 +642,25 @@ def Trigger(tc):
             # common args to setup scapy pkt
             args = Args()
             args.node = node
-            args.proto = tc.proto
+            args.proto = flow.proto
             args.sip = flow.sip
             args.dip = flow.dip
-            args.sport = flow.src_port
-            args.dport = flow.dst_port
+
+            if flow.proto == 'UDP' or flow.proto == 'TCP':
+                args.sport = flow.sport
+                args.dport = flow.dport
+            else:
+                args.icmp_type = flow.icmp_type
+                args.icmp_code = flow.icmp_code
+
             args.nat = tc.nat
             args.flow_id = idx
-            args.size = tc.size
+            args.pyld_size = tc.pyld_size
 
             # ==========================================
             # Send and Receive packets in H2S direction
             # ==========================================
-            args._dir = 'h2s'
+            args.dir_ = 'h2s'
             h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
             # ==========
@@ -584,13 +669,14 @@ def Trigger(tc):
             args.encap =  True
             args.Rx = True
             args.vlan = tc.up0_vlan
-            if tc.vnic_type == 'L2':
-                args.smac = tc.up1_mac
-                args.dmac = tc.up0_mac
+            args.smac = tc.up1_mac
+            args.dmac = tc.up0_mac
 
             setup_pkt(args)
-            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s --timeout %s" \
-                        % (tc.up0_intf, DEFAULT_H2S_RECV_PKT_FILENAME, str(SNIFF_TIMEOUT))
+            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
+                        "--timeout %s --pkt_cnt %d" % (tc.up0_intf, 
+                        DEFAULT_H2S_RECV_PKT_FILENAME, 
+                        str(SNIFF_TIMEOUT), tc.pkt_cnt)
 
             api.Trigger_AddHostCommand(h2s_req, node.Name(), recv_cmd,
                                                 background=True)
@@ -605,10 +691,11 @@ def Trigger(tc):
             args.vlan = tc.up1_vlan
 
             setup_pkt(args)
-            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s" \
-                        % (tc.up1_intf, DEFAULT_H2S_GEN_PKT_FILENAME)
+            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
+                        "--pkt_cnt %d" % (tc.up1_intf, 
+                        DEFAULT_H2S_GEN_PKT_FILENAME, tc.pkt_cnt)
 
-            api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 2')
+            api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 0.5')
             api.Trigger_AddHostCommand(h2s_req, node.Name(), send_cmd)
 
             trig_resp = api.Trigger(h2s_req)
@@ -621,7 +708,7 @@ def Trigger(tc):
             # ==========================================
             # Send and Receive packets in S2H direction
             # ==========================================
-            args._dir = 's2h'
+            args.dir_ = 's2h'
             s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
             # ==========
@@ -634,8 +721,10 @@ def Trigger(tc):
             args.vlan = tc.up1_vlan
 
             setup_pkt(args)
-            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s --timeout %s" \
-                        % (tc.up1_intf, DEFAULT_S2H_RECV_PKT_FILENAME, str(SNIFF_TIMEOUT))
+            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
+                        "--timeout %s --pkt_cnt %d" % (tc.up1_intf, 
+                        DEFAULT_S2H_RECV_PKT_FILENAME, 
+                        str(SNIFF_TIMEOUT), tc.pkt_cnt)
 
             api.Trigger_AddHostCommand(s2h_req, node.Name(), recv_cmd,
                                                 background=True)
@@ -650,10 +739,11 @@ def Trigger(tc):
             args.vlan = tc.up0_vlan
 
             setup_pkt(args)
-            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s" \
-                        % (tc.up0_intf, DEFAULT_S2H_GEN_PKT_FILENAME)
+            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
+                        "--pkt_cnt %d" % (tc.up0_intf, 
+                        DEFAULT_S2H_GEN_PKT_FILENAME, tc.pkt_cnt)
 
-            api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 2')
+            api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 0.5')
             api.Trigger_AddHostCommand(s2h_req, node.Name(), send_cmd)
 
             trig_resp = api.Trigger(s2h_req)
@@ -666,6 +756,10 @@ def Trigger(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
+
+    # skip some iterator cases
+    if skip_curr_test(tc):
+        return api.types.status.SUCCESS
 
     if len(tc.resp) == 0:
         return api.types.status.FAILURE
@@ -689,5 +783,10 @@ def Verify(tc):
     return api.types.status.SUCCESS
 
 def Teardown(tc):
+    
+    # skip some iterator cases
+    if skip_curr_test(tc):
+        return api.types.status.SUCCESS
+
     return api.types.status.SUCCESS
 

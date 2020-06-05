@@ -37,7 +37,9 @@ testcases:
 #        enable  : True
 #
 #        # UDP/TCP/ICMP max dyn flows = 4M
-#        # NAT UDP/TCP max dyn flows = 1M, ICMP = 4K 
+#        # NAT UDP/TCP max dyn flows ~ 130K, ICMP = 512 
+#        # flow_cnt specified in Data_Path_Test should not
+#        # exceed max_dyn_flow_count specified below
 #
 #    -   name    : Flow_Gen
 #        testcase: testcases.networking.config.flow_gen
@@ -52,7 +54,10 @@ testcases:
 #            type     : nested
 #            vnic_type : ['L3','L2']
 #            nat       : ['no','yes']
-#            proto     : ['UDP']
-#            size      : [64,1024]
+#            proto     : ['UDP', 'TCP', 'ICMP']
+#            pyld_size : [64, 1024]
 #            flow_type : ['dynamic']
 #            bidir     : ['yes']
+#        args    :
+#            flow_cnt  : 1
+#            pkt_cnt   : 10

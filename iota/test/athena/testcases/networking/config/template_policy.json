@@ -71,9 +71,9 @@
             },
             "nat": {
                 "local_ip_lo": "2.0.0.1",
-                "local_ip_hi": "2.0.0.2",
+                "local_ip_hi": "2.0.0.5",
                 "nat_ip_lo": "3.0.0.1",
-                "nat_ip_hi": "3.0.0.2",
+                "nat_ip_hi": "3.0.0.5",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         },
@@ -168,9 +168,9 @@
             },
             "nat": {
                 "local_ip_lo": "4.0.0.1",
-                "local_ip_hi": "4.0.0.2",
+                "local_ip_hi": "4.0.0.5",
                 "nat_ip_lo": "5.0.0.1",
-                "nat_ip_hi": "5.0.0.2",
+                "nat_ip_hi": "5.0.0.5",
                 "_comment": "No. of IPs in local_ip range and nat_ip range should match"
             }
         }

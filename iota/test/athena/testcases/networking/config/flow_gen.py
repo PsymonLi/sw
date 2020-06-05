@@ -10,7 +10,7 @@ import math
 import re
 
 import iota.harness.api as api
-import iota.test.athena.utils.flow as flowutils
+import iota.test.athena.utils.flow as flow_utils
 
 '''
 SIP and DIP are dynamically scaled upto LO + NUM_IP_MAX.
@@ -446,7 +446,7 @@ class NatFlowSet:
         # vnic to nat txlate mapping
         self.nat_txlate = {'L3': {}, 'L2': {}}     
         
-        # max UDP/TCP NAT flows ~ 1M assuming 256 translations in policy.json
+        # max UDP/TCP NAT flows ~ 130K assuming 32 translations per vnic in policy.json
         self.num_udp_sport_max = 64
         self.udp_sport_lo = '550'
         self.udp_sport_hi = GetPortHi(self.udp_sport_lo, self.num_udp_sport_max)
@@ -454,12 +454,12 @@ class NatFlowSet:
         self.udp_dport_lo = '20'
         self.udp_dport_hi = GetPortHi(self.udp_dport_lo, self.num_udp_dport_max)
         self.num_tcp_sport_max = 64
-        self.tcp_sport_lo = '6005'
+        self.tcp_sport_lo = '600'
         self.tcp_sport_hi = GetPortHi(self.tcp_sport_lo, self.num_tcp_sport_max)
         self.num_tcp_dport_max = 64
-        self.tcp_dport_lo = '7050'
+        self.tcp_dport_lo = '705'
         self.tcp_dport_hi = GetPortHi(self.tcp_dport_lo, self.num_tcp_dport_max)
-        # max ICMP NAT flows = 4K assuming 256 translations in policy.json
+        # max ICMP NAT flows = 512 assuming 32 translations per vnic in policy.json
         self.icmp_typecodes = ['t8_c0', 't0_c0', 't3_c0', 't3_c1', 't3_c2',
                                 't3_c3', 't3_c4', 't3_c5', 't3_c6', 't3_c7',
                                 't3_c8', 't3_c9', 't3_c10', 't3_c11', 't3_c12', 
@@ -906,7 +906,7 @@ def Trigger(tc):
 
 def DebugFlows():
 
-    flows_req = flowutils.FlowsReq()
+    flows_req = flow_utils.FlowsReq()
     api.Logger.info("L3, w/o NAT, UDP, Dynamic, Flow count 64")
     api.Logger.info("===========")
     flows_req.vnic_type = 'L3'

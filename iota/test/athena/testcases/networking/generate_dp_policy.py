@@ -5,7 +5,6 @@ import json
 import os
 import time
 import iota.test.athena.utils.athena_app as athena_app_utils
-from iota.test.athena.utils.flow import FlowInfo 
 import iota.harness.infra.store as store
 from collections import defaultdict
 
@@ -112,24 +111,19 @@ def Setup(tc):
         # these keys need to be changed for both L2 and L3 with or without NAT.
         vnic['vlan_id'] = str(tc.up1_vlan)
         vnic['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
+        vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
+        vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+
+        # these fields need to be changed only for L3
+        if tc.vnic_type == 'L3':
+            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
+
         # only applicable to L2 vnics
         if tc.vnic_type == 'L2':
             vnic['l2_flows_range']['h2s_mac_lo'] = str(mac_lo)
             vnic['l2_flows_range']['h2s_mac_hi'] = str(mac_hi)
             vnic['l2_flows_range']['s2h_mac_lo'] = str(mac_lo)
             vnic['l2_flows_range']['s2h_mac_hi'] = str(mac_hi)
-
-        if tc.nat == 'yes':    
-            vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-            vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-            if tc.vnic_type == 'L3':
-                vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
-        else:
-            # these fields need to be changed only for L3
-            if tc.vnic_type == 'L3':
-                vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-                vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
-                vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
 
     # write vlan/mac addr and flow info to actual file 
     with open(tc.dp_policy_json_path, 'w+') as fd:
