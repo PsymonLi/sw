@@ -27,8 +27,10 @@ flow_info:
   nop
 
 flow_info_multicast:
-  phvwr.e       p.capri_intrinsic_tm_replicate_en, 1
-  phvwr         p.capri_intrinsic_tm_replicate_ptr, d.u.flow_info_d.multicast_ptr
+  phvwr         p.control_metadata_clear_promiscuous_repl, FALSE
+  or.e          r1, 1, d.u.flow_info_d.multicast_ptr, 1
+  phvwr         p.{capri_intrinsic_tm_replicate_ptr, \
+                   capri_intrinsic_tm_replicate_en}, r1
 
 flow_info_policy_only:
   seq           c1, k.control_metadata_skip_flow_update, TRUE

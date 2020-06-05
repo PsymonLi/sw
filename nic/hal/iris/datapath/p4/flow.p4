@@ -284,6 +284,7 @@ action flow_info(flow_only_policy, dst_lport_en, dst_lport,
     if (multicast_en == TRUE) {
         modify_field(capri_intrinsic.tm_replicate_en, multicast_en);
         modify_field(capri_intrinsic.tm_replicate_ptr, multicast_ptr);
+        modify_field(control_metadata.clear_promiscuous_repl, FALSE);
     } else {
         if (flow_only_policy == TRUE) {
             if (control_metadata.skip_flow_update == TRUE) {
