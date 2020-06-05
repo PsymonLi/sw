@@ -78,7 +78,7 @@ class InterfaceObject(base.ConfigObjectBase):
         if self.IfName:
             self.GID(f'{self.IfName}')
         else:
-            self.GID(f'{INTFTYPE2STR.get(type)}Interface{self.InterfaceId:08x}')
+            self.GID(f'{topo.INTFTYPE2STR.get(type)}Interface{self.InterfaceId:08x}')
         return
 
     def GetInterfaceName(self):

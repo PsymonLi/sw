@@ -94,7 +94,7 @@ def pingWorkloads(workload_pairs, af="ipv4", packet_size=64, count=3, interval=0
             api.Trigger_AddCommand(req, w1.node_name, w1.workload_name, ping_cmd)
             cmd_cookies.append(ping_cmd)
 
-            if sec_ip_test_type == 'random':
+            if sec_ip_test_type == 'random' and w1.sec_ip_addresses and w2.sec_ip_addresses:
                 ping_cmd = __add_source_ip_to_ping_cmd(ping_base_cmd, random.choice(w1.sec_ip_addresses))
                 ping_cmd = __ping_addr_substitution(ping_cmd, random.choice(w2.sec_ip_addresses))
                 api.Logger.verbose(" Ping cmd %s " % (ping_cmd))

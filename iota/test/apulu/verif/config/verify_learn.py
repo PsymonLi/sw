@@ -21,6 +21,9 @@ def __verify_learning():
 
     return api.types.status.SUCCESS
 
+def ValidateLearning():
+    return __verify_learning()
+
 def Main(args):
     api.Logger.verbose("Verifying if all VNICs and Mappings are programmed")
     return __verify_learning()

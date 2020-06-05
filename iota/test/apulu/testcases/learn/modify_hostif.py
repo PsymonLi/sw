@@ -48,6 +48,7 @@ def Trigger(tc):
         old_intf = intf_client.FindHostInterface(tc.subnet.Node, tc.hostifidx).GetInterfaceName()
         new_intf = intf_client.FindHostInterface(tc.subnet.Node, tc.subnet.HostIfIdx).GetInterfaceName()
     api.Logger.debug(f"Subnet moved from HostInterface {old_intf} to {new_intf}")
+    misc_utils.Sleep(3) # needed until delay_delete is enabled
     ret = tc.subnet.VerifyDepsOperSt('Delete')
     if not ret:
         return api.types.status.FAILURE

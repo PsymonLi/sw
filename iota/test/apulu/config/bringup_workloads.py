@@ -128,7 +128,7 @@ def __add_workloads(redirect_port):
             workload_name = ep.name + ep.node_name
             wl = api.GetWorkloadByName(workload_name)
             if wl is None:
-                sys.exit(1)
+                return api.types.status.CRITICAL
 
             wl.vnic = ep.vnic
             if wl.vnic.DhcpEnabled:
@@ -143,7 +143,7 @@ def __add_workloads(redirect_port):
 
         if len(dhcp_wl_list):
             if not dhcp_utils.AcquireIPFromDhcp(dhcp_wl_list):
-                sys.exit(1)
+                return api.types.status.CRITICAL
 
 def __delete_classic_workloads(target_node = None, workloads = None):
 

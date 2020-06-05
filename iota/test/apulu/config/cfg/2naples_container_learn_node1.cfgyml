@@ -40,6 +40,11 @@ dhcprelay:
       serverip : '100.1.1.1'
       agentip  : '1.1.1.1'
 
+security_profile:
+    id          : 1
+    origin      : implicitly-created
+    deffwaction : deny
+
 vpc:
     - id         : 100
       stack      : ipv4

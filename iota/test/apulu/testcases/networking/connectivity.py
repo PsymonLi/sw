@@ -5,10 +5,14 @@ import iota.test.apulu.utils.flow as flow_utils
 import iota.test.apulu.utils.connectivity as conn_utils
 
 def Setup(tc):
-    tc.sec_ip_test_type = getattr(tc.args, "use-sec-ip", 'none')
-    if tc.sec_ip_test_type not in ['all', 'random', 'none']:
-        api.Logger.error("Invalid value for use-sec-ip %s" %(tc.sec_ip_test_type))
-        return api.types.status.FAILURE
+    if tc.iterators.proto == 'icmp':
+        tc.sec_ip_test_type = getattr(tc.args, 'ping-secondary-ip', 'none')
+        if tc.sec_ip_test_type not in ['all', 'random', 'none']:
+            api.Logger.error("Invalid value for ping-secondary-ip %s" %(tc.sec_ip_test_type))
+            return api.types.status.FAILURE
+        api.Logger.verbose("Secondary IP test type set to %s" %(tc.sec_ip_test_type))
+    else:
+        tc.sec_ip_test_type = 'none'
 
     tc.workload_pairs = config_api.GetWorkloadPairs(conn_utils.GetWorkloadType(tc.iterators),
             conn_utils.GetWorkloadScope(tc.iterators))

@@ -65,3 +65,6 @@ testcases:
             ipaf    : [ ipv4 ]
             objtype : [ vpc, subnet, policy, dhcp_relay ]
             oper    : [ [update, create] ]
+
+    -   name    : Restore_Learn_State
+        testcase: testcases.learn.learn_endpoints

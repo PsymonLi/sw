@@ -103,8 +103,10 @@ def acquire_dhcp_ips(workload_pairs):
 
     workloads.clear()
     for pair in workload_pairs:
-        workloads[pair[0]] = True
-        workloads[pair[1]] = True
+        if pair[0].vnic.DhcpEnabled:
+            workloads[pair[0]] = True
+        if pair[1].vnic.DhcpEnabled:
+            workloads[pair[1]] = True
 
     if not api.IsSimulation():
         req = api.Trigger_CreateExecuteCommandsRequest(serial=True)

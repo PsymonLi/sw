@@ -90,7 +90,7 @@ def Teardown(tc):
                 api.Logger.error(f"Teardown failed to send ARP to all workloads")
             else:
                 api.Logger.info("Running overlay connectivity test")
-                cmd_cookies, resp = conn_utils.TriggerConnectivityTestAll(proto="icmp")
+                cmd_cookies, resp = conn_utils.TriggerConnectivityTestAll(proto="icmp", sec_ip_test_type="random")
                 ret = conn_utils.VerifyConnectivityTest("icmp", cmd_cookies, resp)
                 if ret != api.types.status.SUCCESS:
                     api.Logger.error("Connectivity verification failed.")

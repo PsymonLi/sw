@@ -12,6 +12,7 @@ import apollo.config.topo as topo
 import vpc_pb2 as vpc_pb2
 import iota.harness.api as api
 import vpc_pb2 as vpc_pb2
+import iota.test.apulu.utils.misc as misc_utils
 
 WORKLOAD_PAIR_TYPE_LOCAL_ONLY    = 1
 WORKLOAD_PAIR_TYPE_REMOTE_ONLY   = 2
@@ -274,9 +275,12 @@ def ProcessObjectsByOperation(oper, select_objs, spec=None):
             api.Logger.error(f"{oper} failed for object: {obj}")
             res = api.types.status.FAILURE
         if oper == 'Delete':
-            if not getattr(obj, 'VerifyDepsOperSt')(oper):
-                api.Logger.error(f"Dependent object oper state not as expected after {oper} on {obj}")
-                res = api.types.status.FAILURE
+            if hasattr(obj, 'VerifyDepsOperSt'):
+                # needed until delay_delete is enabled, since read can happen when obj is being deleted
+                misc_utils.Sleep(3)
+                if not obj.VerifyDepsOperSt(oper):
+                    api.Logger.error(f"Dependent object oper state not as expected after {oper} on {obj}")
+                    res = api.types.status.FAILURE
     return res
 
 def FindVnicObjectByWorkload(wl):

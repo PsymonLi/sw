@@ -27,7 +27,7 @@ setup:
                 node2 : 2naples_container_equinix_node2.cfgyml
         - step : config.bringup_workloads
         - step : config.add_routes
-        - step : config.learn_endpoints
+        - step : verif.config.verify_learn
         - step : utils.naples_upgrade.install
           args :
              naples_upgr_pkgs : ["naples_fw_venice.tar"]
@@ -39,6 +39,9 @@ common:
         - step : verif.utils.collect_techsupport
 
     setup:
+
+    args:
+        ping-secondary-ip: random # in h2h, randomly ping one secondary IP pair
 
 testbundles:
     sanity:

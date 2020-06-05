@@ -212,7 +212,7 @@ vpc:
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
-              ipcount      : 1
+              ipcount      : 32
 
         - id               : 5
           count            : 1
@@ -229,7 +229,7 @@ vpc:
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
-              ipcount      : 1
+              ipcount      : 32
 
         - id               : 6
           count            : 1
@@ -246,7 +246,7 @@ vpc:
               origin    : discovered
               remoteroutes :
                     - '10.0.0.0\8'
-              ipcount      : 1
+              ipcount      : 32
 
 
       nexthop:

@@ -4,7 +4,6 @@ import iota.test.apulu.config.api as config_api
 import iota.test.apulu.utils.connectivity as conn_utils
 import iota.test.apulu.utils.move as move_utils
 import iota.test.apulu.utils.flow as flow_utils
-import iota.test.apulu.config.learn_endpoints as learn
 import iota.test.apulu.utils.learn_stats as stats_utils
 import iota.test.apulu.utils.learn as learn_utils
 import iota.test.apulu.utils.misc as misc_utils

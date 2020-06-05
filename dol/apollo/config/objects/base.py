@@ -335,9 +335,6 @@ class ConfigObjectBase(base.ConfigObjectBase):
     def IsInterim(self):
         return self.Interim
 
-    def VerifyDepsOperSt(self, oper):
-        return True
-
     def SetBaseClassAttr(self):
         self.__unimplemented()
         return
