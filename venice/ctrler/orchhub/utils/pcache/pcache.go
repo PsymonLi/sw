@@ -374,39 +374,39 @@ func (p *PCache) writeStateMgr(in interface{}) error {
 		var writeErr error
 		meta := obj.GetObjectMeta()
 		if currObj, err := ctrler.Workload().Find(meta); err == nil {
-			// Merge user labels
-			labels := map[string]string{}
-			for k, v := range currObj.Labels {
-				if !strings.HasPrefix(k, globals.SystemLabelPrefix) {
-					// Only take user labels from existing object
-					labels[k] = v
+			for i := 0; i < writeRetries; i++ {
+				// Merge user labels
+				labels := map[string]string{}
+				for k, v := range currObj.Labels {
+					if !strings.HasPrefix(k, globals.SystemLabelPrefix) {
+						// Only take user labels from existing object
+						labels[k] = v
+					}
 				}
-			}
-			for k, v := range obj.Labels {
-				if strings.HasPrefix(k, globals.SystemLabelPrefix) {
-					// Only take system labels from new object
-					labels[k] = v
+				for k, v := range obj.Labels {
+					if strings.HasPrefix(k, globals.SystemLabelPrefix) {
+						// Only take system labels from new object
+						labels[k] = v
+					}
 				}
-			}
-			obj.Labels = labels
-			// Object exists and is changed
-			// Set nil arrays to be arrays of length 0
-			currWorkload := currObj.Workload
-			for i := range currWorkload.Spec.Interfaces {
-				if len(currWorkload.Spec.Interfaces[i].IpAddresses) == 0 {
-					currWorkload.Spec.Interfaces[i].IpAddresses = []string{}
+				obj.Labels = labels
+				// Object exists and is changed
+				// Set nil arrays to be arrays of length 0
+				currWorkload := currObj.Workload
+				for i := range currWorkload.Spec.Interfaces {
+					if len(currWorkload.Spec.Interfaces[i].IpAddresses) == 0 {
+						currWorkload.Spec.Interfaces[i].IpAddresses = []string{}
+					}
 				}
-			}
-			for i := range obj.Spec.Interfaces {
-				if len(obj.Spec.Interfaces[i].IpAddresses) == 0 {
-					obj.Spec.Interfaces[i].IpAddresses = []string{}
+				for i := range obj.Spec.Interfaces {
+					if len(obj.Spec.Interfaces[i].IpAddresses) == 0 {
+						obj.Spec.Interfaces[i].IpAddresses = []string{}
+					}
 				}
-			}
 
-			if !reflect.DeepEqual(currWorkload.Spec, obj.Spec) ||
-				!reflect.DeepEqual(currWorkload.Status, obj.Status) ||
-				!reflect.DeepEqual(currWorkload.Labels, obj.Labels) {
-				for i := 0; i < writeRetries; i++ {
+				if !reflect.DeepEqual(currWorkload.Spec, obj.Spec) ||
+					!reflect.DeepEqual(currWorkload.Status, obj.Status) ||
+					!reflect.DeepEqual(currWorkload.Labels, obj.Labels) {
 					// CAS check is needed in case user adds labels to an object
 					obj.ResourceVersion = currObj.ResourceVersion
 					p.Log.Debugf("%s %s statemgr update called", WorkloadKind, meta.GetKey())
@@ -415,6 +415,11 @@ func (p *PCache) writeStateMgr(in interface{}) error {
 						break
 					}
 					time.Sleep(100 * time.Millisecond)
+					if currObjTmp, err := ctrler.Workload().Find(meta); err == nil {
+						currObj = currObjTmp
+					}
+				} else {
+					break
 				}
 			}
 		} else {
@@ -433,34 +438,40 @@ func (p *PCache) writeStateMgr(in interface{}) error {
 		var writeErr error
 		meta := obj.GetObjectMeta()
 		if currObj, err := ctrler.Host().Find(meta); err == nil {
-			// Merge user labels
-			labels := map[string]string{}
-			for k, v := range currObj.Labels {
-				if !strings.HasPrefix(k, globals.SystemLabelPrefix) {
-					// Only take user labels from existing object
-					labels[k] = v
+			for i := 0; i < writeRetries; i++ {
+				// Merge user labels
+				labels := map[string]string{}
+				for k, v := range currObj.Labels {
+					if !strings.HasPrefix(k, globals.SystemLabelPrefix) {
+						// Only take user labels from existing object
+						labels[k] = v
+					}
 				}
-			}
-			for k, v := range obj.Labels {
-				if strings.HasPrefix(k, globals.SystemLabelPrefix) {
-					// Only take system labels from new object
-					labels[k] = v
+				for k, v := range obj.Labels {
+					if strings.HasPrefix(k, globals.SystemLabelPrefix) {
+						// Only take system labels from new object
+						labels[k] = v
+					}
 				}
-			}
-			obj.Labels = labels
-			// Object exists and is changed
-			if !reflect.DeepEqual(currObj.Host.Spec, obj.Spec) ||
-				!reflect.DeepEqual(currObj.Host.Status, obj.Status) ||
-				!reflect.DeepEqual(currObj.Host.Labels, obj.Labels) {
-				for i := 0; i < writeRetries; i++ {
+				obj.Labels = labels
+				// Object exists and is changed
+				if !reflect.DeepEqual(currObj.Host.Spec, obj.Spec) ||
+					!reflect.DeepEqual(currObj.Host.Labels, obj.Labels) {
+					// Fetch stateMgr host and get it's status and resVer
 					// CAS check is needed in case user adds labels to an object
 					obj.ResourceVersion = currObj.ResourceVersion
+					obj.Status = currObj.Status
 					p.Log.Debugf("%s %s statemgr update called", HostKind, meta.GetKey())
 					writeErr = ctrler.Host().SyncUpdate(obj)
 					if writeErr == nil {
 						break
 					}
 					time.Sleep(100 * time.Millisecond)
+					if currObjTmp, err := ctrler.Host().Find(meta); err == nil {
+						currObj = currObjTmp
+					}
+				} else {
+					break
 				}
 			}
 		} else {

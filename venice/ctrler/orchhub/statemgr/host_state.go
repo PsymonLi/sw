@@ -25,7 +25,7 @@ type HostState struct {
 //GetHostWatchOptions gets options
 func (sm *Statemgr) GetHostWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec"}
+	opts.FieldChangeSelector = []string{}
 	return &opts
 }
 

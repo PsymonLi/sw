@@ -224,6 +224,13 @@ func TestPcache(t *testing.T) {
 	AssertEquals(t, 1, len(retHosts), "Number of hosts did not match")
 	AssertEquals(t, expHost, retHosts[expHost.GetKey()], "Get from pcache returned different values")
 
+	expHost = ref.DeepCopy(expHost).(*cluster.Host)
+	expHost.Labels = map[string]string{
+		"key": "value",
+	}
+	err = pCache.Set("Host", expHost)
+	AssertOk(t, err, "Failed to write host")
+
 	err = pCache.Delete("Host", expHost)
 	AssertOk(t, err, "Failed to delete from statemgr")
 	_, err = stateMgr.Controller().Host().Find(expMeta)

@@ -2756,7 +2756,7 @@ func TestVCHubAPIServerReconnect(t *testing.T) {
 			return false, err
 		}
 		if len(hosts) != 1 {
-			return false, fmt.Errorf("Found %d hosts", len(wl))
+			return false, fmt.Errorf("Found %d hosts", len(hosts))
 		}
 
 		return true, nil
@@ -3288,6 +3288,167 @@ func TestHostUplinkModification(t *testing.T) {
 
 		return true, nil
 	}, "Failed to get wl and host")
+
+}
+
+func TestHostStatusPreserved(t *testing.T) {
+	// STARTING SIM
+	u := createURL(defaultTestParams.TestHostName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
+
+	logger, tmpFile, err := setupLoggerWithFile("vchub_test_host_status_preserved")
+	AssertOk(t, err, "Failed to setup logger")
+
+	var vchub *VCHub
+	var s *sim.VcSim
+
+	defer func() {
+		logger.Infof("Tearing Down")
+		if vchub != nil {
+			vchub.Destroy(false)
+		}
+
+		if s != nil {
+			s.Destroy()
+		}
+		fileBytes, err := ioutil.ReadFile(tmpFile.Name())
+		AssertOk(t, err, "Failed to read log file")
+		Assert(t, !strings.Contains(string(fileBytes), defaultTestParams.TestPassword), "Logs had password in plaintext")
+		os.Remove(tmpFile.Name()) // clean up
+	}()
+
+	s, err = sim.NewVcSim(sim.Config{Addr: u.String()})
+	AssertOk(t, err, "Failed to create vcsim")
+
+	sm, _, err := smmock.NewMockStateManager()
+	if err != nil {
+		t.Fatalf("Failed to create state manager. Err : %v", err)
+		return
+	}
+
+	orchConfig := smmock.GetOrchestratorConfig(defaultTestParams.TestOrchName, defaultTestParams.TestUser, defaultTestParams.TestPassword)
+	orchConfig.Spec.ManageNamespaces = []string{utils.ManageAllDcs}
+	orchConfig.Spec.URI = defaultTestParams.TestHostName
+
+	err = sm.Controller().Orchestrator().Create(orchConfig)
+	// Make channels really small to verify there are no deadlocks from channel issues
+	evCh := make(chan defs.Probe2StoreMsg, 2)
+	readCh := make(chan defs.Probe2StoreMsg, 2)
+
+	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe, WithVcEventsCh(evCh), WithVcReadCh(readCh))
+
+	// Wait for it to come up
+	AssertEventually(t, func() (bool, interface{}) {
+		return vchub.IsSyncDone(), nil
+	}, "VCHub sync never finished")
+	dcName := defaultTestParams.TestDCName
+	dc, err := s.AddDC(dcName)
+	dc.Obj.Name = dcName
+	if err != nil && strings.Contains(err.Error(), "intermittent") {
+		t.Skipf("Skipping test due to issue with external package vcsim")
+	}
+	AssertOk(t, err, "failed to create DC %s", dcName)
+	vchub.vcReadCh <- createDCEvent(dcName, dc.Obj.Self.Value)
+
+	pNicMac := append(createPenPnicBase(), 0xaa, 0x00, 0x00)
+	// Make it Pensando host
+	macStr := conv.MacString(pNicMac)
+
+	// Send host event without display name
+	hostEvt := defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.HostSystem,
+			DcID:       dc.Obj.Self.Value,
+			DcName:     dcName,
+			Key:        "host-1",
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				types.PropertyChange{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "config",
+					Val: types.HostConfigInfo{
+						Network: &types.HostNetworkInfo{
+							Pnic: []types.PhysicalNic{
+								types.PhysicalNic{
+									Mac: macStr,
+									Key: "pnic-2",
+								},
+							},
+							ProxySwitch: []types.HostProxySwitch{
+								types.HostProxySwitch{
+									DvsName: defaultTestParams.TestDVSName,
+									Pnic:    []string{"pnic-1", "pnic-2"},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	vchub.vcReadCh <- hostEvt
+
+	// Verify statemgr has object
+	var host cluster.Host
+	AssertEventually(t, func() (bool, interface{}) {
+		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(hosts) != 1 {
+			return false, fmt.Errorf("Found %d hosts", len(hosts))
+		}
+		host = hosts[0].Host
+
+		return true, nil
+	}, "Failed to get host")
+
+	// Update host status
+	host.Status.AdmittedDSCs = []string{"DSC"}
+	err = sm.Controller().Host().Update(&host)
+	AssertOk(t, err, "Failed to update host")
+
+	// Send name update
+	hostEvt = defs.Probe2StoreMsg{
+		MsgType: defs.VCEvent,
+		Val: defs.VCEventMsg{
+			VcObject:   defs.HostSystem,
+			DcID:       dc.Obj.Self.Value,
+			DcName:     dcName,
+			Key:        "host-1",
+			Originator: "127.0.0.1:8990",
+			Changes: []types.PropertyChange{
+				types.PropertyChange{
+					Op:   types.PropertyChangeOpAdd,
+					Name: "name",
+					Val:  "host1",
+				},
+			},
+		},
+	}
+
+	vchub.vcReadCh <- hostEvt
+	// Wait for label
+	AssertEventually(t, func() (bool, interface{}) {
+		hosts, err := sm.Controller().Host().List(context.Background(), &api.ListWatchOptions{})
+		if err != nil {
+			return false, err
+		}
+		if len(hosts) != 1 {
+			return false, fmt.Errorf("Found %d hosts", len(hosts))
+		}
+		host = hosts[0].Host
+		if host.Labels[NameKey] != "host1" {
+			return false, fmt.Errorf("Host name label isn't added")
+		}
+		// Verify status is not overwritten
+
+		if len(host.Status.AdmittedDSCs) == 0 {
+			return false, fmt.Errorf("Host status was overwritten")
+		}
+
+		return true, nil
+	}, "Failed to get host")
 
 }
 
