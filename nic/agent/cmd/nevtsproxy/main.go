@@ -255,6 +255,7 @@ func main() {
 // startNetworkModeServices helper function to start network mode services
 func (e *evtServices) startNetworkModeServices() {
 	e.logger.Infof("starting network mode services")
+	e.eps.GetEventsDispatcher().SetDefaultObjectRef(getDefaultObjectRef(e.nodeName))
 
 	// starting watching policies from venice
 	if e.policyWatcher == nil {
@@ -326,6 +327,7 @@ func (e *evtServices) registerVeniceExporter() {
 // stopNetworkModeServices helper function to stop network mode services
 func (e *evtServices) stopNetworkModeServices() {
 	e.logger.Infof("stopping network mode services")
+	e.eps.GetEventsDispatcher().SetDefaultObjectRef(getDefaultObjectRef(e.nodeName))
 
 	if e.policyWatcher != nil {
 		e.policyWatcher.Stop()

@@ -3,6 +3,7 @@
 package events
 
 import (
+	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/events"
 	"github.com/pensando/sw/events/generated/eventtypes"
 )
@@ -67,6 +68,9 @@ type Dispatcher interface {
 
 	// non-upgrade related events will be suppressed when maintenance mode flag is set
 	SetMaintenanceMode(bool)
+
+	// set default object reference. Used when Naples mode changes between network/host modes.
+	SetDefaultObjectRef(*api.ObjectRef)
 }
 
 // Chan represents the channel that will be used by the dispatcher to send

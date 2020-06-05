@@ -157,6 +157,13 @@ func (d *dispatcherImpl) SetMaintenanceMode(flag bool) {
 	d.Unlock()
 }
 
+// sets the default object ref
+func (d *dispatcherImpl) SetDefaultObjectRef(defaultObjectRef *api.ObjectRef) {
+	d.Lock()
+	d.defaultObjectRef = defaultObjectRef
+	d.Unlock()
+}
+
 // Action implements the action to be taken when the event reaches the dispatcher.
 // 1. Writes the events to persistent store.
 // 2. Add event to the de-dup cache.
