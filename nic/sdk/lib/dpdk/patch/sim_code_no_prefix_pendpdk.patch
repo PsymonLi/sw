@@ -96,8 +96,21 @@ index cf8d630..2b7c8f0 100644
  	ionic_q_post(adminq, true, ionic_adminq_cb, ctx);
  
  err_out:
+diff --git dpdk-19.02-rc3/drivers/net/ionic/ionic_dev.h dpdk-19.02-rc3/drivers/net/ionic/ionic_dev.h
+index 017b373..66a68af 100644
+--- dpdk-19.02-rc3/drivers/net/ionic/ionic_dev.h
++++ dpdk-19.02-rc3/drivers/net/ionic/ionic_dev.h
+@@ -29,7 +29,7 @@
+ 
+ #define IONIC_LIFS_MAX			1024
+ 
+-#define IONIC_DEVCMD_TIMEOUT			5			/* devcmd_timeout */
++#define IONIC_DEVCMD_TIMEOUT			60		/* devcmd_timeout */
+ #define IONIC_DEVCMD_CHECK_PERIOD_US	100		/* devcmd status check period */
+ 
+ #define	IONIC_ALIGN             4096
 diff --git dpdk-19.02-rc3/drivers/net/ionic/ionic_dev_vdev.c dpdk-19.02-rc3/drivers/net/ionic/ionic_dev_vdev.c
-index a09e29f..1cb7e7e 100644
+index 9683197..e02cba1 100644
 --- dpdk-19.02-rc3/drivers/net/ionic/ionic_dev_vdev.c
 +++ dpdk-19.02-rc3/drivers/net/ionic/ionic_dev_vdev.c
 @@ -43,7 +43,6 @@

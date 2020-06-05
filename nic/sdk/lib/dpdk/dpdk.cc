@@ -243,7 +243,9 @@ dpdk_device::init_(sdk_dpdk_device_params_t *args) {
 }
 
 dpdk_device::~dpdk_device(void) {
-    SDK_FREE(SDK_MEM_ALLOC_LIB_DPDK_BUFFER, (void *)mbufs[0]);
+    if (mbufs.size() > 0) {
+        SDK_FREE(SDK_MEM_ALLOC_LIB_DPDK_BUFFER, (void *)mbufs[0]);
+    }
 }
 
 dpdk_device *

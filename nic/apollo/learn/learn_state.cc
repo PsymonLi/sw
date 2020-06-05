@@ -103,7 +103,9 @@ learn_state::lif_init_(void) {
     args.num_tx_desc = LEARN_LIF_TX_DESC_COUNT;
     args.num_tx_queue = 1;
     learn_lif_ = dpdk_device::factory(&args);
-
+    if (unlikely(learn_lif_ == nullptr)) {
+        return SDK_RET_ERR;
+    }
     return SDK_RET_OK;
 }
 
@@ -120,12 +122,7 @@ learn_state::init (void) {
     if (vnic_objid_idxr_ == nullptr) {
         return SDK_RET_ERR;
     }
-
-    if (lif_init_() != SDK_RET_OK) {
-        return SDK_RET_ERR;
-    }
-
-    return SDK_RET_OK;
+    return lif_init_();
 }
 
 uint32_t
