@@ -157,8 +157,6 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   searchWorkloadCount: number = 0;
   starttimeWatchWorkload: number;
 
-  dataMappingTimer: NodeJS.Timer;
-
   /**
    * This API is to assist searchWorkloadInterfaces().  We use public static function is to avoid "this" keyword confusion
    * @param requirement
@@ -455,15 +453,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
           this.tableLoading = false;
         }
 
-        // if there are too many workloads in Venice, take longer time so table has time to render.
-        if (this.searchWorkloadCount > 300) {
-          clearTimeout(this.dataMappingTimer);
-          this.dataMappingTimer = setTimeout(() => {
-            this.mapData();
-          }, 300);
-        } else {
-          this.mapData();
-        }
+        this.mapData();
 
         // once we have get more workload objects than searchWorkloadCount, we reset this.searchWorkloadCount. It is need in DestroyHook()
         if (this.dataObjects.length >= this.searchWorkloadCount) {
