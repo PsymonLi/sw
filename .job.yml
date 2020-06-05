@@ -207,7 +207,7 @@ jobs:
   iota/test/standalone/sanity/linux:
     labels: ["2xhourly"]
   iota/test/standalone/sanity/windows:
-    labels: ["daily"]
+    labels: ["2xhourly"]
   nic/apollo/tools/apulu/sanity/base:
     labels: ["2xhourly"]
   nic/apollo/tools/apulu/sanity/customer-docker:
@@ -412,6 +412,8 @@ dependencies:
     - reference: iota/test/standalone/precheckin/linux-rdma
   iota/test/standalone/precheckin/windows:
     - reference: iota/test/standalone/precheckin/windows
+  iota/test/standalone/sanity/windows:
+    - reference: iota/test/standalone/sanity/windows
   iota/test/standalone/sanity/freebsd:
     - reference: iota/test/standalone/sanity/freebsd
   iota/test/standalone/sanity/linux:
