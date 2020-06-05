@@ -40,7 +40,7 @@ typedef struct pds_lif_event_info_s {
 } pds_lif_event_info_t;
 
 /// \brief physical port specific event information
-typedef struct pds_port_event_info_s {
+typedef struct pds_port_info_s {
     /// unique identifier for the port
     pds_obj_key_t key;
     // TODO @akoradha port_args is exposed all the way to the agent
@@ -50,7 +50,7 @@ typedef struct pds_port_event_info_s {
     //       and CLIs etc. will naturally work with current db walks etc.
     //       we have all eth ports in if db already.
     sdk::linkmgr::port_args_t info;
-} pds_port_event_info_t;
+} pds_port_info_t;
 
 /// \brief event information passed to event callback of the application
 typedef struct pds_event_s {
@@ -58,7 +58,7 @@ typedef struct pds_event_s {
     pds_event_id_t event_id;
     /// event specific information
     union {
-        pds_port_event_info_t port_info;
+        pds_port_info_t port_info;
         pds_lif_event_info_t lif_info;
         sdk::upg::upg_ev_params_t upg_params;
     };

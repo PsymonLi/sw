@@ -40,10 +40,4 @@ pds_if_read (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
     return entry->read(info);
 }
 
-sdk_ret_t
-port_get (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
-{
-    return pds_if_read(key, info);
-}
-
 }    // namespace api

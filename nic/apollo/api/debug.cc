@@ -153,9 +153,11 @@ dump_port_fsm_record (record_t *record, void *ctxt)
 }
 
 static inline void
-dump_port_fsm (pds_obj_key_t *key, pds_if_info_t *info, int fd)
+dump_port_fsm (sdk::linkmgr::port_args_t *port_info, void *ctxt)
 {
-    in_mem_fsm_logger *sm_logger = info->status.port_status.sm_logger;
+    in_mem_fsm_logger *sm_logger = port_info->sm_logger;
+    pds_obj_key_t *key = (pds_obj_key_t *)port_info->port_an_args;
+    int fd = *(int *)ctxt;
     dump_port_fsm_record_args_t args = { .fd = fd, .index = 0,
                                          .prev_ts = { 0 } };
 
@@ -177,7 +179,6 @@ sdk_ret_t
 pds_handle_cmd (cmd_ctxt_t *ctxt)
 {
     sdk_ret_t ret;
-    pds_if_info_t info = { 0 };
 
     PDS_TRACE_VERBOSE("Received UDS command message %u", ctxt->cmd);
 
@@ -199,10 +200,8 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
         ret = dump_state_base_stats(ctxt->fd);
         break;
     case CMD_MSG_PORT_FSM_DUMP:
-        ret = api::port_get(&ctxt->args.port_id, &info);
-        if (ret == SDK_RET_OK) {
-            dump_port_fsm(&ctxt->args.port_id, &info, ctxt->fd);
-        }
+        ret = api::port_get(&ctxt->args.port_id, dump_port_fsm,
+                            (void *)&ctxt->fd);
         break;
     default:
         ret = SDK_RET_INVALID_ARG;

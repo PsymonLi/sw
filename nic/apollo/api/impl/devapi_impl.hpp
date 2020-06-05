@@ -123,10 +123,8 @@ private:
     devapi_impl() {}
     ~devapi_impl() {}
 
-    static void port_get_config_(_In_ pds_if_info_t *info,
-                                 _Out_ port_config_t *config);
-    static void port_get_status_(_In_ pds_if_info_t *info,
-                                 _Out_ port_status_t *status);
+    static void port_get_config_(_In_ sdk::linkmgr::port_args_t *port_args, _Out_ void *ctxt);
+    static void port_get_status_(_In_ sdk::linkmgr::port_args_t *port_args, _Out_ void *ctxt);
     static sdk_ret_t populate_port_args_(_Out_ sdk::linkmgr::port_args_t *port_args,
                                          _In_ port_config_t *config);
 

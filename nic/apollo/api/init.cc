@@ -145,61 +145,6 @@ create_uplinks (void)
 }
 
 /**
- * @brief        populate port information based on the catalog
- * @param[in]    phy_port  physical port number of this port
- * @param[out]   port_info port parameters filled by this API
- * @return       SDK_RET_OK on success, failure status code on error
- */
-static sdk_ret_t
-populate_port_info (uint32_t phy_port, pds_port_info_t *port_info)
-{
-    port_info->admin_state = g_pds_state.catalogue()->admin_state_fp(phy_port);
-    port_info->type = g_pds_state.catalogue()->port_type_fp(phy_port);
-    if (port_info->type == port_type_t::PORT_TYPE_MGMT) {
-        port_info->speed = port_speed_t::PORT_SPEED_1G;
-        port_info->fec_type = port_fec_type_t::PORT_FEC_TYPE_NONE;
-    } else {
-        port_info->speed = g_pds_state.catalogue()->port_speed_fp(phy_port);
-        port_info->fec_type = g_pds_state.catalogue()->port_fec_type_fp(phy_port);
-        port_info->autoneg_en = true;
-    }
-    port_info->debounce_timeout = 0;    /**< 0 implies debounce disabled */
-    port_info->mtu = 0;    /**< default will be set to max mtu */
-    port_info->pause_type = port_pause_type_t::PORT_PAUSE_TYPE_NONE;
-    port_info->loopback_mode = port_loopback_mode_t::PORT_LOOPBACK_MODE_NONE;
-    port_info->num_lanes = g_pds_state.catalogue()->num_lanes_fp(phy_port);
-    return SDK_RET_OK;
-}
-
-/// \brief  create all ports based on the catalog information
-/// \return SDK_RET_OK on success, failure status code on error
-static sdk_ret_t
-create_eth_ports (void)
-{
-    uint32_t      num_phy_ports;
-    pds_if_spec_t spec;
-    if_index_t    ifindex;
-    sdk_ret_t     ret;
-
-    PDS_TRACE_DEBUG("Creating ports");
-    num_phy_ports = g_pds_state.catalogue()->num_fp_ports();
-    for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
-        memset(&spec, 0, sizeof(pds_if_spec_t));
-        ifindex = ETH_IFINDEX(g_pds_state.catalogue()->slot(),
-                              phy_port, ETH_IF_DEFAULT_CHILD_PORT);
-        spec.key = uuid_from_objid(ifindex);
-        spec.type = IF_TYPE_ETH;
-        populate_port_info(phy_port, &spec.port_info);
-        ret = pds_if_create(&spec, PDS_BATCH_CTXT_INVALID);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Port if 0x%x creation failed, ret %u", ifindex, ret);
-            break;
-        }
-    }
-    return ret;
-}
-
-/**
  * @brief    handle the signal
  * @param[in] sig   signal caught
  * @param[in] info  detailed information about signal
@@ -496,13 +441,13 @@ pds_init (pds_init_params_t *params)
         // linkmgr init
         api::linkmgr_init(asic_cfg.catalog, asic_cfg.cfg_path.c_str());
 
+        // create ports
+        SDK_ASSERT(api::create_ports() == SDK_RET_OK);
+
+        // create uplink interfaces
         while (!api::is_api_thread_ready()) {
             pthread_yield();
         }
-        // create ports
-        SDK_ASSERT(api::create_eth_ports() == SDK_RET_OK);
-
-        // create uplink interfaces
         SDK_ASSERT(api::create_uplinks() == SDK_RET_OK);
 
         // initialize all the signal handlers

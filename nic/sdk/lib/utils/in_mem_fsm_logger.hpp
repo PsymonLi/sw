@@ -162,6 +162,4 @@ private:
 }    // namespace utils
 }    // namespace sdk
 
-using sdk::utils::in_mem_fsm_logger;
-
 #endif  // __SDK_IN_MEM_FSM_LOGGER_HPP__

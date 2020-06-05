@@ -25,6 +25,11 @@
 
 namespace api {
 
+typedef struct port_get_cb_ctxt_s {
+    void *ctxt;
+    port_get_cb_t port_get_cb;
+} port_get_cb_ctxt_t;
+
 typedef struct port_shutdown_walk_cb_ctxt_s {
     bool port_shutdown;
     bool port_pb_shutdown;
@@ -250,6 +255,252 @@ port_shutdown_all (void)
     return SDK_RET_OK;
 }
 
+/**
+ * @brief        update a port with the given configuration information
+ * @param[in]    key           key/uuid of the port
+ * @param[in]    api_port_info port info
+ * @return       SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+port_update (const pds_obj_key_t *key, port_args_t *api_port_info)
+{
+    sdk_ret_t ret;
+    if_entry *intf;
+    port_args_t port_info;
+
+    intf = if_db()->find(key);
+    if (intf == NULL) {
+        PDS_TRACE_ERR("port %s update failed", key->str());
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+    memset(&port_info, 0, sizeof(port_info));
+
+    ret = sdk::linkmgr::port_get(intf->port_info(), &port_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to get port %s info, err %u", key->str(), ret);
+        return ret;
+    }
+    api_port_info->tx_pause_enable = port_info.tx_pause_enable;
+    api_port_info->rx_pause_enable = port_info.rx_pause_enable;
+
+    // sdk port_num is logical port
+    api_port_info->port_num =
+        sdk::lib::catalog::ifindex_to_logical_port(intf->ifindex());
+
+    // update port_args based on the xcvr state
+    sdk::linkmgr::port_args_set_by_xcvr_state(api_port_info);
+
+    ret = sdk::linkmgr::port_update(intf->port_info(), api_port_info);
+    return ret;
+}
+
+/**
+ * @brief        create a port with the given configuration information
+ * @param[in]    ifindex      interface index
+ * @param[in]    port_args    port parameters filled by this API
+ * @return       SDK_RET_OK on success, failure status code on error
+ */
+static sdk_ret_t
+create_port (if_index_t ifindex, port_args_t *port_args)
+{
+    if_entry *intf;
+    void *port_info;
+    pds_obj_key_t key;
+
+    PDS_TRACE_DEBUG("Creating port %u, ifindex 0x%x",
+                    port_args->port_num, ifindex);
+
+    sdk::linkmgr::port_store_user_config(port_args);
+    sdk::linkmgr::port_args_set_by_xcvr_state(port_args);
+    port_info = sdk::linkmgr::port_create(port_args);
+    if (port_info == NULL) {
+        PDS_TRACE_ERR("port %u create failed", port_args->port_num);
+        return SDK_RET_ERR;
+    }
+    key = uuid_from_objid(ifindex);
+    intf = if_entry::factory(key, ifindex);
+    if (intf == NULL) {
+        sdk::linkmgr::port_delete(port_info);
+        return SDK_RET_ERR;
+    }
+    intf->set_port_info(port_info);
+    if_db()->insert(intf);
+    // register the stats region with metrics submodule
+    if (port_args->port_type == port_type_t::PORT_TYPE_ETH) {
+        sdk::metrics::row_address(g_pds_state.port_metrics_handle(),
+                                  *(sdk::metrics::key_t *)key.id,
+                                  (void *)sdk::linkmgr::port_stats_addr(ifindex));
+    } else if (port_args->port_type == port_type_t::PORT_TYPE_MGMT) {
+        sdk::metrics::row_address(g_pds_state.mgmt_port_metrics_handle(),
+                                  *(sdk::metrics::key_t *)key.id,
+                                  (void *)sdk::linkmgr::port_stats_addr(ifindex));
+    }
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief        populate port information based on the catalog
+ * @param[in]    ifindex     interface index of this port
+ * @param[in]    phy_port    physical port number of this port
+ * @param[out]   port_args    port parameters filled by this API
+ * @return       SDK_RET_OK on success, failure status code on error
+ */
+static sdk_ret_t
+populate_port_info (if_index_t ifindex, uint32_t phy_port,
+                    port_args_t *port_args)
+{
+    uint32_t logical_port;
+
+    logical_port = port_args->port_num =
+        sdk::lib::catalog::ifindex_to_logical_port(ifindex);
+    port_args->port_type = g_pds_state.catalogue()->port_type_fp(phy_port);
+    port_args->port_speed = g_pds_state.catalogue()->port_speed_fp(phy_port);
+    port_args->fec_type = g_pds_state.catalogue()->port_fec_type_fp(phy_port);
+    if (port_args->port_type == port_type_t::PORT_TYPE_MGMT) {
+        port_args->port_speed = port_speed_t::PORT_SPEED_1G;
+        port_args->fec_type = port_fec_type_t::PORT_FEC_TYPE_NONE;
+    } else {
+        port_args->auto_neg_enable = true;
+    }
+    port_args->admin_state = g_pds_state.catalogue()->admin_state_fp(phy_port);
+    port_args->num_lanes = g_pds_state.catalogue()->num_lanes_fp(phy_port);
+    port_args->mac_id = g_pds_state.catalogue()->mac_id(logical_port, 0);
+    port_args->mac_ch = g_pds_state.catalogue()->mac_ch(logical_port, 0);
+    port_args->debounce_time = 0;
+    port_args->mtu = 0;    /**< default will be set to max mtu */
+    port_args->pause = port_pause_type_t::PORT_PAUSE_TYPE_NONE;
+    port_args->loopback_mode = port_loopback_mode_t::PORT_LOOPBACK_MODE_NONE;
+
+    for (uint32_t i = 0; i < port_args->num_lanes; i++) {
+        port_args->sbus_addr[i] =
+            g_pds_state.catalogue()->sbus_addr(logical_port, i);
+    }
+    port_args->breakout_modes =
+        g_pds_state.catalogue()->breakout_modes(phy_port);
+
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief     create all ports based on the catalog information
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+create_ports (void)
+{
+    uint32_t       num_phy_ports;
+    port_args_t    port_args;
+    if_index_t     ifindex;
+
+    PDS_TRACE_DEBUG("Creating ports ...");
+    num_phy_ports = g_pds_state.catalogue()->num_fp_ports();
+    for (uint32_t phy_port = 1; phy_port <= num_phy_ports; phy_port++) {
+        ifindex = ETH_IFINDEX(g_pds_state.catalogue()->slot(),
+                              phy_port, ETH_IF_DEFAULT_CHILD_PORT);
+        memset(&port_args, 0, sizeof(port_args));
+        populate_port_info(ifindex, phy_port, &port_args);
+        create_port(ifindex, &port_args);
+    }
+    return SDK_RET_OK;
+}
+
+bool
+if_walk_port_get_cb (void *entry, void *ctxt)
+{
+    int phy_port;
+    sdk_ret_t ret;
+    pds_obj_key_t key;
+    port_args_t port_info;
+    if_entry *intf = (if_entry *)entry;
+    uint64_t stats_data[MAX_MAC_STATS];
+    port_get_cb_ctxt_t *cb_ctxt = (port_get_cb_ctxt_t *)ctxt;
+
+    key = intf->key();
+    memset(&port_info, 0, sizeof(port_info));
+    port_info.stats_data = stats_data;
+    ret = sdk::linkmgr::port_get(intf->port_info(), &port_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to get port 0x%s info, err %u", intf->key().str(),
+                      ret);
+        return false;
+    }
+    port_info.port_num = intf->ifindex();
+    phy_port = sdk::lib::catalog::ifindex_to_phy_port(port_info.port_num);
+    if (phy_port != -1) {
+        ret = sdk::platform::xcvr_get(phy_port - 1, &port_info.xcvr_event_info);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to get xcvr for port %u, err %u",
+                          phy_port, ret);
+        }
+    }
+    // TODO: @akoradha port_args is exposed all the way to the agent
+    //       with the current design, we should create port_spec_t,
+    //       port_status_t and port_stats_t like any other object or
+    //       better approach is to fold all the port stuff into if_entry
+    //       and CLIs etc. will naturally work with current db walks etc.
+    //       we have all eth ports in if db already. with port_args_t
+    //       going directly upto agent svc layer, there is no way to send uuid
+    //       now, so hijacking this pointer field
+    port_info.port_an_args = (port_an_args_t *)&key;
+    cb_ctxt->port_get_cb(&port_info, cb_ctxt->ctxt);
+    return false;
+}
+
+/**
+ * @brief    get port information based on port number
+ * @param[in]    key         key/uuid of the port or k_pds_obj_key_invalid for
+ *                           all ports
+ * @param[in]    port_get_cb callback invoked per port
+ * @param[in]    ctxt        opaque context passed back to the callback
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+port_get (const pds_obj_key_t *key, port_get_cb_t port_get_cb, void *ctxt)
+{
+    if_entry *intf;
+    port_get_cb_ctxt_t cb_ctxt;
+
+    cb_ctxt.ctxt = ctxt;
+    cb_ctxt.port_get_cb = port_get_cb;
+    if (*key == k_pds_obj_key_invalid) {
+        if_db()->walk(IF_TYPE_ETH, if_walk_port_get_cb, &cb_ctxt);
+    } else {
+        intf = if_db()->find(key);
+        if (intf == NULL)  {
+            PDS_TRACE_ERR("Port %s not found", key->str());
+            return SDK_RET_INVALID_OP;
+        }
+        if_walk_port_get_cb(intf, &cb_ctxt);
+    }
+    return SDK_RET_OK;
+}
+
+// @brief    get port information based on ifindex
+// @param[in]    key         ifindex of the port or 0 for all ports
+// @param[in]    port_get_cb callback invoked per port
+// @param[in]    ctxt        opaque context passed back to the callback
+// @return    SDK_RET_OK on success, failure status code on error
+sdk_ret_t
+port_get (const if_index_t *key, port_get_cb_t port_get_cb, void *ctxt)
+{
+    if_entry *intf;
+    api::port_get_cb_ctxt_t cb_ctxt;
+
+    cb_ctxt.ctxt = ctxt;
+    cb_ctxt.port_get_cb = port_get_cb;
+    if (*key == IFINDEX_INVALID) {
+        if_db()->walk(IF_TYPE_ETH, if_walk_port_get_cb, &cb_ctxt);
+    } else {
+        intf = if_db()->find(key);
+        if (intf == NULL)  {
+            PDS_TRACE_ERR("Port 0x%x not found", *key);
+            return SDK_RET_INVALID_OP;
+        }
+        if_walk_port_get_cb(intf, &cb_ctxt);
+    }
+    return SDK_RET_OK;
+}
+
 static bool
 if_walk_port_stats_reset_cb (void *entry, void *ctxt)
 {
@@ -282,38 +533,6 @@ port_stats_reset (const pds_obj_key_t *key)
         if_walk_port_stats_reset_cb(intf, NULL);
     }
     return SDK_RET_OK;
-}
-
-sdk_ret_t
-port_update (pds_if_spec_t *spec,
-             pds_batch_ctxt_t bctxt)
-{
-    sdk_ret_t ret;
-    pds_if_info_t info;
-
-    if (pds_if_read(&spec->key, &info) != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to update port %s, port not found",
-                      spec->key.str());
-        return sdk::SDK_RET_ENTRY_NOT_FOUND;
-    }
-    if ((ret = pds_if_update(spec, bctxt)) != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to port %s, err %u",
-                      spec->key.str(), ret);
-        return ret;
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-port_get (pds_obj_key_t *key, pds_if_info_t *info)
-{
-    return pds_if_read(key, info);
-}
-
-sdk_ret_t
-port_get_all (if_read_cb_t cb, void *ctxt)
-{
-    return pds_if_read_all(cb, ctxt);
 }
 
 }    // namespace api

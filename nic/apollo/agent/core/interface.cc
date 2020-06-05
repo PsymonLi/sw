@@ -56,11 +56,10 @@ interface_update (pds_if_spec_t *spec,
         }
     } else if (!agent_state::state()->pds_mock_mode()) {
         pds_if_info_t info;
-        ret = pds_if_read(&spec->key, &info);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to read interface {}, err {}",
-                          spec->key.str(), ret);
-            return ret;
+        if (pds_if_read(&spec->key, &info) != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to update interface {}, interface not found",
+                          spec->key.str());
+            return sdk::SDK_RET_ENTRY_EXISTS;
         }
         if ((ret = pds_if_update(spec, bctxt)) != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to update interface {}, err {}",

@@ -11,7 +11,6 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/linkmgr/port.hpp"
-#include "nic/sdk/platform/drivers/xcvr.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
@@ -20,8 +19,6 @@
 #include "nic/apollo/api/if.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
-#include "nic/apollo/api/internal/metrics.hpp"
-#include "nic/apollo/api/utils.hpp"
 
 using sdk::lib::catalog;
 
@@ -90,9 +87,6 @@ if_entry::clone(api_ctxt_t *api_ctxt) {
         if (unlikely(cloned_if->impl_ == NULL)) {
             PDS_TRACE_ERR("Failed to clone intf %s impl", key_.str());
             goto error;
-        }
-        if (type() == IF_TYPE_ETH) {
-            cloned_if->set_port_info(port_info());
         }
     }
     return cloned_if;
@@ -183,10 +177,6 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
          if_info_.control_.gateway_ = spec->control_if_info.gateway;
          break;
 
-    case IF_TYPE_ETH:
-         ifindex_ = api::objid_from_uuid(key_);
-         break;
-
     case IF_TYPE_NONE:
         break;
 
@@ -198,45 +188,7 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
 }
 
 sdk_ret_t
-if_entry::port_create_(pds_if_spec_t *spec) {
-    port_args_t port_args;
-    void *port_info;
-
-    memset(&port_args, 0, sizeof(port_args_t));
-    port_api_spec_to_args_(&port_args, spec);
-    // sdk port_num is logical port
-    port_args.port_num =
-        sdk::lib::catalog::ifindex_to_logical_port(ifindex());
-    // update port_args based on the xcvr state
-    sdk::linkmgr::port_args_set_by_xcvr_state(&port_args);
-    port_info = sdk::linkmgr::port_create(&port_args);
-    if (port_info == NULL) {
-        PDS_TRACE_ERR("port %u create failed", port_args.port_num);
-        return SDK_RET_ERR;
-    }
-    set_port_info(port_info);
-    // register the stats region with metrics submodule
-    if (port_args.port_type == port_type_t::PORT_TYPE_ETH) {
-        sdk::metrics::row_address(
-            g_pds_state.port_metrics_handle(),
-            *(sdk::metrics::key_t *)key().id,
-            (void *)sdk::linkmgr::port_stats_addr(ifindex()));
-    } else if (port_args.port_type == port_type_t::PORT_TYPE_MGMT) {
-        sdk::metrics::row_address(
-            g_pds_state.mgmt_port_metrics_handle(),
-            *(sdk::metrics::key_t *)key().id,
-            (void *)sdk::linkmgr::port_stats_addr(ifindex()));
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 if_entry::program_create(api_obj_ctxt_t *obj_ctxt) {
-    pds_if_spec_t *spec = &obj_ctxt->api_params->if_spec;
-
-    if (type() == IF_TYPE_ETH) {
-        port_create_(spec);
-    }
     if (impl_) {
         return impl_->program_hw(this, obj_ctxt);
     }
@@ -276,20 +228,6 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
 
 sdk_ret_t
 if_entry::program_update(api_base *orig_obj, api_obj_ctxt_t *obj_ctxt) {
-    port_args_t port_args;
-    pds_if_spec_t *spec;
-
-    if (type() == IF_TYPE_ETH) {
-        memset(&port_args, 0, sizeof(port_args_t));
-        spec = &obj_ctxt->api_params->if_spec;
-        port_api_spec_to_args_(&port_args, spec);
-        // sdk port_num is logical port
-        port_args.port_num =
-            sdk::lib::catalog::ifindex_to_logical_port(ifindex());
-        // update port_args based on the xcvr state
-        sdk::linkmgr::port_args_set_by_xcvr_state(&port_args);
-        return sdk::linkmgr::port_update(port_info(), &port_args);
-    }
     if (impl_) {
         return impl_->update_hw(orig_obj, this, obj_ctxt);
     }
@@ -305,99 +243,8 @@ if_entry::activate_config(pds_epoch_t epoch, api_op_t api_op,
     return SDK_RET_OK;
 }
 
-void
-if_entry::fill_port_if_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
-    spec->port_info.admin_state = port_args->user_admin_state;
-    spec->port_info.type = port_args->port_type;
-    spec->port_info.speed = port_args->port_speed;
-    spec->port_info.fec_type = port_args->user_fec_type;
-    spec->port_info.autoneg_en = port_args->auto_neg_cfg;
-    spec->port_info.debounce_timeout = port_args->debounce_time;
-    spec->port_info.mtu = port_args->mtu;
-    spec->port_info.pause_type = port_args->pause;
-    spec->port_info.tx_pause_en = port_args->tx_pause_enable;
-    spec->port_info.rx_pause_en = port_args->rx_pause_enable;
-    spec->port_info.loopback_mode = port_args->loopback_mode;
-    spec->port_info.num_lanes = port_args->num_lanes_cfg;
-}
-
-void
-if_entry::fill_port_if_status_(pds_if_status_t *status,
-                               port_args_t *port_args) {
-    status->port_status.link_status.oper_state = port_args->oper_status;
-    status->port_status.link_status.speed = port_args->port_speed;
-    status->port_status.link_status.autoneg_en = port_args->auto_neg_enable;
-    status->port_status.link_status.num_lanes = port_args->num_lanes;
-    status->port_status.link_status.fec_type = port_args->fec_type;
-
-    status->port_status.xcvr_status.port = port_args->xcvr_event_info.phy_port;
-    status->port_status.xcvr_status.state = port_args->xcvr_event_info.state;
-    status->port_status.xcvr_status.pid = port_args->xcvr_event_info.pid;
-    status->port_status.xcvr_status.media_type =
-        port_args->xcvr_event_info.cable_type;
-    memcpy(status->port_status.xcvr_status.xcvr_sprom,
-           port_args->xcvr_event_info.xcvr_sprom,
-           sizeof(uint8_t) * XCVR_SPROM_SIZE);
-
-    status->port_status.fsm_state = port_args->link_sm;
-    status->port_status.mac_id = port_args->mac_id;
-    status->port_status.mac_ch = port_args->mac_ch;
-    status->port_status.sm_logger = port_args->sm_logger;
-}
-
-void
-if_entry::fill_port_if_stats_(pds_if_stats_t *stats, port_args_t *port_args) {
-    memcpy(stats->port_stats.stats, port_args->stats_data,
-           sizeof(uint64_t) * MAX_MAC_STATS);
-    stats->port_stats.num_linkdown = port_args->num_link_down;
-}
-
-void
-if_entry::port_api_spec_to_args_(port_args_t *port_args,
-                                 pds_if_spec_t *spec) {
-    port_args->port_num = sdk::lib::catalog::ifindex_to_logical_port(ifindex());
-    port_args->admin_state = spec->port_info.admin_state;
-    port_args->port_type = spec->port_info.type;
-    port_args->port_speed = spec->port_info.speed;
-    port_args->fec_type = spec->port_info.fec_type;
-    port_args->auto_neg_enable = spec->port_info.autoneg_en;
-    port_args->debounce_time = spec->port_info.debounce_timeout;
-    port_args->mtu = spec->port_info.mtu;
-    port_args->pause = spec->port_info.pause_type;
-    port_args->tx_pause_enable = spec->port_info.tx_pause_en;
-    port_args->rx_pause_enable = spec->port_info.rx_pause_en;
-    port_args->loopback_mode = spec->port_info.loopback_mode;
-    port_args->num_lanes = spec->port_info.num_lanes;
-
-    // invoke after populating port_args from spec
-    sdk::linkmgr::port_store_user_config(port_args);
-}
-
 sdk_ret_t
-if_entry::port_get_(port_args_t *port_args) {
-    sdk_ret_t ret;
-    int phy_port;
-
-    ret = sdk::linkmgr::port_get(port_info(), port_args);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to get port 0x%s info, err %u", key().str(), ret);
-        return ret;
-    }
-    phy_port = sdk::lib::catalog::ifindex_to_phy_port(ifindex());
-    if (phy_port != -1) {
-        ret = sdk::platform::xcvr_get(phy_port - 1,
-                                      &port_args->xcvr_event_info);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to get xcvr for phy port %u, err %u",
-                          phy_port, ret);
-            return ret;
-        }
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-if_entry::fill_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
+if_entry::fill_spec_(pds_if_spec_t *spec) {
     memcpy(&spec->key, &key_, sizeof(key_));
     spec->type = type_;
     spec->admin_state = admin_state_;
@@ -421,7 +268,6 @@ if_entry::fill_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
         spec->control_if_info.gateway = if_info_.control_.gateway_;
         break;
     case IF_TYPE_ETH:
-        fill_port_if_spec_(spec, port_args);
         break;
     default:
         return SDK_RET_ERR;
@@ -473,59 +319,14 @@ if_entry::port_type(void) {
 }
 
 sdk_ret_t
-if_entry::fill_status_(pds_if_status_t *status, port_args_t *port_args) {
-    status->state = this->state();
-    status->ifindex = ifindex();
-
-    switch (type()) {
-    case IF_TYPE_ETH:
-        fill_port_if_status_(status, port_args);
-        break;
-    default:
-        break;
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-if_entry::fill_stats_(pds_if_stats_t *stats, port_args_t *port_args) {
-    switch (type()) {
-    case IF_TYPE_ETH:
-        fill_port_if_stats_(stats, port_args);
-        break;
-    default:
-        break;
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 if_entry::read(pds_if_info_t *info) {
     sdk_ret_t ret;
-    port_args_t port_args = { 0 };
-    uint64_t stats[MAX_MAC_STATS];
 
-    if (type() == IF_TYPE_ETH) {
-        port_args.stats_data = stats;
-        ret = port_get_(&port_args);
-        if(ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to get port info for %s, err %u",
-                          eth_ifindex_to_str(ifindex()).c_str(), ret);
-            return ret;
-        }
-    }
-    ret = fill_spec_(&info->spec, &port_args);
+    ret = fill_spec_(&info->spec);
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    ret = fill_status_(&info->status, &port_args);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-    ret = fill_stats_(&info->stats, &port_args);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
+    info->status.state = this->state();
     if (impl_) {
         return impl_->read_hw(this, (impl::obj_key_t *)(&info->spec.key),
                               (impl::obj_info_t *)info);
