@@ -1,0 +1,91 @@
+//--------------------------------------------------------------------
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// protobuf specification for session information that's synched from 
+// one version of vpp to another
+//--------------------------------------------------------------------
+
+syntax = "proto3";
+package sess_sync;
+
+// Corresponds to pds_flow_state
+enum FlowState {
+  FLOW_STATE_NONE            = 0;
+  FLOW_STATE_INIT            = 1;
+  FLOW_STATE_SETUP           = 2;
+  FLOW_STATE_ESTABLISHED     = 3;
+  FLOW_STATE_KEEPALIVE       = 4;
+  FLOW_STATE_HALFCLOSE_IFLOW = 5;
+  FLOW_STATE_HALFCLOSE_RFLOW = 6;
+  FLOW_STATE_CLOSE           = 7;
+}
+
+// Corresponds to pds_flow_pkt_sub_type
+enum FlowSubType {
+  FLOW_TYPE_NONE                            = 0;
+  FLOW_TYPE_L2L_INTRA_SUBNET                = 1;
+  FLOW_TYPE_L2L_INTER_SUBNET                = 2;
+  FLOW_TYPE_L2R_INTRA_SUBNET                = 3;
+  FLOW_TYPE_L2R_INTER_SUBNET                = 4;
+  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE            = 5;
+  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE_NAPT       = 6;
+  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE_NAT        = 7;
+  FLOW_TYPE_L2N_SYMMETRIC_ROUTE             = 8;
+  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_NAPT        = 9;
+  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_NAT         = 10;
+  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_TWICE_NAT   = 11;
+  FLOW_TYPE_L2N_INTRA_VCN_ROUTE             = 12;
+  FLOW_TYPE_R2L_INTRA_SUBNET                = 13;
+  FLOW_TYPE_R2L_INTER_SUBNET                = 14;
+  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE            = 15;
+  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE_NAT        = 16;
+  FLOW_TYPE_N2L_SYMMETRIC_ROUTE             = 17;
+  FLOW_TYPE_N2L_SYMMETRIC_ROUTE_NAT         = 18;
+  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE_SVC_NAT    = 19;
+  FLOW_TYPE_N2L_SYMMETRIC_ROUTE_SVC_NAT     = 20;
+  FLOW_TYPE_N2L_INTRA_VCN_ROUTE             = 21;
+}
+
+// NAT or other Services
+// TBD: How do we create tx_xlate_id, tx_xlate_id2,
+//      rx_xlate_id and rx_xlate_id2 in Domain 'B'
+enum FlowSvc {
+  FLOW_SVC_NONE        = 0;
+  FLOW_SVC_NAPT        = 1;
+  FLOW_SVC_STATIC_NAT  = 2;
+  FLOW_SVC_NAT44       = 3;
+  FLOW_SVC_NAT_SVC_MAP = 4;
+}
+
+message SessV4Info {
+  uint32      Id                         = 1;
+  uint32      Proto                      = 2;
+  FlowState   State                      = 3;
+  FlowSubType Subtype                    = 4;
+  FlowSvc     SvcType                    = 5;
+  uint32      VnicId                     = 6;
+  bool        TwiceNAT                   = 7;
+  bool        IsLocalToLocal             = 8;
+  bool        IsMissHit                  = 9;
+  bool        IsFlowDrop                 = 10;
+  uint32      IngressBD                  = 11;
+  uint32      InitiatorFlowSrcIp         = 12;
+  uint32      InitiatorFlowDstIp         = 13;
+  uint32      InitiatorFlowSrcPort       = 14;
+  uint32      InitiatorFlowDstPort       = 15;
+  uint32      InitiatorFlowNhId          = 16;
+  uint32      InitiatorFlowNhType        = 17;
+  uint32      InitiatorFlowNhValid       = 18;
+  uint32      InitiatorFlowPriority      = 19;
+  uint32      EgressBD                   = 20;
+  uint32      ResponderFlowSrcIp         = 21;
+  uint32      ResponderFlowDstIp         = 22;
+  uint32      ResponderFlowSrcPort       = 23;
+  uint32      ResponderFlowDstPort       = 24;
+  uint32      ResponderFlowNhId          = 25;
+  uint32      ResponderFlowNhType        = 26;
+  uint32      ResponderFlowNhValid       = 27;
+  uint32      ResponderFlowPriority      = 28;
+  bool        IsInitiatorFlowRx          = 29;
+}
+

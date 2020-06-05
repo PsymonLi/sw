@@ -5,6 +5,7 @@
 #include <vnet/buffer.h>
 #include <pkt.h>
 #include <session.h>
+#include <sess_restore.h>
 #include "log.h"
 #include "node.h"
 #include <flow.h>
@@ -1914,7 +1915,7 @@ pds_session_v4_send_cb (uint8_t *data, uint8_t *len, void *opaq)
     pds_flow_hw_ctx_t *hw_ctx = iter->ctx;
     sess_info_t sess;
 
-    sess.session_id = iter->read_index + 1;
+    sess.id = iter->read_index + 1;
     sess.v4 = hw_ctx->v4;
     sess.flow_state = pds_encode_flowstate(hw_ctx->flow_state);
     sess.iflow_handle = hw_ctx->iflow.handle;
@@ -1975,7 +1976,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
 
     for (u32 i = 0; i < sess_info_cache_batch_get_count(thread_id); i++) {
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(i, thread_id);
-        ctx = pds_flow_get_hw_ctx(sess->session_id);
+        ctx = pds_flow_get_hw_ctx(sess->id);
 
         switch (ctx->flow_state) {
             case PDS_FLOW_STATE_CONN_SETUP:
@@ -2010,7 +2011,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
         }
         ctx->timer_hdl = tw_timer_start_16t_1w_2048sl(
             &fm->timer_wheel[sess->thread_id],
-            sess->session_id,
+            sess->id,
             timer, timeout);
     }
 }
@@ -2109,7 +2110,7 @@ pds_session_v4_walk_cb (uint8_t *data, uint8_t *len, void *opaq)
         if (hw_ctx->is_in_use && (hw_ctx->v4 == iter->v4)) {
             sess_info_t sess;
 
-            sess.session_id = iter->read_index + 1;
+            sess.id = iter->read_index + 1;
             sess.proto = hw_ctx->proto;
             sess.v4 = hw_ctx->v4;
             sess.flow_state = hw_ctx->flow_state;

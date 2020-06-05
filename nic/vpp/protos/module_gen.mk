@@ -1,7 +1,7 @@
-# {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+# {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 include ${MKDEFS}/pre.mk
-MODULE_TARGET       = vppinternal.proto
+MODULE_TARGET       = sess_sync.proto
 MODULE_PIPELINE     = apulu apollo artemis
 MODULE_GEN_TYPES    = PY CC
 MODULE_INCS         = ${MODULE_DIR} \

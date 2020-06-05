@@ -52,23 +52,6 @@ typedef struct pds_session_stats {
     uint64_t rflow_packets_count;
 } pds_session_stats_t;
 
-typedef struct sess_info_ {
-    uint32_t session_id;
-    uint8_t proto;
-    uint8_t thread_id;
-    uint16_t ingress_bd;
-    uint32_t v4 : 1;
-    uint32_t flow_state : 3;
-    uint32_t packet_type : 5;
-    uint32_t iflow_rx : 1;
-    uint32_t nat : 1;
-    uint32_t drop : 1;
-    uint32_t vnic_id : 7;
-    uint64_t iflow_handle;
-    uint64_t rflow_handle;
-    void *flow_table;
-} sess_info_t;
-
 void set_skip_session_program(int val);
 
 int initialize_session(void);
@@ -81,12 +64,6 @@ void session_get_addr(uint32_t ses_id, uint8_t **ses_addr,
                       uint32_t *entry_size);
 
 int pds_session_program(uint32_t ses_id, void *action);
-bool pds_decode_one_v4_session(const uint8_t *data, const uint8_t len,
-                               sess_info_t *sess,
-                               const uint16_t thread_index);
-void pds_encode_one_v4_session(uint8_t *data, uint8_t *len,
-                               sess_info_t *sess,
-                               const uint16_t thread_index);
 
 uint64_t pds_session_get_timestamp(uint32_t session_id);
 
@@ -115,19 +92,6 @@ bool pds_session_get_xlate_ids(uint32_t ses, uint16_t *rx_xlate_id,
 
 int pds_session_update_rewrite_flags(uint32_t session_id, uint16_t tx_rewrite,
                                      uint16_t rx_rewrite);
-
-void sess_info_cache_batch_init (uint16_t thread_id);
-
-sess_info_t *sess_info_cache_batch_get_entry(uint16_t thread_id);
-
-sess_info_t *sess_info_cache_batch_get_entry_index(int index,
-                                                   uint16_t thread_id);
-
-int sess_info_cache_batch_get_count(uint16_t thread_id);
-
-void sess_info_cache_advance_count(int val, uint16_t thread_id);
-
-bool sess_info_cache_full(uint16_t thread_id);
 
 #ifdef __cplusplus
 }

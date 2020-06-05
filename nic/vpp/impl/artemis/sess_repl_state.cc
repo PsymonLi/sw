@@ -2,9 +2,9 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 
-#include <session_internal.pb.h>
+#include <sess_sync.pb.h>
 #include <ftl_wrapper.h>
-#include "session.h"
+#include "sess_restore.h"
 
 bool
 pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,

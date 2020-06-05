@@ -1424,7 +1424,7 @@ pds_program_cached_sessions(void)
         struct session_info_entry_t actiondata = {0};
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(j,
                                                                   thread_index);
-        u32 session_index = sess->session_id;
+        u32 session_index = sess->id;
         pds_impl_db_vnic_entry_t *vnic;
         pds_flow_hw_ctx_t *ctx;
         int ret;

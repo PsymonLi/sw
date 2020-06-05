@@ -1,7 +1,7 @@
 # {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 include ${MKDEFS}/pre.mk
-MODULE_TARGET        = libvppinternalproto.lib
+MODULE_TARGET        = libsess_syncproto.lib
 MODULE_PIPELINE      = apulu apollo artemis
 MODULE_INCS          = /usr/local/include \
                        ${TOPDIR}/nic/hal/third-party/google/include \
