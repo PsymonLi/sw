@@ -12,7 +12,7 @@
   </div>
   <div fxFlex="10px"></div>
   <button pButton type="button" fxFlex="none" *ngIf="showAdd()" (click)="onClickAdd()"
-          class="listcontainer-add-icon">
+          class="listcontainer-add-icon" [matTooltip]="addButtonTooltip">
     <mat-icon>add</mat-icon><span>{{ addText }}</span>
   </button>
 </div>

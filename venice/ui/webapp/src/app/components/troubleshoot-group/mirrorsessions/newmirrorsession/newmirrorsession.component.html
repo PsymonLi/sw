@@ -150,6 +150,7 @@
       <app-listcontainer
                          [formGroup]="newObject.$formGroup.get(['spec', 'interfaces', 'selectors', 0, 'requirements'])"
                          [itemTemplate]="interfaceRowTemplate" (addItem)="addInterfaceSelector()"
+                         addText="AND" [addButtonTooltip]="AND_BUTTON_TOOLTIP"
                          (deleteItem)="removeInterfaceSelector($event)">
       </app-listcontainer>
     </div>
@@ -157,8 +158,9 @@
          *ngIf="getAllInterfaceSelectorsValues()">
       <ng-container *ngIf="getLabelMatchInfo() as labelMatchInfo">
         <span class="newmirrorsession-label-match-tooltip"
-              [title]="labelMatchInfo.title">{{ labelMatchInfo.count }}</span> Uplink Interfaces
-        matched.
+              [matTooltipClass]="'newmirrorsession-label-match-tooltip-tooltip'"
+              [matTooltip]="labelMatchInfo.title">{{ labelMatchInfo.count }} Uplink Interfaces
+          matched.</span>
       </ng-container>
     </div>
   </app-fieldcontainer>
@@ -171,7 +173,8 @@
         'selectboxWithValue': true,
         'requiredField': isFieldEmpty(selector.get(['key']))
     }">
-      <p-dropdown formControlName="key" appFloatLabel="Label Key" editable="true" appendTo="body"
+      <p-dropdown formControlName="key" appFloatLabel="Label Key" editable="true"
+                  appendTo="body" [appErrorTooltip]="LABELKEY_TOOLTIP"
                   class="newmirrorsession-interface-selectbox" [options]="labelKeyOptions"
                   (onChange)="onInterfaceKeyChange(selector)">
         <ng-template let-item pTemplate="item">
@@ -207,6 +210,7 @@
       <p-multiSelect appFloatLabel="Label Values" appendTo="body"
                      formControlName="values" class="newmirrorsession-interface-selectbox"
                      [options]="labelValueOptions || []"
+                     [appErrorTooltip]="LABELVALUES_SELECT_TOOLTIP"
                      [filter]="false" [showHeader]="false" [showToggleAll]="false">
       </p-multiSelect>
     </span>

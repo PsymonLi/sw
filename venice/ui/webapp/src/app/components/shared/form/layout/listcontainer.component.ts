@@ -12,6 +12,7 @@ import { Animations } from '@app/animations';
 
 export class ListContainerComponent {
   @Input() addText: string = 'ADD';
+  @Input() addButtonTooltip: string = '';
   @Input() formGroup: FormGroup = null;
   @Input() maxiumCount: number = -1;
   @Input() rowGap: string = '15px';

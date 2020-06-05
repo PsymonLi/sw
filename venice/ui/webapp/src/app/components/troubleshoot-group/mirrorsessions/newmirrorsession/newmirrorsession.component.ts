@@ -55,7 +55,11 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   PROTS_TOOLTIP: string = 'Type in valid layer3 or layer 4 protocol and protocol/port, ' +
     'hit enter or space key to add more. Port can be individual or range.' +
     'for example: icmp, any/2345, tcp/60001-60100...';
-  LABELVALUES_TOOLTIP: string = 'Type in label values and hit enter or space key to add more.';
+  LABEL_HELP: string = ' To create a new uplink interface, please go to the Networks Overview page to select uplink interfaces and create labels. These labels will be used to reference their respective network interfaces.';
+  LABELVALUES_TOOLTIP: string = 'Type in uplink interface label values. Press enter or space key to add multiple values.' + this.LABEL_HELP;
+  LABELVALUES_SELECT_TOOLTIP: string = 'Select uplink interface label values.' + this.LABEL_HELP;
+  LABELKEY_TOOLTIP: string = 'Type in or select an uplink interface label key.' + this.LABEL_HELP;
+  AND_BUTTON_TOOLTIP: string = 'Refine the uplink interface selection by adding a new selector using the "and" operation.';
 
   minDate: Date = Utility.convertLocalTimeToUTCTime(new Date());
   defaultDate: Date = Utility.convertLocalTimeToUTCTime(new Date());
