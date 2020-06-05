@@ -260,6 +260,25 @@
               </div>
             </div>
             -->
+            <div fxFlex="none" fxLayout="row"
+                 *ngIf="networkInterfaces && networkInterfaces.length > 0">
+              <!-- Field titles -->
+              <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
+                <div class="naplesdetail-node-fieldtitle" fxFlex="30px" fxLayout="row"
+                     fxLayoutAlign="start center">
+                  <div>Interfaces:</div>
+                </div>
+              </div>
+              <div fxFlex="40px"></div>
+              <!-- Values -->
+              <div class="naplesdetail-interfaces-container" fxFlex="200px">
+                <a routerLink="/cluster/networkinterfaces"
+                   matTooltip="View all network interfaces of this DSC in the Network Interfaces Overview page."
+                   [queryParams]="{filter: selectedObj.spec.id || selectedObj.meta.name}">
+                  {{ networkInterfaces.length }} Interfaces
+                </a>
+              </div>
+            </div>
             <div fxFlex="none" fxLayout="row" *featureGuard="'enterprise'">
               <!-- Field titles -->
               <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
