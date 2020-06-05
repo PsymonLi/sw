@@ -1249,6 +1249,11 @@ func (cl *clusterHooks) restoreErspanConfig(kvs kvstore.Interface, logger log.Lo
 	for _, m := range pl.Items {
 		update := false
 		for i := range m.Spec.Collectors {
+			if m.Spec.SpanID == 0 {
+				logger.Infof("update erspan spanID to 1 in %v", m.GetName())
+				m.Spec.SpanID = 1
+				update = true
+			}
 			if m.Spec.Collectors[i].Type == monitoring.PacketCollectorType_ERSPAN.String() {
 				// set new default
 				m.Spec.Collectors[i].Type = monitoring.PacketCollectorType_ERSPAN_TYPE_3.String()
@@ -1260,7 +1265,7 @@ func (cl *clusterHooks) restoreErspanConfig(kvs kvstore.Interface, logger log.Lo
 			logger.Infof("update erspan type in %v", m.GetName())
 			k := m.MakeKey(string(apiclient.GroupMonitoring))
 			if err := kvs.Update(context.Background(), k, m); err != nil {
-				logger.Errorf("failed to update erspan type in %v, error %v", m.GetName(), err)
+				logger.Errorf("failed to update erspan spec in %v, error %v", m.GetName(), err)
 			}
 		}
 	}
