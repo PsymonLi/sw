@@ -1,6 +1,5 @@
 
 App AppApiV1 V1 
-Collector CollectorApiV1 V1 
 Endpoint EndpointApiV1 V1 
 FlowExportPolicy FlowExportPolicyApiV2 V2 
 IPAMPolicy IPAMPolicyApiV1 V1 

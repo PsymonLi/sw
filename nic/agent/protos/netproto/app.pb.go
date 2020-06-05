@@ -7,7 +7,6 @@
 	It is generated from these files:
 		app.proto
 		agg_watch.proto
-		collector.proto
 		endpoint.proto
 		flowexport.proto
 		interface.proto
@@ -45,12 +44,6 @@
 		AggObjectList
 		AggObjectEvent
 		AggObjectEventList
-		Collector
-		CollectorSpec
-		CollectorStatus
-		CollectorList
-		CollectorEvent
-		CollectorEventList
 		Endpoint
 		EndpointSpec
 		EndpointStatus

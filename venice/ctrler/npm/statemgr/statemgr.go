@@ -67,7 +67,6 @@ type Topics struct {
 	SecurityProfileTopic       *nimbus.SecurityProfileTopic
 	NetworkSecurityPolicyTopic *nimbus.NetworkSecurityPolicyTopic
 	NetworkInterfaceTopic      *nimbus.InterfaceTopic
-	CollectorTopic             *nimbus.CollectorTopic
 	AggregateTopic             *nimbus.AggregateTopic
 	IPAMPolicyTopic            *nimbus.IPAMPolicyTopic
 	RoutingConfigTopic         *nimbus.RoutingConfigTopic
@@ -117,7 +116,6 @@ type Statemgr struct {
 	IPAMPolicyStatusReactor            nimbus.IPAMPolicyStatusReactor
 	AggregateStatusReactor             nimbus.AggStatusReactor
 	RoutingConfigStatusReactor         nimbus.RoutingConfigStatusReactor
-	CollectorStatusReactor             nimbus.CollectorStatusReactor
 	ProfileStatusReactor               nimbus.ProfileStatusReactor
 }
 
@@ -134,11 +132,6 @@ func (sm *Statemgr) SetSecurityProfileStatusReactor(handler nimbus.SecurityProfi
 // SetNetworkInterfaceStatusReactor sets the InterfaceStatusReactor
 func (sm *Statemgr) SetNetworkInterfaceStatusReactor(handler nimbus.InterfaceStatusReactor) {
 	sm.NetworkInterfaceStatusReactor = handler
-}
-
-// SetCollectorStatusReactor sets the CollectorStatusReactor
-func (sm *Statemgr) SetCollectorStatusReactor(handler nimbus.CollectorStatusReactor) {
-	sm.CollectorStatusReactor = handler
 }
 
 // SetAppStatusReactor sets the AppStatusReactor
@@ -622,12 +615,6 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		return err
 	}
 
-	sm.topics.CollectorTopic, err = nimbus.AddCollectorTopic(mserver, sm.CollectorStatusReactor)
-	if err != nil {
-		log.Errorf("Error starting collector interface RPC server")
-		return err
-	}
-
 	sm.topics.IPAMPolicyTopic, err = nimbus.AddIPAMPolicyTopic(mserver, sm.IPAMPolicyStatusReactor)
 	if err != nil {
 		log.Errorf("Error starting network interface RPC server: %v", err)
@@ -657,7 +644,6 @@ func (sm *Statemgr) registerKindsWithMbus() {
 	sm.mbus.RegisterKind("SecurityGroup")
 	sm.mbus.RegisterKind("NetworkSecurityPolicy")
 	sm.mbus.RegisterKind("NetworkInterface")
-	sm.mbus.RegisterKind("Collector")
 	sm.mbus.RegisterKind("InterfaceMirrorSession")
 	sm.mbus.RegisterKind("Profile")
 	sm.mbus.RegisterKind("MirrorSession")

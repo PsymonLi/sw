@@ -1688,11 +1688,6 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 	return
 }
 
-// HandleCollector handles CRUD Methods for Collector Object
-func (i *IrisAPI) HandleCollector(oper types.Operation, col netproto.Collector) (cols []netproto.Collector, err error) {
-	return nil, types.ErrNotImplemented
-}
-
 // HandleIPAMPolicy handles CRUD methods for IPAMPolicy
 func (i *IrisAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IPAMPolicy) (policies []netproto.IPAMPolicy, err error) {
 	return nil, types.ErrNotImplemented

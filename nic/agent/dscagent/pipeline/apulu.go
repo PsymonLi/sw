@@ -2070,11 +2070,6 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 	return nil
 }
 
-// HandleCollector handles CRUD Methods for Collector Object
-func (a *ApuluAPI) HandleCollector(oper types.Operation, col netproto.Collector) (cols []netproto.Collector, err error) {
-	return nil, nil
-}
-
 // TODO Move this into InfraAPI to avoid code duplication
 func (a *ApuluAPI) startDynamicWatch(kinds []string) {
 	log.Infof("Starting Dynamic Watches for kinds: %v", kinds)

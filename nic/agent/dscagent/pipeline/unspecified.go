@@ -1759,11 +1759,6 @@ func (i *FakeAgentAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardSt
 	return
 }
 
-// HandleCollector handles CRUD Methods for Collector Object
-func (i *FakeAgentAPI) HandleCollector(oper types.Operation, col netproto.Collector) (cols []netproto.Collector, err error) {
-	return nil, nil
-}
-
 // HandletechSupport stubbed out
 func (i *FakeAgentAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, error) {
 	return "", errors.Wrapf(types.ErrNotImplemented, "Handle Tech Support not implemented by Iris Pipeline")
