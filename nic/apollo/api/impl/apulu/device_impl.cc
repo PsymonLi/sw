@@ -309,7 +309,22 @@ device_impl::fill_egr_drop_stats_(pds_device_drop_stats_t *egr_drop_stats) {
         "tcp_invalid_responder_first_pkt",
         "tcp_data_after_fin",
         "mac_ip_binding_fail",
-        "copp",
+        "copp0",
+        "copp1",
+        "copp2",
+        "copp3",
+        "copp4",
+        "copp5",
+        "copp6",
+        "copp7",
+        "copp8",
+        "copp9",
+        "copp10",
+        "copp11",
+        "copp12",
+        "copp13",
+        "copp14",
+        "copp15",
     };
 
     SDK_ASSERT(sizeof(edrop)/sizeof(edrop[0]) == (P4E_DROP_REASON_MAX + 1));

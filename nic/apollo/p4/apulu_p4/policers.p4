@@ -72,7 +72,7 @@ table vnic_policer_rx {
 action copp(entry_valid, pkt_rate, rlimit_en, rlimit_prof,
             color_aware, rsvd, axi_wr_pend, burst, rate, tbkt) {
     if ((entry_valid == TRUE) and ((tbkt >> 39) == 1)) {
-        egress_drop(P4E_DROP_COPP);
+        egress_drop(P4E_DROP_COPP_MIN + p4e_i2e.copp_class);
     }
 
     modify_field(scratch_metadata.policer_valid, entry_valid);

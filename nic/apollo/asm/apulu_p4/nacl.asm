@@ -20,8 +20,9 @@ nacl_redirect:
     phvwr           p.p4i_i2e_nexthop_type, d.u.nacl_redirect_d.nexthop_type
     phvwr           p.p4i_i2e_nexthop_id, d.u.nacl_redirect_d.nexthop_id
     b               nacl_redirect2
-    phvwr           p.p4i_i2e_copp_policer_id, \
-                        d.u.nacl_redirect_d.copp_policer_id
+    phvwrpair       p.p4i_i2e_copp_policer_id, \
+                        d.u.nacl_redirect_d.copp_policer_id, \
+                        p.p4i_i2e_copp_class, d.u.nacl_redirect_d.copp_class
 nacl_redirect_from_arm:
     phvwr           p.p4i_i2e_nexthop_type, k.arm_to_p4i_nexthop_type
     phvwr           p.p4i_i2e_nexthop_id, k.arm_to_p4i_nexthop_id
@@ -35,8 +36,10 @@ nacl_redirect2:
 nacl_redirect_to_arm:
     phvwr           p.p4i_i2e_nexthop_type, \
                         d.u.nacl_redirect_to_arm_d.nexthop_type
-    phvwr           p.p4i_i2e_copp_policer_id, \
-                        d.u.nacl_redirect_to_arm_d.copp_policer_id
+    phvwrpair       p.p4i_i2e_copp_policer_id, \
+                        d.u.nacl_redirect_to_arm_d.copp_policer_id, \
+                        p.p4i_i2e_copp_class, \
+                        d.u.nacl_redirect_to_arm_d.copp_class
     phvwr           p.p4i_to_arm_nacl_data, d.u.nacl_redirect_to_arm_d.data
     phvwr.e         p.p4i_i2e_nexthop_id, d.u.nacl_redirect_to_arm_d.nexthop_id
     phvwr.f         p.control_metadata_redirect_to_arm, TRUE

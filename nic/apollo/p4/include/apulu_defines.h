@@ -55,8 +55,9 @@
 #define P4E_DROP_TCP_INVALID_RESPONDER_FIRST_PKT    10
 #define P4E_DROP_TCP_DATA_AFTER_FIN                 11
 #define P4E_DROP_MAC_IP_BINDING_FAIL                12
-#define P4E_DROP_COPP                               13
-#define P4E_DROP_REASON_MAX                         P4E_DROP_COPP
+#define P4E_DROP_COPP_MIN                           13
+#define P4E_DROP_COPP_MAX                           28
+#define P4E_DROP_REASON_MAX                         P4E_DROP_COPP_MAX
 
 /*****************************************************************************/
 /* nexthop types                                                            */
@@ -272,7 +273,7 @@
 /* Header sizes                                                              */
 /*****************************************************************************/
 #define APULU_P4I_TO_RXDMA_HDR_SZ       52
-#define APULU_I2E_HDR_SZ                42
+#define APULU_I2E_HDR_SZ                43
 #define APULU_P4_TO_ARM_HDR_SZ          52
 #define APULU_ARM_TO_P4_HDR_SZ          11
 

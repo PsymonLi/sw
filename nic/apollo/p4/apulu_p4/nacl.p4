@@ -15,7 +15,7 @@ action nacl_drop(drop_reason_valid, drop_reason) {
     }
 }
 
-action nacl_redirect(nexthop_type, nexthop_id, copp_policer_id) {
+action nacl_redirect(nexthop_type, nexthop_id, copp_policer_id, copp_class) {
     if (arm_to_p4i.nexthop_valid == TRUE) {
         modify_field(p4i_i2e.nexthop_type, arm_to_p4i.nexthop_type);
         modify_field(p4i_i2e.nexthop_id, arm_to_p4i.nexthop_id);
@@ -23,6 +23,7 @@ action nacl_redirect(nexthop_type, nexthop_id, copp_policer_id) {
         modify_field(p4i_i2e.nexthop_type, nexthop_type);
         modify_field(p4i_i2e.nexthop_id, nexthop_id);
         modify_field(p4i_i2e.copp_policer_id, copp_policer_id);
+        modify_field(p4i_i2e.copp_class, copp_class);
     }
 
     modify_field(p4i_i2e.mapping_bypass, TRUE);
@@ -31,10 +32,12 @@ action nacl_redirect(nexthop_type, nexthop_id, copp_policer_id) {
     modify_field(control_metadata.p4i_drop_reason, 0);
 }
 
-action nacl_redirect_to_arm(nexthop_type, nexthop_id, copp_policer_id, data) {
+action nacl_redirect_to_arm(nexthop_type, nexthop_id, copp_policer_id,
+                            copp_class, data) {
     modify_field(p4i_i2e.nexthop_type, nexthop_type);
     modify_field(p4i_i2e.nexthop_id, nexthop_id);
     modify_field(p4i_i2e.copp_policer_id, copp_policer_id);
+    modify_field(p4i_i2e.copp_class, copp_class);
     modify_field(control_metadata.redirect_to_arm, TRUE);
     modify_field(p4i_to_arm.nacl_data, data);
 }

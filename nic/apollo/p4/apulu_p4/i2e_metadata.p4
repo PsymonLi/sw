@@ -25,5 +25,7 @@ header_type apulu_i2e_metadata_t {
         binding_check_drop  : 1;
         skip_stats_update   : 1;
         tx_policer_id       : 10;
+        copp_class          : 4;
+        pad1                : 4;
     }
 }
