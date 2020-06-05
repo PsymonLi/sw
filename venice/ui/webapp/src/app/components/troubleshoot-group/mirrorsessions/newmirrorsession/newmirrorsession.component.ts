@@ -450,9 +450,7 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   }
 
   deleteRule(index) {
-    if (this.rules.length > 1) {
-      this.rules.splice(index, 1);
-    }
+    this.rules.splice(index, 1);
   }
 
   areAllRulesEmpty() {

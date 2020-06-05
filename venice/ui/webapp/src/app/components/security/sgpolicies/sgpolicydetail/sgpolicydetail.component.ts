@@ -26,6 +26,7 @@ import { Animations } from '@app/animations';
 import { TableviewAbstract, TablevieweditHTMLComponent } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Observable } from 'rxjs';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
+import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 
 /**
  * Component for displaying a security policy and providing IP searching
@@ -237,6 +238,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   showReorder: boolean = false;
   reorderToIndex: number = 0;
 
+
+
   constructor(protected _controllerService: ControllerService,
     protected securityService: SecurityService,
     protected searchService: SearchService,
@@ -256,12 +259,30 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
       this.selectedPolicyId = id;
       this.initializeData();
       this.getSGPoliciesDetail();
-      this._controllerService.setToolbarData({
-        buttons: [],
-        breadcrumb: [
-          { label: 'Network Security Policies', url: Utility.getBaseUIUrl() + 'security/sgpolicies' },
-          { label: id, url: Utility.getBaseUIUrl() + 'security/sgpolicies/' + id }]
-      });
+    });
+  }
+
+  /**
+   * Set toolbar
+   * @param id
+   */
+  private setToolbar(id: string) {
+    let buttons = [];
+    if (this.uiconfigsService.isAuthorized(UIRolePermissions.networklbpolicy_update) && this.dataObjects.length === 0) {
+      // Where there is no rule in this policy, we add a toolbar button to let user create a rule.
+      buttons = [{
+        cssClass: 'global-button-primary sgpolicy-toolbar-button sgpolicy-toolbar-button-ADD',
+        text: 'ADD RULE',
+        computeClass: () => (this.shouldEnableButtons) ? '' : 'global-button-disabled',
+        callback: () => { this.onCreate(); }
+      }];
+    }
+    this._controllerService.setToolbarData({
+      buttons: buttons,
+      breadcrumb: [
+        { label: 'Network Security Policies', url: Utility.getBaseUIUrl() + 'security/sgpolicies' },
+        { label: id, url: Utility.getBaseUIUrl() + 'security/sgpolicies/' + id }
+      ]
     });
   }
 
@@ -627,6 +648,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
           this.selectedPolicy = null;
           this.dataObjects = [];
         }
+        // Once receive server update, we update the toolbar.
+        this.setToolbar( this.selectedPolicyId);
       },
       this._controllerService.webSocketErrorHandler('Failed to get SG Policy')
     );
@@ -885,9 +908,18 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
 
   onAdd(rowData, isBefore: boolean = false) {
     this.newRuleIndex = isBefore ? rowData.order : (rowData.order + 1);
+    this.onRuleAddCreateHelper();
+  }
+
+  private onRuleAddCreateHelper() {
     this.editObject = new SecurityNetworkSecurityPolicy(this.selectedPolicy);
     this.editObject.spec.rules = [];
     this.display = true;
+  }
+
+  onCreate() {
+    this.newRuleIndex = 0;
+    this.onRuleAddCreateHelper();
   }
 
   onReorder() {
@@ -917,8 +949,12 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
         message: 'This action cannot be reversed',
         acceptLabel: 'Delete',
         accept: () => {
+          const selectedIdxMap = {};
+          selectedObjs.forEach(item => {
+            selectedIdxMap[item.order] = true;
+          });
           const policy1 = this.selectedPolicy.getFormGroupValues();
-          const rules = policy1.spec.rules.filter((rule, idx) => !this.ruleEditableMap[idx]);
+          const rules = policy1.spec.rules.filter((rule, idx) => !selectedIdxMap[idx]);
           policy1.spec.rules = rules;
           this.updatePolicy(policy1);
         }

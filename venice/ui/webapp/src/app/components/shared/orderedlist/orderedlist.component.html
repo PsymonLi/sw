@@ -54,10 +54,11 @@
          [ngClass]="{'orderedlist-order-label-selected': data.inEdit}"
          fxFlex="auto" fxLayout="column"
          (click)="onItemClick(index)">
-      <div *ngIf="!skipRenderActionIcons && !data.inEdit" fxFlex="none" fxLayout="row"
+      <div *ngIf="!skipRenderActionIcons" fxFlex="none" fxLayout="row"
            fxLayoutAlign="start end" class="orderedlist-action-icons">
         <div fxFlex="auto" fxLayout="row" fxLayoutAlign="end center">
-          <mat-icon [matTooltip]="'Edit'" (click)="onClickEdit(index)">edit</mat-icon>
+          <mat-icon *ngIf="!data.inEdit" [matTooltip]="'Edit'" (click)="onClickEdit(index)">edit
+          </mat-icon>
           <mat-icon [matTooltip]="'Delete'" (click)="onClickDelete(index)">delete</mat-icon>
         </div>
       </div>

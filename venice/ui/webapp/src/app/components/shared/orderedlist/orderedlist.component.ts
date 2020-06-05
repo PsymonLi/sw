@@ -90,6 +90,11 @@ export class OrderedlistComponent implements OnInit {
   }
 
   onClickDelete(index) {
+    const deleteItem = this.dataArray[index];
+    const isDetedItemEdit = deleteItem.inEdit;
     this.deleteItem.emit(index);
+    if (isDetedItemEdit && this.dataArray.length > 0) {
+      this.dataArray[0].inEdit = true;
+    }
   }
 }

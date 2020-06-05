@@ -180,7 +180,7 @@
                  fxLayoutAlign="start end">
               <div fxFlex="15px"></div>
               <div fxFlex="none" class="newsgpolicy-bold-subtext">Source IP Addresses</div>
-              <div fxFlex="50px"></div>
+              <div fxFlex="30px"></div>
               <div>{{ displayArrayField(data, 'from-ip-addresses') }}</div>
             </div>
           </div>
@@ -201,7 +201,7 @@
                  fxLayoutAlign="start end">
               <div fxFlex="15px"></div>
               <div fxFlex="none" class="newsgpolicy-bold-subtext">Destination IP Addresses</div>
-              <div fxFlex="50px"></div>
+              <div fxFlex="30px"></div>
               <div>{{ displayArrayField(data, 'to-ip-addresses') }}</div>
             </div>
           </div>
@@ -211,14 +211,14 @@
                fxFlex="auto" fxLayout="row" fxLayout="start stretch">
             <div fxFlex="15px"></div>
             <div fxFlex="none" class="newsgpolicy-bold-subtext">Applications:</div>
-            <div fxFlex="50px"></div>
+            <div fxFlex="30px"></div>
             <div>{{ displayArrayField(data, 'apps') }}</div>
           </div>
           <div *ngIf="data.selectedProtoAppOption === PROTO_PORTS_OPTION"
                fxFlex="auto" fxLayout="row" fxLayout="start stretch">
             <div fxFlex="15px"></div>
             <div fxFlex="none" class="newsgpolicy-bold-subtext">Proto-Ports:</div>
-            <div fxFlex="50px"></div>
+            <div fxFlex="30px"></div>
             <div>{{ displayArrayField(data, 'proto-ports') }}</div>
           </div>
         </div>

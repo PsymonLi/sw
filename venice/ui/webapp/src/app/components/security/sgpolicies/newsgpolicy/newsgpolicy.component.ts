@@ -326,9 +326,7 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
   }
 
   deleteRule(index) {
-    if (this.rules.length > 1) {
-      this.rules.splice(index, 1);
-    }
+    this.rules.splice(index, 1);
   }
 
   isValidIP(ip: string) {

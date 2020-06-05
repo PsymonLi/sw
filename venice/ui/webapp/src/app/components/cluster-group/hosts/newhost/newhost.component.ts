@@ -248,8 +248,8 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
 
   /**
    * A DSC has id="dsc1" and mac-address  = 'aaaa.bbbb.cccc".
-   * If User assign  DSC using mac-address 'aaaa.bbbb.cccc".  In table row, DSC-column will show "dsc1"
-   * If user first assigns a DSC to using "id dsc1". This manually input "dsc1" will collid with real DSC (dsc1)
+   * If User assigns a  DSC to a host using mac-address 'aaaa.bbbb.cccc".  In table row, DSC-column will show "dsc1"
+   * If user first assigns another DSC to using "id dsc1". This manually inputed "dsc1" will collid with real DSC (dsc1)
    * @param inputvalue
    * @param dscs
    */
@@ -257,8 +257,13 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
     if (!dscs) {
       return false;
     }
-    const matchedIndex = dscs.findIndex(dsc => dsc.spec.id === inputvalue);
-    return (matchedIndex > -1);
+    const matchedDSCs = dscs.find(dsc => dsc.spec.id === inputvalue);
+    if (! matchedDSCs) {
+      return false;
+    }
+    // Check if matched DSC.mac is assigned to other host
+    const mac = matchedDSCs.meta.name;
+    return this.isDSCMacOccupied(mac, this.existingObjects);
   }
 
   /**
