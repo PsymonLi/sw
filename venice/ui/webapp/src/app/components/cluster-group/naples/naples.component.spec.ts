@@ -276,7 +276,7 @@ describe('NaplesComponent', () => {
     const title = fixture.debugElement.query(By.css('.tableheader-title'));
     expect(title.nativeElement.textContent).toContain('Distributed Services Cards (3)');
     // check table contents
-    const tableBody = fixture.debugElement.query(By.css('.ui-table-scrollable-body tbody'));
+    const tableBody = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
     expect(tableBody).toBeTruthy();
     TestingUtility.verifyTable([new ClusterDistributedServiceCard(naples1), new ClusterDistributedServiceCard(naples2), new ClusterDistributedServiceCard(naples3)], component.cols,
     tableBody, {

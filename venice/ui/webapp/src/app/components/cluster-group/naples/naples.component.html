@@ -61,75 +61,82 @@
       </div>
     </div>
   </div>
-
-  <app-tableviewedit fxFlex="auto" fxLayout="column" class="naples-table-container"
-                     style="height: 100%;"
-                     [data]="dataObjects" [cols]="cols"
-                     [virtualRowHeight]="36" [sortField]="'meta.mod-time'"
-                     [runDoCheck]="true"
-                     [dataKey]="'meta.name'"
-                     [sortOrder]="-1"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [tableLoading]="tableLoading"
-                     [enableCheckbox]="true">
-  </app-tableviewedit>
+  <app-pentable #dscTable
+                [actionTemplate]="actionTemplate"
+                [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate"
+                [columns]="cols"
+                [data]="dataObjects"
+                [enableCheckbox]="true"
+                [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
+                [loading]="tableLoading"
+                [rowHeight]="46"
+                [searchable]="true"
+                (searchCancelledEmitter)="onCancelSearch($event)"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchDSCs()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="DistributedServiceCard"
+                [searchCustomQueryOptions]="customQueryOptions"
+                [searchMultiSelectFields]="multiSelectFields">
+  </app-pentable>
 </app-pagebody>
 
+<ng-template #actionButtonsTemplate>
+  <div fxLayout="row" *ngIf="!tableLoading" class="dsc-actionbuttons">
+    <div fxFlex="1 0 50%">
+      <div *ngIf="dataObjects.length !== dataObjectsBackUp.length"
+           class="dsc-table-header-title-append">
+        <span matTooltip="Total DSCs">
+          | System has ({{ dataObjectsBackUp.length }})
+        </span>
+      </div>
+    </div>
+    <div fxFlex="1 0 50%" fxLayoutAlign="start center"
+         *roleGuard="'clusterdistributedservicecard_update'">
+      <!-- LABEL EDITOR -->
+      <mat-icon class="naples-add-label-button"
+                *ngIf="this.dscTable.selectedDataObjects.length>0"
+                [matTooltip]="'Add labels to selected DSC'"
+                (click)="editLabels()">label</mat-icon>
+      <app-labeleditor
+                       [metadata]="labelEditorMetaData"
+                       [inLabelEditMode]="inLabelEditMode"
+                       (saveEmitter)="handleEditSave($event)"
+                       (cancelEmitter)="handleEditCancel($event)"
+                       [objects]="this.dscTable.selectedDataObjects"
+                       [saveLabelsOperationDone]="saveLabelsOperationDone"
+                       [nameKey]="'spec.id'">
+      </app-labeleditor>
+      <!-- DSC PROFILE EDITOR -->
+      <ng-container *featureGuard="'enterprise'">
+        <mat-icon class="naples-add-label-button"
+                  *ngIf="this.dscTable.selectedDataObjects.length>0"
+                  [matTooltip]="'Assign DSC profile to selected DSC'"
+                  (click)="assignDSCProfile()">book</mat-icon>
+      </ng-container>
+
+      <app-dscprofilesetter [inEditMode]="inProfileAssigningMode"
+                            [selections]="dscprofileOptions"
+                            (saveEmitter)="handleSetDSCProfileSave($event)"
+                            (cancelEmitter)="handleSetDSCProfileCancel($event)"
+                            [saveDSCProfileOperationDone]="saveDSCProfileOperationDone">
+      </app-dscprofilesetter>
+
+    </div>
+  </div>
+</ng-template>
+
 <ng-template #captionTemplate let-count="count">
-  <div fxFlex fxLayout="column">
-    <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
-      <app-tableheader fxFlex="auto" fxLayout="row" title="Distributed Services Cards"
-                       [total]="count"
-                       [tableMenuItems]="tableMenuItems"
-                       [icon]="naplesIcon" [enableColumnSelect]="true"
-                       [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
-        <div fxFlex="none" fxLayoutAlign="start center"
-             *roleGuard="'clusterdistributedservicecard_update'">
-          <!-- LABEL EDITOR -->
-          <mat-icon class="naples-add-label-button"
-                    *ngIf="this.tableContainer.selectedDataObjects.length>0"
-                    [matTooltip]="'Add labels to selected DSC'"
-                    (click)="editLabels()">label</mat-icon>
-          <app-labeleditor
-                           [metadata]="labelEditorMetaData"
-                           [inLabelEditMode]="inLabelEditMode"
-                           (saveEmitter)="handleEditSave($event)"
-                           (cancelEmitter)="handleEditCancel($event)"
-                           [objects]="this.tableContainer.selectedDataObjects"
-                           [saveLabelsOperationDone]="saveLabelsOperationDone"
-                           [nameKey]="'spec.id'">
-          </app-labeleditor>
-          <!-- DSC PROFILE EDITOR -->
-          <ng-container *featureGuard="'enterprise'">
-            <mat-icon class="naples-add-label-button"
-                      *ngIf="this.tableContainer.selectedDataObjects.length>0"
-                      [matTooltip]="'Assign DSC profile to selected DSC'"
-                      (click)="assignDSCProfile()">book</mat-icon>
-          </ng-container>
-
-          <app-dscprofilesetter [inEditMode]="inProfileAssigningMode"
-                                [selections]="dscprofileOptions"
-                                (saveEmitter)="handleSetDSCProfileSave($event)"
-                                (cancelEmitter)="handleSetDSCProfileCancel($event)"
-                                [saveDSCProfileOperationDone]="saveDSCProfileOperationDone">
-          </app-dscprofilesetter>
-
-        </div>
-      </app-tableheader>
-    </div>
-    <div fxLayout="row">
-      <app-advanced-search #advancedSearchComponent
-                           [formArray]="fieldFormArray" [cols]="advSearchCols"
-                           [customQueryOptions]="customQueryOptions"
-                           [multiSelectFields]="multiSelectFields"
-                           (cancelEmitter)="onCancelSearch($event)"
-                           (searchEmitter)="onSearchDSCs()"
-                           kind="DistributedServiceCard"
-                           fxFlex="grow">
-      </app-advanced-search>
-    </div>
+  <div class="dsc-table-caption" fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
+    <app-tableheader fxFlex="auto" fxLayout="row" title="Distributed Services Cards"
+                     [total]="count"
+                     [tableMenuItems]="this.dscTable.tableMenuItems"
+                     [icon]="naplesIcon" [enableColumnSelect]="true"
+                     [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+      <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
+    </app-tableheader>
   </div>
 </ng-template>
 

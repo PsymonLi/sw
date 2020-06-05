@@ -32,7 +32,9 @@
                              [formArray]="searchFormArray"
                              fxFlex="grow"
                              [kind]="searchKind"
-                             (searchEmitter)="onSearch()">
+                             (searchEmitter)="onSearch()"
+                             [customQueryOptions]="searchCustomQueryOptions"
+                             [multiSelectFields]="searchMultiSelectFields">
         </app-advanced-search>
       </div>
       <ng-container *ngTemplateOutlet="disabledMask;">

@@ -97,3 +97,18 @@ $vertical-gutter: 5px;
 .naples-status-green-icon {
   color: #77a746;
 }
+
+.dsc-table-caption .tableheader-title-container {
+  flex: 0 0 auto !important;
+}
+
+.dsc-table-header-title-append {
+  @include primary-font(20px, #484848);
+  margin-right: 5px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dsc-actionbuttons {
+  width: 100%;
+}

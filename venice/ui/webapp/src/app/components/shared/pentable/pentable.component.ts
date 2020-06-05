@@ -13,6 +13,7 @@ import { AdvancedSearchComponent } from '../advanced-search/advanced-search.comp
 import { CustomExportMap, TableCol } from '../tableviewedit';
 import { TableUtility } from '../tableviewedit/tableutility';
 import { TableMenuItem } from '../tableheader/tableheader.component';
+import { RepeaterData } from 'web-app-framework';
 
 @Component({
     selector: 'app-pentable',
@@ -28,8 +29,8 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() actionTemplate: TemplateRef<any>;
   @Input() bodyTemplate: TemplateRef<any>;
   @Input() captionTemplate: TemplateRef<any>;
-  @Input() createTemplate: TemplateRef<any>;
   @Input() columns: TableCol[] = [];
+  @Input() createTemplate: TemplateRef<any>;
   @Input() data: any[] = [];
   @Input() dataKey: string = 'meta.uuid';
   @Input() enableCheckbox: boolean;
@@ -43,8 +44,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() scrollable: boolean = false;
   @Input() searchable: boolean = false;
   @Input() searchCols: TableCol[] = [];
+  @Input() searchCustomQueryOptions: RepeaterData[] = [];
   @Input() searchFormArray = new FormArray([]);
   @Input() searchKind: string;
+  @Input() searchMultiSelectFields: Array<string> = [];
   @Input() sortField: string = 'meta.mod-time';
   @Input() sortOrder: number = -1;
 
