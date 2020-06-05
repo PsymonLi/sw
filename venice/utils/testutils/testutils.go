@@ -89,8 +89,8 @@ func AssertOneOf(tb TBApi, act string, exp []string) {
 	tb.Fatalf("\033[31m%s:%d:\n\n\texp: one of %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
 }
 
-// Fail fails the test after logging the formatted message.
-func Fail(tb TBApi, format string, args ...interface{}) {
+// FailTest fails the test after logging the formatted message.
+func FailTest(tb TBApi, format string, args ...interface{}) {
 	msg := fmt.Sprintf(format, args...)
 	_, file, line, _ := runtime.Caller(1)
 	tb.Fatalf("\033[31m%s:%d: %s.\033[39m\n\n", filepath.Base(file), line, msg)

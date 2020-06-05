@@ -279,13 +279,13 @@ func assertReportIsPresent(t *testing.T, reports []*types.Report, expectedPassed
 			return
 		}
 	}
-	Fail(t, "report not found for test: %s", expectedPassedTestReport.Name)
+	FailTest(t, "report not found for test: %s", expectedPassedTestReport.Name)
 }
 
 func assertTestIsNotReported(t *testing.T, reports []*types.Report, testName string) {
 	for _, report := range reports {
 		if testName == report.Name {
-			Fail(t, "test: %s is not expected to be in the report", testName)
+			FailTest(t, "test: %s is not expected to be in the report", testName)
 		}
 	}
 }
