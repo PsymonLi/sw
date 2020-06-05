@@ -229,16 +229,16 @@ upgrade-build: gopkglist netagent-build
 # this will return a non 0 error when coverage for a package is < 75.0%
 unit-test-cover: gopkglist
 	$(info +++ running go tests on $(GO_PKG_UTEST))
-	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go ${GO_PKG_UTEST}
+	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go -output /testcase_result_export/testsuite_ut_results.json ${GO_PKG_UTEST}
 
 unit-test-cover-odd: gopkglist
 	@$(eval ODDF := $(shell echo ${GO_PKG_UTEST} | awk '{for (i=1; i<=NF; i+=2) printf("%s ",$$i)}'))
 	$(info +++ running go tests on $(ODDF))
-	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go ${ODDF}
+	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go -output /testcase_result_export/testsuite_ut_odd_results.json ${ODDF}
 unit-test-cover-even: gopkglist
 	@$(eval EVENF := $(shell echo ${GO_PKG_UTEST} | awk '{for (i=2; i<=NF; i+=2) printf("%s ",$$i)}'))
 	$(info +++ running go tests on $(EVENF))
-	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go ${EVENF}
+	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go -output /testcase_result_export/testsuite_ut_even_results.json ${EVENF}
 
 integ-test: gopkglist
 	$(MAKE) integ-test-odd
@@ -247,11 +247,11 @@ integ-test: gopkglist
 integ-test-odd: gopkglist
 	@$(eval ODDF := $(shell echo ${GO_PKG_INTEGTEST} | awk '{for (i=1; i<=NF; i+=2) printf("%s ",$$i)}'))
 	$(info +++ running go tests on $(ODDF))
-	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go ${ODDF}
+	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go -output /testcase_result_export/testsuite_integ_odd_results.json ${ODDF}
 integ-test-even: gopkglist
 	@$(eval EVENF := $(shell echo ${GO_PKG_INTEGTEST} | awk '{for (i=2; i<=NF; i+=2) printf("%s ",$$i)}'))
 	$(info +++ running go tests on $(EVENF))
-	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go ${EVENF}
+	@VENICE_DEV=1 CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go run scripts/report/report.go -output /testcase_result_export/testsuite_integ_even_results.json ${EVENF}
 
 ci-integ-test:
 	$(MAKE) pregen-clean

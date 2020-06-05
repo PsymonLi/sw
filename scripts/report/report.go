@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
-	"errors"
+	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -14,18 +16,27 @@ import (
 	"time"
 
 	"github.com/pensando/test-infra-tracker/types"
+	"github.com/pkg/errors"
 )
 
 // minCoverage is the minimum expected coverage for a package
 const (
 	minCoverage = 75.0
-	failPrefix  = "--- FAIL:"
 	// report should not enforce coverage when there are no test files.
 	covIgnorePrefix = "[no test files]"
 	// only handle pensando/sw repo
 	swPkgPrefix = "github.com/pensando/sw/"
 	swBaseRepo  = "pensando/sw"
 	testbed     = "jobd-ci"
+
+	// RedColor string in red
+	RedColor = "\u001b[31m%s\u001b[0m\n"
+	// GreenColor string in green
+	GreenColor = "\u001b[32m%s\u001b[0m\n"
+	// BlueColor string in blue
+	BlueColor = "\u001b[34m%s\u001b[0m\n"
+	// CyanColor string in cyan
+	WhiteColor = "\u001b[37m%s\u001b[0m\n"
 )
 
 var (
@@ -35,11 +46,10 @@ var (
 	// ErrTestCovFailed errors out when the coverage percent is < 75.0%
 	ErrTestCovFailed = errors.New("coverage tests failed")
 
-	errFailSend    = errors.New("failed to send test tracker report")
-	errNotBaseRepo = errors.New("not pensando/sw repo")
+	// ErrParsingTestOutput is thrown when the script is unable to parse test output
+	ErrParsingTestOutput = errors.New("unable to parse test output")
 
-	retryTrackerInterval = 5 * time.Second
-	retryTrackerCount    = 5
+	errNotBaseRepo = errors.New("not pensando/sw repo")
 
 	covIgnoreFilePath = fmt.Sprintf("%s/src/github.com/pensando/sw/scripts/report/.coverignore", os.Getenv("GOPATH"))
 )
@@ -48,7 +58,7 @@ var (
 type TestReport struct {
 	RunFailed       bool
 	Results         []*Target
-	IgnoredPackages []string
+	IgnoredPackages []string `json:"ignored-packages-for-coverage,omitempty"`
 }
 
 // Target holds test execution details.
@@ -58,10 +68,14 @@ type Target struct {
 	Duration    string
 	FailedTests []string
 	Error       string
+	Reports     []*types.Report `json:"-"`
 }
 
 func main() {
-	if len(os.Args) <= 1 {
+	var filePath string
+	flag.StringVar(&filePath, "output", "/testcase_result_export/testsuite_results.json", "JSON formatted Test report filepath")
+	flag.Parse()
+	if len(flag.Args()) < 1 {
 		log.Fatalf("report needs at-least one target to run tests.")
 	}
 
@@ -76,36 +90,62 @@ func main() {
 		t.IgnoredPackages = append(t.IgnoredPackages, s.Text())
 	}
 
-	for _, tgt := range os.Args[1:] {
+	for _, tgt := range flag.Args() {
 		p := Target{
 			Name: tgt,
 		}
 		t.Results = append(t.Results, &p)
 	}
 	t.runCoverage()
-	j, _ := t.reportToJSON()
 
 	t.testCoveragePass()
 
-	// send result to testtracker only in jobd CI environment
+	// dump testdata to a file only in jobd CI environment for jobd to pick it up for reporting.
 	if isJobdCI() {
-		trackerURL := os.Getenv("TRACKER_URL")
-		if trackerURL != "" {
-			if err := t.sendToTestTracker(trackerURL); err != nil {
-				fmt.Println(err)
+		err := t.dumpTestData(filePath)
+		if err != nil {
+			if err == errNotBaseRepo {
+				log.Printf("skipped test dump for repo: %s as reporting is done only for base repo: %s", os.Getenv("JOB_FORK_REPOSITORY"), swBaseRepo)
+			} else {
+				log.Fatalf("Unable to dump test data to file: %s, error: %s", filePath, err.Error())
 			}
-		} else {
-			fmt.Println("TRACKER_URL environment variable is not defined")
 		}
 	}
-
+	printTestSummary(t)
 	if t.RunFailed {
-		t = t.filterFailedTests()
-		failedTests, _ := t.reportToJSON()
-		log.Fatalf("Tests failed. %s", fmt.Sprintf(string(failedTests)))
+		log.Fatalf("Test(s) failed, check the summary above to find failed tests.")
+	}
+}
+
+func printTestSummary(t TestReport) {
+	fmt.Printf(GreenColor, "Test summary:")
+	for _, target := range t.Results {
+		for _, report := range target.Reports {
+			prettyPrint(report)
+		}
+	}
+}
+
+func prettyPrint(report *types.Report) {
+	lineTemplate := "\t%s\t%s\t%d(ms)"
+	var testStatus, lineColor string
+	switch report.Result {
+	case -1:
+		testStatus = "FAIL"
+		lineColor = RedColor
+	case 0:
+		testStatus = "SKIP"
+		lineColor = BlueColor
+	case 1:
+		testStatus = "PASS"
+		lineColor = GreenColor
+	default:
+		testStatus = "N/A"
+		lineColor = WhiteColor
 	}
 
-	fmt.Println(string(j))
+	lineTxt := fmt.Sprintf(lineTemplate, testStatus, report.Name, report.Duration)
+	fmt.Printf(lineColor, lineTxt)
 }
 
 func isJobdCI() bool {
@@ -152,7 +192,7 @@ func (t *TestReport) testCoveragePass() {
 }
 
 func (tgt *Target) test(ignoredPackages []string) error {
-	goTestCmd := "GOPATH=%s VENICE_DEV=1 CGO_LDFLAGS_ALLOW=-I/usr/local/share/libtool go test -timeout 20m %s -tags test -p 1 %s"
+	goTestCmd := "GOPATH=%s VENICE_DEV=1 CGO_LDFLAGS_ALLOW=-I/usr/local/share/libtool go test -json -timeout 20m %s -tags test -p 1 %s"
 	cover := "-cover"
 	isCovIgnored := tgt.checkCoverageIgnore(ignoredPackages)
 	if isCovIgnored {
@@ -166,18 +206,138 @@ func (tgt *Target) test(ignoredPackages []string) error {
 	}(tgt)
 	out, err := exec.Command("sh", "-c", cmd).CombinedOutput()
 	if err != nil {
-		fmt.Println(string(out))
 		tgt.Error = ErrTestFailed.Error()
 	}
 
-	err = tgt.parseCmdOutput(out)
-	if tgt.Error == "" {
-		if tgt.Coverage < minCoverage && !isCovIgnored {
-			tgt.Error = ErrTestCovFailed.Error()
+	reports, consoleOut, coverage, err := ParseTestRunOutput(out)
+	if err != nil {
+		fmt.Printf("Error parsing test output. Error: %s", err.Error())
+		fmt.Println("Printing the output as-is from the test run")
+		fmt.Println(string(out))
+		return ErrParsingTestOutput
+	}
+	for _, l := range consoleOut {
+		fmt.Println(l)
+	}
+	tgt.Reports = reports
+	tgt.Coverage = coverage
+	for _, report := range reports {
+		if report.Result == -1 {
+			tgt.FailedTests = append(tgt.FailedTests, report.Name)
 		}
-		return err
+	}
+	if len(tgt.FailedTests) > 0 {
+		log.Printf("Test Failure: %v\n", tgt.Name)
+		return ErrTestFailed
+	}
+	if tgt.Coverage < minCoverage && !isCovIgnored {
+		tgt.Error = ErrTestCovFailed.Error()
+		return ErrTestCovFailed
 	}
 	return nil
+}
+
+//TestEvent is an unmarshalled form of the json formatted test event produced by 'go test'
+type TestEvent struct {
+	Time    time.Time
+	Action  string
+	Package string
+	Test    string
+	Output  string
+	Elapsed float64
+}
+
+//ParseTestRunOutput parses go test output and returns individual test information along with console output
+func ParseTestRunOutput(output []byte) ([]*types.Report, []string, float64, error) {
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+	testCases := make([]*types.Report, 0)
+	outputMsgs := make([]string, 0)
+	var coverage float64
+	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
+	if err != nil {
+		return testCases, outputMsgs, coverage, fmt.Errorf("while getting target ID: %v", err)
+	}
+	for scanner.Scan() {
+		testEvent := &TestEvent{}
+		err := json.Unmarshal(scanner.Bytes(), testEvent)
+		if err != nil {
+			fmt.Printf("Unable to parse test event: %v, err: %+v", testEvent, err)
+			return testCases, outputMsgs, coverage, fmt.Errorf("unable to parse test events, err: %s", err.Error())
+		}
+		switch testEvent.Action {
+		case "pass", "skip", "fail":
+			if testEvent.Test == "" {
+				// this event is at package level, skip it. No useful information in there.
+				continue
+			}
+			testCase := convertToReport(testEvent)
+			testCases = append(testCases, testCase)
+
+		case "output":
+			if strings.HasPrefix(testEvent.Output, "coverage:") {
+				c, err := extractCoveragePercent(testEvent.Output)
+				if err != nil {
+					fmt.Printf("Unable to extract coverage percentage for package: %s", testEvent.Package)
+				} else {
+					coverage = c
+				}
+			} else if strings.Contains(testEvent.Output, covIgnorePrefix) {
+				coverage = 100.0
+			}
+			outputMsgs = append(outputMsgs, testEvent.Output)
+
+		case "run", "pause", "cont", "bench":
+			// no-op, explicitly skipping these actions
+		default:
+			return testCases, outputMsgs, coverage, fmt.Errorf("unrecognized action: %s found", testEvent.Action)
+		}
+	}
+
+	// set package level coverage, logURL for all test-cases
+	for _, tc := range testCases {
+		tc.Coverage = int32(coverage)
+		tc.LogURL = fmt.Sprintf("http://jobd/logs/%d", targetID)
+	}
+
+	return testCases, outputMsgs, coverage, nil
+}
+
+func extractCoveragePercent(coverageStr string) (float64, error) {
+	// The coverage percentage parsing should be > 0.0%
+	// Cases include packages which has a *test.go file but doesn't test the main binary.
+	// This will also ignore parsing coverage details for the integration tests themselves
+	re := regexp.MustCompile("[1-9]+[0-9]*.[0-9]*%")
+	v := re.FindString(coverageStr)
+	if len(v) <= 0 {
+		return 100, nil
+	}
+	v = strings.TrimSuffix(v, "%")
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return 0, fmt.Errorf("error: %s parsing float", err)
+	}
+	return f, nil
+}
+
+func convertToReport(event *TestEvent) *types.Report {
+	report := &types.Report{
+		Name:        event.Package + "." + event.Test,
+		Description: event.Package + "." + event.Test,
+		FinishTime:  event.Time,
+		Duration:    int32(event.Elapsed * 1000),
+	}
+	switch event.Action {
+	case "pass":
+		report.Result = 1
+	case "fail":
+		report.Result = -1
+	}
+	parts := strings.SplitN(strings.TrimPrefix(event.Package, swPkgPrefix), "/", 2)
+	report.Area = parts[0]
+	if len(parts) > 1 {
+		report.Subarea = parts[1]
+	}
+	return report
 }
 
 func (tgt *Target) checkCoverageIgnore(ignoredPackages []string) (mustIgnore bool) {
@@ -190,88 +350,26 @@ func (tgt *Target) checkCoverageIgnore(ignoredPackages []string) (mustIgnore boo
 	return
 }
 
-func (tgt *Target) parseCmdOutput(b []byte) error {
-	err := tgt.getFailedTests(b)
-	if err != nil {
-		log.Printf("could not get failed tests: %v\n", err)
-		return err
-	}
-	return tgt.getCoveragePercent(b)
-}
-
-func (tgt *Target) getFailedTests(b []byte) error {
-	lines := strings.Split(string(b), "\n")
-	for _, line := range lines {
-		if strings.HasPrefix(line, failPrefix) {
-			t := strings.Split(line, " ")[2]
-			tgt.FailedTests = append(tgt.FailedTests, t)
-		}
-	}
-	if len(tgt.FailedTests) > 0 {
-		log.Printf("Test Failure: %v\n", tgt.Name)
-		return ErrTestFailed
-	}
-	return nil
-}
-
-func (tgt *Target) getCoveragePercent(b []byte) error {
-	out := strings.TrimSpace(string(b))
-	lines := strings.Split(out, "\n")
-	for _, line := range lines {
-		// We need this for packages which doesn't have any test files.
-		// Common cases include binary only packages, generated code, type definitions.
-		if strings.Contains(line, covIgnorePrefix) {
-			tgt.Coverage = 100.0
-			continue
-		}
-		// The coverage percentage parsing should be > 0.0%
-		// Cases include packages which has a *test.go file but doesn't test the main binary.
-		// This will also ignore parsing coverage details for the integration tests themselves
-		re := regexp.MustCompile("[1-9]+[0-9]*.[0-9]*%")
-		v := re.FindString(line)
-		if len(v) <= 0 {
-			tgt.Coverage = 100.0
-			continue
-		}
-		v = strings.TrimSuffix(v, "%")
-		f, err := strconv.ParseFloat(v, 64)
-		if err != nil {
-			fmt.Printf("error: %s parsing float\n", err)
-		} else {
-			tgt.Coverage = f
-		}
-	}
-	return nil
-}
-
-func (t *TestReport) sendToTestTracker(trackerURL string) error {
+func (t *TestReport) dumpTestData(reportFilePath string) error {
 	if os.Getenv("JOB_FORK_REPOSITORY") != swBaseRepo {
 		return errNotBaseRepo
 	}
-
 	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
 	if err != nil {
-		return fmt.Errorf("while getting target ID: %v", err)
+		return errors.Wrap(err, "unable to get target ID")
 	}
 
-	sha := "unknown"
-	title := "unknown"
 	content, err := exec.Command("git", "rev-parse", "--short", "HEAD").Output()
 	if err != nil {
-		return fmt.Errorf("while extracting sha: %v", err)
+		return errors.Wrap(err, "unable to extract commitId")
 	}
-	sha = string(content)
+	sha := strings.Trim(string(content), "\n")
 
 	content, err = exec.Command("sh", "-c", `git log --format=%s -n 1 `+sha).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("while extracting log of sha: %v", err)
+		return errors.Wrap(err, "unable to extract commit message")
 	}
-	title = strings.TrimSpace(string(content))
-
-	cli, err := types.NewClient(trackerURL)
-	if err != nil {
-		return err
-	}
+	title := strings.TrimSpace(string(content))
 
 	reports := types.Reports{
 		Repository: swBaseRepo,
@@ -281,52 +379,22 @@ func (t *TestReport) sendToTestTracker(trackerURL string) error {
 		TargetID:   int32(targetID),
 		Testcases:  []*types.Report{},
 	}
-	for _, tgt := range t.Results {
-		n := strings.TrimPrefix(tgt.Name, swPkgPrefix)
-		report := &types.Report{
-			Name:        n,
-			Description: n,
-			FinishTime:  time.Now(),
-			Coverage:    int32(tgt.Coverage),
-			LogURL:      fmt.Sprintf("http://jobd/logs/%d", targetID),
-		}
-		if tgt.FailedTests == nil && tgt.Error == "" {
-			report.Result = 1
-		} else {
-			report.Result = -1
-			report.Detail = tgt.Error
-		}
-		d, err := time.ParseDuration(tgt.Duration)
-		if err != nil {
-			// if error, set duration to 0
-			fmt.Printf("while converting %s's test duration to second: %v\n", tgt.Duration, err)
-			report.Duration = 0
-		} else {
-			report.Duration = int32(d.Seconds())
-		}
 
-		parts := strings.SplitN(strings.TrimPrefix(tgt.Name, swPkgPrefix), "/", 2)
-		report.Area = parts[0]
-		if len(parts) > 1 {
-			report.Subarea = parts[1]
+	for _, result := range t.Results {
+		for _, report := range result.Reports {
+			reports.Testcases = append(reports.Testcases, report)
 		}
-		reports.Testcases = append(reports.Testcases, report)
 	}
 
-	// send reports with 5 retry
-	for retry := 0; retry < retryTrackerCount; retry++ {
-		if err := cli.Report(&reports); err == nil {
-			return nil
-		} else if !strings.Contains(err.Error(), "connection timed out") &&
-			!strings.Contains(err.Error(), "connection refused") {
-			// retry only if connection failure, for example potential network issue, server restart
-			return err
-		} else {
-			fmt.Printf("while sending report: %v\n", err)
-		}
-
-		fmt.Printf("sleep and retry %d time\n", retry+1)
-		time.Sleep(retryTrackerInterval)
+	// dump reports to file
+	rawContent, err := json.Marshal(reports)
+	if err != nil {
+		fmt.Printf("Error marshalling test report, err: %s", err.Error())
+		return errors.Wrap(err, "unable to marshal test report")
 	}
-	return errFailSend
+	err = ioutil.WriteFile(reportFilePath, rawContent, 0644)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed writing test report to: %s", reportFilePath))
+	}
+	return nil
 }

@@ -4,10 +4,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net"
-	"net/http"
-	"net/http/httptest"
+	"io/ioutil"
+	"math/rand"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -19,97 +19,82 @@ import (
 
 // test vectors
 const (
-	test           = "github.com/pensando/sw/nic/agent/netagent/state"
-	testFailStdOut = `ts=2018-02-06T19:00:16.125059Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.12523Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-proto: no coders for api.TypeMeta
-proto: no encoder for TypeMeta api.TypeMeta [GetProperties]
-proto: no coders for api.ObjectMeta
-proto: no encoder for ObjectMeta api.ObjectMeta [GetProperties]
-proto: no coders for netproto.NetworkSpec
-proto: no encoder for Spec netproto.NetworkSpec [GetProperties]
-proto: no coders for netproto.NetworkStatus
-proto: no encoder for Status netproto.NetworkStatus [GetProperties]
-proto: no coders for api.Timestamp
-proto: no encoder for CreationTime api.Timestamp [GetProperties]
-proto: no coders for api.Timestamp
-proto: no encoder for ModTime api.Timestamp [GetProperties]
-proto: no coders for types.Timestamp
-proto: no encoder for Timestamp types.Timestamp [GetProperties]
-ts=2018-02-06T19:00:16.125663Z module=Default pid=94604 caller=network.go:29 level=info msg="Received duplicate network create for ep {TypeMeta:<Kind:\"Network\" > ObjectMeta:<Name:\"default\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<IPv4Subnet:\"10.1.1.0/24\" IPv4Gateway:\"10.1.1.254\" > Status:<NetworkID:1 > }"
-ts=2018-02-06T19:00:16.125727Z module=Default pid=94604 caller=network.go:24 level=error msg="Network TypeMeta:<Kind:\"Network\" > ObjectMeta:<Name:\"default\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<IPv4Subnet:\"10.1.1.0/24\" IPv4Gateway:\"10.1.1.254\" > Status:<NetworkID:1 >  already exists"
-ts=2018-02-06T19:00:16.125779Z module=Default pid=94604 caller=network.go:137 level=error msg="Network {Name:default Tenant:default Namespace: ResourceVersion: UUID: Labels:map[] CreationTime:{Timestamp:{Seconds:0 Nanos:0}} ModTime:{Timestamp:{Seconds:0 Nanos:0}}} not found"
-ts=2018-02-06T19:00:16.125839Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.125887Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-ts=2018-02-06T19:00:16.125917Z module=Default pid=94604 caller=network.go:117 level=info msg="Nothing to update."
-ts=2018-02-06T19:00:16.125983Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.126025Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-proto: no coders for api.TypeMeta
-proto: no encoder for TypeMeta api.TypeMeta [GetProperties]
-proto: no coders for api.ObjectMeta
-proto: no encoder for ObjectMeta api.ObjectMeta [GetProperties]
-proto: no coders for netproto.EndpointSpec
-proto: no encoder for Spec netproto.EndpointSpec [GetProperties]
-proto: no coders for netproto.EndpointStatus
-proto: no encoder for Status netproto.EndpointStatus [GetProperties]
-ts=2018-02-06T19:00:16.126308Z module=Default pid=94604 caller=endpoint.go:65 level=info msg="Received duplicate endpoint create for ep {TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID\" WorkloadUUID:\"testWorkloadUUID\" NetworkName:\"default\" > Status:<NodeUUID:\"some-unique-id\" > }"
-ts=2018-02-06T19:00:16.126339Z module=Default pid=94604 caller=endpoint.go:73 level=error msg="Error finding the network invalid. Err: Network not found"
-ts=2018-02-06T19:00:16.126405Z module=Default pid=94604 caller=endpoint.go:60 level=error msg="Endpoint TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID\" WorkloadUUID:\"testWorkloadUUID\" NetworkName:\"default\" > Status:<NodeUUID:\"some-unique-id\" >  already exists. New ep {TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID2\" WorkloadUUID:\"testWorkloadUUID2\" NetworkName:\"default\" > Status:<NodeUUID:\"some-unique-id\" > }"
-ts=2018-02-06T19:00:16.126443Z module=Default pid=94604 caller=endpoint.go:206 level=error msg="Endpoint \"default|testEndpoint\" was not found"
-ts=2018-02-06T19:00:16.126515Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.126558Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-ts=2018-02-06T19:00:16.126655Z module=Default pid=94604 caller=endpoint.go:65 level=info msg="Received duplicate endpoint create for ep {TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID\" WorkloadUUID:\"testWorkloadUUID\" NetworkName:\"default\" > Status:<> }"
-ts=2018-02-06T19:00:16.126708Z module=Default pid=94604 caller=endpoint.go:60 level=error msg="Endpoint TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID\" WorkloadUUID:\"testWorkloadUUID\" NetworkName:\"default\" > Status:<>  already exists. New ep {TypeMeta:<Kind:\"Endpoint\" > ObjectMeta:<Name:\"testEndpoint\" Tenant:\"default\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<EndpointUUID:\"testEndpointUUID2\" WorkloadUUID:\"testWorkloadUUID2\" NetworkName:\"default\" > Status:<> }"
-ts=2018-02-06T19:00:16.126725Z module=Default pid=94604 caller=endpoint.go:206 level=error msg="Endpoint \"default|testEndpoint\" was not found"
-ts=2018-02-06T19:00:16.126768Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
---- FAIL: TestSecurityGroupCreateDelete (0.00s)
-	testutils.go:35: netagent_state_test.go:498: Failed to create agent &state.NetAgent{Mutex:sync.Mutex{state:0, sema:0x0}, store:(*emstore.MemStore)(0xc420157da0), nodeUUID:"some-unique-id", datapath:(*state.mockDatapath)(0xc4201bc210), ctrlerif:(*state.mockCtrler)(0xc42000e140), networkDB:map[string]*netproto.Network{}, endpointDB:map[string]*netproto.Endpoint{}, secgroupDB:map[string]*netproto.SecurityGroup{}, tenantDB:map[string]*netproto.Tenant{"default|default":(*netproto.Tenant)(0xc420170a50)}}
+	test             = "github.com/pensando/sw/nic/agent/netagent/state"
+	failedTestStdOut = `{"Time":"2020-05-04T10:46:12.908788-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts"}
+{"Time":"2020-05-04T10:46:12.909013-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"=== RUN   TestAudienceExtractor_ForHostManagedDSCCerts\n"}
+{"Time":"2020-05-04T10:46:12.942813-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"    TestAudienceExtractor_ForHostManagedDSCCerts: testutils.go:48: \u001b[31mauthorizers_test.go:53: Expected to find an empty Audience slice\u001b[39m\n"}
+{"Time":"2020-05-04T10:46:12.942841-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"        \n"}
+{"Time":"2020-05-04T10:46:12.94288-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"--- FAIL: TestAudienceExtractor_ForHostManagedDSCCerts (0.03s)\n"}
+{"Time":"2020-05-04T10:46:12.942892-07:00","Action":"fail","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Elapsed":0.03}
+{"Time":"2020-05-04T10:46:12.942903-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"FAIL\n"}
+{"Time":"2020-05-04T10:46:12.942922-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"coverage: 41.7% of statements\n"}
+{"Time":"2020-05-04T10:46:12.943797-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"exit status 1\n"}
+{"Time":"2020-05-04T10:46:12.943828-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"FAIL\tgithub.com/pensando/sw/nic/agent/nmd/state\t0.235s\n"}
+{"Time":"2020-05-04T10:46:12.943834-07:00","Action":"fail","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.472}`
 
-ts=2018-02-06T19:00:16.12689Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.126914Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-ts=2018-02-06T19:00:16.126945Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type sgID"
-ts=2018-02-06T19:00:16.127035Z module=Default pid=94604 caller=endpoint.go:142 level=error msg="Can not change network after endpoint is created. old default, new unknown"
-ts=2018-02-06T19:00:16.127065Z module=Default pid=94604 caller=endpoint.go:161 level=error msg="Error finding security group unknown. Err: Security group not found"
-ts=2018-02-06T19:00:16.127108Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.127143Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type sgID"
-ts=2018-02-06T19:00:16.12717Z module=Default pid=94604 caller=security.go:25 level=error msg="Error finding peer group unknown. Err: Security group not found"
-ts=2018-02-06T19:00:16.127182Z module=Default pid=94604 caller=security.go:182 level=error msg="Error adding sg rules. Err: Security group not found"
-ts=2018-02-06T19:00:16.127231Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.127278Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-ts=2018-02-06T19:00:16.128205Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-proto: no coders for api.TypeMeta
-proto: no encoder for TypeMeta api.TypeMeta [GetProperties]
-proto: no coders for api.ObjectMeta
-proto: no encoder for ObjectMeta api.ObjectMeta [GetProperties]
-proto: no coders for netproto.TenantSpec
-proto: no encoder for Spec netproto.TenantSpec [GetProperties]
-proto: no coders for netproto.TenantStatus
-proto: no encoder for Status netproto.TenantStatus [GetProperties]
-ts=2018-02-06T19:00:16.128401Z module=Default pid=94604 caller=tenant.go:30 level=info msg="Received duplicate tenant create {TypeMeta:<Kind:\"Tenant\" > ObjectMeta:<Name:\"testTenant\" Tenant:\"testTenant\" CreationTime:<time:<> > ModTime:<time:<> > > Spec:<> Status:<TenantID:2 > }"
-ts=2018-02-06T19:00:16.128452Z module=Default pid=94604 caller=tenant.go:131 level=error msg="Tenant {Name:testTenant Tenant:testTenant Namespace: ResourceVersion: UUID: Labels:map[] CreationTime:{Timestamp:{Seconds:0 Nanos:0}} ModTime:{Timestamp:{Seconds:0 Nanos:0}}} not found"
-ts=2018-02-06T19:00:16.128508Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.128572Z module=Default pid=94604 caller=tenant.go:106 level=info msg="Nothing to update."
-ts=2018-02-06T19:00:16.128616Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type tenantID"
-ts=2018-02-06T19:00:16.128649Z module=Default pid=94604 caller=resid.go:31 level=info msg="New ID generated for resource type networkID"
-ts=2018-02-06T19:00:16.128667Z module=Default pid=94604 caller=network.go:50 level=error msg="Could not find the tenant: {tenant not found <nil>}"
-FAIL
-coverage: 76.8% of statements
-FAIL	github.com/pensando/sw/nic/agent/netagent/state	0.021s
+	skippedTestStdout = `{"Time":"2020-05-04T10:45:57.1088-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:57.109092-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"=== RUN   TestMacBasedAuthorizer_Authorize\n"}
+{"Time":"2020-05-04T10:45:57.109103-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"    TestMacBasedAuthorizer_Authorize: authorizers_test.go:57: Skip because not in job-ci environment\n"}
+{"Time":"2020-05-04T10:45:57.109111-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"--- SKIP: TestMacBasedAuthorizer_Authorize (0.00s)\n"}
+{"Time":"2020-05-04T10:45:57.109114-07:00","Action":"skip","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Elapsed":0}
+{"Time":"2020-05-04T10:45:57.109124-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"PASS\n"}
+{"Time":"2020-05-04T10:45:57.109127-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"coverage: 0.0% of statements\n"}
+{"Time":"2020-05-04T10:45:57.110001-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"ok  \tgithub.com/pensando/sw/nic/agent/nmd/state\t0.201s\n"}
+{"Time":"2020-05-04T10:45:57.11005-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.201}`
 
-2018/02/06 11:00:16 Test Failure: github.com/pensando/sw/nic/agent/netagent/state
-2018/02/06 11:00:16 could not get failed tests: test execution failed
-2018/02/06 11:00:20 Insufficient code coverage for the following packages:
-2018/02/06 11:00:20 github.com/pensando/sw/nic/agent/cmd/halctl`
+	passedTestOutput = `{"Time":"2020-05-04T10:45:42.341018-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:42.341322-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"=== RUN   TestProtectedCommandsAuthorizer_Authorize\n"}
+{"Time":"2020-05-04T10:45:42.371546-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"--- PASS: TestProtectedCommandsAuthorizer_Authorize (0.03s)\n"}
+{"Time":"2020-05-04T10:45:42.371594-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Elapsed":0.03}
+{"Time":"2020-05-04T10:45:42.371616-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"PASS\n"}
+{"Time":"2020-05-04T10:45:42.371621-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"coverage: 1.1% of statements\n"}
+{"Time":"2020-05-04T10:45:42.372432-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"ok  \tgithub.com/pensando/sw/nic/agent/nmd/state\t0.306s\n"}
+{"Time":"2020-05-04T10:45:42.372469-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.306}`
 
-	testCovFailedStdout      = `ok  	github.com/pensando/sw/nic/agent/netagent/state	0.020s	coverage: 41.7% of statements`
-	testInvalidPkgName       = "github.com/pensando/foo"
-	testCovIgnoreNoTestFiles = `?   	github.com/pensando/sw/api	[no test files]`
-	testCovIgnoreSkipped     = `ok  	github.com/pensando/sw/test/e2e	0.028s`
-	testCovIgnoreZeroCov     = `ok  	github.com/pensando/sw/api/integration	0.201s	coverage: 0.0% of statements`
+	testOutputWithUnrecognizedEvent = `{"Time":"2020-05-04T10:45:42.341018-07:00","Action":"init","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:42.341018-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:42.341322-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"=== RUN   TestProtectedCommandsAuthorizer_Authorize\n"}
+{"Time":"2020-05-04T10:45:42.371546-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"--- PASS: TestProtectedCommandsAuthorizer_Authorize (0.03s)\n"}
+{"Time":"2020-05-04T10:45:42.371594-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Elapsed":0.03}
+{"Time":"2020-05-04T10:45:42.371616-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"PASS\n"}
+{"Time":"2020-05-04T10:45:42.371621-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"coverage: 1.1% of statements\n"}
+{"Time":"2020-05-04T10:45:42.372432-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"ok  \tgithub.com/pensando/sw/nic/agent/nmd/state\t0.306s\n"}
+{"Time":"2020-05-04T10:45:42.372469-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.306}`
+
+	mixedTestResultOutput = `{"Time":"2020-05-04T10:45:42.341018-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:42.341322-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"=== RUN   TestProtectedCommandsAuthorizer_Authorize\n"}
+{"Time":"2020-05-04T10:45:42.371546-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Output":"--- PASS: TestProtectedCommandsAuthorizer_Authorize (0.03s)\n"}
+{"Time":"2020-05-04T10:45:42.371594-07:00","Action":"pass","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestProtectedCommandsAuthorizer_Authorize","Elapsed":0.03}
+{"Time":"2020-05-04T10:45:57.1088-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize"}
+{"Time":"2020-05-04T10:45:57.1088-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize_Paused"}
+{"Time":"2020-05-04T10:45:57.109092-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"=== RUN   TestMacBasedAuthorizer_Authorize\n"}
+{"Time":"2020-05-04T10:45:57.109103-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"    TestMacBasedAuthorizer_Authorize: authorizers_test.go:57: Skip because not in job-ci environment\n"}
+{"Time":"2020-05-04T10:45:57.109111-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Output":"--- SKIP: TestMacBasedAuthorizer_Authorize (0.00s)\n"}
+{"Time":"2020-05-04T10:45:57.109113-07:00","Action":"pause","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize_Paused"}
+{"Time":"2020-05-04T10:45:57.109114-07:00","Action":"skip","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestMacBasedAuthorizer_Authorize","Elapsed":0}
+{"Time":"2020-05-04T10:46:12.908788-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts"}
+{"Time":"2020-05-04T10:46:12.909013-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"=== RUN   TestAudienceExtractor_ForHostManagedDSCCerts\n"}
+{"Time":"2020-05-04T10:46:12.942813-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"    TestAudienceExtractor_ForHostManagedDSCCerts: testutils.go:48: \u001b[31mauthorizers_test.go:53: Expected to find an empty Audience slice\u001b[39m\n"}
+{"Time":"2020-05-04T10:46:12.942841-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"        \n"}
+{"Time":"2020-05-04T10:46:12.94288-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"--- FAIL: TestAudienceExtractor_ForHostManagedDSCCerts (0.03s)\n"}
+{"Time":"2020-05-04T10:46:12.942892-07:00","Action":"fail","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Elapsed":0.03}
+{"Time":"2020-05-04T10:46:12.942903-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"FAIL\n"}
+{"Time":"2020-05-04T10:46:12.942922-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"coverage: 41.7% of statements\n"}
+{"Time":"2020-05-04T10:46:12.943797-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"exit status 1\n"}
+{"Time":"2020-05-04T10:46:12.943828-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Output":"FAIL\tgithub.com/pensando/sw/nic/agent/nmd/state\t0.235s\n"}
+{"Time":"2020-05-04T10:46:12.943834-07:00","Action":"fail","Package":"github.com/pensando/sw/nic/agent/nmd/state","Elapsed":0.472}`
+
+	testLowCoverageStdout = `coverage: 41.7% of statements`
+	testInvalidPkgName    = "github.com/pensando/foo"
+	testCovIgnoreZeroCov  = "coverage: 0.0% of statements"
+	testTargetID          = 12345
+	testJobID             = 54321
 )
 
-// Happy path tests
-func TestCoverage(t *testing.T) {
+// no tests to run
+func TestCoverage_WithNoTestsToRun(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
 	tr := TestReport{
 		Results: []*Target{
 			{
@@ -125,6 +110,7 @@ func TestCoverage(t *testing.T) {
 
 	tr.testCoveragePass()
 	AssertEquals(t, false, tr.RunFailed, "Expected the run to pass and it failed")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
 }
 
 func TestCoverageFail(t *testing.T) {
@@ -139,38 +125,6 @@ func TestCoverageFail(t *testing.T) {
 	}
 	tr.testCoveragePass()
 	AssertEquals(t, true, tr.RunFailed, "expected the run to fail due to low coverage")
-}
-
-func TestCoverageFailTracker(t *testing.T) {
-	if !isJobdCI() {
-		t.Skip("Skip because not in job-ci environment")
-	}
-
-	tr := TestReport{
-		Results: []*Target{
-			{
-				Name:     test,
-				Coverage: 45.0,
-				Error:    ErrTestCovFailed.Error(),
-			},
-		},
-	}
-
-	// testtracker should receive corresponding data
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer r.Body.Close()
-		var rep types.Reports
-		AssertOk(t, json.NewDecoder(r.Body).Decode(&rep), "Could not parse tracker report")
-		AssertEquals(t, int32(-1), rep.Testcases[0].Result, "Receive wrong test case result")
-		AssertEquals(t, int32(45), rep.Testcases[0].Coverage, "Receive wrong test case coverage")
-		AssertEquals(t, ErrTestCovFailed.Error(), rep.Testcases[0].Detail, "Receive wrong test case detail")
-	}))
-	defer ts.Close()
-
-	jobRepoBak := os.Getenv("JOB_FORK_REPOSITORY")
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", swBaseRepo), "Could not set environment variable")
-	AssertOk(t, tr.sendToTestTracker(strings.TrimPrefix(ts.URL, "http://")), "Could not send report to test tracker")
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", jobRepoBak), "Could not set environment variable")
 }
 
 func TestFilterFailTests(t *testing.T) {
@@ -195,69 +149,145 @@ func TestFilterFailTests(t *testing.T) {
 	AssertEquals(t, tr.Results[0], tr2.Results[0], "Only failed test should be present")
 }
 
-func TestFilterFailTestsTracker(t *testing.T) {
-	if !isJobdCI() {
-		t.Skip("Skip because not in job-ci environment")
-	}
-
-	tr := TestReport{
-		RunFailed: true,
-		Results: []*Target{
-			{
-				Name:     "test",
-				Coverage: 45.0,
-				Error:    ErrTestCovFailed.Error(),
-			},
-			{
-				Name:     "test2",
-				Coverage: 88.0,
-				Error:    "",
-			},
-		},
-	}
-	// testtracker should receive corresponding data
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var rep types.Reports
-		AssertOk(t, json.NewDecoder(r.Body).Decode(&rep), "Could not parse tracker report")
-		AssertEquals(t, 2, len(rep.Testcases), "Receive wrong number of test case ")
-
-		foundtest := false
-		foundtest2 := false
-		for _, tc := range rep.Testcases {
-			if tc.Name == "test" {
-				foundtest = true
-				AssertEquals(t, int32(-1), tc.Result, "Receive wrong test case result")
-				AssertEquals(t, int32(45), tc.Coverage, "Receive wrong test case coverage")
-				AssertEquals(t, ErrTestCovFailed.Error(), tc.Detail, "Receive wrong test case detail")
-			}
-			if tc.Name == "test2" {
-				foundtest2 = true
-				AssertEquals(t, int32(1), tc.Result, "Receive wrong test case result")
-				AssertEquals(t, int32(88), tc.Coverage, "Receive wrong test case coverage")
-				AssertEquals(t, "", tc.Detail, "Receive wrong test case detail")
-			}
-		}
-		AssertEquals(t, true, foundtest, "test not found")
-		AssertEquals(t, true, foundtest2, "test2 not found")
-	}))
-
-	jobRepoBak := os.Getenv("JOB_FORK_REPOSITORY")
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", swBaseRepo), "Could not set environment variable")
-	AssertOk(t, tr.sendToTestTracker(strings.TrimPrefix(ts.URL, "http://")), "Could not send report to test tracker")
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", jobRepoBak), "Could not set environment variable")
+func TestStdOutParsing_failedTestCase(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	expectedTestReport := getExpectedFailedTestReport(t)
+	reports, _, coverage, err := ParseTestRunOutput([]byte(failedTestStdOut))
+	AssertOk(t, err, "parsing stdout failed")
+	Assert(t, len(reports) == 1, "expected to find single element in reports slice")
+	AssertEquals(t, expectedTestReport, reports[0], "unexpected test report found")
+	AssertEquals(t, 41.7, coverage, "did not get expected coverage results")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
 }
 
-func TestStdOutParsing(t *testing.T) {
-	tgt := Target{
-		Name: test,
+func getExpectedFailedTestReport(t *testing.T) *types.Report {
+	finishTime, err := time.Parse(time.RFC3339, "2020-05-04T10:46:12.942892-07:00")
+	AssertOk(t, err, "time string expected to be parsed successfully")
+	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
+	AssertOk(t, err, "targetID expected to be set")
+	expectedTestReport := &types.Report{
+		Name:        "github.com/pensando/sw/nic/agent/nmd/state.TestAudienceExtractor_ForHostManagedDSCCerts",
+		Description: "github.com/pensando/sw/nic/agent/nmd/state.TestAudienceExtractor_ForHostManagedDSCCerts",
+		Area:        "nic",
+		Subarea:     "agent/nmd/state",
+		FinishTime:  finishTime,
+		Duration:    30,
+		Coverage:    41,
+		Result:      -1,
+		LogURL:      fmt.Sprintf("http://jobd/logs/%d", targetID),
 	}
+	return expectedTestReport
+}
 
-	err := tgt.parseCmdOutput([]byte(testFailStdOut))
-	AssertEquals(t, ErrTestFailed, err, "parsing stdout failed")
+func TestStdOutParsing_SkippedTestCase(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	expectedTestReport := getExpectedSkippedTestReport(t)
+	reports, _, coverage, err := ParseTestRunOutput([]byte(skippedTestStdout))
+	AssertOk(t, err, "parsing stdout failed")
+	Assert(t, len(reports) == 1, "expected to find single element in reports slice")
+	AssertEquals(t, expectedTestReport, reports[0], "unexpected test report found")
+	AssertEquals(t, 100.0, coverage, "did not get expected coverage results")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
+}
 
-	err = tgt.getCoveragePercent([]byte(testCovFailedStdout))
-	AssertOk(t, err, "failed to parse coverage output")
-	AssertEquals(t, tgt.Coverage, 41.7, "did not get expected coverage results")
+func getExpectedSkippedTestReport(t *testing.T) *types.Report {
+	finishTime, err := time.Parse(time.RFC3339, "2020-05-04T10:45:57.109114-07:00")
+	AssertOk(t, err, "time string expected to be parsed successfully")
+	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
+	AssertOk(t, err, "targetID expected to be set")
+	expectedTestReport := &types.Report{
+		Name:        "github.com/pensando/sw/nic/agent/nmd/state.TestMacBasedAuthorizer_Authorize",
+		Description: "github.com/pensando/sw/nic/agent/nmd/state.TestMacBasedAuthorizer_Authorize",
+		Area:        "nic",
+		Subarea:     "agent/nmd/state",
+		FinishTime:  finishTime,
+		Duration:    0,
+		Coverage:    100,
+		Result:      0,
+		LogURL:      fmt.Sprintf("http://jobd/logs/%d", targetID),
+	}
+	return expectedTestReport
+}
+
+func TestStdOutParsing_passedTestCase(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	expectedTestReport := getExpectedPassedTestReport(t)
+	reports, _, coverage, err := ParseTestRunOutput([]byte(passedTestOutput))
+	AssertOk(t, err, "parsing stdout failed")
+	Assert(t, len(reports) == 1, "expected to find single element in reports slice")
+	AssertEquals(t, expectedTestReport, reports[0], "unexpected test report found")
+	AssertEquals(t, 1.1, coverage, "did not get expected coverage results")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
+}
+
+func getExpectedPassedTestReport(t *testing.T) *types.Report {
+	finishTime, err := time.Parse(time.RFC3339, "2020-05-04T10:45:42.371594-07:00")
+	AssertOk(t, err, "time string expected to be parsed successfully")
+	targetID, err := strconv.Atoi(os.Getenv("TARGET_ID"))
+	AssertOk(t, err, "targetID expected to be set")
+	expectedTestReport := &types.Report{
+		Name:        "github.com/pensando/sw/nic/agent/nmd/state.TestProtectedCommandsAuthorizer_Authorize",
+		Description: "github.com/pensando/sw/nic/agent/nmd/state.TestProtectedCommandsAuthorizer_Authorize",
+		Area:        "nic",
+		Subarea:     "agent/nmd/state",
+		FinishTime:  finishTime,
+		Duration:    30,
+		Coverage:    1,
+		Result:      1,
+		LogURL:      fmt.Sprintf("http://jobd/logs/%d", targetID),
+	}
+	return expectedTestReport
+}
+
+func TestStdOutParsing_unrecognizedEvent(t *testing.T) {
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	_, _, _, err := ParseTestRunOutput([]byte(testOutputWithUnrecognizedEvent))
+	AssertError(t, err, "parsing stdout should have failed")
+}
+
+func TestStdOutParsing_mixedResultTestCases(t *testing.T) {
+	targetID := os.Getenv("TARGET_ID")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+
+	expectedSkippedTestReport := getExpectedSkippedTestReport(t)
+	expectedSkippedTestReport.Coverage = 41
+	expectedFailedTestReport := getExpectedFailedTestReport(t)
+	expectedFailedTestReport.Coverage = 41
+	expectedPassedTestReport := getExpectedPassedTestReport(t)
+	expectedPassedTestReport.Coverage = 41
+
+	pausedTestCaseName := "TestMacBasedAuthorizer_Authorize_Paused"
+	Assert(t, strings.Contains(mixedTestResultOutput, pausedTestCaseName), "test case: %s is not present in the test output", pausedTestCaseName)
+	reports, _, coverage, err := ParseTestRunOutput([]byte(mixedTestResultOutput))
+	AssertOk(t, err, "parsing stdout failed")
+	Assert(t, len(reports) == 3, "expected to find single element in reports slice")
+	assertReportIsPresent(t, reports, expectedPassedTestReport)
+	assertReportIsPresent(t, reports, expectedFailedTestReport)
+	assertReportIsPresent(t, reports, expectedSkippedTestReport)
+	assertTestIsNotReported(t, reports, pausedTestCaseName)
+	AssertEquals(t, 41.7, coverage, "did not get expected coverage results")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "could not set TARGET_ID")
+}
+
+func assertReportIsPresent(t *testing.T, reports []*types.Report, expectedPassedTestReport *types.Report) {
+	for _, actualReport := range reports {
+		if expectedPassedTestReport.Name == actualReport.Name {
+			AssertEquals(t, expectedPassedTestReport, actualReport, "unexpected test report found for test: %s", expectedPassedTestReport.Name)
+			return
+		}
+	}
+	Fail(t, "report not found for test: %s", expectedPassedTestReport.Name)
+}
+
+func assertTestIsNotReported(t *testing.T, reports []*types.Report, testName string) {
+	for _, report := range reports {
+		if testName == report.Name {
+			Fail(t, "test: %s is not expected to be in the report", testName)
+		}
+	}
 }
 
 func TestInvalidPackageName(t *testing.T) {
@@ -265,136 +295,73 @@ func TestInvalidPackageName(t *testing.T) {
 		Name: testInvalidPkgName,
 	}
 	var ignoredPackages []string
-	tgt.test(ignoredPackages)
+	err := tgt.test(ignoredPackages)
 	AssertEquals(t, ErrTestFailed.Error(), tgt.Error, "expected the test to fail, it passed instead")
+	AssertEquals(t, ErrParsingTestOutput, err, "expected the test run to fail and the parser to fail as a result")
 }
 
-func TestCoverageIgnore(t *testing.T) {
-	tgt := Target{
-		Name: test,
-	}
-	err := tgt.getCoveragePercent([]byte(testCovIgnoreNoTestFiles))
+func TestCoverageExtractor(t *testing.T) {
+	coverage, err := extractCoveragePercent(testLowCoverageStdout)
 	AssertOk(t, err, "coverage parsing expected to pass")
-	AssertEquals(t, 100.0, tgt.Coverage, "Expected coverage 100%% for missing test files")
+	AssertEquals(t, 41.7, coverage, "Expected coverage 41.7%% for missing test files")
 
-	tgt.Coverage = 0.0
-	err = tgt.getCoveragePercent([]byte(testCovIgnoreSkipped))
+	coverage, err = extractCoveragePercent(testCovIgnoreZeroCov)
 	AssertOk(t, err, "coverage parsing expected to pass")
-	AssertEquals(t, 100.0, tgt.Coverage, "Expected coverage 100%% for missing test files")
-
-	tgt.Coverage = 0.0
-	err = tgt.getCoveragePercent([]byte(testCovIgnoreZeroCov))
-	AssertOk(t, err, "coverage parsing expected to pass")
-	AssertEquals(t, 100.0, tgt.Coverage, "Expected coverage 100%% for missing test files")
+	AssertEquals(t, 100.0, coverage, "Expected coverage 100%% for missing test files")
 }
 
-func TestTrackerBasic(t *testing.T) {
-	if !isJobdCI() {
-		t.Skip("Skip because not in job-ci environment")
-	}
+func TestTestDataDump(t *testing.T) {
+	jobForkRepo := os.Getenv("JOB_FORK_REPOSITORY")
+	targetID := os.Getenv("TARGET_ID")
+	jobID := os.Getenv("JOB_ID")
+
+	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", swBaseRepo), "could not set JOB_FORK_REPOSITORY")
+	AssertOk(t, os.Setenv("TARGET_ID", strconv.Itoa(testTargetID)), "could not set TARGET_ID")
+	AssertOk(t, os.Setenv("JOB_ID", strconv.Itoa(testJobID)), "could not set JOB_ID")
 
 	tr := TestReport{
 		Results: []*Target{
 			{
-				Name: test,
+				Name: "github.com/pensando/sw/nic/agent/nmd/state/",
 			},
 		},
 	}
 
 	tr.runCoverage()
+	testReportFilePath := fmt.Sprintf("/tmp/testing_test_data_dump_%d.json", rand.Int())
+	err := tr.dumpTestData(testReportFilePath)
+	AssertOk(t, err, "Unable to dump test data to file: %s", testReportFilePath)
 
-	// testtracker should receive data
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var rep types.Reports
-		AssertOk(t, json.NewDecoder(r.Body).Decode(&rep), "Could not parse tracker report")
-		AssertEquals(t, swBaseRepo, rep.Repository, "Receive wrong repo")
-		Assert(t, rep.TargetID != int32(0), "Receive wrong TargetID")
-		Assert(t, rep.SHA != "", "Receive wrong SHA")
-		Assert(t, rep.SHATitle != "", "Receive wrong SHA title")
-		AssertEquals(t, testbed, rep.Testbed, "Receive wrong testbed")
-		AssertEquals(t, 1, len(rep.Testcases), "Receive wrong number of test cases")
-		AssertEquals(t, "nic/agent/netagent/state", rep.Testcases[0].Name, "Receive wrong test case name")
-		AssertEquals(t, "nic/agent/netagent/state", rep.Testcases[0].Description, "Receive wrong test case description")
-		Assert(t, time.Now().Format("Mon Jan 2 -0700 MST 2006") == rep.Testcases[0].FinishTime.Format("Mon Jan 2 -0700 MST 2006"), "Receive wrong test case finish time")
-		AssertEquals(t, int32(tr.Results[0].Coverage), rep.Testcases[0].Coverage, "Receive wrong test case coverage")
-		AssertEquals(t, fmt.Sprintf("http://jobd/logs/%d", rep.TargetID), rep.Testcases[0].LogURL, "Receive wrong test case log url")
-		AssertEquals(t, int32(1), rep.Testcases[0].Result, "Receive wrong test case result")
-		AssertEquals(t, "nic", rep.Testcases[0].Area, "Receive wrong test case area")
-		AssertEquals(t, "agent/netagent/state", rep.Testcases[0].Subarea, "Receive wrong test case subarea")
-	}))
-	defer ts.Close()
+	reportRaw, err := ioutil.ReadFile(testReportFilePath)
+	AssertOk(t, err, "Unable to reach test data back from file: %s", testReportFilePath)
 
-	u := strings.TrimPrefix(ts.URL, "http://")
+	unmarshalledReport := types.Reports{}
+	err = json.Unmarshal(reportRaw, &unmarshalledReport)
+	AssertOk(t, err, "Unable to unmarshal test report from file: %s", testReportFilePath)
+	AssertEquals(t, tr.Results[0].Reports, unmarshalledReport.Testcases, "Unexpected reports found in unmarshalled report")
 
-	jobRepoBak := os.Getenv("JOB_FORK_REPOSITORY")
-	targetIDBak := os.Getenv("TARGET_ID")
+	AssertEquals(t, swBaseRepo, unmarshalledReport.Repository, "Found wrong repo in test data dump")
+	Assert(t, unmarshalledReport.TargetID != int32(0), "Found wrong TargetID in test data dump")
+	Assert(t, unmarshalledReport.SHA != "", "Found wrong SHA in test data dump")
+	Assert(t, unmarshalledReport.SHATitle != "", "Found wrong SHA title in test data dump")
+	AssertEquals(t, testbed, unmarshalledReport.Testbed, "Found wrong testbed in test data dump")
+
+	// negative test cases
 	AssertOk(t, os.Unsetenv("JOB_FORK_REPOSITORY"), "Could not unset environment variable")
 	AssertOk(t, os.Unsetenv("TARGET_ID"), "Could not unset environment variable")
-	// empty job repo environment should not sent report
-	AssertEquals(t, errNotBaseRepo.Error(), tr.sendToTestTracker(u).Error(), "Could not check empty sw repo")
+	// empty job repo environment should not dump report
+	AssertEquals(t, errNotBaseRepo.Error(), tr.dumpTestData(testReportFilePath).Error(), "expected to fail when JOB_FORK_REPOSITORY env variable is not set")
 
 	// non pensando/sw repo should report failure too
 	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", "pensando/swtest"), "Could not set environment variable")
-
-	AssertEquals(t, errNotBaseRepo.Error(), tr.sendToTestTracker(u).Error(), "Could not check non sw repo")
+	AssertEquals(t, errNotBaseRepo.Error(), tr.dumpTestData(testReportFilePath).Error(), "expected to fail when JOB_FORK_REPOSITORY env variable is not pensando/sw")
 
 	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", swBaseRepo), "Could not set environment variable")
 
 	// empty TARGET_ID should fail too
-	Assert(t, tr.sendToTestTracker(u) != nil, "Could not check empty target id")
+	Assert(t, tr.dumpTestData(testReportFilePath) != nil, "expected to fail when TARGET_ID env variable is not set")
 
-	AssertOk(t, os.Setenv("TARGET_ID", targetIDBak), "Could not set environment variable")
-	AssertOk(t, tr.sendToTestTracker(u), "Could not send report to test tracker")
-
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", jobRepoBak), "Could not set environment variable")
-}
-
-func TestTrackerRetry(t *testing.T) {
-	if !isJobdCI() {
-		t.Skip("Skip because not in job-ci environment")
-	}
-
-	tr := TestReport{
-		RunFailed: true,
-		Results: []*Target{
-			{
-				Name:     "test",
-				Coverage: 45.0,
-				Error:    ErrTestCovFailed.Error(),
-			},
-		},
-	}
-
-	// reduce retryTimeout to speed up test
-	retryTrackerInterval = time.Second
-
-	// testtracker should receive corresponding data
-	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	}))
-
-	u := "127.0.0.1:7890"
-
-	go func() {
-		// start http test server after 3 seconds
-		time.Sleep(3 * time.Second)
-		l, err := net.Listen("tcp", u)
-		AssertOk(t, err, "Could not listen on 127.0.0.1:7890")
-		ts.Listener = l
-		ts.Start()
-	}()
-
-	jobRepoBak := os.Getenv("JOB_FORK_REPOSITORY")
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", swBaseRepo), "Could not set environment variable")
-	AssertOk(t, tr.sendToTestTracker(u), "Could not send report to test tracker")
-
-	// Not retry if server return error
-	ts2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "test failure", 500)
-	}))
-
-	err := tr.sendToTestTracker(strings.TrimPrefix(ts2.URL, "http://"))
-	Assert(t, err != nil, "Could receive failure without error")
-	AssertEquals(t, "test failure", err.Error(), "Could not receive expected failure reply")
-
-	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", jobRepoBak), "Could not set environment variable")
+	AssertOk(t, os.Setenv("TARGET_ID", targetID), "Could not set environment variable")
+	AssertOk(t, os.Setenv("JOB_FORK_REPOSITORY", jobForkRepo), "Could not set environment variable")
+	AssertOk(t, os.Setenv("JOB_ID", jobID), "Could not set environment variable")
 }
