@@ -233,6 +233,8 @@ fte::pipeline_action_t ep_learn_exec(fte::ctx_t &ctx) {
             ctx.set_feature_status(ret);
             ctx.update_flow(flowupd, FLOW_ROLE_INITIATOR);
         }
+        ctx.set_ignore_session_create(true);
+        ctx.set_valid_rflow(false);
     } else if (is_rarp_flow(&ctx.key()) && is_host_originated_packet(ctx)) {
         HAL_TRACE_VERBOSE("EP_LEARN : RARP packet processing...");
         if (process_vmotion_rarp(&ctx) != true) {
