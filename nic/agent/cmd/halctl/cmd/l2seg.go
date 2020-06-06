@@ -289,7 +289,7 @@ func l2segShowHeader(cmd *cobra.Command, args []string) {
 	fmt.Printf("Attach:      Attached L2segs\n")
 	hdrLine := strings.Repeat("-", 100)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-8s%-5s%-6s%-10s%-20s%-5s%-15s%-20s\n",
+	fmt.Printf("%-8s%-5s%-6s%-10s%-30s%-5s%-15s%-20s\n",
 		"Id", "Mode", "vrfId", "WireEncap", "OIFLs", "#EPs", "IFs", "Attach.")
 	fmt.Println(hdrLine)
 }
@@ -356,7 +356,7 @@ func l2segShowOneResp(resp *halproto.L2SegmentGetResponse) {
 		custOiflsSh := resp.GetStatus().GetBaseOiflCustShared()
 		oiflIdx := 0
 		for oiflIdx < len(custOifls) {
-			if custOiflsSh != nil {
+			if custOiflsSh != nil && oiflIdx < len(custOiflsSh) && custOiflsSh[oiflIdx] != nil {
 				oiflStr += fmt.Sprintf("%s:%d,sh:%d", ifIdxStr[uint32(oiflIdx)],
 					custOifls[oiflIdx].GetId(),
 					custOiflsSh[oiflIdx].GetId())
@@ -407,7 +407,7 @@ func l2segShowOneResp(resp *halproto.L2SegmentGetResponse) {
 		attachStr += "-"
 	}
 
-	fmt.Printf("%-8d%-5s%-6d%-10s%-20s%-5d%-15s%-20s\n",
+	fmt.Printf("%-8d%-5s%-6d%-10s%-30s%-5d%-15s%-20s\n",
 		resp.GetSpec().GetKeyOrHandle().GetSegmentId(),
 		vrfTypeStr,
 		resp.GetSpec().GetVrfKeyHandle().GetVrfId(),
