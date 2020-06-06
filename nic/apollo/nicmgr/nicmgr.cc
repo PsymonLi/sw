@@ -21,6 +21,7 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
+#include "platform/src/lib/nicmgr/include/eth_if.h"
 
 /// \defgroup PDS_NICMGR
 /// @{
@@ -183,8 +184,7 @@ nicmgrapi::host_dev_up_event_handler_(sdk::ipc::ipc_msg_ptr msg,
 
     // port status id should be zero for lif event
     st.id = 0;
-    st.status = 1;
-    st.speed = 0;
+    st.status = IONIC_PORT_OPER_STATUS_UP;
 
     PDS_TRACE_DEBUG("Rcvd host dev up event for lif %u", event->host_dev.id);
     g_devmgr->LifEventHandler(&st, lif_id);
@@ -199,7 +199,7 @@ nicmgrapi::host_dev_down_event_handler_(sdk::ipc::ipc_msg_ptr msg,
 
     // port status id should be zero for lif event
     st.id = 0;
-    st.status = 0;
+    st.status = IONIC_PORT_OPER_STATUS_DOWN;
 
     PDS_TRACE_DEBUG("Rcvd host dev down event for lif %u", event->host_dev.id);
     g_devmgr->LifEventHandler(&st, lif_id);
