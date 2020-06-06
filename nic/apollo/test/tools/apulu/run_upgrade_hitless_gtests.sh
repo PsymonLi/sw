@@ -8,7 +8,8 @@ source ${CUR_DIR}/../setup_gtests.sh
 setup
 
 # run all upg gtests
-rm -rf /update  # TODO : currently need to run from root
+mkdir -p /update/ # TODO : currently need to run from root
+rm -rf /update/*
 
 if [[ "$1" ==  --coveragerun ]]; then
     # run sdk tests for code coverage

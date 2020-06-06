@@ -5,6 +5,7 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
+#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/framework/api_base.hpp"
@@ -133,12 +134,12 @@ backup_tep (upg_obj_info_t *info)
 {
     sdk_ret_t ret;
     ht *tep_ht;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     tep_ht = tep_db()->tep_ht();
     ret = (tep_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -147,12 +148,12 @@ backup_nexthop (upg_obj_info_t *info)
 {
     sdk_ret_t ret;
     ht *nexthop_ht;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     nexthop_ht = nexthop_db()->nh_ht();
     ret = (nexthop_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -161,12 +162,12 @@ backup_nexthop_group (upg_obj_info_t *info)
 {
     sdk_ret_t ret;
     ht *nh_group_ht;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     nh_group_ht = nexthop_group_db()->nh_group_ht();
     ret = (nh_group_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -175,12 +176,12 @@ backup_vnic (upg_obj_info_t *info)
 {
     sdk_ret_t ret;
     ht *vnic_ht;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     vnic_ht = vnic_db()->vnic_ht();
     ret = (vnic_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -189,12 +190,12 @@ backup_vpc (upg_obj_info_t *info)
 {
     sdk_ret_t ret;
     ht *vpc_ht;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     vpc_ht = vpc_db()->vpc_ht();
     ret = (vpc_ht->walk(backup_stateful_obj_cb, (void *)info));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -203,12 +204,12 @@ backup_mapping (upg_obj_info_t *info)
 {
     sdk::lib::kvstore *kvs;
     sdk_ret_t ret;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx = info->ctx;
 
     kvs = api::g_pds_state.kvstore();
     ret = (kvs->iterate(backup_statless_obj_cb, (void *)info, "mapping"));
     // adjust the offset in persistent storage in the end of walk
-    shm->api_upg_ctx()->incr_obj_offset(info->backup.total_size);
+    ctx->incr_obj_offset(info->backup.total_size);
     return ret;
 }
 
@@ -231,27 +232,28 @@ upg_ev_backup (upg_ev_params_t *params)
     uint32_t obj_size;
     upg_obj_info_t info;
     upg_obj_stash_meta_t *hdr;
-    upg_shm *shm = api::g_upg_state->backup_shm();
+    upg_ctxt *ctx;
 
-    SDK_ASSERT(shm->api_upg_ctx() != NULL);
-    // get and initialize a segment from shread memory for write
-    ret = shm->api_upg_ctx()->init(PDS_UPGRADE_API_OBJ_STORE_NAME,
-                                   PDS_UPGRADE_API_OBJ_STORE_SIZE, true);
-    SDK_ASSERT(ret == SDK_RET_OK);
+    ctx = upg_shmstore_objctx_create(core::PDS_THREAD_ID_API,
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG,
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_SIZE,
+                                     UPGRADE_SVC_SHMSTORE_TYPE_BACKUP);
+    SDK_ASSERT(ctx);
     // set the backup status to true. will set to false if there is a failure
     g_upg_state->set_backup_status(true);
-    hdr = (upg_obj_stash_meta_t *)shm->api_upg_ctx()->mem();
-    obj_size = shm->api_upg_ctx()->obj_size();
+    hdr = (upg_obj_stash_meta_t *)ctx->mem();
+    obj_size = ctx->obj_size();
 
     for (uint32_t id = (uint32_t )OBJ_ID_NONE + 1; id < OBJ_ID_MAX; id++) {
         memset(&info, 0, sizeof(upg_obj_info_t));
         // initialize meta for obj
         hdr[id].obj_id = id;
-        hdr[id].offset = shm->api_upg_ctx()->obj_offset();
+        hdr[id].offset = ctx->obj_offset();
         // initialize upg_info
         info.obj_id = id;
         info.mem = (char *)hdr + hdr[id].offset;
         info.backup.size_left = obj_size - hdr[id].offset;
+        info.ctx = ctx;
         switch (id) {
         case OBJ_ID_NEXTHOP_GROUP:
             ret = backup_nexthop_group(&info);
@@ -300,6 +302,7 @@ upg_ev_backup (upg_ev_params_t *params)
         }
     }   //end for
 
+    ctx->destroy(ctx);
     if (g_upg_state->backup_status() == false) {
         PDS_TRACE_ERR("Backup failed");
         return SDK_RET_ERR;
@@ -361,27 +364,18 @@ restore_obj (upg_obj_info_t *info)
 static sdk_ret_t
 upg_ev_restore (upg_ev_params_t *params)
 {
-    std::size_t seg_size;
     sdk_ret_t ret;
     uint32_t obj_count;
-    upg_shm *shm = g_upg_state->restore_shm();
     char *mem;
     upg_obj_stash_meta_t *hdr;
     upg_obj_info_t info;
+    upg_ctxt *ctx;
 
-    // get the size of shared memory segment created already during backup
-    seg_size = shm->shm_mgr()->get_segment_size(PDS_UPGRADE_API_OBJ_STORE_NAME);
-    SDK_ASSERT(seg_size != 0);
-    SDK_ASSERT(shm->api_upg_ctx() != NULL);
-    // now get the segment handle and open for read.
-    // size is ignored if its read operation
-    ret = shm->api_upg_ctx()->init(PDS_UPGRADE_API_OBJ_STORE_NAME, seg_size, false);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to get shared memory segment for restore, err %u",
-                      ret);
-        return ret;
-    }
-    hdr = (upg_obj_stash_meta_t *)shm->api_upg_ctx()->mem();
+    ctx = upg_shmstore_objctx_create(core::PDS_THREAD_ID_API,
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG,
+                                     0, UPGRADE_SVC_SHMSTORE_TYPE_RESTORE);
+    SDK_ASSERT(ctx);
+    hdr = (upg_obj_stash_meta_t *)ctx->mem();
 
     for (uint32_t id = (uint32_t )OBJ_ID_NONE + 1; id < OBJ_ID_MAX; id++) {
         obj_count = hdr[id].obj_count;
@@ -390,6 +384,7 @@ upg_ev_restore (upg_ev_params_t *params)
         }
         PDS_TRACE_INFO("Started restoring %u objs for id %u", obj_count, id);
         memset(&info, 0, sizeof(upg_obj_info_t));
+        info.ctx = ctx;
         // initialize the mem reference for each unique obj
         mem = (char *)hdr + hdr[id].offset;
         while (obj_count--) {
@@ -406,6 +401,7 @@ upg_ev_restore (upg_ev_params_t *params)
                        hdr[id].obj_count, id);
     }   // end for
 
+    ctx->destroy(ctx);
     return ret;
 }
 

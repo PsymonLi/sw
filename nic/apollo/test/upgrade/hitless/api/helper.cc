@@ -47,36 +47,13 @@ obj_backup_graceful (void)
     return SDK_RET_OK;
 }
 
-static sdk_ret_t
-shm_create(bool backup)
-{
-    upg_shm *shm;
-
-    if (backup) {
-        shm = ::api::g_upg_state->backup_shm();
-        if (!shm && ((shm = upg_shm::factory(true)) == NULL)) {
-            PDS_TRACE_ERR("Upgrade shared memory instance creation failed");
-            return SDK_RET_ERR;
-        }
-        ::api::g_upg_state->set_backup_shm(shm);
-    } else {
-        shm = ::api::g_upg_state->restore_shm();
-        if (!shm && ((shm = upg_shm::factory(false)) == NULL)) {
-            PDS_TRACE_ERR("Upgrade shared memory instance open failed");
-            return SDK_RET_ERR;
-        }
-        ::api::g_upg_state->set_restore_shm(shm);
-    }
-    return SDK_RET_OK;
-}
-
 sdk_ret_t
 upg_obj_backup (upg_mode_t mode)
 {
     sdk_ret_t ret;
 
     PDS_TRACE_DEBUG("Upgrade object backup, mode %u", mode);
-    if ((ret = shm_create(true)) != SDK_RET_OK) {
+    if ((ret = upg_shmstore_create(mode)) != SDK_RET_OK) {
         return ret;
     }
 
@@ -96,9 +73,6 @@ upg_obj_restore (upg_mode_t mode)
     sdk_ret_t ret;
 
     PDS_TRACE_DEBUG("Upgrade object restore, mode %u", mode);
-    if ((ret = shm_create(false)) != SDK_RET_OK) {
-        return ret;
-    }
     return ::api::upg_obj_restore(mode);
 }
 

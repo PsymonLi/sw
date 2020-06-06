@@ -143,7 +143,10 @@ shmmgr::factory(const char *name, const std::size_t size,
     shmmgr    *new_shmmgr;
 
     // basic validation(s)
-    if ((name == NULL) || size <= 16) {
+    if (name == NULL) {
+        return NULL;
+    }
+    if (size <= 16 && (mode == SHM_CREATE_ONLY || mode == SHM_OPEN_OR_CREATE)) {
         return NULL;
     }
 

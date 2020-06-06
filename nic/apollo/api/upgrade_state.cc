@@ -21,8 +21,7 @@ upg_state *g_upg_state;
 
 void
 upg_state::init_(pds_init_params_t *params) {
-    backup_shm_ = NULL;
-    restore_shm_ = NULL;
+    return;
 }
 
 void
@@ -64,6 +63,21 @@ upg_state::set_qstate_cfg(uint64_t addr, uint32_t size, uint32_t pgm_off) {
     q.size = size;
     q.pgm_off = pgm_off;
     qstate_cfgs_.push_back(q);
+}
+
+void
+upg_state::insert_upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type,
+                               sdk::lib::shmstore *store) {
+    SDK_ASSERT(upg_shmstore(thread_id, type) == NULL);
+    upg_shmstore_[type].insert(std::make_pair(thread_id, store));
+}
+
+sdk::lib::shmstore *
+upg_state::upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type) {
+    std::unordered_map<uint32_t, sdk::lib::shmstore *>::iterator it;
+
+    it = upg_shmstore_[type].find(thread_id);
+    return it == upg_shmstore_[type].end() ? NULL : it->second;
 }
 
 }    // namespace api

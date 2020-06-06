@@ -12,12 +12,13 @@
 #define __API_UPGRADE_STATE_HPP__
 
 #include <list>
+#include <unordered_map>
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
-#include "nic/apollo/api/internal/upgrade_shm.hpp"
 
 namespace api {
 
@@ -127,11 +128,10 @@ public:
     void set_backup_status(bool status) { backup_status_ = status; }
     /// \brief get backup/restore status
     bool backup_status(void) { return backup_status_; }
-    /// \brief get upgrade shared memory instance
-    upg_shm *backup_shm(void) { return backup_shm_; };
-    void set_backup_shm(upg_shm *shm) { backup_shm_ = shm; }
-    upg_shm *restore_shm(void) { return restore_shm_; };
-    void set_restore_shm(upg_shm *shm) { restore_shm_ = shm; }
+    /// \brief upgrade store instance
+    void insert_upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type,
+                             sdk::lib::shmstore *store);
+    sdk::lib::shmstore *upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t);
 private:
     /// lif qstate mpu program offset map
     std::list<qstate_cfg_t> qstate_cfgs_;
@@ -154,10 +154,9 @@ private:
     sdk::upg::upg_dom_t upg_init_dom_;
     /// backup status
     bool backup_status_;
-    /// upgrade shared memory instance for backup
-    upg_shm *backup_shm_;
-    /// upgrade shared memory instance for restore
-    upg_shm *restore_shm_;
+    /// upgrade object store. indexed using thread-id and store type
+    std::unordered_map<uint32_t, sdk::lib::shmstore *>
+        upg_shmstore_[UPGRADE_SVC_SHMSTORE_TYPE_MAX];
 private:
     void init_(pds_init_params_t *params);
 };

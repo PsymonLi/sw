@@ -2,6 +2,12 @@
 
 MY_DIR=$( readlink -f $( dirname $0 ))
 UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
+
+# clear any upgrade specific data from previous failed run
+mkdir -p /update
+rm -rf /update/*       # upgrade init mode
+rm -rf /root/.pcie*    # pciemgrd saves here in sim mode
+
 # setup dol
 DOL_ARGS='--pipeline apulu --topo learn --feature learn'
 source $MY_DIR/../../../tools/setup_dol.sh $DOL_ARGS

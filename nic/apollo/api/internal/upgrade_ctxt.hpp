@@ -12,14 +12,7 @@
 #define __API_INTERNAL_UPGRADE_HPP__
 
 #include "nic/sdk/include/sdk/base.hpp"
-
-// total size of the below should not exceed PDS_UPG_SHM_SIZE
-// api objects
-#define PDS_UPGRADE_API_OBJ_STORE_NAME "pds_upg_api_objs_info"
-#define PDS_UPGRADE_API_OBJ_STORE_SIZE (1 * 1024 * 1024)
-// nicmgr objects
-#define PDS_UPGRADE_NICMGR_OBJ_STORE_NAME "pds_upg_nicmgr_objs_info"
-#define PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE (20 * 1024)
+#include "nic/sdk/upgrade/include/ev.hpp"
 
 namespace api {
 
@@ -43,18 +36,7 @@ typedef struct upg_backup_info_s {
     uint32_t stashed_obj_count;     ///< number of objs stashed
 } upg_backup_info_t;
 
-/// \brief upgrade obj info. will be used per class during backup/restore
-/// to point/fetch data in/from persistent storage. 
-//  it helps objs to navigate to its correct position inside persistent storage
-typedef struct upg_obj_info_s {
-    uint32_t skipped:1;             ///< object is intentionally skipped
-    char *mem;                      ///< reference into persistent storage
-    uint32_t obj_id ;               ///< obj id
-    size_t   size;                  ///< bytes written/read
-    upg_backup_info_t backup;       ///< backup specific data
-} upg_obj_info_t;
-
-/// \brief obj tlv. abstraction used to read/write from/at specified location
+// \brief obj tlv. abstraction used to read/write from/at specified location
 /// in persistent storage
 // ...WARNING.. this structure should be preserved across upgrades
 typedef struct upg_obj_tlv_s {
@@ -85,8 +67,8 @@ public:
     /// \brief get mapped memory start reference
     char *mem(void) const { return mem_; }
 
-    /// \brief get segment from shared memory
-    sdk_ret_t init(const char *obj_store_name, size_t obj_store_size, bool backup);
+    /// \brief initialize the object store
+    sdk_ret_t init(void *mem, size_t size, bool create);
 
 private:
     /// \brief constructor
@@ -99,6 +81,23 @@ private:
     uint32_t            obj_offset_;        ///< object memory offset
     uint32_t            obj_size_;          ///< max object memory size
 };
+
+/// \brief upgrade obj info. will be used per class during backup/restore
+/// to point/fetch data in/from persistent storage.
+//  it helps objs to navigate to its correct position inside persistent storage
+typedef struct upg_obj_info_s {
+    uint32_t skipped:1;             ///< object is intentionally skipped
+    char *mem;                      ///< reference into persistent storage
+    uint32_t obj_id ;               ///< objid
+    size_t   size;                  ///< bytes written/read
+    upg_backup_info_t backup;       ///< backup specific data
+    upg_ctxt *ctx;                  ///< upgrade context
+} upg_obj_info_t;
+
+
+upg_ctxt *upg_shmstore_objctx_create(uint32_t thread_id, const char *obj_name,
+                                     size_t obj_size,
+                                     upg_svc_shmstore_type_t type);
 
 }    // namespace api
 #endif    // __API_INTERNAL_UPGRADE_HPP__

@@ -3,6 +3,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/core/trace.hpp"
@@ -245,15 +246,22 @@ nicmgr_upg_restore_uplink_info (pds::Port *proto_obj)
 }
 
 static sdk_ret_t
-backup_objs (void)
+backup_objs (upg_mode_t mode)
 {
     std::vector <struct EthDevInfo*> dev_info;
     std::map<uint32_t, uplink_t*> up_links;
     pds::nicmgr::EthDevice proto_dev;
     pds::Port proto_port;
-    api::upg_ctxt *ctx = api::g_upg_state->backup_shm()->nicmgr_upg_ctx();
-    upg_obj_stash_meta_t *meta = (upg_obj_stash_meta_t *)ctx->mem();
-    sdk_ret_t ret;
+    api::upg_ctxt *ctx;
+    upg_obj_stash_meta_t *meta;
+    sdk_ret_t ret = SDK_RET_OK;
+
+    ctx = api::upg_shmstore_objctx_create(core::PDS_THREAD_ID_NICMGR,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE,
+                                          UPGRADE_SVC_SHMSTORE_TYPE_BACKUP);
+    SDK_ASSERT(ctx);
+    meta = (upg_obj_stash_meta_t *)ctx->mem();
 
     dev_info = g_devmgr->GetEthDevStateInfo();
     PDS_TRACE_DEBUG("Saving %lu objects of EthDevInfo", dev_info.size());
@@ -268,7 +276,7 @@ backup_objs (void)
         NICMGR_BKUP_OBJS(proto_dev, "ethdev");
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("EthDevInfo save failed");
-            return ret;
+            goto err_exit;
         }
     }
 
@@ -285,27 +293,35 @@ backup_objs (void)
         NICMGR_BKUP_OBJS(proto_port, "uplink");
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Uplink save failed");
-            return ret;
+            goto err_exit;
         }
     }
-    return SDK_RET_OK;
+
+err_exit:
+    ctx->destroy(ctx);
+    return ret;
 }
 
 static sdk_ret_t
-restore_objs (void)
+restore_objs (upg_mode_t mode)
 {
     sdk_ret_t ret = SDK_RET_OK;
     pds::nicmgr::EthDevice proto_dev;
     pds::Port proto_port;
-    api::upg_ctxt *ctx = api::g_upg_state->restore_shm()->nicmgr_upg_ctx();
+    api::upg_ctxt *ctx;
 
     PDS_TRACE_DEBUG("Retrieving saved objects");
+
+    ctx = api::upg_shmstore_objctx_create(core::PDS_THREAD_ID_NICMGR,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG,
+                                          0, UPGRADE_SVC_SHMSTORE_TYPE_RESTORE);
+    SDK_ASSERT(ctx);
 
     NICMGR_RESTORE_OBJS(proto_port, nicmgr_upg_restore_uplink_info,
                         NICMGR_BKUP_OBJ_UPLINKINFO_ID, "uplink");
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Uplink restore failed");
-        return ret;
+        goto err_exit;
     }
 
     NICMGR_RESTORE_OBJS(proto_dev, nicmgr_upg_restore_eth_device_info,
@@ -313,10 +329,12 @@ restore_objs (void)
 
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Eth device restore failed");
-        return ret;
+        goto err_exit;
     }
 
-    return SDK_RET_OK;
+err_exit:
+    ctx->destroy(ctx);
+    return ret;
 }
 
 
@@ -346,10 +364,11 @@ nicmgr_upg_ev_backup_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 {
     upg_ev_info_s *info = new upg_ev_info_t();
     sdk_ret_t ret;
+    upg_ev_params_t *params = (upg_ev_params_t *)msg->data();
 
     PDS_TRACE_DEBUG("Upgrade nicmgr IPC request backup");
     info->msg_in = msg;
-    ret = backup_objs();
+    ret = backup_objs(params->mode);
     return nicmgr_upg_process_response(ret, info);
 }
 
@@ -416,7 +435,7 @@ nicmgr_upg_init (void)
 
     // load the states
     if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
-        ret = restore_objs();
+        ret = restore_objs(upg_init_mode);
         if (ret != SDK_RET_OK) {
             // api::g_upg_state->set_upg_init_error();
         }

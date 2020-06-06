@@ -76,7 +76,7 @@ function upgmgr_pkgcheck() {
 
 function upgmgr_backup() {
     local files_must="/update/pcieport_upgdata /update/pciemgr_upgdata "
-    files_must+="/update/pds_api_upgdata "
+    files_must+="/update/pds_nicmgr_upgdata "
     local files_optional="/update/pciemgr_upgrollback "
     for e in $files_must; do
         if [[ ! -f $e ]]; then
@@ -93,8 +93,9 @@ function upgmgr_restore() {
 }
 
 function upgmgr_hitless_backup_files_check() {
+    # TODO need to add domain here. dom_b to dom_a will have extensions
     local files_must="/update/pcieport_upgdata /update/pciemgr_upgdata "
-    files_must+="/update/pds_api_upgdata "
+    files_must+="/update/pds_nicmgr_upgdata /update/pds_agent_upgdata "
     local files_optional="/update/pciemgr_upgrollback "
     # first make sure all the mandatory files are present
     for e in $files_must; do
@@ -103,40 +104,12 @@ function upgmgr_hitless_backup_files_check() {
             return 1
         fi
     done
-    # create softlinks to share
-    files_must+=" $files_optional"
-    for e in $files_must; do
-        rm -rf /share/$(basename $e)
-        if [[ -f $e ]]; then
-             ln -s $e /share/$(basename $e)
-        fi
-    done
     return 0
 }
 
 function upgmgr_hitless_restore_files_check() {
-    local files_must="/share/pcieport_upgdata /share/pciemgr_upgdata "
-    files_must+="/share/pds_api_upgdata "
-    local files_optional="/share/pciemgr_upgrollback "
-    # ignore if share directory not present
-    if [ ! -d  /share ];then
-        return 0
-    fi
-    # first make sure all the mandatory files for this version are present
-    # TODO do we need a version comparion here to decide
-    for e in $files_must; do
-        if [[ ! -f $e ]]; then
-            echo "File $e not present"
-            return 1
-        fi
-    done
-    # create softlinks to update
-    files_must+=" $files_optional"
-    for e in $files_must; do
-        if [[ -f $e ]]; then
-             ln -s $e /update/$(basename $e)
-        fi
-    done
+    ehco "Nothing to to"
+    return 0
 }
 
 function reload_drivers() {
@@ -152,6 +125,7 @@ function reload_drivers() {
 
     insmod $PDSPKG_TOPDIR/bin/mnet.ko &> $NON_PERSISTENT_LOG_DIR/mnet_load.log
     [[ $? -ne 0 ]] && echo "Aborting reload, failed to load mnet driver!" && exit 1
+    return 0
 }
 
 function copy_img_to_alt_partition() {

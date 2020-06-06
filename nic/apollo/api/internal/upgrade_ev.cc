@@ -89,19 +89,6 @@ upg_hitless_additional_ev_send (sdk::upg::upg_ev_params_t *params)
 
 
 static sdk_ret_t
-upg_backup_shm_create (void)
-{
-    upg_shm *shm =  api::g_upg_state->backup_shm();
-
-    if (!shm && ((shm = upg_shm::factory(true)) == NULL)) {
-        PDS_TRACE_ERR("Upgrade shared memory instance creation failed");
-        return SDK_RET_ERR;
-    }
-    api::g_upg_state->set_backup_shm(shm);
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
 upg_graceful_ev_send (sdk::upg::upg_ev_params_t *params)
 {
     sdk_ret_t ret;
@@ -117,7 +104,7 @@ upg_graceful_ev_send (sdk::upg::upg_ev_params_t *params)
         ret = SDK_RET_OK;
         break;
     case UPG_EV_BACKUP:
-        if ((ret = upg_backup_shm_create()) != SDK_RET_OK) {
+        if ((ret = upg_shmstore_create(params->mode)) != SDK_RET_OK) {
             break;
         }
         INVOKE_EV_THREAD_HDLR(ev, backup_hdlr, UPG_MSG_ID_BACKUP);
@@ -182,7 +169,7 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         ret = SDK_RET_OK;
         break;
     case UPG_EV_BACKUP:
-        if ((ret = upg_backup_shm_create()) != SDK_RET_OK) {
+        if ((ret = upg_shmstore_create(params->mode)) != SDK_RET_OK) {
             break;
         }
         INVOKE_EV_THREAD_HDLR(ev, backup_hdlr, UPG_MSG_ID_BACKUP);
@@ -344,6 +331,13 @@ upg_obj_restore (upg_mode_t mode)
     sdk_ret_t ret;
 
     PDS_TRACE_DEBUG("Upgrade object restore, mode %u", mode);
+    if (upgrade_mode_none(mode)) {
+        return SDK_RET_OK;
+    }
+    ret = upg_shmstore_open(mode);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     if (upgrade_mode_hitless(mode)) {
         ret = obj_restore_hitless();
     } else if (upgrade_mode_graceful(mode)) {

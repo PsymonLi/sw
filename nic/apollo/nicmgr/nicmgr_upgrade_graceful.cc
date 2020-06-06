@@ -48,16 +48,6 @@ upg_ev_start (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_backup (upg_ev_params_t *params)
 {
-    sdk_ret_t ret;
-    api::upg_ctxt *ctx = api::g_upg_state->backup_shm()->nicmgr_upg_ctx();
-
-    // initialize a segment from shared memory for write
-    ret = ctx->init(PDS_UPGRADE_NICMGR_OBJ_STORE_NAME,
-                    PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE, true);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
-
     return nicmgr_send_ipc(params);
 }
 
@@ -146,17 +136,6 @@ nicmgr_upg_graceful_init (void)
     // register for upgrade events
     api::upg_ev_thread_hdlr_register(ev_hdlr);
 
-    // if it is upgrade mode, open the nicmgr object store for reading
-    if (sdk::platform::upgrade_mode_graceful(g_upg_state->upg_init_mode())) {
-        sdk_ret_t ret;
-        api::upg_ctxt *ctx = api::g_upg_state->restore_shm()->nicmgr_upg_ctx();
-
-        ret = ctx->init(PDS_UPGRADE_NICMGR_OBJ_STORE_NAME,
-                        PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE, false);
-        if (ret != SDK_RET_OK) {
-            return ret;
-        }
-    }
     return SDK_RET_OK;
 }
 

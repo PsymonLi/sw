@@ -18,36 +18,15 @@
 namespace api {
 
 // this is for the header information pointing to each object types
-#define PDS_UPGRADE_STORE_OBJ_OFFSET (OBJ_ID_MAX * sizeof(upg_obj_stash_meta_t))
+#define PDS_UPGRADE_SHMSTORE_OBJ_OFFSET (OBJ_ID_MAX * sizeof(upg_obj_stash_meta_t))
 
 sdk_ret_t
-upg_ctxt::init(const char *obj_store_name, size_t obj_store_size, bool backup) {
-    upg_shm *shm;
-    shmmgr *shm_mmgr;
-    bool obj_store_create = backup;
-
-    shm = backup ? api::g_upg_state->backup_shm() : api::g_upg_state->restore_shm();
-    SDK_ASSERT(shm != NULL);
-    shm_mmgr = shm->shm_mgr();
-    SDK_ASSERT(shm_mmgr != NULL);
-
-    try {
-        mem_ = (char *)shm_mmgr->segment_find(obj_store_name, obj_store_create,
-                                              obj_store_create ? obj_store_size: 0);
-        if (!mem_) {
-            PDS_TRACE_ERR("Failed to init shared memory segment for:%s",
-                          obj_store_create == true ? "backup" : "restore");
-            return SDK_RET_OOM;
-        }
-    } catch (...) {
-        PDS_TRACE_ERR("Failed to init shared memory segment for:%s",
-                      obj_store_create == true ? "backup" : "restore");
-        return SDK_RET_OOM;
-    }
-    obj_size_   = obj_store_size - PDS_UPGRADE_STORE_OBJ_OFFSET;
-    obj_offset_ = PDS_UPGRADE_STORE_OBJ_OFFSET;
-    if (obj_store_create) {
-        memset(mem_, 0, PDS_UPGRADE_STORE_OBJ_OFFSET);
+upg_ctxt::init(void *mem, size_t size, bool create) {
+    mem_ = (char *)mem;
+    obj_size_ = size - PDS_UPGRADE_SHMSTORE_OBJ_OFFSET;
+    obj_offset_ = PDS_UPGRADE_SHMSTORE_OBJ_OFFSET;
+    if (create) {
+        memset(mem_, 0, PDS_UPGRADE_SHMSTORE_OBJ_OFFSET);
     }
     return SDK_RET_OK;
 }
@@ -75,6 +54,40 @@ upg_ctxt::destroy(upg_ctxt *uctxt) {
     if (uctxt) {
         SDK_FREE(api::PDS_MEM_ALLOC_ID_UPG_CTXT, uctxt);
     }
+}
+
+upg_ctxt *
+upg_shmstore_objctx_create (uint32_t thread_id, const char *obj_name,
+                            size_t obj_size, upg_svc_shmstore_type_t type)
+{
+    upg_ctxt *ctx;
+    size_t size;
+    void *mem;
+    sdk::lib::shmstore *store = api::g_upg_state->upg_shmstore(thread_id, type);
+
+    SDK_ASSERT(store);
+    ctx = upg_ctxt::factory();
+    if (type == UPGRADE_SVC_SHMSTORE_TYPE_BACKUP) {
+        mem = store->create_segment(obj_name, obj_size);
+        if (!mem) {
+            PDS_TRACE_ERR("Upgrade segment allocation for object %s failed",
+                          obj_name);
+            return NULL;
+        }
+        ctx->init(mem, obj_size, true);
+    } else if (type == UPGRADE_SVC_SHMSTORE_TYPE_RESTORE) {
+        mem = store->open_segment(obj_name);
+        if (!mem) {
+            PDS_TRACE_ERR("Upgrade segment open for object %s failed", obj_name);
+            return NULL;
+        }
+        size = store->segment_size(obj_name);
+        SDK_ASSERT(size != 0);
+        ctx->init(mem, size, false);
+    } else {
+        SDK_ASSERT(0);
+    }
+    return ctx;
 }
 
 } // namespace api

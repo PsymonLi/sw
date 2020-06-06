@@ -65,6 +65,8 @@ sdk_ret_t nicmgr_upg_hitless_init(void);
 void upg_ev_process_response(sdk_ret_t ret, upg_ev_msg_id_t id);
 sdk_ret_t upg_event_send(sdk::upg::upg_ev_params_t *params);
 sdk_ret_t upg_obj_restore(upg_mode_t mode);
+sdk_ret_t upg_shmstore_create(upg_mode_t mode);
+sdk_ret_t upg_shmstore_open(upg_mode_t mode);
 
 }   // namespace api
 

@@ -59,15 +59,6 @@ upg_ev_sync (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_backup (upg_ev_params_t *params)
 {
-    sdk_ret_t ret;
-    api::upg_ctxt *ctx = api::g_upg_state->backup_shm()->nicmgr_upg_ctx();
-
-    // initialize a segment from shared memory for write
-    ret = ctx->init(PDS_UPGRADE_NICMGR_OBJ_STORE_NAME,
-                    PDS_UPGRADE_NICMGR_OBJ_STORE_SIZE, true);
-    if (ret != SDK_RET_OK) {
-        return ret;
-    }
     return nicmgr_send_ipc(params);
 }
 
