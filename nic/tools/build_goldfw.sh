@@ -156,9 +156,14 @@ else
     cd $TOPDIR/platform/tools && ./update_gold_drv.sh $gold_ver
     cd $TOPDIR/platform && tar -czf gold_drv.tar.gz hosttools
     docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
-    cd $TOPDIR
-    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/nic/buildroot/output_gold/images/naples_goldfw.tar
-    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/platform/gold_drv.tar.gz
+
+    DEST="/release-arfifacts/gold"
+    mkdir -p $DEST
+    mv $TOPDIR/nic/buildroot/output_gold/images/naples_goldfw.tar $DEST/
+    mv $TOPDIR/platform/gold_drv.tar.gz $DEST
+
+    asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/naples_goldfw.tar
+    asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/gold_drv.tar.gz
 
     exit 0
 fi

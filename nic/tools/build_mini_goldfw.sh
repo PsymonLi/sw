@@ -155,8 +155,11 @@ else
     fi
 
     docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
-    cd $TOPDIR
-    asset-build/asset-push/asset-push builds hourly $RELEASE $TOPDIR/nic/buildroot/output_minigold/images/naples_minigoldfw.tar
+
+    DEST="/release-arfifacts/gold"
+    mkdir -p $DEST
+    mv $TOPDIR/nic/buildroot/output_minigold/images/naples_minigoldfw.tar $DEST/
+    asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/naples_minigoldfw.tar
 
     exit 0
 fi
