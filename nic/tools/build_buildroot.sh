@@ -89,7 +89,7 @@ start_shell() {
 
 cleanup() {
     # stop shell
-    [[ ! -z "$DOCKER_ID" ]] && docker stop $DOCKER_ID
+    [ ! -z "$DOCKER_ID" ] && docker stop $DOCKER_ID
     # remove submodule remote
     (cd $TOPDIR/nic/buildroot && git remote remove $GIT_REMOTE_NAME)
 }

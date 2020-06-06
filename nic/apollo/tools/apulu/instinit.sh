@@ -2,10 +2,12 @@
 
 CUR_DIR=$( readlink -f $( dirname $0 ) )
 source $CUR_DIR/setup_env_hw.sh
+source $CUR_DIR/upgmgr_base.sh
 
 export GOTRACEBACK='crash'
 export GOGC=50
 export PERSISTENT_LOG_DIR='/obfl/'
+UPGRADE_INIT_INSTANCE_FILE='/share/upgrade_init_instance.txt'
 
 ulimit -c unlimited
 
@@ -81,6 +83,39 @@ function start_cronjobs {
     nice crond -c $PDSPKG_TOPDIR/conf/apollo/crontabs
 }
 
+function setup_hugepages {
+    set_nr_pages=$1
+    if [[ $set_nr_pages == "1" ]];then
+        #Huge-pages for DPDK considering both instances
+        echo 128 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+    fi
+    mkdir -p /dev/hugepages
+    mount -t hugetlbfs nodev /dev/hugepages
+}
+
+function setup_upgrade_domain {
+    # set the domain for new based on the active domain
+    instance=`cat $UPGRADE_INIT_INSTANCE_FILE`
+    if [[ -f "$instance" ]];then
+        # init boot instance is always dom_a and the next one is dom_b
+        # for all processses including upgrade manager
+        upgmgr_set_init_domain $UPGRADE_DOMAIN_A
+    else
+        upgmgr_set_init_domain $UPGRADE_DOMAIN_B
+    fi
+}
+
+function setup_upgrade_defaults {
+    upgmgr_clear_init_mode
+    upgmgr_clear_init_domain
+    # domain is different from filesystem instance id. domain is to
+    # identify it is a regular boot vs upgrade boot.
+    # save the init instance for future load
+    instance="$(ls /.instance_*)"
+    echo $instance > $UPGRADE_INIT_INSTANCE_FILE;
+}
+
+
 function start_ssh {
     /etc/init.d/S50sshd start
 }
@@ -89,12 +124,16 @@ if [ "$1" = "init" ]
 then
     initial_boot_action
     load_drivers
+    setup_hugepages "1"
+    setup_upgrade_defaults
     start_sysmgr
     bringup_intfs
     start_cronjobs
     start_ssh
 elif [ "$1" = "standby" ]
 then
+    setup_hugepages "0"
+    setup_upgrade_domain
     start_sysmgr
 elif [ "$1" = "switchover" ]
 then
