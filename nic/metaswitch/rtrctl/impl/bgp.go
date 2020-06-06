@@ -69,7 +69,7 @@ var bgpIPUnicastNlriShowCmd = &cobra.Command{
 	Use:   "nlri",
 	Short: "show ip unicast nlri information",
 	Long:  "show ip unicast nlri information",
-	Args:  cobra.NoArgs,
+	Args:  bgpNlriShowCmdHandlerValidator,
 	RunE:  bgpIPUnicastNlriShowCmdHandler,
 }
 
@@ -91,7 +91,7 @@ var bgpL2vpnEvpnNlriShowCmd = &cobra.Command{
 	Use:   "nlri",
 	Short: "show bgp l2vpn evpn nlri information",
 	Long:  "show bgp l2vpn evpn nlri information",
-	Args:  cobra.NoArgs,
+	Args:  bgpNlriShowCmdHandlerValidator,
 	RunE:  bgpL2vpnEvpnNlriShowCmdHandler,
 }
 
@@ -366,6 +366,33 @@ const (
 `
 )
 
+func bgpNlriShowCmdHandlerValidator(cmd *cobra.Command, args []string) (err error) {
+	if extCommFilter != "" {
+		if utils.ExtCommToBytes(extCommFilter) == nil {
+			return fmt.Errorf("Invalid extended community ID %s", extCommFilter)
+		}
+	}
+	if vnidFilter != "" {
+		_, ok := strconv.ParseUint(vnidFilter, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid vni-id %s", vnidFilter)
+		}
+	}
+	if typeFilter != "" {
+		t, ok := strconv.ParseUint(typeFilter, 10, 32)
+		if ok != nil {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
+		}
+		if t < 1 || t > 5 {
+			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
+		}
+	}
+	if len(nextHopFilter) != 0 && vldtor.IPAddr(nextHopFilter) != nil {
+		return fmt.Errorf("Invalid nextHop address %v", nextHopFilter)
+	}
+	return nil
+}
+
 func bgpIPUnicastNlriShowCmdHandler(cmd *cobra.Command, args []string) error {
 	return (bgpNlriShowCmdHandler(cmd, "ipv4-unicast", args))
 }
@@ -392,27 +419,15 @@ func bgpNlriShowCmdHandler(cmd *cobra.Command, _afisafi string, args []string) e
 	if extCommFilter != "" {
 		filter = true
 		ec = utils.ExtCommToBytes(extCommFilter)
-		if ec == nil {
-			return fmt.Errorf("Invalid extended community ID %s", extCommFilter)
-		}
 	}
 	if vnidFilter != "" {
 		filter = true
-		v, ok := strconv.ParseUint(vnidFilter, 10, 32)
-		if ok != nil {
-			return fmt.Errorf("Invalid vni-id %s", vnidFilter)
-		}
+		v, _ := strconv.ParseUint(vnidFilter, 10, 32)
 		vnid = uint32(v)
 	}
 	if typeFilter != "" {
 		filter = true
-		t, ok := strconv.ParseUint(typeFilter, 10, 32)
-		if ok != nil {
-			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
-		}
-		if t < 1 || t > 5 {
-			return fmt.Errorf("Invalid route type %s. <1-5> are valid types", typeFilter)
-		}
+		t, _ := strconv.ParseUint(typeFilter, 10, 32)
 		rType = uint32(t)
 	}
 	if nextHopFilter != "" {
