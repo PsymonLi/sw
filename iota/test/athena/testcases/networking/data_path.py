@@ -16,6 +16,8 @@ import iota.test.athena.utils.athena_app as athena_app_utils
 import iota.test.athena.utils.flow as flow_utils 
 import iota.harness.infra.store as store
 import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
+import iota.test.athena.utils.misc as utils
+import iota.test.athena.utils.pkt_gen as pktgen
 
 DEFAULT_H2S_GEN_PKT_FILENAME = './h2s_pkt.pcap'
 DEFAULT_H2S_RECV_PKT_FILENAME = './h2s_recv_pkt.pcap'
@@ -33,55 +35,6 @@ logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdo
 
 nat_flows_h2s_tx, nat_flows_h2s_rx = None, None
 nat_flows_s2h_tx, nat_flows_s2h_rx = None, None
-
-
-def get_uplink_vlan(vnic_id, uplink):
-    if uplink < 0 or uplink > 1:
-        raise Exception("Invalid uplink {}".format(uplink))
-
-    vlan_offset = (vnic_id * NUM_VLANS_PER_VNIC) + uplink
-    return (api.Testbed_GetVlanBase() + vlan_offset)
-
-
-def get_nat_flow_sip_dip(dir_ = 'h2s', Rx = False, proto = 'UDP', flow_id = 0):
-    if dir_ == 'h2s' and Rx:
-        sip = nat_flows_h2s_rx[proto][flow_id].sip
-        dip = nat_flows_h2s_rx[proto][flow_id].dip
-    elif dir_ == 'h2s' and not Rx:
-        sip = nat_flows_h2s_tx[proto][flow_id].sip
-        dip = nat_flows_h2s_tx[proto][flow_id].dip
-    elif dir_ == 's2h' and Rx:
-        sip = nat_flows_s2h_rx[proto][flow_id].sip
-        dip = nat_flows_s2h_rx[proto][flow_id].dip
-    else:
-        sip = nat_flows_s2h_tx[proto][flow_id].sip
-        dip = nat_flows_s2h_tx[proto][flow_id].dip
-
-    return (sip, dip)
-
-
-class Args():
-
-    def __init__(self):
-        self.encap = False
-        self.node = None
-        self.Rx = None
-        self.dir_ = None
-        self.proto = None
-        self.nat = None
-        self.pyld_size = None
-
-        self.flow_id = None
-        self.smac = None
-        self.dmac = None
-        self.vlan = None
-        self.sip = None
-        self.dip = None
-        self.sport = None
-        self.dport = None
-        self.icmp_type = None
-        self.icmp_code = None
-
 
 def parse_args(tc):
     #==============================================================
@@ -117,294 +70,18 @@ def parse_args(tc):
     if hasattr(tc.iterators, 'flow_type'):
         tc.flow_type = tc.iterators.flow_type
 
-    api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
-                    'proto: {}, bidir: {}, flow_type: {}'
-                    .format(tc.vnic_type, tc.nat, tc.pyld_size,
-                    tc.proto, tc.bidir, tc.flow_type))
-
     if hasattr(tc.args, 'flow_cnt'):
         tc.flow_cnt = tc.args.flow_cnt
 
     if hasattr(tc.args, 'pkt_cnt'):
         tc.pkt_cnt = tc.args.pkt_cnt
 
-
-def is_L2_vnic(_vnic):
-
-    return "vnic_type" in _vnic and _vnic['vnic_type'] == 'L2'
-
-def get_vnic(plcy_obj, _vnic_type, _nat):
-
-    vnics = plcy_obj['vnic']
-
-    for vnic in vnics:
-        vnic_type = 'L2' if is_L2_vnic(vnic) else 'L3'
-        nat = 'yes' if "nat" in vnic else 'no'
-
-        if vnic_type == _vnic_type and \
-           nat == _nat:
-            return vnic
-
-    raise Exception("Matching vnic not found")
-
-def get_vnic_id(_vnic_type, _nat):
-
-    with open(api.GetTestsuiteAttr("dp_policy_json_path")) as fd:
-        plcy_obj = json.load(fd)
-
-    # get vnic
-    vnic = get_vnic(plcy_obj, _vnic_type, _nat)
-    return int(vnic['vnic_id'])
-
-def get_payload(pyld_size):
-
-    pyld=[]
-    size = len(DEFAULT_PAYLOAD)
-    for i in range(pyld_size):
-        pyld.append(DEFAULT_PAYLOAD[i % size])
-
-    return ''.join(pyld)
-
-def craft_pkt(_types, _dicts):
-
-    pkt = None
-    for i in range(len(_types)):
-        _type = _types[i]
-        _dict = _dicts[i]
-        logging.debug("type: {}, dict: {}".format(_type, _dict))
-
-        if _type == "Ether":
-            if 'smac' not in _dict.keys() or \
-               'dmac' not in _dict.keys():
-                raise Exception('Ether: smac and/or dmac not found')
-            else:
-                if pkt:
-                    pkt = pkt/Ether(src = _dict['smac'],
-                                dst = _dict['dmac'])
-                else:
-                    pkt = Ether(src = _dict['smac'],
-                                dst = _dict['dmac'])
-
-        elif _type == "Dot1Q":
-            if 'vlan' not in _dict.keys():
-                raise Exception('Dot1Q: vlan not found')
-            else:
-                pkt = pkt/Dot1Q(vlan = int(_dict['vlan']))
-
-        elif _type == "IP":
-            if 'sip' not in _dict.keys() or \
-               'dip' not in _dict.keys():
-                raise Exception('IP: sip and/or dip not found')
-            else:
-                pkt = pkt/IP(src = _dict['sip'],
-                             dst = _dict['dip'],
-                             id = 0)
-
-        elif _type == "UDP":
-            if 'sport' not in _dict.keys() or \
-               'dport' not in _dict.keys():
-                raise Exception('UDP: sport and/or dport not found')
-            else:
-                pkt = pkt/UDP(sport=int(_dict['sport']),
-                              dport=int(_dict['dport']))
-
-        elif _type == "TCP":
-            if 'sport' not in _dict.keys() or \
-               'dport' not in _dict.keys():
-                raise Exception('TCP: sport and/or dport not found')
-            else:
-                pkt = pkt/TCP(sport=int(_dict['sport']),
-                              dport=int(_dict['dport']))
-
-        elif _type == "ICMP":
-            if 'icmp_type' not in _dict.keys() or \
-               'icmp_code' not in _dict.keys():
-                raise Exception('ICMP: icmp_type and/or icmp_code not found')
-            else:
-                pkt = pkt/ICMP(type=int(_dict['icmp_type']),
-                              code=int(_dict['icmp_code']))
-
-        elif _type == "MPLS":
-            if 'label' not in _dict.keys() or \
-               's' not in _dict.keys():
-                raise Exception('MPLS: label and/or s not found')
-            else:
-                pkt = pkt/MPLS(label=int(_dict['label']),
-                               s=int(_dict['s']))
-
-        elif _type == "GENEVE":
-            if 'vni' not in _dict.keys() or \
-               'options' not in _dict.keys():
-                raise Exception('GENEVE: vni and/or options not found')
-            else:
-                pkt = pkt/GENEVE(vni=int(_dict['vni']),
-                               options=_dict['options'])
-    return pkt
-
-def setup_pkt(_args):
-    types = []
-    dicts = []
-
-    logging.debug("encap: {}, dir: {}, Rx: {}".format(_args.encap, _args.dir_, _args.Rx))
-    with open(api.GetTestsuiteAttr("dp_policy_json_path")) as json_fd:
-        plcy_obj = json.load(json_fd)
-
-    vnics = plcy_obj['vnic']
-    trg_vnic = None
-
-    for vnic in vnics:
-        if _args.encap:
-            encap_info = vnic['rewrite_underlay']
-            vlan = encap_info['vlan_id']
-        else:
-            vlan = vnic['vlan_id']
-        if vlan == str(_args.vlan):
-            trg_vnic = vnic
-            break
-
-    if trg_vnic is not None:
-        # encap info
-        encap_info = trg_vnic['rewrite_underlay']
-        # only applicable to L3 vnics
-        if "vnic_type" not in trg_vnic:
-            # rewrite host info
-            rewrite_host_info = trg_vnic['rewrite_host']
-
-    if _args.encap:
-        if not encap_info:
-            raise Exception('vnic config not found encap vlan %s' % _args.vlan)
-
-        if _args.dir_ == 's2h':
-            outer_smac = _args.smac
-            outer_dmac = _args.dmac
-
-        if encap_info['type'] == 'mplsoudp':
-            if _args.dir_ == 'h2s':
-                outer_smac = encap_info['smac']
-                outer_dmac = encap_info['dmac']
-            outer_sip = encap_info['ipv4_sip']
-            outer_dip = encap_info['ipv4_dip']
-            mpls_lbl1 = encap_info['mpls_label1']
-            mpls_lbl2 = encap_info['mpls_label2']
-
-        elif encap_info['type'] == 'geneve':
-            if _args.dir_ == 'h2s':
-                outer_smac = encap_info['smac']
-                outer_dmac = encap_info['dmac']
-            outer_sip = encap_info['ipv4_sip']
-            outer_dip = encap_info['ipv4_dip']
-            vni = encap_info['vni']
-            if _args.dir_ == 'h2s':
-                dst_slot_id = encap_info['dst_slot_id']
-                src_slot_id = trg_vnic['slot_id']
-            elif _args.dir_ == 's2h':
-                src_slot_id = encap_info['dst_slot_id']
-                dst_slot_id = trg_vnic['slot_id']
-
-        else:
-            raise Exception('encap type %s not supported currently' % encap_info['type'])
-
-        types.append("Ether")
-        ether = {'smac' : outer_smac, 'dmac' : outer_dmac}
-        dicts.append(ether)
-
-        types.append("Dot1Q")
-        dot1q = {'vlan' : _args.vlan}
-        dicts.append(dot1q)
-
-        # append outer IP
-        types.append("IP")
-        ip = {'sip' : outer_sip, 'dip' : outer_dip}
-        dicts.append(ip)
-        
-        # append outer UDP
-        types.append("UDP")             # outer is always UDP in mplsoudp
-        dst_port = '6635' if encap_info['type'] == 'mplsoudp' else '6081'
-        proto = {'sport' : '0', 'dport' : dst_port}
-        dicts.append(proto)
-
-        if encap_info['type'] == 'mplsoudp':
-            # append MPLS label 1
-            types.append("MPLS")
-            mpls = {'label' : mpls_lbl1, 's' : 0}
-            dicts.append(mpls)
-        
-            # append MPLS label 2
-            types.append("MPLS")
-            mpls = {'label' : mpls_lbl2, 's' : 1}
-            dicts.append(mpls)
-
-        elif encap_info['type'] == 'geneve':
-            # append GENEVE options
-            types.append("GENEVE")
-            # some of these fields are hard-coded for now
-            option1 = (0x21 << (5 * 8)) | (0x1 << (4 * 8)) | int(src_slot_id)
-            option2 = (0x22 << (5 * 8)) | (0x1 << (4 * 8)) | int(dst_slot_id)
-            options = (option1 << (8 * 8)) | option2
-            geneve = {'vni' : vni, 'options' : options.to_bytes(16, byteorder="big")}
-            dicts.append(geneve)
-
-            types.append("Ether")
-            if _args.dir_ == 'h2s':
-                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-            elif _args.dir_ == 's2h':
-                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-            dicts.append(ether)
-
-    else:
-        types.append("Ether")
-        if _args.dir_ == 'h2s':
-            ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-        elif _args.dir_ == 's2h':
-            if is_L2_vnic(trg_vnic):
-                ether = {'smac' : _args.smac, 'dmac' : _args.dmac}
-            else:
-                if not rewrite_host_info:
-                    raise Exception('vnic config not found encap vlan %s' % _args.vlan)
-                smac = rewrite_host_info['smac']
-                dmac = rewrite_host_info['dmac']
-                ether = {'smac' : smac, 'dmac' : dmac}
-        dicts.append(ether)
-
-        types.append("Dot1Q")
-        dot1q = {'vlan' : _args.vlan}
-        dicts.append(dot1q)
-
-    types.append("IP")
-    ip = {'sip' : _args.sip, 'dip' : _args.dip}
-    if _args.nat == 'yes':
-       nat_sip, nat_dip = get_nat_flow_sip_dip(_args.dir_, _args.Rx, 
-                                        _args.proto, _args.flow_id)
-       ip = {'sip' : nat_sip, 'dip' : nat_dip}
-    dicts.append(ip)
-
-    
-    types.append(_args.proto)
-    if _args.proto == 'UDP' or _args.proto == 'TCP':
-        dicts.append({'sport' : _args.sport, 'dport' : _args.dport})
-    else: # ICMP
-        dicts.append({'icmp_type' : _args.icmp_type, 
-                    'icmp_code' : _args.icmp_code})
-
-    pkt = craft_pkt(types, dicts)
-    pkt = pkt/get_payload(_args.pyld_size)
-    #logging.debug("Crafted pkt: {}".format(pkt.show()))
-
-    if _args.dir_ == 'h2s':
-        fname = DEFAULT_H2S_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_H2S_GEN_PKT_FILENAME
-    elif _args.dir_ == 's2h':
-        fname = DEFAULT_S2H_RECV_PKT_FILENAME if _args.Rx == True else DEFAULT_S2H_GEN_PKT_FILENAME
-
-    with open(CURR_DIR + '/config/' + fname, 'w+') as fd:
-        logging.debug('Writing crafted pkt to pcap file %s' % fd.name)
-        wrpcap(fd.name, pkt)
-
-    pcap_fname = fd.name
-
-    # copy the pcap file to the host
-    api.CopyToHost(_args.node.Name(), [pcap_fname], "")
-    os.remove(pcap_fname)
-
+    api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
+                    'proto: {}, bidir: {}, flow_type: {} '
+                    'flow_cnt: {}, pkt_cnt: {}'
+                    .format(tc.vnic_type, tc.nat, tc.pyld_size,
+                    tc.proto, tc.bidir, tc.flow_type,
+                    tc.flow_cnt, tc.pkt_cnt))
 
 
 def skip_curr_test(tc):
@@ -536,6 +213,7 @@ def get_flows(tc):
         # are accurate. Actual sip/dip will be handled in setup_pkt
         flows_resp = nat_flows_h2s_tx[tc.proto]
 
+    return flows_resp
 
 def Setup(tc):
 
@@ -545,6 +223,19 @@ def Setup(tc):
     # skip some iterator cases
     if skip_curr_test(tc):
         return api.types.status.SUCCESS
+
+    # setup policy.json obj
+    tc.plcy_obj = None
+    # read from policy.json
+    with open(api.GetTestsuiteAttr("dp_policy_json_path")) as fd:
+        tc.plcy_obj = json.load(fd)
+
+    # get vnic
+    tc.vnic = utils.get_vnic(tc.plcy_obj, tc.vnic_type, tc.nat)
+
+    # get vnic id
+    tc.vnic_id = utils.get_vnic_id(tc.plcy_obj, tc.vnic_type, tc.nat)
+    api.Logger.info('vnic id: {}'.format(tc.vnic_id))
 
     # get node info
     tc.bitw_node_name = None
@@ -585,10 +276,9 @@ def Setup(tc):
     tc.up1_intf = host_intfs[1] 
     
     # get uplink vlans
-    vnic_id = get_vnic_id(tc.vnic_type, tc.nat)
-    tc.up0_vlan = get_uplink_vlan(vnic_id, 0)
-    tc.up1_vlan = get_uplink_vlan(vnic_id, 1)
-    
+    tc.up0_vlan = utils.get_uplink_vlan(tc.vnic_id, 0, NUM_VLANS_PER_VNIC)
+    tc.up1_vlan = utils.get_uplink_vlan(tc.vnic_id, 1, NUM_VLANS_PER_VNIC)
+
     tc.up0_mac, tc.up1_mac = None, None
 
     for wl in workloads:
@@ -640,39 +330,41 @@ def Trigger(tc):
         for idx, flow in enumerate(tc.flows):
 
             # common args to setup scapy pkt
-            args = Args()
-            args.node = node
-            args.proto = flow.proto
-            args.sip = flow.sip
-            args.dip = flow.dip
+            pkt_gen = pktgen.Pktgen()
+            pkt_gen.set_node(node)
+            pkt_gen.set_vnic(tc.vnic)
+            pkt_gen.set_proto(tc.proto)
+            pkt_gen.set_sip(flow.sip)
+            pkt_gen.set_dip(flow.dip)
+            pkt_gen.set_nat(tc.nat)
+            pkt_gen.set_flow_id(idx)
+            pkt_gen.set_pyld_size(tc.pyld_size)
 
             if flow.proto == 'UDP' or flow.proto == 'TCP':
-                args.sport = flow.sport
-                args.dport = flow.dport
+                pkt_gen.set_sport(flow.sport)
+                pkt_gen.set_dport(flow.dport)
             else:
-                args.icmp_type = flow.icmp_type
-                args.icmp_code = flow.icmp_code
-
-            args.nat = tc.nat
-            args.flow_id = idx
-            args.pyld_size = tc.pyld_size
+                pkt_gen.set_icmp_type(flow.icmp_type)
+                pkt_gen.set_icmp_code(flow.icmp_code)
 
             # ==========================================
             # Send and Receive packets in H2S direction
             # ==========================================
-            args.dir_ = 'h2s'
+            pkt_gen.set_dir_('h2s')
+            pkt_gen.set_nat_flows_h2s_tx(nat_flows_h2s_tx)
+            pkt_gen.set_nat_flows_h2s_rx(nat_flows_h2s_rx)
             h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
             # ==========
             # Rx Packet
             # ==========
-            args.encap =  True
-            args.Rx = True
-            args.vlan = tc.up0_vlan
-            args.smac = tc.up1_mac
-            args.dmac = tc.up0_mac
+            pkt_gen.set_encap(True)
+            pkt_gen.set_Rx(True)
+            pkt_gen.set_vlan(tc.up0_vlan)
+            pkt_gen.set_smac(tc.up1_mac)
+            pkt_gen.set_dmac(tc.up0_mac)
 
-            setup_pkt(args)
+            pkt_gen.setup_pkt()
             recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
                         "--timeout %s --pkt_cnt %d" % (tc.up0_intf, 
                         DEFAULT_H2S_RECV_PKT_FILENAME, 
@@ -684,13 +376,13 @@ def Trigger(tc):
             # ==========
             # Tx Packet
             # ==========
-            args.encap = False
-            args.Rx = False
-            args.smac = tc.up1_mac
-            args.dmac = tc.up0_mac
-            args.vlan = tc.up1_vlan
+            pkt_gen.set_encap(False)
+            pkt_gen.set_Rx(False)
+            pkt_gen.set_smac(tc.up1_mac)
+            pkt_gen.set_dmac(tc.up0_mac)
+            pkt_gen.set_vlan(tc.up1_vlan)
 
-            setup_pkt(args)
+            pkt_gen.setup_pkt()
             send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
                         "--pkt_cnt %d" % (tc.up1_intf, 
                         DEFAULT_H2S_GEN_PKT_FILENAME, tc.pkt_cnt)
@@ -708,19 +400,21 @@ def Trigger(tc):
             # ==========================================
             # Send and Receive packets in S2H direction
             # ==========================================
-            args.dir_ = 's2h'
+            pkt_gen.set_dir_('s2h')
+            pkt_gen.set_nat_flows_s2h_tx(nat_flows_s2h_tx)
+            pkt_gen.set_nat_flows_s2h_rx(nat_flows_s2h_rx)
             s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
             # ==========
             # Rx Packet
             # ==========
-            args.encap = False
-            args.Rx = True
-            args.smac = tc.up0_mac
-            args.dmac = tc.up1_mac
-            args.vlan = tc.up1_vlan
+            pkt_gen.set_encap(False)
+            pkt_gen.set_Rx(True)
+            pkt_gen.set_smac(tc.up0_mac)
+            pkt_gen.set_dmac(tc.up1_mac)
+            pkt_gen.set_vlan(tc.up1_vlan)
 
-            setup_pkt(args)
+            pkt_gen.setup_pkt()
             recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
                         "--timeout %s --pkt_cnt %d" % (tc.up1_intf, 
                         DEFAULT_S2H_RECV_PKT_FILENAME, 
@@ -732,13 +426,13 @@ def Trigger(tc):
             # ==========
             # Tx Packet
             # ==========
-            args.encap =  True
-            args.Rx = False
-            args.smac = tc.up0_mac
-            args.dmac = tc.up1_mac
-            args.vlan = tc.up0_vlan
+            pkt_gen.set_encap(True)
+            pkt_gen.set_Rx(False)
+            pkt_gen.set_smac(tc.up0_mac)
+            pkt_gen.set_dmac(tc.up1_mac)
+            pkt_gen.set_vlan(tc.up0_vlan)
 
-            setup_pkt(args)
+            pkt_gen.setup_pkt()
             send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
                         "--pkt_cnt %d" % (tc.up0_intf, 
                         DEFAULT_S2H_GEN_PKT_FILENAME, tc.pkt_cnt)
@@ -783,7 +477,7 @@ def Verify(tc):
     return api.types.status.SUCCESS
 
 def Teardown(tc):
-    
+
     # skip some iterator cases
     if skip_curr_test(tc):
         return api.types.status.SUCCESS
