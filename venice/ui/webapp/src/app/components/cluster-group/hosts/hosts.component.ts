@@ -22,6 +22,9 @@ import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import * as _ from 'lodash';
 import { Observable, Subscription } from 'rxjs';
 import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+
 
 export enum BuildHostWorkloadMapSourceType {
   init = 'init',
@@ -74,9 +77,9 @@ interface HostUiModel {
   styleUrls: ['./hosts.component.scss'],
   animations: [Animations]
 })
-export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterHost> implements OnInit {
+export class HostsComponent extends DataComponent implements OnInit {
 
-  @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
+  @ViewChild('hostTable') hostTable: PentableComponent;
   maxSearchRecords: number = 8000;
 
   bodyicon: Icon = {
@@ -108,6 +111,9 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
   // Used for the table - when true there is a loading icon displayed
   tableLoading: boolean = false;
 
+  // Used to check if vcenter has already been added to advanced search, to prevent multiple additions
+  vcenterAddedToAdvSearch: boolean = false;
+
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Name', class: 'hosts-column-host-name', sortable: true, width: '225px' },
     { field: 'spec.dscs', header: 'Distributed Services Cards', class: 'hosts-column-dscs', sortable: false, width: '200px' },
@@ -123,6 +129,15 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
   exportFilename: string = 'PSM-hosts';
 
   exportMap: CustomExportMap = {
+    'meta.name': (opts): any => {
+      let vcenterName = '';
+      if (opts.data.meta.labels && opts.data.meta.labels['io.pensando.vcenter.display-name']) {
+        vcenterName = opts.data.meta.labels['io.pensando.vcenter.display-name'];
+        return 'Host Name: ' + opts.data.meta.name + ', VCenter Name: ' + vcenterName;
+      } else {
+        return 'Host Name: ' + opts.data.meta.name;
+      }
+    },
     'workloads': (opts): string => {
       return (opts.data._ui.processedWorkloads) ? opts.data._ui.processedWorkloads.map(wkld => wkld.meta.name).join(', ') : '';
     },
@@ -141,11 +156,10 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
 
   constructor(private clusterService: ClusterService,
     private workloadService: WorkloadService,
-    protected cdr: ChangeDetectorRef,
     protected uiconfigsService: UIConfigsService,
     protected controllerService: ControllerService,
     protected searchService: SearchService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
   }
 
 
@@ -218,8 +232,8 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
       buttons = [{
         cssClass: 'global-button-primary host-button newhost-button-ADD',
         text: 'ADD HOST',
-        computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-        callback: () => { this.createNewObject(); }
+        computeClass: () => !this.hostTable.showRowExpand ? '' : 'global-button-disabled',
+        callback: () => { this.hostTable.createNewObject(); }
       }];
     }
 
@@ -293,9 +307,10 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
     return dscInfos;
   }
 
-  postNgInit() {
-    this.filterColumns(); // If backend is a Venice-for-cloud, we want to exclude some columns
+  ngOnInit() {
+    this.setDefaultToolbar();
     this.buildAdvSearchCols();
+    this.filterColumns(); // If backend is a Venice-for-cloud, we want to exclude some columns
     this.getRecords();
   }
 
@@ -360,6 +375,26 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
         this.dataObjects = response.data;
         this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjects); // VS-1395  force table to refresh data.
         this.handleDataReady();
+
+        // check if any hosts have vcenter integration
+        // once such a host is found add advSearchCol and break
+        const oneHostWithVCenter: boolean = this.dataObjects.some(data => data.meta.labels && data.meta.labels['io.pensando.vcenter.display-name']);
+
+        if (oneHostWithVCenter && !this.vcenterAddedToAdvSearch) {
+          this.advSearchCols.push(
+            {
+              field: 'vcenter', header: 'vCenter', localSearch: true,
+              filterfunction: this.searchVCenter,
+              advancedSearchOperator: SearchUtil.stringOperators
+            }
+          );
+          this.vcenterAddedToAdvSearch = true;
+        } else if (!oneHostWithVCenter && this.vcenterAddedToAdvSearch) {
+          this.advSearchCols = this.advSearchCols.filter((col) => {
+            return col.field !== 'vcenter';
+          });
+          this.vcenterAddedToAdvSearch = false;
+        }
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -382,23 +417,6 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
     return this.constructor.name;
   }
 
-  /**
-   * This API serves HTML template. When there are many workloads in one host, we don't list all workloads. This API builds the tooltip text;
-   * @param host
-   */
-  buildMoreWorkloadTooltip(host: ClusterHost): string {
-    const wltips = [];
-    const hostUiModel: HostUiModel = host._ui;
-    const workloads = hostUiModel.processedWorkloads;
-    for (let i = 0; i < workloads.length; i++) {
-      if (i >= this.maxWorkloadsPerRow) {
-        const workload = workloads[i];
-        wltips.push(workload.meta.name);
-      }
-    }
-    return wltips.join(' , ');
-  }
-
   // advance search APIs
   onCancelSearch($event) {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
@@ -410,12 +428,31 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
    * @param field
    * @param order
    */
-  onSearchHosts(field = this.tableContainer.sortField, order = this.tableContainer.sortOrder) {
-    const searchResults = this.onSearchDataObjects(field, order, 'Host', this.maxSearchRecords, this.advSearchCols, this.dataObjects, this.advancedSearchComponent);
+  onSearchHosts(field = this.hostTable.sortField, order = this.hostTable.sortOrder) {
+    const searchResults = this.onSearchDataObjects(field, order, 'Host', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.hostTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.dataObjects = [];
       this.dataObjects = searchResults;
     }
+  }
+
+  searchVCenter(requirement: FieldsRequirement, data = this.dataObjects): any[] {
+    const outputs: any[] = [];
+    for (let i = 0; data && i < data.length; i++) {
+      if (data[i].meta.labels && data[i].meta.labels['io.pensando.vcenter.display-name']) {
+        const recordValue = data[i].meta.labels['io.pensando.vcenter.display-name'];
+        const searchValues = requirement.values;
+        let operator = String(requirement.operator);
+        operator = TableUtility.convertOperator(operator);
+        for (let j = 0; j < searchValues.length; j++) {
+          const activateFunc = TableUtility.filterConstraints[operator];
+          if (activateFunc && activateFunc(recordValue, searchValues[j])) {
+            outputs.push(data[i]);
+          }
+        }
+      }
+    }
+    return outputs;
   }
 
 
@@ -476,4 +513,46 @@ export class HostsComponent extends TablevieweditAbstract<IClusterHost, ClusterH
     });
     return (list.length === 0);
   }
+
+  getSelectedDataObjects(): any[] {
+    return this.hostTable.selectedDataObjects;
+  }
+
+  clearSelectedDataObjects() {
+    this.hostTable.selectedDataObjects = [];
+  }
+
+  onColumnSelectChange(event) {
+    this.hostTable.onColumnSelectChange(event);
+  }
+
+  creationFormClose() {
+    this.hostTable.creationFormClose();
+  }
+
+  editFormClose(rowData) {
+    if (this.hostTable.showRowExpand) {
+      this.hostTable.toggleRow(rowData);
+    }
+  }
+
+  expandRowRequest(event, rowData) {
+    if (!this.hostTable.showRowExpand) {
+      this.hostTable.toggleRow(rowData, event);
+    }
+  }
+
+  onDeleteRecord(event, object) {
+    this.hostTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this),
+      () => {
+        this.hostTable.selectedDataObjects = [];
+      }
+    );
+  }
+
 }

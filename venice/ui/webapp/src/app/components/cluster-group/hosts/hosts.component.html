@@ -1,25 +1,27 @@
 <app-pagebody [icon]="bodyicon" header="Hosts Overview">
   <div fxFlex class="hosts-table-container">
-    <ng-container *ngTemplateOutlet="DataTable"></ng-container>
+    <app-pentable #hostTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="true"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true"
+                  [searchFormArray]="fieldFormArray"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchHosts()"
+                  (searchCancelledEmitter)="onCancelSearch($event)"
+                  searchKind="Host"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+    </app-pentable>
   </div>
 </app-pagebody>
-<ng-template #DataTable>
-  <app-tableviewedit fxLayout="column" style="height: 100%;"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     [enableCheckbox]="true"
-                     [tableLoading]="tableLoading"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
-</ng-template>
 
 <ng-template #actionButtonsTemplate>
   <div fxFlex="none" fxLayoutAlign="start center">
@@ -34,25 +36,15 @@
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <div fxFlex fxLayout="column">
-    <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
-      <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="tableMenuItems" title="Hosts"
-                       [total]="dataObjects.length" [icon]="headerIcon"
-                       [enableColumnSelect]="true"
-                       [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
-        <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
-      </app-tableheader>
-    </div>
-
-    <div fxLayout="row">
-      <app-advanced-search #advancedSearchComponent [formArray]="fieldFormArray"
-                           [cols]="advSearchCols"
-                           (cancelEmitter)="onCancelSearch($event)"
-                           (searchEmitter)="onSearchHosts()" kind="Host" fxFlex="grow">
-      </app-advanced-search>
-    </div>
+  <div fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
+    <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="hostTable.tableMenuItems"
+                     title="Hosts"
+                     [total]="dataObjects.length" [icon]="headerIcon"
+                     [enableColumnSelect]="true"
+                     [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+      <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
+    </app-tableheader>
   </div>
-
 </ng-template>
 
 <ng-template #createTemplate>
@@ -117,8 +109,7 @@
 <!-- TABLE ACTION -->
 <ng-template #actionTemplate let-rowData>
 
-  <div class="global-column-action-icon-container" fxLayout="row" fxLayoutGap="5px"
-       *ngIf="!(rowData._ui['processedWorkloads'] && rowData._ui['processedWorkloads'].length > 0)">
+  <div class="global-column-action-icon-container" fxLayout="row" fxLayoutGap="5px">
     <!-- 2020-01-08 backend does not support host edit. Enable it 202004-08  -->
     <ng-container *ngIf="rowData.spec.dscs && rowData.spec.dscs.length!=2">
       <mat-icon matTooltip="Edit host" *roleGuard="'clusterhost_update'"
@@ -127,16 +118,18 @@
       </mat-icon>
     </ng-container>
 
-
-    <mat-icon matTooltip="Delete host" *roleGuard="'clusterhost_delete'"
-              class="global-table-action-icon"
-              (click)="onDeleteRecord($event, rowData)">delete
-    </mat-icon>
+    <ng-container
+                  *ngIf="!(rowData._ui['processedWorkloads'] && rowData._ui['processedWorkloads'].length > 0)">
+      <mat-icon matTooltip="Delete host" *roleGuard="'clusterhost_delete'"
+                class="global-table-action-icon"
+                (click)="onDeleteRecord($event, rowData)">delete
+      </mat-icon>
+    </ng-container>
   </div>
 </ng-template>
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newhost [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
                [existingObjects]='dataObjects' [allDSCs]="naplesList"
-               (formClose)="closeRowExpand()" fxFlex="none"></app-newhost>
+               (formClose)="editFormClose(rowData)" fxFlex="none"></app-newhost>
 </ng-template>

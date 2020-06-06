@@ -301,7 +301,7 @@ describe('HostsComponent', () => {
     const title = fixture.debugElement.query(By.css('.tableheader-title'));
     expect(title.nativeElement.textContent).toContain('Hosts (2)');
     // check table contents
-    const tableBody = fixture.debugElement.query(By.css('.ui-table-scrollable-body tbody'));
+    const tableBody = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
     expect(tableBody).toBeTruthy();
 
     TestingUtility.verifyTable([new ClusterHost(host2), new ClusterHost(host1)], componentCloud.cols, tableBody, {
@@ -353,7 +353,7 @@ describe('HostsComponent', () => {
     const title = fixture.debugElement.query(By.css('.tableheader-title'));
     expect(title.nativeElement.textContent).toContain('Hosts (2)');
     // check table contents
-    const tableBody = fixture.debugElement.query(By.css('.ui-table-scrollable-body tbody'));
+    const tableBody = fixture.debugElement.query(By.css('.ui-table-wrapper tbody'));
     expect(tableBody).toBeTruthy();
 
     TestingUtility.verifyTable([new ClusterHost(host2), new ClusterHost(host1)], componentEnterprise.cols, tableBody, {
