@@ -108,6 +108,22 @@ def remove_all_core_files():
     remove_core_files(hal_core_path)
     remove_core_files(model_core_path)
 
+def get_files_from_dir(dir, ext):
+    files = filter(lambda f: f.endswith('.' + ext), os.listdir(dir))
+    return files
+
+def remove_conf_files():
+    metrics_dir = os.environ.get('PDSPKG_TOPDIR', nic_dir) + "/operd/metrics/"
+    metrics_conf_files = get_files_from_dir(metrics_dir + "/common/", "json")
+    metrics_conf_files += get_files_from_dir(metrics_dir + "/cloud/", "json")
+    conf_dir = os.environ.get('CONFIG_PATH', nic_dir + "/conf") + "/"
+    for f in metrics_conf_files:
+        try:
+            os.unlink(conf_dir+f)
+        except:
+            pass
+    return
+
 def process_core(executable, core_file):
     if os.path.isfile(core_file):
         #Wait for all std out to clear.
@@ -1161,6 +1177,7 @@ def cleanup(keep_logs=True):
     os.remove(lock_file)
 
     # print "\n* Removing log files:"
+    remove_conf_files()
 
     if keep_logs:
         return
