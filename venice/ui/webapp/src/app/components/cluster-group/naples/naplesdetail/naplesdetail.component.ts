@@ -1107,7 +1107,7 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
    */
   handleSetDSCProfileSave(option: SelectItem) {
     const naplesObject = new ClusterDistributedServiceCard(this.selectedObj);
-    const name = naplesObject.meta.name;
+    const name = (naplesObject.spec.id) ? naplesObject.spec.id : naplesObject.meta.name;  // use dsc.spec.id if possible
     if (naplesObject.spec.dscprofile !== option.value) {
       naplesObject.spec.dscprofile = option.value;
       // udpdate DSC without trimming

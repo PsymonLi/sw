@@ -238,8 +238,8 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   }
 
   displayListInColumn(list: string[]): string {
-    return list.reduce((accum: string, item: string) =>
-      accum + item );
+    return (list && list.length > 0) ?
+        list.reduce((accum: string, item: string) => accum + item ) : '';
   }
 
   deleteRecord(object: MonitoringMirrorSession): Observable<{ body: IMonitoringMirrorSession | IApiStatus | Error; statusCode: number; }> {

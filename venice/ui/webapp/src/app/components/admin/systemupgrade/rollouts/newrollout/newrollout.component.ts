@@ -91,6 +91,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
   orderConstraintslabelFormArray = new FormArray([]);
 
   minDate: Date;
+  defaultDate: Date;
 
   validationMessage: string = null;
 
@@ -156,6 +157,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
     }
     this.addOrder();
     this.minDate = new Date();
+    this.defaultDate = new Date();
   }
 
   // When we get a response containing all DistributedServiceCards objects, we build labelData to be used for the label selector.
@@ -214,6 +216,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
       this.newRollout = new RolloutRollout();
       this.newRollout.kind = 'rollout';
       const startTime = this.computeDefaultStartTime();
+      this.minDate = new Date(startTime);
       this.newRollout.spec['scheduled-start-time'] = new Date(startTime);
       const endTime = startTime + 1800 * 1000; // set default 30 minutes rollout duration.
       this.newRollout.spec['scheduled-end-time'] = null; // new Date(endTime);

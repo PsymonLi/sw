@@ -61,8 +61,8 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   LABELKEY_TOOLTIP: string = 'Type in or select an uplink interface label key.' + this.LABEL_HELP;
   AND_BUTTON_TOOLTIP: string = 'Refine the uplink interface selection by adding a new selector using the "and" operation.';
 
-  minDate: Date = Utility.convertLocalTimeToUTCTime(new Date());
-  defaultDate: Date = Utility.convertLocalTimeToUTCTime(new Date());
+  minDate: Date = new Date();
+  defaultDate: Date = new Date();
 
   packetFilterOptions = Utility.convertEnumToSelectItem(MonitoringMirrorSessionSpec.propInfo['packet-filters'].enum);
   collectorTypeOptions = Utility.convertEnumToSelectItem(MonitoringMirrorCollector.propInfo['type'].enum).filter(
@@ -190,25 +190,6 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   }
   */
 
-  // this fix is for vs-1493
-  // p-calendar needs data object, bacned value is string
-  // if ui try to set value as date object afterviewinit,
-  // it may not work, sometimes, the string value already goest to
-  // p-calendar which cause exception on page. so date object has to
-  // be load into formObject before view init.
-  loadExistingObject(data: any) {
-    // conver date from staring to Date Object
-    const dateValue = data.spec['start-condition']['schedule-time'];
-    if (dateValue) {
-      // need to convert utc time to local time to show it on browser
-      const newData = Utility.getLodash().cloneDeep(data);
-      newData.spec['start-condition']['schedule-time'] =
-          Utility.convertLocalTimeToUTCTime(new Date(dateValue));
-      return newData;
-    }
-    return data;
-  }
-
   isSpanIDAlreadyUsed(existingObjects: IMonitoringMirrorSession[]): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       if (!control.value && control.value !== 0) {
@@ -316,13 +297,6 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
 
   getObjectValues() {
     const currValue: IMonitoringMirrorSession = this.newObject.getFormGroupValues();
-    if (currValue.spec['start-condition'] && currValue.spec['start-condition']['schedule-time']) {
-      const scheduleTime: Date = currValue.spec['start-condition']['schedule-time'];
-      // whatever showed on browser is actually local time, we have do magic to conver it
-      // to real utc time to send to the backend
-      currValue.spec['start-condition']['schedule-time'] = Utility.convertUTCTimeToLocalTime(scheduleTime);
-    }
-
     if (this.radioSelection === 'labels') {
       currValue.spec['match-rules'] = [];
       currValue.spec['packet-filters'] = [];

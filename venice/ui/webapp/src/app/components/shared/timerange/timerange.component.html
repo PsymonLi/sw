@@ -30,6 +30,8 @@
                  formControlName="startTime" pInputText placeholder="">
           <p-calendar [(ngModel)]="startTimeCalendar"
                       [ngModelOptions]="{standalone: true}"
+                      [defaultDate]="calendarDefaultTime"
+                      [maxDate]="calendarDefaultTime"
                       showIcon="true"
                       [showTime]="true"
                       styleClass="timerange-calendar"
@@ -48,6 +50,7 @@
                  formControlName="endTime" pInputText placeholder="">
           <p-calendar [(ngModel)]="endTimeCalendar"
                       [ngModelOptions]="{standalone: true}"
+                      [defaultDate]="calendarDefaultTime"
                       showIcon="true"
                       [showTime]="true"
                       styleClass="timerange-calendar"

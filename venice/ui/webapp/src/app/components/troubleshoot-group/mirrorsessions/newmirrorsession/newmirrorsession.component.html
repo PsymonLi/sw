@@ -14,8 +14,6 @@
       <div fxFlex="20px"></div>
       <ng-container *ngTemplateOutlet="collectors"></ng-container>
       <div fxFlex="20px"></div>
-      <!-- hide this for release a. Re-open in 2020-02-28  -->
-
     </div>
     <div fxFlex="50" fxLayout="column" fxLayoutAlign="start"
          class="newmirrorsession-row">
@@ -72,14 +70,10 @@
              appErrorTooltip spellcheck="false" type="number" min="0" pInputText>
     </span>
     <div fxFlex="89px"></div>
-    <span [formGroup]="newObject.$formGroup.get(['spec', 'start-condition'])"
-          class="newmirrorsession-general-box">
-      <p-calendar [showTime]="true" hourFormat="24" formControlName="schedule-time"
-                  appFloatLabel="Schedule (UTC)" class="ui-calendar-inputbox"
-                  appendTo="body" [showIcon]="true" [minDate]="minDate"
-                  [defaultDate]="defaultDate">
-      </p-calendar>
-    </span>
+    <app-psmcalendar fxFlex="250px" id="newmirrorsession-schedule-calendar"
+                     label="Schedule (UTC)" [minDate]="minDate" [defaultDate]="defaultDate"
+                     [formControl]="newObject.$formGroup.get(['spec', 'start-condition', 'schedule-time'])">
+    </app-psmcalendar>
     <!--
     <span [formGroup]="newObject.$formGroup.get(['spec'])"
           class="newmirrorsession-general-box">

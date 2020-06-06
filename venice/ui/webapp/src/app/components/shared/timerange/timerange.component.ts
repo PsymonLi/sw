@@ -121,8 +121,10 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
 
   startTimeCalendar: Date;
   endTimeCalendar: Date;
+  calendarDefaultTime: Date;
 
   ngOnInit() {
+    this.calendarDefaultTime = Utility.convertLocalTimeToUTCTime(new Date());
     let startTime = this.startTime;
     let endTime = this.endTime;
     if (this.selectedTimeRange != null) {
@@ -147,11 +149,13 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
   }
 
   calendarStartSelect(value) {
-    this.timeFormGroup.get('startTime').reset(value.toISOString());
+    const newValue = Utility.convertUTCTimeToLocalTime(value);
+    this.timeFormGroup.get('startTime').reset(newValue.toISOString());
   }
 
   calendarEndSelect(value) {
-    this.timeFormGroup.get('endTime').reset(value.toISOString());
+    const newValue = Utility.convertUTCTimeToLocalTime(value);
+    this.timeFormGroup.get('endTime').reset(newValue.toISOString());
   }
 
   ngAfterViewInit() {
@@ -204,6 +208,10 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
     if (this.showOverlay) {
       this.overlayPanel.hide();
     }
+
+    // reset psm calendar time when option clicks
+    this.startTimeCalendar = null;
+    this.endTimeCalendar = null;
   }
 
   /**
@@ -234,11 +242,13 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
 
       if (startTimeEntry.time.constructor.name === 'MomentTimeInstance') {
         // Moment instance doesn't need a keyword map
-        this.startTimeCalendar = (startTimeEntry.time.getTime(null).toDate());
+        this.startTimeCalendar = Utility.convertLocalTimeToUTCTime(
+            startTimeEntry.time.getTime(null).toDate());
       }
       if (endTimeEntry.time.constructor.name === 'MomentTimeInstance') {
         // Moment instance doesn't need a keyword map
-        this.endTimeCalendar = (endTimeEntry.time.getTime(null).toDate());
+        this.endTimeCalendar = Utility.convertLocalTimeToUTCTime(
+            endTimeEntry.time.getTime(null).toDate());
       }
 
       const err = timeRange.getErrMsg();
@@ -263,8 +273,8 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
         };
       }
 
-      if (this.maxEndSelectDateValue) {
-         if (this.endTimeCalendar > this.maxEndSelectDateValue ) {
+      if (this.maxEndSelectDateValue && this.endTimeCalendar) {
+        if (Utility.convertUTCTimeToLocalTime(this.endTimeCalendar) > this.maxEndSelectDateValue ) {
           this.groupErrorMessage = 'End time cannot be greater than max value ' + this.maxEndSelectDateValue.toISOString();
           return {
             timeRangeGroup: {

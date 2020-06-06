@@ -1,0 +1,33 @@
+.psm-form {
+  .psm-form-calender-container {
+    .psm-form-calender-box {
+      display: block;
+      width: 100%;
+
+      span {
+        width: 100%;
+
+        input {
+          height: 30px;
+          font-size: 14px;
+          width: calc(100% - 28px);
+        }
+
+        .ui-calendar-button {
+          margin-top: 0px;
+          border-radius: 1px;
+
+          .pi-calendar:before {
+            position: relative;
+            left: -5px;
+          }
+        }
+      }
+    }
+
+    &.psm-required-box {
+      width: calc(100% - 10px) !important;
+      display: inline-block !important;
+    }
+  }
+}

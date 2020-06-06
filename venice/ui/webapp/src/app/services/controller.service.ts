@@ -508,8 +508,8 @@ export class ControllerService {
       const errorCode = (error.code) ? error.code : '';
       const errorMsg = 'Connection close - ' + errorCode;  // error.code is likely 1006, 1011
       // VS-879. GenUtil should re-connect Web-socket // this.invokeErrorToaster( 'Web socket', summary + '\n' + errorMsg);
-      if (errorCode === 1000) {
-        // normall close
+      if (errorCode === 1000 || errorCode !== 1011) {
+        // normal ws close 1000, server close ws 1011 (VS-1779)
         return;
       }
       const url = (error.currentTarget && error.currentTarget.url) ? error.currentTarget.url :
