@@ -90,7 +90,8 @@
                 <span class="newVcenter-toggle-label">Disable Server Authentication</span>
                 <p-inputSwitch class="newVcenter-toggle" appendTo="body"
                                [appErrorTooltip]="'DisableServerAuthentication flag can be used when a client does not want to authenticate a server.'"
-                               formControlName="disable-server-authentication"></p-inputSwitch>
+                               formControlName="disable-server-authentication"
+                               (onChange)="onToggleChange()"></p-inputSwitch>
               </span>
               <div fxFlex="10px"></div>
               <span class="textarea">

@@ -58,6 +58,15 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     if (this.isInline) {
       this.processVcenterIntegration();
     }
+    const formGroup = this.newObject.$formGroup.get(['spec', 'credentials']);
+    if (formGroup.get('disable-server-authentication').value === true) {
+      formGroup.get('ca-data').disable();
+    } else {
+      // seems when disable-server-authentication is not true,
+      // the value is null instead of false
+      // set it to false for submit
+      formGroup.get('disable-server-authentication').setValue(false);
+    }
   }
 
   setValidators(newObject: OrchestrationOrchestrator) {
@@ -290,7 +299,7 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
     Utility.removeObjectProperties(currValue, 'status');
     const credential: IMonitoringExternalCred = currValue.spec.credentials;
     if (credential['auth-type'] === MonitoringExternalCred_auth_type['username-password']) {
-      Utility.removeObjectProperties(credential, ['bearer-token', 'key-data', 'ca-data', 'cert-data']);
+      Utility.removeObjectProperties(credential, ['bearer-token', 'key-data', 'cert-data']);
       if (this.isInline && !credential.username) {
         Utility.removeObjectProperties(currValue.spec, 'credentials');
       }
@@ -403,5 +412,14 @@ export class NewVcenterIntegrationComponent extends CreationForm<IOrchestrationO
   isValidDCName(name: string): boolean {
     // put a place holder here for the futre validation
     return true;
+  }
+
+  onToggleChange() {
+    const formGroup = this.newObject.$formGroup.get(['spec', 'credentials']);
+    if (formGroup.get('disable-server-authentication').value) {
+      formGroup.get('ca-data').disable();
+    } else {
+      formGroup.get('ca-data').enable();
+    }
   }
 }
