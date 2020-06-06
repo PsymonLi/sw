@@ -426,16 +426,19 @@ TEST_F(pds_ms_hals_test, route_test) {
     std::cout << "=== ROUTE Create test ===" << std::endl;
     test_output->expect_create();
     test_input->trigger_create();
+    sleep(1);
     test_output->validate();
     // Update
     std::cout << "=== ROUTE Update test ===" << std::endl;
     test_output->expect_update();
     test_input->trigger_update();
+    sleep(1);
     test_output->validate();
     // Delete
     std::cout << "=== ROUTE Delete test ===" << std::endl;
     test_output->expect_delete();
     test_input->trigger_delete();
+    sleep(1);
     test_output->validate();
 }
 

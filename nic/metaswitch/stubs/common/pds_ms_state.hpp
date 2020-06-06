@@ -6,6 +6,11 @@
 #ifndef __PDS_MS_STATE_HPP__
 #define __PDS_MS_STATE_HPP__
 
+#include <nbase.h>
+extern "C"
+{
+#include <ntltimer.h>
+}
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_indirect_ps_store.hpp"
@@ -160,6 +165,11 @@ public:
     sdk_ret_t ip_track_internal_idx_free(uint32_t index) {
         return ip_track_internal_idx_gen_->free(index);
     }
+    
+    // Get method for route timer list
+    NTL_TIMER_LIST_CB *get_route_timer_list() { return &route_timer_list_; }
+    
+    void init_timer_list(NTL_TIMER_LIST_CB *, NTL_TIMER_PROC *);
 
 private:
     static constexpr uint32_t k_max_fp_ports = 2;
@@ -189,6 +199,11 @@ private:
     uint32_t lnx_ifindex_table_[k_max_fp_ports] = {0};
 
     std::unordered_set<ip_prefix_t, ip_prefix_hash> ignored_prefixes_;
+    
+    // Nbase timer list used to store the timers used by hals route stub
+    // This timer list should only be used for route table batch commit
+    // One timer is used per route table
+    NTL_TIMER_LIST_CB route_timer_list_;
 
 private:
     state_t(void);

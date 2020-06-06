@@ -4,6 +4,8 @@
 //---------------------------------------------------------------
 
 #include <thread>
+#include <nbase.h>
+#include "nic/metaswitch/stubs/hals/pds_ms_hals_timer.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_ip_track_hal.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
@@ -19,7 +21,6 @@
 #include <hals_ropi_slave_join.hpp>
 #include <hals_route.hpp>
 
-extern NBB_ULONG hals_proc_id;
 
 namespace pds_ms {
 
@@ -55,92 +56,122 @@ pds_obj_key_t hals_route_t::make_pds_rttable_key_(state_t* state) {
     return (rttbl_key_);
 }
 
-// Return true indicates route table has changed
-bool hals_route_t::make_pds_rttable_spec_(state_t* state,
-                                          pds_route_table_spec_t &rttable,
-                                          const pds_obj_key_t& rttable_key) {
+static void 
+make_pds_rttable_spec(state_t* state, pds_route_table_spec_t &rttable,
+                       const pds_obj_key_t& rttable_key) {
     memset(&rttable, 0, sizeof(pds_route_table_spec_t));
     rttable.key = rttable_key;
-    bool ret = true;
-
-    // Populate the new route
-    route_.attrs.prefix = ips_info_.pfx;
-    route_.attrs.nh_type = PDS_NH_TYPE_OVERLAY_ECMP;
-    route_.attrs.nh_group = msidx2pdsobjkey(ips_info_.ecmp_id);
 
     auto rttbl_store = state->route_table_store().get(rttable.key);
     if (unlikely(rttbl_store == nullptr)) {
-        throw Error("Did not find route table store for VRF "
-                    + ips_info_.vrf_id);
-    }
-    if (!op_delete_) {
-        // Add/Update the new route in the store
-        auto rt = rttbl_store->get_route(route_.attrs.prefix);
-        if (rt == nullptr) {
-            op_create_ = true;
-        } else {
-            // Cache the route for restore incase of failure
-            prev_route_ = *rt;
-        }
-        rttbl_store->add_upd_route(route_);
-
-    } else {
-        // Delete the route from the store
-        ret = rttbl_store->del_route(route_.attrs.prefix);
+        throw Error(std::string("Did not find route table store for ")
+                    .append(rttable_key.str()));
     }
     // Get the routes pointer. PDS API will make a copy of the
     // route table and free it up once api processing is complete
     // after batch commit
     rttable.route_info = rttbl_store->routes();
+    return;
+}
 
+bool
+hals_route_t::update_route_store_(state_t* state,
+                                  const pds_obj_key_t& rttable_key) {
+    bool ret;
+    
+    // Populate the new route
+    route_.attrs.prefix = ips_info_.pfx;
+    route_.attrs.nh_type = PDS_NH_TYPE_OVERLAY_ECMP;
+    route_.attrs.nh_group = msidx2pdsobjkey(ips_info_.ecmp_id);
+    auto rttbl_store = state->route_table_store().get(rttable_key);
+    if (!op_delete_) {
+        auto rt = rttbl_store->get_route(route_.attrs.prefix);
+        if (rt == nullptr) {
+            op_create_ = true;
+        }
+        // Add or update the route in the store
+        ret = rttbl_store->add_upd_route(route_);
+    } else {
+        // Delete is a route table update with the deleted route.
+        // The route table is ONLY deleted when VRF gets deleted
+        // Delete the route from the store
+        ret = rttbl_store->del_route(route_.attrs.prefix);
+    }
+    // Start the batch commit timer for this route-table
+    timer_start(state->get_route_timer_list(),
+                rttbl_store->batch_commit_timer(),
+                PDS_MS_COMMIT_BATCH_TIMER_MS,
+                ips_info_.vrf_id);
+    
     return ret;
+}
+
+pds_batch_ctxt_guard_t
+process_route_batch(state_t *state, const pds_obj_key_t& rttable_key,
+                    std::unique_ptr<cookie_t>& cookie_uptr)
+{
+    sdk_ret_t ret;
+    pds_route_table_spec_t rttbl_spec;
+    pds_batch_ctxt_guard_t bctxt_guard;
+   
+    // If num routes exceeds capacity then batch commit will be skipped
+    // and pushed later when the number of routes goes below the route
+    // table capacity
+    auto rttbl_store = state->route_table_store().get(rttable_key);
+    int num_routes = rttbl_store->num_routes();
+    if (num_routes > PDS_MS_MAX_NUM_ROUTES) {
+        PDS_TRACE_ERR("Num routes %d is greater than max %d. Skipping "
+                      "batch commit for rttable: %s", num_routes,
+                       PDS_MS_MAX_NUM_ROUTES, rttable_key.str());
+        // Return empty guard
+        return bctxt_guard;
+    }
+    if (!rttbl_store->pending_batch_sz()) {
+        PDS_TRACE_DEBUG("No pending routes. Skipping batch commit "
+                        "for rttable: %s", rttable_key.str());
+        // Return empty guard
+        return bctxt_guard;
+    }
+    PDS_TRACE_DEBUG("Preparing batch. num_routes %d pending_count %d rttbl %s",
+                    num_routes, rttbl_store->pending_batch_sz(),
+                    rttable_key.str());
+    make_pds_rttable_spec(state, rttbl_spec, rttable_key);
+
+    SDK_ASSERT(cookie_uptr); // Cookie should not be empty
+    pds_batch_params_t bp {PDS_BATCH_PARAMS_EPOCH, PDS_BATCH_PARAMS_ASYNC,
+                           pds_ms::hal_callback,
+                           cookie_uptr.get()};
+    auto bctxt = pds_batch_start(&bp);
+    if (unlikely (!bctxt)) {
+        PDS_TRACE_ERR("PDS Batch Start failed");
+        return bctxt_guard;
+    }
+    if (!PDS_MOCK_MODE()) {
+        ret = pds_route_table_update(&rttbl_spec, bctxt);
+    }
+    if (unlikely (ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("PDS Route Update failed. ret %s",
+                      std::to_string(ret).c_str());
+        return bctxt_guard;
+    }
+    bctxt_guard.set(bctxt);
+    
+    return bctxt_guard;
 }
 
 pds_batch_ctxt_guard_t hals_route_t::make_batch_pds_spec_(state_t* state,
                                                           const pds_obj_key_t&
                                                           rttable_key) {
-    pds_batch_ctxt_guard_t bctxt_guard_;
-    sdk_ret_t ret = SDK_RET_OK;
-
-    pds_route_table_spec_t rttbl_spec;
-    // Delete is a route table update with the deleted route.
-    // The route table is ONLY deleted when VRF gets deleted
-    if (!make_pds_rttable_spec_(state, rttbl_spec, rttable_key)) {
-        // Skip batch commit if there is no change
+    pds_batch_ctxt_guard_t bctxt_guard;
+    
+    if (!update_route_store_(state, rttable_key)) {
+        // Skip batch processing if batch is not ready to be committed
         // Return empty guard
-        return  bctxt_guard_;
+        return bctxt_guard;
     }
 
-    SDK_ASSERT(cookie_uptr_); // Cookie should not be empty
-    pds_batch_params_t bp {PDS_BATCH_PARAMS_EPOCH, PDS_BATCH_PARAMS_ASYNC,
-                           pds_ms::hal_callback,
-                           cookie_uptr_.get()};
-    auto bctxt = pds_batch_start(&bp);
-    if (unlikely(!bctxt)) {
-        throw Error(std::string("PDS Batch Start failed for Route ")
-                    .append(ippfx2str(&ips_info_.pfx)));
-    }
-    bctxt_guard_.set(bctxt);
-
-    if (!PDS_MOCK_MODE()) {
-        ret = pds_route_table_update(&rttbl_spec, bctxt);
-    }
-
-    if (op_delete_) { // Delete
-        if (unlikely (ret != SDK_RET_OK)) {
-            throw Error(std::string("PDS Route Delete failed for pfx ")
-                        .append(ippfx2str(&ips_info_.pfx))
-                        .append(" err=").append(std::to_string(ret)));
-        }
-    } else { // Add or update
-        if (unlikely (ret != SDK_RET_OK)) {
-            throw Error(std::string("PDS Route Create or Update failed for pfx ")
-                        .append(ippfx2str(&ips_info_.pfx))
-                        .append(" err=").append(std::to_string(ret)));
-        }
-        // TODO: Is rollback for failure required here ?
-    }
-    return bctxt_guard_;
+    return (process_route_batch(state, rttable_key,
+                                cookie_uptr_));
 }
 
 sdk_ret_t hals_route_t::underlay_route_add_upd_() {
@@ -203,14 +234,64 @@ sdk_ret_t hals_route_t::underlay_route_del_() {
     return api::pds_underlay_route_delete(&ips_info_.pfx);
 }
 
+static void
+batch_commit_route_table (state_t *state, pds_batch_ctxt_guard_t &bctxt_guard,
+                          pds_obj_key_t &rttbl_key,
+                          std::unique_ptr<cookie_t>& cookie_uptr)
+{
+    auto l_rttbl_key_ = rttbl_key;
+    cookie_uptr->send_ips_reply =
+        [l_rttbl_key_] (bool pds_status, bool ips_mock) -> void {
+            // ----------------------------------------------------------------
+            // This block is executed asynchronously when PDS response is rcvd
+            // ----------------------------------------------------------------
+            PDS_TRACE_DEBUG ("++++ MS Route Batch Commit for Route table: %s "
+                             "Async reply %s", l_rttbl_key_.str(),
+                             (pds_status) ? "Success" : "Failure");
+        };
+    
+    // All processing complete, only batch commit remains -
+    // safe to release the cookie_uptr unique_ptr
+    auto cookie = cookie_uptr.release();
+    auto ret = learn::api_batch_commit(bctxt_guard.release());
+    if (unlikely (ret != SDK_RET_OK)) {
+        delete cookie;
+        PDS_TRACE_ERR("Batch commit failed for rttbl %s err %s",
+                      rttbl_key.str(), (std::to_string(ret)).c_str());
+        return;
+    }
+    PDS_TRACE_DEBUG ("Route-Table %s PDS Batch commit successful",
+                     rttbl_key.str());
+    auto rttbl_store = state->route_table_store().get(rttbl_key);
+    if (unlikely(rttbl_store == nullptr)) {
+        PDS_TRACE_ERR("Did not find rttbl store for rttbl %s",
+                       rttbl_key.str());
+        return;
+    }
+    // Commit successful. Stop timers
+    timer_stop(state->get_route_timer_list(),
+               rttbl_store->batch_commit_timer());
+    // Reset pending batch
+    rttbl_store->reset_pending_batch_sz();
+
+    if (PDS_MOCK_MODE()) {
+        // Call the HAL callback in PDS mock mode
+        std::thread cb(pds_ms::hal_callback, SDK_RET_OK, cookie);
+        cb.detach();
+    }
+    return;
+}
+
 void hals_route_t::overlay_route_del_() {
+    pds_obj_key_t rttable_key;
+    pds_batch_ctxt_guard_t pds_bctxt_guard;
+
     op_delete_ = true;
-    pds_batch_ctxt_guard_t  pds_bctxt_guard;
     { // Enter thread-safe context to access/modify global state
         auto state_ctxt = pds_ms::state_t::thread_context();
         // Empty cookie
         cookie_uptr_.reset(new cookie_t);
-        auto rttable_key = make_pds_rttable_key_(state_ctxt.state());
+        rttable_key = make_pds_rttable_key_(state_ctxt.state());
         if (is_pds_obj_key_invalid(rttable_key)) {
             PDS_TRACE_DEBUG("Ignore MS route delete for VRF %d that does not"
                             " have Route table ID", ips_info_.vrf_id);
@@ -219,42 +300,31 @@ void hals_route_t::overlay_route_del_() {
         pds_bctxt_guard = make_batch_pds_spec_(state_ctxt.state(),
                                                rttable_key);
         if (!pds_bctxt_guard) {
-            PDS_TRACE_DEBUG("Ignore %s route delete that is not in"
-                            " route store", ippfx2str(&ips_info_.pfx));
+            PDS_TRACE_DEBUG("%s route delete added to pending batch",
+                             ippfx2str(&ips_info_.pfx));
             return;
         }
         // If we have batched multiple IPS earlier flush it now
         // Cannot add Subnet Delete to an existing batch
         state_ctxt.state()->flush_outstanding_pds_batch();
+
+        // Routes will only get committed once the batch timer expires OR 
+        // we accumulate PDS_MS_COMMIT_BATCH_SIZE number of routes
+        if (pds_bctxt_guard) {
+            batch_commit_route_table(state_ctxt.state(), pds_bctxt_guard, 
+                                     rttable_key, cookie_uptr_);
+        }
+    
     } // End of state thread_context
       // Do Not access/modify global state after this
-
-    auto pfx = ips_info_.pfx;
-    cookie_uptr_->send_ips_reply =
-        [pfx] (bool pds_status, bool ips_mock) -> void {
-            // ----------------------------------------------------------------
-            // This block is executed asynchronously when PDS response is rcvd
-            // ----------------------------------------------------------------
-            PDS_TRACE_DEBUG("+++++ MS Route %s Delete: Rcvd Async PDS"
-                            " response %s +++++++",
-                         ippfx2str(&pfx), (pds_status) ? "Success" : "Failure");
-        };
-    // All processing complete, only batch commit remains -
-    // safe to release the cookie_uptr_ unique_ptr
-    auto cookie = cookie_uptr_.release();
-    auto ret = learn::api_batch_commit(pds_bctxt_guard.release());
-    if (unlikely (ret != SDK_RET_OK)) {
-        delete cookie;
-        throw Error(std::string("Batch commit failed for delete MS Route ")
-                    .append(ippfx2str(&pfx))
-                    .append(" err=").append(std::to_string(ret)));
-    }
-    PDS_TRACE_DEBUG ("MS Route %s: Delete PDS Batch commit successful",
-                     ippfx2str(&pfx));
+    return;
 }
 
-NBB_BYTE hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips) {
-    pds_batch_ctxt_guard_t  pds_bctxt_guard;
+NBB_BYTE
+hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips)
+{
+    pds_obj_key_t rttable_key;
+    pds_batch_ctxt_guard_t pds_bctxt_guard;
     NBB_BYTE rc = ATG_OK;
 
     parse_ips_info_(add_upd_route_ips);
@@ -306,12 +376,11 @@ NBB_BYTE hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_i
         return rc;
     }
 
-    // Alloc new cookie and cache IPS
-    cookie_uptr_.reset (new cookie_t);
-
     { // Enter thread-safe context to access/modify global state
+        // Empty cookie
+        cookie_uptr_.reset(new cookie_t);
         auto state_ctxt = pds_ms::state_t::thread_context();
-        auto rttable_key = make_pds_rttable_key_(state_ctxt.state());
+        rttable_key = make_pds_rttable_key_(state_ctxt.state());
         if (is_pds_obj_key_invalid(rttable_key)) {
             PDS_TRACE_DEBUG("Ignore MS route for VRF %d that does not"
                             " have Route table ID", ips_info_.vrf_id);
@@ -319,102 +388,20 @@ NBB_BYTE hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_i
         }
         pds_bctxt_guard = make_batch_pds_spec_(state_ctxt.state(),
                                                rttable_key);
-        // Flush any outstanding batch
-        state_ctxt.state()->flush_outstanding_pds_batch();
+        if (!pds_bctxt_guard) {
+            PDS_TRACE_DEBUG("%s route add/update added to pending batch",
+                             ippfx2str(&ips_info_.pfx));
+            return rc;
+        }
+    
+        // Routes will only get committed once the batch timer expires OR 
+        // we accumulate PDS_MS_COMMIT_BATCH_SIZE number of routes
+        if (pds_bctxt_guard) {
+            batch_commit_route_table(state_ctxt.state(), pds_bctxt_guard,
+                                     rttable_key, cookie_uptr_);
+        }
     } // End of state thread_context
       // Do Not access/modify global state after this
-
-    auto l_prev_route = prev_route_;
-    auto l_ips_info_ = ips_info_;
-    auto l_rttbl_key_ = rttbl_key_;
-    auto l_op_create_ = op_create_;
-    cookie_uptr_->send_ips_reply =
-        [add_upd_route_ips, l_ips_info_, l_prev_route,
-         l_op_create_, l_rttbl_key_]
-        (bool pds_status, bool ips_mock) -> void {
-            // ----------------------------------------------------------------
-            // This block is executed asynchronously when PDS response is rcvd
-            // ----------------------------------------------------------------
-
-            // Rollback the store incase of failure
-            if (!pds_status) {
-                auto state_ctxt = pds_ms::state_t::thread_context();
-                auto rttbl_store =
-                    state_ctxt.state()->route_table_store().
-                                get(l_rttbl_key_);
-                if (l_op_create_) {
-                    // Add failed. Delete the new route from the store
-                    rttbl_store->del_route((ip_prefix_t &)l_ips_info_.pfx);
-                } else {
-                    // Update failed. Restore the old route
-                    rttbl_store->add_upd_route((pds_route_t &)l_prev_route);
-                }
-            }
-            if (unlikely(ips_mock)) return; // UT
-
-            NBB_CREATE_THREAD_CONTEXT
-            NBS_ENTER_SHARED_CONTEXT(hals_proc_id);
-            NBS_GET_SHARED_DATA();
-
-            do {
-            auto ropi_join = get_hals_ropi_join();
-            if (ropi_join == nullptr) {
-                PDS_TRACE_ERR("Failed to find ROPI join to return AddUpd IPS");
-                break;
-            }
-            auto& route_store = ropi_join->get_route_store();
-            auto key = hals::Route::get_key(*add_upd_route_ips);
-            auto it = route_store.find(key);
-            if (it == route_store.end()) {
-                auto send_response =
-                    hals::Route::set_ips_rc(&add_upd_route_ips->ips_hdr,
-                                            ATG_OK);
-                SDK_ASSERT(send_response);
-                PDS_TRACE_DEBUG ("++++ MS Route %s Overlay NH Group %d Async "
-                                 "reply %s stateless mode ++++",
-                                ippfx2str(&l_ips_info_.pfx),
-                                l_ips_info_.ecmp_id,
-                                (pds_status) ? "Success" : "Failure");
-                ropi_join->send_ips_reply(&add_upd_route_ips->ips_hdr);
-            } else {
-                (*it)->update_complete(ATG_OK);
-                if (pds_status) {
-                    PDS_TRACE_DEBUG("MS Route %s: Send Async IPS "
-                                    "Reply success stateful mode",
-                                    ippfx2str(&l_ips_info_.pfx));
-                } else {
-                    PDS_TRACE_DEBUG("MS Route %s: Send Async IPS "
-                                    "Reply failure stateful mode",
-                                    ippfx2str(&l_ips_info_.pfx));
-                }
-            }
-            } while (0);
-
-            NBS_RELEASE_SHARED_DATA();
-            NBS_EXIT_SHARED_CONTEXT();
-            NBB_DESTROY_THREAD_CONTEXT
-        };
-
-    // All processing complete, only batch commit remains -
-    // safe to release the cookie_uptr_ unique_ptr
-    rc = ATG_ASYNC_COMPLETION;
-    auto cookie = cookie_uptr_.release();
-    auto ret = learn::api_batch_commit(pds_bctxt_guard.release());
-    if (unlikely (ret != SDK_RET_OK)) {
-        delete cookie;
-        throw Error(std::string("Batch commit failed for Add-Update Route ")
-                    .append(ippfx2str(&ips_info_.pfx))
-                    .append(" err=").append(std::to_string(ret)));
-        //TODO: Is rollback required here ?
-    }
-    PDS_TRACE_DEBUG ("Route %s Overlay NHGroup %d Add/Upd PDS Batch"
-                     " commit successful",
-                     ippfx2str(&ips_info_.pfx), ips_info_.ecmp_id);
-    if (PDS_MOCK_MODE()) {
-        // Call the HAL callback in PDS mock mode
-        std::thread cb(pds_ms::hal_callback, SDK_RET_OK, cookie);
-        cb.detach();
-    }
     return rc;
 }
 
@@ -445,6 +432,44 @@ void hals_route_t::handle_delete(ATG_ROPI_ROUTE_ID route_id) {
     }
 
     overlay_route_del_();
+}
+
+// Route timer expiry callback function
+void
+route_timer_expiry_cb (NTL_TIMER_LIST_CB *list_cb, NTL_TIMER_CB *timer_cb)
+{
+    uint32_t vrf_id;
+    pds_batch_ctxt_guard_t bctxt_guard;
+    pds_obj_key_t rttable_key = {0};
+    std::unique_ptr<cookie_t> cookie_uptr;
+    
+    // Action correlator contains the vrf-id
+    vrf_id = timer_cb->action_correlator;
+    PDS_TRACE_DEBUG("Route Batch commit timer expired for VRF %d", vrf_id);
+    
+    {
+        auto state_ctxt = pds_ms::state_t::thread_context();
+        auto vpc_obj = state_ctxt.state()->vpc_store().get(vrf_id);
+        if (unlikely(vpc_obj == nullptr)) {
+            PDS_TRACE_ERR("Cannot find VPC store obj for vrf_id: %d", vrf_id);
+            return;
+        }
+        rttable_key = vpc_obj->properties().vpc_spec.v4_route_table;
+        
+        cookie_uptr.reset(new cookie_t);
+        bctxt_guard = process_route_batch(state_ctxt.state(), rttable_key,
+                                          cookie_uptr);
+        if (!bctxt_guard) {
+            PDS_TRACE_DEBUG("Skip batch commit for vrf_id: %d", vrf_id);
+            return;
+        }
+
+        batch_commit_route_table(state_ctxt.state(), bctxt_guard,
+                                 rttable_key, cookie_uptr);
+    } // End of state thread_context
+      // Do Not access/modify global state after this
+
+    return;
 }
 
 } // End namespace

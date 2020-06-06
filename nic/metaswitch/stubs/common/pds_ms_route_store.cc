@@ -60,7 +60,7 @@ void route_table_obj_t::realloc_() {
     routes_ = new_buf;
 }
 
-void route_table_obj_t::add_upd_route(pds_route_t &route)
+bool route_table_obj_t::add_upd_route(pds_route_t &route)
 {
     const auto it = route_index_.find(route.attrs.prefix);
     if (it == route_index_.end()) {
@@ -81,7 +81,14 @@ void route_table_obj_t::add_upd_route(pds_route_t &route)
         int idx = it->second;
         routes_->routes[idx] = route;
     }
-    return;
+    // Increment the batch size
+    pending_batch_sz_++;
+    if (pending_batch_sz_ == PDS_MS_COMMIT_BATCH_SIZE) {
+        // Return true when the batch size has reached commit size
+        return true;
+    }
+    // Not ready for batch commit yet
+    return false;
 }
 
 bool route_table_obj_t::del_route(ip_prefix_t &pfx)
@@ -100,8 +107,14 @@ bool route_table_obj_t::del_route(ip_prefix_t &pfx)
         route_index_[routes_->routes[idx].attrs.prefix] = idx;
         // Delete the route from the map
         route_index_.erase(pfx);
-        return true;
+        // Increment the batch size
+        pending_batch_sz_++;
+        if (pending_batch_sz_ == PDS_MS_COMMIT_BATCH_SIZE) {
+            // Return true when the batch size has reached commit size
+            return true;
+        }
     }
+    // Not ready for batch commit yet
     return false;
 }
 

@@ -301,10 +301,16 @@ if [ $DOL_RUN == 1 ]; then
        echo Overlay ECMP not found FAIL
        ret=1
     fi
-    if grep -q "++++ MS Route 128.16.0.0/16.*Async reply Success" $NICDIR/pds-agent.log; then
-       echo Type 5 route installed PASS
+    if grep -q "128.16.0.0/16 route.*added to pending batch" $DUTDIR/pds-agent.log; then
+       echo Type 5 route pending batch PASS
     else
        echo Type 5 route not installed FAIL
+       ret=1
+    fi
+    if grep -q "++++ MS Route Batch Commit for Route table:.*Async reply Success" $DUTDIR/pds-agent.log; then
+       echo Type 5 route batch commit PASS
+    else
+       echo Type 5 route batch commit FAIL
        ret=1
     fi
     if grep -q "++++ BD 1 MAC 00:ee:00:00:00:05.*Async reply Success" $NICDIR/pds-agent.log; then
@@ -339,10 +345,16 @@ else
            ret=1
         fi
     fi
-    if grep -q "++++ MS Route 128.16.0.0/16.*Async reply Success" $DUTDIR/pds-agent.log; then
-       echo Type 5 route installed PASS
+    if grep -q "128.16.0.0/16 route.*added to pending batch" $DUTDIR/pds-agent.log; then
+       echo Type 5 route pending batch PASS
     else
        echo Type 5 route not installed FAIL
+       ret=1
+    fi
+    if grep -q "++++ MS Route Batch Commit for Route table:.*Async reply Success" $DUTDIR/pds-agent.log; then
+       echo Type 5 route batch commit PASS
+    else
+       echo Type 5 route batch commit FAIL
        ret=1
     fi
     if [ $RR == 1 ]; then

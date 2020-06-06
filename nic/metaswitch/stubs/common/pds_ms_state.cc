@@ -57,6 +57,13 @@ state_t::state_t(void)
                                        true, true);
 }
 
+void state_t::init_timer_list(NTL_TIMER_LIST_CB *timer_list,
+                              NTL_TIMER_PROC *timer_expiry_cb_fn) {
+    // Initialize the timer list and register the timer expiry
+    // callback function
+    NTL_TIMER_INIT_LIST_CB(timer_list, timer_expiry_cb_fn);
+}
+
 bool
 state_init (void)
 {

@@ -7,7 +7,11 @@
 /// This file contains the unit tests for the common stores
 ///
 //----------------------------------------------------------------------------
-
+#include <nbase.h>
+extern "C"
+{
+#include <ntltimer.h>
+}
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_tep_store.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
@@ -26,12 +30,20 @@ using pds_ms::route_table_store_t;
 using pds_ms::route_table_obj_t;
 using pds_ms::rttbl_obj_uptr_t;
 
+// Mock methods
 sdk_ret_t pds_batch_commit(pds_batch_ctxt_t bctxt) {
     return SDK_RET_OK;
 }
 sdk_ret_t pds_batch_destroy(pds_batch_ctxt_t bctxt) {
     return SDK_RET_OK;
 }
+
+NBB_BOOL ntl_timer_init_list_cb(NTL_TIMER_LIST_CB *timer_list_cb,
+                                NTL_TIMER_PROC *timer_proc,
+                                NBB_BOOL var_duration
+                                NBB_CCXT_T NBB_CXT) { return true; }
+NBB_VOID ntl_timer_init_timer_cb(NTL_TIMER_FIXED_CB *timer_cb
+                                 NBB_CCXT_T NBB_CXT) { return; }
 
 namespace api_test {
 

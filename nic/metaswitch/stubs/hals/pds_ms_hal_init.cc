@@ -10,6 +10,7 @@
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_l2f_mai.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/apollo/include/globals.hpp"
@@ -313,7 +314,12 @@ hal_init (void)
     sdk::ipc::subscribe(EVENT_ID_IP_AGE, &hal_event_callback, NULL);
     sdk::ipc::reg_request_handler(PDS_MSG_TYPE_CFG_OBJ_SET,
                                   pds_msg_cfg_callback, NULL);
-
+    // Initialize the Nbase timer list
+    {
+        auto ctx = state_t::thread_context();
+        ctx.state()->init_timer_list(ctx.state()->get_route_timer_list(),
+                                     route_timer_expiry_cb);
+    }
     return true;
 }
 
