@@ -19,6 +19,9 @@ export class Rolloutv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'RolloutRollout': 100,
+  }
 
   /** List Rollout objects */
   public ListRollout(queryParam: any = null, stagingID: string = ""):Observable<{body: IRolloutRolloutList | IApiStatus | Error, statusCode: number}> {
@@ -143,7 +146,7 @@ export class Rolloutv1Service extends AbstractService {
   }
   
   protected createListRolloutCache(): Observable<ServerEvent<RolloutRollout>> {
-    return this.createDataCache<RolloutRollout>(RolloutRollout, `RolloutRollout`, () => this.ListRollout(), (body: any) => this.WatchRollout(body));
+    return this.createDataCache<RolloutRollout>(RolloutRollout, `RolloutRollout`, () => this.ListRollout(), (body: any) => this.WatchRollout(body), this.bufferDelayMap);
   }
 
   public ListRolloutCache(): Observable<ServerEvent<RolloutRollout>> {

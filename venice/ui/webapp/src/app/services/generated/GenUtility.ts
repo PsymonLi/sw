@@ -7,9 +7,9 @@ import { VeniceResponse } from '@app/models/frontend/shared/veniceresponse.inter
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { MethodOpts, ServerEvent } from '@sdk/v1/services/generated/abstract.service';
 import * as oboe from 'oboe';
-import { NEVER, Observable, Subject, Subscriber, Subscription, TeardownLogic, BehaviorSubject, ReplaySubject } from 'rxjs';
+import { NEVER, Observable, Subject, Subscriber, Subscription, TeardownLogic, ReplaySubject } from 'rxjs';
 import { WebSocketSubject } from 'rxjs/observable/dom/WebSocketSubject';
-import { delay, publishReplay, refCount, bufferTime } from 'rxjs/operators';
+import { delay, publishReplay, refCount } from 'rxjs/operators';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 
 // VS-1306 experimental code. See if we can preserve data to re-run createDataCache() if ListXXXCache() fails
@@ -255,7 +255,7 @@ export class GenServiceUtility {
    *
    *  See hosts.component.ts for example
    */
-  public createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>): Observable<ServerEvent<T>> {
+  public createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>, bufferDelayMap: { [key: string]: number } = {}): Observable<ServerEvent<T>> {
     let observer = new ReplaySubject<ServerEvent<T>>(1);
     if (this.cacheMap[key] != null) {
       // Fetch same observable that we have given out
@@ -276,20 +276,30 @@ export class GenServiceUtility {
      const watchMethod = () => {
         const watchBody = {};
         watchBody['O.resource-version'] = '-1';
+        let events = [];
+        let watchBufferTimer;
         const watchSub = watchFn(watchBody).subscribe(watchResp => {
-          const evts = (<any>watchResp).events;
-          eventUtility.processEvents({
-            events: evts,
-          });
-          if (!listDone) {
-            // Don't emit until list call is done
-            return;
+          events = events.concat((<any>watchResp).events);
+          if (watchBufferTimer == null) {
+            const bufferDelay = bufferDelayMap[key] || 100;
+            watchBufferTimer = setTimeout(() => {
+              eventUtility.processEvents({
+                events: events,
+              });
+              if (!listDone) {
+                // Don't emit until list call is done
+                return;
+              }
+              observer.next({
+                data: [...eventUtility.array],
+                events: [...events],
+                connIsErrorState: false,
+              });
+              // Reset
+              events = [];
+              watchBufferTimer = null;
+            }, bufferDelay);
           }
-          observer.next({
-            data: [...eventUtility.array],
-            events: evts,
-            connIsErrorState: false,
-          });
         },
           (error) => {
             const controller = Utility.getInstance().getControllerService();

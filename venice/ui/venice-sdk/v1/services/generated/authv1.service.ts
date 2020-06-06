@@ -19,6 +19,11 @@ export class Authv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'AuthRoleBinding': 100,
+    'AuthRole': 100,
+    'AuthUser': 100,
+  }
 
   /** Get AuthenticationPolicy object */
   public GetAuthenticationPolicy(queryParam: any = null, stagingID: string = ""):Observable<{body: IAuthAuthenticationPolicy | IApiStatus | Error, statusCode: number}> {
@@ -1181,7 +1186,7 @@ export class Authv1Service extends AbstractService {
   }
   
   protected createListRoleBindingCache(): Observable<ServerEvent<AuthRoleBinding>> {
-    return this.createDataCache<AuthRoleBinding>(AuthRoleBinding, `AuthRoleBinding`, () => this.ListRoleBinding(), (body: any) => this.WatchRoleBinding(body));
+    return this.createDataCache<AuthRoleBinding>(AuthRoleBinding, `AuthRoleBinding`, () => this.ListRoleBinding(), (body: any) => this.WatchRoleBinding(body), this.bufferDelayMap);
   }
 
   public ListRoleBindingCache(): Observable<ServerEvent<AuthRoleBinding>> {
@@ -1189,7 +1194,7 @@ export class Authv1Service extends AbstractService {
   }
   
   protected createListRoleCache(): Observable<ServerEvent<AuthRole>> {
-    return this.createDataCache<AuthRole>(AuthRole, `AuthRole`, () => this.ListRole(), (body: any) => this.WatchRole(body));
+    return this.createDataCache<AuthRole>(AuthRole, `AuthRole`, () => this.ListRole(), (body: any) => this.WatchRole(body), this.bufferDelayMap);
   }
 
   public ListRoleCache(): Observable<ServerEvent<AuthRole>> {
@@ -1197,7 +1202,7 @@ export class Authv1Service extends AbstractService {
   }
   
   protected createListUserCache(): Observable<ServerEvent<AuthUser>> {
-    return this.createDataCache<AuthUser>(AuthUser, `AuthUser`, () => this.ListUser(), (body: any) => this.WatchUser(body));
+    return this.createDataCache<AuthUser>(AuthUser, `AuthUser`, () => this.ListUser(), (body: any) => this.WatchUser(body), this.bufferDelayMap);
   }
 
   public ListUserCache(): Observable<ServerEvent<AuthUser>> {

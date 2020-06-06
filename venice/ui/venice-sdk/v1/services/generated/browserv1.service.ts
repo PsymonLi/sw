@@ -19,6 +19,8 @@ export class Browserv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   public GetReferrers(queryParam: any = null, stagingID: string = ""):Observable<{body: IBrowserBrowseResponse | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/configs/browser/v1/dependedby/**';

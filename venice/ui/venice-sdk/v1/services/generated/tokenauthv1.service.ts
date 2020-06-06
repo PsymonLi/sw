@@ -19,6 +19,8 @@ export class Tokenauthv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   public GetGenerateNodeToken(queryParam: any = null):Observable<{body: ITokenauthNodeTokenResponse | Error, statusCode: number}> {
     let url = this['baseUrlAndPort'] + '/tokenauth/v1/node';

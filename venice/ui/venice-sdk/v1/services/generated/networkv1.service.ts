@@ -19,6 +19,14 @@ export class Networkv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'NetworkNetworkInterface': 100,
+    'NetworkRoutingConfig': 100,
+    'NetworkIPAMPolicy': 100,
+    'NetworkNetwork': 100,
+    'NetworkRouteTable': 100,
+    'NetworkVirtualRouter': 100,
+  }
 
   /** List IPAMPolicy objects */
   public ListIPAMPolicy_1(queryParam: any = null, stagingID: string = ""):Observable<{body: INetworkIPAMPolicyList | IApiStatus | Error, statusCode: number}> {
@@ -1070,7 +1078,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListNetworkInterfaceCache(): Observable<ServerEvent<NetworkNetworkInterface>> {
-    return this.createDataCache<NetworkNetworkInterface>(NetworkNetworkInterface, `NetworkNetworkInterface`, () => this.ListNetworkInterface(), (body: any) => this.WatchNetworkInterface(body));
+    return this.createDataCache<NetworkNetworkInterface>(NetworkNetworkInterface, `NetworkNetworkInterface`, () => this.ListNetworkInterface(), (body: any) => this.WatchNetworkInterface(body), this.bufferDelayMap);
   }
 
   public ListNetworkInterfaceCache(): Observable<ServerEvent<NetworkNetworkInterface>> {
@@ -1078,7 +1086,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListRoutingConfigCache(): Observable<ServerEvent<NetworkRoutingConfig>> {
-    return this.createDataCache<NetworkRoutingConfig>(NetworkRoutingConfig, `NetworkRoutingConfig`, () => this.ListRoutingConfig(), (body: any) => this.WatchRoutingConfig(body));
+    return this.createDataCache<NetworkRoutingConfig>(NetworkRoutingConfig, `NetworkRoutingConfig`, () => this.ListRoutingConfig(), (body: any) => this.WatchRoutingConfig(body), this.bufferDelayMap);
   }
 
   public ListRoutingConfigCache(): Observable<ServerEvent<NetworkRoutingConfig>> {
@@ -1086,7 +1094,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListIPAMPolicyCache(): Observable<ServerEvent<NetworkIPAMPolicy>> {
-    return this.createDataCache<NetworkIPAMPolicy>(NetworkIPAMPolicy, `NetworkIPAMPolicy`, () => this.ListIPAMPolicy(), (body: any) => this.WatchIPAMPolicy(body));
+    return this.createDataCache<NetworkIPAMPolicy>(NetworkIPAMPolicy, `NetworkIPAMPolicy`, () => this.ListIPAMPolicy(), (body: any) => this.WatchIPAMPolicy(body), this.bufferDelayMap);
   }
 
   public ListIPAMPolicyCache(): Observable<ServerEvent<NetworkIPAMPolicy>> {
@@ -1094,7 +1102,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListNetworkCache(): Observable<ServerEvent<NetworkNetwork>> {
-    return this.createDataCache<NetworkNetwork>(NetworkNetwork, `NetworkNetwork`, () => this.ListNetwork(), (body: any) => this.WatchNetwork(body));
+    return this.createDataCache<NetworkNetwork>(NetworkNetwork, `NetworkNetwork`, () => this.ListNetwork(), (body: any) => this.WatchNetwork(body), this.bufferDelayMap);
   }
 
   public ListNetworkCache(): Observable<ServerEvent<NetworkNetwork>> {
@@ -1102,7 +1110,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListRouteTableCache(): Observable<ServerEvent<NetworkRouteTable>> {
-    return this.createDataCache<NetworkRouteTable>(NetworkRouteTable, `NetworkRouteTable`, () => this.ListRouteTable(), (body: any) => this.WatchRouteTable(body));
+    return this.createDataCache<NetworkRouteTable>(NetworkRouteTable, `NetworkRouteTable`, () => this.ListRouteTable(), (body: any) => this.WatchRouteTable(body), this.bufferDelayMap);
   }
 
   public ListRouteTableCache(): Observable<ServerEvent<NetworkRouteTable>> {
@@ -1110,7 +1118,7 @@ export class Networkv1Service extends AbstractService {
   }
   
   protected createListVirtualRouterCache(): Observable<ServerEvent<NetworkVirtualRouter>> {
-    return this.createDataCache<NetworkVirtualRouter>(NetworkVirtualRouter, `NetworkVirtualRouter`, () => this.ListVirtualRouter(), (body: any) => this.WatchVirtualRouter(body));
+    return this.createDataCache<NetworkVirtualRouter>(NetworkVirtualRouter, `NetworkVirtualRouter`, () => this.ListVirtualRouter(), (body: any) => this.WatchVirtualRouter(body), this.bufferDelayMap);
   }
 
   public ListVirtualRouterCache(): Observable<ServerEvent<NetworkVirtualRouter>> {

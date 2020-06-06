@@ -19,6 +19,8 @@ export class Searchv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   /** Security Policy Query */
   public GetPolicyQuery_1(queryParam: any = null):Observable<{body: ISearchPolicySearchResponse | Error, statusCode: number}> {

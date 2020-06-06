@@ -19,6 +19,8 @@ export class Fwlogv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   /** fwlog/v1/tenants/default/objects/<objectName> */
   public GetDownloadFwLogFileContent_1(O_Name, queryParam: any = null):Observable<{body: IFwlogFwLogList | Error, statusCode: number}> {

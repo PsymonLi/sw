@@ -19,6 +19,18 @@ export class Monitoringv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'MonitoringTechSupportRequest': 100,
+    'MonitoringMirrorSession': 100,
+    'MonitoringAlertDestination': 100,
+    'MonitoringAlertPolicy': 100,
+    'MonitoringAlert': 100,
+    'MonitoringArchiveRequest': 100,
+    'MonitoringEventPolicy': 100,
+    'MonitoringFlowExportPolicy': 100,
+    'MonitoringFwlogPolicy': 100,
+    'MonitoringStatsAlertPolicy': 100,
+  }
 
   /** List MirrorSession objects */
   public ListMirrorSession_1(queryParam: any = null, stagingID: string = ""):Observable<{body: IMonitoringMirrorSessionList | IApiStatus | Error, statusCode: number}> {
@@ -2535,7 +2547,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListTechSupportRequestCache(): Observable<ServerEvent<MonitoringTechSupportRequest>> {
-    return this.createDataCache<MonitoringTechSupportRequest>(MonitoringTechSupportRequest, `MonitoringTechSupportRequest`, () => this.ListTechSupportRequest(), (body: any) => this.WatchTechSupportRequest(body));
+    return this.createDataCache<MonitoringTechSupportRequest>(MonitoringTechSupportRequest, `MonitoringTechSupportRequest`, () => this.ListTechSupportRequest(), (body: any) => this.WatchTechSupportRequest(body), this.bufferDelayMap);
   }
 
   public ListTechSupportRequestCache(): Observable<ServerEvent<MonitoringTechSupportRequest>> {
@@ -2543,7 +2555,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListMirrorSessionCache(): Observable<ServerEvent<MonitoringMirrorSession>> {
-    return this.createDataCache<MonitoringMirrorSession>(MonitoringMirrorSession, `MonitoringMirrorSession`, () => this.ListMirrorSession(), (body: any) => this.WatchMirrorSession(body));
+    return this.createDataCache<MonitoringMirrorSession>(MonitoringMirrorSession, `MonitoringMirrorSession`, () => this.ListMirrorSession(), (body: any) => this.WatchMirrorSession(body), this.bufferDelayMap);
   }
 
   public ListMirrorSessionCache(): Observable<ServerEvent<MonitoringMirrorSession>> {
@@ -2551,7 +2563,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListAlertDestinationCache(): Observable<ServerEvent<MonitoringAlertDestination>> {
-    return this.createDataCache<MonitoringAlertDestination>(MonitoringAlertDestination, `MonitoringAlertDestination`, () => this.ListAlertDestination(), (body: any) => this.WatchAlertDestination(body));
+    return this.createDataCache<MonitoringAlertDestination>(MonitoringAlertDestination, `MonitoringAlertDestination`, () => this.ListAlertDestination(), (body: any) => this.WatchAlertDestination(body), this.bufferDelayMap);
   }
 
   public ListAlertDestinationCache(): Observable<ServerEvent<MonitoringAlertDestination>> {
@@ -2559,7 +2571,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListAlertPolicyCache(): Observable<ServerEvent<MonitoringAlertPolicy>> {
-    return this.createDataCache<MonitoringAlertPolicy>(MonitoringAlertPolicy, `MonitoringAlertPolicy`, () => this.ListAlertPolicy(), (body: any) => this.WatchAlertPolicy(body));
+    return this.createDataCache<MonitoringAlertPolicy>(MonitoringAlertPolicy, `MonitoringAlertPolicy`, () => this.ListAlertPolicy(), (body: any) => this.WatchAlertPolicy(body), this.bufferDelayMap);
   }
 
   public ListAlertPolicyCache(): Observable<ServerEvent<MonitoringAlertPolicy>> {
@@ -2567,7 +2579,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListAlertCache(): Observable<ServerEvent<MonitoringAlert>> {
-    return this.createDataCache<MonitoringAlert>(MonitoringAlert, `MonitoringAlert`, () => this.ListAlert(), (body: any) => this.WatchAlert(body));
+    return this.createDataCache<MonitoringAlert>(MonitoringAlert, `MonitoringAlert`, () => this.ListAlert(), (body: any) => this.WatchAlert(body), this.bufferDelayMap);
   }
 
   public ListAlertCache(): Observable<ServerEvent<MonitoringAlert>> {
@@ -2575,7 +2587,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListArchiveRequestCache(): Observable<ServerEvent<MonitoringArchiveRequest>> {
-    return this.createDataCache<MonitoringArchiveRequest>(MonitoringArchiveRequest, `MonitoringArchiveRequest`, () => this.ListArchiveRequest(), (body: any) => this.WatchArchiveRequest(body));
+    return this.createDataCache<MonitoringArchiveRequest>(MonitoringArchiveRequest, `MonitoringArchiveRequest`, () => this.ListArchiveRequest(), (body: any) => this.WatchArchiveRequest(body), this.bufferDelayMap);
   }
 
   public ListArchiveRequestCache(): Observable<ServerEvent<MonitoringArchiveRequest>> {
@@ -2583,7 +2595,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListEventPolicyCache(): Observable<ServerEvent<MonitoringEventPolicy>> {
-    return this.createDataCache<MonitoringEventPolicy>(MonitoringEventPolicy, `MonitoringEventPolicy`, () => this.ListEventPolicy(), (body: any) => this.WatchEventPolicy(body));
+    return this.createDataCache<MonitoringEventPolicy>(MonitoringEventPolicy, `MonitoringEventPolicy`, () => this.ListEventPolicy(), (body: any) => this.WatchEventPolicy(body), this.bufferDelayMap);
   }
 
   public ListEventPolicyCache(): Observable<ServerEvent<MonitoringEventPolicy>> {
@@ -2591,7 +2603,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListFlowExportPolicyCache(): Observable<ServerEvent<MonitoringFlowExportPolicy>> {
-    return this.createDataCache<MonitoringFlowExportPolicy>(MonitoringFlowExportPolicy, `MonitoringFlowExportPolicy`, () => this.ListFlowExportPolicy(), (body: any) => this.WatchFlowExportPolicy(body));
+    return this.createDataCache<MonitoringFlowExportPolicy>(MonitoringFlowExportPolicy, `MonitoringFlowExportPolicy`, () => this.ListFlowExportPolicy(), (body: any) => this.WatchFlowExportPolicy(body), this.bufferDelayMap);
   }
 
   public ListFlowExportPolicyCache(): Observable<ServerEvent<MonitoringFlowExportPolicy>> {
@@ -2599,7 +2611,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListFwlogPolicyCache(): Observable<ServerEvent<MonitoringFwlogPolicy>> {
-    return this.createDataCache<MonitoringFwlogPolicy>(MonitoringFwlogPolicy, `MonitoringFwlogPolicy`, () => this.ListFwlogPolicy(), (body: any) => this.WatchFwlogPolicy(body));
+    return this.createDataCache<MonitoringFwlogPolicy>(MonitoringFwlogPolicy, `MonitoringFwlogPolicy`, () => this.ListFwlogPolicy(), (body: any) => this.WatchFwlogPolicy(body), this.bufferDelayMap);
   }
 
   public ListFwlogPolicyCache(): Observable<ServerEvent<MonitoringFwlogPolicy>> {
@@ -2607,7 +2619,7 @@ export class Monitoringv1Service extends AbstractService {
   }
   
   protected createListStatsAlertPolicyCache(): Observable<ServerEvent<MonitoringStatsAlertPolicy>> {
-    return this.createDataCache<MonitoringStatsAlertPolicy>(MonitoringStatsAlertPolicy, `MonitoringStatsAlertPolicy`, () => this.ListStatsAlertPolicy(), (body: any) => this.WatchStatsAlertPolicy(body));
+    return this.createDataCache<MonitoringStatsAlertPolicy>(MonitoringStatsAlertPolicy, `MonitoringStatsAlertPolicy`, () => this.ListStatsAlertPolicy(), (body: any) => this.WatchStatsAlertPolicy(body), this.bufferDelayMap);
   }
 
   public ListStatsAlertPolicyCache(): Observable<ServerEvent<MonitoringStatsAlertPolicy>> {

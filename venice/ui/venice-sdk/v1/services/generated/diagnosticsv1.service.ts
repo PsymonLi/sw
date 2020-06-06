@@ -19,6 +19,9 @@ export class Diagnosticsv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'DiagnosticsModule': 100,
+  }
 
   /** List Module objects */
   public ListModule(queryParam: any = null, stagingID: string = ""):Observable<{body: IDiagnosticsModuleList | IApiStatus | Error, statusCode: number}> {
@@ -127,7 +130,7 @@ export class Diagnosticsv1Service extends AbstractService {
   }
   
   protected createListModuleCache(): Observable<ServerEvent<DiagnosticsModule>> {
-    return this.createDataCache<DiagnosticsModule>(DiagnosticsModule, `DiagnosticsModule`, () => this.ListModule(), (body: any) => this.WatchModule(body));
+    return this.createDataCache<DiagnosticsModule>(DiagnosticsModule, `DiagnosticsModule`, () => this.ListModule(), (body: any) => this.WatchModule(body), this.bufferDelayMap);
   }
 
   public ListModuleCache(): Observable<ServerEvent<DiagnosticsModule>> {

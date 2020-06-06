@@ -32,6 +32,10 @@ export class MonitoringService extends Monitoringv1Service implements OnDestroy 
         (payload) => { this.publishAJAXEnd(payload); }
       );
       this.serviceUtility.setId(this.getClassName());
+      // Increase buffer window for alerts.
+      // User never creates alerts, so an increased buffer window
+      // shouldn't affect user experience.
+      this.bufferDelayMap.MonitoringAlert = 500;
   }
 
   ngOnDestroy() {
@@ -47,8 +51,8 @@ export class MonitoringService extends Monitoringv1Service implements OnDestroy 
     return this.constructor.name;
   }
 
-  protected createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>) {
-    return this.serviceUtility.createDataCache(constructor, key, listFn, watchFn);
+  protected createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>, bufferDelayMap: { [key: string]: number } = {}) {
+    return this.serviceUtility.createDataCache(constructor, key, listFn, watchFn, bufferDelayMap);
   }
 
   protected getFromDataCache(kind: string, createCacheFn: any) {

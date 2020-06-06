@@ -19,6 +19,8 @@ export class Routingv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   /** List Neighbor objects */
   public ListNeighbor(queryParam: any = null):Observable<{body: IRoutingNeighborList | IApiStatus | Error, statusCode: number}> {

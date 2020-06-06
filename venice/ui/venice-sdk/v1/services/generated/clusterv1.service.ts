@@ -19,6 +19,13 @@ export class Clusterv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'ClusterDistributedServiceCard': 100,
+    'ClusterDSCProfile': 100,
+    'ClusterHost': 100,
+    'ClusterNode': 100,
+    'ClusterTenant': 100,
+  }
 
   /** Get Cluster object */
   public GetCluster(queryParam: any = null, stagingID: string = ""):Observable<{body: IClusterCluster | IApiStatus | Error, statusCode: number}> {
@@ -970,7 +977,7 @@ export class Clusterv1Service extends AbstractService {
   }
   
   protected createListDistributedServiceCardCache(): Observable<ServerEvent<ClusterDistributedServiceCard>> {
-    return this.createDataCache<ClusterDistributedServiceCard>(ClusterDistributedServiceCard, `ClusterDistributedServiceCard`, () => this.ListDistributedServiceCard(), (body: any) => this.WatchDistributedServiceCard(body));
+    return this.createDataCache<ClusterDistributedServiceCard>(ClusterDistributedServiceCard, `ClusterDistributedServiceCard`, () => this.ListDistributedServiceCard(), (body: any) => this.WatchDistributedServiceCard(body), this.bufferDelayMap);
   }
 
   public ListDistributedServiceCardCache(): Observable<ServerEvent<ClusterDistributedServiceCard>> {
@@ -978,7 +985,7 @@ export class Clusterv1Service extends AbstractService {
   }
   
   protected createListDSCProfileCache(): Observable<ServerEvent<ClusterDSCProfile>> {
-    return this.createDataCache<ClusterDSCProfile>(ClusterDSCProfile, `ClusterDSCProfile`, () => this.ListDSCProfile(), (body: any) => this.WatchDSCProfile(body));
+    return this.createDataCache<ClusterDSCProfile>(ClusterDSCProfile, `ClusterDSCProfile`, () => this.ListDSCProfile(), (body: any) => this.WatchDSCProfile(body), this.bufferDelayMap);
   }
 
   public ListDSCProfileCache(): Observable<ServerEvent<ClusterDSCProfile>> {
@@ -986,7 +993,7 @@ export class Clusterv1Service extends AbstractService {
   }
   
   protected createListHostCache(): Observable<ServerEvent<ClusterHost>> {
-    return this.createDataCache<ClusterHost>(ClusterHost, `ClusterHost`, () => this.ListHost(), (body: any) => this.WatchHost(body));
+    return this.createDataCache<ClusterHost>(ClusterHost, `ClusterHost`, () => this.ListHost(), (body: any) => this.WatchHost(body), this.bufferDelayMap);
   }
 
   public ListHostCache(): Observable<ServerEvent<ClusterHost>> {
@@ -994,7 +1001,7 @@ export class Clusterv1Service extends AbstractService {
   }
   
   protected createListNodeCache(): Observable<ServerEvent<ClusterNode>> {
-    return this.createDataCache<ClusterNode>(ClusterNode, `ClusterNode`, () => this.ListNode(), (body: any) => this.WatchNode(body));
+    return this.createDataCache<ClusterNode>(ClusterNode, `ClusterNode`, () => this.ListNode(), (body: any) => this.WatchNode(body), this.bufferDelayMap);
   }
 
   public ListNodeCache(): Observable<ServerEvent<ClusterNode>> {
@@ -1002,7 +1009,7 @@ export class Clusterv1Service extends AbstractService {
   }
   
   protected createListTenantCache(): Observable<ServerEvent<ClusterTenant>> {
-    return this.createDataCache<ClusterTenant>(ClusterTenant, `ClusterTenant`, () => this.ListTenant(), (body: any) => this.WatchTenant(body));
+    return this.createDataCache<ClusterTenant>(ClusterTenant, `ClusterTenant`, () => this.ListTenant(), (body: any) => this.WatchTenant(body), this.bufferDelayMap);
   }
 
   public ListTenantCache(): Observable<ServerEvent<ClusterTenant>> {

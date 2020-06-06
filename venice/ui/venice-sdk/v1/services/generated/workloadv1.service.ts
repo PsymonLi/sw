@@ -19,6 +19,10 @@ export class Workloadv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'WorkloadEndpoint': 100,
+    'WorkloadWorkload': 100,
+  }
 
   /** List Endpoint objects */
   public ListEndpoint_1(queryParam: any = null, stagingID: string = ""):Observable<{body: IWorkloadEndpointList | IApiStatus | Error, statusCode: number}> {
@@ -529,7 +533,7 @@ export class Workloadv1Service extends AbstractService {
   }
   
   protected createListEndpointCache(): Observable<ServerEvent<WorkloadEndpoint>> {
-    return this.createDataCache<WorkloadEndpoint>(WorkloadEndpoint, `WorkloadEndpoint`, () => this.ListEndpoint(), (body: any) => this.WatchEndpoint(body));
+    return this.createDataCache<WorkloadEndpoint>(WorkloadEndpoint, `WorkloadEndpoint`, () => this.ListEndpoint(), (body: any) => this.WatchEndpoint(body), this.bufferDelayMap);
   }
 
   public ListEndpointCache(): Observable<ServerEvent<WorkloadEndpoint>> {
@@ -537,7 +541,7 @@ export class Workloadv1Service extends AbstractService {
   }
   
   protected createListWorkloadCache(): Observable<ServerEvent<WorkloadWorkload>> {
-    return this.createDataCache<WorkloadWorkload>(WorkloadWorkload, `WorkloadWorkload`, () => this.ListWorkload(), (body: any) => this.WatchWorkload(body));
+    return this.createDataCache<WorkloadWorkload>(WorkloadWorkload, `WorkloadWorkload`, () => this.ListWorkload(), (body: any) => this.WatchWorkload(body), this.bufferDelayMap);
   }
 
   public ListWorkloadCache(): Observable<ServerEvent<WorkloadWorkload>> {

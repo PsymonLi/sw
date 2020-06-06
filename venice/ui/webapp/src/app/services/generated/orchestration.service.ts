@@ -48,8 +48,8 @@ export class OrchestrationService extends Orchestrationv1Service implements OnDe
     return this.constructor.name;
   }
 
-  protected createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>) {
-    return this.serviceUtility.createDataCache(constructor, key, listFn, watchFn);
+  protected createDataCache<T>(constructor: any, key: string, listFn: () => Observable<VeniceResponse>, watchFn: (query: any) => Observable<VeniceResponse>, bufferDelayMap: { [key: string]: number } = {}) {
+    return this.serviceUtility.createDataCache(constructor, key, listFn, watchFn, bufferDelayMap);
   }
 
   protected getFromDataCache(kind: string, createCacheFn: any) {

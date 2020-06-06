@@ -19,6 +19,12 @@ export class Securityv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'SecurityApp': 100,
+    'SecurityFirewallProfile': 100,
+    'SecurityNetworkSecurityPolicy': 100,
+    'SecuritySecurityGroup': 100,
+  }
 
   /** List App objects */
   public ListApp_1(queryParam: any = null, stagingID: string = ""):Observable<{body: ISecurityAppList | IApiStatus | Error, statusCode: number}> {
@@ -945,7 +951,7 @@ export class Securityv1Service extends AbstractService {
   }
   
   protected createListAppCache(): Observable<ServerEvent<SecurityApp>> {
-    return this.createDataCache<SecurityApp>(SecurityApp, `SecurityApp`, () => this.ListApp(), (body: any) => this.WatchApp(body));
+    return this.createDataCache<SecurityApp>(SecurityApp, `SecurityApp`, () => this.ListApp(), (body: any) => this.WatchApp(body), this.bufferDelayMap);
   }
 
   public ListAppCache(): Observable<ServerEvent<SecurityApp>> {
@@ -953,7 +959,7 @@ export class Securityv1Service extends AbstractService {
   }
   
   protected createListFirewallProfileCache(): Observable<ServerEvent<SecurityFirewallProfile>> {
-    return this.createDataCache<SecurityFirewallProfile>(SecurityFirewallProfile, `SecurityFirewallProfile`, () => this.ListFirewallProfile(), (body: any) => this.WatchFirewallProfile(body));
+    return this.createDataCache<SecurityFirewallProfile>(SecurityFirewallProfile, `SecurityFirewallProfile`, () => this.ListFirewallProfile(), (body: any) => this.WatchFirewallProfile(body), this.bufferDelayMap);
   }
 
   public ListFirewallProfileCache(): Observable<ServerEvent<SecurityFirewallProfile>> {
@@ -961,7 +967,7 @@ export class Securityv1Service extends AbstractService {
   }
   
   protected createListNetworkSecurityPolicyCache(): Observable<ServerEvent<SecurityNetworkSecurityPolicy>> {
-    return this.createDataCache<SecurityNetworkSecurityPolicy>(SecurityNetworkSecurityPolicy, `SecurityNetworkSecurityPolicy`, () => this.ListNetworkSecurityPolicy(), (body: any) => this.WatchNetworkSecurityPolicy(body));
+    return this.createDataCache<SecurityNetworkSecurityPolicy>(SecurityNetworkSecurityPolicy, `SecurityNetworkSecurityPolicy`, () => this.ListNetworkSecurityPolicy(), (body: any) => this.WatchNetworkSecurityPolicy(body), this.bufferDelayMap);
   }
 
   public ListNetworkSecurityPolicyCache(): Observable<ServerEvent<SecurityNetworkSecurityPolicy>> {
@@ -969,7 +975,7 @@ export class Securityv1Service extends AbstractService {
   }
   
   protected createListSecurityGroupCache(): Observable<ServerEvent<SecuritySecurityGroup>> {
-    return this.createDataCache<SecuritySecurityGroup>(SecuritySecurityGroup, `SecuritySecurityGroup`, () => this.ListSecurityGroup(), (body: any) => this.WatchSecurityGroup(body));
+    return this.createDataCache<SecuritySecurityGroup>(SecuritySecurityGroup, `SecuritySecurityGroup`, () => this.ListSecurityGroup(), (body: any) => this.WatchSecurityGroup(body), this.bufferDelayMap);
   }
 
   public ListSecurityGroupCache(): Observable<ServerEvent<SecuritySecurityGroup>> {

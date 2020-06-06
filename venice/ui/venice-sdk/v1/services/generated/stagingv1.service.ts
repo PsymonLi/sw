@@ -19,6 +19,8 @@ export class Stagingv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   /** List Buffer objects */
   public ListBuffer_1(queryParam: any = null, stagingID: string = ""):Observable<{body: IStagingBufferList | IApiStatus | Error, statusCode: number}> {

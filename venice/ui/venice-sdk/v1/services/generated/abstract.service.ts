@@ -46,7 +46,7 @@ export class AbstractService {
   }
 
   // This function should be overwritten
-  protected createDataCache<T> (constructor: any, key: string, listFn: () => Observable<any>, watchFn: (query: any) => Observable<any>): Observable<any> {
+  protected createDataCache<T> (constructor: any, key: string, listFn: () => Observable<any>, watchFn: (query: any) => Observable<any>, bufferDelayMap: { [key: string]: number } = {}): Observable<any> {
     return null
   }
 

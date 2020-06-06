@@ -51,7 +51,6 @@ export class HttpEventUtility<T> {
   }
 
   public processEvents(eventChunk): ReadonlyArray<T> {
-    const kind = eventChunk.events[0].kind;
     try {
 
       this._updateRecordsMap = {};

@@ -19,6 +19,8 @@ export class Auditv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+  }
 
   /** Fetches an audit event given its uuid */
   public GetGetEvent(UUID, queryParam: any = null):Observable<{body: IAuditAuditEvent | Error, statusCode: number}> {

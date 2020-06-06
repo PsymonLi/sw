@@ -19,6 +19,9 @@ export class Orchestrationv1Service extends AbstractService {
   getClassName(): string {
     return this.constructor.name;
   }
+  bufferDelayMap: { [key: string]: number } = {
+    'OrchestrationOrchestrator': 100,
+  }
 
   /** List Orchestrator objects */
   public ListOrchestrator(queryParam: any = null, stagingID: string = ""):Observable<{body: IOrchestrationOrchestratorList | IApiStatus | Error, statusCode: number}> {
@@ -142,7 +145,7 @@ export class Orchestrationv1Service extends AbstractService {
   }
   
   protected createListOrchestratorCache(): Observable<ServerEvent<OrchestrationOrchestrator>> {
-    return this.createDataCache<OrchestrationOrchestrator>(OrchestrationOrchestrator, `OrchestrationOrchestrator`, () => this.ListOrchestrator(), (body: any) => this.WatchOrchestrator(body));
+    return this.createDataCache<OrchestrationOrchestrator>(OrchestrationOrchestrator, `OrchestrationOrchestrator`, () => this.ListOrchestrator(), (body: any) => this.WatchOrchestrator(body), this.bufferDelayMap);
   }
 
   public ListOrchestratorCache(): Observable<ServerEvent<OrchestrationOrchestrator>> {
