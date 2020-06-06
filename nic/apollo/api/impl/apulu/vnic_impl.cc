@@ -800,6 +800,7 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
     pds_vnic_spec_t *spec;
     p4pd_error_t p4pd_ret;
     vnic_actiondata_t vnic_data;
+    pds_obj_key_t tx_policer_key;
     nexthop_info_entry_t nh_data;
     rx_vnic_actiondata_t rx_vnic_data;
     policer_entry *rx_policer, *tx_policer;
@@ -876,6 +877,18 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
                                   spec->key.str(), spec->tx_policer.str());
                     return sdk::SDK_RET_INVALID_ARG;
                 }
+            } else if ((tx_policer_key = device_find()->tx_policer()) !=
+                           k_pds_obj_key_invalid) {
+                tx_policer = policer_db()->find(&tx_policer_key);
+                if (unlikely(tx_policer == NULL)) {
+                    PDS_TRACE_ERR("Failed to find device tx policer %s",
+                                  tx_policer_key.str());
+                    return sdk::SDK_RET_INVALID_ARG;
+                }
+            } else {
+                tx_policer = NULL;
+            }
+            if (tx_policer) {
                 vnic_data.ing_vnic_info.tx_policer_id =
                     ((policer_impl *)(tx_policer->impl()))->hw_id();
             } else {

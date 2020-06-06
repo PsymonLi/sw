@@ -30,6 +30,12 @@ namespace api {
 /// \ingroup PDS_DEVICE
 /// \@{
 
+typedef struct device_upd_ctxt_s {
+    device_entry *device;
+    api_obj_ctxt_t *obj_ctxt;
+    uint64_t upd_bmap;
+} __PACK__ device_upd_ctxt_t;
+
 device_entry *
 device_entry::factory(pds_device_spec_t *pds_device) {
     device_entry *device;
@@ -109,20 +115,6 @@ device_entry::init_config(api_ctxt_t *api_ctxt) {
 }
 
 sdk_ret_t
-device_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
-    pds_device_spec_t *spec = &obj_ctxt->api_params->device_spec;
-
-    if ((oper_mode_ != spec->dev_oper_mode) ||
-        (bridging_en_ != spec->bridging_en) ||
-        (learning_en_ != spec->learning_en) ||
-        (overlay_routing_en_ != spec->overlay_routing_en)) {
-        PDS_TRACE_WARN("Some of the device obj's attribute changes will take "
-                       "affect after next reboot");
-    }
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
 device_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
     msg->cfg_msg.op = obj_ctxt->api_op;
     msg->cfg_msg.obj_id = OBJ_ID_DEVICE;
@@ -135,6 +127,57 @@ device_entry::populate_msg(pds_msg_t *msg, api_obj_ctxt_t *obj_ctxt) {
             impl_->populate_msg(msg, this, obj_ctxt);
         }
     }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+device_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
+    pds_device_spec_t *spec = &obj_ctxt->api_params->device_spec;
+
+    if ((oper_mode_ != spec->dev_oper_mode) ||
+        (bridging_en_ != spec->bridging_en) ||
+        (learning_en_ != spec->learning_en) ||
+        (overlay_routing_en_ != spec->overlay_routing_en)) {
+        PDS_TRACE_WARN("Some of the device obj's attribute changes will take "
+                       "affect after next reboot");
+    }
+    if (tx_policer_ != spec->tx_policer) {
+        obj_ctxt->upd_bmap |= PDS_DEVICE_UPD_TX_POLICER;
+    }
+    return SDK_RET_OK;
+}
+
+static bool
+vnic_upd_walk_cb_ (void *api_obj, void *ctxt) {
+    vnic_entry *vnic;
+    device_upd_ctxt_t *upd_ctxt = (device_upd_ctxt_t *)ctxt;
+
+    vnic = (vnic_entry *)api_framework_obj((api_base *)api_obj);
+    if (vnic->policer(PDS_POLICER_DIR_EGRESS) == k_pds_obj_key_invalid) {
+        // this vnic inherits device level policer
+        api_obj_add_to_deps(upd_ctxt->obj_ctxt->api_op,
+                            OBJ_ID_DEVICE, upd_ctxt->device,
+                            OBJ_ID_VNIC, (api_base *)api_obj,
+                            upd_ctxt->upd_bmap);
+    }
+    return false;
+}
+
+sdk_ret_t
+device_entry::add_deps(api_obj_ctxt_t *obj_ctxt) {
+    device_upd_ctxt_t upd_ctxt = { 0 };
+
+    // when device level policer is updated, all vnics that don't have vnic
+    // policer configured explicitly are affected
+    if (obj_ctxt->upd_bmap & PDS_DEVICE_UPD_TX_POLICER) {
+        upd_ctxt.device = this;
+        upd_ctxt.obj_ctxt = obj_ctxt;
+        upd_ctxt.upd_bmap = PDS_VNIC_UPD_TX_POLICER;
+        return vnic_db()->walk(vnic_upd_walk_cb_, &upd_ctxt);
+    }
+
+    // in all other cases, it is sufficient to contain the update
+    // programming to this object alone
     return SDK_RET_OK;
 }
 

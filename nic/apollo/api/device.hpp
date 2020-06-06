@@ -17,6 +17,8 @@
 
 namespace api {
 
+// attribute update bits for device object
+#define PDS_DEVICE_UPD_TX_POLICER                0x1
 
 /// \defgroup PDS_DEVICE_ENTRY - device entry functionality
 /// \ingroup PDS_DEVICE
@@ -148,9 +150,7 @@ public:
     /// \param[in]      obj_ctxt    transient state associated with this API
     ///                             processing
     /// \return         SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t add_deps(api_obj_ctxt_t *obj_ctxt)  {
-        return SDK_RET_OK;
-    }
+    virtual sdk_ret_t add_deps(api_obj_ctxt_t *obj_ctxt);
 
     /// \brief     this method is called on new object that needs to replace the
     ///            old version of the object in the DBs
