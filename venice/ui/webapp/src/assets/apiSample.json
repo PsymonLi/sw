@@ -6770,11 +6770,51 @@
                     "status": {}
                 }
             },
+            "GET": {
+                "category": "monitoring",
+                "kind": "fwlogPolicy",
+                "method": "GET",
+                "url": "/configs/monitoring/v1/tenant/default/fwlogPolicy",
+                "request": {
+                    "kind": "FwlogPolicyList",
+                    "api-version": "v1",
+                    "list-meta": {
+                        "total-count": 1
+                    },
+                    "items": [
+                        {
+                            "kind": "FwlogPolicy",
+                            "api-version": "v1",
+                            "meta": {
+                                "name": "fwlogPolicy",
+                                "tenant": "default",
+                                "namespace": "default",
+                                "generation-id": "1",
+                                "resource-version": "776935",
+                                "uuid": "2ebf3d41-41c3-4cc2-8537-1dacb1f9c583",
+                                "creation-time": "2020-06-02T20:14:09.138984348Z",
+                                "mod-time": "2020-06-02T20:14:09.138985866Z",
+                                "self-link": "/configs/monitoring/v1/tenant/default/fwlogPolicy/fwlogPolicy"
+                            },
+                            "spec": {
+                                "format": "syslog-bsd",
+                                "filter": [
+                                    "all"
+                                ],
+                                "psm-target": {
+                                    "enable": true
+                                }
+                            },
+                            "status": {}
+                        }
+                    ]
+                }
+            },
             "DELETE": {
                 "category": "monitoring",
                 "kind": "fwlogPolicy",
                 "method": "DELETE",
-                "url": "configs/monitoring/v1/tenant/default/fwlogPolicy/firewall",
+                "url": "/configs/monitoring/v1/tenant/default/fwlogPolicy/firewall",
                 "request": {
                     "kind": "FwlogPolicy",
                     "api-version": "v1",
