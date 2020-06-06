@@ -102,25 +102,8 @@ oid_set_rss_parameters(struct ionic *ionic,
         PPROCESSOR_NUMBER proc_array = (PPROCESSOR_NUMBER)(
             ((UCHAR *)pParameters) + pParameters->IndirectionTableOffset);
 
-		// Need to stop io activity while we change mappings. Since this is
-		// an Oid request, we have an added ref on the instance so remove it
-		// before trying to stop, otherwise we won't stop
-		deref_request(lif, 1);
-		ntStatus = ionic_stop(lif->ionic, false);
-		// Now that we're stopped, or attempted to stop, add the ref back to the instance
-		ref_request(lif);
-
-        if (ntStatus != NDIS_STATUS_SUCCESS) {
-            goto cleanup;
-        }
-
         // program the indirection table
         ntStatus = map_rss_cpu_ind_tbl(lif, proc_array, tbl_len);
-
-		if (ionic_start(lif->ionic) != NDIS_STATUS_SUCCESS) {
-			ntStatus = NDIS_STATUS_RESOURCES;
-			goto cleanup;
-		}
 
         if (ntStatus != NDIS_STATUS_SUCCESS) {
             goto cleanup;
@@ -549,7 +532,7 @@ map_rss_cpu_ind_tbl(struct lif *lif, PPROCESSOR_NUMBER proc_array, ULONG tbl_len
             // no available queues, send flows to a different rss cpu
             lif->rss_ind_tbl[i] = (u8)q_reuse_idx;
             proc_to_q_map[proc_idx] = (u8)q_reuse_idx;
-            q_reuse_idx++;
+            q_reuse_idx = (q_reuse_idx + 1) % lif->nrxqs;
             RtlSetBit(&proc_used, proc_idx);
         } else {
             // this proc index not assigned, and there is a queue available

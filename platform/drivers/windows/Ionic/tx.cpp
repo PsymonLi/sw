@@ -2216,7 +2216,7 @@ get_tx_queue_id(struct lif *lif,
 		if( hash_val != 0) {
 			table_index = hash_val & (lif->ionic->ident.lif.eth.rss_ind_tbl_sz - 1);
 			queue_id = lif->rss_ind_tbl[ table_index];
-			ASSERT( queue_id < lif->ntxqs);
+			queue_id %= lif->ntxqs;
 		}
 	}
 

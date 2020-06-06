@@ -486,6 +486,8 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 	ULONG credits = 0;
 	NDIS_RECEIVE_THROTTLE_PARAMETERS *throttle_params = (NDIS_RECEIVE_THROTTLE_PARAMETERS *)receive_throttle_params;
 	ULONG flags = 0;
+	struct qcq *tx_qcq = NULL;
+	struct qcq *rx_qcq = NULL;
 
 	UNREFERENCED_PARAMETER(miniport_dpc_context);
     UNREFERENCED_PARAMETER(ndis_reserved2);
@@ -502,11 +504,22 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
     InterlockedIncrement64(&int_tbl->dpc_cnt);
 #endif
 
-	if (int_tbl->lif == NULL) {
+	lif = (struct lif *)InterlockedCompareExchangePointer( (PVOID *)&int_tbl->lif,
+														   NULL,
+														   (PVOID)MAXULONG_PTR);
+
+	rx_qcq = (struct qcq *)InterlockedCompareExchangePointer( (PVOID *)&int_tbl->rx_qcq,
+														   NULL,
+														   (PVOID)MAXULONG_PTR);
+
+	tx_qcq = (struct qcq *)InterlockedCompareExchangePointer( (PVOID *)&int_tbl->tx_qcq,
+														   NULL,
+														   (PVOID)MAXULONG_PTR);
+	
+	if (lif == NULL) {
 		IoPrint("%s unbound msg_id %d\n", __FUNCTION__, message_id);
 		return;
 	}
-    lif = int_tbl->lif;
 
     ref_request(lif);
 
@@ -527,42 +540,38 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
     } else {
 		ndis_budget = throttle_params->MaxNblsToIndicate;
 
-		if (int_tbl->rx_qcq != NULL) {
+		if (rx_qcq != NULL) {
 			budget = IONIC_RX_BUDGET_DEFAULT;
 			if (ionic->RxBudget != 0) {
 				budget = ionic->RxBudget;
 			} else if (ndis_budget != 0) {
 				budget = ndis_budget;
 			}
-			if (budget > int_tbl->rx_qcq->cq.num_descs) {
-				budget = int_tbl->rx_qcq->cq.num_descs;
+			if (budget > rx_qcq->cq.num_descs) {
+				budget = rx_qcq->cq.num_descs;
 			}
 			throttle_params->MaxNblsToIndicate = budget;
 
-			ionic_rx_napi( lif, int_tbl->rx_qcq, throttle_params);
+			ionic_rx_napi( lif, rx_qcq, throttle_params);
 
 			credits = budget - throttle_params->MaxNblsToIndicate;
-
-			ASSERT(int_tbl->int_index == int_tbl->rx_qcq->cq.bound_intr->index);
 		}
 
-		if (int_tbl->tx_qcq != NULL) {
+		if (tx_qcq != NULL) {
 			budget = IONIC_TX_BUDGET_DEFAULT;
 			if (ionic->TxBudget != 0) {
 				budget = ionic->TxBudget;
 			} else if (ndis_budget != 0) {
 				budget = ndis_budget;
 			}
-			if (budget > int_tbl->tx_qcq->cq.num_descs) {
-				budget = int_tbl->tx_qcq->cq.num_descs;
+			if (budget > tx_qcq->cq.num_descs) {
+				budget = tx_qcq->cq.num_descs;
 			}
 			throttle_params->MaxNblsToIndicate = budget;
 
-			tx_packet_dpc_callback(int_tbl->tx_qcq, throttle_params);
+			tx_packet_dpc_callback(tx_qcq, throttle_params);
 
 			credits += budget - throttle_params->MaxNblsToIndicate;
-
-			ASSERT(int_tbl->int_index == int_tbl->tx_qcq->cq.bound_intr->index);
 		}
 
 		if( !throttle_params->MoreNblsPending) {
@@ -572,7 +581,7 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 		if( credits != 0 ||
 			flags != 0) {
 			flags |= IONIC_INTR_CRED_RESET_COALESCE;
-			ionic_intr_credits(int_tbl->lif->ionic->idev.intr_ctrl, int_tbl->int_index, credits,
+			ionic_intr_credits(ionic->idev.intr_ctrl, int_tbl->int_index, credits,
 								flags);
 		}
 	}

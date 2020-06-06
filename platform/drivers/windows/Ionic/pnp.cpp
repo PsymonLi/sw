@@ -557,6 +557,19 @@ PnpEventNotify(NDIS_HANDLE MiniportAdapterContext,
                             ionic));
         ionic_stop(ionic, false);
         ionic_link_down(ionic);
+
+        /* Reset the lifs on this adapter */
+        ionic_lifs_reset( ionic);
+
+        mask_all_interrupts( ionic);
+
+        deinit_dma( ionic);
+
+        if( ionic->intr_obj != NULL) {
+            NdisMDeregisterInterruptEx(ionic->intr_obj);
+            ionic->intr_obj = NULL;
+        }
+
         break;
     }
     }
