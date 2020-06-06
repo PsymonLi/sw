@@ -150,10 +150,8 @@
 }
 
 .naplesdetail-interface-charts-container {
-  margin: 10px;
+  margin: 10px 0px 10px 10px;
   max-width: 1250px;
-  min-width: 1151px;
-  width: 100%;
 
   .naplesdetail-interface-container,
   .naplesdetail-interface-table-container {
@@ -176,9 +174,21 @@
   }
 }
 
-@media only screen and (min-width: 1850px) {
-  .naplesdetail-interface-charts-container {
-    flex-flow: row !important;
+@media only screen and (max-width: 1870px) {
+  .menufullopened .naplesdetail-interface-charts-container {
+    width: 100%;
+  }
+}
+
+@media only screen and (max-width: 1730px) {
+  .menupartialopened .naplesdetail-interface-charts-container {
+    width: 100%;
+  }
+}
+
+@media only screen and (max-width: 1650px) {
+  .menuclosed .naplesdetail-interface-charts-container {
+    width: 100%;
   }
 }
 
@@ -188,5 +198,5 @@
 }
 
 .naplesdetail-charts-card {
-  min-width: 500px;
+  min-width: 480px;
 }
