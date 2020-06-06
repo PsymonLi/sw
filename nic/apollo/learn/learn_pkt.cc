@@ -216,6 +216,11 @@ extract_ip_learn_info (char *pkt_data, learn_ctxt_t *ctxt)
         arp_hdr_t *arp_hdr = (arp_hdr_t *) (pkt_data + impl->l3_offset);
         arp_data_ipv4_t *arp_data = (arp_data_ipv4_t *) (arp_hdr + 1);
 
+        // for RARP packets, we are not interested in IP address
+        if (ctxt->pkt_ctxt.impl_info.hints & LEARN_HINT_RARP) {
+            return false;
+        }
+
         if (ntohs(arp_hdr->ptype) != ETH_TYPE_IPV4) {
             return false;
         }
