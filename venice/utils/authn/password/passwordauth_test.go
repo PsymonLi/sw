@@ -173,7 +173,7 @@ func TestAPIServerDown(t *testing.T) {
 	ch = make(chan error)
 	authenticator = NewPasswordAuthenticator(apicl, ch, time.Nanosecond, policy.Spec.Authenticators.GetLocal(), logger)
 
-	go readInitClientChanel(t, ch, status.Error(codes.DeadlineExceeded, context.DeadlineExceeded.Error()), 5*time.Second)
+	go readInitClientChanel(t, ch, []error{status.Error(codes.DeadlineExceeded, context.DeadlineExceeded.Error())}, 5*time.Second)
 
 	// authenticate
 	autheduser, ok, err = authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
@@ -190,7 +190,8 @@ func TestAPIServerDown(t *testing.T) {
 	// create password authenticator
 	authenticator = NewPasswordAuthenticator(apicl, ch, 30*time.Second, policy.Spec.Authenticators.GetLocal(), logger)
 
-	go readInitClientChanel(t, ch, status.Error(codes.Unavailable, "grpc: the connection is unavailable"), 45*time.Second)
+	go readInitClientChanel(t, ch, []error{status.Error(codes.Unavailable, "grpc: the connection is unavailable"),
+		status.Error(codes.Unavailable, "transport is closing")}, 45*time.Second)
 	// authenticate
 	autheduser, ok, err = authenticator.Authenticate(&auth.PasswordCredential{Username: testUser, Tenant: "default", Password: testPassword})
 
@@ -199,15 +200,29 @@ func TestAPIServerDown(t *testing.T) {
 	Assert(t, err == ErrAPIServerUnavailable, "Incorrect error type returned")
 }
 
-func readInitClientChanel(t *testing.T, ch <-chan error, expectedErr error, timeout time.Duration) {
+func readInitClientChanel(t *testing.T, ch <-chan error, expectedErrs []error, timeout time.Duration) {
+	errorStrings := func(errs []error) []string {
+		var errString []string
+		for _, err := range errs {
+			errString = append(errString, err.Error())
+		}
+		return errString
+	}
 	for {
 		select {
 		case <-time.After(timeout):
-			if expectedErr != nil {
-				Assert(t, false, fmt.Sprintf("expected error: %v, got none", expectedErr))
+			if len(expectedErrs) != 0 {
+				Assert(t, false, fmt.Sprintf("expected error: %#v, got none", errorStrings(expectedErrs)))
 			}
 		case err := <-ch:
-			Assert(t, err.Error() == expectedErr.Error(), fmt.Sprintf("expected error: %v, got: %v", expectedErr, err))
+			foundErr := false
+			for _, val := range expectedErrs {
+				if val.Error() == err.Error() {
+					foundErr = true
+					break
+				}
+			}
+			Assert(t, foundErr, fmt.Sprintf("expected error: %#v, got: %v", errorStrings(expectedErrs), err))
 		}
 		return
 	}

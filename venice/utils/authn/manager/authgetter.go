@@ -176,7 +176,6 @@ func (ug *defaultAuthGetter) IsAuthBootstrapped() (bool, error) {
 }
 
 func (ug *defaultAuthGetter) Stop() {
-	defer ug.Unlock()
 	ug.Lock()
 	ug.watcher.Stop()
 	ug.cancel()
@@ -184,8 +183,9 @@ func (ug *defaultAuthGetter) Stop() {
 		ug.client.Close()
 		ug.client = nil
 	}
-	ug.wg.Wait()
 	ug.stopped = true
+	ug.Unlock()
+	ug.wg.Wait()
 }
 
 func (ug *defaultAuthGetter) start(name, apiServer string, rslver resolver.Interface) {
