@@ -204,12 +204,19 @@ bool mgmt_state_t::bgp_gr_supported() {
     if (hal_hitless_upg_supp()) {
         return true;
     }
+    std::string bgp_gr_test;
 #ifdef SIM
-    char bgp_gr_test[] = "/sw/nic/conf/bgp-gr-test";
+    char* conf_path = std::getenv("CONF_DIR");
+    if (conf_path == nullptr) {
+        bgp_gr_test = "./bgp-gr-test";
+    } else {
+        bgp_gr_test = conf_path;
+        bgp_gr_test += "bgp-gr-test";
+    }
 #else
-    char bgp_gr_test[] = "/data/bgp-gr-test";
+    bgp_gr_test = "/data/bgp-gr-test";
 #endif
-    return stat(bgp_gr_test, &buf) == 0;
+    return stat(bgp_gr_test.c_str(), &buf) == 0;
 }
 
 static std::string mgmt_obj_str(mgmt_obj_type_e obj_type) {
