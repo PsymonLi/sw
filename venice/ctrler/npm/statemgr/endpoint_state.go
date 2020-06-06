@@ -646,15 +646,16 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 				eps.Endpoint.Status.HomingHostName = ws.Workload.Status.HostName
 				eps.Endpoint.Status.HomingHostAddr = eps.Endpoint.Spec.HomingHostAddr
 
-				if err := eps.Write(); err != nil {
-					log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
-				}
-
 				oldDSC, err := sm.FindDistributedServiceCard(eps.Endpoint.Tenant, oldEP.Spec.NodeUUID)
 				if err == nil {
 					eps.stopDSCTracking(oldDSC.DistributedServiceCard.DistributedServiceCard.Name)
 				}
+
 				eps.moveEP = nil
+				if err := eps.Write(); err != nil {
+					log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+				}
+
 				log.Infof("EP [%v] migrated to [%v] after timeout.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 				return
 			}
@@ -688,10 +689,10 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			//sm.mbus.AddObjectWithReferences(epinfo.MakeKey("cluster"), &oldEP, references(epinfo))
 			sm.AddObjectToMbus(epinfo.MakeKey("cluster"), eps, references(epinfo))
 
+			eps.moveEP = nil
 			if err := eps.Write(); err != nil {
 				log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
 			}
-			eps.moveEP = nil
 			log.Infof("Migration aborted for %v", eps.Endpoint.Name)
 			return
 		case <-checkDataplaneMigration.C:
@@ -736,10 +737,6 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						eps.Endpoint.Status.HomingHostName = ws.Workload.Status.HostName
 						eps.Endpoint.Status.HomingHostAddr = eps.Endpoint.Spec.HomingHostAddr
 
-						if err := eps.Write(); err != nil {
-							log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
-						}
-
 						oldDSC, err := sm.FindDistributedServiceCard(eps.Endpoint.Tenant, oldEP.Spec.NodeUUID)
 						if err == nil {
 							eps.stopDSCTracking(oldDSC.DistributedServiceCard.DistributedServiceCard.Name)
@@ -748,6 +745,10 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						ws.incrMigrationSuccess()
 						eps.migrationState = NONE
 						eps.moveEP = nil
+						if err := eps.Write(); err != nil {
+							log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+						}
+
 						log.Infof("EP [%v] migrated to [%v] successfully.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 						eps.Endpoint.Unlock()
 						return
@@ -768,6 +769,8 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 							return
 						}
 
+						eps.migrationState = NONE
+						eps.moveEP = nil
 						// Since the EP is in a bad state at this point, we do not update all spec and status fields
 						// This is to ensure we have enough information for debugging and communicate what went wrong
 						// during migration
@@ -777,8 +780,6 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						}
 
 						ws.incrMigrationFailure()
-						eps.migrationState = NONE
-						eps.moveEP = nil
 						log.Infof("EP [%v] migration to [%v] failed.", eps.Endpoint.Name, eps.Endpoint.Status.NodeUUID)
 						eps.Endpoint.Unlock()
 						return

@@ -983,7 +983,7 @@ func TestMigrationStartFinalSyncAbortAfterDone(t *testing.T) {
 		return false, nil
 	}, "Endpoint not in correct stage", "1s", "20s")
 
-	// Send final sync
+	// Send Abort
 	nwr.Status.MigrationStatus.Stage = workload.WorkloadMigrationStatus_MIGRATION_ABORT.String()
 	err = stateMgr.ctrler.Workload().Update(&nwr)
 	AssertOk(t, err, "Could not update the workload")
@@ -1358,6 +1358,167 @@ func TestMigrationWorkloadBackToBack(t *testing.T) {
 	AssertEventually(t, func() (bool, interface{}) {
 		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
 		if err == nil && wrk.Workload.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Workload not found", "1s", "10s")
+}
+
+func TestAbortStart(t *testing.T) {
+	// create network state manager
+	stateMgr, err := newStatemgr()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	sourceHost := "testHost"
+	destHost := "testHost-2"
+
+	setupTopo(stateMgr, sourceHost, destHost, t)
+
+	// workload params
+	wr := workload.Workload{
+		TypeMeta: api.TypeMeta{Kind: "Workload"},
+		ObjectMeta: api.ObjectMeta{
+			Name:      "testWorkload",
+			Namespace: "default",
+			Tenant:    "default",
+		},
+		Spec: workload.WorkloadSpec{
+			HostName: "testHost",
+			Interfaces: []workload.WorkloadIntfSpec{
+				{
+					MACAddress:   "1001.0203.0405",
+					MicroSegVlan: 100,
+					ExternalVlan: 1,
+				},
+			},
+		},
+	}
+
+	// create the workload
+	err = stateMgr.ctrler.Workload().Create(&wr)
+	AssertOk(t, err, "Could not create the workload")
+	start := time.Now()
+
+	done := false
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindNetwork("default", "Network-Vlan-1")
+		if err == nil {
+			if !done {
+				timeTrack(start, "Network create took")
+				done = true
+			}
+			return true, nil
+		}
+		return false, nil
+	}, "Network not foud", "1s", "1s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "5s")
+
+	// verify we can find the endpoint associated with the workload
+	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+	AssertOk(t, err, "Could not find the endpoint")
+	Assert(t, (foundEp.Endpoint.Status.WorkloadName == wr.Name), "endpoint params did not match")
+
+	// update workload external vlan
+	nwr := ref.DeepCopy(wr).(workload.Workload)
+	nwr.Spec.HostName = "testHost-2"
+	nwr.Spec.Interfaces[0].MicroSegVlan = 200
+	nwr.Status.HostName = "testHost"
+	nwr.Status.MigrationStatus = &workload.WorkloadMigrationStatus{
+		Stage:  "migration-start",
+		Status: workload.WorkloadMigrationStatus_NONE.String(),
+	}
+	nwr.Status.Interfaces = []workload.WorkloadIntfStatus{
+		{
+			MACAddress:   "1001.0203.0405",
+			MicroSegVlan: 100,
+			ExternalVlan: 1,
+		},
+	}
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil && ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_START.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "10s")
+
+	// Send Abort
+	nwr.Status.MigrationStatus.Stage = workload.WorkloadMigrationStatus_MIGRATION_ABORT.String()
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	// Endpoint should continue to be in DONE stage
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err != nil {
+			return false, err
+		}
+
+		if ep.Endpoint.Status.Migration.Status != workload.EndpointMigrationStatus_ABORTED.String() {
+			return false, fmt.Errorf("Unexpected migration stage %v, expected %v", ep.Endpoint.Status.Migration.Status, workload.EndpointMigrationStatus_ABORTED.String())
+		}
+
+		if ep.Endpoint.Status.NodeUUID != ep.Endpoint.Spec.NodeUUID {
+			return false, fmt.Errorf("NodeUUID is different in spec[%v] and status[%v]", ep.Endpoint.Spec.NodeUUID, ep.Endpoint.Status.NodeUUID)
+		}
+
+		if ep.Endpoint.Spec.NodeUUID != "0001.0203.0405" {
+			return false, fmt.Errorf("unexpected NodeUUID %v found. Expected 0001.0203.0405", ep.Endpoint.Spec.NodeUUID)
+		}
+
+		return true, nil
+	}, "Endpoint not in correct stage", "1s", "5s")
+
+	nwr.Status.MigrationStatus.Stage = "migration-start"
+	nwr.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_NONE.String()
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil && ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_START.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "10s")
+
+	// Send final sync
+	nwr.Status.MigrationStatus.Stage = "migration-final-sync"
+	nwr.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_STARTED.String()
+	err = stateMgr.ctrler.Workload().Update(&nwr)
+	AssertOk(t, err, "Could not update the workload")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil && ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_FINAL_SYNC.String() {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not in correct stage", "1s", "1s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
+		if err == nil && ep.Endpoint.Spec.NodeUUID == ep.Endpoint.Status.NodeUUID {
+			return true, nil
+		}
+		return false, nil
+	}, "Endpoint not found", "1s", "20s")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		wrk, err := stateMgr.FindWorkload("default", "testWorkload")
+		if err == nil && wrk.Workload.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_DONE.String() {
 			return true, nil
 		}
 		return false, nil
