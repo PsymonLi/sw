@@ -3201,6 +3201,7 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
         return retval;
     }
 
+#if 0
     // Create Flow-Proto-Stats-State in HBM, as hinted by create_flags
     if (age_thread) {
         if (iflow->flow_telemetry_create_flags) {
@@ -3214,6 +3215,8 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
             create_flow_proto_state(rflow);
         }
     }
+#endif
+
     // update half open session count if state has moved beyond SYN_ACK_RCVD
     if ((tcp_session) && (session->is_in_half_open_state) &&
         (session_state_p->iflow_state.state >= session::FLOW_TCP_STATE_SYN_ACK_RCVD)) {
@@ -3640,16 +3643,15 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
     sdk_ret_t             sret = SDK_RET_OK;
     uint8_t               fte_id = 0;
     uint32_t              num_sessions = 0, bucket_no = 0;
+#if 0
     flow_telemetry_state_t *flow_telemetry_state_p;
+#endif
     bool                  inb_bond_active_changed = false;
 
     session_age_cb_args_t args;
     if (g_hal_state->is_age_debug_enabled()) {
         HAL_TRACE_DEBUG("session age walk cb bucket {} context {:p}", bucket, ctxt);
     }
-
-    // Keep track of age_timer_ticks for pps / bw calculations
-    g_age_timer_ticks++;
 
     // Re-pick inband bond0's active link
     if (g_hal_state->inband_bond_mode() == hal::BOND_MODE_ACTIVE_BACKUP) {
@@ -3674,6 +3676,9 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
         }
    }
 
+#if 0
+    // Keep track of age_timer_ticks for pps / bw calculations
+    g_age_timer_ticks++; 
     //
     // Scan Flow-Proto-State in Age-list and free if applicable
     //
@@ -3698,6 +3703,7 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
 
         flow_telemetry_state_p = next_p;
     }
+#endif
 
     // We dont have any sessions yet - bail
     if (!g_hal_state->session_hal_handle_ht()->num_entries())
