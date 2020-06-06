@@ -1747,12 +1747,10 @@ mapping_impl::activate_create_(pds_epoch_t epoch, mapping_entry *mapping,
         if (ret != SDK_RET_OK) {
             goto error;
         }
-        if (!device_find()->overlay_routing_enabled()) {
-            if (spec->skey.type == PDS_MAPPING_TYPE_L3) {
-                ret = mapping_impl_db()->insert_dhcp_binding(spec);
-                if (ret != SDK_RET_OK) {
-                    return ret;
-                }
+        if (spec->skey.type == PDS_MAPPING_TYPE_L3) {
+            ret = mapping_impl_db()->insert_dhcp_binding(spec);
+            if (ret != SDK_RET_OK) {
+                return ret;
             }
         }
     } else {
@@ -1842,6 +1840,7 @@ mapping_impl::deactivate_ip_local_mapping_entry_(pds_obj_key_t vpc,
 sdk_ret_t
 mapping_impl::activate_delete_(pds_epoch_t epoch, mapping_entry *mapping) {
     sdk_ret_t ret;
+    pds_mapping_key_t skey;
 
     if (!mapping->is_local()) {
         PDS_TRACE_DEBUG("Deleting remote mapping %s",
@@ -1878,11 +1877,9 @@ mapping_impl::activate_delete_(pds_epoch_t epoch, mapping_entry *mapping) {
                           mapping->key2str().c_str(), ret);
             // continue cleanup !!
         }
-        if (!device_find()->overlay_routing_enabled()) {
-            pds_mapping_key_t skey = mapping->skey();
-            if (skey.type == PDS_MAPPING_TYPE_L3) {
-                ret = mapping_impl_db()->remove_dhcp_binding(&skey);
-           }
+        skey = mapping->skey();
+        if (skey.type == PDS_MAPPING_TYPE_L3) {
+            ret = mapping_impl_db()->remove_dhcp_binding(&skey);
         }
     }
     ret = mapping_db()->perish(mapping->key());

@@ -458,7 +458,7 @@ mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
         }
     } else {
         mapping_dump_args_t *mapping_args = &args->mapping_dump;
-        device_entry *dentry = device_find();
+        device_entry *device = device_find();
         type = mapping_args->type;
 
         if (type == MAPPING_DUMP_TYPE_LOCAL) {
@@ -479,7 +479,7 @@ mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
                 local_mapping_print_header(fd);
                 local_mapping_dump_cb(&api_params);
             }
-            if ((dentry) && (!dentry->overlay_routing_enabled())) {
+            if ((device) && (!device->overlay_routing_enabled())) {
                 dump_dhcp_reservation(&mapping_args->skey, fd);
             }
         }
@@ -961,7 +961,12 @@ do_insert_dhcp_binding (dhcpctl_handle *dhcp_connection,
 
 sdk_ret_t
 mapping_impl_state::insert_dhcp_binding(pds_mapping_spec_t *spec) {
-    sdk_ret_t ret;
+    sdk_ret_t ret = SDK_RET_OK;
+    device_entry *device = device_find();
+
+    if ((!device) || (device->overlay_routing_enabled())) {
+        return ret;
+    }
 
     // if dhcpd restarts the omapi control channel between pds-agent
     // and dhcpd will be broken. In that case we need to clear dhcp_connection_
@@ -1046,6 +1051,11 @@ do_remove_dhcp_binding (dhcpctl_handle *dhcp_connection, pds_mapping_key_t *skey
 sdk_ret_t
 mapping_impl_state::remove_dhcp_binding(pds_mapping_key_t *skey) {
     sdk_ret_t ret = SDK_RET_OK;
+    device_entry *device = device_find();
+
+    if ((!device) || (device->overlay_routing_enabled())) {
+        return ret;
+    }
 
     // if dhcpd restarts the omapi control channel between pds-agent
     // and dhcpd will be broken. In that case we need to clear dhcp_connection_
