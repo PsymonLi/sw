@@ -1480,12 +1480,12 @@ func (c *cache) getReflectKindOfObj(obj runtime.Object) string {
 }
 
 func (c *cache) WatchAggregate(ctx context.Context, opts api.AggWatchOptions) (kvstore.Watcher, error) {
-	defer c.RUnlock()
 	c.RLock()
 	if !c.active {
+		c.RUnlock()
 		return nil, errorCacheInactive
 	}
-
+	c.RUnlock()
 	if len(opts.WatchOptions) < 1 {
 		return nil, fmt.Errorf("invalid watch options")
 	}
@@ -1499,6 +1499,8 @@ func (c *cache) WatchAggregate(ctx context.Context, opts api.AggWatchOptions) (k
 		lknd := wopts.Group + "." + wopts.Kind
 		return c.WatchFiltered(apiutils.SetVar(ctx, apiutils.CtxKeyObjKind, lknd), key, wopts.Options)
 	}
+	c.RLock()
+	defer c.RUnlock()
 	filters := make(map[string][]filterFn)
 
 	keys := []string{}
