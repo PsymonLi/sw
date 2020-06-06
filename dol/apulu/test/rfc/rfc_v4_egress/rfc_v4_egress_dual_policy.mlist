@@ -1,0 +1,42 @@
+# Apulu RFC IPv4 Egress modules list for policy with combination of tag and pfx range.
+feature:
+    id          : rfc
+    sub         : ipv4_egress_dual_policy
+    package     : test.rfc
+    module      : rfc
+    runorder    : 10000
+    enable      : True
+    ignore      : False
+
+modules:
+    - module:
+        name    : POLICY_DENY_TCP
+        spec    : rfc_egress.testspec
+        iterate :
+            - policy    : filter://AddrFamily=IPV4,OverlapType=policy_egr_comb_2
+              ruleindex : 0
+              result    : deny
+
+    - module:
+        name    : POLICY_ALLOW_UDP
+        spec    : rfc_egress.testspec
+        iterate :
+            - policy    : filter://AddrFamily=IPV4,OverlapType=policy_egr_comb_1
+              ruleindex : 1
+              result    : allow
+
+    - module:
+        name    : POLICY_DENY_ICMP
+        spec    : rfc_egress.testspec
+        iterate :
+            - policy    : filter://AddrFamily=IPV4,OverlapType=policy_egr_comb_2
+              ruleindex : 2
+              result    : deny
+
+    - module:
+        name    : POLICY_DENY_ESP
+        spec    : rfc_egress.testspec
+        iterate :
+            - policy    : filter://AddrFamily=IPV4,OverlapType=policy_egr_comb_2
+              result    : allow
+              proto     : ESP

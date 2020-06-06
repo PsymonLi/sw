@@ -9,23 +9,18 @@ class PolicyObjectHelper:
     def __init__(self):
         return
 
-    def __get_policyID_from_subnet(self, subnet, af, direction):
+    def __is_policyID_applied_to_subnet(self, policy_id, subnet, af, direction):
         if af == 'IPV6':
-            if direction == 'ingress':
-                return subnet.IngV6SecurityPolicyIds[0] if len(subnet.IngV6SecurityPolicyIds) else None
-            else:
-                return subnet.EgV6SecurityPolicyIds[0] if len(subnet.EgV6SecurityPolicyIds) else None
+            policy_ids = subnet.IngV6SecurityPolicyIds if direction == 'ingress' else subnet.EgV6SecurityPolicyIds
         else:
-            if direction == 'ingress':
-                return subnet.IngV4SecurityPolicyIds[0] if len(subnet.IngV4SecurityPolicyIds) else None
-            else:
-                return subnet.EgV4SecurityPolicyIds[0] if len(subnet.EgV4SecurityPolicyIds) else None
+            policy_ids = subnet.IngV4SecurityPolicyIds if direction == 'ingress' else subnet.EgV4SecurityPolicyIds
+        return policy_id in policy_ids
 
     def __is_lmapping_match(self, policyobj, lobj):
         if lobj.VNIC.SUBNET.VPC.VPCId != policyobj.VPCId:
             return False
         if lobj.AddrFamily == policyobj.AddrFamily:
-            return (policyobj.PolicyId == self.__get_policyID_from_subnet(lobj.VNIC.SUBNET, policyobj.AddrFamily, policyobj.Direction))
+            return self.__is_policyID_applied_to_subnet(policyobj.PolicyId, lobj.VNIC.SUBNET, policyobj.AddrFamily, policyobj.Direction)
         return False
 
     def GetMatchingConfigObjects(self, selectors):

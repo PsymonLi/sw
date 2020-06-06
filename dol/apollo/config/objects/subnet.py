@@ -35,30 +35,20 @@ class SubnetStatus(base.StatusObjectBase):
 
 class SubnetObject(base.ConfigObjectBase):
     def __init__(self, node, parent, spec, poolid):
-        def __get_policies(spec, node, parent, af, direction):
-            attr = ""
-            attr += "v4" if af == "V4" else "v6"
-            attr += "ingr" if direction == "ingress" else "egr"
-            specific_attr = attr + "policies"
-            auto_attr = attr + "policycount"
-            count = getattr(spec, auto_attr, 0)
-            cb = "Get"
-            cb += "Ing" if direction == "ingress" else "Eg"
-            cb += "V4" if af == "V4" else "V6"
-            cb += "SecurityPolicyId"
+        def __get_policies(af, direction):
+            policy_attr_map = {
+                "V4ingress" : ("v4ingrpolicycount", "v4ingrpolicies", PolicyClient.GetIngV4SecurityPolicyId),
+                "V6ingress" : ("v6ingrpolicycount", "v6ingrpolicies", PolicyClient.GetIngV6SecurityPolicyId),
+                "V4egress"  : ("v4egrpolicycount", "v4egrpolicies", PolicyClient.GetEgV4SecurityPolicyId),
+                "V6egress"  : ("v6igrpolicycount", "v6igrpolicies", PolicyClient.GetEgV6SecurityPolicyId)
+            }
+            count_attr, specific_attr, cb = policy_attr_map[af+direction]
             policyids = getattr(spec, specific_attr, None)
-
-            if policyids:
-                return policyids
-            else:
-                if count == 0:
-                    return []
-                policy_id = getattr(PolicyClient, cb)(node, parent.VPCId)
-                if af == 'V6':
-                    is_v6 = True
-                else:
-                    is_v6 = False
-                return PolicyClient.GenerateSubnetPolicies(self, policy_id, count, direction, is_v6)
+            if policyids: return policyids
+            count = getattr(spec, count_attr, 0)
+            if count == 0: return []
+            policy_id = cb(node, parent.VPCId)
+            return PolicyClient.GenerateSubnetPolicies(self, policy_id, count, direction, True if af == 'V6' else False)
 
         super().__init__(api.ObjectTypes.SUBNET, node)
         if hasattr(spec, 'origin'):
@@ -89,10 +79,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, parent.VPCId)
 
-        self.IngV4SecurityPolicyIds = __get_policies(spec, node, parent, "V4", "ingress")
-        self.IngV6SecurityPolicyIds = __get_policies(spec, node, parent, "V6", "ingress")
-        self.EgV4SecurityPolicyIds = __get_policies(spec, node, parent, "V4", "egress")
-        self.EgV6SecurityPolicyIds = __get_policies(spec, node, parent, "V6", "egress")
+        self.IngV4SecurityPolicyIds = __get_policies("V4", "ingress")
+        self.IngV6SecurityPolicyIds = __get_policies("V6", "ingress")
+        self.EgV4SecurityPolicyIds  = __get_policies("V4", "egress")
+        self.EgV6SecurityPolicyIds  = __get_policies("V6", "egress")
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
@@ -183,7 +173,9 @@ class SubnetObject(base.ConfigObjectBase):
             if policyid is 0:
                 continue
             policyobj = PolicyClient.GetPolicyObject(node, policyid)
-            if policyobj.PolicyType == 'default':
+            if policyobj.PolicyType == 'exact':
+                continue
+            elif policyobj.PolicyType == 'default':
                 PolicyClient.Fill_Default_Rules(policyobj, self.IPPrefix)
             else:
                 PolicyClient.ModifyPolicyRules(node, policyid, self)

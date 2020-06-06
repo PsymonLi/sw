@@ -61,6 +61,7 @@ class DeviceObject(base.ConfigObjectBase):
         self.EncapType = utils.GetEncapType(spec.encap)
         self.PolicyAnyDeny = getattr(spec, 'any-deny-policy', False)
         self.Mutable = utils.IsUpdateSupported()
+        self.IPMappingPriority = getattr(spec, 'ip-mapping-priority', 0)
 
         ################# PRIVATE ATTRIBUTES OF DEVICE OBJECT #####################
         self.__spec = spec
@@ -119,6 +120,7 @@ class DeviceObject(base.ConfigObjectBase):
         spec.LearningEn = self.LearningEnabled
         spec.LearnAgeTimeout = self.LearnAgeTimeout
         spec.OverlayRoutingEn = self.OverlayRoutingEn
+        spec.IPMappingPriority = self.IPMappingPriority
         if self.PolicyAnyDeny == True:
             spec.FwPolicyXposnScheme = types_pb2.FW_POLICY_XPOSN_ANY_DENY
         else :
@@ -149,6 +151,8 @@ class DeviceObject(base.ConfigObjectBase):
         if spec.LearnAgeTimeout != self.LearnAgeTimeout:
             return False
         if spec.OverlayRoutingEn != self.OverlayRoutingEn:
+            return False
+        if spec.IPMappingPriority != self.IPMappingPriority:
             return False
         return True
 
