@@ -199,6 +199,7 @@ export class Utility {
   myUIConfigsService: UIConfigsService;
   myStagingService: StagingService;
 
+  private _tenant: string = 'default';
   private _maintenanceMode: boolean = false;
   private _currentRollout: RolloutRollout = null;
   private _enableDataCache: boolean = false;
@@ -2296,8 +2297,12 @@ export class Utility {
     }
   }
 
+  setTenant(tenant: string) {
+    this._tenant = tenant;
+  }
+
   getTenant(): string {
-    return 'default';
+    return this._tenant;
   }
 
   getNamespace(): string {

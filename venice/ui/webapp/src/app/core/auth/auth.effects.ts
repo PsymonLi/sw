@@ -44,6 +44,8 @@ export class AuthEffects {
             if (isAuthOK) {
               sessionStorage.setItem(AUTH_KEY, userData.headers.get(AUTH_KEY));
               sessionStorage.setItem(AUTH_BODY, JSON.stringify(userData.body));
+              // Since VS-1721, we have to set 'tenant' information
+              Utility.getInstance().setTenant(userData.body.meta.tenant);
               this.localStorageService.setItem(LocalStorageEvents.NEW_LOGIN_DATA, sessionStorage);
               this.localStorageService.removeItem(LocalStorageEvents.NEW_LOGIN_DATA);
 

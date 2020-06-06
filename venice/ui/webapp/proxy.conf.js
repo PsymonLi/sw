@@ -29,6 +29,7 @@ const URL = "10.7.100.21:10001"  // Jeff's dev
 // const URL = "10.30.8.2"  // equinix 
 // const URL = "10.30.3.33"  // one host , two cards
 // const URL = "192.168.70.44"  // vm team's develop server  admin/Pensando0$
+// const URL = "10.30.4.69"  // For testing multiple tenants - (Admin role: admin/Systest-1$) , (Tenant admin role: sunil1/Systest-1$ Tenant: suniltenant1 )
 
 const PROXY_CONFIG =
   {
