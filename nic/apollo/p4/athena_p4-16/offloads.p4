@@ -84,8 +84,9 @@ control offloads(inout cap_phv_intr_global_h capri_intrinsic,
         intr_p4.packet_len = intr_p4.packet_len + 4;
       }
       
-      // copy gso valid to capri_gso_csum.gso
-      metadata.scratch.flag = hdr.p4plus_to_p4.gso_valid;
+      if(hdr.p4plus_to_p4.gso_valid == TRUE) {
+       gso_csum.enable_update();
+      }
       
       // update checksum compute flags
       if (hdr.p4plus_to_p4.p4plus_app_id == P4PLUS_APPTYPE_CLASSIC_NIC) {

@@ -27,7 +27,7 @@ static uint32_t
 table_size_get(uint32_t table_id)
 {
     if (table_id == P4TBL_ID_FLOW) {
-        return 4*1024*1024;
+        return 2*1024*1024;
     } else if (table_id == P4TBL_ID_FLOW_OHASH) {
         return 1024*1024;
     }

@@ -20,7 +20,7 @@ parser AthenaEgressParser(packet_in packet,
   bit<16>     icmp_2_hdr_offset;
 
   
-  PensParser()    pensParser;
+  __Parser()    pensParser;
 
   bit<8>      options_len;
   bit<1>      pkt_from_host;

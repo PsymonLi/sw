@@ -20,7 +20,7 @@ parser AthenaIngressParser(packet_in packet,
   bit<16>     icmp_2_hdr_offset;
 
   
-  PensParser()    pensParser;
+  __Parser()    pensParser;
 
   bit<8>      options_len;
   bit<1>      pkt_from_host;
@@ -63,6 +63,7 @@ parser AthenaIngressParser(packet_in packet,
   
   
 state parse_txdma_gso {
+    gso_csum.gso_apply(hdr.p4plus_to_p4.gso_start, metadata.gso.gso_checksum);
     transition parse_packet;
 }
 
@@ -1043,6 +1044,10 @@ control AthenaIngressDeparser(packet_out packet,
                             inout headers hdr,
                             in metadata_t metadata) {
    apply {
+     
+        /* GSO */
+        gso_csum.gso_rewrite(hdr.p4plus_to_p4.gso_offset, metadata.gso.gso_checksum);
+	/* Packet build */
         packet.emit(hdr.ingress_recirc_header);	
         packet.emit(hdr.p4i_to_p4e_header);
         packet.emit(hdr.ethernet_1);
@@ -1050,9 +1055,6 @@ control AthenaIngressDeparser(packet_out packet,
         packet.emit(hdr.ip_1.ipv4);
         packet.emit(hdr.ip_1.ipv6);
         packet.emit(hdr.gre_1);
-	//	packet.emit(hdr.l4_1.icmp);
-	//	packet.emit(hdr.l4_1.tcp);
-	//       packet.emit(hdr.tcp_options_blob);
         packet.emit(hdr.udp);
         packet.emit(hdr.mpls_src);
         packet.emit(hdr.mpls_dst);
@@ -1060,30 +1062,6 @@ control AthenaIngressDeparser(packet_out packet,
         packet.emit(hdr.geneve_1);
 	packet.emit(hdr.geneve_options_blob);
 
-	/*
-        ipv4HdrCsumDep_1.update_len(hdr.ip_1.ipv4, metadata.cntrl.ip_hdr_len_1);
-        hdr.ip_1.ipv4.hdrChecksum = ipv4HdrCsumDep_1.get();
-
-        tcpCsumDep_1.update_pseudo_header_fields(hdr.ip_1.ipv4, {hdr.ip_1.ipv4.srcAddr,
-               hdr.ip_1.ipv4.dstAddr, hdr.ip_1.ipv4.protocol, metadata.cntrl.tcp_len_1});
-        tcpCsumDep_1.update_pseudo_header_fields(hdr.ip_1.ipv6, {hdr.ip_1.ipv6.srcAddr,
-               hdr.ip_1.ipv6.dstAddr, hdr.ip_1.ipv6.nextHdr, metadata.cntrl.tcp_len_1});
-        tcpCsumDep_1.update_len(hdr.l4_1.tcp, metadata.cntrl.tcp_len_1);
-        hdr.l4_1.tcp.checksum = tcpCsumDep_1.get();
-
-        udpCsumDep_1.update_pseudo_header_fields(hdr.ip_1.ipv4, {hdr.ip_1.ipv4.srcAddr,
-               hdr.ip_1.ipv4.dstAddr, hdr.ip_1.ipv4.protocol, metadata.cntrl.udp_len_1});
-        udpCsumDep_1.update_pseudo_header_fields(hdr.ip_1.ipv6, {hdr.ip_1.ipv6.srcAddr,
-               hdr.ip_1.ipv6.dstAddr, hdr.ip_1.ipv6.nextHdr, metadata.cntrl.udp_len_1});
-        udpCsumDep_1.update_len(hdr.l4_1.udp, metadata.cntrl.udp_len_1);
-        udpCsumDep_1.include_checksum_result(hdr.ip_2.ipv4);
-        udpCsumDep_1.include_checksum_result(hdr.l4_2.udp);
-        udpCsumDep_1.include_checksum_result(hdr.l4_2.tcp); // Inner TCP
-        hdr.l4_1.udp.checksum = udpCsumDep_1.get();
-
-        icmpCsumDep_1.update_len(hdr.l4_1.icmp, metadata.cntrl.icmp_len_1);
-        hdr.l4_1.icmp.hdrChecksum = icmpCsumDep_1.get();
-	*/
 	
         packet.emit(hdr.ethernet_2);
         packet.emit(hdr.ctag_2);
@@ -1096,26 +1074,5 @@ control AthenaIngressDeparser(packet_out packet,
         packet.emit(hdr.l4_u.udp);
 	packet.emit(hdr.tcp_options_blob);	
 
-	/*	
-        ipv4HdrCsumDep_2.update_len(hdr.ip_2.ipv4, metadata.cntrl.ip_hdr_len_2);
-        hdr.ip_2.ipv4.hdrChecksum = ipv4HdrCsumDep_2.get();
-
-        tcpCsumDep_2.update_pseudo_header_fields(hdr.ip_2.ipv4, {hdr.ip_2.ipv4.srcAddr,
-               hdr.ip_2.ipv4.dstAddr, hdr.ip_2.ipv4.protocol, metadata.cntrl.tcp_len_2});
-        tcpCsumDep_2.update_pseudo_header_fields(hdr.ip_2.ipv6, {hdr.ip_2.ipv6.srcAddr,
-               hdr.ip_2.ipv6.dstAddr, hdr.ip_2.ipv6.nextHdr, metadata.cntrl.tcp_len_2});
-        tcpCsumDep_2.update_len(hdr.l4_2.tcp, metadata.cntrl.tcp_len_2);
-        hdr.l4_2.tcp.checksum = tcpCsumDep_2.get();
-
-        udpCsumDep_2.update_pseudo_header_fields(hdr.ip_2.ipv4, {hdr.ip_2.ipv4.srcAddr,
-               hdr.ip_2.ipv4.dstAddr, hdr.ip_2.ipv4.protocol, metadata.cntrl.udp_len_2});
-        udpCsumDep_2.update_pseudo_header_fields(hdr.ip_2.ipv6, {hdr.ip_2.ipv6.srcAddr,
-               hdr.ip_2.ipv6.dstAddr, hdr.ip_2.ipv6.nextHdr, metadata.cntrl.udp_len_2});
-        udpCsumDep_2.update_len(hdr.l4_2.udp, metadata.cntrl.udp_len_2);
-        hdr.l4_2.udp.checksum = udpCsumDep_2.get();
-
-        icmpCsumDep_2.update_len(hdr.l4_2.icmp, metadata.cntrl.icmp_len_2);
-        hdr.l4_2.icmp.hdrChecksum = icmpCsumDep_2.get();
-	*/
    }
 }

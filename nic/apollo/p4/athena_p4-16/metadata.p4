@@ -260,10 +260,10 @@ struct offset_metadata_t {
     }
 
 
-struct capri_gso_csum_phv_loc_t {
-	bit<16> gso_checksum;
-    }
-
+struct capri_gso_csum_value_t {
+    bit<16> gso_checksum;
+  }
+ 
 
 struct l4_metadata_t {
      bit<16>   l4_sport_1;
@@ -311,5 +311,6 @@ struct metadata_t {
     @name(".offset_metadata")
     offset_metadata_t     offset;
     csum_metadata_t csum;
+    capri_gso_csum_value_t gso;
     parser_metadata_t prs;
 }

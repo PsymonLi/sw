@@ -93,7 +93,7 @@ public:
     }
 
     pds_ret_t create_entries(uint32_t count, pds_ret_t expret) {
-        for (auto i = 1; i <= count; i++) {
+        for (auto i = 0; i < count; i++) {
             auto rs = create_helper(i, expret);
             MHTEST_CHECK_RETURN(rs == expret, PDS_RET_MAX);
         }
@@ -101,7 +101,7 @@ public:
     }
 
     pds_ret_t delete_entries(uint32_t count, pds_ret_t expret) {
-        for (auto i = 1; i <= count; i++) {
+        for (auto i = 0; i < count; i++) {
             auto rs = delete_helper(i, expret);
             MHTEST_CHECK_RETURN(rs == expret, PDS_RET_MAX);
         }
@@ -109,7 +109,7 @@ public:
     }
 
     pds_ret_t update_entries(uint32_t count, pds_ret_t expret) {
-        for (auto i = 1; i <= count; i++) {
+        for (auto i = 0; i < count; i++) {
             auto rs = update_helper(i, expret);
             MHTEST_CHECK_RETURN(rs == expret, PDS_RET_MAX);
         } 
@@ -117,7 +117,7 @@ public:
     }
 
     pds_ret_t read_entries(uint32_t count, pds_ret_t expret) {
-        for (auto i = 1; i <= count; i++) {
+        for (auto i = 0; i < count; i++) {
             auto rs = read_helper(i, expret);
             MHTEST_CHECK_RETURN(rs == expret, PDS_RET_MAX);
         }
