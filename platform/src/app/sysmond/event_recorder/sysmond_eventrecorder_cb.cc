@@ -49,10 +49,10 @@ void
 eventrecorder_pciehealth_event_cb(sysmon_pciehealth_severity_t sev, const char *reason)
 {
     if (sev == SYSMON_PCIEHEALTH_INFO) {
-        EventLogger::getInstance()->LogInfoPcieHealthEvent(reason);
+        EventLogger::getInstance()->LogInfoPcieHealthEvent("Pcie link health event detected (%s)",reason);
     } else if (sev == SYSMON_PCIEHEALTH_WARN){
-        EventLogger::getInstance()->LogWarnPcieHealthEvent(reason);
+        EventLogger::getInstance()->LogWarnPcieHealthEvent("Pcie link health warning detected (%s)", reason);
     } else if (sev == SYSMON_PCIEHEALTH_ERROR){
-        EventLogger::getInstance()->LogErrorPcieHealthEvent(reason);
+        EventLogger::getInstance()->LogErrorPcieHealthEvent("Pcie link health error detected (%s)", reason);
     }
 }

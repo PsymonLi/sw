@@ -12,15 +12,15 @@ class EventLogger {
     events_recorder* recorder;
 public:
     static std::shared_ptr<EventLogger> getInstance();
-    void LogCriticalTempEvent(std::string description);
-    void LogOverTempAlarmEvent(std::string description, int temperature);
-    void LogOverTempExitAlarmEvent(std::string description, int temperature);
+    void LogCriticalTempEvent(const char *description);
+    void LogOverTempAlarmEvent(const char *description, int temperature);
+    void LogOverTempExitAlarmEvent(const char *description, int temperature);
     void LogFatalInterruptEvent(const char *desc);
-    void LogPanicEvent(std::string description);
-    void LogPostdiagEvent(std::string description);
-    void LogInfoPcieHealthEvent(const char *desc);
-    void LogWarnPcieHealthEvent(const char *desc);
-    void LogErrorPcieHealthEvent(const char *desc);
+    void LogPanicEvent(const char *description);
+    void LogPostdiagEvent(const char *description);
+    void LogInfoPcieHealthEvent(const char *description, const char *desc);
+    void LogWarnPcieHealthEvent(const char *description, const char *desc);
+    void LogErrorPcieHealthEvent(const char *description, const char *desc);
 };
 typedef std::shared_ptr<EventLogger> EventLoggerPtr;
 
