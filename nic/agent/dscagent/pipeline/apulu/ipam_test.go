@@ -3,6 +3,7 @@
 package apulu
 
 import (
+	"reflect"
 	"testing"
 
 	uuid "github.com/satori/go.uuid"
@@ -78,8 +79,32 @@ func TestHandleIPAMPolicy(t *testing.T) {
 	if len(IPAMPolicyIDToServerIDs[ipam.UUID]) != 1 {
 		t.Fatalf("Expected 1 entry in the map for %s. %v", ipam.UUID, IPAMPolicyIDToServerIDs)
 	}
+	var ipm netproto.IPAMPolicy
+	dat, err := infraAPI.Read("IPAMPolicy", ipam.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ipm.Unmarshal(dat)
+	if err != nil {
+		t.Fatalf("IPAM Policy: %v not in boltDB", ipam.GetKey())
+	}
+	if !reflect.DeepEqual(IPAMPolicyIDToServerIDs[ipam.UUID], ipm.Status.IPAMPolicyIDs) {
+		t.Fatalf("IPAM status not populated. Expected: %v got %v", IPAMPolicyIDToServerIDs[ipam.UUID], ipm.Status.IPAMPolicyIDs)
+	}
 	if len(IPAMPolicyIDToServerIDs[ipam1.UUID]) != 2 {
 		t.Fatalf("Expected 2 entries in the map for %s. %v", ipam1.UUID, IPAMPolicyIDToServerIDs)
+	}
+	var ipm1 netproto.IPAMPolicy
+	dat, err = infraAPI.Read("IPAMPolicy", ipam1.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ipm1.Unmarshal(dat)
+	if err != nil {
+		t.Fatalf("IPAM Policy: %v not in boltDB", ipam1.GetKey())
+	}
+	if !reflect.DeepEqual(IPAMPolicyIDToServerIDs[ipam1.UUID], ipm1.Status.IPAMPolicyIDs) {
+		t.Fatalf("IPAM status not populated. Expected: %v got %v", IPAMPolicyIDToServerIDs[ipam1.UUID], ipm1.Status.IPAMPolicyIDs)
 	}
 
 	ipam.Spec.DHCPRelay.Servers[0].IPAddress = "192.168.100.103"
@@ -114,6 +139,19 @@ func TestHandleIPAMPolicy(t *testing.T) {
 	}
 	if _, ok := DHCPServerIPToUUID["192.168.100.104"]; !ok {
 		t.Fatalf("Expected 192.168.100.104 to be in the map. %v", DHCPServerIPToUUID)
+	}
+
+	ipm1 = netproto.IPAMPolicy{}
+	dat, err = infraAPI.Read("IPAMPolicy", ipam1.GetKey())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ipm1.Unmarshal(dat)
+	if err != nil {
+		t.Fatalf("IPAM Policy: %v not in boltDB", ipam1.GetKey())
+	}
+	if !reflect.DeepEqual(IPAMPolicyIDToServerIDs[ipam1.UUID], ipm1.Status.IPAMPolicyIDs) {
+		t.Fatalf("IPAM status not populated. Expected: %v got %v", IPAMPolicyIDToServerIDs[ipam1.UUID], ipm1.Status.IPAMPolicyIDs)
 	}
 
 	if err := HandleIPAMPolicy(infraAPI, ipamClient, subnetClient, types.Delete, ipam, vrfuid.Bytes()); err != nil {

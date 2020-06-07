@@ -58,6 +58,7 @@ func createDHCPRelayHandler(infraAPI types.InfraAPI, client halapi.DHCPSvcClient
 	}
 
 	IPAMPolicyIDToServerIDs[policy.UUID] = uuids
+	policy.Status.IPAMPolicyIDs = uuids
 	dat, _ := policy.Marshal()
 
 	if err := infraAPI.Store(policy.Kind, policy.GetKey(), dat); err != nil {
@@ -149,6 +150,7 @@ func updateDHCPRelayHandler(infraAPI types.InfraAPI, client halapi.DHCPSvcClient
 		log.Infof("Network: %s update | Err: %v | Status : %v | Resp: %v", nw.GetKey(), err, resp.ApiStatus, resp.Response)
 	}
 
+	policy.Status.IPAMPolicyIDs = uuids
 	dat, _ = policy.Marshal()
 
 	if err := infraAPI.Store(policy.Kind, policy.GetKey(), dat); err != nil {

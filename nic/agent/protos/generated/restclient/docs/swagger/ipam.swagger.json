@@ -591,10 +591,12 @@
     "netprotoIPAMPolicyStatus": {
       "type": "object",
       "properties": {
-        "ipam-policy-id": {
-          "type": "string",
-          "format": "uint64",
-          "description": "IPAMPolicy ID in the datapath."
+        "ipam-policy-ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "IPAMPolicy IDs in the datapath."
         }
       }
     }

@@ -69,7 +69,7 @@ var typesMapIpam = map[string]*api.Struct{
 			"api-version":      api.CLIInfo{Path: "APIVersion", Skip: false, Insert: "", Help: ""},
 			"generation-id":    api.CLIInfo{Path: "GenerationID", Skip: false, Insert: "", Help: ""},
 			"ip-address":       api.CLIInfo{Path: "Spec.DHCPRelay.Servers[].IPAddress", Skip: false, Insert: "", Help: ""},
-			"ipam-policy-id":   api.CLIInfo{Path: "Status.IPAMPolicyID", Skip: false, Insert: "", Help: ""},
+			"ipam-policy-ids":  api.CLIInfo{Path: "Status.IPAMPolicyIDs", Skip: false, Insert: "", Help: ""},
 			"kind":             api.CLIInfo{Path: "Kind", Skip: false, Insert: "", Help: ""},
 			"labels":           api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"name":             api.CLIInfo{Path: "Name", Skip: false, Insert: "", Help: ""},
@@ -113,7 +113,7 @@ var typesMapIpam = map[string]*api.Struct{
 	"netproto.IPAMPolicyStatus": &api.Struct{
 		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(IPAMPolicyStatus{}) },
 		Fields: map[string]api.Field{
-			"IPAMPolicyID": api.Field{Name: "IPAMPolicyID", CLITag: api.CLIInfo{ID: "ipam-policy-id", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipam-policy-id", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_UINT64"},
+			"IPAMPolicyIDs": api.Field{Name: "IPAMPolicyIDs", CLITag: api.CLIInfo{ID: "ipam-policy-ids", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ipam-policy-ids", Pointer: false, Slice: true, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 		},
 	},
 }

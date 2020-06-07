@@ -1053,10 +1053,6 @@ func (a *ApuluAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IPAMPo
 
 		return
 	case types.Create:
-		// Alloc ID if ID field is empty. This will be pre-populated in case of config replays
-		if policy.Status.IPAMPolicyID == 0 {
-			policy.Status.IPAMPolicyID = a.InfraAPI.AllocateID(types.IPAMPolicyID, 0)
-		}
 	case types.Update:
 		// Get to ensure that the object exists
 		var existingPolicy netproto.IPAMPolicy
@@ -1075,9 +1071,6 @@ func (a *ApuluAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IPAMPo
 		if proto.Equal(&policy.Spec, &existingPolicy.Spec) {
 			return nil, nil
 		}
-
-		// Reuse ID from store
-		policy.Status.IPAMPolicyID = existingPolicy.Status.IPAMPolicyID
 	case types.Delete:
 		var existingPolicy netproto.IPAMPolicy
 		dat, err := a.InfraAPI.Read(policy.Kind, policy.GetKey())
