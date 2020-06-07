@@ -75,6 +75,9 @@ typedef struct pds_tep_spec_s {
         pds_obj_key_t nh_group;    ///< underlay nexthop group
         pds_obj_key_t tep;         ///< another tunnel/TEP
     };
+    /// type of service (dscp) bits to be used in the outer header in
+    /// encapped packets destined to this tunnel
+    uint8_t tos;
 } __PACK__ pds_tep_spec_t;
 
 /// \brief TEP status

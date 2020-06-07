@@ -111,7 +111,7 @@ var pbDetailShowCmd = &cobra.Command{
 
 func init() {
 	debugCmd.AddCommand(systemDebugCmd)
-	systemDebugCmd.Flags().Uint32VarP(&clockFreq, "clock-frequency", "c", 0, "Specify clock-frequency (Allowed: 833, 900, 957, 1033, 1100)")
+	systemDebugCmd.Flags().Uint32VarP(&clockFreq, "clock-frequency", "c", 0, "Specify clock-frequency (Allowed: 416, 833, 900, 957, 1033, 1100)")
 	systemDebugCmd.Flags().Uint32VarP(&armClockFreq, "arm-clock-frequency", "a", 0, "Specify arm-clock-frequency (Allowed: 1667, 2200)")
 
 	showCmd.AddCommand(systemShowCmd)

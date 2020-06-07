@@ -249,7 +249,7 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
     case PDS_NH_TYPE_OVERLAY:
         // tunnel pointing to another tunnel case, do recursive resolution
         tep2 = tep_db()->find(&spec->tep);
-        if (unlikely(tep2 != NULL)) {
+        if (unlikely(tep2 == NULL)) {
             PDS_TRACE_ERR("tep %s in overlay TEP %s not found",
                           spec->tep.str(), spec->key.str());
             return SDK_RET_INVALID_ARG;
@@ -330,6 +330,10 @@ tep_impl::activate_create_tunnel_table_(pds_epoch_t epoch, tep_entry *tep,
         }
     }
     sdk::lib::memrev(tep_data.tunnel_action.dmaci, spec->mac, ETH_ADDR_LEN);
+    if (spec->tos) {
+        tep_data.tunnel_action.tos_override = 1;
+        tep_data.tunnel_action.tos = spec->tos;
+    }
     tep_data.action_id = TUNNEL_TUNNEL_INFO_ID;
     p4pd_ret = p4pd_global_entry_write(P4TBL_ID_TUNNEL, hw_id1_,
                                        NULL, NULL, &tep_data);
@@ -663,6 +667,9 @@ tep_impl::fill_spec_(pds_tep_spec_t *spec) {
     if (tep_data.tunnel_action.vni) {
         spec->encap.type = PDS_ENCAP_TYPE_VXLAN;
         spec->encap.val.value = tep_data.tunnel_action.vni;
+    }
+    if (tep_data.tunnel_action.tos_override) {
+        spec->tos = tep_data.tunnel_action.tos;
     }
     return SDK_RET_OK;
 }

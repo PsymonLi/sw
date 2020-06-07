@@ -80,6 +80,7 @@ pds_tep_api_spec_to_proto (pds::TunnelSpec *proto_spec,
                       //api_spec->nh_type, api_spec->key.id);
         return SDK_RET_INVALID_ARG;
     }
+    proto_spec->set_tos(api_spec->tos);
     return SDK_RET_OK;
 }
 
@@ -174,6 +175,7 @@ pds_tep_proto_to_api_spec (pds_tep_spec_t *api_spec,
         return SDK_RET_INVALID_ARG;
         break;
     }
+    api_spec->tos = proto_spec.tos();
     return SDK_RET_OK;
 }
 

@@ -78,6 +78,12 @@ message TunnelSpec {
   // public IP of the remote service tunnel that is used as SIPo
   // in the encapped VXLAN packet in the Tx direction
   types.IPAddress RemoteServicePublicIP = 14;
+  // when ToS is configured on a tunnel object, all traffic destined to the
+  // tunnel will carry dscp value as configured.
+  // ToS field is 1 byte value that is populated in the DSCP field of IPv4 outer
+  // header or in the Traffic Class field of IPv6 outer header, this value will
+  // be written as-is (i.e., not interpreted) during encap time by the dataplane
+  uint32           ToS                  = 15;
 }
 
 // operational status of the tunnel, if any
