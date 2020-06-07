@@ -44,14 +44,10 @@ var _ = Describe("TechSupport", func() {
 
 	Context("Naples TechSupport cases", func() {
 		It("Request Techsupport for 1DSC", func() {
-			if !ts.tb.HasNaplesHW() {
-				Skip("Disabling on naples sim until FRU mac is used for Nodes")
-			}
-
 			var nodeNames []string
 
 			techsupportName := "techsupport-test-1"
-			naples := ts.model.Naples().Names()
+			naples := ts.model.Naples().DscIDs()
 			nodeNames = append(nodeNames, naples[0])
 			log.Infof("Requesting Techsupport for %v", nodeNames)
 			techsupport := GetTechSupportRequest(techsupportName, nodeNames)
@@ -83,23 +79,16 @@ var _ = Describe("TechSupport", func() {
 		})
 
 		It("Request Techsupport for All nodes", func() {
-			if !ts.tb.HasNaplesHW() {
-				Skip("Disabling on naples sim until FRU mac is used for Nodes")
-			}
-
 			var nodeNames []string
 
 			techsupportName := "techsupport-test-2"
 
 			// get all naples nodes
-			nodeNames = ts.model.Naples().Names()
-			// TODO: Including Venice nodes crashes TSM
-			// // get all venice nodes
-			// nodes := ts.model.VeniceNodes()
-			// for _, ip := range nodes.GenVeniceIPs() {
-			// 	nodeNames = append(nodeNames, ip)
-			// }
-
+			nodeNames = ts.model.Naples().DscIDs()
+			// get all venice nodes
+			for _, vn := range ts.model.VeniceNodes().Nodes {
+				nodeNames = append(nodeNames, vn.IP())
+			}
 			log.Infof("Requesting Techsupport for %v", nodeNames)
 			techsupport := GetTechSupportRequest(techsupportName, nodeNames)
 

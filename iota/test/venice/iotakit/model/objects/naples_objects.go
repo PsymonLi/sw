@@ -138,6 +138,23 @@ func (npc *NaplesCollection) Names() []string {
 	return ret
 }
 
+// DscIDs returns DSC Ids of all naples in the collection
+func (npc *NaplesCollection) DscIDs() []string {
+	var ret []string
+	for _, n := range npc.Nodes {
+		for _, inst := range n.Instances {
+			ret = append(ret, inst.Dsc.Spec.ID)
+		}
+	}
+	for _, n := range npc.FakeNodes {
+		for _, inst := range n.Instances {
+			ret = append(ret, inst.Dsc.Spec.ID)
+		}
+	}
+
+	return ret
+}
+
 // Any returns the requested number of naples from collection in random
 func (npc *NaplesCollection) Any(num int) *NaplesCollection {
 	if npc.HasError() || len(npc.Nodes) <= num {

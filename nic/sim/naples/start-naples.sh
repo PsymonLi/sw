@@ -5,6 +5,7 @@ set -x
 
 export VER=v1
 export NIC_DIR=/naples/nic
+export PDSPKG_TOPDIR=$NIC_DIR
 export BIN_PATH=$NIC_DIR/bin/
 export PATH=${PATH}:${BIN_PATH}
 export PLATFORM_DIR=/naples/platform
