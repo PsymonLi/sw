@@ -26,6 +26,9 @@
 // hold max supported rx queue size in deltion pool, change this value if
 // we support more buffers per RX queue
 #define PDS_FLOW_DEL_SESSION_POOL_COUNT_MAX     32768
+// Maximum expired timers to be processed per invocation
+#define PDS_FLOW_MAX_TIMER_EXPIRATIONS          VLIB_FRAME_SIZE
+
 #define DISPLAY_BUF_SIZE                        (1*1024*1024)
 #define PDS_FLOW_TIMER_TICK                     0.1
 #define PDS_FLOW_SEC_TO_TIMER_TICK(X)           (X * 10)
@@ -114,6 +117,14 @@
         _(OTHER, "Other packet processed")                          \
         _(SESSION_INVALID, "Session Invalid")                       \
 
+#define foreach_flow_timer                                          \
+        _(CONN_SETUP_TIMER, "Connection Setup timer expired")       \
+        _(IDLE_TIMER, "Idle timer expired")                         \
+        _(KEEP_ALIVE_TIMER, "Keepalive timer expired")              \
+        _(HALF_CLOSE_TIMER, "Half close timer expired")             \
+        _(CLOSE_TIMER, "Close timer expired")                       \
+        _(DROP_TIMER, "Drop timer expired")                         \
+
 typedef enum
 {
 #define _(s,n) FLOW_CLASSIFY_NEXT_##s,
@@ -186,6 +197,14 @@ typedef enum
     FLOW_TYPE_COUNTER_LAST,
 } flow_type_counter_t;
 
+typedef enum
+{
+#define _(n,s) PDS_FLOW_##n,
+    foreach_flow_timer
+#undef _
+    PDS_FLOW_TIMER_LAST,
+} pds_flow_timer_t;
+
 typedef struct fwd_flow_trace_s {
     u32 hw_index;
 } fwd_flow_trace_t;
@@ -224,16 +243,6 @@ typedef enum
 #undef _
     FLOW_AGE_SETUP_COUNTER_LAST,
 } flow_age_setup_counter_t;
-
-typedef enum {
-    PDS_FLOW_CONN_SETUP_TIMER,
-    PDS_FLOW_IDLE_TIMER,
-    PDS_FLOW_KEEP_ALIVE_TIMER,
-    PDS_FLOW_HALF_CLOSE_TIMER,
-    PDS_FLOW_CLOSE_TIMER,
-    PDS_FLOW_DROP_TIMER,
-    PDS_FLOW_N_TIMERS,
-} pds_flow_timer;
 
 typedef CLIB_PACKED(union pds_flow_index_s_ {
     u64 handle;
@@ -330,6 +339,7 @@ typedef struct pds_flow_main_s {
     u32 ses_id_to_del;
     pds_flow_fixup_data_t fixup_data;
     void *sessq;
+    u64 **ses_time;
 } pds_flow_main_t;
 
 extern pds_flow_main_t pds_flow_main;

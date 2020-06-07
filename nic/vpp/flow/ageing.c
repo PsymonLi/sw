@@ -18,7 +18,7 @@
 #include "pdsa_uds_hdlr.h"
 #include "session_api.h"
 
-typedef void (flow_expiration_handler) (u32 ses_id);
+typedef void (flow_expiration_handler) (u32 ses_id, u64 cur_time, u64 timestamp);
 
 typedef struct flow_age_setup_trace_s {
     u32 session_id;
@@ -769,15 +769,24 @@ pds_flow_age_process (vlib_main_t *vm,
     return 0;
 }
 
+static char * flow_timer_expired_strings[] = {
+#define _(n,s) s,
+    foreach_flow_timer
+#undef _
+};
+
 VLIB_REGISTER_NODE(pds_flow_age_node) = {
     .function = pds_flow_age_process,
     .type = VLIB_NODE_TYPE_INPUT,
     .name = "pds-flow-age-process",
     .state = VLIB_NODE_STATE_DISABLED,
+
+    .n_errors = PDS_FLOW_TIMER_LAST,
+    .error_strings = flow_timer_expired_strings
 };
 
 static void
-pds_flow_connection_timeout (u32 ses_id)
+pds_flow_connection_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *session;
@@ -804,18 +813,14 @@ pds_flow_connection_timeout (u32 ses_id)
 }
 
 static void
-pds_flow_idle_timeout (u32 ses_id)
+pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
-    u64 timestamp;
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *session;
-    u64 cur_time;
     u64 diff_time;
     int thread = vlib_get_thread_index();
 
     session = pds_flow_get_hw_ctx(ses_id);
-    timestamp = pds_session_get_timestamp(ses_id);
-    cur_time = pds_system_get_current_tick();
     if (pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
         if (!fm->con_track_en || session->proto != PDS_FLOW_PROTO_TCP) {
             pds_flow_delete_session(ses_id);
@@ -835,19 +840,16 @@ pds_flow_idle_timeout (u32 ses_id)
 }
 
 static void
-pds_flow_keep_alive_timeout (u32 ses_id)
+pds_flow_keep_alive_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     int thread = vlib_get_thread_index();
     pds_flow_hw_ctx_t *session;
-    u64 timestamp;
-    u64 cur_time, diff_time;
+    u64 diff_time;
 
     // If the session timestamp is updated, then start idle timeout, otherwise retry
     // sending keepalives
     session = pds_flow_get_hw_ctx(ses_id);
-    timestamp = pds_session_get_timestamp(ses_id);
-    cur_time = pds_system_get_current_tick();
     if (timestamp &&
         !pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
         // restart idle timeout with the time left for timeout
@@ -869,27 +871,27 @@ pds_flow_keep_alive_timeout (u32 ses_id)
 }
 
 static void
-pds_flow_half_close_timeout (u32 ses_id)
+pds_flow_half_close_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
     return;
 }
 
 static void
-pds_flow_close_timeout (u32 ses_id)
+pds_flow_close_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
     return;
 }
 
 static void
-pds_flow_drop_timeout (u32 ses_id)
+pds_flow_drop_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
 {
     pds_flow_delete_session(ses_id);
     return;
 }
 
-static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_N_TIMERS] =
+static flow_expiration_handler *flow_exp_handlers[PDS_FLOW_TIMER_LAST] =
 {
     pds_flow_connection_timeout,
     pds_flow_idle_timeout,
@@ -905,6 +907,26 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
     int i;
     u32 ses_index, timer_id;
     pds_flow_hw_ctx_t *session;
+    u32 counter[PDS_FLOW_TIMER_LAST] = {0};
+    pds_flow_main_t *fm = &pds_flow_main;
+    int thread = vlib_get_thread_index();
+    static vlib_node_t *age_node = NULL;
+    vlib_main_t *vm = vlib_get_main(); 
+
+    vec_validate(fm->ses_time[thread-1], (vec_len(expired_timers) - 1));
+
+    for (i = 0; i < vec_len(expired_timers); i++) {
+        /* Get session index and timer id */
+        ses_index = expired_timers[i] & 0x0FFFFFFF;
+        timer_id = expired_timers[i] >> 28;
+
+        if ((timer_id == PDS_FLOW_IDLE_TIMER) ||
+            (timer_id == PDS_FLOW_KEEP_ALIVE_TIMER)) {
+            fm->ses_time[thread-1][i] = pds_session_get_timestamp(ses_index);
+        }
+    }
+    //get current tick
+    u64 cur_time = pds_system_get_current_tick();
 
     for (i = 0; i < vec_len(expired_timers); i++) {
         /* Get session index and timer id */
@@ -917,8 +939,22 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
             continue;
         }
         session->timer_hdl = ~0;
-        (*flow_exp_handlers[timer_id]) (ses_index);
+        (*flow_exp_handlers[timer_id]) (ses_index, cur_time, 
+                                        fm->ses_time[thread-1][i]);
+        counter[timer_id]++;
     }
+
+    if (PREDICT_FALSE(!age_node)) {
+        age_node = vlib_get_node_by_name(vm, (u8 *) "pds-flow-age-process");
+    }
+
+#define _(n, s)                                                            \
+    vlib_node_increment_counter(vm, age_node->index,                       \
+                                PDS_FLOW_##n,                              \
+                                counter[PDS_FLOW_##n]);
+    foreach_flow_timer
+#undef _
+
 }
 
 uword
@@ -938,8 +974,10 @@ pds_flow_timer_init (vlib_main_t *vm, vlib_node_runtime_t *rt, vlib_frame_t *f)
             continue;
         }
         tw = vec_elt_at_index(fm->timer_wheel, ii);
+        // Process 256 timers at a time
         tw_timer_wheel_init_16t_1w_2048sl(tw, pds_flow_expired_timers_dispatch,
-                                          PDS_FLOW_TIMER_TICK, ~0);
+                                          PDS_FLOW_TIMER_TICK,
+                                          PDS_FLOW_MAX_TIMER_EXPIRATIONS);
         tw->last_run_time = vlib_time_now(this_vlib_main);
         vlib_node_set_state(this_vlib_main, node->index, VLIB_NODE_STATE_POLLING);
     }));

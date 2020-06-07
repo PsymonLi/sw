@@ -1805,6 +1805,8 @@ pds_flow_init (vlib_main_t * vm)
     fm->table6_or_l2 = ftl_create((void *) pds_flow_key2str,
                                   (void *) pds_flow_appdata2str);
     vec_validate_init_empty(fm->stats_buf, DISPLAY_BUF_SIZE, 0);
+    
+    vec_validate(fm->ses_time, no_of_threads - 1);
 
     for (i = 0; i < no_of_threads; i++) {
         fm->session_id_thr_local_pool[i].session_count = -1;
@@ -1971,7 +1973,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *ctx;
-    pds_flow_timer timer;
+    pds_flow_timer_t timer;
     f64 timeout;
 
     for (u32 i = 0; i < sess_info_cache_batch_get_count(thread_id); i++) {
