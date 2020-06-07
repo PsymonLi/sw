@@ -8,7 +8,7 @@ MODULE_BIN_DIR := ${BLD_OUT_DIR}/sbus_pcie_rom_capri_submake
 
 pcie_romvers = \
 	0x1094_2347 \
-	0x10AA_2347 \
+	0x10AA_2347_0A1 \
 	$(NULL)
 
 pcie_rombins = $(foreach v,$(pcie_romvers),${MODULE_BIN_DIR}/serdes.$(v).bin)

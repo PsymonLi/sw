@@ -158,16 +158,17 @@ pcieport_serdes_fw_gen(void)
 
 #define SERDESFW_GEN(mac) \
     mac(0x1094_2347) \
-    mac(0x10AA_2347)
+    mac(0x10AA_2347_0A1)
+
+/* generate extern declaration of serdesfw symbol */
+#define ext_decl(n) \
+extern uint8_t sbus_pcie_rom_ ## n ## _start[];
+SERDESFW_GEN(ext_decl);
+extern uint8_t sbus_pcie_rom_start[];
 
 static uint8_t *
 serdes_lookup(const char *name)
 {
-    /* generate extern declaration of serdesfw symbol */
-#define ext_decl(n) \
-    extern uint8_t sbus_pcie_rom_ ## n ## _start[];
-    SERDESFW_GEN(ext_decl);
-
     /* generate serdesfw table */
     static struct serdes_entry {
         const char *name;
@@ -189,10 +190,20 @@ serdes_lookup(const char *name)
     return NULL;
 }
 
+static void
+pcie_serdesfw_list(void)
+{
+    pciesys_logdebug("$PCIE_SERDESFW known values:\n");
+#define printf_serdesfwvers(n) \
+    pciesys_logdebug("    %s%s\n", #n, \
+                     sbus_pcie_rom_ ## n ## _start == sbus_pcie_rom_start ? \
+                     " (default)" : "");
+    SERDESFW_GEN(printf_serdesfwvers);
+}
+
 int
 pcieportpd_serdes_init(void)
 {
-    extern uint8_t sbus_pcie_rom_start[];
     const char *s = getenv("PCIE_SERDESFW");
     const struct sbus_hdr {
         uint32_t magic;
@@ -206,6 +217,7 @@ pcieportpd_serdes_init(void)
     } else if ((hdr = (struct sbus_hdr *)serdes_lookup(s)) != 0) {
         pciesys_loginfo("$PCIE_SERDESFW selects %s\n", s);
     } else {
+        pcie_serdesfw_list();
         pciesys_loginfo("$PCIE_SERDESFW bad value: %s (using default)\n", s);
         hdr = (struct sbus_hdr *)sbus_pcie_rom_start;
     }
