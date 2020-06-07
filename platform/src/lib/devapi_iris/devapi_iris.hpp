@@ -73,6 +73,10 @@ public:
     // Generic APIs
     sdk_ret_t set_micro_seg_en(bool en);
     bool get_micro_seg_cfg_en(void);
+    virtual uint32_t max_encap_hdr_len(void) const override {
+        // iris pipeline doesnt add additional encap
+        return 0;
+    }
     static bool is_hal_up(void);
 
     // Single Wire Management(SWM) APIs

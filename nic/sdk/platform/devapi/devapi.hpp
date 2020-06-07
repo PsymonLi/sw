@@ -92,6 +92,8 @@ public:
         return SDK_RET_INVALID_OP;
     }
     static bool is_hal_up(void);
+    /// return worst case encap header length
+    virtual uint32_t max_encap_hdr_len(void) const = 0;
 
     // single wire management APIs
     virtual sdk_ret_t swm_enable(void) = 0;

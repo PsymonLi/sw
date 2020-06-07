@@ -22,6 +22,8 @@ using sdk::platform::devapi;
 
 #define DEVAPI_IMPL_ADMIN_COS 1
 
+// 14 bytes of eth , 20 bytes of IP, 8 bytes of UDP, 8 bytes of VxLAN headers
+#define VXLAN_ENCAP_LEN     50
 
 /// \defgroup PDS_DEVAPI_IMPL - dev api implementation
 /// \ingroup PDS_DEVAPI
@@ -118,6 +120,11 @@ public:
     virtual sdk_ret_t swm_enable_rx(uint32_t channel) override;
     virtual sdk_ret_t swm_disable_rx(uint32_t channel) override;
     virtual sdk_ret_t swm_upd_vlan_mode(bool enable, uint32_t mode, uint32_t channel) override;
+
+    // generic APIs
+    virtual uint32_t max_encap_hdr_len(void) const override {
+        return VXLAN_ENCAP_LEN;
+    }
 
 private:
     devapi_impl() {}
