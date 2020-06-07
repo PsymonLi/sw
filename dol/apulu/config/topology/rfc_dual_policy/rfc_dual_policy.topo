@@ -71,15 +71,19 @@ node:
               v4ingrpolicies :
                 - 1
                 - 2
+                - 3
               v6ingrpolicies :
                 - 1
                 - 2
+                - 3
               v4egrpolicies :
-                - 3
                 - 4
+                - 5
+                - 6
               v6egrpolicies :
-                - 3
                 - 4
+                - 5
+                - 6
               vnic:
                 - count   : 1             # VNICs per subnet
                   ipcount : 2             # Local IP mapping per vnic
@@ -143,7 +147,7 @@ node:
 
                       - protocol: icmp
                         priority: 'MINPRIO + 2'
-                        action  : deny
+                        action  : allow
                         srctype : none
                         dsttype : pfxrange
                         v4dstiplow : '12.0.0.0'
@@ -188,6 +192,50 @@ node:
                       - protocol: icmp
                         priority: 'MINPRIO'
                         action  : deny
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '12.0.0.0'
+                        v4dstiphigh : '12.0.0.255'
+                        v6dstiplow : 'aaaa:1:c::0'
+                        v6dstiphigh : 'aaaa:1:c::ffff'
+
+                  - type : specific
+                    policytype : exact
+                    overlaptype : policy_ingr_guard
+                    direction : ingress
+                    defaultfwaction : deny
+                    rule:
+                      - protocol: tcp
+                        priority: 'MAXPRIO * 0.8'
+                        action  : allow
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '12.0.0.2'
+                        v4dstiphigh : '12.0.0.2'
+                        v6dstiplow : 'aaaa:1:c:::0'
+                        v6dstiphigh : 'aaaa:1:c::ff'
+                        sportlow: 50000
+                        sporthigh: 50000
+                        dportlow: 50000
+                        dporthigh: 50000
+
+                      - protocol: udp
+                        priority: 'MAXPRIO * 0.5'
+                        action  : deny
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '12.0.0.2'
+                        v4dstiphigh : '12.0.0.2'
+                        v6dstiplow : 'aaaa:1:c:::0'
+                        v6dstiphigh : 'aaaa:1:c::ff'
+                        sportlow: 50000
+                        sporthigh: 50000
+                        dportlow: 50000
+                        dporthigh: 50000
+
+                      - protocol: icmp
+                        priority: 'MINPRIO'
+                        action  : allow
                         srctype : none
                         dsttype : pfxrange
                         v4dstiplow : '12.0.0.0'
@@ -281,4 +329,48 @@ node:
                         v4dstiplow : '10.10.10.64'
                         v4dstiphigh : '10.10.10.224'
                         v6dstiplow : 'e1ba:aced:a11:face:b00a::40'
-1                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:e0'
+                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:e0'
+
+                  - type : specific
+                    policytype : exact
+                    overlaptype : policy_egr_guard
+                    direction : egress
+                    defaultfwaction : deny
+                    rule:
+                      - protocol: tcp
+                        priority: 'MAXPRIO - 3'
+                        action  : allow
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '10.10.10.128'
+                        v4dstiphigh : '10.10.10.128'
+                        v6dstiplow : 'e1ba:aced:a11:face:b00a::ffff:ffff:80'
+                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:80'
+                        sportlow: 65534
+                        sporthigh: 65534
+                        dportlow: 65534
+                        dporthigh: 65534
+
+                      - protocol: udp
+                        priority: 'MAXPRIO - 3'
+                        action  : deny
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '10.10.10.128'
+                        v4dstiphigh : '10.10.10.128'
+                        v6dstiplow : 'e1ba:aced:a11:face:b00a::ffff:ffff:80'
+                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:80'
+                        sportlow: 65534
+                        sporthigh: 65534
+                        dportlow: 65534
+                        dporthigh: 65534
+                        
+                      - protocol: icmp
+                        priority: 'MAXPRIO-1'
+                        action  : allow
+                        srctype : none
+                        dsttype : pfxrange
+                        v4dstiplow : '10.10.10.64'
+                        v4dstiphigh : '10.10.10.224'
+                        v6dstiplow : 'e1ba:aced:a11:face:b00a::40'
+                        v6dstiphigh : 'e1ba:aced:a11:face:b00a:ffff:ffff:e0'
