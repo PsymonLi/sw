@@ -799,9 +799,11 @@ class _Testbed:
                 return alloc
 
     def __getNextVlanAllocator(self):
+        alloc = self.__multi_vlan_allocators[self.__nextVlanAllocator]
         self.__nextVlanAllocator += 1
         if self.__nextVlanAllocator >= len(self.__multi_vlan_allocators):
             self.__nextVlanAllocator = 0
+        return alloc
 
     def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset):
         setMsg = topo_pb2.SwitchMsg()
@@ -835,7 +837,7 @@ class _Testbed:
         topo = store.GetTopology()
         vmps = topo.GetVlanMappings()
         if vmps:
-            origVlans = store.GetTestbed()._Testbed__vlan_allocator._TestbedVlanManager__vlans[1:]
+            origVlans = self.GetVlans()
             origVlanRangeString = self.__buildVlanRangeString(origVlans)
             vmo = int(len(origVlans)/len(vmps.items()))
             vlans = self.__splitVlans(origVlans, vmo)

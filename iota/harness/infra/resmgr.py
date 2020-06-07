@@ -161,6 +161,9 @@ class TestbedVlanManager(object):
         self.__count = 0
         self.Reset()
 
+    def Vlans(self):
+        return self.__vlans
+
     def Alloc(self):
         return next(self.__pool)
 
@@ -180,6 +183,9 @@ class TestbedVlanManagerByNodeNicPort(object):
         self.__count = 0
         self.__members = {}
         self.Reset()
+
+    def Vlans(self):
+        return self.__vlans
 
     def Alloc(self):
         return next(self.__pool)

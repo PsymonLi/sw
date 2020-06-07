@@ -510,7 +510,7 @@ class Node(object):
                         if len(ports) < portNum:
                             raise Exception("port number {0} is > len of port list ({1})".format(portNum, len(ports)))
                         return ports[portNum]
-        raise Exception("failed to find port index in warmd.json for node {0}, nic {1}, port {2}".format(topoNode, nicNum, port))
+        raise Exception("failed to find port index in warmd.json for node ID {0}, nicNum {1}, portNum {2}".format(instId, nicNum, portNum))
 
     def GetApcInfo(self):
         return self.__apcInfo
