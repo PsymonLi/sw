@@ -1221,15 +1221,6 @@ ctx_t::apply_session_limit(void)
     int8_t                       tcp_flags;
     const fte::cpu_rxhdr_t      *cpurxhdr = cpu_rxhdr();
   
-    // check for flood protection limits
-    // fetch the security profile, if any
-    nwsec_prof_ =
-        hal::find_nwsec_profile_by_handle(
-                       hal::g_hal_state->customer_default_security_profile_hdl());
-    if (nwsec_prof_ == NULL) {
-        goto end;
-    }
-
     HAL_TRACE_VERBOSE("Security profile handle: {}", 
                      hal::g_hal_state->customer_default_security_profile_hdl());
     // check for flood protection limits
