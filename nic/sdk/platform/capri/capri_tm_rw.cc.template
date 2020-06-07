@@ -1597,6 +1597,7 @@ capri_tm_drain_hbm_contexts (tm_port_t port)
     uint32_t num_hbm_contexts_per_port;
     uint32_t context;
     uint32_t i;
+    uint32_t ctxts = 0;
 
     num_hbm_contexts_per_port = tm_cfg_profile()->num_qs[TM_PORT_TYPE_UPLINK];
     while (port_supports_hbm_contexts(port) &&
@@ -1609,6 +1610,7 @@ capri_tm_drain_hbm_contexts (tm_port_t port)
                 all_zeroes = false;
             } else {
                 SDK_TRACE_VERBOSE("port %u, hbm context %u 0", port, context);
+                SET_BIT(ctxts, i);
             }
         }
         // TODO: Do we need a sleep here ?
@@ -1619,6 +1621,11 @@ capri_tm_drain_hbm_contexts (tm_port_t port)
     if (!all_zeroes && port_supports_hbm_contexts(port)) {
         SDK_TRACE_ERR("Port %u hbm queues not drained completely after %u tries",
                       port, tries);
+        for (uint i = 0; i < num_hbm_contexts_per_port; i++) {
+            if (CHECK_BIT(ctxts, i) == 0) {
+                SDK_TRACE_ERR("port: %u ctxt: %u not drained.", port, i);
+            }
+        }
         return sdk::SDK_RET_RETRY;
     }
 
@@ -1635,6 +1642,7 @@ capri_tm_drain_occupancy (tm_port_t port)
     uint32_t cur_occupancy = 0;
     uint32_t peak_occupancy = 0;
     uint32_t num_iqs = capri_tm_get_num_iqs_for_port(port);
+    uint32_t ctxts = 0;
 
     while ((all_zeroes == false) && (tries < max_tries)) {
         all_zeroes = true;
@@ -1644,12 +1652,18 @@ capri_tm_drain_occupancy (tm_port_t port)
                 all_zeroes = false;
             } else {
                 SDK_TRACE_VERBOSE("port %u, iq %u 0", port, iq);
+                SET_BIT(ctxts, iq);
             }
         }
         tries++;
         usleep(1000);
     }
     if (all_zeroes == false) {
+        for (uint i = 0; i < num_iqs; i++) {
+            if (CHECK_BIT(ctxts, i) == 0) {
+                SDK_TRACE_ERR("port: %u iq: %u not drained.", port, i);
+            }
+        }
         return SDK_RET_RETRY;
     }
     return ret;
@@ -1666,6 +1680,7 @@ capri_tm_drain_oq (tm_port_t port)
     uint32_t num_oqs = capri_tm_get_num_oqs_for_port(port);
     cap_top_csr_t &cap0 = g_capri_state_pd->cap_top();
     cap_pbc_csr_t &pbc_csr = cap0.pb.pbc;
+    uint32_t ctxts = 0;
 
     while ((all_zeroes == false) && (tries < max_tries)) {
         all_zeroes = true;
@@ -1679,12 +1694,18 @@ capri_tm_drain_oq (tm_port_t port)
                 all_zeroes = false;
             } else {
                 SDK_TRACE_VERBOSE("port %u, oq %u 0", port, oq);
+                SET_BIT(ctxts, oq);
             }
         }
         tries++;
         usleep(1000);
     }
     if (all_zeroes == false) {
+        for (uint i = 0; i < num_oqs; i++) {
+            if (CHECK_BIT(ctxts, i) == 0) {
+                SDK_TRACE_ERR("port: %u oq: %u not drained.", port, i);
+            }
+        }
         return SDK_RET_RETRY;
     }
     return ret;
@@ -1693,36 +1714,36 @@ capri_tm_drain_oq (tm_port_t port)
 sdk_ret_t
 capri_tm_drain_uplink_port (tm_port_t port)
 {
-    sdk_ret_t ret = SDK_RET_OK;
+    sdk_ret_t ret = SDK_RET_OK, final_ret = SDK_RET_OK;
 
     ret = capri_tm_drain_hbm_contexts(port);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Port %u drain. hbm contexts not drained", port);
-        return ret;
+        final_ret = ret;
     }
 
     // wait for the sop and eop counters to match
     ret = capri_tm_sop_eop_check(port);
     if (ret != sdk::SDK_RET_OK) {
         SDK_TRACE_ERR("Port %u drain. sop eop does not match", port);
-        return ret;
+        final_ret = ret;
     }
 
     // wait for occupancy to be 0
     ret = capri_tm_drain_occupancy(port);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Port %u drain, occ not drained", port);
-        return ret;
+        final_ret = ret;
     }
 
     // wait for oq depth to be 0
     ret = capri_tm_drain_oq(port);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Port %u drain, oq not drained", port);
-        return ret;
+        final_ret = ret;
     }
 
-    return ret;
+    return final_ret;
 }
 
 sdk_ret_t

@@ -240,6 +240,11 @@ typedef enum sdk_status_e {
 #define htonll(x) ((1==htonl(1)) ? (x) : ((uint64_t)htonl((x) & 0xFFFFFFFF) << 32) | htonl((x) >> 32))
 #define ntohll(x) ((1==ntohl(1)) ? (x) : ((uint64_t)ntohl((x) & 0xFFFFFFFF) << 32) | ntohl((x) >> 32))
 
+#define SET_BIT(p,n)   ((p) |=   (1 << (n)))
+#define CLR_BIT(p,n)   ((p) &=  ~(1 << (n)))
+#define FLIP_BIT(p,n)  ((p) ^=   (1 << (n)))
+#define CHECK_BIT(p,n) ((p) &    (1 << (n)))
+
 }    // namespace sdk
 
 using sdk::sdk_ret_t;

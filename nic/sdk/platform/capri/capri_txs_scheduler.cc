@@ -22,7 +22,6 @@ namespace sdk {
 namespace platform {
 namespace capri {
 
-#define CHECK_BIT(var,pos) ((var) & (1 << (pos)))
 #define DTDM_CALENDAR_SIZE 64
 
 uint32_t
