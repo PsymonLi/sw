@@ -516,6 +516,10 @@ dependencies:
     - reference: nic/apollo/tools/apulu/sanity/base
     - reference: test/ci_targets/cloud-e2e
     - reference: test/ci_targets/controlplane-dol
+  nic/operd:
+    - reference: iota/test/venice
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/apollo/tools/apulu/sanity/base
   nic/p4-hlir:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
@@ -545,6 +549,8 @@ dependencies:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/linux
     - reference: iota/test/standalone/precheckin/esx    # for testing upgrade support in sysmgr
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/apollo/tools/apulu/sanity/base
   nic/third-party:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
