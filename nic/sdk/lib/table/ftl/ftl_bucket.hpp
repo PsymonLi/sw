@@ -13,7 +13,7 @@ public:
 
 private:
     uint8_t valid_  : 1;
-    uint8_t epoch_  : 7;
+    uint8_t epoch_  : NUM_EPOCH_BITS;
 
     volatile uint8_t locked_;
 

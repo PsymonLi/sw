@@ -189,6 +189,7 @@ public:
         this->tstats = p->tstats;
         this->pctx = p;
         this->thread_id = p->thread_id;
+        this->validate_epoch = p->validate_epoch;
         return SDK_RET_OK;
     }
 };

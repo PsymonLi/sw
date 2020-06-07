@@ -35,6 +35,9 @@ hint_table::factory(sdk::table::properties_t *props) {
 
 sdk_ret_t
 hint_table::init_(sdk::table::properties_t *props) {
+    // Size validation
+    SDK_ASSERT(props->stable_size <= ((uint32_t)1 << NUM_SINDEX_BITS));
+
     auto ret = base_table::init_(props->stable_id,
                                      props->stable_size);
     if (ret != SDK_RET_OK) {
@@ -59,8 +62,7 @@ hint_table::init_(sdk::table::properties_t *props) {
 }
 
 void
-hint_table::destroy_(hint_table *table)
-{
+hint_table::destroy_(hint_table *table) {
     base_table::destroy_(table);
     table->indexer_.deinit();
     SDK_FREE(SDK_MEM_ALLOC_FTL_HINT_TABLE, table);
@@ -178,14 +180,12 @@ hint_table::initctx_with_handle_(Apictx *ctx) {
     ctx->pindex = ctx->pctx->pindex;
     // Save the table_id
     ctx->table_id = table_id_;
-    // Set validate epoch bit
-    ctx->validate_epoch = 1;
     // Save the bucket for this context
     ctx->bucket = &buckets_[ctx->table_index];
     ctx->level++;
 
-    FTL_TRACE_VERBOSE("%s: TID:%d Idx:%d ValEpoch:%d", ctx->idstr(),
-                      ctx->table_id, ctx->table_index, ctx->validate_epoch);
+    FTL_TRACE_VERBOSE("%s: TID:%d Idx:%d", ctx->idstr(),
+                      ctx->table_id, ctx->table_index);
     return SDK_RET_OK;
 }
     

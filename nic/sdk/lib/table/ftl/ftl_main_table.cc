@@ -42,6 +42,9 @@ sdk_ret_t
 main_table::init_(sdk::table::properties_t *props) {
     sdk_ret_t ret = SDK_RET_OK;
 
+    // Size validation
+    SDK_ASSERT(props->ptable_size <= ((uint32_t)1 << NUM_PINDEX_BITS));
+
     ret = base_table::init_(props->ptable_id, props->ptable_size);
 
     num_hash_bits_ = 32 - num_table_index_bits_;

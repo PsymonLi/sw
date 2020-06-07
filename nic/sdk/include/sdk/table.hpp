@@ -31,6 +31,10 @@ typedef enum health_s {
 } health_t;
 
 #define SDK_TABLE_HANDLE_STR_LEN 64
+
+#define NUM_PINDEX_BITS    (28)
+#define NUM_SINDEX_BITS    (26)
+#define NUM_EPOCH_BITS     (7)
 struct handle_t {
 public:
     static handle_t null() {
@@ -77,11 +81,11 @@ public:
 private:
     union {
         struct {
-            uint64_t pindex_ : 28;
-            uint64_t sindex_ : 26;
+            uint64_t pindex_ : NUM_PINDEX_BITS;
+            uint64_t sindex_ : NUM_SINDEX_BITS;
             uint64_t pvalid_ : 1;
             uint64_t svalid_ : 1;
-            uint64_t epoch_  : 7;
+            uint64_t epoch_  : NUM_EPOCH_BITS;
             uint64_t rsvd_   : 1;
         };
         uint64_t value_;
