@@ -23,7 +23,7 @@
 
 #define DEVAPI_CHECK                                                          \
     if (!dev_api) {                                                           \
-        NIC_LOG_ERR("{}: Uninitialized devapi", name);                        \
+        NIC_LOG_ERR("{}: Uninitialized devapi", spec->name);                  \
         return (IONIC_RC_EAGAIN);                                             \
     }
 

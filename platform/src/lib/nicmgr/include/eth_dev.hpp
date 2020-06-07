@@ -6,7 +6,6 @@
 #define __ETH_DEV_HPP__
 
 #include <map>
-#include <set>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
@@ -22,6 +21,7 @@
 #include "device.hpp"
 #include "eth_lif.hpp"
 #include "pd_client.hpp"
+#include "eth_pstate.hpp"
 
 #ifdef ELBA
 #include "elb_top_csr_defines.h"
@@ -196,16 +196,12 @@ public:
 private:
     // Device Spec
     const struct eth_devspec *spec;
-    // Info
-    char name[IONIC_IFNAMSIZ];
     // PD Info
     PdClient *pd;
     // HAL Info
     devapi *dev_api;
     // Lif map
     std::map<uint64_t, EthLif *> lif_map;
-    // Active lif set
-    std::set<uint16_t> active_lif_set;
     // Resources
     std::vector<Eth*> vf_devs;
     Eth *pf_dev;
@@ -217,25 +213,21 @@ private:
     // PCIe info
     pciehdev_t *pdev;
     BusType dev_bus_type;
-
-    // Port Info
-    uint64_t host_port_info_addr;
     // Port Config
     union ionic_port_config *port_config;
     uint64_t port_config_addr;
-    uint64_t host_port_config_addr;
     // Port Status
     struct ionic_port_status *port_status;
     uint64_t port_status_addr;
-    uint64_t host_port_status_addr;
     // Port MAC Stats
     uint64_t port_mac_stats_addr;
-    uint64_t host_port_mac_stats_addr;
     uint32_t port_mac_stats_size;
     // Port PacketBuffer (PB) Stats
     uint64_t port_pb_stats_addr;
-    uint64_t host_port_pb_stats_addr;
     uint32_t port_pb_stats_size;
+    // Eth Persistent states
+    ethdev_pstate_t *dev_pstate;
+    nicmgr_shm  *shm_mem;
     // Tasks
     EV_P;
     ev_prepare devcmd_prepare = {0};
@@ -275,7 +267,7 @@ private:
     static void DevcmdPreparePoll(EV_P_ ev_prepare *w, int events);
     static void DevcmdCheckPoll(EV_P_ ev_check *w, int events);
     static void DevcmdTimerPoll(EV_P_ ev_timer *w, int events);
-    
+
     status_code_t _CmdAccessCheck(cmd_opcode_t opcode);
     status_code_t _CmdIdentify(void *req, void *req_data, void *resp, void *resp_data);
     status_code_t _CmdInit(void *req, void *req_data, void *resp, void *resp_data);

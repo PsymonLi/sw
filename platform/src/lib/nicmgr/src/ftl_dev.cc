@@ -13,7 +13,7 @@
 
 #include "nic/include/base.hpp"
 #include "nic/sdk/platform/misc/include/misc.h"
-#include "nicmgr_shm.hpp"
+#include "nicmgr_shm_cpp.hpp"
 
 #include "logger.hpp"
 #include "ftl_dev.hpp"

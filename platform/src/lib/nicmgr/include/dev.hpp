@@ -24,6 +24,7 @@
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 
 #include "device.hpp"
+#include "nicmgr_shm.hpp"
 #include "pd_client.hpp"
 #include "ev.h"
 
@@ -202,6 +203,9 @@ private:
     std::vector<struct EthDevInfo *> eth_dev_info_list;
 
     UpgradeState upg_state;
+
+    // persistent state
+    nicmgr_shm *shm_mem;
 
     // init helper functions
     void PlatformInit(devicemgr_cfg_t *cfg);

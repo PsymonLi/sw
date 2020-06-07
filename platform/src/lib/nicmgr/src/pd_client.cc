@@ -990,17 +990,3 @@ PdClient::get_pc_offset(const char *prog_name, const char *label,
      }
      return 0;
 }
-
-bool
-PdClient::is_dev_hwinit_done (const char *dev_name)
-{
-    // TODO, check for Dev Status in HW
-    if (!sdk::asic::asic_is_hard_init()) {
-        if (!dev_name) {
-            return true;
-        } // else TODO
-        return true;
-    } else {
-        return false;
-    }
-}

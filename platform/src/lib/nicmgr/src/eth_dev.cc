@@ -44,6 +44,26 @@ Eth::GetEthDevInfo(struct EthDevInfo *dev_info)
     dev_info->eth_spec = const_cast<struct eth_devspec *>(spec);
 }
 
+static void
+active_lif_remove (uint16_t lif_set[], uint16_t *size, uint16_t lif_id)
+{
+    int i;
+
+    // search lif_id
+    for (i = 0; i < *size; i++) {
+        if (lif_set[i] == lif_id) {
+            break;
+        }
+    }
+
+    // if lif_id is found, remove it
+    if (i < *size)
+    {
+        lif_set[i] = lif_set[*size - 1];
+        *size = *size - 1;
+    }
+}
+
 std::string
 Eth::eth_type_to_str(EthDevType type)
 {
@@ -164,7 +184,8 @@ Eth::PortMacStatsMappingInit(const struct eth_devspec *spec, PdClient *pd)
     port_mac_stats_addr = PortStatsGetOffset(spec->uplink_port_num, mac_stats_hbm_base);
     PortMacStatsUpdateSize(spec->uplink_port_num);
 
-    NIC_LOG_INFO("{}: {:#d} port_mac_stats_addr {:#x} size {:#d}", spec->name, spec->uplink_port_num,
+    NIC_LOG_INFO("{}: {:#d} port_mac_stats_addr {:#x} size {:#d}",
+                 spec->name, spec->uplink_port_num,
                  port_mac_stats_addr, port_mac_stats_size);
 }
 
@@ -198,7 +219,8 @@ Eth::PortPbStatsMappingInit(const struct eth_devspec *spec, PdClient *pd)
     port_pb_stats_addr = PortStatsGetOffset(spec->uplink_port_num, pb_stats_hbm_base);
     port_pb_stats_size = sizeof(struct ionic_port_pb_stats);
 
-    NIC_LOG_INFO("{}: {:#d} port_pb_stats_addr {:#x} size {:#d}", spec->name, spec->uplink_port_num,
+    NIC_LOG_INFO("{}: {:#d} port_pb_stats_addr {:#x} size {:#d}",
+                 spec->name, spec->uplink_port_num,
                  port_pb_stats_addr, port_pb_stats_size);
 }
 
@@ -207,16 +229,10 @@ Eth::Eth(devapi *dev_api, void *dev_spec, PdClient *pd_client, EV_P) {
     this->dev_api = dev_api;
     this->spec = (struct eth_devspec *)dev_spec;
     this->pd = pd_client;
-    this->is_device_upgrade = false;
+    this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->active_lif_set.clear();
-    this->host_port_info_addr = 0;
-    this->host_port_mac_stats_addr = 0;
-    this->host_port_pb_stats_addr = 0;
-    this->host_port_status_addr = 0;
-    this->host_port_config_addr = 0;
     this->pf_dev = NULL;
-
+    this->shm_mem = nicmgr_shm::getInstance();
     NIC_LOG_DEBUG("{}: eth device initializing", spec->name);
 }
 
@@ -226,16 +242,10 @@ Eth::Eth(devapi *dev_api, struct EthDevInfo *dev_info, PdClient *pd_client, EV_P
     this->spec = dev_info->eth_spec;
     this->pd = pd_client;
     this->dev_resources = *(dev_info->eth_res);
-    this->is_device_upgrade = false;
+    this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->active_lif_set.clear();
-    this->host_port_info_addr = 0;
-    this->host_port_mac_stats_addr = 0;
-    this->host_port_pb_stats_addr = 0;
-    this->host_port_status_addr = 0;
-    this->host_port_config_addr = 0;
     this->pf_dev = NULL;
-
+    this->shm_mem = nicmgr_shm::getInstance();
     NIC_LOG_DEBUG("{}: Restoring eth device in Upgrade mode", spec->name);
 }
 
@@ -267,6 +277,16 @@ Eth::Init(Eth *pf_dev) {
 
     // Set device attributes
     DeviceInit(pf_dev);
+
+    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
+                                                                 sizeof(*dev_pstate));
+
+    if (dev_pstate == NULL) {
+        NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
+        throw;
+    }
+
+    strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 
     // alloc lif memory
     LifIDAlloc();
@@ -312,6 +332,15 @@ Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
     // Set device attributes
     // TODO: Add VF support
     DeviceInit(NULL);
+    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
+                                                                 sizeof(*dev_pstate));
+
+    if (dev_pstate == NULL) {
+        NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
+        throw;
+    }
+
+    strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 
     // reserve lif memory
     LifIDReserve();
@@ -355,6 +384,15 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec) {
     // Set device attributes
     // TODO: Add VF support
     DeviceInit(NULL);
+    dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
+                                                                 sizeof(*dev_pstate));
+
+    if (dev_pstate == NULL) {
+        NIC_LOG_ERR("{}: Failed to memory for pstate", spec->name);
+        throw;
+    }
+
+    strncpy0(dev_pstate->name, spec->name.c_str(), sizeof(dev_pstate->name));
 
     // reserve lif memory
     LifIDReserve();
@@ -1556,26 +1594,26 @@ Eth::_CmdPortInit(void *req, void *req_data, void *resp, void *resp_data)
     }
 
     if (cmd->info_pa) {
-        host_port_info_addr = cmd->info_pa;
+        dev_pstate->host_port_info_addr = cmd->info_pa;
         NIC_LOG_INFO("{}: host_port_info_addr {:#x}", spec->name, cmd->info_pa);
 
-        host_port_config_addr = cmd->info_pa + offsetof(struct ionic_port_info, config);
-        NIC_LOG_INFO("{}: host_port_config_addr {:#x}", spec->name, host_port_config_addr);
+        dev_pstate->host_port_config_addr = cmd->info_pa + offsetof(struct ionic_port_info, config);
+        NIC_LOG_INFO("{}: host_port_config_addr {:#x}", spec->name, dev_pstate->host_port_config_addr);
 
-        host_port_status_addr = cmd->info_pa + offsetof(struct ionic_port_info, status);
-        NIC_LOG_INFO("{}: host_port_status_addr {:#x}", spec->name, host_port_status_addr);
+        dev_pstate->host_port_status_addr = cmd->info_pa + offsetof(struct ionic_port_info, status);
+        NIC_LOG_INFO("{}: host_port_status_addr {:#x}", spec->name, dev_pstate->host_port_status_addr);
 
-        host_port_mac_stats_addr = cmd->info_pa + offsetof(struct ionic_port_info, stats);
-        NIC_LOG_INFO("{}: host_port_mac_stats_addr {:#x}", spec->name, host_port_mac_stats_addr);
+        dev_pstate->host_port_mac_stats_addr = cmd->info_pa + offsetof(struct ionic_port_info, stats);
+        NIC_LOG_INFO("{}: host_port_mac_stats_addr {:#x}", spec->name, dev_pstate->host_port_mac_stats_addr);
 
-        host_port_pb_stats_addr = cmd->info_pa + offsetof(struct ionic_port_info, pb_stats);
-        NIC_LOG_INFO("{}: host_port_pb_stats_addr {:#x}", spec->name, host_port_pb_stats_addr);
+        dev_pstate->host_port_pb_stats_addr = cmd->info_pa + offsetof(struct ionic_port_info, pb_stats);
+        NIC_LOG_INFO("{}: host_port_pb_stats_addr {:#x}", spec->name, dev_pstate->host_port_pb_stats_addr);
     } else {
-        host_port_info_addr = 0;
-        host_port_config_addr = 0;
-        host_port_status_addr = 0;
-        host_port_mac_stats_addr = 0;
-        host_port_pb_stats_addr = 0;
+        dev_pstate->host_port_info_addr = 0;
+        dev_pstate->host_port_config_addr = 0;
+        dev_pstate->host_port_status_addr = 0;
+        dev_pstate->host_port_mac_stats_addr = 0;
+        dev_pstate->host_port_pb_stats_addr = 0;
     }
 
     memcpy(port_config, cfg, sizeof(*port_config));
@@ -1591,11 +1629,11 @@ Eth::_CmdPortReset(void *req, void *req_data, void *resp, void *resp_data)
 
     NIC_LOG_DEBUG("{}: {}", spec->name, opcode_to_str(cmd->opcode));
 
-    host_port_info_addr = 0;
-    host_port_config_addr = 0;
-    host_port_status_addr = 0;
-    host_port_mac_stats_addr = 0;
-    host_port_pb_stats_addr = 0;
+    dev_pstate->host_port_info_addr = 0;
+    dev_pstate->host_port_config_addr = 0;
+    dev_pstate->host_port_status_addr = 0;
+    dev_pstate->host_port_mac_stats_addr = 0;
+    dev_pstate->host_port_pb_stats_addr = 0;
 
     return (IONIC_RC_SUCCESS);
 }
@@ -2168,8 +2206,10 @@ Eth::_CmdLifInit(void *req, void *req_data, void *resp, void *resp_data)
         return (ret);
     }
 
-    active_lif_set.insert(lif_id);
-    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, active_lif_set.size());
+    // insert lif id into active lif list
+    dev_pstate->active_lif_set[dev_pstate->n_active_lif] = lif_id;
+    dev_pstate->n_active_lif++;
+    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, dev_pstate->n_active_lif);
 
     port_id = spec->uplink_port_num;
 
@@ -2210,11 +2250,13 @@ Eth::_CmdLifInit(void *req, void *req_data, void *resp, void *resp_data)
         port_status->fec_type = IONIC_PORT_FEC_TYPE_NONE;
     }
 
-    if (spec->eth_type == ETH_HOST && cmd->index == 0 && host_port_mac_stats_addr != 0) {
+    if (spec->eth_type == ETH_HOST && cmd->index == 0 &&
+        dev_pstate->host_port_mac_stats_addr != 0) {
         NIC_LOG_INFO("{}: port{}: Starting stats update to "
                      "host_port_mac_stats_addr {:#x} host_port_pb_stats_addr {:#x}",
                      spec->name, spec->uplink_port_num,
-                     host_port_mac_stats_addr, host_port_pb_stats_addr);
+                     dev_pstate->host_port_mac_stats_addr,
+                     dev_pstate->host_port_pb_stats_addr);
 
         // Start stats timer
         ev_timer_start(EV_A_ &stats_timer);
@@ -2268,7 +2310,7 @@ Eth::_CmdLifReset(void *req, void *req_data, void *resp, void *resp_data)
     }
     eth_lif = it->second;
 
-    if (spec->eth_type == ETH_HOST && cmd->index == 0 && host_port_mac_stats_addr != 0) {
+    if (spec->eth_type == ETH_HOST && cmd->index == 0 && dev_pstate->host_port_mac_stats_addr != 0) {
         NIC_LOG_INFO("{}: port{}: Stopping stats update", spec->name, spec->uplink_port_num);
         ev_timer_stop(EV_A_ & stats_timer);
     }
@@ -2278,8 +2320,8 @@ Eth::_CmdLifReset(void *req, void *req_data, void *resp, void *resp_data)
         NIC_LOG_DEBUG("{}: LIF reset failed !", spec->name);
     }
 
-    active_lif_set.erase(lif_id);
-    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, active_lif_set.size());
+    active_lif_remove(dev_pstate->active_lif_set, &dev_pstate->n_active_lif, lif_id);
+    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, dev_pstate->n_active_lif);
 
     return ret;
 }
@@ -2473,14 +2515,14 @@ Eth::StatsUpdate(EV_P_ ev_timer *w, int events)
     }
     eth_lif = it->second;
 
-    if (eth->port_mac_stats_addr != 0 && eth->host_port_mac_stats_addr != 0) {
+    if (eth->port_mac_stats_addr != 0 && eth->dev_pstate->host_port_mac_stats_addr != 0) {
         eth_lif->EdmaAsyncProxy(eth->spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
-                                eth->port_mac_stats_addr, eth->host_port_mac_stats_addr,
+                                eth->port_mac_stats_addr, eth->dev_pstate->host_port_mac_stats_addr,
                                 sizeof(struct ionic_port_stats), &ctx);
 
-        if (eth->port_pb_stats_addr != 0 && eth->host_port_pb_stats_addr != 0) {
+        if (eth->port_pb_stats_addr != 0 && eth->dev_pstate->host_port_pb_stats_addr != 0) {
             eth_lif->EdmaAsyncProxy(eth->spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
-                                    eth->port_pb_stats_addr, eth->host_port_pb_stats_addr,
+                                    eth->port_pb_stats_addr, eth->dev_pstate->host_port_pb_stats_addr,
                                     sizeof(struct ionic_port_pb_stats), &ctx);
         }
     }
@@ -2500,10 +2542,10 @@ Eth::PortConfigUpdate(void *obj)
     }
     eth_lif = it->second;
 
-    if (eth->host_port_config_addr) {
+    if (eth->dev_pstate->host_port_config_addr) {
         eth_lif->EdmaProxy(
             eth->spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
-            eth->port_config_addr, eth->host_port_config_addr, sizeof(union ionic_port_config), NULL);
+            eth->port_config_addr, eth->dev_pstate->host_port_config_addr, sizeof(union ionic_port_config), NULL);
     }
 }
 
@@ -2520,10 +2562,10 @@ Eth::PortStatusUpdate(void *obj)
     }
     eth_lif = it->second;
 
-    if (eth->host_port_status_addr) {
+    if (eth->dev_pstate->host_port_status_addr) {
         eth_lif->EdmaProxy(
             eth->spec->host_dev ? EDMA_OPCODE_LOCAL_TO_HOST : EDMA_OPCODE_LOCAL_TO_LOCAL,
-            eth->port_status_addr, eth->host_port_status_addr, sizeof(struct ionic_port_status), NULL);
+            eth->port_status_addr, eth->dev_pstate->host_port_status_addr, sizeof(struct ionic_port_status), NULL);
     }
 }
 
@@ -2673,16 +2715,17 @@ Eth::Reset()
             NIC_LOG_ERR("{}: Failed to reset lif", spec->name);
             // TODO: Handle lif reset fail
         }
-        active_lif_set.erase(it->first);
+        active_lif_remove(dev_pstate->active_lif_set,
+                          &dev_pstate->n_active_lif, it->first);
     }
 
     // set fw status to down if in upgrade process
-    if (is_device_upgrade && !active_lif_set.size()) {
+    if (is_device_upgrade && dev_pstate->n_active_lif == 0) {
         SetFwStatus(0);
         is_device_upgrade = false;
     }
 
-    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, active_lif_set.size());
+    NIC_LOG_DEBUG("{}: active_lif_cnt: {}", spec->name, dev_pstate->n_active_lif);
 
     return (IONIC_RC_SUCCESS);
 }
@@ -2707,13 +2750,13 @@ Eth::IsDevQuiesced()
 bool
 Eth::IsDevReset()
 {
-    if (!active_lif_set.size()) {
+    if (dev_pstate->n_active_lif == 0) {
         NIC_LOG_DEBUG("{}: Device is in reset state!", spec->name);
         return true;
     }
 
     NIC_LOG_DEBUG("{}: Device is not in reset state yet! active_lif_cnt: {}",
-            spec->name, active_lif_set.size());
+            spec->name, dev_pstate->n_active_lif);
     return false;
 }
 

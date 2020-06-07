@@ -33,7 +33,7 @@
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/ftl_dev.hpp"
 #include "platform/src/lib/nicmgr/include/ftl_lif.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm.hpp"
+#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
 
 /*
  * Max devcmd retry timeout
@@ -116,10 +116,10 @@ private:
 
 /**
  * Devcmd interface wrapper
- * 
- * A note about devcmd locking: the FTL device in nicmgr implements a 
+ *
+ * A note about devcmd locking: the FTL device in nicmgr implements a
  * state machine to maintain operation correctness.
- * 
+ *
  * Consider one example: Thread A has, for some reason, invoked a
  * scanners-stop-all command. Some time after, poller thread B
  * executes a single-queue scanner reschedule. The nicmgr state machine

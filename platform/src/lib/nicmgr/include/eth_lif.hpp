@@ -10,6 +10,7 @@ using namespace std;
 #include "nic/include/edmaq.h"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "pd_client.hpp"
+#include "eth_pstate.hpp"
 #include "ev.h"
 #include <unordered_map>
 
@@ -36,7 +37,6 @@ enum eth_hw_qtype {
     ETH_HW_QTYPE_NONE = 15,
 };
 
-#define IONIC_IFNAMSIZ 16
 
 #define BIT_MASK(n) ((1ULL << n) - 1)
 
@@ -71,9 +71,6 @@ enum eth_hw_qtype {
 #define RXDMA_Q_QUIESCE_WAIT_S 0.001  // 1 ms
 #define RXDMA_LIF_QUIESCE_WAIT_S 0.01 // 10 ms
 
-#define RSS_HASH_KEY_SIZE 40
-#define RSS_IND_TBL_SIZE 128
-
 #define FW_MAX_SZ ((900 << 20)) // 900 MiB
 #define FW_FILEPATH "/update/firmware.tar"
 
@@ -89,21 +86,6 @@ typedef struct eth_lif_res_s {
     uint64_t cmb_mem_addr;
     uint64_t cmb_mem_size;
 } eth_lif_res_t;
-
-/**
- * LIF State enum
- */
-enum eth_lif_state {
-    LIF_STATE_RESETTING,
-    LIF_STATE_RESET,
-    LIF_STATE_CREATING,
-    LIF_STATE_CREATED,
-    LIF_STATE_INITING,
-    LIF_STATE_INIT,
-    // LIF LINK STATES
-    LIF_STATE_UP,
-    LIF_STATE_DOWN,
-};
 
 class EthLif
 {
@@ -154,17 +136,17 @@ class EthLif
 
     /* LIF admin state */
     status_code_t SetAdminState(uint8_t admin_state);
-    uint8_t GetAdminState() { return admin_state; }
+    uint8_t GetAdminState() { return lif_pstate->admin_state; }
 
     /* Proxy LIF admin state of a VF controlled by a PF */
     status_code_t SetProxyAdminState(uint8_t admin_state);
-    uint8_t GetProxyAdminState() { return proxy_admin_state; }
+    uint8_t GetProxyAdminState() { return lif_pstate->proxy_admin_state; }
 
     status_code_t LifToggleTxRxState(bool enable);
     status_code_t LifQuiesce();
 
     /* LIF overall link state */
-    enum eth_lif_state GetLifLinkState() { return state; }
+    enum eth_lif_state GetLifLinkState() { return lif_pstate->state; }
 
     /* Address to store VF's stats */
     void SetPfStatsAddr(uint64_t addr);
@@ -188,13 +170,6 @@ private:
     Eth *dev;
     std::unordered_map<uint64_t, EthLif *> subscribers_map;
     static sdk::lib::indexer *fltr_allocator;
-    // Info
-    char name[IONIC_IFNAMSIZ];
-    enum eth_lif_state state;
-    uint8_t admin_state;
-    uint8_t proxy_admin_state;
-    uint8_t port_status;
-
     // PD Info
     PdClient *pd;
     // HAL Info
@@ -209,15 +184,12 @@ private:
     // Config
     union ionic_lif_config *lif_config;
     uint64_t lif_config_addr;
-    uint64_t host_lif_config_addr;
     // Status
     struct ionic_lif_status *lif_status;
     uint64_t lif_status_addr;
-    uint64_t host_lif_status_addr;
     // Stats
     uint64_t lif_stats_addr;
-    uint64_t host_lif_stats_addr;
-    uint64_t pf_lif_stats_addr;
+    uint64_t pf_lif_stats_addr; //TODO: Revisit pesistent state
 
     // NotifyQ
     uint16_t notify_ring_head;
@@ -232,22 +204,18 @@ private:
     uint8_t *fw_buf;
     // Features
     uint64_t features;
-    // RSS config
-    uint16_t rss_type;
-    uint8_t rss_key[RSS_HASH_KEY_SIZE];  // 40B
-    uint8_t rss_indir[RSS_IND_TBL_SIZE]; // 128B
     // Network info
     map<uint64_t, uint64_t> mac_addrs;
     map<uint64_t, uint16_t> vlans;
     map<uint64_t, tuple<uint64_t, uint16_t>> mac_vlans;
-    uint32_t mtu;
     // Tasks
     ev_timer stats_timer = {0};
     ev_timer sched_eval_timer = {0};
     bool stats_timer_init_done = false;
 
-    // ref_cnt for queues for this lif
-    uint32_t active_q_ref_cnt;
+    // persistent config
+    ethlif_pstate_t *lif_pstate;
+    nicmgr_shm  *shm_mem;
 
     // Services
     AdminQ *adminq;

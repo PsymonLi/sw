@@ -16,7 +16,7 @@
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/sdk/asic/asic.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm.hpp"
+#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
 
 using namespace sdk;
 using namespace sdk::asic;
@@ -60,10 +60,10 @@ pds_global_init (pds_cinit_params_t *params)
      params_cpp.cfg_file = "hal.json";
 #endif
     params_cpp.flow_age_pid = params->flow_age_pid;
-   
+
     if (params->flags & PDS_FLAG_INIT_TYPE_SOFT) {
         asic_init_type = ASIC_INIT_TYPE_SOFT;
-    } 
+    }
 
     sdk::asic::asic_set_init_type(asic_init_type);
 
@@ -77,7 +77,7 @@ pds_global_init (pds_cinit_params_t *params)
         PDS_TRACE_ERR("PDS soft init done\n");
         //return (pds_ret_t)ret;
     }
-        
+
     ret = pds_flow_cache_create();
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Flow cache init failed with ret %u\n", ret);
@@ -105,7 +105,7 @@ pds_global_init (pds_cinit_params_t *params)
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Flow aging init failed with ret %u\n", ret);
         }
-    }    
+    }
     return (pds_ret_t)ret;
 }
 

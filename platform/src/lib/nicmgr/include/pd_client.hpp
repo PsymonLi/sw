@@ -135,7 +135,6 @@ public:
 #if 0
     uint64_t rdma_get_ah_base_addr(uint32_t lif);
 #endif
-    bool is_dev_hwinit_done(const char *dev_name);
 private:
     PdClient(){}
     ~PdClient(){}

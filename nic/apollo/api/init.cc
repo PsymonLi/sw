@@ -32,7 +32,7 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm.hpp"
+#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
 #include "platform/sysmon/sysmon.hpp"
 #include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/api/internal/monitor.hpp"

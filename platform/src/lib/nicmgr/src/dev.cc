@@ -19,7 +19,7 @@
 #include "nic/sdk/platform/misc/include/maclib.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 #include "nic/sdk/platform/mnet/include/mnet.h"
-#include "nicmgr_shm.hpp"
+#include "nicmgr_shm_cpp.hpp"
 
 #include "logger.hpp"
 
@@ -152,6 +152,7 @@ DeviceManager::Init(devicemgr_cfg_t *cfg) {
         PciemgrInit(cfg);
         HeartbeatStart();
     }
+    this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Init Done");
 }
 
@@ -164,6 +165,7 @@ DeviceManager::UpgradeGracefulInit(devicemgr_cfg_t *cfg) {
         PciemgrInit(cfg);
         HeartbeatStart();
     }
+    this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Graceful Init Done");
 }
 
@@ -175,6 +177,7 @@ DeviceManager::UpgradeHitlessInit(devicemgr_cfg_t *cfg) {
         PciemgrInit(cfg);
         HeartbeatStart();
     }
+    this->shm_mem = nicmgr_shm::factory(false);
     NIC_HEADER_TRACE("DeviceManager Hitless Init Done");
 }
 
