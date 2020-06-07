@@ -316,7 +316,7 @@ validate_learn (learn_ctxt_t *ctxt)
         // validate if IP belongs to the subnet. subnet should be present now,
         // since bdid to subnetid lookup was successful
         subnet = subnet_db()->find(&ctxt->mac_key.subnet);
-        if(ctxt->ip_key.ip_addr.af == IP_AF_IPV4) {
+        if (ctxt->ip_key.ip_addr.af == IP_AF_IPV4) {
             v4_prefix = subnet->v4_prefix();
             if (!ipv4_addr_within_prefix(&v4_prefix,
                                          &ctxt->ip_key.ip_addr.addr.v4_addr)) {

@@ -38,6 +38,14 @@
 #define COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS      300000
 #define COPP_DEFUNCT_FLOW_TO_DATAPATH_LIF_PPS   50000
 
+// 4 bits of copp class can be used to account for copp drops
+#define P4_COPP_DROP_CLASS_OTHER                0
+#define P4_COPP_DROP_CLASS_INBAND               1
+#define P4_COPP_DROP_CLASS_ARP_HOST             2
+#define P4_COPP_DROP_CLASS_DHCP_HOST            3
+#define P4_COPP_DROP_CLASS_FLOW_EPOCH           4
+#define P4_COPP_DROP_CLASS_FLOW_MISS            5
+
 namespace api {
 namespace impl {
 
@@ -224,6 +232,7 @@ lif_impl::create_oob_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_action.nexthop_id = nh_idx_;
     data.nacl_redirect_action.copp_policer_id = idx;
+    data.nacl_redirect_action.copp_class = P4_COPP_DROP_CLASS_INBAND;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -405,6 +414,7 @@ lif_impl::create_inb_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_action.nexthop_id = nh_idx_;
     data.nacl_redirect_action.copp_policer_id = idx;
+    data.nacl_redirect_action.copp_class = P4_COPP_DROP_CLASS_INBAND;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
     if (p4pd_ret != P4PD_SUCCESS) {
@@ -719,6 +729,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_ARP;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
@@ -768,6 +779,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_DHCP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_DHCP_HOST;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
@@ -809,6 +821,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_FLOW_EPOCH;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
@@ -855,6 +868,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_FLOW_MISS;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
@@ -941,6 +955,7 @@ lif_impl::create_datapath_mnic_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_FLOW_MISS;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_FLOW_MISS_IP4_IP6;
     SDK_ASSERT(apulu_impl_db()->nacl_idxr()->alloc(&nacl_idx) == SDK_RET_OK);
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx, &key, &mask, &data);
@@ -1258,6 +1273,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_ARP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
@@ -1296,6 +1312,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_ARP_REPLY;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
@@ -1330,6 +1347,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_ARP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_RARP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
@@ -1382,6 +1400,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class = P4_COPP_DROP_CLASS_DHCP_HOST;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L2_MISS_DHCP;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
