@@ -102,6 +102,8 @@ else
         DEST="/release-arfifacts/fw"
         mkdir -p $DEST
         mv $TOPDIR/nic/buildroot/output_diag/images/naples_diagfw.tar $DEST/
+
+        cd $TOPDIR
         asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/naples_diagfw.tar
     fi
 

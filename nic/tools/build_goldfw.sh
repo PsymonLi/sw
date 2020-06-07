@@ -162,6 +162,7 @@ else
     mv $TOPDIR/nic/buildroot/output_gold/images/naples_goldfw.tar $DEST/
     mv $TOPDIR/platform/gold_drv.tar.gz $DEST
 
+    cd $TOPDIR
     asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/naples_goldfw.tar
     asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/gold_drv.tar.gz
 

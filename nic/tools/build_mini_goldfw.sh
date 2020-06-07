@@ -159,6 +159,7 @@ else
     DEST="/release-arfifacts/gold"
     mkdir -p $DEST
     mv $TOPDIR/nic/buildroot/output_minigold/images/naples_minigoldfw.tar $DEST/
+    cd $TOPDIR
     asset-build/asset-push/asset-push builds hourly $RELEASE $DEST/naples_minigoldfw.tar
 
     exit 0
