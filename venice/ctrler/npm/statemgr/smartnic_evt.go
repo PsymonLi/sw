@@ -252,8 +252,10 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String() {
 			sns.decommissioned = false
 			_, err = sm.AddDsc(smartNic)
-			log.Errorf("Error Adding smartnic. Err: %v", err)
-			return err
+			if err != nil {
+				log.Errorf("Error Adding smartnic. Err: %v", err)
+				return err
+			}
 		}
 	}
 
