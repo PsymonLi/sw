@@ -9,12 +9,12 @@ import iota.test.iris.testcases.expanded_telemetry.utils as eutils
 from ipaddress import ip_address
 
 def Setup(tc):
-    tc.node_intf_obj_map = {}
-    for node_name in api.GetNaplesHostnames():
-        uplink_objs = eutils.generateUplinkIntfCfgObj(node_name)
-        tc.node_intf_obj_map[node_name] = uplink_objs
-        api.Logger.info("%s Interface objects:"%(node_name))
-        agent_api.PrintConfigObjects(uplink_objs)
+    # tc.node_intf_obj_map = {}
+    # for node_name in api.GetNaplesHostnames():
+    #     uplink_objs = eutils.generateUplinkIntfCfgObj(node_name)
+    #     tc.node_intf_obj_map[node_name] = uplink_objs
+    #     api.Logger.info("%s Interface objects:"%(node_name))
+    #     agent_api.PrintConfigObjects(uplink_objs)
     return api.types.status.SUCCESS
 
 def UpdateFlowMonitorObjects(fpObjs):
@@ -81,32 +81,20 @@ def Trigger(tc):
     result = api.types.status.SUCCESS
     mirrorPolicies = utils.GetTargetJsons('mirror', "scale")
     flowmonPolicies = utils.GetTargetJsons('flowmon', "scale")
-    colPolicies = utils.GetTargetJsons('mirror', "collector")
+    #colPolicies = utils.GetTargetJsons('mirror', "collector")
     iters = getattr(tc.args, "iters", 10)
+    iters = 1
     mpObjs = fpObjs = []
-    for mp_json, fp_json, col_json in zip(mirrorPolicies, flowmonPolicies, colPolicies):
+    for mp_json, fp_json in zip(mirrorPolicies, flowmonPolicies):
         for i in range(iters):
             #
             # Push Mirror Session and Flow Export objects
             #
             mpObjs = agent_api.AddOneConfig(mp_json)
             fpObjs = agent_api.AddOneConfig(fp_json)
-            coObjs =  agent_api.AddOneConfig(col_json)
-            ret = agent_api.PushConfigObjects(mpObjs+fpObjs+coObjs)
+            ret = agent_api.PushConfigObjects(mpObjs+fpObjs)
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Failed to push the telemetry objects")
-                return api.types.status.FAILURE
-
-            #
-            # Add and Remove the collecors to interface config
-            #
-            ret = AddRemoveCollectorsOnInterface(tc, coObjs)
-            if ret != api.types.status.SUCCESS:
-                api.Logger.error("Failed to update the interface objects")
-                return api.types.status.FAILURE
-            ret = agent_api.DeleteConfigObjects(coObjs)
-            if ret != api.types.status.SUCCESS:
-                api.Logger.error("Failed to delete the telemetry objects")
                 return api.types.status.FAILURE
 
             #
@@ -114,32 +102,19 @@ def Trigger(tc):
             #
             mpObjs = UpdateMirrorSessionObjects(mpObjs)
             fpObjs = UpdateFlowMonitorObjects(fpObjs)
-            coObjs = UpdateCollectorObjects(coObjs)
             ret = agent_api.UpdateConfigObjects(mpObjs+fpObjs)
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Failed to update the telemetry objects")
-                return api.types.status.FAILURE
-            ret = agent_api.PushConfigObjects(coObjs)
-            if ret != api.types.status.SUCCESS:
-                api.Logger.error("Failed to delete the telemetry objects")
-                return api.types.status.FAILURE
-
-            #
-            # Add and Remove the collecors to interface config
-            #
-            ret = AddRemoveCollectorsOnInterface(tc, coObjs)
-            if ret != api.types.status.SUCCESS:
-                api.Logger.error("Failed to update the interface objects")
                 return api.types.status.FAILURE
 
             #
             # Delete Mirror Session and Flow Export objects
             #
-            ret = agent_api.DeleteConfigObjects(fpObjs+mpObjs+coObjs)
+            ret = agent_api.DeleteConfigObjects(fpObjs+mpObjs)
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Failed to delete the telemetry objects")
                 return api.types.status.FAILURE
-            ret = agent_api.RemoveConfigObjects(mpObjs+fpObjs+coObjs)
+            ret = agent_api.RemoveConfigObjects(mpObjs+fpObjs)
             if ret != api.types.status.SUCCESS:
                 api.Logger.error("Failed to remove the telemetry objects")
                 return api.types.status.FAILURE
@@ -149,13 +124,11 @@ def Trigger(tc):
 def Verify(tc):
     showMirrorCmd = "/nic/bin/halctl show mirror"
     showFlowMonitorCmd = "/nic/bin/halctl show flow-monitor"
-    showCollectorCmd = "/nic/bin/halctl show collector"
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
 
     for node_name in api.GetNaplesHostnames():
         api.Trigger_AddNaplesCommand(req, node_name, showMirrorCmd)
         api.Trigger_AddNaplesCommand(req, node_name, showFlowMonitorCmd)
-        api.Trigger_AddNaplesCommand(req, node_name, showCollectorCmd)
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
