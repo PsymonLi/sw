@@ -43,7 +43,6 @@ type TestNode struct {
 	logger            *log.Logger
 	connector         interface{}
 	triggerLocal      bool
-	ApcInfo           *iota.ApcInfo
 	DCName            string
 	ClusterName       string
 	DistributedSwitch string

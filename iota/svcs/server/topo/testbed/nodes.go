@@ -433,22 +433,22 @@ func (n *TestNode) RestartNode(method string, useNcsi bool) error {
 			}
 		}
 	} else if method == "apc" {
-		if n.ApcInfo == nil {
+		if n.info.ApcInfo == nil {
 			log.Errorf("user requested apc power cycle but node %s missing apc info", n.Node.Name)
 		} else {
-			log.Infof("restarting node %s using apc power cycle(ip:%s, user:%s, pass:%s)", n.Node.Name, n.ApcInfo.Ip, n.ApcInfo.Username, n.ApcInfo.Password)
+			log.Infof("restarting node %s using apc power cycle(ip:%s, user:%s, pass:%s)", n.Node.Name, n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password)
 
-			h, err := apc.Dial(n.ApcInfo.Ip, n.ApcInfo.Username, n.ApcInfo.Password, os.Stdout)
+			h, err := apc.Dial(n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password, os.Stdout)
 			if err != nil {
-				log.Errorf("failed to connect to apc %s with username %s and password %s. error was: %v", n.ApcInfo.Ip, n.ApcInfo.Username, n.ApcInfo.Password, err)
+				log.Errorf("failed to connect to apc %s with username %s and password %s. error was: %v", n.info.ApcInfo.Ip, n.info.ApcInfo.Username, n.info.ApcInfo.Password, err)
 			} else {
 				defer h.Close()
-				if err := h.PowerOff(n.ApcInfo.Port); err != nil {
-					log.Errorf("failed to power off port %s of apc %s. error was: %v", n.ApcInfo.Port, n.ApcInfo.Ip, err)
+				if err := h.PowerOff(n.info.ApcInfo.Port); err != nil {
+					log.Errorf("failed to power off port %s of apc %s. error was: %v", n.info.ApcInfo.Port, n.info.ApcInfo.Ip, err)
 				}
 				time.Sleep(30 * time.Second)
-				if err := h.PowerOn(n.ApcInfo.Port); err != nil {
-					log.Errorf("failed to power on port %s of apc %s. error was: %v", n.ApcInfo.Port, n.ApcInfo.Ip, err)
+				if err := h.PowerOn(n.info.ApcInfo.Port); err != nil {
+					log.Errorf("failed to power on port %s of apc %s. error was: %v", n.info.ApcInfo.Port, n.info.ApcInfo.Ip, err)
 				}
 				time.Sleep(2 * time.Minute)
 				cmd := fmt.Sprintf("ipmitool -I lanplus -H %s -U %s -P %s power on",

@@ -305,6 +305,7 @@ func (ts *TopologyService) InitTestBed(ctx context.Context, req *iota.TestBedMsg
 				Name:         node.NodeName,
 				IPAddress:    node.IpAddress,
 				License:      node.License,
+				ApcInfo:      node.ApcInfo,
 			}
 
 			if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX ||
@@ -387,6 +388,7 @@ func (ts *TopologyService) initTestNodes(ctx context.Context, req *iota.TestNode
 			Name:         node.NodeName,
 			IPAddress:    node.IpAddress,
 			License:      node.License,
+			ApcInfo:      node.ApcInfo,
 		}
 		if node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_ESX ||
 			node.Os == iota.TestBedNodeOs_TESTBED_NODE_OS_VCENTER {
