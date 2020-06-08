@@ -190,6 +190,13 @@ remove_files() {
     # Copy back header files to platform/src/lib
     cd /tmp/platform/
     cp -r --parents -u . $DST/platform/src/lib
+
+    # Copy back platform driver common includes
+    cd $DST
+    mkdir -p platform/drivers
+    cd /tmp/platform_drivers/
+    cp -r --parents -u . $DST/platform/drivers
+
 }
 
 save_files() {
@@ -202,7 +209,8 @@ save_files() {
     platform_inc+='nicmgr/include/eth_dev.hpp nicmgr/include/eth_lif.hpp nicmgr/include/logger.hpp nicmgr/include/nicmgr_utils.hpp nicmgr/include/ftl_dev.hpp '
     platform_inc+='nicmgr/include/ftl_lif.hpp eth_p4plus/eth_p4pd.hpp nicmgr/include/nicmgr_shm.hpp nicmgr/include/nicmgr_shm_cpp.hpp '
     platform_inc+='nicmgr/include/eth_pstate.hpp nicmgr/include/eth_if.h '
-
+    platform_drivers_inc+='common/ionic_if.h '
+    
     mkdir -p $LIBDIR
     cd $DST/nic/build
     for f in $files ; do
@@ -221,6 +229,14 @@ save_files() {
     mkdir -p /tmp/platform
     for f in $platform_inc ; do
         cp -r --parents -u $f /tmp/platform
+    done
+
+    # Keep the required platform driver headers
+    cd $DST/platform/drivers
+    rm -rf /tmp/platform_drivers
+    mkdir -p /tmp/platform_drivers
+    for f in $platform_drivers_inc ; do
+        cp -r --parents -u $f /tmp/platform_drivers
     done
 }
 
