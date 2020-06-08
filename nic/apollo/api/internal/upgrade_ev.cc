@@ -166,7 +166,7 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         INVOKE_EV_THREAD_HDLR(ev, compat_check_hdlr, UPG_MSG_ID_COMPAT_CHECK);
         break;
     case UPG_EV_START:
-        ret = SDK_RET_OK;
+        INVOKE_EV_THREAD_HDLR(ev, start_hdlr, UPG_MSG_ID_START);
         break;
     case UPG_EV_BACKUP:
         if ((ret = upg_shmstore_create(params->mode)) != SDK_RET_OK) {
