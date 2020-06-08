@@ -953,8 +953,12 @@ func (api *rolloutAPI) Watch(handler RolloutHandler) error {
 // StopWatch stop watch for Tenant Rollout object
 func (api *rolloutAPI) StopWatch(handler RolloutHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Rollout"].Stop()
+	worker := api.ct.workPools["Rollout"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRollout(handler)
 }
 
@@ -2077,8 +2081,12 @@ func (api *rolloutactionAPI) Watch(handler RolloutActionHandler) error {
 // StopWatch stop watch for Tenant RolloutAction object
 func (api *rolloutactionAPI) StopWatch(handler RolloutActionHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RolloutAction"].Stop()
+	worker := api.ct.workPools["RolloutAction"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRolloutAction(handler)
 }
 

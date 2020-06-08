@@ -955,8 +955,12 @@ func (api *userAPI) Watch(handler UserHandler) error {
 // StopWatch stop watch for Tenant User object
 func (api *userAPI) StopWatch(handler UserHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["User"].Stop()
+	worker := api.ct.workPools["User"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchUser(handler)
 }
 
@@ -2055,8 +2059,12 @@ func (api *authenticationpolicyAPI) Watch(handler AuthenticationPolicyHandler) e
 // StopWatch stop watch for Tenant AuthenticationPolicy object
 func (api *authenticationpolicyAPI) StopWatch(handler AuthenticationPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["AuthenticationPolicy"].Stop()
+	worker := api.ct.workPools["AuthenticationPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAuthenticationPolicy(handler)
 }
 
@@ -3128,8 +3136,12 @@ func (api *roleAPI) Watch(handler RoleHandler) error {
 // StopWatch stop watch for Tenant Role object
 func (api *roleAPI) StopWatch(handler RoleHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Role"].Stop()
+	worker := api.ct.workPools["Role"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRole(handler)
 }
 
@@ -4048,8 +4060,12 @@ func (api *rolebindingAPI) Watch(handler RoleBindingHandler) error {
 // StopWatch stop watch for Tenant RoleBinding object
 func (api *rolebindingAPI) StopWatch(handler RoleBindingHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RoleBinding"].Stop()
+	worker := api.ct.workPools["RoleBinding"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRoleBinding(handler)
 }
 
@@ -4968,8 +4984,12 @@ func (api *userpreferenceAPI) Watch(handler UserPreferenceHandler) error {
 // StopWatch stop watch for Tenant UserPreference object
 func (api *userpreferenceAPI) StopWatch(handler UserPreferenceHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["UserPreference"].Stop()
+	worker := api.ct.workPools["UserPreference"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchUserPreference(handler)
 }
 

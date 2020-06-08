@@ -947,8 +947,12 @@ func (api *bufferAPI) Watch(handler BufferHandler) error {
 // StopWatch stop watch for Tenant Buffer object
 func (api *bufferAPI) StopWatch(handler BufferHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Buffer"].Stop()
+	worker := api.ct.workPools["Buffer"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchBuffer(handler)
 }
 
