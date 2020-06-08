@@ -10,6 +10,7 @@ struct phv_         p;
 
 %%
 
+// r7 : packet length
 session_info:
     seq             c7, k.p4e_i2e_skip_stats_update, FALSE
     // update timestamp and release lock
@@ -18,58 +19,60 @@ session_info:
 
     seq             c1, k.p4e_i2e_copp_policer_id, r0
     phvwr.!c1       p.control_metadata_copp_policer_valid, TRUE
-    seq             c1, k.p4e_i2e_session_id, r0
-    // r7 : packet length
     sub             r7, k.capri_p4_intrinsic_frame_size, k.offset_metadata_l2_1
     phvwr           p.capri_p4_intrinsic_packet_len, r7
-    phvwr           p.meter_metadata_meter_len, r7
     phvwr           p.control_metadata_rx_packet, k.p4e_i2e_rx_packet
+    seq             c1, k.p4e_i2e_session_id, r0
     bcf             [c1], session_info_error
     phvwr           p.control_metadata_update_checksum, \
                         k.p4e_i2e_update_checksum
+
     seq             c1, k.p4e_i2e_session_id, -1
     seq.!c1         c1, k.p4e_to_arm_valid, TRUE
-    bcf             [c1], session_redirect
+    b.c1            session_redirect
+    bbeq.!c1        d.session_info_d.drop, TRUE, session_info_drop
     seq             c1, k.egress_recirc_valid, FALSE
     bcf             [!c1|!c7], session_info_common
     phvwr.c1        p.control_metadata_session_tracking_en, \
                         d.session_info_d.session_tracking_en
     // non-recirc packet
-    seq             c1, k.p4e_i2e_meter_enabled, TRUE
-    sne.c1          c1, d.session_info_d.meter_id, r0
+    bbne            k.p4e_i2e_meter_enabled, TRUE, session_info_common
+    sne             c1, d.session_info_d.meter_id, r0
     bcf             [!c1], session_info_common
     add             r1, r0, d.session_info_d.meter_id
     seq             c1, k.p4e_i2e_rx_packet, TRUE
     add.c1          r1, r1, (METER_TABLE_SIZE >> 1)
-    phvwr           p.meter_metadata_meter_id, r1
+    or              r1, r7[15:0], r1[10:0], 16
+    phvwr           p.{meter_metadata_meter_id,meter_metadata_meter_len}, r1
 
 session_info_common:
     bbeq            k.p4e_i2e_rx_packet, FALSE, session_tx
     seq             c1, k.p4e_i2e_is_local_to_local, TRUE
 session_rx:
-    phvwr           p.rewrite_metadata_flags, d.session_info_d.rx_rewrite_flags
-    seq             c1, d.session_info_d.rx_xlate_id, r0
-    cmov            r1, c1, k.p4e_i2e_xlate_id, d.session_info_d.rx_xlate_id
-    sne             c1, r1, r0
-    phvwr.c1        p.control_metadata_apply_nat, TRUE
-    phvwr.c1        p.rewrite_metadata_xlate_id, r1
+    seq             c3, d.session_info_d.rx_xlate_id, r0
+    cmov            r1, c3, k.p4e_i2e_xlate_id, d.session_info_d.rx_xlate_id
+    sne             c2, r1, r0
     sne             c1, d.session_info_d.rx_xlate_id2, r0
-    phvwr.c1        p.control_metadata_apply_nat2, TRUE
+    csave           r2, [c2-c1]
+    phvwr           p.{control_metadata_apply_nat,control_metadata_apply_nat2}, r2
+    phvwr           p.rewrite_metadata_xlate_id, r1
+    phvwr           p.rewrite_metadata_xlate_id2, d.session_info_d.rx_xlate_id2
     b               session_stats
-    phvwr.c1        p.rewrite_metadata_xlate_id2, d.session_info_d.rx_xlate_id2
+    phvwr.f         p.rewrite_metadata_flags, d.session_info_d.rx_rewrite_flags
 
 session_tx:
-    seq.c1          c1, k.p4e_i2e_flow_role, TCP_FLOW_RESPONDER
-    phvwr.c1        p.rewrite_metadata_flags, d.session_info_d.rx_rewrite_flags
-    phvwr.!c1       p.rewrite_metadata_flags, d.session_info_d.tx_rewrite_flags
-    seq             c1, d.session_info_d.tx_xlate_id, r0
-    cmov            r1, c1, k.p4e_i2e_xlate_id, d.session_info_d.tx_xlate_id
-    sne             c1, r1, r0
-    phvwr.c1        p.control_metadata_apply_nat, TRUE
-    phvwr.c1        p.rewrite_metadata_xlate_id, r1
+    seq             c7, d.session_info_d.tx_xlate_id, r0
+    cmov            r1, c7, k.p4e_i2e_xlate_id, d.session_info_d.tx_xlate_id
+    sne             c2, r1, r0
     sne             c1, d.session_info_d.tx_xlate_id2, r0
-    phvwr.c1        p.control_metadata_apply_nat2, TRUE
-    phvwr.c1        p.rewrite_metadata_xlate_id2, d.session_info_d.tx_xlate_id2
+    csave           r2, [c2-c1]
+    phvwr           p.{control_metadata_apply_nat,control_metadata_apply_nat2}, r2
+    phvwr           p.rewrite_metadata_xlate_id, r1
+    phvwr           p.rewrite_metadata_xlate_id2, d.session_info_d.tx_xlate_id2
+    seq.c1          c1, k.p4e_i2e_flow_role, TCP_FLOW_RESPONDER
+    cmov            r1, c1, d.session_info_d.rx_rewrite_flags, \
+                        d.session_info_d.tx_rewrite_flags
+    phvwr.f         p.rewrite_metadata_flags, r1
 
 session_stats:
     seq             c1, k.egress_recirc_valid, TRUE
@@ -94,9 +97,8 @@ session_redirect:
     phvwr.f         p.capri_rxdma_intrinsic_qid, d.session_info_d.qid
 
 session_info_drop:
-    add             r6, r6, r5[26:0]
-    memwr.dx        r6, r7
-    phvwr.e         p.control_metadata_p4e_drop_reason[P4E_DROP_SESSION_HIT], 1
+    phvwr           p.control_metadata_p4e_drop_reason[P4E_DROP_SESSION_HIT], 1
+    b               session_stats
     phvwr.f         p.capri_intrinsic_drop, 1
 
 session_info_error:

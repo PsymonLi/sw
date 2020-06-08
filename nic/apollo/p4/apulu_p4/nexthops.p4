@@ -259,8 +259,9 @@ action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
 }
 
 @pragma stage 4
-@pragma index_table
 @pragma hbm_table
+@pragma index_table
+@pragma numthreads 2
 @pragma capi_bitfields_struct
 table nexthop {
     reads {

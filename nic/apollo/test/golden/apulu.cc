@@ -638,6 +638,10 @@ device_init (void)
     session_stats_addr = asicpd_get_mem_addr(JSTATSBASE);
     session_stats_addr -= ((uint64_t)1 << 31);
     asicpd_program_table_constant(P4TBL_ID_SESSION, session_stats_addr);
+
+    // program thread ids for nexthop table
+    asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 0, 0);
+    asicpd_program_table_thread_constant(P4TBL_ID_NEXTHOP, 1, 1);
 }
 
 static void

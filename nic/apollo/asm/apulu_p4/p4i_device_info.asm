@@ -10,9 +10,6 @@ struct phv_                 p;
 %%
 
 p4i_device_info:
-    phvwr           p.key_metadata_entry_valid, TRUE
-    phvwr           p.p4i_i2e_nexthop_type, NEXTHOP_TYPE_NEXTHOP
-    phvwr           p.p4i_i2e_priority, -1
     sub             r1, k.capri_p4_intrinsic_frame_size, \
                         k.offset_metadata_l2_1
     sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
@@ -32,17 +29,21 @@ p4i_recirc_done:
                         d.p4i_device_info_d.device_mac_addr1
     seq.!c1         c1, k.ethernet_1_dstAddr, \
                         d.p4i_device_info_d.device_mac_addr2
-    seq             c2, k.ipv4_1_valid, TRUE
-    seq.c2          c2, k.ipv4_1_dstAddr, d.p4i_device_info_d.device_ipv4_addr
-    seq             c3, k.ipv6_1_valid, TRUE
-    seq.c3          c3, k.ipv6_1_dstAddr[127:64], \
+    crestore        [c3-c2], k.{ipv4_1_valid,ipv6_1_valid}, 0x3
+    bcf             [c3], p4i_device_ip_check
+    seq.c3          c3, k.ipv4_1_dstAddr, d.p4i_device_info_d.device_ipv4_addr
+    seq.c2          c2, k.ipv6_1_dstAddr[127:64], \
                         d.p4i_device_info_d.device_ipv6_addr[127:64]
-    seq.c3          c3, k.ipv6_1_dstAddr[63:0], \
+    seq.c2          c2, k.ipv6_1_dstAddr[63:0], \
                         d.p4i_device_info_d.device_ipv6_addr[63:0]
+p4i_device_ip_check:
     andcf           c1, [c2 | c3]
-    phvwr.e         p.control_metadata_l2_enabled, \
+    phvwr           p.control_metadata_l2_enabled, \
                         d.p4i_device_info_d.l2_enabled
     phvwr.c1        p.control_metadata_to_device_ip, TRUE
+    phvwrpair.e     p.p4i_i2e_nexthop_type, NEXTHOP_TYPE_NEXTHOP, \
+                        p.p4i_i2e_priority, 0x1f
+    phvwr.f         p.key_metadata_entry_valid, TRUE
 
 /*****************************************************************************/
 /* error function                                                            */
