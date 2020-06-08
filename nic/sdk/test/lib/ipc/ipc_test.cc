@@ -41,7 +41,7 @@ struct poll_s {
 
 static ipc_msg_ptr g_async_thread_pending_message = nullptr;
 
-void
+static void *
 poll_fd_watch_cb (int fd, handler_cb cb, const void *ctx,
                   const void *fd_watch_cb_ctx)
 {
@@ -55,6 +55,8 @@ poll_fd_watch_cb (int fd, handler_cb cb, const void *ctx,
     poll_fds->nfds += 1;
 
     printf("Now also watching fd: %i. Total: %lu\n", fd, poll_fds->nfds);
+
+    return NULL;
 }
 
 void req_1_callback (ipc_msg_ptr msg, const void *ctx)
@@ -62,6 +64,11 @@ void req_1_callback (ipc_msg_ptr msg, const void *ctx)
     printf("Got message: %s\n", (char *)msg->data());
     assert(g_async_thread_pending_message == nullptr);
     g_async_thread_pending_message = msg;
+}
+
+void req_2_callback (ipc_msg_ptr msg, const void *ctx)
+{
+    // Just a black hole...
 }
 
 void req_99_callback (ipc_msg_ptr msg, const void *ctx)
@@ -88,10 +95,20 @@ void *async_thread_run (void *arg)
     struct poll_s poll_fds;
     poll_fds.nfds = 0;
 
-    ipc_init_async(T_CLIENT_1, poll_fd_watch_cb, &poll_fds);
+    ipc_init_async(T_CLIENT_1, std::unique_ptr<sdk::ipc::infra_t>(
+                       new sdk::ipc::infra_t{
+                           .fd_watch = poll_fd_watch_cb,
+                               .fd_watch_ctx = &poll_fds,
+                               .fd_unwatch = NULL,
+                               .fd_unwatch_ctx = NULL,
+                               .timer_add = NULL,
+                               .timer_add_ctx = NULL,
+                               .timer_del = NULL,
+                               .timer_del_ctx = NULL}));
 
     set_drip_feeding(true);
     reg_request_handler(1, req_1_callback, NULL);
+    reg_request_handler(2, req_2_callback, NULL);
     reg_request_handler(99, req_99_callback, &exit);
 
     subscribe(2, sub_2_callback, NULL);
@@ -121,12 +138,23 @@ void req_1_callback_ev (ipc_msg_ptr msg, const void *ctx)
     respond(msg, rsp, sizeof(rsp));
 }
 
-void req_99_callback_ev (ipc_msg_ptr msg, const void *ctx)
+static void
+req_2_response_handler (ipc_msg_ptr msg, const void *request_cookie)
 {
-    printf("Got request 99. Will exit now\n");
-    respond(msg, NULL, 0);
+    // This should be called because we expired
+    assert(msg == nullptr);
+
+    printf("Got a non-response for requres 2. Will now exit\n");
 
     ev_break(EV_DEFAULT, EVBREAK_ALL);
+}
+
+void req_99_callback_ev (ipc_msg_ptr msg, const void *ctx)
+{
+    printf("Got request 99. Will exit in a when a request expires\n");
+    respond(msg, NULL, 0);
+
+    request(T_CLIENT_1, 2, NULL, 0, req_2_response_handler, NULL, 1.0);
 }
 
 void sub_2_callback_ev (ipc_msg_ptr msg, const void *ctx)

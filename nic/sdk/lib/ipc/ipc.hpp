@@ -60,34 +60,43 @@ typedef void (*subscription_cb)(ipc_msg_ptr msg, const void *ctx);
 ///
 
 typedef void (*handler_cb)(int fd, const void *ctx);
-typedef void (*fd_watch_cb)(int fd, handler_cb cb, const void *set_ctx,
-                            const void *ctx);
+typedef void *(*fd_watch_fn)(int fd, handler_cb cb, const void *ipc_ctx,
+                             const void *infra_ctx);
+typedef void (*fd_unwatch_fn)(int fd, void *watcher, const void *infra_ctx);
+typedef void (*timer_callback)(void *timer, const void *ipc_ctx);
+typedef void *(*timer_add_fn)(timer_callback callback, const void *ipc_ctx,
+                              double timeout, const void *infra_ctx);
+typedef void (*timer_del_fn)(void *timer, const void *infra_ctx);
 
-extern void ipc_init_async(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                           const void *fd_watch_cb_ctx);
+typedef struct infra_t_ {
+    fd_watch_fn fd_watch;
+    const void *fd_watch_ctx;
+    fd_unwatch_fn fd_unwatch;
+    const void *fd_unwatch_ctx;
+    timer_add_fn timer_add;
+    const void *timer_add_ctx;
+    timer_del_fn timer_del;
+    const void *timer_del_ctx;
+} infra_t;
+typedef std::unique_ptr<infra_t> infra_ptr;
 
-typedef void (*handler_ms_cb)(int fd, int, void *ctx);
-
-typedef void (*fd_watch_ms_cb)(int fd, handler_ms_cb cb, void *cb_ctx);
-
-extern void ipc_init_metaswitch(uint32_t client_id,
-                                fd_watch_ms_cb fw_watch_ms_cb);
+extern void ipc_init_async(uint32_t client_id, infra_ptr infra,
+                           bool associate_thread_name = false);
 
 extern void ipc_init_sync(uint32_t client_id);
 
-extern void ipc_init_sync(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                          const void *fd_watch_cb_ctx);
+extern void ipc_init_sync(uint32_t client_id, infra_ptr infra);
 
 ///
 /// Sending
 ///
 
 extern void request(uint32_t recipient, uint32_t msg_code, const void *data,
-                    size_t length, const void *cookie);
+                    size_t length, const void *cookie, double timeout = 0.0);
 
 extern void request(uint32_t recipient, uint32_t msg_code, const void *data,
                     size_t length, response_oneshot_cb response_cb,
-                    const void *cookie);
+                    const void *cookie, double timeout = 0.0);
 
 extern void broadcast(uint32_t msg_code, const void *data, size_t data_length);
 
@@ -117,46 +126,6 @@ extern void receive(void);
 ///
 
 extern void set_drip_feeding(bool enabled);
-
-
-
-///
-/// class/handler based client
-///
-
-
-/// Just a forward declaration; ignore
-class ipc_service_async;
-
-class async_client {
-public:
-    static std::shared_ptr<async_client> create(uint32_t client_id,
-                                                fd_watch_cb fd_watch_cb,
-                                                const void *user_ctx);
-    static std::shared_ptr<async_client> create(uint32_t client_id,
-                                                fd_watch_ms_cb fd_watch_ms_cb);
-    async_client(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                 const void *user_ctx);
-    async_client(uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb);
-    ~async_client();
-    void request(uint32_t recipient, uint32_t msg_code, const void *data,
-                 size_t length, const void *cookie);
-    void request(uint32_t recipient, uint32_t msg_code, const void *data,
-                 size_t length, response_oneshot_cb response_cb,
-                 const void *cookie);
-    void broadcast(uint32_t msg_code, const void *data, size_t data_length);
-    void respond(ipc_msg_ptr msg, const void *data, size_t data_length);
-    void reg_request_handler(uint32_t msg_code, request_cb callback,
-                             const void *ctx);
-    void reg_response_handler(uint32_t msg_code, response_cb callback,
-                              const void *ctx);
-    void subscribe(uint32_t msg_code, subscription_cb callback,
-                   const void *ctx);
-private:
-    std::mutex         lock;
-    ipc_service_async *ipc_service_;
-};
-typedef std::shared_ptr<async_client> async_client_ptr;
 
 } // namespace ipc
 } // namespace sdk

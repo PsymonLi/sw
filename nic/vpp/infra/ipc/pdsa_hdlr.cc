@@ -45,7 +45,7 @@ pds_ipc_read_fd (int fd) {
 // callback called when initializing IPC. Provides a file desciptor to
 // be monitored via poll, and a callback function to be called when
 // data is available on the file descriptor
-static void
+static void *
 pds_vpp_fd_watch_cb (int fd, sdk::ipc::handler_cb cb, const void *set_ctx,
                     const void *ctx) {
     // confirm that the context is the ptr to this fn
@@ -56,6 +56,8 @@ pds_vpp_fd_watch_cb (int fd, sdk::ipc::handler_cb cb, const void *set_ctx,
     g_cb_ctx[fd] = set_ctx;
 
     pds_vpp_fd_register(fd);
+
+    return NULL;
 }
 
 /// \brief dummy "OK" callback, used until actual code is ready
@@ -353,8 +355,18 @@ pds_obj_count_get_cb (const pds_cmd_msg_t *msg, pds_cmd_rsp_t *response)
 void
 pds_ipc_init (void)
 {
-    sdk::ipc::ipc_init_async(PDS_IPC_ID_VPP, pds_vpp_fd_watch_cb,
-                             (const void *)pds_vpp_fd_watch_cb);
+    sdk::ipc::ipc_init_async(
+        PDS_IPC_ID_VPP,
+        std::unique_ptr<sdk::ipc::infra_t>(new sdk::ipc::infra_t{
+                    .fd_watch = pds_vpp_fd_watch_cb,
+                    .fd_watch_ctx = (void *)pds_vpp_fd_watch_cb,
+                    .fd_unwatch = NULL,
+                    .fd_unwatch_ctx = NULL,
+                    .timer_add = NULL,
+                    .timer_add_ctx = NULL,
+                    .timer_del = NULL,
+                    .timer_del_ctx =  NULL,
+                    }));
 
     // register with the upgrade manager for upgrade IPC messages.
     vpp_upg_init();

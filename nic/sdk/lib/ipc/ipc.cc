@@ -1,27 +1,24 @@
-//------------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-//------------------------------------------------------------------------------
 
-#include "ipc.hpp"
-#include "ipc_internal.hpp"
-#include "zmq_ipc.hpp"
-#include "subscribers.hpp"
-
-#include "include/sdk/base.hpp"
-
+#include <assert.h>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <string>
-#include <vector>
-
-#include <assert.h>
+#include <set>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <sys/eventfd.h>
 #include <unistd.h>
+#include <vector>
+
+#include "include/sdk/base.hpp"
+#include "ipc.hpp"
+#include "ipc_internal.hpp"
+#include "subscribers.hpp"
+#include "zmq_ipc.hpp"
 
 namespace sdk {
 namespace ipc {
@@ -47,6 +44,7 @@ typedef struct client_receive_cb_ctx_ {
     uint64_t recipient;
 } client_receive_cb_ctx_t;
 
+
 class ipc_service {
 public:
     ~ipc_service();
@@ -54,7 +52,8 @@ public:
     ipc_service(uint32_t client_id);
     virtual void request(uint32_t recipient, uint32_t msg_code,
                          const void *data, size_t data_length,
-                         response_oneshot_cb cb, const void *cookie) = 0;
+                         response_oneshot_cb cb, const void *cookie,
+                         double timeout) = 0;
     virtual void client_receive(uint32_t recipient) = 0;
     void respond(ipc_msg_ptr msg, const void *data, size_t data_length);
     void broadcast(uint32_t msg_code, const void *data, size_t data_length);
@@ -72,8 +71,8 @@ protected:
     virtual zmq_ipc_client_ptr new_client_(uint32_t recipient) = 0;
     uint32_t get_id_(void);
     void set_server_(zmq_ipc_server_ptr ipc_server);
-    void handle_response_(ipc_msg_ptr msg, response_oneshot_cb cb,
-                          const void *cookie);
+    void handle_response_(uint32_t msg_code, ipc_msg_ptr msg,
+                          response_oneshot_cb cb, const void *cookie);
     zmq_ipc_client_ptr get_client_(uint32_t recipient);
     bool should_serialize_(void);
     void serialize_(ipc_msg_ptr msg);
@@ -83,6 +82,8 @@ protected:
     // Another eventfd used to poll the zmq in the cases where the zmq fd
     // will not trigger
     int receive_eventfd_;
+    infra_ptr infra_;
+    
 private:
     uint32_t id_;
     zmq_ipc_server_ptr ipc_server_;
@@ -108,36 +109,45 @@ class ipc_service_sync : public ipc_service {
 public:
     ipc_service_sync();
     ipc_service_sync(uint32_t client_id);
-    ipc_service_sync(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                     const void *fd_watch_cb_ctx);
+    ipc_service_sync(uint32_t client_id, infra_ptr infra);
     virtual void request(uint32_t recipient, uint32_t msg_code,
                          const void *data, size_t data_length,
-                         response_oneshot_cb cb, const void *cookie) override;
+                         response_oneshot_cb cb, const void *cookie,
+                         double timeout) override;
     virtual void client_receive(uint32_t recipient) override;
 protected:
     virtual zmq_ipc_client_ptr new_client_(uint32_t recipient) override;
 };
 typedef std::shared_ptr<ipc_service_sync> ipc_service_sync_ptr;
 
+
+struct message_ctx_t {
+    class ipc_service_async *service;
+    response_oneshot_cb oneshot_cb;
+    const void *cookie;
+    void *timer;
+    uint32_t code;
+};
+
 class ipc_service_async : public ipc_service {
+
 public:
-    ipc_service_async(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                      const void *fd_watch_cb_ctx);
-    ipc_service_async(uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb);
+    ipc_service_async(uint32_t client_id, infra_ptr infra);
     virtual void request(uint32_t recipient, uint32_t msg_code,
                          const void *data, size_t data_length,
-                         response_oneshot_cb cb, const void *cookie) override;
+                         response_oneshot_cb cb, const void *cookie,
+                         double timeout) override;
     virtual void client_receive(uint32_t recipient) override;
+    void timer_expired(message_ctx_t *msg_ctx);
+
 protected:
     virtual zmq_ipc_client_ptr new_client_(uint32_t recipient) override;
+
 private:
-    ipc_service_async(uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb,
-                      fd_watch_cb fd_watch_cb, const void *fd_watch_cb_ctx);
-    fd_watch_ms_cb fd_watch_ms_cb_;
-    fd_watch_cb fd_watch_cb_;
-    const void *fd_watch_cb_ctx_;
     client_receive_cb_ctx_t client_rx_cb_ctx_[IPC_MAX_ID + 1];
     int ipc_client_eventfds_[IPC_MAX_ID + 1];
+    std::set<message_ctx_t *> msg_contexts_;
+    std::mutex msg_contexts_lock_;
 };
 typedef std::shared_ptr<ipc_service_async> ipc_service_async_ptr;
 
@@ -147,6 +157,7 @@ static std::mutex g_thread_handles_lock;
 static std::map<std::string, ipc_service_ptr> g_thread_handles;
 
 const int THREAD_NAME_BUFFER_SZ = 64;
+
 
 static std::string
 thread_name (void)
@@ -177,14 +188,6 @@ eventfd_receive (int fd, const void *ctx)
 }
 
 static void
-server_receive_ms (int fd, int, void *ctx)
-{
-    ipc_service *svc = (ipc_service *)ctx;
-
-    svc->server_receive();
-}
-
-static void
 client_receive (int fd, const void *ctx)
 {
     client_receive_cb_ctx_t *c_rx_cb_ctx = (client_receive_cb_ctx_t *)ctx;
@@ -193,11 +196,11 @@ client_receive (int fd, const void *ctx)
 }
 
 static void
-client_receive_ms (int fd, int, void *ctx)
+timer_handler (void *timer, const void *ipc_ctx)
 {
-    client_receive_cb_ctx_t *c_rx_cb_ctx = (client_receive_cb_ctx_t *)ctx;
+    message_ctx_t *msg_ctx = (message_ctx_t *)ipc_ctx;
 
-    c_rx_cb_ctx->svc->client_receive(c_rx_cb_ctx->recipient);
+    msg_ctx->service->timer_expired(msg_ctx);
 }
 
 ipc_service::~ipc_service() {
@@ -260,20 +263,19 @@ ipc_service::respond(ipc_msg_ptr msg, const void *data, size_t data_length) {
     
     this->message_in_flight_ = false;
 
-    SDK_TRACE_DEBUG(
-        "0x%lx: will deserialize because we responded to message - %s",
-        pthread_self(), msg->debug().c_str());
+    SDK_TRACE_DEBUG("will deserialize because we responded to message - %s",
+                    msg->debug().c_str());
     this->deserialize_();
 }
 
 void
-ipc_service::handle_response_(ipc_msg_ptr msg, response_oneshot_cb cb,
-                              const void *cookie) {
+ipc_service::handle_response_(uint32_t msg_code, ipc_msg_ptr msg,
+                              response_oneshot_cb cb, const void *cookie) {
     if (cb) {
         cb(msg, cookie);
     } else {
-        assert(this->rsp_cbs_.count(msg->code()) > 0);
-        rsp_callback_t rsp_cb = this->rsp_cbs_[msg->code()];
+        assert(this->rsp_cbs_.count(msg_code) > 0);
+        rsp_callback_t rsp_cb = this->rsp_cbs_[msg_code];
         if (rsp_cb.cb != NULL) {
             rsp_cb.cb(msg, cookie, rsp_cb.ctx);
         }
@@ -287,24 +289,33 @@ ipc_service_sync::ipc_service_sync(uint32_t client_id)
     : ipc_service(client_id) {
 }
 
-ipc_service_sync::ipc_service_sync(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                                    const void *fd_watch_cb_ctx)
+ipc_service_sync::ipc_service_sync(uint32_t client_id,
+                                   infra_ptr infra)
     : ipc_service(client_id) {
- 
+
+    assert(infra != nullptr);
+    
     zmq_ipc_server_ptr server = std::make_shared<zmq_ipc_server>(
         this->get_id_());
 
+    this->infra_ = std::move(infra);
+
     this->set_server_(server);
-    fd_watch_cb(server->fd(), sdk::ipc::server_receive, (void *)this,
-                fd_watch_cb_ctx);
-    fd_watch_cb(this->receive_eventfd_, sdk::ipc::server_receive, (void *)this,
-                fd_watch_cb_ctx);
+    this->infra_->fd_watch(server->fd(),
+                           sdk::ipc::server_receive,
+                           (void *)this,
+                           this->infra_->fd_watch_ctx);
+    this->infra_->fd_watch(this->receive_eventfd_,
+                           sdk::ipc::server_receive,
+                           (void *)this,
+                           this->infra_->fd_watch_ctx);
 }
 
 void
 ipc_service_sync::request(uint32_t recipient, uint32_t msg_code,
                           const void *data, size_t data_length,
-                          response_oneshot_cb cb, const void *cookie) {
+                          response_oneshot_cb cb, const void *cookie,
+                          double timeout) {
 
     zmq_ipc_client_sync_ptr client =
         std::dynamic_pointer_cast<zmq_ipc_client_sync>(
@@ -312,7 +323,7 @@ ipc_service_sync::request(uint32_t recipient, uint32_t msg_code,
 
     ipc_msg_ptr msg = client->send_recv(msg_code, data, data_length);
 
-    this->handle_response_(msg, cb, cookie);
+    this->handle_response_(msg->code(), msg, cb, cookie);
 }
 
 zmq_ipc_client_ptr
@@ -325,48 +336,28 @@ ipc_service_sync::client_receive(uint32_t sender){
 }
 
 ipc_service_async::ipc_service_async(uint32_t client_id,
-                                     fd_watch_ms_cb fd_watch_ms_cb,
-                                     fd_watch_cb fd_watch_cb,
-                                     const void *fd_watch_cb_ctx)
+                                     infra_ptr infra)
     : ipc_service(client_id) {
 
-    this->fd_watch_ms_cb_ = fd_watch_ms_cb;
-    this->fd_watch_cb_ = fd_watch_cb;
-    this->fd_watch_cb_ctx_ = fd_watch_cb_ctx;
+    assert(infra != nullptr);
+    this->infra_ = std::move(infra);
 
     zmq_ipc_server_ptr server = std::make_shared<zmq_ipc_server>(
         this->get_id_());
 
     this->set_server_(server);
-    if (this->fd_watch_ms_cb_) {
-        this->fd_watch_ms_cb_(server->fd(), sdk::ipc::server_receive_ms,
-                              (void *)this);
-        this->fd_watch_ms_cb_(this->receive_eventfd_,
-                              sdk::ipc::server_receive_ms,
-                              (void *)this);
-        // todo: enable serialized messages for ms thread maybe??
-    } else {
-        this->fd_watch_cb_(server->fd(), sdk::ipc::server_receive,
-                           (void *)this,
-                           this->fd_watch_cb_ctx_);
-        this->fd_watch_cb_(this->get_eventfd_(), sdk::ipc::eventfd_receive,
-                           (void *)this,
-                           this->fd_watch_cb_ctx_);
-        this->fd_watch_cb_(this->receive_eventfd_, sdk::ipc::server_receive,
-                           (void *)this,
-                           this->fd_watch_cb_ctx_);
-    }    
-}
-
-ipc_service_async::ipc_service_async(uint32_t client_id,
-                                     fd_watch_cb fd_watch_cb,
-                                     const void *fd_watch_cb_ctx)
-    : ipc_service_async(client_id, NULL, fd_watch_cb, fd_watch_cb_ctx) {
-}
-
-ipc_service_async::ipc_service_async(uint32_t client_id,
-                                     fd_watch_ms_cb fd_watch_ms_cb)
-    : ipc_service_async(client_id, fd_watch_ms_cb, NULL, NULL) {
+    this->infra_->fd_watch(server->fd(),
+                                 sdk::ipc::server_receive,
+                                 (void *)this,
+                                 this->infra_->fd_watch_ctx);
+    this->infra_->fd_watch(this->get_eventfd_(),
+                                 sdk::ipc::eventfd_receive,
+                                 (void *)this,
+                                 this->infra_->fd_watch_ctx);
+    this->infra_->fd_watch(this->receive_eventfd_,
+                                 sdk::ipc::server_receive,
+                                 (void *)this,
+                                 this->infra_->fd_watch_ctx);
 }
 
 zmq_ipc_client_ptr
@@ -376,35 +367,31 @@ ipc_service_async::new_client_(uint32_t recipient) {
 
     this->client_rx_cb_ctx_[recipient] = {this, recipient};
     
+    this->infra_->fd_watch(client->fd(),
+                                 sdk::ipc::client_receive,
+                                 &this->client_rx_cb_ctx_[recipient],
+                                 this->infra_->fd_watch_ctx);
 
-    if (this->fd_watch_ms_cb_) {
-        this->fd_watch_ms_cb_(client->fd(), sdk::ipc::client_receive_ms,
-                              &this->client_rx_cb_ctx_[recipient]);
-
-        // For MS we also create a event fd, so we check for incoming
-        // messages only from the FD POLL thread
-        this->ipc_client_eventfds_[recipient] =
-            eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
-        
-        assert(this->ipc_client_eventfds_[recipient] != -1);
-        SDK_TRACE_DEBUG("0x%lx registering eventfd (%u) for client (%u)",
-                        pthread_self(), this->ipc_client_eventfds_[recipient],
-                        recipient);
-
-        this->fd_watch_ms_cb_(this->ipc_client_eventfds_[recipient],
-                              sdk::ipc::client_receive_ms,
-                              &this->client_rx_cb_ctx_[recipient]);
-        
-        this->fd_watch_ms_cb_(client->fd(), sdk::ipc::client_receive_ms,
-                              &this->client_rx_cb_ctx_[recipient]);
-
-    } else {
-        this->ipc_client_eventfds_[recipient] = -1;
-        this->fd_watch_cb_(client->fd(), sdk::ipc::client_receive,
+    // We create an event fd, so we check for incoming messages only from the
+    // async callback
+    this->ipc_client_eventfds_[recipient] =
+        eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK);
+    
+    assert(this->ipc_client_eventfds_[recipient] != -1);
+    SDK_TRACE_DEBUG("registering eventfd (%u) for client (%u)",
+                    this->ipc_client_eventfds_[recipient],
+                    recipient);
+    
+    this->infra_->fd_watch(this->ipc_client_eventfds_[recipient],
+                           sdk::ipc::client_receive,
                            &this->client_rx_cb_ctx_[recipient],
-                           this->fd_watch_cb_ctx_);
-    }
+                           this->infra_->fd_watch_ctx);
         
+    this->infra_->fd_watch(client->fd(),
+                           sdk::ipc::client_receive,
+                           &this->client_rx_cb_ctx_[recipient],
+                           this->infra_->fd_watch_ctx);
+
     // If we don't do this we don't get any events coming from ZMQ
     // It doesn't play very well with libevent
     client->recv();
@@ -415,26 +402,36 @@ ipc_service_async::new_client_(uint32_t recipient) {
 void
 ipc_service_async::request(uint32_t recipient, uint32_t msg_code,
                            const void *data, size_t data_length,
-                           response_oneshot_cb cb, const void *cookie) {
+                           response_oneshot_cb cb, const void *cookie,
+                           double timeout) {
 
     zmq_ipc_client_async_ptr client =
         std::dynamic_pointer_cast<zmq_ipc_client_async>(
             this->get_client_(recipient));
 
-    client->send(msg_code, data, data_length, cb, cookie);
-
-    if (this->ipc_client_eventfds_[recipient] != -1) {
-        // This is a special case for MS
-        // Instead of checking for messages here, notify the
-        // POLL FD thread to check
-        uint64_t buffer = 1;
-        write(this->ipc_client_eventfds_[recipient], &buffer, sizeof(buffer));
-
-        SDK_TRACE_DEBUG("0x%lx: asking for client check for %u", pthread_self(),
-                        recipient);
+    message_ctx_t *msg_ctx = new message_ctx_t();
+    msg_ctx->service = this;
+    msg_ctx->code = msg_code;
+    msg_ctx->cookie = cookie;
+    msg_ctx->oneshot_cb = cb;
+    if (timeout != 0.0) {
+        msg_ctx->timer = this->infra_->timer_add(
+            timer_handler, msg_ctx, timeout,
+            this->infra_->timer_add_ctx);
     } else {
-        this->client_receive(recipient);
+        msg_ctx->timer = NULL;
     }
+    this->msg_contexts_lock_.lock();
+    this->msg_contexts_.insert(msg_ctx);
+    this->msg_contexts_lock_.unlock();
+    
+    client->send(msg_code, data, data_length, cb, msg_ctx);
+
+    // zmq requires us to check for incoming messages every time we perform an
+    // action on the zmq_socket. Use the event fd to queue the check
+    uint64_t buffer = 1;
+    write(this->ipc_client_eventfds_[recipient], &buffer, sizeof(buffer));
+    SDK_TRACE_DEBUG("asking for client check for %u", recipient);
 }
 
 void
@@ -445,8 +442,7 @@ ipc_service_async::client_receive(uint32_t sender) {
         std::dynamic_pointer_cast<zmq_ipc_client_async>(
             this->get_client_(sender));
 
-    SDK_TRACE_DEBUG("0x%lx: client receive check for %u", pthread_self(),
-        sender);
+    SDK_TRACE_DEBUG("client receive check for %u", sender);
     
     if (this->ipc_client_eventfds_[sender] != -1) {
         // Read the eventfd to clear the flag
@@ -466,10 +462,60 @@ ipc_service_async::client_receive(uint32_t sender) {
             return;
         }
 
-        this->handle_response_(msg, msg->response_cb(), msg->cookie());
+        message_ctx_t *msg_ctx = (message_ctx_t *)msg->cookie();
+        this->msg_contexts_lock_.lock();
+        if (this->msg_contexts_.count(msg_ctx) == 0) {
+            // Timer expired and we have already freed this,
+            // and called the callback
+            SDK_TRACE_DEBUG("We have already dealt with %p. Ignoring response",
+                            msg_ctx);
+            msg_ctx = NULL;
+        } else {
+            this->msg_contexts_.erase(msg_ctx);
+        }
+        this->msg_contexts_lock_.unlock();
+        if (msg_ctx == NULL) {
+            continue;
+        }
+        
+        this->handle_response_(msg_ctx->code, msg, msg_ctx->oneshot_cb,
+                               msg_ctx->cookie);
+        if (msg_ctx->timer != NULL) {
+            this->infra_->timer_del(msg_ctx->timer,
+                                    this->infra_->timer_del_ctx);
+        }
+        delete msg_ctx;
     }
 }
 
+void
+ipc_service_async::timer_expired (message_ctx_t *msg_ctx)
+{
+        this->msg_contexts_lock_.lock();
+        if (this->msg_contexts_.count(msg_ctx) == 0) {
+            // Timer expired and we have already freed this,
+            // and called the callback
+            SDK_TRACE_DEBUG("We have already dealt with %p. Ignoring timer",
+                            msg_ctx);
+            msg_ctx = NULL;
+        } else {
+            this->msg_contexts_.erase(msg_ctx);
+        }
+        this->msg_contexts_lock_.unlock();
+        if (msg_ctx == NULL) {
+            return;
+        }
+
+        SDK_TRACE_DEBUG("Timed out waiting a response for %p", msg_ctx);
+        // If timer expires, we call the callback with an empty message
+        this->handle_response_(msg_ctx->code, nullptr, msg_ctx->oneshot_cb,
+                               msg_ctx->cookie);
+        if (msg_ctx->timer != NULL) {
+            this->infra_->timer_del(msg_ctx->timer,
+                                    this->infra_->timer_del_ctx);
+        }
+        delete msg_ctx;    
+}
 
 bool
 ipc_service::should_serialize_(void) {
@@ -489,8 +535,7 @@ ipc_service::should_serialize_(void) {
 
 void
 ipc_service::serialize_(ipc_msg_ptr msg) {
-    SDK_TRACE_DEBUG("0x%lx: serializing message - %s",
-                    pthread_self(), msg->debug().c_str());
+    SDK_TRACE_DEBUG("serializing message - %s", msg->debug().c_str());
     
     this->hold_queue_.push(msg);
 }
@@ -503,8 +548,7 @@ ipc_service::deserialize_(void) {
         return;
     }
 
-    SDK_TRACE_DEBUG("0x%lx: messages waiting: %lu",
-                    pthread_self(), this->hold_queue_.size());
+    SDK_TRACE_DEBUG("messages waiting: %lu", this->hold_queue_.size());
     
     // Notify the client we have messages for delivery
     write(this->eventfd_, &buffer, sizeof(buffer));
@@ -517,8 +561,7 @@ ipc_service::deliver_(ipc_msg_ptr msg) {
                 
     req_callback_t req_cb = this->req_cbs_[msg->code()];
 
-    SDK_TRACE_DEBUG("0x%lx: delivering message - %s",
-                    pthread_self(), msg->debug().c_str());
+    SDK_TRACE_DEBUG("delivering message - %s", msg->debug().c_str());
                 
     if (req_cb.cb != NULL) {
         this->message_in_flight_ = true;
@@ -579,8 +622,7 @@ ipc_service::eventfd_receive(void) {
     
     if (!this->hold_queue_.empty()) {
         ipc_msg_ptr msg = this->hold_queue_.front();
-        SDK_TRACE_DEBUG("0x%lx: deserializing msg - %s",
-                        pthread_self(), msg->debug().c_str());
+        SDK_TRACE_DEBUG("deserializing msg - %s", msg->debug().c_str());
         this->hold_queue_.pop();
         this->deliver_(msg);
     }
@@ -592,8 +634,7 @@ ipc_service::broadcast(uint32_t msg_code, const void *data,
     std::vector<uint32_t> recipients = subscribers::instance()->get(msg_code);
 
     if (recipients.size() == 0) {
-        SDK_TRACE_DEBUG("0x%lx: no subscribers for message: msg_code: %u",
-                        pthread_self(), msg_code);
+        SDK_TRACE_DEBUG("no subscribers for message: msg_code: %u", msg_code);
     }
     for (uint32_t recipient : recipients) {
         this->get_client_(recipient)->broadcast(msg_code, data, data_length);
@@ -630,83 +671,6 @@ ipc_service::set_drip_feeding(bool enabled) {
     this->serializing_enabled_ = enabled;
 }
 
-async_client_ptr
-async_client::create(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                      const void *user_ctx) {
-    return std::make_shared<async_client>(client_id, fd_watch_cb, user_ctx);
-}
-
-async_client_ptr
-async_client::create(uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb) {
-    return std::make_shared<async_client>(client_id, fd_watch_ms_cb);
-}
-
-async_client::async_client(uint32_t client_id, fd_watch_cb fd_watch_cb,
-                            const void *user_ctx) {
-    this->ipc_service_ = new ipc_service_async(client_id, fd_watch_cb,
-                                               user_ctx);
-}
-
-async_client::async_client(uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb) {
-    this->ipc_service_ = new ipc_service_async(client_id, fd_watch_ms_cb);
-}
-
-async_client::~async_client() {
-    // todo: fixme: uninplemented
-    // delete this->ipc_service_;
-}
-
-void
-async_client::request(uint32_t recipient, uint32_t msg_code, const void *data,
-                      size_t data_length, const void *cookie) {
-    lock.lock();
-    this->ipc_service_->request(recipient, msg_code, data, data_length, NULL,
-                                cookie);
-    lock.unlock();
-}
-
-void
-async_client::request(uint32_t recipient, uint32_t msg_code, const void *data,
-                      size_t data_length, response_oneshot_cb cb,
-                      const void *cookie) {
-    lock.lock();
-    this->ipc_service_->request(recipient, msg_code, data, data_length, cb,
-                                cookie);
-    lock.unlock();
-}
-
-void
-async_client::broadcast(uint32_t msg_code, const void *data,
-                        size_t data_length) {
-    lock.lock();
-    this->ipc_service_->broadcast(msg_code, data, data_length);
-    lock.unlock();
-}
-
-void
-async_client::reg_request_handler(uint32_t msg_code, request_cb callback,
-                                  const void *ctx) {
-    lock.lock();
-    this->ipc_service_->reg_request_handler(msg_code, callback, ctx);
-    lock.unlock();
-}
-
-void
-async_client::reg_response_handler(uint32_t msg_code, response_cb callback,
-                                   const void *ctx) {
-    lock.lock();
-    this->ipc_service_->reg_response_handler(msg_code, callback, ctx);
-    lock.unlock();
-}
-
-void
-async_client::subscribe(uint32_t msg_code, subscription_cb callback,
-                        const void *ctx) {
-    lock.lock();
-    this->ipc_service_->subscribe(msg_code, callback, ctx);
-    lock.unlock();
-}
-
 // We use this as for non asynchronous thread creating a client
 // upfront is not required for request or broadcast.
 // We create the first time an API gets called
@@ -729,26 +693,22 @@ service (void)
 }
 
 void
-ipc_init_async (uint32_t client_id, fd_watch_cb fd_watch_cb,
-                const void *fd_watch_cb_ctx)
+ipc_init_async (uint32_t client_id, infra_ptr infra, bool associate_thread_name)
 {
-    assert(t_ipc_service == nullptr);
-    t_ipc_service = std::make_shared<ipc_service_async>(
-        client_id, fd_watch_cb, fd_watch_cb_ctx);
-}
-
-void
-ipc_init_metaswitch (uint32_t client_id, fd_watch_ms_cb fd_watch_ms_cb)
-{
-
-    g_thread_handles_lock.lock();
-    assert(g_thread_handles.count(thread_name()) == 0);
-
-    t_ipc_service = nullptr;
-    t_ipc_service = std::make_shared<ipc_service_async>(client_id,
-                                                        fd_watch_ms_cb);
-    g_thread_handles[thread_name()] = t_ipc_service;
-    g_thread_handles_lock.unlock();
+    if (associate_thread_name) {
+        g_thread_handles_lock.lock();
+        assert(g_thread_handles.count(thread_name()) == 0);
+        
+        t_ipc_service = nullptr;
+        t_ipc_service = std::make_shared<ipc_service_async>(client_id,
+                                                            std::move(infra));
+        g_thread_handles[thread_name()] = t_ipc_service;
+        g_thread_handles_lock.unlock();
+    } else {
+        assert(t_ipc_service == nullptr);
+        t_ipc_service = std::make_shared<ipc_service_async>(client_id,
+                                                            std::move(infra));
+    }
 }
 
 void
@@ -759,27 +719,30 @@ ipc_init_sync (uint32_t client_id)
 }
 
 void
-ipc_init_sync (uint32_t client_id, fd_watch_cb fd_watch_cb,
-               const void *fd_watch_cb_ctx)
+ipc_init_sync (uint32_t client_id,
+               infra_ptr infra)
 {
     assert(t_ipc_service == nullptr);
     t_ipc_service = std::make_shared<ipc_service_sync>(
-        client_id, fd_watch_cb, fd_watch_cb_ctx);
+        client_id, std::move(infra));
 }
 
 
 void
 request (uint32_t recipient, uint32_t msg_code, const void *data,
-         size_t data_length, const void *cookie)
+         size_t data_length, const void *cookie, double timeout)
 {
-    service()->request(recipient, msg_code, data, data_length, NULL, cookie);
+    service()->request(recipient, msg_code, data, data_length, NULL, cookie,
+                       timeout);
 }
 
 void
 request (uint32_t recipient, uint32_t msg_code, const void *data,
-         size_t data_length, response_oneshot_cb cb, const void *cookie)
+         size_t data_length, response_oneshot_cb cb, const void *cookie,
+         double timeout)
 {
-    service()->request(recipient, msg_code, data, data_length, cb, cookie);
+    service()->request(recipient, msg_code, data, data_length, cb, cookie,
+                       timeout);
 }
 
 void

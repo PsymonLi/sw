@@ -68,10 +68,17 @@ static event_thread *g_event_thread_table[MAX_THREAD_ID + 1];
 
 static updown_mgr g_updown;
 
-typedef struct ipc_watcher_ {
+typedef struct ipc_fd_watcher_ {
+    ev_io ev_watcher;
     sdk::ipc::handler_cb callback;
     const void *ctx;
-} ipc_watcher_t;
+} ipc_fd_watcher_t;
+
+typedef struct ipc_timer_watcher_ {
+    ev_timer ev_watcher;
+    sdk::ipc::timer_callback callback;
+    const void *ctx;
+} ipc_timer_watcher_t;
 
 // Converts ev values to event values.
 // e.g. EV_READ to EVENT_READ
@@ -331,12 +338,12 @@ event_thread::process_lfq_(void) {
 static void
 ipc_io_callback (struct ev_loop *loop, ev_io *watcher, int revents)
 {
-    ipc_watcher_t *ipc_watcher = (ipc_watcher_t *)watcher->data;
+    ipc_fd_watcher_t *ipc_watcher = (ipc_fd_watcher_t *)watcher;
     clock_t start;
     double cpu_time_used;
 
     start = clock();
-    ipc_watcher->callback(watcher->fd, ipc_watcher->ctx);
+    ipc_watcher->callback(ipc_watcher->ev_watcher.fd, ipc_watcher->ctx);
     cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
 
     if (cpu_time_used > MAX_CALLBACK_DURATION) {
@@ -344,40 +351,119 @@ ipc_io_callback (struct ev_loop *loop, ev_io *watcher, int revents)
     }
 }
 
-void
-event_thread::create_ipc_watcher_(int fd, sdk::ipc::handler_cb cb,
-                                  const void *ctx) {
-    // todo: fix me: we are leaking!
-    ipc_watcher_t *ipc_watcher = (ipc_watcher_t *)malloc(sizeof(*ipc_watcher));
-    ipc_watcher->callback = cb;
-    ipc_watcher->ctx = ctx;
+void *
+event_thread::create_ipc_fd_watcher_(int fd, sdk::ipc::handler_cb cb,
+                                  const void *ipc_ctx) {
+    ipc_fd_watcher_t *watcher =  new ipc_fd_watcher_t();
+    watcher->callback = cb;
+    watcher->ctx = ipc_ctx;
 
-    // todo: fix me: we are leaking!
-    ev_io *watcher = (ev_io *)malloc(sizeof(*watcher));
-    watcher->data = ipc_watcher;
+    ev_io_init((ev_io *)watcher, ipc_io_callback, fd, EV_READ);
+    ev_io_start(this->loop_, (ev_io *)watcher);
 
-    ev_io_init(watcher, ipc_io_callback, fd, EV_READ);
-    ev_io_start(this->loop_, watcher);
+    return watcher;
+}
+
+void *
+event_thread::create_ipc_fd_watcher(int fd, sdk::ipc::handler_cb cb,
+                                    const void *ipc_ctx, const void *infra_ctx)
+{
+    event_thread *thread = (event_thread *)infra_ctx;
+
+    return thread->create_ipc_fd_watcher_(fd, cb, ipc_ctx);
 }
 
 void
-event_thread::create_ipc_watcher (int fd, sdk::ipc::handler_cb cb,
-                                  const void *ctx,
-                                  const void *ipc_poll_fd_ctx)
-{
-    event_thread *thread = (event_thread *)ipc_poll_fd_ctx;
+event_thread::delete_ipc_fd_watcher_(int fd, void *watcher) {
+    ipc_fd_watcher_t *ipc_watcher = (ipc_fd_watcher_t *)watcher;
+    ev_io_stop(this->loop_, (ev_io *)ipc_watcher);
 
-    thread->create_ipc_watcher_(fd, cb, ctx);
+    delete ipc_watcher;
+}
+
+void
+event_thread::delete_ipc_fd_watcher(int fd, void *watcher,
+                                    const void *infra_ctx)
+{
+    event_thread *thread = (event_thread *)infra_ctx;
+
+    thread->delete_ipc_fd_watcher_(fd, watcher);
+}
+
+static void
+ipc_timer_callback (struct ev_loop *loop, ev_timer *watcher, int revents)
+{
+    ipc_timer_watcher_t *ipc_watcher = (ipc_timer_watcher_t *)watcher;
+    clock_t start;
+    double cpu_time_used;
+
+    start = clock();
+    ipc_watcher->callback(watcher, ipc_watcher->ctx);
+    cpu_time_used = ((double) (clock() - start)) / CLOCKS_PER_SEC;
+
+    if (cpu_time_used > MAX_CALLBACK_DURATION) {
+        SDK_TRACE_DEBUG("ipc_timer took %f seconds", cpu_time_used);
+    }
+}
+
+void *
+event_thread::create_ipc_timer_watcher_(sdk::ipc::timer_callback cb,
+                                        const void *ipc_ctx, double timeout) {
+
+    ipc_timer_watcher_t *watcher =  new ipc_timer_watcher_t();
+    watcher->callback = cb;
+    watcher->ctx = ipc_ctx;
+
+    ev_timer_init((ev_timer *)watcher, ipc_timer_callback, timeout, 0.0);
+    ev_timer_start(this->loop_, (ev_timer *)watcher);
+
+    return watcher;
+}
+
+void *
+event_thread::create_ipc_timer_watcher(sdk::ipc::timer_callback cb,
+                                       const void *ipc_ctx, double timeout,
+                                       const void *infra_ctx)
+{
+    event_thread *thread = (event_thread *)infra_ctx;
+
+    return thread->create_ipc_timer_watcher_(cb, ipc_ctx, timeout);
+}
+
+void
+event_thread::delete_ipc_timer_watcher_(void *watcher) {
+    ipc_timer_watcher_t *ipc_watcher = (ipc_timer_watcher_t *)watcher;
+        
+    ev_timer_stop(this->loop_, (ev_timer *)ipc_watcher);
+
+    delete ipc_watcher;
+}
+
+void
+event_thread::delete_ipc_timer_watcher(void *watcher, const void *infra_ctx)
+{
+    event_thread *thread = (event_thread *)infra_ctx;
+
+    thread->delete_ipc_timer_watcher_(watcher);
 }
 
 void
 event_thread::run_(void) {
     t_event_thread_ = this;
-
+    std::unique_ptr<sdk::ipc::infra_t> infra_fns(new sdk::ipc::infra_t());
+    infra_fns->fd_watch = create_ipc_fd_watcher;
+    infra_fns->fd_watch_ctx = this;
+    infra_fns->fd_unwatch = delete_ipc_fd_watcher;
+    infra_fns->fd_unwatch_ctx = this;
+    infra_fns->timer_add = create_ipc_timer_watcher;
+    infra_fns->timer_add_ctx = this;
+    infra_fns->timer_del = delete_ipc_timer_watcher;
+    infra_fns->timer_del_ctx = this;
+    
     if (this->sync_ipc_) {
-        sdk::ipc::ipc_init_sync(this->thread_id(), create_ipc_watcher, this);
+        sdk::ipc::ipc_init_sync(this->thread_id(), std::move(infra_fns));
     } else {
-        sdk::ipc::ipc_init_async(this->thread_id(), create_ipc_watcher, this);
+        sdk::ipc::ipc_init_async(this->thread_id(), std::move(infra_fns));
     }
 
     if (this->init_func_) {

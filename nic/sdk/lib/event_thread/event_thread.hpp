@@ -162,16 +162,28 @@ private:
     void run_(void);
     void handle_async_(void);
     void process_lfq_(void);
-    void create_ipc_watcher_(int fd, sdk::ipc::handler_cb cb, const void *ctx);
+    void *create_ipc_fd_watcher_(int fd, sdk::ipc::handler_cb cb,
+                                 const void *ctx);
+    static void *create_ipc_fd_watcher(int fd, sdk::ipc::handler_cb cb,
+                                       const void *ctx,
+                                       const void *ipc_poll_fd_ctx);
+    void delete_ipc_fd_watcher_(int fd, void *watcher);
+    static void delete_ipc_fd_watcher (int fd, void *watcher,
+                                       const void *infra_ctx);
+    void *create_ipc_timer_watcher_(sdk::ipc::timer_callback cb,
+                                    const void *ctx, double timeout);
+    static void *create_ipc_timer_watcher(sdk::ipc::timer_callback cb,
+                                   const void *ctx, double timeout,
+                                   const void *infra_ctx);
+    void delete_ipc_timer_watcher_(void *watcher);
+    static void delete_ipc_timer_watcher(void *watcher, const void *infra_ctx);
 
+    
 private:
     // Private static callback functions that are hooked to libev
     static void *event_thread_entry_(void *ctx);
     static void async_callback_(struct ev_loop *loop, ev_async *watcher,
                                 int revents);
-    static void create_ipc_watcher(int fd, sdk::ipc::handler_cb cb,
-                                   const void *ctx,
-                                   const void *ipc_poll_fd_ctx);
     static sdk_ret_t suspend_cb_(void *arg);
     static sdk_ret_t resume_cb_(void *arg);
 };

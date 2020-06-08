@@ -13,6 +13,7 @@
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
+#include "nic/sdk/lib/ipc/ipc_ms.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"

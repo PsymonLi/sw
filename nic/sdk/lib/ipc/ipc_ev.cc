@@ -30,6 +30,12 @@ typedef struct ev_watcher_ {
     const void *ctx;
 } ev_watcher_t;
 
+struct timer_t {
+    ev_timer ev_watcher;
+    ipc::timer_callback cb;
+    const void *ctx;
+};
+
 static void
 ev_watch_cb_wrap (struct ev_loop *loop, ev_io *w, int revents)
 {
@@ -38,7 +44,7 @@ ev_watch_cb_wrap (struct ev_loop *loop, ev_io *w, int revents)
     watcher->cb(watcher->ev.fd, watcher->ctx);
 }
     
-static void
+static void *
 ev_watch_cb (int fd, handler_cb cb, const void *set_ctx, const void *ctx)
 {
     ev_watcher_t *watcher = (ev_watcher_t *)malloc(sizeof(*watcher));
@@ -48,12 +54,66 @@ ev_watch_cb (int fd, handler_cb cb, const void *set_ctx, const void *ctx)
     
     ev_io_init((ev_io *)watcher, ev_watch_cb_wrap, fd, EV_READ);
     ev_io_start(EV_DEFAULT, (ev_io *)watcher);
+
+    return watcher;
+}
+
+static void
+fd_unwatch (int fd, void *watcher, const void *infra_ctx)
+{
+    ev_watcher_t *w = (ev_watcher_t *)watcher;
+    
+    ev_io_stop(EV_DEFAULT, (ev_io *)w);
+
+    delete w;
+}
+
+static void
+timer_cb_wrap (struct ev_loop *loop, ev_timer *w, int revents)
+{
+    timer_t *timer = (timer_t *)w;
+
+    timer->cb(timer, timer->ctx);
+}
+
+static void *
+timer_add (timer_callback ipc_cb, const void *ipc_ctx, double timeout,
+           const void *infra_ctx)
+{
+    timer_t *timer = new timer_t;
+
+    timer->cb = ipc_cb;
+    timer->ctx = ipc_ctx;
+
+    ev_timer_init((ev_timer *)timer, timer_cb_wrap, timeout, 0.0);
+    ev_timer_start(EV_DEFAULT, (ev_timer *)timer);
+    
+    return timer;
+}
+
+static void
+timer_del (void *timer, const void *infra_ctx)
+{
+    timer_t *t = (timer_t *)timer;
+
+    ev_timer_stop(EV_DEFAULT, (ev_timer *)timer);
+
+    delete t;
 }
 
 void
 ipc_init_ev_default (uint32_t client_id)
 {
-    ipc_init_async(client_id, ev_watch_cb, NULL);
+    ipc_init_async(client_id, std::unique_ptr<infra_t>(new infra_t{
+                    .fd_watch = ev_watch_cb,
+                    .fd_watch_ctx = NULL,
+                    .fd_unwatch = fd_unwatch,
+                    .fd_unwatch_ctx = NULL,
+                    .timer_add = timer_add,
+                    .timer_add_ctx = NULL,
+                    .timer_del = timer_del,
+                    .timer_del_ctx =  NULL,
+                    }));
 }
 
 }
