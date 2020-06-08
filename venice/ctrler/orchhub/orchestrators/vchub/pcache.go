@@ -1,6 +1,8 @@
 package vchub
 
 import (
+	"fmt"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/workload"
@@ -23,6 +25,14 @@ type workloadVnics struct {
 	api.ObjectMeta
 	api.TypeMeta
 	Interfaces map[string]*vnicEntry
+}
+
+func (w *workloadVnics) String() string {
+	ret := fmt.Sprintf("key: %s, Infs: ", w.Name)
+	for _, v := range w.Interfaces {
+		ret += fmt.Sprintf("[ PG: %s, Port: %s, IP: %v, Mac: %s, overrideSet: %v ]", v.PG, v.Port, v.IP, v.MacAddress, v.portOverrideSet)
+	}
+	return ret
 }
 
 func (v *VCHub) setupPCache() {

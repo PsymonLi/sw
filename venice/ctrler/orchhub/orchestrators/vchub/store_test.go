@@ -295,6 +295,55 @@ func TestDCs(t *testing.T) {
 				}, "Failed to find orch invalid event")
 			},
 		},
+		{
+			name: "DC rename without manage all",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.Datacenter,
+						Key:        dcID,
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "RandomName",
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				vchub.State.ForceDCNames = map[string]bool{
+					dcName: true,
+				}
+				mockProbe := mock.NewMockProbeInf(mockCtrl)
+				vchub.probe = mockProbe
+				mockProbe.EXPECT().TagObjAsManaged(gomock.Any()).Return(nil).AnyTimes()
+
+				mockProbe.EXPECT().RenameDC("RandomName", dcName, gomock.Any()).Return(nil).Times(1)
+
+				// Setup state for DC1
+				addDCState(t, vchub, dcName)
+
+				eventRecorder.ClearEvents()
+
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				// Verification is mockprobe RenamePG getting called
+				AssertEventually(t, func() (bool, interface{}) {
+					evts := eventRecorder.GetEvents()
+					found := false
+					for _, evt := range evts {
+						if evt.EventType == eventtypes.ORCH_INVALID_ACTION.String() && strings.Contains(evt.Message, "DC") {
+							found = true
+						}
+					}
+					return found, nil
+				}, "Failed to find orch invalid event")
+			},
+		},
 	}
 
 	runStoreTC(t, testCases)

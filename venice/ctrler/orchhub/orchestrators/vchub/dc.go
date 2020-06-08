@@ -172,11 +172,13 @@ func (v *VCHub) GetDCFromID(dcID string) *PenDC {
 	defer v.DcMapLock.Unlock()
 	dcName, ok := v.DcID2NameMap[dcID]
 	if !ok {
+		v.Log.Errorf("No entry in DcID2NameMap for dcID %s", dcID)
 		return nil
 	}
 	if dc, ok := v.DcMap[dcName]; ok {
 		return dc
 	}
+	v.Log.Errorf("No DC object for DC %s", dcName)
 	return nil
 }
 

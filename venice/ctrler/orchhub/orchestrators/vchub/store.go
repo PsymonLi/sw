@@ -295,7 +295,7 @@ func (v *VCHub) handleDC(m defs.VCEventMsg) {
 		oldName, ok := v.DcID2NameMap[m.Key]
 		if ok && oldName != name {
 			// Check if we are managing it
-			if !v.isManagedNamespace(name) {
+			if !v.isManagedNamespace(oldName) {
 				// DC we aren't managing is renamed, update map entry
 				v.DcID2NameMap[m.Key] = name
 				v.DcMapLock.Unlock()

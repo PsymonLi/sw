@@ -112,7 +112,7 @@ func (sm *Statemgr) OnDSCProfileUpdate(dscProfile *ctkit.DSCProfile, nfwp *clust
 			if !dscState.isOrchestratorCompatible() {
 				sm.AddIncompatibleDSCToOrch(dscState.DistributedServiceCard.Name, orchNameValue)
 				recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-					fmt.Sprintf("DSC %v mode must be updated to work with orchestrator", dscState.DistributedServiceCard.Spec.ID), nil)
+					fmt.Sprintf("DSC %v mode must be updated to work with orchestrator", dscState.DistributedServiceCard.Spec.ID), &dscState.DistributedServiceCard.DistributedServiceCard)
 			} else {
 				sm.RemoveIncompatibleDSCFromOrch(dscState.DistributedServiceCard.Name, orchNameValue)
 			}

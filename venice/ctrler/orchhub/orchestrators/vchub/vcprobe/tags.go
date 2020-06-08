@@ -647,7 +647,6 @@ func (t *tagsProbe) fetchTags() {
 			}
 			tc := t.GetTagClient()
 			res, err := tc.ListAttachedTagsOnObjects(t.ClientCtx, vmChunk)
-			ctx := t.ClientCtx
 
 			t.ReleaseClient()
 
@@ -655,6 +654,10 @@ func (t *tagsProbe) fetchTags() {
 				t.Log.Errorf("Failed to get attached tags: %s", err)
 				if t.IsREST401(err) {
 					t.CheckTagSession = true
+				}
+				ctx := t.ClientCtx
+				if ctx == nil {
+					return
 				}
 				// Might be hitting rate limiting at scale
 				select {

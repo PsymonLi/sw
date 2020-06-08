@@ -88,8 +88,7 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(dsc *ctkit.DistributedService
 			if !dscState.isOrchestratorCompatible() {
 				sm.AddIncompatibleDSCToOrch(dscState.DistributedServiceCard.Name, orchVal)
 				recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-					fmt.Sprintf("Profile %v added to DSC %v is incompatible with orchestration feature", newProfile, dscState.DistributedServiceCard.DistributedServiceCard.Spec.ID),
-					nil)
+					fmt.Sprintf("Profile %v added to DSC %v is incompatible with orchestration feature", newProfile, dscState.DistributedServiceCard.DistributedServiceCard.Spec.ID), &dscState.DistributedServiceCard.DistributedServiceCard)
 			} else {
 				sm.RemoveIncompatibleDSCFromOrch(dscState.DistributedServiceCard.Name, orchVal)
 			}

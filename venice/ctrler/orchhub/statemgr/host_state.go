@@ -56,7 +56,7 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 			sm.logger.Infof("DSC for host [%v] is not admitted", hostState.Host.Name)
 			recorder.Event(eventtypes.ORCH_DSC_NOT_ADMITTED,
 				fmt.Sprintf("DSC for host [%v] is not admitted", hostState.Host.Name),
-				nil)
+				&nh.Host)
 			return nil
 		}
 
@@ -77,8 +77,7 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 		if !snic.isOrchestratorCompatible() {
 			sm.AddIncompatibleDSCToOrch(snic.DistributedServiceCard.Name, orchNameValue)
 			recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature", snic.DistributedServiceCard.Spec.ID),
-				nil)
+				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature", snic.DistributedServiceCard.Spec.ID), &snic.DistributedServiceCard.DistributedServiceCard)
 		}
 	}
 
