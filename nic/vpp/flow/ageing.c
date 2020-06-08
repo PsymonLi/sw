@@ -651,15 +651,17 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
         vnet_buffer(b)->pds_tx_data.vnic_id = vnic_id;
         vnet_buffer(b)->pds_tx_data.nh_id = vnic_nh_hw_id;
 
-        static vlib_node_t *vnic_node = NULL;
-        if (!vnic_node) {
-            vnic_node = vlib_get_node_by_name(vm, (u8 *) "pds-vnic-l2-rewrite");
+        static u32 vnic_node_index = ~0L;
+        if (PREDICT_FALSE(vnic_node_index == (u32) ~0L)) {
+            vlib_node_t *vnic_node =
+                vlib_get_node_by_name(vm, (u8 *) "pds-vnic-l2-rewrite");
+            vnic_node_index = vnic_node->index;
         }
-        vlib_frame_t *to_frame = vlib_get_frame_to_node(vm, vnic_node->index);
+        vlib_frame_t *to_frame = vlib_get_frame_to_node(vm, vnic_node_index);
         to_next = vlib_frame_vector_args(to_frame);
         to_next[0] = bi;
         to_frame->n_vectors++;
-        vlib_put_frame_to_node(vm, vnic_node->index, to_frame);
+        vlib_put_frame_to_node(vm, vnic_node_index, to_frame);
     } else {
         u8 *rewrite = NULL;
         ethernet_header_t *eth0;
@@ -692,15 +694,17 @@ pds_flow_send_keep_alive_helper (pds_flow_hw_ctx_t *session,
 
         vlib_buffer_advance(b, - VPP_ARM_TO_P4_HDR_SZ);
 
-        static vlib_node_t *fwd_node = NULL;
-        if (!fwd_node) {
-            fwd_node = vlib_get_node_by_name(vm, (u8 *) "pds-fwd-flow");
+        static u32 fwd_node_index = ~0L;
+        if (PREDICT_FALSE(fwd_node_index == (u32) ~0L)) {
+            vlib_node_t *fwd_node =
+                vlib_get_node_by_name(vm, (u8 *) "pds-fwd-flow");
+            fwd_node_index = fwd_node->index;
         }
-        vlib_frame_t *to_frame = vlib_get_frame_to_node(vm, fwd_node->index);
+        vlib_frame_t *to_frame = vlib_get_frame_to_node(vm, fwd_node_index);
         to_next = vlib_frame_vector_args(to_frame);
         to_next[0] = bi;
         to_frame->n_vectors++;
-        vlib_put_frame_to_node(vm, fwd_node->index, to_frame);
+        vlib_put_frame_to_node(vm, fwd_node_index, to_frame);
     }
     return 0;
 }
@@ -910,7 +914,7 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
     u32 counter[PDS_FLOW_TIMER_LAST] = {0};
     pds_flow_main_t *fm = &pds_flow_main;
     int thread = vlib_get_thread_index();
-    static vlib_node_t *age_node = NULL;
+    static u32 age_node_index = ~0L;
     vlib_main_t *vm = vlib_get_main(); 
 
     vec_validate(fm->ses_time[thread-1], (vec_len(expired_timers) - 1));
@@ -944,14 +948,18 @@ pds_flow_expired_timers_dispatch (u32 * expired_timers)
         counter[timer_id]++;
     }
 
-    if (PREDICT_FALSE(!age_node)) {
-        age_node = vlib_get_node_by_name(vm, (u8 *) "pds-flow-age-process");
+    if (PREDICT_FALSE(age_node_index == (u32) ~0L)) {
+        vlib_node_t *age_node =
+            vlib_get_node_by_name(vm, (u8 *) "pds-flow-age-process");
+        age_node_index = age_node->index;
     }
 
-#define _(n, s)                                                            \
-    vlib_node_increment_counter(vm, age_node->index,                       \
-                                PDS_FLOW_##n,                              \
-                                counter[PDS_FLOW_##n]);
+#define _(n, s)                                                             \
+    if (counter[PDS_FLOW_##n]) {                                            \
+        vlib_node_increment_counter(vm, age_node_index,                     \
+                                    PDS_FLOW_##n,                           \
+                                    counter[PDS_FLOW_##n]);                 \
+    }
     foreach_flow_timer
 #undef _
 
