@@ -962,12 +962,8 @@ func (api *{{ToLower .}}API) Watch(handler {{.}}Handler) error {
 // StopWatch stop watch for Tenant {{.}} object
 func (api *{{ToLower .}}API) StopWatch(handler {{.}}Handler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["{{.}}"]
+	api.ct.workPools["{{.}}"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatch{{.}}(handler)
 }
 

@@ -928,12 +928,8 @@ func (api *networkAPI) Watch(handler NetworkHandler) error {
 // StopWatch stop watch for Tenant Network object
 func (api *networkAPI) StopWatch(handler NetworkHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Network"]
+	api.ct.workPools["Network"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchNetwork(handler)
 }
 
@@ -1852,12 +1848,8 @@ func (api *serviceAPI) Watch(handler ServiceHandler) error {
 // StopWatch stop watch for Tenant Service object
 func (api *serviceAPI) StopWatch(handler ServiceHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Service"]
+	api.ct.workPools["Service"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchService(handler)
 }
 
@@ -2776,12 +2768,8 @@ func (api *lbpolicyAPI) Watch(handler LbPolicyHandler) error {
 // StopWatch stop watch for Tenant LbPolicy object
 func (api *lbpolicyAPI) StopWatch(handler LbPolicyHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["LbPolicy"]
+	api.ct.workPools["LbPolicy"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchLbPolicy(handler)
 }
 
@@ -3700,12 +3688,8 @@ func (api *virtualrouterAPI) Watch(handler VirtualRouterHandler) error {
 // StopWatch stop watch for Tenant VirtualRouter object
 func (api *virtualrouterAPI) StopWatch(handler VirtualRouterHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["VirtualRouter"]
+	api.ct.workPools["VirtualRouter"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchVirtualRouter(handler)
 }
 
@@ -4624,12 +4608,8 @@ func (api *networkinterfaceAPI) Watch(handler NetworkInterfaceHandler) error {
 // StopWatch stop watch for Tenant NetworkInterface object
 func (api *networkinterfaceAPI) StopWatch(handler NetworkInterfaceHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["NetworkInterface"]
+	api.ct.workPools["NetworkInterface"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchNetworkInterface(handler)
 }
 
@@ -5548,12 +5528,8 @@ func (api *ipampolicyAPI) Watch(handler IPAMPolicyHandler) error {
 // StopWatch stop watch for Tenant IPAMPolicy object
 func (api *ipampolicyAPI) StopWatch(handler IPAMPolicyHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["IPAMPolicy"]
+	api.ct.workPools["IPAMPolicy"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchIPAMPolicy(handler)
 }
 
@@ -6480,12 +6456,8 @@ func (api *routingconfigAPI) Watch(handler RoutingConfigHandler) error {
 // StopWatch stop watch for Tenant RoutingConfig object
 func (api *routingconfigAPI) StopWatch(handler RoutingConfigHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["RoutingConfig"]
+	api.ct.workPools["RoutingConfig"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchRoutingConfig(handler)
 }
 
@@ -7404,12 +7376,8 @@ func (api *routetableAPI) Watch(handler RouteTableHandler) error {
 // StopWatch stop watch for Tenant RouteTable object
 func (api *routetableAPI) StopWatch(handler RouteTableHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["RouteTable"]
+	api.ct.workPools["RouteTable"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchRouteTable(handler)
 }
 

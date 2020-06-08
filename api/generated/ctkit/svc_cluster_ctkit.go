@@ -949,12 +949,8 @@ func (api *clusterAPI) Watch(handler ClusterHandler) error {
 // StopWatch stop watch for Tenant Cluster object
 func (api *clusterAPI) StopWatch(handler ClusterHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Cluster"]
+	api.ct.workPools["Cluster"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchCluster(handler)
 }
 
@@ -1975,12 +1971,8 @@ func (api *nodeAPI) Watch(handler NodeHandler) error {
 // StopWatch stop watch for Tenant Node object
 func (api *nodeAPI) StopWatch(handler NodeHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Node"]
+	api.ct.workPools["Node"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchNode(handler)
 }
 
@@ -2899,12 +2891,8 @@ func (api *hostAPI) Watch(handler HostHandler) error {
 // StopWatch stop watch for Tenant Host object
 func (api *hostAPI) StopWatch(handler HostHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Host"]
+	api.ct.workPools["Host"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchHost(handler)
 }
 
@@ -3823,12 +3811,8 @@ func (api *distributedservicecardAPI) Watch(handler DistributedServiceCardHandle
 // StopWatch stop watch for Tenant DistributedServiceCard object
 func (api *distributedservicecardAPI) StopWatch(handler DistributedServiceCardHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["DistributedServiceCard"]
+	api.ct.workPools["DistributedServiceCard"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchDistributedServiceCard(handler)
 }
 
@@ -4747,12 +4731,8 @@ func (api *tenantAPI) Watch(handler TenantHandler) error {
 // StopWatch stop watch for Tenant Tenant object
 func (api *tenantAPI) StopWatch(handler TenantHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Tenant"]
+	api.ct.workPools["Tenant"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchTenant(handler)
 }
 
@@ -5671,12 +5651,8 @@ func (api *versionAPI) Watch(handler VersionHandler) error {
 // StopWatch stop watch for Tenant Version object
 func (api *versionAPI) StopWatch(handler VersionHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Version"]
+	api.ct.workPools["Version"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchVersion(handler)
 }
 
@@ -6602,12 +6578,8 @@ func (api *configurationsnapshotAPI) Watch(handler ConfigurationSnapshotHandler)
 // StopWatch stop watch for Tenant ConfigurationSnapshot object
 func (api *configurationsnapshotAPI) StopWatch(handler ConfigurationSnapshotHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["ConfigurationSnapshot"]
+	api.ct.workPools["ConfigurationSnapshot"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchConfigurationSnapshot(handler)
 }
 
@@ -7584,12 +7556,8 @@ func (api *snapshotrestoreAPI) Watch(handler SnapshotRestoreHandler) error {
 // StopWatch stop watch for Tenant SnapshotRestore object
 func (api *snapshotrestoreAPI) StopWatch(handler SnapshotRestoreHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["SnapshotRestore"]
+	api.ct.workPools["SnapshotRestore"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchSnapshotRestore(handler)
 }
 
@@ -8559,12 +8527,8 @@ func (api *licenseAPI) Watch(handler LicenseHandler) error {
 // StopWatch stop watch for Tenant License object
 func (api *licenseAPI) StopWatch(handler LicenseHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["License"]
+	api.ct.workPools["License"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchLicense(handler)
 }
 
@@ -9483,12 +9447,8 @@ func (api *dscprofileAPI) Watch(handler DSCProfileHandler) error {
 // StopWatch stop watch for Tenant DSCProfile object
 func (api *dscprofileAPI) StopWatch(handler DSCProfileHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["DSCProfile"]
+	api.ct.workPools["DSCProfile"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchDSCProfile(handler)
 }
 
@@ -10415,12 +10375,8 @@ func (api *credentialsAPI) Watch(handler CredentialsHandler) error {
 // StopWatch stop watch for Tenant Credentials object
 func (api *credentialsAPI) StopWatch(handler CredentialsHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Credentials"]
+	api.ct.workPools["Credentials"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchCredentials(handler)
 }
 

@@ -941,12 +941,8 @@ func (api *orderAPI) Watch(handler OrderHandler) error {
 // StopWatch stop watch for Tenant Order object
 func (api *orderAPI) StopWatch(handler OrderHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Order"]
+	api.ct.workPools["Order"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchOrder(handler)
 }
 
@@ -1974,12 +1970,8 @@ func (api *bookAPI) Watch(handler BookHandler) error {
 // StopWatch stop watch for Tenant Book object
 func (api *bookAPI) StopWatch(handler BookHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Book"]
+	api.ct.workPools["Book"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchBook(handler)
 }
 
@@ -2949,12 +2941,8 @@ func (api *publisherAPI) Watch(handler PublisherHandler) error {
 // StopWatch stop watch for Tenant Publisher object
 func (api *publisherAPI) StopWatch(handler PublisherHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Publisher"]
+	api.ct.workPools["Publisher"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchPublisher(handler)
 }
 
@@ -3880,12 +3868,8 @@ func (api *storeAPI) Watch(handler StoreHandler) error {
 // StopWatch stop watch for Tenant Store object
 func (api *storeAPI) StopWatch(handler StoreHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Store"]
+	api.ct.workPools["Store"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchStore(handler)
 }
 
@@ -4855,12 +4839,8 @@ func (api *couponAPI) Watch(handler CouponHandler) error {
 // StopWatch stop watch for Tenant Coupon object
 func (api *couponAPI) StopWatch(handler CouponHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Coupon"]
+	api.ct.workPools["Coupon"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchCoupon(handler)
 }
 
@@ -5787,12 +5767,8 @@ func (api *customerAPI) Watch(handler CustomerHandler) error {
 // StopWatch stop watch for Tenant Customer object
 func (api *customerAPI) StopWatch(handler CustomerHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Customer"]
+	api.ct.workPools["Customer"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchCustomer(handler)
 }
 

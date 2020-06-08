@@ -936,12 +936,8 @@ func (api *neighborAPI) Watch(handler NeighborHandler) error {
 // StopWatch stop watch for Tenant Neighbor object
 func (api *neighborAPI) StopWatch(handler NeighborHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Neighbor"]
+	api.ct.workPools["Neighbor"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchNeighbor(handler)
 }
 

@@ -928,12 +928,8 @@ func (api *bucketAPI) Watch(handler BucketHandler) error {
 // StopWatch stop watch for Tenant Bucket object
 func (api *bucketAPI) StopWatch(handler BucketHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Bucket"]
+	api.ct.workPools["Bucket"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchBucket(handler)
 }
 
@@ -1852,12 +1848,8 @@ func (api *objectAPI) Watch(handler ObjectHandler) error {
 // StopWatch stop watch for Tenant Object object
 func (api *objectAPI) StopWatch(handler ObjectHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Object"]
+	api.ct.workPools["Object"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchObject(handler)
 }
 

@@ -936,12 +936,8 @@ func (api *orchestratorAPI) Watch(handler OrchestratorHandler) error {
 // StopWatch stop watch for Tenant Orchestrator object
 func (api *orchestratorAPI) StopWatch(handler OrchestratorHandler) error {
 	api.ct.Lock()
-	worker := api.ct.workPools["Orchestrator"]
+	api.ct.workPools["Orchestrator"].Stop()
 	api.ct.Unlock()
-	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
-	if worker != nil {
-		worker.Stop()
-	}
 	return api.ct.StopWatchOrchestrator(handler)
 }
 
