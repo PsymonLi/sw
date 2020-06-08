@@ -1645,7 +1645,7 @@ VOID LinkCheckWorkerThreadProc(PVOID Context) {
             break;
         }
         if (WaitStatus == STATUS_WAIT_1) {
-            DbgTrace((TRACE_COMPONENT_WORKER_THREAD, TRACE_LEVEL_VERBOSE, "%s evThreadDoWork signaled \n"));
+            DbgTrace((TRACE_COMPONENT_WORKER_THREAD, TRACE_LEVEL_VERBOSE, "%s evThreadDoWork signaled \n", __FUNCTION__));
             // do stuff
             ionic_link_status_check(ionic->master_lif, PORT_OPER_STATUS_NONE);
 
