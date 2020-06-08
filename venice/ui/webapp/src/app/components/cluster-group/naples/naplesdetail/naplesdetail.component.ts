@@ -1110,8 +1110,8 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
     const name = (naplesObject.spec.id) ? naplesObject.spec.id : naplesObject.meta.name;  // use dsc.spec.id if possible
     if (naplesObject.spec.dscprofile !== option.value) {
       naplesObject.spec.dscprofile = option.value;
-      // udpdate DSC without trimming
-      const sub = this.clusterService.UpdateDistributedServiceCard(name, naplesObject, '', this.selectedObj, false).subscribe(
+      // udpdate DSC without trimming  // VS-1834 use dsc.meta.name in update api
+      const sub = this.clusterService.UpdateDistributedServiceCard(naplesObject.meta.name, naplesObject, '', this.selectedObj, false).subscribe(
         response => {
           this._controllerService.invokeSuccessToaster(Utility.UPDATE_SUCCESS_SUMMARY, `Successfully updated ${name}'s profile`);
           this.inProfileAssigningMode = false;

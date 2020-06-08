@@ -235,9 +235,12 @@ export class TechsupportComponent extends TablevieweditAbstract<IMonitoringTechS
   }
 
   displayFailureMessage(rowData: MonitoringTechSupportRequest): string {
+    const tsStatus = rowData.status.reason;
     const nodes = rowData.status['ctrlr-node-results'];
     const nics = rowData.status['dsc-results'];
     const reasonArray: string[] = [];
+    reasonArray.push('Errors:');
+    reasonArray.push(tsStatus);
     if (nodes != null) {
       Object.keys(nodes).forEach((key) => {
         if (key != null && nodes[key].status != null && nodes[key].status === MonitoringTechSupportRequestStatus_status.failed) {
@@ -257,7 +260,7 @@ export class TechsupportComponent extends TablevieweditAbstract<IMonitoringTechS
     });
 
     if (nonNullArray.length > 0) {
-      return nonNullArray.join('\n');  // if the failing agents have a 'reason' attribute (ideally), then print that explanation as an error message
+      return nonNullArray.join('<br/>');  // if the failing agents have a 'reason' attribute (ideally), then print that explanation as an error message
     } else {     // else, manually identify the agents that caused the operation to fail, and print a generic error message (eg: X is unhealthy)
       return this.whichNaplesFail(rowData);
     }
@@ -428,6 +431,24 @@ export class TechsupportComponent extends TablevieweditAbstract<IMonitoringTechS
    */
   showDeleteIcon(rowData: MonitoringTechSupportRequest): boolean {
     return (rowData.status.status !== MonitoringTechSupportRequestStatus_status.running);
+  }
+
+  onFailureReasonClick(rowData: MonitoringTechSupportRequest) {
+    // we don't want the panel collapse when clicking on "view reasons"
+    event.stopPropagation();
+    event.preventDefault();
+    const msg = this.displayFailureMessage(rowData);
+    this._controllerService.invokeConfirm({
+      header: 'Techsupport [' + rowData.meta.name + '] Failed',
+      message:  msg,
+      acceptLabel: 'Close',
+      acceptVisible: true,
+      rejectVisible: false,
+      accept: () => {
+        // When a primeng alert is created, it tries to "focus" on a button, not adding a button returns an error.
+        // So we create a button but hide it later.
+      }
+    });
   }
 
 }

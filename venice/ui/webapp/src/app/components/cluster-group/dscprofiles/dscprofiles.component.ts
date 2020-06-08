@@ -220,6 +220,7 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
         this.processOneDSCProfile(dscProfile);
       }
       this.updateSelectedDSCProfile();
+      this.dataObjects = [...this.dataObjects] ;  // tell angular to refresh references.
     }
   }
 
