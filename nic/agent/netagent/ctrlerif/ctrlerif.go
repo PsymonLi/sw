@@ -66,7 +66,7 @@ func NewNpmClient(agent types.CtrlerIntf, srvURL string, resolverClient resolver
 		clientFactory:   rpckit.NewClientFactory(agent.GetAgentID()),
 	}
 
-	client.debugStats = debugStats.New(fmt.Sprintf("npmif-%s", client.getAgentName())).Tsdb().Kind("netagentStats").TsdbPeriod(5 * time.Second).Build()
+	client.debugStats = debugStats.New(fmt.Sprintf("npmif-%s", client.getAgentName())).Tsdb().Kind("netagentStats").TsdbPeriod(3 * time.Minute).Build()
 
 	// register the NPM client as a controller plugin
 	err := agent.RegisterCtrlerIf(&client)

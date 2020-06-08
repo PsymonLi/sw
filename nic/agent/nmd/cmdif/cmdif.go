@@ -64,7 +64,7 @@ func NewCmdClient(nmd nmdapi.NmdAPI, cmdRegistrationURL string, resolverClient r
 		startTime:          time.Now(),
 	}
 
-	client.debugStats = debugStats.New(fmt.Sprintf("cmdif-%s", client.getAgentName())).Tsdb().Kind("nmdStats").TsdbPeriod(5 * time.Second).Build()
+	client.debugStats = debugStats.New(fmt.Sprintf("cmdif-%s", client.getAgentName())).Tsdb().Kind("nmdStats").TsdbPeriod(3 * time.Minute).Build()
 
 	// register the NMD client as a controller plugin
 	err := nmd.RegisterCMD(&client)

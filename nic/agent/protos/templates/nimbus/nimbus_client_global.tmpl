@@ -55,7 +55,7 @@ func NewNimbusClient(clientName, srvURL string, rpcClient *rpckit.RPCClient) (*N
 		objlocks:        make(map[string]*sync.Mutex),
 	}
 
-	client.debugStats = debugStats.New(clientName).Tsdb().Kind("nimbusClientStats").TsdbPeriod(5 * time.Second).Build()
+	client.debugStats = debugStats.New(clientName).Tsdb().Kind("nimbusClientStats").TsdbPeriod(3 * time.Minute).Build()
 
 	return &client, nil
 }
