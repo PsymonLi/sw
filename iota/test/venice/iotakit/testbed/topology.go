@@ -81,8 +81,11 @@ type TopoMeta struct {
 			Naples    int `yaml:"naples"`
 		} `yaml:"vcenter"`
 		K8sMaster struct {
-			Instances int    `yaml:"instances"`
+			Instances int `yaml:"instances"`
 		} `yaml:"k8s-master"`
+		Command struct {
+			Instances int `yaml:"instances"`
+		} `yaml:"command"`
 	} `yaml:"nodes"`
 	Workload struct {
 		Esx struct {
@@ -222,6 +225,13 @@ func ParseTopology(fileName string) (*Topology, error) {
 
 		// TODO: start from 1
 		break
+	}
+	for i := 0; i < topoMeta.Nodes.Command.Instances; i++ {
+		topo.Nodes = append(topo.Nodes, TopoNode{
+			NodeName:    "command-node-" + fmt.Sprintf("%v", i+1),
+			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
+			Personality: iota.PersonalityType_PERSONALITY_COMMAND_NODE,
+		})
 	}
 
 	if topoMeta.Workload.Esx.Image != "" {

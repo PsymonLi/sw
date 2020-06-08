@@ -117,7 +117,7 @@ type ClusterActionIntf interface {
 }
 
 type ObjectIntf interface {
-	GetOrchestrator() (*objects.Orchestrator, error)
+	GetOrchestrator() (*objects.OrchestratorCollection, error)
 	Hosts() *objects.HostCollection
 	HostWorkloads() []*objects.HostWorkloadCollection
 	SwitchPorts() *objects.SwitchPortCollection

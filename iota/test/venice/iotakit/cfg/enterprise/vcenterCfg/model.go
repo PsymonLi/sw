@@ -51,13 +51,6 @@ func (vc *VcenterCfg) pushConfigViaRest() error {
 			return err
 		} */
 
-	//Set mac address to be empty as venter and orch will figure out for themselves
-	for _, wl := range vc.Cfg.ConfigItems.Workloads {
-		for index := range wl.Spec.Interfaces {
-			wl.Spec.Interfaces[index].MACAddress = ""
-		}
-	}
-
 	for _, o := range cfg.ConfigItems.Networks {
 
 		if err := rClient.CreateNetwork(o); err != nil {
@@ -232,16 +225,10 @@ func (vc *VcenterCfg) PushConfig() error {
 		done <- fmt.Errorf("Config push incomplete")
 	}
 
-	var err error
-	err = vc.CleanupAllConfig()
-	if err != nil {
-		return err
-	}
-
 	//if os.Getenv("USE_STAGING_BUFFER") != "" {
 	//	err = vc.pushConfigViaStagingBuffer(ctx, urls)
 	//} else {
-	err = vc.pushConfigViaRest()
+	err := vc.pushConfigViaRest()
 	//}
 
 	if err != nil {

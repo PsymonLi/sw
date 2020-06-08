@@ -35,6 +35,7 @@ type EntBaseCfg struct {
 
 	DefaultSgPolicies []*NetworkSecurityPolicy //default sg policy pushed
 	Cfg               *cfgen.Cfgen
+	scale             bool
 }
 
 //TimeTrack tracker
@@ -188,6 +189,7 @@ func (gs *EntBaseCfg) PopulateConfig(params *ConfigParams) error {
 	gs.Cfg.NetworkSecurityPolicyParams.NumPolicies = 1
 
 	cfg := gs.Cfg
+	gs.scale = params.Scale
 
 	//Reset config stats so that we can start fresh
 
@@ -964,6 +966,10 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 	var configPushStatus objClient.VeniceConfigPushStatus
 	var rawData objClient.VeniceRawData
 
+	if gs.Cfg == nil {
+		//config not pushed
+		return true, nil
+	}
 	rClient := gs.Client
 
 	err := rClient.PullConfigPushStatus([]string{"App", "Endpoint", "NetworkInterface",
@@ -979,17 +985,17 @@ func (gs *EntBaseCfg) configPushComplete() (bool, error) {
 		return true, nil
 	}
 
-	/*
-		workloads, err := rClient.ListWorkload()
-		if err != nil {
-			return false, err
-		}
+	workloads, err := rClient.ListWorkload()
+	if err != nil {
+		return false, err
+	}
 
-
+	if gs.scale {
 		if len(configPushStatus.KindObjects.Endpoint) != len(workloads)*gs.Cfg.WorkloadParams.InterfacesPerWorkload {
 			log.Infof("Endpoints not synced with NPM yet. %v %v", len(configPushStatus.KindObjects.Endpoint), len(workloads))
 			return false, nil
-		} */
+		}
+	}
 
 	policies, err := rClient.ListNetworkSecurityPolicy()
 	if err != nil {

@@ -162,7 +162,7 @@ func (sm *SysModel) GetVeniceURL() []string {
 }
 
 //GetOrchestrator Default objects.has no orchestrator
-func (sm *SysModel) GetOrchestrator() (*objects.Orchestrator, error) {
+func (sm *SysModel) GetOrchestrator() (*objects.OrchestratorCollection, error) {
 	return nil, nil
 }
 

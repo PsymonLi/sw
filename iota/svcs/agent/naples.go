@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -1528,6 +1529,11 @@ func (node *commandNode) Init(in *iota.Node) (*iota.Node, error) {
 
 	node.bgCmds = new(sync.Map)
 	node.name = in.GetName()
+
+	dir := Common.DstIotaEntitiesDir + "/" + in.GetName()
+	os.Mkdir(dir, 0765)
+	os.Chmod(dir, 0777)
+
 	return &iota.Node{Name: in.Name, IpAddress: in.IpAddress, Type: in.GetType(),
 		NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK}}, nil
 }
@@ -1902,6 +1908,20 @@ type simNetworkSpec struct {
 	parent   string
 }
 
+func convertToVeniceFormatMac(s string) string {
+	mac := strings.Replace(s, ":", "", -1)
+	var buffer bytes.Buffer
+	i := 1
+	for _, rune := range mac {
+		buffer.WriteRune(rune)
+		if i != 0 && i%4 == 0 && i != len(mac) {
+			buffer.WriteRune('.')
+		}
+		i++
+	}
+	return buffer.String()
+}
+
 func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAddress string,
 	image string, nwSpec simNetworkSpec, veniceIPs []string, defaultGW string, reload bool) (string, error) {
 
@@ -2051,7 +2071,7 @@ func (naples *naplesMultiSimNode) bringUpNaples(index uint32, name string, macAd
 		cmd = append(cmd, "--mgmt-ip")
 		cmd = append(cmd, mgmtIP)
 		cmd = append(cmd, "--id")
-		cmd = append(cmd, name)
+		cmd = append(cmd, convertToVeniceFormatMac(mac))
 		cmdResp, _, rerr := wload.RunCommand(cmd, "", 0, 0, false, false)
 
 		if rerr != nil || cmdResp.ExitCode != 0 || cmdResp.Stderr != "" {

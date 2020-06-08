@@ -112,6 +112,7 @@ type ObjClient interface {
 
 	CreateOrchestration(orch *orchestration.Orchestrator) error
 	DeleteOrchestration(orch *orchestration.Orchestrator) error
+	GetOrchestration(orch *orchestration.Orchestrator) (*orchestration.Orchestrator, error)
 
 	CreateRoutingConfig(nwR *network.RoutingConfig) error
 	UpdateRoutingConfig(nwR *network.RoutingConfig) error
@@ -1711,4 +1712,18 @@ func (r *Client) DeleteOrchestration(orch *orchestration.Orchestrator) error {
 	}
 
 	return err
+}
+
+//GetOrchestration deletes orchestration object
+func (r *Client) GetOrchestration(orch *orchestration.Orchestrator) (*orchestration.Orchestrator, error) {
+
+	var err error
+	for _, restcl := range r.restcls {
+		orch, err = restcl.OrchestratorV1().Orchestrator().Get(r.ctx, &orch.ObjectMeta)
+		if err == nil {
+			return orch, nil
+		}
+	}
+
+	return nil, errors.New("Orchestration config get failed")
 }

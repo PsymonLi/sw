@@ -84,6 +84,10 @@ func isServerUp() bool {
 }
 
 func initialize() {
+
+	if os.Getenv("JOB_ID") == "" {
+		os.Setenv("SKIP_CLEANUP", "1")
+	}
 	// find config file if it exists
 	os.Setenv("VENICE_DEV", "1")
 	os.Setenv("JOB_ID", "1")

@@ -240,7 +240,7 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 		return err
 	}
 	wMove := &iota.WorkloadMoveMsg{
-		OrchestratorNode: orch.Name,
+		OrchestratorNode: orch.Orchestrators[0].Name,
 	}
 	for _, w := range wc.Workloads {
 		wMove.WorkloadMoves = append(wMove.WorkloadMoves, &iota.WorkloadMove{
@@ -298,7 +298,7 @@ func (sm *VcenterSysModel) AddNetworks(spec common.NetworkSpec) error {
 
 	addNetworkMsg := &iota.NetworksMsg{
 		Switch:           spec.Switch,
-		OrchestratorNode: orch.Name,
+		OrchestratorNode: orch.Orchestrators[0].Name,
 	}
 
 	for _, node := range spec.Nodes {
@@ -332,6 +332,10 @@ func (sm *VcenterSysModel) AddNetworks(spec common.NetworkSpec) error {
 //RemoveNetworks remove networks from switch
 func (sm *VcenterSysModel) RemoveNetworks(switchName string) error {
 
+	if sm.vcenterSim != nil {
+		return nil
+	}
+
 	topoClient := iota.NewTopologyApiClient(sm.Tb.Client().Client)
 
 	orch, err := sm.GetOrchestrator()
@@ -341,7 +345,7 @@ func (sm *VcenterSysModel) RemoveNetworks(switchName string) error {
 
 	removeNetworkMsg := &iota.NetworksMsg{
 		Switch:           switchName,
-		OrchestratorNode: orch.Name,
+		OrchestratorNode: orch.Orchestrators[0].Name,
 		Network: []*iota.Network{&iota.Network{
 			Cluster: sm.Tb.GetCluster(),
 		}},

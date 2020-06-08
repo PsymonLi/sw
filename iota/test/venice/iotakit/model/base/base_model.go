@@ -52,6 +52,7 @@ type SysModel struct {
 	FakeHosts                  map[string]*objects.Host           // simulated hosts
 	FakeNaples                 map[string]*objects.Naples         // simulated Naples instances
 	ThirdPartyNodes            map[string]*objects.ThirdPartyNode // Naples instances
+	CommandNodes               map[string]*objects.CommandNode    // Naples instances
 	VeniceNodeMap              map[string]*objects.VeniceNode     // Venice nodes
 	VeniceNodesMapDisconnected map[string]*objects.VeniceNode     // Venice which are not part of cluster
 	InbandNaplesIPAddress      map[string][]string
@@ -76,6 +77,7 @@ func (sm *SysModel) Init(tb *testbed.TestBed, cfgType enterprise.CfgType, reinit
 	sm.Switches = make(map[string]*objects.Switch)
 	sm.NaplesNodes = make(map[string]*objects.Naples)
 	sm.ThirdPartyNodes = make(map[string]*objects.ThirdPartyNode)
+	sm.CommandNodes = make(map[string]*objects.CommandNode)
 	sm.VeniceNodeMap = make(map[string]*objects.VeniceNode)
 	sm.VeniceNodesMapDisconnected = make(map[string]*objects.VeniceNode)
 	sm.FakeNaples = make(map[string]*objects.Naples)
@@ -373,6 +375,7 @@ func (sm *SysModel) CreateNaples(node *testbed.TestNode) error {
 		if err != nil {
 			//Try to find by mac at least
 			snic, err = sm.GetSmartNICByName(vmac)
+
 		}
 		if err != nil {
 			err := fmt.Errorf("Failed to get smartnc object for name %v(%v). Err: %+v", node.NodeName, vmac, err)
@@ -421,6 +424,13 @@ func (sm *SysModel) createThirdParty(node *testbed.TestNode) error {
 	return nil
 }
 
+// createThirdParty creates a naples instance
+func (sm *SysModel) createCommandNode(node *testbed.TestNode) error {
+
+	sm.CommandNodes[node.NodeName] = objects.NewCommandNode(node.NodeName, node)
+	return nil
+}
+
 // createNaples creates a naples instance
 func (sm *SysModel) createMultiSimNaples(node *testbed.TestNode) error {
 
@@ -445,14 +455,23 @@ func (sm *SysModel) createMultiSimNaples(node *testbed.TestNode) error {
 		for _, simInfo := range node.GetIotaNode().GetNaplesMultiSimConfig().GetSimsInfo() {
 			//TODO: (iota agent is also following the same format.)
 			simName := simInfo.GetName()
+			simMac := convertToVeniceFormatMac(simInfo.GetNodeUuid())
 			success = false
 			for _, snic := range snicList {
-				if snic.Spec.ID == simName {
+				if snic.Spec.ID == simName || snic.Status.PrimaryMAC == simMac {
 					sm.FakeNaples[simName] = objects.NewNaplesNode(simName, node)
 					sm.FakeNaples[simName].AddDSC(simName, snic)
 					sm.FakeNaples[simName].SetIP(simInfo.GetIpAddress())
 					success = true
 				}
+				/*
+					if snic.Spec.ID != simName {
+						snic.Spec.ID = simName
+						if err := sm.UpdateSmartNIC(snic); err != nil {
+							log.Infof("Error updating smart nic object %v", err)
+							return err
+						}
+					}*/
 			}
 
 			if !success {
@@ -578,6 +597,11 @@ func (sm *SysModel) SetupNodes() error {
 			if err != nil {
 				return err
 			}
+		} else if nr.Personality == iota.PersonalityType_PERSONALITY_COMMAND_NODE {
+			err := sm.createCommandNode(nr)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -645,6 +669,7 @@ func (sm *SysModel) AssociateHosts() error {
 						//Add BM type to support upgrade
 						dsc.Labels = make(map[string]string)
 						dsc.Labels["type"] = "bm"
+						//dsc.Spec.ID = inst.EntityName
 						if err := sm.UpdateSmartNIC(dsc); err != nil {
 							log.Infof("Error updating smart nic object %v", err)
 							return err
@@ -966,7 +991,7 @@ func (sm *SysModel) Cleanup() error {
 }
 
 //GetOrchestrator Default objects.has no orchestrator
-func (sm *SysModel) GetOrchestrator() (*objects.Orchestrator, error) {
+func (sm *SysModel) GetOrchestrator() (*objects.OrchestratorCollection, error) {
 	return nil, nil
 }
 

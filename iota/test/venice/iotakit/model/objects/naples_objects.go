@@ -39,6 +39,11 @@ type ThirdPartyNode struct {
 	Node
 }
 
+// CommandNode represents any node to run commands on
+type CommandNode struct {
+	Node
+}
+
 // NewNaplesNode create a new naples node obj
 func NewNaplesNode(name string, node *testbed.TestNode) *Naples {
 	return &Naples{
@@ -62,6 +67,18 @@ func (naples *Naples) AddDSC(name string, sn *cluster.DistributedServiceCard) {
 func NewThirdPartyNode(name string, node *testbed.TestNode) *ThirdPartyNode {
 
 	return &ThirdPartyNode{
+		Node: Node{
+			testNode: node,
+			name:     name,
+			iotaNode: node.GetIotaNode(),
+		},
+	}
+}
+
+// NewCommandNode create a new comand node obj
+func NewCommandNode(name string, node *testbed.TestNode) *CommandNode {
+
+	return &CommandNode{
 		Node: Node{
 			testNode: node,
 			name:     name,
@@ -119,6 +136,12 @@ type NaplesCollection struct {
 type ThirdPartyCollection struct {
 	CollectionCommon
 	Nodes []*ThirdPartyNode
+}
+
+// CommandNodeCollection contains a list of commandNodes
+type CommandNodeCollection struct {
+	CollectionCommon
+	Nodes []*CommandNode
 }
 
 // Names returns names of all naples in the collection

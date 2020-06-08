@@ -679,6 +679,7 @@ func (tb *TestBed) preapareNodeParams(nodeType iota.TestBedNodeType, personality
 				//ControlIp:   fmt.Sprintf("172.16.100.%d", len(tb.Nodes)+1), //FIXME
 				VenicePeers: []*iota.VenicePeer{},
 			}
+		case iota.PersonalityType_PERSONALITY_COMMAND_NODE:
 		default:
 			return fmt.Errorf("unsupported node personality %v", personality)
 		}
@@ -775,10 +776,12 @@ func (tb *TestBed) preapareNodeParams(nodeType iota.TestBedNodeType, personality
 
 //Cleanup clean up testbed
 func (tb *TestBed) Cleanup() {
-	if tb.cleanup && tb.iotaClient != nil {
-		log.Infof("Cleaning up testbed")
-		client := iota.NewTopologyApiClient(tb.iotaClient.Client)
-		client.CleanUpTestBed(context.Background(), tb.tbMsg)
+	if os.Getenv("SKIP_CLEANUP") == "" {
+		if tb.cleanup && tb.iotaClient != nil {
+			log.Infof("Cleaning up testbed")
+			client := iota.NewTopologyApiClient(tb.iotaClient.Client)
+			client.CleanUpTestBed(context.Background(), tb.tbMsg)
+		}
 	}
 }
 

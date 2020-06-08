@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,21 +22,58 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+var (
+	vcenterSimBinary         = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/bin/orch-sim", os.Getenv("GOPATH"))
+	vcenterSimRunnerBinary   = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/bin/orchrunner", os.Getenv("GOPATH"))
+	cfgFile                  = "/tmp/scale-cfg.json"
+	orchSimIntances          = 10
+	orchSimInstanceStartPort = 20000
+)
+
 //VcenterSysModel representing model for vcenter
 type VcenterSysModel struct {
 	enterprise.SysModel
-	orchestrator *objects.Orchestrator
+	orchestrator *objects.OrchestratorCollection
+	vcenterSim   *objects.CommandNode
 }
 
 //GetOrchestrator returns orchestroa
-func (sm *VcenterSysModel) getOrchestrator() (*objects.Orchestrator, error) {
+func (sm *VcenterSysModel) getOrchestrators(scale bool) (*objects.OrchestratorCollection, error) {
+	port := ""
+	if scale {
+		port = fmt.Sprintf("%v", orchSimInstanceStartPort)
+		name := fmt.Sprintf("vcsim-%s-dc", port)
+		collection := objects.NewOrchestrator(sm.ObjClient(),
+			name,
+			name,
+			sm.vcenterSim.GetIotaNode().GetIpAddress(),
+			port,
+			"user",
+			"password",
+		)
+		for i := 0; i < orchSimIntances; i++ {
+			port = fmt.Sprintf("%v", orchSimInstanceStartPort+i)
+			name := fmt.Sprintf("vcsim-%s-dc", port)
+			newCollection := objects.NewOrchestrator(sm.ObjClient(),
+				name,
+				name,
+				sm.vcenterSim.GetIotaNode().GetIpAddress(),
+				port,
+				"user",
+				"password",
+			)
+			collection.Merge(newCollection)
 
+		}
+		return collection, nil
+	}
 	for _, node := range sm.Tb.Nodes {
 		if node.Personality == iota.PersonalityType_PERSONALITY_VCENTER_NODE {
 			return objects.NewOrchestrator(sm.ObjClient(),
 				sm.Tb.GetDC(),
 				node.NodeName,
 				node.NodeMgmtIP,
+				port,
 				sm.Tb.Params.Provision.Vars["VcenterUsername"],
 				sm.Tb.Params.Provision.Vars["VcenterPassword"],
 			), nil
@@ -45,7 +83,7 @@ func (sm *VcenterSysModel) getOrchestrator() (*objects.Orchestrator, error) {
 	return nil, errors.New("Vcenter orchestrator not found")
 }
 
-func (sm *VcenterSysModel) GetOrchestrator() (*objects.Orchestrator, error) {
+func (sm *VcenterSysModel) GetOrchestrator() (*objects.OrchestratorCollection, error) {
 	return sm.orchestrator, nil
 }
 
@@ -61,14 +99,16 @@ func (sm *VcenterSysModel) DisconnectVeniceAndOrchestrator() error {
 	//For later deletion
 	cookie := sm.getOrchRuleCookie()
 
-	orch, _ := sm.GetOrchestrator()
+	orchs, _ := sm.GetOrchestrator()
 
 	for _, venice := range sm.VeniceNodeMap {
-		cmd := fmt.Sprintf("sudo iptables -A INPUT -s %v -j DROP  -m comment --comment %s",
-			strings.Split(orch.IP, "/")[0], cookie)
-		trig.AddCommand(cmd, venice.Name()+"_venice", venice.Name())
-		trig.AddCommandWithRetriesOnFailures(cmd, venice.Name()+"_venice",
-			venice.Name(), 3)
+		for _, orch := range orchs.Orchestrators {
+			cmd := fmt.Sprintf("sudo iptables -A INPUT -s %v -j DROP  -m comment --comment %s",
+				strings.Split(orch.IP, "/")[0], cookie)
+			trig.AddCommand(cmd, venice.Name()+"_venice", venice.Name())
+			trig.AddCommandWithRetriesOnFailures(cmd, venice.Name()+"_venice",
+				venice.Name(), 3)
+		}
 	}
 
 	// run the trigger
@@ -201,6 +241,10 @@ func (sm *VcenterSysModel) setupInsertionMode() error {
 
 func (sm *VcenterSysModel) setupVmotionNetwork() error {
 
+	if sm.vcenterSim != nil {
+		return nil
+	}
+
 	nc := sm.Networks("")
 	if len(nc.Subnets()) < 1 {
 		return fmt.Errorf("Insufficient networks to enable vmotion")
@@ -224,11 +268,8 @@ func (sm *VcenterSysModel) setupVmotionNetwork() error {
 func (sm *VcenterSysModel) SetupDefaultConfig(ctx context.Context, scale, scaleData bool) error {
 	sm.Scale = scale
 	sm.ScaleData = scaleData
-	err := sm.InitConfig(scale, scaleData)
-	if err != nil {
-		return err
-	}
-	err = sm.setupInsertionMode()
+
+	err := sm.setupInsertionMode()
 	if err != nil {
 		return err
 	}
@@ -248,7 +289,7 @@ L:
 			return fmt.Errorf("Error associating hosts: %s", err)
 		default:
 			err = sm.AssociateHosts()
-			if err == nil && len(sm.NaplesHosts) == len(sm.NaplesNodes)+len(sm.FakeNaples) {
+			if err == nil && len(sm.NaplesHosts)+len(sm.FakeHosts) == len(sm.NaplesNodes)+len(sm.FakeNaples) {
 				break L
 			}
 			log.Errorf("Error associating hosts: %s", err)
@@ -379,10 +420,12 @@ func (sm *VcenterSysModel) modifyConfig() error {
 	//Modify netwrork object with scope
 	for _, nw := range cfgObjects.Networks {
 		nw.Spec.Orchestrators = []*network.OrchestratorInfo{}
-		nw.Spec.Orchestrators = append(nw.Spec.Orchestrators, &network.OrchestratorInfo{
-			Name:      orch.Name,
-			Namespace: orch.DC,
-		})
+		for _, orch := range orch.Orchestrators {
+			nw.Spec.Orchestrators = append(nw.Spec.Orchestrators, &network.OrchestratorInfo{
+				Name:      orch.Name,
+				Namespace: orch.DC,
+			})
+		}
 
 		for i := range cfgObjects.Workloads {
 			for j := range cfgObjects.Workloads[i].Spec.Interfaces {
@@ -393,7 +436,48 @@ func (sm *VcenterSysModel) modifyConfig() error {
 		}
 	}
 
+	if sm.vcenterSim == nil {
+		//Set mac address to be empty as venter and orch will figure out for themselves
+		for _, wl := range cfgObjects.Workloads {
+			for index := range wl.Spec.Interfaces {
+				wl.Spec.Interfaces[index].MACAddress = ""
+			}
+		}
+	}
+
 	return nil
+}
+
+func (sm *VcenterSysModel) restartSim() error {
+
+	trig := sm.Tb.NewTrigger()
+	trig.AddCommand(fmt.Sprintf("pkill -9 %v", filepath.Base(vcenterSimBinary)), "", sm.vcenterSim.GetIotaNode().Name)
+	trig.AddCommand(fmt.Sprintf("pkill -9 %v", filepath.Base(vcenterSimRunnerBinary)), "", sm.vcenterSim.GetIotaNode().Name)
+	_, err := trig.Run()
+	if err != nil {
+		return fmt.Errorf("Error running command %v", err.Error())
+	}
+	//Copy binary as well as config files
+	err = sm.Tb.CopyToNode(sm.vcenterSim.GetIotaNode().Name, []string{vcenterSimBinary, vcenterSimRunnerBinary, cfgFile}, "")
+	if err != nil {
+		log.Errorf("Error copying vcenter scale sim  %v", err.Error())
+		return err
+	}
+
+	trig = sm.Tb.NewTrigger()
+	trig.AddBackgroundCommand(fmt.Sprintf("./%v -c %v -o ./%v -n %v -p %v", filepath.Base(vcenterSimRunnerBinary), filepath.Base(cfgFile), filepath.Base(vcenterSimBinary), orchSimIntances, orchSimInstanceStartPort), "", sm.vcenterSim.GetIotaNode().Name)
+	_, err = trig.Run()
+	if err != nil {
+		return fmt.Errorf("Error running command %v", err.Error())
+	}
+
+	return nil
+}
+
+func TimeTrack(start time.Time, name string) time.Duration {
+	elapsed := time.Since(start)
+	log.Infof("%s took %s\n", name, elapsed)
+	return elapsed
 }
 
 // InitConfig sets up a default config for the system
@@ -415,6 +499,13 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 
 	}
 
+	if scale && len(sm.CommandNodes) > 0 {
+		for _, cn := range sm.CommandNodes {
+			sm.vcenterSim = cn
+			break
+		}
+	}
+
 	index := 0
 	for name, node := range sm.ThirdPartyNodes {
 		node.UUID = "50df.9ac7.c24" + fmt.Sprintf("%v", index)
@@ -423,6 +514,7 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 		index++
 	}
 
+	cfgParams.NaplesLoopBackIPs = make(map[string]string)
 	for _, naples := range sm.FakeNaples {
 		//cfgParams.Dscs = append(cfgParams.Dscs, naples.SmartNic)
 		cfgParams.FakeDscs = append(cfgParams.FakeDscs, naples.Instances[0].Dsc)
@@ -438,7 +530,7 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 
 	if skipConfig == "" {
 
-		orch, err := sm.getOrchestrator()
+		orch, err := sm.getOrchestrators(scale)
 		if err != nil {
 			return err
 		}
@@ -476,6 +568,12 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 			return err
 		}
 
+		if scale && sm.vcenterSim != nil {
+			if err := sm.restartSim(); err != nil {
+				return err
+			}
+		}
+
 		time.Sleep(120 * time.Second)
 
 		err = orch.Commit()
@@ -488,15 +586,47 @@ func (sm *VcenterSysModel) InitConfig(scale, scaleData bool) error {
 		if err != nil {
 			return err
 		}
+
+		sm.AllowVeniceAndOrchestrator()
+
+		bkCtx, cancelFunc := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancelFunc()
+	L:
+		for true {
+			select {
+			case <-bkCtx.Done():
+				return fmt.Errorf("Error Connecting vcenter %s", err)
+			default:
+
+				if connected, err := orch.Connected(); err == nil && connected {
+					break L
+				}
+				log.Infof("Orchestrator not connected to vcenter error : %v", err)
+				time.Sleep(2 * time.Second)
+			}
+		}
+
+		defer TimeTrack(time.Now(), "Config Genenration and Propogation")
 		err = sm.PushConfig()
 		if err != nil {
 			return err
 		}
-		defer sm.AllowVeniceAndOrchestrator()
 
-		ok, err := sm.IsConfigPushComplete()
-		if !ok || err != nil {
-			return err
+		if scale {
+			bkCtx, cancelFunc := context.WithTimeout(context.Background(), 20*time.Minute)
+			defer cancelFunc()
+			for true {
+				select {
+				case <-bkCtx.Done():
+					return fmt.Errorf("Config push timed out %s", err)
+				default:
+					ok, err := sm.IsConfigPushComplete()
+					if err == nil && ok {
+						return nil
+					}
+					time.Sleep(10 * time.Second)
+				}
+			}
 		}
 
 	}
