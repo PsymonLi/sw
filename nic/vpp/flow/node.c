@@ -1071,8 +1071,9 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
                 vnet_buffer(p0)->pds_flow_data.tcp_win_sz =
                     clib_net_to_host_u16(tcp0->window);
             } else if (PREDICT_FALSE(!flow_exists &&
-                       !(vnet_buffer(p0)->pds_flow_data.tcp_flags & TCP_FLAG_SYN))) {
-                // If session in getting created due to a packet other than SYN,
+                       (vnet_buffer(p0)->pds_flow_data.tcp_flags &
+                       (TCP_FLAG_FIN | TCP_FLAG_RST)))) {
+                // If session in getting created due to a FIN/RST,
                 // then move the session state to ESTABLISHED so that session
                 // ageing is handled. This is needed to handle VMotion wherein
                 // we might have to create flows for packets other than SYN.
@@ -1156,6 +1157,23 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
             }
             ftlv6_cache_set_key(src, dst, protocol, sport, dport, lkp_id);
             pds_flow_extract_nexthop_info(p0, 0, 1, thread_index);
+
+            if (ip60->protocol == IP_PROTOCOL_TCP) {
+                if (fm->con_track_en) {
+                    vnet_buffer(p0)->pds_flow_data.tcp_seq_no =
+                            clib_net_to_host_u32(tcp0->seq_number);
+                    vnet_buffer(p0)->pds_flow_data.tcp_win_sz =
+                            clib_net_to_host_u16(tcp0->window);
+                } else if (PREDICT_FALSE(!flow_exists &&
+                           (vnet_buffer(p0)->pds_flow_data.tcp_flags &
+                           (TCP_FLAG_FIN | TCP_FLAG_RST)))) {
+                    // If session in getting created due to a FIN/RST,
+                    // then move the session state to ESTABLISHED so that session
+                    // ageing is handled. This is needed to handle VMotion wherein
+                    // we might have to create flows for packets other than SYN.
+                    ses->flow_state = PDS_FLOW_STATE_ESTABLISHED;
+                }
+            }
         }
         ftlv6_cache_set_session_index(session_id);
         ftlv6_cache_set_flow_role(TCP_FLOW_INITIATOR);
