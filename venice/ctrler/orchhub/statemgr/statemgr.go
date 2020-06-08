@@ -43,7 +43,14 @@ func NewStatemgr(apiSrvURL string, resolver resolver.Interface, logger log.Logge
 	}
 
 	logger.Infof("Creating new ctkit controller")
-	ctrler, _, err := ctkit.NewController(globals.OrchHub, nil, apiSrvURL, resolver, logger, false)
+	spec := ctkit.CtrlerSpec{
+		ApisrvURL:              apiSrvURL,
+		Logger:                 logger,
+		Name:                   globals.OrchHub,
+		Resolver:               resolver,
+		NumberofWorkersPerKind: 32,
+	}
+	ctrler, _, err := ctkit.NewController(spec)
 	if err != nil {
 		logger.Errorf("Error initiating controller kit. Err: %v", err)
 		return nil, err

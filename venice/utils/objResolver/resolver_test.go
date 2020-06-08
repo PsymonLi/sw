@@ -21,6 +21,7 @@ import (
 type ctkitBaseCtx struct {
 	//resolveState resolveState //resolve state
 	ResolveCtx
+	watchTs int64
 }
 
 type testObjData struct {
@@ -57,6 +58,21 @@ func (ctx *testObjCtx) Lock() {
 
 func (ctx *testObjCtx) Unlock() {
 	ctx.obj.Unlock()
+}
+
+func (ctx *testObjCtx) SetWatchTs(int64) {
+	//	ctx.ctkitBaseCtx.watchTs = time
+}
+
+func (ctx *testObjCtx) SetInternal() {
+}
+
+func (ctx *testObjCtx) IsInternal() bool {
+	return false
+}
+
+func (ctx *testObjCtx) GetWatchTs() int64 {
+	return ctx.watchTs
 }
 
 func (ctx *testObjCtx) GetKind() string {
@@ -441,7 +457,7 @@ func TestObjResolverDepAddTest_1(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 	}
@@ -474,7 +490,7 @@ func TestObjResolverDepAddTest_2(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"a", "c", 0, maxObj},
@@ -514,7 +530,7 @@ func TestObjResolverDepAddTest_3(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -547,7 +563,7 @@ func TestObjResolverDepAddTest_3(t *testing.T) {
 	evtsExp.evKindMap[kvstore.Created]["b"] = maxObj
 	evtsExp.evKindMap[kvstore.Created]["d"] = maxObj
 	evtsExp.evKindMap[kvstore.Created]["c"] = maxObj
-	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
+	err = verifyObjects(t, &evtsExp, time.Duration(30*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
 }
@@ -560,7 +576,7 @@ func TestObjResolverDepAddTest_4(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -581,19 +597,19 @@ func TestObjResolverDepAddTest_4(t *testing.T) {
 	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(kvstore.Created, "c", 0, 50)
+	err = sendObjects(kvstore.Created, "c", 0, 5)
 	AssertOk(t, err, "Error creating object")
-	evtsExp.evKindMap[kvstore.Created]["c"] = 50
+	evtsExp.evKindMap[kvstore.Created]["c"] = 5
 	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(kvstore.Created, "c", 50, 99)
+	err = sendObjects(kvstore.Created, "c", 5, 9)
 	AssertOk(t, err, "Error creating object")
-	evtsExp.evKindMap[kvstore.Created]["c"] = 99
+	evtsExp.evKindMap[kvstore.Created]["c"] = 9
 	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Second))
 	AssertOk(t, err, "Error verifying objects")
 
-	err = sendObjects(kvstore.Created, "c", 99, 100)
+	err = sendObjects(kvstore.Created, "c", 9, 10)
 	AssertOk(t, err, "Error creating object")
 	evtsExp.evKindMap[kvstore.Created]["a"] = maxObj
 	evtsExp.evKindMap[kvstore.Created]["b"] = maxObj
@@ -611,7 +627,7 @@ func TestObjResolverDepAddTest_5(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -662,7 +678,7 @@ func TestObjResolverDepDelTest_1(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 	}
@@ -710,7 +726,7 @@ func TestObjResolverDepDelTest_3(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -766,7 +782,7 @@ func TestObjResolverDepAddDelTest_1(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 	}
@@ -820,7 +836,7 @@ func TestObjResolverDepAddDelTest_2(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -832,7 +848,7 @@ func TestObjResolverDepAddDelTest_2(t *testing.T) {
 	AssertOk(t, err, "Error creating object")
 
 	//Make sure we receive no objects
-	err = verifyObjects(t, &evtsExp, time.Duration(1*time.Millisecond))
+	err = verifyObjects(t, &evtsExp, time.Duration(100*time.Millisecond))
 	Assert(t, err == nil, "Error verifying objects")
 
 	err = sendObjects(kvstore.Created, "b", 0, maxObj)
@@ -891,7 +907,7 @@ func TestObjResolverDepAddDelTest_3(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj},
@@ -979,7 +995,7 @@ func TestMemdbAddUpdateTest_1(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj / 2},
@@ -1039,7 +1055,7 @@ func TestMemdbAddUpdateTest_2(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj / 2},
@@ -1099,7 +1115,7 @@ func TestMemdbAddUpdateTest_3(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj / 2},
@@ -1165,7 +1181,7 @@ func TestMemdbAddUpdateTest_4(t *testing.T) {
 	evtRcvd.Reset()
 	ctrlerInst.Reset()
 
-	maxObj := 100
+	maxObj := 10
 	relations := []relation{
 		{"a", "b", 0, maxObj},
 		{"b", "c", 0, maxObj / 2},

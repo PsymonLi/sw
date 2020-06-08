@@ -622,6 +622,8 @@ func TestAggWatchWithSgAndPoliciesList(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 3 {
 			return true, nil
 		}
@@ -635,6 +637,8 @@ func TestAggWatchWithSgAndPoliciesList(t *testing.T) {
 	AssertOk(t, err, "Error deleting security policies")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 0 {
 			return true, nil
 		}
@@ -679,6 +683,8 @@ func TestAggWatchWithSgAndPoliciesListOneAfterOther(t *testing.T) {
 	time.Sleep(time.Second * 2)
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 3 {
 			return true, nil
 		}
@@ -692,6 +698,8 @@ func TestAggWatchWithSgAndPoliciesListOneAfterOther(t *testing.T) {
 	AssertOk(t, err, "Error deleting security policies")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 0 {
 			return true, nil
 		}
@@ -790,6 +798,8 @@ func TestAggWatchWithSgAndUpdatePoliciesListWithDisconnect(t *testing.T) {
 	go ag.client.WatchAggregate(cancelCtx, []string{"NetworkSecurityPolicy"}, ag)
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 3 {
 			return true, nil
 		}
@@ -814,6 +824,8 @@ func TestAggWatchWithSgAndUpdatePoliciesListWithDisconnect(t *testing.T) {
 
 	go ag.client.WatchAggregate(context.Background(), []string{"NetworkSecurityPolicy"}, ag)
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 3 {
 			return true, nil
 		}
@@ -835,6 +847,8 @@ func TestAggWatchWithSgAndUpdatePoliciesListWithDisconnect(t *testing.T) {
 	AssertOk(t, err, "Error deleting security policies")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 0 {
 			return true, nil
 		}
@@ -883,6 +897,8 @@ func TestAggWatchWithAppAndPolicyDep(t *testing.T) {
 	go ag.client.WatchAggregate(context.Background(), []string{"App", "NetworkSecurityPolicy"}, ag)
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) != 3 {
 			return false, fmt.Sprintf("expected : %d, got : %v. Agent Object : %v", 3, len(ag.securityPolicies), ag)
 		}
@@ -901,6 +917,8 @@ func TestAggWatchWithAppAndPolicyDep(t *testing.T) {
 	AssertOk(t, err, "Error deleting security policies")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 0 {
 			return true, nil
 		}
@@ -964,6 +982,8 @@ func TestAggWatchWithAppAndPolicyDepOutOfOrder(t *testing.T) {
 	AssertOk(t, err, "Error creating Apps")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.apps) != 3 {
 			return false, fmt.Sprintf("expected : %d, got : %v. Agent Object : %v", 3, len(ag.apps), ag)
 		}
@@ -992,6 +1012,8 @@ func TestAggWatchWithAppAndPolicyDepOutOfOrder(t *testing.T) {
 	}, fmt.Sprintf("Apps not received by agent. %v", ag), "100ms", "5s")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 3 {
 			return true, nil
 		}
@@ -1003,6 +1025,8 @@ func TestAggWatchWithAppAndPolicyDepOutOfOrder(t *testing.T) {
 	AssertOk(t, err, "Error deleting security policies")
 
 	AssertEventually(t, func() (bool, interface{}) {
+		ag.Lock()
+		defer ag.Unlock()
 		if len(ag.securityPolicies) == 0 {
 			return true, nil
 		}

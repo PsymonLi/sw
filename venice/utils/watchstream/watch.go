@@ -606,9 +606,12 @@ func (w *watchEventQ) Dequeue(ctx context.Context,
 			//  - list all objects in order of kinds provided in watch
 			//  - use the snapshot ver as the from ver and start incremental watch
 			snapVer := w.store.StartSnapshot()
+			w.log.Infof("Started Snapshot [%v]", snapVer)
 			for _, p := range w.paths {
 				// XXX- FIX NOW get kind for fieldselectors
+				w.log.Infof("start ListSnapshot for [%v]", p)
 				objs, err := w.store.ListFromSnapshot(snapVer, p, "", api.ListWatchOptions{})
+				w.log.Infof("ListSnapshot for [%v] size[%v](%v)", p, len(objs), err)
 				if err == nil {
 					sendList(objs)
 				}

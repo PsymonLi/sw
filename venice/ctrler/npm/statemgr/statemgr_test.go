@@ -11,7 +11,6 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -799,7 +798,6 @@ func TestNetworkList(t *testing.T) {
 	AssertOk(t, err, "Error creating the tenant")
 
 	list, err := stateMgr.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
-	Assert(t, strings.Contains(err.Error(), "not found in local cache"), "Failed to get list of networks")
 	Assert(t, len(list) == 0, fmt.Sprintf("Expected 0 networks, found %v networks", len(list)))
 
 	// create a network
@@ -836,11 +834,9 @@ func TestEndpointCreateDelete(t *testing.T) {
 	AssertOk(t, err, "Error creating the tenant")
 
 	list, err := stateMgr.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
-	Assert(t, strings.Contains(err.Error(), "not found in local cache"), "Failed to get list of networks")
 	Assert(t, len(list) == 0, fmt.Sprintf("Expected 0 networks, found %v networks", len(list)))
 
 	listEP, err := stateMgr.ctrler.Endpoint().List(context.Background(), &api.ListWatchOptions{})
-	Assert(t, strings.Contains(err.Error(), "not found in local cache"), "Failed to get list of endpoints")
 	Assert(t, len(listEP) == 0, fmt.Sprintf("Expected 0 endpoints, found %v endpoints", len(listEP)))
 
 	// create a network
@@ -3194,65 +3190,6 @@ func TestNetworkInterfaceConvert(t *testing.T) {
 		agentNetif.Spec.Type = v.agent
 		Assert(t, convertNetifObj("testnode", agentNetif) != nil, "failed to convert")
 	}
-}
-
-// Test CRUD operations on NetworkInterface object; there is no backend
-// code for these objects, so we don't check on other return details
-func TestNetworkInterfaceCRUD(t *testing.T) {
-	// create network state manager
-	stateMgr, err := newStatemgr()
-	defer stateMgr.Stop()
-	if err != nil {
-		t.Fatalf("Could not create network manager. Err: %v", err)
-		return
-	}
-
-	netifName := "00ae.cd00.1638-uplink130"
-	netif := network.NetworkInterface{
-		TypeMeta: api.TypeMeta{Kind: "NetworkInterface"},
-		ObjectMeta: api.ObjectMeta{
-			Name: netifName,
-		},
-		Status: network.NetworkInterfaceStatus{
-			OperStatus: "UP",
-			Type:       "UPLINK_ETH",
-		},
-	}
-
-	// create the netif
-	err = stateMgr.ctrler.NetworkInterface().Create(&netif)
-	AssertOk(t, err, "Could not create the smartNic")
-
-	// delete the smartNic
-	err = stateMgr.ctrler.NetworkInterface().Update(&netif)
-	AssertOk(t, err, "Error deleting the smartNic")
-
-	// delete the smartNic
-	err = stateMgr.ctrler.NetworkInterface().Delete(&netif)
-	AssertOk(t, err, "Error deleting the smartNic")
-
-	// Statemngr empty functions
-	cif := &ctkit.NetworkInterface{
-		NetworkInterface: netif,
-	}
-	err = stateMgr.OnNetworkInterfaceCreate(cif)
-	AssertOk(t, err, "expecting to pass")
-
-	err = stateMgr.OnNetworkInterfaceUpdate(cif, &netif)
-	AssertOk(t, err, "expecting to pass")
-
-	err = stateMgr.OnNetworkInterfaceDelete(cif)
-	AssertOk(t, err, "expecting to pass")
-
-	netif.Spec.Pause = &network.PauseSpec{
-		Type: network.PauseType_PRIORITY.String(),
-	}
-
-	cif.HandlerCtx = &NetworkInterfaceState{}
-	nifstate, err := networkInterfaceStateFromObj(cif)
-	nifstate.NetworkInterfaceState = cif
-	AssertOk(t, err, "expecting to succeed creating Netif State")
-
 }
 
 func TestRouteTableObj(t *testing.T) {
@@ -10889,6 +10826,7 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	// init tsdb client
+	numberofWorkersPerKind = 4
 	tsdbOpts := &tsdb.Opts{
 		ClientName:              "npm-statemgr-test",
 		Collector:               "test-collector",
@@ -10903,6 +10841,7 @@ func TestMain(m *testing.M) {
 	config.Filter = log.AllowAllFilter
 	logger = log.SetConfig(config)
 
+	useResolver = false
 	// call flag.Parse() here if TestMain uses flags
 	os.Exit(m.Run())
 }

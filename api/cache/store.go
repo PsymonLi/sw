@@ -278,7 +278,9 @@ func (s *store) Set(key string, rev uint64, obj runtime.Object, cb apiintf.Succe
 				cobj.delQId = 0
 				cobj.inDelQ = false
 			}
-			s.lastVer = rev
+			if rev > s.lastVer {
+				s.lastVer = rev
+			}
 			return nil
 		}
 		success = false
@@ -293,7 +295,9 @@ func (s *store) Set(key string, rev uint64, obj runtime.Object, cb apiintf.Succe
 		lastUpd:   time.Now(),
 		snapshots: make(map[uint64]mvccObj),
 	}
-	s.lastVer = rev
+	if rev > s.lastVer {
+		s.lastVer = rev
+	}
 	s.objs.Set(prefix, cobj)
 	s.stats.sets.Add(1)
 	return nil
@@ -390,7 +394,9 @@ func (s *store) Delete(key string, rev uint64, cb apiintf.SuccessCbFunc) (obj ru
 		if rev <= cobj.revision {
 			return nil, errorNotCorrectRev
 		}
-		s.lastVer = rev
+		if rev > s.lastVer {
+			s.lastVer = rev
+		}
 	}
 
 	if s.lastSnapshot != 0 {

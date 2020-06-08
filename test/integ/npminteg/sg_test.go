@@ -144,39 +144,12 @@ func (it *integTestSuite) TestNpmSgCreateDeleteWitApps(c *C) {
 		ports = append(ports, port)
 	}
 
-	//Stop App Watch so that we  miss apps update.
-
-	it.npmCtrler.StateMgr.StopAppWatch()
+	//First Create Apps
 	for index, app := range apps {
 		err := it.CreateApp("default", "default", app, ports[index])
 		c.Assert(err, IsNil)
 		if index+1 == addApps {
 			break
-		}
-	}
-
-	for _, ag := range it.agents {
-		for index, app := range apps {
-			policyMeta := api.ObjectMeta{
-				Tenant:    "default",
-				Namespace: "default",
-				Name:      app,
-			}
-
-			AssertEventually(c, func() (bool, interface{}) {
-				napp := netproto.App{
-					TypeMeta:   api.TypeMeta{Kind: "App"},
-					ObjectMeta: policyMeta,
-				}
-				_, err := ag.dscAgent.PipelineAPI.HandleApp(agentTypes.Get, napp)
-				if err == nil {
-					return false, nil
-				}
-				return true, nil
-			}, fmt.Sprintf("App not found in agent. App: %v", policyMeta), "10ms", it.pollTimeout())
-			if index+1 == addApps {
-				break
-			}
 		}
 	}
 
@@ -202,23 +175,7 @@ func (it *integTestSuite) TestNpmSgCreateDeleteWitApps(c *C) {
 
 	//Sleep for a while to make sure we don't receive the policy
 	time.Sleep(500 * time.Millisecond)
-	// verify agent state does not have the policy has the rules
-	for _, ag := range it.agents {
-		AssertEventually(c, func() (bool, interface{}) {
-			nsgp := netproto.NetworkSecurityPolicy{
-				TypeMeta:   api.TypeMeta{Kind: "NetworkSecurityPolicy"},
-				ObjectMeta: policyMeta,
-			}
-			_, err := ag.dscAgent.PipelineAPI.HandleNetworkSecurityPolicy(agentTypes.Get, nsgp)
-			if err == nil {
-				return false, nil
-			}
-			return true, nil
-		}, fmt.Sprintf("SGPolicy still found in agent. SGP: %v", policyMeta), "10ms", it.pollTimeout())
-	}
 
-	//Now we will allow apps to resolve
-	it.npmCtrler.StateMgr.StartAppWatch()
 	// construct object meta
 	for _, ag := range it.agents {
 		for index, app := range apps {
@@ -324,8 +281,6 @@ func (it *integTestSuite) TestNpmSgCreateDeleteWitApps(c *C) {
 		}, fmt.Sprintf("Sg rules not found on agent. SGP: %v", policyMeta), "10ms", it.pollTimeout())
 	}
 
-	//Stop Policy watch so that npm does not receive delete
-	it.npmCtrler.StopNetworkSecurityPolicyWatch()
 	// delete the sg policy
 	err = it.DeleteSgpolicy("default", "default", "testpolicy")
 	c.Assert(err, IsNil)
@@ -336,35 +291,8 @@ func (it *integTestSuite) TestNpmSgCreateDeleteWitApps(c *C) {
 		c.Assert(err, IsNil)
 	}
 
-	time.Sleep(500 * time.Millisecond)
-
-	//Make sure apps not deleted from agent yet
-	for _, ag := range it.agents {
-		for _, app := range apps {
-			policyMeta := api.ObjectMeta{
-				Tenant:    "default",
-				Namespace: "default",
-				Name:      app,
-			}
-
-			AssertEventually(c, func() (bool, interface{}) {
-				napp := netproto.App{
-					TypeMeta:   api.TypeMeta{Kind: "App"},
-					ObjectMeta: policyMeta,
-				}
-				_, err := ag.dscAgent.PipelineAPI.HandleApp(agentTypes.Get, napp)
-				if err != nil {
-					return false, nil
-				}
-				return true, nil
-			}, fmt.Sprintf("App found on agent. DB: %v", policyMeta), "100ms", it.pollTimeout())
-		}
-	}
-
-	it.npmCtrler.StartNetworkSecurityPolicyWatch()
 	time.Sleep(2 * time.Second)
 
-	// verify rules are not gone from agent
 	for _, ag := range it.agents {
 		AssertEventually(c, func() (bool, interface{}) {
 			nsgp := netproto.NetworkSecurityPolicy{
@@ -379,7 +307,6 @@ func (it *integTestSuite) TestNpmSgCreateDeleteWitApps(c *C) {
 		}, "Sg rules still found on agent", "10ms", it.pollTimeout())
 	}
 
-	//Make sure apps not deleted from agent yet
 	for _, ag := range it.agents {
 		for _, app := range apps {
 			policyMeta := api.ObjectMeta{

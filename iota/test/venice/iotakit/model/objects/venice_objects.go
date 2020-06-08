@@ -753,3 +753,63 @@ func (vnc *VeniceContainerCollection) RunCommand(cont *VeniceContainer, cmd stri
 
 	return triggerResp[0].Stdout, triggerResp[0].Stderr, triggerResp[0].ExitCode, nil
 }
+
+//Pause pauses the container
+func (vnc *VeniceContainerCollection) Pause() error {
+
+	//Derivce the container ID
+	trig := vnc.Testbed.NewTrigger()
+
+	for _, container := range vnc.Containers {
+		entity := container.Node.iotaNode.Name + "_venice"
+
+		fullCommand := "docker pause  " + container.ContainerID
+
+		trig.AddCommand(fullCommand, entity, container.Node.iotaNode.Name)
+
+	}
+	// trigger commands
+	triggerResp, err := trig.Run()
+	if err != nil {
+		log.Errorf("Failed to pause container Err: %v %v", err, triggerResp)
+		return fmt.Errorf("Failed to pause container Err: %v", err)
+	}
+
+	for _, resp := range triggerResp {
+		if resp.ExitCode != 0 {
+			log.Errorf("Failed to pause container Err: %v %v", err, resp.Stderr)
+			return fmt.Errorf("Failed to pause container %v", resp.Stderr)
+		}
+	}
+	return nil
+}
+
+//UnPause unpauses the container
+func (vnc *VeniceContainerCollection) UnPause() error {
+
+	//Derivce the container ID
+	trig := vnc.Testbed.NewTrigger()
+
+	for _, container := range vnc.Containers {
+		entity := container.Node.iotaNode.Name + "_venice"
+
+		fullCommand := "docker unpause  " + container.ContainerID
+
+		trig.AddCommand(fullCommand, entity, container.Node.iotaNode.Name)
+
+	}
+	// trigger commands
+	triggerResp, err := trig.Run()
+	if err != nil {
+		log.Errorf("Failed to pause container Err: %v %v", err, triggerResp)
+		return fmt.Errorf("Failed to pause container Err: %v", err)
+	}
+
+	for _, resp := range triggerResp {
+		if resp.ExitCode != 0 {
+			log.Errorf("Failed to pause container Err: %v %v", err, resp.Stderr)
+			return fmt.Errorf("Failed to pause container %v", resp.Stderr)
+		}
+	}
+	return nil
+}

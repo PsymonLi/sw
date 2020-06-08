@@ -41,6 +41,9 @@ var ObjRelations = map[string][]apiintf.ObjRelation{
 	"network.NetworkInterfaceSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/Network", Field: "AttachNetwork"},
 	},
+	"network.NetworkInterfaceStatus": []apiintf.ObjRelation{
+		{Type: "NamedRef", To: "cluster/DistributedServiceCard", Field: "DSC"},
+	},
 	"network.NetworkSpec": []apiintf.ObjRelation{
 		{Type: "NamedRef", To: "network/VirtualRouter", Field: "VirtualRouter"},
 		{Type: "NamedRef", To: "network/IPAMPolicy", Field: "IPAMPolicy"},

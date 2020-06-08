@@ -34,6 +34,11 @@ type Orchestrator struct {
 	orchestration.Orchestrator
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Orchestrator) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Orchestrator) Write() error {
@@ -243,13 +248,22 @@ type orchestratorCtx struct {
 }
 
 func (ctx *orchestratorCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *orchestratorCtx) GetKey() string {
 	return ctx.obj.MakeKey("orchestration")
+
+}
+
+func (ctx *orchestratorCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *orchestratorCtx) GetKind() string {
@@ -270,6 +284,7 @@ func (ctx *orchestratorCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*orchestratorCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -279,6 +294,7 @@ func (ctx *orchestratorCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *orchestratorCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Orchestrator = obj.(*orchestratorCtx).obj.Orchestrator
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *orchestratorCtx) Lock() {
@@ -362,6 +378,7 @@ func (ct *ctrlerCtx) handleOrchestratorEventParallel(evt *kvstore.WatchEvent) er
 		eobj.ApplyStorageTransformer(context.Background(), false /*decrypt*/)
 
 		ctx := &orchestratorCtx{event: evt.Type, obj: &Orchestrator{Orchestrator: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -419,7 +436,7 @@ func (ct *ctrlerCtx) handleOrchestratorEventParallelWithNoResolver(evt *kvstore.
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*orchestratorCtx)
+					workCtx = fobj.(*orchestratorCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Orchestrator_Updated_Events").Inc()
 					obj.Lock()
@@ -436,6 +453,7 @@ func (ct *ctrlerCtx) handleOrchestratorEventParallelWithNoResolver(evt *kvstore.
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &orchestratorCtx{event: evt.Type, obj: &Orchestrator{Orchestrator: *eobj, ctrler: ct}}
@@ -774,6 +792,9 @@ func (api *orchestratorAPI) Update(obj *orchestration.Orchestrator) error {
 
 // SyncUpdate triggers update on Orchestrator object and updates the cache
 func (api *orchestratorAPI) SyncUpdate(obj *orchestration.Orchestrator) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

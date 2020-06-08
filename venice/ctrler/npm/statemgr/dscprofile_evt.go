@@ -117,7 +117,6 @@ func convertDSCProfile(dps *DSCProfileState) *netproto.Profile {
 	fwp.CreationTime = api.Timestamp{Timestamp: *creationTime}
 	fwp.ObjectMeta.Tenant = "default"
 	fwp.ObjectMeta.Namespace = "default"
-	log.Infof("UUID is %v", fwp.ObjectMeta.UUID)
 
 	return &fwp
 }
@@ -231,7 +230,6 @@ func (sm *Statemgr) FindDSCProfile(tenant, name string) (*DSCProfileState, error
 		log.Infof("Unable to find the profile")
 		return nil, err
 	}
-	log.Infof("Found the profile")
 	return DSCProfileStateFromObj(obj)
 }
 
@@ -411,7 +409,7 @@ func (sm *Statemgr) UpdateDSCProfileStatusOnOperDelete(nodeuuid, tenant, name, g
 
 // UpdateDSCProfileStatusOnOperUpdate updates the profile status on Create/Update
 func (sm *Statemgr) UpdateDSCProfileStatusOnOperUpdate(nodeuuid, tenant, name, generationID string) {
-	log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s", name, tenant, nodeuuid)
+	//log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s", name, tenant, nodeuuid)
 	dscProfile, err := sm.FindDSCProfile(tenant, name)
 	if err != nil {
 		return
@@ -444,6 +442,6 @@ func (sm *Statemgr) UpdateDSCProfileStatusOnOperUpdate(nodeuuid, tenant, name, g
 	if update {
 		sm.PeriodicUpdaterPush(dscProfile)
 	}
-	log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s done", name, tenant, nodeuuid)
+	//log.Infof("OnOperUpdate: received status for profile %s tenant %s nodeuud %s done", name, tenant, nodeuuid)
 
 }

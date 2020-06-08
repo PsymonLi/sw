@@ -3,6 +3,7 @@
 package statemgr
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -13,7 +14,6 @@ import (
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/api/labels"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
-	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/runtime"
@@ -68,9 +68,11 @@ func EndpointStateFromObj(obj runtime.Object) (*EndpointState, error) {
 			eps := epobj.HandlerCtx.(*EndpointState)
 			return eps, nil
 		default:
+			log.Errorf("Incorrect type %#v, %#v", obj, epobj.HandlerCtx)
 			return nil, ErrIncorrectObjectType
 		}
 	default:
+		log.Errorf("Incorrect type %#v", obj)
 		return nil, ErrIncorrectObjectType
 	}
 }
@@ -376,8 +378,9 @@ func (sm *Statemgr) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 		time.Sleep(20 * time.Millisecond)
 		ns, err = sm.FindNetwork(epinfo.Tenant, epinfo.Status.Network)
 		if err != nil {
+			//return kvstore.NewKeyNotFoundError(epinfo.Status.Network, 0)
 			log.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
-			return kvstore.NewKeyNotFoundError(epinfo.Status.Network, 0)
+			return fmt.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
 		}
 	}
 
@@ -737,6 +740,9 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 						eps.Endpoint.Status.HomingHostName = ws.Workload.Status.HostName
 						eps.Endpoint.Status.HomingHostAddr = eps.Endpoint.Spec.HomingHostAddr
 
+						if err := eps.Write(); err != nil {
+							log.Errorf("Failed to write EP %v to API Server. Err : %v", eps.Endpoint.Name, err)
+						}
 						oldDSC, err := sm.FindDistributedServiceCard(eps.Endpoint.Tenant, oldEP.Spec.NodeUUID)
 						if err == nil {
 							eps.stopDSCTracking(oldDSC.DistributedServiceCard.DistributedServiceCard.Name)

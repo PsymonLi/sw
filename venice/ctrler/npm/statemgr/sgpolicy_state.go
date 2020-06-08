@@ -15,7 +15,6 @@ import (
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
-	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
@@ -234,7 +233,8 @@ func (sm *Statemgr) updateAttachedApps(sgp *security.NetworkSecurityPolicy) erro
 				app, err := sm.FindApp(sgp.Tenant, appName)
 				if err != nil {
 					log.Errorf("Error finding app %v for policy %v, rule {%v}", appName, sgp.Name, rule)
-					return kvstore.NewKeyNotFoundError(appName, 0)
+					return fmt.Errorf("Error finding app %v for policy %v, rule {%v}", appName, sgp.Name, rule)
+					//return kvstore.NewKeyNotFoundError(appName, 0)
 				}
 
 				app.attachPolicy(sgp.Name)

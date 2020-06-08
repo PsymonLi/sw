@@ -47,6 +47,9 @@ func TestIotaVcHub(t *testing.T) {
 	}
 	tb, model, err := model.InitSuite(*topoName, *testbedParams, *scaleFlag, *scaleDataFlag)
 
+	if err != nil {
+		log.Infof("Error setting up suite %v", err)
+	}
 	Assert(t, err == nil, "Init suite failed")
 
 	// test suite

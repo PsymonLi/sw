@@ -527,6 +527,17 @@ func (m *NetworkInterface) References(tenant string, path string, resp map[strin
 		m.Spec.References(tenant, tag, resp)
 
 	}
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "status"
+
+		m.Status.References(tenant, tag, resp)
+
+	}
 }
 
 func (m *NetworkInterface) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
@@ -701,6 +712,29 @@ func (m *NetworkInterfaceSpec) Normalize() {
 
 func (m *NetworkInterfaceStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 
+	{
+
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		tag := path + dlmtr + "dsc"
+		uref, ok := resp[tag]
+		if !ok {
+			uref = apiintf.ReferenceObj{
+				RefType: apiintf.ReferenceType("NamedRef"),
+				RefKind: "DistributedServiceCard",
+			}
+		}
+
+		if m.DSC != "" {
+			uref.Refs = append(uref.Refs, globals.ConfigRootPrefix+"/cluster/"+"distributedservicecards/"+m.DSC)
+		}
+
+		if len(uref.Refs) > 0 {
+			resp[tag] = uref
+		}
+	}
 }
 
 func (m *NetworkInterfaceStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {

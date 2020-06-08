@@ -17,6 +17,8 @@ type opResolver interface {
 	resolvedCheck(key string) bool
 	//trigger recursive dep check once resolved
 	trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, error)
+	//get unresolved objects
+	getUnResolvedObjects(key string) []apiintf.CtkitObject
 }
 
 //ObjectResolver is interface to do resolution on the controller DB
@@ -103,6 +105,28 @@ func (r *addResolver) resolvedCheck(key string) bool {
 	return refObjsResolved
 }
 
+func (r *addResolver) getUnResolvedObjects(key string) []apiintf.CtkitObject {
+
+	node := r.objGraph.References(key)
+	if node == nil {
+		//This node had no references, hence resolved.
+		return nil
+	}
+	pendingObjs := []apiintf.CtkitObject{}
+	for key, refs := range node.Refs {
+		_, dKind, _ := getSKindDKindFieldKey(key)
+		objDB := r.md.GetObjectStore(dKind)
+		for _, ref := range refs {
+			refObj, err := objDB.GetObject(getRefKey(ref))
+			//Referred Object not present or still not resolved.
+			if err == nil && !refObj.IsResolved() {
+				pendingObjs = append(pendingObjs, refObj)
+			}
+		}
+	}
+	return pendingObjs
+}
+
 func getRefKey(ref string) string {
 	return ref
 }
@@ -159,7 +183,6 @@ func (r *addResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, er
 		for key, referrers := range node.Refs {
 			skind, _, _ := getSKindDKindFieldKey(key)
 			objDB := r.md.GetObjectStore(skind)
-		L:
 			for _, referrer := range referrers {
 				referrerObj, err := objDB.GetObject(getRefKey(referrer))
 				//referrerObj, ok := objDB.objects[referrer]
@@ -178,7 +201,7 @@ func (r *addResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, er
 								log.Infof("Object key %v resolved, but ignoreing\n", referrerObj.GetKey())
 								//Contiue as this is not done yet.
 								referrerObj.Unlock()
-								break L
+								continue
 							}
 							//Mark object as in progress to queue any event behind this
 							referrerObj.SetInProgress()
@@ -191,8 +214,8 @@ func (r *addResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, er
 							referrerObj.ClearPendingEvents()
 						} else {
 							//Break out as this is still not resolved.
-							referrerObj.Unlock()
-							break L
+							//referrerObj.Unlock()
+							//break L
 						}
 					}
 					referrerObj.Unlock()
@@ -219,6 +242,10 @@ func (r *addResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, er
 	}
 
 	return pendingObjects, nil
+}
+
+func (r *deleteResolver) getUnResolvedObjects(key string) []apiintf.CtkitObject {
+	return nil
 }
 
 func (r *deleteResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent, error) {
@@ -251,7 +278,6 @@ func (r *deleteResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent,
 		for key, references := range node.Refs {
 			_, dKind, _ := getSKindDKindFieldKey(key)
 			objDB := r.md.GetObjectStore(dKind)
-		L:
 			for _, reference := range references {
 				referenceObj, err := objDB.GetObject(getRefKey(reference))
 				if err == nil {
@@ -279,7 +305,8 @@ func (r *deleteResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent,
 							}
 							thisObjPendingEvents = []apiintf.CtkitEvent{}
 							referenceObj.Unlock()
-							break L
+							continue
+							//break L
 						}
 					}
 					referenceObj.Unlock()
@@ -316,6 +343,7 @@ func (resolver *ObjectResolver) updateReferences(obj apiintf.CtkitObject) {
 	if obj.References() == nil {
 		return
 	}
+
 	node := graph.Node{
 		This: obj.GetKey(),
 		Refs: make(map[string][]string),
@@ -329,6 +357,14 @@ func (resolver *ObjectResolver) updateReferences(obj apiintf.CtkitObject) {
 		}
 	}
 
+	resolver.objGraph.UpdateNode(&node)
+}
+
+func (resolver *ObjectResolver) clearReferences(key string) {
+	node := graph.Node{
+		This: key,
+		Refs: make(map[string][]string),
+	}
 	resolver.objGraph.UpdateNode(&node)
 }
 
@@ -361,11 +397,22 @@ func (resolver *ObjectResolver) processAddInternal(obj apiintf.CtkitObject) erro
 		return resolver.processUpdateInternal(obj)
 	}
 
+	resolver.updateReferences(obj)
+	unresolvedObjs := resolver.addResolver.getUnResolvedObjects(obj.GetKey())
+	for _, unresolvedObj := range unresolvedObjs {
+		if unresolvedObj.IsOperationPending() {
+			log.Infof("Operation pending still on depending object %v (%v) ", unresolvedObj.GetKey(), obj.GetKey())
+			resolver.clearReferences(obj.GetKey())
+			unresolvedObj.AddToPending(apiintf.CtkitEvent{Obj: obj, Event: kvstore.Created})
+			return nil
+		}
+	}
+
 	objectDB.AddObject(obj)
 	obj.Lock()
 
 	obj.SetInProgress()
-	resolver.updateReferences(obj)
+	//resolver.updateReferences(obj)
 
 	if resolver.addResolver.resolvedCheck(obj.GetKey()) {
 		obj.SetEvent(kvstore.Created)
@@ -375,6 +422,7 @@ func (resolver *ObjectResolver) processAddInternal(obj apiintf.CtkitObject) erro
 		resolver.md.ResolvedRun(obj)
 	} else {
 		//Don't Send the object to consumer as it is still not resolved
+		//Check if the any of the dependening objects
 		obj.SetAddUnResolved()
 		obj.Unlock()
 		log.Infof("Add Object key %v unresolved, refs %v", obj.GetKey(), obj.References())
@@ -417,6 +465,7 @@ recheck:
 		event = kvstore.Created
 	} else {
 		existingObj.Lock()
+		existingObj.SetWatchTs(obj.GetWatchTs())
 		//Check if it is deleted.
 		if !existingObj.IsDeleted() {
 			if existingObj.IsOperationPending() {
@@ -568,13 +617,13 @@ func (resolver *ObjectResolver) Resolve(event kvstore.WatchEventType, obj apiint
 		for _, pobj := range pendingObjects {
 			//When creates is resolved, only delete events will be queued
 			if pobj.Event == kvstore.Deleted {
-				log.Infof("Process update of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending delete of key %v", pobj.Obj.GetKey())
 				resolver.processDeleteInternal(pobj.Obj)
 			} else if pobj.Event == kvstore.Updated {
-				log.Infof("Process update of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending update of key %v", pobj.Obj.GetKey())
 				resolver.processUpdateInternal(pobj.Obj)
 			} else if pobj.Event == kvstore.Created {
-				log.Infof("Process create of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending create of key %v", pobj.Obj.GetKey())
 				resolver.processAddInternal(pobj.Obj)
 			}
 		}

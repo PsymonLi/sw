@@ -10,7 +10,6 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
-	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 	"github.com/pensando/sw/venice/utils/runtime"
@@ -115,6 +114,7 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 func (sm *Statemgr) OnDistributedServiceCardCreate(smartNic *ctkit.DistributedServiceCard) error {
 	defer sm.ProcessDSCEvent(CreateEvent, &smartNic.DistributedServiceCard)
 	defer sm.sendDscUpdateNotification(&smartNic.DistributedServiceCard)
+	log.Infof("GOT DSC Create....")
 	sns, err := sm.dscCreate(smartNic)
 	if err != nil {
 		return err
@@ -157,7 +157,9 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 			profileState.DSCProfile.Unlock()
 		} else {
 			//Retry as this might be timing
-			return nil, kvstore.NewKeyNotFoundError(profName, 0)
+			log.Errorf("Profile %v not found", profName)
+			return nil, fmt.Errorf("Profile %v not found", profName)
+			//return nil, kvstore.NewKeyNotFoundError(profName, 0)
 		}
 	}
 
@@ -303,7 +305,9 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 				profileState.DSCProfile.Unlock()
 			} else {
 				//Retry as this might be timing
-				return nil, kvstore.NewKeyNotFoundError(newProfile, 0)
+				log.Errorf("Profile %v not found", newProfile)
+				return nil, fmt.Errorf("Profile %v not found", newProfile)
+				//return nil, kvstore.NewKeyNotFoundError(newProfile, 0)
 			}
 		}
 

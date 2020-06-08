@@ -40,6 +40,11 @@ type WatchEvent struct {
 
 	// Control is only set when Type is WatcherControl
 	Control *WatchControl
+
+	// timestamp for the watch creation
+	// not related to the event itself, used by watcher to indicate
+	// when it was received to facilitate mark and sweep when watch reestablishes
+	WatchTS int64
 }
 
 // WatchControl holds control messages on the watch channel

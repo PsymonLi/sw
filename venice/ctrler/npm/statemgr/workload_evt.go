@@ -107,8 +107,9 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 		time.Sleep(20 * time.Millisecond)
 		host, err = ws.stateMgr.ctrler.Host().Find(&api.ObjectMeta{Name: w.Spec.HostName})
 		if err != nil {
+			//return kvstore.NewKeyNotFoundError(w.Spec.HostName, 0)
 			log.Errorf("Error finding the host %s for workload %v. Err: %v", w.Spec.HostName, w.Name, err)
-			return kvstore.NewKeyNotFoundError(w.Spec.HostName, 0)
+			return fmt.Errorf("Error finding the host %s for workload %v. Err: %v", w.Spec.HostName, w.Name, err)
 		}
 	}
 
@@ -141,6 +142,7 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 		}
 
 		log.Infof("Handling migration for reconciled workload [%v]", ws.Workload.Name)
+		time.Sleep(1 * time.Second)
 		return ws.handleMigration()
 	}
 
@@ -201,6 +203,7 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 // reconcileWorkload checks if the endpoints are create for the workload and tries to create them
 func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState, snic *DistributedServiceCardState) error {
 	// find workload
+	log.Infof("Trying to reconcile workload %v", w.Name)
 	ws, err := sm.FindWorkload(w.Tenant, w.Name)
 	if err != nil {
 		return err
@@ -220,6 +223,7 @@ func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState, snic *D
 			_, err := sm.FindEndpoint(w.Tenant, epName)
 			pending, _ := sm.EndpointIsPending(w.Tenant, epName)
 			if err != nil && !pending {
+				log.Infof("Crating endpoint as part of reconcile %v", w.Name)
 				err = ws.createEndpoints()
 				if err != nil {
 					log.Errorf("Error creating endpoints for workload. Err: %v", err)
@@ -288,7 +292,7 @@ func (ws *WorkloadState) createNetwork(netName string, extVlan uint32) error {
 	}
 
 	// create it in apiserver
-	return ws.stateMgr.ctrler.Network().SyncCreate(&nwt)
+	return ws.stateMgr.ctrler.Network().Create(&nwt)
 }
 
 func (ws *WorkloadState) isMigrating() bool {
@@ -301,14 +305,45 @@ func (ws *WorkloadState) isMigrating() bool {
 	return w.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_STARTED.String() || w.Status.MigrationStatus.Status == workload.WorkloadMigrationStatus_NONE.String()
 }
 
+// checkEventually checks if a condition is met repeatedly
+func (ws *WorkloadState) waitForEndpoints() error {
+	pollInterval := 100 * time.Millisecond
+	timeoutInterval := time.Second * 120
+
+	timeout := time.After(timeoutInterval)
+
+	// loop till we reach timeout interval
+	for {
+		select {
+		case <-time.After(pollInterval):
+
+			for ii := range ws.Workload.Spec.Interfaces {
+				// check if we already have the endpoint for this workload
+				name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
+				epName := ws.Workload.Name + "-" + name
+				_, err := ws.stateMgr.FindEndpoint(ws.Workload.Tenant, epName)
+				pending, _ := ws.stateMgr.EndpointIsPending(ws.Workload.Tenant, epName)
+				if err == nil || pending {
+					return nil
+				}
+			}
+
+		case <-timeout:
+			log.Errorf("Error finding endpoints for workload  %v", ws.Workload.Name)
+			return fmt.Errorf("Error finding endpoints for workload  %v", ws.Workload.Name)
+		}
+	}
+}
+
 // createEndpoints tries to create all endpoints for a workload
 func (ws *WorkloadState) createEndpoints() error {
 	var ns *NetworkState
 	// find the host for the workload
 	host, err := ws.stateMgr.FindHost("", ws.Workload.Spec.HostName)
 	if err != nil {
+		//return kvstore.NewKeyNotFoundError(ws.Workload.Spec.HostName, 0)
 		log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Spec.HostName, ws.Workload.Name, err)
-		return kvstore.NewKeyNotFoundError(ws.Workload.Spec.HostName, 0)
+		return fmt.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Spec.HostName, ws.Workload.Name, err)
 	}
 
 	// loop over each interface of the workload
@@ -347,10 +382,11 @@ func (ws *WorkloadState) createEndpoints() error {
 		// check if we already have the endpoint for this workload
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
+		log.Infof("Adding to create endpoint %v", epName)
 		nodeUUID := ""
 		dscs := host.getDSCs()
 		if len(dscs) == 0 {
-			log.Errorf("Failed to find DSC on host %v", host.Host.Name)
+			log.Errorf("Failed to find DSC on host %v (%v)", host.Host.Name, epName)
 			ws.stateMgr.Unlock()
 			return fmt.Errorf("No DSC found for Host %v", host.Host.Name)
 		}
@@ -439,6 +475,7 @@ func (ws *WorkloadState) createEndpoints() error {
 			return kvstore.NewTxnFailedError()
 		}
 		// create new endpoint
+		log.Infof("Creating endpoint %v", epInfo.Name)
 		err = ws.stateMgr.ctrler.Endpoint().Create(epInfo)
 		if err != nil {
 			log.Errorf("Error creating endpoint. Err: %v", err)
@@ -697,8 +734,8 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 	}
 
 	// loop over each interface of the workload
-	ws.stateMgr.Lock()
-	defer ws.stateMgr.Unlock()
+	//ws.stateMgr.Lock()
+	//defer ws.stateMgr.Unlock()
 
 	var netName string
 	for ii := range ws.Workload.Spec.Interfaces {
@@ -736,7 +773,8 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 			_, err := ns.FindEndpointByMacAddr(epMac)
 			if err != nil {
 				log.Errorf("Failed to find endpoint with ep mac - %v", epMac)
-				return fmt.Errorf("failed to find ep %v", epMac)
+				//Ignore error
+				//return fmt.Errorf("failed to find ep %v", epMac)
 			}
 
 			epInfo := workload.Endpoint{

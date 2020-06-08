@@ -309,7 +309,8 @@ func (aps *AppState) detachPolicy(sgpName string) error {
 		}
 	}
 	// save the updated app
-	aps.App.Write()
+	//Write is expensive, don't hold the policy delete
+	go aps.App.Write()
 
 	return nil
 }

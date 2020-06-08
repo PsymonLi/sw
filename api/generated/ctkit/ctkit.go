@@ -11,7 +11,19 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
+	"github.com/pensando/sw/api/generated/auth"
+	"github.com/pensando/sw/api/generated/bookstore"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/diagnostics"
+	"github.com/pensando/sw/api/generated/monitoring"
+	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/objstore"
+	"github.com/pensando/sw/api/generated/orchestration"
+	"github.com/pensando/sw/api/generated/rollout"
+	"github.com/pensando/sw/api/generated/routing"
+	"github.com/pensando/sw/api/generated/security"
+	"github.com/pensando/sw/api/generated/staging"
+	"github.com/pensando/sw/api/generated/workload"
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/api/labels"
 	"github.com/pensando/sw/venice/utils"
@@ -29,7 +41,10 @@ import (
 )
 
 const maxApisrvWriteRetry = 5
-const numberOfShardWorkers = 64
+
+var (
+	numberOfShardWorkers = 64
+)
 
 type apiServerObject interface {
 	References(tenant string, path string, resp map[string]apiintf.ReferenceObj)
@@ -46,12 +61,32 @@ func references(obj apiServerObject) map[string]apiintf.ReferenceObj {
 type ctkitBaseCtx struct {
 	//resolveState resolveState //resolve state
 	objResolver.ResolveCtx
+	watchTs    int64
+	references map[string]apiintf.ReferenceObj
+}
+
+func (ctBase *ctkitBaseCtx) SetWatchTs(ts int64) {
+	ctBase.watchTs = ts
+}
+
+func (ctBase *ctkitBaseCtx) GetWatchTs() int64 {
+	return ctBase.watchTs
 }
 
 // db of objects for a kind
 type kindStore struct {
 	sync.Mutex
 	objects map[string]apiintf.CtkitObject
+}
+
+func (ct *ctrlerCtx) filterOutRefs(obj apiintf.CtkitObject) {
+
+	refs := obj.References()
+	for key, ref := range refs {
+		if _, ok := ct.kinds[ref.RefKind]; !ok {
+			delete(refs, key)
+		}
+	}
 }
 
 func (ks *kindStore) GetObject(key string) (apiintf.CtkitObject, error) {
@@ -148,6 +183,7 @@ type Controller interface {
 	List(kind string, ctx context.Context, opts *api.ListWatchOptions) ([]runtime.Object, error)
 	Stop() error                                                              // stop the controller
 	RegisterDiagnosticsHandler(rpcMethod, query string, handler diag.Handler) // registers diagnostics query handler
+	AggWatch() AggWatchAPI
 
 	User() UserAPI                                       // return User API interface
 	AuthenticationPolicy() AuthenticationPolicyAPI       // return AuthenticationPolicy API interface
@@ -209,9 +245,19 @@ type Controller interface {
 	Workload() WorkloadAPI                               // return Workload API interface
 }
 
+type CtrlerSpec struct {
+	Name                   string
+	RpcServer              *rpckit.RPCServer
+	ResolveObjects         bool
+	NumberofWorkersPerKind int
+	Resolver               resolver.Interface
+	ApisrvURL              string
+	Logger                 log.Logger
+}
+
 // NewController creates a new instance of controler
-func NewController(name string, rpcServer *rpckit.RPCServer, apisrvURL string, resolver resolver.Interface, logger log.Logger, resolveObjects bool) (Controller, CtrlDefReactor, error) {
-	keyTags := map[string]string{"node": "venice", "module": name, "kind": "CtkitStats"}
+func NewController(spec CtrlerSpec) (Controller, CtrlDefReactor, error) {
+	keyTags := map[string]string{"node": "venice", "module": spec.Name, "kind": "CtkitStats"}
 	tsdbObj, err := tsdb.NewObj("CtkitStats", keyTags, nil, nil)
 
 	defReactor := CtrlDefReactor{}
@@ -223,11 +269,11 @@ func NewController(name string, rpcServer *rpckit.RPCServer, apisrvURL string, r
 
 	// create controller context
 	ctrl := ctrlerCtx{
-		name:        name,
-		rpcServer:   rpcServer,
-		apisrvURL:   apisrvURL,
-		logger:      logger.WithContext("submodule", name+"-Watcher"),
-		resolver:    resolver,
+		name:        spec.Name,
+		rpcServer:   spec.RpcServer,
+		apisrvURL:   spec.ApisrvURL,
+		logger:      spec.Logger.WithContext("submodule", spec.Name+"-Watcher"),
+		resolver:    spec.Resolver,
 		stoped:      false,
 		watchers:    make(map[string]kvstore.Watcher),
 		watchCancel: make(map[string]context.CancelFunc),
@@ -235,16 +281,20 @@ func NewController(name string, rpcServer *rpckit.RPCServer, apisrvURL string, r
 		kinds:       make(map[string]*kindStore),
 		workPools:   make(map[string]*shardworkers.WorkerPool),
 		stats:       tsdbObj,
-		diagSvc:     diagsvc.GetDiagnosticsService(name, utils.GetHostname(), diagnostics.ModuleStatus_Venice, logger),
+		diagSvc:     diagsvc.GetDiagnosticsService(spec.Name, utils.GetHostname(), diagnostics.ModuleStatus_Venice, spec.Logger),
 		apiInfMap:   make(map[string]interface{}),
 	}
 
-	if resolveObjects {
+	if spec.ResolveObjects {
 		ctrl.objResolver = objResolver.NewObjectResolver(&ctrl)
 	}
 
-	if rpcServer != nil {
-		diag.RegisterService(rpcServer.GrpcServer, ctrl.diagSvc)
+	if spec.RpcServer != nil {
+		diag.RegisterService(spec.RpcServer.GrpcServer, ctrl.diagSvc)
+	}
+
+	if spec.NumberofWorkersPerKind != 0 {
+		numberOfShardWorkers = spec.NumberofWorkersPerKind
 	}
 
 	return &ctrl, defReactor, nil
@@ -275,6 +325,20 @@ func (ct *ctrlerCtx) getKindStore(kind string) *kindStore {
 		ct.kinds[kind] = ks
 	}
 	return ct.kinds[kind]
+}
+
+func (ct *ctrlerCtx) setKindStore(kind string) {
+
+	ct.Lock()
+	defer ct.Unlock()
+
+	ks, ok := ct.kinds[kind]
+	if !ok {
+		ks = &kindStore{
+			objects: make(map[string]apiintf.CtkitObject),
+		}
+		ct.kinds[kind] = ks
+	}
 }
 
 // Stop stops the controller
@@ -309,7 +373,7 @@ func (ct *ctrlerCtx) Stop() error {
 }
 
 func (ct *ctrlerCtx) startWorkerPool(kind string) {
-	workerPool := shardworkers.NewWorkerPool(numberOfShardWorkers)
+	workerPool := shardworkers.NewWorkerPool(uint32(numberOfShardWorkers))
 	workerPool.Start()
 	ct.Lock()
 	ct.workPools[kind] = workerPool
@@ -343,7 +407,6 @@ func (ct *ctrlerCtx) apiClient() (apiclient.Services, error) {
 }
 
 func (ct *ctrlerCtx) processAdd(obj apiintf.CtkitObject) error {
-
 	return ct.objResolver.ProcessAdd(obj)
 }
 
@@ -361,6 +424,11 @@ func (ct *ctrlerCtx) resolveObject(event kvstore.WatchEventType, workObj apiintf
 
 func (ct *ctrlerCtx) runJob(pool string, workObj shardworkers.WorkObj) error {
 	return ct.workPools[pool].RunJob(workObj)
+}
+
+func (ct *ctrlerCtx) workerPoolIdle(pool string) bool {
+	idle, _ := ct.workPools[pool].IsIdle()
+	return idle
 }
 
 func (ct *ctrlerCtx) findObject(kind, key string) (runtime.Object, error) {
@@ -386,6 +454,211 @@ func (ct *ctrlerCtx) findObject(kind, key string) (runtime.Object, error) {
 	}
 
 	return obj.RuntimeObject(), nil
+}
+
+func (ct *ctrlerCtx) sweepObjects(kind string, watchTS time.Time) {
+	ct.Lock()
+
+	ks, ok := ct.kinds[kind]
+	if !ok {
+		ct.Unlock()
+		return
+	}
+
+	ct.Unlock()
+	sweepObjs := []workerObject{}
+	ks.Lock()
+
+	for _, obj := range ks.objects {
+		if obj.IsInternal() {
+			continue
+		}
+		if obj.GetWatchTs() != watchTS.Unix() {
+			switch kind {
+
+			case "User":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*User).User)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleUserEventParallel})
+			case "AuthenticationPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*AuthenticationPolicy).AuthenticationPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAuthenticationPolicyEventParallel})
+			case "Role":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Role).Role)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRoleEventParallel})
+			case "RoleBinding":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RoleBinding).RoleBinding)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRoleBindingEventParallel})
+			case "UserPreference":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*UserPreference).UserPreference)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleUserPreferenceEventParallel})
+			case "Order":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Order).Order)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleOrderEventParallel})
+			case "Book":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Book).Book)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleBookEventParallel})
+			case "Publisher":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Publisher).Publisher)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handlePublisherEventParallel})
+			case "Store":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Store).Store)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleStoreEventParallel})
+			case "Coupon":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Coupon).Coupon)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleCouponEventParallel})
+			case "Customer":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Customer).Customer)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleCustomerEventParallel})
+			case "Cluster":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Cluster).Cluster)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleClusterEventParallel})
+			case "Node":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Node).Node)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNodeEventParallel})
+			case "Host":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Host).Host)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleHostEventParallel})
+			case "DistributedServiceCard":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*DistributedServiceCard).DistributedServiceCard)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleDistributedServiceCardEventParallel})
+			case "Tenant":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Tenant).Tenant)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleTenantEventParallel})
+			case "Version":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Version).Version)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleVersionEventParallel})
+			case "ConfigurationSnapshot":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*ConfigurationSnapshot).ConfigurationSnapshot)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleConfigurationSnapshotEventParallel})
+			case "SnapshotRestore":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*SnapshotRestore).SnapshotRestore)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleSnapshotRestoreEventParallel})
+			case "License":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*License).License)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleLicenseEventParallel})
+			case "DSCProfile":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*DSCProfile).DSCProfile)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleDSCProfileEventParallel})
+			case "Credentials":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Credentials).Credentials)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleCredentialsEventParallel})
+			case "Module":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Module).Module)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleModuleEventParallel})
+			case "EventPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*EventPolicy).EventPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleEventPolicyEventParallel})
+			case "FwlogPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*FwlogPolicy).FwlogPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleFwlogPolicyEventParallel})
+			case "FlowExportPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*FlowExportPolicy).FlowExportPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleFlowExportPolicyEventParallel})
+			case "Alert":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Alert).Alert)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAlertEventParallel})
+			case "AlertPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*AlertPolicy).AlertPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAlertPolicyEventParallel})
+			case "StatsAlertPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*StatsAlertPolicy).StatsAlertPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleStatsAlertPolicyEventParallel})
+			case "AlertDestination":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*AlertDestination).AlertDestination)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAlertDestinationEventParallel})
+			case "MirrorSession":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*MirrorSession).MirrorSession)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleMirrorSessionEventParallel})
+			case "TroubleshootingSession":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*TroubleshootingSession).TroubleshootingSession)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleTroubleshootingSessionEventParallel})
+			case "TechSupportRequest":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*TechSupportRequest).TechSupportRequest)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleTechSupportRequestEventParallel})
+			case "ArchiveRequest":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*ArchiveRequest).ArchiveRequest)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleArchiveRequestEventParallel})
+			case "AuditPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*AuditPolicy).AuditPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAuditPolicyEventParallel})
+			case "Network":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Network).Network)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNetworkEventParallel})
+			case "Service":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Service).Service)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleServiceEventParallel})
+			case "LbPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*LbPolicy).LbPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleLbPolicyEventParallel})
+			case "VirtualRouter":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*VirtualRouter).VirtualRouter)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleVirtualRouterEventParallel})
+			case "NetworkInterface":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*NetworkInterface).NetworkInterface)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNetworkInterfaceEventParallel})
+			case "IPAMPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*IPAMPolicy).IPAMPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleIPAMPolicyEventParallel})
+			case "RoutingConfig":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RoutingConfig).RoutingConfig)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRoutingConfigEventParallel})
+			case "RouteTable":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RouteTable).RouteTable)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRouteTableEventParallel})
+			case "Bucket":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Bucket).Bucket)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleBucketEventParallel})
+			case "Object":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Object).Object)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleObjectEventParallel})
+			case "Orchestrator":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Orchestrator).Orchestrator)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleOrchestratorEventParallel})
+			case "Rollout":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Rollout).Rollout)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRolloutEventParallel})
+			case "RolloutAction":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RolloutAction).RolloutAction)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRolloutActionEventParallel})
+			case "Neighbor":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Neighbor).Neighbor)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNeighborEventParallel})
+			case "SecurityGroup":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*SecurityGroup).SecurityGroup)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleSecurityGroupEventParallel})
+			case "NetworkSecurityPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*NetworkSecurityPolicy).NetworkSecurityPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNetworkSecurityPolicyEventParallel})
+			case "App":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*App).App)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleAppEventParallel})
+			case "FirewallProfile":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*FirewallProfile).FirewallProfile)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleFirewallProfileEventParallel})
+			case "Certificate":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Certificate).Certificate)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleCertificateEventParallel})
+			case "TrafficEncryptionPolicy":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*TrafficEncryptionPolicy).TrafficEncryptionPolicy)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleTrafficEncryptionPolicyEventParallel})
+			case "Buffer":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Buffer).Buffer)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleBufferEventParallel})
+			case "Endpoint":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Endpoint).Endpoint)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleEndpointEventParallel})
+			case "Workload":
+				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Workload).Workload)}
+				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleWorkloadEventParallel})
+			}
+		}
+	}
+	ks.Unlock()
+
+	for _, work := range sweepObjs {
+		work.workFunc(work.ev)
+	}
+
 }
 
 func (ct *ctrlerCtx) isPending(kind, key string) (bool, error) {
@@ -891,4 +1164,790 @@ func (ct *ctrlerCtx) RegisterDiagnosticsHandler(rpcMethod, query string, handler
 			// TODO throw an event
 		}
 	}
+}
+
+// dummy struct that implements Aggwatch
+type aggwatchAPI struct {
+	ct *ctrlerCtx
+}
+
+type AggWatchReactor interface {
+	//Callback from ctkit whenever resync is complete
+	ResyncComplete()
+}
+
+const (
+	aggWatckKind = "agg-watch"
+)
+
+type AggWatchAPI interface {
+	Start(reactor AggWatchReactor, kinds []AggKind) error
+}
+
+type AggKind struct {
+	Group   string
+	Kind    string
+	Reactor interface{}
+}
+
+type workerFunc func(evt *kvstore.WatchEvent) error
+
+type workerObject struct {
+	workFunc workerFunc
+	ev       *kvstore.WatchEvent
+}
+
+const (
+	workerQueueSize = 16384
+)
+
+func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReactor) error {
+
+	if agg.ct.resolver == nil {
+		reactor.ResyncComplete()
+		return nil
+	}
+	waitForWorkerPoolIdle := func() {
+
+		for true {
+			done := true
+			for _, kind := range wopts.WatchOptions {
+				if !agg.ct.workerPoolIdle(kind.Kind) {
+					log.Infof("Waiting pool %v still running", kind)
+					done = false
+					break
+				}
+			}
+			if done {
+				return
+			}
+			log.Infof("Waiting for worker pools to be idle.")
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	sweepObjects := func(watchTS time.Time) {
+		for _, kind := range wopts.WatchOptions {
+			log.Infof("Doing sweep of object %v", kind)
+			agg.ct.sweepObjects(kind.Kind, watchTS)
+		}
+	}
+
+	evWorker := func(watchTS time.Time, workChannel chan workerObject, done chan error) {
+
+		defer close(done)
+		log.Infof("Started agg ev worker")
+		defer log.Infof("agg ev worker done")
+		for true {
+			select {
+			case work, ok := <-workChannel:
+				if !ok {
+					return
+				}
+				switch work.ev.Type {
+				case kvstore.WatcherControl:
+					//wait for current objects to be processed
+					waitForWorkerPoolIdle()
+					//Sweep objects which are not removed
+					sweepObjects(watchTS)
+					waitForWorkerPoolIdle()
+					reactor.ResyncComplete()
+				default:
+					work.workFunc(work.ev)
+				}
+
+			}
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	agg.ct.Lock()
+	agg.ct.watchCancel[aggWatckKind] = cancel
+	agg.ct.Unlock()
+
+	ct := agg.ct
+	logger := ct.logger.WithContext("submodule", "AggWatcher")
+	log.Infof("Starting agg watch loop")
+	var watchTS time.Time
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		apiclt, err := apiclient.NewGrpcAPIClient(ct.name, ct.apisrvURL, logger, rpckit.WithBalancer(balancer.New(ct.resolver)))
+		// create a grpc client
+		if err != nil {
+			logger.Warnf("Failed to connect to gRPC server [%s] : %v \n", ct.apisrvURL, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		log.Infof("Connecting with options %#v", wopts)
+		watcher, err := apiclt.AggWatchV1().Watch(ctx, wopts)
+		if err != nil {
+			logger.Warnf("Failed to start aggwatch [%s] : %v \n", ct.apisrvURL, err)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if wopts.ResourceVersion == "" {
+			watchTS = time.Now()
+		}
+		log.Infof("Started agg watch loop")
+
+		evWorkChannel := make(chan workerObject, workerQueueSize)
+		evWorkerDone := make(chan error)
+		go evWorker(watchTS, evWorkChannel, evWorkerDone)
+	watchLoop:
+		for {
+			select {
+			case <-ctx.Done():
+				log.Infof("Stopped agg watch loop")
+				break watchLoop
+			case ev, ok := <-watcher.EventChan():
+				if ok {
+					ev.WatchTS = watchTS.Unix()
+					switch ev.Type {
+					case kvstore.Created, kvstore.Updated, kvstore.Deleted:
+						switch ev.Object.GetObjectKind() {
+
+						case "User":
+							wopts.ResourceVersion = ev.Object.(*auth.User).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleUserEventParallel}
+						case "AuthenticationPolicy":
+							wopts.ResourceVersion = ev.Object.(*auth.AuthenticationPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAuthenticationPolicyEventParallel}
+						case "Role":
+							wopts.ResourceVersion = ev.Object.(*auth.Role).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRoleEventParallel}
+						case "RoleBinding":
+							wopts.ResourceVersion = ev.Object.(*auth.RoleBinding).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRoleBindingEventParallel}
+						case "UserPreference":
+							wopts.ResourceVersion = ev.Object.(*auth.UserPreference).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleUserPreferenceEventParallel}
+						case "Order":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Order).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleOrderEventParallel}
+						case "Book":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Book).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleBookEventParallel}
+						case "Publisher":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Publisher).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handlePublisherEventParallel}
+						case "Store":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Store).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleStoreEventParallel}
+						case "Coupon":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Coupon).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleCouponEventParallel}
+						case "Customer":
+							wopts.ResourceVersion = ev.Object.(*bookstore.Customer).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleCustomerEventParallel}
+						case "Cluster":
+							wopts.ResourceVersion = ev.Object.(*cluster.Cluster).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleClusterEventParallel}
+						case "Node":
+							wopts.ResourceVersion = ev.Object.(*cluster.Node).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNodeEventParallel}
+						case "Host":
+							wopts.ResourceVersion = ev.Object.(*cluster.Host).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleHostEventParallel}
+						case "DistributedServiceCard":
+							wopts.ResourceVersion = ev.Object.(*cluster.DistributedServiceCard).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleDistributedServiceCardEventParallel}
+						case "Tenant":
+							wopts.ResourceVersion = ev.Object.(*cluster.Tenant).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleTenantEventParallel}
+						case "Version":
+							wopts.ResourceVersion = ev.Object.(*cluster.Version).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleVersionEventParallel}
+						case "ConfigurationSnapshot":
+							wopts.ResourceVersion = ev.Object.(*cluster.ConfigurationSnapshot).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleConfigurationSnapshotEventParallel}
+						case "SnapshotRestore":
+							wopts.ResourceVersion = ev.Object.(*cluster.SnapshotRestore).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleSnapshotRestoreEventParallel}
+						case "License":
+							wopts.ResourceVersion = ev.Object.(*cluster.License).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleLicenseEventParallel}
+						case "DSCProfile":
+							wopts.ResourceVersion = ev.Object.(*cluster.DSCProfile).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleDSCProfileEventParallel}
+						case "Credentials":
+							wopts.ResourceVersion = ev.Object.(*cluster.Credentials).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleCredentialsEventParallel}
+						case "Module":
+							wopts.ResourceVersion = ev.Object.(*diagnostics.Module).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleModuleEventParallel}
+						case "EventPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.EventPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleEventPolicyEventParallel}
+						case "FwlogPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.FwlogPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleFwlogPolicyEventParallel}
+						case "FlowExportPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.FlowExportPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleFlowExportPolicyEventParallel}
+						case "Alert":
+							wopts.ResourceVersion = ev.Object.(*monitoring.Alert).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAlertEventParallel}
+						case "AlertPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.AlertPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAlertPolicyEventParallel}
+						case "StatsAlertPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.StatsAlertPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleStatsAlertPolicyEventParallel}
+						case "AlertDestination":
+							wopts.ResourceVersion = ev.Object.(*monitoring.AlertDestination).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAlertDestinationEventParallel}
+						case "MirrorSession":
+							wopts.ResourceVersion = ev.Object.(*monitoring.MirrorSession).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleMirrorSessionEventParallel}
+						case "TroubleshootingSession":
+							wopts.ResourceVersion = ev.Object.(*monitoring.TroubleshootingSession).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleTroubleshootingSessionEventParallel}
+						case "TechSupportRequest":
+							wopts.ResourceVersion = ev.Object.(*monitoring.TechSupportRequest).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleTechSupportRequestEventParallel}
+						case "ArchiveRequest":
+							wopts.ResourceVersion = ev.Object.(*monitoring.ArchiveRequest).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleArchiveRequestEventParallel}
+						case "AuditPolicy":
+							wopts.ResourceVersion = ev.Object.(*monitoring.AuditPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAuditPolicyEventParallel}
+						case "Network":
+							wopts.ResourceVersion = ev.Object.(*network.Network).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNetworkEventParallel}
+						case "Service":
+							wopts.ResourceVersion = ev.Object.(*network.Service).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleServiceEventParallel}
+						case "LbPolicy":
+							wopts.ResourceVersion = ev.Object.(*network.LbPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleLbPolicyEventParallel}
+						case "VirtualRouter":
+							wopts.ResourceVersion = ev.Object.(*network.VirtualRouter).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleVirtualRouterEventParallel}
+						case "NetworkInterface":
+							wopts.ResourceVersion = ev.Object.(*network.NetworkInterface).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNetworkInterfaceEventParallel}
+						case "IPAMPolicy":
+							wopts.ResourceVersion = ev.Object.(*network.IPAMPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleIPAMPolicyEventParallel}
+						case "RoutingConfig":
+							wopts.ResourceVersion = ev.Object.(*network.RoutingConfig).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRoutingConfigEventParallel}
+						case "RouteTable":
+							wopts.ResourceVersion = ev.Object.(*network.RouteTable).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRouteTableEventParallel}
+						case "Bucket":
+							wopts.ResourceVersion = ev.Object.(*objstore.Bucket).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleBucketEventParallel}
+						case "Object":
+							wopts.ResourceVersion = ev.Object.(*objstore.Object).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleObjectEventParallel}
+						case "Orchestrator":
+							wopts.ResourceVersion = ev.Object.(*orchestration.Orchestrator).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleOrchestratorEventParallel}
+						case "Rollout":
+							wopts.ResourceVersion = ev.Object.(*rollout.Rollout).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRolloutEventParallel}
+						case "RolloutAction":
+							wopts.ResourceVersion = ev.Object.(*rollout.RolloutAction).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRolloutActionEventParallel}
+						case "Neighbor":
+							wopts.ResourceVersion = ev.Object.(*routing.Neighbor).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNeighborEventParallel}
+						case "SecurityGroup":
+							wopts.ResourceVersion = ev.Object.(*security.SecurityGroup).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleSecurityGroupEventParallel}
+						case "NetworkSecurityPolicy":
+							wopts.ResourceVersion = ev.Object.(*security.NetworkSecurityPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNetworkSecurityPolicyEventParallel}
+						case "App":
+							wopts.ResourceVersion = ev.Object.(*security.App).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleAppEventParallel}
+						case "FirewallProfile":
+							wopts.ResourceVersion = ev.Object.(*security.FirewallProfile).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleFirewallProfileEventParallel}
+						case "Certificate":
+							wopts.ResourceVersion = ev.Object.(*security.Certificate).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleCertificateEventParallel}
+						case "TrafficEncryptionPolicy":
+							wopts.ResourceVersion = ev.Object.(*security.TrafficEncryptionPolicy).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleTrafficEncryptionPolicyEventParallel}
+						case "Buffer":
+							wopts.ResourceVersion = ev.Object.(*staging.Buffer).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleBufferEventParallel}
+						case "Endpoint":
+							wopts.ResourceVersion = ev.Object.(*workload.Endpoint).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleEndpointEventParallel}
+						case "Workload":
+							wopts.ResourceVersion = ev.Object.(*workload.Workload).GetResourceVersion()
+							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleWorkloadEventParallel}
+						}
+					case kvstore.WatcherError:
+						log.Infof("Received watcher error, resetting resource version")
+						wopts.ResourceVersion = ""
+						break watchLoop
+					case kvstore.WatcherControl:
+						evWorkChannel <- workerObject{ev: ev}
+					default:
+						log.Errorf("Invalid Event received %#v", ev)
+					}
+				} else {
+					log.Infof("Channel closed, breaking watch loop")
+					break watchLoop
+				}
+
+			}
+		}
+		close(evWorkChannel)
+		<-evWorkerDone
+		apiclt.Close()
+		// if stop flag is set, we are done
+		if ct.stoped {
+			logger.Infof("Exiting Agg API server watcher")
+			return nil
+		}
+
+	}
+
+}
+
+func (agg *aggwatchAPI) Start(reactor AggWatchReactor, kinds []AggKind) error {
+
+	wopts := api.AggWatchOptions{}
+	for _, kind := range kinds {
+		switch kind.Kind {
+
+		case "User":
+			if reactor, ok := kind.Reactor.(UserHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "User")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetUserWatchOptions()})
+			}
+		case "AuthenticationPolicy":
+			if reactor, ok := kind.Reactor.(AuthenticationPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "AuthenticationPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAuthenticationPolicyWatchOptions()})
+			}
+		case "Role":
+			if reactor, ok := kind.Reactor.(RoleHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Role")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRoleWatchOptions()})
+			}
+		case "RoleBinding":
+			if reactor, ok := kind.Reactor.(RoleBindingHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "RoleBinding")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRoleBindingWatchOptions()})
+			}
+		case "UserPreference":
+			if reactor, ok := kind.Reactor.(UserPreferenceHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "UserPreference")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetUserPreferenceWatchOptions()})
+			}
+		case "Order":
+			if reactor, ok := kind.Reactor.(OrderHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Order")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetOrderWatchOptions()})
+			}
+		case "Book":
+			if reactor, ok := kind.Reactor.(BookHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Book")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetBookWatchOptions()})
+			}
+		case "Publisher":
+			if reactor, ok := kind.Reactor.(PublisherHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Publisher")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetPublisherWatchOptions()})
+			}
+		case "Store":
+			if reactor, ok := kind.Reactor.(StoreHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Store")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetStoreWatchOptions()})
+			}
+		case "Coupon":
+			if reactor, ok := kind.Reactor.(CouponHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Coupon")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetCouponWatchOptions()})
+			}
+		case "Customer":
+			if reactor, ok := kind.Reactor.(CustomerHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Customer")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetCustomerWatchOptions()})
+			}
+		case "Cluster":
+			if reactor, ok := kind.Reactor.(ClusterHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Cluster")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetClusterWatchOptions()})
+			}
+		case "Node":
+			if reactor, ok := kind.Reactor.(NodeHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Node")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNodeWatchOptions()})
+			}
+		case "Host":
+			if reactor, ok := kind.Reactor.(HostHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Host")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetHostWatchOptions()})
+			}
+		case "DistributedServiceCard":
+			if reactor, ok := kind.Reactor.(DistributedServiceCardHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "DistributedServiceCard")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetDistributedServiceCardWatchOptions()})
+			}
+		case "Tenant":
+			if reactor, ok := kind.Reactor.(TenantHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Tenant")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetTenantWatchOptions()})
+			}
+		case "Version":
+			if reactor, ok := kind.Reactor.(VersionHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Version")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetVersionWatchOptions()})
+			}
+		case "ConfigurationSnapshot":
+			if reactor, ok := kind.Reactor.(ConfigurationSnapshotHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "ConfigurationSnapshot")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetConfigurationSnapshotWatchOptions()})
+			}
+		case "SnapshotRestore":
+			if reactor, ok := kind.Reactor.(SnapshotRestoreHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "SnapshotRestore")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetSnapshotRestoreWatchOptions()})
+			}
+		case "License":
+			if reactor, ok := kind.Reactor.(LicenseHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "License")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetLicenseWatchOptions()})
+			}
+		case "DSCProfile":
+			if reactor, ok := kind.Reactor.(DSCProfileHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "DSCProfile")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetDSCProfileWatchOptions()})
+			}
+		case "Credentials":
+			if reactor, ok := kind.Reactor.(CredentialsHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Credentials")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetCredentialsWatchOptions()})
+			}
+		case "Module":
+			if reactor, ok := kind.Reactor.(ModuleHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Module")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetModuleWatchOptions()})
+			}
+		case "EventPolicy":
+			if reactor, ok := kind.Reactor.(EventPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "EventPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetEventPolicyWatchOptions()})
+			}
+		case "FwlogPolicy":
+			if reactor, ok := kind.Reactor.(FwlogPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "FwlogPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetFwlogPolicyWatchOptions()})
+			}
+		case "FlowExportPolicy":
+			if reactor, ok := kind.Reactor.(FlowExportPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "FlowExportPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetFlowExportPolicyWatchOptions()})
+			}
+		case "Alert":
+			if reactor, ok := kind.Reactor.(AlertHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Alert")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAlertWatchOptions()})
+			}
+		case "AlertPolicy":
+			if reactor, ok := kind.Reactor.(AlertPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "AlertPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAlertPolicyWatchOptions()})
+			}
+		case "StatsAlertPolicy":
+			if reactor, ok := kind.Reactor.(StatsAlertPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "StatsAlertPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetStatsAlertPolicyWatchOptions()})
+			}
+		case "AlertDestination":
+			if reactor, ok := kind.Reactor.(AlertDestinationHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "AlertDestination")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAlertDestinationWatchOptions()})
+			}
+		case "MirrorSession":
+			if reactor, ok := kind.Reactor.(MirrorSessionHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "MirrorSession")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetMirrorSessionWatchOptions()})
+			}
+		case "TroubleshootingSession":
+			if reactor, ok := kind.Reactor.(TroubleshootingSessionHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "TroubleshootingSession")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetTroubleshootingSessionWatchOptions()})
+			}
+		case "TechSupportRequest":
+			if reactor, ok := kind.Reactor.(TechSupportRequestHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "TechSupportRequest")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetTechSupportRequestWatchOptions()})
+			}
+		case "ArchiveRequest":
+			if reactor, ok := kind.Reactor.(ArchiveRequestHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "ArchiveRequest")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetArchiveRequestWatchOptions()})
+			}
+		case "AuditPolicy":
+			if reactor, ok := kind.Reactor.(AuditPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "AuditPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAuditPolicyWatchOptions()})
+			}
+		case "Network":
+			if reactor, ok := kind.Reactor.(NetworkHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Network")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNetworkWatchOptions()})
+			}
+		case "Service":
+			if reactor, ok := kind.Reactor.(ServiceHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Service")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetServiceWatchOptions()})
+			}
+		case "LbPolicy":
+			if reactor, ok := kind.Reactor.(LbPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "LbPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetLbPolicyWatchOptions()})
+			}
+		case "VirtualRouter":
+			if reactor, ok := kind.Reactor.(VirtualRouterHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "VirtualRouter")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetVirtualRouterWatchOptions()})
+			}
+		case "NetworkInterface":
+			if reactor, ok := kind.Reactor.(NetworkInterfaceHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "NetworkInterface")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNetworkInterfaceWatchOptions()})
+			}
+		case "IPAMPolicy":
+			if reactor, ok := kind.Reactor.(IPAMPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "IPAMPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetIPAMPolicyWatchOptions()})
+			}
+		case "RoutingConfig":
+			if reactor, ok := kind.Reactor.(RoutingConfigHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "RoutingConfig")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRoutingConfigWatchOptions()})
+			}
+		case "RouteTable":
+			if reactor, ok := kind.Reactor.(RouteTableHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "RouteTable")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRouteTableWatchOptions()})
+			}
+		case "Bucket":
+			if reactor, ok := kind.Reactor.(BucketHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Bucket")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetBucketWatchOptions()})
+			}
+		case "Object":
+			if reactor, ok := kind.Reactor.(ObjectHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Object")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetObjectWatchOptions()})
+			}
+		case "Orchestrator":
+			if reactor, ok := kind.Reactor.(OrchestratorHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Orchestrator")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetOrchestratorWatchOptions()})
+			}
+		case "Rollout":
+			if reactor, ok := kind.Reactor.(RolloutHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Rollout")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRolloutWatchOptions()})
+			}
+		case "RolloutAction":
+			if reactor, ok := kind.Reactor.(RolloutActionHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "RolloutAction")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRolloutActionWatchOptions()})
+			}
+		case "Neighbor":
+			if reactor, ok := kind.Reactor.(NeighborHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Neighbor")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNeighborWatchOptions()})
+			}
+		case "SecurityGroup":
+			if reactor, ok := kind.Reactor.(SecurityGroupHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "SecurityGroup")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetSecurityGroupWatchOptions()})
+			}
+		case "NetworkSecurityPolicy":
+			if reactor, ok := kind.Reactor.(NetworkSecurityPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "NetworkSecurityPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNetworkSecurityPolicyWatchOptions()})
+			}
+		case "App":
+			if reactor, ok := kind.Reactor.(AppHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "App")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetAppWatchOptions()})
+			}
+		case "FirewallProfile":
+			if reactor, ok := kind.Reactor.(FirewallProfileHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "FirewallProfile")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetFirewallProfileWatchOptions()})
+			}
+		case "Certificate":
+			if reactor, ok := kind.Reactor.(CertificateHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Certificate")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetCertificateWatchOptions()})
+			}
+		case "TrafficEncryptionPolicy":
+			if reactor, ok := kind.Reactor.(TrafficEncryptionPolicyHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "TrafficEncryptionPolicy")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetTrafficEncryptionPolicyWatchOptions()})
+			}
+		case "Buffer":
+			if reactor, ok := kind.Reactor.(BufferHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Buffer")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetBufferWatchOptions()})
+			}
+		case "Endpoint":
+			if reactor, ok := kind.Reactor.(EndpointHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Endpoint")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetEndpointWatchOptions()})
+			}
+		case "Workload":
+			if reactor, ok := kind.Reactor.(WorkloadHandler); !ok {
+				return fmt.Errorf("%v reactor not implemented", "Workload")
+			} else {
+				wopts.WatchOptions = append(wopts.WatchOptions,
+					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetWorkloadWatchOptions()})
+			}
+
+		default:
+			return fmt.Errorf("Kind %v not found", kind.Kind)
+		}
+		agg.ct.startWorkerPool(kind.Kind)
+		log.Infof("Ctkit handler registration for agg reactor for %v(%v) %p %T", kind.Kind, kind.Group, kind.Reactor, kind.Reactor)
+		agg.ct.handlers[kind.Kind] = kind.Reactor
+		agg.ct.setKindStore(kind.Kind)
+	}
+
+	go agg.runLoop(&wopts, reactor)
+	return nil
+}
+
+//AggWatch returns handler for agg watch
+func (ct *ctrlerCtx) AggWatch() AggWatchAPI {
+	kind := aggWatckKind
+	if _, ok := ct.apiInfMap[kind]; !ok {
+		s := &aggwatchAPI{ct: ct}
+		ct.apiInfMap[kind] = s
+	}
+	return ct.apiInfMap[kind].(*aggwatchAPI)
 }

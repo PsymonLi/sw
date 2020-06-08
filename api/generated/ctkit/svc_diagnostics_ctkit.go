@@ -34,6 +34,11 @@ type Module struct {
 	diagnostics.Module
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Module) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Module) Write() error {
@@ -239,13 +244,22 @@ type moduleCtx struct {
 }
 
 func (ctx *moduleCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *moduleCtx) GetKey() string {
 	return ctx.obj.MakeKey("diagnostics")
+
+}
+
+func (ctx *moduleCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *moduleCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *moduleCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*moduleCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *moduleCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *moduleCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Module = obj.(*moduleCtx).obj.Module
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *moduleCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleModuleEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &moduleCtx{event: evt.Type, obj: &Module{Module: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleModuleEventParallelWithNoResolver(evt *kvstore.WatchE
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*moduleCtx)
+					workCtx = fobj.(*moduleCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Module_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleModuleEventParallelWithNoResolver(evt *kvstore.WatchE
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &moduleCtx{event: evt.Type, obj: &Module{Module: *eobj, ctrler: ct}}
@@ -773,6 +791,9 @@ func (api *moduleAPI) Update(obj *diagnostics.Module) error {
 
 // SyncUpdate triggers update on Module object and updates the cache
 func (api *moduleAPI) SyncUpdate(obj *diagnostics.Module) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

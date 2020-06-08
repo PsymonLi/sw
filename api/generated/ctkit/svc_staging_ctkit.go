@@ -34,6 +34,11 @@ type Buffer struct {
 	staging.Buffer
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Buffer) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Buffer) Write() error {
@@ -239,13 +244,22 @@ type bufferCtx struct {
 }
 
 func (ctx *bufferCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *bufferCtx) GetKey() string {
 	return ctx.obj.MakeKey("staging")
+
+}
+
+func (ctx *bufferCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *bufferCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *bufferCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*bufferCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *bufferCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *bufferCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Buffer = obj.(*bufferCtx).obj.Buffer
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *bufferCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleBufferEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &bufferCtx{event: evt.Type, obj: &Buffer{Buffer: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleBufferEventParallelWithNoResolver(evt *kvstore.WatchE
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*bufferCtx)
+					workCtx = fobj.(*bufferCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Buffer_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleBufferEventParallelWithNoResolver(evt *kvstore.WatchE
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &bufferCtx{event: evt.Type, obj: &Buffer{Buffer: *eobj, ctrler: ct}}
@@ -785,6 +803,9 @@ func (api *bufferAPI) Update(obj *staging.Buffer) error {
 
 // SyncUpdate triggers update on Buffer object and updates the cache
 func (api *bufferAPI) SyncUpdate(obj *staging.Buffer) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

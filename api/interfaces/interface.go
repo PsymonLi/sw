@@ -244,6 +244,9 @@ type CtkitObject interface {
 	GetNewObj() CtkitObject
 	Copy(CtkitObject)
 	RuntimeObject() runtime.Object
+	SetWatchTs(int64)
+	GetWatchTs() int64
+	IsInternal() bool
 	References() map[string]ReferenceObj
 }
 

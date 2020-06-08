@@ -58,7 +58,7 @@ func TestWorkerStartStop(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 	TestUtils.Assert(t, myCtx.done, "Work is done")
-
+	wp.GetPendingJobsCount(0)
 	cnt, err := wp.GetCompletedJobsCount(0)
 	TestUtils.Assert(t, cnt == 1 && err == nil, "Jobs completed match on queue 0")
 
@@ -73,6 +73,9 @@ func TestWorkerStartStop(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	cnt, err = wp.GetCompletedJobsCount(1)
 	TestUtils.Assert(t, cnt == 1 && err == nil, "Jobs completed match on queue 1")
+	time.Sleep(2 * time.Second)
+	idle, err := wp.IsIdle()
+	TestUtils.Assert(t, idle, "Jobs completed match on queue 1")
 
 	wp.Stop()
 	TestUtils.Assert(t, !wp.Running(), "Worker pool not running")

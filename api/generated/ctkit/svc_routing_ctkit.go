@@ -34,6 +34,11 @@ type Neighbor struct {
 	routing.Neighbor
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Neighbor) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Neighbor) Write() error {
@@ -243,13 +248,22 @@ type neighborCtx struct {
 }
 
 func (ctx *neighborCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *neighborCtx) GetKey() string {
 	return ctx.obj.MakeKey("routing")
+
+}
+
+func (ctx *neighborCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *neighborCtx) GetKind() string {
@@ -270,6 +284,7 @@ func (ctx *neighborCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*neighborCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -279,6 +294,7 @@ func (ctx *neighborCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *neighborCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Neighbor = obj.(*neighborCtx).obj.Neighbor
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *neighborCtx) Lock() {
@@ -362,6 +378,7 @@ func (ct *ctrlerCtx) handleNeighborEventParallel(evt *kvstore.WatchEvent) error 
 		eobj.ApplyStorageTransformer(context.Background(), false /*decrypt*/)
 
 		ctx := &neighborCtx{event: evt.Type, obj: &Neighbor{Neighbor: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -419,7 +436,7 @@ func (ct *ctrlerCtx) handleNeighborEventParallelWithNoResolver(evt *kvstore.Watc
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*neighborCtx)
+					workCtx = fobj.(*neighborCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Neighbor_Updated_Events").Inc()
 					obj.Lock()
@@ -436,6 +453,7 @@ func (ct *ctrlerCtx) handleNeighborEventParallelWithNoResolver(evt *kvstore.Watc
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &neighborCtx{event: evt.Type, obj: &Neighbor{Neighbor: *eobj, ctrler: ct}}
@@ -774,6 +792,9 @@ func (api *neighborAPI) Update(obj *routing.Neighbor) error {
 
 // SyncUpdate triggers update on Neighbor object and updates the cache
 func (api *neighborAPI) SyncUpdate(obj *routing.Neighbor) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

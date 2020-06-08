@@ -29,6 +29,8 @@ var singletonStatemgr Statemgr
 var once sync.Once
 var featuremgrs map[string]FeatureStateMgr
 
+var numberofWorkersPerKind = 64
+
 // maxUpdateChannelSize is the size of the update pending channel
 const maxUpdateChannelSize = 16384
 
@@ -44,6 +46,10 @@ type dscUpdateObj struct {
 	dsc *cluster.DistributedServiceCard
 	obj dscUpdateIntf
 }
+
+var (
+	useResolver = true
+)
 
 // dscUpdateIntf
 type dscUpdateIntf interface {
@@ -76,36 +82,39 @@ type Topics struct {
 // Statemgr is the object state manager
 type Statemgr struct {
 	sync.Mutex
-	mbus                  *nimbus.MbusServer       // nimbus server
-	periodicUpdaterQueue  chan updatable           // queue for periodically writing items back to apiserver
-	dscObjUpdateQueue     chan dscUpdateObj        // queue for sending updates after DSC update
-	garbageCollector      *GarbageCollector        // nw object garbage collector
+	mbus                  *nimbus.MbusServer // nimbus server
+	periodicUpdaterQueue  chan updatable     // queue for periodically writing items back to apiserver
+	dscObjUpdateQueue     chan dscUpdateObj  // queue for sending updates after DSC update
+	garbageCollector      *GarbageCollector  // nw object garbage collector
+	initialResyncDone     bool
+	resyncDone            chan bool
 	dscUpdateNotifObjects map[string]dscUpdateIntf // objects which are watching dsc update
 	ctrler                ctkit.Controller         // controller instance
 	topics                Topics                   // message bus topics
 	networkKindLock       sync.Mutex               // lock on entire network kind, take when any changes are done to any network
 	logger                log.Logger
 	WatchFilterFlags      map[string]uint
+	aggKinds              []ctkit.AggKind
 
-	ModuleReactor                 ctkit.ModuleHandler
-	TenantReactor                 ctkit.TenantHandler
-	SecurityGroupReactor          ctkit.SecurityGroupHandler
-	AppReactor                    ctkit.AppHandler
-	VirtualRouterReactor          ctkit.VirtualRouterHandler
-	RouteTableReactor             ctkit.RouteTableHandler
-	NetworkReactor                ctkit.NetworkHandler
-	FirewallProfileReactor        ctkit.FirewallProfileHandler
-	DistributedServiceCardReactor ctkit.DistributedServiceCardHandler
-	HostReactor                   ctkit.HostHandler
-	EndpointReactor               ctkit.EndpointHandler
-	NetworkSecurityPolicyReactor  ctkit.NetworkSecurityPolicyHandler
-	WorkloadReactor               ctkit.WorkloadHandler
-	NetworkInterfaceReactor       ctkit.NetworkInterfaceHandler
-	IPAMPolicyReactor             ctkit.IPAMPolicyHandler
-	RoutingConfigReactor          ctkit.RoutingConfigHandler
-	DSCProfileReactor             ctkit.DSCProfileHandler
-	MirrorSessionReactor          ctkit.MirrorSessionHandler
-	FlowExportPolicyReactor       ctkit.FlowExportPolicyHandler
+	ctkit.ModuleHandler
+	ctkit.TenantHandler
+	ctkit.SecurityGroupHandler
+	ctkit.AppHandler
+	ctkit.VirtualRouterHandler
+	ctkit.RouteTableHandler
+	ctkit.NetworkHandler
+	ctkit.FirewallProfileHandler
+	ctkit.DistributedServiceCardHandler
+	ctkit.HostHandler
+	ctkit.EndpointHandler
+	ctkit.NetworkSecurityPolicyHandler
+	ctkit.WorkloadHandler
+	ctkit.NetworkInterfaceHandler
+	ctkit.IPAMPolicyHandler
+	ctkit.RoutingConfigHandler
+	ctkit.DSCProfileHandler
+	ctkit.MirrorSessionHandler
+	ctkit.FlowExportPolicyHandler
 
 	SecurityProfileStatusReactor       nimbus.SecurityProfileStatusReactor
 	AppStatusReactor                   nimbus.AppStatusReactor
@@ -169,99 +178,137 @@ func (sm *Statemgr) SetRoutingConfigStatusReactor(handler nimbus.RoutingConfigSt
 	sm.RoutingConfigStatusReactor = handler
 }
 
+func (sm *Statemgr) addAggKind(group, kind string, reactor interface{}) {
+	sm.Lock()
+	defer sm.Unlock()
+	for index, aggKind := range sm.aggKinds {
+		if aggKind.Group == group && aggKind.Kind == kind {
+			log.Infof("Overwriting agg reactor for %v(%v) %p %T", kind, group, reactor, reactor)
+			sm.aggKinds[index].Reactor = reactor
+			return
+		}
+	}
+	log.Infof("Registring agg reactor for %v(%v) %p %T", kind, group, reactor, reactor)
+	sm.aggKinds = append(sm.aggKinds, ctkit.AggKind{
+		Group:   group,
+		Kind:    kind,
+		Reactor: reactor,
+	})
+}
+
 // SetIPAMPolicyReactor sets the IPAMPolicy reactor
 func (sm *Statemgr) SetIPAMPolicyReactor(handler ctkit.IPAMPolicyHandler) {
-	sm.IPAMPolicyReactor = handler
+	sm.IPAMPolicyHandler = handler
+	sm.addAggKind("network", "IPAMPolicy", handler)
 }
 
 // SetModuleReactor sets the Module reactor
 func (sm *Statemgr) SetModuleReactor(handler ctkit.ModuleHandler) {
-	sm.ModuleReactor = handler
+	sm.ModuleHandler = handler
+	sm.addAggKind("diagnostics", "Module", handler)
 }
 
 // SetTenantReactor sets the Tenant reactor
 func (sm *Statemgr) SetTenantReactor(handler ctkit.TenantHandler) {
-	sm.TenantReactor = handler
+	sm.TenantHandler = handler
+	sm.addAggKind("cluster", "Tenant", handler)
 }
 
 // SetSecurityGroupReactor sets the SecurityGroup reactor
 func (sm *Statemgr) SetSecurityGroupReactor(handler ctkit.SecurityGroupHandler) {
-	sm.SecurityGroupReactor = handler
+	sm.SecurityGroupHandler = handler
+	sm.addAggKind("security", "SecurityGroup", handler)
 }
 
 // SetAppReactor sets the App reactor
 func (sm *Statemgr) SetAppReactor(handler ctkit.AppHandler) {
-	sm.AppReactor = handler
+	sm.AppHandler = handler
+	sm.addAggKind("security", "App", handler)
 }
 
 // SetVirtualRouterReactor sets the VirtualRouter reactor
 func (sm *Statemgr) SetVirtualRouterReactor(handler ctkit.VirtualRouterHandler) {
-	sm.VirtualRouterReactor = handler
+	sm.VirtualRouterHandler = handler
+	sm.addAggKind("network", "VirtualRouter", handler)
 }
 
 // SetRouteTableReactor sets the VirtualRouter reactor
 func (sm *Statemgr) SetRouteTableReactor(handler ctkit.RouteTableHandler) {
-	sm.RouteTableReactor = handler
+	sm.RouteTableHandler = handler
+	sm.addAggKind("network", "RouteTable", handler)
 }
 
 // SetNetworkReactor sets the Network reactor
 func (sm *Statemgr) SetNetworkReactor(handler ctkit.NetworkHandler) {
-	sm.NetworkReactor = handler
+	sm.NetworkHandler = handler
+	sm.addAggKind("network", "Network", handler)
 }
 
 // SetFirewallProfileReactor sets the FirewallProfile reactor
 func (sm *Statemgr) SetFirewallProfileReactor(handler ctkit.FirewallProfileHandler) {
-	sm.FirewallProfileReactor = handler
+	sm.FirewallProfileHandler = handler
+	sm.addAggKind("security", "FirewallProfile", handler)
 }
 
 // SetDistributedServiceCardReactor sets the DistributedServiceCard reactor
 func (sm *Statemgr) SetDistributedServiceCardReactor(handler ctkit.DistributedServiceCardHandler) {
-	sm.DistributedServiceCardReactor = handler
+	log.Infof("regi handler %p", handler)
+	sm.DistributedServiceCardHandler = handler
+	sm.addAggKind("cluster", "DistributedServiceCard", handler)
 }
 
 // SetHostReactor sets the Host reactor
 func (sm *Statemgr) SetHostReactor(handler ctkit.HostHandler) {
-	sm.HostReactor = handler
+	sm.HostHandler = handler
+	sm.addAggKind("cluster", "Host", handler)
 }
 
 // SetEndpointReactor sets the Endpoint reactor
 func (sm *Statemgr) SetEndpointReactor(handler ctkit.EndpointHandler) {
-	sm.EndpointReactor = handler
+	sm.EndpointHandler = handler
+	sm.addAggKind("workload", "Endpoint", handler)
 }
 
 // SetNetworkSecurityPolicyReactor sets the NetworkSecurity reactor
 func (sm *Statemgr) SetNetworkSecurityPolicyReactor(handler ctkit.NetworkSecurityPolicyHandler) {
-	sm.NetworkSecurityPolicyReactor = handler
+	sm.NetworkSecurityPolicyHandler = handler
+	sm.addAggKind("security", "NetworkSecurityPolicy", handler)
 }
 
 // SetWorkloadReactor sets the Workload reactor
 func (sm *Statemgr) SetWorkloadReactor(handler ctkit.WorkloadHandler) {
-	sm.WorkloadReactor = handler
+	sm.WorkloadHandler = handler
+	sm.addAggKind("workload", "Workload", handler)
 }
 
 // SetNetworkInterfaceReactor sets the NetworkInterface reactor
 func (sm *Statemgr) SetNetworkInterfaceReactor(handler ctkit.NetworkInterfaceHandler) {
-	sm.NetworkInterfaceReactor = handler
+	sm.NetworkInterfaceHandler = handler
+	sm.addAggKind("network", "NetworkInterface", handler)
 }
 
 // SetMirrorSessionReactor sets the  MirrorSession reactor
 func (sm *Statemgr) SetMirrorSessionReactor(handler ctkit.MirrorSessionHandler) {
-	sm.MirrorSessionReactor = handler
+	sm.MirrorSessionHandler = handler
+	sm.addAggKind("monitoring", "MirrorSession", handler)
 }
 
 // SetFlowExportPolicyReactor sets the  MirrorSession reactor
 func (sm *Statemgr) SetFlowExportPolicyReactor(handler ctkit.FlowExportPolicyHandler) {
-	sm.FlowExportPolicyReactor = handler
+	sm.FlowExportPolicyHandler = handler
+	sm.addAggKind("monitoring", "FlowExportPolicy", handler)
 }
 
 // SetRoutingConfigReactor sets the RoutingConfig reactor
 func (sm *Statemgr) SetRoutingConfigReactor(handler ctkit.RoutingConfigHandler) {
-	sm.RoutingConfigReactor = handler
+	sm.RoutingConfigHandler = handler
+	sm.addAggKind("network", "RoutingConfig", handler)
 }
 
 // SetDSCProfileReactor sets the DSCProfile reactor
 func (sm *Statemgr) SetDSCProfileReactor(handler ctkit.DSCProfileHandler) {
-	sm.DSCProfileReactor = handler
+	sm.DSCProfileHandler = handler
+	sm.addAggKind("cluster", "DSCProfile", handler)
 }
 
 // ErrIsObjectNotFound returns true if the error is object not found
@@ -323,9 +370,10 @@ func (sm *Statemgr) StopGarbageCollection() {
 // Stop stops the watchers
 func (sm *Statemgr) Stop() error {
 	log.Infof("Statemanager stop called")
+	sm.ctrler.Stop()
 	close(sm.periodicUpdaterQueue)
 	sm.StopGarbageCollection()
-	return sm.ctrler.Stop()
+	return nil
 }
 
 type featureMgrBase struct {
@@ -441,6 +489,22 @@ func (sm *Statemgr) setDefaultReactors(reactor ctkit.CtrlDefReactor) {
 
 }
 
+//ResyncComplete callback from ctkit when resync of state is done
+func (sm *Statemgr) ResyncComplete() {
+
+	sm.checkRejectedNetworks()
+	sm.RemoveStaleEndpoints()
+	sm.cleanUnusedNetworks()
+	if !sm.initialResyncDone {
+		// label the objects for relA to relB
+		sm.labelInternalNetworkObjects()
+		sm.initialResyncDone = true
+		log.Info("Initial Rsync complete done")
+		sm.resyncDone <- true
+	}
+
+}
+
 // Run calls the feature statemgr callbacks and eastablishes the Watches
 func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr resolver.Interface, mserver *nimbus.MbusServer, logger log.Logger, options ...Option) error {
 
@@ -452,7 +516,17 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 
 	// create controller instance
 	// disable object resolution
-	ctrler, defReactor, err := ctkit.NewController(globals.Npm, rpcServer, apisrvURL, rslvr, logger, false)
+
+	spec := ctkit.CtrlerSpec{
+		ApisrvURL:              apisrvURL,
+		Logger:                 logger,
+		Name:                   globals.Npm,
+		Resolver:               rslvr,
+		NumberofWorkersPerKind: numberofWorkersPerKind,
+		RpcServer:              rpcServer,
+		ResolveObjects:         useResolver,
+	}
+	ctrler, defReactor, err := ctkit.NewController(spec)
 	if err != nil {
 		logger.Fatalf("Error creating controller. Err: %v", err)
 	}
@@ -468,9 +542,8 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 	sm.periodicUpdaterQueue = newPeriodicUpdater()
 	sm.dscObjUpdateQueue = newdscOpdateObjNotifier()
 
-	// Start garbage collection of unused network
-	sm.StartGarbageCollection()
-
+	sm.resyncDone = make(chan bool)
+	sm.initialResyncDone = false
 	// init the watch reactors
 	sm.setDefaultReactors(defReactor)
 
@@ -486,104 +559,21 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 
 	sm.EnableSelectivePushForKind("Profile")
 
-	// start all object watches
-	// there is a specific order we do these watches to meet dependency requirements
-	// 1. apps before sgpolicies
-	// 2. endpoints before workload
-	// 3. smartnics before hosts
-	// 4. security-groups before sgpolicies
-	err = ctrler.Module().Watch(sm.ModuleReactor)
+	err = ctrler.AggWatch().Start(sm, sm.aggKinds)
 	if err != nil {
-		logger.Fatalf("Error watching module object")
-	}
-	err = ctrler.Tenant().Watch(sm.TenantReactor)
-	if err != nil {
-		logger.Fatalf("Error watching sg policy")
+		log.Errorf("Error starting watch %v", err)
+		return err
 	}
 
-	err = ctrler.SecurityGroup().Watch(sm.SecurityGroupReactor)
-	if err != nil {
-		logger.Fatalf("Error watching security group")
-	}
-	err = ctrler.App().Watch(sm.AppReactor)
-	if err != nil {
-		logger.Fatalf("Error watching app")
-	}
+	<-sm.resyncDone
 
-	err = ctrler.VirtualRouter().Watch(sm.VirtualRouterReactor)
-	if err != nil {
-		logger.Fatalf("Error watching virtual router")
-	}
-	err = ctrler.RouteTable().Watch(sm.RouteTableReactor)
-	if err != nil {
-		logger.Fatalf("Error watching virtual router")
-	}
-	err = ctrler.Network().Watch(sm.NetworkReactor)
-	if err != nil {
-		logger.Fatalf("Error watching network")
-	}
-	sm.checkRejectedNetworks()
-	err = ctrler.FirewallProfile().Watch(sm.FirewallProfileReactor)
-	if err != nil {
-		logger.Fatalf("Error watching firewall profile")
-	}
+	// Start garbage collection of unused network
+	sm.StartGarbageCollection()
 
-	logger.Info("start watch for DSCProfile")
-	err = ctrler.DSCProfile().Watch(sm.DSCProfileReactor)
-	if err != nil {
-		logger.Fatalf("Error watching DSCProfile")
-	}
-	err = ctrler.DistributedServiceCard().Watch(sm.DistributedServiceCardReactor)
-	if err != nil {
-		logger.Fatalf("Error watching smartnic")
-	}
-	err = ctrler.Host().Watch(sm.HostReactor)
-	if err != nil {
-		logger.Fatalf("Error watching host")
-	}
-	err = ctrler.Endpoint().Watch(sm.EndpointReactor)
-	if err != nil {
-		logger.Fatalf("Error watching endpoint")
-	}
-	err = ctrler.NetworkSecurityPolicy().Watch(sm.NetworkSecurityPolicyReactor)
-	if err != nil {
-		logger.Fatalf("Error watching sg policy")
-	}
-	err = ctrler.Workload().Watch(sm.WorkloadReactor)
-	if err != nil {
-		logger.Fatalf("Error watching workloads")
-	}
-	err = ctrler.NetworkInterface().Watch(sm.NetworkInterfaceReactor)
-	if err != nil {
-		logger.Fatalf("Error watching network-interface")
-	}
+	//Wait for while to make sure garbage collection has started
+	time.Sleep(100 * time.Millisecond)
 
-	err = ctrler.MirrorSession().Watch(sm.MirrorSessionReactor)
-	if err != nil {
-		logger.Fatalf("Error watching mirror")
-	}
-
-	err = ctrler.FlowExportPolicy().Watch(sm.FlowExportPolicyReactor)
-	if err != nil {
-		logger.Fatalf("Error watching flow export")
-	}
-
-	err = ctrler.IPAMPolicy().Watch(sm.IPAMPolicyReactor)
-	if err != nil {
-		logger.Fatalf("Error watching ipam-policy")
-	}
-
-	err = ctrler.RoutingConfig().Watch(sm.RoutingConfigReactor)
-	if err != nil {
-		logger.Fatalf("Error watching routing-config")
-	}
-
-	//Remove state endpoints after we start the watch
-	//Start watch would synchronosly does diff of all workload and endpoints.
-	//Stale endpoints would then be deleted.
-	//statemgr.RemoveStaleEndpoints()
-
-	// create all topics on the message bus
+	// create all topics on the message bus after our state is built up
 	sm.topics.EndpointTopic, err = nimbus.AddEndpointTopic(mserver, sm.EndpointStatusReactor)
 	if err != nil {
 		logger.Errorf("Error starting endpoint RPC server")
@@ -626,9 +616,6 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		log.Errorf("Error starting Aggregate RPC server")
 		return err
 	}
-
-	// label the objects for relA to relB
-	sm.labelInternalNetworkObjects()
 
 	return err
 }
@@ -1205,6 +1192,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "Endpoint":
 			eps, err := sm.ListEndpoints()
 			if err != nil {
+				log.Errorf("Error querying Endpoint %v", err)
 				return fmt.Errorf("Error querying endpoints %v", err)
 			}
 			objects = make([]interface{}, len(eps))
@@ -1215,6 +1203,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "App":
 			eps, err := sm.ListApps()
 			if err != nil {
+				log.Errorf("Error querying App %v", err)
 				return fmt.Errorf("Error querying apps %v", err)
 			}
 			objects = make([]interface{}, len(eps))
@@ -1224,6 +1213,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "FirewallProfile":
 			eps, err := sm.ListFirewallProfiles()
 			if err != nil {
+				log.Errorf("Error querying FirewallProfile %v", err)
 				return fmt.Errorf("Error querying fwp %v", err)
 			}
 			objects = make([]interface{}, len(eps))
@@ -1233,6 +1223,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "NetworkSecurityPolicy":
 			eps, err := sm.ListSgpolicies()
 			if err != nil {
+				log.Errorf("Error querying NetworkSecurityPolicy %v", err)
 				return fmt.Errorf("Error querying policy %v", err)
 			}
 			objects = make([]interface{}, len(eps))
@@ -1242,6 +1233,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "MirrorSession":
 			eps, err := sm.ListMirrorSesssions()
 			if err != nil {
+				log.Errorf("Error querying MirrorSession %v", err)
 				return fmt.Errorf("Error querying mirror sessions %v", err)
 			}
 			objects = make([]interface{}, len(eps))
@@ -1251,6 +1243,7 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 		case "NetworkInterface":
 			eps, err := sm.ListNetworkInterfaces()
 			if err != nil {
+				log.Errorf("Error querying NetworkInterface %v", err)
 				return fmt.Errorf("Error querying network interfaces %v", err)
 			}
 			objects = make([]interface{}, len(eps))

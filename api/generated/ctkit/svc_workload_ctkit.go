@@ -34,6 +34,11 @@ type Endpoint struct {
 	workload.Endpoint
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Endpoint) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Endpoint) Write() error {
@@ -239,13 +244,22 @@ type endpointCtx struct {
 }
 
 func (ctx *endpointCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *endpointCtx) GetKey() string {
 	return ctx.obj.MakeKey("workload")
+
+}
+
+func (ctx *endpointCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *endpointCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *endpointCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*endpointCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *endpointCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *endpointCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Endpoint = obj.(*endpointCtx).obj.Endpoint
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *endpointCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleEndpointEventParallel(evt *kvstore.WatchEvent) error 
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &endpointCtx{event: evt.Type, obj: &Endpoint{Endpoint: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleEndpointEventParallelWithNoResolver(evt *kvstore.Watc
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*endpointCtx)
+					workCtx = fobj.(*endpointCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Endpoint_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleEndpointEventParallelWithNoResolver(evt *kvstore.Watc
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &endpointCtx{event: evt.Type, obj: &Endpoint{Endpoint: *eobj, ctrler: ct}}
@@ -766,6 +784,9 @@ func (api *endpointAPI) Update(obj *workload.Endpoint) error {
 
 // SyncUpdate triggers update on Endpoint object and updates the cache
 func (api *endpointAPI) SyncUpdate(obj *workload.Endpoint) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -933,6 +954,11 @@ type Workload struct {
 	workload.Workload
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Workload) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Workload) Write() error {
@@ -1138,13 +1164,22 @@ type workloadCtx struct {
 }
 
 func (ctx *workloadCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *workloadCtx) GetKey() string {
 	return ctx.obj.MakeKey("workload")
+
+}
+
+func (ctx *workloadCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *workloadCtx) GetKind() string {
@@ -1165,6 +1200,7 @@ func (ctx *workloadCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*workloadCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -1174,6 +1210,7 @@ func (ctx *workloadCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *workloadCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Workload = obj.(*workloadCtx).obj.Workload
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *workloadCtx) Lock() {
@@ -1255,6 +1292,7 @@ func (ct *ctrlerCtx) handleWorkloadEventParallel(evt *kvstore.WatchEvent) error 
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &workloadCtx{event: evt.Type, obj: &Workload{Workload: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -1310,7 +1348,7 @@ func (ct *ctrlerCtx) handleWorkloadEventParallelWithNoResolver(evt *kvstore.Watc
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*workloadCtx)
+					workCtx = fobj.(*workloadCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Workload_Updated_Events").Inc()
 					obj.Lock()
@@ -1327,6 +1365,7 @@ func (ct *ctrlerCtx) handleWorkloadEventParallelWithNoResolver(evt *kvstore.Watc
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &workloadCtx{event: evt.Type, obj: &Workload{Workload: *eobj, ctrler: ct}}
@@ -1690,6 +1729,9 @@ func (api *workloadAPI) Update(obj *workload.Workload) error {
 
 // SyncUpdate triggers update on Workload object and updates the cache
 func (api *workloadAPI) SyncUpdate(obj *workload.Workload) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

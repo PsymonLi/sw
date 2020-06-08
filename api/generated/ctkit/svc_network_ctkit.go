@@ -34,6 +34,11 @@ type Network struct {
 	network.Network
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Network) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Network) Write() error {
@@ -239,13 +244,22 @@ type networkCtx struct {
 }
 
 func (ctx *networkCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *networkCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *networkCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *networkCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *networkCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*networkCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *networkCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *networkCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Network = obj.(*networkCtx).obj.Network
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *networkCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleNetworkEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &networkCtx{event: evt.Type, obj: &Network{Network: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleNetworkEventParallelWithNoResolver(evt *kvstore.Watch
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*networkCtx)
+					workCtx = fobj.(*networkCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Network_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleNetworkEventParallelWithNoResolver(evt *kvstore.Watch
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &networkCtx{event: evt.Type, obj: &Network{Network: *eobj, ctrler: ct}}
@@ -766,6 +784,9 @@ func (api *networkAPI) Update(obj *network.Network) error {
 
 // SyncUpdate triggers update on Network object and updates the cache
 func (api *networkAPI) SyncUpdate(obj *network.Network) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -933,6 +954,11 @@ type Service struct {
 	network.Service
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Service) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Service) Write() error {
@@ -1138,13 +1164,22 @@ type serviceCtx struct {
 }
 
 func (ctx *serviceCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *serviceCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *serviceCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *serviceCtx) GetKind() string {
@@ -1165,6 +1200,7 @@ func (ctx *serviceCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*serviceCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -1174,6 +1210,7 @@ func (ctx *serviceCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *serviceCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Service = obj.(*serviceCtx).obj.Service
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *serviceCtx) Lock() {
@@ -1255,6 +1292,7 @@ func (ct *ctrlerCtx) handleServiceEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &serviceCtx{event: evt.Type, obj: &Service{Service: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -1310,7 +1348,7 @@ func (ct *ctrlerCtx) handleServiceEventParallelWithNoResolver(evt *kvstore.Watch
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*serviceCtx)
+					workCtx = fobj.(*serviceCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Service_Updated_Events").Inc()
 					obj.Lock()
@@ -1327,6 +1365,7 @@ func (ct *ctrlerCtx) handleServiceEventParallelWithNoResolver(evt *kvstore.Watch
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &serviceCtx{event: evt.Type, obj: &Service{Service: *eobj, ctrler: ct}}
@@ -1665,6 +1704,9 @@ func (api *serviceAPI) Update(obj *network.Service) error {
 
 // SyncUpdate triggers update on Service object and updates the cache
 func (api *serviceAPI) SyncUpdate(obj *network.Service) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -1832,6 +1874,11 @@ type LbPolicy struct {
 	network.LbPolicy
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *LbPolicy) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *LbPolicy) Write() error {
@@ -2037,13 +2084,22 @@ type lbpolicyCtx struct {
 }
 
 func (ctx *lbpolicyCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *lbpolicyCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *lbpolicyCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *lbpolicyCtx) GetKind() string {
@@ -2064,6 +2120,7 @@ func (ctx *lbpolicyCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*lbpolicyCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -2073,6 +2130,7 @@ func (ctx *lbpolicyCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *lbpolicyCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.LbPolicy = obj.(*lbpolicyCtx).obj.LbPolicy
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *lbpolicyCtx) Lock() {
@@ -2154,6 +2212,7 @@ func (ct *ctrlerCtx) handleLbPolicyEventParallel(evt *kvstore.WatchEvent) error 
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &lbpolicyCtx{event: evt.Type, obj: &LbPolicy{LbPolicy: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -2209,7 +2268,7 @@ func (ct *ctrlerCtx) handleLbPolicyEventParallelWithNoResolver(evt *kvstore.Watc
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*lbpolicyCtx)
+					workCtx = fobj.(*lbpolicyCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("LbPolicy_Updated_Events").Inc()
 					obj.Lock()
@@ -2226,6 +2285,7 @@ func (ct *ctrlerCtx) handleLbPolicyEventParallelWithNoResolver(evt *kvstore.Watc
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &lbpolicyCtx{event: evt.Type, obj: &LbPolicy{LbPolicy: *eobj, ctrler: ct}}
@@ -2564,6 +2624,9 @@ func (api *lbpolicyAPI) Update(obj *network.LbPolicy) error {
 
 // SyncUpdate triggers update on LbPolicy object and updates the cache
 func (api *lbpolicyAPI) SyncUpdate(obj *network.LbPolicy) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -2731,6 +2794,11 @@ type VirtualRouter struct {
 	network.VirtualRouter
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *VirtualRouter) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *VirtualRouter) Write() error {
@@ -2936,13 +3004,22 @@ type virtualrouterCtx struct {
 }
 
 func (ctx *virtualrouterCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *virtualrouterCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *virtualrouterCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *virtualrouterCtx) GetKind() string {
@@ -2963,6 +3040,7 @@ func (ctx *virtualrouterCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*virtualrouterCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -2972,6 +3050,7 @@ func (ctx *virtualrouterCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *virtualrouterCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.VirtualRouter = obj.(*virtualrouterCtx).obj.VirtualRouter
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *virtualrouterCtx) Lock() {
@@ -3053,6 +3132,7 @@ func (ct *ctrlerCtx) handleVirtualRouterEventParallel(evt *kvstore.WatchEvent) e
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &virtualrouterCtx{event: evt.Type, obj: &VirtualRouter{VirtualRouter: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -3108,7 +3188,7 @@ func (ct *ctrlerCtx) handleVirtualRouterEventParallelWithNoResolver(evt *kvstore
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*virtualrouterCtx)
+					workCtx = fobj.(*virtualrouterCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("VirtualRouter_Updated_Events").Inc()
 					obj.Lock()
@@ -3125,6 +3205,7 @@ func (ct *ctrlerCtx) handleVirtualRouterEventParallelWithNoResolver(evt *kvstore
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &virtualrouterCtx{event: evt.Type, obj: &VirtualRouter{VirtualRouter: *eobj, ctrler: ct}}
@@ -3463,6 +3544,9 @@ func (api *virtualrouterAPI) Update(obj *network.VirtualRouter) error {
 
 // SyncUpdate triggers update on VirtualRouter object and updates the cache
 func (api *virtualrouterAPI) SyncUpdate(obj *network.VirtualRouter) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -3630,6 +3714,11 @@ type NetworkInterface struct {
 	network.NetworkInterface
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *NetworkInterface) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *NetworkInterface) Write() error {
@@ -3835,13 +3924,22 @@ type networkinterfaceCtx struct {
 }
 
 func (ctx *networkinterfaceCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *networkinterfaceCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *networkinterfaceCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *networkinterfaceCtx) GetKind() string {
@@ -3862,6 +3960,7 @@ func (ctx *networkinterfaceCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*networkinterfaceCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -3871,6 +3970,7 @@ func (ctx *networkinterfaceCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *networkinterfaceCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.NetworkInterface = obj.(*networkinterfaceCtx).obj.NetworkInterface
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *networkinterfaceCtx) Lock() {
@@ -3952,6 +4052,7 @@ func (ct *ctrlerCtx) handleNetworkInterfaceEventParallel(evt *kvstore.WatchEvent
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &networkinterfaceCtx{event: evt.Type, obj: &NetworkInterface{NetworkInterface: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -4007,7 +4108,7 @@ func (ct *ctrlerCtx) handleNetworkInterfaceEventParallelWithNoResolver(evt *kvst
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*networkinterfaceCtx)
+					workCtx = fobj.(*networkinterfaceCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("NetworkInterface_Updated_Events").Inc()
 					obj.Lock()
@@ -4024,6 +4125,7 @@ func (ct *ctrlerCtx) handleNetworkInterfaceEventParallelWithNoResolver(evt *kvst
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &networkinterfaceCtx{event: evt.Type, obj: &NetworkInterface{NetworkInterface: *eobj, ctrler: ct}}
@@ -4362,6 +4464,9 @@ func (api *networkinterfaceAPI) Update(obj *network.NetworkInterface) error {
 
 // SyncUpdate triggers update on NetworkInterface object and updates the cache
 func (api *networkinterfaceAPI) SyncUpdate(obj *network.NetworkInterface) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -4529,6 +4634,11 @@ type IPAMPolicy struct {
 	network.IPAMPolicy
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *IPAMPolicy) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *IPAMPolicy) Write() error {
@@ -4734,13 +4844,22 @@ type ipampolicyCtx struct {
 }
 
 func (ctx *ipampolicyCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *ipampolicyCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *ipampolicyCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *ipampolicyCtx) GetKind() string {
@@ -4761,6 +4880,7 @@ func (ctx *ipampolicyCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*ipampolicyCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -4770,6 +4890,7 @@ func (ctx *ipampolicyCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *ipampolicyCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.IPAMPolicy = obj.(*ipampolicyCtx).obj.IPAMPolicy
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *ipampolicyCtx) Lock() {
@@ -4851,6 +4972,7 @@ func (ct *ctrlerCtx) handleIPAMPolicyEventParallel(evt *kvstore.WatchEvent) erro
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &ipampolicyCtx{event: evt.Type, obj: &IPAMPolicy{IPAMPolicy: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -4906,7 +5028,7 @@ func (ct *ctrlerCtx) handleIPAMPolicyEventParallelWithNoResolver(evt *kvstore.Wa
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*ipampolicyCtx)
+					workCtx = fobj.(*ipampolicyCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("IPAMPolicy_Updated_Events").Inc()
 					obj.Lock()
@@ -4923,6 +5045,7 @@ func (ct *ctrlerCtx) handleIPAMPolicyEventParallelWithNoResolver(evt *kvstore.Wa
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &ipampolicyCtx{event: evt.Type, obj: &IPAMPolicy{IPAMPolicy: *eobj, ctrler: ct}}
@@ -5261,6 +5384,9 @@ func (api *ipampolicyAPI) Update(obj *network.IPAMPolicy) error {
 
 // SyncUpdate triggers update on IPAMPolicy object and updates the cache
 func (api *ipampolicyAPI) SyncUpdate(obj *network.IPAMPolicy) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -5428,6 +5554,11 @@ type RoutingConfig struct {
 	network.RoutingConfig
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *RoutingConfig) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *RoutingConfig) Write() error {
@@ -5637,13 +5768,22 @@ type routingconfigCtx struct {
 }
 
 func (ctx *routingconfigCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *routingconfigCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *routingconfigCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *routingconfigCtx) GetKind() string {
@@ -5664,6 +5804,7 @@ func (ctx *routingconfigCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*routingconfigCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -5673,6 +5814,7 @@ func (ctx *routingconfigCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *routingconfigCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.RoutingConfig = obj.(*routingconfigCtx).obj.RoutingConfig
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *routingconfigCtx) Lock() {
@@ -5756,6 +5898,7 @@ func (ct *ctrlerCtx) handleRoutingConfigEventParallel(evt *kvstore.WatchEvent) e
 		eobj.ApplyStorageTransformer(context.Background(), false /*decrypt*/)
 
 		ctx := &routingconfigCtx{event: evt.Type, obj: &RoutingConfig{RoutingConfig: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -5813,7 +5956,7 @@ func (ct *ctrlerCtx) handleRoutingConfigEventParallelWithNoResolver(evt *kvstore
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*routingconfigCtx)
+					workCtx = fobj.(*routingconfigCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("RoutingConfig_Updated_Events").Inc()
 					obj.Lock()
@@ -5830,6 +5973,7 @@ func (ct *ctrlerCtx) handleRoutingConfigEventParallelWithNoResolver(evt *kvstore
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &routingconfigCtx{event: evt.Type, obj: &RoutingConfig{RoutingConfig: *eobj, ctrler: ct}}
@@ -6168,6 +6312,9 @@ func (api *routingconfigAPI) Update(obj *network.RoutingConfig) error {
 
 // SyncUpdate triggers update on RoutingConfig object and updates the cache
 func (api *routingconfigAPI) SyncUpdate(obj *network.RoutingConfig) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -6335,6 +6482,11 @@ type RouteTable struct {
 	network.RouteTable
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *RouteTable) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *RouteTable) Write() error {
@@ -6540,13 +6692,22 @@ type routetableCtx struct {
 }
 
 func (ctx *routetableCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *routetableCtx) GetKey() string {
 	return ctx.obj.MakeKey("network")
+
+}
+
+func (ctx *routetableCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *routetableCtx) GetKind() string {
@@ -6567,6 +6728,7 @@ func (ctx *routetableCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*routetableCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -6576,6 +6738,7 @@ func (ctx *routetableCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *routetableCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.RouteTable = obj.(*routetableCtx).obj.RouteTable
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *routetableCtx) Lock() {
@@ -6657,6 +6820,7 @@ func (ct *ctrlerCtx) handleRouteTableEventParallel(evt *kvstore.WatchEvent) erro
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &routetableCtx{event: evt.Type, obj: &RouteTable{RouteTable: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -6712,7 +6876,7 @@ func (ct *ctrlerCtx) handleRouteTableEventParallelWithNoResolver(evt *kvstore.Wa
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*routetableCtx)
+					workCtx = fobj.(*routetableCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("RouteTable_Updated_Events").Inc()
 					obj.Lock()
@@ -6729,6 +6893,7 @@ func (ct *ctrlerCtx) handleRouteTableEventParallelWithNoResolver(evt *kvstore.Wa
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &routetableCtx{event: evt.Type, obj: &RouteTable{RouteTable: *eobj, ctrler: ct}}
@@ -7067,6 +7232,9 @@ func (api *routetableAPI) Update(obj *network.RouteTable) error {
 
 // SyncUpdate triggers update on RouteTable object and updates the cache
 func (api *routetableAPI) SyncUpdate(obj *network.RouteTable) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

@@ -16,6 +16,7 @@ type workerState int
 const (
 	notRunning workerState = iota
 	running
+	idle
 )
 
 // number of times to retry the operation
@@ -31,6 +32,7 @@ type WorkObj interface {
 }
 
 type worker struct {
+	sync.Mutex
 	id         int
 	queue      chan workCtx
 	state      workerState
@@ -51,6 +53,12 @@ func (w *worker) pendingCount() uint32 {
 	return (uint32)(len(w.queue))
 }
 
+func (w *worker) running() bool {
+	w.Lock()
+	defer w.Unlock()
+	return w.state == running
+}
+
 func (w *worker) retryError(err error) bool {
 
 	return kvstore.IsKeyNotFoundError(err) || kvstore.IsTxnFailedError(err)
@@ -59,9 +67,16 @@ func (w *worker) retryError(err error) bool {
 func (w *worker) Run(ctx context.Context) {
 	w.workMaster.StartWg.Done()
 	defer w.workMaster.DoneWg.Done()
+	w.Lock()
+	w.state = idle
+	w.Unlock()
+	ticker := time.NewTicker((1 * time.Second))
 	for true {
 		select {
 		case workContext := <-w.queue:
+			w.Lock()
+			w.state = running
+			w.Unlock()
 			var err error
 			for i := 0; i < maxRetryCount; i++ {
 				if workContext.workFunc != nil {
@@ -80,6 +95,12 @@ func (w *worker) Run(ctx context.Context) {
 
 			}
 			atomic.AddUint32(&w.doneCnt, 1)
+		case <-ticker.C:
+			if len(w.queue) == 0 {
+				w.Lock()
+				w.state = idle
+				w.Unlock()
+			}
 		case <-ctx.Done():
 			return
 		}
@@ -198,4 +219,19 @@ func (wp *WorkerPool) RunFunction(workObj WorkObj, workerFunc WorkFunc) error {
 	wp.workers[workerID].queue <- workCtx{workFunc: workerFunc, workObj: workObj}
 
 	return nil
+}
+
+//IsIdle tells whether worker pool is idle
+func (wp *WorkerPool) IsIdle() (bool, error) {
+
+	if !wp.Running() {
+		return false, errors.New("workers are not started")
+	}
+
+	for _, w := range wp.workers {
+		if w.running() {
+			return false, nil
+		}
+	}
+	return true, nil
 }

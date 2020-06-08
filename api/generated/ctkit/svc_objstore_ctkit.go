@@ -34,6 +34,11 @@ type Bucket struct {
 	objstore.Bucket
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Bucket) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Bucket) Write() error {
@@ -239,13 +244,22 @@ type bucketCtx struct {
 }
 
 func (ctx *bucketCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *bucketCtx) GetKey() string {
 	return ctx.obj.MakeKey("objstore")
+
+}
+
+func (ctx *bucketCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *bucketCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *bucketCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*bucketCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *bucketCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *bucketCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Bucket = obj.(*bucketCtx).obj.Bucket
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *bucketCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleBucketEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &bucketCtx{event: evt.Type, obj: &Bucket{Bucket: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleBucketEventParallelWithNoResolver(evt *kvstore.WatchE
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*bucketCtx)
+					workCtx = fobj.(*bucketCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Bucket_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleBucketEventParallelWithNoResolver(evt *kvstore.WatchE
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &bucketCtx{event: evt.Type, obj: &Bucket{Bucket: *eobj, ctrler: ct}}
@@ -766,6 +784,9 @@ func (api *bucketAPI) Update(obj *objstore.Bucket) error {
 
 // SyncUpdate triggers update on Bucket object and updates the cache
 func (api *bucketAPI) SyncUpdate(obj *objstore.Bucket) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -933,6 +954,11 @@ type Object struct {
 	objstore.Object
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Object) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Object) Write() error {
@@ -1138,13 +1164,22 @@ type objectCtx struct {
 }
 
 func (ctx *objectCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *objectCtx) GetKey() string {
 	return ctx.obj.MakeKey("objstore")
+
+}
+
+func (ctx *objectCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *objectCtx) GetKind() string {
@@ -1165,6 +1200,7 @@ func (ctx *objectCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*objectCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -1174,6 +1210,7 @@ func (ctx *objectCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *objectCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Object = obj.(*objectCtx).obj.Object
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *objectCtx) Lock() {
@@ -1255,6 +1292,7 @@ func (ct *ctrlerCtx) handleObjectEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &objectCtx{event: evt.Type, obj: &Object{Object: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -1310,7 +1348,7 @@ func (ct *ctrlerCtx) handleObjectEventParallelWithNoResolver(evt *kvstore.WatchE
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*objectCtx)
+					workCtx = fobj.(*objectCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Object_Updated_Events").Inc()
 					obj.Lock()
@@ -1327,6 +1365,7 @@ func (ct *ctrlerCtx) handleObjectEventParallelWithNoResolver(evt *kvstore.WatchE
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &objectCtx{event: evt.Type, obj: &Object{Object: *eobj, ctrler: ct}}
@@ -1665,6 +1704,9 @@ func (api *objectAPI) Update(obj *objstore.Object) error {
 
 // SyncUpdate triggers update on Object object and updates the cache
 func (api *objectAPI) SyncUpdate(obj *objstore.Object) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {

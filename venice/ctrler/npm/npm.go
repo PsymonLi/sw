@@ -30,11 +30,15 @@
 package npm
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"expvar"
 	"fmt"
 	"net/http"
+	pprof "net/http/pprof"
+	rprof "runtime/pprof"
 	"strings"
 	"time"
 
@@ -206,6 +210,10 @@ func (c *Netctrler) runDebugRESTServer(restURL string) error {
 		json.NewEncoder(w).Encode(objlist)
 	}))
 
+	// pprof
+	router.Methods("GET").Subrouter().Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	router.Methods("GET").Subrouter().Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+
 	// start the server
 	go http.ListenAndServe(restURL, router)
 
@@ -293,6 +301,27 @@ func (d *diagHandler) HandleRequest(ctx context.Context, req *diagapi.Diagnostic
 	case "reset-stats":
 		d.stateMgr.ResetConfigPushStats()
 		ret.Content = fmt.Sprintf("Reset complete")
+
+	case "goroutines":
+		var byteBuffer bytes.Buffer
+		ioWriter := bufio.NewWriter(&byteBuffer)
+		goRoutineProfile := rprof.Lookup("goroutine")
+		if goRoutineProfile != nil {
+			err := goRoutineProfile.WriteTo(ioWriter, 2)
+			if err == nil {
+				ioWriter.Flush()
+				str, err := json.Marshal(byteBuffer.String())
+				if err != nil {
+					ret.Content = fmt.Sprintf("marshall returned error (%s)", err)
+				} else {
+					ret.Content = strings.Replace(string(str), "\\\"", "\"", -1)
+				}
+			} else {
+				ret.Content = fmt.Sprintf("goroutines getinfo failed")
+			}
+		} else {
+			ret.Content = fmt.Sprintf("profile not found")
+		}
 
 	default:
 		ret.Content = fmt.Sprintf("Unknown action [%v]. valid actions (list-objects, dump-nimbus-db)", action)

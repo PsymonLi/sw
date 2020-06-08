@@ -79,6 +79,13 @@
       "Field": "AttachNetwork"
     }
   ],
+  "network.NetworkInterfaceStatus": [
+    {
+      "Type": "NamedRef",
+      "To": "cluster/DistributedServiceCard",
+      "Field": "DSC"
+    }
+  ],
   "network.NetworkSpec": [
     {
       "Type": "NamedRef",

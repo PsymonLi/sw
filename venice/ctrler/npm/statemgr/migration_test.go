@@ -118,7 +118,8 @@ func TestMigrationWorkloadMigration(t *testing.T) {
 
 	AssertEventually(t, func() (bool, interface{}) {
 		ep, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
-		if err == nil && ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_START.String() {
+		if err == nil && ep.Endpoint.Status.Migration != nil &&
+			ep.Endpoint.Status.Migration.Status == workload.EndpointMigrationStatus_START.String() {
 			return true, nil
 		}
 		return false, nil
@@ -617,12 +618,14 @@ func TestMigrationOnCreateWithMigrationStageFinalSync(t *testing.T) {
 		return false, nil
 	}, "Endpoint not found", "1s", "1s")
 
+	time.Sleep(1 * time.Second)
 	wrFound, err := stateMgr.FindWorkload("default", "testWorkload")
 	AssertOk(t, err, "Did not find workload")
 	logger.Infof("Got Workload %v", wrFound.Workload)
 	Assert(t, (wrFound.Workload.Status.MigrationStatus != nil), "workload migration status is nil")
 	Assert(t, (wrFound.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_FINAL_SYNC.String()), fmt.Sprintf("migration final sync state not found %v", wrFound.Workload))
 
+	time.Sleep(1 * time.Second)
 	// verify we can find the endpoint associated with the workload
 	foundEp, err := stateMgr.FindEndpoint("default", "testWorkload-1001.0203.0405")
 	AssertOk(t, err, "Could not find the endpoint")

@@ -5652,7 +5652,6 @@ func TestAggregateWatcher(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot create grpc client")
 	}
-	defer apicl.Close()
 	wopts := api.AggWatchOptions{
 		WatchOptions: []api.KindWatchOptions{
 			{
@@ -5907,6 +5906,53 @@ func TestAggregateWatcher(t *testing.T) {
 	AssertEventually(t, func() (bool, interface{}) {
 		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 6"
 	}, fmt.Sprintf("failed to receive %d events, got [%d/%d]", len(expEvs), kvEvents, kvCtrls))
+
+	ok, msg = validateReceived(gotEvs, expEvs)
+	Assert(t, ok, msg)
+	cancel()
+	wg.Wait()
+
+	apicl.Close()
+
+	wopts.ResourceVersion = ""
+	t.Logf("=== Start watcher with after restart")
+	restartAPIGatewayAndServer(t)
+	apiserverAddr = "localhost" + ":" + tinfo.apiserverport
+	apicl, err = client.NewGrpcUpstream("test", apiserverAddr, tinfo.l)
+	if err != nil {
+		t.Fatalf("cannot create grpc client")
+	}
+	defer apicl.Close()
+	ctx, cancel = context.WithCancel(context.Background())
+	kvEvents, kvErrors, kvCtrls = 0, 0, 0
+	gotEvMu.Lock()
+	gotEvs = nil
+	gotEvMu.Unlock()
+
+	wr, err := apicl.AggWatchV1().Watch(ctx, &wopts)
+	AssertOk(t, err, "establishing aggregate watch failed (%s)", err)
+	startCh = make(chan error)
+	listCh = make(chan error)
+	wg.Add(1)
+	go startWatcher("restart", startCh, listCh, wr)
+	<-startCh
+	<-listCh
+
+	// host update after
+	_, err = apicl.ClusterV1().Host().Update(ctx, &host)
+	AssertOk(t, err, "host update should succeed")
+
+	expEvs = []aggEvents{
+		{Type: kvstore.Created, Kind: "Network", Seq: 0},
+		{Type: kvstore.Created, Kind: "Workload", Seq: 1},
+		{Type: kvstore.Created, Kind: "Host", Seq: 2},
+		{Type: kvstore.Created, Kind: "DistributedServiceCard", Seq: 3},
+		{Type: kvstore.WatcherControl, Seq: 4},
+		{Type: kvstore.Updated, Kind: "Host", Seq: 5},
+	}
+	AssertEventually(t, func() (bool, interface{}) {
+		return kvEvents+kvCtrls == len(expEvs), "waiting for events to get to 6"
+	}, fmt.Sprintf("failed to receive 6 events, got [%d/%d]", kvEvents, kvCtrls))
 
 	ok, msg = validateReceived(gotEvs, expEvs)
 	Assert(t, ok, msg)

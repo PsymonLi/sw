@@ -1362,5 +1362,9 @@ L2:
 
 func (sm *SysModel) CollectLogs() error {
 
-	return sm.DownloadTechsupport("")
+	if err := sm.DownloadTechsupport(""); err != nil {
+		return err
+	}
+	sm.combineLogs()
+	return nil
 }

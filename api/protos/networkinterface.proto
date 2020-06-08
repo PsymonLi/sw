@@ -136,7 +136,8 @@ message NetworkInterfaceStatus {
     }
 
     string Name                                 = 1 [(gogoproto.jsontag) = "name,omitempty"];
-    string DSC                                  = 2 [(gogoproto.jsontag) = "dsc,omitempty"];
+    string DSC                                  = 2 [(gogoproto.jsontag) = "dsc,omitempty", 
+                                                     (venice.objRelation) = {Type: "NamedRef", To: "cluster/DistributedServiceCard"}];
     string Type                                 = 3 [(venice.check) = "StrEnum(NetworkInterfaceStatus.IFType)",
                                                    (gogoproto.jsontag) = "type,omitempty"];
     string OperStatus                           = 4 [(venice.check) = "StrEnum(IFStatus)",

@@ -463,6 +463,10 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 		log.Errorf("Error creating new network state. Err: %v", err)
 		return err
 	}
+
+	if IsObjInternal(ns.Network.Labels) {
+		ns.Network.SetInternal()
+	}
 	// On restart npm might receive create events for networks that were rejected earlier.
 	// skip those here.. they are processed after watcher has started
 	if nw.Status.OperState == network.OperState_Rejected.String() {
@@ -514,6 +518,9 @@ func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) err
 		return nil
 	}
 
+	if IsObjInternal(nw.Network.Labels) {
+		nw.SetInternal()
+	}
 	// find the network state
 	nwState, err := NetworkStateFromObj(nw)
 	if err != nil {
@@ -694,7 +701,7 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 	// 4. Mark all remaining networks which are in networkMap
 	sm.networkKindLock.Lock()
 	defer sm.networkKindLock.Unlock()
-	networkMap := make(map[uint32]*network.Network)
+	networkMap := make(map[uint32]*ctkit.Network)
 	networkVlanMap := make(map[string]uint32)
 	netObjs, err := sm.ctrler.Network().List(context.Background(), &api.ListWatchOptions{})
 	if err == nil {
@@ -705,7 +712,7 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 				log.Infof("network [%+v] with orch ref will not be labeled", nw.Network)
 				continue
 			}
-			networkMap[nw.Network.Spec.VlanID] = &nw.Network
+			networkMap[nw.Network.Spec.VlanID] = nw
 			networkVlanMap[nw.Network.Name] = nw.Network.Spec.VlanID
 		}
 	} else {
@@ -759,6 +766,7 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 			if err != nil {
 				log.Errorf("Ignore error updating the network[%v]. Err: %v", nwt, err)
 			}
+
 		}
 	}
 

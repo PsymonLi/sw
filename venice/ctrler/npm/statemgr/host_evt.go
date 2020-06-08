@@ -174,7 +174,7 @@ func (hst *HostState) getDSCs() []*DistributedServiceCardState {
 			snicMac := hst.Host.Spec.DSCs[jj].MACAddress
 			snic, err = hst.stateMgr.FindDistributedServiceCardByMacAddr(snicMac)
 			if err != nil {
-				log.Warnf("Error finding smart nic for mac add %v", snicMac)
+				log.Warnf("Error finding smart nic for mac add %v : %v", snicMac, err)
 				continue
 			}
 		}

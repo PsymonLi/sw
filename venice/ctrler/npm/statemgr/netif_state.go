@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 
 	"github.com/gogo/protobuf/types"
@@ -268,24 +269,6 @@ func (sm *Statemgr) GetNetworkInterfaceWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{"ObjectMeta.Labels", "Spec", "Status"}
 	return &opts
-}
-
-// OnNetworkInterfaceCreate is empty implementation for interface handling
-func (sm *Statemgr) OnNetworkInterfaceCreate(obj *ctkit.NetworkInterface) error {
-	log.Infof("Statemanager got OnNetworkInterfaceCreate [%v]", obj.Name)
-	return nil
-}
-
-// OnNetworkInterfaceUpdate is empty implementation for interface handling
-func (sm *Statemgr) OnNetworkInterfaceUpdate(oldObj *ctkit.NetworkInterface, newObj *network.NetworkInterface) error {
-	log.Infof("Statemanager got OnNetworkInterfaceUpdate [%v]", newObj.Name)
-	return nil
-}
-
-// OnNetworkInterfaceDelete is empty implementation for interface handling
-func (sm *Statemgr) OnNetworkInterfaceDelete(obj *ctkit.NetworkInterface) error {
-	log.Infof("Statemanager got OnNetworkInterfaceDelete [%v]", obj.Name)
-	return nil
 }
 
 // OnNetworkInterfaceReconnect is called when ctkit reconnects to apiserver
@@ -813,6 +796,7 @@ func (sma *SmNetworkInterface) updateMirror(nw *NetworkInterfaceState) error {
 			log.Errorf("Error updating interface %v", err.Error())
 			return err
 		}
+		sma.sm.PeriodicUpdaterPush(nw)
 	} else {
 		log.Infof("No mirror update for DSC %v Intf %v  Mirror Sessions %v ",
 			nw.NetworkInterfaceState.Status.DSC, nw.NetworkInterfaceState.Name, nw.mirrorSessions)
@@ -854,7 +838,6 @@ func (sma *SmNetworkInterface) UpdateInterfacesMatchingSelector(oldSelCol *inter
 	for _, nw := range nwInterfaceStatesMap {
 		nw.NetworkInterfaceState.Lock()
 		sma.updateMirror(nw)
-		sma.sm.PeriodicUpdaterPush(nw)
 		nw.NetworkInterfaceState.Unlock()
 	}
 
@@ -955,7 +938,7 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceCreate(ctkitNetif *ctkit.Networ
 	receiver, err := sma.sm.mbus.FindReceiver(ifcfg.NetworkInterfaceState.Status.DSC)
 	if err != nil {
 		log.Errorf("error finding receiver for %v %v", ifcfg.NetworkInterfaceState.Status.DSC, err)
-		return err
+		return kvstore.NewTxnFailedError()
 	}
 
 	pushObj, err := sma.sm.AddPushObjectToMbus(ctkitNetif.MakeKey(string(apiclient.GroupNetwork)), ifcfg, references(ctkitNetif),
@@ -971,8 +954,6 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceCreate(ctkitNetif *ctkit.Networ
 	if err != nil {
 		log.Errorf("Error updating interface mirror %v", err)
 	}
-
-	sma.sm.PeriodicUpdaterPush(ifcfg)
 
 	return nil
 }
@@ -1006,7 +987,6 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceUpdate(ctkitNetif *ctkit.Networ
 		return err
 	}
 
-	sma.sm.PeriodicUpdaterPush(currIntf)
 	return nil
 }
 

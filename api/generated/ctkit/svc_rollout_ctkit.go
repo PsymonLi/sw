@@ -34,6 +34,11 @@ type Rollout struct {
 	rollout.Rollout
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *Rollout) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *Rollout) Write() error {
@@ -239,13 +244,22 @@ type rolloutCtx struct {
 }
 
 func (ctx *rolloutCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *rolloutCtx) GetKey() string {
 	return ctx.obj.MakeKey("rollout")
+
+}
+
+func (ctx *rolloutCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *rolloutCtx) GetKind() string {
@@ -266,6 +280,7 @@ func (ctx *rolloutCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*rolloutCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -275,6 +290,7 @@ func (ctx *rolloutCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *rolloutCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.Rollout = obj.(*rolloutCtx).obj.Rollout
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *rolloutCtx) Lock() {
@@ -356,6 +372,7 @@ func (ct *ctrlerCtx) handleRolloutEventParallel(evt *kvstore.WatchEvent) error {
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &rolloutCtx{event: evt.Type, obj: &Rollout{Rollout: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -411,7 +428,7 @@ func (ct *ctrlerCtx) handleRolloutEventParallelWithNoResolver(evt *kvstore.Watch
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*rolloutCtx)
+					workCtx = fobj.(*rolloutCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("Rollout_Updated_Events").Inc()
 					obj.Lock()
@@ -428,6 +445,7 @@ func (ct *ctrlerCtx) handleRolloutEventParallelWithNoResolver(evt *kvstore.Watch
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &rolloutCtx{event: evt.Type, obj: &Rollout{Rollout: *eobj, ctrler: ct}}
@@ -791,6 +809,9 @@ func (api *rolloutAPI) Update(obj *rollout.Rollout) error {
 
 // SyncUpdate triggers update on Rollout object and updates the cache
 func (api *rolloutAPI) SyncUpdate(obj *rollout.Rollout) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
@@ -1162,6 +1183,11 @@ type RolloutAction struct {
 	rollout.RolloutAction
 	HandlerCtx interface{} // additional state handlers can store
 	ctrler     *ctrlerCtx  // reference back to the controller instance
+	internal   bool
+}
+
+func (obj *RolloutAction) SetInternal() {
+	obj.internal = true
 }
 
 func (obj *RolloutAction) Write() error {
@@ -1367,13 +1393,22 @@ type rolloutactionCtx struct {
 }
 
 func (ctx *rolloutactionCtx) References() map[string]apiintf.ReferenceObj {
-	resp := make(map[string]apiintf.ReferenceObj)
-	ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
-	return resp
+	if ctx.references == nil {
+		resp := make(map[string]apiintf.ReferenceObj)
+		ctx.references = resp
+		ctx.obj.References(ctx.obj.GetObjectMeta().Name, ctx.obj.GetObjectMeta().Namespace, resp)
+		ctx.obj.ctrler.filterOutRefs(ctx)
+	}
+	return ctx.references
 }
 
 func (ctx *rolloutactionCtx) GetKey() string {
 	return ctx.obj.MakeKey("rollout")
+
+}
+
+func (ctx *rolloutactionCtx) IsInternal() bool {
+	return ctx.obj.internal
 }
 
 func (ctx *rolloutactionCtx) GetKind() string {
@@ -1394,6 +1429,7 @@ func (ctx *rolloutactionCtx) SetNewObj(newObj apiintf.CtkitObject) {
 	} else {
 		ctx.newObj = newObj.(*rolloutactionCtx)
 		ctx.newObj.obj.HandlerCtx = ctx.obj.HandlerCtx
+		ctx.references = newObj.References()
 	}
 }
 
@@ -1403,6 +1439,7 @@ func (ctx *rolloutactionCtx) GetNewObj() apiintf.CtkitObject {
 
 func (ctx *rolloutactionCtx) Copy(obj apiintf.CtkitObject) {
 	ctx.obj.RolloutAction = obj.(*rolloutactionCtx).obj.RolloutAction
+	ctx.SetWatchTs(obj.GetWatchTs())
 }
 
 func (ctx *rolloutactionCtx) Lock() {
@@ -1484,6 +1521,7 @@ func (ct *ctrlerCtx) handleRolloutActionEventParallel(evt *kvstore.WatchEvent) e
 		log.Infof("Watcher: Got %s watch event(%s): {%+v}", kind, evt.Type, eobj)
 
 		ctx := &rolloutactionCtx{event: evt.Type, obj: &RolloutAction{RolloutAction: *eobj, ctrler: ct}}
+		ctx.SetWatchTs(evt.WatchTS)
 
 		var err error
 		switch evt.Type {
@@ -1539,7 +1577,7 @@ func (ct *ctrlerCtx) handleRolloutActionEventParallelWithNoResolver(evt *kvstore
 						ct.delObject(kind, workCtx.GetKey())
 					}
 				} else {
-					workCtx := fobj.(*rolloutactionCtx)
+					workCtx = fobj.(*rolloutactionCtx)
 					obj := workCtx.obj
 					ct.stats.Counter("RolloutAction_Updated_Events").Inc()
 					obj.Lock()
@@ -1556,6 +1594,7 @@ func (ct *ctrlerCtx) handleRolloutActionEventParallelWithNoResolver(evt *kvstore
 					}
 					obj.Unlock()
 				}
+				workCtx.SetWatchTs(evt.WatchTS)
 				return err
 			}
 			ctrlCtx := &rolloutactionCtx{event: evt.Type, obj: &RolloutAction{RolloutAction: *eobj, ctrler: ct}}
@@ -1894,6 +1933,9 @@ func (api *rolloutactionAPI) Update(obj *rollout.RolloutAction) error {
 
 // SyncUpdate triggers update on RolloutAction object and updates the cache
 func (api *rolloutactionAPI) SyncUpdate(obj *rollout.RolloutAction) error {
+	if api.ct.objResolver != nil {
+		log.Fatal("Cannot use Sync update when object resolver is enabled on ctkit")
+	}
 	newObj := obj
 	var writeErr error
 	if api.ct.resolver != nil {
