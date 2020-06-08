@@ -250,20 +250,22 @@ class Node(object):
 
         # Restore static-routes after naples reload/switch-over
         def RestoreNicStaticRoutes(self):
-           if GlobalOptions.dryrun:
-               return
-           if self.__nic_static_routes:
-              for rt in self.__nic_static_routes:
-                  print("Restoring static route %s via %s " % (rt.Route, rt.Nexthop))
-                  self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
-                  self.__console_hdl.RunCmdGetOp("ip route add " + rt.Route + " via " + rt.Nexthop)
-           else:
-              print("No static routes to configure on naples")
+            if GlobalOptions.dryrun:
+                return
+            if self.__nic_static_routes:
+                self.__console_hdl.Close()
+                for rt in self.__nic_static_routes:
+                    print("Restoring static route %s via %s " % (rt.Route, rt.Nexthop))
+                    self.__console_hdl.RunCmdGetOp("ip route add " + rt.Route + " via " + rt.Nexthop)
+            else:
+                print("No static routes to configure on naples")
 
         def SetNicFirewallRules(self):
             if GlobalOptions.dryrun:
                 return
             if self.GetNaplesPipeline() == "apulu":
+                print("Setting NIC firewall rules")
+                self.__console_hdl.Close()
                 self.__console_hdl.RunCmdGetOp("iptables -D tcp_inbound -p tcp -m tcp --dport 11357:11360 -j DROP")
 
         def GetDataNetworks(self):
@@ -602,6 +604,10 @@ class Node(object):
     def RestoreNicStaticRoutes(self, device = None):
         dev = self.__get_device(device)
         return dev.RestoreNicStaticRoutes()
+
+    def SetNicFirewallRules(self, device = None):
+        dev = self.__get_device(device)
+        return dev.SetNicFirewallRules()
 
     def Name(self):
         return self.__name
@@ -1439,6 +1445,9 @@ class Topology(object):
 
     def RestoreNicStaticRoutes(self, node_name, device = None):
         return self.__nodes[node_name].RestoreNicStaticRoutes(device)
+
+    def SetNicFirewallRules(self, node_name, device = None):
+        return self.__nodes[node_name].SetNicFirewallRules(device)
 
     def GetEsxHostIpAddress(self, node_name):
         return self.__nodes[node_name].EsxHostIpAddress()

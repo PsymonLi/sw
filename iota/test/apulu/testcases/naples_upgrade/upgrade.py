@@ -9,7 +9,6 @@ import iota.test.apulu.utils.misc as misc_utils
 
 # Following come from DOL
 import apollo.config.generator as obj_gen_api
-from apollo.oper.alerts import client as AlertsClient
 import upgrade_pb2 as upgrade_pb2
 from apollo.oper.upgrade import client as UpgradeClient
 
@@ -73,29 +72,35 @@ def VerifyConnectivity(tc):
     return api.types.status.SUCCESS
 
 
+def VerifyMgmtConnectivity(tc):
+    if api.GlobalOptions.dryrun:
+        return api.types.status.SUCCESS
+
+    # ensure Mgmt Connectivity
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    for node in tc.nodes:
+        api.Logger.info("Checking connectivity to Naples Mgmt IP: %s"%api.GetNicIntMgmtIP(node))
+        api.Trigger_AddHostCommand(req, node,
+                'ping -c 5 -i 0.2 {}'.format(api.GetNicIntMgmtIP(node)))
+    resp = api.Trigger(req)
+
+    if not resp.commands:
+        return api.types.status.FAILURE
+
+    result = api.types.status.SUCCESS
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code:
+            result = api.types.status.FAILURE
+
+    return result
+
+
 # Push config after upgrade
 def UpdateConfigAfterUpgrade(tc):
     api.Logger.info("Updating Configurations after Upgrade")
-
-    DeviceClient = config_api.GetObjClient('device')
-    InterfaceClient = config_api.GetObjClient('interface')
-    VpcClient = config_api.GetObjClient('vpc')
-    SecurityProfileClient = config_api.GetObjClient('security_profile')
-    NHGroupClient = config_api.GetObjClient('nexthopgroup')
-    TunnelClient = config_api.GetObjClient('tunnel')
-    MirrorClient = config_api.GetObjClient('mirror')
-
     for node in tc.nodes:
-#        #obj_gen_api.__create(node)
-        DeviceClient.CreateObjects(node)
-        InterfaceClient.CreateObjects(node)
-        VpcClient.CreateObjects(node)
-        SecurityProfileClient.CreateObjects(node)
-        NHGroupClient.CreateObjects(node)
-        TunnelClient.CreateObjects(node)
-        MirrorClient.CreateObjects(node)
-        AlertsClient.CreateObjects(node)
-
+        obj_gen_api.__create(node)
     api.Logger.info("Completed Config updates")
 
 
@@ -142,6 +147,13 @@ def Setup(tc):
         api.Logger.error("Failed in Reseting Upgrade Log files.")
         return api.types.status.FAILURE
 
+    # verify connectivity
+    result = VerifyMgmtConnectivity(tc)
+    if result != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Mgmt Connectivity Check during Setup.")
+        tc.skip = True
+        return result
+
     # choose workloads for connectivity/traffic test
     result = ChooseWorkLoads(tc)
     if result != api.types.status.SUCCESS or tc.skip:
@@ -170,12 +182,21 @@ def Trigger(tc):
 def checkUpgradeStatus(tc):
     result = api.types.status.SUCCESS
     status_in_progress = True
+    retry_count = 0
     while status_in_progress:
         misc_utils.Sleep(1)
+        retry_count += 1
+        if retry_count == 300:
+            # break if status is still in-progress after max retries
+            result = api.types.status.FAILURE
+            break
         req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+
         for node in tc.nodes:
             api.Trigger_AddNaplesCommand(req, node, "grep -vi in-progress /update/pds_upg_status.txt", timeout=2)
-        api.Logger.info("Checking for status not in-progress in file /update/pds_upg_status.txt")
+
+        if retry_count % 10 == 0:
+            api.Logger.info("Checking for status not in-progress in file /update/pds_upg_status.txt, retries: %s"%retry_count)
         resp = api.Trigger(req)
 
         status_in_progress = False
@@ -209,6 +230,9 @@ def checkUpgradeStatus(tc):
                 api.Logger.error("EXCEPTION occured in checking Upgrade manager status")
                 result = api.types.status.FAILURE
 
+    if status_in_progress:
+        api.Logger.error("Upgrade Failed: Status is still IN-PROGRESS")
+
     return result
 
 
@@ -223,28 +247,38 @@ def Verify(tc):
     api.Logger.info("Sleep for 120 secs before checking for /update/pds_upg_status.txt")
     misc_utils.Sleep(120)
 
-    # Restore naples static route for mgmt port reachability
-    for node in tc.nodes:
-        api.RestoreNicStaticRoutes(node)
-    misc_utils.Sleep(5)
+    try:
+        # Restore naples static route for mgmt port reachability
+        for node in tc.nodes:
+            api.RestoreNicStaticRoutes(node)
+            api.Logger.info(f"Configured NIC Static Routes after Upgrade on {node}")
+            api.SetNicFirewallRules(node)
+            api.Logger.info(f"Configured NIC Firewall Rules after Upgrade on {node}")
+    except Exception as e:
+        api.Logger.error("Failed in Switchover during Upgrade with exception: %s"%e)
+        return api.types.status.FAILURE
 
-    if checkUpgradeStatus(tc) != api.types.status.SUCCESS:
+    misc_utils.Sleep(1)
+
+    # verify connectivity
+    if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
+        result = api.types.status.FAILURE
+    elif checkUpgradeStatus(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in validation of Upgrade Manager completion status")
         result = api.types.status.FAILURE
 
-# TODO Below code commented until complete support for upgrade in pds-agent mode is supported
+    # push configs after upgrade
+    UpdateConfigAfterUpgrade(tc)
 
-#    # push configs after upgrade
-#    UpdateConfigAfterUpgrade(tc)
-#
-#    misc_utils.Sleep(5)
-#    # verify connectivity
-#    if VerifyConnectivity(tc) != api.types.status.SUCCESS:
-#        api.Logger.error("Failed in Connectivity Check after upgrade .")
+    misc_utils.Sleep(1)
+    # verify connectivity
+    if VerifyConnectivity(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in Connectivity Check after Upgrade .")
+        result = api.types.status.FAILURE
 
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
-        api.Logger.error("Failed to verify the upgrade logs")
-        result = api.types.status.FAILURE
+        api.Logger.error("Failed to verify the upgrademgr logs...")
 
     if result == api.types.status.SUCCESS:
         api.Logger.info(f"Upgrade: Completed Successfully for {tc.nodes}")

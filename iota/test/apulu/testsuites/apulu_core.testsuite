@@ -45,8 +45,8 @@ testbundles:
         - mtu/mtu.testbundle
         - vlanoffload/vlanoffload.testbundle
         - classic/driver-features-sanity.testbundle
-        - reboot/reboot.testbundle
         - naples_upgrade/upgrade_direct.testbundle
+        - reboot/reboot.testbundle
         - techsupport/techsupport.testbundle
 
     regression:

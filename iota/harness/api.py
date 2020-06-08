@@ -309,6 +309,9 @@ def SetNaplesNodeUuid(node_name, uuid, device=None):
 def RestoreNicStaticRoutes(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().RestoreNicStaticRoutes(node_name)
 
+def SetNicFirewallRules(node_name):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().SetNicFirewallRules(node_name)
+
 def GetDataVlans():
     vlan_ids = []
     try:
