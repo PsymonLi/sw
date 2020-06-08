@@ -98,6 +98,7 @@ func (it *veniceIntegSuite) TestMetrics(c *C) {
 }
 
 func (it *veniceIntegSuite) TestMetricsWithDefaultMeta(c *C) {
+	c.Skip("IPv4FlowDropMetrics is disabled")
 	// metrics iterators don't work in OSX
 	if runtime.GOOS == "darwin" {
 		return
@@ -289,6 +290,7 @@ func (it *veniceIntegSuite) TestMetricsAuthz(c *C) {
 }
 
 func (it *veniceIntegSuite) TestFlowMetrics(c *C) {
+	c.Skip("IPv4FlowDropMetrics is disabled")
 	// metrics iterators don't work in OSX
 	if runtime.GOOS == "darwin" {
 		return

@@ -73,7 +73,7 @@ func (it *veniceIntegSuite) TestValidateFwlogPolicy(c *C) {
 							Transport:   "tcp/10001",
 						},
 						{
-							Destination: "192.168.10.1/32",
+							Destination: "192.168.10.1",
 							Transport:   "udp/15001",
 						},
 					},
