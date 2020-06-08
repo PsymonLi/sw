@@ -76,7 +76,7 @@ copy_files() {
     pack_apollo+='platform/src/boot/boot0 '
     pack_apollo+='nic/conf/captrace platform/src/app/pciemgrd nic/hal/third-party/spdlog/include/ '
     pack_apollo+='platform/src/app/memtun nic/hal/third-party/judy '
-    pack_apollo+='platform/src/lib/pciemgr_if platform/drivers  platform/src/lib/nicmgr '
+    pack_apollo+='platform/src/lib/pciemgr_if platform/drivers platform/drivers/common platform/src/lib/nicmgr '
     pack_apollo+='platform/src/lib/eth_p4plus '
     pack_apollo+='platform/src/lib/rdmamgr_apollo '
 
