@@ -94,22 +94,31 @@ class SubnetObject(base.ConfigObjectBase):
         else:
             self.Vnid = next(ResmgrClient[node].VxlanIdAllocator)
         # TODO: clean this host if logic
+        self.HostIfIdx = []
         if utils.IsDol():
             self.HostIf = InterfaceClient.GetHostInterface(node)
             if self.HostIf:
-                self.HostIfIdx = utils.LifId2LifIfIndex(self.HostIf.lif.id)
+                self.HostIfIdx.append(utils.LifId2LifIfIndex(self.HostIf.lif.id))
             else:
-                self.HostIfIdx = getattr(parent, 'HostIfIdx', None)
+                self.HostIfIdx.append(getattr(parent, 'HostIfIdx', None))
             node_uuid = None
         else:
             self.HostIf = None
             hostifidx = getattr(spec, 'hostifidx', None)
             if hostifidx:
-                self.HostIfIdx = int(hostifidx)
-            else:
-                self.HostIfIdx = InterfaceClient.GetHostInterface(node)
+                if isinstance(hostifidx, list):
+                    for ifidx in hostifidx:
+                        self.HostIfIdx.append(int(ifidx))
+                else:
+                    self.HostIfIdx.append(int(hostifidx))
+            elif getattr(spec, 'vnic', None):
+                hostifidx = InterfaceClient.GetHostInterface(node)
+                if hostifidx:
+                    self.HostIfIdx.append(hostifidx)
             node_uuid = EzAccessStoreClient[node].GetNodeUuid(node)
-        self.HostIfUuid = utils.PdsUuid(self.HostIfIdx, node_uuid=node_uuid) if self.HostIfIdx else None
+        self.HostIfUuid = []
+        for ifidx in self.HostIfIdx:
+            self.HostIfUuid.append(utils.PdsUuid(ifidx, node_uuid=node_uuid))
         # TODO: randomize maybe?
         if utils.IsNetAgentMode():
             self.DHCPPolicyIds = list(map(lambda x: x.Id, DHCPRelayClient.Objects(node)))
@@ -223,16 +232,18 @@ class SubnetObject(base.ConfigObjectBase):
         if not utils.IsNetAgentMode():
             return False
 
-        if self.HostIfUuid != None:
+        if len(self.HostIfUuid) != 0:
             #dissociate this from subnet first
             InterfaceClient.UpdateHostInterfaces(self.Node, [self], True)
 
         if hostifidx == None:
-            self.HostIfIdx = InterfaceClient.GetHostInterface(self.Node)
+            self.HostIfIdx = [InterfaceClient.GetHostInterface(self.Node)]
         else:
-            self.HostIfIdx = hostifidx
+            self.HostIfIdx = [hostifidx]
         node_uuid = EzAccessStoreClient[self.Node].GetNodeUuid(self.Node)
-        self.HostIfUuid = utils.PdsUuid(self.HostIfIdx, node_uuid=node_uuid) if self.HostIfIdx else None
+        self.HostIfUuid = []
+        for ifidx in self.HostIfIdx:
+            self.HostIfUuid.append(utils.PdsUuid(ifidx, node_uuid=node_uuid))
         InterfaceClient.UpdateHostInterfaces(self.Node, [ self ])
         return True
 
@@ -242,8 +253,8 @@ class SubnetObject(base.ConfigObjectBase):
             hostIf = InterfaceClient.GetHostInterface(self.Node)
             if hostIf != None:
                 self.HostIf = hostIf
-                self.HostIfIdx = utils.LifId2LifIfIndex(self.HostIf.lif.id)
-                self.HostIfUuid = utils.PdsUuid(self.HostIfIdx) if self.HostIfIdx else None
+                self.HostIfIdx = [utils.LifId2LifIfIndex(self.HostIf.lif.id)]
+                self.HostIfUuid = [utils.PdsUuid(self.HostIfIdx[0])] if self.HostIfIdx[0] else []
         self.V4RouteTableId = 0
 
         # remove self from dependee list of those policies before updating it
@@ -300,8 +311,8 @@ class SubnetObject(base.ConfigObjectBase):
                 spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(self.DHCPPolicyIds, ObjectTypes.DHCP_PROXY))
         utils.GetRpcEncap(self.Node, self.Vnid, self.Vnid, spec.FabricEncap)
         if utils.IsPipelineApulu():
-            if self.HostIfUuid:
-                spec.HostIf.append(self.HostIfUuid.GetUuid())
+            for uuid in self.HostIfUuid:
+                spec.HostIf.append(uuid.GetUuid())
         return
 
     def PopulateAgentJson(self):
@@ -401,8 +412,8 @@ class SubnetObject(base.ConfigObjectBase):
         if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
             return False
         if utils.IsPipelineApulu():
-            if self.HostIfUuid:
-                if spec.HostIf[0] != self.HostIfUuid.GetUuid():
+            if len(self.HostIfUuid):
+                if spec.HostIf[0] != self.HostIfUuid[0].GetUuid():
                     return False
         return True
 

@@ -51,9 +51,8 @@ def Verify(tc):
     
     if  traffic_utils.verifyPing(tc.cmd_cookies, tc.resp) != api.types.status.SUCCESS:
         return api.types.status.FAILURE
-    if tc.args.type != 'igw_only':
-        return flow_utils.verifyFlows(tc.iterators.ipaf, tc.workload_pairs)
-    elif tc.args.nat_type == 'napt' or tc.args.nat_type == 'napt_service':
+    if tc.args.type == 'igw_only' and \
+            (tc.args.nat_type == 'napt' or tc.args.nat_type == 'napt_service'):
         post_stats = nat_pb.NatPbStats()
         for pb in tc.nat_port_blocks:
             if pb.ProtoName == "icmp":

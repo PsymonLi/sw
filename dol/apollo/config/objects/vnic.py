@@ -79,13 +79,26 @@ class VnicObject(base.ConfigObjectBase):
         self.GID('Vnic%d'%self.VnicId)
         self.UUID = utils.PdsUuid(self.VnicId, self.ObjType)
         self.SUBNET = parent
+        self.HostIfIdx = None
+        self.HostIfUuid = None
+        if utils.IsDol():
+            node_uuid = None
+        else:
+            node_uuid = EzAccessStoreClient[node].GetNodeUuid(node)
+            hostifidx = getattr(spec, 'hostifidx', None)
+            if hostifidx:
+                self.HostIfIdx = int(hostifidx)
+            elif len(parent.HostIfIdx) != 0:
+                self.HostIfIdx = parent.HostIfIdx[0]
+        if self.HostIfIdx:
+            self.HostIfUuid = utils.PdsUuid(self.HostIfIdx, node_uuid=node_uuid)
         vmac = getattr(spec, 'vmac', None)
         if vmac:
             if isinstance(vmac, objects.MacAddressStep):
                 self.MACAddr = vmac.get()
             elif vmac == 'usepfmac':
                 # used in IOTA for workload interface
-                hostif = InterfaceClient.FindHostInterface(node, parent.HostIfIdx)
+                hostif = InterfaceClient.FindHostInterface(node, self.HostIfIdx)
                 if hostif != None:
                     self.MACAddr = hostif.GetInterfaceMac()
                 else:
@@ -197,11 +210,16 @@ class VnicObject(base.ConfigObjectBase):
         logger.info("- RxMirror:", self.RxMirror)
         logger.info("- TxMirror:", self.TxMirror)
         logger.info("- V4MeterId:%d|V6MeterId:%d" %(self.V4MeterId, self.V6MeterId))
-        if self.UseHostIf:
-            if self.SUBNET.HostIfIdx:
-                logger.info("- HostIfIdx:%s" % hex(self.SUBNET.HostIfIdx))
-            if self.SUBNET.HostIfUuid:
-                logger.info("- HostIf:%s" % self.SUBNET.HostIfUuid)
+        if self.HostIfIdx:
+            if self.HostIfIdx:
+                logger.info("- HostIfIdx:%s" % hex(self.HostIfIdx))
+            if self.HostIfUuid:
+                logger.info("- HostIf:%s" % self.HostIfUuid)
+        elif self.SUBNET.HostIfIdx:
+            if self.HostIfIdx:
+                logger.info("- HostIfIdx:%s" % hex(self.SUBNET.HostIfIdx[0]))
+            if self.HostIfUuid:
+                logger.info("- HostIf:%s" % self.SUBNET.HostIfUuid[0])
         logger.info(f"- IngressPolicer:{self.RxPolicer}")
         logger.info(f"- EgressPolicer:{self.TxPolicer}")
         logger.info(f"- NumSecurityPolicies:{self.__numpolicy}")
@@ -287,8 +305,10 @@ class VnicObject(base.ConfigObjectBase):
         for policyid in self.EgV6SecurityPolicyIds:
             spec.EgV6SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, api.ObjectTypes.POLICY))
         if utils.IsPipelineApulu():
-            if self.UseHostIf and self.SUBNET.HostIfUuid:
-                spec.HostIf = self.SUBNET.HostIfUuid.GetUuid()
+            if self.UseHostIf and self.HostIfUuid:
+                spec.HostIf = self.HostIfUuid.GetUuid()
+            elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
+                spec.HostIf = self.SUBNET.HostIfUuid[0].GetUuid()
             spec.FlowLearnEn = True
         if self.RxPolicer:
             spec.RxPolicerId = self.RxPolicer.UUID.GetUuid()
@@ -308,8 +328,11 @@ class VnicObject(base.ConfigObjectBase):
             if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
                 return False
         if utils.IsPipelineApulu():
-            if self.UseHostIf and self.SUBNET.HostIfUuid:
-                if spec.HostIf != self.SUBNET.HostIfUuid.GetUuid():
+            if self.UseHostIf and self.HostIfUuid:
+                if spec.HostIf != self.HostIfUuid.GetUuid():
+                    return False
+            elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
+                if spec.HostIf != self.SUBNET.HostIfUuid[0].GetUuid():
                     return False
         if spec.MACAddress != self.MACAddr.getnum():
             return False
@@ -326,8 +349,11 @@ class VnicObject(base.ConfigObjectBase):
         if utils.GetYamlSpecAttr(spec) != self.GetKey():
             return False
         if utils.IsPipelineApulu():
-            if self.UseHostIf and self.SUBNET.HostIfUuid:
-                if (utils.GetYamlSpecAttr(spec, 'hostif')) != self.SUBNET.HostIfUuid.GetUuid():
+            if self.UseHostIf and self.HostIfUuid:
+                if (utils.GetYamlSpecAttr(spec, 'hostif')) != self.HostIfUuid.GetUuid():
+                    return False
+            elif self.UseHostIf and self.SUBNET.HostIfUuid:
+                if (utils.GetYamlSpecAttr(spec, 'hostif')) != self.SUBNET.HostIfUuid[0].GetUuid():
                     return False
         if spec['macaddress'] != self.MACAddr.getnum():
             return False
@@ -557,7 +583,7 @@ class VnicObjectClient(base.ConfigClientBase):
                     continue
                 vnic_spec = yamlOp['spec']
                 hostif = vnic_spec['hostif']
-                if utils.PdsUuid(hostif).GetUuid() != vnic_obj.SUBNET.HostIfUuid.GetUuid():
+                if utils.PdsUuid(hostif).GetUuid() != vnic_obj.HostIfUuid.GetUuid():
                     logger.error(f"host interface did not match for {vnic_uuid_str}")
                     return False
                 if vnic_spec['macaddress'] != vnic_obj.MACAddr.getnum():

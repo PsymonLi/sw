@@ -157,6 +157,7 @@ vpc:
           v4prefixlen      : 24
           v6prefixlen      : 64
           v4prefix         : '2.1.0.0\24'
+          hostifidx        : 0x80000049
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 202
           v4routerip       : '2.1.0.1'
@@ -166,6 +167,7 @@ vpc:
             - id        : 1
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/00ae.cd00.000a
+              hostifidx : 0x80000049
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 1
@@ -201,10 +203,19 @@ vpc:
               rmacaddr : macaddr/00ae.cd00.0812
               ripaddr  : '3.1.0.2'
               tunnelid : 1
+            - id       : 4
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.0813
+              ripaddr  : '3.1.0.102'
+              tunnelid : 1
         - id               : 3
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '9.0.0.0\24'
+          hostifidx        :
+                - 0x8000004a
+                - 0x8000004b
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 902
           v4routerip       : '9.0.0.1'
@@ -214,6 +225,7 @@ vpc:
             - id        : 3
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/00ae.cd00.000d
+              hostifidx : 0x8000004a
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 2
@@ -231,17 +243,38 @@ vpc:
                     - '2.1.0.0\24'
                     - '10.0.200.0\24'
                     - '64.0.0.0\24'
+            - id        : 4
+              count     : 1             # 1 untagged VNIC
+              vmac      : macaddr/00ae.cd00.000e
+              hostifidx : 0x8000004b
+              ipcount : 1             # Local IP mapping per vnic
+              lmap    :
+                - id       : 3
+                  count    : 1
+                  keytype  : l3
+                  lmacaddr : macaddr/00ae.cd00.000e
+                  lipaddr  : '9.0.0.103'
+              srcguard: false         # true or false (default false)
+              public  : false
+              tagged  : true         # true or false (default true)
+              vnicencapvalue : 999
+              vnictype : "local"
+              remoteroutes :
+                    - '3.1.0.0\24'
+                    - '2.1.0.0\24'
+                    - '10.0.200.0\24'
+                    - '64.0.0.0\24'
           rmap:                       # Remote IP mappings per subnet
-            - id       : 4
-              count    : 1
-              keytype  : l3
-              rmacaddr : macaddr/00ae.cd00.0813
-              ripaddr  : '9.0.0.2'
-              tunnelid : 1
             - id       : 5
               count    : 1
               keytype  : l3
               rmacaddr : macaddr/00ae.cd00.0814
+              ripaddr  : '9.0.0.2'
+              tunnelid : 1
+            - id       : 6
+              count    : 1
+              keytype  : l3
+              rmacaddr : macaddr/00ae.cd00.0815
               ripaddr  : '9.0.0.102'
               tunnelid : 1
         # For node1 this is an igw route, for node2 a local vnic
@@ -250,6 +283,7 @@ vpc:
           v4prefixlen      : 24
           v6prefixlen      : 64
           v4prefix         : '64.0.0.0\24'
+          hostifidx        : 0x8000004c
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 60001
           v4routerip       : '64.0.0.1'
@@ -259,6 +293,7 @@ vpc:
             - id        : 100
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/00ae.cd00.000b
+              hostifidx : 0x8000004c
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 100
@@ -282,6 +317,7 @@ vpc:
           count            : 1
           v4prefixlen      : 24
           v4prefix         : '10.0.200.0\24'
+          hostifidx        : 0x8000004d
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 60002
           v4routerip       : '10.0.200.1'
@@ -291,6 +327,7 @@ vpc:
             - id        : 101
               count     : 1             # 1 untagged VNIC
               vmac      : macaddr/00ae.cd00.000c
+              hostifidx : 0x8000004d
               ipcount : 1             # Local IP mapping per vnic
               lmap    :
                 - id       : 101
