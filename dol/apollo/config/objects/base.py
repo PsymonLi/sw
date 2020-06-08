@@ -386,6 +386,7 @@ class ConfigClientBase(base.ConfigClientBase):
         self.Objs = defaultdict(dict)
         self.ObjType = objtype
         self.Maxlimit = maxlimit
+        self.args = None
         return
 
     def IsReadSupported(self):
@@ -517,7 +518,7 @@ class ConfigClientBase(base.ConfigClientBase):
             import apollo.test.utils.pdsctl as pdsctl
         else:
             import iota.test.apulu.utils.pdsctl as pdsctl
-        ret, op = pdsctl.GetObjects(node, self.GetPdsctlObjectName())
+        ret, op = pdsctl.GetObjects(node, self.GetPdsctlObjectName(), self.args)
         if not self.ValidatePdsctlRead(node, ret, op):
             logger.critical("Object validation failed for ", self.ObjType, ret, op)
             return False

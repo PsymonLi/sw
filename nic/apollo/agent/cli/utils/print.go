@@ -137,6 +137,56 @@ func EncapToString(encap *pds.Encap) string {
 	return encapStr
 }
 
+// StringToEncapType converts string to encap
+func StringToEncapType(encapTypeStr string) pds.EncapType {
+	switch strings.ToLower(encapTypeStr) {
+	case "dot1q":
+		return pds.EncapType_ENCAP_TYPE_DOT1Q
+	case "mplsoudp":
+		return pds.EncapType_ENCAP_TYPE_MPLSoUDP
+	case "vxlan":
+		return pds.EncapType_ENCAP_TYPE_VXLAN
+	default:
+		return pds.EncapType_ENCAP_TYPE_NONE
+	}
+}
+
+// StringToEncapVal converts string to encap
+func StringToEncapVal(encapTypeStr string, val uint32) *pds.EncapVal {
+	encapVal := pds.EncapVal{}
+	switch strings.ToLower(encapTypeStr) {
+	case "dot1q":
+		encapVal.Val = &pds.EncapVal_VlanId{
+			VlanId: val,
+		}
+
+	case "mplsoudp":
+		encapVal.Val = &pds.EncapVal_MPLSTag{
+			MPLSTag: val,
+		}
+	case "vxlan":
+		encapVal.Val = &pds.EncapVal_Vnid{
+			Vnid: val,
+		}
+	default:
+	}
+	return &encapVal
+}
+
+// StringToERspanType converts string to encap
+func StringToERspanType(erspanTypeStr string) pds.ERSpanType {
+	switch strings.ToLower(erspanTypeStr) {
+	case "type1":
+		return pds.ERSpanType_ERSPAN_TYPE_1
+	case "type2":
+		return pds.ERSpanType_ERSPAN_TYPE_2
+	case "type3":
+		return pds.ERSpanType_ERSPAN_TYPE_3
+	default:
+		return pds.ERSpanType_ERSPAN_TYPE_NONE
+	}
+}
+
 func BoolToString(val bool) string {
 	if val {
 		return "T"

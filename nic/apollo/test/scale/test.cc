@@ -1774,6 +1774,36 @@ create_rspan_mirror_sessions (uint32_t num_sessions)
 }
 
 sdk_ret_t
+create_erspan_mirror_sessions (uint32_t num_sessions)
+{
+    sdk_ret_t rv;
+    static uint32_t msid = 20, i;
+    pds_mirror_session_spec_t ms;
+
+    for (i = 0; i < num_sessions; i++) {
+        ms.key = test::int2pdsobjkey(msid++);
+        ms.type = PDS_MIRROR_SESSION_TYPE_ERSPAN;
+        ms.snap_len = 128;
+        ms.erspan_spec.type = PDS_ERSPAN_TYPE_2;
+        ms.erspan_spec.vpc = test::int2pdsobjkey(i);
+        ms.erspan_spec.dst_type = PDS_ERSPAN_DST_TYPE_IP;
+        // Only IPv4 ERSPAN collector is supported for now
+        //ms.erspan_spec.tep = test::int2pdsobjkey(i);
+        ms.erspan_spec.ip_addr.af = IP_AF_IPV4;
+        ms.erspan_spec.ip_addr.addr.v4_addr = 0x64646464; //100.100.100.100
+        ms.erspan_spec.dscp = 128;
+        ms.erspan_spec.span_id = 128;
+        rv = create_mirror_session(&ms);
+        if (rv != SDK_RET_OK) {
+            printf("Failed to create mirror session %s, err %u\n",
+                   ms.key.str(), rv);
+            return rv;
+        }
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 create_l3_intfs (uint32_t num_if)
 {
     sdk_ret_t rv;
@@ -2151,14 +2181,21 @@ create_objects (void)
                 return ret;
             }
         }
+    }
 
-        if (apollo()) {
-            // create RSPAN mirror sessions
-            if (g_test_params.mirror_en && (g_test_params.num_rspan > 0)) {
-                ret = create_rspan_mirror_sessions(g_test_params.num_rspan);
-                if (ret != SDK_RET_OK) {
-                    return ret;
-                }
+    if (apollo() || apulu()) {
+        // create RSPAN mirror sessions
+        if (g_test_params.mirror_en && (g_test_params.num_rspan > 0)) {
+            ret = create_rspan_mirror_sessions(g_test_params.num_rspan);
+            if (ret != SDK_RET_OK) {
+                return ret;
+            }
+        }
+        // create ERSPAN mirror sessions
+        if (g_test_params.mirror_en && (g_test_params.num_erspan > 0)) {
+            ret = create_erspan_mirror_sessions(g_test_params.num_erspan);
+            if (ret != SDK_RET_OK) {
+                return ret;
             }
         }
     }

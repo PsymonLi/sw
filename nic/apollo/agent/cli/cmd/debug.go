@@ -18,7 +18,15 @@ var debugCmd = &cobra.Command{
 	Long:  "Debug commands",
 }
 
+var debugCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Debug create commands",
+	Long:  "Debug create commands",
+}
+
 func init() {
 	rootCmd.AddCommand(debugCmd)
 	impl.RegisterDebugNodes(&impl.CLIParams{GRPCPort: types.PDSGRPCDefaultPort}, debugCmd)
+
+	debugCmd.AddCommand(debugCreateCmd)
 }

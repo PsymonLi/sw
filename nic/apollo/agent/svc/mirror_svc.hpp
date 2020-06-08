@@ -156,12 +156,14 @@ pds_mirror_session_proto_to_api_spec (pds_mirror_session_spec_t *api_spec,
             pds_mirror_erspan_type_proto_to_api_spec(proto_spec.erspanspec().type());
         pds_obj_key_proto_to_api_spec(&api_spec->erspan_spec.vpc,
                                       proto_spec.erspanspec().vpcid());
-        if (api_spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
-            pds_obj_key_proto_to_api_spec(&api_spec->erspan_spec.tep,
-                                          proto_spec.erspanspec().tunnelid());
-        } else if (api_spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP) {
+        if (proto_spec.erspanspec().has_dstip()) {
+            api_spec->erspan_spec.dst_type = PDS_ERSPAN_DST_TYPE_IP;
             ipaddr_proto_spec_to_api_spec(&api_spec->erspan_spec.ip_addr,
                                           proto_spec.erspanspec().dstip());
+        } else {
+            api_spec->erspan_spec.dst_type = PDS_ERSPAN_DST_TYPE_TEP;
+            pds_obj_key_proto_to_api_spec(&api_spec->erspan_spec.tep,
+                                          proto_spec.erspanspec().tunnelid());
         }
         api_spec->erspan_spec.dscp = proto_spec.erspanspec().dscp();
         api_spec->erspan_spec.span_id = proto_spec.erspanspec().spanid();

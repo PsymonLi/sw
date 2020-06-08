@@ -73,8 +73,8 @@ def UpdatePort(cmd):
     if utils.IsDryRun(): return True
     return True if "Update port succeeded" in stdout else False
 
-def GetObjects(node, objName):
+def GetObjects(node, objName, args=None):
     # TODO: as part of container support, need to make sure this runs on appropriate node
     # get object name
-    return ExecutePdsctlShowCommand(objName)
+    return ExecutePdsctlShowCommand(objName, args)
 

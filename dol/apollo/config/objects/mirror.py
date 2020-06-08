@@ -116,6 +116,7 @@ class MirrorSessionObject(base.ConfigObjectBase):
 class MirrorSessionObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.MIRROR, Resmgr.MAX_MIRROR)
+        self.args = '--type erspan'
         return
 
     def GetKeyfromSpec(self, spec, yaml=False):

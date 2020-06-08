@@ -61,7 +61,7 @@
         },
         {
             "kind" : "mirror",
-            "enable" : "false",
+            "enable" : "enable",
             "rspan" : "4",
             "erspan" : "4"
         },
