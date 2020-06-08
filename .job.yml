@@ -179,11 +179,11 @@ jobs:
   asset-build:
     labels: ["2xhourly"]
   docs:
-    labels: ["hourly"]
+    labels: ["2xhourly"]
   dol:
     labels: ["precommit", "hourly"]
   iota:
-    labels: ["precommit", "hourly"]
+    labels: ["precommit", "2xhourly"]
   iota/test/venice:
     labels: ["precommit", "2xhourly"]
   iota/test/venice/vcenter:
