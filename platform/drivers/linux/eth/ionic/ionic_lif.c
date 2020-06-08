@@ -1504,8 +1504,11 @@ static int ionic_change_mtu(struct net_device *netdev, int new_mtu)
 		},
 	};
 	int err;
+	int fs;
 
-	if (new_mtu < IONIC_MIN_MTU || new_mtu > IONIC_MAX_MTU) {
+	fs = new_mtu + ETH_HLEN + VLAN_HLEN;
+	if (fs < le32_to_cpu(lif->identity->eth.min_frame_size) ||
+	    fs > le32_to_cpu(lif->identity->eth.max_frame_size)) {
 		netdev_err(netdev, "Invalid MTU %d\n", new_mtu);
 		return -EINVAL;
 	}
@@ -2676,16 +2679,6 @@ static struct ionic_lif *ionic_lif_alloc(struct ionic *ionic, unsigned int index
 		netdev->watchdog_timeo = 2 * HZ;
 		netif_carrier_off(netdev);
 
-#ifdef HAVE_NETDEVICE_MIN_MAX_MTU
-#ifdef HAVE_RHEL7_EXTENDED_MIN_MAX_MTU
-		netdev->extended->min_mtu = IONIC_MIN_MTU;
-		netdev->extended->max_mtu = IONIC_MAX_MTU;
-#else
-		netdev->min_mtu = IONIC_MIN_MTU;
-		netdev->max_mtu = IONIC_MAX_MTU;
-#endif /* HAVE_RHEL7_EXTENDED_MIN_MAX_MTU */
-#endif /* HAVE_NETDEVICE_MIN_MAX_MTU */
-
 		lif->nrdma_eqs_avail = ionic->nrdma_eqs_per_lif;
 		lif->nrdma_eqs = ionic->nrdma_eqs_per_lif;
 		lif->nxqs = ionic->ntxqs_per_lif;
@@ -2796,6 +2789,19 @@ int ionic_lifs_alloc(struct ionic *ionic)
 	lif = ionic_lif_alloc(ionic, 0);
 	if (lif && !IS_ERR(lif)) {
 		ionic_lif_identify(ionic, IONIC_LIF_TYPE_CLASSIC, lif->identity);
+
+		if (is_master_lif(lif)) {
+#ifdef HAVE_NETDEVICE_MIN_MAX_MTU
+#ifdef HAVE_RHEL7_EXTENDED_MIN_MAX_MTU
+			lif->netdev->extended->min_mtu = lif->identity->eth.min_frame_size;
+			lif->netdev->extended->max_mtu = lif->identity->eth.max_frame_size - ETH_HLEN - VLAN_HLEN;
+#else
+			lif->netdev->min_mtu = lif->identity->eth.min_frame_size;
+			lif->netdev->max_mtu = lif->identity->eth.max_frame_size - ETH_HLEN - VLAN_HLEN;
+#endif /* HAVE_RHEL7_EXTENDED_MIN_MAX_MTU */
+#endif /* HAVE_NETDEVICE_MIN_MAX_MTU */
+		}
+
 		lif->lif_type = IONIC_LIF_TYPE_CLASSIC;
 		ionic_lif_queue_identify(lif);
 	} else {
