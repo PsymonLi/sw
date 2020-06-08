@@ -63,77 +63,66 @@ intr_reg_list = [
 intr_list = []
 
 def Setup(tc):
-    for reg_name, delphi_name, fields in intr_reg_list:
-        for field in fields:
-            intr_field = DelphiInterruptField(reg_name, field, delphi_name)
-            intr_list.append(intr_field)
+    tc.Nodes = api.GetNaplesHostnames()
+    api.Logger.info("Found {} hosts" .format(len(tc.Nodes)))
+
+    for node in tc.Nodes:
+        for reg_name, delphi_name, fields in intr_reg_list:
+            for field in fields:
+                intr_field = DelphiInterruptField(reg_name, field, delphi_name)
+                intr_list.append( (node,intr_field) )
     return api.types.status.SUCCESS
 
 def Trigger(tc):
     api.Logger.info("Starting interrupt test")
 
-    tc.Nodes = api.GetNaplesHostnames()
-    api.Logger.info("The number of hosts {}" .format(len(tc.Nodes)))
+    for node, intr in intr_list:
+        req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+        api.Trigger_AddNaplesCommand(req, node, intr.get_count_cmd())
+        api.Trigger_AddNaplesCommand(req, node, intr.set_field_cmd())
+        resp = api.Trigger(req)
 
-    for node in tc.Nodes:
-        for intr in intr_list:
-            req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-
-            cmd_list = [intr.get_count_cmd(), intr.set_field_cmd()]
-
-            for cmd in cmd_list:
-                api.Trigger_AddNaplesCommand(req, node, cmd)
-
-            resp = api.Trigger(req)
-
-            i = 0
-            for cmd in resp.commands:
-                if cmd.exit_code != 0:
-                    api.Logger.error("cmd failed {}, Node{}, Interrupt {}, Field {}".format(cmd_list[i], node, intr.name(), intr.field()))
-                    return api.types.status.FAILURE
-                i += 1
-
-            cmd = resp.commands[0]
-            count = intr.parse_count_cmd_output(cmd.stdout)
-            if count == -1:
-                api.Logger.error("Invalid count. Node {}, Interrupt {}, Field {}".format(node, intr.name(), intr.field()))
+        for cmd in resp.commands:
+            if cmd.exit_code != 0:
+                api.Logger.error("Command failed: {}, Node {}, Interrupt {}, Field {}".format(cmd.command, node, intr.name(), intr.field()))
                 return api.types.status.FAILURE
 
-            intr.set_count(count)
+        cmd = resp.commands[0]
+        count = intr.parse_count_cmd_output(cmd.stdout)
+        if count == -1:
+            api.Logger.error("Invalid count: Node {}, Interrupt {}, Field {}".format(node, intr.name(), intr.field()))
+            return api.types.status.FAILURE
+
+        api.Logger.info("Set: Node {}, Interrupt {}, Field {}, {} -> {}".format(node, intr.name(), intr.field(), count, count + 1))
+        intr.set_count(count)
 
     return api.types.status.SUCCESS
 
 def Verify(tc):
-    tc.Nodes = api.GetNaplesHostnames()
+    rc = api.types.status.SUCCESS
 
-    for node in tc.Nodes:
-        for intr in intr_list:
-            req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    api.Trigger_AddNaplesCommand(req, tc.Nodes[0], 'sleep 3')
+    resp = api.Trigger(req)
 
-            # sleep for sometime to make sure interrupt poll detects the interrupt trigger
-            cmd_list = ['sleep 3', intr.get_count_cmd()]
+    for node, intr in intr_list:
+        req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+        api.Trigger_AddNaplesCommand(req, node, intr.get_count_cmd())
+        resp = api.Trigger(req)
 
-            for cmd in cmd_list:
-                api.Trigger_AddNaplesCommand(req, node, cmd)
+        cmd = resp.commands[0]
+        if cmd.exit_code != 0:
+            api.Logger.error("Command failed: Node {}, Interrupt {}, Field {}".format(node, intr.name(), intr.field()))
+            return api.types.status.FAILURE
 
-            resp = api.Trigger(req)
+        expected = intr.count() + 1
+        value = intr.parse_count_cmd_output(cmd.stdout)
 
-            i = 0
-            for cmd in resp.commands:
-                if cmd.exit_code != 0:
-                    api.Logger.error("cmd failed {}, Node{}, Interrupt {}, Field {}".format(cmd_list[i], node, intr.name(), intr.field()))
-                    return api.types.status.FAILURE
-                i += 1
+        if value < expected:
+            api.Logger.error("Node {}, Interrupt {}, Field {}, Expected {}, Got {}".format(node, intr.name(), intr.field(), expected, value))
+            rc = api.types.status.FAILURE
 
-            expected = intr.count() + 1
-            cmd = resp.commands[1]
-            value = intr.parse_count_cmd_output(cmd.stdout)
-
-            if value < expected:
-                api.Logger.error("Node {}, Interrupt {}, Field {}, Expected {}, Got {}".format(node, intr.name(), intr.field(), expected, value))
-                return api.types.status.FAILURE
-
-    return api.types.status.SUCCESS
+    return rc
 
 def Teardown(tc):
     return api.types.status.SUCCESS

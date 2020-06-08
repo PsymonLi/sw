@@ -48,39 +48,10 @@ extern void ionic_set_ops(struct ibv_context *ibctx);
 extern const struct verbs_context_ops ionic_ctx_ops;
 #endif
 
-#ifdef NOT_UPSTREAM
+#ifdef IONIC_LIB_STATS
 FILE *IONIC_DEBUG_FILE;
-
-static void ionic_debug_file_close(void)
-{
-	fclose(IONIC_DEBUG_FILE);
-}
-
-static void ionic_debug_file_open(void)
-{
-	const char *name = getenv("IONIC_DEBUG_FILE");
-
-	if (!name) {
-		IONIC_DEBUG_FILE = IONIC_DEFAULT_DEBUG_FILE;
-		return;
-	}
-
-	IONIC_DEBUG_FILE = fopen(name, "w");
-
-	if (!IONIC_DEBUG_FILE) {
-		perror("ionic debug file: ");
-		return;
-	}
-
-	atexit(ionic_debug_file_close);
-}
-
-static void ionic_debug_file_init(void)
-{
-	static pthread_once_t once = PTHREAD_ONCE_INIT;
-
-	pthread_once(&once, ionic_debug_file_open);
-}
+static struct ionic_stats *global_stats;
+static struct ionic_latencies *global_lats;
 
 static int ionic_env_val_def(const char *name, int def)
 {
@@ -105,8 +76,6 @@ static int ionic_env_debug(void)
 	return ionic_env_val("IONIC_DEBUG");
 }
 
-#endif /* NOT_UPSTREAM */
-#ifdef IONIC_LIB_STATS
 static int ionic_env_stats(void)
 {
 	if (!(IONIC_STATS))
@@ -121,6 +90,52 @@ static int ionic_env_lats(void)
 		return 0;
 
 	return ionic_env_val("IONIC_LATS");
+}
+
+static void ionic_debug_file_close(void)
+{
+	if (global_stats) {
+		ionic_stats_print(IONIC_DEBUG_FILE, global_stats);
+		free(global_stats);
+	}
+
+	if (global_lats) {
+		ionic_lats_print(IONIC_DEBUG_FILE, global_lats);
+		free(global_lats);
+	}
+
+	fclose(IONIC_DEBUG_FILE);
+}
+
+static void ionic_debug_file_open(void)
+{
+	const char *name = getenv("IONIC_DEBUG_FILE");
+
+	if (!name) {
+		IONIC_DEBUG_FILE = IONIC_DEFAULT_DEBUG_FILE;
+	} else {
+		IONIC_DEBUG_FILE = fopen(name, "w");
+	}
+
+	if (!IONIC_DEBUG_FILE) {
+		perror("ionic debug file: ");
+		return;
+	}
+
+	if (ionic_env_stats())
+		global_stats = calloc(1, sizeof *global_stats);
+
+	if (ionic_env_lats())
+		global_lats = calloc(1, sizeof *global_lats);
+
+	atexit(ionic_debug_file_close);
+}
+
+static void ionic_debug_file_init(void)
+{
+	static pthread_once_t once = PTHREAD_ONCE_INIT;
+
+	pthread_once(&once, ionic_debug_file_open);
 }
 
 #endif /* IONIC_LIB_STATS */
@@ -141,12 +156,10 @@ static struct verbs_context *ionic_alloc_context(struct ibv_device *ibdev,
 	int rc, version;
 #ifdef IONIC_LIB_STATS
 	int level;
-#endif
 
-#ifdef NOT_UPSTREAM
 	ionic_debug_file_init();
-
 #endif
+
 #ifdef __FreeBSD__
 	dev = to_ionic_dev(&vdev->device);
 	ctx = to_ionic_ctx(ibctx);
@@ -230,15 +243,13 @@ static struct verbs_context *ionic_alloc_context(struct ibv_device *ibdev,
 			ctx->spec = 0;
 	}
 
-#ifdef NOT_UPSTREAM
+#ifdef IONIC_LIB_STATS
 	if (ionic_env_debug())
 		ctx->dbg_file = IONIC_DEBUG_FILE;
 
-#endif /* NOT_UPSTREAM */
-#ifdef IONIC_LIB_STATS
 	level = ionic_env_stats();
 	if (level) {
-		ctx->stats = calloc(1, sizeof(*ctx->stats));
+		ctx->stats = global_stats;
 
 		if (ctx->stats && level > 1)
 			ctx->stats->histogram = 1;
@@ -246,7 +257,7 @@ static struct verbs_context *ionic_alloc_context(struct ibv_device *ibdev,
 
 	level = ionic_env_lats();
 	if (level) {
-		ctx->lats = calloc(1, sizeof(*ctx->lats));
+		ctx->lats = global_lats;
 
 		if (ctx->lats && level > 1)
 			ctx->lats->histogram = 1;
@@ -280,14 +291,6 @@ static void ionic_uninit_context(struct verbs_device *vdev,
 	pthread_mutex_destroy(&ctx->mut);
 
 	ionic_unmap(ctx->dbpage, 1u << ctx->pg_shift);
-#ifdef IONIC_LIB_STATS
-
-	ionic_stats_print(IONIC_DEBUG_FILE, ctx->stats);
-	free(ctx->stats);
-
-	ionic_lats_print(IONIC_DEBUG_FILE, ctx->lats);
-	free(ctx->lats);
-#endif /* IONIC_LIB_STATS */
 }
 
 #endif /* __FreeBSD__ */

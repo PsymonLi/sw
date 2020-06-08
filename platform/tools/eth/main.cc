@@ -33,6 +33,8 @@ usage()
     printf("   debug          <lif> <qtype> <qid> <enable>\n");
     printf("   nvme_qstate    <lif> <qtype> <qid>\n");
     printf("   rdma_qstate    <lif> <qtype> <qid>\n");
+    printf("   rdma_kte       <lif>\n");
+    printf("   rdma_pte       <lif>\n");
     printf("   virtio_qstate  <lif> <qtype> <qid>\n");
     printf("   qpoll          <lif> <qtype>\n");
     printf("   stats          <lif>\n");
@@ -126,6 +128,20 @@ main(int argc, char **argv)
             uint32_t qid = std::strtoul(argv[4], NULL, 0);
             rdma_qstate(lif, qtype, qid);
         }
+    } else if (strcmp(argv[1], "rdma_kte") == 0) {
+        if (argc != 3) {
+            usage();
+        }
+        uint16_t lif = std::strtoul(argv[2], NULL, 0);
+
+        rdma_kte(lif);
+    } else if (strcmp(argv[1], "rdma_pte") == 0) {
+        if (argc != 3) {
+            usage();
+        }
+        uint16_t lif = std::strtoul(argv[2], NULL, 0);
+
+        rdma_pte(lif);
     } else if (strcmp(argv[1], "virtio_qstate") == 0) {
         if (argc != 5) {
             usage();

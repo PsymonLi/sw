@@ -9,11 +9,18 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
+#include "nic/sdk/lib/p4/p4_api.hpp"
+#include "nic/sdk/lib/p4/p4_utils.hpp"
 #include "platform/src/lib/nicmgr/include/rdma_dev.hpp"
 
 #include "impl.hpp"
 
+#ifdef IRIS
+#include "gen/p4gen/common_rxdma_actions/include/common_rxdma_actions_p4pd.h"
+#include "gen/p4gen/common_rxdma_actions/include/common_rxdma_actions_p4pd_table.h"
+#endif
 
 #define RESET_HEADER() do { hdr_done = false; } while (0)
 #define PRINT_HEADER(owner)                                             \
@@ -750,13 +757,13 @@ rdma_qstate(uint16_t lif, uint8_t qtype, uint32_t qid)
 
     if (qid >= qinfo[qtype].length) {
         printf("Invalid qid %u for lif %u qtype %u (%s)\n",
-	       qid, lif, qtype, qnames[qtype]);
+               qid, lif, qtype, qnames[qtype]);
         return;
     }
 
     /* Print the state of a single queue */
     printf("RDMA queue state for lif %u qtype %u (%s) qid %u:\n",
-	   lif, qtype, qnames[qtype], qid);
+           lif, qtype, qnames[qtype], qid);
     rdma_qstate_one(qinfo, qtype, qid);
 }
 
@@ -794,4 +801,151 @@ rdma_qstate_all(uint16_t lif, uint8_t qtype)
         for (qid = 0; qid < qinfo[qtype_idx].length; qid++)
             rdma_qstate_one(qinfo, qtype_idx, qid);
     }
+}
+
+#ifdef IRIS
+static int
+p4pd_common_p4plus_rxdma_stage0_rdma_params_table_entry_get(uint32_t hw_lif_id,
+    rx_stage0_load_rdma_params_actiondata_t *data)
+{
+    p4pd_error_t        pd_err;
+
+    assert(hw_lif_id < MAX_LIFS);
+
+    pd_init();
+
+    pd_err = p4pd_global_entry_read(
+        P4_COMMON_RXDMA_ACTIONS_TBL_ID_RX_STAGE0_LOAD_RDMA_PARAMS,
+        hw_lif_id, NULL, NULL, data);
+    if (pd_err != P4PD_SUCCESS) {
+        assert(0);
+    }
+
+    return 0;
+}
+#endif /* IRIS */
+
+void
+rdma_kte(uint32_t hw_lif_id)
+{
+#ifdef IRIS
+    uint64_t pt_table_base_addr, num_pt_entries;
+    uint64_t key_table_base_addr, num_key_entries;
+    rx_stage0_load_rdma_params_actiondata_t data = { 0 };
+    uint64_t idx, kte_addr;
+    key_entry_t kte;
+    bool skipped = false;
+
+    if (hw_lif_id >= MAX_LIFS) {
+        printf("Invalid lif %d\n", hw_lif_id);
+        return;
+    };
+
+    p4pd_common_p4plus_rxdma_stage0_rdma_params_table_entry_get(
+        hw_lif_id, &data);
+
+    pt_table_base_addr =
+        data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.pt_base_addr_page_id;
+    pt_table_base_addr <<= HBM_PAGE_SIZE_SHIFT;
+
+    num_pt_entries =
+        data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.log_num_pt_entries;
+
+    num_key_entries =
+        data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.log_num_kt_entries;
+
+    if (!pt_table_base_addr || !num_pt_entries || !num_key_entries) {
+        printf("No RDMA key table found for lif %d\n", hw_lif_id);
+        return;
+    }
+
+    num_pt_entries = 1 << num_pt_entries;
+    num_key_entries = 1 << num_key_entries;
+    key_table_base_addr = pt_table_base_addr +
+        (sizeof(uint64_t) * num_pt_entries);
+
+    /* Print the contents of the key table */
+    printf("RDMA key table entries for lif %u\n", hw_lif_id);
+    printf("    base_addr %#010lx  num_entries %#lx\n",
+           key_table_base_addr, num_key_entries);
+
+    printf("\tIndex\tt s qpid lkey ukey ck       ac fl base_addr      len (all hex)\n");
+    for (idx = 0; idx < num_key_entries; idx++) {
+        kte_addr = key_table_base_addr + idx * sizeof kte;
+        sdk::lib::pal_mem_read(kte_addr, (uint8_t *)&kte, sizeof kte, 0);
+
+        memrev((uint8_t *)&kte, sizeof kte);
+
+        if (kte.len) {
+            printf("\t%lx\t%1x %1x %4x %4x %4x %8x %02x %02x %12lx %c %lx\n",
+                   idx,
+                   kte.type, kte.state, kte.qp,
+                   kte.mr_l_key, kte.user_key, kte.mr_cookie,
+                   kte.acc_ctrl, kte.flags,
+                   kte.is_phy_address ? kte.phy_base_addr : kte.base_va,
+                   kte.is_phy_address ? 'p' : 'v',
+                   kte.len);
+            skipped = false;
+        } else if (!skipped) {
+            printf("\t...\n");
+            skipped = true;
+        }
+    }
+#else
+    printf("Not supported\n");
+#endif /* IRIS */
+}
+
+void
+rdma_pte(uint32_t hw_lif_id)
+{
+#ifdef IRIS
+    uint64_t pt_table_base_addr, num_pt_entries;
+    rx_stage0_load_rdma_params_actiondata_t data = { 0 };
+    uint64_t idx, pte_addr, pte;
+    bool skipped = false;
+
+    if (hw_lif_id >= MAX_LIFS) {
+        printf("Invalid lif %d\n", hw_lif_id);
+        return;
+    };
+
+    p4pd_common_p4plus_rxdma_stage0_rdma_params_table_entry_get(
+        hw_lif_id, &data);
+
+    pt_table_base_addr =
+        data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.pt_base_addr_page_id;
+    pt_table_base_addr <<= HBM_PAGE_SIZE_SHIFT;
+
+    num_pt_entries =
+        data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.log_num_pt_entries;
+
+    if (!pt_table_base_addr || !num_pt_entries) {
+        printf("No RDMA page table found for lif %d\n", hw_lif_id);
+        return;
+    }
+
+    num_pt_entries = 1 << num_pt_entries;
+
+    /* Print the contents of the page table */
+    printf("RDMA page table entries for lif %u\n", hw_lif_id);
+    printf("    base_addr %#010lx  num_entries %#lx\n",
+           pt_table_base_addr, num_pt_entries);
+
+    printf("\tIndex\tHost Addr\n");
+    for (idx = 0; idx < num_pt_entries; idx++) {
+        pte_addr = pt_table_base_addr + idx * sizeof pte;
+        sdk::lib::pal_mem_read(pte_addr, (uint8_t *)&pte, sizeof pte, 0);
+
+        if (pte) {
+            printf("\t%lx\t%lx\n", idx, pte);
+            skipped = false;
+        } else if (!skipped) {
+            printf("\t...\n");
+            skipped = true;
+        }
+    }
+#else
+    printf("Not supported\n");
+#endif /* IRIS */
 }

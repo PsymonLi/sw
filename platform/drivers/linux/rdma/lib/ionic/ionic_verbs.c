@@ -2379,12 +2379,6 @@ static void ionic_free_context(struct ibv_context *ibctx)
 
 	verbs_uninit_context(&ctx->vctx);
 
-	ionic_stats_print(IONIC_DEBUG_FILE, ctx->stats);
-	free(ctx->stats);
-
-	ionic_lats_print(IONIC_DEBUG_FILE, ctx->lats);
-	free(ctx->lats);
-
 	free(ctx);
 }
 

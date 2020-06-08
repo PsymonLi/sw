@@ -506,11 +506,10 @@ rdmamgr_iris::rdma_get_pt_base_addr(uint32_t lif)
 
     pt_table_base_addr = data.action_u.rx_stage0_load_rdma_params_rx_stage0_load_rdma_params.pt_base_addr_page_id;
 
-    NIC_FUNC_DEBUG("lif-{}: Rx LIF params - pt_base_addr_page_id {}",
+    NIC_FUNC_DEBUG("lif-{}: Rx LIF params - pt_base_addr_page_id {:x}",
                     lif, pt_table_base_addr);
 
-    pt_table_base_addr <<= HBM_PAGE_SIZE_SHIFT;
-    return(pt_table_base_addr);
+    return pt_table_base_addr << HBM_PAGE_SIZE_SHIFT;
 }
 
 uint64_t
@@ -536,8 +535,8 @@ rdmamgr_iris::rdma_get_kt_base_addr(uint32_t lif)
     key_table_base_addr = (pt_table_base_addr << HBM_PAGE_SIZE_SHIFT) +
         (sizeof(uint64_t) << log_num_pt_entries);
 
-    NIC_FUNC_DEBUG("lif-{}: Rx LIF params - pt_base_addr_page_id {} "
-                    "log_num_pt_entries {} key_table_base_addr {}",
+    NIC_FUNC_DEBUG("lif-{}: Rx LIF params - pt_base_addr_page_id {:x} "
+                    "log_num_pt_entries {} key_table_base_addr {:x}",
                     lif,
                     pt_table_base_addr, log_num_pt_entries,
                     key_table_base_addr);

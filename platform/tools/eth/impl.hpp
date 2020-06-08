@@ -7,6 +7,7 @@
 
 // Common
 #define QTYPE_MAX               (8)
+#define MAX_LIFS                (2048)
 #define PAL_barrier()           asm volatile("dsb sy" ::: "memory")
 
 #define min(a,b) \
@@ -61,6 +62,8 @@ void eth_lif_status(uint64_t addr);
 // rdma
 void rdma_qstate(uint16_t lif, uint8_t qtype, uint32_t qid);
 void rdma_qstate_all(uint16_t lif, uint8_t qtype);
+void rdma_kte(uint32_t hw_lif_id);
+void rdma_pte(uint32_t hw_lif_id);
 
 // nvme
 void nvme_qstate(uint16_t lif, uint8_t qtype, uint32_t qid);

@@ -9,5 +9,9 @@ for LIF in $LIFS
 do
 	echo === RDMA LIF $LIF start ===
 	/platform/bin/eth_dbgtool rdma_qstate $LIF
+	echo
+	/platform/bin/eth_dbgtool rdma_pte $LIF
+	echo
+	/platform/bin/eth_dbgtool rdma_kte $LIF
 	echo ===  RDMA LIF $LIF end  ===
 done
