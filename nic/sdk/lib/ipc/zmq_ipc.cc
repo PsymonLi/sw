@@ -413,6 +413,8 @@ zmq_ipc_server::reply(ipc_msg_ptr msg, const void *data,
 
     assert(zmsg->preamble()->recipient == this->id_);
 
+    assert(zmsg->preamble()->type == DIRECT);
+
     // Take ZMQ LOCK
     this->zlock();
 
