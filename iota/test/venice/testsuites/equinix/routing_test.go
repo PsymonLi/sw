@@ -252,7 +252,6 @@ var _ = Describe("Routing Config Tests", func() {
 		})
 
 		It("Change overlay password", func() {
-			Skip("Once agg watch issue is fixed with respect tp cert, enable it")
 			// get all existing routing config
 			rcc, err := ts.model.ListRoutingConfig()
 			Expect(err).ShouldNot(HaveOccurred())
@@ -292,7 +291,6 @@ var _ = Describe("Routing Config Tests", func() {
 		})
 
 		It("Change overlay password w/ implicit reset", func() {
-			Skip("Once agg watch issue is fixed with respect tp cert, enable it")
 			/*
 				This case is same as above except when we revert to original config,
 				we remove DSC config template from RR w/o  explicitly resetting password.
