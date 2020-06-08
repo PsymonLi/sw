@@ -182,3 +182,27 @@ testcases:
             ipaf    : [ ipv4 ]
             pktsize : [ 256 ]
 
+    -   name    : Ping_Invalid_NAT_Port_Out_Of_Range
+        testcase: testcases.networking.nat_invalidate
+        args    :
+            dst_ip : 50.5.1.1
+            dst_port : 21000
+            in_pb_range : False
+        iterators :
+
+    -   name    : Ping_Invalid_NAT_Port_In_Range
+        testcase: testcases.networking.nat_invalidate
+        args    :
+            dst_ip : 50.5.1.1
+            dst_port : 11000
+            in_pb_range : True
+        iterators :
+
+    -   name    : Ping_Invalid_NAT_IP_Out_Of_Range
+        testcase: testcases.networking.nat_invalidate
+        args    :
+            dst_ip : 50.5.5.1
+            dst_port : 11000
+            in_pb_range : False
+        iterators :
+

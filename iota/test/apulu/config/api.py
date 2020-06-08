@@ -216,6 +216,18 @@ def GetWorkloadPairs(wl_pair_type, wl_pair_scope,
     return __getWorkloadPairsBy(wl_pair_type, wl_pair_scope, nat_type, \
                                 local_vnic_has_public_ip, direction)
 
+def GetIgwWorkload():
+    naplesHosts = api.GetNaplesHostnames()
+    vnics = []
+    for node in naplesHosts:
+        vnics.extend(vnic.client.Objects(node))
+
+    for vnic1 in vnics:
+        if vnic1.VnicType == "igw":
+            w = __findWorkloadByVnic(vnic1)
+            return w
+    return None
+
 def __getObjects(objtype):
     objs = list()
     naplesHosts = api.GetNaplesHostnames()
