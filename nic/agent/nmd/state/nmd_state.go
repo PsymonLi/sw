@@ -264,6 +264,14 @@ func NewNMD(pipeline Pipeline,
 		}
 	}
 
+	var interfaceIPs []agentTypes.DSCInterfaceIP
+	// Replay dsc interface ip config stored in DB
+	if dat, err := emdb.RawRead(DSCInterfaceIPConfigKind, DSCInterfaceIPConfigKey); err == nil {
+		if err := json.Unmarshal(dat, &interfaceIPs); err != nil {
+			log.Error("Could not unmarshal interface IPs from DB")
+		}
+	}
+
 	var delClient clientAPI.Client
 	if pipeline != nil {
 		delClient = pipeline.GetDelphiClient()
@@ -287,6 +295,7 @@ func NewNMD(pipeline Pipeline,
 		listenURL:           listenURL,
 		stopNICUpd:          make(chan bool, 1),
 		config:              config,
+		DSCInterfaceIPs:     interfaceIPs,
 		ro:                  ro,
 		revProxy:            revProxy,
 		metrics:             nil,
@@ -1680,6 +1689,15 @@ func (n *NMD) GetVeniceIPs() []string {
 // SetVeniceIPs sets the venice co-ordinates
 func (n *NMD) SetVeniceIPs(veniceIPs []string) {
 	n.config.Status.Controllers = veniceIPs
+}
+
+// GetInterfaceIPs returns the DSC interface IPs
+func (n *NMD) GetInterfaceIPs() map[uint32]*cluster.IPConfig {
+	interfaceIPs := make(map[uint32]*cluster.IPConfig)
+	for _, intf := range n.DSCInterfaceIPs {
+		interfaceIPs[intf.IfID] = &cluster.IPConfig{IPAddress: intf.IPAddress, DefaultGW: intf.GatewayIP}
+	}
+	return interfaceIPs
 }
 
 // SetInterfaceIPs sets the DSC interface IPs

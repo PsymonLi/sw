@@ -186,6 +186,11 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 					n.config.Status.AdmissionPhase = cmd.DistributedServiceCardStatus_DECOMMISSIONED.String()
 					n.config.Status.AdmissionPhaseReason = "DistributedServiceCard management mode changed to HOST"
 					log.Infof("Naples successfully decommissioned and moved to HOST mode.")
+					// Delete DSC Interface IP Config
+					err = n.store.RawDelete(DSCInterfaceIPConfigKind, DSCInterfaceIPConfigKey)
+					if err != nil {
+						log.Errorf("Error deleting persisted DSC Interface IP Config")
+					}
 					// update nic in the DB
 					n.SetSmartNIC(nic)
 					err = n.store.Write(nic)

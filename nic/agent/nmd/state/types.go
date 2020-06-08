@@ -29,6 +29,12 @@ import (
 
 const (
 	nicRegistrationWaitTime = time.Duration(time.Minute * 5)
+
+	// DSCInterfaceIPConfigKind to load/store dsc interface ip information in DB
+	DSCInterfaceIPConfigKind = "dscInterfaceIpKind"
+
+	// DSCInterfaceIPConfigKey to load/store dsc interface ip information in DB
+	DSCInterfaceIPConfigKey = "dscInterfaceIpKey"
 )
 
 // NMD is the Naples management daemon instance object

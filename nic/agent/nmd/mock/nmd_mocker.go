@@ -314,6 +314,11 @@ func (ag *NMD) PersistState(updateDelphi bool) error {
 	return nil
 }
 
+// GetInterfaceIPs returns the DSC interface IPs
+func (ag *NMD) GetInterfaceIPs() map[uint32]*cluster.IPConfig {
+	return make(map[uint32]*cluster.IPConfig)
+}
+
 // SetInterfaceIPs sets the DSC interface IPs
 func (ag *NMD) SetInterfaceIPs(interfaceIPs map[uint32]*cluster.IPConfig) {
 

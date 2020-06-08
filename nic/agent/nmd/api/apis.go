@@ -61,6 +61,7 @@ type NmdAPI interface {
 	SetVeniceIPs(veniceIPs []string)
 	GetVeniceIPs() []string
 	SetInterfaceIPs(interfaceIPs map[uint32]*cluster.IPConfig)
+	GetInterfaceIPs() map[uint32]*cluster.IPConfig
 	PersistState(updateDelphi bool) error
 	SetMgmtInterface(intf string)
 	SetNetworkMode(intf string)

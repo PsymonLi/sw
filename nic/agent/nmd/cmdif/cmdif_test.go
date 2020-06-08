@@ -167,6 +167,9 @@ func (ag *mockAgent) PersistState(update bool) error {
 	return nil
 }
 
+func (ag *mockAgent) GetInterfaceIPs() map[uint32]*cluster.IPConfig {
+	return make(map[uint32]*cluster.IPConfig)
+}
 func (ag *mockAgent) SetInterfaceIPs(interfaceIPs map[uint32]*cluster.IPConfig) {
 	return
 }

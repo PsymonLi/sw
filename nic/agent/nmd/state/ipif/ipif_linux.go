@@ -327,6 +327,9 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 	// Should the IP information be updated to NMD
 	mustUpdateIP := false
 
+	// Should the Interface IPs be updated to NMD
+	mustUpdateInterfaceIPs := false
+
 	// Start renewal routine
 	// Kick off a renewal process.
 	d.DhcpWaitGroup.Add(1)
@@ -344,10 +347,13 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 			veniceIPs = append(veniceIPs, veniceIP)
 		}
 		d.nmd.SetVeniceIPs(veniceIPs)
+		if len(d.nmd.GetInterfaceIPs()) == 0 {
+			mustUpdateInterfaceIPs = true
+		}
 	}
 
 	if mustUpdateIP {
-		if len(d.InterfaceIPs) > 0 {
+		if mustUpdateInterfaceIPs && len(d.InterfaceIPs) > 0 {
 			interfaceIPs := make(map[uint32]*cluster.IPConfig)
 			for _, interfaceIP := range d.InterfaceIPs {
 				interfaceIPs[uint32(interfaceIP.IfID)] = &cluster.IPConfig{
@@ -356,6 +362,8 @@ func (d *DHCPState) updateDHCPState(ack dhcp4.Packet, mgmtLink netlink.Link) (er
 				}
 			}
 			d.nmd.SetInterfaceIPs(interfaceIPs)
+		} else {
+			log.Info("Using persisted interface IP config. Skipping updating config from option 242")
 		}
 
 		if d.Hostname != "" {

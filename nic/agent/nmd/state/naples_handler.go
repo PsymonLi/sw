@@ -287,6 +287,12 @@ func (n *NMD) PersistState(updateDelphi bool) (err error) {
 		return
 	}
 
+	// Persisting DSC Interface IPs
+	dat, _ := json.Marshal(n.DSCInterfaceIPs)
+	if err := n.store.RawWrite(DSCInterfaceIPConfigKind, DSCInterfaceIPConfigKey, dat); err != nil {
+		log.Errorf("failed to persist DSC Interface IPs. Err: %v", err)
+	}
+
 	// Persist device files
 	if n.Pipeline != nil && n.Pipeline.GetPipelineType() == globals.NaplesPipelineApollo {
 		// Skip writing device files in case of apollo pipeline
