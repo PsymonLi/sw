@@ -78,7 +78,8 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         const protocol: string = ctrl2.value;
         const ctrl: AbstractControl = formGroup.get(['ports']);
         this.addFieldValidator(ctrl, this.isPortsFieldValid());
-        if (protocol !== 'tcp' && protocol !== 'udp') {
+        if (!protocol || (protocol.toLowerCase() !== 'tcp' &&
+            protocol.toLowerCase() !== 'udp')) {
           ctrl.disable();
         }
       });
@@ -433,8 +434,8 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     for (let i = 0; i < tempProto.controls.length; i++) {
       const formGroup: FormGroup = tempProto.controls[i] as FormGroup;
       if (formGroup.value && formGroup.value.protocol) {
-        if (formGroup.value.protocol !== 'tcp' &&
-            formGroup.value.protocol !== 'udp') {
+        if (formGroup.value.protocol.toLowerCase() !== 'tcp' &&
+            formGroup.value.protocol.toLowerCase() !== 'udp') {
           return false;
         }
         if (formGroup.valid) {
@@ -455,7 +456,9 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         this.createButtonTooltip = 'Error: Protocol ' + (i + 1) + ' is empty.';
         return false;
       }
-      if (formGroup.value && (formGroup.value.protocol === 'tcp' || formGroup.value.protocol === 'udp')
+      if (formGroup.value && formGroup.value.protocol &&
+          (formGroup.value.protocol.toLowerCase() === 'tcp' ||
+          formGroup.value.protocol.toLowerCase() === 'udp')
           && Utility.isEmpty(formGroup.value.ports, true)) {
         this.createButtonTooltip = 'Error: Port ' + (i + 1) + ' is empty.';
         return false;
@@ -516,7 +519,10 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
   isPortRequired(formGroup: any): boolean {
     const protocol = formGroup.get(['protocol']).value;
     const portsCtrl: FormControl = formGroup.get(['ports']);
-    const shouldEnable: boolean = protocol && (protocol.trim() === 'tcp' || protocol.trim() === 'udp' || protocol.trim() === 'any');
+    const shouldEnable: boolean = protocol &&
+        (protocol.trim().toLowerCase() === 'tcp' ||
+          protocol.trim().toLowerCase() === 'udp' ||
+          protocol.trim().toLowerCase() === 'any');
     if (shouldEnable) {
       portsCtrl.enable();
     } else {
@@ -527,7 +533,8 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     if (val && val.trim()) {
       return false;
     }
-    return protocol && (protocol.trim() === 'tcp' || protocol.trim() === 'udp');
+    return protocol && (protocol.trim().toLowerCase() === 'tcp' ||
+        protocol.trim().toLowerCase() === 'udp');
   }
 
   addFieldValidator(ctrl: AbstractControl, validator: ValidatorFn) {
@@ -545,7 +552,7 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
         return null;
       }
       val = val.trim();
-      if (val === 'tcp' || val === 'udp' || val === 'icmp' || val === 'any') {
+      if (Utility.isProtocolValid(val)) {
         return null;
       }
       return {

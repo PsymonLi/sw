@@ -140,7 +140,8 @@
     <div fxLayout="row" class="newrollout-input-padding">
       <app-psmcalendar fxFlex="200px" id="newRollout-schedule-start-calendar"
                        label="Start Time (UTC)" [minDate]="minDate" [defaultDate]="defaultDate"
-                       [formControl]="newRollout.$formGroup.get(['spec', 'scheduled-start-time'])">
+                       [formControl]="newRollout.$formGroup.get(['spec', 'scheduled-start-time'])"
+                       [showRequired]="!rolloutNowcheck">
       </app-psmcalendar>
       <p-checkbox binary="true" styleClass="newrollout-schedulenow-checkbox"
                   [value]="rolloutNowcheck"

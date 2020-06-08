@@ -471,10 +471,13 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
     if (arr.length > 2) {
       return false;
     }
-    if (arr.length === 1) {
-      return prot === 'any' || prot === 'icmp';
+    if (!prot) {
+      return false;
     }
-    if (prot !== 'tcp' && prot !== 'udp' && prot !== 'any') {
+    if (arr.length === 1) {
+      return Utility.isProtocolNoPortsValid(prot);
+    }
+    if (!Utility.isProtocolHasPortsValid(prot)) {
       return false;
     }
     return Utility.isPortRangeValid(arr[1]);

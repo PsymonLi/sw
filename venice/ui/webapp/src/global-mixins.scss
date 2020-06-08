@@ -473,9 +473,11 @@ $backgroundGradient: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 
 }
 
 .psm-form {
-  .psm-input-required-icon {
+  .psm-required-box {
     color: #dd3b09;
     width: 10px;
+    position: relative;
+    left: -10px;
 
     &:before {
       content: '*';

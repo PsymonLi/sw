@@ -1,5 +1,7 @@
 .psm-form {
   .psm-form-calender-container {
+    width: 100%;
+
     .psm-form-calender-box {
       display: block;
       width: 100%;
@@ -11,23 +13,48 @@
           height: 30px;
           font-size: 14px;
           width: calc(100% - 28px);
+          border-radius: 0px !important;
         }
 
         .ui-calendar-button {
           margin-top: 0px;
-          border-radius: 1px;
+          border-radius: 0px !important;
 
           .pi-calendar:before {
             position: relative;
             left: -5px;
           }
         }
+
       }
     }
 
     &.psm-required-box {
-      width: calc(100% - 10px) !important;
-      display: inline-block !important;
+      width: calc(100% + 10px) !important;
+
+      p-calendar {
+        width: calc(100% - 10px) !important;
+        display: inline-block !important;
+      }
+    }
+
+    &.psm-invalid-box {
+      input {
+        border: 1px solid #e57553 !important;
+
+        &:focus {
+          box-shadow: inset 5px 0 0 0 #e57553 !important;
+        }
+      }
+
+      .ui-inputwrapper-focus~label,
+      .ui-state-filled~label {
+        color: #e57553 !important;
+      }
+    }
+
+    &.ui-float-label>label {
+      left: .75em;
     }
   }
 }

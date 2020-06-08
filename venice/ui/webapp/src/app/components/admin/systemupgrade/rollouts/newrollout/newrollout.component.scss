@@ -153,11 +153,6 @@ $vertical-gutter: 5px;
   padding: 0px 10px;
 }
 
-/** customize calendar's internal input */
-.newrollout-calendar>input.ui-inputtext {
-  padding: 5px !important;
-}
-
 .newrollout-divider {
   border-bottom: 1px solid #dddddd;
 }
@@ -176,9 +171,6 @@ $vertical-gutter: 5px;
   width: 100px;
 }
 
-.newrollout-calendar>input.ui-inputtext {
-  width: 170px; // line up the calendar widget
-}
 
 .newrollout-dropdown-label {
   font-size: 14px;
@@ -231,21 +223,6 @@ $vertical-gutter: 5px;
     height: 30px;
     font-size: 14px;
     width: 100%;
-  }
-
-  .ui-calendar-button {
-    position: relative;
-
-    .pi-calendar:before {
-      position: relative;
-      left: -5px;
-    }
-  }
-
-  .ui-calendar-inputbox {
-    input {
-      width: calc(100% - 28px) !important;
-    }
   }
 
   .ui-multiselect-label-container {

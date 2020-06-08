@@ -126,8 +126,8 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     return this.displayListInColumn(Utility.formatPropagationColumn(data));
   }
   displayListInColumn(list: string[]): string {
-    return list.reduce((accum: string, item: string) =>
-      accum + '<span>' + item + '</span>', '');
+    return (list && list.length > 0) ?
+        list.reduce((accum: string, item: string) => accum + item ) : '';
   }
   formatTargets(data: IMonitoringExportConfig[]) {
     if (data == null) {

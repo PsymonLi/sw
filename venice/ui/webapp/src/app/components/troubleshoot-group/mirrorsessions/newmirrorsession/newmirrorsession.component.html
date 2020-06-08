@@ -133,29 +133,31 @@
 <ng-template #interface_selector>
   <app-fieldcontainer class="newmirrorsession-selectors"
                       fieldTitle="Uplink Interfaces" subtitle="(select from interface labels)">
-    <div fxFlex="none" fxLayout="row" class="newmirrorsession-interface-direction-box"
-         [formGroup]="newObject.$formGroup.get(['spec', 'interfaces'])">
-      <p-dropdown appFloatLabel="Direction" appendTo="body"
-                  [options]="interfaceDirectionOptions" formControlName="direction">
-      </p-dropdown>
-    </div>
-    <div fxFlex="auto"
-         class="newmirrorsession-section-div newmirrorsession-section-workloadlabels-div">
-      <app-listcontainer
-                         [formGroup]="newObject.$formGroup.get(['spec', 'interfaces', 'selectors', 0, 'requirements'])"
-                         [itemTemplate]="interfaceRowTemplate" (addItem)="addInterfaceSelector()"
-                         addText="AND" [addButtonTooltip]="AND_BUTTON_TOOLTIP"
-                         (deleteItem)="removeInterfaceSelector($event)">
-      </app-listcontainer>
-    </div>
-    <div fxFlex="auto" class="newmirrorsession-label-match-count"
-         *ngIf="getAllInterfaceSelectorsValues()">
-      <ng-container *ngIf="getLabelMatchInfo() as labelMatchInfo">
-        <span class="newmirrorsession-label-match-tooltip"
-              [matTooltipClass]="'newmirrorsession-label-match-tooltip-tooltip'"
-              [matTooltip]="labelMatchInfo.title">{{ labelMatchInfo.count }} Uplink Interfaces
-          matched.</span>
-      </ng-container>
+    <div fxLayout="column">
+      <div fxFlex="none" fxLayout="row" class="newmirrorsession-interface-direction-box"
+           [formGroup]="newObject.$formGroup.get(['spec', 'interfaces'])">
+        <p-dropdown appFloatLabel="Direction" appendTo="body"
+                    [options]="interfaceDirectionOptions" formControlName="direction">
+        </p-dropdown>
+      </div>
+      <div fxFlex="auto"
+           class="newmirrorsession-section-div newmirrorsession-section-workloadlabels-div">
+        <app-listcontainer
+                           [formGroup]="newObject.$formGroup.get(['spec', 'interfaces', 'selectors', 0, 'requirements'])"
+                           [itemTemplate]="interfaceRowTemplate" (addItem)="addInterfaceSelector()"
+                           addText="AND" [addButtonTooltip]="AND_BUTTON_TOOLTIP"
+                           (deleteItem)="removeInterfaceSelector($event)">
+        </app-listcontainer>
+      </div>
+      <div fxFlex="auto" class="newmirrorsession-label-match-count"
+           *ngIf="getAllInterfaceSelectorsValues()">
+        <ng-container *ngIf="getLabelMatchInfo() as labelMatchInfo">
+          <span class="newmirrorsession-label-match-tooltip"
+                [matTooltipClass]="'newmirrorsession-label-match-tooltip-tooltip'"
+                [matTooltip]="labelMatchInfo.title">{{ labelMatchInfo.count }} Uplink Interfaces
+            matched.</span>
+        </ng-container>
+      </div>
     </div>
   </app-fieldcontainer>
 </ng-template>

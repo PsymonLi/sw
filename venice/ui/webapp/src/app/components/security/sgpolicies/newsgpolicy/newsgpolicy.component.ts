@@ -206,7 +206,9 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
             return false;
           }
           const portsField: AbstractControl = protoArr.controls[j].get(['ports']);
-          if (protocolField.value === 'tcp' || protocolField.value === 'udp') {
+          if (protocolField.value &&
+                (protocolField.value.toLowerCase() === 'tcp' ||
+                protocolField.value.toLowerCase() === 'udp')) {
             if (Utility.isEmpty(portsField.value)) {
               this.createButtonTooltip =
                 'Error: Rule ' + (i + 1) + ' ports ' + (j + 1) + ' are empty.';
@@ -344,7 +346,7 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
         return null;
       }
       val = val.trim();
-      if (val === 'tcp' || val === 'udp' || val === 'icmp' || val === 'any') {
+      if (Utility.isProtocolValid(val)) {
         return null;
       }
       return {
@@ -376,9 +378,12 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
   }
 
   isPortRequired(formGroup: any): boolean {
-    const protocol = formGroup.get(['protocol']).value;
+    const protocol: string = formGroup.get(['protocol']).value;
     const portsCtrl: FormControl = formGroup.get(['ports']);
-    const shouldEnable: boolean = protocol && (protocol.trim() === 'tcp' || protocol.trim() === 'udp' || protocol.trim() === 'any');
+    const shouldEnable: boolean = protocol &&
+        (protocol.trim().toLowerCase() === 'tcp' ||
+          protocol.trim().toLowerCase() === 'udp' ||
+          protocol.trim().toLowerCase() === 'any');
     if (shouldEnable) {
       portsCtrl.enable();
     } else {
@@ -389,7 +394,8 @@ export class NewsgpolicyComponent extends CreationForm<ISecurityNetworkSecurityP
     if (val && val.trim()) {
       return false;
     }
-    return protocol && (protocol.trim() === 'tcp' || protocol.trim() === 'udp');
+    return protocol && (protocol.trim().toLowerCase() === 'tcp' ||
+        protocol.trim().toLowerCase() === 'udp');
   }
 
   addProtoTarget(ruleIndex: number) {

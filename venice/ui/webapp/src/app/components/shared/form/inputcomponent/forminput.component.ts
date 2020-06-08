@@ -8,6 +8,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   protected defaultComponentClass: string = 'psm-form-input-box';
 
   boxId: string = '';
+  currentTooltipClass: string;
   isRequiredField: boolean = false;
   disabled: boolean = false;
   subscriptions: Subscription[] = [];
@@ -15,15 +16,19 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   ngControl: NgControl;
   innerValue: any;
 
-  @ViewChild('componentbox', {read: ElementRef}) inputBox: ElementRef;
   @Input() label: string;
   @Input() id: string;
   @Input() showRequired: boolean;
   @Input() showRequiredOnEmpty: boolean;
+  @Input() hintTooltip: string;
+  @Input() errorTooltip: string;
   @Input() spanClass: string;
   @Input() componentClass: string;
   @Input() componentStyleClass: string;
   @Input() componentInputStyleClass: string;
+  @Input() tooltipClass: string = 'global-info-tooltip';
+  @Input() errorTooltipClass: string = 'global-error-tooltip';
+
   // this input function let each component instance to change value before
   // put the value into input box
   @Input() processInput: (val: any) => any = (val) => val;
@@ -43,6 +48,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     this.ngControl = this.inj.get<NgControl>(NgControl as Type<NgControl>);
     this.boxId = this.id ? this.id + '-box' :
         this.constructor.name + '-' + Utility.s4() + '-' + Utility.s4();
+    this.currentTooltipClass = this.tooltipClass;
   }
 
   ngAfterViewInit() {
@@ -75,6 +81,11 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     if (this.showRequiredIcon()) {
       clsList += ' psm-required-box';
     }
+    if (this.ngControl && this.ngControl.control &&
+        this.ngControl.touched && this.ngControl.invalid &&
+        this.ngControl.dirty) {
+      clsList += ' psm-invalid-box';
+    }
     return clsList;
   }
 
@@ -87,19 +98,61 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   }
 
   showRequiredIcon(): boolean {
+    if (this.ngControl.value) {
+      return false;
+    }
     if (this.showRequired === true || this.showRequired === false) {
       return this.showRequired;
     }
-    if (this.showRequiredOnEmpty === true || this.isRequiredField) {
-      return !this.ngControl.value;
+    return this.showRequiredOnEmpty === true || this.isRequiredField;
+  }
+
+  getTooltip(): string {
+    if (this.hintTooltip) {
+      this.currentTooltipClass = this.tooltipClass;
+      return this.hintTooltip;
     }
-    return false;
+    if (this.ngControl && this.ngControl.control &&
+        this.ngControl.touched && this.ngControl.invalid &&
+        this.ngControl.dirty) {
+      this.currentTooltipClass = this.errorTooltipClass;
+      if (this.errorTooltip) {
+        return this.errorTooltip;
+      }
+      const msgs = [];
+      for (const key in this.ngControl.errors) {
+        if (this.ngControl.errors.hasOwnProperty(key)) {
+          const error = this.ngControl.errors[key];
+          if (error.message != null) {
+            msgs.push(error.message);
+          }
+        }
+      }
+      return msgs.join('\n');
+    }
+    if (this.ngControl && this.ngControl.control) {
+      this.currentTooltipClass = this.tooltipClass;
+      const desc = [];
+      const customControl: any = this.ngControl.control;
+      if (customControl && customControl._venice_sdk && customControl._venice_sdk.description) {
+        desc.push(customControl._venice_sdk.description);
+      }
+      if (customControl && customControl._venice_sdk && customControl._venice_sdk.hint) {
+        desc.push('Ex. ' + customControl._venice_sdk.hint);
+      }
+      return desc.join('\n');
+    }
+  }
+
+  onBoxTouched() {
+    this.onTouched();
   }
 
   // when the innerValue changes, use this.onChange to update data model.
   // processOutput is for instance and setOutputValue is for class
   onInnerCtrlChange() {
     this.onChange(this.processOutput(this.setOutputValue(this.innerValue)));
+    this.onTouched();
   }
 
   // write the value from data model to the input box

@@ -756,6 +756,20 @@ export class Utility {
     return this.getLodash().isEmpty(obj);
   }
 
+  public static isProtocolValid(port: string): boolean {
+    return port.toLowerCase() === 'tcp' || port.toLowerCase() === 'udp' ||
+           port.toLowerCase() === 'icmp' || port.toLowerCase() === 'any';
+  }
+
+  public static isProtocolNoPortsValid(port: string): boolean {
+    return port.toLowerCase() === 'icmp' || port.toLowerCase() === 'any';
+  }
+
+  public static isProtocolHasPortsValid(port: string): boolean {
+    return port.toLowerCase() === 'tcp' || port.toLowerCase() === 'udp' ||
+           port.toLowerCase() === 'any';
+  }
+
   public static isPortRangeValid(port: string): boolean {
     if (!port || !port.trim()) {
       return false;

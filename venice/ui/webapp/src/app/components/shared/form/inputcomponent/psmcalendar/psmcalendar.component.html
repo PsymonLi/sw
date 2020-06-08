@@ -1,11 +1,14 @@
-<span *ngIf="showRequiredIcon()" class="psm-input-required-icon"></span>
 <span [class]="getSpanClasses()">
-  <p-calendar #componentbox [id]="boxId" [class]="getComponentClass()"
-              appendTo="body" [showTime]="true" [showIcon]="true" [disabled]="disabled"
+  <p-calendar [id]="boxId" [class]="getComponentClass()"
+              appendTo="body" [showTime]="true"
+              [showIcon]="true" [disabled]="disabled"
               [styleClass]="componentStyleClass"
               [inputStyleClass]="componentInputStyleClass"
+              [matTooltip]="getTooltip()"
+              [matTooltipClass]="currentTooltipClass"
               [minDate]="minDate" [defaultDate]="defaultDate"
-              [(ngModel)]="innerValue" (ngModelChange)="onInnerCtrlChange()">
+              [(ngModel)]="innerValue" (onBlur)="onBoxTouched()"
+              (ngModelChange)="onInnerCtrlChange()">
   </p-calendar>
   <label *ngIf="label" [for]="boxId">{{ label }}</label>
 </span>
