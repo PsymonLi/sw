@@ -9,7 +9,7 @@ glopts.GlobalOptions = GlobalOptions
 import infra.common.parser as parser
 import iota.harness.api as api
 from infra.common.logging import logger as logger
-import apollo.config.generator as generator
+from apollo.config.node import client as NodeClient
 from apollo.config.store import EzAccessStore
 from apollo.config.store import client as EzAccessStoreClient
 from apollo.config.store import Init as EzAccessStoreInit
@@ -111,8 +111,7 @@ def Main(args):
         EzAccessStoreInit(node)
         EzAccessStore.SetUuidMap(naples_uuid_map)
         EzAccessStoreClient[node].SetUnderlayIPs(api.GetNicUnderlayIPs(node))
-
-        generator.Main(node, cfgspec, api.GetNicMgmtIP(node))
+        NodeClient.CreateNode(node, cfgspec, api.GetNicMgmtIP(node))
 
     if not __generate_rmappings_from_lmappings():
         api.Logger.error("Failed to convert local mappings to remote mappings")

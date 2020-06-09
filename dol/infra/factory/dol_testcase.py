@@ -2,7 +2,7 @@
 
 import copy
 
-from infra.factory.testcase import * 
+from infra.factory.testcase import *
 from infra.engine.trigger2  import DolTriggerEngine
 from infra.engine.verif import DolVerifEngine
 
@@ -73,7 +73,7 @@ class DOLTestCase(TestCase):
     def SetDrop(self):
         self.drop = True
         return
-    
+
     def IsDrop(self):
         return self.drop
 
@@ -132,7 +132,7 @@ class DOLTestCase(TestCase):
                 return None
         else: # Its a reference
             tpkt.packet = spkt.packet.object.Get(self)
-        
+
         tpkt.packet = copy.deepcopy(tpkt.packet)
         tpkt.packet.SetStepId(step_id)
         tpkt.packet.Build(self)
@@ -155,7 +155,7 @@ class DOLTestCase(TestCase):
         if spsn.packets == None: return
         for spkt in spsn.packets:
             logger.info("- Setting up  Packet: %s:" % spkt)
-            tpkt = self.__setup_packet(step_id, spkt)            
+            tpkt = self.__setup_packet(step_id, spkt)
             if tpkt is None:
                 continue
 
@@ -195,7 +195,7 @@ class DOLTestCase(TestCase):
             npkts,nbytes = tc_desc_spec.descriptor.object.GetTxPktByteStats()
             stats.AddStatsEntry(tc_desc_spec.descriptor.ring.GetLif(), npkts, nbytes)
         return
- 
+
     def __setup_doorbell(self, tcsn, spsn):
         if spsn.doorbell == None: return
         if spsn.doorbell.object == None: return
@@ -206,7 +206,7 @@ class DOLTestCase(TestCase):
         tcsn.doorbell.spec = spsn.doorbell.fields
         logger.info("- Adding Doorbell: %s" % tcsn.doorbell.object.GID())
         return
-   
+
     def __setup_config_objects(self, tcsn, spsn):
         if not hasattr(spsn, "configs") or spsn.configs == None:
             return
@@ -231,7 +231,7 @@ class DOLTestCase(TestCase):
             else:
                 tc_config.spec = cfg_fields
             tcsn.configs.append(tc_config)
-   
+
     #def __setup_ignore_excess_packets(self, tcsn, spsn):
     #    tcsn.ignore_excess_packets = getattr(spsn, 'ignore_excess_packets', False)
 
@@ -272,7 +272,7 @@ class DOLTestCase(TestCase):
             tcstep.expect.callback = spstep.expect.callback
         return defs.status.SUCCESS
 
-    
+
     def TeardownCallback(self):
         super().TeardownCallback()
         ModelConnector.TestCaseEnd(self.GID(), self.loopid)

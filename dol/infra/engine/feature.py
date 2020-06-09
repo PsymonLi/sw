@@ -2,6 +2,7 @@
 
 import infra.common.parser      as parser
 import infra.common.objects     as objects
+import pdb
 
 from infra.common.logging       import logger
 from infra.common.glopts        import GlobalOptions
@@ -54,7 +55,8 @@ class FeatureObject:
         self.perf       = getattr(spec.feature, 'perf', False)
         self.pendol     = getattr(spec.feature, 'pendol', False)
         self.tcscale    = getattr(spec.feature, 'tcscale', None)
-        self.modscale    = getattr(spec.feature, 'modscale', None)
+        self.modscale   = getattr(spec.feature, 'modscale', None)
+        self.argslist   = getattr(spec.feature, 'argslist', None)
         return
 
     def AddModulesFromMlists(self, test_path):
@@ -67,15 +69,25 @@ class FeatureObject:
                     self.spec.modules.append(mod)
 
     def RenameModule(self, mspec):
-        if mspec.name in self.counts:
-            count = self.counts[mspec.name]
-            count += 1
-            self.counts[mspec.name] = count
+        if hasattr(mspec, 'original_name'):
+            name = mspec.original_name
         else:
-            self.counts[mspec.name] = 0
-        mspec.name = str(self.counts[mspec.name]) + "." + mspec.name
+            name = mspec.name
+        if name in self.counts:
+            self.counts[name] += 1
+        else:
+            self.counts[name] = 1
+        if self.counts[name]:
+            if not hasattr(mspec, 'original_name'):
+                mspec.original_name = mspec.name
+            mspec.name = str(self.counts[name]) + "." + name
 
-    def LoadOneModule(self, mspec, recurse=False):
+    def LoadOneModule(self, mspec, rename=False, args=None):
+
+        def __build_args(mspec, args):
+            if args:
+                mspec.args = args
+
         if self.sub is None:
             mspec.feature = self.id
         else:
@@ -93,7 +105,8 @@ class FeatureObject:
         mspec.tcscale   = getattr(mspec, 'tcscale', self.tcscale)
         mspec.modscale  = getattr(mspec, 'modscale', self.modscale)
         mspec.runorder  = self.runorder
-        if recurse is True:
+        __build_args(mspec, args)
+        if rename is True:
             # Rename the module to avoid duplicate cases
             self.RenameModule(mspec)
         ModuleStore.Add(mspec)
@@ -105,16 +118,26 @@ class FeatureObject:
         spec = parser.ParseFile(path, mlist_name)
         for mod in spec.modules:
             mspec = mod.module
-            self.LoadOneModule(mspec, True)
+            self.LoadOneModule(mspec, rename=True)
 
-    def LoadModules(self, path):
+    def LoadModules(self, path, rename=False, args=None):
         for m in self.spec.modules:
             mspec = m.module
             if hasattr(mspec, 'mlist'):
                 self.LoadModulesFromMlist(mspec, path)
             else:
-                self.LoadOneModule(mspec)
+                self.LoadOneModule(mspec, rename, args)
         return
+
+    def LoadAllModules(self, path):
+        if self.argslist:
+            # if configs is specified, then load args from that list and repeat
+            # the modules in current mlist for each of those args
+            argslist = parser.ParseFile(path, self.argslist)
+            for args in argslist.args:
+                self.LoadModules(path, True, args)
+        else:
+            self.LoadModules(path)
 
 class FeatureObjectHelper(parser.ParserBase):
     def __init__(self):
@@ -148,7 +171,7 @@ class FeatureObjectHelper(parser.ParserBase):
             if self.__is_enabled(feature) is False:
                 logger.info("  - Disabled....Skipping")
                 continue
-            feature.LoadModules(test_path)
+            feature.LoadAllModules(test_path)
             self.features.append(feature)
         return
 

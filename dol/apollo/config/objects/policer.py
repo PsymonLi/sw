@@ -131,6 +131,8 @@ class PolicerObjectClient(base.ConfigClientBase):
     def GenerateObjects(self, node, topospecobj):
         if not hasattr(topospecobj, 'policer'):
             return
+        if utils.IsReconfigInProgress(node):
+            return
 
         for policer_spec_obj in topospecobj.policer:
             obj = PolicerObject(node, policer_spec_obj)

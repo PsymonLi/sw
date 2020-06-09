@@ -16,6 +16,7 @@ import apollo.config.utils as utils
 import apollo.config.topo as topo
 
 from apollo.config.store import EzAccessStore
+from apollo.config.store import client as EzAccessStoreClient
 
 import types_pb2 as types_pb2
 
@@ -86,6 +87,7 @@ class ConfigObjectBase(base.ConfigObjectBase):
         # there are few updates yet to be pushed to hw
         self.Dirty = False
         self.Node = node
+        self.NodeObj = getattr(EzAccessStoreClient.get(node), 'NodeObj', None)
         self.Duplicate = None
         self.Interim = False
         self.Tenant = 'default'
@@ -151,7 +153,8 @@ class ConfigObjectBase(base.ConfigObjectBase):
         self.Deps[dep.ObjType].append(dep)
 
     def DeleteDependent(self, dep):
-        self.Deps[dep.ObjType].remove(dep)
+        if len(self.Deps[dep.ObjType]):
+            self.Deps[dep.ObjType].remove(dep)
 
     def DeriveOperInfo(self):
         self.BuildDependency()
@@ -269,7 +272,10 @@ class ConfigObjectBase(base.ConfigObjectBase):
                 clone = self.CopyObject()
                 clone.Precedent = None
                 self.Precedent = clone
-                self.UpdateAttributes(spec)
+                if utils.IsReconfigInProgress(self.Node):
+                    self.ReconfigAttribs(spec)
+                else:
+                    self.UpdateAttributes(spec)
                 logger.info("Updated values -")
                 self.Show()
                 self.SetDirty(True)
@@ -379,6 +385,21 @@ class ConfigObjectBase(base.ConfigObjectBase):
         self.__populate_BatchContext(grpcmsg, cookie)
         self.PopulateKey(grpcmsg)
         return grpcmsg
+    
+    def AddToReconfigState(self, op):
+        if op == 'create':
+            self.NodeObj.ReconfigState.Created.append(self)
+        elif op == 'update':
+            self.NodeObj.ReconfigState.Updated.append(self)
+        else:
+            assert(0)
+        return
+
+    def IsReconfigInProgress(self):
+        if self.NodeObj.ReconfigState.InProgress:
+            return True
+        return False
+
 
 class ConfigClientBase(base.ConfigClientBase):
     def __init__(self, objtype, maxlimit=0):
@@ -387,6 +408,7 @@ class ConfigClientBase(base.ConfigClientBase):
         self.ObjType = objtype
         self.Maxlimit = maxlimit
         self.args = None
+        self.ReconfigInProgress = defaultdict(bool)
         return
 
     def IsReadSupported(self):
@@ -671,6 +693,20 @@ class ConfigClientBase(base.ConfigClientBase):
             return False
         return True
 
+    def Reconfig(self, node, spec):
+        if not spec:
+            return
+        id = getattr(spec, 'id', None)
+        if id:
+            obj = self.GetObjectByKey(node, id)
+            obj.Update(spec)
+            #obj.AddToReconfigState('update')
+        else:
+            for obj in self.Objects(node):
+                obj.Update(spec)
+                #obj.AddToReconfigState('update')
+        return
+    
 class MappingObjectBase(ConfigObjectBase):
     def __init__(self, objtype, node):
         super().__init__(objtype, node)

@@ -85,6 +85,8 @@ class OperObjectsClient(base.ConfigClientBase):
         self.Objs[node].update({obj.GID: obj})
 
     def GenerateObjects(self, node):
+        if utils.IsReconfigInProgress(node):
+            return
         self.GenerateTechSupportObjects(node)
 
     def GetTechSupportObject(self, node):

@@ -4,12 +4,12 @@ import pdb
 
 from infra.common.logging import logger as logger
 from infra.common.glopts import GlobalOptions
+from apollo.config.node import client as NodeClient
+from apollo.config.store import EzAccessStore
 
 import apollo.config.utils as utils
 import apollo.config.topo as topo
-import apollo.config.generator as generator
 import apollo.test.callbacks.common.modcbs as modcbs
-from apollo.config.store import EzAccessStore
 import apollo.config.objects.nat_pb as nat_pb
 
 def Setup(infra, module):
@@ -101,5 +101,5 @@ def TestCaseVerify(tc):
         topo.ChosenFlowObjs.use_selected_objs = True
     elif 'WORKFLOW_END' in tc.module.name:
         topo.ChosenFlowObjs.Reset()
-        generator.__read(EzAccessStore.GetDUTNode())
+        NodeClient.Read(EzAccessStore.GetDUTNode())
     return True

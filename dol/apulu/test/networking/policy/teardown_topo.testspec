@@ -1,0 +1,14 @@
+selectors:
+    root: ref://store/templates/id=NODE
+    maxlimits: 1
+    node      : filter://NodeType=DUT
+
+trigger:
+    configs:
+        - object: ref://testcase/config/root
+          method: Teardown
+
+expect:
+    configs:
+        - object: ref://testcase/config/root
+          method: Read 

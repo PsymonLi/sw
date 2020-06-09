@@ -1,0 +1,9 @@
+node :
+    -   id : 1
+
+        vpc : 
+        -   id : 2
+            subnet:
+                -   id : 1
+                    v4ingrpolicycount: 2
+                    v4egrpolicycount: 2

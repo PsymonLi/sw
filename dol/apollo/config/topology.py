@@ -1,9 +1,10 @@
 #! /usr/bin/python3
 import infra.common.parser as parser
-import apollo.config.generator as generator
 import apollo.config.resmgr as resmgr
 import apollo.config.utils as utils
+import pdb
 
+from apollo.config.node import client as NodeClient
 from infra.common.logging import logger as logger
 from infra.common.glopts import GlobalOptions
 from apollo.config.store import EzAccessStore
@@ -42,7 +43,7 @@ def Main():
     dutnode = "Node%d" % topospec.dutnode
     EzAccessStore.SetDUTNode(dutnode)
     
-    for node in topospec.node:
-        nodename = "Node%d" % node.id
-        generator.Main(nodename, node)
+    for nodespec in topospec.node:
+        nodename = "Node%d" % nodespec.id
+        NodeClient.CreateNode(nodename, nodespec)
     return

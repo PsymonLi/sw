@@ -92,3 +92,6 @@ def GetExpectedStats(tc, args):
         spec['rxpackets'] = 0
         spec['rxbytes'] = 0
     return spec
+
+def GetModuleArgs(tc):
+    return tc.module.args

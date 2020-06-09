@@ -2,7 +2,7 @@
 import random
 import copy
 #Following come from dol/infra
-from apollo.config.generator import ObjectInfo as ObjClient
+from apollo.config.node import ObjectInfo as ObjClient
 from apollo.config.agent.api import ObjectTypes as APIObjTypes
 import apollo.config.objects.vnic as vnic
 import apollo.config.objects.lmapping as lmapping

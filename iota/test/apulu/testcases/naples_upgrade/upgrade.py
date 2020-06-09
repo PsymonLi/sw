@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+import pdb
 import time
 import random
 import iota.harness.api as api
@@ -8,8 +9,8 @@ import iota.test.utils.ping as ping
 import iota.test.apulu.utils.misc as misc_utils
 
 # Following come from DOL
-import apollo.config.generator as obj_gen_api
 import upgrade_pb2 as upgrade_pb2
+from apollo.config.node import client as NodeClient
 from apollo.oper.upgrade import client as UpgradeClient
 
 def trigger_upgrade_request(tc):
@@ -100,7 +101,7 @@ def VerifyMgmtConnectivity(tc):
 def UpdateConfigAfterUpgrade(tc):
     api.Logger.info("Updating Configurations after Upgrade")
     for node in tc.nodes:
-        obj_gen_api.__create(node)
+        NodeClient.Get(node).Create()
     api.Logger.info("Completed Config updates")
 
 

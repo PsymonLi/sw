@@ -14,8 +14,9 @@ class EzAccessStore:
     testbedSpec = None
 
 # Class members
-    def __init__(self, node):
+    def __init__(self, node, parent=None):
         self.Node = node
+        self.NodeObj = parent
         self.objects = ConfigStore.objects
 
         # Custom Database for easy access.
@@ -312,8 +313,8 @@ class EzAccessStore:
         return EzAccessStore.configClientDict.get(objType.name.lower(), None)
 
 client = dict()
-def Init(node):
+def Init(node, parent=None):
     global client
     if not node in client:
-        storeObj = EzAccessStore(node)
+        storeObj = EzAccessStore(node, parent)
         client[node] = storeObj

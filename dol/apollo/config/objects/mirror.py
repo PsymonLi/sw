@@ -130,6 +130,10 @@ class MirrorSessionObjectClient(base.ConfigClientBase):
         return self.GetObjectByKey(node, mirrorid)
 
     def GenerateObjects(self, node, mirrorsessionspec):
+        if not hasattr(mirrorsessionspec, 'mirror'):
+            return
+        if utils.IsReconfigInProgress(node):
+            return
         def __add_mirror_session(msspec):
             spantype = msspec.spantype
             snaplen = msspec.snaplen
@@ -148,9 +152,6 @@ class MirrorSessionObjectClient(base.ConfigClientBase):
             else:
                 assert(0)
             self.Objs[node].update({obj.Id: obj})
-
-        if not hasattr(mirrorsessionspec, 'mirror'):
-            return
 
         for mirror_session_spec_obj in mirrorsessionspec.mirror:
             __add_mirror_session(mirror_session_spec_obj)

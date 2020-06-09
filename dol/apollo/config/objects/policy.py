@@ -435,6 +435,7 @@ class PolicyObject(base.ConfigObjectBase):
         self.DeriveOperInfo()
         self.Mutable = True if (utils.IsUpdateSupported() and self.IsOriginFixed()) else False
         self.DefaultFWAction = defaultfwaction
+        self.AddToReconfigState('create')
         self.Show()
         return
 
@@ -789,22 +790,22 @@ class PolicyObjectClient(base.ConfigClientBase):
         return
 
     def GetIngV4SecurityPolicyId(self, node, vpcid):
-        if len(self.__v4ingressobjs[node][vpcid]) == 0:
+        if len(self.__v4ingressobjs[node]) == 0 or len(self.__v4ingressobjs[node][vpcid]) == 0:
             return 0
         return self.__v4ipolicyiter[node][vpcid].rrnext().PolicyId
 
     def GetIngV6SecurityPolicyId(self, node, vpcid):
-        if len(self.__v6ingressobjs[node][vpcid]) == 0:
+        if len(self.__v6ingressobjs[node]) == 0 or len(self.__v6ingressobjs[node][vpcid]) == 0:
             return 0
         return self.__v6ipolicyiter[node][vpcid].rrnext().PolicyId
 
     def GetEgV4SecurityPolicyId(self, node, vpcid):
-        if len(self.__v4egressobjs[node][vpcid]) == 0:
+        if len(self.__v4egressobjs[node]) == 0 or len(self.__v4egressobjs[node][vpcid]) == 0:
             return 0
         return self.__v4epolicyiter[node][vpcid].rrnext().PolicyId
 
     def GetEgV6SecurityPolicyId(self, node, vpcid):
-        if len(self.__v6egressobjs[node][vpcid]) == 0:
+        if len(self.__v6egressobjs[node]) == 0 or len(self.__v6egressobjs[node][vpcid]) == 0:
             return 0
         return self.__v6epolicyiter[node][vpcid].rrnext().PolicyId
 
@@ -947,6 +948,8 @@ class PolicyObjectClient(base.ConfigClientBase):
 
         node = subnet.Node
         naclobj = self.GetPolicyObject(node, naclid)
+        if not naclobj:
+            return
         subnetpfx = subnet.IPPrefix[1] if af == utils.IP_VERSION_4 else subnet.IPPrefix[0]
 
         subnet_policies = [naclid]
@@ -966,14 +969,15 @@ class PolicyObjectClient(base.ConfigClientBase):
         isV4Stack = utils.IsV4Stack(parent.Stack)
         isV6Stack = utils.IsV6Stack(parent.Stack) and self.__v6supported
 
-        self.__v4ingressobjs[node][vpcid] = []
-        self.__v6ingressobjs[node][vpcid] = []
-        self.__v4egressobjs[node][vpcid] = []
-        self.__v6egressobjs[node][vpcid] = []
-        self.__v4ipolicyiter[node][vpcid] = None
-        self.__v6ipolicyiter[node][vpcid] = None
-        self.__v4epolicyiter[node][vpcid] = None
-        self.__v6epolicyiter[node][vpcid] = None
+        if vpcid not in self.__v4ingressobjs[node]:
+            self.__v4ingressobjs[node][vpcid] = []
+            self.__v6ingressobjs[node][vpcid] = []
+            self.__v4egressobjs[node][vpcid] = []
+            self.__v6egressobjs[node][vpcid] = []
+            self.__v4ipolicyiter[node][vpcid] = None
+            self.__v6ipolicyiter[node][vpcid] = None
+            self.__v4epolicyiter[node][vpcid] = None
+            self.__v6epolicyiter[node][vpcid] = None
 
         def __get_l4_rule(af, rulespec):
             sportlow = getattr(rulespec, 'sportlow', None)
@@ -1262,6 +1266,7 @@ class PolicyObjectClient(base.ConfigClientBase):
             else:
                 self.__v4egressobjs[node][vpcid].append(obj)
             self.Objs[node].update({obj.PolicyId: obj})
+            return obj
 
         def __add_v6policy(direction, v6rules, policytype, overlaptype, defaultfwaction, fwdmode=None):
             obj = PolicyObject(node, vpcid, utils.IP_VERSION_6, direction, v6rules, policytype, overlaptype,
@@ -1271,6 +1276,7 @@ class PolicyObjectClient(base.ConfigClientBase):
             else:
                 self.__v6egressobjs[node][vpcid].append(obj)
             self.Objs[node].update({obj.PolicyId: obj})
+            return obj
 
         def __add_user_specified_policy(policyspec, policytype, overlaptype, defaultfwaction, fwdmode=None):
             direction = policyspec.direction
@@ -1280,8 +1286,8 @@ class PolicyObjectClient(base.ConfigClientBase):
                     return
                 if direction == 'bidir':
                     #For bidirectional, add policy in both directions
-                    policyobj = __add_v4policy('ingress', v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
-                    policyobj = __add_v4policy('egress', v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
+                    ig_policyobj = __add_v4policy('ingress', v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
+                    eg_policyobj = __add_v4policy('egress', v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
                 else:
                     policyobj = __add_v4policy(direction, v4rules, policytype, overlaptype, defaultfwaction, fwdmode)
 
@@ -1291,8 +1297,8 @@ class PolicyObjectClient(base.ConfigClientBase):
                     return
                 if direction == 'bidir':
                     #For bidirectional, add policy in both directions
-                    policyobj = __add_v6policy('ingress', v6rules, policytype, overlaptype, defaultfwaction, fwdmode)
-                    policyobj = __add_v6policy('egress', v6rules, policytype, overlaptype, defaultfwaction, fwdmode)
+                    ig_policyobj = __add_v6policy('ingress', v6rules, policytype, overlaptype, defaultfwaction, fwdmode)
+                    eg_policyobj = __add_v6policy('egress', v6rules, policytype, overlaptype, defaultfwaction, fwdmode)
                 else:
                     policyobj = __add_v6policy(direction, v6rules, policytype, overlaptype, defaultfwaction, fwdmode)
 
@@ -1309,7 +1315,7 @@ class PolicyObjectClient(base.ConfigClientBase):
                 # use number of subnets instead
                 policycount = __get_num_subnets(vpc_spec_obj)
             for i in range(policycount):
-                __add_user_specified_policy(policyspec, policyspec.policytype, None, defaultfwaction, fwdmode)
+                list = __add_user_specified_policy(policyspec, policyspec.policytype, None, defaultfwaction, fwdmode)
 
         for policy_spec_obj in vpc_spec_obj.policy:
             policy_spec_type = policy_spec_obj.type
@@ -1318,14 +1324,14 @@ class PolicyObjectClient(base.ConfigClientBase):
             fwdmode = getattr(policy_spec_obj, 'fwdmode', None)
             if policy_spec_type == "specific":
                 if policytype == 'default' or policytype == 'subnet':
-                    __add_default_policies(vpc_spec_obj, policy_spec_obj, defaultfwaction, fwdmode)
+                    policies = __add_default_policies(vpc_spec_obj, policy_spec_obj, defaultfwaction, fwdmode)
                 else:
                     overlaptype = getattr(policy_spec_obj, 'overlaptype', None)
-                    __add_user_specified_policy(policy_spec_obj, \
+                    policies = __add_user_specified_policy(policy_spec_obj, \
                                                 policytype, overlaptype, defaultfwaction, fwdmode)
             elif policy_spec_type == "base":
                 overlaptype = getattr(policy_spec_obj, 'overlaptype', 'none')
-                __add_user_specified_policy(policy_spec_obj, policytype, overlaptype,
+                policies = __add_user_specified_policy(policy_spec_obj, policytype, overlaptype,
                                             defaultfwaction, fwdmode)
 
         if len(self.__v4ingressobjs[node][vpcid]) != 0:

@@ -144,7 +144,7 @@ class TunnelObject(base.ConfigObjectBase):
                "EncapValue:%d|Nat:%s|Mac:%s|NhType:%s|NexthopId:%d" % \
                (self.UUID, self.LocalIPAddr, self.RemoteIPAddr,
                utils.GetTunnelTypeString(self.Type), remote, self.EncapValue,
-               self.Nat, self.MACAddr, self.__nhtype, (self.NexthopId if self.NexthopId != None else 0))
+               self.Nat, self.MACAddr, self.__nhtype, (self.NexthopId if self.NexthopId else 0))
 
     def Show(self):
         logger.info("Tunnel Object: %s" % self)

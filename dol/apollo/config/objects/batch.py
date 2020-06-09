@@ -82,6 +82,8 @@ class BatchObjectClient:
         return self.__objs.values()
 
     def GenerateObjects(self, node, topospec):
+        if node in self.__objs.keys():
+            return
         obj = BatchObject(node)
         obj.Show()
         self.__objs.update({node: obj})

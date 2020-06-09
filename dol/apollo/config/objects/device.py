@@ -1,5 +1,6 @@
 #! /usr/bin/python3
 import os
+import pdb
 
 from infra.common.logging import logger
 
@@ -20,10 +21,10 @@ import ipaddress
 class DeviceObject(base.ConfigObjectBase):
     def __init__(self, node, spec):
         super().__init__(api.ObjectTypes.DEVICE, node)
-        if hasattr(spec, 'origin'):
-            self.SetOrigin(spec.origin)
         self.SetSingleton(True)
         self.GID("Device1")
+        if hasattr(spec, 'origin'):
+            self.SetOrigin(spec.origin)
         self.Stack = getattr(spec, 'stack', 'ipv4')
         ################# PUBLIC ATTRIBUTES OF DEVICE OBJECT #####################
         self.Mode = getattr(spec, 'mode', 'auto')
@@ -227,6 +228,8 @@ class DeviceObjectClient(base.ConfigClientBase):
         return True
 
     def GenerateObjects(self, node, topospec):
+        if utils.IsReconfigInProgress(node):
+            return
         obj = DeviceObject(node, topospec.device)
         self.Objs[node].update({0: obj})
         EzAccessStoreClient[node].SetDevice(obj)

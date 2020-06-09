@@ -1,0 +1,19 @@
+# .alist(args list) - list of args;
+# modules in the mlist will be repeated for each args
+
+args :
+    - topos:
+        - subnet.topo
+        - security-profile-allow.topo
+        - policy1.topo
+        - policy1.topo
+    - topos:
+        - subnet.topo
+        - security-profile-allow.topo
+        - policy1.topo
+        - policy2.topo
+    - topos:
+        - subnet.topo
+        - security-profile-allow.topo
+        - policy2.topo
+        - policy2.topo

@@ -127,13 +127,15 @@ class VpcObject(base.ConfigObjectBase):
             DHCPRelayClient.GenerateObjects(node, self.VPCId, spec)
 
         # Generate NextHop configuration
-        NhClient.GenerateObjects(node, self, spec)
+        if hasattr(spec, 'nexthop'):
+            NhClient.GenerateObjects(node, self, spec)
 
         # Generate NextHopGroup configuration
-        NhGroupClient.GenerateObjects(node, self, spec)
+        if hasattr(spec, 'nexthop-group'):
+            NhGroupClient.GenerateObjects(node, self, spec)
 
         # Generate Tunnel configuration
-        if hasattr(spec, "tunnel"):
+        if hasattr(spec, 'tunnel'):
             tunnel.client.GenerateObjects(node, EzAccessStoreClient[node].GetDevice(), spec.tunnel)
 
         # Generate Tag configuration.
@@ -146,7 +148,7 @@ class VpcObject(base.ConfigObjectBase):
 
         # Generate DHCP Policy configuration.
         if hasattr(spec, 'dhcppolicy'):
-           DHCPProxyClient.GenerateObjects(node, self, spec)
+            DHCPProxyClient.GenerateObjects(node, self, spec)
 
         # Generate Route configuration.
         if hasattr(spec, 'routetbl'):
@@ -440,6 +442,12 @@ class VpcObject(base.ConfigObjectBase):
         self.CommitUpdate()
         return
 
+    def ReconfigAttribs(self, spec):
+        if hasattr(spec, 'policy'):
+            policy.client.GenerateObjects(self.Node, self, spec)
+        if hasattr(spec, 'subnet'):
+            subnet.client.GenerateObjects(self.Node, self, spec)
+        return
 
 class VpcObjectClient(base.ConfigClientBase):
     def __init__(self):
@@ -466,6 +474,13 @@ class VpcObjectClient(base.ConfigClientBase):
         CfgJsonHelper.WriteConfig()
 
     def GenerateObjects(self, node, topospec):
+        # reconfig scenario
+        if utils.IsReconfigInProgress(node):
+            for p in topospec.vpc:
+                self.Reconfig(node, p)
+            return
+
+        # regular config generation 
         vpc_count = 0
         for p in topospec.vpc:
             vpc_count += p.count
@@ -538,4 +553,3 @@ client = VpcObjectClient()
 
 def GetMatchingObjects(selectors):
     return client.Objects()
-

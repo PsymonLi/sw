@@ -1,4 +1,6 @@
 #! /usr/bin/python3
+import pdb
+
 from infra.common.logging import logger as logger
 
 def Setup(infra, module):
@@ -18,3 +20,6 @@ def Setup(infra, module):
         if 'policy' in iterelem.__dict__:
             logger.info("Extending policy selector to : %s" % iterelem.policy)
             module.testspec.selectors.policy.Extend(iterelem.policy)
+        if 'node' in iterelem.__dict__:
+            logger.info("Extending node selector to : %s" % iterelem.node)
+            module.testspec.selectors.node.Extend(iterelem.node)

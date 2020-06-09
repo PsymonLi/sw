@@ -1,0 +1,7 @@
+node:
+  - id : 1
+
+    security_profile:
+        id          : 1
+        origin      : fixed
+        deffwaction : deny

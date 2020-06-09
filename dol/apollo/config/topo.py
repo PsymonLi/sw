@@ -89,6 +89,10 @@ class SecurityRuleActionType(enum.IntEnum):
     ALLOW = 1
     DENY = 2
 
+class ObjectTypes(enum.IntEnum):
+    NODE = 100
+    MAX = 101
+
 class ChosenFlowObjs:
     def __init__(self):
         self.select_objs = False
@@ -113,6 +117,5 @@ class ChosenFlowObjs:
             if obj.IsFilterMatch(selectors):
                 matching_objs.append(obj)
         return matching_objs
-
 
 ChosenFlowObjs = ChosenFlowObjs()

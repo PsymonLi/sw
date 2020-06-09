@@ -84,15 +84,15 @@ class Module(objects.FrameworkObject):
         self.tracker    = getattr(spec, 'tracker', False)
         self.runorder   = getattr(spec, 'runorder', 65535)
         self.rtl        = getattr(spec, 'rtl', True)
-        self.perf    = getattr(spec, 'perf', False)
+        self.perf       = getattr(spec, 'perf', False)
         self.pendol     = getattr(spec, 'pendol', False)
         self.tcscale    = getattr(spec, 'tcscale', None)
-        self.modscale    = getattr(spec, 'modscale', None)
+        self.modscale   = getattr(spec, 'modscale', None)
         self.id         = self.runorder << 16 + ModuleIdAllocator.get()
         self.module_hdl = None
         self.infra_data = None
         self.CompletedTestCases = []
-        self.abort = False
+        self.abort      = False
 
         self.stats = ModuleStats()
         self.Show()
@@ -169,7 +169,7 @@ class Module(objects.FrameworkObject):
             return 0
         if self.stats.total == 0:
             if GlobalOptions.tcid != None:
-                # When running in 1 testcase mode, tests can be skipped as 
+                # When running in 1 testcase mode, tests can be skipped as
                 # they did not match the testcase id. Dont treat this as error.
                 return 0
             return 1
@@ -200,7 +200,7 @@ class Module(objects.FrameworkObject):
             status = 'Fail'
         else:
             status = 'Pass'
-        
+
         namestr = "%s::%s" % (self.feature, self.name)
         namestr = namestr[:58]
         print("%-58s %-9s %6d %6d %6d" %\
@@ -251,10 +251,10 @@ class Module(objects.FrameworkObject):
                     GlobalOptions.alltc_done = True
                 return True
             return False
-            
+
         if not isinstance(GlobalOptions.tcid, int):
             GlobalOptions.tcid = utils.ParseInteger(GlobalOptions.tcid)
-    
+
         if tcid == GlobalOptions.tcid:
             GlobalOptions.alltc_done = True
             return True
@@ -331,7 +331,7 @@ class Module(objects.FrameworkObject):
 class ModuleRunner:
     def __init__(self, module):
         self.module = module
-    
+
     def Run(self):
         pass
 
@@ -339,7 +339,7 @@ class ModuleRunner:
 class DolModuleRunner(ModuleRunner):
     def __init__(self, module):
         super().__init__(module)
-        
+
     def __select_config(self):
         logger.LogFunctionBegin()
 
@@ -358,7 +358,7 @@ class DolModuleRunner(ModuleRunner):
         else:
             logger.info("- Selected %d Matching Objects" % len(objs))
         logger.LogFunctionEnd()
-        return defs.status.SUCCESS    
+        return defs.status.SUCCESS
 
     def __execute(self):
         matching_tcsets = []
@@ -385,7 +385,7 @@ class DolModuleRunner(ModuleRunner):
                     self.module.abort = True
                     break
         return
-    
+
     def Run(self):
         self.__select_config()
         self.__execute()
@@ -393,14 +393,14 @@ class DolModuleRunner(ModuleRunner):
 class E2EModuleRunner(ModuleRunner):
     def __init__(self, module):
         super().__init__(module)
-    
+
     def Run(self):
         tcid = TestCaseIdAllocator.get()
         tc = factory.GetTestCase(tcid, None, self.module, 0)
         tc.SetUp()
         self.module._execute_testcase(tc)
         self.module.CompletedTestCases.append(tc)
- 
+
 class ModuleDatabase:
     def __init__(self):
         self.db = {}

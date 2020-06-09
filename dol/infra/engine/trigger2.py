@@ -9,7 +9,7 @@ from infra.common.glopts        import GlobalOptions
 from infra.asic.model           import ModelConnector
 from infra.asic.pktcollector    import PacketCollector
 
-import infra.e2e.main as E2E 
+import infra.e2e.main as E2E
 
 class TriggerError(defs.Error):
    """ Raised when the trigger fails """

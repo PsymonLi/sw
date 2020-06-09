@@ -10,7 +10,6 @@ from apollo.config.objects.policy import client as PolicyClient
 
 import apollo.config.agent.api as api
 import apollo.config.objects.base as base
-import apollo.config.topo as topo
 import apollo.config.utils as utils
 
 import types_pb2 as types_pb2
@@ -220,6 +219,8 @@ class SecurityProfileObjectClient(base.ConfigClientBase):
         return
 
     def GenerateObjects(self, node, topospec):
+        if utils.IsReconfigInProgress(node):
+            return
         if (hasattr(topospec, 'security_profile')):
             obj = SecurityProfileObject(node, topospec.security_profile)
             self.Objs[node].update({obj.SecurityProfileId: obj})

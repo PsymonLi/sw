@@ -5,6 +5,7 @@ import ipaddress
 import itertools
 import copy
 import json
+
 from infra.common.logging import logger
 
 from apollo.config.store import EzAccessStore
@@ -26,6 +27,7 @@ import apollo.config.objects.metaswitch.evpnevi as evpnevi
 import apollo.config.objects.metaswitch.evpnevirt as evpnevirt
 import apollo.config.utils as utils
 import apollo.test.utils.oper as oper
+import apollo.config.topo as topo
 
 import subnet_pb2 as subnet_pb2
 
@@ -34,22 +36,34 @@ class SubnetStatus(base.StatusObjectBase):
         super().__init__(api.ObjectTypes.SUBNET)
 
 class SubnetObject(base.ConfigObjectBase):
-    def __init__(self, node, parent, spec, poolid):
-        def __get_policies(af, direction):
-            policy_attr_map = {
-                "V4ingress" : ("v4ingrpolicycount", "v4ingrpolicies", PolicyClient.GetIngV4SecurityPolicyId),
-                "V6ingress" : ("v6ingrpolicycount", "v6ingrpolicies", PolicyClient.GetIngV6SecurityPolicyId),
-                "V4egress"  : ("v4egrpolicycount", "v4egrpolicies", PolicyClient.GetEgV4SecurityPolicyId),
-                "V6egress"  : ("v6igrpolicycount", "v6igrpolicies", PolicyClient.GetEgV6SecurityPolicyId)
-            }
-            count_attr, specific_attr, cb = policy_attr_map[af+direction]
-            policyids = getattr(spec, specific_attr, None)
-            if policyids: return policyids
-            count = getattr(spec, count_attr, 0)
-            if count == 0: return []
-            policy_id = cb(node, parent.VPCId)
-            return PolicyClient.GenerateSubnetPolicies(self, policy_id, count, direction, True if af == 'V6' else False)
+    @staticmethod
+    def __get_policies(subnet, spec, node, parent, af, direction, generate=True):
 
+        def __get_policies_frm_count(node, vpcid, count, cb):
+            policyids = []
+            for c in range(count):
+                id = cb(node, parent.VPCId)
+                policyids.append(id)
+            return policyids
+
+        policy_attr_map = {
+            "V4ingress" : ("v4ingrpolicycount", "v4ingrpolicies", PolicyClient.GetIngV4SecurityPolicyId),
+            "V6ingress" : ("v6ingrpolicycount", "v6ingrpolicies", PolicyClient.GetIngV6SecurityPolicyId),
+            "V4egress"  : ("v4egrpolicycount", "v4egrpolicies", PolicyClient.GetEgV4SecurityPolicyId),
+            "V6egress"  : ("v6igrpolicycount", "v6igrpolicies", PolicyClient.GetEgV6SecurityPolicyId)
+        }
+        count_attr, specific_attr, cb = policy_attr_map[af+direction]
+        policyids = getattr(spec, specific_attr, None)
+        if policyids: return policyids
+        count = getattr(spec, count_attr, 0)
+        if count == 0: return []
+        policy_id = cb(node, parent.VPCId)
+        if generate:
+            return PolicyClient.GenerateSubnetPolicies(subnet, policy_id, count, direction, True if af == 'V6' else False)
+        else:
+            return __get_policies_frm_count(node, parent.VPCId, count, cb)
+
+    def __init__(self, node, parent, spec, poolid):
         super().__init__(api.ObjectTypes.SUBNET, node)
         if hasattr(spec, 'origin'):
             self.SetOrigin(spec.origin)
@@ -79,10 +93,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, parent.VPCId)
 
-        self.IngV4SecurityPolicyIds = __get_policies("V4", "ingress")
-        self.IngV6SecurityPolicyIds = __get_policies("V6", "ingress")
-        self.EgV4SecurityPolicyIds  = __get_policies("V4", "egress")
-        self.EgV6SecurityPolicyIds  = __get_policies("V6", "egress")
+        self.IngV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V4", "ingress")
+        self.IngV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V6", "ingress")
+        self.EgV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V4", "egress")
+        self.EgV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V6", "egress")
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
@@ -134,6 +148,13 @@ class SubnetObject(base.ConfigObjectBase):
         self.DeriveOperInfo()
         self.Mutable = utils.IsUpdateSupported()
 
+        self.GenerateChildren(node, spec)
+        self.__fill_default_rules_in_policy(node)
+        self.Show()
+
+        return
+
+    def GenerateChildren(self, node, spec):
         ############### CHILDREN OBJECT GENERATION
         # Generate Metaswitch Objects configuration
         evpnevi.client.GenerateObjects(node, self, spec)
@@ -142,11 +163,6 @@ class SubnetObject(base.ConfigObjectBase):
         # Generate VNIC and Remote Mapping configuration
         vnic.client.GenerateObjects(node, self, spec)
         rmapping.client.GenerateObjects(node, self, spec)
-
-        self.__fill_default_rules_in_policy(node)
-        self.Show()
-
-        return
 
     def __repr__(self):
         return "Subnet: %s |VPC: %s |PfxSel:%d|MAC:%s" %\
@@ -178,6 +194,7 @@ class SubnetObject(base.ConfigObjectBase):
 
     def __fill_default_rules_in_policy(self, node):
         ids = itertools.chain(self.IngV4SecurityPolicyIds, self.EgV4SecurityPolicyIds, self.IngV6SecurityPolicyIds, self.EgV6SecurityPolicyIds)
+
         for policyid in ids:
             if policyid is 0:
                 continue
@@ -295,14 +312,14 @@ class SubnetObject(base.ConfigObjectBase):
         spec.VirtualRouterMac = self.VirtualRouterMACAddr.getnum()
         spec.V4RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V4RouteTableId, ObjectTypes.ROUTE)
         spec.V6RouteTableId = utils.PdsUuid.GetUUIDfromId(self.V6RouteTableId, ObjectTypes.ROUTE)
-        for policyid in self.IngV4SecurityPolicyIds:
-            spec.IngV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.POLICY))
-        for policyid in self.IngV6SecurityPolicyIds:
-            spec.IngV6SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.POLICY))
-        for policyid in self.EgV4SecurityPolicyIds:
-            spec.EgV4SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.POLICY))
-        for policyid in self.EgV6SecurityPolicyIds:
-            spec.EgV6SecurityPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.POLICY))
+        specAttrs = ['IngV4SecurityPolicyId', 'IngV6SecurityPolicyId', 'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
+        ObjAttrs = ['IngV4SecurityPolicyIds', 'IngV6SecurityPolicyIds', 'EgV4SecurityPolicyIds', 'EgV6SecurityPolicyIds']
+        for specAttr, ObjAttr in zip(specAttrs, ObjAttrs):
+            policies = getattr(self, ObjAttr, None)
+            if not policies:
+                continue
+            getattr(spec, specAttr).extend(list(map(lambda policyid: \
+                    utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.POLICY), policies)))
         if utils.IsNetAgentMode():
             for policyid in self.DHCPPolicyIds:
                 spec.DHCPPolicyId.append(utils.PdsUuid.GetUUIDfromId(policyid, ObjectTypes.DHCP_RELAY))
@@ -573,6 +590,20 @@ class SubnetObject(base.ConfigObjectBase):
                 return False
         return True
 
+    def ReconfigAttribs(self, spec):
+        self.IngV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
+                                      self.Node, self.VPC, "V4", "ingress", False)
+        self.EgV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
+                                     self.Node, self.VPC, "V4", "egress", False)
+        self.IngV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
+                                      self.Node, self.VPC, "V6", "ingress", False)
+        self.EgV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
+                                     self.Node, self.VPC, "V6", "egress", False)
+        self.AddToReconfigState('update')
+        logger.info("Object Updated")
+        self.Show()
+        return
+
 class SubnetObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.SUBNET, Resmgr.MAX_SUBNET)
@@ -582,6 +613,11 @@ class SubnetObjectClient(base.ConfigClientBase):
         return self.GetObjectByKey(node, subnetid)
 
     def GenerateObjects(self, node, parent, vpc_spec_obj):
+        if utils.IsReconfigInProgress(node):
+            for spec in vpc_spec_obj.subnet:
+                self.Reconfig(node, spec) 
+            return
+
         poolid = 0
         for subnet_spec_obj in vpc_spec_obj.subnet:
             if hasattr(subnet_spec_obj, 'v6prefixlen'):

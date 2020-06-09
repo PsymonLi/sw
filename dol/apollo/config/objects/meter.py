@@ -10,7 +10,6 @@ from apollo.config.resmgr import Resmgr
 
 import apollo.config.agent.api as api
 import apollo.config.utils as utils
-import apollo.config.topo as topo
 import apollo.config.objects.base as base
 import apollo.config.objects.route as route
 from apollo.config.store import EzAccessStore

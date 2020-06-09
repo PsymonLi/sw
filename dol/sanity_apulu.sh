@@ -46,5 +46,7 @@ DryRunSanity lpm_adjacent_priority lpm SUB="v4_adjacent"
 DryRunSanity lpm_overlap_priority lpm SUB="v4_overlap"
 DryRunSanity lpm_full_overlap_priority lpm SUB="v4_full_overlap"
 
+DryRunSanity hostvxlan_ex policy SUB="multi_policy"
+
 # end of script
 clean_exit

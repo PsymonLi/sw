@@ -7,6 +7,7 @@ from apollo.config.resmgr import Resmgr
 
 import apollo.config.agent.api as api
 import apollo.config.objects.base as base
+import apollo.config.utils as utils
 
 import types_pb2 as types_pb2
 
@@ -64,6 +65,8 @@ class AlertsObjectsClient(base.ConfigClientBase):
         return False
 
     def GenerateObjects(self, node):
+        if utils.IsReconfigInProgress(node):
+            return
         obj = AlertsObject(node)
         self.Objs[node] = obj
 

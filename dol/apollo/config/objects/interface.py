@@ -15,9 +15,9 @@ from apollo.config.resmgr import Resmgr
 
 import apollo.config.agent.api as api
 import apollo.config.utils as utils
-import apollo.config.topo as topo
 import apollo.config.objects.base as base
 import apollo.config.objects.host.lif as lif
+import apollo.config.topo as topo
 from apollo.config.objects.port import client as PortClient
 
 import interface_pb2 as interface_pb2
@@ -564,6 +564,8 @@ class InterfaceObjectClient(base.ConfigClientBase):
     def GenerateHostInterfaces(self, node, topospec):
         if not utils.IsInterfaceSupported():
             return
+        if utils.IsReconfigInProgress(node):
+            return
         if not utils.IsDol():
             self.__generate_host_interfaces_iota(node)
         else:
@@ -626,6 +628,8 @@ class InterfaceObjectClient(base.ConfigClientBase):
 
     def GenerateObjects(self, node, parent, topospec):
         if not utils.IsL3InterfaceSupported():
+            return
+        if utils.IsReconfigInProgress(node):
             return
         iflist = getattr(topospec, 'interface', [])
         self.__generate_l3_uplink_interfaces(node, parent, iflist)

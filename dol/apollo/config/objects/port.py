@@ -1,17 +1,17 @@
 #! /usr/bin/python3
-import pdb
 import enum
+import pdb
 
+from collections import defaultdict
 from infra.common.logging import logger
 
 from apollo.config.store import client as EzAccessStoreClient
-
 from apollo.config.resmgr import client as ResmgrClient
 
 import apollo.config.agent.api as api
 import apollo.config.utils as utils
-import apollo.config.topo as topo
 import apollo.config.objects.base as base
+import apollo.config.topo as topo
 
 from apollo.oper.alerts import client as AlertsClient
 
@@ -98,7 +98,7 @@ class PortObject(base.ConfigObjectBase):
         obj.alert = AlertsClient.Objects(self.Node)
         return
 
-class PortObjectClient:
+class PortObjectClient():
     def __init__(self):
         self.__objs = dict()
         return
@@ -123,6 +123,8 @@ class PortObjectClient:
 
         portlist = getattr(topospec, 'uplink', None)
         if portlist is None:
+            return
+        if utils.IsReconfigInProgress(node):
             return
         for spec in portlist:
             entryspec = spec.entry

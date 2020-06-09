@@ -1,5 +1,3 @@
-#! /usr/bin/python3
-import pdb
 import copy
 
 import infra.config.base as base
@@ -11,6 +9,7 @@ import apollo.config.utils as utils
 import apollo.config.topo as topo
 import apollo.config.objects.dhcprelay as dhcprelay
 
+from apollo.config.node import client as NodeClient
 from infra.common.logging import logger
 from apollo.config.store import EzAccessStore as EzAccessStore
 from apollo.config.store import client as EzAccessStoreClient

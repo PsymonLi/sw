@@ -10,10 +10,12 @@ import yaml
 from collections import OrderedDict
 import os
 from os import environ
+import pdb
 
 import types_pb2 as types_pb2
 import tunnel_pb2 as tunnel_pb2
 import infra.common.defs as defs
+import infra.common.parser as parser
 import apollo.config.agent.api as api
 from apollo.config.agent.api import ObjectTypes as ObjectTypes
 import apollo.config.topo as topo
@@ -1163,3 +1165,55 @@ def ValidatePolicyAttr(obj, spec):
             if spec.EgV6SecurityPolicyId[0] != PdsUuid.GetUUIDfromId(obj.EgV6SecurityPolicyIds[0], ObjectTypes.POLICY):
                 return False
     return True
+
+def GetTopoSpec(filename):
+    path = '%s/config/topology/%s' % \
+            (GlobalOptions.pipeline, GlobalOptions.topology)
+    topospec = parser.ParseFile(path, filename)
+    nodespec = getattr(topospec, 'node', None)
+    if not nodespec:
+        assert(0)
+    return nodespec[0]
+
+def MergeYAMLs(spec1, spec2):
+    if isinstance(spec1, int):
+        return
+    if isinstance(spec1, list) and isinstance(spec2, list):
+        if hasattr(spec1[0], 'id') and hasattr(spec2[0], 'id'):
+            for d1 in spec1:
+                for d2 in spec2:
+                    if getattr(d1, 'id') == getattr(d2, 'id'):
+                        MergeYAMLs(d1, d2)
+                        return
+        else:
+            spec1.extend(spec2)
+            return
+    for attr1 in vars(spec1):
+        data1 = getattr(spec1, attr1)
+        if not data1:
+            continue
+        for attr2 in vars(spec2):
+            if attr1 == attr2:
+                # merge
+                data2 = getattr(spec2, attr2)
+                if not data2:
+                    continue
+                MergeYAMLs(data1, data2)
+    for attr2 in vars(spec2):
+        if not hasattr(spec1, attr2):
+            setattr(spec1, attr2, getattr(spec2, attr2))
+    return
+
+def GetReconfigState(node):
+    return EzAccessStoreClient[node].NodeObj.ReconfigState
+
+def IsReconfigInProgress(node):
+    ReconfigState = GetReconfigState(node)
+    if ReconfigState.InProgress:
+        return True
+    return False
+
+def SetReconfigInProgress(node, state=True):
+    ReconfigState = GetReconfigState(node)
+    ReconfigState.InProgress = True
+    return

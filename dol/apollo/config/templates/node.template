@@ -1,0 +1,9 @@
+# Node Object Template
+meta:
+    id      : NODE
+    package : config
+    module  : node 
+    feature_set:
+        - apollo
+
+Node: None
