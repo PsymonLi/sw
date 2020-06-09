@@ -45,6 +45,8 @@ func generateSystemdKubeletConfig(nodeID string) error {
 		// Image collection (GC)
 		evictionHardParam           = "--eviction-hard"
 		evictionMinimumReclaimParam = "--eviction-minimum-reclaim"
+		imageGCHighThresholdParam   = "--image-gc-high-threshold"
+		imageGCLowThresholdParam    = "--image-gc-low-threshold"
 	)
 
 	// Kubelet gets a single set of credentials that it uses to:
@@ -74,7 +76,9 @@ func generateSystemdKubeletConfig(nodeID string) error {
 	cfgMap[tlsCertFileVar] = fmt.Sprintf("%s %s", tlsCertFileParam, kubeletCertFile)
 
 	// garbage collection config
-	cfgMap[nodeEvictionHardVar] = fmt.Sprintf("%s=memory.available<1%%,nodefs.available<1%%,imagefs.available<1%%", evictionHardParam)
+	cfgMap[imageGCHighThresholdVar] = fmt.Sprintf("%s %s", imageGCHighThresholdParam, "100")
+	cfgMap[imageGCLowThresholdVar] = fmt.Sprintf("%s %s", imageGCLowThresholdParam, "95")
+	cfgMap[nodeEvictionHardVar] = fmt.Sprintf("%s=memory.available<1%%,nodefs.available<0%%,imagefs.available<0%%", evictionHardParam)
 
 	return systemd.WriteCfgMapToFile(cfgMap, path.Join(globals.KubeletConfigDir, kubeletSystemdCfgFile))
 }
