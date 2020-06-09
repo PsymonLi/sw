@@ -1,0 +1,89 @@
+=*========= Compile  =======================================================================================
+
+------- for ARM
+cd nic
+make ARCH=aarch64 PLATFORM=hw ASIC=elba axitrace.bin
+
+
+
+=*========== Presentation  ====================================================================================
+
+https://docs.google.com/presentation/d/1Ee_zNhEqB21kL31jyYP2QcFzTMGQhv-8D2AgloDEmp4/edit#slide=id.p
+
+
+
+
+=*========== installation  =====================================================================================
+
+select 1 of the following 3 installations
+
+installation 1: make a directory structure like:  
+                xxxxx/
+                      bin/
+                          axitrace.bin
+                      cfg/
+                          elba.cfg
+                add xxxxx/bin in the PATH environment
+
+installation 2: make a directory structure like:
+                xxxxx/
+                      axitrace.bin
+                      cfg/
+                          elba.cfg
+                add xxxxx in the PATH environment
+
+installation 3: set environment ELBA_AXITRACE_ROOT to the directory which contains cfg/elba.cfg, copy axitrace.bin to any directory in the PATH environment.
+
+
+
+
+=*========== Help ================================================================================================
+
+axitrace -h
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==
+==
+==
+==
+==
+==
+
+=*=========== MISC Cheatsheet
+
+valgrind --leak-check=full --show-leak-kinds=all /usr/src/github.com/pensando/sw/nic/build/x86_64/iris/elba/bin/axitrace -s 33 -c sdk/platform/elba/axitrace/cfg/regtest_basic.cfg  -c sdk/platform/elba/axitrace/cfg/trace_basic.cfg  --error-to-warning overlap --clean-console --cleanup --debug -t PX:always-on -f
+
+gdb --args /usr/src/github.com/pensando/sw/nic/build/x86_64/iris/elba/bin/axitrace -s 33 -c sdk/platform/elba/axitrace/cfg/regtest_basic.cfg  -c sdk/platform/elba/axitrace/cfg/trace_basic.cfg  --error-to-warning overlap --clean-console --cleanup --debug -t PX:always-on -f
+
+=*========== Calibration
+axitrace --calibr
+
+

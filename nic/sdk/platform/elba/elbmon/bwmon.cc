@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "elb_nx_sw_api.h"
+
 #include "elb_ms_c_hdr.h"
 #include "elb_pics_c_hdr.h"
 #include "elb_pp_c_hdr.h"
@@ -66,6 +68,8 @@ bwmon_fn (int index, uint32_t base_addr)
     // Use NS defines to get relative spacing between monitor regs
     // base_addr is the address of
     // ELB_*_CSR_STA_AXI_BW_MON_RD_LATENCY_BYTE_ADDRESS =
+
+    /*
     uint32_t rd_latency, rd_bandwidth, rd_cnt, rd_trans;
     uint32_t wr_latency, wr_bandwidth, wr_cnt, wr_trans;
     bwmon_t *bwmon_data = &asic->bwmons[index];
@@ -117,11 +121,19 @@ bwmon_fn (int index, uint32_t base_addr)
         NS_AP_M_MINI_CSR_STA_AXI_BW_MON_WR_BANDWIDTH_MAXV_GET(wr_bandwidth),
         NS_AP_M_MINI_CSR_STA_AXI_BW_MON_WR_TRANSACTIONS_OUTSTANDING_GET(wr_trans),
         NS_AP_M_MINI_CSR_STA_AXI_BW_MON_WR_TRANSACTIONS_DESS_RDY_GET(wr_trans));
+    */
 }
 
 void
 bwmon_read_counters (void)
 {
+
+    // Use API calls instead of local bwmon calc:
+    elb_nx_nis_bwmon_dump(0, 0);
+
+    elb_nx_nis_counter_dump(0, 0);
+
+    /*
     int index = 0;
 
     bwmon_fn(index++, (ELB_ADDR_BASE_PXB_PXB_OFFSET +
@@ -141,7 +153,7 @@ bwmon_read_counters (void)
 
     bwmon_fn(index++, (ELB_ADDR_BASE_MS_MS_OFFSET +
                ELB_GL0_CSR_MS_M_MINI_CSR_STA_AXI_BW_MON_RD_LATENCY_BYTE_ADDRESS));
-
+    */
 }
 
 void

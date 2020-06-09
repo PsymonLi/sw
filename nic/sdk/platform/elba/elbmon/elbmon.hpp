@@ -83,6 +83,14 @@ typedef struct mpu_ {
     uint8_t phvwr_stall_pc;
     uint8_t st_stall_pc;
     uint64_t addr;
+    uint64_t last_pc;
+
+    uint64_t icache_miss_address;
+    uint32_t icache_miss_latency;
+
+    uint8_t last_exception_code;
+    uint8_t exception_level;
+    uint64_t last_exception_pc;
 
     functions_t functions;
 } mpu_t;
@@ -111,6 +119,13 @@ typedef struct stage_ {
     uint32_t sdp_nodrdy_out;
     _var_t util, xoff, idle;
     int index;
+
+  uint64_t te_bad_addr;
+  uint8_t te_bad_len;
+  uint8_t te_bad_sz;
+  uint8_t te_bad_id;
+  uint8_t te_axi_err_resp;
+  uint8_t te_axi_err_id;
 
     functions_t functions;
 } stage_t;

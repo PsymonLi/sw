@@ -175,6 +175,20 @@ te_read_counters (int verbose, uint8_t pipeline, uint8_t stage)
     stage_ptr->te_axi_cnt = te_axi_cnt;
     stage_ptr->te_tcam_cnt = te_tcam_cnt;
     stage_ptr->te_mpu_cnt = te_mpu_cnt;
+
+    uint32_t sta_bad_axi [3];
+    pal_reg_rd32w(te_base + ELB_TE_CSR_STA_BAD_AXI_READ_BYTE_OFFSET, sta_bad_axi, 3);
+    stage_ptr->te_bad_addr = 
+      ((uint64_t) ELB_TE_CSR_STA_BAD_AXI_READ_STA_BAD_AXI_READ_0_3_ADDR_31_0_GET(sta_bad_axi[0])) + 
+      ((uint64_t) ELB_TE_CSR_STA_BAD_AXI_READ_STA_BAD_AXI_READ_1_3_ADDR_63_32_GET(sta_bad_axi[1]) << 32);
+    stage_ptr->te_bad_len = ELB_TE_CSR_STA_BAD_AXI_READ_STA_BAD_AXI_READ_2_3_LEN_GET(sta_bad_axi[2]);
+    stage_ptr->te_bad_sz = ELB_TE_CSR_STA_BAD_AXI_READ_STA_BAD_AXI_READ_2_3_SZ_GET(sta_bad_axi[2]);
+    stage_ptr->te_bad_id = ELB_TE_CSR_STA_BAD_AXI_READ_STA_BAD_AXI_READ_2_3_ID_GET(sta_bad_axi[2]);
+    
+    uint32_t sta_axi_err;
+    pal_reg_rd32w(te_base + ELB_TE_CSR_STA_AXI_ERR_BYTE_ADDRESS, &sta_axi_err, 1);
+    stage_ptr->te_axi_err_resp = ELB_TE_CSR_STA_AXI_ERR_RESP_GET(sta_axi_err);
+    stage_ptr->te_axi_err_id = ELB_TE_CSR_STA_AXI_ERR_ID_GET(sta_axi_err);
 }
 
 void
@@ -254,6 +268,28 @@ mpu_read_counters (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
         mpu_ptr->inst_per_phv = inst_executed / phv_executed;
         mpu_ptr->phvwr_stall_pc = phvwr_stall * 100 / cycles;
         mpu_ptr->st_stall_pc = st_stall * 100 / cycles;
+
+	// icache miss
+	uint32_t sta_icache_miss [2] = {0};
+        pal_reg_rd32w( mpu_base +
+		       ELB_MPU_CSR_STA_ICACHE_MISS_BYTE_OFFSET,
+		       sta_icache_miss, 2);
+	mpu_ptr->icache_miss_address = 
+	  (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_ADDRESS_GET(sta_icache_miss[0]) << 6);
+	mpu_ptr->icache_miss_latency = 
+	  (ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_1_2_LATENCY_9_1_GET(sta_icache_miss[1]) << 1) +
+	  ELB_MPU_CSR_STA_ICACHE_MISS_STA_ICACHE_MISS_0_2_LATENCY_0_0_GET(sta_icache_miss[0]);
+
+	// Load excpetion status:
+	uint32_t sta_exception [2] = {0};
+        pal_reg_rd32w( mpu_base +
+		       ELB_MPU_CSR_STA_EXCEPTION_BYTE_OFFSET,
+                      sta_exception, 2);
+	mpu_ptr->last_exception_code = ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_CODE_GET(sta_exception[0]);
+	mpu_ptr->last_exception_pc   = 
+	  ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_1_2_PC_33_27_GET(sta_exception[1]) << 27) +
+	  ((uint64_t) ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_PC_26_0_GET(sta_exception[0]));
+	mpu_ptr->exception_level = ELB_MPU_CSR_STA_EXCEPTION_STA_EXCEPTION_0_2_LVL_GET(sta_exception[0]);
     }
 }
 
@@ -272,6 +308,7 @@ mpu_read_table_addr (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
 {
   uint64_t mpu_base = get_mpu_base(pipeline, stage, mpu);
   uint32_t table_addr[2];
+  uint32_t sta_pc[2];
   uint64_t addr;
   mpu_t *mpu_ptr = NULL;
 
@@ -287,6 +324,14 @@ mpu_read_table_addr (int verbose, uint8_t pipeline, uint8_t stage, uint8_t mpu)
                  << 32));
         mpu_ptr = &asic->pipelines[pipeline].stages[stage].mpus[mpu];
         mpu_ptr->addr = addr;
+
+        pal_reg_rd32w(mpu_base + ELB_MPU_CSR_STA_PC_BYTE_OFFSET,
+		      sta_pc, 2);
+	mpu_ptr->last_pc =  ((uint64_t)
+			     ELB_MPU_CSR_STA_PC_STA_PC_0_2_VALUE_31_0_GET(sta_pc[0]) +
+			     ((uint64_t)
+			      ELB_MPU_CSR_STA_PC_STA_PC_1_2_VALUE_33_32_GET(sta_pc[1])
+			      << 32));
     }
 }
 
