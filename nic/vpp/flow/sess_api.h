@@ -2,8 +2,8 @@
 //  {C} Copyright 2020 Pensando Systems Inc. All rights reserved.
 //
 
-#ifndef __VPP_IMPL_APULU_SESSION_H__
-#define __VPP_IMPL_APULU_SESSION_H__
+#ifndef __VPP_IMPL_APULU_SESS_H__
+#define __VPP_IMPL_APULU_SESS_H__
 
 #include <nic/vpp/infra/utils.h>
 
@@ -17,4 +17,4 @@ void pds_flow_delete_session(u32 sess_id);
 #ifdef __cplusplus
 }
 #endif
-#endif  // __VPP_IMPL_APULU_SESSION_H__
+#endif  // __VPP_IMPL_APULU_SESS_H__

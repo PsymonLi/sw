@@ -16,7 +16,7 @@
 #include <pd_utils.h>
 #include <ftl_wrapper.h>
 #include <ftl_utils.hpp>
-#include <session.h>
+#include <sess.h>
 #include <pds_table.h>
 
 using namespace sdk;

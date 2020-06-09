@@ -10,12 +10,12 @@
 #include <vppinfra/socket.h>
 #include <vppinfra/file.h>
 #include <vlib/unix/unix.h>
-#include "inter_domain_pvt.h"
+#include "repl_state_tp_pvt.h"
 
-clib_socket_t inter_domain_server_sock;
+clib_socket_t repl_state_tp_server_sock;
 
 static clib_error_t *
-inter_domain_server_read (clib_file_t * uf)
+repl_state_tp_server_read (clib_file_t * uf)
 {
     u8 *input_buf = 0;
     int n;
@@ -39,13 +39,13 @@ inter_domain_server_read (clib_file_t * uf)
 }
 
 static clib_error_t *
-inter_domain_server_write (clib_file_t * uf)
+repl_state_tp_server_write (clib_file_t * uf)
 {
     return 0;
 }
 
 static clib_error_t *
-inter_domain_server_error (clib_file_t * uf)
+repl_state_tp_server_error (clib_file_t * uf)
 {
     clib_file_del(&file_main, uf);
     return 0;
@@ -53,9 +53,9 @@ inter_domain_server_error (clib_file_t * uf)
 
 // Socket has a new connection.
 static clib_error_t *
-inter_domain_server_accept (clib_file_t * uf)
+repl_state_tp_server_accept (clib_file_t * uf)
 {
-    clib_socket_t *s = &inter_domain_server_sock;
+    clib_socket_t *s = &repl_state_tp_server_sock;
     clib_error_t *error;
     clib_socket_t client;
     clib_file_t clib_file = { 0 };
@@ -65,9 +65,9 @@ inter_domain_server_accept (clib_file_t * uf)
         return error;
     }
 
-    clib_file.read_function = inter_domain_server_read;
-    clib_file.write_function = inter_domain_server_write;
-    clib_file.error_function = inter_domain_server_error;
+    clib_file.read_function = repl_state_tp_server_read;
+    clib_file.write_function = repl_state_tp_server_write;
+    clib_file.error_function = repl_state_tp_server_error;
     clib_file.file_descriptor = client.fd;
     clib_file.private_data = 0;
     clib_file.description = format(0, "VPP Inter domain IPC client");
@@ -78,15 +78,15 @@ inter_domain_server_accept (clib_file_t * uf)
      * to negotiate the queue name to use and know the client's capabilities
      * like number of threads etc. We will do it in phase-2
      */
-    idipc_sync(IDIPC_OBJ_ID_SESS, sqname);
+    repl_state_tp_sync(REPL_STATE_OBJ_ID_SESS, sqname);
     return 0;
 }
 
 // Initialize a Unix Domain Socket and register the FD with VPP event loop
 int
-inter_domain_server_init()
+repl_state_tp_server_init()
 {
-    clib_socket_t *s = &inter_domain_server_sock;
+    clib_socket_t *s = &repl_state_tp_server_sock;
     clib_error_t *error = 0;
 
     s->config = SOCKET_FILE;
@@ -106,7 +106,7 @@ inter_domain_server_init()
     }
 
     clib_file_t clib_file = { 0 };
-    clib_file.read_function = inter_domain_server_accept;
+    clib_file.read_function = repl_state_tp_server_accept;
     clib_file.file_descriptor = s->fd;
     clib_file.description = format(0, "VPP Inter domain IPC listener %s", s->config);
     clib_file_add(&file_main, &clib_file);

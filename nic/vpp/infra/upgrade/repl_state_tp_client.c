@@ -10,12 +10,12 @@
 #include <vppinfra/socket.h>
 #include <vppinfra/file.h>
 #include <vlib/unix/unix.h>
-#include "inter_domain_pvt.h"
+#include "repl_state_tp_pvt.h"
 
-clib_socket_t inter_domain_client_sock;
+clib_socket_t repl_state_tp_client_sock;
 
 static clib_error_t *
-inter_domain_client_read (clib_file_t * uf)
+repl_state_tp_client_read (clib_file_t * uf)
 {
     u8 *input_buf = 0;
     int n;
@@ -39,13 +39,13 @@ inter_domain_client_read (clib_file_t * uf)
 }
 
 static clib_error_t *
-inter_domain_client_write (clib_file_t * uf)
+repl_state_tp_client_write (clib_file_t * uf)
 {
     return 0;
 }
 
 static clib_error_t *
-inter_domain_client_error (clib_file_t * uf)
+repl_state_tp_client_error (clib_file_t * uf)
 {
     clib_file_del(&file_main, uf);
     return 0;
@@ -53,9 +53,9 @@ inter_domain_client_error (clib_file_t * uf)
 
 // Initialize a Unix Domain Socket and register the FD with VPP event loop
 int
-inter_domain_client_init()
+repl_state_tp_client_init()
 {
-    clib_socket_t *s = &inter_domain_client_sock;
+    clib_socket_t *s = &repl_state_tp_client_sock;
     clib_error_t *error = 0;
     clib_file_t clib_file = { 0 };
 
@@ -76,9 +76,9 @@ inter_domain_client_init()
         return 1;
     }
 
-    clib_file.read_function = inter_domain_client_read;
-    clib_file.write_function = inter_domain_client_write;
-    clib_file.error_function = inter_domain_client_error;
+    clib_file.read_function = repl_state_tp_client_read;
+    clib_file.write_function = repl_state_tp_client_write;
+    clib_file.error_function = repl_state_tp_client_error;
     clib_file.file_descriptor = s->fd;
     clib_file.private_data = 0;
     clib_file.description = format(0, "VPP Inter domain IPC client");
@@ -89,7 +89,7 @@ inter_domain_client_init()
      * to negotiate the queue name to use and advertise our capabilities
      * like number of threads etc. We will do it in phase-2
      */
-    idipc_restore(IDIPC_OBJ_ID_SESS, sqname);
+    repl_state_tp_restore(REPL_STATE_OBJ_ID_SESS, sqname);
 
     return 0;
 }

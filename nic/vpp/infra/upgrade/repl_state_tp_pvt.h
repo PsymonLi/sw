@@ -2,13 +2,13 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 
-#ifndef __INTER_DOMAIN_PVT_H__
-#define __INTER_DOMAIN_PVT_H__
+#ifndef __REPL_STATE_TP_PVT_H__
+#define __REPL_STATE_TP_PVT_H__
 
-#include "inter_domain_common.h"
+#include "repl_state_tp_common.h"
 
 #define SOCKET_FILE "/run/vpp/vpp-domA.sock"
 #define BUF_SIZE 4096
 #define sqname "vpp_sess_syncq"
 
-#endif /* __INTER_DOMAIN_PVT_H__ */
+#endif /* __REPL_STATE_TP_PVT_H__ */

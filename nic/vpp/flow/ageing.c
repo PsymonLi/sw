@@ -5,7 +5,7 @@
 #include <vlib/vlib.h>
 #include <vnet/buffer.h>
 #include <vnet/tcp/tcp_packet.h>
-#include <session.h>
+#include <sess.h>
 #include <mapping.h>
 #include <system.h>
 #include <feature.h>
@@ -16,7 +16,7 @@
 #include "node.h"
 #include "pdsa_hdlr.h"
 #include "pdsa_uds_hdlr.h"
-#include "session_api.h"
+#include "sess_api.h"
 
 typedef void (flow_expiration_handler) (u32 ses_id, u64 cur_time, u64 timestamp);
 

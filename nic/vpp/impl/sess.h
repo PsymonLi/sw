@@ -1,9 +1,9 @@
 //
-// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 
-#ifndef __VPP_IMPL_SESSION_H__
-#define __VPP_IMPL_SESSION_H__
+#ifndef __VPP_IMPL_SESS_H__
+#define __VPP_IMPL_SESS_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,4 +97,4 @@ int pds_session_update_rewrite_flags(uint32_t session_id, uint16_t tx_rewrite,
 }
 #endif
 
-#endif  // __VPP_IMPL_SESSION_H__
+#endif  // __VPP_IMPL_SESS_H__

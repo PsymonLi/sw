@@ -11,7 +11,7 @@
 #include <nic/vpp/infra/ipc/pdsa_hdlr.hpp>
 #include <feature.h>
 #include <ftl_wrapper.h>
-#include "session.h"
+#include "sess.h"
 #include "pdsa_hdlr.h"
 #include "pdsa_uds_hdlr.h"
 #include "log.h"

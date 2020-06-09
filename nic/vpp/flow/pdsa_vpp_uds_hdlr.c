@@ -3,7 +3,7 @@
 //
 
 #include "node.h"
-#include "session_helper.h"
+#include "sess_helper.h"
 
 // Return pointer to FTL v4 flow table
 void * pds_flow_get_table4 (void)

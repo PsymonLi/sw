@@ -5,11 +5,11 @@
 #include "node.h"
 #include "pdsa_uds_hdlr.h"
 #include <nic/vpp/infra/ipc/pdsa_vpp_hdlr.h>
-#include "session_api.h"
+#include "sess_api.h"
 #include "log.h"
 #include <assert.h>
-#include <session.h>
-#include <session_helper.h>
+#include <sess.h>
+#include <sess_helper.h>
 #include <nic/vpp/infra/utils.h>
 #include "fixup.h"
 

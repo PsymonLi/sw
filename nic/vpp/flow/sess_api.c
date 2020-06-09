@@ -5,7 +5,7 @@
 #include <vlib/vlib.h>
 #include "pdsa_uds_hdlr.h"
 #include "node.h"
-#include <session.h>
+#include <sess.h>
 #include <vnic.h>
 
 always_inline uint8_t

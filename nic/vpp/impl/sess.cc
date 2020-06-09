@@ -1,5 +1,5 @@
 //
-// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 
 #include <include/sdk/base.hpp>
@@ -8,7 +8,7 @@
 #include <lib/p4/p4_api.hpp>
 #include <platform/capri/capri_tbl_rw.hpp>
 #include <pd_utils.h>
-#include "session.h"
+#include "sess.h"
 #include "gen/p4gen/p4/include/ftl.h"
 
 using namespace sdk::lib;

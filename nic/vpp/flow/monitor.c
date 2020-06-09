@@ -7,7 +7,7 @@
 #include "pdsa_hdlr.h"
 #include "pdsa_uds_hdlr.h"
 #include "vnic.h"
-#include "session.h"
+#include "sess.h"
 
 #ifndef MIN
 #define MIN(a,b) ((a) < (b) ? (a) : (b))

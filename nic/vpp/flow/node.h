@@ -338,7 +338,6 @@ typedef struct pds_flow_main_s {
     u32 *delete_sessions;
     u32 ses_id_to_del;
     pds_flow_fixup_data_t fixup_data;
-    void *sessq;
     u64 **ses_time;
 } pds_flow_main_t;
 
@@ -650,20 +649,4 @@ always_inline void pds_session_id_flush(void)
 void pds_session_update_data(u32 ses_id, u64 new_handle,
                              bool iflow, bool move_complete, bool lock);
 
-void pds_session_recv_begin();
-void pds_session_recv_end();
-bool pds_session_v4_recv_cb (const uint8_t *data, const uint8_t len);
-void pds_session_cleanup_all();
-
-typedef struct sess_iter_ {
-    bool v4;
-    int32_t read_index;
-    void *flow_table;
-    pds_flow_hw_ctx_t *pool;
-    pds_flow_hw_ctx_t *ctx;
-} sess_iter_t;
-
-void pds_session_send_begin(sess_iter_t *iter, bool v4);
-void pds_session_send_end(sess_iter_t *iter);
-bool pds_session_v4_send_cb (uint8_t *data, uint8_t *len, void *opaq);
 #endif    // __VPP_FLOW_NODE_H__

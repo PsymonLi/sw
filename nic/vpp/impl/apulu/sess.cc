@@ -13,7 +13,7 @@
 #include "nic/apollo/api/pds_state.hpp"
 #include <nic/apollo/p4/include/apulu_defines.h>
 #include <pd_utils.h>
-#include <nic/vpp/impl/session.h>
+#include <nic/vpp/impl/sess.h>
 #include "gen/p4gen/p4/include/ftl.h"
 #include <pds_table.h>
 

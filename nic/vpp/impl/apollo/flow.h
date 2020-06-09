@@ -89,7 +89,7 @@ pds_flow_add_tx_hdrs_x1 (vlib_buffer_t *b0)
     }
 }
 
-static char *
+always_inline char *
 pds_flow4_key2str (void *key)
 {
     static char str[256];
@@ -106,7 +106,7 @@ pds_flow4_key2str (void *key)
     return str;
 }
 
-static char *
+always_inline char *
 pds_flow_key2str (void *key)
 {
     static char str[256];
@@ -123,7 +123,7 @@ pds_flow_key2str (void *key)
     return str;
 }
 
-static char *
+always_inline char *
 pds_flow_appdata2str (void *appdata)
 {
     static char str[512];

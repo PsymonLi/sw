@@ -7,7 +7,7 @@
 #include <vlib/vlib.h>
 #include <vnet/vnet.h>
 #include <vnet/plugin/plugin.h>
-#include <session.h>
+#include <sess.h>
 #include <system.h>
 #include <time.h>
 #include <nic/vpp/infra/shm_ipc/shm_ipc.h>

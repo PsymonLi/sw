@@ -2,8 +2,8 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //
 
-#ifndef __VPP_IMPL_APULU_SESSION_HELPER_H__
-#define __VPP_IMPL_APULU_SESSION_HELPER_H__
+#ifndef __VPP_IMPL_APULU_SESS_HELPER_H__
+#define __VPP_IMPL_APULU_SESS_HELPER_H__
 
 #include <nic/vpp/flow/node.h>
 #include "impl_db.h"
@@ -61,4 +61,4 @@ pds_session_get_rewrite_flags (u32 ses_id, u8 pkt_type,
     }
 }
 
-#endif    // __VPP_IMPL_APULU_SESSION_HELPER_H__
+#endif    // __VPP_IMPL_APULU_SESS_HELPER_H__

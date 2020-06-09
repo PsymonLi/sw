@@ -7,8 +7,8 @@
 #include "hitless_upg_hdlr.hpp"
 
 extern "C" {
-    extern int inter_domain_server_init(void);
-    extern int inter_domain_client_init(void);
+    extern int repl_state_tp_server_init(void);
+    extern int repl_state_tp_client_init(void);
 }
 
 using namespace sdk::upg;
@@ -25,7 +25,7 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
         // Initialize the sync server 
         upg_log_notice("%s: Initializing the inter domain UIPC server\n",
                        __FUNCTION__);
-        i = inter_domain_server_init();
+        i = repl_state_tp_server_init();
         if (i == 0) {
             ret = SDK_RET_OK;
         } else {
@@ -38,7 +38,7 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
         // Initialize the sync clinet 
         upg_log_notice("%s: Initializing the inter domain UIPC client\n",
                        __FUNCTION__);
-        i = inter_domain_client_init();
+        i = repl_state_tp_client_init();
         if (i == 0) {
             ret = SDK_RET_OK;
         } else {
