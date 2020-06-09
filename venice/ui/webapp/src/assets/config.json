@@ -1,7 +1,9 @@
 {
   "enabled-features" : [
   ],
-  "disabled-features": [],
+  "disabled-features": [
+    "showDashboardFlowdrops"
+  ],
   "condition-thresholds": {
     "critical": 95,
     "warning": 80,

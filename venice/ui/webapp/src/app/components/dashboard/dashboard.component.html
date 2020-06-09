@@ -14,6 +14,11 @@
     <app-dsbdnapleswidget *roleGuard="'clusterdistributedservicecard_read'" fxFlex="none">
     </app-dsbdnapleswidget>
   </div>
+  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
+    <ng-container *featureGuard="'showDashboardFlowdrops'">
+      <app-dsbdcard></app-dsbdcard>
+    </ng-container>
+  </div>
 </div>
 
 <!-- Previous dashboard -->

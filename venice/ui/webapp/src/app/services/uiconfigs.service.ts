@@ -21,6 +21,8 @@ export enum UIFeatures {
   troubleshooting = 'troubleshooting',
   securitygroup = 'securitygroup',
 
+  showDashboardFlowdrops = 'showDashboardFlowdrops',
+
   // derived features
   cloud = 'cloud',
   enterprise = 'enterprise',

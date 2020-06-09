@@ -1,0 +1,92 @@
+<div class="detail-card-wrapper">
+  <div class="detail-card" style="min-width: 450px; margin-left: 20px">
+    <div class="detail-card-border"></div>
+
+    <!-- header -->
+    <div fxLayout="row" class="detail-card-header">
+      NAPLES
+    </div>
+
+    <!-- stats body -->
+    <div fxLayout="row">
+      <div fxLayout="column" style="min-width: 450px;">
+        <div class="detail-card-border"></div>
+        <div>
+          <div class="dsbdcard-keystat">
+            <div fxLayout="row" fxLayoutAlign="start stretch">
+              <div fxLayout="column" fxFlex="0 1 auto" fxLayoutAlign="end center"
+                   class="dsbdcard-keystat-text">
+                1234
+              </div>
+              <div fxLayout="column" fxLayoutAlign="end center" class="dsbdcard-keystat-name">
+                <!-- <div fxFlex="50"></div> -->
+                TOTAL NAPLES
+              </div>
+            </div>
+          </div>
+          <div class="dsbdcard-horizontal-divider"></div>
+          <ng-container
+                        *ngTemplateOutlet="dbsdStat; context:{name: 'BANDWIDTH REPORT', text:'Tx & Rx'}">
+          </ng-container>
+
+          <div class="dsbdcard-horizontal-divider"></div>
+          <ng-container
+                        *ngTemplateOutlet="dbsdStat; context:{name: 'CPS', text:'123 Bps'}">
+          </ng-container>
+
+          <div class="dsbdcard-horizontal-divider"></div>
+          <ng-container
+                        *ngTemplateOutlet="dbsdStat; context:{name: 'PACKET DROPS', text:'3812'}">
+          </ng-container>
+        </div>
+        <div class="detail-card-border"></div>
+      </div>
+
+      <div fxLayout="column" class="dsbdcard-vertical-divider"></div>
+
+      <div class="dsbdcard-sidepanel" fxLayout="column" style="min-width: 150px;">
+        <div class="detail-card-border"></div>
+        <div class="detail-card-header-sm">
+          Alerts
+        </div>
+        <div class="detail-card-border"></div>
+        <div class="dsbdcard-horizontal-divider"></div>
+        <div class="dsbdcard-sidepanel-text" fxLayout="row">
+          <div fxFlex fxLayoutAlign="start center">CRITICAL</div>
+          <div class="global-alert-critical-icon" fxFlex fxLayoutAlign="end center">23</div>
+        </div>
+        <div class="dsbdcard-sidepanel-text" fxLayout="row">
+          <div fxFlex fxLayoutAlign="start center">HIGH</div>
+          <div class="global-alert-warning-icon" fxFlex fxLayoutAlign="end center">109</div>
+        </div>
+        <div class="dsbdcard-sidepanel-text" fxLayout="row">
+          <div fxFlex fxLayoutAlign="start center">NORMAL</div>
+          <div class="global-alert-info-icon" fxFlex fxLayoutAlign="end center">5890</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #dbsdStat let-statName="name" let-statText="text">
+  <div class="dsbdcard-stat">
+    <div fxLayout="row" fxLayout="start stretch">
+      <div fxFlex="4 0 auto" fxLayout="column">
+        <div fxFlex="1 1 auto"></div>
+        <div class="detail-card-border"></div>
+        <div fxFlex="1 1 auto"></div>
+      </div>
+      <div class="dsbdcard-stat-name" fxFlex="1 0 auto">
+        {{statName}}
+      </div>
+    </div>
+    <div class="dsbdcard-stat-text" fxLayout="row" fxLayoutAlign="end stretch">
+      {{statText}}
+    </div>
+  </div>
+</ng-template>
+
+<!--
+Increase left boundary thickness?
+thousands separator?
+-->

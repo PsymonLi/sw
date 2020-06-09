@@ -1,0 +1,57 @@
+@import "src/global-mixins";
+
+.dsbdcard-header-text {
+  @include primary-font(24px);
+}
+
+.dsbdcard-keystat {
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.dsbdcard-keystat-text {
+  @include primary-font(48px, #676763, 200);
+  margin-left: 10px;
+  line-height: 1;
+}
+
+.dsbdcard-keystat-name {
+  @include primary-font(21px, #676763, 300);
+  margin-left: 10px;
+  line-height: 1.5;
+}
+
+.dsbdcard-horizontal-divider {
+  min-height: 10px;
+}
+
+.dsbdcard-vertical-divider {
+  min-width: 10px;
+}
+
+.dsbdcard-stat-text {
+  @include primary-font(36px, #676763, 200);
+}
+
+.dsbdcard-stat-name {
+  @include primary-font(21px, #676763, 300);
+  margin-right: 20px;
+  margin-left: 20px;
+}
+
+.dsbdcard-stat {
+  border-right: solid 1px rgba(103, 103, 99, 0.31);
+  padding-right: 10px;
+}
+
+.dsbdcard-sidepanel {
+  background-image: url("/assets/images/misc/gray-gradient-bg.svg");
+}
+
+.dsbdcard-sidepanel-header {
+  @include primary-font(18px);
+}
+
+.dsbdcard-sidepanel-text {
+  @include primary-font(18px, #676763, 300);
+}

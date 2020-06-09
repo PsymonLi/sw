@@ -38,6 +38,7 @@ import { WorkloadService } from '@app/services/generated/workload.service';
 import { By } from '@angular/platform-browser';
 import { TestingUtility } from '@app/common/TestingUtility';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
+import { DsbdcardComponent } from './widgets/dsbdcard/dsbdcard.component';
 
 @Component({
   template: ''
@@ -59,6 +60,7 @@ describe('DashboardComponent', () => {
         DsbdworkloadComponent,
         DummyComponent,
         WorkloadsComponent,
+        DsbdcardComponent,
       ],
       imports: [
 
