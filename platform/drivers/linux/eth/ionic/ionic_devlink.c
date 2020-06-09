@@ -91,7 +91,8 @@ int ionic_devlink_register(struct ionic *ionic)
 		return err;
 	}
 
-#if ( LINUX_VERSION_CODE < KERNEL_VERSION(5,2,0) )
+#if ( LINUX_VERSION_CODE < KERNEL_VERSION(5,2,0) && \
+      !(RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,2))))
 	devlink_port_attrs_set(&ionic->dl_port, DEVLINK_PORT_FLAVOUR_PHYSICAL,
 			       0, false, 0);
 #else

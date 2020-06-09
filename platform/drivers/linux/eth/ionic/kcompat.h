@@ -6416,12 +6416,14 @@ ptp_read_system_postts(struct ptp_system_timestamp __always_unused *sts)
 
 /*****************************************************************************/
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5,2,0))
-#ifdef HAVE_SKB_XMIT_MORE
+#if (defined HAVE_SKB_XMIT_MORE) && \
+(!(RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,2))))
 #define netdev_xmit_more()	(skb->xmit_more)
 #else
 #define netdev_xmit_more()	(0)
 #endif
 
+#if (!(RHEL_RELEASE_CODE && RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,2)))
 #ifndef eth_get_headlen
 static inline u32
 __kc_eth_get_headlen(const struct net_device __always_unused *dev, void *data,
@@ -6432,6 +6434,7 @@ __kc_eth_get_headlen(const struct net_device __always_unused *dev, void *data,
 
 #define eth_get_headlen(dev, data, len) __kc_eth_get_headlen(dev, data, len)
 #endif /* !eth_get_headlen */
+#endif /* !RHEL >= 8.2 */
 
 #ifndef mmiowb
 #ifdef CONFIG_IA64

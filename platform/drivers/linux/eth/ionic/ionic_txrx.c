@@ -900,10 +900,8 @@ static void ionic_tx_tso_post(struct ionic_queue *q,
 #ifdef IONIC_SUPPORTS_BQL
 		netdev_tx_sent_queue(q_to_ndq(q), skb->len);
 #endif
-#ifdef HAVE_NETDEV_XMIT_MORE
+#ifdef HAVE_SKB_XMIT_MORE
 		ionic_txq_post(q, !netdev_xmit_more(), ionic_tx_clean, skb);
-#elif defined HAVE_SKB_XMIT_MORE
-		ionic_txq_post(q, !skb->xmit_more, ionic_tx_clean, skb);
 #else
 		ionic_txq_post(q, true, ionic_tx_clean, skb);
 #endif
@@ -1237,10 +1235,8 @@ static int ionic_tx(struct ionic_queue *q, struct sk_buff *skb)
 #ifdef IONIC_SUPPORTS_BQL
 	netdev_tx_sent_queue(q_to_ndq(q), skb->len);
 #endif
-#ifdef HAVE_NETDEV_XMIT_MORE
+#ifdef HAVE_SKB_XMIT_MORE
 	ionic_txq_post(q, !netdev_xmit_more(), ionic_tx_clean, skb);
-#elif defined HAVE_SKB_XMIT_MORE
-	ionic_txq_post(q, !skb->xmit_more, ionic_tx_clean, skb);
 #else
 	ionic_txq_post(q, true, ionic_tx_clean, skb);
 #endif
