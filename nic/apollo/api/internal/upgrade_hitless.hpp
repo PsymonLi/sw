@@ -52,6 +52,9 @@ typedef struct upg_ev_hitless_s {
     /// threads should be paused here to a safe point for switchover (on A)
     upg_ev_hdlr_t quiesce_hdlr;
 
+    /// prepare for switching to B
+    upg_ev_hdlr_t pre_switchover_hdlr;
+
     /// pipeline switch should be done here (on B)
     /// if it is success, it can start shared resource access
     upg_ev_hdlr_t switchover_hdlr;

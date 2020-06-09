@@ -527,7 +527,7 @@ restore_eth_device_info_cb (EthDeviceInfo *EthDevProtoObj, void *arg)
     eth_dev_info->eth_spec = eth_spec;
 
     NIC_LOG_DEBUG("Restore eth dev {}", EthDevProtoObj->eth_dev_spec().name());
-    devmgr->RestoreDevice(ETH, eth_dev_info);
+    devmgr->RestoreDeviceGraceful(ETH, eth_dev_info);
 }
 
 static void

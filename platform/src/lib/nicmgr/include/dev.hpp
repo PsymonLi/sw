@@ -124,7 +124,8 @@ public:
     void AddDevice(DeviceType type, void *dev_spec);
     void DeleteDevices();
     sdk_ret_t RemoveDevice(std::string name);
-    void RestoreDevice(DeviceType type, void *dev_state);
+    void RestoreDeviceGraceful(DeviceType type, void *dev_state);
+    void RestoreDeviceHitless(DeviceType type, void *dev_state);
 
     // event handlers
     void HalEventHandler(bool is_up);

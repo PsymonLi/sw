@@ -736,7 +736,7 @@ DeviceManager::DeleteDevices()
 }
 
 void
-DeviceManager::RestoreDevice(DeviceType type, void *dev_state)
+DeviceManager::RestoreDeviceGraceful(DeviceType type, void *dev_state)
 {
     switch (type) {
     case ETH: {
@@ -744,6 +744,26 @@ DeviceManager::RestoreDevice(DeviceType type, void *dev_state)
         Eth *eth_dev = new Eth(dev_api, dev_info, pd, EV_A);
         eth_dev->SetType(ETH);
         eth_dev->UpgradeGracefulInit(dev_info->eth_spec);
+        devices[eth_dev->GetName()] = eth_dev;
+        NIC_LOG_DEBUG("Restored ETH device {} after upgrade", eth_dev->GetName());
+        break;
+    }
+    default:
+        break;
+    }
+
+    upg_state = DEVICES_ACTIVE_STATE;
+}
+
+void
+DeviceManager::RestoreDeviceHitless(DeviceType type, void *dev_state)
+{
+    switch (type) {
+    case ETH: {
+        struct EthDevInfo *dev_info = (struct EthDevInfo *)dev_state;
+        Eth *eth_dev = new Eth(dev_api, dev_info, pd, EV_A);
+        eth_dev->SetType(ETH);
+        eth_dev->UpgradeHitlessInit(dev_info->eth_spec);
         devices[eth_dev->GetName()] = eth_dev;
         NIC_LOG_DEBUG("Restored ETH device {} after upgrade", eth_dev->GetName());
         break;

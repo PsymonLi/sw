@@ -77,7 +77,8 @@
             "//": "all services are ready on B",
             "svc": {
               "domain": "B",
-              "discovery": "yes"
+              "discovery": "yes",
+              "rsp_timeout": "300000ms"
             },
             "events": [
                 { "name": "svc_rsp_ok",   "next_stage": "config_replay"   },

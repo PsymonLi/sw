@@ -178,6 +178,7 @@ nicmgr_upg_backup_eth_device_info (struct EthDevInfo *eth_dev_info,
 static void
 nicmgr_upg_restore_eth_device_info (pds::nicmgr::EthDevice *proto_obj)
 {
+    upg_mode_t upg_init_mode = api::g_upg_state->upg_init_mode();
     struct EthDevInfo *eth_dev_info = new EthDevInfo();
     struct eth_devspec *eth_spec = new eth_devspec();
     struct eth_dev_res *eth_res = new eth_dev_res();
@@ -231,7 +232,11 @@ nicmgr_upg_restore_eth_device_info (pds::nicmgr::EthDevice *proto_obj)
     eth_dev_info->eth_spec = eth_spec;
 
     PDS_TRACE_DEBUG("Restore eth dev %s", eth_spec->name.c_str());
-    g_devmgr->RestoreDevice(ETH, eth_dev_info);
+    if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
+        g_devmgr->RestoreDeviceGraceful(ETH, eth_dev_info);
+    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
+        g_devmgr->RestoreDeviceHitless(ETH, eth_dev_info);
+    }
 }
 
 static void
@@ -303,7 +308,7 @@ err_exit:
 }
 
 static sdk_ret_t
-restore_objs (upg_mode_t mode)
+restore_objs (void)
 {
     sdk_ret_t ret = SDK_RET_OK;
     pds::nicmgr::EthDevice proto_dev;
@@ -412,6 +417,31 @@ nicmgr_upg_ev_pre_respawn_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     return nicmgr_upg_process_response(ret, info);
 }
 
+static void
+nicmgr_upg_ev_pre_switchover_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    upg_ev_info_s *info = new upg_ev_info_t();
+    sdk_ret_t ret = SDK_RET_OK;
+
+    PDS_TRACE_DEBUG("Upgrade nicmgr IPC request pre switchover");
+    info->msg_in = msg;
+    ret = nicmgr::upg::upg_pre_switchover_handler(info);
+
+    return nicmgr_upg_process_response(ret, info);
+}
+
+static void
+nicmgr_upg_ev_switchover_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    upg_ev_info_s *info = new upg_ev_info_t();
+    sdk_ret_t ret = SDK_RET_OK;
+
+    PDS_TRACE_DEBUG("Upgrade nicmgr IPC request switchover");
+    info->msg_in = msg;
+    ret = nicmgr::upg::upg_switchover_handler(info);
+
+    return nicmgr_upg_process_response(ret, info);
+}
 sdk_ret_t
 nicmgr_upg_init (void)
 {
@@ -428,23 +458,23 @@ nicmgr_upg_init (void)
                                   nicmgr_upg_ev_hostdev_reset_hdlr, NULL);
     sdk::ipc::reg_request_handler(UPG_MSG_ID_PRE_RESPAWN,
                                   nicmgr_upg_ev_pre_respawn_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_PRE_SWITCHOVER,
+                                  nicmgr_upg_ev_pre_switchover_hdlr, NULL);
+    sdk::ipc::reg_request_handler(UPG_MSG_ID_SWITCHOVER,
+                                  nicmgr_upg_ev_switchover_hdlr, NULL);
 
     // register the async handlers to nicmgr library
     nicmgr::upg::upg_ev_init(nicmgr_device_reset_status_cb,
                              nicmgr_upg_process_response);
 
     // load the states
-    if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
-        ret = restore_objs(upg_init_mode);
+    if (!sdk::platform::upgrade_mode_none(upg_init_mode)) {
+        ret = restore_objs();
         if (ret != SDK_RET_OK) {
             // api::g_upg_state->set_upg_init_error();
         }
-    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
-        // ret = restore_objs();
-        // if (ret != SDK_RET_OK) {
-            // api::g_upg_state->set_upg_init_error();
-        // } @Karthi, please fill the details
     }
+
     return SDK_RET_OK;
 }
 

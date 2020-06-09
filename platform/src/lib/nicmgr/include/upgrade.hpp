@@ -19,6 +19,8 @@ typedef void (*upg_event_response_cb_t)(sdk_ret_t status, void *cookie);
 
 sdk_ret_t upg_compat_check_handler(void);
 sdk_ret_t upg_link_down_handler(void *cookie);
+sdk_ret_t upg_pre_switchover_handler(void *cookie);
+sdk_ret_t upg_switchover_handler(void *cookie);
 sdk_ret_t upg_failed_handler(void *cookie);
 sdk_ret_t upg_host_down_handler(void *cookie);
 void upg_ev_init(upg_device_reset_status_cb_t reset_status_cb,

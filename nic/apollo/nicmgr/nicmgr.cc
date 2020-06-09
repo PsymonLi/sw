@@ -98,7 +98,7 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
         g_devmgr->UpgradeGracefulInit(&cfg);
         // upg_init below does the state loading
     } else {
-        // g_devmgr->UpgradeHitlessInit(&cfg);
+        g_devmgr->UpgradeHitlessInit(&cfg);
         // TODO : upg_init below does the state loading
     }
 
@@ -142,6 +142,8 @@ nicmgrapi::hal_up_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
     // TODO Karthi, implementaion for hitless upgrade
     if (upg_init_mode != upg_mode_t::UPGRADE_MODE_HITLESS) {
         g_devmgr->HalEventHandler(true);
+    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
+        g_devmgr->UpgradeHitlessHalEventHandler(true);
     }
 }
 

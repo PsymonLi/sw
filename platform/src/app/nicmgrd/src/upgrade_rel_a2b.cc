@@ -89,7 +89,7 @@ restore_devices(void)
         eth_dev_info->eth_res = eth_res;
         eth_dev_info->eth_spec = eth_spec;
 
-        devmgr->RestoreDevice(ETH, eth_dev_info);
+        devmgr->RestoreDeviceGraceful(ETH, eth_dev_info);
     }
 }
 

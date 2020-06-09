@@ -6,14 +6,23 @@
 
 std::string
 oprom_type_to_str(OpromType type) {
+    std::string oprom = "";
+
     switch (type) {
-        CASE(OPROM_UNKNOWN);
-        CASE(OPROM_LEGACY);
-        CASE(OPROM_UEFI);
-        CASE(OPROM_UNIFIED);
+    case (OPROM_LEGACY):
+        oprom = "legacy";
+        break;
+    case (OPROM_UEFI):
+        oprom = "uefi";
+        break;
+    case (OPROM_UNIFIED):
+        oprom = "unified";
+        break;
     default:
-        return "unknown";
+        oprom = "unknown";
     }
+
+    return oprom;
 }
 
 OpromType

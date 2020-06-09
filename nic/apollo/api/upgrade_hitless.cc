@@ -418,6 +418,12 @@ upg_ev_quiesce (upg_ev_params_t *params)
 }
 
 static sdk_ret_t
+upg_ev_pre_switchover (upg_ev_params_t *params)
+{
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
 upg_ev_switchover (upg_ev_params_t *params)
 {
     sdk_ret_t ret = impl_base::pipeline_impl()->upgrade_switchover();
@@ -462,6 +468,7 @@ upg_hitless_init (pds_init_params_t *params)
     ev_hdlr.sync_hdlr = upg_ev_sync;
     ev_hdlr.quiesce_hdlr = upg_ev_quiesce;
     ev_hdlr.switchover_hdlr = upg_ev_switchover;
+    ev_hdlr.pre_switchover_hdlr = upg_ev_pre_switchover;
     ev_hdlr.repeal_hdlr = upg_ev_repeal;
     ev_hdlr.restore_hdlr = upg_ev_restore;
 
