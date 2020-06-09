@@ -157,11 +157,11 @@ pal_init_hw_vectors (void)
 
     gl_hw_vecs.cpld_write_qsfp_temp = (cpld_write_qsfp_temp_fn_t)dlsym(gl_lib_handle,
                                                      "pal_write_qsfp_temp");
-    SDK_ASSERT(gl_hw_vecs.cpld_write_qsfp_temp);
+    //SDK_ASSERT(gl_hw_vecs.cpld_write_qsfp_temp);
 
     gl_hw_vecs.qsfp_dom_read = (qsfp_dom_read_fn_t)dlsym(gl_lib_handle,
                                                      "pal_qsfp_dom_read");
-    SDK_ASSERT(gl_hw_vecs.qsfp_dom_read);
+    //SDK_ASSERT(gl_hw_vecs.qsfp_dom_read);
     return PAL_RET_OK;
 }
 

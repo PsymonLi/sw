@@ -619,6 +619,7 @@ linkmgr_threads_resumed (void)
     return linkmgr_threads_suspended_(false);
 }
 
+
 sdk_ret_t
 linkmgr_init (linkmgr_cfg_t *cfg)
 {
@@ -946,7 +947,7 @@ port_args_set_by_xcvr_state (port_args_t *port_args)
                             port_args->toggle_fec_mode);
 
         } else {
-            port_args->admin_state = port_admin_state_t::PORT_ADMIN_STATE_DOWN;
+            // HAPS fix - bypass port_args->admin_state = port_admin_state_t::PORT_ADMIN_STATE_DOWN;
         }
     }
     return SDK_RET_OK;
@@ -1105,7 +1106,7 @@ port_create (port_args_t *args)
     }
 
     // if admin up is set, enable the port
-    if (args->admin_state == port_admin_state_t::PORT_ADMIN_STATE_UP) {
+    if ((args->admin_state == port_admin_state_t::PORT_ADMIN_STATE_UP) ||  (getenv("ELBA_FORCE_ADMIN_PORT") != NULL)) {
         ret = port::port_enable(port_p);
         if (ret != SDK_RET_OK) {
             SDK_TRACE_ERR("port %u enable failed", args->port_num);

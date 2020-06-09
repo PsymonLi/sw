@@ -26,9 +26,11 @@
 #ifdef ELBA
 #include "elb_top_csr_defines.h"
 #include "elb_soc_c_hdr.h"
+#include "elb_wa_c_hdr.h"
 #else
 #include "cap_top_csr_defines.h"
 #include "cap_ms_c_hdr.h"
+#include "cap_wa_c_hdr.h"
 #endif
 namespace pt = boost::property_tree;
 
@@ -36,10 +38,16 @@ namespace pt = boost::property_tree;
 #define UPD_BITS_POSITION (17)
 #define LIF_BITS_POSITION (6)
 
+#ifdef ELBA
+#define WA_DHS_ADDRESS (ELB_ADDR_BASE_DB_WA_OFFSET + ELB_WA_CSR_DHS_HOST_DOORBELL_BYTE_ADDRESS)
+#else 
+#define WA_DHS_ADDRESS (CAP_ADDR_BASE_DB_WA_OFFSET + CAP_WA_CSR_DHS_HOST_DOORBELL_BYTE_ADDRESS)
+#endif
 #define DOORBELL_ADDR(lif_num)                                                                    \
-    ((0x8400000) | (0xb << UPD_BITS_POSITION) | (lif_num << LIF_BITS_POSITION))
+    ((WA_DHS_ADDRESS) | (0xb << UPD_BITS_POSITION) | (lif_num << LIF_BITS_POSITION))
 
-#define DEVCMD_TIMEOUT 5
+
+#define DEVCMD_TIMEOUT 30
 #define PORT_MAC_STATS_REPORT_SIZE (1024)
 #define PORT_PB_STATS_REPORT_SIZE  (1024)
 

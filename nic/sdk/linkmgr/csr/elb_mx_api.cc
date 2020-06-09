@@ -3,14 +3,14 @@
 #include <cstdint>
 #include "include/sdk/types.hpp"
 #include "lib/catalog/catalog.hpp"
+//#include "include/sdk/asic/capri/cap_mx_api.h"
 #include "include/sdk/asic/elba/elb_mx_api.h"
 #include "third-party/asic/elba/model/elb_mx/elb_mx_csr.h"
 #include "third-party/asic/elba/model/elb_bx/elb_bx_csr.h"
 #include "elb_blk_reg_model.h"
 
-
 mac_profile_t mx[MAX_MAC];
-#if 0
+
 // TBD-ELBA-REBASE
 
 // reads addr, set/reset bit and writes back
@@ -36,13 +36,14 @@ cap_mx_serdes_lpbk_get (int chip_id, int inst_id, int ch)
     return (data & (1 << ch)) >> ch;
 }
 
-void cap_mx_set_ch_enable(int chip_id, int inst_id, int value) {
+void cap_mx_set_ch_enable(int chip_id, int inst_id, int value) { 
     // channel enable: {ch3, ch2, ch1, ch0}
     cap_mx_apb_write(chip_id, inst_id, 0x4, value);
 }
 
 // MX Port# to MX TDM Slot Mapping
-void cap_mx_set_cfg_mac_tdm(int chip_id, int inst_id, int slot0, int slot1, int slot2, int slot3) {
+void cap_mx_set_cfg_mac_tdm(int chip_id, int inst_id, int slot0, int slot1, int slot2, int slot3) { 
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    mx_csr.cfg_mac_tdm.slot0(slot0);
    mx_csr.cfg_mac_tdm.slot1(slot1);
@@ -56,7 +57,9 @@ void cap_mx_set_cfg_mac_tdm(int chip_id, int inst_id, int slot0, int slot1, int 
    }
    mx_csr.cfg_mac_tdm.write();
    // mx_csr.cfg_mac_tdm.show();
+#endif
 }
+#if 0
 
 void cap_mx_set_mtu_jabber(int chip_id , int inst_id, int ch, int max_value, int jabber_value) {
    if (ch == 0) {
@@ -180,6 +183,7 @@ void cap_mx_set_pause(int chip_id , int inst_id, int ch0_pri_vec, int ch1_pri_ve
 }
 
 int cap_mx_check_tx_idle(int chip_id, int inst_id, int port) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    mx_csr.sta_mac.read();
    bool tx_idle[4];
@@ -189,9 +193,12 @@ int cap_mx_check_tx_idle(int chip_id, int inst_id, int port) {
    tx_idle[3] = (mx_csr.sta_mac.ff_tx3idle_o().convert_to<int>() == 1);
 
    return (tx_idle[port]) ? 1 : 0;
+#endif
+   return 0;
 }
 
 int cap_mx_check_rx_idle(int chip_id, int inst_id, int port) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    mx_csr.sta_mac.read();
    bool rx_idle[4];
@@ -205,6 +212,8 @@ int cap_mx_check_rx_idle(int chip_id, int inst_id, int port) {
                 (mx_csr.sta_mac.ff_rx3sync_o().convert_to<int>() == 0);
 
    return (rx_idle[port]) ? 1 : 0;
+#endif
+   return 0;
 }
 
 void cap_mx_wait_mac_sync(int chip_id, int mx_inst, int ch) {
@@ -223,6 +232,7 @@ void cap_mx_wait_mac_sync(int chip_id, int mx_inst, int ch) {
 }
 
 int cap_mx_check_sync(int chip_id, int inst_id, int port) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    mx_csr.sta_mac.read();
    bool rx_sync[4];
@@ -232,8 +242,10 @@ int cap_mx_check_sync(int chip_id, int inst_id, int port) {
    rx_sync[3] = (mx_csr.sta_mac.ff_rx3sync_o().convert_to<int>() == 1);
 
    return (rx_sync[port]) ? 1 : 0;
+#endif
+   return 1
 }
-
+#endif
 // MX Port# to MAC Channel# Mapping
 void cap_mx_set_appfifoportmap(int chip_id, int inst_id, int enable_vec, int port_map3, int port_map2, int port_map1, int port_map0) {
 
@@ -267,11 +279,12 @@ void cap_mx_set_pcs_lane_remap(int chip_id, int inst_id, int pcs_lane7, int pcs_
 }
 
 void cap_mx_set_tx_rx_enable(int chip_id, int inst_id, int ch, int tx_enable, int rx_enable) {
-
+/* 
    PLOG_MSG("mx" << inst_id << " channel " << ch << ": set tx_enable = " << tx_enable << ", rx_enable = " << rx_enable << endl);
    int addr = (ch == 1) ? 0x500 : (ch == 2) ? 0x600 : (ch == 3) ? 0x700 : 0x400;
    int wdata = (rx_enable & 0x1) << 1 | (tx_enable & 0x1);
    cap_mx_apb_write(chip_id, inst_id, addr, wdata);
+*/
 }
 
 void cap_mx_set_ch_mode(int chip_id, int inst_id, int ch, int mode) {
@@ -322,7 +335,7 @@ void cap_mx_load_from_cfg_glbl2(int chip_id, int inst_id, int ch_enable_vec) {
    }
    if(mx[inst_id].tx_pad_disable) {
      cap_mx_tx_pad_disable(0,inst_id);
-   }
+   }  
 
    cap_mx_apb_write(chip_id, inst_id, 0x1901, mx[inst_id].serdes_lp);
 }
@@ -331,7 +344,7 @@ void cap_mx_load_from_cfg(int chip_id, int inst_id, int rst) {
    if (rst == 1) {
      cap_mx_set_soft_reset(chip_id, inst_id, 0xf);
    }
-   PLOG_MSG( "cap_mx_load_from_cfg: cap" << chip_id << "/mx" << inst_id << ":\n");
+   // PLOG_MSG( "cap_mx_load_from_cfg: cap" << chip_id << "/mx" << inst_id << ":\n");
 
    int ch_enable_vec = 0;
 
@@ -347,11 +360,13 @@ void cap_mx_load_from_cfg(int chip_id, int inst_id, int rst) {
 }
 
 void cap_mx_tx_pad_disable(int chip_id, int inst_id) {
+#if 0
    cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    PLOG_MSG( "MX inst_id:" << inst_id << " Entered cap_mx_tx_pad_disable " << endl)
    mx_csr.cfg_mac_gbl.read();
    mx_csr.cfg_mac_gbl.ff_txdispad_i(1);
    mx_csr.cfg_mac_gbl.write();
+#endif
 }
 
 void cap_mx_eos(int chip_id, int inst_id) {
@@ -362,12 +377,14 @@ void cap_mx_eos(int chip_id, int inst_id) {
 
 
 void cap_mx_eos_cnt(int chip_id, int inst_id) {
+#if 0
  //cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
    cap_mx_mac_stat(chip_id,inst_id, 0, 1, NULL);  // channel 0
    cap_mx_mac_stat(chip_id,inst_id, 1, 1, NULL);  // channel 1
    cap_mx_mac_stat(chip_id,inst_id, 2, 1, NULL);  // channel 2
    cap_mx_mac_stat(chip_id,inst_id, 3, 1, NULL);  // channel 3
+#endif
 }
 
 void cap_mx_eos_int(int chip_id, int inst_id) {
@@ -376,6 +393,7 @@ void cap_mx_eos_int(int chip_id, int inst_id) {
 void cap_mx_eos_sta(int chip_id, int inst_id) {
 }
 
+#if 0
 void cap_mx_set_debug_ctl(int chip_id, int inst_id, int enable, int select) {
 
  PLOG_MSG("Set MX debug enable/select\n");
@@ -386,6 +404,8 @@ void cap_mx_set_debug_ctl(int chip_id, int inst_id, int enable, int select) {
  mx_csr.cfg_debug_port.select(select);
  mx_csr.cfg_debug_port.write();
 }
+
+#endif
 
 void cap_mx_dump_mibs(int chip_id) {
 #if 0
@@ -525,11 +545,12 @@ void cap_mx_dump_mibs(int chip_id) {
 void print_msg(string msg) {
 #ifdef _CSV_INCLUDED_
     vpi_printf((PLI_BYTE8*) "%s", msg.c_str());
-#else
+#else 
     std::cout << msg;
-#endif
+#endif    
 }
 
+#if 0
 void cap_mx_set_tx_drain(int chip_id, int inst_id, int ch, int value) {
    PLOG_MSG("mx" << inst_id << " channel " << ch << ": set tx_drain " << value << endl);
    int addr = (ch == 1) ? 0x500 : (ch == 2) ? 0x600 : (ch == 3) ? 0x700 : 0x400;
@@ -667,8 +688,10 @@ int cap_mx_rx_crc_stomp_cnt(int chip_id, int inst_id, int ch) {
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
 }
+#endif
 
 int cap_mx_rx_jabber_cnt(int chip_id, int inst_id, int ch) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
  int cnt_offset = 14;
  int addr = ((ch&0x3) << 7) | cnt_offset;
@@ -676,9 +699,12 @@ int cap_mx_rx_jabber_cnt(int chip_id, int inst_id, int ch) {
  mx_csr.dhs_mac_stats.entry[addr].read();
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
+#endif
+ return 0;
 }
 
 int cap_mx_tx_truncated_cnt(int chip_id, int inst_id, int ch) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
  int cnt_offset = 17;
  int addr = ((ch&0x3) << 7) | cnt_offset;
@@ -686,9 +712,12 @@ int cap_mx_tx_truncated_cnt(int chip_id, int inst_id, int ch) {
  mx_csr.dhs_mac_stats.entry[addr].read();
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
+#endif
+ return 0;
 }
 
 int cap_mx_tx_good_cnt(int chip_id, int inst_id, int ch) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
  int cnt_offset = 32;
  int addr = ((ch&0x3) << 7) | cnt_offset;
@@ -696,9 +725,12 @@ int cap_mx_tx_good_cnt(int chip_id, int inst_id, int ch) {
  mx_csr.dhs_mac_stats.entry[addr].read();
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
+#endif
+ return 0;
 }
 
 int cap_mx_tx_all_cnt(int chip_id, int inst_id, int ch) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
  int cnt_offset = 33;
  int addr = ((ch&0x3) << 7) | cnt_offset;
@@ -706,9 +738,12 @@ int cap_mx_tx_all_cnt(int chip_id, int inst_id, int ch) {
  mx_csr.dhs_mac_stats.entry[addr].read();
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
+#endif
+ return 0;
 }
 
 int cap_mx_rx_frame_too_long_cnt(int chip_id, int inst_id, int ch) {
+#if 0
  cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
  int cnt_offset = 17;
  int addr = ((ch&0x3) << 7) | cnt_offset;
@@ -716,11 +751,14 @@ int cap_mx_rx_frame_too_long_cnt(int chip_id, int inst_id, int ch) {
  mx_csr.dhs_mac_stats.entry[addr].read();
  rdata = mx_csr.dhs_mac_stats.entry[addr].value().convert_to<int>();
  return rdata;
+#endif
+ return 0;
 }
 
 
 
 void cap_mx_bist_run(int chip_id, int inst_id, int enable) {
+#if 0
   cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
 
   PLOG_API_MSG("MX[" << inst_id << "]", ": cap_mx_bist_run, enable = " << enable << "\n");
@@ -741,9 +779,11 @@ void cap_mx_bist_run(int chip_id, int inst_id, int enable) {
   mx_csr.cfg_fec_mem.read();
   mx_csr.cfg_fec_mem.bist_run(enable);
   mx_csr.cfg_fec_mem.write();
+#endif
 }
 
 void cap_mx_bist_chk(int chip_id, int inst_id) {
+#if 0
   cap_mx_csr_t & mx_csr = CAP_BLK_REG_MODEL_ACCESS(cap_mx_csr_t, chip_id, inst_id);
 
   PLOG_API_MSG("MX[" << inst_id << "]", ": cap_mx_bist_chk\n");
@@ -796,10 +836,10 @@ void cap_mx_bist_chk(int chip_id, int inst_id) {
   if (!err) {
      PLOG_API_MSG("PASSED: MX[" << inst_id << "]", ": cap_mx_bist_chk\n");
   }
-}
 #endif
+}
 
-// KCM
+// KCM 
 int
 cap_mx_base_r_pcs_status2 (int chip_id, int inst_id, int mac_ch)
 {
@@ -827,7 +867,7 @@ cap_mx_base_r_pcs_status2 (int chip_id, int inst_id, int mac_ch)
     }
 
     return cap_mx_apb_read(chip_id, inst_id, addr);
-#else
+#else 
     return 0;
 #endif
 }
@@ -860,7 +900,7 @@ cap_mx_base_r_pcs_status2_clear (int chip_id, int inst_id, int mac_ch)
 
     cap_mx_apb_write(chip_id, inst_id, addr, 0x0);
     return 0;
-#else
+#else 
     return 0;
 #endif
 }
@@ -901,16 +941,15 @@ int cap_mx_check_ch_sync(int chip_id, int inst_id, int ch) {
  int data = cap_mx_apb_read(chip_id, inst_id, 0x9);
  return ((data >> ch) & 0x1);
 #else
- return 0;
+ return 1;
 #endif
 }
 
 void cap_mx_load_from_cfg_glbl1(int chip_id, int inst_id, int *ch_enable_vec) {
-#if 0
 // TBD-ELBA-REBASE
-   //
+   // 
    // Comira MAC Configurations
-   //
+   // 
    // bit[15]: slot2chmappingenable, bit[14:9]: 1 ch thres, bit[8:4]: 2 ch thres, bit[3:0]: 4 ch thres
    // 16'b1_010000_01000_1000 = 16'b1010_0000_1000_1000
    cap_mx_apb_write(chip_id, inst_id, 0x201, 0xA088);
@@ -929,34 +968,45 @@ void cap_mx_load_from_cfg_glbl1(int chip_id, int inst_id, int *ch_enable_vec) {
    uint32_t slot2 = mx[inst_id].tdm[2];
    uint32_t slot3 = mx[inst_id].tdm[3];
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
    // channel mode
    if (mx[inst_id].mac_mode == MAC_MODE_4x25g || mx[inst_id].mac_mode == MAC_MODE_4x10g || mx[inst_id].mac_mode == MAC_MODE_4x1g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       if (mx[inst_id].speed[0] == 25) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
          cap_mx_apb_write(chip_id, inst_id, 0x3, 0xAA);  // 4x25G
       } else if (mx[inst_id].speed[0] == 10) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
          cap_mx_apb_write(chip_id, inst_id, 0x3, 0x00);  // 4x10G
       } else {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
          cap_mx_apb_write(chip_id, inst_id, 0x3, 0x55);  // 4x1G
       }
    } else if (mx[inst_id].mac_mode == MAC_MODE_1x50g_2x25g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
      cap_mx_apb_write(chip_id, inst_id, 0x3, 0xAF);
    } else if (mx[inst_id].mac_mode == MAC_MODE_2x25g_1x50g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
      cap_mx_apb_write(chip_id, inst_id, 0x3, 0xFA);
    }
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
    // Speed up SerDes locking (for simulation purpose only)
    if (mx[inst_id].for_simulation) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_apb_write(chip_id, inst_id, 0x8ff, 0x1E05);
    }
 
    // App fifo port mapping, ChMapping0, ChMapping1, cfg_mac_tdm, PCS lane remapping
    if (mx[inst_id].mac_mode == MAC_MODE_1x100g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0x1, 0, 0, 0, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 0, 0, 0, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, slot0, slot1, slot2, slot3);
       cap_mx_set_pcs_lane_remap(chip_id, inst_id, 7, 6, 5, 4);
       *ch_enable_vec = mx[inst_id].port_enable[0];
    } else if (mx[inst_id].mac_mode == MAC_MODE_2x25g_1x50g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0x7, 4, 2, 1, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 2, 1, 2, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, 0, 2, 1, 2);
@@ -965,12 +1015,14 @@ void cap_mx_load_from_cfg_glbl1(int chip_id, int inst_id, int *ch_enable_vec) {
       cap_mx_apb_write(chip_id, inst_id, 0x1983, 0x0f9a);
       *ch_enable_vec = (mx[inst_id].port_enable[2]<<2) | (mx[inst_id].port_enable[1]<<1) | mx[inst_id].port_enable[0];
    } else if (mx[inst_id].mac_mode == MAC_MODE_1x40g || mx[inst_id].mac_mode == MAC_MODE_1x50g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0x1, 0, 0, 0, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 0, 0, 0, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, slot0, slot1, slot2, slot3);
       cap_mx_set_pcs_lane_remap(chip_id, inst_id, 7, 6, 5, 4);
       *ch_enable_vec = mx[inst_id].port_enable[0];
    } else if (mx[inst_id].mac_mode == MAC_MODE_2x40g || mx[inst_id].mac_mode == MAC_MODE_2x50g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0x5, 4, 1, 4, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 2, 0, 2, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, slot0, slot1, slot2, slot3);
@@ -979,18 +1031,21 @@ void cap_mx_load_from_cfg_glbl1(int chip_id, int inst_id, int *ch_enable_vec) {
       cap_mx_apb_write(chip_id, inst_id, 0x1983, 0x0f9a);
       *ch_enable_vec = (mx[inst_id].port_enable[1]<<2) | mx[inst_id].port_enable[0];
    } else if (mx[inst_id].mac_mode == MAC_MODE_1x50g_2x25g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0xd, 3, 2, 4, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 3, 0, 2, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, 0, 2, 0, 3);
       cap_mx_set_pcs_lane_remap(chip_id, inst_id, 7, 6, 5, 4);
       *ch_enable_vec = (mx[inst_id].port_enable[3]<<3) | (mx[inst_id].port_enable[2]<<2) | mx[inst_id].port_enable[0];
    } else if (mx[inst_id].mac_mode == MAC_MODE_4x25g || mx[inst_id].mac_mode == MAC_MODE_4x10g || mx[inst_id].mac_mode == MAC_MODE_4x1g) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       cap_mx_set_appfifoportmap(chip_id, inst_id, 0xf, 3, 2, 1, 0);
       cap_mx_set_chmapping(chip_id, inst_id, 3, 2, 1, 0);
       cap_mx_set_cfg_mac_tdm(chip_id, inst_id, slot0, slot1, slot2, slot3);
       cap_mx_set_pcs_lane_remap(chip_id, inst_id, 7, 6, 5, 4);
       *ch_enable_vec = (mx[inst_id].port_enable[3] << 3) | (mx[inst_id].port_enable[2]<<2) | (mx[inst_id].port_enable[1]<<1) | mx[inst_id].port_enable[0];
    } else {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
       PLOG_MSG( "mx" << inst_id << " ERROR: invalid mac_mode = " << mx[inst_id].mac_mode << endl;);
       *ch_enable_vec = 0;
    }
@@ -1006,6 +1061,7 @@ void cap_mx_load_from_cfg_glbl1(int chip_id, int inst_id, int *ch_enable_vec) {
    cap_mx_apb_write(chip_id, inst_id, 0x502, 0x10);
    cap_mx_apb_write(chip_id, inst_id, 0x602, 0x10);
    cap_mx_apb_write(chip_id, inst_id, 0x702, 0x10);
+#if 0
 #endif
 }
 
@@ -1153,7 +1209,7 @@ cap_mx_serdes_lpbk_set (int chip_id, int inst_id, int ch, int value)
 #endif
 }
 
-void cap_mx_set_ch_enable(int chip_id, int inst_id, int ch, int value) {
+void cap_mx_set_ch_enable(int chip_id, int inst_id, int ch, int value) { 
 #if 0
 // TBD-ELBA-REBASE
     // channel enable: {ch3, ch2, ch1, ch0}
@@ -1445,7 +1501,7 @@ void cap_mx_soft_reset(int chip_id, int inst_id) {
 #endif
 }
 
-void cap_mx_set_soft_reset(int chip_id, int inst_id, int value) {
+void cap_mx_set_soft_reset(int chip_id, int inst_id, int value) { 
 #if 0
 // TBD-ELBA-REBASE
     // Software reset for stats: {ch3, ch2, ch1, ch0}
@@ -1559,7 +1615,7 @@ cap_mx_tx_drain (int chip_id, int inst_id, int mac_ch, bool drain)
    return 0;
 }
 
-void cap_mx_set_soft_reset(int chip_id, int inst_id, int ch, int value) {
+void cap_mx_set_soft_reset(int chip_id, int inst_id, int ch, int value) { 
 #if 0
 // TBD-ELBA-REBASE
     int rdata;

@@ -741,7 +741,10 @@ elba_mpu_icache_dcache_invalidate (void)
 {
     int i;
     elb_top_csr_t & elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
-
+    if(getenv("ELBA_NO_MPU_INIT"))  {
+        SDK_TRACE_DEBUG("Skipping MPU INIT");
+	return;
+    }
     for (i = 0; i < ELBA_P4_NUM_STAGES; i++) {
           elb0.sgi.stg[i].icache.icache.all(1);
           elb0.sgi.stg[i].icache.icache.write();
@@ -1051,7 +1054,7 @@ elba_global_pics_get (uint32_t tableid)
     return ((elb_pics_csr_t*)nullptr);
 }
 
-sdk_ret_t
+ sdk_ret_t
 elba_flush_shadow_mem (void)
 {
     // TODO. revisit for elba upgrade support

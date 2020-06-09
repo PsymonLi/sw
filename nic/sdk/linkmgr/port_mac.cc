@@ -217,6 +217,7 @@ mac_cfg_haps (const char *cfg_path)
     while (fscanf(fp, "%" PRIx32 "%" PRIx32 "%" PRIx32,
                   &addrh, &addrl, &data) != EOF) {
         WRITE_REG_BASE(chip, (uint64_t)addrl, data);
+
     }
 
     data = 0x1140;
@@ -475,17 +476,21 @@ mac_cfg_hw (mac_info_t *mac_info)
     bool         rx_pause_enable = mac_info->rx_pause_enable;
     port_speed_t      port_speed = (port_speed_t) mac_info->speed;
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
     switch (port_speed) {
     case port_speed_t::PORT_SPEED_10G:
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
         mx[inst_id].mac_mode = MAC_MODE_4x10g;
         mx_api_speed = 10;
         if ((g_linkmgr_cfg.catalog->is_card_naples25()) ||
                  (g_linkmgr_cfg.catalog->is_card_naples25_swm())) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
             mx[inst_id].tdm[0] = 0;
             mx[inst_id].tdm[1] = 0;
             mx[inst_id].tdm[2] = 0;
             mx[inst_id].tdm[3] = 0;
         } else {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
             mx[inst_id].tdm[0] = 0;
             mx[inst_id].tdm[1] = 1;
             mx[inst_id].tdm[2] = 2;
@@ -498,11 +503,13 @@ mac_cfg_hw (mac_info_t *mac_info)
         mx_api_speed = 25;
         if ((g_linkmgr_cfg.catalog->is_card_naples25()) ||
                  (g_linkmgr_cfg.catalog->is_card_naples25_swm())) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
             mx[inst_id].tdm[0] = 0;
             mx[inst_id].tdm[1] = 0;
             mx[inst_id].tdm[2] = 0;
             mx[inst_id].tdm[3] = 0;
         } else {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
             mx[inst_id].tdm[0] = 0;
             mx[inst_id].tdm[1] = 1;
             mx[inst_id].tdm[2] = 2;
@@ -512,6 +519,7 @@ mac_cfg_hw (mac_info_t *mac_info)
 
     case port_speed_t::PORT_SPEED_40G:
         mx[inst_id].mac_mode = MAC_MODE_1x40g;
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
         mx_api_speed = 40;
         mx[inst_id].tdm[0] = 0;
         mx[inst_id].tdm[1] = 0;
@@ -520,6 +528,7 @@ mac_cfg_hw (mac_info_t *mac_info)
         break;
 
     case port_speed_t::PORT_SPEED_50G:
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
         mx[inst_id].mac_mode = MAC_MODE_2x50g;
         mx_api_speed = 50;
         mx[inst_id].tdm[0] = 0;
@@ -529,6 +538,7 @@ mac_cfg_hw (mac_info_t *mac_info)
         break;
 
     case port_speed_t::PORT_SPEED_100G:
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
         mx[inst_id].mac_mode = MAC_MODE_1x100g;
         mx_api_speed = 100;
         mx[inst_id].tdm[0] = 0;
@@ -543,6 +553,7 @@ mac_cfg_hw (mac_info_t *mac_info)
 
     mx[inst_id].glbl_mode = glbl_mode(mx[inst_id].mac_mode);
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
     // Only master lane
     mac_ch_en |= (1 << start_lane);
 
@@ -552,13 +563,16 @@ mac_cfg_hw (mac_info_t *mac_info)
     mx[inst_id].speed      [start_lane] = mx_api_speed;
     mx[inst_id].port_enable[start_lane] = 1;
 
+    printf("Here   %s:%d  mac_global_init=%d, inst_id=%d force_global_init=%d\n", __FILE__, __LINE__, mac_global_init(inst_id), inst_id, (mac_info->force_global_init == true));
     if (mac_global_init(inst_id) == 0 || mac_info->force_global_init == true) {
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
         cap_mx_load_from_cfg_glbl1(chip_id, inst_id, &ch_enable_vec);
 
         cap_mx_set_tx_padding(chip_id, inst_id, mac_info->tx_pad_enable);
 
     }
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
     mx_init[inst_id] = mx_init[inst_id] | mac_ch_en;
 
     SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, mx_init: 0x%x",
@@ -567,8 +581,10 @@ mac_cfg_hw (mac_info_t *mac_info)
     // set MAC serdes loopback if enabled
     cap_mx_serdes_lpbk_set(0, inst_id, mac_ch_en, loopback);
 
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
     for (uint32_t ch = start_lane; ch < start_lane + num_lanes; ch++) {
         cap_mx_cfg_ch(chip_id, inst_id, ch);
+    printf("Here   %s:%d ch=%d, start_lane=%d, num_lanes=%d  \n", __FILE__, __LINE__, ch, start_lane, num_lanes);
 
         (void)fec;
         cap_mx_set_fec(chip_id, inst_id, ch, fec);
@@ -738,6 +754,7 @@ mac_deinit_hw (uint32_t mac_inst, uint32_t mac_ch)
 {
     uint32_t mask = 1 << mac_ch;
     mx_init[mac_inst] = mx_init[mac_inst] & ~mask;
+    printf("Here   %s:%d  \n", __FILE__, __LINE__);
     SDK_LINKMGR_TRACE_DEBUG("mac_inst: %d, mac_ch: %d, mx_init: 0x%x",
                     mac_inst, mac_ch, mx_init[mac_inst]);
     return 0;
@@ -962,6 +979,7 @@ mac_mgmt_stats_reset_hw (uint32_t mac_inst, uint32_t mac_ch, bool reset)
     return 0;
 }
 
+
 //----------------------------------------------------------------------------
 // Mock methods
 //----------------------------------------------------------------------------
@@ -1140,16 +1158,19 @@ port_mac_fn_init(linkmgr_cfg_t *cfg)
     mac_mgmt_fn->mac_deinit         = &mac_deinit_default;
     mac_mgmt_fn->mac_send_remote_faults = &mac_send_remote_faults_default;
     mac_mgmt_fn->mac_tx_drain       = &mac_tx_drain_default;
+    printf("KCM2:Here  port_mac_fn_init %s:%d  %d\n", __FILE__, __LINE__, platform_type);
+    if(getenv("ELBA_NO_PORT_MAC"))  {
+       printf("KCM2:Returning  port_mac_fn_init %s:%d  %d\n", __FILE__, __LINE__, platform_type);
+       return SDK_RET_OK;
+    } else {
+       printf("KCM2:Not returning  port_mac_fn_init %s:%d  %d\n", __FILE__, __LINE__, platform_type);
+    }
 
     switch (platform_type) {
-    case platform_type_t::PLATFORM_TYPE_HAPS:
-        // TODO needs sequencing from hal
-        // mac_cfg_haps(cfg->cfg_path);
-        break;
-
     case platform_type_t::PLATFORM_TYPE_SIM:
     case platform_type_t::PLATFORM_TYPE_MOCK:
         // Faults and Sync is mocked
+    printf("Here  port_mac_fn_init %s:%d  %d\n", __FILE__, __LINE__, platform_type);
         mac_fn->mac_cfg            = &mac_cfg_hw;
         mac_fn->mac_cfg_fec        = &mac_cfg_fec_hw;
         mac_fn->mac_enable         = &mac_enable_hw;
@@ -1175,8 +1196,13 @@ port_mac_fn_init(linkmgr_cfg_t *cfg)
         mac_mgmt_fn->mac_stats_get    = &mac_mgmt_stats_get_hw;
         mac_mgmt_fn->mac_deinit       = &mac_mgmt_deinit_hw;
         mac_mgmt_fn->mac_tx_drain     = &mac_mgmt_tx_drain_hw;
-        mac_mgmt_fn->mac_stats_reset  = &mac_mgmt_stats_reset_hw;
+        mac_mgmt_fn->mac_stats_reset = &mac_mgmt_stats_reset_hw;
         break;
+
+    case platform_type_t::PLATFORM_TYPE_HAPS:
+        // TODO needs sequencing from hal
+        // mac_cfg_haps(cfg->cfg_path);
+        //break;
 
     case platform_type_t::PLATFORM_TYPE_ZEBU:
     case platform_type_t::PLATFORM_TYPE_HW:
@@ -1209,6 +1235,7 @@ port_mac_fn_init(linkmgr_cfg_t *cfg)
         mac_mgmt_fn->mac_deinit      = &mac_mgmt_deinit_hw;
         mac_mgmt_fn->mac_tx_drain    = &mac_mgmt_tx_drain_hw;
         mac_mgmt_fn->mac_stats_reset = &mac_mgmt_stats_reset_hw;
+
         break;
 
     default:

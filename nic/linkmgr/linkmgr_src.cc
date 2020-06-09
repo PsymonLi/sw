@@ -13,11 +13,6 @@
 #include "nic/linkmgr/linkmgr_utils.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/platform/drivers/xcvr.hpp"
-#ifdef ELBA
-#include "nic/sdk/include/sdk/asic/elba/elb_mx_api.h"
-#else
-#include "nic/sdk/include/sdk/asic/capri/cap_mx_api.h"
-#endif
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "platform/pal/include/pal_types.h"
 #include "platform/drivers/xcvr.hpp"
@@ -289,7 +284,13 @@ linkmgr_create_ports (sdk::linkmgr::linkmgr_cfg_t *sdk_cfg)
             port_args.admin_state = port_admin_state_t::PORT_ADMIN_STATE_UP;
         } else {
             port_args.auto_neg_enable = true;
+            port_args.auto_neg_enable = false;
             port_args.admin_state = port_admin_state_t::PORT_ADMIN_STATE_DOWN;
+	    if(getenv("ELBA_FORCE_ADMIN_PORT_ALL")) {
+              HAL_TRACE_DEBUG("Overriding to ADMIN_STATE_UP for ports fp port {} ifindex {} num_lanes {}",
+			fp_port, ifindex, port_args.num_lanes);
+              port_args.admin_state = port_admin_state_t::PORT_ADMIN_STATE_UP;
+            }
         }
 
         hal::hal_cfg_db_open(hal::CFG_OP_WRITE);

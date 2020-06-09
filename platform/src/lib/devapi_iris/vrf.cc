@@ -105,6 +105,9 @@ devapi_vrf::vrf_halcreate(void)
             set_interface_id(uplink_->get_id());
     }
 
+    int cnt = 4;
+    int done = 0;
+    while(!done ) {
     VERIFY_HAL();
     status = hal->vrf_create(req_msg, rsp_msg);
     if (status.ok()) {
@@ -120,13 +123,22 @@ devapi_vrf::vrf_halcreate(void)
             ret = SDK_RET_ERR;
             goto end;
         }
+	done= 1;
     } else {
+	if(cnt) { --cnt; }
+	if(cnt == 0) {
+	done= 1;
         NIC_LOG_ERR("Failed to create vrf for id:{}. err: {}:{}",
                     id_, status.error_code(), status.error_message());
         ret = SDK_RET_ERR;
         goto end;
+	} else {
+        NIC_LOG_ERR("Failed to create vrf for id:{}. cnt {} err: {}:{}",
+                    id_, cnt, status.error_code(), status.error_message());
+}	
     }
-
+       
+    }
 end:
     return ret;
 }

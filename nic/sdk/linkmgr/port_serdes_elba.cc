@@ -5,6 +5,7 @@
 #include "port_serdes.hpp"
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
+#include "include/sdk/asic/elba/elb_mx_api.h"
 #ifdef ELBA
 #include "third-party/avago/build_elba/include/aapl/aapl.h"
 #else
@@ -283,7 +284,7 @@ sbus_access (uint32_t sbus_addr,
 {
     //uint32_t chip_id     = 0;
     uint32_t status      = 0;
-    uint32_t ring_number = ((sbus_addr >> 8 ) & 0x0f);
+    uint32_t ring_number = ((sbus_addr >> 8 ) & 0x0f); 
     uint32_t sbus_id     = (sbus_addr         & 0xff);
 
     //Required commands are:
@@ -584,44 +585,46 @@ serdes_spico_upload_hw (uint32_t sbus_addr, const char* filename)
     return rc;
 }
 
-// static int
-// serdes_pre_ical_start_hw (uint32_t sbus_addr)
-// {
-//     int int_code;
-//     int int_data;
-//     int int_ret;
+#if 0
+static int
+serdes_pre_ical_start_hw (uint32_t sbus_addr)
+{
+    int int_code;
+    int int_data;
+    int int_ret;
 
-//     int_code = 0x18;
-//     int_data = 0x7;
-//     int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
-//     if (int_ret == false) {
-//         SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
-//                               "sbus_addr %u, int_code 0x%x, int_data 0x%x",
-//                               sbus_addr, int_code, int_data);
-//         return -1;
-//     }
+    int_code = 0x18;
+    int_data = 0x7;
+    int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
+    if (int_ret == false) {
+        SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
+                              "sbus_addr %u, int_code 0x%x, int_data 0x%x",
+                              sbus_addr, int_code, int_data);
+        return -1;
+    }
 
-//     int_code = 0x19;
-//     int_data = 0x2710;
-//     int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
-//     if (int_ret == false) {
-//         SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
-//                               "sbus_addr %u, int_code 0x%x, int_data 0x%x",
-//                               sbus_addr, int_code, int_data);
-//         return -1;
-//     }
+    int_code = 0x19;
+    int_data = 0x2710;
+    int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
+    if (int_ret == false) {
+        SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
+                              "sbus_addr %u, int_code 0x%x, int_data 0x%x",
+                              sbus_addr, int_code, int_data);
+        return -1;
+    }
 
-//     int_code = 0x19;
-//     int_data = 0x0;
-//     int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
-//     if (int_ret == false) {
-//         SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
-//                               "sbus_addr %u, int_code 0x%x, int_data 0x%x",
-//                               sbus_addr, int_code, int_data);
-//         return -1;
-//     }
-//     return 0;
-// }
+    int_code = 0x19;
+    int_data = 0x0;
+    int_ret = serdes_spico_int_check_hw(sbus_addr, int_code, int_data);
+    if (int_ret == false) {
+        SDK_LINKMGR_TRACE_ERR("Failed to send interrupt to serdes. "
+                              "sbus_addr %u, int_code 0x%x, int_data 0x%x",
+                              sbus_addr, int_code, int_data);
+        return -1;
+    }
+    return 0;
+}
+#endif
 
 int
 serdes_ical_start_hw (uint32_t sbus_addr, port_speed_t serdes_speed)
@@ -1389,6 +1392,9 @@ port_serdes_fn_init(platform_type_t platform_type,
                                       &serdes_an_fec_enable_read_default;
     serdes_fn->serdes_an_rsfec_enable_read =
                                       &serdes_an_rsfec_enable_read_default;
+
+    printf("TBD-ELBA-REBASE Skipping port_serdes_fn_init %s:%d  %d(is_haps=%d)\n", __FILE__, __LINE__, platform_type, (platform_type == platform_type_t::PLATFORM_TYPE_HW));
+    return SDK_RET_OK; // TBD-ELBA-REBASE
 
     switch (platform_type) {
     case platform_type_t::PLATFORM_TYPE_HW:

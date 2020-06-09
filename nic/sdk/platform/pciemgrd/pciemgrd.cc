@@ -952,7 +952,7 @@ evmon_end(void *arg)
     tnow = tv.tv_sec * 1000000 + tv.tv_usec;
 
     tdelta = tnow - *tstamp;
-    if (tdelta > 2000) {
+    if (tdelta > 300000) {
         pciesys_logwarn("evmon %ldus delay\n", tdelta);
     }
 }

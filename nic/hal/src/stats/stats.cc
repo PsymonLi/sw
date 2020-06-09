@@ -230,6 +230,9 @@ stats_timer_cb (void *timer, uint32_t timer_id, void *ctxt)
     pd::pd_func_args_t                  pd_func_args;
     SystemResponse                      rsp;
 
+    if(getenv("ELBA_HAPS_NO_STATS_POLL"))
+	return;
+
     ret = pd::hal_pd_call(pd::PD_FUNC_ID_QOS_CLASS_PERIODIC_STATS_UPDATE, NULL);
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Error in updating qos periodic stats, ret {}", ret);

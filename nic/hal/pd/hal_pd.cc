@@ -33,6 +33,7 @@ hal_pd_stub_assert (pd_func_args_t *args)
         (pd_func_t)dlsym(RTLD_DEFAULT, #NAME);                                 \
     dlsym_error = dlerror();                                                   \
     if (dlsym_error) {                                                         \
+        printf("Failed to load symbol from PD lib %s", #NAME);      		\
         HAL_TRACE_DEBUG("Failed to load symbol from PD lib {}:{}", #NAME,      \
                         dlsym_error);                                          \
         g_pd_funcs[PD_FUNC_ID] = hal_pd_stub_assert;                           \
