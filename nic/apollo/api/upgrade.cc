@@ -3,12 +3,14 @@
 //
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/upgrade/include/ev.hpp"
+#include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/core/core.hpp"
+#include "nic/apollo/api/include/pds_event.hpp"
 #include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
-#include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hal_init.hpp"
@@ -209,6 +211,84 @@ upg_shmstore_open (upg_mode_t mode)
     }
     done = true;
     return ret;
+}
+
+static sdk_ret_t
+pds_upgrade_start_hdlr (sdk::upg::upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+    pds_event_t pds_event;
+
+    // notify the agent that firmware upgrade is starting so that it can
+    // shutdown its external gRPC channel and stop accepting any new incoming
+    // config
+    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+        pds_event.event_id = PDS_EVENT_ID_UPGRADE_START;
+        ret = g_pds_state.event_notify(&pds_event);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+    return pds_upgrade(params);
+}
+
+static sdk_ret_t
+pds_upgrade_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+    pds_event_t pds_event;
+
+    // notify the agent that firmware upgrade failed and it needs to re-open
+    // its external gRPC to start accepting config
+    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+        pds_event.event_id = PDS_EVENT_ID_UPGRADE_ABORT;
+        ret = g_pds_state.event_notify(&pds_event);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
+    return pds_upgrade(params);
+}
+
+static void
+upg_ev_fill (sdk::upg::upg_ev_t *ev)
+{
+    ev->svc_ipc_id = core::PDS_THREAD_ID_UPGRADE;
+    strncpy(ev->svc_name, "pdsagent", sizeof(ev->svc_name));
+    ev->compat_check_hdlr = pds_upgrade;
+    ev->start_hdlr = pds_upgrade_start_hdlr;
+    ev->backup_hdlr = pds_upgrade;
+    ev->prepare_hdlr = pds_upgrade;
+    ev->pre_switchover_hdlr = pds_upgrade;
+    ev->switchover_hdlr = pds_upgrade;
+    ev->rollback_hdlr = pds_upgrade;
+    ev->ready_hdlr = pds_upgrade;
+    ev->config_replay_hdlr = pds_upgrade;
+    ev->sync_hdlr = pds_upgrade;
+    ev->repeal_hdlr = pds_upgrade_repeal_hdlr;
+    ev->respawn_hdlr = pds_upgrade;
+    ev->pre_respawn_hdlr = pds_upgrade;
+    ev->finish_hdlr = pds_upgrade;
+}
+
+void
+upgrade_thread_init_fn (void *ctxt)
+{
+    sdk::upg::upg_ev_t ev = { 0 };
+
+    // register for all upgrade events
+    upg_ev_fill(&ev);
+    sdk::upg::upg_ev_hdlr_register(ev);
+}
+
+void
+upgrade_thread_exit_fn (void *ctxt)
+{
+}
+
+void
+upgrade_thread_event_cb (void *msg, void *ctxt)
+{
 }
 
 }   // namespace api

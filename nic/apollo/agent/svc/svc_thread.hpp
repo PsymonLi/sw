@@ -10,7 +10,8 @@
 
 #define FD_INVALID (-1)
 
-sdk_ret_t handle_svc_req(int fd, types::ServiceRequestMessage *proto_req, int cmd_fd);
+sdk_ret_t handle_svc_req(int fd, types::ServiceRequestMessage *proto_req,
+                         int cmd_fd);
 
 namespace core {
 

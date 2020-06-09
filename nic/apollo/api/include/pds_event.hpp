@@ -28,6 +28,8 @@ typedef enum pds_event_id_e {
     PDS_EVENT_ID_LIF_UPDATE,
     PDS_EVENT_ID_LIF_UP,
     PDS_EVENT_ID_LIF_DOWN,
+    PDS_EVENT_ID_UPGRADE_START,
+    PDS_EVENT_ID_UPGRADE_ABORT,
     PDS_EVENT_ID_MAX,
 } pds_event_id_t;
 
@@ -65,6 +67,6 @@ typedef struct pds_event_s {
 } pds_event_t;
 
 /// \brief type of the callback function invoked to raise events
-typedef void (*pds_event_cb_t)(const pds_event_t *event);
+typedef sdk_ret_t (*pds_event_cb_t)(const pds_event_t *event);
 
 #endif    // __INCLUDE_API_PDS_EVENT_HPP__

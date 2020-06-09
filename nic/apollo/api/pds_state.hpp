@@ -240,10 +240,11 @@ public:
     }
     pds_event_cb_t event_cb(void) const { return event_cb_; }
     void set_event_cb(pds_event_cb_t event_cb) { event_cb_ = event_cb; }
-    void event_notify(const pds_event_t *event) {
+    sdk_ret_t event_notify(const pds_event_t *event) {
         if (event_cb_) {
-            event_cb_(event);
+            return event_cb_(event);
         }
+        return SDK_RET_OK;
     }
     const mac_addr_t& system_mac(void) const { return system_mac_; }
     void set_system_mac(mac_addr_t mac) {

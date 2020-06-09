@@ -21,6 +21,7 @@
 #include "nic/apollo/nicmgr/nicmgr.hpp"
 #include "nic/apollo/pciemgr/pciemgr.hpp"
 #include "nic/apollo/learn/learn_thread.hpp"
+#include "nic/apollo/api/internal/upgrade.hpp"
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 
 using boost::property_tree::ptree;
@@ -314,6 +315,29 @@ bool
 is_routing_thread_ready (void)
 {
     return sdk::lib::thread::find(PDS_THREAD_ID_ROUTING)->ready();
+}
+
+sdk_ret_t
+spawn_upgrade_thread (pds_state *state)
+{
+    sdk::event_thread::event_thread *new_thread;
+
+    new_thread =
+        sdk::event_thread::event_thread::factory(
+            "upgrade", PDS_THREAD_ID_UPGRADE,
+            sdk::lib::THREAD_ROLE_CONTROL,
+            0x0,    // use all control cores
+            api::upgrade_thread_init_fn,
+            api::upgrade_thread_exit_fn,
+            api::upgrade_thread_event_cb,
+            sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
+            true);
+     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
+                             "upgrade thread create failure");
+     new_thread->set_data(state);
+     new_thread->start(new_thread);
+     return SDK_RET_OK;
 }
 
 static bool

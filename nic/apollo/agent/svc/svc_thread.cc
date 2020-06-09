@@ -12,14 +12,11 @@
 #include "nic/apollo/agent/trace.hpp"
 #include "nic/apollo/agent/init.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
-#include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "gen/proto/types.pb.h"
 
 #define SVC_SERVER_SOCKET_PATH          "/var/run/pds_svc_server_sock"
 #define CMD_IOVEC_DATA_LEN              (1024 * 1024)
-
-#define UPG_EV_PDS_AGENT_NAME "pdsagent"
 
 namespace core {
 
@@ -92,125 +89,38 @@ svc_server_accept_cb (sdk::event_thread::io_t *io, int fd, int events)
     sdk::event_thread::io_start(cmd_read_io);
 }
 
-static sdk_ret_t
-grpc_svc_upgrade_event (bool suspend)
-{
-    sdk_ret_t ret;
-    uint32_t wait_in_ms = 10 * 1000; // 10 seconds
-    bool status;
-    sdk::lib::thread *thr =  sdk::lib::thread::find(PDS_AGENT_THREAD_ID_GRPC_SVC);
-
-    if (thr) {
-        ret = suspend ? thr->suspend() : thr->resume();
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Agent gRPC service suspend/resume request failed, ret %u", ret);
-            return ret;
-        }
-        // wait for to suspended
-        while (wait_in_ms > 0) {
-            status = suspend ? thr->suspended() : !thr->suspended();
-            if (status) {
-                break;
-            }
-            usleep(1000);
-            wait_in_ms--;
-        }
-        if (wait_in_ms == 0) {
-            PDS_TRACE_ERR("Agent gRPC service suspend/resume failed due to timeout");
-            return SDK_RET_ERR;
-        }
-    }
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_upgrade_start_hdlr (sdk::upg::upg_ev_params_t *params)
-{
-    sdk_ret_t ret;
-
-    // disable grpc service in hitless upgrade. no new configs are allowed
-    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
-        ret = grpc_svc_upgrade_event(true);
-        if (ret != SDK_RET_OK) {
-            return ret;
-        }
-    }
-    return pds_upgrade(params);
-}
-
-static sdk_ret_t
-pds_upgrade_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
-{
-    sdk_ret_t ret;
-
-    // enable back the grpc service if there is a upgrade failure
-    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
-        ret = grpc_svc_upgrade_event(false);
-        if (ret != SDK_RET_OK) {
-            return ret;
-        }
-    }
-    return pds_upgrade(params);
-}
-
-static void
-upg_ev_fill (sdk::upg::upg_ev_t *ev)
-{
-    ev->svc_ipc_id = PDS_AGENT_THREAD_ID_SVC_SERVER;
-    strncpy(ev->svc_name, UPG_EV_PDS_AGENT_NAME, sizeof(ev->svc_name));
-    ev->compat_check_hdlr = pds_upgrade;
-    ev->start_hdlr = pds_upgrade_start_hdlr;
-    ev->backup_hdlr = pds_upgrade;
-    ev->prepare_hdlr = pds_upgrade;
-    ev->pre_switchover_hdlr = pds_upgrade;
-    ev->switchover_hdlr = pds_upgrade;
-    ev->rollback_hdlr = pds_upgrade;
-    ev->ready_hdlr = pds_upgrade;
-    ev->config_replay_hdlr = pds_upgrade;
-    ev->sync_hdlr = pds_upgrade;
-    ev->repeal_hdlr = pds_upgrade_repeal_hdlr;
-    ev->respawn_hdlr = pds_upgrade;
-    ev->pre_respawn_hdlr = pds_upgrade;
-    ev->finish_hdlr = pds_upgrade;
-}
-
-
 void
 svc_server_thread_init (void *ctxt)
 {
     struct sockaddr_un sock_addr;
-    sdk::upg::upg_ev_t ev = { 0 };
-
-    // register for upgrade events
-    upg_ev_fill(&ev);
-    sdk::upg::upg_ev_hdlr_register(ev);
 
     // initialize unix socket
     if ((g_uds_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
-        PDS_TRACE_ERR("Failed to open unix domain socket for cmd server thread, err {} {}",
+        PDS_TRACE_ERR("Failed to open UDS for cmd server thread, err {} {}",
                       errno, strerror(errno));
         return;
     }
 
-    PDS_TRACE_INFO ("Connected to unix domain socket {}", SVC_SERVER_SOCKET_PATH);
     memset(&sock_addr, 0, sizeof (sock_addr));
     sock_addr.sun_family = AF_UNIX;
-    strncpy(sock_addr.sun_path, SVC_SERVER_SOCKET_PATH, sizeof(SVC_SERVER_SOCKET_PATH));
-    if (bind(g_uds_sock_fd, (struct sockaddr *)&sock_addr, sizeof(struct sockaddr_un)) == -1) {
-        PDS_TRACE_ERR ("Failed to bind unix domain socket for cmd server thread, err {} {}",
+    strncpy(sock_addr.sun_path, SVC_SERVER_SOCKET_PATH,
+            sizeof(SVC_SERVER_SOCKET_PATH));
+    if (bind(g_uds_sock_fd, (struct sockaddr *)&sock_addr,
+             sizeof(struct sockaddr_un)) == -1) {
+        PDS_TRACE_ERR ("Failed to bind UDS for service thread, err {} {}",
                        errno, strerror(errno));
         return;
     }
 
     if (listen(g_uds_sock_fd, 1) == -1) {
-        PDS_TRACE_ERR ("Failed to bind unix domain socket for fd receive, err {} {}",
+        PDS_TRACE_ERR ("Failed to listen on UDS fd, err {} {}",
                        errno, strerror(errno));
         return;
     }
 
-    PDS_TRACE_INFO ("Listening to unix domain socket {}", SVC_SERVER_SOCKET_PATH);
-    sdk::event_thread::io_init(&cmd_accept_io, svc_server_accept_cb, g_uds_sock_fd,
-                               EVENT_READ);
+    PDS_TRACE_INFO ("Listening to UDS {}", SVC_SERVER_SOCKET_PATH);
+    sdk::event_thread::io_init(&cmd_accept_io, svc_server_accept_cb,
+                               g_uds_sock_fd, EVENT_READ);
     sdk::event_thread::io_start(&cmd_accept_io);
 }
 

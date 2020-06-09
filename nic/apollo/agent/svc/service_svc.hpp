@@ -14,7 +14,6 @@
 #include "nic/apollo/api/include/pds_batch.hpp"
 #include "nic/apollo/api/include/pds_service.hpp"
 #include "nic/apollo/agent/core/state.hpp"
-#include "nic/apollo/agent/core/service.hpp"
 #include "nic/apollo/agent/svc/specs.hpp"
 #include "nic/apollo/agent/svc/service.hpp"
 #include "nic/apollo/agent/hooks.hpp"
