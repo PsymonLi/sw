@@ -1,0 +1,258 @@
+#!/bin/sh
+
+#set -e
+
+# List the name of binaries that don't keep their build name into packaging.
+# Need this to figure the right binary to use from workspace.
+# hal_static -> hal is one such. Add any more in here.
+declare -A binary_name_mapping
+binary_name_mapping=([hal]=hal_static)
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+GDB=/tool/toolchain/aarch64-1.1/bin/aarch64-linux-gnu-gdb
+
+HOURLY_BUILD="/vol/builds/hourly"
+RELEASE_BUILD="/vol/builds/release"
+BUILD_META_FILE="nic/etc/VERSION.json"
+CORE_BUNDLE=""
+BATCH_MODE=""
+KEEP_WORK_DIR=0
+
+# Clean up the created directory/extraced files.
+cleanup_act() {
+    if [ -d $DECODE_DIR ]; then
+        if [ "$WORK_DIR_CREATED_BY_SCRIPT" = "true" ]; then
+            rm -rf $DECODE_DIR
+        else
+            # Else remoe the files and leave the directory intact.
+            rm $DECODE_DIR/$CORE_FILE_ROOTNAME &> /dev/null
+            rm -rf $DECODE_DIR/nic &> /dev/null
+            rm  $DECODE_DIR/VERSION.json &> /dev/null
+        fi
+    fi
+}
+
+# Remove extracted files, if not asked to to keep them at the end.
+exit_handler() {
+    if [ -d $DECODE_DIR ] && [ ${KEEP_WORK_DIR} -ne 1 ]; then
+        cleanup_act
+    fi
+}
+
+ctrlc_handler() {
+    # Clean up unzipped files unconditionally, as we don't know state of them.
+    cleanup_act
+    exit 1
+}
+
+trap ctrlc_handler SIGINT
+trap exit_handler EXIT
+
+# Reads build meta data.
+get_build_meta() {
+    build_pipeline=$(jq -r '.sw.pipeline' $1 2> /dev/null)
+    build_version=$(jq -r '.sw.version' $1 2> /dev/null)
+    build_tag=$(jq -r '.sw.tag' $1 2> /dev/null)
+    build_host=$(jq -r '.sw.build_host' $1 2> /dev/null)
+    build_host_workspace=$(jq -r '.sw.host_workspace' $1 2> /dev/null)
+
+    # If build_host or build_host_workspace is not present in metadata file
+    # this must be case of regular builds, check /vol/builds/... directory
+    # for the worksapce based on 'build_version' info.
+    if [ "$build_host" = "null" ]  || [ "$build_host_workspace" = "null" ]; then
+        echo "Figuring build work space from build 'version' tag of ${build_version}."
+#       echo "Version:$build_version"
+        build_host=`hostname -s`
+
+        pushd . > /dev/null
+        build_host_workspace="$HOURLY_BUILD/${build_version}"
+
+        # cd to the directory to test it's existence
+        cd $build_host_workspace
+        if [ $? -ne 0 ]; then
+            build_host_workspace="$RELEASE_BUILD/${build_version}"
+            cd $build_host_workspace
+            if [ $? -ne 0 ]; then
+                echo "Error: Can't find build work space '${build_host_workspace}'. Exiting..."
+                popd > /dev/null
+                exit 1
+            fi
+        fi
+
+        if [ "${build_pipeline}" = "apulu" ]; then
+            build_host_workspace="${build_host_workspace}/sw-${build_pipeline}/sw"
+        else
+            build_host_workspace="${build_host_workspace}/sw-${build_pipeline}-capri/sw"
+        fi
+        popd > /dev/null
+
+        # Not doing '--dirty' option (packaging script does use it though) as it
+        # is taking ages to run and being dirty shouldn't be a possibility anyway
+        # on official build directories
+        get_tag="git describe --tag --always"
+    else
+        get_tag="git describe --tag --dirty --always"
+    fi
+
+    echo "Build credentials from core bundle:"
+    echo " Pipeline:${build_pipeline}, Version:${build_version}, Tag:${build_tag}"
+    echo " Build host:${build_host}, Work space:${build_host_workspace}"
+    return 0
+}
+
+# Given core file name, find the corresponding binary name to use for decoding.
+get_binary_name() {
+    file $DECODE_DIR/$CORE_FILE_ROOTNAME
+
+    # Figure the binary name of the core. In 'file' dump it looks like 
+    # "from '/nic/bin/pdsagent -c hal_hw.json'" with 'pdsagent' being the binary in this case.
+    BINARY_NAME=$(file $DECODE_DIR/$CORE_FILE_ROOTNAME | sed 's/.*from \x27\/nic\/bin\/\([^ \x27]*\).*/\1/')
+
+    # Figure the actual build name of the binary for the ones that are renamed
+    # during packaging, for example : hal -> hal_static in workspace.
+    for bin_name in "${!binary_name_mapping[@]}"; do
+        if [ ${bin_name} = ${BINARY_NAME} ]; then
+            BINARY_NAME=${binary_name_mapping[${bin_name}]}
+        fi
+    done
+    echo "Binary name figured from core file is ${BINARY_NAME}"
+}
+
+print_usage() {
+    echo "Usage: $0 [-bk] [-d decode directory]-c core-file-tar-bundle"
+    echo "       -b   Batch/brief mode. Just decode stack and exit, don't stay in debugger."
+    echo "       -c   Core bundle file (.tar) to be decoded."
+    echo "       -d   Working directory to unbundle core bundle in to. Default is core file directory."
+    echo "       -k   Keep working dir at the end. Keeps extracted, uncompressed core and build meta data file."
+    exit 1
+}
+
+while getopts ":c:d:bk" opt; do
+  case ${opt} in
+    b)
+        BATCH_MODE='-batch'
+        ;;
+    c)
+        CORE_BUNDLE=$OPTARG
+        ;;
+    d)
+        DECODE_DIR=$OPTARG
+        ;;
+    k)
+        KEEP_WORK_DIR=1
+        ;;
+    *)
+        print_usage
+      ;;
+  esac
+done
+
+if [ -z $CORE_BUNDLE ]; then
+    echo "Specify core file tar bundle to decode."
+    print_usage
+    exit 1
+fi
+
+if [ ! -f $CORE_BUNDLE ]; then
+    echo "No such file - $CORE_BUNDLE."
+    exit 1
+fi
+
+CORE_BUNDLE_REAL_PATH=$(realpath ${CORE_BUNDLE})
+CORE_DIR=$(dirname "${CORE_BUNDLE_REAL_PATH}")
+CORE_FILE_BASENAME=$(basename "${CORE_BUNDLE_REAL_PATH}")
+CORE_FILE_ROOTNAME=$(echo "$CORE_FILE_BASENAME" | cut -f 1 -d '.')
+#CORE_COMP=$(echo "$CORE_FILE_BASENAME" | cut -f 2 -d '_')
+CORE_FILE=${CORE_FILE_ROOTNAME}.gz
+echo "Core file name:$CORE_FILE"
+
+if [ -z ${DECODE_DIR} ]; then
+    DECODE_DIR=$CORE_DIR/$CORE_FILE_ROOTNAME
+fi
+#echo "DECODE_DIR:$DECODE_DIR"
+WORK_DIR_CREATED_BY_SCRIPT=false
+if [ ! -d $DECODE_DIR ]; then
+    mkdir -p $DECODE_DIR
+    WORK_DIR_CREATED_BY_SCRIPT=true
+fi
+if [ ! -d $DECODE_DIR ]; then
+    echo "Couldn't create decode directory:$DECODE_DIR"
+    exit 1
+fi
+cd $DECODE_DIR
+
+echo "In `pwd`, Extracting core from bundle:"
+tar -xvf $CORE_BUNDLE_REAL_PATH
+
+# Check if both core and build meta data files are present or not.
+if [ ! -f $BUILD_META_FILE ]; then
+    #Newer core bundles would have this at top level itself.
+    BUILD_META_FILE="VERSION.json"
+fi
+
+if  [ ! -f $CORE_FILE ] || [ ! -f $BUILD_META_FILE ]; then
+    echo "Error extracting the bundle, core or VERSION.json file not found"
+    exit 1
+fi
+
+# Unzip the core file file
+echo "Uncompressing the core file..."
+gunzip -f $CORE_FILE
+if [ ! -f $CORE_FILE_ROOTNAME ]; then
+    echo "Error: something went wrong. Core file uncompression failed. Exiting."
+    exit 1
+fi
+echo "Ucompressed core file: `ls -lart $CORE_FILE_ROOTNAME`"
+
+get_build_meta $BUILD_META_FILE
+if [ "$?" -ne 0 ]; then
+    echo "Error: Misssing build credentials \
+(pipeline/version/buildworkspace etc.) in ${BUILD_META_FILE}. Exiting."
+    exit 1
+fi
+
+BIN_DIR="build/aarch64/${build_pipeline}/capri/bin/"
+
+if [ "`hostname -s`" != ${build_host} ]; then
+    echo "Can't access work space. Please run from the machine:${build_host}. Exiting."
+    exit 1
+fi
+
+cd ${build_host_workspace}
+if [ "`pwd`" != "${build_host_workspace}" ]; then
+    echo "Can't find build work space:${build_host_workspace}. Exiting."
+    exit 1
+fi
+
+echo "Decoding on host `hostname -s`, in work space:`pwd`"
+
+# Figure if the state of the work space is mathing the tag value from
+# build of the core being debugged.
+tag=`$get_tag`
+if [ "${build_tag}" != "${tag}" ]; then
+    echo "Warning!!!: Work space tag doesn't match with build. ws. tag ${tag} build tag ${build_tag} !!!"
+    while true; do
+        read -p "Do you wish to still continue to decode from here?" yn
+        case $yn in
+            [Yy]* ) break;;
+            [Nn]* ) exit;;
+            * ) echo "Please answer yes or no.";;
+        esac
+    done
+else
+    echo "Core bundle and work space tags match (${tag}), proceeding to decode."
+fi
+cd nic
+
+# Find the binary name to use for decoding the core
+get_binary_name
+BINARY_FILE="${BIN_DIR}${BINARY_NAME}"
+if [ ! -f ${BINARY_FILE} ]; then
+    echo "Binary '${BINARY_FILE}' of core not found in work space. Exiting"
+    exit 1
+fi
+
+echo "Launcing gdb :$GDB $BATCH_MODE ${BINARY_FILE} ${DECODE_DIR}/${CORE_FILE_ROOTNAME} -n -x ${SCRIPT_DIR}/gdb_init_${build_pipeline}"
+$GDB $BATCH_MODE ${BINARY_FILE} ${DECODE_DIR}/${CORE_FILE_ROOTNAME} -n -x ${SCRIPT_DIR}/gdb_init_${build_pipeline}
+echo "Exiting from the script...Have a great time!"
