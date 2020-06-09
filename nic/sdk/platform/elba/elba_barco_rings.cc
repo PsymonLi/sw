@@ -1608,14 +1608,6 @@ elba_barco_cp_init (elba_barco_ring_t *barco_ring)
      * Enable warm queue
      */
     hens.dhs_crypto_ctl.cp_cfg_dist.read();
-    #ifndef ELBA
-    reg_lo = (hens.dhs_crypto_ctl.cp_cfg_dist.fld().convert_to<uint32_t>()  &
-              ~BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE(BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE_MASK)) |
-             BARCO_CRYPTO_CP_DIST_DESC_Q_EN                                             |
-             BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE(BARCO_CRYPTO_CP_RING_SIZE);
-    hens.dhs_crypto_ctl.cp_cfg_dist.fld(reg_lo);
-    hens.dhs_crypto_ctl.cp_cfg_dist.write();
-    #endif
 
     hens.dhs_crypto_ctl.cp_cfg_host_opaque_tag_adr_w0.fld((uint32_t)(barco_ring->opaque_tag_addr & 0xffffffff));
     hens.dhs_crypto_ctl.cp_cfg_host_opaque_tag_adr_w0.write();
@@ -1647,9 +1639,6 @@ elba_barco_cp_hot_init (elba_barco_ring_t *barco_ring)
     elb_top_csr_t &cap0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_hens_csr_t &hens = cap0.md.hens;
     sdk_ret_t ret = SDK_RET_OK;
-    #ifndef ELBA
-    uint32_t reg_lo;
-    #endif
     ret = elba_barco_ring_common_init(barco_ring);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1664,14 +1653,6 @@ elba_barco_cp_hot_init (elba_barco_ring_t *barco_ring)
      * Enable hot queue
      */
     hens.dhs_crypto_ctl.cp_cfg_dist.read();
-    #ifndef ELBA
-    reg_lo = (hens.dhs_crypto_ctl.cp_cfg_dist.fld().convert_to<uint32_t>()  &
-              ~BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE_MASK))   |
-             BARCO_CRYPTO_CP_DIST_DESC_HOTQ_EN                                                  |
-             BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_CP_HOT_RING_SIZE);
-    hens.dhs_crypto_ctl.cp_cfg_dist.fld(reg_lo);
-    hens.dhs_crypto_ctl.cp_cfg_dist.write();
-    #endif
     hens.dhs_crypto_ctl.cp_cfg_q0_pd_idx.fld(barco_ring->producer_idx);
     hens.dhs_crypto_ctl.cp_cfg_q0_pd_idx.write();
 
@@ -1748,14 +1729,6 @@ elba_barco_dc_init (elba_barco_ring_t *barco_ring)
      * Enable warm queue
      */
     hens.dhs_crypto_ctl.dc_cfg_dist.read();
-    #ifndef ELBA
-    reg_lo = (hens.dhs_crypto_ctl.dc_cfg_dist.fld().convert_to<uint32_t>()  &
-              ~BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE(BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE_MASK))   |
-             BARCO_CRYPTO_DC_DIST_DESC_Q_EN                                               |
-             BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE(BARCO_CRYPTO_DC_RING_SIZE);
-    hens.dhs_crypto_ctl.dc_cfg_dist.fld(reg_lo);
-    hens.dhs_crypto_ctl.dc_cfg_dist.write();
-    #endif
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w0.fld((uint32_t)(barco_ring->opaque_tag_addr & 0xffffffff));
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w0.write();
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w1.fld((uint32_t)(barco_ring->opaque_tag_addr >> 32));
@@ -1786,9 +1759,6 @@ elba_barco_dc_hot_init (elba_barco_ring_t *barco_ring)
     elb_top_csr_t &cap0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_hens_csr_t &hens = cap0.md.hens;
     sdk_ret_t ret = SDK_RET_OK;
-    #ifndef ELBA
-    uint32_t reg_lo;
-    #endif
     ret = elba_barco_ring_common_init(barco_ring);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1803,14 +1773,6 @@ elba_barco_dc_hot_init (elba_barco_ring_t *barco_ring)
      * Enable hot queue
      */
     hens.dhs_crypto_ctl.dc_cfg_dist.read();
-    #ifndef ELBA
-    reg_lo = (hens.dhs_crypto_ctl.dc_cfg_dist.fld().convert_to<uint32_t>()  &
-             ~BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE_MASK))    |
-             BARCO_CRYPTO_DC_DIST_DESC_HOTQ_EN                                                  |
-             BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_DC_HOT_RING_SIZE);
-    hens.dhs_crypto_ctl.dc_cfg_dist.fld(reg_lo);
-    hens.dhs_crypto_ctl.dc_cfg_dist.write();
-    #endif
     hens.dhs_crypto_ctl.dc_cfg_q0_pd_idx.fld(barco_ring->producer_idx);
     hens.dhs_crypto_ctl.dc_cfg_q0_pd_idx.write();
 
