@@ -1,5 +1,5 @@
 /*
- * {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+ * Copyright (c) 2018, Pensando Systems Inc.
  */
 
 #ifndef __ELB_SW_GLUE_H__

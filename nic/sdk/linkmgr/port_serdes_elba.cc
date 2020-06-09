@@ -5,11 +5,7 @@
 #include "port_serdes.hpp"
 #include "linkmgr_types.hpp"
 #include "linkmgr_internal.hpp"
-#ifdef ELBA
-#include "third-party/avago/build_elba/include/aapl/aapl.h"
-#else
-#include "third-party/avago/build_capri/include/aapl/aapl.h"
-#endif
+#include "third-party/avago/build/include/aapl/aapl.h"
 #include "platform/pal/include/pal.h"
 
 namespace sdk {

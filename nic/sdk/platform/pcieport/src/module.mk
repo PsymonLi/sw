@@ -7,11 +7,6 @@ MODULE_SRCS     := $(wildcard ${MODULE_SRC_DIR}/*.c) \
 MODULE_PREREQS  := sbus_pcie_rom_$(ASIC).submake
 MODULE_LDFLAGS  := ${BLD_OUT_DIR}/sbus_pcie_rom_$(ASIC)_submake/sbus_pcie_rom.o
 ifeq ($(ASIC),capri)
-MODULE_DEFS     := -DCAPRI_SW -DASIC_CAPRI
+MODULE_DEFS     := -DCAPRI_SW
 endif
-ifeq ($(ASIC),elba)
-MODULE_DEFS     := -DELBA_SW -D_DISABLE_SKNOBS_ -DASIC_ELBA
-MODULE_INCS     += ${MODULE_SRC_DIR}/../include/${ASIC}
-endif
-
 include ${MKDEFS}/post.mk

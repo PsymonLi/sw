@@ -359,7 +359,7 @@ elba_barco_ring_common_init (elba_barco_ring_t *barco_ring)
     uint64_t                            ring_base = 0;
     uint32_t                            ring_size = 0;
 
-    ring_base = elba_get_mem_addr(barco_ring->hbm_region);
+    ring_base = get_mem_addr(barco_ring->hbm_region);
     if (ring_base == INVALID_MEM_ADDRESS) {
         SDK_TRACE_ERR("Failed to retrieve Barco Ring memory region for %s",
                       barco_ring->ring_name);
@@ -372,7 +372,7 @@ elba_barco_ring_common_init (elba_barco_ring_t *barco_ring)
         return SDK_RET_ERR;
     }
 
-    ring_size = elba_get_mem_size_kb(barco_ring->hbm_region) * 1024;
+    ring_size = get_mem_size_kb(barco_ring->hbm_region) * 1024;
     if (ring_size < (uint32_t)(barco_ring->ring_size * barco_ring->descriptor_size)) {
         SDK_TRACE_ERR("Not enough memory for Barco Ring memory region %s",
                       barco_ring->ring_name);
@@ -559,13 +559,13 @@ elba_barco_xts0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -665,13 +665,13 @@ elba_barco_xts1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -771,13 +771,13 @@ elba_barco_mpp0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp0_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -957,13 +957,13 @@ elba_barco_mpp1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp1_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1053,13 +1053,13 @@ elba_barco_mpp2_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp2_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1149,13 +1149,13 @@ elba_barco_mpp3_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
 
     mpse.dhs_crypto_ctl.mpp3_key_array_base_w0.fld(key_array_base & 0xffffffff);
@@ -1245,13 +1245,13 @@ elba_barco_sym0_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -1426,13 +1426,13 @@ elba_barco_sym1_key_array_init (void)
 
     // Currently sharing the same key descriptor array as GCM
     // Eventually all symmetric protocols will share one large key array
-    key_array_base = elba_get_mem_addr(key_desc_array);
+    key_array_base = get_mem_addr(key_desc_array);
     SDK_ASSERT(key_array_base != INVALID_MEM_ADDRESS);
     /* All regions in hbm_mem.json are in multiples of 1kb and hence should already be aligned to 16byte
      * but confirm
      */
     assert((key_array_base & (BARCO_CRYPTO_KEY_DESC_ALIGN_BYTES - 1)) == 0);
-    region_sz = elba_get_mem_size_kb(key_desc_array) * 1024;
+    region_sz = get_mem_size_kb(key_desc_array) * 1024;
     key_array_key_count = region_sz / BARCO_CRYPTO_KEY_DESC_SZ;
     /* Sanity check that we have enough memory to support the keys scale needed */
     assert(key_array_key_count >= CRYPTO_KEY_COUNT_MAX);
@@ -1608,14 +1608,12 @@ elba_barco_cp_init (elba_barco_ring_t *barco_ring)
      * Enable warm queue
      */
     hens.dhs_crypto_ctl.cp_cfg_dist.read();
-    #ifndef ELBA
     reg_lo = (hens.dhs_crypto_ctl.cp_cfg_dist.fld().convert_to<uint32_t>()  &
               ~BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE(BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE_MASK)) |
              BARCO_CRYPTO_CP_DIST_DESC_Q_EN                                             |
              BARCO_CRYPTO_CP_DIST_DESC_Q_SIZE(BARCO_CRYPTO_CP_RING_SIZE);
     hens.dhs_crypto_ctl.cp_cfg_dist.fld(reg_lo);
     hens.dhs_crypto_ctl.cp_cfg_dist.write();
-    #endif
 
     hens.dhs_crypto_ctl.cp_cfg_host_opaque_tag_adr_w0.fld((uint32_t)(barco_ring->opaque_tag_addr & 0xffffffff));
     hens.dhs_crypto_ctl.cp_cfg_host_opaque_tag_adr_w0.write();
@@ -1647,9 +1645,8 @@ elba_barco_cp_hot_init (elba_barco_ring_t *barco_ring)
     elb_top_csr_t &cap0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_hens_csr_t &hens = cap0.md.hens;
     sdk_ret_t ret = SDK_RET_OK;
-    #ifndef ELBA
     uint32_t reg_lo;
-    #endif
+
     ret = elba_barco_ring_common_init(barco_ring);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1664,14 +1661,13 @@ elba_barco_cp_hot_init (elba_barco_ring_t *barco_ring)
      * Enable hot queue
      */
     hens.dhs_crypto_ctl.cp_cfg_dist.read();
-    #ifndef ELBA
     reg_lo = (hens.dhs_crypto_ctl.cp_cfg_dist.fld().convert_to<uint32_t>()  &
               ~BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE_MASK))   |
              BARCO_CRYPTO_CP_DIST_DESC_HOTQ_EN                                                  |
              BARCO_CRYPTO_CP_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_CP_HOT_RING_SIZE);
     hens.dhs_crypto_ctl.cp_cfg_dist.fld(reg_lo);
     hens.dhs_crypto_ctl.cp_cfg_dist.write();
-    #endif
+
     hens.dhs_crypto_ctl.cp_cfg_q0_pd_idx.fld(barco_ring->producer_idx);
     hens.dhs_crypto_ctl.cp_cfg_q0_pd_idx.write();
 
@@ -1748,14 +1744,13 @@ elba_barco_dc_init (elba_barco_ring_t *barco_ring)
      * Enable warm queue
      */
     hens.dhs_crypto_ctl.dc_cfg_dist.read();
-    #ifndef ELBA
     reg_lo = (hens.dhs_crypto_ctl.dc_cfg_dist.fld().convert_to<uint32_t>()  &
               ~BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE(BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE_MASK))   |
              BARCO_CRYPTO_DC_DIST_DESC_Q_EN                                               |
              BARCO_CRYPTO_DC_DIST_DESC_Q_SIZE(BARCO_CRYPTO_DC_RING_SIZE);
     hens.dhs_crypto_ctl.dc_cfg_dist.fld(reg_lo);
     hens.dhs_crypto_ctl.dc_cfg_dist.write();
-    #endif
+
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w0.fld((uint32_t)(barco_ring->opaque_tag_addr & 0xffffffff));
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w0.write();
     hens.dhs_crypto_ctl.dc_cfg_host_opaque_tag_adr_w1.fld((uint32_t)(barco_ring->opaque_tag_addr >> 32));
@@ -1786,9 +1781,8 @@ elba_barco_dc_hot_init (elba_barco_ring_t *barco_ring)
     elb_top_csr_t &cap0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
     elb_hens_csr_t &hens = cap0.md.hens;
     sdk_ret_t ret = SDK_RET_OK;
-    #ifndef ELBA
     uint32_t reg_lo;
-    #endif
+
     ret = elba_barco_ring_common_init(barco_ring);
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1803,14 +1797,13 @@ elba_barco_dc_hot_init (elba_barco_ring_t *barco_ring)
      * Enable hot queue
      */
     hens.dhs_crypto_ctl.dc_cfg_dist.read();
-    #ifndef ELBA
     reg_lo = (hens.dhs_crypto_ctl.dc_cfg_dist.fld().convert_to<uint32_t>()  &
              ~BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE_MASK))    |
              BARCO_CRYPTO_DC_DIST_DESC_HOTQ_EN                                                  |
              BARCO_CRYPTO_DC_DIST_DESC_HOTQ_SIZE(BARCO_CRYPTO_DC_HOT_RING_SIZE);
     hens.dhs_crypto_ctl.dc_cfg_dist.fld(reg_lo);
     hens.dhs_crypto_ctl.dc_cfg_dist.write();
-    #endif
+
     hens.dhs_crypto_ctl.dc_cfg_q0_pd_idx.fld(barco_ring->producer_idx);
     hens.dhs_crypto_ctl.dc_cfg_q0_pd_idx.write();
 
