@@ -9,8 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	minioclient "github.com/minio/minio-go/v6"
 	"github.com/pkg/errors"
+
+	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
 
 	"github.com/pensando/sw/venice/vos"
 
@@ -265,4 +268,23 @@ func TestSetBucketLifecycle(t *testing.T) {
 	err := inst.createDefaultBuckets(fb)
 	AssertOk(t, err, "create buckets failed")
 	Assert(t, len(lcmap) == 2, "lifecycle not set for fwlogs bucket", len(lcmap))
+}
+
+func TestNew(t *testing.T) {
+
+	// negative case - vos constructor fails when unexpected type is sent over cert manager channel
+	testCertMgrChannel := make(chan interface{}, 1)
+	testCertMgrChannel <- errors.New("unexpected data")
+	_, err := New(context.Background(), false, "testURL", testCertMgrChannel)
+	AssertError(t, err, "VOS constructor is expected to fail")
+
+	// negative case - vos constructor fails when credentials creation fails
+	c := gomock.NewController(t)
+	defer c.Finish()
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(c)
+	mockCredentialManager.EXPECT().GetCredentials().Return(nil, errors.New("failed to get credentials")).AnyTimes()
+	testCertMgrChannel = make(chan interface{}, 1)
+	testCertMgrChannel <- mockCredentialManager
+	_, err = New(context.Background(), false, "testURL", testCertMgrChannel)
+	AssertError(t, err, "VOS constructor is expected to fail")
 }

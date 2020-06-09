@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/rollout"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/cache/mocks"
@@ -194,6 +196,8 @@ func TestNodeObject(t *testing.T) {
 		case *cluster.DistributedServiceCard:
 			in0 := into.(*cluster.DistributedServiceCard)
 			*in0 = nic
+		case *cluster.Credentials:
+			return errors.New("credentials object not found")
 		}
 		return nil
 	}
@@ -220,6 +224,20 @@ func TestNodeObject(t *testing.T) {
 	if &nic != nil {
 		Assert(t, nic.Spec.DSCProfile == "InsertionFWProfile", nic.Spec.DSCProfile)
 	}
+
+	assertCredentialsCreation(t, txn)
+}
+
+func assertCredentialsCreation(t *testing.T, txn *mocks.FakeTxn) {
+	for _, op := range txn.Ops {
+		if op.Op == "create" && strings.Contains(op.Key, "credentials") {
+			credentials := op.Obj.(*cluster.Credentials)
+			err := minio.ValidateObjectStoreCredentials(credentials)
+			AssertOk(t, err, "Invalid credentials object attempted to be created")
+			return
+		}
+	}
+	t.Fatalf("credential creation operation not found")
 }
 
 func TestClusterObject(t *testing.T) {

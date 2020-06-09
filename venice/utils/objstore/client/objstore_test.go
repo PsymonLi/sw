@@ -3,16 +3,21 @@ package objstore
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"testing/iotest"
 
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
+
+	minio "github.com/pensando/sw/venice/utils/objstore/minio"
+	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
 
 	vlog "github.com/pensando/sw/venice/utils/log"
 
@@ -20,7 +25,7 @@ import (
 	types "github.com/pensando/sw/venice/cmd/types/protos"
 	"github.com/pensando/sw/venice/globals"
 	mockmc "github.com/pensando/sw/venice/utils/objstore/client/mock"
-	minio "github.com/pensando/sw/venice/utils/objstore/minio/client"
+	minioclient "github.com/pensando/sw/venice/utils/objstore/minio/client"
 	mockresolver "github.com/pensando/sw/venice/utils/resolver/mock"
 	tu "github.com/pensando/sw/venice/utils/testutils"
 )
@@ -53,7 +58,8 @@ func TestNewClient(t *testing.T) {
 
 	r := mockresolver.New()
 	retryOpt := WithConnectRetries(1)
-	_, err = NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.Assert(t, err != nil, "failed test client error ")
 
 	err = r.AddServiceInstance(&types.ServiceInstance{
@@ -68,7 +74,7 @@ func TestNewClient(t *testing.T) {
 	})
 	tu.AssertOk(t, err, "failed to add objstore sercvice")
 
-	_, err = NewClient("ten1", "svc1", r, retryOpt)
+	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed newclient ")
 
 	err = r.AddServiceInstance(&types.ServiceInstance{
@@ -83,7 +89,7 @@ func TestNewClient(t *testing.T) {
 	})
 	tu.AssertOk(t, err, "failed to add 127.0.0.1:1001 service")
 
-	_, err = NewClient("ten1", "svc1", r, retryOpt)
+	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.Assert(t, err != nil, "failed test invalid client address")
 
 	// test two service instance
@@ -110,8 +116,25 @@ func TestNewClient(t *testing.T) {
 		URL:     l.Addr().(*net.TCPAddr).String(),
 	})
 	tu.AssertOk(t, err, "failed to add server2 service")
-	_, err = NewClient("ten1", "svc1", r, retryOpt)
+	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed test multiple objstore address")
+
+	// negative case - Client initialization fails when credentials manager fails to get minio credentials
+	testErrMsg := "test error message"
+	mockCredMgrWithError := mock_credentials.NewMockCredentialsManager(c)
+	mockCredMgrWithError.EXPECT().GetCredentials().Return(nil, errors.New(testErrMsg))
+	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredMgrWithError))
+	tu.AssertError(t, err, "new client initialization expected to fail when credential manager fails")
+	tu.Assert(t, strings.Contains(err.Error(), testErrMsg), "new client initialization failed with unexpected error")
+}
+
+func setupMockCredsManager(c *gomock.Controller) *mock_credentials.MockCredentialsManager {
+	mockCredsManager := mock_credentials.NewMockCredentialsManager(c)
+	mockCredsManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	return mockCredsManager
 }
 
 func TestGetObjStoreAddr(t *testing.T) {
@@ -167,7 +190,8 @@ func TestPutObject(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
@@ -175,11 +199,10 @@ func TestPutObject(t *testing.T) {
 	b := &bytes.Buffer{}
 
 	mockClient := &client{
-		client:         mc,
-		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
-		resolverClient: r,
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
 	}
 
 	// success case
@@ -187,14 +210,38 @@ func TestPutObject(t *testing.T) {
 	_, err = mockClient.PutObject(context.Background(), "obj1", b, nil)
 	tu.AssertOk(t, err, "putobj failed")
 
+	mc.EXPECT().PutObjectOfSize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil).Times(1)
+	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
+	tu.AssertOk(t, err, "putobj failed")
+
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
+	tu.AssertOk(t, err, "putobj failed")
+
 	// failure
 	mc.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("failed")).Times(1)
 	_, err = mockClient.PutObject(context.Background(), "obj1", b, nil)
 	tu.Assert(t, err != nil, "putobj succeeded ")
 
+	mc.EXPECT().PutObjectOfSize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("failed")).Times(1)
+	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
+	tu.Assert(t, err != nil, "putobj succeeded ")
+
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("failed")).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
+	tu.Assert(t, err != nil, "putobj succeeded ")
+
 	// connect error
 	mc.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
 	_, err = mockClient.PutObject(context.Background(), "obj1", b, nil)
+	tu.Assert(t, err != nil, "putobj succeeded")
+
+	mc.EXPECT().PutObjectOfSize(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.PutObjectOfSize(context.Background(), "obj1", b, 0, nil)
+	tu.Assert(t, err != nil, "putobj succeeded")
+
+	mc.EXPECT().PutObjectExplicit(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), fmt.Errorf("%s", connectErr)).Times(1)
+	_, err = mockClient.PutObjectExplicit(context.Background(), "testService", "obj1", b, 0, nil)
 	tu.Assert(t, err != nil, "putobj succeeded")
 
 	err = r.AddServiceInstance(&types.ServiceInstance{
@@ -238,18 +285,18 @@ func TestGetObject(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
 	mc := mockmc.NewMockobjStoreBackend(c)
 
 	mockClient := &client{
-		client:         mc,
-		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
-		resolverClient: r,
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
 	}
 
 	// success case
@@ -308,21 +355,21 @@ func TestStatObject(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
 	mc := mockmc.NewMockobjStoreBackend(c)
 
 	mockClient := &client{
-		client:         mc,
-		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
-		resolverClient: r,
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
 	}
 
-	objStats := &minio.ObjectStats{
+	objStats := &minioclient.ObjectStats{
 		Size: 100,
 	}
 
@@ -387,18 +434,18 @@ func TestListObjects(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
 	mc := mockmc.NewMockobjStoreBackend(c)
 
 	mockClient := &client{
-		client:         mc,
-		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
-		resolverClient: r,
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
 	}
 
 	objlist := []string{"obj1", "obj2"}
@@ -472,18 +519,18 @@ func TestRemoveObjects(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
 	mc := mockmc.NewMockobjStoreBackend(c)
 
 	mockClient := &client{
-		client:         mc,
-		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
-		resolverClient: r,
+		client:             mc,
+		bucketName:         "ten1:svc1",
+		resolverClient:     r,
+		credentialsManager: setupMockCredsManager(c),
 	}
 
 	// success case
@@ -566,7 +613,8 @@ func TestSetServiceLifecycle(t *testing.T) {
 	tu.AssertOk(t, err, "failed to add server2 service")
 
 	retryOpt := WithConnectRetries(1)
-	oc, err := NewClient("ten1", "svc1", r, retryOpt)
+	mockCredsManager := setupMockCredsManager(c)
+	oc, err := NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredsManager))
 	tu.AssertOk(t, err, "failed create new client")
 	tu.Assert(t, oc != nil, "new client nil")
 
@@ -575,8 +623,6 @@ func TestSetServiceLifecycle(t *testing.T) {
 	mockClient := &client{
 		client:         mc,
 		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
 		resolverClient: r,
 	}
 
@@ -613,8 +659,6 @@ func TestGetStreamObjectAtOffset(t *testing.T) {
 	mockClient := &client{
 		client:         mc,
 		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
 		resolverClient: r,
 	}
 
@@ -631,7 +675,7 @@ func TestGetStreamObjectAtOffset(t *testing.T) {
 	tu.Assert(t, err != nil, "getobjectatoffset didn't fail on error")
 
 	// in progress
-	objStats := &minio.ObjectStats{
+	objStats := &minioclient.ObjectStats{
 		Size: 100,
 	}
 	mc.EXPECT().GetObject(gomock.Any(), fmt.Sprintf("%s", objNameToStreamObjName("obj1", 0))).Return(nil, fmt.Errorf("failed")).Times(1)
@@ -670,8 +714,6 @@ func TestPutStreamObject(t *testing.T) {
 	mockClient := &client{
 		client:         mc,
 		bucketName:     "ten1:svc1",
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
 		resolverClient: r,
 	}
 

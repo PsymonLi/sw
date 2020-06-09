@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 	"github.com/pensando/sw/venice/utils/version"
 
 	"github.com/pensando/sw/api/generated/rollout"
@@ -1191,6 +1192,26 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 			err = txn.Create(dscDefaultProfileKey, dscDefaultProfile)
 			if err != nil {
 				cl.logger.Errorf("(nodePreCommitHook)dscDefaultProfile Creation Error %+v", err)
+				return i, true, nil
+			}
+		}
+
+		// Create minio credentials object as Rel A has these credentials hard-coded
+		credentials, err := minio.GenerateObjectStoreCredentials()
+		if err != nil {
+			cl.logger.Errorf("(nodePreCommitHook) credentials generation error %+v", err)
+			// TODO: what should the behavior be if this fails?
+			return i, true, nil
+		}
+		credentialsKey := credentials.MakeKey(string(apiclient.GroupCluster))
+		intoCredentials := cluster.Credentials{}
+		err = kvs.Get(ctx, credentialsKey, &intoCredentials)
+		if err != nil {
+			cl.logger.Infof("(nodePreCommitHook) credentials not found (%+v). Creating now", err)
+			err = txn.Create(credentialsKey, credentials)
+			if err != nil {
+				cl.logger.Errorf("(nodePreCommitHook) credentials creation Error %+v", err)
+				// TODO: what should the behavior be if this fails?
 				return i, true, nil
 			}
 		}

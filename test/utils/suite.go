@@ -18,6 +18,8 @@ import (
 	"github.com/onsi/gomega"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/auth"
@@ -444,6 +446,25 @@ func (tu *TestUtils) Init() {
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create client to apiServer, err: %v", err))
 	}
+
+	gomega.Eventually(func() bool {
+		objMeta := &api.ObjectMeta{
+			Name: globals.MinioCredentialsObjectName,
+		}
+		creds, err := tu.APIClient.ClusterV1().Credentials().Get(context.Background(), objMeta)
+		if err != nil {
+			ginkgo.By(fmt.Sprintf("ts:%s failed to fetch minio credentials from api-server, err: %s", time.Now().String(), err.Error()))
+			return false
+		}
+		_, err = minio.GetMinioKeys(creds)
+		if err != nil {
+			ginkgo.By(fmt.Sprintf("ts:%s failed to extract minio keys from credentials object, err: %s", time.Now().String(), err.Error()))
+			return false
+		}
+		ginkgo.By("Found minio credentials as expected")
+		return true
+	}, 10, 1).Should(gomega.BeTrue(), "Object store credentials must have been created")
+
 	tu.SetupObjstoreClient()
 
 }
@@ -455,23 +476,23 @@ func (tu *TestUtils) SetupObjstoreClient() error {
 	tlcConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
-	tu.VOSClient, err = objstore.NewClient("default", "images", tu.resolver, objstore.WithTLSConfig(tlcConfig))
+	tu.VOSClient, err = objstore.NewClient("default", "images", tu.resolver, objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(tu.APIClient))
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create client to objstore, err: %v", err))
 	}
-	tu.SnapshotVOSClient, err = objstore.NewClient("default", "snapshots", tu.resolver, objstore.WithTLSConfig(tlcConfig))
+	tu.SnapshotVOSClient, err = objstore.NewClient("default", "snapshots", tu.resolver, objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(tu.APIClient))
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create snapshot client to objstore, err: %v", err))
 	}
-	tu.AuditVOSClient, err = objstore.NewClient("default", "auditevents", tu.resolver, objstore.WithTLSConfig(tlcConfig))
+	tu.AuditVOSClient, err = objstore.NewClient("default", "auditevents", tu.resolver, objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(tu.APIClient))
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create snapshot client to objstore, err: %v", err))
 	}
-	tu.EventVOSClient, err = objstore.NewClient("default", "events", tu.resolver, objstore.WithTLSConfig(tlcConfig))
+	tu.EventVOSClient, err = objstore.NewClient("default", "events", tu.resolver, objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(tu.APIClient))
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create snapshot client to objstore, err: %v", err))
 	}
-	tu.FwLogClient, err = objstore.NewClient("default", "fwlogs", tu.resolver, objstore.WithTLSConfig(tlcConfig))
+	tu.FwLogClient, err = objstore.NewClient("default", "fwlogs", tu.resolver, objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(tu.APIClient))
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("cannot create fwlogs client to objstore, err: %v", err))
 	}

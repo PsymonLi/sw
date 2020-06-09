@@ -9,7 +9,12 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
+
+	vutils "github.com/pensando/sw/venice/utils"
+
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 
 	"github.com/pensando/sw/api"
 	cmd "github.com/pensando/sw/api/generated/cluster"
@@ -22,13 +27,14 @@ import (
 	"github.com/pensando/sw/venice/cmd/validation"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/certmgr"
-	"github.com/pensando/sw/venice/utils/errors"
+	verrors "github.com/pensando/sw/venice/utils/errors"
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/log"
 )
 
 const (
 	quorumNodesCertMgrBundleName = "QuorumNodes"
+	retryCount                   = 6
 )
 
 // clusterCreateOp contains state for creating a cluster.
@@ -49,14 +55,14 @@ func NewClusterCreateOp(cluster *cmd.Cluster) Op {
 func (o *clusterCreateOp) Validate() error {
 	// Check if in cluster.
 	if cluster, err := utils.GetCluster(); err != nil {
-		return errors.NewInternalError(err)
+		return verrors.NewInternalError(err)
 	} else if cluster != nil {
-		return errors.NewBadRequest(fmt.Sprintf("Already part of cluster +%v", cluster))
+		return verrors.NewBadRequest(fmt.Sprintf("Already part of cluster +%v", cluster))
 	}
 
 	// Validate arguments.
 	if errs := validation.ValidateCluster(o.cluster, net.DefaultResolver); len(errs) != 0 {
-		return errors.NewInvalid("cluster", "", errs)
+		return verrors.NewInvalid("cluster", "", errs)
 	}
 	return nil
 }
@@ -116,7 +122,7 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 	// Generate etcd quorum configuration.
 	quorumConfig, err := makeQuorumConfig(o.cluster.UUID, o.cluster.Spec.QuorumNodes, false)
 	if err != nil {
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 
 	if env.CertMgr == nil {
@@ -134,17 +140,17 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 	if err == nil {
 		defer env.CertMgr.DestroyKeyAgreementKey(quorumNodesCertMgrBundleName)
 	} else {
-		return nil, errors.NewInternalError(fmt.Errorf("Error getting Key-agreement-key: %v", err))
+		return nil, verrors.NewInternalError(fmt.Errorf("Error getting Key-agreement-key: %v", err))
 	}
 
 	// Since this is the instance that initiates cluster formation, bootstrap the CA.
 	// This generates the signing key if it is not already available.
 	err = env.CertMgr.StartCa(true)
 	if err != nil {
-		return nil, errors.NewInternalError(fmt.Errorf("Error starting CertificatesMgr CA: %v", err))
+		return nil, verrors.NewInternalError(fmt.Errorf("Error starting CertificatesMgr CA: %v", err))
 	}
 	if !env.CertMgr.IsReady() {
-		return nil, errors.NewInternalError(fmt.Errorf("CertMgr not ready"))
+		return nil, verrors.NewInternalError(fmt.Errorf("CertMgr not ready"))
 	}
 	// Now that CA has started, Recorderclients can talk RPC to eventsProxy
 	env.Recorder.StartExport()
@@ -168,7 +174,7 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 	nodeTransportKeys := make(map[string][]byte)
 	err = sendPreJoins(nil, preJoinReq, o.cluster.Spec.QuorumNodes, nodeTransportKeys)
 	if err != nil {
-		return nil, errors.NewBadRequest(err.Error())
+		return nil, verrors.NewBadRequest(err.Error())
 	}
 
 	// Send join request to all nodes.
@@ -183,11 +189,11 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 
 	err = sendJoins(nil, joinReq, o.cluster.Spec.QuorumNodes, nodeTransportKeys)
 	if err != nil {
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 	ts, err := types.TimestampProto(time.Now())
 	if err != nil {
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 	o.cluster.CreationTime.Timestamp = *ts
 	o.cluster.ModTime.Timestamp = *ts
@@ -198,7 +204,7 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 	if err != nil {
 		log.Errorf("Failed to add cluster to txn, error: %v", err)
 		sendDisjoins(nil, o.cluster.Spec.QuorumNodes)
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 
 	for ii := range o.cluster.Spec.QuorumNodes {
@@ -208,7 +214,7 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 		if err != nil {
 			log.Errorf("Failed to add node %v to txn, error: %v", name, err)
 			sendDisjoins(nil, o.cluster.Spec.QuorumNodes)
-			return nil, errors.NewInternalError(err)
+			return nil, verrors.NewInternalError(err)
 		}
 	}
 
@@ -217,13 +223,13 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 	if err != nil {
 		log.Errorf("Failed to add version to txn, error: %v", err)
 		sendDisjoins(nil, o.cluster.Spec.QuorumNodes)
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 
 	if _, err := txn.Commit(context.Background()); err != nil {
 		log.Errorf("Failed to commit cluster create txn to kvstore, error: %v", err)
 		sendDisjoins(nil, o.cluster.Spec.QuorumNodes)
-		return nil, errors.NewInternalError(err)
+		return nil, verrors.NewInternalError(err)
 	}
 	log.Infof("Wrote cluster %#v to kvstore", o.cluster)
 	// TODO: write the containerInfo to kv store here
@@ -233,5 +239,38 @@ func (o *clusterCreateOp) Run() (interface{}, error) {
 		go auth.RunAuthServer(":"+env.Options.GRPCAuthPort, nil)
 	}
 
+	// store object store credentials to KV store
+	if err := waitForAPIServerAndCreateMinioCredentials(); err != nil {
+		log.Errorf("Failed to create MINIO credentials object in kvstore using APIServer endpoint")
+		sendDisjoins(nil, o.cluster.Spec.QuorumNodes)
+		return nil, verrors.NewInternalError(err)
+	}
+
 	return o.cluster, nil
+}
+
+func waitForAPIServerAndCreateMinioCredentials() error {
+	apiClient, err := vutils.ExecuteWithRetry(getAPIClient, 10*time.Second, retryCount)
+
+	if err != nil {
+		return errors.Wrap(err, "api-server isn't up yet, can not proceed with minio credentials creation")
+	}
+
+	credentialsManager := minio.NewAPIServerBasedCredsManager(apiClient.(cmd.ClusterV1Interface), minio.WithAPIRetries(retryCount, 5*time.Second))
+	_, err = credentialsManager.CreateCredentials()
+	if err != nil {
+		if strings.Contains(err.Error(), "AlreadyExists") {
+			log.Infof("Credentials already exist")
+			return nil
+		}
+		return errors.Wrap(err, "failed to create minio Credentials")
+	}
+	return nil
+}
+
+func getAPIClient(ctx context.Context) (interface{}, error) {
+	if env.CfgWatcherService.APIClient() == nil {
+		return nil, errors.New("api-server isn't up yet")
+	}
+	return env.CfgWatcherService.APIClient(), nil
 }

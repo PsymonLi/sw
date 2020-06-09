@@ -15,7 +15,10 @@ import (
 	"reflect"
 	"testing"
 
+	uuid "github.com/satori/go.uuid"
 	. "gopkg.in/check.v1"
+
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -50,6 +53,19 @@ type objstoreIntegSuite struct {
 	resolverClient resolver.Interface
 	authDir        string
 	tlsConfig      *tls.Config
+	credsManger    minio.CredentialsManager
+}
+
+type dummyCredsManager struct {
+	creds *minio.Credentials
+}
+
+func (d *dummyCredsManager) GetCredentials() (*minio.Credentials, error) {
+	return d.creds, nil
+}
+
+func (d *dummyCredsManager) CreateCredentials() (*minio.Credentials, error) {
+	return nil, nil
 }
 
 func TestObjStoreInteg(t *testing.T) {
@@ -96,6 +112,14 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 		ServerName: globals.Vos,
 	}
 
+	minioAccessKey := uuid.NewV4().String()
+	minioSecretKey := uuid.NewV4().String()
+	it.credsManger = &dummyCredsManager{
+		creds: &minio.Credentials{
+			AccessKey: minioAccessKey,
+			SecretKey: minioSecretKey,
+		},
+	}
 	// start objstore
 	cmd := []string{
 		"run",
@@ -104,9 +128,9 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 		"-p",
 		"19001:19001",
 		"-e",
-		"MINIO_ACCESS_KEY=miniokey",
+		"MINIO_ACCESS_KEY=" + minioAccessKey,
 		"-e",
-		"MINIO_SECRET_KEY=minio0523",
+		"MINIO_SECRET_KEY=" + minioSecretKey,
 		"-v",
 		fmt.Sprintf("%s:/root/.minio/certs", it.authDir),
 		"--name",
@@ -182,7 +206,7 @@ func (it *objstoreIntegSuite) TearDownSuite(c *C) {
 
 // basic test to make sure all components come up
 func (it *objstoreIntegSuite) TestObjStoreApis(c *C) {
-	oc, err := objstore.NewClient("default", "pktcap", it.resolverClient, objstore.WithTLSConfig(it.tlsConfig))
+	oc, err := objstore.NewClient("default", "pktcap", it.resolverClient, objstore.WithTLSConfig(it.tlsConfig), objstore.WithCredentialsManager(it.credsManger))
 	AssertOk(c, err, fmt.Sprintf("obj store client failed"))
 	_, err = oc.ListObjects("")
 	AssertOk(c, err, fmt.Sprintf("list objects failed"))

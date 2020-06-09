@@ -15,7 +15,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
+	vminio "github.com/pensando/sw/venice/utils/objstore/minio"
+
+	"github.com/pensando/sw/api/generated/apiclient"
+	"github.com/pensando/sw/venice/utils/balancer"
 	vlog "github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/rpckit"
 
 	"github.com/pensando/sw/venice/globals"
 	minio "github.com/pensando/sw/venice/utils/objstore/minio/client"
@@ -68,13 +76,13 @@ type objStoreBackend interface {
 
 // object store back-end details
 type client struct {
-	accessID       string
-	secretKey      string
-	connRetries    int
-	tlsConfig      *tls.Config
-	bucketName     string
-	client         objStoreBackend
-	resolverClient resolver.Interface
+	apiClient          apiclient.Services
+	credentialsManager vminio.CredentialsManager
+	connRetries        int
+	tlsConfig          *tls.Config
+	bucketName         string
+	client             objStoreBackend
+	resolverClient     resolver.Interface
 }
 
 // Option provides optional parameters to the client constructor
@@ -86,6 +94,20 @@ type Option func(c *client)
 func WithTLSConfig(tlsConfig *tls.Config) Option {
 	return func(c *client) {
 		c.tlsConfig = tlsConfig
+	}
+}
+
+//WithAPIClient tbd
+func WithAPIClient(apiClient apiclient.Services) Option {
+	return func(c *client) {
+		c.apiClient = apiClient
+	}
+}
+
+// WithCredentialsManager tbd
+func WithCredentialsManager(credentialsManager vminio.CredentialsManager) Option {
+	return func(c *client) {
+		c.credentialsManager = credentialsManager
 	}
 }
 
@@ -101,12 +123,9 @@ func WithConnectRetries(count int) Option {
 func NewClient(tenantName, serviceName string, resolver resolver.Interface, opts ...Option) (Client, error) {
 
 	// TODO: validate bucket name
-	// TODO: get access id & secret key from object store
 
 	// Initialize client object.
 	c := &client{
-		accessID:       "miniokey",
-		secretKey:      "minio0523",
 		bucketName:     fmt.Sprintf("%s.%s", tenantName, serviceName),
 		resolverClient: resolver,
 		connRetries:    maxRetry,
@@ -116,11 +135,31 @@ func NewClient(tenantName, serviceName string, resolver resolver.Interface, opts
 		o(c)
 	}
 
+	if c.credentialsManager == nil {
+		clientName := fmt.Sprintf("%s.%s", tenantName, serviceName)
+		if err := c.initCredentialManager(clientName); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := c.connect(); err != nil {
 		return nil, err
 	}
 
 	return c, nil
+}
+
+func (c *client) initCredentialManager(clientName string) error {
+	if c.apiClient != nil {
+		c.credentialsManager = vminio.NewAPIServerBasedCredsManager(c.apiClient.ClusterV1())
+		return nil
+	}
+	apiClient, err := getAPIClient(c.resolverClient, clientName)
+	if err != nil {
+		return errors.Wrap(err, "Failed to initialize API client")
+	}
+	c.credentialsManager = vminio.NewAPIServerBasedCredsManager(apiClient.ClusterV1())
+	return nil
 }
 
 // connect() resolves object store name to URL and connects
@@ -139,11 +178,17 @@ func (c *client) connect() error {
 
 	objsLog.Infof("{%s} urls %+v ", globals.VosMinio, addr)
 
+	minioCreds, err := c.credentialsManager.GetCredentials()
+	if err != nil {
+		log.Errorf("Unable to get MINIO credentials, error: %s", err.Error())
+		return errors.Wrap(err, "unable to get MINIO credentials")
+	}
+
 	// connect and check
 	for _, url := range addr {
 		for i := 0; i < c.connRetries; i++ {
 			objsLog.Infof("connecting to {%s} %s", globals.VosMinio, url)
-			mc, err := minio.NewClient(url, c.accessID, c.secretKey, c.tlsConfig, c.bucketName)
+			mc, err := minio.NewClient(url, minioCreds.AccessKey, minioCreds.SecretKey, c.tlsConfig, c.bucketName)
 			if err != nil {
 				objsLog.Warnf("failed to create client to %s, %s", url, err)
 				time.Sleep(time.Second * 1)
@@ -157,6 +202,17 @@ func (c *client) connect() error {
 	}
 
 	return fmt.Errorf("failed to connect to any of the object stores %+v", addr)
+}
+
+func getAPIClient(resolver resolver.Interface, clientName string) (apiclient.Services, error) {
+	// create the api client
+	l := vlog.WithContext("Pkg", "objstoreClient")
+	apiClient, err := apiclient.NewGrpcAPIClient(clientName, globals.APIServer, l, rpckit.WithBalancer(balancer.New(resolver)))
+	if err != nil {
+		log.Errorf("Failed to connect to api gRPC server [%s]\n", globals.APIServer)
+		return nil, err
+	}
+	return apiClient, err
 }
 
 // getObjStoreAddr get object store URLs from the resolver

@@ -11,7 +11,10 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
@@ -22,6 +25,7 @@ import (
 	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/log"
 	objstore "github.com/pensando/sw/venice/utils/objstore/client"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
 )
@@ -60,6 +64,12 @@ const (
 		"can occur if the PSM is experiencing heavy load during flow logs ingestion. The increased load could be a result of a sudden spike " +
 		"in connections per second seen across the PSM cluster. It does not mean that the logs have been dropped, but if the condition " +
 		"persists then it can lead to dropping of flow logs in which case another event called flow logs dropped will get raised"
+)
+
+var (
+	minioCredsManager    minio.CredentialsManager
+	initCredsManagerOnce sync.Once
+	credsManagerMutex    sync.Mutex
 )
 
 // TestObject is used for testing
@@ -120,8 +130,7 @@ func newVrfBufferedLogs() *vrfBufferedLogs {
 
 // ObjStoreInit initializes minio and fwlog object
 // The fwlog is sent on the testChannel as well if not nil
-func (s *PolicyState) ObjStoreInit(nodeUUID string,
-	rc resolver.Interface, periodicTransmitTime time.Duration, testChannel chan<- TestObject) error {
+func (s *PolicyState) ObjStoreInit(nodeUUID string, rc resolver.Interface, periodicTransmitTime time.Duration, testChannel chan<- TestObject) error {
 	if rc == nil {
 		log.Errorf("Resolver cannot be null")
 		return fmt.Errorf("Resolver cannot be null")
@@ -504,8 +513,9 @@ func createBucketClient(ctx context.Context, resolver resolver.Interface, tenant
 		return nil, fmt.Errorf("Error getting tls provider (%s)", err)
 	}
 
+	InitMinioCredsManager(resolver)
 	if tlsp == nil {
-		return objstore.NewClient(tenantName, bucketName, resolver)
+		return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithCredentialsManager(minioCredsManager))
 	}
 
 	tlsc, err := tlsp.GetClientTLSConfig(globals.Vos)
@@ -514,7 +524,32 @@ func createBucketClient(ctx context.Context, resolver resolver.Interface, tenant
 	}
 	tlsc.ServerName = globals.Vos
 
-	return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithTLSConfig(tlsc))
+	return objstore.NewClient(tenantName, bucketName, resolver, objstore.WithTLSConfig(tlsc), objstore.WithCredentialsManager(minioCredsManager))
+}
+
+//InitMinioCredsManager should be used outside of this package only for injecting a mock credentials manager for testing
+func InitMinioCredsManager(obj interface{}) error {
+	credsManagerMutex.Lock()
+	defer credsManagerMutex.Unlock()
+
+	if minioCredsManager != nil {
+		return nil
+	}
+
+	switch obj.(type) {
+	case minio.CredentialsManager:
+		minioCredsManager = obj.(minio.CredentialsManager)
+		return nil
+	case resolver.Interface:
+		cm, err := minio.NewCredentialsManager("TmaAgentObjStoreClient", obj.(resolver.Interface))
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize minio credentials manager")
+		}
+		minioCredsManager = cm
+		return nil
+	default:
+		return errors.New("invalid entity type provided for credentials manager initialization")
+	}
 }
 
 func getTenantNameFromSourceVrf(vrf uint64) string {

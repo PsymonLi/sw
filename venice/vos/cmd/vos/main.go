@@ -10,10 +10,16 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
+	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+	"github.com/pensando/sw/venice/utils/resolver"
+	"github.com/pensando/sw/venice/utils/rpckit"
 	vospkg "github.com/pensando/sw/venice/vos/pkg"
 )
 
@@ -22,7 +28,7 @@ var pkgName = globals.Vos
 func main() {
 
 	var (
-		nsURLs = flag.String("resolver-urls", ":"+globals.CMDResolverPort,
+		resolverURLs = flag.String("resolver-urls", ":"+globals.CMDResolverPort,
 			"comma separated list of resolver URLs of the form 'ip:port'")
 		clusterNodes    = flag.String("cluster-nodes", "", "comma seperated list of cluster nodes")
 		logFile         = flag.String("logfile", fmt.Sprintf("%s.log", filepath.Join(globals.LogDir, globals.Vos)), "redirect logs to file")
@@ -54,7 +60,7 @@ func main() {
 	logger := log.SetConfig(logConfig)
 	defer logger.Close()
 
-	log.Infof("resolver-urls %+v", nsURLs)
+	log.Infof("resolver-urls %+v", resolverURLs)
 	log.Infof("cluster-nodes %v", *clusterNodes)
 	log.Infof("starting object store with args : {%+v}", os.Args)
 	nodes := strings.Split(*clusterNodes, ",")
@@ -79,8 +85,12 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	credsMgrChannel := make(chan interface{}, 1)
+	go waitForAPIServerAndGetMinioCredsManager(resolverURLs, credsMgrChannel)
+
 	// init obj store
 	_, err := vospkg.New(ctx, *traceAPI, "",
+		credsMgrChannel,
 		vospkg.WithBootupArgs(args),
 		vospkg.WithBucketDiskThresholds(vospkg.GetBucketDiskThresholds()))
 
@@ -90,4 +100,22 @@ func main() {
 	}
 
 	select {}
+}
+
+func waitForAPIServerAndGetMinioCredsManager(resolverURLs *string, credsMgrChannel chan<- interface{}) {
+	for {
+		select {
+		case <-time.After(5 * time.Second):
+			resolver := resolver.New(&resolver.Config{Name: globals.Vos, Servers: strings.Split(*resolverURLs, ",")})
+			apisrvURL := globals.APIServer
+			// create the api client
+			l := log.WithContext("Pkg", "VeniceObjectStore")
+			apiClient, err := apiclient.NewGrpcAPIClient(globals.Vos, apisrvURL, l, rpckit.WithBalancer(balancer.New(resolver)))
+			if err != nil {
+				log.Errorf("Failed to connect to api gRPC server [%s], retrying...\n", apisrvURL)
+				continue
+			}
+			credsMgrChannel <- minio.NewAPIServerBasedCredsManager(apiClient.ClusterV1(), minio.WithAPIRetries(5, 5*time.Second))
+		}
+	}
 }

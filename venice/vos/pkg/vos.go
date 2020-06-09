@@ -16,6 +16,8 @@ import (
 	minio "github.com/minio/minio/cmd"
 	"github.com/pkg/errors"
 
+	vminio "github.com/pensando/sw/venice/utils/objstore/minio"
+
 	"github.com/pensando/sw/api"
 	apiintf "github.com/pensando/sw/api/interfaces"
 
@@ -30,8 +32,6 @@ import (
 )
 
 const (
-	minioKey        = "miniokey"
-	minioSecret     = "minio0523"
 	defaultLocation = "default"
 
 	// Throttling is mainly used for firewall logs. Minio does not have the capability to add throttling for
@@ -220,9 +220,8 @@ func (i *instance) Watch(ctx context.Context,
 // testURL = url for minio server for testing
 // Vos is setup differently when testURL is provided. For example, tls is not used whil testing and
 // insecure minio connection is initialized.
-func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.Interface, error) {
+func New(ctx context.Context, trace bool, testURL string, credentialsManagerChannel <-chan interface{}, opts ...Option) (vos.Interface, error) {
 	inst := &instance{}
-
 	// Run options
 	for _, opt := range opts {
 		if opt != nil {
@@ -232,10 +231,36 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 
 	updateGoMaxProcs()
 
-	os.Setenv("MINIO_ACCESS_KEY", minioKey)
-	os.Setenv("MINIO_SECRET_KEY", minioSecret)
+	var credentialsManager vminio.CredentialsManager
 
-	log.Infof("minio env: %+v", os.Environ())
+	select {
+	case item := <-credentialsManagerChannel:
+		if mgr, ok := item.(vminio.CredentialsManager); ok {
+			credentialsManager = mgr
+		} else {
+			log.Errorf("Unexpected item found in credentials manager channel, item: %v", item)
+			return nil, errors.New("unexpected item found in credentials manager channel")
+		}
+	}
+
+	minioCreds, err := credentialsManager.GetCredentials()
+	if err != nil {
+		log.Errorf("Unable to get MINIO credentials, error: %s", err.Error())
+		return nil, errors.Wrap(err, "unable to get MINIO credentials")
+	}
+
+	os.Setenv("MINIO_ACCESS_KEY", minioCreds.AccessKey)
+	os.Setenv("MINIO_SECRET_KEY", minioCreds.SecretKey)
+	var envVars string
+	// remove secrets out from log info
+	for _, envVar := range os.Environ() {
+		if !strings.Contains(envVar, "MINIO_ACCESS_KEY") &&
+			!strings.Contains(envVar, "MINIO_SECRET_KEY") {
+			envVars = fmt.Sprintf("%s %s", envVars, envVar)
+		}
+	}
+	log.Infof("minio env: %s", envVars)
+
 	if trace {
 		os.Setenv("MINIO_HTTP_TRACE", "/dev/stdout")
 		log.Infof("minio enabled API tracing")
@@ -259,7 +284,7 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 	if testURL != "" {
 		secureMinio = false
 	}
-	mclient, err := minioclient.New(url, minioKey, minioSecret, secureMinio)
+	mclient, err := minioclient.New(url, minioCreds.AccessKey, minioCreds.SecretKey, secureMinio)
 	if err != nil {
 		log.Errorf("Failed to create client (%s)", err)
 		return nil, errors.Wrap(err, "Failed to create Client")
@@ -322,7 +347,7 @@ func New(ctx context.Context, trace bool, testURL string, opts ...Option) (vos.I
 	// Register all plugins
 	plugins.RegisterPlugins(inst)
 	grpcBackend.start(ctx)
-	httpBackend.start(ctx, globals.VosHTTPPort, minioKey, minioSecret, tlsc)
+	httpBackend.start(ctx, globals.VosHTTPPort, minioCreds.AccessKey, minioCreds.SecretKey, tlsc)
 	log.Infof("Initialization complete")
 	<-ctx.Done()
 	return inst, nil

@@ -15,10 +15,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pensando/sw/venice/utils/certs"
-	"github.com/pensando/sw/venice/utils/tsdb"
-
 	"google.golang.org/grpc/grpclog"
+
+	"github.com/pensando/sw/venice/utils/certs"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+	"github.com/pensando/sw/venice/utils/tsdb"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -123,6 +124,14 @@ func (tInfo *tInfo) setup() error {
 
 	tInfo.updateResolver(globals.APIServer, tInfo.apiServerAddr)
 
+	// grpc client
+	apicl, err := apiclient.NewGrpcAPIClient("OrchhubIntegTest", tinfo.apiServerAddr, tinfo.l)
+	if err != nil {
+		log.Errorf("cannot create grpc client, Err: %v", err)
+		return err
+	}
+	tinfo.apicl = apicl
+
 	// start objstore
 	err = startObjstore(tInfo)
 	if err != nil {
@@ -152,13 +161,6 @@ func (tInfo *tInfo) setup() error {
 	tInfo.orchHub = ctrler
 	tInfo.updateResolver(globals.OrchHub, url)
 
-	// grpc client
-	apicl, err := apiclient.NewGrpcAPIClient("OrchhubIntegTest", tinfo.apiServerAddr, tinfo.l)
-	if err != nil {
-		log.Errorf("cannot create grpc client, Err: %v", err)
-		return err
-	}
-	tinfo.apicl = apicl
 	// Create default tenant
 	err = createTenant()
 	return err
@@ -383,6 +385,12 @@ func startObjstore(tinfo *tInfo) error {
 		return err
 	}
 
+	credentialMgr := minio.NewAPIServerBasedCredsManager(tinfo.apicl.ClusterV1())
+	minioKeys, err := credentialMgr.CreateCredentials()
+	if err != nil {
+		log.Error("error creating credentials")
+		return err
+	}
 	// start objstore
 	cmd := []string{
 		"run",
@@ -391,9 +399,9 @@ func startObjstore(tinfo *tInfo) error {
 		"-p",
 		"19001:19001",
 		"-e",
-		"MINIO_ACCESS_KEY=miniokey",
+		"MINIO_ACCESS_KEY=" + minioKeys.AccessKey,
 		"-e",
-		"MINIO_SECRET_KEY=minio0523",
+		"MINIO_SECRET_KEY=" + minioKeys.SecretKey,
 		"-v",
 		fmt.Sprintf("%s:/root/.minio/certs", tinfo.authDir),
 		"--name",

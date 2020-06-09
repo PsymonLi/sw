@@ -20,6 +20,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
 	_ "github.com/pensando/sw/nic/agent/dscagent"
@@ -64,7 +67,13 @@ func TestProcessFWEventForObjStore(t *testing.T) {
 
 	r := mock.New()
 	retryOpt := objstore.WithConnectRetries(1)
-	_, err = objstore.NewClient("ten1", "svc1", r, retryOpt)
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(c)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	credentialMgrOpt := objstore.WithCredentialsManager(mockCredentialManager)
+	_, err = objstore.NewClient("ten1", "svc1", r, retryOpt, credentialMgrOpt)
 	Assert(t, err != nil, "failed test client error ")
 
 	err = r.AddServiceInstance(&servicetypes.ServiceInstance{
@@ -91,6 +100,8 @@ func TestProcessFWEventForObjStore(t *testing.T) {
 	AssertOk(t, err, "failed to init FwLog")
 
 	testChannel := make(chan TestObject, 10000)
+	err = InitMinioCredsManager(mockCredentialManager)
+	AssertOk(t, err, "failed to inject mock minio credentials manager")
 	err = ps.ObjStoreInit("1", r, time.Duration(1)*time.Second, testChannel)
 	AssertOk(t, err, "failed to init objectstore")
 

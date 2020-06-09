@@ -10,7 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
+
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
@@ -59,9 +63,18 @@ func SkipBenchmarkTmAgentFwLogs(b *testing.B) {
 	defer l.Close()
 	url := "127.0.0.1:9000"
 
+	c := gomock.NewController(b)
+	defer c.Finish()
+
 	r := mock.New()
 	retryOpt := objstore.WithConnectRetries(1)
-	_, err = objstore.NewClient("ten1", "svc1", r, retryOpt)
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(c)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	credentialMgrOpt := objstore.WithCredentialsManager(mockCredentialManager)
+	_, err = objstore.NewClient("ten1", "svc1", r, retryOpt, credentialMgrOpt)
 
 	err = r.AddServiceInstance(&servicetypes.ServiceInstance{
 		TypeMeta: api.TypeMeta{
@@ -73,6 +86,10 @@ func SkipBenchmarkTmAgentFwLogs(b *testing.B) {
 		Service: globals.VosMinio,
 		URL:     url,
 	})
+	err = state.InitMinioCredsManager(mockCredentialManager)
+	if err != nil {
+		panic(err)
+	}
 
 	for n := 0; n < b.N; n++ {
 		ctx, cancel := context.WithCancel(context.Background())

@@ -268,6 +268,15 @@ const (
 
 	// FwlogsBucketName represents the bucket name used for storing fwlogs in object store
 	FwlogsBucketName = "fwlogs"
+
+	// MinioCredentialsObjectName is the name of the credentials object in kv-store which contains credentials to access minio
+	MinioCredentialsObjectName = "MinioCredentials"
+
+	// MinioAccessKeyName is the environment variable name of minio access key
+	MinioAccessKeyName = "MINIO_ACCESS_KEY"
+
+	// MinioSecretKeyName is the environment variable name of minio secret key
+	MinioSecretKeyName = "MINIO_SECRET_KEY"
 )
 
 var (

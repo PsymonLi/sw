@@ -17,8 +17,13 @@ import (
 
 	dctypes "github.com/docker/docker/api/types"
 	dc "github.com/docker/docker/client"
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	es "github.com/olivere/elastic"
+
+	"github.com/pensando/sw/venice/utils/objstore/minio"
+
+	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
@@ -75,10 +80,18 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 
 	// setupKibana(t, url)
 	// defer stopKibana(t)
-
-	setupVos(t, ctx, logger, "127.0.0.1")
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(mockCtrl)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	credsMgrChannel := make(chan interface{}, 1)
+	credsMgrChannel <- mockCredentialManager
+	setupVos(t, ctx, logger, "127.0.0.1", credsMgrChannel)
 	setupSpyglass(ctx, t, r, esClient, logger)
-	setupTmAgent(ctx, t, r)
+	setupTmAgent(ctx, t, r, mockCredentialManager)
 	startFwLogGen(100, 1000)
 
 	// TestVerifyFirewallIndexName verifies that the firewall index is created
@@ -94,7 +107,7 @@ func SkipTestAppendOnlyWriter(t *testing.T) {
 	// TestVerifyLastProcessedObjectKeys verifies that lastProcessedObjectKeys
 	// are getting persisted in minio
 	t.Run("TestVerifyLastProcessedObjectKeys", func(t *testing.T) {
-		verifyLastProcessedObjectKeys(ctx, t, r, logger)
+		verifyLastProcessedObjectKeys(ctx, t, r, mockCredentialManager, logger)
 	})
 
 	// Wait for 10 seconds and let the previous fwloggen finsih, otherwise it will impact
@@ -120,10 +133,17 @@ func SkipTestFlowLogsRateLimitingAtDSC(t *testing.T) {
 	r := mock.New()
 	r = updateResolver(t, r, globals.Vos, "127.0.0.1:9051")
 	r = updateResolver(t, r, globals.VosMinio, "127.0.0.1:19001")
-	setupTmAgent(ctx, t, r)
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockCredentialManager := mock_credentials.NewMockCredentialsManager(mockCtrl)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+	setupTmAgent(ctx, t, r, mockCredentialManager)
 	// TestDebuhRESTHandle
 	t.Run("TestVosRateLimitingAndEvents", func(t *testing.T) {
-		verifyVosRateLimitingAndEventsAtDSC(ctx, t, r, logger)
+		verifyVosRateLimitingAndEventsAtDSC(ctx, t, r, mockCredentialManager, logger)
 	})
 }
 
@@ -185,10 +205,11 @@ func stopKibana(t *testing.T) {
 	}
 }
 
-func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string) {
+func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, credentialManagerChannel <-chan interface{}) {
 	go func() {
 		args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/disk1"}
 		_, err := vospkg.New(ctx, false, url,
+			credentialManagerChannel,
 			vospkg.WithBootupArgs(args),
 			vospkg.WithBucketDiskThresholds(map[string]float64{"/disk1/default.fwlogs": 0.000001}))
 		AssertOk(t, err, "error in initiating Vos")
@@ -309,12 +330,12 @@ func verifyDiskMonitoring(ctx context.Context, t *testing.T, esClient elastic.ES
 	AssertEventually(t, assert, "old objects are not getting deleted from elastic", string("1s"), string("300s"))
 }
 
-func verifyLastProcessedObjectKeys(ctx context.Context, t *testing.T, r resolver.Interface, logger log.Logger) {
+func verifyLastProcessedObjectKeys(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager, logger log.Logger) {
 	// Get the minio client for download the object
 	var client objstore.Client
 	var err error
 	assert := func() (bool, interface{}) {
-		client, err = objstore.NewClient(globals.DefaultTenant, fwlogsSystemMetaBucketName, r)
+		client, err = objstore.NewClient(globals.DefaultTenant, fwlogsSystemMetaBucketName, r, objstore.WithCredentialsManager(credsManager))
 		return err == nil, client
 	}
 	AssertEventually(t, assert, "error in creating objstore client", string("1s"), string("200s"))
@@ -488,7 +509,7 @@ func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T) {
 	}, "failed to find flow logs rate limited event", "2s", "60s")
 }
 
-func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r resolver.Interface, logger log.Logger) {
+func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager, logger log.Logger) {
 	vosCtx, stopVos := context.WithCancel(ctx)
 	defer func() {
 		stopVos()
@@ -497,7 +518,10 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 	}()
 	os.Setenv("MINIO_API_REQUESTS_MAX", "1")
 	os.Setenv("MINIO_API_REQUESTS_DEADLINE", "1ns")
-	setupVos(t, vosCtx, logger, "127.0.0.1")
+
+	credsMgrChannel := make(chan interface{}, 1)
+	credsMgrChannel <- credsManager
+	setupVos(t, vosCtx, logger, "127.0.0.1", credsMgrChannel)
 	startFwLogGen(10000, 200000)
 	AssertEventually(t, func() (bool, interface{}) {
 		for _, ev := range mockEventsRecorder.GetEvents() {
@@ -513,7 +537,7 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 	}, "failed to find flow logs reporting error event", "2s", "60s")
 }
 
-func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface) {
+func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager) {
 	ps, err := tmagentstate.NewTpAgent(ctx, strings.Split(types.DefaultAgentRestURL, ":")[1])
 	ps.UpdateHostName(dscID)
 	AssertOk(t, err, "failed to create tp agent")
@@ -522,6 +546,7 @@ func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface) {
 	err = ps.FwlogInit(tmagentstate.FwlogIpcShm)
 	AssertOk(t, err, "failed to init FwLog")
 
+	tmagentstate.InitMinioCredsManager(credsManager)
 	err = ps.ObjStoreInit("1", r, time.Duration(1)*time.Second, nil)
 	AssertOk(t, err, "objstore init failed")
 }

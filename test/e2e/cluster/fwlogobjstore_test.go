@@ -328,11 +328,11 @@ func setupFwLogsClients() (objstore.Client, objstore.Client) {
 
 	// fwlogs.fwlogs
 	fwLogClient, err := objstore.NewClient(bucketPrefix,
-		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig))
+		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(ts.tu.APIClient))
 	Expect(err).NotTo(HaveOccurred())
 
 	fwLogMetaClient, err := objstore.NewClient(metaBucketPrefix,
-		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig))
+		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(ts.tu.APIClient))
 	Expect(err).NotTo(HaveOccurred())
 
 	return fwLogClient, fwLogMetaClient
