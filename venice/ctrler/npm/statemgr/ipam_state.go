@@ -104,13 +104,13 @@ func convertIPAMPolicy(ipam *IPAMState) *netproto.IPAMPolicy {
 	obj.Spec = netproto.IPAMPolicySpec{}
 	obj.Spec.DHCPRelay = &netproto.DHCPRelayPolicy{}
 	for _, srv := range ipam.IPAMPolicy.Spec.DHCPRelay.Servers {
-		log.Error("convertIPAMPolicy: dhcp server info: ", srv)
+		log.Debug("convertIPAMPolicy: dhcp server info: ", srv)
 		server.IPAddress = srv.IPAddress
 		server.VirtualRouter = srv.VirtualRouter
 		obj.Spec.DHCPRelay.Servers = append(obj.Spec.DHCPRelay.Servers, server)
 	}
 	//obj.Spec.DHCPRelay.Servers = servers
-	log.Error("convertIPAMPolicy: returning:  ", *obj)
+	log.Debug("convertIPAMPolicy: returning:  ", *obj)
 	return obj
 }
 

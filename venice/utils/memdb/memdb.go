@@ -164,6 +164,14 @@ type Watcher struct {
 	Channel chan Event
 }
 
+// PropagationStTopoUpdate is returned to indicate topo change related information to update propagation status
+type PropagationStTopoUpdate struct {
+	AddDSCs    []string
+	DelDSCs    []string
+	AddObjects map[string][]string
+	DelObjects map[string][]string
+}
+
 //GetName gets name of the watcher
 func (watcher *Watcher) GetName() interface{} {
 	return watcher.Name
@@ -190,11 +198,12 @@ type Memdb struct {
 	dbDelResolver   resolver
 	filterGroups    map[string]watchFiltersetInterface
 	// map of per object kind watch filter flags
-	filterFlags    map[string]uint
-	dscWatcherInfo map[string]dscWatcherDBInterface
-	wFilterLock    sync.RWMutex
-	wFilterDSCLock sync.RWMutex
-	topoHandler    topoMgrInterface
+	filterFlags     map[string]uint
+	dscWatcherInfo  map[string]dscWatcherDBInterface
+	wFilterLock     sync.RWMutex
+	wFilterDSCLock  sync.RWMutex
+	topoHandler     topoMgrInterface
+	propagationStCh chan *PropagationStTopoUpdate
 }
 
 type objIntf interface {
@@ -245,9 +254,10 @@ type watchFiltersetInterface interface {
 }
 
 type topoMgrInterface interface {
-	handleAddEvent(obj Object, key string)
-	handleUpdateEvent(old, new Object, key string)
-	handleDeleteEvent(obj Object, key string)
+	handleAddEvent(obj Object, key string) *PropagationStTopoUpdate
+	handleUpdateEvent(old, new Object, key string) *PropagationStTopoUpdate
+	handleDeleteEvent(obj Object, key string) *PropagationStTopoUpdate
+	getRefCnt(dsc, kind, tenant, name string) int
 	dump() string
 }
 
@@ -729,6 +739,13 @@ func (md *Memdb) getPObjectDBByType(kind string) objDBInterface {
 	return md.getPushObjdb(kind)
 }
 
+func (md *Memdb) sendPropagationUpdate(update *PropagationStTopoUpdate) {
+	log.Infof("Sending propagation status update: %+v", update)
+	if md.propagationStCh != nil {
+		md.propagationStCh <- update
+	}
+}
+
 //AddObjectWithReferences add object with refs
 func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
 	if obj.Object().GetObjectKind() == "" {
@@ -761,7 +778,10 @@ func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[
 		obj.Lock()
 		obj.resolved()
 		obj.Unlock()
-		md.topoHandler.handleAddEvent(obj.Object(), key)
+		propTopoUpdate := md.topoHandler.handleAddEvent(obj.Object(), key)
+		if propTopoUpdate != nil {
+			md.sendPropagationUpdate(propTopoUpdate)
+		}
 		od.watchEvent(md, obj, CreateEvent)
 		md.dbAddResolver.trigger(key)
 	} else {
@@ -821,9 +841,15 @@ func (md *Memdb) updateObject(od objDBInterface, key string, obj objIntf, refs m
 		ostate.Unlock()
 
 		if event == CreateEvent {
-			md.topoHandler.handleAddEvent(obj.Object(), key)
+			propTopoUpdate := md.topoHandler.handleAddEvent(obj.Object(), key)
+			if propTopoUpdate != nil {
+				md.sendPropagationUpdate(propTopoUpdate)
+			}
 		} else {
-			md.topoHandler.handleUpdateEvent(old, obj.Object(), key)
+			propTopoUpdate := md.topoHandler.handleUpdateEvent(old, obj.Object(), key)
+			if propTopoUpdate != nil {
+				md.sendPropagationUpdate(propTopoUpdate)
+			}
 		}
 
 		od.watchEvent(md, ostate, event)
@@ -976,7 +1002,10 @@ func (md *Memdb) deleteObject(od objDBInterface, key string, obj objIntf, refs m
 		od.Lock()
 		od.deleteObject(key)
 		od.Unlock()
-		md.topoHandler.handleDeleteEvent(obj.Object(), key)
+		propUpdate := md.topoHandler.handleDeleteEvent(obj.Object(), key)
+		if propUpdate != nil {
+			md.sendPropagationUpdate(propUpdate)
+		}
 		od.watchEvent(md, existingObj, DeleteEvent)
 		md.dbDelResolver.trigger(key)
 	} else {
@@ -1070,7 +1099,7 @@ func (md *Memdb) ListObjectsForReceiver(kind string, receiverID string, filters 
 	}
 
 	if md.isControllerWatchFilter(kind) {
-		log.Infof("Replay DSC objects for dsc: %s | kind: %s", receiverID, kind)
+		log.Debugf("Replay DSC objects for dsc: %s | kind: %s", receiverID, kind)
 		return md.ListDscObjects(receiverID, kind)
 	}
 
@@ -1084,7 +1113,7 @@ func (md *Memdb) ListDscObjects(dsc, kind string) []Object {
 	if dscInfo, ok := md.dscWatcherInfo[dsc]; ok {
 		flts := dscInfo.getFilterFns(kind)
 		if flts != nil {
-			log.Infof("Found existing filters for dsc: %s | kind: %s", dsc, kind)
+			log.Debugf("Found existing filters for dsc: %s | kind: %s", dsc, kind)
 			return md.ListObjects(kind, flts)
 		}
 	}
@@ -1248,4 +1277,9 @@ func (md *Memdb) GetDBWatchers(kind string) (*DBWatchers, error) {
 	}
 
 	return md.pushdb.GetWatchers(kind)
+}
+
+// SetPropagationStatusChannel sets the propagationupdate channel to send updates to npm
+func (md *Memdb) SetPropagationStatusChannel(c chan *PropagationStTopoUpdate) {
+	md.propagationStCh = c
 }

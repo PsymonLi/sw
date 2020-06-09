@@ -197,6 +197,16 @@ func (ms *MbusServer) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
 	ms.memDB.SendRoutingConfig(dsc, oldRtCfg, newRtCfg)
 }
 
+// IsObjectValidForDSC returns true if the object should be propogated to the DSC with id
+func (ms *MbusServer) IsObjectValidForDSC(dsc, kind string, ometa api.ObjectMeta) bool {
+return ms.memDB.IsObjectValidForDSC(dsc, kind, ometa)
+}
+
+// SetPropagationStatusChannel is used to the propagationstatusupdate channel from statemgr
+func (ms *MbusServer) SetPropagationStatusChannel(c chan *memdb.PropagationStTopoUpdate) {
+       ms.memDB.SetPropagationStatusChannel(c)
+}
+
 // NewMbusServer creates a new instance of message bus server
 func NewMbusServer(svcName string, grpcServer *rpckit.RPCServer) *MbusServer {
 	mbusServer := MbusServer{

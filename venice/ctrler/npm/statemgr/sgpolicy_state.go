@@ -256,7 +256,7 @@ func (sgp *SgpolicyState) TrackedDSCs() []string {
 
 	trackedDSCs := []string{}
 	for _, dsc := range dscs {
-		if sgp.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) {
+		if sgp.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) && sgp.stateMgr.IsObjectValidForDSC(dsc.DistributedServiceCard.DistributedServiceCard.Status.PrimaryMAC, "NetworkSecurityPolicy", sgp.NetworkSecurityPolicy.ObjectMeta) {
 			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
 		}
 	}
@@ -270,7 +270,7 @@ func (sgp *SgpolicyState) processDSCUpdate(dsc *cluster.DistributedServiceCard) 
 	sgp.NetworkSecurityPolicy.Lock()
 	defer sgp.NetworkSecurityPolicy.Unlock()
 
-	if sgp.stateMgr.isDscEnforcednMode(dsc) {
+	if sgp.stateMgr.isDscEnforcednMode(dsc) && sgp.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "NetworkSecurityPolicy", sgp.NetworkSecurityPolicy.ObjectMeta) {
 		sgp.smObjectTracker.startDSCTracking(dsc.Name)
 	} else {
 		sgp.smObjectTracker.stopDSCTracking(dsc.Name)
@@ -284,7 +284,9 @@ func (sgp *SgpolicyState) processDSCDelete(dsc *cluster.DistributedServiceCard) 
 
 	sgp.NetworkSecurityPolicy.Lock()
 	defer sgp.NetworkSecurityPolicy.Unlock()
-	sgp.smObjectTracker.stopDSCTracking(dsc.Name)
+	if sgp.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "NetworkSecurityPolicy", sgp.NetworkSecurityPolicy.ObjectMeta) == true {
+		sgp.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
 
 	return nil
 }
@@ -541,4 +543,49 @@ func (sm *Statemgr) UpdateSgpolicyStatus(nodeuuid, tenant, name, generationID st
 
 	policy.updateNodeVersion(nodeuuid, generationID)
 
+}
+
+func (sm *Statemgr) handlePropagationTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+
+	if update == nil {
+		log.Errorf("handlePropagationTopoUpdate invalid update received")
+		return
+	}
+
+	// check if sg policy status needs updates
+	for _, d1 := range update.AddDSCs {
+		if s1, ok := update.AddObjects["NetworkSecurityPolicy"]; ok {
+			tenant := update.AddObjects["Tenant"][0]
+			for _, p1 := range s1 {
+				//look up the sg policy
+				policy, err := sm.FindSgpolicy(tenant, p1)
+				if err != nil {
+					sm.logger.Errorf("Sgpolicy look up failed for tenant: %s | name: %s", tenant, p1)
+					continue
+				}
+				//sm.logger.Infof("runPropagationTopoUpdater found policy: %v", policy.NetworkSecurityPolicy.GetObjectMeta())
+				policy.NetworkSecurityPolicy.Lock()
+				policy.smObjectTracker.startDSCTracking(d1)
+				policy.NetworkSecurityPolicy.Unlock()
+			}
+		}
+	}
+
+	for _, d2 := range update.DelDSCs {
+		if s2, ok := update.DelObjects["NetworkSecurityPolicy"]; ok {
+			tenant := update.DelObjects["Tenant"][0]
+			for _, p2 := range s2 {
+				//look up the sg policy
+				policy, err := sm.FindSgpolicy(tenant, p2)
+				if err != nil {
+					sm.logger.Errorf("Sgpolicy look up failed for tenant: %s | name: %s", tenant, p2)
+					continue
+				}
+				//sm.logger.Infof("runPropagationTopoUpdater found policy: %v", policy.NetworkSecurityPolicy.GetObjectMeta())
+				policy.NetworkSecurityPolicy.Lock()
+				policy.smObjectTracker.stopDSCTracking(d2)
+				policy.NetworkSecurityPolicy.Unlock()
+			}
+		}
+	}
 }

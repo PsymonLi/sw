@@ -10,6 +10,7 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
+	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
 	"github.com/pensando/sw/venice/utils/runtime"
@@ -545,7 +546,10 @@ func (sm *Statemgr) isDscEnforcednMode(nsnic *cluster.DistributedServiceCard) bo
 		return false
 	}
 
-	return (strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.DeploymentTarget) == strings.ToLower(cluster.DSCProfileSpec_VIRTUALIZED.String()) && strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.FeatureSet) == strings.ToLower(cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()))
+	overlayEnabled := featureflags.IsOVerlayRoutingEnabled()
+	dscProfileState := (strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.DeploymentTarget) == strings.ToLower(cluster.DSCProfileSpec_VIRTUALIZED.String()) && strings.ToLower(profileState.DSCProfile.DSCProfile.Spec.FeatureSet) == strings.ToLower(cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String()))
+
+	return dscProfileState || overlayEnabled
 }
 
 // isDscEnforcednMode returns true if the DSC in insertion mode cluster

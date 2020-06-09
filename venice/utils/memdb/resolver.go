@@ -150,10 +150,16 @@ func (r *addResolver) trigger(key string) error {
 						if r.resolvedCheck(referrerObj.Key(), referrerObj.Object()) {
 							log.Infof("Object key %v resolved\n", referrerObj.Key())
 							if referrerObj.isUpdateUnResolved() {
-								r.md.topoHandler.handleUpdateEvent(nil, referrerObj.Object(), referrerObj.Key())
+								update := r.md.topoHandler.handleUpdateEvent(nil, referrerObj.Object(), referrerObj.Key())
+								if update != nil {
+									r.md.sendPropagationUpdate(update)
+								}
 								objDB.watchEvent(r.md, referrerObj, UpdateEvent)
 							} else {
-								r.md.topoHandler.handleAddEvent(referrerObj.Object(), referrerObj.Key())
+								update := r.md.topoHandler.handleAddEvent(referrerObj.Object(), referrerObj.Key())
+								if update != nil {
+									r.md.sendPropagationUpdate(update)
+								}
 								objDB.watchEvent(r.md, referrerObj, CreateEvent)
 							}
 							referrerObj.resolved()
@@ -224,7 +230,10 @@ func (r *deleteResolver) trigger(key string) error {
 							//Put the deleted node to run as next loop
 							inFlightObjects = append(inFlightObjects, transitQueue{key: referenceObj.Key()})
 							log.Infof("Object key %v resolved\n", referenceObj.Key())
-							r.md.topoHandler.handleDeleteEvent(referenceObj.Object(), referenceObj.Key())
+							update := r.md.topoHandler.handleDeleteEvent(referenceObj.Object(), referenceObj.Key())
+							if update != nil {
+								r.md.sendPropagationUpdate(update)
+							}
 							objDB.deleteObject(getRefKey(reference))
 							objDB.watchEvent(r.md, referenceObj, DeleteEvent)
 							for _, pobj := range referenceObj.getAndClearPending() {
@@ -298,7 +307,10 @@ func (r *deleteResolver) revaluate(kind string, keys []string) error {
 					//Put the deleted node to run as next loop
 					inFlightObjects = append(inFlightObjects, transitQueue{key: referenceObj.Key()})
 					log.Infof("Object key %v resolved\n", referenceObj.Key())
-					r.md.topoHandler.handleDeleteEvent(referenceObj.Object(), referenceObj.Key())
+					update := r.md.topoHandler.handleDeleteEvent(referenceObj.Object(), referenceObj.Key())
+					if update != nil {
+						r.md.sendPropagationUpdate(update)
+					}
 					objDB.deleteObject(getRefKey(reference))
 					objDB.watchEvent(r.md, referenceObj, DeleteEvent)
 					for _, pobj := range referenceObj.getAndClearPending() {

@@ -82,10 +82,11 @@ type Topics struct {
 // Statemgr is the object state manager
 type Statemgr struct {
 	sync.Mutex
-	mbus                  *nimbus.MbusServer // nimbus server
-	periodicUpdaterQueue  chan updatable     // queue for periodically writing items back to apiserver
-	dscObjUpdateQueue     chan dscUpdateObj  // queue for sending updates after DSC update
-	garbageCollector      *GarbageCollector  // nw object garbage collector
+	mbus                  *nimbus.MbusServer                  // nimbus server
+	periodicUpdaterQueue  chan updatable                      // queue for periodically writing items back to apiserver
+	dscObjUpdateQueue     chan dscUpdateObj                   // queue for sending updates after DSC update
+	propogationTopoUpdate chan *memdb.PropagationStTopoUpdate // queue for updates from memdb for propagation status on a topo change
+	garbageCollector      *GarbageCollector                   // nw object garbage collector
 	initialResyncDone     bool
 	resyncDone            chan bool
 	dscUpdateNotifObjects map[string]dscUpdateIntf // objects which are watching dsc update
@@ -502,7 +503,25 @@ func (sm *Statemgr) ResyncComplete() {
 		log.Info("Initial Rsync complete done")
 		sm.resyncDone <- true
 	}
+}
 
+func (sm *Statemgr) runPropagationTopoUpdater(c <-chan *memdb.PropagationStTopoUpdate) {
+	for {
+		select {
+		case update, ok := <-c:
+			if ok == false {
+				log.Infof("runPropagationTopoUpdater exiting")
+				return
+			}
+			sm.handlePropagationTopoUpdate(update)
+		}
+	}
+}
+
+func (sm *Statemgr) newPropagationTopoUpdater() {
+	topoChan := make(chan *memdb.PropagationStTopoUpdate, maxUpdateChannelSize)
+	sm.propogationTopoUpdate = topoChan
+	go sm.runPropagationTopoUpdater(topoChan)
 }
 
 // Run calls the feature statemgr callbacks and eastablishes the Watches
@@ -541,6 +560,9 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 	// of the process, we don't have to worry about leaked go subroutines
 	sm.periodicUpdaterQueue = newPeriodicUpdater()
 	sm.dscObjUpdateQueue = newdscOpdateObjNotifier()
+
+	sm.newPropagationTopoUpdater()
+	sm.mbus.SetPropagationStatusChannel(sm.propogationTopoUpdate)
 
 	sm.resyncDone = make(chan bool)
 	sm.initialResyncDone = false
@@ -1267,4 +1289,9 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 	}
 
 	return objConfigStatus
+}
+
+// IsObjectValidForDSC checks whether a given object is supposed to be pushed to the DSC
+func (sm *Statemgr) IsObjectValidForDSC(dsc, kind string, ometa api.ObjectMeta) bool {
+	return sm.mbus.IsObjectValidForDSC(dsc, kind, ometa)
 }

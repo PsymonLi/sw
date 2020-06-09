@@ -30,13 +30,13 @@ const (
 
 var order = []string{"SecurityProfile", "IPAMPolicy", "RouteTable", "Vrf", "NetworkSecurityPolicy", "Network"}
 
-type topoFunc func(old, new Object, key string)
+type topoFunc func(old, new Object, key string) (bool, *PropagationStTopoUpdate)
 type kindWatchOptions map[string]api.ListWatchOptions
 
 type topoInterface interface {
-	addNode(obj Object, key string)
-	deleteNode(obj Object, evalOpts bool, key string)
-	updateNode(old, new Object, key string)
+	addNode(obj Object, key string, propUpdate *PropagationStTopoUpdate) bool
+	deleteNode(obj Object, evalOpts bool, key string, propUpdate *PropagationStTopoUpdate) bool
+	updateNode(old, new Object, key string, propUpdate *PropagationStTopoUpdate) bool
 	addBackRef(key, ref, refKind string)
 	delBackRef(key, ref, refKind string)
 	getRefs(key string) *topoRefs
@@ -354,7 +354,7 @@ func getKey(tenant, ns, name string) string {
 	return memdbKey(&ometa)
 }
 
-func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool) (mod uint) {
+func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool, propUpdate *PropagationStTopoUpdate) (mod uint) {
 	log.Infof("Received for key: %s | dsc: %s | tenat: %s | ns: %s | add: %v", key, dsc, tenant, ns, add)
 
 	if add == true {
@@ -362,12 +362,20 @@ func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool) (mod 
 		if tn.tm.refCounts.getRefCnt(dsc, "Tenant", tenant, "") == 1 {
 			// this tenant got added for the first time
 			mod |= updateTenant
+			propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+			propUpdate.AddObjects["Vrf"] = []string{tenant}
+			propUpdate.AddObjects["Network"] = []string{tenant}
+			propUpdate.AddObjects["Tenant"] = []string{tenant}
 		}
 	} else {
 		tn.tm.refCounts.delRefCnt(dsc, "Tenant", tenant, "")
 		if tn.tm.refCounts.getRefCnt(dsc, "Tenant", tenant, "") == 0 {
 			// No more references to this tenant on this dsc
 			mod |= updateTenant
+			propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+			propUpdate.DelObjects["Vrf"] = []string{tenant}
+			propUpdate.DelObjects["Network"] = []string{tenant}
+			propUpdate.DelObjects["Tenant"] = []string{tenant}
 		}
 	}
 
@@ -391,12 +399,22 @@ func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool) (mod 
 			if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, ipamRef[0]) == 1 {
 				// first reference to this ipam on this dsc
 				mod |= updateIPAM
+				propUpdate.AddObjects["IPAMPolicy"] = []string{ipamRef[0]}
+				if len(propUpdate.AddDSCs) == 0 {
+					propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+					propUpdate.AddObjects["Tenant"] = []string{tenant}
+				}
 			}
 		} else {
 			tn.tm.refCounts.delRefCnt(dsc, "IPAMPolicy", tenant, ipamRef[0])
 			if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, ipamRef[0]) == 0 {
 				// last reference to this ipam on this dsc
 				mod |= updateIPAM
+				propUpdate.DelObjects["IPAMPolicy"] = []string{ipamRef[0]}
+				if len(propUpdate.DelDSCs) == 0 {
+					propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+					propUpdate.DelObjects["Tenant"] = []string{tenant}
+				}
 			}
 		}
 	} else {
@@ -412,17 +430,26 @@ func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool) (mod 
 							tn.tm.refCounts.addRefCnt(dsc, "IPAMPolicy", tenant, ipamDefRef[0])
 							if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, ipamDefRef[0]) == 1 {
 								mod |= updateIPAM
+								propUpdate.AddObjects["IPAMPolicy"] = []string{ipamDefRef[0]}
+								if len(propUpdate.AddDSCs) == 0 {
+									propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+									propUpdate.AddObjects["Tenant"] = []string{tenant}
+								}
 							}
 						} else {
 							tn.tm.refCounts.delRefCnt(dsc, "IPAMPolicy", tenant, ipamDefRef[0])
 							if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, ipamDefRef[0]) == 0 {
 								mod |= updateIPAM
+								propUpdate.DelObjects["IPAMPolicy"] = []string{ipamDefRef[0]}
+								if len(propUpdate.DelDSCs) == 0 {
+									propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+									propUpdate.DelObjects["Tenant"] = []string{tenant}
+								}
 							}
 						}
 					}
 				}
 			}
-
 		}
 	}
 
@@ -432,11 +459,21 @@ func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool) (mod 
 				tn.tm.refCounts.addRefCnt(dsc, "NetworkSecurityPolicy", tenant, sgRef)
 				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", tenant, sgRef) == 1 {
 					mod |= updateSgPolicy
+					propUpdate.AddObjects["NetworkSecurityPolicy"] = append(propUpdate.AddObjects["NetworkSecurityPolicy"], sgRef)
+					if len(propUpdate.AddDSCs) == 0 {
+						propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+						propUpdate.AddObjects["Tenant"] = []string{tenant}
+					}
 				}
 			} else {
 				tn.tm.refCounts.delRefCnt(dsc, "NetworkSecurityPolicy", tenant, sgRef)
 				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", tenant, sgRef) == 0 {
 					mod |= updateSgPolicy
+					propUpdate.DelObjects["NetworkSecurityPolicy"] = append(propUpdate.DelObjects["NetworkSecurityPolicy"], sgRef)
+					if len(propUpdate.DelDSCs) == 0 {
+						propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+						propUpdate.DelObjects["Tenant"] = []string{tenant}
+					}
 				}
 			}
 		}
@@ -459,28 +496,28 @@ func (tn *topoNode) updateWatchOptions(dsc string, opts kindWatchOptions) {
 	}
 }
 
-func (tn *topoNode) addNode(obj Object, objKey string) {
+func (tn *topoNode) addNode(obj Object, objKey string, propUpdate *PropagationStTopoUpdate) bool {
 	kind := obj.GetObjectKind()
 	switch kind {
 	case "IPAMPolicy":
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
 			// already exists
-			return
+			return false
 		}
 		tn.topo[key] = newTopoRefs()
 	case "NetworkSecurityPolicy":
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
 			// already exists
-			return
+			return false
 		}
 		tn.topo[key] = newTopoRefs()
 	case "Vrf":
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
 			// already exists
-			return
+			return false
 		}
 		vr := obj.(*netproto.Vrf)
 		topoRefs := newTopoRefs()
@@ -491,11 +528,12 @@ func (tn *topoNode) addNode(obj Object, objKey string) {
 	case "Interface":
 		nwIf := obj.(*netproto.Interface)
 		log.Infof("Interface add for key: %s |  Spec: %v | dsc : %v", objKey, nwIf.Spec, nwIf.Status.DSC)
+
 		tenant := ""
 		if nwIf.Spec.VrfName != "" {
 			tenant = nwIf.Spec.VrfName
 		} else {
-			return
+			return false
 		}
 
 		var topoRefs *topoRefs
@@ -506,7 +544,7 @@ func (tn *topoNode) addNode(obj Object, objKey string) {
 				if len(nwRef) != 0 {
 					if nwRef[0] == nwIf.Spec.Network {
 						log.Infof("Duplicate add received for interface: %s | spec: %v, current ref: %v", objKey, nwIf.Spec, refs)
-						return
+						return false
 					}
 				}
 			}
@@ -523,15 +561,18 @@ func (tn *topoNode) addNode(obj Object, objKey string) {
 
 			// trigger an update to watchoptions of the effected kinds
 			dsc := nwIf.Status.DSC
-			mod := tn.updateRefCounts(k1, dsc, tenant, obj.GetObjectMeta().Namespace, true)
+			mod := tn.updateRefCounts(k1, dsc, tenant, obj.GetObjectMeta().Namespace, true, propUpdate)
 			opts := tn.evalWatchOptions(dsc, kind, objKey, tenant, obj.GetObjectMeta().Namespace, mod)
 			log.Infof("New watchoptions after topo update: %v", opts)
 			tn.updateWatchOptions(dsc, opts)
+			if mod != 0 {
+				return true
+			}
 		}
 	case "Network":
 		key := memdbKey(obj.GetObjectMeta())
 		if _, ok := tn.topo[key]; ok {
-			return
+			return false
 		}
 		nw := obj.(*netproto.Network)
 		topoRefs := newTopoRefs()
@@ -559,6 +600,7 @@ func (tn *topoNode) addNode(obj Object, objKey string) {
 
 		tn.topo[key] = topoRefs
 	}
+	return false
 }
 
 func (md *Memdb) sendIntfDetachEvent(obj Object, objKey string) error {
@@ -598,7 +640,7 @@ func (md *Memdb) sendIntfDetachEvent(obj Object, objKey string) error {
 	return nil
 }
 
-func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
+func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpdate *PropagationStTopoUpdate) bool {
 	kind := obj.GetObjectKind()
 	switch kind {
 	case "Interface":
@@ -608,13 +650,13 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 		if nwIf.Spec.VrfName != "" {
 			tenant = nwIf.Spec.VrfName
 		} else {
-			return
+			return false
 		}
 
 		if _, ok := tn.topo[objKey]; !ok {
 			// doesn't exist
 			log.Errorf("topo doesn't exist for: %v", obj.GetObjectMeta())
-			return
+			return false
 		}
 		topoRefs := tn.topo[objKey]
 		fwRefs := topoRefs.refs
@@ -627,7 +669,7 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 
 			dsc := nwIf.Status.DSC
 			// decrement the refcnt
-			mod := tn.updateRefCounts(k1, dsc, tenant, obj.GetObjectMeta().Namespace, false)
+			mod := tn.updateRefCounts(k1, dsc, tenant, obj.GetObjectMeta().Namespace, false, propUpdate)
 			if mod != 0 {
 				modFlags := map[string]uint{}
 				for _, s := range order {
@@ -650,7 +692,7 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 				err := tn.md.sendIntfDetachEvent(obj, objKey)
 				if err != nil {
 					log.Errorf("sendIntfDetachEvent failed for obj: %v | key: %s | err: %v", obj.GetObjectMeta(), objKey, err)
-					return
+					return false
 				}
 
 				l := len(order)
@@ -670,6 +712,7 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 						}
 					}
 				}
+				return true
 			}
 		}
 	case "Network":
@@ -708,12 +751,64 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string) {
 		}
 		delete(tn.topo, key)
 	}
+	return false
 }
 
-func (tn *topoNode) updateNode(old, new Object, objKey string) {
+func consolidatePropUpdate(propUpdate *PropagationStTopoUpdate) {
+	if len(propUpdate.AddDSCs) != 0 && len(propUpdate.DelDSCs) != 0 {
+		if propUpdate.AddDSCs[0] == propUpdate.DelDSCs[0] {
+			propUpdate.AddDSCs = []string{}
+			propUpdate.DelDSCs = []string{}
+		}
+	}
+
+	if i1, ok := propUpdate.AddObjects["IPAMPolicy"]; ok {
+		if i2, ok2 := propUpdate.DelObjects["IPAMPolicy"]; ok2 {
+			if i1[0] == i2[0] {
+				delete(propUpdate.AddObjects, "IPAMPolicy")
+				delete(propUpdate.DelObjects, "IPAMPolicy")
+			}
+		}
+	}
+
+	sgAddMap := map[string]int{}
+	sgDelMap := map[string]int{}
+
+	if s1, ok := propUpdate.AddObjects["NetworkSecurityPolicy"]; ok {
+		for _, p1 := range s1 {
+			sgAddMap[p1]++
+		}
+	}
+
+	if s2, ok := propUpdate.DelObjects["NetworkSecurityPolicy"]; ok {
+		for _, p2 := range s2 {
+			sgDelMap[p2]++
+		}
+	}
+
+	adds := []string{}
+	dels := []string{}
+
+	for k1 := range sgAddMap {
+		if _, ok := sgDelMap[k1]; !ok {
+			adds = append(adds, k1)
+		}
+	}
+
+	for k2 := range sgDelMap {
+		if _, ok := sgAddMap[k2]; !ok {
+			dels = append(dels, k2)
+		}
+	}
+	propUpdate.AddObjects["NetworkSecurityPolicy"] = adds
+	propUpdate.DelObjects["NetworkSecurityPolicy"] = dels
+}
+
+func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *PropagationStTopoUpdate) bool {
 	kind := new.GetObjectKind()
 	switch kind {
 	case "Interface":
+		var up1, up2 bool
 		oldObj := old.(*netproto.Interface)
 		newObj := new.(*netproto.Interface)
 
@@ -726,13 +821,23 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 
 		if oldTenant != "" && oldNw != "" {
 			// remove the oldObj references
-			tn.deleteNode(old, true, objKey)
+			up1 = tn.deleteNode(old, true, objKey, propUpdate)
 		}
 
 		if newTenant != "" && newNw != "" {
-			tn.addNode(new, objKey)
+			up2 = tn.addNode(new, objKey, propUpdate)
 		}
+
+		if up1 == true && up2 == true {
+			// in case of going from tenA/subnetA to tenA/subnetB, if its the only attachment
+			// to this tenant, the update is split as a detach and an attach, go through the propagation
+			// update status and remove any duplicates
+			consolidatePropUpdate(propUpdate)
+		}
+
+		return (up1 || up2)
 	case "Network":
+		updated := false
 		oldObj := old.(*netproto.Network)
 		newObj := new.(*netproto.Network)
 
@@ -746,7 +851,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 		topoRefs := tn.topo[key]
 
 		if topoRefs == nil {
-			return
+			return false
 		}
 		fwRefs := topoRefs.refs
 
@@ -867,9 +972,25 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 			}
 			for _, a := range delSg {
 				tn.tm.refCounts.delRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, a)
+				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, a) == 0 {
+					updated = true
+					propUpdate.DelObjects["NetworkSecurityPolicy"] = append(propUpdate.DelObjects["NetworkSecurityPolicy"], a)
+					if len(propUpdate.DelDSCs) == 0 {
+						propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+						propUpdate.DelObjects["Tenant"] = []string{oldObj.Tenant}
+					}
+				}
 			}
 			for _, b := range addSg {
 				tn.tm.refCounts.addRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, b)
+				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, b) == 1 {
+					updated = true
+					propUpdate.AddObjects["NetworkSecurityPolicy"] = append(propUpdate.AddObjects["NetworkSecurityPolicy"], b)
+					if len(propUpdate.AddDSCs) == 0 {
+						propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+						propUpdate.AddObjects["Tenant"] = []string{oldObj.Tenant}
+					}
+				}
 			}
 			tn.tm.refCounts.dump()
 			opts := tn.evalWatchOptions(dsc, "Network", key, "", "", mod)
@@ -911,6 +1032,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 				}
 			}
 		}
+		return updated
 	case "Vrf":
 		oldObj := old.(*netproto.Vrf)
 		newObj := new.(*netproto.Vrf)
@@ -923,7 +1045,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 
 		log.Infof("Update VPC old spec: %v | new spec: %v", oldObj.Spec, newObj.Spec)
 		if topoRefs == nil {
-			return
+			return false
 		}
 		fwRefs := topoRefs.refs
 
@@ -962,6 +1084,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string) {
 			}
 		}
 	}
+	return false
 }
 
 func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[string]string) {
@@ -1145,125 +1268,152 @@ func newTopoMgr(md *Memdb) topoMgrInterface {
 	return mgr
 }
 
-func (tm *topoMgr) handleAddEvent(obj Object, key string) {
+func (tm *topoMgr) handleAddEvent(obj Object, key string) *PropagationStTopoUpdate {
 	if tm.md.isControllerWatchFilter("IPAMPolicy") == false {
 		// just return
-		return
+		return nil
 	}
 	if handler, ok := tm.topoTriggerMap[obj.GetObjectKind()]; ok {
 		tm.Lock()
 		defer tm.Unlock()
 		fn := handler[createEvent]
-		fn(nil, obj, key)
+		topoUpdated, update := fn(nil, obj, key)
 		tm.dump()
+		if topoUpdated == true {
+			return update
+		}
 	}
+	return nil
 }
 
-func (tm *topoMgr) handleUpdateEvent(old, new Object, key string) {
+func (tm *topoMgr) handleUpdateEvent(old, new Object, key string) *PropagationStTopoUpdate {
 	if tm.md.isControllerWatchFilter("IPAMPolicy") == false {
 		// just return
-		return
+		return nil
 	}
 	if handler, ok := tm.topoTriggerMap[new.GetObjectKind()]; ok {
 		tm.Lock()
 		defer tm.Unlock()
 		fn := handler[updateEvent]
-		fn(old, new, key)
+		topoUpdated, update := fn(old, new, key)
+		if topoUpdated == true {
+			return update
+		}
 	}
+	return nil
 }
 
-func (tm *topoMgr) handleDeleteEvent(obj Object, key string) {
+func (tm *topoMgr) handleDeleteEvent(obj Object, key string) *PropagationStTopoUpdate {
 	if tm.md.isControllerWatchFilter("IPAMPolicy") == false {
 		// just return
-		return
+		return nil
 	}
 	if handler, ok := tm.topoTriggerMap[obj.GetObjectKind()]; ok {
 		tm.Lock()
 		defer tm.Unlock()
 		fn := handler[deleteEvent]
-		fn(nil, obj, key)
+		topoUpdated, update := fn(nil, obj, key)
+		if topoUpdated == true {
+			return update
+		}
 	}
+	return nil
 }
 
-func (tm *topoMgr) handleObjectCreate(old, new Object, key string) {
+func newPropUpdate() *PropagationStTopoUpdate {
+	propUpdate := PropagationStTopoUpdate{}
+	propUpdate.AddObjects = map[string][]string{}
+	propUpdate.DelObjects = map[string][]string{}
+	return &propUpdate
+}
+
+func (tm *topoMgr) handleObjectCreate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	kind := new.GetObjectKind()
 	if node, ok := tm.topology[kind]; ok {
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 	} else {
 		node := tm.newTopoNode()
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 		tm.topology[kind] = node
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleObjectUpdate(old, new Object, key string) {
+func (tm *topoMgr) handleObjectUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(old, new, key)
+		node.updateNode(old, new, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleObjectDelete(old, new Object, key string) {
+func (tm *topoMgr) handleObjectDelete(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.deleteNode(new, true, key)
+		node.deleteNode(new, true, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleVrfCreate(old, new Object, key string) {
+func (tm *topoMgr) handleVrfCreate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	kind := new.GetObjectKind()
 	if node, ok := tm.topology[kind]; ok {
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 	} else {
 		node := tm.newTopoNode()
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 		tm.topology[kind] = node
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) {
+func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	oldObj := old.(*netproto.Vrf)
 	newObj := new.(*netproto.Vrf)
 
 	if oldObj.Spec.IPAMPolicy == newObj.Spec.IPAMPolicy {
 		// not a topo trigger
-		return
+		return false, nil
 	}
 
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(old, new, key)
+		node.updateNode(old, new, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleVrfDelete(old, new Object, key string) {
+func (tm *topoMgr) handleVrfDelete(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.deleteNode(new, true, key)
+		node.deleteNode(new, true, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleNetworkCreate(old, new Object, key string) {
+func (tm *topoMgr) handleNetworkCreate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	kind := new.GetObjectKind()
 	if node, ok := tm.topology[kind]; ok {
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 	} else {
 		node := tm.newTopoNode()
-		node.addNode(new, key)
+		node.addNode(new, key, newPropUpdate())
 		tm.topology[kind] = node
 	}
+	return false, nil
 }
 
-func (tm *topoMgr) handleNetworkDelete(old, new Object, key string) {
+func (tm *topoMgr) handleNetworkDelete(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.deleteNode(new, true, key)
+		node.deleteNode(new, true, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
+	return false, nil
 }
 
 func sgPoliciesSame(str1, str2 []string) bool {
@@ -1281,7 +1431,7 @@ func sgPoliciesSame(str1, str2 []string) bool {
 	return true
 }
 
-func (tm *topoMgr) handleNetworkUpdate(old, new Object, key string) {
+func (tm *topoMgr) handleNetworkUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	oldObj := old.(*netproto.Network)
 	newObj := new.(*netproto.Network)
 
@@ -1292,44 +1442,52 @@ func (tm *topoMgr) handleNetworkUpdate(old, new Object, key string) {
 		sgPoliciesSame(oldObj.Spec.IngV6SecurityPolicies, newObj.Spec.IngV6SecurityPolicies) &&
 		sgPoliciesSame(oldObj.Spec.EgV4SecurityPolicies, newObj.Spec.EgV6SecurityPolicies) {
 		// not a topology trigger
-		return
+		return false, nil
 	}
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(old, new, key)
-	} else {
-		log.Error("Object doesn't exist in the topo", new)
+		update := newPropUpdate()
+		updated := node.updateNode(old, new, key, update)
+		return updated, update
 	}
+	log.Error("Object doesn't exist in the topo", new)
+	return false, nil
 }
 
-func (tm *topoMgr) handleInterfaceCreate(old, new Object, key string) {
+func (tm *topoMgr) handleInterfaceCreate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	log.Infof("Interface add received: %v", new.GetObjectMeta())
 	kind := new.GetObjectKind()
+	topoUpdated := false
+	update := newPropUpdate()
 	if node, ok := tm.topology[kind]; ok {
-		node.addNode(new, key)
+		topoUpdated = node.addNode(new, key, update)
 	} else {
 		node := tm.newTopoNode()
-		node.addNode(new, key)
+		topoUpdated = node.addNode(new, key, update)
 		tm.topology[kind] = node
 	}
+	return topoUpdated, update
 }
 
-func (tm *topoMgr) handleInterfaceDelete(old, new Object, key string) {
+func (tm *topoMgr) handleInterfaceDelete(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.deleteNode(new, true, key)
-	} else {
-		log.Error("Object doesn't exist in the topo", new)
+		update := newPropUpdate()
+		updated := node.deleteNode(new, true, key, update)
+		return updated, update
 	}
+	log.Error("Object doesn't exist in the topo", new)
+
+	return false, nil
 }
 
-func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) {
+func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
 	if new == nil {
 		log.Errorf("Invalid update received for key: %s | old: %v | new: %v", key, old, new)
-		return
+		return false, nil
 	}
 	if old == nil {
 		log.Info("Update recieved with old object as nil, treat it as an add")
 		tm.handleInterfaceCreate(old, new, key)
-		return
+		return false, nil
 	}
 	oldObj := old.(*netproto.Interface)
 	newObj := new.(*netproto.Interface)
@@ -1337,13 +1495,15 @@ func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) {
 	// TODO use objDiff??
 	if oldObj.Spec.Network == newObj.Spec.Network && oldObj.Spec.VrfName == newObj.Spec.VrfName {
 		//not a topology trigger
-		return
+		return false, nil
 	}
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(old, new, key)
-	} else {
-		log.Error("Object doesn't exist in the topo", new)
+		update := newPropUpdate()
+		updated := node.updateNode(old, new, key, update)
+		return updated, update
 	}
+	log.Error("Object doesn't exist in the topo", new)
+	return false, nil
 }
 
 // SendRoutingConfig handles routing config refered to by DSC config
@@ -1374,4 +1534,20 @@ func (md *Memdb) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
 		log.Infof("Sending reconcile event for RoutingConfig | dsc: %s | opts: %v", dsc, opts)
 		md.sendReconcileEvent(dsc, "RoutingConfig", oldFlt, newFlt)
 	}
+}
+
+func (tm *topoMgr) getRefCnt(dsc, kind, tenant, name string) int {
+	return tm.refCounts.getRefCnt(dsc, kind, tenant, name)
+}
+
+// IsObjectValidForDSC returns true if the object should be propogated to the DSC with id
+func (md *Memdb) IsObjectValidForDSC(dsc, kind string, ometa api.ObjectMeta) bool {
+	if !md.isControllerWatchFilter(kind) {
+		return true
+	}
+
+	if md.topoHandler.getRefCnt(dsc, kind, ometa.Tenant, ometa.Name) != 0 {
+		return true
+	}
+	return false
 }
