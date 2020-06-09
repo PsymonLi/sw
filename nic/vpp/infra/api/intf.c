@@ -52,6 +52,10 @@ pds_infra_set_all_intfs_status (u8 admin_up)
 static walk_rc_t
 intf_remove (vnet_main_t *vnm, u32 hw_if_index, void *args)
 {
+    // Skip the deletion of local0 interface.
+    if (hw_if_index == vnm->local_interface_hw_if_index) {
+        return WALK_CONTINUE;
+    }
     vnet_delete_hw_interface(vnm, hw_if_index);
 
     return WALK_CONTINUE;
