@@ -1,0 +1,21 @@
+[
+    {
+        "name": "VNIC_SESSION_LIMIT_EXCEEDED",
+        "category": "Resource",
+        "severity": "CRITICAL",
+        "description": "Session count for vnic reached limit, new sessions will be dropped"
+    },
+    {
+        "name": "VNIC_SESSION_THRESHOLD_EXCEEDED",
+        "category": "Resource",
+        "severity": "WARN",
+        "description": "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached"
+    },
+    {
+        "name": "VNIC_SESSION_WITHIN_THRESHOLD",
+        "category": "Resource",
+        "severity": "INFO",
+        "description": "Session count for vnic falls within the threshold"
+
+    }
+]

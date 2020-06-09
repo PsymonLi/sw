@@ -87,7 +87,8 @@ pds_cfg_db_vnic_set_cb (const pds_cfg_msg_t *msg)
     } else if (msg->vnic.spec.vnic_encap.type == PDS_ENCAP_TYPE_QINQ) {
         dot1ad = 1;
     }
-    rc = pds_impl_db_vnic_set((uint8_t *)msg->vnic.spec.mac_addr,
+    rc = pds_impl_db_vnic_set((uint8_t *)msg->vnic.key.id,
+                              (uint8_t *)msg->vnic.spec.mac_addr,
                               msg->vnic.spec.max_sessions,
                               msg->vnic.status.hw_id,
                               subnet_hw_id,

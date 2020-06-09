@@ -18,6 +18,9 @@ extern "C" {
 #define PDS_VPP_MAX_SUBNET  BD_TABLE_SIZE
 #define PDS_VPP_MAX_VNIC    VNIC_INFO_TABLE_SIZE
 #define PDS_VPP_MAX_VPC     VPC_TABLE_SIZE
+#define PDS_MAX_KEY_LEN     16 // mirrors defn in nic/apollo/api/include/pds.hpp
+#define VNIC_SESSION_LIMIT_MIN_THRESHOLD (0.8) // reset approach on 80%
+#define VNIC_SESSION_LIMIT_MAX_THRESHOLD (0.9) // reset exhaust / raise approach event at 90%
 
 typedef enum {
     PDS_ETH_ENCAP_NO_VLAN,
@@ -26,12 +29,17 @@ typedef enum {
 } pds_eth_encap_type;
 
 typedef struct {
-    mac_addr_t mac;                 // vnic mac
-    u32 max_sessions;               // max number of sessions from this vnic
-    volatile u32 active_ses_count;  // currently active sessions on the vnic
-    u16 subnet_hw_id;               // subnet hwid to index subnet store in infra
-    u8 flow_log_en : 1;             // flag indicating flow logging enabled
-    u8 reserve : 7;
+    u8 obj_key[PDS_MAX_KEY_LEN];         // UUID of the vnic
+    mac_addr_t mac;                      // vnic mac
+    u32 max_sessions;                    // max sessions from this vnic
+    u32 ses_alert_min_threshold;         // threshold to raise alert
+    u32 ses_alert_max_threshold;         // threshold to clear condition
+    volatile u32 active_ses_count;       // currently active sessions on vnic
+    u16 subnet_hw_id;                    // subnet hwid to index subnet store in infra
+    u8 flow_log_en : 1;                  // flag indicating flow logging enabled
+    u8 ses_alert_limit_exceeded: 1;      // flag to raise session limit alert
+    u8 ses_alert_threshold_exceeded : 1; // flag to raise session threshold alert
+    u8 reserve : 5;
     u8 encap_type;                  // pds_eth_encap_type
     u8 l2_encap_len;                // layer2 encapsulation length
     u16 vlan_id;                    // vlan id if encap type is != no vlan

@@ -6,6 +6,7 @@
 #define __VPP_IMPL_APULU_VNIC_H__
 
 #include <nic/vpp/infra/utils.h>
+#include <nic/vpp/infra/operd/alerts.h>
 #include <nic/apollo/packet/apulu/p4_cpu_hdr.h>
 #include <nic/vpp/impl/apulu/p4_cpu_hdr_utils.h>
 #include <nic/apollo/p4/include/apulu_defines.h>
@@ -98,13 +99,30 @@ pds_vnic_vpc_id_get (u16 vnic_id)
 
 always_inline int
 pds_vnic_active_sessions_decrement (uint16_t vnic_id) {
-    pds_impl_db_vnic_entry_t *vnic_info = NULL;
+    pds_impl_db_vnic_entry_t *vnic = NULL;
 
-    vnic_info = pds_impl_db_vnic_get(vnic_id);
-    if (PREDICT_FALSE(vnic_info == NULL)) {
+    vnic = pds_impl_db_vnic_get(vnic_id);
+    if (PREDICT_FALSE(vnic == NULL)) {
         return -1;
     }
-    vnic_info->active_ses_count--;
+    vnic->active_ses_count--;
+    if (PREDICT_TRUE(vnic->max_sessions == 0)) {
+        // nothing to do if session limit is not configured
+        return 0;
+    }
+    if (PREDICT_FALSE(vnic->ses_alert_threshold_exceeded &&
+        (vnic->active_ses_count < vnic->ses_alert_min_threshold))) {
+        // session count within threshold level
+        vnic->ses_alert_threshold_exceeded = 0;
+    } else if (PREDICT_FALSE(vnic->ses_alert_limit_exceeded &&
+               (vnic->active_ses_count < vnic->ses_alert_max_threshold))) {
+        // session count >= threshold level and < max session limit
+        // reset session exhausted flag
+        vnic->ses_alert_limit_exceeded = 0;
+        operd_alert_vnic_session_within_limit(vnic->obj_key,
+                                              vnic->active_ses_count,
+                                              vnic->max_sessions);
+    }
     return 0;
 }
 

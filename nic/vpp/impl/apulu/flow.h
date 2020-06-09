@@ -16,8 +16,10 @@
 #include <vnet/vxlan/vxlan_packet.h>
 #include <nic/vpp/impl/nat.h>
 #include <nic/vpp/impl/pds_table.h>
+#include <nic/vpp/infra/operd/alerts.h>
 #include "p4_cpu_hdr_utils.h"
 #include "impl_db.h"
+#include "vnic.h"
 #include <netinet/ether.h>
 #include "gen/p4gen/p4/include/ftl.h"
 
@@ -950,6 +952,34 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
     return;
 }
 
+always_inline bool
+pds_vnic_active_sessions_increment (pds_impl_db_vnic_entry_t *vnic)
+{
+    if (PREDICT_FALSE(vnic->max_sessions &&
+                      vnic->active_ses_count >= vnic->max_sessions)) {
+        if (vnic->ses_alert_limit_exceeded == 0) {
+            // hit max limit, raise limit reached event
+            operd_alert_vnic_session_limit_exhaustion(vnic->obj_key,
+                                                      vnic->active_ses_count,
+                                                      vnic->max_sessions);
+            vnic->ses_alert_limit_exceeded = 1;
+        }
+        return false;
+    }
+    vnic->active_ses_count++;
+    if (PREDICT_FALSE(vnic->max_sessions &&
+                      (!vnic->ses_alert_threshold_exceeded) &&
+                      (vnic->active_ses_count >= vnic->ses_alert_max_threshold)))
+    {
+        // hit threshold, raise limit approach event
+        operd_alert_vnic_session_limit_approach(vnic->obj_key,
+                                                vnic->active_ses_count,
+                                                vnic->max_sessions);
+        vnic->ses_alert_threshold_exceeded = 1;
+    }
+    return true;
+}
+
 always_inline void
 pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
 {
@@ -1056,13 +1086,11 @@ vnic_check:
     }
 
     vlib_buffer_advance(p, pds_flow_classify_get_advance_offset(p, flag_orig));
-    if (PREDICT_FALSE(vnic->max_sessions &&
-        (vnic->active_ses_count >= vnic->max_sessions))) {
+    if (PREDICT_FALSE(pds_vnic_active_sessions_increment(vnic) == false)) {
         *next = FLOW_CLASSIFY_NEXT_DROP;
         counter[FLOW_CLASSIFY_COUNTER_MAX_EXCEEDED] += 1;
         goto end;
     }
-    vnic->active_ses_count++;
 
     pds_flow_packet_type_derive(p, hdr, flags, next, counter, ctx);
     if (FLOW_CLASSIFY_N_NEXT != *next) {

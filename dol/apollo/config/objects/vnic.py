@@ -190,6 +190,7 @@ class VnicObject(base.ConfigObjectBase):
             self.ServiceIPs.append(service_ip.replace('\\', '/'))
         self.Movable = getattr(spec, 'movable', False)
         self.DhcpEnabled = getattr(spec, 'dhcpenabled', False)
+        self.MaxSessions = getattr(spec, 'maxsessions', 0)
         self.Show()
 
         ############### CHILDREN OBJECT GENERATION
@@ -314,6 +315,8 @@ class VnicObject(base.ConfigObjectBase):
             spec.RxPolicerId = self.RxPolicer.UUID.GetUuid()
         if self.TxPolicer:
             spec.TxPolicerId = self.TxPolicer.UUID.GetUuid()
+        if self.MaxSessions:
+            spec.MaxSessions = self.MaxSessions
         return
 
     def ValidateSpec(self, spec):

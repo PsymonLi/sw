@@ -14,7 +14,8 @@
 extern "C" {
 #endif
 
-int pds_impl_db_vnic_set(uint8_t *mac,
+int pds_impl_db_vnic_set(uint8_t *key,
+                         uint8_t *mac,
                          uint32_t max_sessions,
                          uint16_t vnic_hw_id,
                          uint16_t subnet_hw_id,

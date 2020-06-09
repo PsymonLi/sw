@@ -65,7 +65,8 @@ pds_impl_db_##obj##_get (type hw_id)                            \
 }                                                               \
 
 int
-pds_impl_db_vnic_set (uint8_t *mac,
+pds_impl_db_vnic_set (uint8_t *key,
+                      uint8_t *mac,
                       uint32_t max_sessions,
                       uint16_t vnic_hw_id,
                       uint16_t subnet_hw_id,
@@ -87,9 +88,18 @@ pds_impl_db_vnic_set (uint8_t *mac,
 
     POOL_IMPL_DB_ADD(vnic, vnic_hw_id);
 
+    clib_memcpy(vnic_info->obj_key, key, PDS_MAX_KEY_LEN);
     clib_memcpy(vnic_info->mac, mac, ETH_ADDR_LEN);
     vnic_info->max_sessions = max_sessions;
+    if (max_sessions) {
+        vnic_info->ses_alert_max_threshold =
+                        (u32)(max_sessions * VNIC_SESSION_LIMIT_MAX_THRESHOLD);
+        vnic_info->ses_alert_min_threshold =
+                        (u32)(max_sessions * VNIC_SESSION_LIMIT_MIN_THRESHOLD);
+    }
     vnic_info->subnet_hw_id = subnet_hw_id;
+    vnic_info->ses_alert_limit_exceeded = 0; // reset flags on vnic reconfigure
+    vnic_info->ses_alert_threshold_exceeded = 0;
     if (flow_log_en) {
         vnic_info->flow_log_en = 1;
     } else {
