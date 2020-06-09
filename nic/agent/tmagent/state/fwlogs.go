@@ -21,26 +21,52 @@ const FwlogIpcShm = "/fwlog_ipc_shm"
 var flowDirectionName map[uint32]string
 
 type fwevent struct {
-	*halproto.FWEvent
+	ev []halproto.FWEvent
 }
 
-// String show json string
-func (ev *fwevent) String() string {
-	return fmt.Sprintf("[{"+
-		"\"time\":\"%v\",\"destaddr\":\"%v\",\"destport\":%v,\"srcaddr\":\"%v\",\"srcport\":%v,\"protocol\":\"%v\",\"action\":\"%v\","+
-		"\"direction\":\"%v\",\"rule-id\":%v,\"session-id\":%v,\"session-state\":\"%v\",\"app-id\":\"%v\"}]",
-		time.Unix(0, ev.GetTimestamp()).Format(time.RFC3339),
-		netutils.IPv4Uint32ToString(ev.GetDipv4()),
-		ev.GetDport(),
-		netutils.IPv4Uint32ToString(ev.GetSipv4()),
-		ev.GetSport(),
-		strings.TrimPrefix(ev.GetIpProt().String(), "IPPROTO_"),
-		strings.ToLower(strings.TrimPrefix(ev.GetFwaction().String(), "SECURITY_RULE_ACTION_")),
-		flowDirectionName[ev.GetDirection()],
-		ev.GetRuleId(),
-		ev.GetSessionId(),
-		strings.ToLower(strings.Replace(halproto.FlowLogEventType_name[int32(ev.GetFlowaction())], "LOG_EVENT_TYPE_", "", 1)),
-		ev.GetAppId())
+// syslog get json string for a vrf/filter
+func (event *fwevent) syslog(vrf uint64, filter uint32) string {
+	num := 0
+	s := ""
+
+	for _, ev := range event.ev {
+		if ev.DestVrf != vrf && ev.SourceVrf != vrf {
+			continue
+		}
+
+		if filter&(1<<uint32(ev.Fwaction)) == 0 {
+			continue
+		}
+
+		if num == 0 {
+			s += "["
+		} else {
+			s += ","
+		}
+		s += fmt.Sprintf("{\"time\":\"%v\",\"destaddr\":\"%v\",\"destport\":%v,\"srcaddr\":\"%v\",\"srcport\":%v,\"protocol\":\"%v\",\"action\":\"%v\","+
+			"\"direction\":\"%v\",\"rule-id\":%v,\"session-state\":\"%v\"}",
+			time.Unix(0, ev.GetTimestamp()).Format(time.RFC3339),
+			netutils.IPv4Uint32ToString(ev.GetDipv4()),
+			ev.GetDport(),
+			netutils.IPv4Uint32ToString(ev.GetSipv4()),
+			ev.GetSport(),
+			strings.TrimPrefix(ev.GetIpProt().String(), "IPPROTO_"),
+			strings.ToLower(strings.TrimPrefix(ev.GetFwaction().String(), "SECURITY_RULE_ACTION_")),
+			flowDirectionName[ev.GetDirection()],
+			ev.GetRuleId(),
+			strings.ToLower(strings.Replace(halproto.FlowLogEventType_name[int32(ev.GetFlowaction())], "LOG_EVENT_TYPE_", "", 1)))
+		num++
+	}
+
+	if num > 0 {
+		s += "]"
+	}
+	return s
+}
+
+// string get json string
+func (event *fwevent) String() string {
+	return event.syslog(65, 0xFFFFF)
 }
 
 // TsdbInit initilaizes tsdb and fwlog object
@@ -92,14 +118,14 @@ func (s *PolicyState) FwlogInit(path string) error {
 	}
 
 	for ix := 0; ix < instCount; ix++ {
-		ipc := shm.IPCInstance()
-		log.Infof("IPC[%d] %s", ix, ipc)
-		s.ipc = append(s.ipc, ipc)
+		inst := shm.IPCInstance()
+		log.Infof("IPC[%d] %s", ix, inst)
+		s.ipc = append(s.ipc, inst)
 		s.wg.Add(1)
 		go func(ix int) {
 			defer s.wg.Done()
 			log.Infof("start ProcessFWEvent_%d()", ix)
-			ipc.Receive(s.ctx, s.ProcessFWEvent)
+			inst.Receive(s.ctx, s.ProcessFWEvent)
 			log.Infof("exit ProcessFWEvent_%d()", ix)
 		}(ix)
 	}
@@ -119,73 +145,14 @@ func (s *PolicyState) isAtleastOneFwLogCollectorPresent() bool {
 }
 
 // ProcessFWEvent process fwlog event received from ipc
-func (s *PolicyState) ProcessFWEvent(ev *halproto.FWEvent, ts time.Time) {
+// NOTE: events []halproto.FWEvent is a global buffer, don't cache it
+// it will be overwritten by the next read operation.
+func (s *PolicyState) ProcessFWEvent(events []halproto.FWEvent) {
 	// return if no collectors are present
 	if !s.isAtleastOneFwLogCollectorPresent() {
 		return
 	}
-
-	fwev := &fwevent{FWEvent: ev}
-
-	vrfSrc := fmt.Sprintf("%v", ev.GetSourceVrf())
-	vrfDest := fmt.Sprintf("%v", ev.GetDestVrf())
-	ipSrc := netutils.IPv4Uint32ToString(ev.GetSipv4())
-	ipDest := netutils.IPv4Uint32ToString(ev.GetDipv4())
-	dPort := fmt.Sprintf("%v", ev.GetDport())
-	sPort := fmt.Sprintf("%v", ev.GetSport())
-	ipProt := fmt.Sprintf("%v", strings.TrimPrefix(ev.GetIpProt().String(), "IPPROTO_"))
-	action := fmt.Sprintf("%v", strings.ToLower(strings.TrimPrefix(ev.GetFwaction().String(), "SECURITY_RULE_ACTION_")))
-	dir := flowDirectionName[ev.GetDirection()]
-	ruleID := fmt.Sprintf("%v", ev.GetRuleId())
-	sessionID := fmt.Sprintf("%v", ev.GetSessionId())
-	state := strings.ToLower(strings.Replace(halproto.FlowLogEventType_name[int32(ev.GetFlowaction())], "LOG_EVENT_TYPE_", "", 1))
-	alg := fmt.Sprintf("%v", strings.TrimPrefix(ev.GetAlg().String(), "APP_SVC_"))
-	icmpType := fmt.Sprintf("%v", int64(ev.GetIcmptype()))
-	icmpID := fmt.Sprintf("%v", int64(ev.GetIcmpid()))
-	icmpCode := fmt.Sprintf("%v", int64(ev.GetIcmpcode()))
-	appID := fmt.Sprintf("%v", ev.GetAppId()) // TODO: praveen convert to enum
-	iflowBytes := fmt.Sprintf("%v", ev.GetIflowBytes())
-	rflowBytes := fmt.Sprintf("%v", ev.GetRflowBytes())
-	unixnano := ev.GetTimestamp()
-	if unixnano != 0 {
-		// if a timestamp was specified in the msg, use it
-		ts = time.Unix(0, unixnano)
-	}
-
-	// CSV file format
-	// Since no aggregation is done as fo now, just report count=1 for every log.
-	count := "1"
-
-	// CSV file format
-	fwLog := []string{
-		vrfSrc,
-		vrfDest,
-		ipSrc,
-		ipDest,
-		ts.Format(time.RFC3339),
-		sPort,
-		dPort,
-		ipProt,
-		action,
-		dir,
-		ruleID,
-		sessionID,
-		state,
-		icmpType,
-		icmpID,
-		icmpCode,
-		appID,
-		alg,
-		iflowBytes,
-		rflowBytes,
-		count,
-	}
-
-	// set src/dest vrf
-	vrfList := map[uint64]bool{
-		ev.SourceVrf: true,
-		ev.DestVrf:   true,
-	}
+	fwev := &fwevent{ev: events}
 
 	// used for sending the log only once to PSM
 	logSentToPSM := false
@@ -193,20 +160,68 @@ func (s *PolicyState) ProcessFWEvent(ev *halproto.FWEvent, ts time.Time) {
 	// check dest/src vrf
 	s.fwLogCollectors.Range(func(k interface{}, v interface{}) bool {
 		if col, ok := v.(*syslogFwlogCollector); ok {
-			col.Lock()
-			if _, ok := vrfList[col.vrf]; ok {
-				if col.syslogFd != nil && col.filter&(1<<uint32(ev.Fwaction)) != 0 {
-					s.sendFwLog(col, fwev)
-				}
-			} else {
-				log.Errorf("invalid collector")
-			}
-			col.Unlock()
+			s.sendFwLog(col, fwev)
 		} else if col, ok := v.(*psmFwlogCollector); ok && !logSentToPSM {
-			if _, ok := vrfList[col.vrf]; ok && col.filter&(1<<uint32(ev.Fwaction)) != 0 {
-				// TODO: use sync pool
-				s.logsChannel <- singleLog{ts, ev.GetSourceVrf(), fwLog}
-				logSentToPSM = true
+			for _, ev := range events {
+				if ev.SourceVrf != col.vrf && ev.DestVrf != col.vrf {
+					continue
+				}
+				if col.filter&(1<<uint32(ev.Fwaction)) != 0 {
+
+					vrfSrc := fmt.Sprintf("%v", ev.GetSourceVrf())
+					vrfDest := fmt.Sprintf("%v", ev.GetDestVrf())
+					ipSrc := netutils.IPv4Uint32ToString(ev.GetSipv4())
+					ipDest := netutils.IPv4Uint32ToString(ev.GetDipv4())
+					dPort := fmt.Sprintf("%v", ev.GetDport())
+					sPort := fmt.Sprintf("%v", ev.GetSport())
+					ipProt := fmt.Sprintf("%v", strings.TrimPrefix(ev.GetIpProt().String(), "IPPROTO_"))
+					action := fmt.Sprintf("%v", strings.ToLower(strings.TrimPrefix(ev.GetFwaction().String(), "SECURITY_RULE_ACTION_")))
+					dir := flowDirectionName[ev.GetDirection()]
+					ruleID := fmt.Sprintf("%v", ev.GetRuleId())
+					sessionID := fmt.Sprintf("%v", ev.GetSessionId())
+					state := strings.ToLower(strings.Replace(halproto.FlowLogEventType_name[int32(ev.GetFlowaction())], "LOG_EVENT_TYPE_", "", 1))
+					alg := fmt.Sprintf("%v", strings.TrimPrefix(ev.GetAlg().String(), "APP_SVC_"))
+					icmpType := fmt.Sprintf("%v", int64(ev.GetIcmptype()))
+					icmpID := fmt.Sprintf("%v", int64(ev.GetIcmpid()))
+					icmpCode := fmt.Sprintf("%v", int64(ev.GetIcmpcode()))
+					appID := fmt.Sprintf("%v", ev.GetAppId()) // TODO: praveen convert to enum
+					iflowBytes := fmt.Sprintf("%v", ev.GetIflowBytes())
+					rflowBytes := fmt.Sprintf("%v", ev.GetRflowBytes())
+					ts := time.Unix(0, ev.GetTimestamp())
+
+					// CSV file format
+					// Since no aggregation is done as fo now, just report count=1 for every log.
+					count := "1"
+
+					// CSV file format
+					fwLog := []string{
+						vrfSrc,
+						vrfDest,
+						ipSrc,
+						ipDest,
+						ts.Format(time.RFC3339),
+						sPort,
+						dPort,
+						ipProt,
+						action,
+						dir,
+						ruleID,
+						sessionID,
+						state,
+						icmpType,
+						icmpID,
+						icmpCode,
+						appID,
+						alg,
+						iflowBytes,
+						rflowBytes,
+						count,
+					}
+
+					// TODO: use sync pool
+					s.logsChannel <- singleLog{ts, ev.GetSourceVrf(), fwLog}
+					logSentToPSM = true
+				}
 			}
 		}
 

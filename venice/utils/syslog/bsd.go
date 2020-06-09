@@ -3,7 +3,6 @@ package syslog
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net"
 
 	syslog "github.com/RackSec/srslog"
@@ -76,104 +75,96 @@ func (w *bsd) Close() error {
 
 // Emerg logs a message with severity LOG_EMERG
 func (w *bsd) Emerg(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Emerg(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Emerg(message)
+	return w.sw.Emerg(msg.Msg)
 }
 
 // Alert logs a message with severity LOG_ALERT
 func (w *bsd) Alert(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Alert(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Alert(message)
+	return w.sw.Alert(msg.Msg)
 }
 
 // Crit logs a message with severity LOG_CRIT
 func (w *bsd) Crit(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Crit(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Crit(message)
+	return w.sw.Crit(msg.Msg)
 }
 
 // Err logs a message with severity LOG_ERR
 func (w *bsd) Err(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Err(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Err(message)
+	return w.sw.Err(msg.Msg)
 }
 
 // Warning logs a message with severity LOG_WARNING
 func (w *bsd) Warning(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Warning(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Warning(message)
+	return w.sw.Warning(msg.Msg)
 }
 
 // Notice logs a message with severity LOG_NOTICE
 func (w *bsd) Notice(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Notice(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Notice(message)
+	return w.sw.Notice(msg.Msg)
 }
 
 // Info logs a message with severity LOG_INFO
 func (w *bsd) Info(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Info(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Info(message)
+	return w.sw.Info(msg.Msg)
 }
 
 // Debug logs a message with severity LOG_DEBUG
 func (w *bsd) Debug(msg *Message) error {
-	message := fmt.Sprintf("%s", msg.Msg)
 	if msg.StructuredData != nil {
 		m, err := json.Marshal(msg.StructuredData)
 		if err != nil {
 			return err
 		}
-		message = fmt.Sprintf("%s - %s", msg.Msg, string(m))
+		return w.sw.Debug(msg.Msg + " - " + string(m))
 	}
-	return w.sw.Debug(message)
+	return w.sw.Debug(msg.Msg)
 }

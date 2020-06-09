@@ -932,24 +932,26 @@ func TestProcessFWEvent(t *testing.T) {
 	events := []struct {
 		msgBsd     string
 		msgRfc5424 string
-		fwEvent    *halproto.FWEvent
+		fwEvent    []halproto.FWEvent
 	}{
 		{
-			fwEvent: &halproto.FWEvent{
-				SourceVrf: nm[0].Status.VrfID,
-				DestVrf:   nm[0].Status.VrfID,
-				Fwaction:  halproto.SecurityAction_SECURITY_RULE_ACTION_IMPLICIT_DENY,
-				Sipv4:     srcIP,
-				Dipv4:     destIP,
-				Dport:     10000,
-				IpProt:    20000,
-				AppId:     32,
+			fwEvent: []halproto.FWEvent{
+				{
+					SourceVrf: nm[0].Status.VrfID,
+					DestVrf:   nm[0].Status.VrfID,
+					Fwaction:  halproto.SecurityAction_SECURITY_RULE_ACTION_IMPLICIT_DENY,
+					Sipv4:     srcIP,
+					Dipv4:     destIP,
+					Dport:     10000,
+					IpProt:    20000,
+					AppId:     32,
+				},
 			},
 		},
 	}
 
 	for _, e := range events {
-		ps.ProcessFWEvent(e.fwEvent, time.Time{})
+		ps.ProcessFWEvent(e.fwEvent)
 
 		// verify
 		for k, v := range map[string][]chan []byte{
@@ -968,16 +970,14 @@ func TestProcessFWEvent(t *testing.T) {
 					m, ok := l["content"]
 					Assert(t, ok, "failed to get message from syslog  %+v", l)
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m),
-						strings.ToLower(strings.TrimPrefix(e.fwEvent.Fwaction.String(), "SECURITY_RULE_ACTION_"))),
-						"failed to match, expected %s, got %+v", e.fwEvent.Fwaction, m)
-					Assert(t, strings.Contains(fmt.Sprintf("%s", m), fmt.Sprintf("%d", e.fwEvent.Dport)),
-						"failed to match, expected %s, got %+v", e.fwEvent.Dport, m)
+						strings.ToLower(strings.TrimPrefix(e.fwEvent[0].Fwaction.String(), "SECURITY_RULE_ACTION_"))),
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Fwaction, m)
+					Assert(t, strings.Contains(fmt.Sprintf("%s", m), fmt.Sprintf("%d", e.fwEvent[0].Dport)),
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Dport, m)
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m), destIPStr),
-						"failed to match, expected %s, got %+v", e.fwEvent.Dipv4, m)
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Dipv4, m)
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m), srcIPStr),
-						"failed to match, expected %s, got %+v", e.fwEvent.Sipv4, m)
-					Assert(t, strings.Contains(fmt.Sprintf("%s", m), "app-id"),
-						"failed to match, expected app-id field, got %+v", m)
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Sipv4, m)
 				}
 			} else {
 				for _, c := range v {
@@ -991,16 +991,14 @@ func TestProcessFWEvent(t *testing.T) {
 					// "session-id":0,"session-state":"flow_create","source-address":"192.168.10.1",
 					// "source-port":0,"timestamp":"0001-01-01T00:00:00Z"}]
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m),
-						strings.ToLower(strings.TrimPrefix(e.fwEvent.Fwaction.String(), "SECURITY_RULE_ACTION_"))),
-						"failed to match, expected %s, got %+v", e.fwEvent.Fwaction, m)
-					Assert(t, strings.Contains(fmt.Sprintf("%s", m), fmt.Sprintf("%d", e.fwEvent.Dport)),
-						"failed to match, expected %s, got %+v", e.fwEvent.Dport, m)
+						strings.ToLower(strings.TrimPrefix(e.fwEvent[0].Fwaction.String(), "SECURITY_RULE_ACTION_"))),
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Fwaction, m)
+					Assert(t, strings.Contains(fmt.Sprintf("%s", m), fmt.Sprintf("%d", e.fwEvent[0].Dport)),
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Dport, m)
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m), destIPStr),
-						"failed to match, expected %v , got %+v", e.fwEvent.Dipv4, m)
+						"failed to match, expected %v , got %+v", e.fwEvent[0].Dipv4, m)
 					Assert(t, strings.Contains(fmt.Sprintf("%s", m), srcIPStr),
-						"failed to match, expected %s, got %+v", e.fwEvent.Sipv4, m)
-					Assert(t, strings.Contains(fmt.Sprintf("%s", m), "app-id"),
-						"failed to match, expected app-id field, got %+v", m)
+						"failed to match, expected %s, got %+v", e.fwEvent[0].Sipv4, m)
 				}
 			}
 		}
@@ -1364,10 +1362,46 @@ func TestFwlogInit(t *testing.T) {
 
 func TestSyslogJson(t *testing.T) {
 	fwevent := fwevent{
-		FWEvent: &halproto.FWEvent{},
+		ev: []halproto.FWEvent{
+			{
+				SourceVrf: 65,
+				Sipv4:     0x10101001,
+				Sport:     10000,
+				Dipv4:     0x10101001,
+				Dport:     10000,
+			},
+			{
+				SourceVrf: 65,
+				Sipv4:     0x10101002,
+				Sport:     20000,
+				Dipv4:     0x10101002,
+				Dport:     20000,
+			},
+			{
+				SourceVrf: 65,
+				Sipv4:     0x10101003,
+				Sport:     30000,
+				Dipv4:     0x10101003,
+				Dport:     30000,
+			},
+			{
+				SourceVrf: 65,
+				Sipv4:     0x10101004,
+				Sport:     40000,
+				Dipv4:     0x10101005,
+				Dport:     40000,
+			},
+			{
+				SourceVrf: 65,
+				Sipv4:     0x10101005,
+				Sport:     50000,
+				Dipv4:     0x10101005,
+				Dport:     50000,
+			},
+		},
 	}
 	s := fwevent.String()
-	fmt.Printf("%v\n", s)
+	fmt.Printf("fwlog %v\n", s)
 	m := []map[string]interface{}{}
 	err := json.Unmarshal([]byte(s), &m)
 	AssertOk(t, err, "invalid json")

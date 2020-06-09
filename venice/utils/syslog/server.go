@@ -73,7 +73,7 @@ func Server(ctx context.Context, addr string, logType string, proto string) (str
 			numMsg := map[string]int{} // updated by single goroutine
 			fmt.Printf("udp syslog server %s ready \n", l.LocalAddr().String())
 			for ctx.Err() == nil {
-				buff := make([]byte, 1024)
+				buff := make([]byte, 4*1024)
 				l.SetReadDeadline(time.Now().Add(time.Second * 30))
 				n, raddr, err := l.ReadFrom(buff)
 				if err != nil {

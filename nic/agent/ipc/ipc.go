@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	shmPath   = "/dev/shm"
-	pollDelay = 50 * time.Millisecond
+	shmPath          = "/dev/shm"
+	pollDelay        = 50 * time.Millisecond
+	defaultBatchSize = 50
 )
 
 // SharedMem is an instance of shared memory that may be
@@ -43,6 +44,8 @@ type IPC struct {
 	errCountIndex uint32
 	rxErrors      uint64
 	rxCount       uint64
+	rxBatch       uint64
+	readBuff      []ipcproto.FWEvent
 }
 
 // NewSharedMem creates an instance of sharedmem
@@ -101,6 +104,7 @@ func (sm *SharedMem) IPCInstance() *IPC {
 		numBufs:    uint32(numBufs),
 		readIndex:  GetSharedConstant("IPC_READ_OFFSET"),
 		writeIndex: GetSharedConstant("IPC_WRITE_OFFSET"),
+		readBuff:   make([]ipcproto.FWEvent, defaultBatchSize),
 	}
 }
 
@@ -110,7 +114,7 @@ func (sm *SharedMem) String() string {
 }
 
 // Receive processes messages received on the IPC channel
-func (ipc *IPC) Receive(ctx context.Context, h func(*ipcproto.FWEvent, time.Time)) {
+func (ipc *IPC) Receive(ctx context.Context, h func([]ipcproto.FWEvent)) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -132,8 +136,8 @@ func (ipc *IPC) DumpFrom(ro uint32) []*ipcproto.FWEvent {
 	}
 
 	for ix := 0; ix < avail; ix++ {
-		ev, err := ipc.readMsg(ro)
-		if err != nil {
+		ev := &ipcproto.FWEvent{}
+		if err := ipc.readMsg(ro, ev); err != nil {
 			log.Errorf("failed to read message from index[%v], err: %v", ro, err)
 			continue
 		}
@@ -149,7 +153,9 @@ func (ipc *IPC) Dump() []*ipcproto.FWEvent {
 	return ipc.DumpFrom(uint32(0))
 }
 
-func (ipc *IPC) processIPC(h func(*ipcproto.FWEvent, time.Time)) {
+var zevent ipcproto.FWEvent
+
+func (ipc *IPC) processIPC(h func([]ipcproto.FWEvent)) {
 	ro := binary.LittleEndian.Uint32(ipc.base[ipc.readIndex:])
 	wo := binary.LittleEndian.Uint32(ipc.base[ipc.writeIndex:])
 	avail := int((wo + ipc.numBufs - ro) % ipc.numBufs)
@@ -157,16 +163,24 @@ func (ipc *IPC) processIPC(h func(*ipcproto.FWEvent, time.Time)) {
 		return
 	}
 
-	ts := time.Now().UnixNano()
-	for ix := 0; ix < avail; ix++ {
-		// timestamp is not set for fwlog events from HAL
-		// generate different timestamps for each event
-		// TODO: revisit
-		ipc.processMsg(ro, time.Unix(0, ts+int64(ix)), h)
-		ro = (ro + 1) % ipc.numBufs
+	if avail > defaultBatchSize {
+		avail = defaultBatchSize
 	}
 
+	eid := 0
+	for ix := 0; ix < avail; ix++ {
+		ipc.readBuff[eid] = zevent
+		if err := ipc.readMsg(ro, &ipc.readBuff[eid]); err != nil {
+			ipc.rxErrors++
+		} else {
+			ipc.rxCount++
+			eid++
+		}
+		ro = (ro + 1) % ipc.numBufs
+	}
 	binary.LittleEndian.PutUint32(ipc.base[ipc.readIndex:], ro)
+	ipc.rxBatch = uint64(avail)
+	h(ipc.readBuff[0:eid])
 }
 
 // Write is the function to send fwlog event to shm, used in tests
@@ -186,29 +200,16 @@ func (ipc *IPC) Write(event *ipcproto.FWEvent) error {
 	return nil
 }
 
-func (ipc *IPC) processMsg(offset uint32, ts time.Time, h func(*ipcproto.FWEvent, time.Time)) {
-	ev, err := ipc.readMsg(offset)
-	if err != nil {
-		return
-	}
-
-	ipc.rxCount++
-
-	h(ev, ts)
-}
-
-func (ipc *IPC) readMsg(offset uint32) (*ipcproto.FWEvent, error) {
+func (ipc *IPC) readMsg(offset uint32, ev *ipcproto.FWEvent) error {
 	index := GetSharedConstant("IPC_OVH_SIZE") + offset*GetSharedConstant("IPC_BUF_SIZE")
 	msgSize := binary.LittleEndian.Uint32(ipc.base[index:])
 
 	index += GetSharedConstant("IPC_HDR_SIZE")
-	ev := &ipcproto.FWEvent{}
 	if err := proto.Unmarshal(ipc.base[index:(index+msgSize)], ev); err != nil {
 		log.Errorf("Error %v reading message", err)
-		return nil, err
+		return err
 	}
-
-	return ev, nil
+	return nil
 }
 
 func (ipc *IPC) writeMsg(offset uint32, event *ipcproto.FWEvent) error {
@@ -230,8 +231,10 @@ func (ipc *IPC) String() string {
 	ro := binary.LittleEndian.Uint32(ipc.base[ipc.readIndex:])
 	wo := binary.LittleEndian.Uint32(ipc.base[ipc.writeIndex:])
 
-	return fmt.Sprintf("readindex: %v (@%v) writeindex: %v (@%v) numbuffer: %v txCountIndex: %v errCountIndex: %v rxErrors: %v rxCount: %v",
-		ro, ipc.readIndex, wo, ipc.writeIndex, ipc.numBufs, ipc.txCountIndex, ipc.errCountIndex, ipc.rxErrors, ipc.rxCount)
+	return fmt.Sprintf("readindex: %v (@%v) writeindex: %v (@%v) numbuffer: %v txCountIndex: %v "+
+		"errCountIndex: %v rxErrors: %v rxCount: %v rxBatch: %v",
+		ro, ipc.readIndex, wo, ipc.writeIndex, ipc.numBufs, ipc.txCountIndex, ipc.errCountIndex,
+		ipc.rxErrors, ipc.rxCount, ipc.rxBatch)
 }
 
 // GetSharedConstant gets a shared constant from cgo

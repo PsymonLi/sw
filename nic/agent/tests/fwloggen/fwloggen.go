@@ -88,6 +88,7 @@ func fwlogGen(fwlogShm string, numEntries, rateps int, vrf int) error {
 		for idx := 0; idx < nEntries; idx++ {
 			for _, fd := range ipcList {
 				ev := &halproto.FWEvent{
+					Timestamp:  time.Now().UnixNano(),
 					SourceVrf:  uint64(vrf),
 					DestVrf:    uint64(vrf),
 					Sipv4:      uint32(rand.Int31n(200) + rand.Int31n(200)<<8 + rand.Int31n(200)<<16 + rand.Int31n(200)<<24),

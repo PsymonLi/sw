@@ -28,7 +28,7 @@ import (
 type event struct {
 	msgBsd     string
 	msgRfc5424 string
-	fwEvent    *halproto.FWEvent
+	fwEvent    []halproto.FWEvent
 }
 
 const eventsPerSecond = 1300
@@ -120,21 +120,23 @@ func SkipBenchmarkTmAgentFwLogs(b *testing.B) {
 				events := []event{}
 				for i := 0; i < eventsPerSecond; i++ {
 					events = append(events, event{
-						fwEvent: &halproto.FWEvent{
-							SourceVrf: 1000,
-							DestVrf:   1001,
-							Fwaction:  halproto.SecurityAction_SECURITY_RULE_ACTION_DENY,
-							Sipv4:     srcIP,
-							Dipv4:     destIP,
-							Dport:     uint32(10000 + i),
-							IpProt:    1,
-							AppId:     32,
+						fwEvent: []halproto.FWEvent{
+							{
+								SourceVrf: 1000,
+								DestVrf:   1001,
+								Fwaction:  halproto.SecurityAction_SECURITY_RULE_ACTION_DENY,
+								Sipv4:     srcIP,
+								Dipv4:     destIP,
+								Dport:     uint32(10000 + i),
+								IpProt:    1,
+								AppId:     32,
+							},
 						},
 					})
 				}
 
 				for _, e := range events {
-					ps.ProcessFWEvent(e.fwEvent, time.Now())
+					ps.ProcessFWEvent(e.fwEvent)
 				}
 
 				time.Sleep(1 * time.Second)

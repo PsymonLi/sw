@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -119,13 +118,16 @@ func TestBasicIPC(t *testing.T) {
 	client1.putBuffer(buf, size)
 
 	callCount := 0
-	h := func(ev *FWEvent, ts time.Time) {
+	numLogs := 0
+	h := func(ev []FWEvent) {
 		callCount++
+		numLogs += len(ev)
 	}
 	Assert(t, len(ipc1.Dump()) == 2, "expected 2 msgs")
 	ipc1.processIPC(h)
 	Assert(t, ipc1.rxCount == 2, "Expected 2 msgs")
-	Assert(t, callCount == 2, "Expected 3 invocations, got %v", callCount)
+	Assert(t, callCount == 1, "Expected 1 invocations, got %v", callCount)
+	Assert(t, numLogs == 2, "Expected 2 logs, got %v", numLogs)
 
 	// some -ve cases for coverage
 	shm, err = NewSharedMem(0, ipcInstances, "/fwlog_ipc_shm")

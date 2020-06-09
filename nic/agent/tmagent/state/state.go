@@ -80,12 +80,13 @@ type syslogFwlogCollector struct {
 	syslogFd    syslog.Writer
 	txCount     uint64
 	txErr       uint64
+	txSize      int
 }
 
 func (f *syslogFwlogCollector) String() string {
 	if f != nil {
-		return fmt.Sprintf("vrf:%d format:%v proto:%v destination:%v port:%v fd:%v txCount:%d txErr:%d",
-			f.vrf, f.format, f.proto, f.destination, f.port, f.syslogFd != nil, f.txCount, f.txErr)
+		return fmt.Sprintf("vrf:%d format:%v proto:%v destination:%v port:%v fd:%v txCount:%d txErr:%d txSize:%v",
+			f.vrf, f.format, f.proto, f.destination, f.port, f.syslogFd != nil, f.txCount, f.txErr, f.txSize)
 	}
 	return ""
 }
@@ -796,18 +797,36 @@ func (s *PolicyState) ListFwlogPolicy(tx context.Context) ([]*tpmprotos.FwlogPol
 
 // send fwlog to collector
 func (s *PolicyState) sendFwLog(c *syslogFwlogCollector, fwev *fwevent) {
-	if c.format == monitoring.MonitoringExportFormat_SYSLOG_RFC5424.String() ||
-		c.format == monitoring.MonitoringExportFormat_SYSLOG_BSD.String() {
+	c.Lock()
+	defer c.Unlock()
 
-		if err := c.syslogFd.Info(&syslog.Message{
-			Msg: fwev.String(),
-		}); err != nil {
-			c.txErr++
-			log.Debugf("failed to send to %v://%v:%v, %v", c.proto, c.destination, c.port, err)
-			s.closeSyslog(c)
-		}
-		c.txCount++
+	if c.format != strings.ToLower(monitoring.MonitoringExportFormat_SYSLOG_RFC5424.String()) &&
+		c.format != strings.ToLower(monitoring.MonitoringExportFormat_SYSLOG_BSD.String()) {
+		return
 	}
+
+	msg := fwev.syslog(c.vrf, c.filter)
+
+	if msg == "" {
+		return
+	}
+
+	if c.syslogFd == nil {
+		c.txErr++
+		return
+	}
+
+	if err := c.syslogFd.Info(&syslog.Message{
+		Msg: msg,
+	}); err != nil {
+		c.txErr++
+		log.Debugf("failed to send to %v://%v:%v, %v", c.proto, c.destination, c.port, err)
+		s.closeSyslog(c)
+		return
+	}
+	c.txSize = len(msg)
+	c.txCount++
+
 }
 
 // Debug is the debug entry point from REST

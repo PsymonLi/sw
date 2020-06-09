@@ -329,7 +329,7 @@ func generateLogs(t *testing.T, ps *PolicyState, action halproto.SecurityAction,
 
 	// send logs
 	for i := 0; i < count; i++ {
-		fwEvent := &halproto.FWEvent{
+		fwEvent := []halproto.FWEvent{{
 			SourceVrf:       65,
 			DestVrf:         65,
 			Sipv4:           srcIP,
@@ -346,8 +346,9 @@ func generateLogs(t *testing.T, ps *PolicyState, action halproto.SecurityAction,
 			Icmpcode:        0,
 			Icmpid:          0,
 			AppId:           32,
+		},
 		}
 
-		ps.ProcessFWEvent(fwEvent, time.Now())
+		ps.ProcessFWEvent(fwEvent)
 	}
 }
