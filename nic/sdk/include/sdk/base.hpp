@@ -194,33 +194,34 @@ do {                                                       \
 // SDK return codes
 //------------------------------------------------------------------------------
 #define SDK_RET_ENTRIES(ENTRY)                                                 \
-    ENTRY(SDK_RET_OK,                         0,    "ok")                      \
-    ENTRY(SDK_RET_OOM,                        1,    "out of memory error")     \
-    ENTRY(SDK_RET_INVALID_ARG,                2,    "invalid arg")             \
-    ENTRY(SDK_RET_INVALID_OP,                 3,    "invalid operation")       \
-    ENTRY(SDK_RET_ENTRY_NOT_FOUND,            4,    "lookup failure")          \
-    ENTRY(SDK_RET_ENTRY_EXISTS,               5,    "already present")         \
-    ENTRY(SDK_RET_NO_RESOURCE,                6,    "resource exhaustion")     \
-    ENTRY(SDK_RET_TABLE_FULL,                 7,    "hw table full")           \
-    ENTRY(SDK_RET_OOB,                        8,    "out-of-bound error")      \
-    ENTRY(SDK_RET_HW_PROGRAM_ERR,             9,    "h/w programming error")   \
-    ENTRY(SDK_RET_RETRY,                      10,   "retry the operation")     \
-    ENTRY(SDK_RET_NOOP,                       11,   "No operation performed")  \
-    ENTRY(SDK_RET_DUPLICATE_FREE,             12,   "duplicate free")          \
-    ENTRY(SDK_RET_COLLISION,                  13,   "collision detected")      \
-    ENTRY(SDK_RET_MAX_RECIRC_EXCEED,          14,   "maximum recirc exceeded") \
-    ENTRY(SDK_RET_HW_READ_ERR,                15,   "h/w read error")          \
-    ENTRY(SDK_RET_TXN_NOT_FOUND,              16,   "transaction not found")   \
-    ENTRY(SDK_RET_TXN_EXISTS,                 17,   "transaction exists")      \
-    ENTRY(SDK_RET_TXN_INCOMPLETE,             18,   "transaction incomplete")  \
-    ENTRY(SDK_RET_COMM_FAIL,                  19,   "communication failure")   \
-    ENTRY(SDK_RET_HW_SW_OO_SYNC,              20,   "h/w, s/w out of sync")    \
-    ENTRY(SDK_RET_OBJ_CLONE_ERR,              21,   "object clone failure")    \
-    ENTRY(SDK_RET_IN_PROGRESS,                22,   "operation in progress")   \
-    ENTRY(SDK_RET_UPG_CRITICAL,               23,   "upgrade critcal failure") \
-    ENTRY(SDK_RET_MAPPING_CONFLICT,           24,   "resource mapping conflict")\
-    ENTRY(SDK_RET_MAX,                        25,   "max return value")        \
-    ENTRY(SDK_RET_ERR,                        255,  "catch all generic error")
+    ENTRY(SDK_RET_OK,                      0,    "ok")                         \
+    ENTRY(SDK_RET_OOM,                     1,    "out of memory error")        \
+    ENTRY(SDK_RET_INVALID_ARG,             2,    "invalid arg")                \
+    ENTRY(SDK_RET_INVALID_OP,              3,    "invalid operation")          \
+    ENTRY(SDK_RET_ENTRY_NOT_FOUND,         4,    "lookup failure")             \
+    ENTRY(SDK_RET_ENTRY_EXISTS,            5,    "already present")            \
+    ENTRY(SDK_RET_NO_RESOURCE,             6,    "resource exhaustion")        \
+    ENTRY(SDK_RET_TABLE_FULL,              7,    "hw table full")              \
+    ENTRY(SDK_RET_OOB,                     8,    "out-of-bound error")         \
+    ENTRY(SDK_RET_HW_PROGRAM_ERR,          9,    "h/w programming error")      \
+    ENTRY(SDK_RET_RETRY,                   10,   "retry the operation")        \
+    ENTRY(SDK_RET_NOOP,                    11,   "no operation performed")     \
+    ENTRY(SDK_RET_DUPLICATE_FREE,          12,   "duplicate free")             \
+    ENTRY(SDK_RET_COLLISION,               13,   "collision detected")         \
+    ENTRY(SDK_RET_MAX_RECIRC_EXCEED,       14,   "maximum recirc exceeded")    \
+    ENTRY(SDK_RET_HW_READ_ERR,             15,   "h/w read error")             \
+    ENTRY(SDK_RET_TXN_NOT_FOUND,           16,   "transaction not found")      \
+    ENTRY(SDK_RET_TXN_EXISTS,              17,   "transaction exists")         \
+    ENTRY(SDK_RET_TXN_INCOMPLETE,          18,   "transaction incomplete")     \
+    ENTRY(SDK_RET_COMM_FAIL,               19,   "communication failure")      \
+    ENTRY(SDK_RET_HW_SW_OO_SYNC,           20,   "h/w, s/w out of sync")       \
+    ENTRY(SDK_RET_OBJ_CLONE_ERR,           21,   "object clone failure")       \
+    ENTRY(SDK_RET_IN_PROGRESS,             22,   "operation in progress")      \
+    ENTRY(SDK_RET_UPG_CRITICAL,            23,   "upgrade critcal failure")    \
+    ENTRY(SDK_RET_MAPPING_CONFLICT,        24,   "resource mapping conflict")  \
+    ENTRY(SDK_RET_TIMEOUT,                 25,   "operation timed out")        \
+    ENTRY(SDK_RET_MAX,                     26,   "max return value")           \
+    ENTRY(SDK_RET_ERR,                     255,  "catch all generic error")
 
 SDK_DEFINE_ENUM(sdk_ret_t, SDK_RET_ENTRIES)
 SDK_DEFINE_ENUM_TO_STR(sdk_ret_t, SDK_RET_ENTRIES)
@@ -265,6 +266,7 @@ using sdk::SDK_RET_HW_SW_OO_SYNC;
 using sdk::SDK_RET_IN_PROGRESS;
 using sdk::SDK_RET_NOOP;
 using sdk::SDK_RET_MAPPING_CONFLICT;
+using sdk::SDK_RET_TIMEOUT;
 using sdk::sdk_status_t;
 
 #endif    // __SDK_BASE_HPP__

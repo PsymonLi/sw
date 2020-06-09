@@ -1408,9 +1408,16 @@ error:
 void
 api_engine::process_ipc_async_result_(sdk::ipc::ipc_msg_ptr msg,
                                       const void *ctxt) {
+    sdk_ret_t ret;
     ipc_msg_ptr ipc_msg;
-    sdk_ret_t ret = *(sdk_ret_t *)msg->data();
 
+    if (msg == nullptr) {
+        ret = SDK_RET_TIMEOUT;
+    } else {
+        ret = *(sdk_ret_t *)msg->data();
+    }
+
+    // get the original request msg from the app
     ipc_msg = g_api_engine.ipc_msg();
     if (ret != SDK_RET_OK) {
         SDK_TRACE_DEBUG("Rcvd failure response to PDS_MSG_TYPE_CFG_OBJ_SET, "
