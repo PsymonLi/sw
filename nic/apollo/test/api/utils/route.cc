@@ -136,14 +136,70 @@ route_table_feeder::key_compare(const pds_obj_key_t *key) const {
     return *key == this->spec.key;
 }
 
+inline bool
+compare_routes (pds_route_t *r1, pds_route_t *r2)
+{
+    if (ip_prefix_is_equal((ip_prefix_t*)&r1->attrs.prefix,
+                           (ip_prefix_t*)&r2->attrs.prefix) == false)
+        return false;
+    if (r1->attrs.class_priority != r2->attrs.class_priority)
+        return false;
+    if (r1->attrs.priority != r2->attrs.priority)
+        return false;
+    if (r1->attrs.nh_type != r2->attrs.nh_type)
+        return false;
+    switch (r1->attrs.nh_type) {
+    case PDS_NH_TYPE_OVERLAY:
+        if (r1->attrs.tep != r2->attrs.tep)
+            return false;
+        break;
+    case PDS_NH_TYPE_OVERLAY_ECMP:
+        if (r1->attrs.nh_group != r2->attrs.nh_group)
+            return false;
+        break;
+    case PDS_NH_TYPE_PEER_VPC:
+        if (r1->attrs.vpc != r2->attrs.vpc)
+            return false;
+        break;
+    case PDS_NH_TYPE_IP:
+        if (r1->attrs.nh != r2->attrs.nh)
+            return false;
+        break;
+    case PDS_NH_TYPE_VNIC:
+        if (r1->attrs.vnic != r2->attrs.vnic)
+            return false;
+        break;
+    default:
+        return false;
+    }
+    if (r1->attrs.nat.src_nat_type != r2->attrs.nat.src_nat_type)
+        return false;
+    if (ip_addr_is_equal(&r1->attrs.nat.dst_nat_ip,
+                         &r2->attrs.nat.dst_nat_ip) == false)
+        return false;
+    if (r1->attrs.meter != r2->attrs.meter)
+        return false;
+    return true;
+}
+
 bool
 route_table_feeder::spec_compare(const pds_route_table_spec_t *spec) const {
     if (spec->route_info == NULL)
         return false;
     if (spec->route_info->af != this->spec.route_info->af)
         return false;
-    if (spec->route_info->num_routes != this->spec.route_info->num_routes)
+    if (spec->route_info->num_routes != this->spec.route_info->num_routes) {
         return false;
+    }
+    if (spec->route_info->num_routes) {
+        for (uint32_t i = 0; i < spec->route_info->num_routes; i++) {
+            if (compare_routes(&spec->route_info->routes[i],
+                               &this->spec.route_info->routes[i]) == false) {
+                return false;
+            }
+        }
+        return true;
+    }
     return true;
 }
 

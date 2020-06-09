@@ -659,8 +659,9 @@ TEST_F(policy, rule_info_update_af) {
     policy_create(feeder);
     policy_read(feeder);
     create_rules("10::1/64", IP_AF_IPV6, 5, &spec.rule_info, 10);
-    spec.rule_info->af = IP_AF_IPV6;
-    policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_AF);
+    policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_AF, SDK_RET_ERR);
+    // As update fails, rollback feeder's spec to old spec
+    feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", 2);
     policy_read(feeder);
     policy_delete(feeder);
     policy_read(feeder, SDK_RET_ENTRY_NOT_FOUND);

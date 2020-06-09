@@ -70,10 +70,15 @@ public:
 inline std::ostream&
 operator<<(std::ostream& os, const pds_route_t *route) {
     os << " pfx: " << ippfx2str(&route->attrs.prefix)
+       << " class priority: " << route->attrs.class_priority
+       << " priority: " << route->attrs.priority
        << " nh type: " << route->attrs.nh_type;
     switch (route->attrs.nh_type) {
     case PDS_NH_TYPE_OVERLAY:
         os << " TEP: " << route->attrs.tep.str();
+        break;
+    case PDS_NH_TYPE_OVERLAY_ECMP:
+        os << " nh group: " << route->attrs.nh_group.str();
         break;
     case PDS_NH_TYPE_IP:
         os << " NH: " << route->attrs.nh.str();
@@ -81,21 +86,33 @@ operator<<(std::ostream& os, const pds_route_t *route) {
     case PDS_NH_TYPE_PEER_VPC:
         os << " vpc: " << route->attrs.vpc.str();
         break;
+    case PDS_NH_TYPE_VNIC:
+        os << " vnic: " << route->attrs.vnic.str();
+        break;
     default:
         break;
     }
+    os << " src nat type: " << route->attrs.nat.src_nat_type;
+    os << " dst nat ip: " << ipaddr2str(&route->attrs.nat.dst_nat_ip);
+    os << " meter: " << (route->attrs.meter ? "true" : "false");
     os << std::endl;
     return os;
 }
 
 inline std::ostream&
 operator<<(std::ostream& os, const pds_route_table_spec_t *spec) {
-    os << &spec->key
+    os << " key: " << spec->key.str()
         << " af: " << +(spec->route_info ? spec->route_info->af : 0)
         << " num routes: " << (spec->route_info ?
                                   spec->route_info->num_routes : 0)
         << " priority enable: " << (spec->route_info ?
-                                    spec->route_info->priority_en : false);
+                                    spec->route_info->priority_en : false)
+        << std::endl;
+    if (spec->route_info) {
+        for (uint32_t i = 0; i < spec->route_info->num_routes; i++) {
+            os << " Route " << i << " : " << &spec->route_info->routes[i];
+        }
+    }
     return os;
 }
 
@@ -124,18 +141,24 @@ operator<<(std::ostream& os, const pds_route_table_info_t *obj) {
 inline std::ostream&
 operator<<(std::ostream& os, const route_table_feeder& obj) {
     os << "Route table feeder => "
-       << " key: " << obj.spec.key.str()
-       << " af: " << +(obj.spec.route_info ? obj.spec.route_info->af : 0)
-       << " num routes: " << (obj.spec.route_info ?
-                                  obj.spec.route_info->num_routes : 0)
-       << " priority enable: " << (obj.spec.route_info ?
-                                  obj.spec.route_info->priority_en : false);
+        << " key: " << obj.spec.key.str()
+        << " af: " << +(obj.spec.route_info ? obj.spec.route_info->af : 0)
+        << " num routes: " << (obj.spec.route_info ?
+                               obj.spec.route_info->num_routes : 0)
+        << " priority enable: " << (obj.spec.route_info ?
+                                    obj.spec.route_info->priority_en : false)
+        << std::endl;
+    if (obj.spec.route_info) {
+        for (uint32_t i = 0; i < obj.spec.route_info->num_routes; i++) {
+            os << " Route "<< i << " : " << &obj.spec.route_info->routes[i];
+        }
+    }
     return os;
 }
 
 // CRUD prototypes
 API_CREATE(route_table);
-API_READ(route_table);
+API_ROUTE_TABLE_READ(route_table);
 API_UPDATE(route_table);
 API_DELETE(route_table);
 

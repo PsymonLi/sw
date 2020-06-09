@@ -149,6 +149,50 @@ read(_api_str##_feeder& feeder) {                                            \
     return rv;                                                               \
 }
 
+/// \brief Invokes the PDS read api for route-table test object
+/// Also it compares the config values with values read from hardware
+/// only if current method is read
+#define API_ROUTE_TABLE_READ(_api_str)                                       \
+inline sdk_ret_t                                                             \
+read(_api_str##_feeder& feeder) {                                            \
+    sdk_ret_t rv;                                                            \
+    pds_obj_key_t key;                                                       \
+    pds_route_table_info_t *info;                                            \
+    uint32_t num_routes;                                                     \
+                                                                             \
+    memset(&key, 0, sizeof(key));                                            \
+    feeder.key_build(&key);                                                  \
+    info = new (pds_route_table_info_t);                                     \
+    memset(info, 0, sizeof(pds_route_table_info_t));                         \
+    info->spec.route_info =                                                  \
+    (route_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_ROUTE_TABLE,                 \
+                               ROUTE_INFO_SIZE(0));                          \
+    if ((rv = pds_route_table_read(&key, info)) != SDK_RET_OK)               \
+        return rv;                                                           \
+                                                                             \
+    num_routes = info->spec.route_info->num_routes;                          \
+    if (num_routes) {                                                        \
+        SDK_FREE(PDS_MEM_ALLOC_ID_ROUTE_TABLE, info->spec.route_info);       \
+        info->spec.route_info =                                              \
+        (route_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_ROUTE_TABLE,             \
+                                   ROUTE_INFO_SIZE(num_routes));             \
+        info->spec.route_info->num_routes = num_routes;                      \
+        rv = pds_route_table_read(&key, info);                               \
+        if (rv != SDK_RET_OK) {                                              \
+            SDK_FREE(PDS_MEM_ALLOC_ID_ROUTE_TABLE, info->spec.route_info);   \
+            return rv;                                                       \
+        }                                                                    \
+    }                                                                        \
+    if (feeder.stash()) {                                                    \
+        feeder.vec.push_back(info);                                          \
+        return rv;                                                           \
+    }                                                                        \
+    rv = api_info_compare<_api_str##_feeder, pds_##_api_str##_info_t>(       \
+            feeder, info);                                                   \
+    SDK_FREE(PDS_MEM_ALLOC_ID_ROUTE_TABLE, info->spec.route_info);           \
+    delete(info);                                                            \
+    return rv;                                                               \
+}
 
 /// \brief invokes the PDS read apis for test objects
 /// also it compares the config values with values previously

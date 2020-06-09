@@ -44,16 +44,14 @@ class policy_feeder : public feeder {
 public:
     // Test params
     pds_policy_spec_t spec;
-    uint8_t af;
-    uint32_t num_rules;
-    uint16_t stateful_rules;
     std::string cidr_str;
-
+    uint16_t stateful_rules;
     // constructor
     policy_feeder() { };
     policy_feeder(policy_feeder& feeder) {
         init(feeder.spec.key, feeder.stateful_rules,
-             feeder.af, feeder.cidr_str, feeder.num_obj, feeder.num_rules);
+             feeder.spec.rule_info->af, feeder.cidr_str, feeder.num_obj,
+             feeder.spec.rule_info->num_rules);
     }
 
     // Initialize feeder with the base set of values

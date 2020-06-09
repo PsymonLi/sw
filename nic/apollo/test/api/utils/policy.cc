@@ -35,14 +35,12 @@ policy_feeder::init(pds_obj_key_t key,
     }
     memset(&this->spec, 0, sizeof(pds_policy_spec_t));
     this->spec.key = key;
-    this->af = af;
-    this->num_rules = max_rules;
-    this->stateful_rules = stateful_rules;
     this->spec.rule_info = NULL;
     this->cidr_str = cidr_str;
-    create_rules(this->cidr_str, this->af, this->stateful_rules,
-                 (rule_info_t **)&(this->spec.rule_info), this->num_rules);
+    this->stateful_rules = stateful_rules;
     num_obj = num_policy;
+    create_rules(this->cidr_str, af, this->stateful_rules,
+                 (rule_info_t **)&(this->spec.rule_info), max_rules);
 }
 
 void
@@ -207,8 +205,9 @@ policy_feeder::spec_alloc(pds_policy_spec_t *spec) {
 void
 policy_feeder::spec_build(pds_policy_spec_t *spec) const {
     memcpy(spec, &this->spec, sizeof(pds_policy_spec_t));
-    create_rules(this->cidr_str, this->af, this->stateful_rules,
-                 (rule_info_t **)&(spec->rule_info), this->num_rules);
+    create_rules(this->cidr_str, this->spec.rule_info->af,
+                 this->stateful_rules, (rule_info_t **)&(spec->rule_info),
+                 this->spec.rule_info->num_rules);
 }
 
 bool
@@ -218,9 +217,12 @@ policy_feeder::key_compare(const pds_obj_key_t *key) const {
 
 bool
 policy_feeder::spec_compare(const pds_policy_spec_t *spec) const {
-    if (spec->rule_info)
-        if (spec->rule_info->af != this->af)
-            return false;
+    if (spec->rule_info == NULL)
+        return false;
+    if (spec->rule_info->af != this->spec.rule_info->af)
+        return false;
+    if (spec->rule_info->num_rules != this->spec.rule_info->num_rules)
+        return false;
     return true;
 }
 

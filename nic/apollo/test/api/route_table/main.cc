@@ -102,7 +102,6 @@ protected:
 //----------------------------------------------------------------------------
 // Route table test cases implementation
 //----------------------------------------------------------------------------
-
 /// \defgroup ROUTE_TESTS Route table tests
 /// @{
 /// \brief Route table WF_B1
@@ -713,12 +712,10 @@ TEST_F(route_test, v4v6_route_table_workflow_neg_8) {
 //---------------------------------------------------------------------
 
 /// \brief change address family of a route-table
-TEST_F(route_test, DISABLED_rt_update_af) {
+TEST_F(route_test, rt_update_af) {
 
     route_table_feeder feeder;
     pds_route_table_spec_t spec;
-    pds_route_table_spec_t old_spec;
-    memset(&old_spec, 0, sizeof(old_spec));
     memset(&spec, 0, sizeof(spec));
 
     // checking v4->v6 update
@@ -726,15 +723,14 @@ TEST_F(route_test, DISABLED_rt_update_af) {
     feeder.init(k_base_v4_pfx, IP_AF_IPV4, 0,
                 k_num_route_tables, k_route_table_id);
     route_table_create(feeder);
-    memcpy(&old_spec, &feeder.spec, sizeof(pds_route_table_spec_t));
     route_table_read(feeder);
     create_route_table_spec(k_base_v6_pfx, IP_AF_IPV6, 0,
                             k_num_route_tables, &spec, false);
     // update should fail as af is immutable attribute
-    // But update is working , need to check
     route_table_update(feeder, &spec, ROUTE_TABLE_ATTR_AF, SDK_RET_ERR);
     // As update fails, rollback feeder's spec to old spec
-    memcpy(&feeder.spec, &old_spec, sizeof(pds_route_table_spec_t));
+    feeder.init(k_base_v4_pfx, IP_AF_IPV4, 0,
+                k_num_route_tables, k_route_table_id);
     route_table_read(feeder);
     // cleanup
     route_table_delete(feeder);
@@ -744,11 +740,9 @@ TEST_F(route_test, DISABLED_rt_update_af) {
     if(!apulu()) {
         // Currently ipv6 feeder init is not supported in apulu
         memset(&spec, 0, sizeof(spec));
-        memset(&old_spec, 0, sizeof(old_spec));
         feeder.init(k_base_v6_pfx, IP_AF_IPV6, 0, k_num_route_tables,
                     k_route_table_id);
         route_table_create(feeder);
-        memcpy(&old_spec, &feeder.spec, sizeof(pds_route_table_spec_t));
         // update should fail as af is immutable attribute
         route_table_read(feeder);
         create_route_table_spec(k_base_v4_pfx,  IP_AF_IPV4, 0,
@@ -756,13 +750,13 @@ TEST_F(route_test, DISABLED_rt_update_af) {
                                 &spec, false);
         route_table_update(feeder, &spec, ROUTE_TABLE_ATTR_AF, SDK_RET_ERR);
         // As update fails, rollback feeder's spec to old spec
-        memcpy(&feeder.spec, &old_spec, sizeof(pds_route_table_spec_t));
+        feeder.init(k_base_v6_pfx, IP_AF_IPV6, 0, k_num_route_tables,
+                    k_route_table_id);
         route_table_read(feeder);
         route_table_delete(feeder);
         route_table_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
     }
 }
-
 /// \brief change routes in a route table
 TEST_F(route_test, rt_update_routes) {
     route_table_feeder feeder;
