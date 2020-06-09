@@ -13,6 +13,14 @@
 #include "nic/linkmgr/linkmgr_utils.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/platform/drivers/xcvr.hpp"
+
+
+#ifdef ELBA
+#include "nic/sdk/include/sdk/asic/elba/elb_mx_common_api.h"
+#else
+#include "nic/sdk/include/sdk/asic/capri/cap_mx_api.h"
+#endif
+
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "platform/pal/include/pal_types.h"
 #include "platform/drivers/xcvr.hpp"
@@ -1791,7 +1799,11 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                             mac_inst, mac_ch);
 
             memset(stats_data, 0, sizeof(uint64_t) * MAX_MAC_STATS);
+#ifdef ELBA
+            elb_mx_mac_stat(0 /*chip_id*/, mac_inst, mac_ch, stats_data);
+#else
             cap_mx_mac_stat(0 /*chip_id*/, mac_inst, mac_ch, 0, stats_data);
+#endif
             break;
 
         case 19:
@@ -1802,7 +1814,11 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                             " enable: {}",
                             mac_inst, mac_ch, req.val3());
 
+#ifdef ELBA
+            elb_mx_pcs_lpbk_set(0 /*chip_id*/, mac_inst, mac_ch, 1, req.val3());
+#else
             cap_mx_serdes_lpbk_set(0 /*chip_id*/, mac_inst, mac_ch, req.val3());
+#endif
 
             break;
 
@@ -1933,6 +1949,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             sbus_addr = req.val3(); // mac reg addr
             sbus_data = req.val4(); // mac reg data
 
+#ifndef ELBA
             if (req.val1() == 0) {
                 // READ
                 HAL_TRACE_DEBUG (
@@ -1946,6 +1963,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
                 cap_mx_apb_write(0 /* chip_id */, mac_inst,
                                  sbus_addr, sbus_data);
             }
+#endif
 
             break;
 
