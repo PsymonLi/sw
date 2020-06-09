@@ -13,10 +13,11 @@ import (
 )
 
 var tsShowCmd = &cobra.Command{
-	Use:   "techsupport",
-	Short: "collect technical support information",
-	Long:  "collect technical support information",
-	Run:   tsShowCmdHandler,
+	Use:    "techsupport",
+	Short:  "collect technical support information",
+	Long:   "collect technical support information",
+	Hidden: true,
+	Run:    tsShowCmdHandler,
 }
 
 func init() {
