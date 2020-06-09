@@ -706,6 +706,7 @@ type SecurityGroupAPI interface {
 	SyncUpdate(obj *security.SecurityGroup) error
 	Label(obj *api.Label) error
 	Delete(obj *security.SecurityGroup) error
+	SyncDelete(obj *security.SecurityGroup) error
 	Find(meta *api.ObjectMeta) (*SecurityGroup, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*SecurityGroup, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.SecurityGroup, error)
@@ -847,6 +848,26 @@ func (api *securitygroupAPI) Delete(obj *security.SecurityGroup) error {
 	return nil
 }
 
+// SyncDelete deletes SecurityGroup object and updates the cache
+func (api *securitygroupAPI) SyncDelete(obj *security.SecurityGroup) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().SecurityGroup().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleSecurityGroupEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *securitygroupAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -928,8 +949,12 @@ func (api *securitygroupAPI) Watch(handler SecurityGroupHandler) error {
 // StopWatch stop watch for Tenant SecurityGroup object
 func (api *securitygroupAPI) StopWatch(handler SecurityGroupHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["SecurityGroup"].Stop()
+	worker := api.ct.workPools["SecurityGroup"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchSecurityGroup(handler)
 }
 
@@ -1626,6 +1651,7 @@ type NetworkSecurityPolicyAPI interface {
 	SyncUpdate(obj *security.NetworkSecurityPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *security.NetworkSecurityPolicy) error
+	SyncDelete(obj *security.NetworkSecurityPolicy) error
 	Find(meta *api.ObjectMeta) (*NetworkSecurityPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*NetworkSecurityPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.NetworkSecurityPolicy, error)
@@ -1767,6 +1793,26 @@ func (api *networksecuritypolicyAPI) Delete(obj *security.NetworkSecurityPolicy)
 	return nil
 }
 
+// SyncDelete deletes NetworkSecurityPolicy object and updates the cache
+func (api *networksecuritypolicyAPI) SyncDelete(obj *security.NetworkSecurityPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().NetworkSecurityPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleNetworkSecurityPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *networksecuritypolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1848,8 +1894,12 @@ func (api *networksecuritypolicyAPI) Watch(handler NetworkSecurityPolicyHandler)
 // StopWatch stop watch for Tenant NetworkSecurityPolicy object
 func (api *networksecuritypolicyAPI) StopWatch(handler NetworkSecurityPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["NetworkSecurityPolicy"].Stop()
+	worker := api.ct.workPools["NetworkSecurityPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchNetworkSecurityPolicy(handler)
 }
 
@@ -2546,6 +2596,7 @@ type AppAPI interface {
 	SyncUpdate(obj *security.App) error
 	Label(obj *api.Label) error
 	Delete(obj *security.App) error
+	SyncDelete(obj *security.App) error
 	Find(meta *api.ObjectMeta) (*App, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*App, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.App, error)
@@ -2687,6 +2738,26 @@ func (api *appAPI) Delete(obj *security.App) error {
 	return nil
 }
 
+// SyncDelete deletes App object and updates the cache
+func (api *appAPI) SyncDelete(obj *security.App) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().App().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAppEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *appAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2768,8 +2839,12 @@ func (api *appAPI) Watch(handler AppHandler) error {
 // StopWatch stop watch for Tenant App object
 func (api *appAPI) StopWatch(handler AppHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["App"].Stop()
+	worker := api.ct.workPools["App"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchApp(handler)
 }
 
@@ -3466,6 +3541,7 @@ type FirewallProfileAPI interface {
 	SyncUpdate(obj *security.FirewallProfile) error
 	Label(obj *api.Label) error
 	Delete(obj *security.FirewallProfile) error
+	SyncDelete(obj *security.FirewallProfile) error
 	Find(meta *api.ObjectMeta) (*FirewallProfile, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FirewallProfile, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.FirewallProfile, error)
@@ -3607,6 +3683,26 @@ func (api *firewallprofileAPI) Delete(obj *security.FirewallProfile) error {
 	return nil
 }
 
+// SyncDelete deletes FirewallProfile object and updates the cache
+func (api *firewallprofileAPI) SyncDelete(obj *security.FirewallProfile) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().FirewallProfile().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleFirewallProfileEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *firewallprofileAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3688,8 +3784,12 @@ func (api *firewallprofileAPI) Watch(handler FirewallProfileHandler) error {
 // StopWatch stop watch for Tenant FirewallProfile object
 func (api *firewallprofileAPI) StopWatch(handler FirewallProfileHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["FirewallProfile"].Stop()
+	worker := api.ct.workPools["FirewallProfile"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchFirewallProfile(handler)
 }
 
@@ -4386,6 +4486,7 @@ type CertificateAPI interface {
 	SyncUpdate(obj *security.Certificate) error
 	Label(obj *api.Label) error
 	Delete(obj *security.Certificate) error
+	SyncDelete(obj *security.Certificate) error
 	Find(meta *api.ObjectMeta) (*Certificate, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Certificate, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.Certificate, error)
@@ -4527,6 +4628,26 @@ func (api *certificateAPI) Delete(obj *security.Certificate) error {
 	return nil
 }
 
+// SyncDelete deletes Certificate object and updates the cache
+func (api *certificateAPI) SyncDelete(obj *security.Certificate) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().Certificate().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleCertificateEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *certificateAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4608,8 +4729,12 @@ func (api *certificateAPI) Watch(handler CertificateHandler) error {
 // StopWatch stop watch for Tenant Certificate object
 func (api *certificateAPI) StopWatch(handler CertificateHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Certificate"].Stop()
+	worker := api.ct.workPools["Certificate"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchCertificate(handler)
 }
 
@@ -5306,6 +5431,7 @@ type TrafficEncryptionPolicyAPI interface {
 	SyncUpdate(obj *security.TrafficEncryptionPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *security.TrafficEncryptionPolicy) error
+	SyncDelete(obj *security.TrafficEncryptionPolicy) error
 	Find(meta *api.ObjectMeta) (*TrafficEncryptionPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TrafficEncryptionPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*security.TrafficEncryptionPolicy, error)
@@ -5447,6 +5573,26 @@ func (api *trafficencryptionpolicyAPI) Delete(obj *security.TrafficEncryptionPol
 	return nil
 }
 
+// SyncDelete deletes TrafficEncryptionPolicy object and updates the cache
+func (api *trafficencryptionpolicyAPI) SyncDelete(obj *security.TrafficEncryptionPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.SecurityV1().TrafficEncryptionPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleTrafficEncryptionPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *trafficencryptionpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -5528,8 +5674,12 @@ func (api *trafficencryptionpolicyAPI) Watch(handler TrafficEncryptionPolicyHand
 // StopWatch stop watch for Tenant TrafficEncryptionPolicy object
 func (api *trafficencryptionpolicyAPI) StopWatch(handler TrafficEncryptionPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["TrafficEncryptionPolicy"].Stop()
+	worker := api.ct.workPools["TrafficEncryptionPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchTrafficEncryptionPolicy(handler)
 }
 

@@ -706,6 +706,7 @@ type OrderAPI interface {
 	SyncUpdate(obj *bookstore.Order) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Order) error
+	SyncDelete(obj *bookstore.Order) error
 	Find(meta *api.ObjectMeta) (*Order, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Order, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Order, error)
@@ -860,6 +861,26 @@ func (api *orderAPI) Delete(obj *bookstore.Order) error {
 	return nil
 }
 
+// SyncDelete deletes Order object and updates the cache
+func (api *orderAPI) SyncDelete(obj *bookstore.Order) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Order().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleOrderEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *orderAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -941,8 +962,12 @@ func (api *orderAPI) Watch(handler OrderHandler) error {
 // StopWatch stop watch for Tenant Order object
 func (api *orderAPI) StopWatch(handler OrderHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Order"].Stop()
+	worker := api.ct.workPools["Order"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchOrder(handler)
 }
 
@@ -1741,6 +1766,7 @@ type BookAPI interface {
 	SyncUpdate(obj *bookstore.Book) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Book) error
+	SyncDelete(obj *bookstore.Book) error
 	Find(meta *api.ObjectMeta) (*Book, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Book, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Book, error)
@@ -1889,6 +1915,26 @@ func (api *bookAPI) Delete(obj *bookstore.Book) error {
 	return nil
 }
 
+// SyncDelete deletes Book object and updates the cache
+func (api *bookAPI) SyncDelete(obj *bookstore.Book) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Book().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleBookEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *bookAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1970,8 +2016,12 @@ func (api *bookAPI) Watch(handler BookHandler) error {
 // StopWatch stop watch for Tenant Book object
 func (api *bookAPI) StopWatch(handler BookHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Book"].Stop()
+	worker := api.ct.workPools["Book"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchBook(handler)
 }
 
@@ -2719,6 +2769,7 @@ type PublisherAPI interface {
 	SyncUpdate(obj *bookstore.Publisher) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Publisher) error
+	SyncDelete(obj *bookstore.Publisher) error
 	Find(meta *api.ObjectMeta) (*Publisher, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Publisher, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Publisher, error)
@@ -2860,6 +2911,26 @@ func (api *publisherAPI) Delete(obj *bookstore.Publisher) error {
 	return nil
 }
 
+// SyncDelete deletes Publisher object and updates the cache
+func (api *publisherAPI) SyncDelete(obj *bookstore.Publisher) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Publisher().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handlePublisherEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *publisherAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2941,8 +3012,12 @@ func (api *publisherAPI) Watch(handler PublisherHandler) error {
 // StopWatch stop watch for Tenant Publisher object
 func (api *publisherAPI) StopWatch(handler PublisherHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Publisher"].Stop()
+	worker := api.ct.workPools["Publisher"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchPublisher(handler)
 }
 
@@ -3639,6 +3714,7 @@ type StoreAPI interface {
 	SyncUpdate(obj *bookstore.Store) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Store) error
+	SyncDelete(obj *bookstore.Store) error
 	Find(meta *api.ObjectMeta) (*Store, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Store, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Store, error)
@@ -3787,6 +3863,26 @@ func (api *storeAPI) Delete(obj *bookstore.Store) error {
 	return nil
 }
 
+// SyncDelete deletes Store object and updates the cache
+func (api *storeAPI) SyncDelete(obj *bookstore.Store) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Store().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleStoreEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *storeAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3868,8 +3964,12 @@ func (api *storeAPI) Watch(handler StoreHandler) error {
 // StopWatch stop watch for Tenant Store object
 func (api *storeAPI) StopWatch(handler StoreHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Store"].Stop()
+	worker := api.ct.workPools["Store"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchStore(handler)
 }
 
@@ -4617,6 +4717,7 @@ type CouponAPI interface {
 	SyncUpdate(obj *bookstore.Coupon) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Coupon) error
+	SyncDelete(obj *bookstore.Coupon) error
 	Find(meta *api.ObjectMeta) (*Coupon, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Coupon, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Coupon, error)
@@ -4758,6 +4859,26 @@ func (api *couponAPI) Delete(obj *bookstore.Coupon) error {
 	return nil
 }
 
+// SyncDelete deletes Coupon object and updates the cache
+func (api *couponAPI) SyncDelete(obj *bookstore.Coupon) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Coupon().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleCouponEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *couponAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4839,8 +4960,12 @@ func (api *couponAPI) Watch(handler CouponHandler) error {
 // StopWatch stop watch for Tenant Coupon object
 func (api *couponAPI) StopWatch(handler CouponHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Coupon"].Stop()
+	worker := api.ct.workPools["Coupon"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchCoupon(handler)
 }
 
@@ -5545,6 +5670,7 @@ type CustomerAPI interface {
 	SyncUpdate(obj *bookstore.Customer) error
 	Label(obj *api.Label) error
 	Delete(obj *bookstore.Customer) error
+	SyncDelete(obj *bookstore.Customer) error
 	Find(meta *api.ObjectMeta) (*Customer, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Customer, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*bookstore.Customer, error)
@@ -5686,6 +5812,26 @@ func (api *customerAPI) Delete(obj *bookstore.Customer) error {
 	return nil
 }
 
+// SyncDelete deletes Customer object and updates the cache
+func (api *customerAPI) SyncDelete(obj *bookstore.Customer) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.BookstoreV1().Customer().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleCustomerEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *customerAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -5767,8 +5913,12 @@ func (api *customerAPI) Watch(handler CustomerHandler) error {
 // StopWatch stop watch for Tenant Customer object
 func (api *customerAPI) StopWatch(handler CustomerHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Customer"].Stop()
+	worker := api.ct.workPools["Customer"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchCustomer(handler)
 }
 

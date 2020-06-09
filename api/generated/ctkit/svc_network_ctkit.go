@@ -706,6 +706,7 @@ type NetworkAPI interface {
 	SyncUpdate(obj *network.Network) error
 	Label(obj *api.Label) error
 	Delete(obj *network.Network) error
+	SyncDelete(obj *network.Network) error
 	Find(meta *api.ObjectMeta) (*Network, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Network, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.Network, error)
@@ -847,6 +848,26 @@ func (api *networkAPI) Delete(obj *network.Network) error {
 	return nil
 }
 
+// SyncDelete deletes Network object and updates the cache
+func (api *networkAPI) SyncDelete(obj *network.Network) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().Network().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleNetworkEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *networkAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -928,8 +949,12 @@ func (api *networkAPI) Watch(handler NetworkHandler) error {
 // StopWatch stop watch for Tenant Network object
 func (api *networkAPI) StopWatch(handler NetworkHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Network"].Stop()
+	worker := api.ct.workPools["Network"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchNetwork(handler)
 }
 
@@ -1626,6 +1651,7 @@ type ServiceAPI interface {
 	SyncUpdate(obj *network.Service) error
 	Label(obj *api.Label) error
 	Delete(obj *network.Service) error
+	SyncDelete(obj *network.Service) error
 	Find(meta *api.ObjectMeta) (*Service, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Service, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.Service, error)
@@ -1767,6 +1793,26 @@ func (api *serviceAPI) Delete(obj *network.Service) error {
 	return nil
 }
 
+// SyncDelete deletes Service object and updates the cache
+func (api *serviceAPI) SyncDelete(obj *network.Service) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().Service().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleServiceEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *serviceAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1848,8 +1894,12 @@ func (api *serviceAPI) Watch(handler ServiceHandler) error {
 // StopWatch stop watch for Tenant Service object
 func (api *serviceAPI) StopWatch(handler ServiceHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Service"].Stop()
+	worker := api.ct.workPools["Service"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchService(handler)
 }
 
@@ -2546,6 +2596,7 @@ type LbPolicyAPI interface {
 	SyncUpdate(obj *network.LbPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *network.LbPolicy) error
+	SyncDelete(obj *network.LbPolicy) error
 	Find(meta *api.ObjectMeta) (*LbPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*LbPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.LbPolicy, error)
@@ -2687,6 +2738,26 @@ func (api *lbpolicyAPI) Delete(obj *network.LbPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes LbPolicy object and updates the cache
+func (api *lbpolicyAPI) SyncDelete(obj *network.LbPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().LbPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleLbPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *lbpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2768,8 +2839,12 @@ func (api *lbpolicyAPI) Watch(handler LbPolicyHandler) error {
 // StopWatch stop watch for Tenant LbPolicy object
 func (api *lbpolicyAPI) StopWatch(handler LbPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["LbPolicy"].Stop()
+	worker := api.ct.workPools["LbPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchLbPolicy(handler)
 }
 
@@ -3466,6 +3541,7 @@ type VirtualRouterAPI interface {
 	SyncUpdate(obj *network.VirtualRouter) error
 	Label(obj *api.Label) error
 	Delete(obj *network.VirtualRouter) error
+	SyncDelete(obj *network.VirtualRouter) error
 	Find(meta *api.ObjectMeta) (*VirtualRouter, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*VirtualRouter, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.VirtualRouter, error)
@@ -3607,6 +3683,26 @@ func (api *virtualrouterAPI) Delete(obj *network.VirtualRouter) error {
 	return nil
 }
 
+// SyncDelete deletes VirtualRouter object and updates the cache
+func (api *virtualrouterAPI) SyncDelete(obj *network.VirtualRouter) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().VirtualRouter().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleVirtualRouterEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *virtualrouterAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3688,8 +3784,12 @@ func (api *virtualrouterAPI) Watch(handler VirtualRouterHandler) error {
 // StopWatch stop watch for Tenant VirtualRouter object
 func (api *virtualrouterAPI) StopWatch(handler VirtualRouterHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["VirtualRouter"].Stop()
+	worker := api.ct.workPools["VirtualRouter"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchVirtualRouter(handler)
 }
 
@@ -4386,6 +4486,7 @@ type NetworkInterfaceAPI interface {
 	SyncUpdate(obj *network.NetworkInterface) error
 	Label(obj *api.Label) error
 	Delete(obj *network.NetworkInterface) error
+	SyncDelete(obj *network.NetworkInterface) error
 	Find(meta *api.ObjectMeta) (*NetworkInterface, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*NetworkInterface, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.NetworkInterface, error)
@@ -4527,6 +4628,26 @@ func (api *networkinterfaceAPI) Delete(obj *network.NetworkInterface) error {
 	return nil
 }
 
+// SyncDelete deletes NetworkInterface object and updates the cache
+func (api *networkinterfaceAPI) SyncDelete(obj *network.NetworkInterface) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().NetworkInterface().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleNetworkInterfaceEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *networkinterfaceAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4608,8 +4729,12 @@ func (api *networkinterfaceAPI) Watch(handler NetworkInterfaceHandler) error {
 // StopWatch stop watch for Tenant NetworkInterface object
 func (api *networkinterfaceAPI) StopWatch(handler NetworkInterfaceHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["NetworkInterface"].Stop()
+	worker := api.ct.workPools["NetworkInterface"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchNetworkInterface(handler)
 }
 
@@ -5306,6 +5431,7 @@ type IPAMPolicyAPI interface {
 	SyncUpdate(obj *network.IPAMPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *network.IPAMPolicy) error
+	SyncDelete(obj *network.IPAMPolicy) error
 	Find(meta *api.ObjectMeta) (*IPAMPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*IPAMPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.IPAMPolicy, error)
@@ -5447,6 +5573,26 @@ func (api *ipampolicyAPI) Delete(obj *network.IPAMPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes IPAMPolicy object and updates the cache
+func (api *ipampolicyAPI) SyncDelete(obj *network.IPAMPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().IPAMPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleIPAMPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *ipampolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -5528,8 +5674,12 @@ func (api *ipampolicyAPI) Watch(handler IPAMPolicyHandler) error {
 // StopWatch stop watch for Tenant IPAMPolicy object
 func (api *ipampolicyAPI) StopWatch(handler IPAMPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["IPAMPolicy"].Stop()
+	worker := api.ct.workPools["IPAMPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchIPAMPolicy(handler)
 }
 
@@ -6234,6 +6384,7 @@ type RoutingConfigAPI interface {
 	SyncUpdate(obj *network.RoutingConfig) error
 	Label(obj *api.Label) error
 	Delete(obj *network.RoutingConfig) error
+	SyncDelete(obj *network.RoutingConfig) error
 	Find(meta *api.ObjectMeta) (*RoutingConfig, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RoutingConfig, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.RoutingConfig, error)
@@ -6375,6 +6526,26 @@ func (api *routingconfigAPI) Delete(obj *network.RoutingConfig) error {
 	return nil
 }
 
+// SyncDelete deletes RoutingConfig object and updates the cache
+func (api *routingconfigAPI) SyncDelete(obj *network.RoutingConfig) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().RoutingConfig().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRoutingConfigEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *routingconfigAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -6456,8 +6627,12 @@ func (api *routingconfigAPI) Watch(handler RoutingConfigHandler) error {
 // StopWatch stop watch for Tenant RoutingConfig object
 func (api *routingconfigAPI) StopWatch(handler RoutingConfigHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RoutingConfig"].Stop()
+	worker := api.ct.workPools["RoutingConfig"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRoutingConfig(handler)
 }
 
@@ -7154,6 +7329,7 @@ type RouteTableAPI interface {
 	SyncUpdate(obj *network.RouteTable) error
 	Label(obj *api.Label) error
 	Delete(obj *network.RouteTable) error
+	SyncDelete(obj *network.RouteTable) error
 	Find(meta *api.ObjectMeta) (*RouteTable, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RouteTable, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*network.RouteTable, error)
@@ -7295,6 +7471,26 @@ func (api *routetableAPI) Delete(obj *network.RouteTable) error {
 	return nil
 }
 
+// SyncDelete deletes RouteTable object and updates the cache
+func (api *routetableAPI) SyncDelete(obj *network.RouteTable) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.NetworkV1().RouteTable().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRouteTableEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *routetableAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -7376,8 +7572,12 @@ func (api *routetableAPI) Watch(handler RouteTableHandler) error {
 // StopWatch stop watch for Tenant RouteTable object
 func (api *routetableAPI) StopWatch(handler RouteTableHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RouteTable"].Stop()
+	worker := api.ct.workPools["RouteTable"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRouteTable(handler)
 }
 

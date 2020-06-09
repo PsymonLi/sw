@@ -714,6 +714,7 @@ type ClusterAPI interface {
 	SyncUpdate(obj *cluster.Cluster) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Cluster) error
+	SyncDelete(obj *cluster.Cluster) error
 	Find(meta *api.ObjectMeta) (*Cluster, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Cluster, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Cluster, error)
@@ -868,6 +869,26 @@ func (api *clusterAPI) Delete(obj *cluster.Cluster) error {
 	return nil
 }
 
+// SyncDelete deletes Cluster object and updates the cache
+func (api *clusterAPI) SyncDelete(obj *cluster.Cluster) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Cluster().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleClusterEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *clusterAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -949,8 +970,12 @@ func (api *clusterAPI) Watch(handler ClusterHandler) error {
 // StopWatch stop watch for Tenant Cluster object
 func (api *clusterAPI) StopWatch(handler ClusterHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Cluster"].Stop()
+	worker := api.ct.workPools["Cluster"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchCluster(handler)
 }
 
@@ -1749,6 +1774,7 @@ type NodeAPI interface {
 	SyncUpdate(obj *cluster.Node) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Node) error
+	SyncDelete(obj *cluster.Node) error
 	Find(meta *api.ObjectMeta) (*Node, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Node, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Node, error)
@@ -1890,6 +1916,26 @@ func (api *nodeAPI) Delete(obj *cluster.Node) error {
 	return nil
 }
 
+// SyncDelete deletes Node object and updates the cache
+func (api *nodeAPI) SyncDelete(obj *cluster.Node) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Node().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleNodeEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *nodeAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1971,8 +2017,12 @@ func (api *nodeAPI) Watch(handler NodeHandler) error {
 // StopWatch stop watch for Tenant Node object
 func (api *nodeAPI) StopWatch(handler NodeHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Node"].Stop()
+	worker := api.ct.workPools["Node"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchNode(handler)
 }
 
@@ -2669,6 +2719,7 @@ type HostAPI interface {
 	SyncUpdate(obj *cluster.Host) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Host) error
+	SyncDelete(obj *cluster.Host) error
 	Find(meta *api.ObjectMeta) (*Host, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Host, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Host, error)
@@ -2810,6 +2861,26 @@ func (api *hostAPI) Delete(obj *cluster.Host) error {
 	return nil
 }
 
+// SyncDelete deletes Host object and updates the cache
+func (api *hostAPI) SyncDelete(obj *cluster.Host) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Host().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleHostEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *hostAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2891,8 +2962,12 @@ func (api *hostAPI) Watch(handler HostHandler) error {
 // StopWatch stop watch for Tenant Host object
 func (api *hostAPI) StopWatch(handler HostHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Host"].Stop()
+	worker := api.ct.workPools["Host"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchHost(handler)
 }
 
@@ -3589,6 +3664,7 @@ type DistributedServiceCardAPI interface {
 	SyncUpdate(obj *cluster.DistributedServiceCard) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.DistributedServiceCard) error
+	SyncDelete(obj *cluster.DistributedServiceCard) error
 	Find(meta *api.ObjectMeta) (*DistributedServiceCard, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*DistributedServiceCard, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.DistributedServiceCard, error)
@@ -3730,6 +3806,26 @@ func (api *distributedservicecardAPI) Delete(obj *cluster.DistributedServiceCard
 	return nil
 }
 
+// SyncDelete deletes DistributedServiceCard object and updates the cache
+func (api *distributedservicecardAPI) SyncDelete(obj *cluster.DistributedServiceCard) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().DistributedServiceCard().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleDistributedServiceCardEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *distributedservicecardAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3811,8 +3907,12 @@ func (api *distributedservicecardAPI) Watch(handler DistributedServiceCardHandle
 // StopWatch stop watch for Tenant DistributedServiceCard object
 func (api *distributedservicecardAPI) StopWatch(handler DistributedServiceCardHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["DistributedServiceCard"].Stop()
+	worker := api.ct.workPools["DistributedServiceCard"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchDistributedServiceCard(handler)
 }
 
@@ -4509,6 +4609,7 @@ type TenantAPI interface {
 	SyncUpdate(obj *cluster.Tenant) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Tenant) error
+	SyncDelete(obj *cluster.Tenant) error
 	Find(meta *api.ObjectMeta) (*Tenant, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Tenant, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Tenant, error)
@@ -4650,6 +4751,26 @@ func (api *tenantAPI) Delete(obj *cluster.Tenant) error {
 	return nil
 }
 
+// SyncDelete deletes Tenant object and updates the cache
+func (api *tenantAPI) SyncDelete(obj *cluster.Tenant) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Tenant().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleTenantEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *tenantAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4731,8 +4852,12 @@ func (api *tenantAPI) Watch(handler TenantHandler) error {
 // StopWatch stop watch for Tenant Tenant object
 func (api *tenantAPI) StopWatch(handler TenantHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Tenant"].Stop()
+	worker := api.ct.workPools["Tenant"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchTenant(handler)
 }
 
@@ -5429,6 +5554,7 @@ type VersionAPI interface {
 	SyncUpdate(obj *cluster.Version) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Version) error
+	SyncDelete(obj *cluster.Version) error
 	Find(meta *api.ObjectMeta) (*Version, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Version, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Version, error)
@@ -5570,6 +5696,26 @@ func (api *versionAPI) Delete(obj *cluster.Version) error {
 	return nil
 }
 
+// SyncDelete deletes Version object and updates the cache
+func (api *versionAPI) SyncDelete(obj *cluster.Version) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Version().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleVersionEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *versionAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -5651,8 +5797,12 @@ func (api *versionAPI) Watch(handler VersionHandler) error {
 // StopWatch stop watch for Tenant Version object
 func (api *versionAPI) StopWatch(handler VersionHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Version"].Stop()
+	worker := api.ct.workPools["Version"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchVersion(handler)
 }
 
@@ -6349,6 +6499,7 @@ type ConfigurationSnapshotAPI interface {
 	SyncUpdate(obj *cluster.ConfigurationSnapshot) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.ConfigurationSnapshot) error
+	SyncDelete(obj *cluster.ConfigurationSnapshot) error
 	Find(meta *api.ObjectMeta) (*ConfigurationSnapshot, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*ConfigurationSnapshot, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.ConfigurationSnapshot, error)
@@ -6497,6 +6648,26 @@ func (api *configurationsnapshotAPI) Delete(obj *cluster.ConfigurationSnapshot) 
 	return nil
 }
 
+// SyncDelete deletes ConfigurationSnapshot object and updates the cache
+func (api *configurationsnapshotAPI) SyncDelete(obj *cluster.ConfigurationSnapshot) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().ConfigurationSnapshot().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleConfigurationSnapshotEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *configurationsnapshotAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -6578,8 +6749,12 @@ func (api *configurationsnapshotAPI) Watch(handler ConfigurationSnapshotHandler)
 // StopWatch stop watch for Tenant ConfigurationSnapshot object
 func (api *configurationsnapshotAPI) StopWatch(handler ConfigurationSnapshotHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["ConfigurationSnapshot"].Stop()
+	worker := api.ct.workPools["ConfigurationSnapshot"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchConfigurationSnapshot(handler)
 }
 
@@ -7327,6 +7502,7 @@ type SnapshotRestoreAPI interface {
 	SyncUpdate(obj *cluster.SnapshotRestore) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.SnapshotRestore) error
+	SyncDelete(obj *cluster.SnapshotRestore) error
 	Find(meta *api.ObjectMeta) (*SnapshotRestore, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*SnapshotRestore, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.SnapshotRestore, error)
@@ -7475,6 +7651,26 @@ func (api *snapshotrestoreAPI) Delete(obj *cluster.SnapshotRestore) error {
 	return nil
 }
 
+// SyncDelete deletes SnapshotRestore object and updates the cache
+func (api *snapshotrestoreAPI) SyncDelete(obj *cluster.SnapshotRestore) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().SnapshotRestore().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleSnapshotRestoreEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *snapshotrestoreAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -7556,8 +7752,12 @@ func (api *snapshotrestoreAPI) Watch(handler SnapshotRestoreHandler) error {
 // StopWatch stop watch for Tenant SnapshotRestore object
 func (api *snapshotrestoreAPI) StopWatch(handler SnapshotRestoreHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["SnapshotRestore"].Stop()
+	worker := api.ct.workPools["SnapshotRestore"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchSnapshotRestore(handler)
 }
 
@@ -8305,6 +8505,7 @@ type LicenseAPI interface {
 	SyncUpdate(obj *cluster.License) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.License) error
+	SyncDelete(obj *cluster.License) error
 	Find(meta *api.ObjectMeta) (*License, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*License, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.License, error)
@@ -8446,6 +8647,26 @@ func (api *licenseAPI) Delete(obj *cluster.License) error {
 	return nil
 }
 
+// SyncDelete deletes License object and updates the cache
+func (api *licenseAPI) SyncDelete(obj *cluster.License) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().License().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleLicenseEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *licenseAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -8527,8 +8748,12 @@ func (api *licenseAPI) Watch(handler LicenseHandler) error {
 // StopWatch stop watch for Tenant License object
 func (api *licenseAPI) StopWatch(handler LicenseHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["License"].Stop()
+	worker := api.ct.workPools["License"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchLicense(handler)
 }
 
@@ -9225,6 +9450,7 @@ type DSCProfileAPI interface {
 	SyncUpdate(obj *cluster.DSCProfile) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.DSCProfile) error
+	SyncDelete(obj *cluster.DSCProfile) error
 	Find(meta *api.ObjectMeta) (*DSCProfile, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*DSCProfile, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.DSCProfile, error)
@@ -9366,6 +9592,26 @@ func (api *dscprofileAPI) Delete(obj *cluster.DSCProfile) error {
 	return nil
 }
 
+// SyncDelete deletes DSCProfile object and updates the cache
+func (api *dscprofileAPI) SyncDelete(obj *cluster.DSCProfile) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().DSCProfile().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleDSCProfileEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *dscprofileAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -9447,8 +9693,12 @@ func (api *dscprofileAPI) Watch(handler DSCProfileHandler) error {
 // StopWatch stop watch for Tenant DSCProfile object
 func (api *dscprofileAPI) StopWatch(handler DSCProfileHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["DSCProfile"].Stop()
+	worker := api.ct.workPools["DSCProfile"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchDSCProfile(handler)
 }
 
@@ -10153,6 +10403,7 @@ type CredentialsAPI interface {
 	SyncUpdate(obj *cluster.Credentials) error
 	Label(obj *api.Label) error
 	Delete(obj *cluster.Credentials) error
+	SyncDelete(obj *cluster.Credentials) error
 	Find(meta *api.ObjectMeta) (*Credentials, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Credentials, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*cluster.Credentials, error)
@@ -10294,6 +10545,26 @@ func (api *credentialsAPI) Delete(obj *cluster.Credentials) error {
 	return nil
 }
 
+// SyncDelete deletes Credentials object and updates the cache
+func (api *credentialsAPI) SyncDelete(obj *cluster.Credentials) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.ClusterV1().Credentials().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleCredentialsEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *credentialsAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -10375,8 +10646,12 @@ func (api *credentialsAPI) Watch(handler CredentialsHandler) error {
 // StopWatch stop watch for Tenant Credentials object
 func (api *credentialsAPI) StopWatch(handler CredentialsHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Credentials"].Stop()
+	worker := api.ct.workPools["Credentials"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchCredentials(handler)
 }
 

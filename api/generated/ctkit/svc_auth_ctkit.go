@@ -714,6 +714,7 @@ type UserAPI interface {
 	SyncUpdate(obj *auth.User) error
 	Label(obj *api.Label) error
 	Delete(obj *auth.User) error
+	SyncDelete(obj *auth.User) error
 	Find(meta *api.ObjectMeta) (*User, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*User, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*auth.User, error)
@@ -874,6 +875,26 @@ func (api *userAPI) Delete(obj *auth.User) error {
 	return nil
 }
 
+// SyncDelete deletes User object and updates the cache
+func (api *userAPI) SyncDelete(obj *auth.User) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.AuthV1().User().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleUserEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *userAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -955,8 +976,12 @@ func (api *userAPI) Watch(handler UserHandler) error {
 // StopWatch stop watch for Tenant User object
 func (api *userAPI) StopWatch(handler UserHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["User"].Stop()
+	worker := api.ct.workPools["User"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchUser(handler)
 }
 
@@ -1814,6 +1839,7 @@ type AuthenticationPolicyAPI interface {
 	SyncUpdate(obj *auth.AuthenticationPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *auth.AuthenticationPolicy) error
+	SyncDelete(obj *auth.AuthenticationPolicy) error
 	Find(meta *api.ObjectMeta) (*AuthenticationPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AuthenticationPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*auth.AuthenticationPolicy, error)
@@ -1974,6 +2000,26 @@ func (api *authenticationpolicyAPI) Delete(obj *auth.AuthenticationPolicy) error
 	return nil
 }
 
+// SyncDelete deletes AuthenticationPolicy object and updates the cache
+func (api *authenticationpolicyAPI) SyncDelete(obj *auth.AuthenticationPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.AuthV1().AuthenticationPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAuthenticationPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *authenticationpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2055,8 +2101,12 @@ func (api *authenticationpolicyAPI) Watch(handler AuthenticationPolicyHandler) e
 // StopWatch stop watch for Tenant AuthenticationPolicy object
 func (api *authenticationpolicyAPI) StopWatch(handler AuthenticationPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["AuthenticationPolicy"].Stop()
+	worker := api.ct.workPools["AuthenticationPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAuthenticationPolicy(handler)
 }
 
@@ -2906,6 +2956,7 @@ type RoleAPI interface {
 	SyncUpdate(obj *auth.Role) error
 	Label(obj *api.Label) error
 	Delete(obj *auth.Role) error
+	SyncDelete(obj *auth.Role) error
 	Find(meta *api.ObjectMeta) (*Role, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Role, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*auth.Role, error)
@@ -3047,6 +3098,26 @@ func (api *roleAPI) Delete(obj *auth.Role) error {
 	return nil
 }
 
+// SyncDelete deletes Role object and updates the cache
+func (api *roleAPI) SyncDelete(obj *auth.Role) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.AuthV1().Role().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRoleEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *roleAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3128,8 +3199,12 @@ func (api *roleAPI) Watch(handler RoleHandler) error {
 // StopWatch stop watch for Tenant Role object
 func (api *roleAPI) StopWatch(handler RoleHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Role"].Stop()
+	worker := api.ct.workPools["Role"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRole(handler)
 }
 
@@ -3826,6 +3901,7 @@ type RoleBindingAPI interface {
 	SyncUpdate(obj *auth.RoleBinding) error
 	Label(obj *api.Label) error
 	Delete(obj *auth.RoleBinding) error
+	SyncDelete(obj *auth.RoleBinding) error
 	Find(meta *api.ObjectMeta) (*RoleBinding, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RoleBinding, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*auth.RoleBinding, error)
@@ -3967,6 +4043,26 @@ func (api *rolebindingAPI) Delete(obj *auth.RoleBinding) error {
 	return nil
 }
 
+// SyncDelete deletes RoleBinding object and updates the cache
+func (api *rolebindingAPI) SyncDelete(obj *auth.RoleBinding) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.AuthV1().RoleBinding().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRoleBindingEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *rolebindingAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4048,8 +4144,12 @@ func (api *rolebindingAPI) Watch(handler RoleBindingHandler) error {
 // StopWatch stop watch for Tenant RoleBinding object
 func (api *rolebindingAPI) StopWatch(handler RoleBindingHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RoleBinding"].Stop()
+	worker := api.ct.workPools["RoleBinding"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRoleBinding(handler)
 }
 
@@ -4746,6 +4846,7 @@ type UserPreferenceAPI interface {
 	SyncUpdate(obj *auth.UserPreference) error
 	Label(obj *api.Label) error
 	Delete(obj *auth.UserPreference) error
+	SyncDelete(obj *auth.UserPreference) error
 	Find(meta *api.ObjectMeta) (*UserPreference, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*UserPreference, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*auth.UserPreference, error)
@@ -4887,6 +4988,26 @@ func (api *userpreferenceAPI) Delete(obj *auth.UserPreference) error {
 	return nil
 }
 
+// SyncDelete deletes UserPreference object and updates the cache
+func (api *userpreferenceAPI) SyncDelete(obj *auth.UserPreference) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.AuthV1().UserPreference().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleUserPreferenceEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *userpreferenceAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4968,8 +5089,12 @@ func (api *userpreferenceAPI) Watch(handler UserPreferenceHandler) error {
 // StopWatch stop watch for Tenant UserPreference object
 func (api *userpreferenceAPI) StopWatch(handler UserPreferenceHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["UserPreference"].Stop()
+	worker := api.ct.workPools["UserPreference"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchUserPreference(handler)
 }
 

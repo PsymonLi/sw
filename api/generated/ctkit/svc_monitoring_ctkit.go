@@ -714,6 +714,7 @@ type EventPolicyAPI interface {
 	SyncUpdate(obj *monitoring.EventPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.EventPolicy) error
+	SyncDelete(obj *monitoring.EventPolicy) error
 	Find(meta *api.ObjectMeta) (*EventPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*EventPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.EventPolicy, error)
@@ -855,6 +856,26 @@ func (api *eventpolicyAPI) Delete(obj *monitoring.EventPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes EventPolicy object and updates the cache
+func (api *eventpolicyAPI) SyncDelete(obj *monitoring.EventPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().EventPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleEventPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *eventpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -936,8 +957,12 @@ func (api *eventpolicyAPI) Watch(handler EventPolicyHandler) error {
 // StopWatch stop watch for Tenant EventPolicy object
 func (api *eventpolicyAPI) StopWatch(handler EventPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["EventPolicy"].Stop()
+	worker := api.ct.workPools["EventPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchEventPolicy(handler)
 }
 
@@ -1642,6 +1667,7 @@ type FwlogPolicyAPI interface {
 	SyncUpdate(obj *monitoring.FwlogPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.FwlogPolicy) error
+	SyncDelete(obj *monitoring.FwlogPolicy) error
 	Find(meta *api.ObjectMeta) (*FwlogPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FwlogPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.FwlogPolicy, error)
@@ -1783,6 +1809,26 @@ func (api *fwlogpolicyAPI) Delete(obj *monitoring.FwlogPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes FwlogPolicy object and updates the cache
+func (api *fwlogpolicyAPI) SyncDelete(obj *monitoring.FwlogPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().FwlogPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleFwlogPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *fwlogpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1864,8 +1910,12 @@ func (api *fwlogpolicyAPI) Watch(handler FwlogPolicyHandler) error {
 // StopWatch stop watch for Tenant FwlogPolicy object
 func (api *fwlogpolicyAPI) StopWatch(handler FwlogPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["FwlogPolicy"].Stop()
+	worker := api.ct.workPools["FwlogPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchFwlogPolicy(handler)
 }
 
@@ -2570,6 +2620,7 @@ type FlowExportPolicyAPI interface {
 	SyncUpdate(obj *monitoring.FlowExportPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.FlowExportPolicy) error
+	SyncDelete(obj *monitoring.FlowExportPolicy) error
 	Find(meta *api.ObjectMeta) (*FlowExportPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*FlowExportPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.FlowExportPolicy, error)
@@ -2711,6 +2762,26 @@ func (api *flowexportpolicyAPI) Delete(obj *monitoring.FlowExportPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes FlowExportPolicy object and updates the cache
+func (api *flowexportpolicyAPI) SyncDelete(obj *monitoring.FlowExportPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().FlowExportPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleFlowExportPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *flowexportpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2792,8 +2863,12 @@ func (api *flowexportpolicyAPI) Watch(handler FlowExportPolicyHandler) error {
 // StopWatch stop watch for Tenant FlowExportPolicy object
 func (api *flowexportpolicyAPI) StopWatch(handler FlowExportPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["FlowExportPolicy"].Stop()
+	worker := api.ct.workPools["FlowExportPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchFlowExportPolicy(handler)
 }
 
@@ -3490,6 +3565,7 @@ type AlertAPI interface {
 	SyncUpdate(obj *monitoring.Alert) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.Alert) error
+	SyncDelete(obj *monitoring.Alert) error
 	Find(meta *api.ObjectMeta) (*Alert, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Alert, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.Alert, error)
@@ -3631,6 +3707,26 @@ func (api *alertAPI) Delete(obj *monitoring.Alert) error {
 	return nil
 }
 
+// SyncDelete deletes Alert object and updates the cache
+func (api *alertAPI) SyncDelete(obj *monitoring.Alert) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().Alert().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAlertEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *alertAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -3712,8 +3808,12 @@ func (api *alertAPI) Watch(handler AlertHandler) error {
 // StopWatch stop watch for Tenant Alert object
 func (api *alertAPI) StopWatch(handler AlertHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Alert"].Stop()
+	worker := api.ct.workPools["Alert"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAlert(handler)
 }
 
@@ -4410,6 +4510,7 @@ type AlertPolicyAPI interface {
 	SyncUpdate(obj *monitoring.AlertPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.AlertPolicy) error
+	SyncDelete(obj *monitoring.AlertPolicy) error
 	Find(meta *api.ObjectMeta) (*AlertPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AlertPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.AlertPolicy, error)
@@ -4551,6 +4652,26 @@ func (api *alertpolicyAPI) Delete(obj *monitoring.AlertPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes AlertPolicy object and updates the cache
+func (api *alertpolicyAPI) SyncDelete(obj *monitoring.AlertPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().AlertPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAlertPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *alertpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -4632,8 +4753,12 @@ func (api *alertpolicyAPI) Watch(handler AlertPolicyHandler) error {
 // StopWatch stop watch for Tenant AlertPolicy object
 func (api *alertpolicyAPI) StopWatch(handler AlertPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["AlertPolicy"].Stop()
+	worker := api.ct.workPools["AlertPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAlertPolicy(handler)
 }
 
@@ -5330,6 +5455,7 @@ type StatsAlertPolicyAPI interface {
 	SyncUpdate(obj *monitoring.StatsAlertPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.StatsAlertPolicy) error
+	SyncDelete(obj *monitoring.StatsAlertPolicy) error
 	Find(meta *api.ObjectMeta) (*StatsAlertPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*StatsAlertPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.StatsAlertPolicy, error)
@@ -5471,6 +5597,26 @@ func (api *statsalertpolicyAPI) Delete(obj *monitoring.StatsAlertPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes StatsAlertPolicy object and updates the cache
+func (api *statsalertpolicyAPI) SyncDelete(obj *monitoring.StatsAlertPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().StatsAlertPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleStatsAlertPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *statsalertpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -5552,8 +5698,12 @@ func (api *statsalertpolicyAPI) Watch(handler StatsAlertPolicyHandler) error {
 // StopWatch stop watch for Tenant StatsAlertPolicy object
 func (api *statsalertpolicyAPI) StopWatch(handler StatsAlertPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["StatsAlertPolicy"].Stop()
+	worker := api.ct.workPools["StatsAlertPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchStatsAlertPolicy(handler)
 }
 
@@ -6258,6 +6408,7 @@ type AlertDestinationAPI interface {
 	SyncUpdate(obj *monitoring.AlertDestination) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.AlertDestination) error
+	SyncDelete(obj *monitoring.AlertDestination) error
 	Find(meta *api.ObjectMeta) (*AlertDestination, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AlertDestination, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.AlertDestination, error)
@@ -6399,6 +6550,26 @@ func (api *alertdestinationAPI) Delete(obj *monitoring.AlertDestination) error {
 	return nil
 }
 
+// SyncDelete deletes AlertDestination object and updates the cache
+func (api *alertdestinationAPI) SyncDelete(obj *monitoring.AlertDestination) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().AlertDestination().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAlertDestinationEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *alertdestinationAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -6480,8 +6651,12 @@ func (api *alertdestinationAPI) Watch(handler AlertDestinationHandler) error {
 // StopWatch stop watch for Tenant AlertDestination object
 func (api *alertdestinationAPI) StopWatch(handler AlertDestinationHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["AlertDestination"].Stop()
+	worker := api.ct.workPools["AlertDestination"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAlertDestination(handler)
 }
 
@@ -7178,6 +7353,7 @@ type MirrorSessionAPI interface {
 	SyncUpdate(obj *monitoring.MirrorSession) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.MirrorSession) error
+	SyncDelete(obj *monitoring.MirrorSession) error
 	Find(meta *api.ObjectMeta) (*MirrorSession, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*MirrorSession, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.MirrorSession, error)
@@ -7319,6 +7495,26 @@ func (api *mirrorsessionAPI) Delete(obj *monitoring.MirrorSession) error {
 	return nil
 }
 
+// SyncDelete deletes MirrorSession object and updates the cache
+func (api *mirrorsessionAPI) SyncDelete(obj *monitoring.MirrorSession) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().MirrorSession().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleMirrorSessionEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *mirrorsessionAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -7400,8 +7596,12 @@ func (api *mirrorsessionAPI) Watch(handler MirrorSessionHandler) error {
 // StopWatch stop watch for Tenant MirrorSession object
 func (api *mirrorsessionAPI) StopWatch(handler MirrorSessionHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["MirrorSession"].Stop()
+	worker := api.ct.workPools["MirrorSession"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchMirrorSession(handler)
 }
 
@@ -8098,6 +8298,7 @@ type TroubleshootingSessionAPI interface {
 	SyncUpdate(obj *monitoring.TroubleshootingSession) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.TroubleshootingSession) error
+	SyncDelete(obj *monitoring.TroubleshootingSession) error
 	Find(meta *api.ObjectMeta) (*TroubleshootingSession, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TroubleshootingSession, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.TroubleshootingSession, error)
@@ -8239,6 +8440,26 @@ func (api *troubleshootingsessionAPI) Delete(obj *monitoring.TroubleshootingSess
 	return nil
 }
 
+// SyncDelete deletes TroubleshootingSession object and updates the cache
+func (api *troubleshootingsessionAPI) SyncDelete(obj *monitoring.TroubleshootingSession) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().TroubleshootingSession().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleTroubleshootingSessionEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *troubleshootingsessionAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -8320,8 +8541,12 @@ func (api *troubleshootingsessionAPI) Watch(handler TroubleshootingSessionHandle
 // StopWatch stop watch for Tenant TroubleshootingSession object
 func (api *troubleshootingsessionAPI) StopWatch(handler TroubleshootingSessionHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["TroubleshootingSession"].Stop()
+	worker := api.ct.workPools["TroubleshootingSession"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchTroubleshootingSession(handler)
 }
 
@@ -9018,6 +9243,7 @@ type TechSupportRequestAPI interface {
 	SyncUpdate(obj *monitoring.TechSupportRequest) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.TechSupportRequest) error
+	SyncDelete(obj *monitoring.TechSupportRequest) error
 	Find(meta *api.ObjectMeta) (*TechSupportRequest, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*TechSupportRequest, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.TechSupportRequest, error)
@@ -9159,6 +9385,26 @@ func (api *techsupportrequestAPI) Delete(obj *monitoring.TechSupportRequest) err
 	return nil
 }
 
+// SyncDelete deletes TechSupportRequest object and updates the cache
+func (api *techsupportrequestAPI) SyncDelete(obj *monitoring.TechSupportRequest) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().TechSupportRequest().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleTechSupportRequestEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *techsupportrequestAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -9240,8 +9486,12 @@ func (api *techsupportrequestAPI) Watch(handler TechSupportRequestHandler) error
 // StopWatch stop watch for Tenant TechSupportRequest object
 func (api *techsupportrequestAPI) StopWatch(handler TechSupportRequestHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["TechSupportRequest"].Stop()
+	worker := api.ct.workPools["TechSupportRequest"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchTechSupportRequest(handler)
 }
 
@@ -9938,6 +10188,7 @@ type ArchiveRequestAPI interface {
 	SyncUpdate(obj *monitoring.ArchiveRequest) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.ArchiveRequest) error
+	SyncDelete(obj *monitoring.ArchiveRequest) error
 	Find(meta *api.ObjectMeta) (*ArchiveRequest, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*ArchiveRequest, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.ArchiveRequest, error)
@@ -10086,6 +10337,26 @@ func (api *archiverequestAPI) Delete(obj *monitoring.ArchiveRequest) error {
 	return nil
 }
 
+// SyncDelete deletes ArchiveRequest object and updates the cache
+func (api *archiverequestAPI) SyncDelete(obj *monitoring.ArchiveRequest) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().ArchiveRequest().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleArchiveRequestEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *archiverequestAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -10167,8 +10438,12 @@ func (api *archiverequestAPI) Watch(handler ArchiveRequestHandler) error {
 // StopWatch stop watch for Tenant ArchiveRequest object
 func (api *archiverequestAPI) StopWatch(handler ArchiveRequestHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["ArchiveRequest"].Stop()
+	worker := api.ct.workPools["ArchiveRequest"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchArchiveRequest(handler)
 }
 
@@ -10924,6 +11199,7 @@ type AuditPolicyAPI interface {
 	SyncUpdate(obj *monitoring.AuditPolicy) error
 	Label(obj *api.Label) error
 	Delete(obj *monitoring.AuditPolicy) error
+	SyncDelete(obj *monitoring.AuditPolicy) error
 	Find(meta *api.ObjectMeta) (*AuditPolicy, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*AuditPolicy, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*monitoring.AuditPolicy, error)
@@ -11065,6 +11341,26 @@ func (api *auditpolicyAPI) Delete(obj *monitoring.AuditPolicy) error {
 	return nil
 }
 
+// SyncDelete deletes AuditPolicy object and updates the cache
+func (api *auditpolicyAPI) SyncDelete(obj *monitoring.AuditPolicy) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.MonitoringV1().AuditPolicy().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleAuditPolicyEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *auditpolicyAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -11146,8 +11442,12 @@ func (api *auditpolicyAPI) Watch(handler AuditPolicyHandler) error {
 // StopWatch stop watch for Tenant AuditPolicy object
 func (api *auditpolicyAPI) StopWatch(handler AuditPolicyHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["AuditPolicy"].Stop()
+	worker := api.ct.workPools["AuditPolicy"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchAuditPolicy(handler)
 }
 

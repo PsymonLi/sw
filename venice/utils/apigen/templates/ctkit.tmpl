@@ -730,6 +730,7 @@ type {{.}}API interface {
 	SyncUpdate(obj *{{$pkgname}}.{{.}}) error
 	Label(obj *api.Label) error
 	Delete(obj *{{$pkgname}}.{{.}}) error
+	SyncDelete(obj *{{$pkgname}}.{{.}}) error
 	Find(meta *api.ObjectMeta) (*{{.}}, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*{{.}}, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*{{$pkgname}}.{{.}}, error)
@@ -880,6 +881,26 @@ func (api *{{ToLower .}}API) Delete(obj *{{$pkgname}}.{{.}}) error {
 	return nil
 }
 
+// SyncDelete deletes {{.}} object and updates the cache
+func (api *{{ToLower .}}API) SyncDelete(obj *{{$pkgname}}.{{.}}) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.{{$srvname}}().{{.}}().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handle{{.}}Event(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *{{ToLower .}}API) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -962,8 +983,12 @@ func (api *{{ToLower .}}API) Watch(handler {{.}}Handler) error {
 // StopWatch stop watch for Tenant {{.}} object
 func (api *{{ToLower .}}API) StopWatch(handler {{.}}Handler) error {
 	api.ct.Lock()
-	api.ct.workPools["{{.}}"].Stop()
+	worker := api.ct.workPools["{{.}}"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatch{{.}}(handler)
 }
 

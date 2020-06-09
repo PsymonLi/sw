@@ -706,6 +706,7 @@ type ModuleAPI interface {
 	SyncUpdate(obj *diagnostics.Module) error
 	Label(obj *api.Label) error
 	Delete(obj *diagnostics.Module) error
+	SyncDelete(obj *diagnostics.Module) error
 	Find(meta *api.ObjectMeta) (*Module, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Module, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*diagnostics.Module, error)
@@ -854,6 +855,26 @@ func (api *moduleAPI) Delete(obj *diagnostics.Module) error {
 	return nil
 }
 
+// SyncDelete deletes Module object and updates the cache
+func (api *moduleAPI) SyncDelete(obj *diagnostics.Module) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.DiagnosticsV1().Module().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleModuleEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *moduleAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -935,8 +956,12 @@ func (api *moduleAPI) Watch(handler ModuleHandler) error {
 // StopWatch stop watch for Tenant Module object
 func (api *moduleAPI) StopWatch(handler ModuleHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Module"].Stop()
+	worker := api.ct.workPools["Module"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchModule(handler)
 }
 

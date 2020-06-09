@@ -714,6 +714,7 @@ type OrchestratorAPI interface {
 	SyncUpdate(obj *orchestration.Orchestrator) error
 	Label(obj *api.Label) error
 	Delete(obj *orchestration.Orchestrator) error
+	SyncDelete(obj *orchestration.Orchestrator) error
 	Find(meta *api.ObjectMeta) (*Orchestrator, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Orchestrator, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*orchestration.Orchestrator, error)
@@ -855,6 +856,26 @@ func (api *orchestratorAPI) Delete(obj *orchestration.Orchestrator) error {
 	return nil
 }
 
+// SyncDelete deletes Orchestrator object and updates the cache
+func (api *orchestratorAPI) SyncDelete(obj *orchestration.Orchestrator) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.OrchestratorV1().Orchestrator().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleOrchestratorEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *orchestratorAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -936,8 +957,12 @@ func (api *orchestratorAPI) Watch(handler OrchestratorHandler) error {
 // StopWatch stop watch for Tenant Orchestrator object
 func (api *orchestratorAPI) StopWatch(handler OrchestratorHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Orchestrator"].Stop()
+	worker := api.ct.workPools["Orchestrator"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchOrchestrator(handler)
 }
 

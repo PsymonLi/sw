@@ -706,6 +706,7 @@ type RolloutAPI interface {
 	SyncUpdate(obj *rollout.Rollout) error
 	Label(obj *api.Label) error
 	Delete(obj *rollout.Rollout) error
+	SyncDelete(obj *rollout.Rollout) error
 	Find(meta *api.ObjectMeta) (*Rollout, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Rollout, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*rollout.Rollout, error)
@@ -872,6 +873,26 @@ func (api *rolloutAPI) Delete(obj *rollout.Rollout) error {
 	return nil
 }
 
+// SyncDelete deletes Rollout object and updates the cache
+func (api *rolloutAPI) SyncDelete(obj *rollout.Rollout) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.RolloutV1().Rollout().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRolloutEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *rolloutAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -953,8 +974,12 @@ func (api *rolloutAPI) Watch(handler RolloutHandler) error {
 // StopWatch stop watch for Tenant Rollout object
 func (api *rolloutAPI) StopWatch(handler RolloutHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Rollout"].Stop()
+	worker := api.ct.workPools["Rollout"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRollout(handler)
 }
 
@@ -1855,6 +1880,7 @@ type RolloutActionAPI interface {
 	SyncUpdate(obj *rollout.RolloutAction) error
 	Label(obj *api.Label) error
 	Delete(obj *rollout.RolloutAction) error
+	SyncDelete(obj *rollout.RolloutAction) error
 	Find(meta *api.ObjectMeta) (*RolloutAction, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*RolloutAction, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*rollout.RolloutAction, error)
@@ -1996,6 +2022,26 @@ func (api *rolloutactionAPI) Delete(obj *rollout.RolloutAction) error {
 	return nil
 }
 
+// SyncDelete deletes RolloutAction object and updates the cache
+func (api *rolloutactionAPI) SyncDelete(obj *rollout.RolloutAction) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.RolloutV1().RolloutAction().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleRolloutActionEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *rolloutactionAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -2077,8 +2123,12 @@ func (api *rolloutactionAPI) Watch(handler RolloutActionHandler) error {
 // StopWatch stop watch for Tenant RolloutAction object
 func (api *rolloutactionAPI) StopWatch(handler RolloutActionHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["RolloutAction"].Stop()
+	worker := api.ct.workPools["RolloutAction"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchRolloutAction(handler)
 }
 

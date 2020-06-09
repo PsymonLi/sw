@@ -706,6 +706,7 @@ type EndpointAPI interface {
 	SyncUpdate(obj *workload.Endpoint) error
 	Label(obj *api.Label) error
 	Delete(obj *workload.Endpoint) error
+	SyncDelete(obj *workload.Endpoint) error
 	Find(meta *api.ObjectMeta) (*Endpoint, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Endpoint, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*workload.Endpoint, error)
@@ -847,6 +848,26 @@ func (api *endpointAPI) Delete(obj *workload.Endpoint) error {
 	return nil
 }
 
+// SyncDelete deletes Endpoint object and updates the cache
+func (api *endpointAPI) SyncDelete(obj *workload.Endpoint) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.WorkloadV1().Endpoint().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleEndpointEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *endpointAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -928,8 +949,12 @@ func (api *endpointAPI) Watch(handler EndpointHandler) error {
 // StopWatch stop watch for Tenant Endpoint object
 func (api *endpointAPI) StopWatch(handler EndpointHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Endpoint"].Stop()
+	worker := api.ct.workPools["Endpoint"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchEndpoint(handler)
 }
 
@@ -1626,6 +1651,7 @@ type WorkloadAPI interface {
 	SyncUpdate(obj *workload.Workload) error
 	Label(obj *api.Label) error
 	Delete(obj *workload.Workload) error
+	SyncDelete(obj *workload.Workload) error
 	Find(meta *api.ObjectMeta) (*Workload, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Workload, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*workload.Workload, error)
@@ -1792,6 +1818,26 @@ func (api *workloadAPI) Delete(obj *workload.Workload) error {
 	return nil
 }
 
+// SyncDelete deletes Workload object and updates the cache
+func (api *workloadAPI) SyncDelete(obj *workload.Workload) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.WorkloadV1().Workload().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleWorkloadEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *workloadAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -1873,8 +1919,12 @@ func (api *workloadAPI) Watch(handler WorkloadHandler) error {
 // StopWatch stop watch for Tenant Workload object
 func (api *workloadAPI) StopWatch(handler WorkloadHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Workload"].Stop()
+	worker := api.ct.workPools["Workload"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchWorkload(handler)
 }
 

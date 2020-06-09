@@ -706,6 +706,7 @@ type BufferAPI interface {
 	SyncUpdate(obj *staging.Buffer) error
 	Label(obj *api.Label) error
 	Delete(obj *staging.Buffer) error
+	SyncDelete(obj *staging.Buffer) error
 	Find(meta *api.ObjectMeta) (*Buffer, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Buffer, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*staging.Buffer, error)
@@ -866,6 +867,26 @@ func (api *bufferAPI) Delete(obj *staging.Buffer) error {
 	return nil
 }
 
+// SyncDelete deletes Buffer object and updates the cache
+func (api *bufferAPI) SyncDelete(obj *staging.Buffer) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.StagingV1().Buffer().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleBufferEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *bufferAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -947,8 +968,12 @@ func (api *bufferAPI) Watch(handler BufferHandler) error {
 // StopWatch stop watch for Tenant Buffer object
 func (api *bufferAPI) StopWatch(handler BufferHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Buffer"].Stop()
+	worker := api.ct.workPools["Buffer"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchBuffer(handler)
 }
 

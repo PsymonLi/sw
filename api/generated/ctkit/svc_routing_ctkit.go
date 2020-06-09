@@ -714,6 +714,7 @@ type NeighborAPI interface {
 	SyncUpdate(obj *routing.Neighbor) error
 	Label(obj *api.Label) error
 	Delete(obj *routing.Neighbor) error
+	SyncDelete(obj *routing.Neighbor) error
 	Find(meta *api.ObjectMeta) (*Neighbor, error)
 	List(ctx context.Context, opts *api.ListWatchOptions) ([]*Neighbor, error)
 	ApisrvList(ctx context.Context, opts *api.ListWatchOptions) ([]*routing.Neighbor, error)
@@ -855,6 +856,26 @@ func (api *neighborAPI) Delete(obj *routing.Neighbor) error {
 	return nil
 }
 
+// SyncDelete deletes Neighbor object and updates the cache
+func (api *neighborAPI) SyncDelete(obj *routing.Neighbor) error {
+	var writeErr error
+	if api.ct.resolver != nil {
+		apicl, err := api.ct.apiClient()
+		if err != nil {
+			api.ct.logger.Errorf("Error creating API server clent. Err: %v", err)
+			return err
+		}
+
+		_, writeErr = apicl.RoutingV1().Neighbor().Delete(context.Background(), &obj.ObjectMeta)
+	}
+
+	if writeErr == nil {
+		api.ct.handleNeighborEvent(&kvstore.WatchEvent{Object: obj, Type: kvstore.Deleted})
+	}
+
+	return writeErr
+}
+
 // MakeKey generates a KV store key for the object
 func (api *neighborAPI) getFullKey(tenant, name string) string {
 	if tenant != "" {
@@ -936,8 +957,12 @@ func (api *neighborAPI) Watch(handler NeighborHandler) error {
 // StopWatch stop watch for Tenant Neighbor object
 func (api *neighborAPI) StopWatch(handler NeighborHandler) error {
 	api.ct.Lock()
-	api.ct.workPools["Neighbor"].Stop()
+	worker := api.ct.workPools["Neighbor"]
 	api.ct.Unlock()
+	// Don't call stop with ctkit lock. Lock might be taken when an event comes in for the worker
+	if worker != nil {
+		worker.Stop()
+	}
 	return api.ct.StopWatchNeighbor(handler)
 }
 
