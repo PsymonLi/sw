@@ -24,6 +24,7 @@
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
 #include "nic/apollo/api/impl/apulu/subnet_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vnic_impl.hpp"
+#include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_ftl.h"
 
@@ -175,6 +176,24 @@ public:
     /// \brief  return the nexthop table index corresponding to this mapping
     /// \return nexthop index
     uint32_t nexthop_id(void) const { return nexthop_id_; }
+
+    /// \brief  return the subnet h/w id of this mapping
+    /// \return subnet h/w id
+    uint32_t subnet_hw_id(void) const { return subnet_hw_id_; }
+
+    /// \brief  return the MAC address of the mapping
+    /// \return MAC address of the mapping entry
+    mac_addr_t& mac(void) { return mac_addr_; }
+
+    /// \brief  return subnet objet this mapping belongs to
+    /// \return pointer to the subnet of this mapping
+    subnet_entry *subnet(void) const {
+        subnet_impl *impl = subnet_impl_db()->find(subnet_hw_id_);
+        if (impl) {
+            return subnet_find(impl->key());
+        }
+        return NULL;
+    }
 
 private:
     /// \brief constructor
@@ -715,6 +734,7 @@ private:
     uint32_t    subnet_hw_id_;
     uint8_t     nexthop_type_;
     uint32_t    nexthop_id_;
+    mac_addr_t  mac_addr_;
 
     // handles or indices for NAT table
     uint32_t    to_public_ip_nat_idx_;

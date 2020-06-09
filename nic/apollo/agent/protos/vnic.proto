@@ -38,8 +38,13 @@ message VnicSpec {
   // fabric encap information to be used for traffic originated from this vnic
   types.Encap     FabricEncap           = 6 [(gogoproto.moretags) = "meta:immutable"];
   // Tx/egress mirror session id list, if any
+  // NOTE: when Tx mirroring is enabled, original packet sent by the vnic is
+  //       mirrored as-is (including dot1q tag, if any) towards the collector
   repeated bytes  TxMirrorSessionId     = 7;
   // Rx/ingress mirror session id list, if any
+  // NOTE: when Rx mirroring is enabled, the packet that is mirrored is same as
+  //       the packet that is ultimately sent to the vnic (i.e., the mirrored
+  //       packet has no VxLAN header and has all packet rewrites done)
   repeated bytes  RxMirrorSessionId     = 8;
   // switch vnic is router/bridge/appliance sitting behind the VLAN of this VNIC
   // and can have many MACs in the same VLAN, so SMAC check will be disabled

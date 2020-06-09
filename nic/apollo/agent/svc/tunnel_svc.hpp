@@ -89,7 +89,7 @@ static inline void
 pds_tep_api_status_to_proto (pds::TunnelStatus *proto_status,
                              const pds_tep_status_t *api_status)
 {
-    proto_status->set_hwid(api_status->hw_id1_);
+    proto_status->set_hwid(api_status->hw_id);
 }
 
 // populate proto buf stats from tep API stats

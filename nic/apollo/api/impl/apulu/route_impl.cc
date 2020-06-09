@@ -569,7 +569,7 @@ route_table_impl::program_route_table_(pds_route_table_spec_t *spec) {
             }
             PDS_IMPL_NH_VAL_SET_NH_INFO(nh_val, NEXTHOP_TYPE_TUNNEL,
                                         route_spec->attrs.class_priority,
-                                        ((tep_impl *)(tep->impl()))->hw_id1());
+                                        ((tep_impl *)(tep->impl()))->hw_id());
             rtable->routes[i].nhid = nh_val;
             PDS_TRACE_VERBOSE("Processing route table %s, route %s prio %u -> "
                               "TEP %s, nh id 0x%x", spec->key.str(),

@@ -109,9 +109,12 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
     tep_entry *tep;
     uint32_t oport;
     ip_addr_t mytep_ip;
+    subnet_entry *subnet;
     p4pd_error_t p4pd_ret;
     mapping_entry *mapping;
     nexthop_info_entry_t nh_data;
+    pds_mapping_key_t mapping_key;
+    mapping_impl *mapping_impl_obj;
     mirror_actiondata_t mirror_data = { 0 };
 
     switch (spec->type) {
@@ -165,15 +168,14 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
         mirror_data.action_id = MIRROR_ERSPAN_ID;
         vpc = vpc_find(&spec->erspan_spec.vpc);
         if (vpc->type() == PDS_VPC_TYPE_UNDERLAY) {
-            // TODO: is this correct ??
-            mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_TUNNEL;
+            mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
             mytep_ip = device_db()->find()->ip_addr();
             mirror_data.erspan_action.sip = mytep_ip.addr.v4_addr;
             if (spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
                 tep = tep_find(&spec->erspan_spec.tep);
                 SDK_ASSERT(tep != NULL);
                 mirror_data.erspan_action.nexthop_id =
-                    ((tep_impl *)(tep->impl()))->hw_id1();
+                    ((tep_impl *)(tep->impl()))->hw_id();
                 mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
                 //mirror_data.erspan_action.dmac;
                 //mirror_data.erspan_action.smac;
@@ -196,27 +198,73 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
             }
         } else {
             SDK_ASSERT(spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP);
-#if 0
             // mirror destination is either local or remote mapping
-            mapping = mapping_entry::build(&spec->erspan_spec.mapping);
+            mapping_key.type = PDS_MAPPING_TYPE_L3;
+            mapping_key.vpc = spec->erspan_spec.vpc;
+            mapping_key.ip_addr = spec->erspan_spec.ip_addr;
+            mapping = mapping_entry::build(&mapping_key);
             if (mapping == NULL) {
-                PDS_TRACE_ERR("Failed to find mapping %s",
-                              spec->erspan_spec.mapping.str());
+                PDS_TRACE_ERR("Failed to find ERSPAN mirror session %s dst IP "
+                              "mapping (%s, %s)", spec->key.str(),
+                              spec->erspan_spec.vpc.str(),
+                              ipaddr2str(&spec->erspan_spec.ip_addr));
                 return SDK_RET_INVALID_ARG;
             }
+            subnet = ((mapping_impl *)(mapping->impl()))->subnet();
+            mapping_impl_obj = (mapping_impl *)mapping->impl();
+            subnet = mapping_impl_obj->subnet();
             if (mapping->is_local()) {
+#if 0
                 mirror_data.erspan_action.nexthop_type =
                     ((mapping_impl *)(mapping->impl()))->nexthop_type();
                 mirror_data.erspan_action.nexthop_id =
                     ((mapping_impl *)(mapping->impl()))->nexthop_id();
-            } else {
-                // for remote mappings, there is lot more programming needed
-                SDK_ASSERT(FALSE);
-            }
-            // TODO:
-            // we need to soft delete mapping thats built
 #endif
+            } else {
+                // forwarding mirror packet takes same forwarding path as any
+                // other traffic to this mappping
+                mirror_data.erspan_action.nexthop_type =
+                    mapping_impl_obj->nexthop_type();
+                mirror_data.erspan_action.nexthop_id =
+                    mapping_impl_obj->nexthop_id();
+                // for remote mappings, set apply_tunnel2 to TRUE for outer
+                // VxLAN header to be added
+                mirror_data.erspan_action.apply_tunnel2 = TRUE;
+                if (mirror_data.erspan_action.nexthop_type ==
+                        NEXTHOP_TYPE_ECMP) {
+                    // TODO: in this case, mapping is pointing to OVERLAY ECMP
+                    //       (i.e. group of TEPs) and we don't know which tunnel
+                    //       datapath will pick up, so not filling at this point
+                    // mirror_data.erspan_action.tunnel2_id = ;
+                } else {
+                    // nexthop type is NEXTHOP_TYPE_TUNNEL, fetch the TEP's h/w
+                    // id and populate TUNNEL table idx of that tunnel
+                    mirror_data.erspan_action.tunnel2_id =
+                        mapping_impl_obj->nexthop_id();
+                }
+                // VxLAN vnid = mapping's BD vnid
+                mirror_data.erspan_action.tunnel2_vni =
+                    subnet->fabric_encap().val.vnid;
+                // ERSPAN Eth header SMAC = VR IP
+                sdk::lib::memrev(mirror_data.erspan_action.smac,
+                                 &subnet->vr_mac()[0], ETH_ADDR_LEN);
+                // ERSPAN Eth header DMAC = mapping's DMAC
+                sdk::lib::memrev(mirror_data.erspan_action.dmac,
+                                 &mapping_impl_obj->mac()[0], ETH_ADDR_LEN);
+                // ERSPAN IP header SIP is IPv4 VR IP of mapping's subnet
+                mirror_data.erspan_action.sip = subnet->v4_vr_ip();
+                // ERSPAN IP header DIP is VR
+                mirror_data.erspan_action.dip =
+                    spec->erspan_spec.ip_addr.addr.v4_addr;
+                // no outer vlan header added to the mirrored packet
+                mirror_data.erspan_action.ctag = 0;
+            }
+            mapping_entry::soft_delete(mapping);
         }
+        mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
+        mirror_data.erspan_action.gre_seq_en = TRUE;
+        mirror_data.erspan_action.vlan_strip_en =
+            spec->erspan_spec.vlan_strip_en;
         mirror_data.erspan_action.truncate_len = spec->snap_len;
         mirror_data.erspan_action.span_id = spec->erspan_spec.span_id;
         mirror_data.erspan_action.dscp = spec->erspan_spec.dscp;

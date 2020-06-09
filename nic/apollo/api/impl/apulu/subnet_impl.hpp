@@ -176,11 +176,12 @@ public:
     /// \param[in]  entry in the hash table context
     /// \return     hw id from the entry
     static void *key_get(void *entry) {
-        subnet_impl *subnet = (subnet_impl *) entry;
+        subnet_impl *subnet = (subnet_impl *)entry;
         return (void *)&(subnet->hw_id_);
     }
 
     /// \brief      accessor API for key
+    /// \return     pointer to the subnet object's key
     pds_obj_key_t *key(void) { return &key_; }
 
     /// \brief      accessor API for hash table context

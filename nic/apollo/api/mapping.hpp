@@ -312,11 +312,11 @@ public:
 
     /**
      * @brief read config
-     * @param[in]  key pointer to the mapping's identifier
+     * @param[in]  skey pointer to the mapping's 2nd-ary key
      * @param[out] info Pointer to the info object
      * @return   SDK_RET_OK on success, failure status code on error
      */
-    sdk_ret_t read(pds_mapping_key_t *id, pds_mapping_info_t *info);
+    sdk_ret_t read(pds_mapping_key_t *skey, pds_mapping_info_t *info);
 
     /// \brief     helper function to get key given mapping entry
     /// \param[in] entry    pointer to mapping instance

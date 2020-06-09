@@ -46,9 +46,9 @@ enum ERSpanType {
 message ERSpanSpec {
   // type of the ERSPAN session
   // NOTE: only TYPE 3 is supported currently
-  ERSpanType          Type     = 1;
+  ERSpanType          Type        = 1;
   // VPC id
-  bytes               VPCId    = 2 [(gogoproto.moretags) = "meta:mandatory"];
+  bytes               VPCId       = 2 [(gogoproto.moretags) = "meta:mandatory"];
   oneof erspandst {
       // Destination/Collector IP address to be used for ERSPAN
       // NOTE: currently DstIP is supported
@@ -56,14 +56,18 @@ message ERSpanSpec {
       // 2. if it the IP address of a local/remote mapping in the overlay
       //    if this IP is in the overlay but reachable via route and not a
       //    local/remote mapping, then an error is returned
-      types.IPAddress DstIP    = 3;
+      types.IPAddress DstIP       = 3;
       // tunnel (aka. TEP) as the ERSPAN collector
-      bytes           TunnelId = 4;
+      bytes           TunnelId    = 4;
   }
   // DSCP value to use in the packet
-  uint32              Dscp     = 5;
+  uint32              Dscp        = 5;
   // Span ID to use in the packet
-  uint32              SpanId   = 6;
+  uint32              SpanId      = 6;
+  // when VlanStripEn is set to true, dot1q tag of original packet is stripped
+  // before mirroring
+  // NOTE: VlanStringEn is applicable only for ERSPAN_TYPE_2 mirror session
+  bool                VlanStripEn = 7 [(gogoproto.moretags) = "meta:constraints={ERSpanSpec.Type==ERSPAN_TYPE_2"];
 }
 
 // MirrorSessionSpec captures configuration of Mirror session

@@ -51,8 +51,7 @@ static inline void
 pds_tep_api_status_to_proto (pds::TunnelStatus *proto_status,
                              const pds_tep_status_t *api_status)
 {
-    proto_status->set_hwid(api_status->hw_id1_);
-    proto_status->set_hwid2(api_status->hw_id2_);
+    proto_status->set_hwid(api_status->hw_id);
 }
 
 // populate proto buf spec from tep API spec
@@ -100,8 +99,7 @@ static inline sdk_ret_t
 pds_tep_proto_to_api_status (pds_tep_status_t *api_status,
                              const pds::TunnelStatus &proto_status)
 {
-    api_status->hw_id1_ = proto_status.hwid();
-    api_status->hw_id2_ = proto_status.hwid2();
+    api_status->hw_id = proto_status.hwid();
     return SDK_RET_OK;
 }
 

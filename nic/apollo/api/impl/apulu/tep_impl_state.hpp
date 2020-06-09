@@ -56,13 +56,11 @@ public:
 
 private:
     rte_indexer *tunnel_idxr(void) { return tunnel_idxr_; }
-    rte_indexer *tunnel2_idxr(void) { return tunnel2_idxr_; }
     friend class tep_impl;    ///< tep_impl, friend of tep_impl_state
 
 private:
     ///< indexer to allocate h/w indices for TEPs
     rte_indexer *tunnel_idxr_;     // TUNNEL table indexer
-    rte_indexer *tunnel2_idxr_;    // TUNNEL2 table indexer
 };
 
 ///   \@}

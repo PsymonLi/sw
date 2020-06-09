@@ -150,19 +150,14 @@ public:
         return SDK_RET_INVALID_OP;
     }
 
-    /// \brief     return h/w index for this TEP in TUNNEL table
-    /// \return    h/w table index for this TEP in TUNNEL table
-    uint16_t hw_id1(void) const { return hw_id1_; }
-
-    /// \brief     return h/w index for this TEP in TUNNEL2 table
-    /// \return    h/w table index for this TEP in TUNNEL2 table
-    uint16_t hw_id2(void) const { return hw_id2_; }
+    /// \brief     return h/w index for this TEP in TUNNEL/TUNNEL2 table
+    /// \return    h/w table index for this TEP in TUNNEL/TUNNEL2 table
+    uint16_t hw_id(void) const { return hw_id_; }
 
 private:
     /// \brief constructor
     tep_impl() {
-        hw_id1_ = 0xFFFF;
-        hw_id2_ = 0xFFFF;
+        hw_id_ = 0xFFFF;
     }
 
     /// \brief destructor
@@ -262,10 +257,8 @@ private:
 
 private:
     // P4 datapath specific state
-    /// hardware id for this TEP in TUNNEL table
-    uint16_t   hw_id1_;
-    /// hardware id for this TEP in TUNNEL2 table
-    uint16_t   hw_id2_;
+    /// hardware id for this TEP in TUNNEL & TUNNEL2 table
+    uint16_t   hw_id_;
 } __PACK__;
 
 /// \@}

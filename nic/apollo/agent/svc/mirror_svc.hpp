@@ -85,6 +85,7 @@ pds_mirror_session_api_spec_to_proto (pds::MirrorSessionSpec *proto_spec,
             }
             proto_erspan->set_dscp(api_spec->erspan_spec.dscp);
             proto_erspan->set_spanid(api_spec->erspan_spec.span_id);
+            proto_erspan->set_vlanstripen(api_spec->erspan_spec.vlan_strip_en);
         }
         break;
 
@@ -167,6 +168,17 @@ pds_mirror_session_proto_to_api_spec (pds_mirror_session_spec_t *api_spec,
         }
         api_spec->erspan_spec.dscp = proto_spec.erspanspec().dscp();
         api_spec->erspan_spec.span_id = proto_spec.erspanspec().spanid();
+        api_spec->erspan_spec.vlan_strip_en =
+            proto_spec.erspanspec().vlanstripen();
+        if (api_spec->erspan_spec.vlan_strip_en &&
+            (api_spec->erspan_spec.type != PDS_ERSPAN_TYPE_2)) {
+            PDS_TRACE_ERR("Mirror session {} spec invalid, ERSPAN type %u "
+                          "doesn't support vlan stripping, this feature is "
+                          "only supported with ERSPAN %u type",
+                          api_spec->key.id, api_spec->erspan_spec.type,
+                          PDS_ERSPAN_TYPE_2);
+            return SDK_RET_INVALID_ARG;
+        }
     } else {
         PDS_TRACE_ERR("rspan & erspan config missing in mirror session {} spec",
                       api_spec->key.id);

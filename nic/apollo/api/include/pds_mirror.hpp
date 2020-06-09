@@ -66,6 +66,8 @@ typedef struct pds_erspan_spec_s {
     };
     uint32_t dscp;                    ///< DSCP value to use in the packet
     uint32_t span_id;                 ///< SPAN ID used in ERSPAN header
+    /// strip dot1q tag of the pkt before mirroring
+    bool vlan_strip_en;
 } __PACK__ pds_erspan_spec_t;
 
 /// \brief    mirror session type

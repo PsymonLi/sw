@@ -127,6 +127,7 @@ mapping_impl::mapping_table_read_(pds_mapping_key_t *key,
     } else {
         impl->nexthop_id_ = PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
     }
+    sdk::lib::memrev(impl->mac_addr_, mapping_data.dmaci, ETH_ADDR_LEN);
     *is_local = (mapping_data.nexthop_type == NEXTHOP_TYPE_NEXTHOP);
     return ret;
 }
@@ -390,12 +391,12 @@ mapping_impl::build(pds_mapping_key_t *key, mapping_entry *mapping) {
     impl->vpc_hw_id_ = ((vpc_impl *)vpc->impl())->hw_id();
     mapping->set_num_tags(impl->num_class_id_);
     for (uint8_t i = 0; i < impl->num_class_id_; i++) {
-        ret = ((vpc_impl *)vpc->impl())->find_tag(impl->class_id_[i], &tag, is_local);
+        ret = ((vpc_impl *)vpc->impl())->find_tag(impl->class_id_[i],
+                                                  &tag, is_local);
         if (ret == SDK_RET_OK) {
             mapping->set_tag(i, tag);
         }
     }
-
     return impl;
 
 err:
@@ -1621,7 +1622,7 @@ mapping_impl::fill_remote_mapping_key_data_(
         tep = tep_find(&spec->tep);
         tep_impl_obj = (tep_impl *)tep->impl();
         mapping_data->nexthop_type = NEXTHOP_TYPE_TUNNEL;
-        mapping_data->nexthop_id = tep_impl_obj->hw_id1();
+        mapping_data->nexthop_id = tep_impl_obj->hw_id();
         break;
 
     case PDS_NH_TYPE_OVERLAY_ECMP:

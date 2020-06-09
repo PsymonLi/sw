@@ -92,8 +92,7 @@ operator<<(std::ostream& os, const pds_tep_spec_t *spec) {
 
 inline std::ostream&
 operator<<(std::ostream& os, const pds_tep_status_t *status) {
-    os << " HW id1: " << status->hw_id1_
-       << " HW id2: " << status->hw_id2_
+    os << " HW id: " << status->hw_id
        << " NH id: " << status->nh_id
        << " DMAC: " << macaddr2str(status->dmac);
     return os;
