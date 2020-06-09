@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
+	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
@@ -185,6 +186,11 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 			if err != nil {
 				log.Error(err)
 				continue
+			}
+			// Populate the mirror direction for the updated mirror session. Bolt DB still doesn't have the update
+			// so ValidateImterface would not return the updated mirror direction
+			for _, id := range sessionIDs {
+				collectorMap[id] = commonUtils.MirrorDir(mirror.Spec.MirrorDirection)
 			}
 			if err := HandleInterface(infraAPI, intfClient, types.Update, intf, collectorMap); err != nil {
 				log.Error(errors.Wrapf(types.ErrInterfaceUpdateDuringInterfaceMirrorSessionUpdate, "Interface: %s | Err: %v", intf.GetKey(), err))

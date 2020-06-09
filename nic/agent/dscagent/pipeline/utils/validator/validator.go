@@ -73,19 +73,6 @@ func ValidateEndpoint(i types.InfraAPI, endpoint netproto.Endpoint) (network net
 	return
 }
 
-func mirrorDir(dir netproto.MirrorDir) int {
-	switch dir {
-	case netproto.MirrorDir_INGRESS:
-		return types.MirrorDirINGRESS
-	case netproto.MirrorDir_EGRESS:
-		return types.MirrorDirEGRESS
-	case netproto.MirrorDir_BOTH:
-		return types.MirrorDirBOTH
-	default:
-		return 0
-	}
-}
-
 func validateInterfaceMirrorSessions(i types.InfraAPI, mirrorSessions []string, collectorMap map[uint64]int, mirrorSessionMap map[string][]uint64) error {
 	for _, ms := range mirrorSessions {
 		var intfMirror netproto.InterfaceMirrorSession
@@ -101,7 +88,7 @@ func validateInterfaceMirrorSessions(i types.InfraAPI, mirrorSessions []string, 
 		}
 		mirrorKey := fmt.Sprintf("%s/%s", intfMirror.Kind, intfMirror.GetKey())
 		for _, c := range mirrorSessionMap[mirrorKey] {
-			collectorMap[c] |= mirrorDir(intfMirror.Spec.MirrorDirection)
+			collectorMap[c] |= utils.MirrorDir(intfMirror.Spec.MirrorDirection)
 		}
 	}
 	return nil

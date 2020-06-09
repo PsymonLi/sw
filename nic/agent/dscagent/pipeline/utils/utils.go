@@ -529,3 +529,17 @@ func IsSafeProfileMove(fromProfile netproto.Profile, toProfile netproto.Profile)
 
 	return (fromProfileLevel < toProfileLevel)
 }
+
+// MirrorDir gives the netagent mirror direction for netproto's mirror direction
+func MirrorDir(dir netproto.MirrorDir) int {
+	switch dir {
+	case netproto.MirrorDir_INGRESS:
+		return types.MirrorDirINGRESS
+	case netproto.MirrorDir_EGRESS:
+		return types.MirrorDirEGRESS
+	case netproto.MirrorDir_BOTH:
+		return types.MirrorDirBOTH
+	default:
+		return 0
+	}
+}
