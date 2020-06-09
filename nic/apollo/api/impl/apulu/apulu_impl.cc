@@ -337,6 +337,7 @@ apulu_impl::table_engine_cfg_update_(p4plus_prog_t *prog) {
     cfg[idx].pc_offset = 0;
     // increment the count
     if (idx >= num_cfgs) {
+        cfg[idx].asm_base = asm_base;
         g_upg_state->incr_tbl_eng_cfg_count(prog->pipe, 1);
     }
 }

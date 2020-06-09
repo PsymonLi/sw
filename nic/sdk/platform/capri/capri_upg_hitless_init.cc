@@ -13,6 +13,7 @@
 #include "platform/capri/capri_tm_rw.hpp"
 #include "platform/capri/capri_tbl_rw.hpp"
 #include "platform/capri/capri_state.hpp"
+#include "platform/capri/capri_quiesce.hpp"
 
 namespace sdk {
 namespace platform {
@@ -46,6 +47,12 @@ capri_upgrade_hitless_init (asic_cfg_t *cfg)
                              &cfg->device_profile->qos_profile);
     SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                             "Capri TM Slave init failure, err : %d", ret);
+
+    // this will initialize the quiesce data structures. as it does not
+    // change, we can call it here
+    ret = capri_quiesce_init();
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "Capri quiesce init failure, err %u", ret);
 
     if (cfg->completion_func) {
         cfg->completion_func(sdk::SDK_STATUS_ASIC_INIT_DONE);

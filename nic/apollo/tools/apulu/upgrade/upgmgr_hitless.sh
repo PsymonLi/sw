@@ -35,6 +35,27 @@ elif [[ $STAGE_NAME == "UPG_STAGE_BACKUP" && $STAGE_TYPE == "POST" ]]; then
 elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
     $PENVISORCTL load
 
+elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
+    # called on A during A to B upgrade
+    # TODO : discuss with Stavros on this. whether we should do this after
+    # switchover before unload
+    if [[ $STAGE_STATUS == "ok" ]]; then
+        echo "Pre switchover successful"
+        # $PENVISORCTL switch
+    else
+        echo "Pre switchover failed"
+    fi
+
+elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
+    upgmgr_clear_init_domain  # these files no more in use
+    upgmgr_clear_init_mode
+    if [[ $STAGE_STATUS == "ok" ]]; then
+        echo "Switchover successful, Unloading the previous instance"
+        # $PENVISORCTL unload
+    else
+        echo "Switchover failed" # TODO penvisor actions
+    fi
+
 else
     echo "Unknown stage name given"
     exit 1

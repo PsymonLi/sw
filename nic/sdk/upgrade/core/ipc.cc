@@ -40,6 +40,10 @@ wait_for_svc_ready (ipc_svc_dom_id_t dom_id, uint32_t ev_id,
 {
     std::vector<uint32_t> recipients;
     ev_tstamp wait = 0.0;
+    uint32_t count = 0;
+
+    UPG_TRACE_INFO("Waiting for services to be up.., domain %u, event %u, numsvc %u, tsamp %f",
+                   dom_id, ev_id, num_svcs, timeout);
 
     while (timeout > wait) {
         // TODO : it is better if IPC layer provides a function for it
@@ -48,6 +52,11 @@ wait_for_svc_ready (ipc_svc_dom_id_t dom_id, uint32_t ev_id,
         if (recipients.size() < num_svcs) {
             ev_sleep(0.001); // 1 millisecond
             wait += 0.001;
+            if (count % 100 == 0) {
+                UPG_TRACE_INFO("Waiting for services to be up.., expected %u, now %u",
+                               num_svcs, (uint32_t)recipients.size());
+            }
+            count++;
         } else {
             return SDK_RET_OK;
         }

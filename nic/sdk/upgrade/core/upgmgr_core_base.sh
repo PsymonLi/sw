@@ -5,10 +5,12 @@ unset HELP FW_PKG_NAME STAGE_NAME STAGE_TYPE STAGE_STATUS
 
 # file to identify the bootup is regular or upgrade
 # this should be set by pipeline specific implemenation in apropriate place
-UPGRADE_INIT_MODE_FILE='/update/upgrade_init_mode.txt'
+# in this the first one is for upgrade manager to know the upgrade continuation
+UPGMGR_INIT_MODE_FILE='/update/upgmgr_init_mode.txt'
+UPGRADE_INIT_MODE_FILE='/.upgrade_init_mode'
 
 # file to identify the hitless bootup domain
-UPGRADE_INIT_DOM_FILE='/update/upgrade_init_domain.txt'
+UPGRADE_INIT_DOM_FILE='/.upgrade_init_domain'
 UPGRADE_DOMAIN_A="dom_a"
 UPGRADE_DOMAIN_B="dom_b"
 
@@ -36,13 +38,14 @@ function upgmgr_parse_inputs() {
 }
 
 function upgmgr_set_init_mode() {
-    mkdir -p "$(dirname "$UPGRADE_INIT_MODE_FILE")"
+    mkdir -p "$(dirname "$UPGMGR_INIT_MODE_FILE")"
+    echo $1 > $UPGMGR_INIT_MODE_FILE
     echo $1 > $UPGRADE_INIT_MODE_FILE
     sync
 }
 
 function upgmgr_clear_init_mode() {
-    rm -rf $UPGRADE_INIT_MODE_FILE
+    rm -rf $UPGMGR_INIT_MODE_FILE
 }
 
 function upgmgr_init_domain() {

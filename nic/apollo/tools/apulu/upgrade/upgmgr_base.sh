@@ -93,7 +93,8 @@ function upgmgr_restore() {
 }
 
 function upgmgr_hitless_backup_files_check() {
-    # TODO need to add domain here. dom_b to dom_a will have extensions
+    return 0 # TODO need to add domain here. dom_b to dom_a will have extensions
+
     local files_must="/update/pcieport_upgdata /update/pciemgr_upgdata "
     files_must+="/update/pds_nicmgr_upgdata /update/pds_agent_upgdata "
     local files_optional="/update/pciemgr_upgrollback "

@@ -17,7 +17,9 @@ ulimit -c unlimited
 grep "overlay" /proc/mounts | grep -q "lowerdir=/new"
 if [ $? -ne 0 ]; then
     rm -rf /update/*_upg*
-    rm -rf /update/upgrade_init_mode.txt
+    rm -rf /update/upgmgr_init_mode.txt
+else
+    cp  /update/upgmgr_init_mode.txt /.upgrade_init_mode
 fi
 
 # POST

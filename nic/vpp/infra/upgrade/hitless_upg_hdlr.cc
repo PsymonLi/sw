@@ -67,6 +67,7 @@ vpp_hitless_upg_ev_hdlr (upg_ev_params_t *params)
                       sdk::upg::upg_event2str(params->id));
         SDK_ASSERT(0);
     }
+    ret = SDK_RET_OK; // TODO: Returning ok now - need to test other services
     return ret;
 }
 

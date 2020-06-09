@@ -364,7 +364,7 @@ restore_obj (upg_obj_info_t *info)
 static sdk_ret_t
 upg_ev_restore (upg_ev_params_t *params)
 {
-    sdk_ret_t ret;
+    sdk_ret_t ret = SDK_RET_OK;
     uint32_t obj_count;
     char *mem;
     upg_obj_stash_meta_t *hdr;
@@ -426,7 +426,29 @@ upg_ev_pre_switchover (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_switchover (upg_ev_params_t *params)
 {
-    sdk_ret_t ret = impl_base::pipeline_impl()->upgrade_switchover();
+    sdk_ret_t ret, rv;
+
+    // sim it always fail, so ignore
+    ret = sdk::asic::pd::asicpd_quiesce_start();
+    if (ret != SDK_RET_OK) {
+       PDS_TRACE_ERR("Upgrade pipeline quiesce start failed");
+    }
+    if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
+        ret = SDK_RET_OK;
+    }
+    if (ret == SDK_RET_OK) {
+        ret = impl_base::pipeline_impl()->upgrade_switchover();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Pipeline switchover failed, ret %u", ret);
+        }
+    }
+    // do quiesce stop irrespective of the failure. don't want to stop the
+    // pipeline and return from here
+    rv = sdk::asic::pd::asicpd_quiesce_stop();
+    if(rv != SDK_RET_OK) {
+       PDS_TRACE_ERR("Upgrade pipeline quiesce stop failed");
+       ret = ret == SDK_RET_OK ? rv : ret;
+    }
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade pipeline switchover failed, err %u", ret);
     }

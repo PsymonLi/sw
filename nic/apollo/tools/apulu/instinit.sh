@@ -137,13 +137,12 @@ then
     start_sysmgr
 elif [ "$1" = "switchover" ]
 then
-    load_drivers
     bringup_intfs
     start_cronjobs
     start_ssh
 elif [ "$1" = "shutdown" ]
 then
-    unload_drivers
+    echo "Nothing to do"
 else
     echo "Unknown action: $1"
 fi

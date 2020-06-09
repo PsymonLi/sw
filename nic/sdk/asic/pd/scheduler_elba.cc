@@ -67,6 +67,13 @@ end:
 }
 
 sdk_ret_t
+asicpd_tx_scheduler_map_reserve (asicpd_scheduler_lif_params_t *lif)
+{
+    // TODO
+    SDK_ASSERT(0);
+}
+
+sdk_ret_t
 asicpd_tx_scheduler_map_free (asicpd_scheduler_lif_params_t *lif)
 {
     sdk_ret_t      ret = SDK_RET_OK;

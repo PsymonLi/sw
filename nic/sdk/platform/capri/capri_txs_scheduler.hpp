@@ -86,7 +86,8 @@ sdk_ret_t capri_txs_scheduler_tx_alloc(capri_txs_sched_lif_params_t *tx_params,
 
 sdk_ret_t capri_txs_scheduler_tx_dealloc(uint32_t alloc_offset,
                                          uint32_t alloc_units);
-
+sdk_ret_t capri_txs_scheduler_tx_reserve(uint32_t reserve_offset,
+                                         uint32_t num_units);
 /** capri_txs_policer_lif_params_update
  * API to program txs policer table with lif,cos scheduler-table mappings.
  *

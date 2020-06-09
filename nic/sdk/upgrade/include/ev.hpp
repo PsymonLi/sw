@@ -100,23 +100,23 @@ upg_stage2event (upg_stage_t stage)
     return (upg_ev_id_t)EV_ID_UPGMGR(stage);
 }
 
-// file setup by the upgrade loader during bringup
+// file setup by the system init module during bringup
 // if it not set, regular boot is assumed
-#define UPGRADE_INIT_MODE_FILE "/update/upgrade_init_mode.txt"
-#define UPGRADE_INIT_DOM_FILE "/update/upgrade_init_domain.txt"
+#define UPGRADE_INIT_MODE_FILE "/.upgrade_init_mode"
+#define UPGRADE_INIT_DOM_FILE "/.upgrade_init_domain"
 
 static inline upg_mode_t
-upg_init_mode (void)
+upg_init_mode (const char *file = NULL)
 {
-    FILE *fp = fopen(UPGRADE_INIT_MODE_FILE, "r");
+    FILE *fp;
     upg_mode_t mode;
     char buf[32], *m = NULL;
 
+    fp = file ? fopen(file, "r") : fopen(UPGRADE_INIT_MODE_FILE, "r");
     if (fp) {
         m = fgets(buf, sizeof(buf), fp);
         fclose(fp);
     }
-
     if (!m) {
         return upg_mode_t::UPGRADE_MODE_NONE;
     }

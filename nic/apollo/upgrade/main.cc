@@ -28,7 +28,8 @@ typedef void (*sig_handler_t)(int sig, siginfo_t *info, void *ptr);
 
 #define UPGRADE_IPC_PEER_SOCK_NAME "/tmp/upgrade_ipc_peer.sock"
 #define UPGRADE_PEER_BRINGUP_WAIT_CNT 300 // 300 seconds considering sim
-#define NIC_TOOLS "/nic/tools/"
+#define NIC_TOOLS "/nic/tools/"  # TODO : Need to remove @chinmoy
+#define UPGMGR_INIT_MODE_FILE "/update/upgmgr_init_mode.txt"
 
 namespace sdk {
 namespace upg {
@@ -261,7 +262,7 @@ upg_ev_request_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 static void
 upg_event_thread_init (void *ctxt)
 {
-    upg_mode_t mode = sdk::upg::upg_init_mode();
+    upg_mode_t mode = sdk::upg::upg_init_mode(UPGMGR_INIT_MODE_FILE);
 
     // if it is an graceful upgrade restart, need to continue the stages
     // from previous run
@@ -320,7 +321,7 @@ grpc_svc_init (void)
     ServerBuilder *server_builder;
     UpgSvcImpl upg_svc;
     std::string g_grpc_server_addr;
-    upg_mode_t mode = sdk::upg::upg_init_mode();
+    upg_mode_t mode = sdk::upg::upg_init_mode(UPGMGR_INIT_MODE_FILE);
 
     // spawn thread for upgrade event handling
     spawn_upg_event_thread();

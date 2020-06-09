@@ -65,6 +65,7 @@ public:
                                            lif_mcast_filter_t mcast_filter) override;
     virtual sdk_ret_t lif_upd_rx_en(uint32_t lif_id, bool rx_en) override;
     static sdk_ret_t lif_program_tx_scheduler(lif_info_t *info);
+    static sdk_ret_t lif_reserve_tx_scheduler(lif_info_t *info);
     virtual sdk_ret_t lif_upd_max_tx_rate(uint32_t lif_id, uint64_t rate_in_Bps) override;
     virtual sdk_ret_t lif_get_max_tx_rate(uint32_t lif_id, uint64_t *rate_in_Bps) override;
 

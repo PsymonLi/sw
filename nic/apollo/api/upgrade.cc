@@ -97,7 +97,7 @@ upg_shmstore_name (const char *name, upg_mode_t mode, bool create)
     // shm_create is true (new states on B). cannot use the same name as A, as A
     // need to reuse this if there is an upgrade failure
     if (sdk::platform::upgrade_mode_hitless(mode)) {
-        sdk::upg::upg_dom_t dom = sdk::upg::upg_init_domain();
+        sdk::upg::upg_dom_t dom = api::g_upg_state->upg_init_domain();
 
         if ((create && sdk::upg::upg_domain_b(dom)) ||
             (!create && sdk::upg::upg_domain_a(dom))) {

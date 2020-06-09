@@ -22,6 +22,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/utils.hpp"
+#include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
@@ -111,8 +112,17 @@ devapi_impl::lif_init(lif_info_t *info) {
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
     lif_spec_from_info(spec, info);
-    // program tx scheduler
-    lif_program_tx_scheduler(info);
+
+    if (sdk::platform::upgrade_mode_hitless(api::g_upg_state->upg_init_mode()) &&
+        (info->tx_sched_table_offset != INVALID_INDEXER_INDEX)) {
+        // reserve the bits, configuration has been done already by A
+        // during A to B hitless upgrade
+        ret = lif_reserve_tx_scheduler(info);
+        SDK_ASSERT(ret == SDK_RET_OK);
+    } else {
+        // program tx scheduler
+        lif_program_tx_scheduler(info);
+    }
     ret = lif->create(&spec);
     if (ret == SDK_RET_OK) {
         PDS_TRACE_DEBUG("Created lif %s, id %lu %s %u %s",
@@ -663,6 +673,24 @@ devapi_impl::lif_program_tx_scheduler(lif_info_t *info) {
         PDS_TRACE_ERR("Failed to program tx sched. lif %lu, err %u",
                       info->lif_id, ret);
         return ret;
+    }
+    return ret;
+}
+
+sdk_ret_t
+devapi_impl::lif_reserve_tx_scheduler(lif_info_t *info) {
+    sdk_ret_t ret;
+    asicpd_scheduler_lif_params_t   apd_lif;
+
+    // reserve scheduler units
+    apd_lif.lif_id = info->lif_id;
+    apd_lif.hw_lif_id = info->lif_id;
+    apd_lif.tx_sched_table_offset = info->tx_sched_table_offset;
+    apd_lif.tx_sched_num_table_entries = info->tx_sched_num_table_entries;
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_reserve(&apd_lif);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to reserve tx sched. lif %lu, err %u",
+                      info->lif_id, ret);
     }
     return ret;
 }

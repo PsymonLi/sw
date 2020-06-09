@@ -50,6 +50,34 @@ end:
     return ret;
 }
 
+// needed in upgrade scenarios where the allocation happens in A and need to
+// reserve the same in B. New allocation should use the alloc function
+sdk_ret_t
+asicpd_tx_scheduler_map_reserve (asicpd_scheduler_lif_params_t *lif)
+{
+    sdk_ret_t ret;
+
+    // during hitless upgrade, B reserves these offsets allocated by A
+    SDK_ASSERT (lif->tx_sched_table_offset != INVALID_INDEXER_INDEX);
+    SDK_ASSERT (lif->tx_sched_num_table_entries != 0);
+
+    // Reserve txs scheduler resource for this lif.
+    // Sched table can hold 8K queues per index and mandates new index for each cos.
+    ret = capri_txs_scheduler_tx_reserve(lif->tx_sched_table_offset,
+                                         lif->tx_sched_num_table_entries);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("lif_id %u,failed to reserve txs sched res",
+                       lif->lif_id);
+        return SDK_RET_NO_RESOURCE;
+    } else {
+        SDK_TRACE_DEBUG("lif_id %u, reserved %u scheduler resource at offset %u",
+                        lif->lif_id,
+                        lif->tx_sched_num_table_entries,
+                        lif->tx_sched_table_offset);
+    }
+    return SDK_RET_OK;
+}
+
 sdk_ret_t
 asicpd_tx_scheduler_map_free (asicpd_scheduler_lif_params_t *lif)
 {
