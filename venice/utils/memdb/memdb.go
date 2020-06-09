@@ -804,13 +804,13 @@ func (md *Memdb) updateObject(od objDBInterface, key string, obj objIntf, refs m
 		return nil
 	}
 
-	log.Infof("Update for obj %v", key)
+	log.Debugf("Update for obj %v", key)
 	md.updateReferences(key, obj.Object(), refs)
 	old := ostate.Object()
 	ostate.SetValue(obj.Object())
 
 	if md.dbAddResolver.resolvedCheck(key, obj.Object()) {
-		log.Infof("Update Object key %v resolved", key)
+		log.Debugf("Update Object key %v resolved", key)
 		event := UpdateEvent
 		if ostate.isAddUnResolved() {
 			//It was not resolved before, hence set it to create now
