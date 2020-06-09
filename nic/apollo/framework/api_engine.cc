@@ -72,6 +72,10 @@
 #define PDS_API_ABORT_COUNTER_INC(cntr_, val)                \
             counters_.abort.cntr_ += (val)
 
+// in most extreme cases when the IPC peer dies, we need to bail out
+// and so 10 secs is long enough for that
+#define PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT             10.0
+
 namespace api {
 
 /// \defgroup PDS_API_ENGINE Framework for processing APIs
@@ -1457,7 +1461,8 @@ api_engine::send_req_rsp_msgs_(pds_ipc_id_t ipc_id,
         sdk::ipc::request(ipc_id, PDS_MSG_TYPE_CFG_OBJ_SET,
                           api_msg_info->req_rsp_msgs,
                           core::pds_msg_list_size(api_msg_info->req_rsp_msgs),
-                          process_ipc_async_result_, NULL);
+                          process_ipc_async_result_, NULL,
+                          PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
         return SDK_RET_IN_PROGRESS;
     }
     return SDK_RET_OK;
