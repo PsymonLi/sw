@@ -60,7 +60,8 @@ export class ClusterupdateComponent extends BaseComponent implements OnInit {
 
   setValidators() {
     this.addNTP.setValidators([this.isNTPServerNameValid()]);
-    this.tempCluster.$formGroup.get(['spec', 'virtual-ip']).setValidators([IPUtility.isValidIPValidator, required]);
+    // virtual-ip field is a required field when enabled on the template
+    this.tempCluster.$formGroup.get(['spec', 'virtual-ip']).setValidators(IPUtility.isValidIPValidator);
   }
 
   isNTPServerNameValid(): ValidatorFn {
