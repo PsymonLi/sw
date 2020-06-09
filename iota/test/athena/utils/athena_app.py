@@ -118,6 +118,36 @@ def athena_sec_app_start(node_name = None):
     return api.types.status.SUCCESS
 
 
+def athena_sec_app_might_start(node_name = None):
+    node_names = []
+
+    if node_name is None:
+        node_names = get_bitw_nodes()
+    else:
+        node_names.append(node_name)
+    
+    for nname in node_names:
+        req = api.Trigger_CreateExecuteCommandsRequest()
+        
+        cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
+        api.Trigger_AddNaplesCommand(req, nname, cmd)
+
+        resp = api.Trigger(req)
+        ps_cmd_resp = resp.commands[0]
+        api.PrintCommandResults(ps_cmd_resp)
+        
+        if "athena_app" in ps_cmd_resp.stdout:
+            athena_sec_app_pid = ps_cmd_resp.stdout.strip().split()[1]
+        
+            api.Logger.info("athena sec app already running on node %s "
+                            "with pid %s." % (nname, athena_sec_app_pid))
+        else:
+            ret = athena_sec_app_start(nname)
+            if ret != api.types.status.SUCCESS:
+                return ret
+
+    return api.types.status.SUCCESS
+
 def athena_sec_app_restart(node_name = None):
     node_names = []
 

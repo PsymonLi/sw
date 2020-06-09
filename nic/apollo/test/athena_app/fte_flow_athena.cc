@@ -1943,7 +1943,7 @@ fte_setup_flow (void)
     return ret;
 }
 
-static pds_ret_t
+pds_ret_t
 fte_flows_aging_expiry_fn(uint32_t expiry_id,
                           pds_flow_age_expiry_type_t expiry_type,
                           void *user_ctx)

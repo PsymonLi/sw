@@ -32,22 +32,32 @@
 #include "nic/include/ftl_dev_if.hpp"
 #include "nic/apollo/api/include/athena/pds_conntrack.h"
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
+#include <rte_atomic.h>
+#include <rte_spinlock.h>
 
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x)   (sizeof(x) / sizeof((x)[0]))
 #endif
 
-#define TEST_LOG_INFO(args...)                      \
-    do {                                            \
-        printf(args);                               \
-        fflush(stdout);                             \
+extern FILE *app_test_log_fp;
+
+#define TEST_LOG_INFO(args...)                          \
+    do {                                                \
+        if (app_test_log_fp) {                          \
+            fprintf(app_test_log_fp, args);             \
+        }                                               \
+        printf(args);                                   \
+        fflush(stdout);                                 \
     } while (false)
 
-#define TEST_LOG_ERR(args...)                       \
-    do {                                            \
-         printf("ERROR: " args);                    \
-         fflush(stdout);                             \
-     } while (false)
+#define TEST_LOG_ERR(args...)                           \
+    do {                                                \
+        if (app_test_log_fp) {                          \
+            fprintf(app_test_log_fp, "ERROR: " args);   \
+        }                                               \
+        printf("ERROR: " args);                         \
+        fflush(stdout);                                 \
+    } while (false)
 
 
 namespace test {
@@ -194,39 +204,79 @@ private:
 class id_map_t
 {
 public:
-
-    ~id_map_t() { clear(); }
+    id_map_t() 
+    {
+        rte_spinlock_init(&lock_);
+    }
+    ~id_map_t() 
+    {
+        clear();
+    }
 
     bool insert(uint32_t id)
     {
         std::pair<std::map<uint32_t,uint32_t>::iterator,bool> ret;
+
+        lock();
         ret = id_map.insert(std::make_pair(id, 0));
+        unlock();
         return ret.second;
     }
 
-    void erase(uint32_t id) { id_map.erase(id); }
+    void erase(uint32_t id)
+    {
+        lock();
+        id_map.erase(id);
+        unlock();
+    }
 
     bool find(uint32_t id)
     {
+        bool result;
+
+        lock();
         auto iter = id_map.find(id);
-        return iter != id_map.end();
+        result = iter != id_map.end();
+        unlock();
+        return result;
     }
 
     bool find_erase(uint32_t id)
     {
-        if (find(id)) {
-            erase(id);
+        lock();
+        auto iter = id_map.find(id);
+        if (iter != id_map.end()) {
+            id_map.erase(id);
+            unlock();
             return true;
         }
+        unlock();
         return false;
     }
 
-    void clear(void) { id_map.clear(); }
+    void clear(void)
+    {
+        lock();
+        id_map.clear();
+        unlock();
+    }
 
-    uint32_t size(void) { return (uint32_t)id_map.size(); }
+    uint32_t size(void)
+    {
+        uint32_t sz;
+
+        lock();
+        sz = (uint32_t)id_map.size();
+        unlock();
+        return sz;
+    }
 
 private:
     std::map<uint32_t,uint32_t> id_map;
+    rte_spinlock_t              lock_;
+
+    void lock(void) { rte_spinlock_lock(&lock_); }
+    void unlock(void) { rte_spinlock_unlock(&lock_); }
 };
 
 /*
@@ -295,18 +345,40 @@ public:
 
     tolerance_fail_count_t() { clear(); }
 
-    void clear(void) { counters = {0}; }
+    void clear(void)
+    {
+        rte_atomic32_init(&counters.accel_control);
+        rte_atomic32_init(&counters.info_read);
+        rte_atomic32_init(&counters.under_age);
+        rte_atomic32_init(&counters.over_age);
+        rte_atomic32_init(&counters.create_add);
+        rte_atomic32_init(&counters.create_erase);
+        rte_atomic32_init(&counters.empty_check);
+        rte_atomic32_init(&counters.delete_errors);
+    }
+
+    void accel_control_inc(void) { rte_atomic32_inc(&counters.accel_control); }
+    void info_read_inc(void) { rte_atomic32_inc(&counters.info_read); }
+    void under_age_inc(void) { rte_atomic32_inc(&counters.under_age); }
+    void over_age_inc(void) { rte_atomic32_inc(&counters.over_age); }
+    void create_add_inc(void) { rte_atomic32_inc(&counters.create_add); }
+    void create_erase_inc(void) { rte_atomic32_inc(&counters.create_erase); }
+    void empty_check_inc(void) { rte_atomic32_inc(&counters.empty_check); }
+    void delete_errors_inc(void) { rte_atomic32_inc(&counters.delete_errors); }
+
+    uint32_t under_age(void) { return rte_atomic32_read(&counters.under_age); }
+    uint32_t over_age(void) { return rte_atomic32_read(&counters.over_age); }
 
     uint32_t total(void)
     {
-        return counters.accel_control   +
-               counters.info_read       +
-               counters.under_age       +
-               counters.over_age        +
-               counters.create_add      +
-               counters.create_erase    +
-               counters.empty_check     +
-               counters.delete_errors;
+        return rte_atomic32_read(&counters.accel_control)   +
+               rte_atomic32_read(&counters.info_read)       +
+               rte_atomic32_read(&counters.under_age)       +
+               rte_atomic32_read(&counters.over_age)        +
+               rte_atomic32_read(&counters.create_add)      +
+               rte_atomic32_read(&counters.create_erase)    +
+               rte_atomic32_read(&counters.empty_check)     +
+               rte_atomic32_read(&counters.delete_errors);
     }
 
     friend class aging_tolerance_t;
@@ -314,14 +386,14 @@ public:
 private:
 
     struct {
-        uint32_t                accel_control;
-        uint32_t                info_read;
-        uint32_t                under_age;
-        uint32_t                over_age;
-        uint32_t                create_add;
-        uint32_t                create_erase;
-        uint32_t                empty_check;
-        uint32_t                delete_errors;
+        rte_atomic32_t          accel_control;
+        rte_atomic32_t          info_read;
+        rte_atomic32_t          under_age;
+        rte_atomic32_t          over_age;
+        rte_atomic32_t          create_add;
+        rte_atomic32_t          create_erase;
+        rte_atomic32_t          empty_check;
+        rte_atomic32_t          delete_errors;
     } counters;
 };
 
@@ -346,12 +418,14 @@ public:
         curr_tmo(&normal_tmo),
         num_ids_max(num_ids_max),
         tolerance_secs(0),
-        over_age_min_(UINT32_MAX),
-        over_age_max_(0),
-        using_fte_indices_(false),
-        create_count_(0),
-        erase_count_(0),
-        expiry_count_(0) {}
+        using_fte_indices_(false)
+    {
+        rte_atomic32_set(&over_age_min_, UINT32_MAX);
+        rte_atomic32_init(&over_age_max_);
+        rte_atomic32_init(&create_count_);
+        rte_atomic32_init(&erase_count_);
+        rte_atomic32_init(&expiry_count_);
+    }
 
     ~aging_tolerance_t() { create_id_map.clear(); }
 
@@ -367,16 +441,24 @@ public:
     void create_id_map_empty_check(void);
 
     uint32_t curr_max_tmo(void) const { return curr_tmo->max_tmo_get(); }
-    void expiry_count_inc(void) { expiry_count_++; }
-    void delete_errors_inc(void) { failures.counters.delete_errors++; }
-    uint32_t delete_errors(void) { return failures.counters.delete_errors; }
-    uint32_t create_count(void) { return create_count_; }
-    uint32_t expiry_count(void) { return expiry_count_; }
+    void create_count_inc(void) { rte_atomic32_inc(&create_count_); }
+    void erase_count_inc(void) { rte_atomic32_inc(&erase_count_); }
+    void expiry_count_inc(void) { rte_atomic32_inc(&expiry_count_); }
+    void delete_errors_inc(void) { rte_atomic32_inc(&failures.counters.delete_errors); }
+    uint32_t delete_errors(void) { return rte_atomic32_read(&failures.counters.delete_errors); }
+    uint32_t create_count(void) { return rte_atomic32_read(&create_count_); }
+    uint32_t erase_count(void) { return rte_atomic32_read(&erase_count_); }
+    uint32_t expiry_count(void) { return rte_atomic32_read(&expiry_count_); }
+
+    void over_age_min(uint32_t val) { rte_atomic32_set(&over_age_min_, val); }
+    void over_age_max(uint32_t val) { rte_atomic32_set(&over_age_max_, val); }
+
     uint32_t over_age_min(void)
     {
-        return over_age_min_ == UINT32_MAX ? 0 : over_age_min_;
+        return (uint32_t)rte_atomic32_read(&over_age_min_) == UINT32_MAX ?
+               0 : rte_atomic32_read(&over_age_min_);
     }
-    uint32_t over_age_max(void) { return over_age_max_; }
+    uint32_t over_age_max(void) { return rte_atomic32_read(&over_age_max_); }
     void using_fte_indices(bool yesno) { using_fte_indices_ = yesno; }
     bool using_fte_indices(void) { return using_fte_indices_; }
 
@@ -406,15 +488,15 @@ private:
     aging_tmo_cfg_t             *curr_tmo;
     uint32_t                    num_ids_max;
     uint32_t                    tolerance_secs;
-    uint32_t                    over_age_min_;
-    uint32_t                    over_age_max_;
+    rte_atomic32_t              over_age_min_;
+    rte_atomic32_t              over_age_max_;
     tolerance_fail_count_t      failures;
     bool                        using_fte_indices_;
 
     id_map_t                    create_id_map;
-    uint32_t                    create_count_;
-    uint32_t                    erase_count_;
-    uint32_t                    expiry_count_;
+    rte_atomic32_t              create_count_;
+    rte_atomic32_t              erase_count_;
+    rte_atomic32_t              expiry_count_;
 };
 
 /**
@@ -510,7 +592,7 @@ private:
 #ifdef __x86_64__
 #define APP_TIME_LIMIT_EXEC_GRACE           300 /* seconds over max tmo */
 #else
-#define APP_TIME_LIMIT_EXEC_GRACE           60 /* seconds over max_tmo */
+#define APP_TIME_LIMIT_EXEC_GRACE           120 /* seconds over max_tmo */
 #endif
 
 #define APP_TIME_LIMIT_USLEEP_DFLT          10000 /* 10ms */
@@ -647,6 +729,10 @@ conntrack_timestamp2secs(uint32_t conntrack_ts)
 {
     return session_timestamp2secs(conntrack_ts);
 }
+
+bool test_log_file_create(test_vparam_ref_t vparam);
+bool test_log_file_append(test_vparam_ref_t vparam);
+void test_log_file_close(void);
 
 }    // namespace athena_app
 }    // namespace test

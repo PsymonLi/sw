@@ -4,7 +4,8 @@ include ${MKDEFS}/pre.mk
 MODULE_TARGET   = athena_client_host.bin
 MODULE_PIPELINE = athena
 MODULE_ARCH     = x86_64
-MODULE_INCS     = ${MODULE_GEN_DIR}
+MODULE_INCS     = ${MODULE_GEN_DIR} ${BLD_OUT_DIR}/pen_dpdk_submake/include/
+MODULE_PREREQS  = pen_dpdk.submake
 MODULE_LDFLAGS  = -L${TOPDIR}/nic/third-party/gflags/${ARCH}/lib
 MODULE_LDLIBS   = zmq gflags
 include ${MKDEFS}/post.mk

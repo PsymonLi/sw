@@ -11,7 +11,8 @@
 #include "app_test_utils.hpp"
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
-#include <rte_atomic.h>
+
+FILE    *app_test_log_fp;
 
 namespace test {
 namespace athena_app {
@@ -854,12 +855,13 @@ void
 aging_tolerance_t::reset(uint32_t ids_max)
 {
     num_ids_max = ids_max;
-    over_age_min_ = UINT32_MAX;
-    over_age_max_ = 0;
     using_fte_indices_ = false;
-    create_count_ = 0;
-    erase_count_ = 0;
-    expiry_count_ = 0;
+    rte_atomic32_set(&over_age_min_, UINT32_MAX);
+    rte_atomic32_init(&over_age_max_);
+    rte_atomic32_init(&create_count_);
+    rte_atomic32_init(&erase_count_);
+    rte_atomic32_init(&expiry_count_);
+
     create_id_map.clear();
     failures.clear();
     normal_tmo.reset();
@@ -886,7 +888,7 @@ aging_tolerance_t::age_accel_control(bool enable_sense)
     } else {
         TEST_LOG_ERR("Failed to set accelerated aging control %u\n",
                      enable_sense);
-        failures.counters.accel_control++;
+        failures.accel_control_inc();
     }
 }
 
@@ -895,7 +897,7 @@ aging_tolerance_t::create_id_map_insert(uint32_t id)
 {
     if (create_map_with_ids()) {
          if (create_id_map.insert(id)) {
-             create_count_++;
+             create_count_inc();
          } else {
 
              /*
@@ -906,7 +908,7 @@ aging_tolerance_t::create_id_map_insert(uint32_t id)
               *    randomly generated
               *
              TEST_LOG_ERR("entry_id %u could not be added to id_map\n", id);
-             failures.counters.create_add++;
+             failures.create_add_inc();
              */
          }
     } else {
@@ -915,7 +917,7 @@ aging_tolerance_t::create_id_map_insert(uint32_t id)
          * Count-only mode should not have been used for the 2 types of
          * test stated above or the test could fail.
          */
-        create_count_++;
+        create_count_inc();
     }
 }
 
@@ -924,16 +926,16 @@ aging_tolerance_t::create_id_map_find_erase(uint32_t id)
 {
     if (create_map_with_ids()) {
         if (create_id_map.find_erase(id)) {
-            erase_count_++;
+            erase_count_inc();
         } else {
             TEST_LOG_ERR("entry_id %u was not created for this test\n", id);
-            failures.counters.create_erase++;
+            failures.create_erase_inc();
         }
-    } else if (erase_count_ < create_count_) {
-        erase_count_++;
+    } else if (erase_count() < create_count()) {
+        erase_count_inc();
     } else {
         TEST_LOG_ERR("entry_id %u not removable or already removed\n", id);
-        failures.counters.create_erase++;
+        failures.create_erase_inc();
     }
 }
 
@@ -941,7 +943,7 @@ uint32_t
 aging_tolerance_t::create_id_map_size(void)
 {
     return create_map_with_ids() ?
-           create_id_map.size() : create_count_;
+           create_id_map.size() : create_count();
 }
 
 void 
@@ -951,11 +953,11 @@ aging_tolerance_t::create_id_map_empty_check(void)
 
     rem_count = create_map_with_ids() ?
                 create_id_map.size() :
-                (create_count_ - erase_count_);
+                (create_count() - erase_count());
     if (rem_count) {
         TEST_LOG_ERR("Not all entries were aged out, remaining count: %u\n",
                      rem_count);
-        failures.counters.empty_check++;
+        failures.empty_check_inc();
     }
 }
 
@@ -991,7 +993,7 @@ aging_tolerance_t::session_tmo_tolerance_check(uint32_t id)
                                                         info.status.timestamp));
             tmo_tolerance_check(id, delta_secs, curr_tmo->session_tmo_get());
         } else {
-            failures.counters.info_read++;
+            failures.info_read_inc();
         }
     }
 }
@@ -1025,7 +1027,7 @@ aging_tolerance_t::conntrack_tmo_tolerance_check(uint32_t id)
                                                             info.status.timestamp));
             tmo_tolerance_check(id, delta_secs, applic_tmo);
         } else {
-            failures.counters.info_read++;
+            failures.info_read_inc();
         }
     }
 }
@@ -1036,22 +1038,22 @@ aging_tolerance_t::tmo_tolerance_check(uint32_t id,
                                        uint32_t applic_tmo_secs)
 {
     if (delta_secs < applic_tmo_secs) {
-        if (failures.counters.under_age == 0) {
+        if (failures.under_age() == 0) {
             TEST_LOG_ERR("entry_id %u aged out in < timeout of %u seconds "
                          "(actual: %u)\n", id, applic_tmo_secs, delta_secs);
         }
-        failures.counters.under_age++;
+        failures.under_age_inc();
     } else {
         uint32_t over_age = delta_secs - applic_tmo_secs;
-        over_age_min_ = std::min(over_age, over_age_min_);
-        over_age_max_ = std::max(over_age, over_age_max_);
+        over_age_min(std::min(over_age, over_age_min()));
+        over_age_max(std::max(over_age, over_age_max()));
         if (over_age > tolerance_secs) {
-            if (failures.counters.over_age == 0) {
+            if (failures.over_age() == 0) {
                 TEST_LOG_ERR("entry_id %u took extra %u seconds to age out "
                              "(tolerance is %u seconds)\n",
                              id, over_age, tolerance_secs);
             }
-            failures.counters.over_age++;
+            failures.over_age_inc();
         }
     }
 }
@@ -1119,6 +1121,28 @@ mpu_tmr_wheel_update(void)
 #endif
 }
 
+bool
+test_log_file_create(test_vparam_ref_t vparam)
+{
+    app_test_log_fp = fopen(vparam.expected_str().c_str(), "w+");
+    return true;
+}
+
+bool
+test_log_file_append(test_vparam_ref_t vparam)
+{
+    app_test_log_fp = fopen(vparam.expected_str().c_str(), "a+");
+    return true;
+}
+
+void
+test_log_file_close(void)
+{
+    if (app_test_log_fp) {
+        fclose(app_test_log_fp);
+        app_test_log_fp = nullptr;
+    }
+}
 
 }    // namespace athena_app
 }    // namespace test

@@ -13,6 +13,8 @@
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/apollo/core/trace.hpp"
+#include "fte_athena.hpp"
 
 namespace test {
 namespace athena_app {
@@ -262,10 +264,12 @@ conntrack_aging_expiry_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_CONNTRACK:
         if (aging_expiry_dflt_fn) {
-            ct_tolerance.expiry_count_inc();
             ct_tolerance.conntrack_tmo_tolerance_check(expiry_id);
-            ct_tolerance.create_id_map_find_erase(expiry_id);
             ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
+            if (ret != PDS_RET_RETRY) {
+                ct_tolerance.expiry_count_inc();
+                ct_tolerance.create_id_map_find_erase(expiry_id);
+            }
         }
         break;
 
@@ -302,10 +306,11 @@ conntrack_aging_init(test_vparam_ref_t vparam)
     }
     if (CONNTRACK_RET_VALIDATE(ret)) {
 
-        // Here we don't want to assume that some existing threads are already
-        // doing polling on our behalf. Hence, we indicate intention of self polling. 
+        // On HW go with FTE polling threads; 
+        // otherwise do self polling in this module.
 
-        ret = pds_flow_age_sw_pollers_poll_control(true, conntrack_aging_expiry_fn);
+        ret = pds_flow_age_sw_pollers_poll_control(!hw(),
+                                      conntrack_aging_expiry_fn);
     }
     if (!hw() && CONNTRACK_RET_VALIDATE(ret)) {
         ret = pds_flow_age_hw_scanners_start();
@@ -336,12 +341,17 @@ conntrack_aging_fini(test_vparam_ref_t vparam)
     test_vparam_t   sim_vparam;
     pds_ret_t       ret;
 
-    ret = !hw() ? pds_flow_age_hw_scanners_stop(true) :
-                  PDS_RET_OK;
-    if (CONNTRACK_RET_VALIDATE(ret)) {
-        ret = pds_flow_age_sw_pollers_poll_control(false, NULL);
-    }
+    if (hw()) {
 
+        // Restore FTE aging expiry handler
+        ret = pds_flow_age_sw_pollers_poll_control(false,
+                                      fte_ath::fte_flows_aging_expiry_fn);
+    } else {
+        ret = pds_flow_age_hw_scanners_stop(true);
+        if (CONNTRACK_RET_VALIDATE(ret)) {
+            ret = pds_flow_age_sw_pollers_poll_control(false, NULL);
+        }
+    }
 
     sim_vparam.push_back(test_param_t((uint32_t)false));
     conntrack_aging_force_expired_ts(sim_vparam);
@@ -360,14 +370,16 @@ conntrack_aging_pollers_poll(void *user_ctx)
 static bool
 conntrack_aging_expiry_count_check(void *user_ctx)
 {
-    conntrack_aging_pollers_poll(user_ctx);
+    if (!hw()) {
+        conntrack_aging_pollers_poll(user_ctx);
+    }
     return ct_tolerance.expiry_count() >= ct_tolerance.create_count();
 }
 
 bool
 conntrack_4combined_expiry_count_check(bool poll_needed)
 {
-    if (poll_needed) {
+    if (!hw() && poll_needed) {
         conntrack_aging_pollers_poll((void *)&ct_tolerance);
     }
     return ct_tolerance.expiry_count() >= ct_tolerance.create_count();

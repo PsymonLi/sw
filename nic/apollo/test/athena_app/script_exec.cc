@@ -25,6 +25,8 @@ const static map<string,test_fn_t>  name2fn_map =
     APP_TEST_NAME2FN_MAP_ENTRY(skip_fte_flow_prog_set),
     APP_TEST_NAME2FN_MAP_ENTRY(flow_cache_dump),
     APP_TEST_NAME2FN_MAP_ENTRY(session_info_dump),
+    APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_create),
+    APP_TEST_NAME2FN_MAP_ENTRY(test_log_file_append),
     APP_TEST_NAME2FN_MAP_ENTRY(APP_TEST_EXIT_FN),
 };
 
@@ -252,6 +254,7 @@ script_exec(const string& scripts_dir,
     }
     TEST_LOG_INFO("\nOverall Report: %s\n",
                   overall_success ? "SUCCESS" : "FAILURE");
+    test_log_file_close();
     if (has_app_exit) {
         test_entry_t& test_entry = test_suite.at(tcid);
 

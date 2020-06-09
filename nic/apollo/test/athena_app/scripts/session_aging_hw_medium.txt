@@ -2,8 +2,9 @@
 #so it's fine to specify larger size parameters here. The infra will
 #automatically reduce it to the actual table size as needed.
 
+test_log_file_create /var/log/pensando/iota_session_medium_test.log
 skip_fte_flow_prog_set TRUE
-session_table_clear_full 262555
+session_table_clear_full 8388608
 
 session_aging_init
 session_aging_force_expired_ts false
@@ -30,6 +31,8 @@ session_aging_test
 
 session_aging_metrics_show
 session_aging_accel_control False
+session_aging_normal_tmo_set 300
+session_aging_accel_tmo_set 30
 session_aging_fini
 
 skip_fte_flow_prog_set false

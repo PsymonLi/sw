@@ -14,6 +14,7 @@
 #include "nic/sdk/third-party/zmq/include/zmq.h"
 #include "nic/apollo/api/include/athena/pds_base.h"
 #include "nic/apollo/api/include/athena/pds_init.h"
+#include "nic/apollo/api/include/athena/pds_flow_age.h"
 
 namespace fte_ath {
 
@@ -41,6 +42,9 @@ void fte_l2_flow_range_bmap_destroy(void);
 sdk_ret_t fte_flow_prog(struct rte_mbuf *m);
 void fte_thread_init(unsigned int core_id);
 sdk_ret_t fte_flows_init(void);
+pds_ret_t fte_flows_aging_expiry_fn(uint32_t expiry_id,
+                                    pds_flow_age_expiry_type_t expiry_type,
+                                    void *user_ctx);
 pds_ret_t fte_dump_flows(const char *fname,
                          bool append);
 pds_ret_t fte_dump_flows(zmq_msg_t *rx_msg = nullptr,

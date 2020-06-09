@@ -15,6 +15,8 @@
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/apollo/p4/include/athena_defines.h"
+#include "nic/apollo/core/trace.hpp"
+#include "fte_athena.hpp"
 
 namespace test {
 namespace athena_app {
@@ -198,28 +200,6 @@ session_populate_full(test_vparam_ref_t vparam)
     TEST_LOG_INFO("Session entries created: %u\n",
                   session_tolerance.create_id_map_size());
     return SESSION_CREATE_RET_VALIDATE(ret);
-}
-
-static void
-flow_cache_entry_clear(pds_flow_iter_cb_arg_t *arg)
-{
-    if (SESSION_RET_VALIDATE(pds_flow_cache_entry_delete(&arg->flow_key))) {
-        *((uint32_t *)arg->appctx) += 1;
-    }
-}
-
-bool
-flow_cache_table_clear_full(test_vparam_ref_t vparam)
-{
-    pds_flow_iter_cb_arg_t  arg = {0};
-    uint32_t                clear_count = 0;
-    pds_ret_t               ret;
-
-    arg.appctx = (void *)&clear_count;
-    ret = pds_flow_cache_entry_iterate(flow_cache_entry_clear, &arg);
-
-    TEST_LOG_INFO("Flow cache entries deleted: %u\n", clear_count);
-    return SESSION_RET_VALIDATE(ret);
 }
 
 bool
@@ -421,10 +401,10 @@ session_aging_expiry_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_SESSION:
         if (aging_expiry_dflt_fn) {
+            session_tolerance.session_tmo_tolerance_check(expiry_id);
             ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
             if (ret != PDS_RET_RETRY) {
                 session_tolerance.expiry_count_inc();
-                session_tolerance.session_tmo_tolerance_check(expiry_id);
                 session_tolerance.create_id_map_find_erase(expiry_id);
                 if (session_tolerance.using_fte_indices()) {
                     fte_ret = fte_ath::fte_session_index_free(expiry_id);
@@ -475,10 +455,11 @@ session_aging_init(test_vparam_ref_t vparam)
     }
     if (SESSION_RET_VALIDATE(ret)) {
 
-        // Here we don't want to assume that some existing threads are already
-        // doing polling on our behalf. Hence, we indicate intention of self polling. 
+        // On HW go with FTE polling threads; 
+        // otherwise do self polling in this module.
 
-        ret = pds_flow_age_sw_pollers_poll_control(true, session_aging_expiry_fn);
+        ret = pds_flow_age_sw_pollers_poll_control(!hw(),
+                                      session_aging_expiry_fn);
     }
     if (!hw() && SESSION_RET_VALIDATE(ret)) {
         ret = pds_flow_age_hw_scanners_start();
@@ -510,12 +491,17 @@ session_aging_fini(test_vparam_ref_t vparam)
     test_vparam_t   sim_vparam;
     pds_ret_t       ret;
 
-    ret = !hw() ? pds_flow_age_hw_scanners_stop(true) :
-                  PDS_RET_OK;
-    if (SESSION_RET_VALIDATE(ret)) {
-        ret = pds_flow_age_sw_pollers_poll_control(false, NULL);
-    }
+    if (hw()) {
 
+        // Restore FTE aging expiry handler
+        ret = pds_flow_age_sw_pollers_poll_control(false,
+                                      fte_ath::fte_flows_aging_expiry_fn);
+    } else {
+        ret = pds_flow_age_hw_scanners_stop(true);
+        if (SESSION_RET_VALIDATE(ret)) {
+            ret = pds_flow_age_sw_pollers_poll_control(false, NULL);
+        }
+    }
 
     sim_vparam.push_back(test_param_t((uint32_t)false));
     session_aging_force_expired_ts(sim_vparam);
@@ -534,14 +520,16 @@ session_aging_pollers_poll(void *user_ctx)
 static bool
 session_aging_expiry_count_check(void *user_ctx)
 {
-    session_aging_pollers_poll(user_ctx);
+    if (!hw()) {
+        session_aging_pollers_poll(user_ctx);
+    }
     return session_tolerance.expiry_count() >= session_tolerance.create_count();
 }
 
 bool
 session_4combined_expiry_count_check(bool poll_needed)
 {
-    if (poll_needed) {
+    if (!hw() && poll_needed) {
         session_aging_pollers_poll((void *)&session_tolerance);
     }
     return session_tolerance.expiry_count() >= session_tolerance.create_count();
@@ -567,7 +555,7 @@ session_aging_test(test_vparam_ref_t vparam)
 
     ts.time_expiry_set(APP_TIME_LIMIT_EXEC_SECS(session_tolerance.curr_max_tmo() +
                                                 APP_TIME_LIMIT_EXEC_GRACE));
-    ts.time_limit_exec(session_aging_expiry_count_check, nullptr, 0);
+    ts.time_limit_exec(session_aging_expiry_count_check, nullptr);
     return session_4combined_result_check();
 }
 

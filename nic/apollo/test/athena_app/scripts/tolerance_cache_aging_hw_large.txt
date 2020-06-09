@@ -2,9 +2,9 @@
 #so it's fine to specify larger size parameters here. The infra will
 #automatically reduce it to the actual table size as needed.
 
+test_log_file_create /var/log/pensando/iota_tolerance_cache_large_test.log
 skip_fte_flow_prog_set TRUE
-session_table_clear_full 8388608
-flow_cache_table_clear_full
+session_and_cache_clear_full 8388608
 
 session_aging_init
 session_aging_force_expired_ts false
@@ -14,7 +14,10 @@ session_aging_tolerance_secs_set 20
 session_aging_normal_tmo_set 6
 session_aging_accel_tmo_set 2
 
-session_and_cache_populate tcp {vnic 17 3} {sip 169.254.60.1 100} {dip 169.111.1.1 100} {sport 33333 10} {dport 6666 10}
+#session_and_cache_populate tcp {vnic 17 3} {sip 169.254.60.1 100} {dip 169.111.1.1 100} {sport 33333 10} {dport 6666 10}
+
+# Amar's patterns
+session_and_cache_populate tcp {vnic 2 256} {sip 11.0.0.1 2} {dip 9.0.0.1 2} {sport 100 20} {dport 201 100}
 session_aging_test
 
 #switch to accelerated aging
@@ -23,9 +26,13 @@ session_aging_accel_control true
 session_and_cache_populate udp {vnic 256 3} {sip 122.21.31.1 128} {dip 211.11.191.1 128} {sport 10000 10} {dport 737 10}
 session_aging_test
 
+flow_cache_dump /data/iota_tolerance_cache_large.log
+
 session_aging_metrics_show
 session_aging_accel_control FALSE
 session_aging_tolerance_secs_set 0
+session_aging_normal_tmo_set 300
+session_aging_accel_tmo_set 30
 session_aging_fini
 
 skip_fte_flow_prog_set false

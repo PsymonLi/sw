@@ -23,6 +23,8 @@ DEFINE_int32(rx_timeout, 600,
 DEFINE_int32(tx_timeout, 300,
              "Socket transmit timeout in seconds");
 
+FILE    *app_test_log_fp;
+
 /*
  * ZMQ transport address for monitoring socket state change
  */
