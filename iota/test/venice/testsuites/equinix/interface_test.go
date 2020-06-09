@@ -112,10 +112,6 @@ var _ = Describe("Interface tests", func() {
 				//verify routerID has changed in pdsctl
 				return verifyPDSAgentIntf(lbc)
 			}).Should(Succeed())
-
-			//verify overlay and underlay are established
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 	})

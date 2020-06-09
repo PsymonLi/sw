@@ -3,7 +3,6 @@ package equinix_test
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -18,6 +17,11 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/log"
+)
+
+const (
+	PEER_ESTABLISHED     = "ESTABLISHED"
+	PEER_NOT_ESTABLISHED = "NOT ESTABLISHED"
 )
 
 var _ = Describe("Routing Config Tests", func() {
@@ -145,13 +149,10 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(verifyTimerInVenice(keepAlive, holdTime)).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//revert to original
 			Expect(orig.Commit()).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Add, delete ECX Peer in RR", func() {
@@ -184,7 +185,7 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//Delete added ECX peer
 			for _, v := range rcc.RoutingObjs {
@@ -198,13 +199,10 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//revert to original
 			Expect(orig.Commit()).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Add, delete DSCAutoConfig for Naples in RR", func() {
@@ -233,7 +231,7 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			log.Infof("Deleting Naples peering template")
 			//Delete added Naples template
@@ -246,9 +244,6 @@ var _ = Describe("Routing Config Tests", func() {
 				}
 			}
 			Expect(rcc.Commit()).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Change overlay password", func() {
@@ -265,14 +260,14 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_NOT_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_NOT_ESTABLISHED)
 
 			//Now change password on Naples & verify status is established
 			rcc.SetPasswordOnNaples(newPassword)
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//reset passwords
 			rcc.SetPasswordOnRR("")
@@ -280,14 +275,11 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//Revert to original state (i.e. w/o the DSC autoconfig block in RR)
 			log.Infof("Reverting to original config on Naples & RR")
 			Expect(orig.Commit()).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Change overlay password w/ implicit reset", func() {
@@ -308,22 +300,19 @@ var _ = Describe("Routing Config Tests", func() {
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_NOT_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_NOT_ESTABLISHED)
 
 			//Now change password on Naples & verify status is established
 			rcc.SetPasswordOnNaples(newPassword)
 			Expect(rcc.Commit()).Should(Succeed())
 
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//Revert to original state (i.e. w/o the DSC autoconfig block in RR)
 			//Default config doesn't have Naples config template
 			log.Infof("Reverting original config on Naples & RR")
 			Expect(orig.Commit()).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Disassociate RR from cluster", func() {
@@ -343,16 +332,13 @@ var _ = Describe("Routing Config Tests", func() {
 			}
 			//overlay should not be formed
 			verifyNaplesBgpState(PEER_NOT_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_NOT_ESTABLISHED)
 
 			//revert to original routing config association
 			for _, n := range savedNodes {
 				err = cfgClient.UpdateClusterNode(n)
 				Expect(err).ShouldNot(HaveOccurred())
 			}
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("RR: Change associated routing cfg", func() {
@@ -394,7 +380,7 @@ var _ = Describe("Routing Config Tests", func() {
 
 			//Verify overlay is formed
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//Restore original state
 			cnode.Spec.RoutingConfig = savedRtgCfgName
@@ -403,9 +389,6 @@ var _ = Describe("Routing Config Tests", func() {
 
 			//Delete new added routing config
 			Expect(cfgClient.DeleteRoutingConfig(newRtgCfg)).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Naples: Disassociate routing config", func() {
@@ -425,16 +408,13 @@ var _ = Describe("Routing Config Tests", func() {
 			}
 			//overlay should not be formed
 			verifyNaplesBgpState(PEER_NOT_ESTABLISHED, PEER_NOT_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_NOT_ESTABLISHED)
 
 			//revert to original routing config association
 			for _, d := range savedDSCs {
 				err = cfgClient.UpdateSmartNIC(d)
 				Expect(err).ShouldNot(HaveOccurred())
 			}
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 
 		It("Naples: Change routing config association", func() {
@@ -481,7 +461,7 @@ var _ = Describe("Routing Config Tests", func() {
 
 			//Verify overlay is formed
 			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
+			verifyRRState(PEER_ESTABLISHED)
 
 			//Restore original state
 			dsc.Spec.RoutingConfig = savedRtgCfgName
@@ -490,9 +470,6 @@ var _ = Describe("Routing Config Tests", func() {
 
 			//Delete new added routing config
 			Expect(cfgClient.DeleteRoutingConfig(newRtgCfg)).Should(Succeed())
-
-			verifyNaplesBgpState(PEER_ESTABLISHED, PEER_ESTABLISHED)
-			verifyRRState()
 		})
 	})
 })
@@ -575,10 +552,11 @@ func (pdsNbr *pdsBGPNeighbor) populate(r *objects.RoutingConfig,
 }
 
 func (pdsNbr *pdsBGPNeighbor) populateRR(r *objects.RoutingConfig,
-	nbr *network.BGPNeighbor, ip string) {
+	nbr *network.BGPNeighbor, ip string, state string) {
 	pdsNbr.Spec.IPAddress = ip
 	pdsNbr.Spec.Holdtime = r.RoutingObj.Spec.BGPConfig.GetHoldtime()
 	pdsNbr.Spec.Keepalive = r.RoutingObj.Spec.BGPConfig.GetKeepaliveInterval()
+	pdsNbr.Status.Status = state
 }
 
 func convertPDSConfig(peersAf []*PdsBGPPeerAFSpec, peers []*PdsBGPPeer,
@@ -613,18 +591,20 @@ func convertPDSConfig(peersAf []*PdsBGPPeerAFSpec, peers []*PdsBGPPeer,
 
 func getNaplesState(node *objects.Naples, pdsctlPath string, isHWNode bool) *pdsConfigCmp {
 
-	peersaf_fn := func(cmd string) ([]*PdsBGPPeerAFSpec, error) {
-		naples := []*objects.Naples{node}
-		var cmdOut []string
-		if isHWNode {
-			cmdOut, _ = ts.model.RunNaplesCommand(&objects.NaplesCollection{Nodes: naples}, cmd)
-		} else {
-			cmdOut, _ = ts.model.RunFakeNaplesCommand(&objects.NaplesCollection{FakeNodes: naples}, cmd)
+	/*
+		peersaf_fn := func(cmd string) ([]*PdsBGPPeerAFSpec, error) {
+			naples := []*objects.Naples{node}
+			var cmdOut []string
+			if isHWNode {
+				cmdOut, _ = ts.model.RunNaplesCommand(&objects.NaplesCollection{Nodes: naples}, cmd)
+			} else {
+				cmdOut, _ = ts.model.RunFakeNaplesCommand(&objects.NaplesCollection{FakeNodes: naples}, cmd)
+			}
+			peersAf := []*PdsBGPPeerAFSpec{}
+			err := json.Unmarshal([]byte(cmdOut[0]), &peersAf)
+			return peersAf, err
 		}
-		peersAf := []*PdsBGPPeerAFSpec{}
-		err := json.Unmarshal([]byte(cmdOut[0]), &peersAf)
-		return peersAf, err
-	}
+	*/
 
 	peers_fn := func(cmd string) ([]*PdsBGPPeer, error) {
 		naples := []*objects.Naples{node}
@@ -653,24 +633,24 @@ func getNaplesState(node *objects.Naples, pdsctlPath string, isHWNode bool) *pds
 	}
 
 	//get bgp peers, peers-af, show bgp o/p from each naples
-	peersAf, _ := peersaf_fn(fmt.Sprintf("%s show bgp peers-af --json", pdsctlPath))
+	//peersAf, _ := peersaf_fn(fmt.Sprintf("%s show bgp peers-af --json", pdsctlPath))
 	peers, _ := peers_fn(fmt.Sprintf("%s show bgp peers --json", pdsctlPath))
 	bgpSpec, _ := bgp_fn(fmt.Sprintf("%s show bgp --json", pdsctlPath))
 
 	//convert pds config
-	return convertPDSConfig(peersAf, peers, bgpSpec, true)
+	return convertPDSConfig(nil, peers, bgpSpec, true)
 }
 
 func getRRState(pegContainerCollection *objects.VeniceContainerCollection,
 	pegasusContainer *objects.VeniceContainer, rtrctlPath string) *pdsConfigCmp {
-
-	peersaf_fn := func(cmd string) ([]*PdsBGPPeerAFSpec, error) {
-		cmdOut, _, _, _ := pegContainerCollection.RunCommand(pegasusContainer, cmd)
-		peersAf := []*PdsBGPPeerAFSpec{}
-		err := json.Unmarshal([]byte(cmdOut), &peersAf)
-		return peersAf, err
-	}
-
+	/*
+		peersaf_fn := func(cmd string) ([]*PdsBGPPeerAFSpec, error) {
+			cmdOut, _, _, _ := pegContainerCollection.RunCommand(pegasusContainer, cmd)
+			peersAf := []*PdsBGPPeerAFSpec{}
+			err := json.Unmarshal([]byte(cmdOut), &peersAf)
+			return peersAf, err
+		}
+	*/
 	peers_fn := func(cmd string) ([]*PdsBGPPeer, error) {
 		cmdOut, _, _, _ := pegContainerCollection.RunCommand(pegasusContainer, cmd)
 		peers := []*PdsBGPPeer{}
@@ -686,15 +666,15 @@ func getRRState(pegContainerCollection *objects.VeniceContainerCollection,
 	}
 
 	//get bgp peers, peers-af, show bgp o/p from each naples
-	peersAf, _ := peersaf_fn(fmt.Sprintf("%s show bgp peers-af --json", rtrctlPath))
+	//peersAf, _ := peersaf_fn(fmt.Sprintf("%s show bgp peers-af --json", rtrctlPath))
 	peers, _ := peers_fn(fmt.Sprintf("%s show bgp peers --json", rtrctlPath))
 	bgpSpec, _ := bgp_fn(fmt.Sprintf("%s show bgp --json", rtrctlPath))
 
 	//convert pds config
-	return convertPDSConfig(peersAf, peers, bgpSpec, false)
+	return convertPDSConfig(nil, peers, bgpSpec, true)
 }
 
-func getNaplesCfgTemplate(node *objects.Naples) (*objects.RoutingConfig, error) {
+func getNaplesCfgTemplate(node *objects.Naples, updc *objects.RoutingConfigCollection) (*objects.RoutingConfig, error) {
 	dscName := node.Instances[0].Dsc.GetName()
 	dsc, err := ts.model.ConfigClient().GetSmartNIC(dscName)
 	if err != nil {
@@ -705,10 +685,6 @@ func getNaplesCfgTemplate(node *objects.Naples) (*objects.RoutingConfig, error) 
 		return nil, nil
 	}
 
-	updc, err := ts.model.ListRoutingConfig()
-	if err != nil {
-		return nil, err
-	}
 	for _, r := range updc.RoutingObjs {
 		if r.RoutingObj.Spec.BGPConfig.GetDSCAutoConfig() &&
 			r.RoutingObj.GetName() == dsc.Spec.RoutingConfig {
@@ -718,7 +694,7 @@ func getNaplesCfgTemplate(node *objects.Naples) (*objects.RoutingConfig, error) 
 	return nil, fmt.Errorf("Naples routing config not found")
 }
 
-func getRRCfgTemplate(nodeName string) (*objects.RoutingConfig, error) {
+func getRRCfgTemplate(nodeName string, rcc *objects.RoutingConfigCollection) (*objects.RoutingConfig, error) {
 
 	node, err := ts.model.ConfigClient().GetClusterNode(nodeName)
 	if err != nil {
@@ -733,13 +709,8 @@ func getRRCfgTemplate(nodeName string) (*objects.RoutingConfig, error) {
 		return nil, nil
 	}
 
-	updc, err := ts.model.ListRoutingConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	//Routing config for RRs is one for each RR; so need to match routerid
-	for _, r := range updc.RoutingObjs {
+	for _, r := range rcc.RoutingObjs {
 		if r.RoutingObj.Spec.BGPConfig.GetDSCAutoConfig() == false &&
 			r.RoutingObj.GetName() == node.Spec.GetRoutingConfig() {
 			return r, nil
@@ -763,53 +734,6 @@ func getUnderlayPeers(node *objects.Naples) ([]string, error) {
 		ip = append(ip, intf.GatewayIP)
 	}
 	return ip, err
-}
-
-const (
-	PEER_ESTABLISHED     = "ESTABLISHED"
-	PEER_NOT_ESTABLISHED = "NOT ESTABLISHED"
-)
-
-func getDefaultNaplesPeerState() (map[string]string, error) {
-	m := make(map[string]string)
-	var err error
-
-	getOverlayState := func() error {
-		vnodes := ts.model.VeniceNodes()
-		for _, venicenode := range vnodes.Nodes {
-			m[venicenode.IP()] = PEER_NOT_ESTABLISHED
-		}
-
-		pnodes, err := vnodes.GetVeniceNodeWithService("pen-pegasus")
-		if err != nil {
-			return err
-		}
-		for _, pnode := range pnodes.Nodes {
-			m[pnode.IP()] = PEER_ESTABLISHED
-		}
-		return err
-	}
-
-	nodes := ts.model.Naples().Nodes
-
-	for _, node := range nodes {
-		//get underlay
-		ipList, err := getUnderlayPeers(node)
-		if err != nil {
-			return nil, err
-		}
-		for _, ip := range ipList {
-			m[ip] = PEER_ESTABLISHED
-		}
-	}
-
-	//get overlay ; overlay peers are same for all DSCs
-	err = getOverlayState()
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
 }
 
 func getExpectedNaplesState(r *objects.RoutingConfig, node *objects.Naples, isHwNode bool,
@@ -884,7 +808,7 @@ func getExpectedNaplesState(r *objects.RoutingConfig, node *objects.Naples, isHw
 	return &cfg, err
 }
 
-func getExpectedRRState(r *objects.RoutingConfig) *pdsConfigCmp {
+func getExpectedRRState(r *objects.RoutingConfig, overlayState string) *pdsConfigCmp {
 	var cfg pdsConfigCmp
 
 	if r == nil {
@@ -905,7 +829,7 @@ func getExpectedRRState(r *objects.RoutingConfig) *pdsConfigCmp {
 			continue
 		}
 		//ECX or non-autoconfig DSC nodes should have valid IP
-		pdsNbr.populateRR(r, nbr, nbr.GetIPAddress())
+		pdsNbr.populateRR(r, nbr, nbr.GetIPAddress(), PEER_NOT_ESTABLISHED)
 		cfg.Neighbors = append(cfg.Neighbors, &pdsNbr)
 	}
 
@@ -915,12 +839,12 @@ func getExpectedRRState(r *objects.RoutingConfig) *pdsConfigCmp {
 	for _, dsc := range dscs.FakeNodes {
 		var pdsNbr pdsBGPNeighbor
 
-		pdsNbr.populateRR(r, nil, strings.Split(dsc.IP(), "/")[0])
+		pdsNbr.populateRR(r, nil, strings.Split(dsc.IP(), "/")[0], overlayState)
 		cfg.Neighbors = append(cfg.Neighbors, &pdsNbr)
 	}
 	for _, dsc := range dscs.Nodes {
 		var pdsNbr pdsBGPNeighbor
-		pdsNbr.populateRR(r, nil, strings.Split(dsc.Instances[0].LoopbackIP, "/")[0])
+		pdsNbr.populateRR(r, nil, strings.Split(dsc.Instances[0].LoopbackIP, "/")[0], overlayState)
 		cfg.Neighbors = append(cfg.Neighbors, &pdsNbr)
 	}
 
@@ -934,108 +858,71 @@ func getExpectedRRState(r *objects.RoutingConfig) *pdsConfigCmp {
 
 func verifyNaplesBgpState(overlayState string, underlayState string) {
 
+	//Avoid naples verification for scale setup
+	if *scaleFlag {
+		return
+	}
+
+	rcc, err := ts.model.ListRoutingConfig()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
 	//Get pdsagent o/p from Naples and compare
 	fakeNodes := ts.model.Naples().FakeNodes
 	for _, node := range fakeNodes {
-		EventuallyWithOffset(1, func() error {
-			log.Infof("DSC %s: trying to match naples bgp state...", node.IP())
-			//get naples rtg config template
-			r, err := getNaplesCfgTemplate(node)
-			if err != nil {
-				return err
-			}
+		//get naples rtg config template
+		r, err := getNaplesCfgTemplate(node, rcc)
+		ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
 
-			expected, _ := getExpectedNaplesState(r, node, false, overlayState, underlayState)
+		expected, _ := getExpectedNaplesState(r, node, false, overlayState, underlayState)
 
-			existing := getNaplesState(node, "/naples/nic/bin/pdsctl", false)
+		EventuallyWithOffset(1, func() *pdsConfigCmp {
+			log.Infof("DSC %s: trying to match naples bgp state...", node.Name())
 
-			logStr := fmt.Sprintf("Expected bgp state %+v\n", expected)
-			logStr += fmt.Sprintf("Existing bgp state %+v\n", existing)
+			return getNaplesState(node, "/naples/nic/bin/pdsctl", false)
 
-			for _, n := range expected.Neighbors {
-				logStr += fmt.Sprintf("Expected nbr %+v\n", n)
-			}
-			for _, n := range existing.Neighbors {
-				logStr += fmt.Sprintf("Existing nbr %+v\n", n)
-			}
-
-			if reflect.DeepEqual(expected, existing) == false {
-				return fmt.Errorf("Naples: BGP state verify failed for node %s\nError logs:\n%s",
-					node.IP(), logStr)
-			}
-			return nil
-		}).Should(Succeed())
+		}).Should(Equal(expected))
 	}
 
 	nodes := ts.model.Naples().Nodes
 	for _, node := range nodes {
-		EventuallyWithOffset(1, func() error {
+		//get naples rtg config template
+		r, err := getNaplesCfgTemplate(node, rcc)
+		ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+		expected, _ := getExpectedNaplesState(r, node, true, overlayState, underlayState)
+
+		EventuallyWithOffset(1, func() *pdsConfigCmp {
 			log.Infof("DSC %s: trying to match naples bgp state...", node.IP())
-			//get naples rtg config template
-			r, err := getNaplesCfgTemplate(node)
-			if err != nil {
-				return err
-			}
 
-			expected, _ := getExpectedNaplesState(r, node, true, overlayState, underlayState)
+			return getNaplesState(node, "/nic/bin/pdsctl", true)
 
-			existing := getNaplesState(node, "/nic/bin/pdsctl", true)
-
-			logStr := fmt.Sprintf("Expected bgp state %+v\n", expected)
-			logStr += fmt.Sprintf("Existing bgp state %+v\n", existing)
-
-			for _, n := range expected.Neighbors {
-				logStr += fmt.Sprintf("Expected nbr %+v\n", n)
-			}
-			for _, n := range existing.Neighbors {
-				logStr += fmt.Sprintf("Existing nbr %+v\n", n)
-			}
-
-			if reflect.DeepEqual(expected, existing) == false {
-				return fmt.Errorf("Naples: BGP state verify failed for node %s\nError logs:\n%s",
-					node.IP(), logStr)
-			}
-			return nil
-		}).Should(Succeed())
+		}).Should(Equal(expected))
 	}
 }
 
-func verifyRRState() {
+func verifyRRState(overlayState string) {
 	//Get pdsagent o/p from RR nodes and compare
 	pegContainerCollection, err := ts.model.VeniceNodes().GetVeniceContainersWithService("pen-pegasus", true)
 
 	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
 
+	rcc, err := ts.model.ListRoutingConfig()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
 	for _, pegContainer := range pegContainerCollection.Containers {
-		EventuallyWithOffset(1, func() error {
+		nodeName := pegContainer.Node.ClusterNode.GetName()
+
+		r, err := getRRCfgTemplate(nodeName, rcc)
+		ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+		//populate expected o/p
+		expected := getExpectedRRState(r, overlayState)
+
+		EventuallyWithOffset(1, func() *pdsConfigCmp {
 			nodeName := pegContainer.Node.ClusterNode.GetName()
 			log.Infof("Cluster node %s: trying to match RR state...", nodeName)
 			//get RR rtg config template
-			r, err := getRRCfgTemplate(nodeName)
-
-			if err != nil {
-				return err
-			}
-			//populate expected o/p
-			expected := getExpectedRRState(r)
-
-			existing := getRRState(pegContainerCollection, pegContainer, "/bin/rtrctl")
-
-			logStr := fmt.Sprintf("Expected bgp state %+v \n", expected)
-			logStr += fmt.Sprintf("Existing bgp state %+v\n", existing)
-
-			for _, n := range expected.Neighbors {
-				logStr += fmt.Sprintf("Expected nbr %+v\n", n)
-			}
-			for _, n := range existing.Neighbors {
-				logStr += fmt.Sprintf("Existing nbr %+v\n", n)
-			}
-
-			if reflect.DeepEqual(expected, existing) == false {
-				return fmt.Errorf("RR : BGP state verify failed for RR %s \nError logs:\n%s",
-					pegContainer.Node.IP(), logStr)
-			}
-			return nil
-		}).Should(Succeed())
+			return getRRState(pegContainerCollection, pegContainer, "/bin/rtrctl")
+		}).Should(Equal(expected))
 	}
 }
