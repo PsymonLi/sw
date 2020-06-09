@@ -1083,10 +1083,6 @@ EthLif::_CmdFwDownload(void *req, void *req_data, void *resp, void *resp_data)
     bool posted = false;
     struct edmaq_ctx ctx = {0};
 
-    if (!DeviceManager::GetInstance()->IsHostManaged()) {
-        NIC_LOG_ERR("{}: Firmware download not allowed, not host managed!", hal_lif_info_.name);
-        return (IONIC_RC_EPERM);
-    }
     if (spec->vf_dev) {
         NIC_LOG_ERR("{}: Firmware download not allowed on VF interface!", hal_lif_info_.name);
         return (IONIC_RC_EPERM);
@@ -1199,10 +1195,6 @@ EthLif::_CmdFwControl(void *req, void *req_data, void *resp, void *resp_data)
     int err;
     char buf[512] = {0};
 
-    if (!DeviceManager::GetInstance()->IsHostManaged()) {
-        NIC_LOG_ERR("{}: Firmware control not allowed, not host managed!", hal_lif_info_.name);
-        return (IONIC_RC_EPERM);
-    }
     if (spec->vf_dev) {
         NIC_LOG_ERR("{}: Firmware control not allowed on VF interface!", hal_lif_info_.name);
         return (IONIC_RC_EPERM);

@@ -177,9 +177,6 @@ public:
     void SetThread(sdk::lib::thread *thr) { thread = thr; }
     struct ev_loop *ev_loop(void) { return EV_A; }
 
-    // device mode
-    bool IsHostManaged(void) { return fwd_mode == sdk::lib::FORWARDING_MODE_CLASSIC; }
-
 private:
     static DeviceManager *instance;
 
