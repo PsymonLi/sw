@@ -74,7 +74,8 @@
           </ng-container>
         </td>
         <td *ngFor="let col of selectedColumns; let last = last"
-            [class]="'ui-resizable-column ' + (col.class ? col.class : '')">
+            [class]="'ui-resizable-column ' + (col.class ? col.class : '')"
+            (click)="rowClick($event, rowData)">
           <ng-container
                         *ngTemplateOutlet="bodyTemplate; context: {col: col, hovered: hoveredRowID === getRowID(rowData), $implicit: rowData, rowIndex: rowIndex}">
           </ng-container>

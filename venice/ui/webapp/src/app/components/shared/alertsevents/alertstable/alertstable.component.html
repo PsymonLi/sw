@@ -11,13 +11,12 @@
                      [showRowExpand]="false">
   </app-tableviewedit> -->
 
-  <!-- TODO: Add (rowClick)="selectAlert($event)-->
   <app-pentable #alertsTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
                 [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
                 [dataKey]="'meta.name'" [enableCheckbox]="true"
                 [exportFilename]="exportFilename" [numRows]="25"
-                [rowHeight]="36"></app-pentable>
-
+                (rowClickEmitter)="selectAlert($event)" [rowHeight]="36">
+  </app-pentable>
 </div>
 
 
@@ -43,9 +42,8 @@
 </ng-template>
 
 <ng-template #captionTemplate>
-  <div class="alertdetail-caption">
-    <div *ngIf="this.selectedAlert" [@slideInOut] fxFlex="auto"
-         class="alertdetail-container">
+  <div class="alertdetail-caption" fxLayout="column">
+    <div *ngIf="this.selectedAlert" [@slideInOut] fxFlex="auto">
       <ng-container *ngTemplateOutlet="selectedAlertDetail;"></ng-container>
     </div>
     <app-tableheader fxFlex title="Alerts" [count]="dataObjects.length" [total]="alerts.length"

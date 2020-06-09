@@ -52,6 +52,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   @Input() sortOrder: number = -1;
 
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
+  @Output() rowClickEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowSelectedEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() rowUnselectedEmitter: EventEmitter<any> = new EventEmitter<any>();
   @Output() searchCancelledEmitter: EventEmitter<any> = new EventEmitter<any>();
@@ -338,6 +339,11 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     const scrollWidth = bodyWidth - bodyTableWidth;
 
     $('.pentable-widget .ui-table-scrollable-header-box').css('margin-right', `${scrollWidth}px`);
+  }
+
+  rowClick($event, rowData) {
+    $event['rowData'] = rowData;
+    this.rowClickEmitter.emit($event);
   }
 
   rowExpandAnimationComplete(rowData) {

@@ -20,7 +20,6 @@
       </div>
     </div>
   </div>
-  <!--TODO: Add (rowClick)="selectEvent($event)"-->
   <app-pentable #eventsTable style="height: 100%" [bodyTemplate]="bodyTemplate"
                 [captionTemplate]="captionTemplate"
                 [columns]="cols"
@@ -30,13 +29,14 @@
                 [exportFilename]="exportFilename"
                 [loading]="eventsLoading"
                 [numRows]="25"
-                [rowHeight]="36"></app-pentable>
+                (rowClickEmitter)="selectEvent($event)"
+                [rowHeight]="36">
+  </app-pentable>
 </div>
 
 <ng-template #captionTemplate>
   <div class="eventdetail-caption">
-    <div *ngIf="this.selectedEvent" [@slideInOut]
-         class="eventdetail-container">
+    <div *ngIf="this.selectedEvent" [@slideInOut]>
       <ng-container *ngTemplateOutlet="selectedEventDetail;"></ng-container>
     </div>
     <app-tableheader title="Events" [count]="dataObjects.length" [total]="eventsTotalCount"
