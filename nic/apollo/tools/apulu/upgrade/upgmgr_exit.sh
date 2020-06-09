@@ -34,6 +34,11 @@ while getopts ":r:s" o; do
 done
 shift $((OPTIND-1))
 
+# disable tech support in respawn case
+if [ -e  $RESPAWN_IN_PROGRESS_FILE ];then
+    export TECH_SUPPORT_DISABLED="1"
+fi
+
 if [ "${response}" != "ok" ];then
     if [ -e ${PDSPKG_TOPDIR}/tools/collect_techsupport.sh ]
     then

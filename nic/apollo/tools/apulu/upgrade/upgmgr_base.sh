@@ -5,6 +5,7 @@ unset FW_PATH RUNNING_IMAGE FW_UPDATE_TOOL SYS_UPDATE_TOOL
 source $PDSPKG_TOPDIR/tools/upgmgr_core_base.sh
 
 UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
+RESPAWN_IN_PROGRESS_FILE='/tmp/.respawn_in_progress'
 PENVISORCTL='penvisorctl'
 
 function upgmgr_set_upgrade_status() {
@@ -139,4 +140,22 @@ function copy_img_to_alt_partition() {
     fi
     $tool -i $img -p /update/naples_fw.tar
     return $?
+}
+
+function upgmgr_clear_respawn_status() {
+    rm -f $RESPAWN_IN_PROGRESS_FILE
+}
+
+function upgmgr_set_respawn_status() {
+    touch $RESPAWN_IN_PROGRESS_FILE
+}
+
+function upgmgr_graceful_success() {
+    if [ -e  $RESPAWN_IN_PROGRESS_FILE ];then
+        upgmgr_set_upgrade_status "failed"
+        $PDSPKG_TOPDIR/tools/bringup_mgmt_ifs.sh &> $NON_PERSISTENT_LOG_DIR/mgmt_if.log
+    else
+        upgmgr_set_upgrade_status "success"
+    fi
+    return 0
 }

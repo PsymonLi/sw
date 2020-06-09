@@ -2,6 +2,10 @@
 
 source /nic/tools/setup_env_hw.sh
 
+if [[ ! -z "$TECH_SUPPORT_DISABLED" ]];then
+    exit 0
+fi
+
 # destination directory for techsupport
 TS_DIR="/data/techsupport/"
 

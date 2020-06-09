@@ -20,6 +20,7 @@ if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
     upgmgr_set_upgrade_status  "in-progress"
     upgmgr_setup
     upgmgr_pkgcheck
+    upgmgr_clear_respawn_status
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
 
 elif [[ $STAGE_NAME == "UPG_STAGE_START" && $STAGE_TYPE == "POST" ]]; then
@@ -35,12 +36,9 @@ elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; t
     upgmgr_backup
     [[ $? -ne 0 ]] && echo "Files backup failed!" && exit 1
 
-elif [[ $STAGE_NAME == "UPG_STAGE_PRE_RESPAWN" && $STAGE_TYPE == "PRE" ]]; then
-    reload_drivers
-    upgmgr_set_init_mode "graceful"
-
 elif [[ $STAGE_NAME == "UPG_STAGE_RESPAWN" && $STAGE_TYPE == "PRE" ]]; then
     reload_drivers
+    upgmgr_set_respawn_status
     upgmgr_set_init_mode "graceful"
 
 elif [[ $STAGE_NAME == "UPG_STAGE_SWITCHOVER" && $STAGE_TYPE == "PRE" ]]; then
@@ -50,10 +48,12 @@ elif [[ $STAGE_NAME == "UPG_STAGE_READY" && $STAGE_TYPE == "POST" ]]; then
     # post ready below is no more in use
     upgmgr_clear_init_mode
     if [[ $STAGE_STATUS == "ok" ]]; then
-        upgmgr_set_upgrade_status "success"
+        upgmgr_graceful_success
     else
         upgmgr_set_upgrade_status "failed"
     fi
+    upgmgr_clear_respawn_status
+
 else
     echo "Unknown stage name given"
     exit 1

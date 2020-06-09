@@ -33,6 +33,8 @@ static sdk_ret_t
 upg_respawn_cb (sdk::upg::upg_ev_params_t *params)
 {
     PenIPCBus *bus = (PenIPCBus *)params->svc_ctx;
+    // running tech-support causes bringup delay
+    setenv("TECH_SUPPORT_DISABLED", "1", 1);
     bus->RespawnProcesses();
 
     return SDK_RET_OK;
