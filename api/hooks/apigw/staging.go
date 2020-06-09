@@ -179,16 +179,18 @@ func (s *stagingHooks) processBulkeditReq(ctx context.Context, in interface{}) (
 		case string(apiintf.DeleteOper):
 			action = auth.Permission_Delete.String()
 		default:
-			s.logger.Errorf("Unknown method type \n", oper)
+			s.logger.Errorf("Unknown method type %s on ObjURI %s", oper, item.GetURI())
 			err = errors.New("Unknown method type " + oper + " on Object " + item.GetURI())
 			buf.Status.Errors = append(buf.Status.Errors, &staging.ValidationError{
-				// Set Spec.Item.Item here
+				ItemId: staging.ItemId{
+					Method: item.GetMethod(),
+					URI:    item.GetURI(),
+				},
 				Errors: []string{err.Error()},
 			})
 			continue
 		}
-
-		bulkOps = append(bulkOps, authz.NewOperation(resource, action))
+		bulkOps = append(bulkOps, authz.NewOperationWithReqObj(resource, action, *item))
 	}
 
 	if len(buf.Status.Errors) > 0 {

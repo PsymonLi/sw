@@ -1093,6 +1093,18 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 	n3, err := types.MarshalAny(&netw3)
 	AssertOk(t, err, "error marshalling network netw3")
 
+	b1 := bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_CREATE.String(),
+		Object: &api.Any{Any: *n1},
+	}
+	b2 := bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_CREATE.String(),
+		Object: &api.Any{Any: *n2},
+	}
+	b3 := bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_CREATE.String(),
+		Object: &api.Any{Any: *n3},
+	}
 	bulkEditReq := &staging.BulkEditAction{
 		ObjectMeta: api.ObjectMeta{
 			Name:      stagingBufferName,
@@ -1101,21 +1113,28 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 		},
 		Spec: bulkedit.BulkEditActionSpec{
 			Items: []*bulkedit.BulkEditItem{
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_CREATE.String(),
-					Object: &api.Any{Any: *n1},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_CREATE.String(),
-					Object: &api.Any{Any: *n2},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_CREATE.String(),
-					Object: &api.Any{Any: *n3},
-				},
+				&b1, &b2, &b3,
 			},
 		},
 	}
+	b1.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw1"
+	b2.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw2"
+	b3.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw3"
+
+	b1json, err := json.Marshal(b1)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b2json, err := json.Marshal(b2)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b3json, err := json.Marshal(b3)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+
+	itemsJsons := [][]byte{b1json, b2json, b3json}
 
 	bEResp, err := ti.Restcl.StagingV1().Buffer().Bulkedit(ctx, bulkEditReq)
 	AssertOk(t, err, "error Creating networks via bulkedit")
@@ -1129,7 +1148,7 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 	// search for audit events for create oper
 	stages := []string{auditapi.Stage_RequestAuthorization.String(), auditapi.Stage_RequestProcessing.String()}
 	netwNames := []string{"TestStagingNetw1", "TestStagingNetw2", "TestStagingNetw3"}
-	for _, netw := range netwNames {
+	for i, netw := range netwNames {
 		for _, stage := range stages {
 			query := &search.SearchRequest{
 				Query: &search.SearchQuery{
@@ -1184,6 +1203,9 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 			}, "error performing audit log search")
 
 			events := resp.AggregatedEntries.Tenants[globals.DefaultTenant].Categories[globals.Kind2Category("AuditEvent")].Kinds[auth.Permission_AuditEvent.String()].Entries
+			if events[0].Object.GetRequestObject() != "" {
+				Assert(t, strings.Compare(string(itemsJsons[i]), events[0].Object.GetRequestObject()) == 0, "RequestObject in audit log doesn't match")
+			}
 			Assert(t, (events[0].Object.Action == string(apiintf.CreateOper)) &&
 				(events[0].Object.Resource.Kind == string("Network")) &&
 				(events[0].Object.Outcome == auditapi.Outcome_Success.String()) &&
@@ -1201,6 +1223,18 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 	n3, err = types.MarshalAny(&netw3)
 	AssertOk(t, err, "error marshalling network netw3")
 
+	b1 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_UPDATE.String(),
+		Object: &api.Any{Any: *n1},
+	}
+	b2 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_UPDATE.String(),
+		Object: &api.Any{Any: *n2},
+	}
+	b3 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_UPDATE.String(),
+		Object: &api.Any{Any: *n3},
+	}
 	bulkEditReq = &staging.BulkEditAction{
 		ObjectMeta: api.ObjectMeta{
 			Name:      stagingBufferName,
@@ -1209,21 +1243,28 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 		},
 		Spec: bulkedit.BulkEditActionSpec{
 			Items: []*bulkedit.BulkEditItem{
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_UPDATE.String(),
-					Object: &api.Any{Any: *n1},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_UPDATE.String(),
-					Object: &api.Any{Any: *n2},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_UPDATE.String(),
-					Object: &api.Any{Any: *n3},
-				},
+				&b1, &b2, &b3,
 			},
 		},
 	}
+	b1.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw1"
+	b2.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw2"
+	b3.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw3"
+
+	b1json, err = json.Marshal(b1)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b2json, err = json.Marshal(b2)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b3json, err = json.Marshal(b3)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+
+	itemsJsons = [][]byte{b1json, b2json, b3json}
 
 	bEResp, err = ti.Restcl.StagingV1().Buffer().Bulkedit(ctx, bulkEditReq)
 	AssertOk(t, err, "error Creating networks via bulkedit")
@@ -1236,7 +1277,7 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 
 	// search for audit events for update oper
 	stages = []string{auditapi.Stage_RequestAuthorization.String(), auditapi.Stage_RequestProcessing.String()}
-	for _, netw := range netwNames {
+	for i, netw := range netwNames {
 		for _, stage := range stages {
 			query := &search.SearchRequest{
 				Query: &search.SearchQuery{
@@ -1291,6 +1332,10 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 			}, "error performing audit log search")
 
 			events := resp.AggregatedEntries.Tenants[globals.DefaultTenant].Categories[globals.Kind2Category("AuditEvent")].Kinds[auth.Permission_AuditEvent.String()].Entries
+			if events[0].Object.GetRequestObject() != "" {
+				Assert(t, strings.Compare(string(itemsJsons[i]), events[0].Object.GetRequestObject()) == 0, "RequestObject in audit log doesn't match")
+			}
+
 			Assert(t, (events[0].Object.Action == string(apiintf.UpdateOper)) &&
 				(events[0].Object.Resource.Kind == string("Network")) &&
 				(events[0].Object.Outcome == auditapi.Outcome_Success.String()) &&
@@ -1298,6 +1343,18 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 		}
 	}
 
+	b1 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_DELETE.String(),
+		Object: &api.Any{Any: *n1},
+	}
+	b2 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_DELETE.String(),
+		Object: &api.Any{Any: *n2},
+	}
+	b3 = bulkedit.BulkEditItem{
+		Method: bulkedit.BulkEditItem_DELETE.String(),
+		Object: &api.Any{Any: *n3},
+	}
 	bulkEditReq = &staging.BulkEditAction{
 		ObjectMeta: api.ObjectMeta{
 			Name:      stagingBufferName,
@@ -1306,21 +1363,28 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 		},
 		Spec: bulkedit.BulkEditActionSpec{
 			Items: []*bulkedit.BulkEditItem{
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_DELETE.String(),
-					Object: &api.Any{Any: *n1},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_DELETE.String(),
-					Object: &api.Any{Any: *n2},
-				},
-				&bulkedit.BulkEditItem{
-					Method: bulkedit.BulkEditItem_DELETE.String(),
-					Object: &api.Any{Any: *n3},
-				},
+				&b1, &b2, &b3,
 			},
 		},
 	}
+	b1.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw1"
+	b2.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw2"
+	b3.URI = "/configs/network/v1/tenant/default/networks/TestStagingNetw3"
+
+	b1json, err = json.Marshal(b1)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b2json, err = json.Marshal(b2)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+	b3json, err = json.Marshal(b3)
+	if err != nil {
+		t.Fatalf("failed to json marshal bulkedit item obj, %v", err)
+	}
+
+	itemsJsons = [][]byte{b1json, b2json, b3json}
 
 	bEResp, err = ti.Restcl.StagingV1().Buffer().Bulkedit(ctx, bulkEditReq)
 	AssertOk(t, err, "error Creating networks via bulkedit")
@@ -1333,7 +1397,7 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 
 	// search for audit events for delete oper
 	stages = []string{auditapi.Stage_RequestAuthorization.String(), auditapi.Stage_RequestProcessing.String()}
-	for _, netw := range netwNames {
+	for i, netw := range netwNames {
 		for _, stage := range stages {
 			query := &search.SearchRequest{
 				Query: &search.SearchQuery{
@@ -1388,10 +1452,14 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 			}, "error performing audit log search")
 
 			events := resp.AggregatedEntries.Tenants[globals.DefaultTenant].Categories[globals.Kind2Category("AuditEvent")].Kinds[auth.Permission_AuditEvent.String()].Entries
+			if events[0].Object.GetRequestObject() != "" {
+				Assert(t, strings.Compare(string(itemsJsons[i]), events[0].Object.GetRequestObject()) == 0, "RequestObject in audit log doesn't match")
+			}
 			Assert(t, (events[0].Object.Action == string(apiintf.DeleteOper)) &&
 				(events[0].Object.Resource.Kind == string("Network")) &&
 				(events[0].Object.Outcome == auditapi.Outcome_Success.String()) &&
-				(events[0].Object.Stage == strings.ToLower(stage)), fmt.Sprintf("unexpected audit event: %#v", *events[0]))
+				(events[0].Object.Stage == strings.ToLower(stage) &&
+					(strings.Contains(events[0].Object.GetRequestObject(), "BulkEditAction") == false)), fmt.Sprintf("unexpected audit event: %#v", *events[0]))
 		}
 	}
 }

@@ -31,6 +31,7 @@ type operation struct {
 	action      string
 	auditAction string
 	id          string
+	reqObj      interface{}
 }
 
 func (op *operation) GetResource() Resource {
@@ -49,6 +50,10 @@ func (op *operation) GetID() string {
 	return op.id
 }
 
+func (op *operation) GetRequestObject() interface{} {
+	return op.reqObj
+}
+
 // NewOperation returns an instance of Operation
 func NewOperation(resource Resource, action string) Operation {
 	return &operation{
@@ -56,6 +61,17 @@ func NewOperation(resource Resource, action string) Operation {
 		action:      action,
 		auditAction: action,
 		id:          uuid.NewV4().String(),
+	}
+}
+
+// NewOperationWithReqObj returns an instance of Operation and allows the reqObj to be set
+func NewOperationWithReqObj(resource Resource, action string, reqObj interface{}) Operation {
+	return &operation{
+		resource:    resource,
+		action:      action,
+		auditAction: action,
+		id:          uuid.NewV4().String(),
+		reqObj:      reqObj,
 	}
 }
 

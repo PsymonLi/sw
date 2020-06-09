@@ -206,7 +206,8 @@ var _ = Describe("audit tests", func() {
 				Expect(event.Object.Action == auth.Permission_Create.String() &&
 					event.Object.Resource.Kind == string(network.KindNetwork) &&
 					event.Object.Outcome == audit.Outcome_Success.String() &&
-					event.Object.Stage == audit.Stage_RequestProcessing.String()).Should(BeTrue())
+					event.Object.Stage == audit.Stage_RequestProcessing.String() &&
+					(strings.Contains(event.Object.GetRequestObject(), "BulkEditAction") == false)).Should(BeTrue())
 			}
 
 			Eventually(func() error {

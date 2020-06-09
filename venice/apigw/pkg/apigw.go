@@ -897,10 +897,14 @@ func (a *apiGw) audit(ctx context.Context, user *auth.User, reqObj interface{}, 
 				Data:        make(map[string]string),
 			},
 		}
+		reqObjToAudit := reqObj
+		if operation.GetRequestObject() != nil {
+			reqObjToAudit = operation.GetRequestObject()
+		}
 		// policy checker checks whether to log audit event and populates it based on policy
 		ok, failOp, err := audit.NewPolicyChecker().PopulateEvent(event,
 			audit.NewMetadataContextPopulator(ctx),
-			audit.NewRequestObjectPopulator(reqObj, true),
+			audit.NewRequestObjectPopulator(reqObjToAudit, true),
 			audit.NewResponseObjectPopulator(resObj, true),
 			audit.NewErrorPopulator(apierr))
 		if err != nil {

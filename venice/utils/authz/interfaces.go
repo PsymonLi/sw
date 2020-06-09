@@ -31,6 +31,9 @@ type Operation interface {
 
 	// GetID returns unique ID for the operation
 	GetID() string
+
+	// GetRequestObject returns the request Object for this operation
+	GetRequestObject() interface{}
 }
 
 // Resource represents an object or API endpoint resource on which authorization for an action needs to be checked
