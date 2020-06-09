@@ -28,7 +28,6 @@ import (
 )
 
 const (
-	defaultNTPServer             = "pool.ntp.org"
 	quorumNodesCertMgrBundleName = "QuorumNodes"
 )
 
@@ -69,9 +68,6 @@ func (o *clusterCreateOp) populateClusterDefaults() {
 	o.cluster.UUID = uuid.NewV4().String()
 	o.cluster.SelfLink = o.cluster.MakeKey("cluster")
 	o.cluster.GenerationID = "1"
-	if len(o.cluster.Spec.NTPServers) == 0 {
-		o.cluster.Spec.NTPServers = append(o.cluster.Spec.NTPServers, defaultNTPServer)
-	}
 }
 
 func (o *clusterCreateOp) populateVersionDefaults() {

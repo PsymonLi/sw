@@ -149,6 +149,28 @@ func TestValidateCluster(t *testing.T) {
 				&cmd.ClusterStatus{},
 			),
 		},
+		"good-cluster-with-good-ntp-servers": {
+			isExpectedFailure: false,
+			cluster: testCluster("foo",
+				&cmd.ClusterSpec{
+					QuorumNodes: []string{"node1", "192.168.30.12", "node3.pensando.io"},
+					VirtualIP:   "192.168.30.10",
+					NTPServers:  []string{"ntp1", "ntp2", "10.0.0.1"},
+				},
+				&cmd.ClusterStatus{},
+			),
+		},
+		"good-cluster-with-bad-ntp-servers": {
+			isExpectedFailure: true,
+			cluster: testCluster("foo",
+				&cmd.ClusterSpec{
+					QuorumNodes: []string{"node1", "192.168.30.12", "node3.pensando.io"},
+					VirtualIP:   "192.168.30.10",
+					NTPServers:  []string{"bang"},
+				},
+				&cmd.ClusterStatus{},
+			),
+		},
 	}
 
 	r := netutils.NewMockResolver()
@@ -161,6 +183,8 @@ func TestValidateCluster(t *testing.T) {
 	r.AddHost("node4", []string{""})
 	r.AddHost("node5", nil)
 	r.AddHost("node7", []string{"192.168.30.17", "192.168.31.17"})
+	r.AddHost("ntp1", []string{"192.168.30.10", "192.168.31.11"})
+	r.AddHost("ntp2", []string{"192.168.30.20"})
 
 	for name, scenario := range scenarios {
 		errs := ValidateCluster(scenario.cluster, r)

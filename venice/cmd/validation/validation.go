@@ -89,6 +89,38 @@ func ValidateClusterSpecQuorumNodes(resolver ResolverInterface, nodes []string, 
 	return allErrs
 }
 
+// ValidateClusterSpecNTPServers validates the NTP configuration in cluster spec.
+func ValidateClusterSpecNTPServers(resolver ResolverInterface, nodes []string, fldPath *field.Path) field.ErrorList {
+	allErrs := field.ErrorList{}
+
+	// Each NTP server must be either a valid DNS name or an IP address
+	for _, n := range nodes {
+		if ip := net.ParseIP(n); ip != nil {
+			// quorum node ID is IP address
+			if !IsValidNodeIP(&ip) {
+				allErrs = append(allErrs, field.Invalid(fldPath, nodes, fmt.Sprintf("invalid IP address %v for NTP server", n)))
+			}
+		} else {
+			// quorum node ID is a DNS name
+			if len(validation.IsDNS1123Subdomain(n)) > 0 {
+				allErrs = append(allErrs, field.Invalid(fldPath, nodes, fmt.Sprintf("NTP server %v is not a valid DNS name or IP address", n)))
+			}
+			// Check that it resolves to at least 1 IP address
+			ctx, cancel := context.WithTimeout(context.Background(), resolverTimeout)
+			addrs, err := resolver.LookupHost(ctx, n)
+			if err != nil {
+				allErrs = append(allErrs, field.Invalid(fldPath, nodes, fmt.Sprintf("Error resolving IP address for node %v: %v", n, err)))
+			}
+			if len(addrs) == 0 {
+				allErrs = append(allErrs, field.Invalid(fldPath, nodes, fmt.Sprintf("DNS did not return an IP address for node %v", n)))
+			}
+			cancel()
+		}
+	}
+
+	return allErrs
+}
+
 // ValidateClusterSpec validates the cluster specification.
 func ValidateClusterSpec(resolver ResolverInterface, spec *cmd.ClusterSpec, fldPath *field.Path) field.ErrorList {
 	allErrs := field.ErrorList{}
@@ -108,6 +140,9 @@ func ValidateClusterSpec(resolver ResolverInterface, spec *cmd.ClusterSpec, fldP
 
 	// Validate specified quorum nodes.
 	allErrs = append(allErrs, ValidateClusterSpecQuorumNodes(resolver, spec.QuorumNodes, fldPath.Child("quorumNodes"))...)
+
+	// Validate NTP config
+	allErrs = append(allErrs, ValidateClusterSpecNTPServers(resolver, spec.NTPServers, fldPath.Child("ntpServers"))...)
 
 	return allErrs
 }

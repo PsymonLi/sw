@@ -250,8 +250,7 @@ def initCluster(nodeAddr, quorumNodes, clustervip):
         "spec": {
             "auto-admit-dscs": True,
             "quorum-nodes": quorumNodes,
-            "virtual-ip":  clustervip,
-            "ntp-servers": ["e2e-test-ntp-ext-server-srv1", "e2e-test-ntp-ext-server-srv2"] # use unresolvable names
+            "virtual-ip":  clustervip
         }
     })
 
