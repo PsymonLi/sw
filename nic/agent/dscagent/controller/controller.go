@@ -334,6 +334,7 @@ func (c *API) start(ctx context.Context) error {
 		<-alertsWatcherExited
 
 		c.closeConnections()
+		c.stopAlertPoliciesWatch()
 		time.Sleep(types.ControllerWaitDelay)
 
 	}
@@ -397,7 +398,7 @@ func (c *API) stopAlertPoliciesWatch() {
 }
 
 // WatchAlertPolicies watches for alert/event policies & handles alerts. Cloud Pipeline only
-func (c *API) WatchAlertPolicies() error {
+func (c *API) WatchAlertPolicies(ctx context.Context) error {
 
 	if c.WatchCtx == nil {
 		log.Info("Controller API: WatchCtx is not set")
@@ -412,7 +413,11 @@ func (c *API) WatchAlertPolicies() error {
 	var err error
 	nodeName := c.InfraAPI.GetDscName()
 	defLogger := log.GetDefaultInstance()
-	storeConfig := &events.StoreConfig{Dir: globals.EventsDir}
+	storeConfig := &events.StoreConfig{
+		Dir:         globals.EventsDir,
+		MaxFileSize: 1 * 1000 * 1000, // 1mb
+		MaxNumFiles: 4,
+	}
 
 	// populate default object reference to be used by events dispatcher
 	dsc := &cluster.DistributedServiceCard{}
@@ -455,7 +460,7 @@ func (c *API) WatchAlertPolicies() error {
 
 	c.evtsDispatcher.Start()
 	log.Info("Controller API: Started Events Dispatcher")
-	c.PipelineAPI.HandleAlerts(c.WatchCtx, c.evtsDispatcher)
+	c.PipelineAPI.HandleAlerts(ctx, c.evtsDispatcher)
 	return nil
 }
 

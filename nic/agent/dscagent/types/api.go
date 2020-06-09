@@ -18,7 +18,7 @@ type ControllerAPI interface {
 	Start(kinds []string) error
 	Stop() error
 	WatchTechSupport()
-	WatchAlertPolicies() error
+	WatchAlertPolicies(ctx context.Context) error
 }
 
 // InfraAPI implements all infra APIs that are common across pipelines

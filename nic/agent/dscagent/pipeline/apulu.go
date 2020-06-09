@@ -2097,7 +2097,7 @@ func (a *ApuluAPI) StartAlertPoliciesWatch(ctx context.Context) {
 			if a.ControllerAPI == nil {
 				log.Info("Waiting for controller registration")
 			} else {
-				err := a.ControllerAPI.WatchAlertPolicies()
+				err := a.ControllerAPI.WatchAlertPolicies(ctx)
 				if err == nil {
 					log.Infof("Watching Alert policies")
 					return
