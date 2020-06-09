@@ -30,6 +30,7 @@ type flowExpHooks struct {
 const (
 	veniceMaxCollectorsPerPolicy = 2
 	veniceMaxPolicySessions      = 8
+	veniceMaxNetflowCollectors   = 8
 )
 
 func (r *flowExpHooks) validateFlowExportPolicy(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
@@ -65,6 +66,11 @@ func (r *flowExpHooks) validateFlowExportPolicy(ctx context.Context, kv kvstore.
 	if err != nil {
 		return nil, false, fmt.Errorf("error retrieving FlowExportPolicy: %v", err)
 	}
+	// perform global validation across policy
+	if err := globalFlowExportValidator(&policy, &policyList); err != nil {
+		return i, false, err
+	}
+
 	switch oper {
 	case apiintf.CreateOper:
 		if len(policyList.Items) >= veniceMaxPolicySessions {
@@ -296,4 +302,18 @@ func parsePortProto(src string) (uint32, error) {
 	}
 
 	return uint32(port), nil
+}
+
+func globalFlowExportValidator(newfp *monitoring.FlowExportPolicy, policyList *monitoring.FlowExportPolicyList) error {
+	totalCollectors := len(newfp.Spec.Exports)
+	for _, policy := range policyList.Items {
+		if policy.Name == newfp.Name {
+			continue
+		}
+		totalCollectors = totalCollectors + len(newfp.Spec.Exports)
+	}
+	if totalCollectors > veniceMaxNetflowCollectors {
+		return fmt.Errorf("can't configure more than %v netflow collectors", veniceMaxNetflowCollectors)
+	}
+	return nil
 }

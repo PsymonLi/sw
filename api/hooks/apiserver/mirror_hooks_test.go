@@ -15,6 +15,7 @@ import (
 	"github.com/pensando/sw/venice/utils/kvstore/store"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/runtime"
+	. "github.com/pensando/sw/venice/utils/testutils"
 )
 
 var testBadMirrorSessions = []monitoring.MirrorSession{
@@ -614,4 +615,30 @@ func TestMirrorSessions(t *testing.T) {
 	if !ok && err != nil {
 		t.Errorf("Failed to create a good mirror session (%s)", err)
 	}
+	maxExportSession := &testGoodMirrorSession[0]
+	maxExportList := &monitoring.MirrorSessionList{
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSessionList",
+			APIVersion: "v1",
+		},
+		Items: []*monitoring.MirrorSession{},
+	}
+	for sess := 1; sess < len(testGoodMirrorSession); sess++ {
+		maxExportList.Items = append(maxExportList.Items, &testGoodMirrorSession[sess])
+	}
+	var maxCollectors []monitoring.MirrorCollector
+	for i := 1; i <= veniceMaxMirrorCollectors+1; i++ {
+		newCol := monitoring.MirrorCollector{
+			Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+			ExportCfg: &monitoring.MirrorExportConfig{
+				Destination: "10.1.1.1",
+			},
+			StripVlanHdr: true,
+		}
+		maxCollectors = append(maxCollectors, newCol)
+	}
+	maxExportSession.Spec.Collectors = maxCollectors
+	maxExportSession.Normalize()
+	err = globalMirrorSessionValidator(maxExportSession, maxExportList)
+	Assert(t, err != nil, "validation passed, expecting to fail for %v", maxExportSession.Name)
 }

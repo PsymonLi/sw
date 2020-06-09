@@ -26,6 +26,7 @@ const (
 	// Finalize these parameters once we decide how to store the packets captured by Venice
 	veniceMaxPacketSize           = 2048
 	veniceMaxCollectorsPerSession = 2
+	veniceMaxMirrorCollectors     = 8
 	veniceMaxMirrorSessions       = 8
 )
 
@@ -119,6 +120,10 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			return i, false, fmt.Errorf("Unsupported collector type")
 		}
 
+	}
+	// perform global validation across policy
+	if err := globalMirrorSessionValidator(&ms, &mirrors); err != nil {
+		return i, false, err
 	}
 	if numVeniceCollectors > 0 && ms.Spec.PacketSize > veniceMaxPacketSize {
 		errStr := fmt.Errorf("Max packet size allowed by Venice collector is %v", veniceMaxPacketSize)
@@ -218,4 +223,18 @@ func registerMirrorSessionHooks(svc apiserver.Service, logger log.Logger) {
 type gCollector struct {
 	pktSize uint32
 	c       *monitoring.MirrorCollector
+}
+
+func globalMirrorSessionValidator(ms *monitoring.MirrorSession, mirrors *monitoring.MirrorSessionList) error {
+	totalCollectors := len(ms.Spec.Collectors)
+	for _, mir := range mirrors.Items {
+		if mir.Name == ms.Name {
+			continue
+		}
+		totalCollectors = totalCollectors + len(mir.Spec.Collectors)
+	}
+	if totalCollectors > veniceMaxMirrorCollectors {
+		return fmt.Errorf("can't configure more than %v mirror collectors", veniceMaxMirrorCollectors)
+	}
+	return nil
 }

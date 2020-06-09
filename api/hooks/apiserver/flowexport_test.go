@@ -1337,3 +1337,75 @@ func TestFlowExportPolicyHandleCredentialUpdate(t *testing.T) {
 		AssertEquals(t, test.out, out, fmt.Sprintf("[%v] test failed, expected returned obj [%#v], got [%#v]", test.name, test.out, out))
 	}
 }
+
+func TestFlowExportMaxCollectorValidation(t *testing.T) {
+	testExportMax := monitoring.FlowExportPolicy{
+		TypeMeta: api.TypeMeta{
+			Kind: "FlowExportPolicy",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Namespace: globals.DefaultNamespace,
+			Name:      globals.DefaultTenant,
+			Tenant:    globals.DefaultTenant,
+		},
+		Spec: monitoring.FlowExportPolicySpec{
+			Format: monitoring.MonitoringExportFormat_SYSLOG_BSD.String(),
+		},
+	}
+	var maxCollectors []monitoring.ExportConfig
+	for i := 1; i <= veniceMaxNetflowCollectors+1; i++ {
+		newCol := monitoring.ExportConfig{
+			Destination: "10.1.1.1",
+		}
+		maxCollectors = append(maxCollectors, newCol)
+	}
+	testExportMax.Spec.Exports = maxCollectors
+	testFlowExportList := &monitoring.FlowExportPolicyList{
+		TypeMeta: api.TypeMeta{
+			Kind:       "FlowExportPolicyList",
+			APIVersion: "v1",
+		},
+		Items: []*monitoring.FlowExportPolicy{
+			{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Name:      "valid-policy",
+					Tenant:    globals.DefaultTenant,
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					MatchRules: []*monitoring.MatchRule{
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"1.1.1.1"},
+							},
+
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"1.1.1.2"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/1000"},
+							},
+						},
+					},
+
+					Interval:         "15s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "10.1.1.100",
+							Transport:   "UDP/1234",
+						},
+					},
+				},
+			},
+		},
+	}
+	err := globalFlowExportValidator(&testExportMax, testFlowExportList)
+	Assert(t, err != nil, "validation passed, expecting to fail for %v", testExportMax.Name)
+
+}

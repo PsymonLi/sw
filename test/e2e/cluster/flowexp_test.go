@@ -1375,10 +1375,6 @@ var _ = Describe("flow export policy tests", func() {
 							Destination: "192.168.100.1",
 							Transport:   "UDP/5055",
 						},
-						{
-							Destination: "192.168.100.2",
-							Transport:   "UDP/6055",
-						},
 					},
 				},
 			}
