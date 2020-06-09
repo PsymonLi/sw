@@ -112,6 +112,10 @@ message RouteTableSpec {
   // enable or disable priority based routing for the route table
   bool           PriorityEn = 3 [(gogoproto.moretags) = "meta:immutable,default=false"];
   // routes in this route table
+  // NOTE: in a given route table, same prefix must not appear more than once.
+  //       if there are multiple paths to same route prefix, application is
+  //       expected to create a nexthop group and point the route to it instead
+  //       of adding same route with multiple different nexthops
   repeated RouteInfo Routes = 4;
 }
 

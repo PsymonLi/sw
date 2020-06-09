@@ -21,7 +21,7 @@
 
 ///< invalid VPC key
 #define PDS_VPC_ID_INVALID    k_pds_obj_key_invalid
-#define PDS_MAX_VPC        64    ///< max VPC
+#define PDS_MAX_VPC           128    ///< max VPC
 
 /// \brief VPC type
 typedef enum pds_vpc_type_e {

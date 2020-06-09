@@ -21,7 +21,7 @@
 /// \defgroup PDS_SUBNET Subnet API
 /// @{
 
-#define PDS_MAX_SUBNET                64    ///< max subnets
+#define PDS_MAX_SUBNET                128   ///< max subnets
 #define PDS_MAX_SUBNET_POLICY         5     ///< max #of security policies per subnet
 #define PDS_MAX_SUBNET_DHCP_POLICY    5     ///< max #of DHCP policies per subnet
 #define PDS_MAX_SUBNET_HOST_IF        8     ///< max #of host PFs subnet can be deployed on
