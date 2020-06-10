@@ -20,11 +20,15 @@
 /// @{
 
 /// \brief upgrade request
-/// this implements a stateless upgrade sequences.
+/// this invokes the event handlers for the given event specified in the param
 /// it is the responsibilty of the upg manager to invoke the stages in proper order.
 /// \param[in] params upgrade event parameter
 /// \return #SDK_RET_OK on success, failure status code on error
 sdk_ret_t pds_upgrade(sdk::upg::upg_ev_params_t *params);
+
+/// \brief upgrade init request
+void pds_upgrade_init(void);
+
 
 /// @}
 

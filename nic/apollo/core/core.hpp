@@ -14,6 +14,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/lib/periodic/periodic.hpp"
+#include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/include/globals.hpp"
 
@@ -47,6 +48,7 @@ sdk_ret_t spawn_pciemgr_thread(pds_state *state);
 sdk_ret_t spawn_api_thread(pds_state *state);
 sdk_ret_t spawn_learn_thread(pds_state *state);
 sdk_ret_t spawn_routing_thread(pds_state *state);
+sdk_ret_t spawn_upgrade_thread(sdk::upg::upg_ev_params_t *params);
 bool is_nicmgr_ready(void);
 bool is_routing_thread_ready(void);
 void stop_learn_thread(void);

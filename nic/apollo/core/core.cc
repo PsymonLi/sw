@@ -318,7 +318,7 @@ is_routing_thread_ready (void)
 }
 
 sdk_ret_t
-spawn_upgrade_thread (pds_state *state)
+spawn_upgrade_thread (sdk::upg::upg_ev_params_t *params)
 {
     sdk::event_thread::event_thread *new_thread;
 
@@ -335,7 +335,7 @@ spawn_upgrade_thread (pds_state *state)
             true);
      SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                              "upgrade thread create failure");
-     new_thread->set_data(state);
+     new_thread->set_data(params);
      new_thread->start(new_thread);
      return SDK_RET_OK;
 }

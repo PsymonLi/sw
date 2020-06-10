@@ -89,10 +89,24 @@ upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *req_cookie,
     response_cb((upg_event_msg_t *)msg->data());
 }
 
+// TODO replace discovery everywhere
+static void
+upg_ev_discovery_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    response_cb((upg_event_msg_t *)msg->data());
+}
+
 void
 upg_ipc_init (upg_async_response_cb_t rsp_cb)
 {
+    // compat check and ready are broadcast/discovery events
+    sdk::ipc::reg_request_handler(UPG_EV_COMPAT_CHECK, upg_ev_discovery_handler, NULL);
+    sdk::ipc::reg_request_handler(UPG_EV_READY, upg_ev_discovery_handler, NULL);
+
     for (uint32_t ev_id = UPG_EV_COMPAT_CHECK; ev_id < UPG_EV_MAX; ev_id++) {
+        if ((ev_id == UPG_EV_COMPAT_CHECK) || (ev_id == UPG_EV_READY)) {
+            continue;
+        }
         sdk::ipc::reg_response_handler(ev_id, upg_ev_handler, NULL);
     }
     response_cb = rsp_cb;

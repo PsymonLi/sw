@@ -12,7 +12,6 @@
 
 sdk_ret_t handle_svc_req(int fd, types::ServiceRequestMessage *proto_req,
                          int cmd_fd);
-
 namespace core {
 
 void svc_server_thread_init(void *ctxt);

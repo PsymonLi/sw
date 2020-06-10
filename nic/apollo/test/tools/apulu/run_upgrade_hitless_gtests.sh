@@ -10,6 +10,7 @@ setup
 # run all upg gtests
 mkdir -p /update/ # TODO : currently need to run from root
 rm -rf /update/*
+rm -rf /.upgrade* # TODO : include setup_upgrade, call the functions
 
 if [[ "$1" ==  --coveragerun ]]; then
     # run sdk tests for code coverage

@@ -246,7 +246,15 @@ typedef struct upg_ev_s {
 
 } upg_ev_t;
 
+// registers both discovery(broadcast) and other events
 void upg_ev_hdlr_register(upg_ev_t &ev);
+
+// registers only service discovery(broadcast) events. needed where the discovery
+// and the stage events are handled in seperate threads. in that case the stage
+// events can be registered only after the discovery stage as only one thread
+// should respond to the discovery event for the given service
+void upg_ev_svc_ready_hdlr_register(upg_ev_t &ev);
+
 
 #undef EV_ID_UPGMGR
 

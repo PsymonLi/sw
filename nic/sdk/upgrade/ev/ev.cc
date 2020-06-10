@@ -62,6 +62,7 @@ upg_ev_process_response (sdk_ret_t status, const void *cookie)
     upg_event_msg_t resp;
     upg_ev_info_t *info = (upg_ev_info_t *)cookie;
     upg_event_msg_t *event = (upg_event_msg_t *)info->msg_in->data();
+    upg_ev_id_t ev_id = upg_stage2event(event->stage);
 
     // upgrademgr not expecting in-progress status
     if (status == SDK_RET_IN_PROGRESS) {
@@ -76,7 +77,13 @@ upg_ev_process_response (sdk_ret_t status, const void *cookie)
     // invoked by service thread
     resp.rsp_svc_ipc_id = upg_ev.svc_ipc_id;
     // respond to upgrade manager with unicast message
-    sdk::ipc::respond(info->msg_in, &resp, sizeof(resp));
+    // compatcheck and ready are broadcast, use explicit response(request) here
+    if ((ev_id == UPG_EV_COMPAT_CHECK) || (ev_id == UPG_EV_READY)) {
+        sdk::ipc::request(info->msg_in->sender(), info->msg_in->code(),
+                          &resp, sizeof(resp), NULL);
+    } else {
+        sdk::ipc::respond(info->msg_in, &resp, sizeof(resp));
+    }
     SDK_TRACE_DEBUG("Upgrade IPC response stage %s completed status %u",
                     upg_stage2str(event->stage), resp.rsp_status);
     delete info;
@@ -133,7 +140,7 @@ upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 }
 
 void
-upg_ev_hdlr_register(upg_ev_t &ev)
+upg_ev_hdlr_register (upg_ev_t &ev)
 {
     memcpy(&upg_ev, &ev, sizeof(upg_ev_t));
 
@@ -147,6 +154,31 @@ upg_ev_hdlr_register(upg_ev_t &ev)
     for(uint32_t ev_id = UPG_EV_COMPAT_CHECK; ev_id <= UPG_EV_MAX; ev_id++) {
         sdk::ipc::reg_request_handler(ev_id, upg_ev_handler, NULL);
         upg_ev_bitmap |= (1 << ev_id);
+    }
+}
+
+static void
+upg_svc_ready_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    // ignore the request if the regular event registration is done
+    // by the process/thread
+    if (upg_ev_bitmap) {
+        return;
+    }
+    upg_ev_handler(msg, ctxt);
+}
+
+void
+upg_ev_svc_ready_hdlr_register (upg_ev_t &ev)
+{
+    memcpy(&upg_ev, &ev, sizeof(upg_ev_t));
+    upg_mode_t mode = sdk::upg::upg_init_mode();
+
+    // subscribe for upgrade events from upgrade manager
+    if (sdk::platform::upgrade_mode_none(mode)) {
+        sdk::ipc::subscribe(UPG_EV_COMPAT_CHECK, upg_svc_ready_ev_handler, NULL);
+    } else {
+        sdk::ipc::subscribe(UPG_EV_READY, upg_svc_ready_ev_handler, NULL);
     }
 }
 

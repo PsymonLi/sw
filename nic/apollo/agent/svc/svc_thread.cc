@@ -12,6 +12,7 @@
 #include "nic/apollo/agent/trace.hpp"
 #include "nic/apollo/agent/init.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
+#include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "gen/proto/types.pb.h"
 
@@ -93,6 +94,9 @@ void
 svc_server_thread_init (void *ctxt)
 {
     struct sockaddr_un sock_addr;
+
+    // register for initial upgrade discovery events
+    pds_upgrade_init();
 
     // initialize unix socket
     if ((g_uds_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {

@@ -17,7 +17,6 @@
 
 namespace api {
 
-
 sdk_ret_t
 upg_init (pds_init_params_t *params)
 {
@@ -275,10 +274,17 @@ void
 upgrade_thread_init_fn (void *ctxt)
 {
     sdk::upg::upg_ev_t ev = { 0 };
+    sdk_ret_t ret;
+    sdk::upg::upg_ev_params_t *params = api::g_upg_state->ev_params();
 
     // register for all upgrade events
     upg_ev_fill(&ev);
     sdk::upg::upg_ev_hdlr_register(ev);
+
+    ret = pds_upgrade(params);
+    if (ret != SDK_RET_IN_PROGRESS) {
+        params->response_cb(ret, params->response_cookie);
+    }
 }
 
 void
