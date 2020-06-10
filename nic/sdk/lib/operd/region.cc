@@ -21,6 +21,10 @@ namespace operd {
 const std::string CONFIG_LOCATION = "/nic/conf/operd-regions.json";
 const std::string CONFIG_OVERRIDE = "OPERD_REGIONS";
 const int OPEN_TRIES = 10;
+const int SPIN_SLEEP_MS = 25;
+const int SPIN_MAX_TRIES = 10;
+const uint8_t UPDATE_IN_PROGRESS = 1;
+const uint8_t UPDATE_READY = 0;
 
 region::region(std::string name) {
     this->name_ = name;
@@ -139,6 +143,7 @@ region::reserve_(int count) {
 
         chunk = this->get_chunk_(starting_serial + i);
 
+        chunk->updating = UPDATE_IN_PROGRESS;
         chunk->serial = starting_serial + i;
         chunk->part_of = starting_serial;
     }
@@ -176,6 +181,15 @@ region::get_raw_chunk(uint8_t encoder, uint8_t severity, size_t size) {
 
     chunk->size = size;
     return chunk->data;
+}
+
+void
+region::commit_raw_chunk(void *data) {
+    chunk_t *chunk;
+
+    chunk = (chunk_t *)(((char *)data) - offsetof(chunk_t, data));
+
+    chunk->updating = UPDATE_READY;
 }
 
 void
@@ -218,6 +232,7 @@ region::write(uint8_t encoder, uint8_t severity, const void *data,
         memcpy(chunk->data, copy_start, copy_size);
         chunk->size = data_length - (i * CHUNK_SIZE);
     }
+    starting_chunk->updating = UPDATE_READY;
 }
 
 std::shared_ptr<log>
@@ -261,6 +276,13 @@ region::read_(serial_t serial)
         }
         chunk = this->get_chunk_(serial + chunk_index);
         if (chunk_index == 0) {
+            // spin if the chunk is currently being updated
+            int spins = 0;
+            while (chunk->updating != UPDATE_READY) {
+                usleep(SPIN_SLEEP_MS * 1000);
+                spins += 1;
+                assert(spins < SPIN_MAX_TRIES);
+            }
             e = std::make_shared<entry>(chunk->size);
             e->pid_ = chunk->pid;
             e->severity_ = chunk->severity;
@@ -268,7 +290,7 @@ region::read_(serial_t serial)
             memcpy(&e->timestamp_, &chunk->timestamp, sizeof(e->timestamp_));
         }
 
-        if (chunk->size < CHUNK_SIZE)            
+        if (chunk->size < CHUNK_SIZE)
             copy_amount = chunk->size; 
         memcpy(e->data_ + (chunk_index * CHUNK_SIZE), chunk->data, copy_amount);
 

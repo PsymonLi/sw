@@ -13,6 +13,7 @@ extern "C" {
 #endif
 
 operd_flow_t *pds_operd_get_flow_ip4(void);
+void pds_operd_commit_flow_ip4(operd_flow_t *flow);
 
 void pds_operd_export_flow_ip6(uint8_t *sip,
                                uint8_t *dip,

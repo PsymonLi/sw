@@ -3,9 +3,12 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <map>
 #include <memory>
 #include <signal.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -380,6 +383,19 @@ sigchld_handler (int)
 }
 #endif
 
+static void
+update_coredump_filter (void)
+{
+    int fd;
+
+    fd = open("/proc/self/coredump_filter", O_WRONLY | O_CREAT);
+    assert(fd != 1);
+
+    write(fd, "0x1F", 4);
+
+    close(fd);
+}
+
 int
 main (int argc, const char *argv[])
 {
@@ -389,6 +405,7 @@ main (int argc, const char *argv[])
 
     // TODO: Fix system cmd & uncomment this
     // signal(SIGCHLD, sigchld_handler);
+    update_coredump_filter();
 
     // Don't buffer stdout and stderr, so we read it in
     // sysmgr log files immediatelly

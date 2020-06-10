@@ -334,12 +334,14 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
 
     if (0 != ftlv4_read_snat_info(flow->session_id, host_origin, flow->v4,
                                   flow->nat_data)) {
+        pds_operd_commit_flow_ip4(flow);
         return -1;
     }
 
     if (FLOW_EXPORT_REASON_ADD != reason) {
         // don't read stats for add. they would be zero anyway
         if (0 != pds_session_stats_read(flow->session_id, &session_stats)) {
+            pds_operd_commit_flow_ip4(flow);
             return -1;
         }
         memcpy(&flow->stats, &session_stats, sizeof(pds_session_stats_t));
@@ -361,6 +363,8 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
     flow->type = OPERD_FLOW_TYPE_IP4;
     flow->action = drop ? OPERD_FLOW_ACTION_DENY : OPERD_FLOW_ACTION_ALLOW;
 
+    pds_operd_commit_flow_ip4(flow);
+    
     return 0;
 }
 

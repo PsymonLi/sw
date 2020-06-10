@@ -35,6 +35,9 @@ const int CHUNK_COUNT_MAX = 16384;
 struct chunk_ {
     serial_t serial;
     serial_t part_of;
+    // updating is a boolean that true if we are actively writing a record on
+    // the chunk
+    uint8_t updating;
     // if there are multiple chunks in an entry, size contains
     // the size starting with this fragment until the end
     size_t size;
@@ -74,6 +77,7 @@ public:
     void reset(void) override;
     void set_severity(uint8_t new_severity);
     void *get_raw_chunk(uint8_t encoder, uint8_t severity, size_t size);
+    void commit_raw_chunk(void *data);
 private:
     void load_config_(void);
     void create_shm_(void);

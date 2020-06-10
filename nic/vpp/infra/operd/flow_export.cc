@@ -28,6 +28,12 @@ pds_operd_get_flow_ip4 (void)
 }
 
 void
+pds_operd_commit_flow_ip4 (operd_flow_t *flow)
+{
+    g_operd_region->commit_raw_chunk(flow);
+}
+
+void
 pds_operd_export_flow_ip6 (uint8_t *sip,
                            uint8_t *dip,
                            uint8_t ip_proto,
@@ -72,6 +78,8 @@ pds_operd_export_flow_ip6 (uint8_t *sip,
     flow->v6.lookup_id = lookup_id;
     memcpy(&flow->stats, flow_stats, sizeof(operd_flow_stats_t));
 
+    g_operd_region->commit_raw_chunk(flow);
+    
     return;
 }
 
@@ -109,6 +117,8 @@ pds_operd_export_flow_l2 (uint8_t *smac,
     flow->l2.ether_type = ether_type;
     flow->l2.bd_id = bd_id;
     memcpy(&flow->stats, flow_stats, sizeof(operd_flow_stats_t));
+
+    g_operd_region->commit_raw_chunk(flow);
 
     return;
 }
