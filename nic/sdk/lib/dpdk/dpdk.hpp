@@ -26,10 +26,8 @@ namespace dpdk {
 
 // Defines DPDK initialisation parameters
 typedef struct sdk_dpdk_params_s {
-    // [Input] Callback function for logging DPDK logs.
-    sdk_logger::trace_cb_t  log_cb;
-    // [Input] Log name to be registered with DPDK.
-    string log_name;
+    // [Input] DPDK log file name
+    string log_file_name;
     // [Input] DPDK mbuf pool name.
     string mbuf_pool_name;
     // [Input] Number of mbufs to be allocated for the system.
@@ -60,7 +58,6 @@ typedef struct dpdk_init_params_s {
 // Stores DPDK configurations
 typedef struct dpdk_global_config_s {
     map<string, uint16_t> name_to_port_map;
-    sdk_logger::trace_cb_t log_cb;
     // We assume only one numa node, so only one pool
     struct rte_mempool *rte_mp;
 } dpdk_global_config_t;

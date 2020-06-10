@@ -21,27 +21,6 @@ using namespace std;
 
 static dpdk_global_config_t dpdk_config;
 
-#define SDK_DPDK_LOG(...) \
-    if (dpdk_config.log_cb) {                                           \
-        (*dpdk_config.log_cb) (sdk_mod_id_t::SDK_MOD_ID_SDK,            \
-                               ##__VA_ARGS__);                          \
-    }
-
-#define SDK_DPDK_LOG_INFO(fmt, _args...)                                \
-        SDK_DPDK_LOG(SDK_TRACE_LEVEL_INFO, fmt, ##_args);               \
-
-#define SDK_DPDK_LOG_ERR(fmt, _args...)                                 \
-        SDK_DPDK_LOG(SDK_TRACE_LEVEL_ERR, fmt, ##_args);                \
-
-#define SDK_DPDK_LOG_WARN(fmt, _args...)                                \
-        SDK_DPDK_LOG(SDK_TRACE_LEVEL_WARN, fmt, ##_args);               \
-
-#define SDK_DPDK_LOG_DEBUG(fmt, _args...)                               \
-        SDK_DPDK_LOG(SDK_TRACE_LEVEL_DEBUG, fmt, ##_args);              \
-
-#define SDK_DPDK_LOG_VERBOSE(fmt, _args...)                             \
-        SDK_DPDK_LOG(SDK_TRACE_LEVEL_VERBOSE, fmt, ##_args);            \
-
 // if we support per device config, then move it to dpdk_device class in future.
 struct rte_eth_conf ethdev_conf = {0};
 
@@ -110,45 +89,60 @@ sdk::lib::dpdk::dpdk_init (sdk_dpdk_params_t *args)
     string intermediate;
     sdk_ret_t ret_val = SDK_RET_OK;
     int port_id;
-    int ionicpmd_logtype;
     stringstream eal_list;
+    FILE *dpdk_log_stream = NULL;
 
-    if (!args || args->log_name.empty() || !args->log_cb ||
-        args->mbuf_pool_name.empty()) {
+    if (!args || args->mbuf_pool_name.empty() || args->log_file_name.empty()) {
         ret_val = SDK_RET_INVALID_ARG;
         goto end;
     }
 
-    dpdk_config.log_cb = args->log_cb;
     eal_list << args->eal_init_list;
-    while(getline(eal_list, intermediate, ' ')) {
+    while (getline(eal_list, intermediate, ' ')) {
         tokens.push_back(intermediate);
     }
 
-    for(uint16_t i = 0; i < args->vdev_list.size(); i++) {
+    for (uint16_t i = 0; i < args->vdev_list.size(); i++) {
         tokens.push_back(string("--vdev"));
         tokens.push_back(args->vdev_list[i]);
     }
     args_count = tokens.size();
     dpdk_argv = (char **)calloc(sizeof(char *), args_count);
+    if (dpdk_argv == NULL) {
+        ret_val = SDK_RET_OOM;
+        goto end;
+    }
     for (int i = 0; i < args_count; i++) {
         dpdk_argv[i] = (char *) tokens[i].c_str();
     }
 
+    // open log file to redirect DPDK logs
+    dpdk_log_stream = fopen(args->log_file_name.c_str(), "w");
+    if (dpdk_log_stream == NULL) {
+        SDK_TRACE_ERR("Failed to open DPDK log file %s for writing",
+                      args->log_file_name.c_str());
+        ret_val = SDK_RET_ERR;
+        goto end;
+    }
+    if (rte_openlog_stream(dpdk_log_stream) != 0) {
+        SDK_TRACE_ERR("Failed to register log stream with DPDK");
+        ret_val = SDK_RET_ERR;
+        goto end;
+    }
+
+    // set log level for EAL and IONIC driver
+    if (rte_log_set_level(RTE_LOGTYPE_EAL, RTE_LOG_DEBUG) != 0) {
+        SDK_TRACE_ERR("Failed to set DPDK EAL log level");
+        ret_val = SDK_RET_ERR;
+        goto end;
+    }
+
     ret = rte_eal_init(args_count, dpdk_argv);
     if (ret < 0) {
+        SDK_TRACE_ERR("Failed to initialize DPDK");
         ret_val = SDK_RET_ERR;
         goto end;
     }
-
-    ionicpmd_logtype = rte_log_register(args->log_name.c_str());
-    if (ionicpmd_logtype < 0) {
-        ret_val = SDK_RET_ERR;
-        goto end;
-    }
-    rte_log_set_level(ionicpmd_logtype, RTE_LOG_DEBUG);
-
-    // TODO : getting DPDK logs to our callback.
 
     // create pools for mbuf
     dpdk_config.rte_mp = rte_pktmbuf_pool_create(args->mbuf_pool_name.c_str(),
@@ -180,6 +174,14 @@ end:
     if (dpdk_argv) {
         free(dpdk_argv);
         dpdk_argv = NULL;
+    }
+    if (ret_val == SDK_RET_OK) {
+        return ret_val;
+    }
+
+    // failed to initialize, cleanup allocated resources
+    if (dpdk_log_stream != NULL) {
+        fclose(dpdk_log_stream);
     }
     return ret_val;
 }
@@ -267,7 +269,7 @@ dpdk_device::factory(sdk_dpdk_device_params_t *args) {
     } else {
         ret = SDK_RET_OOM;
     }
-    SDK_DPDK_LOG_INFO("Factory ret[%d]", ret);
+    SDK_TRACE_INFO("Factory ret[%d]", ret);
     return obj;
 }
 
@@ -279,19 +281,19 @@ dpdk_device::destroy(dpdk_device *dev) {
         return SDK_RET_OK;
     }
 
-    SDK_DPDK_LOG_INFO("Destroying dpdk dev, port %u", dev->portid);
+    SDK_TRACE_INFO("Destroying dpdk dev, port %u", dev->portid);
     if (rte_eth_dev_is_valid_port(dev->portid)) {
         rte_eth_dev_stop(dev->portid);
         rte_eth_dev_close(dev->portid);
 
         rte_dev =  rte_eth_devices[dev->portid].device;
-        SDK_DPDK_LOG_INFO("Removing RTE device, port %u", dev->portid);
+        SDK_TRACE_INFO("Removing RTE device, port %u", dev->portid);
         if (!rte_dev) {
-            SDK_DPDK_LOG_ERR("RTE Device for port %u not exist", dev->portid);
+            SDK_TRACE_ERR("RTE Device for port %u not exist", dev->portid);
             return SDK_RET_ERR;
         }
         if (rte_dev_remove(rte_dev) != 0) {
-            SDK_DPDK_LOG_ERR("RTE Device removal port %u failed", dev->portid);
+            SDK_TRACE_ERR("RTE Device removal port %u failed", dev->portid);
             return SDK_RET_ERR;
         }
     }

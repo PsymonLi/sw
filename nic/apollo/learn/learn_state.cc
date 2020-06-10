@@ -42,14 +42,6 @@ learn_state::~learn_state() {
     rte_indexer::destroy(vnic_objid_idxr_);
 }
 
-static int
-learn_log (uint32_t mod_id, sdk_trace_level_e trace_level,
-           const char *format, ...)
-{
-    // TODO: All DPDK logs to be redirected here and write logs to file
-    return 0;
-}
-
 sdk_ret_t
 learn_state::lif_init_(void) {
     sdk_ret_t ret;
@@ -82,9 +74,8 @@ learn_state::lif_init_(void) {
         eal_init_list += " --file-prefix learn";
     }
 
-    params.log_cb = learn_log;
     params.eal_init_list = eal_init_list.c_str();
-    params.log_name = "learn_dpdk";
+    params.log_file_name = dpdk_log_file_name();
     params.mbuf_pool_name = "learn_dpdk";
     params.mbuf_size = LEARN_LIF_PKT_BUF_SZ;
     params.num_mbuf = LEARN_LIF_MBUF_COUNT;

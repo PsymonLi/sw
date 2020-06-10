@@ -243,6 +243,12 @@ function setup_fru () {
     fi
 }
 
+function setup_hugepages () {
+    echo 4096 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
+    mkdir /dev/hugepages
+    mount -t hugetlbfs nodev /dev/hugepages
+}
+
 function setup_env () {
     sudo mkdir -p /var/log/pensando/ /obfl/ /sysconfig/config0/ /data/
     setup_conf_files
@@ -250,6 +256,7 @@ function setup_env () {
     if [[ $DSCAGENTMODE == 1 ]]; then
         setup_interfaces
     fi
+    setup_hugepages
 }
 
 function setup () {

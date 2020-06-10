@@ -187,6 +187,12 @@ public:
     /// \return     pointer to learn lif device
     dpdk_device *learn_lif(void) const { return learn_lif_; }
 
+    /// \brief      return file path to stream DPDK logs
+    /// \return     string representing DPDK log file
+    string dpdk_log_file_name(void) {
+        return std::string(std::getenv("LOG_DIR")) + "dpdk.log";
+    }
+
     /// \brief      return learn counters
     /// \return     pointer to learn counter struct
     learn_counters_t *counters(void) { return &counters_; }

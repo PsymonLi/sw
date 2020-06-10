@@ -8,11 +8,6 @@ APP_ID=$3
 #set -x
 #echo $NICDIR
 
-#Huge-pages for DPDK
-echo 4096 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-mkdir /dev/hugepages
-mount -t hugetlbfs nodev /dev/hugepages
-
 #VPP Partial init env variables
 export HAL_CONFIG_PATH=$NICDIR/conf/
 export CONFIG_PATH=$NICDIR/conf/
