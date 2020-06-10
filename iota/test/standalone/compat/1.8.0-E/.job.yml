@@ -9,12 +9,12 @@ queue_name: baremetal
 # e2e-targets is the scheduler for CI runs to specify baremetal or virtual machine.
 e2e-targets:
   # baremetal + baremetal Esx test cases
-  e2e-esx-bm-regression-compat-dr:
-    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --regression --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-17"]
+  ESX-Driver-1.5.0-E-14.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: ESX-Compat
     sub-area: Driver-1.5.0-E-14
-    feature: Firmware-1.8.0-E-17
+    feature: Firmware-1.8.0-E-48
     max-duration: 24h
     build-dependencies:
       - build-iris-arm
@@ -35,11 +35,11 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
-  e2e-esx-bm-regression-compat-fw:
-    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --regression --skip-sanity --compat --driver-version 1.8.0-E-17 --fw-version 1.5.0-E-14"]
+  ESX-Driver-1.8.0-E-48.Firmware-1.5.0-E-14:
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.5.0-E-14"]
     owners: ["email:srivatsa@pensando.io"]
     area: ESX-Compat
-    sub-area: Driver-1.8.0-E-17
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.5.0-E-14
     max-duration: 24h
     build-dependencies:
@@ -61,12 +61,12 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
-  e2e-linux-bm-regression-eth-compat-dr:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-17"]
+  Linux-Driver-1.5.0-E-14.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: Linux-Compat
     sub-area: Driver-1.5.0-E-14
-    feature: Firmware-1.8.0-E-17
+    feature: Firmware-1.8.0-E-48
     max-duration: 24h
     build-dependencies:
       - build-iris-arm
@@ -89,11 +89,11 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
-  e2e-linux-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --driver-version 1.8.0-E-17 --fw-version 1.5.0-E-14"]
+  Linux-Driver-1.8.0-E-48.Firmware-1.5.0-E-14:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.5.0-E-14"]
     owners: ["email:srivatsa@pensando.io"]
     area: Linux-Compat
-    sub-area: Driver-1.8.0-E-17
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.5.0-E-14
     max-duration: 24h
     build-dependencies:
@@ -117,12 +117,12 @@ e2e-targets:
       EsxUsername: root
       EsxPassword: Pen0trl!
 
-  e2e-freebsd-bm-regression-eth-compat-dr:
-    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-17"]
+  BSD-Driver-1.5.0-E-14.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.5.0-E-14 --fw-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: FreeBSD-Compat
     sub-area: Driver-1.5.0-E-14
-    feature: Firmware-1.8.0-E-17
+    feature: Firmware-1.8.0-E-48
     max-duration: 24h
     build-dependencies:
       - build-iris-arm
@@ -146,11 +146,11 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
-  e2e-freebsd-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --fw-version 1.5.0-E-14 --driver-version 1.8.0-E-17"]
+  BSD-Driver-1.8.0-E-48.Firmware-1.5.0-E-14:
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.5.0-E-14 --driver-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: FreeBSD-Compat
-    sub-area: Driver-1.8.0-E-17
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.5.0-E-14
     max-duration: 24h
     build-dependencies:
@@ -175,11 +175,11 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
 
-  e2e-sles15-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --fw-version 1.3.2-E-3 --driver-version 1.8.0-E-17"]
+  SLES15-Driver-1.8.0-E-48.Firmware-1.3.2-E-3:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.3.2-E-3 --driver-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: SLES15-Compat
-    sub-area: Driver-1.8.0-E-17
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.3.2-E-3
     max-duration: 24h
     build-dependencies:
@@ -203,11 +203,11 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
  
-  e2e-sles15sp1-bm-regression-eth-compat-fw:
-    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity --compat --fw-version 1.3.2-E-3 --driver-version 1.8.0-E-17"]
+  SLES15SP1-Driver-1.8.0-E-48.Firmware-1.3.2-E-3:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.3.2-E-3 --driver-version 1.8.0-E-48"]
     owners: ["email:srivatsa@pensando.io"]
     area: SLES15SP1-Compat
-    sub-area: Driver-1.8.0-E-17
+    sub-area: Driver-1.8.0-E-48
     feature: Firmware-1.3.2-E-3
     max-duration: 24h
     build-dependencies:
@@ -231,6 +231,172 @@ e2e-targets:
         EsxUsername: root
         EsxPassword: Pen0trl!
  
+  ESX-Driver-1.3.2-E-3.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.3.2-E-3 --fw-version 1.8.0-E-48"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: ESX-Compat
+    sub-area: Driver-1.3.2-E-3
+    feature: Firmware-1.8.0-E-48
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-10
+        count: 2
+        resources:
+          servers:
+            - type: server-a
+          nic-type: naples
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: esx
+        VmOs: linux
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
+  ESX-Driver-1.8.0-E-48.Firmware-1.3.2-E-3:
+    commands: ["sh", "-c", "make esx && ./run_iota.sh --testsuite useg_enf_esx --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.3.2-E-3"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: ESX-Compat
+    sub-area: Driver-1.8.0-E-48
+    feature: Firmware-1.3.2-E-3
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-10
+        count: 2
+        resources:
+          servers:
+            - type: server-a
+          nic-type: naples
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: esx
+        VmOs: linux
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
+  Linux-Driver-1.3.2-E-3.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.3.2-E-3 --fw-version 1.8.0-E-48"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: Linux-Compat
+    sub-area: Driver-1.3.2-E-3
+    feature: Firmware-1.8.0-E-48
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-17
+        count: 2
+        resources:
+          servers:
+            - type: server-a
+            - type: hpe
+          # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
+          nic-type: naples
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: linux
+        VmOs: linux
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
+  Linux-Driver-1.8.0-E-48.Firmware-1.3.2-E-3:
+    commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.8.0-E-48 --fw-version 1.3.2-E-3"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: Linux-Compat
+    sub-area: Driver-1.8.0-E-48
+    feature: Firmware-1.3.2-E-3
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-17
+        count: 2
+        resources:
+          servers:
+            - type: server-a
+            - type: hpe
+          # nic-type is naples now. In the future, it can be mellanox, or raw, which means no special need
+          nic-type: naples
+    provision:
+      username: vm
+      password: vm
+      vars:
+      BmOs: linux
+      VmOs: linux
+      EsxUsername: root
+      EsxPassword: Pen0trl!
+
+  BSD-Driver-1.3.2-E-3.Firmware-1.8.0-E-48:
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --driver-version 1.3.2-E-3 --fw-version 1.8.0-E-48"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: FreeBSD-Compat
+    sub-area: Driver-1.3.2-E-3
+    feature: Firmware-1.8.0-E-48
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-14
+        count: 2
+        resources:
+          # Freebsd works with only server-d
+          server-type: server-d
+          # nic-type can be naples, mellanox, or raw
+          nic-type: naples
+          constraints:
+            same-switch: true
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: freebsd
+        VmOs: freebsd
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
+  BSD-Driver-1.8.0-E-48.Firmware-1.3.2-E-3:
+    commands: ["sh", "-c", "make freebsd && ./run_iota.sh --testsuite transparent_basenet --skip-sanity --compat --fw-version 1.3.2-E-3 --driver-version 1.8.0-E-48"]
+    owners: ["email:srivatsa@pensando.io"]
+    area: FreeBSD-Compat
+    sub-area: Driver-1.8.0-E-48
+    feature: Firmware-1.3.2-E-3
+    max-duration: 24h
+    build-dependencies:
+      - build-iris-arm
+      - build-iota
+    clusters:
+      - image: build-14
+        count: 2
+        resources:
+          # Freebsd works with only server-d
+          server-type: server-d
+          # nic-type can be naples, mellanox, or raw
+          nic-type: naples
+          constraints:
+            same-switch: true
+    provision:
+      username: vm
+      password: vm
+      vars:
+        BmOs: freebsd
+        VmOs: freebsd
+        EsxUsername: root
+        EsxPassword: Pen0trl!
+
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz
   - /sw/iota/all_corefiles.tgz

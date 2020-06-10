@@ -105,6 +105,50 @@ testbundles:
         - rss/rss.testbundle
         - penctl/mode_change.testbundle
 
+    compat:
+        common:
+            # Relative paths from iota/test/iris/testbundles/
+            - networking/connectivity.testbundle
+            - classic/ethtool.testbundle
+            - filters/filters.testbundle
+            - mtu/mtu.testbundle
+            - subifs/subifs-precheckin.testbundle
+            - rx_mode/rx_mode.testbundle
+            - tso/tso.testbundle
+            - drivercsum/drivercsum.testbundle
+            - classic/driver-features-sanity.testbundle
+            - penctl/penctl_classic.testbundle
+
+        Fw-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.8.0-E-48: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.8.0-E-48: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
 teardown:
     #- step      : verif.utils.collect_logs_and_cores
     #- step      : testcases.frequency.clock_settings_td

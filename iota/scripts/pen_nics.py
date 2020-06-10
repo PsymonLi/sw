@@ -21,15 +21,9 @@ def __get_nics_output_esx():
     return output
 
 esx_interface_types = {
-    "int-mnic" : "Management",
-    "data-nic" : "Ethernet"
+    "int-mnic" : ["Management Controller", "Ethernet Management"],
+    "data-nic" : ["Ethernet Controller", "Ethernet PF"]
 }
-
-esx_interface_filter_types = {
-    "int-mnic" : "PF",
-    "data-nic" : "Management"
-}
-
 
 def MacInRange(mac, mac_hint):
         num1 = int(mac_hint.replace(':', ''), 16)
@@ -40,7 +34,11 @@ def __print_mnic_ip_esx(mac_hint, intf_type):
     output = __get_nics_output_esx()
     exit_code = 1
     for line in output.splitlines():
-        if line not in ["", "\n"] and esx_interface_types[intf_type] in str(line) and esx_interface_filter_types[intf_type] not in str(line):
+        line = line.rstrip()
+        if not line:
+            continue
+        for pattern in esx_interface_types[intf_type]:
+            if pattern in str(line):
                 strline = str(line)
                 pci = strline.split()[1]
                 mac = strline.split()[6]
@@ -56,7 +54,11 @@ def __print_intfs_esx(mac_hint, intf_type):
     output = __get_nics_output_esx()
     exit_code = 1
     for line in output.splitlines():
-        if line not in ["", "\n"] and esx_interface_types[intf_type] in str(line) and esx_interface_filter_types[intf_type] not in str(line):
+        line = line.rstrip()
+        if not line:
+            continue
+        for pattern in esx_interface_types[intf_type]:
+            if pattern in str(line):
                 strline = str(line, 'UTF8')
                 strline.strip()
                 intf = strline.split()[0]

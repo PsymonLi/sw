@@ -335,6 +335,26 @@ class TestSuite:
             for bunfile in getattr(self.__spec.testbundles, 'precheckin', []):
                 self.__append_testbundle(bunfile)
 
+        if GlobalOptions.compat_test:
+            Logger.debug("For compat-test with fw-version %s and driver-version: %s" % 
+                         (self.GetFirmwareVersion(), self.GetDriverVersion()))
+            if hasattr(self.__spec.testbundles, 'compat'):
+                # first load "common" testbundles for compat-regression
+                for bunfile in getattr(self.__spec.testbundles.compat, 'common', []):
+                    self.__append_testbundle(bunfile)
+
+                # Append with fw-version specific bundles to be included
+                fw_section = 'Fw-' + self.GetFirmwareVersion()
+                for bunfile in getattr(self.__spec.testbundles.compat, self.GetFirmwareVersion(), []):
+                    self.__append_testbundle(bunfile)
+
+                # Append with driver-version specific bundles to be included
+                fw_section = 'Dr-' + self.GetFirmwareVersion()
+                for bunfile in getattr(self.__spec.testbundles.compat, self.GetDriverVersion(), []):
+                    self.__append_testbundle(bunfile)
+            else:
+                Logger.error('Missing compat section')
+
     def __resolve_teardown(self):
         teardown_spec = getattr(self.__spec, 'teardown', [])
         if teardown_spec is None:

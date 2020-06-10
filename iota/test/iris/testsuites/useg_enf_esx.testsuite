@@ -104,5 +104,54 @@ testbundles:
         - firewall/conntrack_regression.testbundle
         - naples_upgrade/naples_upgrade_hostpin_long.testbundle
 
+    compat:
+        common:
+            # Relative paths from iota/test/iris/testbundles/
+            - networking/connectivity.testbundle
+            - networking/networking.testbundle
+            - flowlog/flowlog.testbundle
+            - networking/cps.testbundle
+            - networking/upgrade.testbundle
+            - linktest/linktest.testbundle
+            - firewall/policy.testbundle
+            - aging/aging.testbundle
+            - alg/alg.testbundle
+            - firewall/conntrack.testbundle
+            - firewall/normalization.testbundle
+            - linktest/linktest.testbundle
+            - mnic/mnic_hostpin.testbundle
+            - penctl/penctl_hostpin.testbundle
+            - naples_upgrade/naples_upgrade_hostpin.testbundle
+
+        Fw-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-1.8.0-E-48:
+            # Relative paths from iota/test/iris/testbundles/
+
+        Fw-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.1.1-E-15: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.3.2-E-3: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.5.0-E-14: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-1.8.0-E-48: 
+            # Relative paths from iota/test/iris/testbundles/
+
+        Dr-latest:
+            # Relative paths from iota/test/iris/testbundles/
+
 teardown:
     #- step      : verif.utils.collect_logs_and_cores
