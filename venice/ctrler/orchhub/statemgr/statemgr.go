@@ -1,6 +1,7 @@
 package statemgr
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils/channelqueue"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/kvstore"
@@ -27,8 +29,8 @@ type Statemgr struct {
 	ctrler            ctkit.Controller
 	instanceManagerCh chan *kvstore.WatchEvent
 	ctkitReconnectCh  chan string // Emits the kind that reconnected
-	probeChMutex      sync.RWMutex
-	probeCh           map[string]chan *kvstore.WatchEvent
+	probeQMutex       sync.RWMutex
+	probeQs           map[string]*channelqueue.ChQueue
 }
 
 // NewStatemgr creates a new state mgr
@@ -64,7 +66,7 @@ func NewStatemgr(apiSrvURL string, resolver resolver.Interface, logger log.Logge
 		ctrler:            ctrler,
 		instanceManagerCh: instanceManagerCh,
 		ctkitReconnectCh:  ctkitReconnectCh,
-		probeCh:           make(map[string]chan *kvstore.WatchEvent),
+		probeQs:           make(map[string]*channelqueue.ChQueue),
 	}
 
 	err = stateMgr.startWatchers()
@@ -88,46 +90,49 @@ func (s *Statemgr) SetAPIClient(cl apiclient.Services) {
 
 // RemoveProbeChannel removes the channel for communication with vcprobe
 func (s *Statemgr) RemoveProbeChannel(orchKey string) error {
-	s.probeChMutex.Lock()
-	defer s.probeChMutex.Unlock()
+	s.probeQMutex.Lock()
+	defer s.probeQMutex.Unlock()
 
-	_, ok := s.probeCh[orchKey]
+	chQ, ok := s.probeQs[orchKey]
 
 	if !ok {
 		return fmt.Errorf("vc probe channel [%s] not found", orchKey)
 	}
 
-	delete(s.probeCh, orchKey)
+	chQ.Stop()
+	delete(s.probeQs, orchKey)
 	return nil
 }
 
 // AddProbeChannel sets the channel for communication with vcprobe
-func (s *Statemgr) AddProbeChannel(orchKey string, orchOpsChannel chan *kvstore.WatchEvent) error {
-	s.probeChMutex.Lock()
-	defer s.probeChMutex.Unlock()
+func (s *Statemgr) AddProbeChannel(orchKey string) error {
+	s.probeQMutex.Lock()
+	defer s.probeQMutex.Unlock()
 
-	_, ok := s.probeCh[orchKey]
+	_, ok := s.probeQs[orchKey]
 
 	if ok {
 		return fmt.Errorf("vc probe channel [%s] already exists", orchKey)
 	}
 
-	s.probeCh[orchKey] = orchOpsChannel
+	chQ := channelqueue.NewChQueue()
+	s.probeQs[orchKey] = chQ
+	chQ.Start(context.Background())
 
 	return nil
 }
 
 // GetProbeChannel sets the channel for communication with vcprobe
-func (s *Statemgr) GetProbeChannel(orchKey string) (chan *kvstore.WatchEvent, error) {
-	s.probeChMutex.RLock()
-	defer s.probeChMutex.RUnlock()
+func (s *Statemgr) GetProbeChannel(orchKey string) (*channelqueue.ChQueue, error) {
+	s.probeQMutex.RLock()
+	defer s.probeQMutex.RUnlock()
 
-	ch, ok := s.probeCh[orchKey]
+	chQ, ok := s.probeQs[orchKey]
 	if !ok {
 		return nil, fmt.Errorf("vc probe channel [%s] not found", orchKey)
 	}
 
-	return ch, nil
+	return chQ, nil
 }
 
 // SendNetworkProbeEvent sends network  event to appropriate orchestrator
@@ -136,7 +141,8 @@ func (s *Statemgr) SendNetworkProbeEvent(obj runtime.Object, evtType kvstore.Wat
 	if nw == nil {
 		return fmt.Errorf("object passed is not of network type. Object : %v", obj)
 	}
-	err := s.SendProbeEvent(obj, evtType, "")
+	s.logger.Infof("Sending nw event - %v", nw)
+	err := s.SendProbeEvent(nw.GetObjectMeta(), nw.GetObjectKind(), evtType, "")
 	if err != nil {
 		s.logger.Errorf("Failed to send network probe event, Err : %v", err)
 		return err
@@ -147,22 +153,27 @@ func (s *Statemgr) SendNetworkProbeEvent(obj runtime.Object, evtType kvstore.Wat
 
 // SendProbeEvent send probe event to appropriate orchestrator
 // If orchKey is blank, it will send to all orchestrators
-func (s *Statemgr) SendProbeEvent(obj runtime.Object, evtType kvstore.WatchEventType, orchKey string) error {
-	s.logger.Infof("Sending probe event - %v Type - %v to Orchestrator - %v", obj, evtType, orchKey)
-	s.probeChMutex.Lock()
-	defer s.probeChMutex.Unlock()
+func (s *Statemgr) SendProbeEvent(objMeta *api.ObjectMeta, kind string, evtType kvstore.WatchEventType, orchKey string) error {
+	s.logger.Infof("Sending probe event - %v Kind %s Type - %v to Orchestrator - %v", objMeta, kind, evtType, orchKey)
+	s.probeQMutex.RLock()
+	defer s.probeQMutex.RUnlock()
+	item := channelqueue.Item{
+		EvtType: evtType,
+		ObjMeta: objMeta,
+		Kind:    kind,
+	}
 	if len(orchKey) != 0 {
-		ch, ok := s.probeCh[orchKey]
+		chQ, ok := s.probeQs[orchKey]
 		if !ok {
 			return fmt.Errorf("failed to get orchestrator channel for %s", orchKey)
 		}
 
-		ch <- &kvstore.WatchEvent{Object: obj, Type: evtType}
+		chQ.Send(item)
 		return nil
 	}
 
-	for _, ch := range s.probeCh {
-		ch <- &kvstore.WatchEvent{Object: obj, Type: evtType}
+	for _, chQ := range s.probeQs {
+		chQ.Send(item)
 	}
 
 	return nil

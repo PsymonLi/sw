@@ -79,32 +79,30 @@ var (
 	overrideRewriteDelay = 10 * time.Second
 )
 
-func (v *VCHub) handleWorkloadEvent(evtType kvstore.WatchEventType, obj *workload.Workload) {
-	v.Log.Infof("Handling workload event %v", obj)
-	if obj.Status.MigrationStatus != nil {
-		// Read current state of object in case we already processed it (during sync)
-		// TODO: read from statemgr instead of pcache
-		wl := v.pCache.GetWorkloadByName(obj.Name)
-		v.Log.Infof("pcache version of object %v", wl)
-		if wl == nil || wl.Status.MigrationStatus == nil {
-			return
-		}
-		if wl.Status.MigrationStatus.Stage == stageMigrationDone || wl.Status.MigrationStatus.Stage == stageMigrationNone {
-			return // Migration in terminal state already or not started
-		}
-		switch wl.Status.MigrationStatus.Status {
-		case statusTimedOut:
-			v.Log.Infof("Processing timeout for %s", wl.Name)
+func (v *VCHub) handleWorkloadEvent(evtType kvstore.WatchEventType, objMeta *api.ObjectMeta) {
+	v.Log.Infof("Handling workload event %v", objMeta.Name)
+	// Read current state of object in case we already processed it (during sync)
+	// TODO: read from statemgr instead of pcache
+	wl := v.pCache.GetWorkloadByName(objMeta.Name)
+	v.Log.Infof("pcache version of object %v", wl)
+	if wl == nil || wl.Status.MigrationStatus == nil {
+		return
+	}
+	if wl.Status.MigrationStatus.Stage == stageMigrationDone || wl.Status.MigrationStatus.Stage == stageMigrationNone {
+		return // Migration in terminal state already or not started
+	}
+	switch wl.Status.MigrationStatus.Status {
+	case statusTimedOut:
+		v.Log.Infof("Processing timeout for %s", wl.Name)
+		v.finishMigration(wl)
+		v.resyncWorkload(wl)
+	case statusDone, statusFailed:
+		v.Log.Infof("Processing status done/failed for %s", wl.Name)
+		if wl.Status.MigrationStatus.Stage != stageMigrationAbort && wl.Status.MigrationStatus.Stage != stageMigrationDone {
+			v.Log.Infof("Calling finish migration for %s", wl.Name)
 			v.finishMigration(wl)
-			v.resyncWorkload(wl)
-		case statusDone, statusFailed:
-			v.Log.Infof("Processing status done/failed for %s", wl.Name)
-			if wl.Status.MigrationStatus.Stage != stageMigrationAbort && wl.Status.MigrationStatus.Stage != stageMigrationDone {
-				v.Log.Infof("Calling finish migration for %s", wl.Name)
-				v.finishMigration(wl)
-			}
-			v.resyncWorkload(wl)
 		}
+		v.resyncWorkload(wl)
 	}
 }
 

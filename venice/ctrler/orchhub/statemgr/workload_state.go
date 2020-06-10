@@ -44,7 +44,7 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 		sm.logger.Errorf("Could not extract orch key from workload label, %v ", w.ObjectMeta)
 		return nil
 	}
-	err = sm.SendProbeEvent(&w.Workload, kvstore.Created, orchKey)
+	err = sm.SendProbeEvent(w.Workload.GetObjectMeta(), w.Workload.GetObjectKind(), kvstore.Created, orchKey)
 	return err
 }
 
@@ -65,7 +65,7 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nw *workload.Workload) e
 			sm.logger.Errorf("Could not extract orch key from workload label, %v ", nw.ObjectMeta)
 			return nil
 		}
-		err = sm.SendProbeEvent(nw, kvstore.Updated, orchKey)
+		err = sm.SendProbeEvent(nw.GetObjectMeta(), nw.GetObjectKind(), kvstore.Updated, orchKey)
 	}
 	return err
 }

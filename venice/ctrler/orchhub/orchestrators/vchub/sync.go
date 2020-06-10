@@ -130,7 +130,7 @@ func (v *VCHub) sync() bool {
 	// Process any API events we have missed (migration.status.done/timeout)
 	for _, workload := range workloads {
 		if workload.Status.MigrationStatus != nil {
-			v.handleWorkloadEvent(kvstore.Updated, &workload.Workload)
+			v.handleWorkloadEvent(kvstore.Updated, workload.Workload.GetObjectMeta())
 		}
 	}
 
@@ -427,7 +427,7 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 				// Check if across DC vmotion is in final sync. If so, datapath may have already written state
 				if v.isWorkloadMigrating(&workload.Workload) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
 					v.Log.Infof("Across DC vmotion is in final sync, check datapath value...")
-					v.handleWorkloadEvent(kvstore.Updated, &workload.Workload)
+					v.handleWorkloadEvent(kvstore.Updated, workload.Workload.GetObjectMeta())
 				}
 				continue
 			}
@@ -460,7 +460,7 @@ func (v *VCHub) syncVMs(workloads []*ctkit.Workload, dc mo.Datacenter, vms []mo.
 		}
 
 		if v.isWorkloadMigrating(&workload.Workload) && workload.Workload.Status.MigrationStatus.Stage == stageMigrationFinalSync {
-			v.handleWorkloadEvent(kvstore.Updated, &workload.Workload)
+			v.handleWorkloadEvent(kvstore.Updated, workload.Workload.GetObjectMeta())
 		}
 	}
 

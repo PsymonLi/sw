@@ -501,7 +501,7 @@ func (p *PCache) deleteStatemgr(in interface{}) error {
 		if _, err := ctrler.Workload().Find(meta); err == nil {
 			// Object exists
 			p.Log.Debugf("%s %s deleting from statemgr", WorkloadKind, meta.GetKey())
-			writeErr = ctrler.Workload().Delete(obj)
+			writeErr = ctrler.Workload().SyncDelete(obj)
 			p.Log.Debugf("%s %s deleting from statemgr returned %v", WorkloadKind, meta.GetKey(), writeErr)
 		}
 		return writeErr
@@ -534,7 +534,7 @@ func (p *PCache) deleteStatemgr(in interface{}) error {
 				p.Log.Errorf("Workload list failed %s", err)
 			}
 
-			writeErr = ctrler.Host().Delete(obj)
+			writeErr = ctrler.Host().SyncDelete(obj)
 			// Unlock after host delete so that any calls to validateWorkload happen after this host is removed
 			// from statemgr
 			workloadMap.Unlock()

@@ -11,10 +11,6 @@ import (
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
-const (
-	probeChannelMax = 500
-)
-
 // OrchestratorState is a wrapper for orchestration object
 type OrchestratorState struct {
 	sync.Mutex
@@ -32,14 +28,12 @@ func (sm *Statemgr) GetOrchestratorWatchOptions() *api.ListWatchOptions {
 
 // OnOrchestratorCreate creates a orchestrator based on watch event
 func (sm *Statemgr) OnOrchestratorCreate(w *ctkit.Orchestrator) error {
-	_, ok := sm.probeCh[w.Orchestrator.Name]
+	_, ok := sm.probeQs[w.Orchestrator.Name]
 	if ok {
 		return fmt.Errorf("vc probe channel already created")
 	}
 
-	probeChannel := make(chan *kvstore.WatchEvent, probeChannelMax)
-
-	err := sm.AddProbeChannel(w.Orchestrator.GetName(), probeChannel)
+	err := sm.AddProbeChannel(w.Orchestrator.GetName())
 	if err != nil {
 		return err
 	}

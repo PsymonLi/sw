@@ -5,19 +5,36 @@ import (
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/useg"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils/channelqueue"
 	"github.com/pensando/sw/venice/utils/kvstore"
 )
 
 const networkKind = "Network"
 
-func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nw *network.Network) {
+func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nwMeta *api.ObjectMeta) {
 	// Update calls might actually be create calls for us, since the active flag would not be set on object creation
-	v.Log.Infof("Handling network event nw %v", nw)
+	v.Log.Infof("Handling network event for %v", nwMeta.Name)
 	v.syncLock.RLock()
 	defer v.syncLock.RUnlock()
 	// TODO: check res version to prevent double ops
+	nwCtkit, err := v.StateMgr.Controller().Network().Find(nwMeta)
+	var nw *network.Network
+	if err != nil && evtType != kvstore.Deleted {
+		v.Log.Infof("network no longer exists, nothing to do. err %s", err)
+		return
+	}
+	if evtType == kvstore.Deleted {
+		// Create an empty config
+		nw = &network.Network{
+			ObjectMeta: *nwMeta,
+			Spec:       network.NetworkSpec{},
+		}
+	} else {
+		nw = &nwCtkit.Network
+	}
+	v.Log.Infof("Handling network event %v nw %v", evtType, nw)
 
-	pgName := CreatePGName(nw.Name)
+	pgName := CreatePGName(nwMeta.Name)
 
 	if evtType == kvstore.Created && len(nw.Spec.Orchestrators) == 0 {
 		return
@@ -35,29 +52,26 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nw *network.N
 			}
 		}
 	}
-	v.Log.Infof("evt %s network %s event for dcs %v", evtType, nw.Name, dcs)
+	v.Log.Infof("evt %s network %s event for dcs %v", evtType, nwMeta.Name, dcs)
 	retryFn := func() {
 		v.Log.Infof("Retry Event: Create PG running")
 		// Verify this is still needed
-		nw, err := v.StateMgr.Controller().Network().Find(nw.GetObjectMeta())
+		nw, err := v.StateMgr.Controller().Network().Find(nwMeta)
 		if err != nil {
 			v.Log.Infof("Retry event: network no longer exists, nothing to do. err %s", err)
 			return
 		}
-		apiServerCh, err := v.StateMgr.GetProbeChannel(v.OrchConfig.GetName())
+		apiServerChQ, err := v.StateMgr.GetProbeChannel(v.OrchConfig.GetName())
 		if err != nil {
 			v.Log.Errorf("Retry event: Could not get probe channel for %s. Err : %v", v.OrchConfig.GetKey(), err)
 			return
 		}
-		evt := &kvstore.WatchEvent{
-			Type:   kvstore.Updated,
-			Object: &nw.Network,
+		evt := channelqueue.Item{
+			EvtType: kvstore.Updated,
+			ObjMeta: nw.Network.GetObjectMeta(),
+			Kind:    string(network.KindNetwork),
 		}
-		select {
-		case <-v.Ctx.Done():
-			return
-		case apiServerCh <- evt:
-		}
+		apiServerChQ.Send(evt)
 	}
 	for _, penDC := range v.DcMap {
 		if _, ok := dcs[penDC.Name]; ok {
@@ -109,7 +123,7 @@ func (v *VCHub) handleNetworkEvent(evtType kvstore.WatchEventType, nw *network.N
 					}
 				}
 			}
-		} else if evtType == kvstore.Updated {
+		} else if evtType == kvstore.Updated || evtType == kvstore.Deleted {
 			// Check if we need to delete
 			if penDC.GetPG(pgName, "") != nil {
 				_, errs := penDC.RemovePG(pgName, "")

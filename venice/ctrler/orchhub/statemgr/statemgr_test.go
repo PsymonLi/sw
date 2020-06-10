@@ -12,7 +12,7 @@ import (
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
-	"github.com/pensando/sw/venice/utils/kvstore"
+	"github.com/pensando/sw/venice/ctrler/orchhub/utils/channelqueue"
 	"github.com/pensando/sw/venice/utils/log"
 	. "github.com/pensando/sw/venice/utils/testutils"
 	"github.com/pensando/sw/venice/utils/tsdb"
@@ -53,8 +53,7 @@ func TestNetworkWatcher(t *testing.T) {
 	}
 
 	orchName := "TestOrch"
-	probeChl := make(chan *kvstore.WatchEvent, 10)
-	sm.AddProbeChannel(orchName, probeChl)
+	sm.AddProbeChannel(orchName)
 
 	orch := GetOrchestratorConfig(orchName, "user", "pass")
 	orchInfo := []*network.OrchestratorInfo{
@@ -97,20 +96,21 @@ func TestNetworkWatcher(t *testing.T) {
 	Assert(t, (err == nil), "network could not be created")
 	expNets["prod-cece-vlan300"] = true
 
-	receiveNetworks := func(pChl chan *kvstore.WatchEvent, rcvNets map[string]bool) {
+	receiveNetworks := func(pChl <-chan channelqueue.Item, rcvNets map[string]bool) {
 		for {
 			msg, ok := <-pChl
 			if !ok {
 				logger.Infof("probe chl closed")
 				return
 			}
-			logger.Infof("Received net %s on probe chl", msg.Object.(*network.Network).Name)
-			rcvNets[msg.Object.(*network.Network).Name] = true
+			logger.Infof("Received net %s on probe chl", msg.ObjMeta.Name)
+			rcvNets[msg.ObjMeta.Name] = true
 		}
 	}
-	defer close(probeChl)
+	chQ, err := sm.GetProbeChannel(orchName)
+	AssertOk(t, err, "Failed to get probe channel")
 	rcvNets := map[string]bool{}
-	go receiveNetworks(probeChl, rcvNets)
+	go receiveNetworks(chQ.ReadCh(), rcvNets)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		for net := range expNets {

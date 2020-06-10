@@ -26,11 +26,12 @@ func (v *VCHub) startEventsListener() {
 	v.Log.Infof("Running store")
 	v.Log.Infof("Starting probe channel watch for %s", v.OrchConfig.Name)
 	defer v.Wg.Done()
-	apiServerCh, err := v.StateMgr.GetProbeChannel(v.OrchConfig.GetName())
+	apiServerChQ, err := v.StateMgr.GetProbeChannel(v.OrchConfig.GetName())
 	if err != nil {
 		v.Log.Errorf("Could not get probe channel for %s. Err : %v", v.OrchConfig.GetKey(), err)
 		return
 	}
+	apiServerCh := apiServerChQ.ReadCh()
 
 	for {
 		select {
@@ -191,13 +192,13 @@ func (v *VCHub) startEventsListener() {
 			v.Log.Infof("Received API event")
 
 			if ok && processEvent {
-				switch obj := evt.Object.(type) {
-				case *network.Network:
-					v.Log.Infof("Processing network event %s", obj.Name)
-					v.handleNetworkEvent(evt.Type, obj)
-				case *workload.Workload:
-					v.Log.Infof("Processing workload event %s", obj.Name)
-					v.handleWorkloadEvent(evt.Type, obj)
+				switch evt.Kind {
+				case string(network.KindNetwork):
+					v.Log.Infof("Processing network event %s", evt.ObjMeta.Name)
+					v.handleNetworkEvent(evt.EvtType, evt.ObjMeta)
+				case string(workload.KindWorkload):
+					v.Log.Infof("Processing workload event %s", evt.ObjMeta.Name)
+					v.handleWorkloadEvent(evt.EvtType, evt.ObjMeta)
 				}
 			} else {
 				v.Log.Infof("Skipped API Event %v", ok && processEvent)
