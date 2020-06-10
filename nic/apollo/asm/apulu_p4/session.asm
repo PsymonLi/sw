@@ -63,9 +63,9 @@ session_rx:
 session_tx:
     seq             c7, d.session_info_d.tx_xlate_id, r0
     cmov            r1, c7, k.p4e_i2e_xlate_id, d.session_info_d.tx_xlate_id
-    sne             c2, r1, r0
-    sne             c1, d.session_info_d.tx_xlate_id2, r0
-    csave           r2, [c2-c1]
+    sne             c4, r1, r0
+    sne             c3, d.session_info_d.tx_xlate_id2, r0
+    csave           r2, [c4-c3]
     phvwr           p.{control_metadata_apply_nat,control_metadata_apply_nat2}, r2
     phvwr           p.rewrite_metadata_xlate_id, r1
     phvwr           p.rewrite_metadata_xlate_id2, d.session_info_d.tx_xlate_id2
