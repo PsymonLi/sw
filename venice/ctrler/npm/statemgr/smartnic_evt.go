@@ -167,6 +167,11 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 	return sns, nil
 }
 
+func (sm *Statemgr) dscDecommissioned(dsc *cluster.DistributedServiceCard) bool {
+	return !dsc.Spec.Admit && (dsc.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_DECOMMISSIONED.String() ||
+		dsc.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_PENDING.String())
+}
+
 func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard, sns *DistributedServiceCardState, sendSgPolicies bool) {
 	// see if smartnic is admitted
 	/*if sm.isDscAdmitted(&smartNic.DistributedServiceCard) {
@@ -237,7 +242,7 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 	}
 
 	if !sns.decommissioned {
-		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_DECOMMISSIONED.String() {
+		if sm.dscDecommissioned(nsnic) {
 			sns.decommissioned = true
 			sm.deleteDsc(smartNic)
 			// Stop all migration from/to this DSC

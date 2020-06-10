@@ -1049,7 +1049,7 @@ func (sma *SmNetworkInterface) ProcessDSCEvent(ev EventType, dsc *cluster.Distri
 	}
 
 	//Process only if it is deleted or decomissioned
-	if ev != DeleteEvent && dsc.Status.AdmissionPhase != cluster.DistributedServiceCardStatus_DECOMMISSIONED.String() {
+	if ev != DeleteEvent && !sma.sm.dscDecommissioned(dsc) {
 		return
 	}
 
