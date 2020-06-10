@@ -1705,21 +1705,21 @@ pd_qos_class_set_global_pause_type_init (
     return;
 }
 
-typedef struct pd_qos_swm_control_queue_init_args_s {
+typedef struct pd_qos_swm_and_control_queue_init_args_s {
     bool swm_init;
     bool control_init;
-} __PACK__ pd_qos_swm_control_queue_init_args_t;
+} __PACK__ pd_qos_swm_and_control_queue_init_args_t;
 
-typedef struct pd_qos_swm_control_queue_deinit_args_s {
+typedef struct pd_qos_swm_and_control_queue_deinit_args_s {
     bool swm_deinit;
     bool control_deinit;
-} __PACK__ pd_qos_swm_control_queue_deinit_args_t;
+} __PACK__ pd_qos_swm_and_control_queue_deinit_args_t;
 
-typedef struct pd_qos_swm_control_add_del_mac_args_s {
+typedef struct pd_qos_swm_and_control_add_del_mac_args_s {
     uint32_t uplink_port;
     uint64_t dmac;
     bool     add;
-} __PACK__ pd_qos_swm_control_add_del_mac_args_t;
+} __PACK__ pd_qos_swm_and_control_add_del_mac_args_t;
 
 typedef struct pd_qos_class_restore_args_s {
     qos_class_t              *qos_class;
@@ -3431,8 +3431,8 @@ pd_nvme_cq_create_args_init (pd_nvme_cq_create_args_t *args)
     ENTRY(PD_FUNC_ID_TUNNEL_IF_RTEP_UPDATE,      344, "PD_FUNC_ID_TUNNEL_IF_RTEP_UPDATE")  \
     ENTRY(PD_FUNC_ID_COLL_EP_UPDATE,             345, "PD_FUNC_ID_COLL_EP_UPDATE")  \
     ENTRY(PD_FUNC_ID_SET_CLOCK_MULTIPLIER,       346, "PD_FUNC_ID_SET_CLOCK_MULTIPLIER")\
-    ENTRY(PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_INIT, 347, "PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_INIT")  \
-    ENTRY(PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_DEINIT, 348, "PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_DEINIT")  \
+    ENTRY(PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_INIT, 347, "PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_INIT")  \
+    ENTRY(PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_DEINIT, 348, "PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_DEINIT")  \
     ENTRY(PD_FUNC_ID_IF_INP_MAC_VLAN_PGM,        349, "PD_FUNC_ID_IF_INP_MAC_VLAN_PGM") \
     ENTRY(PD_FUNC_ID_IF_INP_PROP_PGM,            350, "PD_FUNC_ID_IF_INP_PROP_PGM") \
     ENTRY(PD_FUNC_ID_LIF_SCHED_DATA,             351, "PD_FUNC_ID_LIF_SCHED_DATA")  \
@@ -3444,7 +3444,7 @@ pd_nvme_cq_create_args_init (pd_nvme_cq_create_args_t *args)
     ENTRY(PD_FUNC_ID_COLLECTOR_UPDATE,           357, "PD_FUNC_ID_COLLECTOR_UPDATE")\
     ENTRY(PD_FUNC_ID_SYSTEM_MODE_CHANGE,         358, "PD_FUNC_ID_SYSTEM_MODE_CHANGE")\
     ENTRY(PD_FUNC_ID_MIRROR_STATS_UPDATE,        359, "PD_FUNC_ID_MIRROR_STATS_UPDATE")\
-    ENTRY(PD_FUNC_ID_QOS_SWM_CONTROL_ADD_DEL_MAC, 360, "PD_FUNC_ID_QOS_SWM_CONTROL_ADD_DEL_MAC")  \
+    ENTRY(PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC, 360, "PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC")  \
     ENTRY(PD_FUNC_ID_MAX,                        361, "pd_func_id_max")
 
 DEFINE_ENUM(pd_func_id_t, PD_FUNC_IDS)
@@ -3642,9 +3642,9 @@ typedef struct pd_func_args_s {
         PD_UNION_ARGS_FIELD(pd_qos_class_get);
         PD_UNION_ARGS_FIELD(pd_qos_class_periodic_stats_update);
         PD_UNION_ARGS_FIELD(pd_qos_class_set_global_pause_type);
-        PD_UNION_ARGS_FIELD(pd_qos_swm_control_queue_init);
-        PD_UNION_ARGS_FIELD(pd_qos_swm_control_queue_deinit);
-        PD_UNION_ARGS_FIELD(pd_qos_swm_control_add_del_mac);
+        PD_UNION_ARGS_FIELD(pd_qos_swm_and_control_queue_init);
+        PD_UNION_ARGS_FIELD(pd_qos_swm_and_control_queue_deinit);
+        PD_UNION_ARGS_FIELD(pd_qos_swm_and_control_add_del_mac);
         PD_UNION_ARGS_FIELD(pd_qos_clear_stats);
 
         // copp
@@ -4108,9 +4108,9 @@ PD_FUNCP_TYPEDEF(pd_qos_class_get);
 PD_FUNCP_TYPEDEF(pd_qos_class_periodic_stats_update);
 PD_FUNCP_TYPEDEF(pd_qos_class_set_global_pause_type);
 PD_FUNCP_TYPEDEF(pd_qos_class_init_tc_to_iq_map);
-PD_FUNCP_TYPEDEF(pd_qos_swm_control_queue_init);
-PD_FUNCP_TYPEDEF(pd_qos_swm_control_queue_deinit);
-PD_FUNCP_TYPEDEF(pd_qos_swm_control_add_del_mac);
+PD_FUNCP_TYPEDEF(pd_qos_swm_and_control_queue_init);
+PD_FUNCP_TYPEDEF(pd_qos_swm_and_control_queue_deinit);
+PD_FUNCP_TYPEDEF(pd_qos_swm_and_control_add_del_mac);
 PD_FUNCP_TYPEDEF(pd_qos_clear_stats);
 
 // copp

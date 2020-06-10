@@ -1283,6 +1283,7 @@ qos_class_pd_program_hw (pd_qos_class_t *pd_qos_class)
 {
     hal_ret_t            ret = HAL_RET_OK;
     qos_class_t          *qos_class = pd_qos_class->pi_qos_class;
+    qos_group_t          qos_group;
 
     ret = qos_class_pd_program_uplink_iq_params(pd_qos_class);
     if (ret != HAL_RET_OK) {
@@ -1308,8 +1309,15 @@ qos_class_pd_program_hw (pd_qos_class_t *pd_qos_class)
         return ret;
     }
 
-    if ( (qos_class_get_qos_group(qos_class) == QOS_GROUP_DEFAULT) ||
-         (qos_is_user_defined_class(qos_class_get_qos_group(qos_class))) ) {
+    /* Call the qos_class_pd_program_scheduler for
+     * DEFAULT, CONTROL, SPAN and User-defined groups.
+     * Since these groups need dwrr weights to be programmed.
+     */
+    qos_group = qos_class_get_qos_group(qos_class);
+    if ( (qos_group == QOS_GROUP_DEFAULT) ||
+         (qos_group == QOS_GROUP_CONTROL) ||
+         (qos_group == QOS_GROUP_SPAN) ||
+         (qos_is_user_defined_class(qos_group)) ) {
         ret = qos_class_pd_program_scheduler(pd_qos_class);
     } else {
         ret = qos_class_pd_sched_pgm(pd_qos_class);
@@ -1836,7 +1844,7 @@ pd_qos_class_set_global_pause_type (pd_func_args_t *pd_func_args)
 
 #define QOS_ACTION(_arg) d.action_u.qos_qos._arg
 static hal_ret_t
-qos_class_pd_program_qos_table_for_swm_control (uint32_t p4_q, bool program)
+qos_class_pd_program_qos_table_for_swm_and_control (uint32_t p4_q, bool program)
 {
     hal_ret_t      ret = HAL_RET_OK;
     sdk_ret_t      sdk_ret;
@@ -1986,7 +1994,7 @@ pd_qos_set_dmac_cam_entry (uint32_t uplink_port, int cam_entry, uint64_t dmac)
 }
 
 hal_ret_t
-pd_qos_program_uplink_for_swm_control (uint32_t uplink_port, uint64_t dmac, bool program)
+pd_qos_program_uplink_for_swm_and_control (uint32_t uplink_port, uint64_t dmac, bool program)
 {
     hal_ret_t   ret = HAL_RET_OK;
     sdk_ret_t   sdk_ret;
@@ -2138,7 +2146,7 @@ pd_qos_program_uplink_for_swm_control (uint32_t uplink_port, uint64_t dmac, bool
 }
 
 hal_ret_t
-pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
+pd_qos_reserve_and_program_swm_and_control_queues (uint32_t p4_q, bool alloc)
 {
     hal_ret_t       ret = HAL_RET_OK;
     indexer::status ret_idx = indexer::SUCCESS;
@@ -2186,7 +2194,7 @@ pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
     }
 
     // program/ reset the PQ_QOS_TBL
-    ret = qos_class_pd_program_qos_table_for_swm_control(p4_q, alloc);
+    ret = qos_class_pd_program_qos_table_for_swm_and_control(p4_q, alloc);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to program qos_table for p4_q {} ret {}",
                       p4_q, ret);
@@ -2199,12 +2207,14 @@ pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
 }
 
 hal_ret_t
-pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
+pd_qos_swm_and_control_queue_init (pd_func_args_t *pd_func_args)
 {
     hal_ret_t       ret = HAL_RET_OK;
+    pd_qos_class_t  *pd_qos_class;
+    qos_class_t     *qos_class;
 
-    pd_qos_swm_control_queue_init_args_t *args =
-                            pd_func_args->pd_qos_swm_control_queue_init;
+    pd_qos_swm_and_control_queue_init_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_queue_init;
 
     HAL_TRACE_DEBUG("SWM/Control queue init");
 
@@ -2223,7 +2233,7 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
          */
 
         // reserve BMC UC queue for SWM/Control
-        ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, true);
+        ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, true);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to reserve/program queues for swm/control p4_q {} ret {}",
                           CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, ret);
@@ -2231,14 +2241,14 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
         }
 
         // nothing to reserve, just program BMC Flood queue for SWM/Control
-        ret = qos_class_pd_program_qos_table_for_swm_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
+        ret = qos_class_pd_program_qos_table_for_swm_and_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
                                                      true);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to program queues for swm/control p4_q {} ret {}",
                           CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE, ret);
             //TODO: should this be freed as it failed or use whatever has been
             // allocated successfully? That would make debugging a nightmare..
-            if(pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
+            if(pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
                                                             false) != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to free/de-program queues for swm/control p4_q {} "
                               "ret {}",
@@ -2248,18 +2258,29 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
         }
 
         HAL_TRACE_DEBUG("Done allocating Control related queues!");
+
+        /* Update the PI and PD structures with the assigned iq */
+        qos_class = find_qos_class_by_group(QOS_GROUP_CONTROL);
+        if (!qos_class) {
+            HAL_TRACE_ERR("FAILED to find qos group CONTROL");
+            return HAL_RET_QOS_CLASS_NOT_FOUND;
+        }
+
+        pd_qos_class = qos_class->pd;
+        pd_qos_class->uplink.iq = CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE - CAPRI_TM_P4_UPLINK_IQ_OFFSET;
+        HAL_TRACE_DEBUG("Done updating iq for CONTROL qos class!");
     }
 
     if (args->swm_init == true) {
         /* Reserving Queue #29 at P4 ingr/egr ports for SWM NCSI protocol traffic.*/
-        ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE, true);
+        ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE, true);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to reserve/program queues for swm_p4_q {} ret {}",
                           CAPRI_TM_P4_SWM_NCSI_QUEUE, ret);
             return ret;
         }
 
-        ret = pd_qos_program_uplink_for_swm_control(TM_PORT_NCSI, 0, true);
+        ret = pd_qos_program_uplink_for_swm_and_control(TM_PORT_NCSI, 0, true);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to program HW ret {}", ret);
         }
@@ -2271,18 +2292,20 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
 }
 
 hal_ret_t
-pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
+pd_qos_swm_and_control_queue_deinit (pd_func_args_t *pd_func_args)
 {
     hal_ret_t       ret = HAL_RET_OK;
+    pd_qos_class_t  *pd_qos_class;
+    qos_class_t     *qos_class;
 
-    pd_qos_swm_control_queue_deinit_args_t *args =
-                            pd_func_args->pd_qos_swm_control_queue_deinit;
+    pd_qos_swm_and_control_queue_deinit_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_queue_deinit;
 
     HAL_TRACE_DEBUG("SWM/Control queue deinit");
 
     if (args->control_deinit) {
         // free BMC UC queue for Control
-        ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
+        ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
                                                     false);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to free/de-program queues for swm/control p4_q {} ret {}",
@@ -2290,7 +2313,7 @@ pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
         }
 
         // deprogram BMC Flood queue for SWM/Control
-        ret = qos_class_pd_program_qos_table_for_swm_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
+        ret = qos_class_pd_program_qos_table_for_swm_and_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
                                                      false);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to deprogram queues for swm/control p4_q {} ret {}",
@@ -2298,18 +2321,29 @@ pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
         }
 
         HAL_TRACE_DEBUG("Done de-allocating Control related queues!");
+
+        /* Update the PI and PD structures with invalid iq */
+        qos_class = find_qos_class_by_group(QOS_GROUP_CONTROL);
+        if (!qos_class) {
+            HAL_TRACE_ERR("FAILED to find qos group CONTROL");
+            return HAL_RET_QOS_CLASS_NOT_FOUND;
+        }
+
+        pd_qos_class = qos_class->pd;
+        pd_qos_class->uplink.iq = CAPRI_TM_INVALID_Q;
+        HAL_TRACE_DEBUG("Done removing iq for CONTROL qos class!");
     }
     // reset programming on mgmt port
     if (args->swm_deinit == true) {
         // free NCSI queue for SWM
-        ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE,
+        ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE,
                                                     false);
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to free/de-program queues for swm_p4_q {} ret {}",
                           CAPRI_TM_P4_SWM_NCSI_QUEUE, ret);
         }
 
-        ret = pd_qos_program_uplink_for_swm_control(TM_PORT_NCSI, 0, false);
+        ret = pd_qos_program_uplink_for_swm_and_control(TM_PORT_NCSI, 0, false);
         if(ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to program HW ret {}", ret);
         }
@@ -2321,12 +2355,12 @@ pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
 }
 
 hal_ret_t
-pd_qos_swm_control_add_del_mac (pd_func_args_t *pd_func_args)
+pd_qos_swm_and_control_add_del_mac (pd_func_args_t *pd_func_args)
 {
     hal_ret_t       ret = HAL_RET_OK;
 
-    pd_qos_swm_control_add_del_mac_args_t *args =
-                            pd_func_args->pd_qos_swm_control_add_del_mac;
+    pd_qos_swm_and_control_add_del_mac_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_add_del_mac;
     uint32_t uplink_port = args->uplink_port;
     bool add = args->add;
     uint64_t dmac = args->dmac;
@@ -2340,7 +2374,7 @@ pd_qos_swm_control_add_del_mac (pd_func_args_t *pd_func_args)
         return HAL_RET_INVALID_ARG;
     }
 
-    ret = pd_qos_program_uplink_for_swm_control(uplink_port, dmac, add);
+    ret = pd_qos_program_uplink_for_swm_and_control(uplink_port, dmac, add);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to program HW ret {}", ret);
         return ret;
@@ -2410,6 +2444,18 @@ pd_qos_class_create (pd_func_args_t *pd_func_args)
         HAL_TRACE_ERR("Unable to program hw for Qos-class: {} ret {}",
                       args->qos_class->key, ret);
         goto end;
+    }
+
+    if ( (qos_group_is_user_defined(args->qos_class->key.qos_group)) &&
+         (qos_class_is_no_drop(pd_qos_class->pi_qos_class)) ) {
+        /* 
+         * For no-drop classes, assuming they are for RDMA, allocate 
+         * 3x buffers as compared to other classes (assuming they are 
+         * running ethernet traffic) to get better DWRR fairness 
+         */
+        capri_tm_realloc_no_drop_min_res_for_txdma(pd_qos_class->txdma[0].iq,
+                                                   pd_qos_class->txdma[1].iq,
+                                                   true);
     }
 
     HAL_TRACE_DEBUG("created pd state for qos_class: {}, iq {}, oq {}",
@@ -2550,6 +2596,17 @@ pd_qos_class_delete (pd_func_args_t *pd_func_args)
 
     // TODO: deprogram hw
     qos_class_pd_deprogram_hw(qos_class_pd);
+
+    if ( (qos_group_is_user_defined(args->qos_class->key.qos_group)) &&
+         (qos_class_is_no_drop(qos_class_pd->pi_qos_class)) ) {
+        /* 
+         * if no-drop class is being deleted, reset the previously increased
+         * 3x buffers  to default.
+         */
+        capri_tm_realloc_no_drop_min_res_for_txdma(qos_class_pd->txdma[0].iq,
+                                                   qos_class_pd->txdma[1].iq,
+                                                   false);
+    }
 
     // free up the resource and memory
     ret = qos_class_pd_cleanup(qos_class_pd);

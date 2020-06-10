@@ -1776,7 +1776,7 @@ pd_qos_class_set_global_pause_type (pd_func_args_t *pd_func_args)
 
 #define QOS_ACTION(_arg) d.action_u.qos_qos._arg
 static hal_ret_t
-qos_class_pd_program_qos_table_for_swm_control (uint32_t p4_q, bool program)
+qos_class_pd_program_qos_table_for_swm_and_control (uint32_t p4_q, bool program)
 {
     hal_ret_t      ret = HAL_RET_OK;
     sdk_ret_t      sdk_ret;
@@ -1964,7 +1964,7 @@ pd_qos_program_uplink_for_swm_control (uint32_t uplink_port, uint64_t dmac, bool
 }
 
 hal_ret_t
-pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
+pd_qos_reserve_and_program_swm_and_control_queues (uint32_t p4_q, bool alloc)
 {
     hal_ret_t       ret = HAL_RET_OK;
     indexer::status ret_idx = indexer::SUCCESS;
@@ -2012,7 +2012,7 @@ pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
     }
 
     // program/ reset the PQ_QOS_TBL
-    ret = qos_class_pd_program_qos_table_for_swm_control(p4_q, alloc);
+    ret = qos_class_pd_program_qos_table_for_swm_and_control(p4_q, alloc);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to program qos_table for p4_q {} ret {}",
                       p4_q, ret);
@@ -2025,12 +2025,12 @@ pd_qos_reserve_and_program_swm_control_queues (uint32_t p4_q, bool alloc)
 }
 
 hal_ret_t
-pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
+pd_qos_swm_and_control_queue_init (pd_func_args_t *pd_func_args)
 {
     hal_ret_t       ret = HAL_RET_OK;
 
-    pd_qos_swm_control_queue_init_args_t *args =
-                            pd_func_args->pd_qos_swm_control_queue_init;
+    pd_qos_swm_and_control_queue_init_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_queue_init;
 
     HAL_TRACE_DEBUG("SWM/Control queue init");
 
@@ -2048,7 +2048,7 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
      */
 
     // reserve BMC UC queue for SWM/Control
-    ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, true);
+    ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, true);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to reserve/program queues for swm/control p4_q {} ret {}",
                       CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE, ret);
@@ -2056,13 +2056,13 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
     }
 
     // reserve NCSI queue for SWM
-    ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE, true);
+    ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_NCSI_QUEUE, true);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to reserve/program queues for swm_p4_q {} ret {}",
                       CAPRI_TM_P4_SWM_NCSI_QUEUE, ret);
         //TODO: should this be freed as it failed or use whatever has been
         // allocated successfully? That would make debugging a nightmare..
-        if(pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
+        if(pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
                                                         false) != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to free/de-program queues for swm/control p4_q {} "
                           "ret {}",
@@ -2072,14 +2072,14 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
     }
 
     // nothing to reserve, just program BMC Flood queue for SWM/Control
-    ret = qos_class_pd_program_qos_table_for_swm_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
+    ret = qos_class_pd_program_qos_table_for_swm_and_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
                                                  true);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to program queues for swm/control p4_q {} ret {}",
                       CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE, ret);
         //TODO: should this be freed as it failed or use whatever has been
         // allocated successfully? That would make debugging a nightmare..
-        if(pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
+        if(pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
                                                         false) != HAL_RET_OK) {
             HAL_TRACE_ERR("Failed to free/de-program queues for swm/control p4_q {} "
                           "ret {}",
@@ -2109,17 +2109,17 @@ pd_qos_swm_control_queue_init (pd_func_args_t *pd_func_args)
 }
 
 hal_ret_t
-pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
+pd_qos_swm_and_control_queue_deinit (pd_func_args_t *pd_func_args)
 {
     hal_ret_t       ret = HAL_RET_OK;
 
-    pd_qos_swm_control_queue_deinit_args_t *args =
-                            pd_func_args->pd_qos_swm_control_queue_deinit;
+    pd_qos_swm_and_control_queue_deinit_args_t *args =
+                            pd_func_args->pd_qos_swm_and_control_queue_deinit;
 
     HAL_TRACE_DEBUG("SWM/Control queue deinit");
 
     // free BMC UC queue for SWM/Control
-    ret = pd_qos_reserve_and_program_swm_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
+    ret = pd_qos_reserve_and_program_swm_and_control_queues(CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE,
                                                 false);
     if (ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to free/de-program queues for swm/control p4_q {} ret {}",
@@ -2137,7 +2137,7 @@ pd_qos_swm_control_queue_deinit (pd_func_args_t *pd_func_args)
 #endif
 
     // deprogram BMC Flood queue for SWM/Control
-    ret = qos_class_pd_program_qos_table_for_swm_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
+    ret = qos_class_pd_program_qos_table_for_swm_and_control(CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE,
                                                  false);
     if(ret != HAL_RET_OK) {
         HAL_TRACE_ERR("Failed to deprogram queues for swm/control p4_q {} ret {}",

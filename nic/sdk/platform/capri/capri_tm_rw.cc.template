@@ -1332,7 +1332,7 @@ capri_tm_scheduler_map_update_l${level} (uint32_t port,
     SDK_TRACE_DEBUG("%s", data.str().c_str());
     data.str("");
 
-    uint64_t scheduler_rate;
+    uint64_t scheduler_rate = 0;
     if (node_params->sched_type == TM_SCHED_TYPE_STRICT) {
         scheduler_rate = (uint64_t)CAPRI_TM_SCHEDULER_RATE_REFRESH_INTERVAL_US*node_params->strict.rate;
         scheduler_rate /= 1000000;
@@ -1342,14 +1342,31 @@ capri_tm_scheduler_map_update_l${level} (uint32_t port,
         }
     }
 
+    uint32_t weight = node_params->dwrr.weight;
+    uint32_t div_factor = 50;
+
+    if (weight == 0)
+        weight = div_factor / 10;   // weight of 0 will be set a quota of 10k
+    else if (weight < 10)
+        weight = 10;           // weight of 10 or less will be set to 10 (20k)
+    else if (weight == 100)
+        weight = div_factor;   // set default to 100k
+
+    /* 
+     * quota ranges from 20k (10%) to 198k (99%) ; 10k of weight for 0 and 
+     * 100k for default weight of 100 (as when no other TC is enabled, it 
+     * doesnt matter what quota is set - so defaulting it to 100k.
+     */
+
     uint32_t quota = (node_params->sched_type == TM_SCHED_TYPE_STRICT ? scheduler_rate : 
-                            ((node_params->dwrr.weight / 10.0) * 100 * CAPRI_TM_DWRR_UNIT));
+                            ((weight / 100.0) * 2 * 100 * CAPRI_TM_DWRR_UNIT));
 
     cap_pb_cfg_sched_node(0, 0, 1, port, node, quota);
 
     SDK_TRACE_DEBUG("Updated the output queue scheduler on port %u "
-                    "level %u, node %u wt %u quota %u",
-                    port, ${level}, node, node_params->dwrr.weight, quota);
+                    "level %u, node %u conf wt %u wt %u quota %u sched_type %u",
+                    port, ${level}, node, node_params->dwrr.weight, weight, 
+                    quota, node_params->sched_type);
 
     return sdk::SDK_RET_OK;
 }
@@ -2393,9 +2410,10 @@ capri_tm_program_pbc_buffers2 (capri_tm_buf_cfg_t *buf_cfg)
         ${trace_register("pbc_csr.port_" + str(p) + ".cfg_account_pg_" + str(pg))}
         pbc_csr.port_${p}.cfg_account_pg_${pg}.write();
     }
+    SDK_TRACE_DEBUG("%s", data.str().c_str());
+    data.str("");
 //::    #endfor
 //:: #endfor
-    SDK_TRACE_DEBUG("%s", data.str().c_str());
     return ret;
 }
 
@@ -2434,6 +2452,31 @@ capri_tm_program_pbc_buffers3 (capri_tm_buf_cfg_t *buf_cfg)
         } else {
             reserved_min = buf_cfg->chunks_per_q[port_type];
             headroom = cells_to_chunks(tm_asic_profile()->port[port_type].headroom_cells);
+#if 0
+            if (port_type == TM_PORT_TYPE_DMA) {
+                /* 
+                 * reserved_min for TC0 and user-defined TCs need to be atleast
+                 * doubled from the currently allocated chunks of 64.
+                 * To accommodate these buffers, it has to be subtracted from
+                 * other lesser used queues.
+                 */
+
+                /* 
+                 * Out of 64 chunks for each q, reduce 48 chunks from
+                 * admin q (1), proxy queues (3,4,5,6) and last 3 user defined
+                 * queues (15,14,13).
+                 */
+                if ( (${pg} == 1) || ((${pg} >= 3) && (${pg} <= 6)) || 
+                     ((${pg} >= 13) && (${pg} <= 15)) ) {
+                    reserved_min = reserved_min / 4;
+                }
+
+                /* Allocate the additional buffers to the first 6 user qs */
+                if ( (${pg} == 0) || ((${pg} >= 7) && (${pg} <= 11)) ) {
+                    reserved_min = reserved_min * 2;
+                }
+            }
+#endif
         }
     }
 
@@ -2995,6 +3038,7 @@ void cap_pb_cfg_sched_node(int chip_id, int inst_id, int level,
     SDK_TRACE_DEBUG("level: %d, oport: %d, queue_node: %d, quota: %d",
                     level, oport, queue_node, quota);
 
+    pbc_csr.cfg_sched.read();
     pbc_csr.cfg_sched.enable_wrr(1);
     pbc_csr.cfg_sched.dhs_selection( (level-1)*2 );
     pbc_csr.cfg_sched.write();
@@ -5450,6 +5494,63 @@ capri_tm_get_current_credits (tm_port_t tm_port,
     } else {
         return SDK_RET_ERR;
     }
+    return SDK_RET_OK;
+}
+
+/* set TXDMA min-res buffers */
+sdk_ret_t
+capri_tm_realloc_no_drop_min_res_for_txdma (int iq_cosa, int iq_cosb, bool realloc)
+{
+    cpp_int reserved_min;
+    cap_top_csr_t &cap0 = g_capri_state_pd->cap_top();
+    cap_pbc_csr_t &pbc_csr = cap0.pb.pbc;
+
+    /* 
+     * reserved_min for no-drop TC need to be atleast
+     * 3x from the currently allocated chunks of 64.
+     * To accommodate these buffers, it has to be subtracted from
+     * other lesser used/un-used queues.
+     */
+
+//:: for pg in range(0, 16):
+
+    /*
+     * half the buffers for :
+     *  proxy queues (3, 4, 5, 6) - to get 128 chunks for iq_cosa
+     *  admin q (1) and last 3 user defined qs (13, 14, 15) - to get 128 chunks
+     *      for iq_cosb
+     */
+    if ( (${pg} == 1) || ((${pg} >= 3) && (${pg} <= 6)) || 
+         ((${pg} >= 13) && (${pg} <= 15)) ) {
+        pbc_csr.port_9.cfg_account_pg_${pg}.read();
+        reserved_min = pbc_csr.port_9.cfg_account_pg_${pg}.reserved_min();
+        if (realloc)
+            reserved_min = reserved_min / 2;
+        else
+            reserved_min = CAPRI_TM_DEF_MIN_RES_CHUNKS;
+        pbc_csr.port_9.cfg_account_pg_${pg}.reserved_min(reserved_min);
+        pbc_csr.port_9.cfg_account_pg_${pg}.write();
+    }
+
+    /* 3x the buffers for given iqs */
+    if ( (${pg} == iq_cosa) || (${pg} == iq_cosb) ) {
+        pbc_csr.port_9.cfg_account_pg_${pg}.read();
+        reserved_min = pbc_csr.port_9.cfg_account_pg_${pg}.reserved_min();
+        if (realloc)
+            reserved_min = reserved_min * 3;
+        else
+            reserved_min = CAPRI_TM_DEF_MIN_RES_CHUNKS;
+        pbc_csr.port_9.cfg_account_pg_${pg}.reserved_min(reserved_min);
+        pbc_csr.port_9.cfg_account_pg_${pg}.write();
+    }
+
+//:: #endfor
+
+    SDK_TRACE_DEBUG("%s min-res for iqs %d %d", 
+                    (realloc ? "Reallocating 3x" : 
+                        "Deallocating 3x and setting def"), 
+                    iq_cosa, iq_cosb);
+
     return SDK_RET_OK;
 }
 

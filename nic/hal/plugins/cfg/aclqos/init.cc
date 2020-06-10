@@ -92,7 +92,11 @@ hal_qos_config_init (hal_cfg_t *hal_cfg)
         if (qos_group[i] == kh::QosGroup::INTERNAL_CPU_COPY) {
             spec.mutable_sched()->mutable_strict()->set_bps(QOS_DEFAULT_CPU_BPS);
         } else if (qos_group[i] == kh::QosGroup::DEFAULT) {
-            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(100);
+            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(50);
+        } else if (qos_group[i] == kh::QosGroup::CONTROL) {
+            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(99);
+        } else if (qos_group[i] == kh::QosGroup::SPAN) {
+            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(1);
         } else {
             spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(50);
         }

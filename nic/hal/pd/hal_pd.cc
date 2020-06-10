@@ -265,12 +265,12 @@ hal_pd_load_symbols (void)
                    pd_qos_class_set_global_pause_type);
     PD_FUNC_LOAD(PD_FUNC_ID_QOS_CLASS_INIT_TC_TO_IQ_MAP,
                    pd_qos_class_init_tc_to_iq_map);
-    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_INIT,
-                   pd_qos_swm_control_queue_init);
-    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_CONTROL_QUEUE_DEINIT,
-                   pd_qos_swm_control_queue_deinit);
-    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_CONTROL_ADD_DEL_MAC,
-                   pd_qos_swm_control_add_del_mac);
+    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_INIT,
+                   pd_qos_swm_and_control_queue_init);
+    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_AND_CONTROL_QUEUE_DEINIT,
+                   pd_qos_swm_and_control_queue_deinit);
+    PD_FUNC_LOAD(PD_FUNC_ID_QOS_SWM_AND_CONTROL_ADD_DEL_MAC,
+                   pd_qos_swm_and_control_add_del_mac);
     PD_FUNC_LOAD(PD_FUNC_ID_QOS_CLEAR_STATS, pd_qos_clear_stats);
 
     // copp

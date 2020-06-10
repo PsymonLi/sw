@@ -40,11 +40,12 @@ using sdk::lib::indexer;
 #define CAPRI_TM_MAX_SCHED_NODES      16
 #define CAPRI_TM_MAX_SCHED_NODE_INPUTS 32
 #define CAPRI_TM_MAX_PORTS             12
-#define CAPRI_TM_DWRR_UNIT             10000
+#define CAPRI_TM_DWRR_UNIT             1000
 #define CAPRI_TM_SCHED_TIMER           5000
 #define CAPRI_TM_CLK_PERIOD            833
 #define CAPRI_TM_BUS_WIDTH             512
 #define CAPRI_TM_MAX_QUEUES            32
+#define CAPRI_TM_DEF_MIN_RES_CHUNKS    64
 
 #define CAPRI_TM_MAX_IQS               32
 #define CAPRI_TM_MAX_OQS               32
@@ -397,6 +398,7 @@ uint64_t capri_tm_clear_port_mon_in (int chip_id,
 sdk_ret_t capri_tm_set_span_threshold(uint32_t span_threshold);
 // set the reserved min for uplink ports
 sdk_ret_t capri_tm_set_reserved_min(uint32_t reserved_min);
+sdk_ret_t capri_tm_realloc_no_drop_min_res_for_txdma(int iq_cosa, int iq_cosb, bool realloc);
 
 sdk_ret_t
 capri_tm_get_current_credits(tm_port_t tm_port,
