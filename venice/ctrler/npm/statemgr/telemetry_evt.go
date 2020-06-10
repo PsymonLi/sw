@@ -124,9 +124,9 @@ func initSmFlowExportPolicyInterface() {
 }
 
 // FindFlowExportPolicy finds mirror session state
-func (smm *SmFlowExportPolicyInterface) FindFlowExportPolicy(tenant, name string) (*FlowExportPolicyState, error) {
+func (sm *Statemgr) FindFlowExportPolicy(tenant, name string) (*FlowExportPolicyState, error) {
 	// find the object
-	obj, err := smm.sm.FindObject("FlowExportPolicy", tenant, "default", name)
+	obj, err := sm.FindObject("FlowExportPolicy", tenant, "default", name)
 	if err != nil {
 		return nil, err
 	}
@@ -357,24 +357,24 @@ func (smm *SmFlowExportPolicyInterface) GetFlowExportPolicyWatchOptions() *api.L
 }
 
 //OnFlowExportPolicyCreateReq create req
-func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyCreateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+func (sm *Statemgr) OnFlowExportPolicyCreateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
 	return nil
 }
 
 //OnFlowExportPolicyUpdateReq update req
-func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyUpdateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+func (sm *Statemgr) OnFlowExportPolicyUpdateReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
 	return nil
 }
 
 //OnFlowExportPolicyDeleteReq delete req
-func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyDeleteReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+func (sm *Statemgr) OnFlowExportPolicyDeleteReq(nodeID string, objinfo *netproto.FlowExportPolicy) error {
 	return nil
 }
 
 //OnFlowExportPolicyOperUpdate  oper update req
-func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyOperUpdate(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+func (sm *Statemgr) OnFlowExportPolicyOperUpdate(nodeID string, objinfo *netproto.FlowExportPolicy) error {
 
-	eps, err := smm.FindFlowExportPolicy(objinfo.Tenant, objinfo.Name)
+	eps, err := sm.FindFlowExportPolicy(objinfo.Tenant, objinfo.Name)
 	if err != nil {
 		return err
 	}
@@ -384,7 +384,7 @@ func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyOperUpdate(nodeID stri
 }
 
 //OnFlowExportPolicyOperDelete delete request
-func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyOperDelete(nodeID string, objinfo *netproto.FlowExportPolicy) error {
+func (sm *Statemgr) OnFlowExportPolicyOperDelete(nodeID string, objinfo *netproto.FlowExportPolicy) error {
 	return nil
 }
 

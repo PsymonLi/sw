@@ -70,6 +70,8 @@ func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
 	}
 
 	objTracker.generationID = genID
+	mgr := MustGetStatemgr()
+	mgr.PeriodicUpdaterPush(objTracker.obj)
 
 	return nil
 }

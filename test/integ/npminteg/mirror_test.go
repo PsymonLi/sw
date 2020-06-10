@@ -163,61 +163,85 @@ func (it *integTestSuite) TestNpmMirrorPolicy(c *C) {
 		return false, fmt.Sprintf("Unexpected State : %v", tsgp.Status.ScheduleState)
 	}, "Mirror status was not in expected schedule state", "100ms", it.pollTimeout())
 
-	/*
-		// wait a little so that we dont cause a race condition between NPM write ans updates
-		time.Sleep(time.Millisecond * 10)
+}
 
-		// update the policy
-		newRule := security.SGRule{
-			Action:          "PERMIT",
-			ToIPAddresses:   []string{"10.2.1.1/24"},
-			FromIPAddresses: []string{"10.2.1.1/24"},
-			ProtoPorts: []security.ProtoPort{
+func (it *integTestSuite) TestNpmFlowExportPolicy(c *C) {
+	// clean up stale mirror Policies
+	policies, err := it.apisrvClient.MonitoringV1().FlowExportPolicy().List(context.Background(), &api.ListWatchOptions{ObjectMeta: api.ObjectMeta{Tenant: globals.DefaultTenant}})
+	AssertOk(c, err, "failed to list policies")
+
+	for _, p := range policies {
+		_, err := it.apisrvClient.MonitoringV1().FlowExportPolicy().Delete(context.Background(), &p.ObjectMeta)
+		AssertOk(c, err, "failed to clean up policy. NSP: %v | Err: %v", p.GetKey(), err)
+	}
+
+	mr := monitoring.FlowExportPolicy{
+		TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:       "default",
+			Namespace:    "default",
+			Name:         "flow-export-policy",
+			GenerationID: "1",
+		},
+		Spec: monitoring.FlowExportPolicySpec{
+			Interval:         "10s",
+			TemplateInterval: "5m",
+			Format:           "ipfix",
+			Exports: []monitoring.ExportConfig{
 				{
-					Protocol: "tcp",
-					Ports:    "81",
+					Destination: "10.10.10.3",
+					Transport:   "UDP/514",
 				},
 			},
-		}
-		sgp.Spec.Rules = append(sgp.Spec.Rules, newRule)
-		sgp.ObjectMeta.GenerationID = "2"
-		_, err = it.apisrvClient.SecurityV1().NetworkSecurityPolicy().Update(context.Background(), &:71)
-		AssertOk(c, err, "error updating sg policy")
+			MatchRules: []*monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"any"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"any"},
+					},
+					AppProtoSel: &monitoring.AppProtoSelector{
+						ProtoPorts: []string{"tcp/80"},
+					},
+				},
+			},
+		},
+		Status: monitoring.FlowExportPolicyStatus{},
+	}
+	// create mirror policy
+	_, err = it.apisrvClient.MonitoringV1().FlowExportPolicy().Create(context.Background(), &mr)
+	AssertOk(c, err, "error creating mirror policy")
 
-		// verify agent state updated policy
-		for _, ag := range it.agents {
-			AssertEventually(c, func() (bool, interface{}) {
-				nsgp := netproto.NetworkSecurityPolicy{
-					TypeMeta:   api.TypeMeta{Kind: "NetworkSecurityPolicy"},
-					ObjectMeta: sgp.ObjectMeta,
-				}
-				gsgp, gerr := ag.dscAgent.PipelineAPI.HandleNetworkSecurityPolicy(agentTypes.Get, nsgp)
-
-				if gerr != nil {
-					return false, nil
-				}
-				if len(gsgp[0].Spec.Rules) != len(sgp.Spec.Rules) {
-					return false, gsgp
-				}
-				return true, nil
-			}, fmt.Sprintf("SGPolicy not found in agent. SGP: %v", sgp.GetKey()), "10ms", it.pollTimeout())
-		}
-
-		// verify sgpolicy status reflects propagation status
+	// verify agent state has the policy and has the rules
+	for _, ag := range it.agents {
 		AssertEventually(c, func() (bool, interface{}) {
-			tsgp, gerr := it.apisrvClient.SecurityV1().NetworkSecurityPolicy().Get(context.Background(), &sgp.ObjectMeta)
-			if gerr != nil {
-				return false, gerr
+			nsgp := netproto.FlowExportPolicy{
+				TypeMeta:   api.TypeMeta{Kind: "FlowExportPolicy"},
+				ObjectMeta: mr.ObjectMeta,
 			}
-			if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) ||
-				(tsgp.Status.PropagationStatus.MinVersion != "" || len(tsgp.Status.RuleStatus) != len(sgp.Spec.Rules)) {
-				return false, tsgp
+			gsgp, gerr := ag.dscAgent.PipelineAPI.HandleFlowExportPolicy(agentTypes.Get, nsgp)
+			if gerr != nil {
+				return false, nil
+			}
+			if len(gsgp[0].Spec.MatchRules) != len(mr.Spec.MatchRules) {
+				return false, gsgp
 			}
 			return true, nil
-		}, "SgPolicy status was not updated after updating the policy", "100ms", it.pollTimeout())
+		}, fmt.Sprintf("Flowexport Policy not found in agent. SGP: %v", mr.GetKey()), "10ms", it.pollTimeout())
+	}
 
-		// delete sg policy
-		_, err = it.apisrvClient.SecurityV1().NetworkSecurityPolicy().Delete(context.Background(), &sgp.ObjectMeta)
-		AssertOk(c, err, "error deleting sg policy")
-	*/
+	// verify policy status reflects new agent
+	AssertEventually(c, func() (bool, interface{}) {
+		tsgp, gerr := it.apisrvClient.MonitoringV1().FlowExportPolicy().Get(context.Background(), &mr.ObjectMeta)
+		if gerr != nil {
+			return false, gerr
+		}
+		log.Infof("Mirror status %#v", tsgp.Status)
+		if (tsgp.Status.PropagationStatus.Updated != int32(it.numAgents)) || (tsgp.Status.PropagationStatus.Pending != 0) {
+			return false, tsgp
+		}
+		return true, nil
+	}, "Mirror status was not updated after adding new smartnic", "100ms", it.pollTimeout())
+
 }

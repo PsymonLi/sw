@@ -425,8 +425,6 @@ func (sm *Statemgr) OnNetworkSecurityPolicyCreate(sgp *ctkit.NetworkSecurityPoli
 		return err
 	}
 
-	sm.PeriodicUpdaterPush(sgps)
-
 	return nil
 }
 
@@ -487,8 +485,6 @@ func (sm *Statemgr) OnNetworkSecurityPolicyUpdate(sgp *ctkit.NetworkSecurityPoli
 	}
 
 	log.Infof("Updated sgpolicy %#v", sgp.ObjectMeta)
-
-	sm.PeriodicUpdaterPush(sgps)
 
 	return nil
 }

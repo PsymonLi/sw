@@ -243,8 +243,6 @@ func (sm *Statemgr) OnFirewallProfileCreate(fwProfile *ctkit.FirewallProfile) er
 
 	//fps.iniNo
 
-	sm.PeriodicUpdaterPush(fps)
-
 	// store it in local DB
 	err = sm.AddObjectToMbus(fwProfile.MakeKey("security"), fps, references(fwProfile))
 	if err != nil {
@@ -284,8 +282,6 @@ func (sm *Statemgr) OnFirewallProfileUpdate(fwProfile *ctkit.FirewallProfile, nf
 		return err
 	}
 	log.Infof("Updated fwProfile: %+v", fwProfile)
-
-	sm.PeriodicUpdaterPush(fps)
 
 	return nil
 }

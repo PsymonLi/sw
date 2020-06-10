@@ -797,7 +797,6 @@ func (sma *SmNetworkInterface) updateMirror(nw *NetworkInterfaceState) error {
 			log.Errorf("Error updating interface %v", err.Error())
 			return err
 		}
-		sma.sm.PeriodicUpdaterPush(nw)
 	} else {
 		log.Infof("No mirror update for DSC %v Intf %v  Mirror Sessions %v ",
 			nw.NetworkInterfaceState.Status.DSC, nw.NetworkInterfaceState.Name, nw.mirrorSessions)

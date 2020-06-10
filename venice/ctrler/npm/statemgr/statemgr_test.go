@@ -10201,7 +10201,7 @@ func TestWatcherWithFlowExportCreateDelete(t *testing.T) {
 		AssertOk(t, err, "Error creating mirror session ")
 
 		AssertEventually(t, func() (bool, interface{}) {
-			_, err := smgrFlowExportPolicyInterface.FindFlowExportPolicy("default", mirrorName)
+			_, err := stateMgr.FindFlowExportPolicy("default", mirrorName)
 			if err == nil {
 				return true, nil
 			}
@@ -10232,7 +10232,7 @@ func TestWatcherWithFlowExportCreateDelete(t *testing.T) {
 		AssertOk(t, err, "Error creating mirror session ")
 
 		AssertEventually(t, func() (bool, interface{}) {
-			_, err := smgrFlowExportPolicyInterface.FindFlowExportPolicy("default", mirrorName)
+			_, err := stateMgr.FindFlowExportPolicy("default", mirrorName)
 			if err == nil {
 				return true, nil
 			}
@@ -10277,7 +10277,7 @@ func TestWatcherWithFlowExportCreateDelete(t *testing.T) {
 		AssertOk(t, err, "Error creating mirror session ")
 
 		AssertEventually(t, func() (bool, interface{}) {
-			_, err := smgrFlowExportPolicyInterface.FindFlowExportPolicy("default", mirrorName)
+			_, err := stateMgr.FindFlowExportPolicy("default", mirrorName)
 			if err != nil {
 				return true, nil
 			}
