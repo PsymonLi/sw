@@ -41,26 +41,14 @@ typedef struct pds_lif_event_info_s {
     pds_lif_status_t status;
 } pds_lif_event_info_t;
 
-/// \brief physical port specific event information
-typedef struct pds_port_info_s {
-    /// unique identifier for the port
-    pds_obj_key_t key;
-    // TODO @akoradha port_args is exposed all the way to the agent
-    //       with the current design, we should create port_spec_t,
-    //       port_status_t and port_stats_t like any other object or
-    //       better approach is to fold all the port stuff into if_entry
-    //       and CLIs etc. will naturally work with current db walks etc.
-    //       we have all eth ports in if db already.
-    sdk::linkmgr::port_args_t info;
-} pds_port_info_t;
-
 /// \brief event information passed to event callback of the application
 typedef struct pds_event_s {
     /// unique event id
     pds_event_id_t event_id;
     /// event specific information
     union {
-        pds_port_info_t port_info;
+        /// port interface specific event information
+        pds_if_info_t port_info;
         pds_lif_event_info_t lif_info;
         sdk::upg::upg_ev_params_t upg_params;
     };

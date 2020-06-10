@@ -107,10 +107,14 @@ pds_event_to_proto_event_response (pds::EventResponse *proto_rsp,
     case PDS_EVENT_ID_PORT_CREATE:
     case PDS_EVENT_ID_PORT_UP:
     case PDS_EVENT_ID_PORT_DOWN:
-        pds::PortSpec *spec = proto_rsp->mutable_porteventinfo()->mutable_spec();
-        pds::PortStatus *status = proto_rsp->mutable_porteventinfo()->mutable_status();
-        pds_port_spec_to_proto(spec, &event->port_info.info);
-        pds_port_status_to_proto(status, &event->port_info.info);
+        pds::PortSpec *spec =
+            proto_rsp->mutable_porteventinfo()->mutable_spec();
+        pds::PortStatus *status =
+            proto_rsp->mutable_porteventinfo()->mutable_status();
+        const pds_if_info_t *info = &event->port_info;
+        pds_port_api_spec_to_proto(spec, &info->spec, info->status.ifindex);
+        pds_port_api_status_to_proto(status, &info->status,
+                                     info->spec.port_info.type);
         return SDK_RET_OK;
     }
     return SDK_RET_INVALID_ARG;

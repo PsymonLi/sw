@@ -11,6 +11,8 @@
 #include "lib/shmmgr/shmmgr.hpp"
 #include "lib/utils/in_mem_fsm_logger.hpp"
 
+#define MAX_MAC_STATS 89
+
 namespace sdk {
 namespace linkmgr {
 

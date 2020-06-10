@@ -153,21 +153,31 @@ dump_port_fsm_record (record_t *record, void *ctxt)
 }
 
 static inline void
-dump_port_fsm (sdk::linkmgr::port_args_t *port_info, void *ctxt)
+dump_port_fsm (pds_if_info_t *info, int fd)
 {
-    in_mem_fsm_logger *sm_logger = port_info->sm_logger;
-    pds_obj_key_t *key = (pds_obj_key_t *)port_info->port_an_args;
-    int fd = *(int *)ctxt;
+    in_mem_fsm_logger *sm_logger = info->status.port_status.sm_logger;
     dump_port_fsm_record_args_t args = { .fd = fd, .index = 0,
                                          .prev_ts = { 0 } };
 
-    dprintf(fd, "\nPort ID: %s\n", key->str());
+    dprintf(fd, "\nPort ID: %s\n", info->spec.key.str());
     dprintf(fd, " %-30s  %-30s  %-s\n", "Timestamp", "State", "Duration (sec)");
     dprintf(fd, "%s\n", std::string(80, '-').c_str());
 
     sm_logger->walk(dump_port_fsm_record,
                     (dump_port_fsm_record_args_t *)&args);
     dprintf(fd,"\n");
+}
+
+static inline void
+dump_port_fsm_cb (void *entry, void *ctxt)
+{
+    pds_if_info_t *info = (pds_if_info_t *)entry;
+    int fd = *(int *)ctxt;
+
+    if (info->spec.type != IF_TYPE_ETH) {
+        return;
+    }
+    dump_port_fsm(info, fd);
 }
 
 /**
@@ -179,6 +189,7 @@ sdk_ret_t
 pds_handle_cmd (cmd_ctxt_t *ctxt)
 {
     sdk_ret_t ret;
+    pds_if_info_t info = { 0 };
 
     PDS_TRACE_VERBOSE("Received UDS command message %u", ctxt->cmd);
 
@@ -200,8 +211,14 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
         ret = dump_state_base_stats(ctxt->fd);
         break;
     case CMD_MSG_PORT_FSM_DUMP:
-        ret = api::port_get(&ctxt->args.port_id, dump_port_fsm,
-                            (void *)&ctxt->fd);
+        if (ctxt->args.valid == true) {
+            ret = api::port_get(&ctxt->args.port_id, &info);
+            if (ret == SDK_RET_OK) {
+                dump_port_fsm(&info, ctxt->fd);
+            }
+        } else {
+            ret = api::port_get_all(dump_port_fsm_cb, (void *)&ctxt->fd);
+        }
         break;
     default:
         ret = SDK_RET_INVALID_ARG;
