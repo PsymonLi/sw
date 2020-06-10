@@ -956,7 +956,7 @@ var _ = Describe("fwlog policy tests", func() {
 									Transport:   "tcp/10001",
 								},
 								{
-									Destination: "localhost",
+									Destination: "192.168.100.12",
 									Transport:   "tcp/15001",
 								},
 							},
