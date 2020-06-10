@@ -266,6 +266,7 @@ func (k *k8sService) runUntilCancel() {
 						/*upon CMD restart disabled flag is set to true and pegasus deployment is deleted, allowing it to be redeployed */
 						if _, found := foundModules[name]; found {
 							delete(foundModules, name)
+							module.Spec.Disabled = false
 						}
 						continue
 					}

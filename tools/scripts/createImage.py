@@ -136,7 +136,7 @@ imageConfig['imageMap'] = imageMap
 imageConfig['upgradeOrder'] = ['pen-cmd', 'pen-apiserver', 'pen-apigw',  'pen-npm', 'pen-tpm', 'pen-spyglass', 'pen-evtsmgr', 'pen-tsm', 'pen-evtsproxy',
                                'pen-kube-controller-manager', 'pen-kube-scheduler', 'pen-kube-apiserver', 'pen-etcd',
                                'pen-filebeat', 'pen-ntp',  'pen-elastic', 'pen-elastic-curator', "pen-vos",
-                               "pen-citadel", "pen-vtsa", "pen-rollout", "pen-orchhub", "pen-alertmgr"]
+                               "pen-citadel", "pen-vtsa", "pen-rollout", "pen-orchhub", "pen-pegasus", "pen-alertmgr"]
 
 # installInfo is used by the installer during installation of this image.
 # This has 2 steps. Preload and LoadAndInstall.
