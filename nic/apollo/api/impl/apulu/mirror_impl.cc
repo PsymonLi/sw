@@ -213,20 +213,27 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
             subnet = ((mapping_impl *)(mapping->impl()))->subnet();
             mapping_impl_obj = (mapping_impl *)mapping->impl();
             subnet = mapping_impl_obj->subnet();
+
+            // forwarding mirror packet takes same forwarding path as any
+            // other traffic to this mappping
+            mirror_data.erspan_action.nexthop_type =
+                mapping_impl_obj->nexthop_type();
+            mirror_data.erspan_action.nexthop_id =
+                mapping_impl_obj->nexthop_id();
+            // ERSPAN Eth header SMAC = VR IP
+            sdk::lib::memrev(mirror_data.erspan_action.smac,
+                             &subnet->vr_mac()[0], ETH_ADDR_LEN);
+            // ERSPAN Eth header DMAC = mapping's DMAC
+            sdk::lib::memrev(mirror_data.erspan_action.dmac,
+                             &mapping_impl_obj->mac()[0], ETH_ADDR_LEN);
+            // ERSPAN IP header SIP is IPv4 VR IP of mapping's subnet
+            mirror_data.erspan_action.sip = subnet->v4_vr_ip();
+            // ERSPAN IP header DIP is the collector IP
+            mirror_data.erspan_action.dip =
+                spec->erspan_spec.ip_addr.addr.v4_addr;
             if (mapping->is_local()) {
-#if 0
-                mirror_data.erspan_action.nexthop_type =
-                    ((mapping_impl *)(mapping->impl()))->nexthop_type();
-                mirror_data.erspan_action.nexthop_id =
-                    ((mapping_impl *)(mapping->impl()))->nexthop_id();
-#endif
+                mirror_data.erspan_action.apply_tunnel2 = FALSE;
             } else {
-                // forwarding mirror packet takes same forwarding path as any
-                // other traffic to this mappping
-                mirror_data.erspan_action.nexthop_type =
-                    mapping_impl_obj->nexthop_type();
-                mirror_data.erspan_action.nexthop_id =
-                    mapping_impl_obj->nexthop_id();
                 // for remote mappings, set apply_tunnel2 to TRUE for outer
                 // VxLAN header to be added
                 mirror_data.erspan_action.apply_tunnel2 = TRUE;
@@ -245,17 +252,6 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
                 // VxLAN vnid = mapping's BD vnid
                 mirror_data.erspan_action.tunnel2_vni =
                     subnet->fabric_encap().val.vnid;
-                // ERSPAN Eth header SMAC = VR IP
-                sdk::lib::memrev(mirror_data.erspan_action.smac,
-                                 &subnet->vr_mac()[0], ETH_ADDR_LEN);
-                // ERSPAN Eth header DMAC = mapping's DMAC
-                sdk::lib::memrev(mirror_data.erspan_action.dmac,
-                                 &mapping_impl_obj->mac()[0], ETH_ADDR_LEN);
-                // ERSPAN IP header SIP is IPv4 VR IP of mapping's subnet
-                mirror_data.erspan_action.sip = subnet->v4_vr_ip();
-                // ERSPAN IP header DIP is VR
-                mirror_data.erspan_action.dip =
-                    spec->erspan_spec.ip_addr.addr.v4_addr;
                 // no outer vlan header added to the mirrored packet
                 mirror_data.erspan_action.ctag = 0;
             }
