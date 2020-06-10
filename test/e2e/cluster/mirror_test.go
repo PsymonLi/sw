@@ -198,13 +198,14 @@ var _ = Describe("mirror session tests", func() {
 
 			ctx := ts.tu.MustGetLoggedInContext(context.Background())
 			ms := testMirrorSessions[0]
-			initMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
-			listMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
+			initMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
+			listMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
 
 			By("Creating MirrorSession ------")
 			_, err := mirrorRestIf.Create(ctx, &ms)
 			Expect(err).ShouldNot(HaveOccurred())
-			initMirrorMap[ms.GetName()] = ms.GetSpec()
+			spec := ms.GetSpec()
+			initMirrorMap[ms.GetName()] = &spec
 			time.Sleep(10 * time.Second)
 
 			By("Checking that MirrorSession has started------")
@@ -214,16 +215,30 @@ var _ = Describe("mirror session tests", func() {
 					By(fmt.Sprintf("GET err:%s", err))
 					return false
 				}
-				listMirrorMap[tms.GetName()] = tms.GetSpec()
+				spec := tms.GetSpec()
+				listMirrorMap[tms.GetName()] = &spec
 				if tms.Status.ScheduleState != monitoring.MirrorSessionState_ACTIVE.String() {
 					By(fmt.Sprintf("mirror state: %v", tms.Status.ScheduleState))
 					return false
 				}
 				By("Deep check obtained mirror session content------")
-				if !reflect.DeepEqual(initMirrorMap, listMirrorMap) {
-					By(fmt.Sprintf("get inconsistent mirror session %v after initialization", ms.Name))
+				if len(initMirrorMap) != len(listMirrorMap) {
+					By(fmt.Sprintf("get inconsistent number of mirror session after initialization. Prev: %v, Now: %v", len(initMirrorMap), len(listMirrorMap)))
 					return false
 				}
+				// need to update spanID
+				for name, spec := range initMirrorMap {
+					if _, ok := listMirrorMap[name]; !ok {
+						By(fmt.Sprintf("cannot find mirror session %v after initialization", name))
+						return false
+					}
+					spec.SpanID = listMirrorMap[name].SpanID
+					if !reflect.DeepEqual(spec, listMirrorMap[name]) {
+						By(fmt.Sprintf("get inconsistent mirror session %v after initialization. Prev: %+v, After: %+v", ms.Name, *spec, *listMirrorMap[name]))
+						return false
+					}
+				}
+
 				return true
 			}, 5, 1).Should(BeTrue(), fmt.Sprintf("Failed to start %s", ms.Name))
 
@@ -253,13 +268,14 @@ var _ = Describe("mirror session tests", func() {
 			nodeAuthFile, err := testutils.GetNodeAuthTokenTempFile(ctx, apiGwAddr, []string{"*"})
 
 			ms := testMirrorSessions[1]
-			initMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
-			listMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
+			initMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
+			listMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
 
 			By("Creating MirrorSession ------")
 			_, err = mirrorRestIf.Create(ctx, &ms)
 			Expect(err).ShouldNot(HaveOccurred())
-			initMirrorMap[ms.GetName()] = ms.GetSpec()
+			spec := ms.GetSpec()
+			initMirrorMap[ms.GetName()] = &spec
 
 			//_, err = mirrorRestIf.Update(ctx, &ms)
 			//Expect(err).ShouldNot(HaveOccurred())
@@ -273,15 +289,28 @@ var _ = Describe("mirror session tests", func() {
 					return false
 				}
 				tms = tmp
-				listMirrorMap[tms.GetName()] = tms.GetSpec()
+				spec := tms.GetSpec()
+				listMirrorMap[tms.GetName()] = &spec
 				if tms.Status.ScheduleState != monitoring.MirrorSessionState_ACTIVE.String() {
 					By(fmt.Sprintf("mirror state: %v", tms.Status.ScheduleState))
 					return false
 				}
 				By("Deep check obtained mirror session content------")
-				if !reflect.DeepEqual(initMirrorMap, listMirrorMap) {
-					By(fmt.Sprintf("get inconsistent mirror session %v after initialization", ms.Name))
+				if len(initMirrorMap) != len(listMirrorMap) {
+					By(fmt.Sprintf("get inconsistent number of mirror session after initialization. Prev: %v, Now: %v", len(initMirrorMap), len(listMirrorMap)))
 					return false
+				}
+				// need to update spanID
+				for name, spec := range initMirrorMap {
+					if _, ok := listMirrorMap[name]; !ok {
+						By(fmt.Sprintf("cannot find mirror session %v after initialization", name))
+						return false
+					}
+					spec.SpanID = listMirrorMap[name].SpanID
+					if !reflect.DeepEqual(spec, listMirrorMap[name]) {
+						By(fmt.Sprintf("get inconsistent mirror session %v after initialization. Prev: %+v, After: %+v", ms.Name, *spec, *listMirrorMap[name]))
+						return false
+					}
 				}
 				return true
 			}, 5, 1).Should(BeTrue(), fmt.Sprintf("Failed to start %s", ms.Name))
@@ -409,18 +438,20 @@ var _ = Describe("mirror session tests", func() {
 			}
 
 			ms := scheduledTestCase
-			initMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
-			listMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
+			initMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
+			listMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
 
 			By("Creating MirrorSession ------")
-			initMirrorMap[ms.GetName()] = ms.GetSpec()
+			spec := ms.GetSpec()
+			initMirrorMap[ms.GetName()] = &spec
 			_, err = mirrorRestIf.Create(ctx, &ms)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			By("Checking whether MirrorSession has started after scheduled time or not------")
 			Eventually(func() bool {
 				tms, err := mirrorRestIf.Get(ctx, &ms.ObjectMeta)
-				listMirrorMap[tms.GetName()] = tms.GetSpec()
+				spec := tms.GetSpec()
+				listMirrorMap[tms.GetName()] = &spec
 				if err != nil {
 					By(fmt.Sprintf("GET err:%s", err))
 					return false
@@ -456,11 +487,22 @@ var _ = Describe("mirror session tests", func() {
 
 				By("Deep check obtained mirror session content on venice------")
 				// Deep check mirror session on venice
-				if !reflect.DeepEqual(initMirrorMap, listMirrorMap) {
-					By(fmt.Sprintf("get inconsistent mirror session %v after initialization", ms.Name))
+				if len(initMirrorMap) != len(listMirrorMap) {
+					By(fmt.Sprintf("get inconsistent number of mirror session after initialization. Prev: %v, Now: %v", len(initMirrorMap), len(listMirrorMap)))
 					return false
 				}
-
+				// need to update spanID
+				for name, spec := range initMirrorMap {
+					if _, ok := listMirrorMap[name]; !ok {
+						By(fmt.Sprintf("cannot find mirror session %v after initialization", name))
+						return false
+					}
+					spec.SpanID = listMirrorMap[name].SpanID
+					if !reflect.DeepEqual(spec, listMirrorMap[name]) {
+						By(fmt.Sprintf("get inconsistent mirror session %v after initialization. Prev: %+v, After: %+v", ms.Name, *spec, *listMirrorMap[name]))
+						return false
+					}
+				}
 				return true
 			}, 60, 3).Should(BeTrue(), fmt.Sprintf("Failed to get SCHEDULED state for scheduled mirror session %s", ms.Name))
 
@@ -481,17 +523,27 @@ var _ = Describe("mirror session tests", func() {
 
 				By("Deep check obtained mirror session content on venice------")
 				ms := scheduledTestCase
-				initMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
-				listMirrorMap := make(map[string]monitoring.MirrorSessionSpec)
-				if !reflect.DeepEqual(initMirrorMap, listMirrorMap) {
-					By(fmt.Sprintf("get inconsistent mirror session %v after initialization", ms.Name))
+				initMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
+				listMirrorMap := make(map[string]*monitoring.MirrorSessionSpec)
+				initSpec := ms.GetSpec()
+				listSpec := ms.GetSpec()
+				initMirrorMap[ms.GetName()] = &initSpec
+				listMirrorMap[tms.GetName()] = &listSpec
+				if len(initMirrorMap) != len(listMirrorMap) {
+					By(fmt.Sprintf("get inconsistent number of mirror session after initialization. Prev: %v, Now: %v", len(initMirrorMap), len(listMirrorMap)))
 					return false
 				}
-				initMirrorMap[ms.GetName()] = ms.GetSpec()
-				listMirrorMap[tms.GetName()] = tms.GetSpec()
-				if !reflect.DeepEqual(initMirrorMap, listMirrorMap) {
-					By(fmt.Sprintf("get inconsistent mirror session %v after initialization", ms.Name))
-					return false
+				// need to update spanID
+				for name, spec := range initMirrorMap {
+					if _, ok := listMirrorMap[name]; !ok {
+						By(fmt.Sprintf("cannot find mirror session %v after initialization", name))
+						return false
+					}
+					spec.SpanID = listMirrorMap[name].SpanID
+					if !reflect.DeepEqual(spec, listMirrorMap[name]) {
+						By(fmt.Sprintf("get inconsistent mirror session %v after initialization. Prev: %+v, After: %+v", ms.Name, *spec, *listMirrorMap[name]))
+						return false
+					}
 				}
 
 				By("Make sure mirror session is on naples after scheduled time------")
