@@ -905,8 +905,10 @@ pd_enicif_program_hw(pd_enicif_t *pd_enicif)
 
         // For host enics, install nop mac vlan entry for host untag traffic
         if (lif && lif->type == types::LIF_TYPE_HOST) {
-            ret = pd_enicif_inp_props_mac_vlan_nop(pd_enicif, 
-                                                   TABLE_OPER_INSERT);
+            if (MAC_TO_UINT64(lif->mac_addr)) {
+                ret = pd_enicif_inp_props_mac_vlan_nop(pd_enicif, 
+                                                       TABLE_OPER_INSERT);
+            }
         }
     }
 
