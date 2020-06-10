@@ -24,77 +24,6 @@ $table-headerheight: 55px;
   min-height: 600px;
 }
 
-.cluster-node-table-container {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding: 5px 20px;
-  width: 450px;
-  border: solid 2px #dddddd;
-  margin-left: 20px;
-  margin-right: 0px;
-}
-
-.cluster-node-table-title {
-  @include primary-font(20px);
-  margin-bottom: 10px;
-}
-
-.cluster-node-fieldtitle {
-  @include primary-font(16px, #676763, 500);
-}
-
-.cluster-node-value {
-  @include primary-font(16px);
-  margin-left: 5px;
-}
-
-.cluster-node-name {
-  font-size: 20px;
-  color: black;
-  cursor: pointer;
-}
-
-.cluster-node-status {
-  border-radius: 50%;
-  height: 7px;
-  width: 7px;
-}
-
-.cluster-node-status-healthy {
-  background-color: #77a746;
-}
-
-.cluster-node-status-unhealthy {
-  background-color: #dd3b09;
-}
-
-.cluster-node-container {
-  padding: 0px 5px 5px 5px;
-  outline: none;
-
-  &:hover {
-    background-color: #e7e7e3;
-    cursor: pointer;
-  }
-}
-
-.cluster-node-star {
-  font-size: 16px;
-  height: 16px;
-  width: 16px;
-  color: #fcb710;
-}
-
-.cluster-details {
-  border-top: solid 1px #f0f0f0;
-  margin-top: 10px;
-  padding-top: 10px;
-}
-
-.cluster-details-title {
-  @include primary-font(20px);
-}
-
 .cluster-toolbar-button {
   @include primary-font(16px, #ffffff);
   height: 30px;
@@ -105,28 +34,165 @@ $table-headerheight: 55px;
   min-width: 80px;
 }
 
-.cluster-update-button {
-  @include primary-font(16px, #ffffff);
-  height: 30px;
-  font-weight: 500;
-  text-align: center;
-  display: block;
-  padding: 0px 10px;
-  width: 130px;
+.cluster-stats-charts-container {
+  margin: 10px 0px 10px 10px;
+
+  .lastupdateTime {
+    @include primary-font(12px, $mediumGray, 300);
+  }
+
+  .cluster-node-table-container {
+    background-image: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 250, 239, 0.5) 2%) !important;
+    border-left: solid 1px #c4bfa4;
+    padding-left: 10px;
+    width: 400px;
+    min-height: 345px;
+
+    .margin-top-auto {
+      margin-top: auto;
+    }
+
+    .cluster-details-title {
+      @include primary-font(20px);
+
+      mat-icon {
+        position: relative;
+        top: 6px;
+      }
+    }
+
+    .cluster-node-fieldtitle {
+      @include primary-font(16px, #676763, 500);
+    }
+
+    .cluster-node-value {
+      @include primary-font(16px);
+      margin-left: 5px;
+    }
+
+    .cluster-update-button {
+      @include primary-font(16px, #ffffff);
+      height: 30px;
+      font-weight: 500;
+      text-align: center;
+      display: block;
+      padding: 0px 10px;
+      width: 130px;
+    }
+
+    .cluster-details-nodes-table {
+      margin: 5px 10px 10px 50px;
+
+      tr {
+        background-color: transparent !important;
+        border-collapse: collapse;
+        height: 28px;
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      th,
+      td {
+        width: 100%;
+        font-family: Roboto;
+        font-weight: normal;
+        font-stretch: condensed;
+        font-style: normal;
+        line-height: normal;
+        letter-spacing: normal;
+        color: #353532 !important;
+        border-left: 1px solid transparent !important;
+        border-right: 1px solid transparent !important;
+        border-top: 1px solid transparent !important;
+      }
+
+      th {
+        background-color: #e7e7e3 !important;
+        font-size: 14px !important;
+        border-right: 1px solid #fff !important;
+        border-top: 1px solid #D5D5D5 !important;
+      }
+
+      th:last-of-type {
+        border-right: 0px solid transparent !important;
+      }
+
+      td {
+        font-size: 12px !important;
+      }
+
+      td.nodename,
+      th.nodename {
+        width: 110px;
+      }
+
+      .cluster-node-status {
+        border-radius: 50%;
+        height: 7px;
+        width: 7px;
+        display: inline-block;
+        margin-right: 5px
+      }
+
+      .cluster-node-status-healthy {
+        background-color: #77a746;
+      }
+
+      .cluster-node-status-unhealthy {
+        background-color: #dd3b09;
+      }
+
+      .cluster-node-star {
+        font-size: 14px;
+        height: 14px;
+        width: 14px;
+        color: #fcb710;
+        margin-left: 3px;
+      }
+    }
+  }
+
+  .cluster-chart-container {
+    min-width: 500px;
+
+    .cluster-chart-item {
+      width: 100% !important;
+      height: 100% !important;
+
+      &>div {
+        position: relative;
+
+        .telemetrychartview-card {
+          width: calc(100% - 10px) !important;
+          height: 320px !important;
+          margin: 0px !important;
+
+          .basecard-container {
+            box-shadow: none !important;
+            border: none !important;
+            background: none !important;
+          }
+        }
+      }
+    }
+  }
 }
 
-.cluster-chart-item {
-  max-width: calc(66% - 20px);
-  width: calc(66% - 20px);
-  min-width: 450px;
-  height: 440px;
-  margin-right: 20px;
+@media only screen and (max-width: 1772px) {
+  .menufullopened .cluster-stats-container {
+    width: 750px;
+  }
+}
 
-  div {
-    height: calc(100% - 10px);
+@media only screen and (max-width: 1632px) {
+  .menupartialopened .cluster-stats-container {
+    width: 750px;
+  }
+}
 
-    .telemetrychartview-card {
-      width: 100%;
-    }
+@media only screen and (max-width: 1552px) {
+  .menuclosed .cluster-stats-container {
+    width: 750px;
   }
 }

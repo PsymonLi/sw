@@ -1,32 +1,31 @@
 <app-pagebody [icon]="bodyicon" header="Cluster Overview">
   <div fxFlex="none" fxLayout="column">
-    <div fxLayout="row wrap" class="cluster-card-container" fxLayoutAlign="stretch stretch">
-      <app-telemetrychartview class="cluster-chart-item"
-                              fxFlex="nogrow"
-                              [hideEditButtons]="true"
-                              [selectedTimeRange]="selectedTimeRange"
-                              [chartConfig]="graphConfig">
-      </app-telemetrychartview>
-      <ng-container *ngTemplateOutlet="nodeTable"></ng-container>
-    </div>
-    <div fxFlex="none" fxLayout="row wrap" class="cluster-card-container">
-      <ng-container *roleGuard="{req: ['clusterNode_read']}">
-        <ng-container *ngFor="let cardData of heroCards">
-          <app-herocard fxFlex="nogrow"
-                        [title]="cardData.title"
-                        [firstStat]="cardData.firstStat"
-                        [secondStat]="cardData.secondStat"
-                        [thirdStat]="cardData.thirdStat"
-                        [backgroundIcon]="cardData.backgroundIcon"
-                        [themeColor]="cardData.themeColor"
-                        [icon]="cardData.icon"
-                        [lineData]="cardData.lineData"
-                        [arrowDirection]="cardData.arrowDirection"
-                        [lastUpdateTime]="lastUpdateTime"
-                        [cardState]="cardData.cardState">
-          </app-herocard>
-        </ng-container>
-      </ng-container>
+    <div fxFlex="none" fxLayout="row wrap" fxLayoutGap="10px"
+         class="cluster-stats-charts-container">
+      <div fxFlex="none" class="detail-card-wrapper" fxLayout="column">
+        <div class="detail-card-border"></div>
+        <ng-container *ngTemplateOutlet="nodeTable"></ng-container>
+        <div class="detail-card-border margin-top-auto"></div>
+      </div>
+      <div fxFlex="none" class="detail-card detail-card-wrapper cluster-stats-container"
+           fxLayout="column">
+        <div class="detail-card-border"></div>
+        <app-cpu-memory-storage-stats *ngIf="clusterLoaded"
+                                      [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
+        </app-cpu-memory-storage-stats>
+        <div class="detail-card-border margin-top-auto"></div>
+      </div>
+      <div class="detail-card detail-card-wrapper cluster-chart-container" fxFlex=""
+           fxLayout="column">
+        <div class="detail-card-border"></div>
+        <app-telemetrychartview class="cluster-chart-item"
+                                fxFlex="nogrow"
+                                [hideEditButtons]="true"
+                                [selectedTimeRange]="selectedTimeRange"
+                                [chartConfig]="graphConfig">
+        </app-telemetrychartview>
+        <div class="detail-card-border margin-top-auto"></div>
+      </div>
     </div>
   </div>
   <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}" fxFlex
@@ -36,65 +35,14 @@
 </app-pagebody>
 
 <ng-template #nodeTable>
-  <div fxFlex="none" fxLayout="column" class="cluster-node-table-container">
-    <ng-container *roleGuard="'clusterNode_read'">
-      <div fxFlex="none" fxLayout="row" class="cluster-node-table-title">
-        Nodes ({{nodes.length }})
+  <div fxFlex="none" fxLayout="column" class="detail-card cluster-node-table-container">
+    <div fxFlex="none" fxLayout="column">
+      <div fxFlex="none" class="cluster-details-title">
+        Cluster Detail
+        <mat-icon matTooltip="Update Cluster Detail" class="global-table-action-icon"
+                  (click)="showUpdateCluster()" *roleGuard="'clustercluster_update'">edit
+        </mat-icon>
       </div>
-      <ng-container *ngFor="let node of nodes">
-        <div routerLink="./{{node.meta.name}}" fxFlex="none" fxLayout="column"
-             class="cluster-node-container">
-          <div fxFlex="none" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="5px"
-               class="cluster-node-name">
-            <div fxFlex="none" class="cluster-node-status" [ngClass]="getNodeStatusClass(node)">
-            </div>
-            <span class="cluster-node-name" fxFlex="none">{{ node.meta.name }}</span>
-            <mat-icon fxFlex="none" *ngIf="cluster.status.leader === node.meta.name"
-                      class="cluster-node-star" title="Leader">star_rate</mat-icon>
-          </div>
-          <div fxLayout="row">
-            <div fxFlex="none" fxLayout="column">
-              <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
-                   fxLayoutAlign="start center">
-                <div>Quorum Node:</div>
-              </div>
-            </div>
-            <div fxFlex fxLayout="column">
-              <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
-                   class="cluster-node-value">
-                <div class="cluster-node-quorum">{{ node?.status?.quorum  }}</div>
-              </div>
-            </div>
-            <div fxFlex="none" fxLayout="column">
-              <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
-                   fxLayoutAlign="start center">
-                <div>Phase:</div>
-              </div>
-            </div>
-            <div fxFlex fxLayout="column">
-              <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
-                   class="cluster-node-value">
-                <div class="cluster-node-phase">{{ phaseEnum[node.status.phase] }}</div>
-              </div>
-            </div>
-            <div fxFlex="none" fxLayout="column">
-              <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
-                   fxLayoutAlign="start center">
-                <div>Condition:</div>
-              </div>
-            </div>
-            <div fxFlex fxLayout="column">
-              <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
-                   class="cluster-node-value">
-                <div class="cluster-node-phase">{{ displayCondition(node)}}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ng-container>
-    </ng-container>
-    <div fxFlex="none" fxLayout="column" class="cluster-details">
-      <div fxFlex="none" class="cluster-details-title"> Cluster Detail </div>
       <div fxFlex="none" fxLayout="row">
         <!-- Field titles -->
         <div fxFlex="50" fxLayout="column">
@@ -143,9 +91,44 @@
         </div>
       </div>
     </div>
-    <div fxFlex fxLayout="row">
-      <button class="global-button-primary cluster-update-button"
-              (click)="showUpdateCluster()">UPDATE DETAILS</button>
+    <div class="cluster-node-fieldtitle" fxLayout="row">
+      <div>Nodes:</div>
+    </div>
+    <div>
+      <p-table styleClass="cluster-details-nodes-table"
+               [value]="nodes"
+               *roleGuard="'clusterNode_read'">
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="nodename">Name</th>
+            <th>Quorum</th>
+            <th>Phase</th>
+            <th>Condition</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-node>
+          <tr>
+            <td class="nodename">
+              <div class="cluster-details-nodes-table-cell" fxLayout="row"
+                   fxLayoutAlign="start center">
+                <span class="cluster-node-status" [ngClass]="getNodeStatusClass(node)"></span>
+                <a routerLink="./{{node.meta.name}}">{{node.meta.name}}</a>
+                <mat-icon fxFlex="none" *ngIf="cluster.status.leader === node.meta.name"
+                          class="cluster-node-star" title="Leader">star_rate</mat-icon>
+              </div>
+            </td>
+            <td>
+              <div class="cluster-details-nodes-table-cell">{{ node?.status?.quorum }}</div>
+            </td>
+            <td>
+              <div class="cluster-details-nodes-table-cell">{{ phaseEnum[node.status.phase] }}</div>
+            </td>
+            <td>
+              <div class="cluster-details-nodes-table-cell">{{ displayCondition(node) }}</div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
   </div>
 </ng-template>

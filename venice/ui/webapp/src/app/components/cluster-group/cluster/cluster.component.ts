@@ -39,6 +39,7 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   };
   selectedTimeRange: TimeRange;
   graphConfig: GraphConfig;
+  clusterLoaded: boolean = false;
   cluster: ClusterCluster = new ClusterCluster();
   // Used for processing the stream events
   clusterEventUtility: HttpEventUtility<ClusterCluster>;
@@ -196,6 +197,7 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
     queryList.queries.push(this.maxNodeQuery());
     const sub = this.metricsqueryService.pollMetrics('clusterCards', queryList).subscribe(
       (data: ITelemetry_queryMetricsQueryResponse) => {
+        this.clusterLoaded = true;
         if (data && data.results && data.results.length === 4) {
           this.timeSeriesData = data.results[0];
           this.avgData = data.results[1];

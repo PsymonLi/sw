@@ -140,5 +140,12 @@ export class CpuMemoryStorageStatsComponent implements OnInit, OnChanges {
     return this.describeArc(140, 140, radius, 25, 25 + newAngle);
   }
 
+  formatThirdValue(val: string) {
+    if (val && val[val.length - 1] === ')' &&
+        val.lastIndexOf('(') > -1) {
+      return val.substring(val.lastIndexOf('(') + 1, val.length - 1);
+    }
+  }
+
 }
 

@@ -130,23 +130,6 @@ describe('ClusterComponent', () => {
     const clusterHe: HTMLElement = clusterDe.nativeElement;
     expect(clusterDe.queryAll(By.css('.pagebody-icon')).length).toBe(1, 'More than pagebody icon was present');
     expect(clusterHe.querySelector('div.pagebody-headercontent').textContent).toContain('Cluster Overview', 'header title was not cluster overview');
-    // Node values
-    expect(clusterDe.queryAll(By.css('div.cluster-node-container')).length).toBe(5, 'Number of nodes displayed was incorrect');
-    for (let i = 0; i < 5; i++) {
-      const node = clusterDe.queryAll(By.css('div.cluster-node-container'))[i];
-      expect(node.nativeElement.querySelector('div.cluster-node-name').textContent).toContain('node' + (5 - i), 'node name was incorrect');
-      if (5 - i === 1) {
-        expect(node.nativeElement.querySelector('.cluster-node-star')).toBeTruthy('Expected node to be the leader');
-      } else {
-        expect(node.nativeElement.querySelector('.cluster-node-star')).toBeNull('Expected node not to be the leader');
-      }
-      if (5 - i <= 3) {
-        expect(node.nativeElement.querySelector('div.cluster-node-quorum').textContent).toContain('true', 'expected node to be part of the quorum');
-      } else {
-        expect(node.nativeElement.querySelector('div.cluster-node-quorum').textContent).toContain('false', 'expected node not to be part of the quorum');
-      }
-      expect(node.nativeElement.querySelector('div.cluster-node-phase').textContent).toContain('Joined', 'expected node phase to be joined');
-    }
 
     // Cluster values
     expect(
@@ -167,18 +150,6 @@ describe('ClusterComponent', () => {
         TestingUtility.removeAllPermissions();
         const controllerService = TestBed.get(ControllerService);
         toolbarSpy = spyOn(controllerService, 'setToolbarData');
-      });
-      it('nodes table', () => {
-        TestingUtility.addPermissions([UIRolePermissions.clusternode_read]);
-        fixture.detectChanges();
-        // Check nodes
-        expect(fixture.debugElement.queryAll(By.css('div.cluster-node-container')).length).toBe(5, 'Number of nodes displayed was incorrect');
-
-        TestingUtility.removeAllPermissions();
-        TestingUtility.updateRoleGuards();
-        fixture.detectChanges();
-
-        expect(fixture.debugElement.queryAll(By.css('div.cluster-node-container')).length).toBe(0, 'Number of nodes displayed was incorrect');
       });
 
       it('alertsevents table', () => {
