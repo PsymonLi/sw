@@ -134,6 +134,338 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   ],
   "objectKind": "DistributedServiceCard"
 },
+  LifMetrics: {
+  "name": "LifMetrics",
+  "description": "Logical Interface Metrics",
+  "displayName": "Logical Interface Statistics",
+  "tags": [
+    "Level4"
+  ],
+  "scope": "PerLIF",
+  "fields": [
+    {
+      "name": "RxUnicastBytes",
+      "displayName": "Rx Unicast Bytes",
+      "description": "Rx Unicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxUnicastPackets",
+      "displayName": "Rx Unicast Packets",
+      "description": "Rx Unicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxMulticastBytes",
+      "displayName": "Rx Multicast Bytes",
+      "description": "Rx Multicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxMulticastPackets",
+      "displayName": "Rx Multicast Packets",
+      "description": "Rx Multicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxBroadcastBytes",
+      "displayName": "Rx Broadcast Bytes",
+      "description": "Rx Broadcast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxBroadcastPackets",
+      "displayName": "Rx Broadcast Packets",
+      "description": "Rx Broadcast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropUnicastBytes",
+      "displayName": "Rx Drop Unicast Bytes",
+      "description": "Rx Drop Unicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropUnicastPackets",
+      "displayName": "Rx Drop Unicast Packets",
+      "description": "Rx Drop Unicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropMulticastBytes",
+      "displayName": "Rx Drop Multicast Bytes",
+      "description": "Rx Drop Multicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropMulticastPackets",
+      "displayName": "Rx Drop Multicast Packets",
+      "description": "Rx Drop Multicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropBroadcastBytes",
+      "displayName": "Rx Drop Broadcast Bytes",
+      "description": "Rx Drop Broadcast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxDropBroadcastPackets",
+      "displayName": "Rx Drop Broadcast Packets",
+      "description": "Rx Drop Broadcast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxUnicastBytes",
+      "displayName": "Tx Unicast Bytes",
+      "description": "Tx Unicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxUnicastPackets",
+      "displayName": "Tx Unicast Packets",
+      "description": "Tx Unicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxMulticastBytes",
+      "displayName": "Tx Multicast Bytes",
+      "description": "Tx Multicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxMulticastPackets",
+      "displayName": "Tx Multicast Packets",
+      "description": "Tx Multicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxBroadcastBytes",
+      "displayName": "Tx Broadcast Bytes",
+      "description": "Tx Broadcast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxBroadcastPackets",
+      "displayName": "Tx Broadcast Packets",
+      "description": "Tx Broadcast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropUnicastBytes",
+      "displayName": "Tx Drop Unicast Bytes",
+      "description": "Tx Drop Unicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropUnicastPackets",
+      "displayName": "Tx Drop Unicast Packets",
+      "description": "Tx Drop Unicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropMulticastBytes",
+      "displayName": "Tx Drop Multicast Bytes",
+      "description": "Tx Drop Multicast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropMulticastPackets",
+      "displayName": "Tx Drop Multicast Packets",
+      "description": "Tx Drop Multicast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropBroadcastBytes",
+      "displayName": "Tx Drop Broadcast Bytes",
+      "description": "Tx Drop Broadcast Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxDropBroadcastPackets",
+      "displayName": "Tx Drop Broadcast Packets",
+      "description": "Tx Drop Broadcast Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxPkts",
+      "displayName": "Tx Pkts",
+      "description": "Total Transmit Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxBytes",
+      "displayName": "Tx Bytes",
+      "description": "Total Transmit Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxPkts",
+      "displayName": "Rx Pkts",
+      "description": "Total Receive Packets",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxBytes",
+      "displayName": "Rx Bytes",
+      "description": "Total Receive Bytes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "objectKind": "NetworkInterface",
+  "interfaceType": "host-pf"
+},
   MacMetrics: {
   "name": "MacMetrics",
   "description": "Uplink Metrics",
@@ -1513,19 +1845,15 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   "objectKind": "NetworkInterface",
   "interfaceType": "uplink-mgmt"
 },
-  LifMetrics: {
-  "name": "LifMetrics",
-  "description": "Logical Interface Metrics",
-  "displayName": "Logical Interface Statistics",
-  "tags": [
-    "Level4"
-  ],
-  "scope": "PerLIF",
+  PcieMgrMetrics: {
+  "name": "PcieMgrMetrics",
+  "description": "pcie port metrics",
+  "displayName": "PCIe Manager information",
   "fields": [
     {
-      "name": "RxUnicastBytes",
-      "displayName": "Rx Unicast Bytes",
-      "description": "Rx Unicast Bytes",
+      "name": "NotIntr",
+      "displayName": "not_intr",
+      "description": "notify total intrs",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1534,9 +1862,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxUnicastPackets",
-      "displayName": "Rx Unicast Packets",
-      "description": "Rx Unicast Packets",
+      "name": "NotSpurious",
+      "displayName": "not_spurious",
+      "description": "notify spurious intrs",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1545,9 +1873,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxMulticastBytes",
-      "displayName": "Rx Multicast Bytes",
-      "description": "Rx Multicast Bytes",
+      "name": "NotCnt",
+      "displayName": "not_cnt",
+      "description": "notify total txns",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1556,9 +1884,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxMulticastPackets",
-      "displayName": "Rx Multicast Packets",
-      "description": "Rx Multicast Packets",
+      "name": "NotMax",
+      "displayName": "not_max",
+      "description": "notify max txns per intr",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1567,9 +1895,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxBroadcastBytes",
-      "displayName": "Rx Broadcast Bytes",
-      "description": "Rx Broadcast Bytes",
+      "name": "NotCfgrd",
+      "displayName": "not_cfgrd",
+      "description": "notify config reads",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1578,9 +1906,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxBroadcastPackets",
-      "displayName": "Rx Broadcast Packets",
-      "description": "Rx Broadcast Packets",
+      "name": "NotCfgwr",
+      "displayName": "not_cfgwr",
+      "description": "notify config writes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1589,9 +1917,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropUnicastBytes",
-      "displayName": "Rx Drop Unicast Bytes",
-      "description": "Rx Drop Unicast Bytes",
+      "name": "NotMemrd",
+      "displayName": "not_memrd",
+      "description": "notify memory reads",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1600,9 +1928,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropUnicastPackets",
-      "displayName": "Rx Drop Unicast Packets",
-      "description": "Rx Drop Unicast Packets",
+      "name": "NotMemwr",
+      "displayName": "not_memwr",
+      "description": "notify memory writes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1611,9 +1939,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropMulticastBytes",
-      "displayName": "Rx Drop Multicast Bytes",
-      "description": "Rx Drop Multicast Bytes",
+      "name": "NotIord",
+      "displayName": "not_iord",
+      "description": "notify io reads",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1622,9 +1950,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropMulticastPackets",
-      "displayName": "Rx Drop Multicast Packets",
-      "description": "Rx Drop Multicast Packets",
+      "name": "NotIowr",
+      "displayName": "not_iowr",
+      "description": "notify io writes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1633,9 +1961,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropBroadcastBytes",
-      "displayName": "Rx Drop Broadcast Bytes",
-      "description": "Rx Drop Broadcast Bytes",
+      "name": "NotUnknown",
+      "displayName": "not_unknown",
+      "description": "notify unknown type",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1644,9 +1972,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxDropBroadcastPackets",
-      "displayName": "Rx Drop Broadcast Packets",
-      "description": "Rx Drop Broadcast Packets",
+      "name": "NotRsrv0",
+      "displayName": "not_rsrv0",
+      "description": "notify rsrv0",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1655,9 +1983,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxUnicastBytes",
-      "displayName": "Tx Unicast Bytes",
-      "description": "Tx Unicast Bytes",
+      "name": "NotRsrv1",
+      "displayName": "not_rsrv1",
+      "description": "notify rsrv1",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1666,9 +1994,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxUnicastPackets",
-      "displayName": "Tx Unicast Packets",
-      "description": "Tx Unicast Packets",
+      "name": "NotMsg",
+      "displayName": "not_msg",
+      "description": "notify pcie message",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1677,9 +2005,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxMulticastBytes",
-      "displayName": "Tx Multicast Bytes",
-      "description": "Tx Multicast Bytes",
+      "name": "NotUnsupported",
+      "displayName": "not_unsupported",
+      "description": "notify unsupported",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1688,9 +2016,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxMulticastPackets",
-      "displayName": "Tx Multicast Packets",
-      "description": "Tx Multicast Packets",
+      "name": "NotPmv",
+      "displayName": "not_pmv",
+      "description": "notify pgm model violation",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1699,9 +2027,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxBroadcastBytes",
-      "displayName": "Tx Broadcast Bytes",
-      "description": "Tx Broadcast Bytes",
+      "name": "NotDbpmv",
+      "displayName": "not_dbpmv",
+      "description": "notify doorbell pmv",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1710,9 +2038,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxBroadcastPackets",
-      "displayName": "Tx Broadcast Packets",
-      "description": "Tx Broadcast Packets",
+      "name": "NotAtomic",
+      "displayName": "not_atomic",
+      "description": "notify atomic trans",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1721,9 +2049,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropUnicastBytes",
-      "displayName": "Tx Drop Unicast Bytes",
-      "description": "Tx Drop Unicast Bytes",
+      "name": "NotPmtmiss",
+      "displayName": "not_pmtmiss",
+      "description": "notify PMT miss",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1732,9 +2060,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropUnicastPackets",
-      "displayName": "Tx Drop Unicast Packets",
-      "description": "Tx Drop Unicast Packets",
+      "name": "NotPmrmiss",
+      "displayName": "not_pmrmiss",
+      "description": "notify PMR miss",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1743,9 +2071,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropMulticastBytes",
-      "displayName": "Tx Drop Multicast Bytes",
-      "description": "Tx Drop Multicast Bytes",
+      "name": "NotPrtmiss",
+      "displayName": "not_prtmiss",
+      "description": "notify PRT miss",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1754,9 +2082,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropMulticastPackets",
-      "displayName": "Tx Drop Multicast Packets",
-      "description": "Tx Drop Multicast Packets",
+      "name": "NotBdf2Vfidmiss",
+      "displayName": "not_bdf2vfidmiss",
+      "description": "notify bdf2vfid table miss",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1765,9 +2093,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropBroadcastBytes",
-      "displayName": "Tx Drop Broadcast Bytes",
-      "description": "Tx Drop Broadcast Bytes",
+      "name": "NotPrtoor",
+      "displayName": "not_prtoor",
+      "description": "notify PRT out-of-range",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1776,9 +2104,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxDropBroadcastPackets",
-      "displayName": "Tx Drop Broadcast Packets",
-      "description": "Tx Drop Broadcast Packets",
+      "name": "NotVfidoor",
+      "displayName": "not_vfidoor",
+      "description": "notify vfid out-of-range",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1787,9 +2115,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxPkts",
-      "displayName": "Tx Pkts",
-      "description": "Total Transmit Packets",
+      "name": "NotBdfoor",
+      "displayName": "not_bdfoor",
+      "description": "notify bdf out-of-range",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1798,9 +2126,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TxBytes",
-      "displayName": "Tx Bytes",
-      "description": "Total Transmit Bytes",
+      "name": "NotPmrind",
+      "displayName": "not_pmrind",
+      "description": "notify PMR force indirect",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1809,9 +2137,9 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxPkts",
-      "displayName": "Rx Pkts",
-      "description": "Total Receive Packets",
+      "name": "NotPrtind",
+      "displayName": "not_prtind",
+      "description": "notify PRT force indirect",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1820,9 +2148,130 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "RxBytes",
-      "displayName": "Rx Bytes",
-      "description": "Total Receive Bytes",
+      "name": "NotPmrecc",
+      "displayName": "not_pmrecc",
+      "description": "notify PMR ECC error",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "NotPrtecc",
+      "displayName": "not_prtecc",
+      "description": "notify PRT ECC error",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndIntr",
+      "displayName": "ind_intr",
+      "description": "indirect total intrs",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndSpurious",
+      "displayName": "ind_spurious",
+      "description": "indirect spurious intrs",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndCfgrd",
+      "displayName": "ind_cfgrd",
+      "description": "indirect config reads",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndCfgwr",
+      "displayName": "ind_cfgwr",
+      "description": "indirect config writes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndMemrd",
+      "displayName": "ind_memrd",
+      "description": "indirect memory reads",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndMemwr",
+      "displayName": "ind_memwr",
+      "description": "indirect memory writes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndIord",
+      "displayName": "ind_iord",
+      "description": "indirect io reads",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndIowr",
+      "displayName": "ind_iowr",
+      "description": "indirect io writes",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IndUnknown",
+      "displayName": "ind_unknown",
+      "description": "indirect unknown type",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Healthlog",
+      "displayName": "healthlog",
+      "description": "health log events",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1842,8 +2291,551 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ]
     }
   ],
-  "objectKind": "NetworkInterface",
-  "interfaceType": "host-pf"
+  "tags": [
+    "Level7"
+  ],
+  "scope": "PerPciePort",
+  "objectKind": "DistributedServiceCard"
+},
+  PciePortMetrics: {
+  "name": "PciePortMetrics",
+  "description": "Key index - pcie port",
+  "displayName": "PCIe port information",
+  "fields": [
+    {
+      "name": "IntrTotal",
+      "displayName": "intr_total",
+      "description": "total port intrs",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrPolled",
+      "displayName": "intr_polled",
+      "description": "total port intrs polled",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrPerstn",
+      "displayName": "intr_perstn",
+      "description": "pcie out of reset",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrLtssmstEarly",
+      "displayName": "intr_ltssmst_early",
+      "description": "link train before linkup",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrLtssmst",
+      "displayName": "intr_ltssmst",
+      "description": "link train after  linkup",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrLinkup2Dn",
+      "displayName": "intr_linkup2dn",
+      "description": "link down",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrLinkdn2Up",
+      "displayName": "intr_linkdn2up",
+      "description": "link up",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrRstup2Dn",
+      "displayName": "intr_rstup2dn",
+      "description": "mac up",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrRstdn2Up",
+      "displayName": "intr_rstdn2up",
+      "description": "mac down",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrSecbus",
+      "displayName": "intr_secbus",
+      "description": "secondary bus set",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Linkup",
+      "displayName": "linkup",
+      "description": "link is up",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Hostup",
+      "displayName": "hostup",
+      "description": "host is up (secbus)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Phypolllast",
+      "displayName": "phypolllast",
+      "description": "phy poll count (last)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Phypollmax",
+      "displayName": "phypollmax",
+      "description": "phy poll count (max)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Phypollperstn",
+      "displayName": "phypollperstn",
+      "description": "phy poll lost perstn",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Phypollfail",
+      "displayName": "phypollfail",
+      "description": "phy poll failed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Gatepolllast",
+      "displayName": "gatepolllast",
+      "description": "gate poll count (last)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Gatepollmax",
+      "displayName": "gatepollmax",
+      "description": "gate poll count (max)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Markerpolllast",
+      "displayName": "markerpolllast",
+      "description": "marker poll count (last)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Markerpollmax",
+      "displayName": "markerpollmax",
+      "description": "marker poll count (max)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Axipendpolllast",
+      "displayName": "axipendpolllast",
+      "description": "axipend poll count (last)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Axipendpollmax",
+      "displayName": "axipendpollmax",
+      "description": "axipend poll count (max)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Faults",
+      "displayName": "faults",
+      "description": "link faults",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "Powerdown",
+      "displayName": "powerdown",
+      "description": "powerdown count",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "LinkDn2UpInt",
+      "displayName": "link_dn2up_int",
+      "description": "link_dn2up_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "LinkUp2DnInt",
+      "displayName": "link_up2dn_int",
+      "description": "link_up2dn_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SecBusRstInt",
+      "displayName": "sec_bus_rst_int",
+      "description": "sec_bus_rst_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RstUp2DnInt",
+      "displayName": "rst_up2dn_int",
+      "description": "rst_up2dn_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RstDn2UpInt",
+      "displayName": "rst_dn2up_int",
+      "description": "rst_dn2up_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "PortgateOpen2CloseInt",
+      "displayName": "portgate_open2close_int",
+      "description": "portgate_open2close_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "LtssmStChangedInt",
+      "displayName": "ltssm_st_changed_int",
+      "description": "ltssm_st_changed_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SecBusnumChangedInt",
+      "displayName": "sec_busnum_changed_int",
+      "description": "sec_busnum_changed_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcPmeInt",
+      "displayName": "rc_pme_int",
+      "description": "rc_pme_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcAerrInt",
+      "displayName": "rc_aerr_int",
+      "description": "rc_aerr_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcSerrInt",
+      "displayName": "rc_serr_int",
+      "description": "rc_serr_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcHpeInt",
+      "displayName": "rc_hpe_int",
+      "description": "rc_hpe_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcEqReqInt",
+      "displayName": "rc_eq_req_int",
+      "description": "rc_eq_req_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcDpcInt",
+      "displayName": "rc_dpc_int",
+      "description": "rc_dpc_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "PmTurnoffInt",
+      "displayName": "pm_turnoff_int",
+      "description": "pm_turnoff_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TxbfrOverflowInt",
+      "displayName": "txbfr_overflow_int",
+      "description": "txbfr_overflow_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RxtlpErrInt",
+      "displayName": "rxtlp_err_int",
+      "description": "rxtlp_err_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "TlFlrReqInt",
+      "displayName": "tl_flr_req_int",
+      "description": "tl_flr_req_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "RcLegacyIntpinChangedInt",
+      "displayName": "rc_legacy_intpin_changed_int",
+      "description": "rc_legacy_intpin_changed_int",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "PpsdSbeInterrupt",
+      "displayName": "ppsd_sbe_interrupt",
+      "description": "ppsd_sbe_interrupt",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "PpsdDbeInterrupt",
+      "displayName": "ppsd_dbe_interrupt",
+      "description": "ppsd_dbe_interrupt",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SbusErrInterrupt",
+      "displayName": "sbus_err_interrupt",
+      "description": "sbus_err_interrupt",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "PoweronRetries",
+      "displayName": "poweron_retries",
+      "description": "poweron_retries",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "tags": [
+    "Level7"
+  ],
+  "scope": "PerPciePort",
+  "objectKind": "DistributedServiceCard"
 },
   MemoryMetrics: {
   "name": "MemoryMetrics",

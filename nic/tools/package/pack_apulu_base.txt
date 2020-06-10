@@ -7,8 +7,9 @@ nic/conf/$PIPELINE/operd.json                                     /nic/conf/
 nic/conf/$PIPELINE/operd-decoders.json                            /nic/conf/
 
 # metrics schema
-nic/operd/metrics/common/sysmond.json                             /nic/conf/
-nic/operd/metrics/common/pcie.json                                /nic/conf/
+nic/operd/metrics/common/sysmond_metrics.json                     /nic/conf/
+nic/operd/metrics/common/pcie_metrics.json                        /nic/conf/
+nic/operd/metrics/common/flowstats_metrics.json                   /nic/conf/
 
 # HW catalog files
 nic/conf/catalog_hw_68-0003.json                                  /nic/conf/

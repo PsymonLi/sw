@@ -8,7 +8,7 @@ import (
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
-	"github.com/pensando/sw/metrics/genfields"
+	"github.com/pensando/sw/metrics/iris/genfields"
 	"github.com/pensando/sw/metrics/types"
 	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
 	cmdtypes "github.com/pensando/sw/venice/cmd/types"

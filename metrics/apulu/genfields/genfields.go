@@ -24,29 +24,21 @@ func init() {
 		log.Fatalf("failed to get apulu genfields abs path")
 	}
 	generatedFolderPath := path.Join(filepath.Dir(currPath), "/../generated")
-	dir, err := ioutil.ReadDir(generatedFolderPath)
+	files, err := ioutil.ReadDir(generatedFolderPath)
 	if err != nil {
 		log.Fatalf("Failed to read dir %v Err: %v", generatedFolderPath, err)
 		return
 	}
-	for _, mgrDir := range dir {
-		mgrFolderPath := path.Join(generatedFolderPath, mgrDir.Name())
-		files, err := ioutil.ReadDir(mgrFolderPath)
+	for _, f := range files {
+		filePath := path.Join(generatedFolderPath, f.Name())
+		bytes, err := ioutil.ReadFile(filePath)
 		if err != nil {
-			log.Fatalf("Failed to read dir %v Err: %v", mgrFolderPath, err)
+			log.Fatalf("Failed to read file %v Err: %v", filePath, err)
 			return
 		}
-		for _, f := range files {
-			filePath := path.Join(mgrFolderPath, f.Name())
-			bytes, err := ioutil.ReadFile(filePath)
-			if err != nil {
-				log.Fatalf("Failed to read file %v Err: %v", filePath, err)
-				return
-			}
-			fieldMap, err := plugin.GetMetricsFieldMapFromJSON(bytes)
-			for metric, fields := range fieldMap {
-				kindToFieldNameMap[metric] = fields
-			}
+		fieldMap, err := plugin.GetMetricsFieldMapFromJSON(bytes)
+		for metric, fields := range fieldMap {
+			kindToFieldNameMap[metric] = fields
 		}
 	}
 }

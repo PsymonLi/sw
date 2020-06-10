@@ -13,7 +13,6 @@ nic/conf/$PIPELINE/device-pf6.json                                /nic/conf/devi
 nic/conf/$PIPELINE/device-pf8.json                                /nic/conf/
 
 # metrics schema
-nic/operd/metrics/cloud/flowstats.json                            /nic/conf/
 nic/operd/metrics/venice/lif_metrics.json                         /nic/conf/
 nic/operd/metrics/venice/mac_metrics.json                         /nic/conf/
 

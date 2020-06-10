@@ -1,6 +1,450 @@
 import { MetricMeasurement } from './metadata';
 
 export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
+  AccelHwRingMetrics: {
+  "name": "AccelHwRingMetrics",
+  "description": "Key indices - RId: ring ID, SubRId: sub-ring ID",
+  "displayName": "Metrics for hardware rings",
+  "fields": [
+    {
+      "name": "PIndex",
+      "displayName": "P Index",
+      "description": "ring producer index",
+      "units": "ID",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "CIndex",
+      "displayName": "C Index",
+      "description": "ring consumer index",
+      "units": "ID",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "InputBytes",
+      "displayName": "Input Bytes",
+      "description": "total input bytes (not available for cp_hot, dc_hot, xts_enc/dec, gcm_enc/dec)",
+      "units": "Bytes",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "OutputBytes",
+      "displayName": "Output Bytes",
+      "description": "total output bytes (not available for cp_hot, dc_hot, xts_enc/dec, gcm_enc/dec)",
+      "units": "Bytes",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SoftResets",
+      "displayName": "Soft Resets",
+      "description": "number of soft resets executed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "scope": "PerRingPerSubRing",
+  "objectKind": "DistributedServiceCard"
+},
+  AccelPfInfo: {
+  "name": "AccelPfInfo",
+  "description": "Key index - logical interface ID",
+  "displayName": "Device information",
+  "fields": [
+    {
+      "name": "HwLifId",
+      "displayName": "Hw Lif Id",
+      "description": "hardware logical interface ID",
+      "units": "ID",
+      "baseType": "uint64",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "NumSeqQueues",
+      "displayName": "Num Seq Queues",
+      "description": "number of sequencer queues available",
+      "units": "Count",
+      "baseType": "uint32",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "CryptoKeyIdxBase",
+      "displayName": "Crypto Key Idx Base",
+      "description": "crypto key base index",
+      "units": "Count",
+      "baseType": "uint32",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "NumCryptoKeysMax",
+      "displayName": "Num Crypto Keys Max",
+      "description": "maximum number of crypto keys allowed",
+      "units": "Count",
+      "baseType": "uint32",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrBase",
+      "displayName": "Intr Base",
+      "description": "CPU interrupt base",
+      "units": "Count",
+      "baseType": "uint32",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "IntrCount",
+      "displayName": "Intr Count",
+      "description": "CPU interrupt vectors available",
+      "units": "Count",
+      "baseType": "uint32",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "scope": "PerLIF",
+  "objectKind": "NetworkInterface",
+  "interfaceType": "host-pf"
+},
+  AccelSeqQueueInfoMetrics: {
+  "name": "AccelSeqQueueInfoMetrics",
+  "description": "Key indices are - LifID and QId",
+  "displayName": "Sequencer queues information",
+  "fields": [
+    {
+      "name": "QStateAddr",
+      "displayName": "Q State Add",
+      "description": "queue state memory address",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "QGroup",
+      "displayName": "Q Group",
+      "description": "queue group\\n           : 0 - compress/decompress\\n           : 1 - compress/decompress status\\n           : 2 - crypto\\n           : 3 - crypto status\\n",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "CoreId",
+      "displayName": "Core Id",
+      "description": "CPU core ID (not available currently",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "scope": "PerLIFPerQ",
+  "objectKind": "DistributedServiceCard"
+},
+  AccelSeqQueueMetrics: {
+  "name": "AccelSeqQueueMetrics",
+  "description": "Key indices are - LifID and QId",
+  "displayName": "Metrics for sequencer queues",
+  "fields": [
+    {
+      "name": "InterruptsRaised",
+      "displayName": "Interrupts Raised",
+      "description": "CPU interrupts raised",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "NextDBsRung",
+      "displayName": "Next DBs Rung",
+      "description": "chaining doorbells rung",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SeqDescsProcessed",
+      "displayName": "Seq Descs Processed",
+      "description": "sequencer descriptors processed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SeqDescsAborted",
+      "displayName": "Seq Descs Aborted",
+      "description": "sequencer descriptors aborted (due to reset)",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "StatusPdmaXfers",
+      "displayName": "Status Pdma Xfers",
+      "description": "status descriptors copied",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "HwDescXfers",
+      "displayName": "Hw Desc Xfers",
+      "description": "descriptors transferred to hardware",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "HwBatchErrors",
+      "displayName": "Hw Batch Errors",
+      "description": "hardware batch (length) errors",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "HwOpErrors",
+      "displayName": "Hw Op Errors",
+      "description": "hardware operation errors",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "AolUpdateReqs",
+      "displayName": "Aol Update Reqs",
+      "description": "AOL list updates requested",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SglUpdateReqs",
+      "displayName": "Sgl Update Reqs",
+      "description": "scatter/gather list updates requested",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SglPdmaXfers",
+      "displayName": "Sgl Pdma Xfers",
+      "description": "payload DMA transfers executed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SglPdmaErrors",
+      "displayName": "Sgl Pdma Errors",
+      "description": "payload DMA errors encountered",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SglPadOnlyXfers",
+      "displayName": "Sgl Pad Only Xfers",
+      "description": "pad-data-only DMA transfers executed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SglPadOnlyErrors",
+      "displayName": "Sgl Pad Only Errors",
+      "description": "pad-data-only DMA errors encountered",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "AltDescsTaken",
+      "displayName": "Alt Descs Taken",
+      "description": "alternate (bypass-onfail) descriptors executed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "AltBufsTaken",
+      "displayName": "Alt Bufs Taken",
+      "description": "alternate buffers taken",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "LenUpdateReqs",
+      "displayName": "Len Update Reqs",
+      "description": "length updates requested",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "CpHeaderUpdates",
+      "displayName": "Cp Header Updates",
+      "description": "compression header updates requested",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "SeqHwBytes",
+      "displayName": "Seq Hw Bytes",
+      "description": "bytes processed",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "reporterID",
+      "description": "Name of reporting object",
+      "baseType": "string",
+      "jsType": "string",
+      "isTag": true,
+      "displayName": "reporterID",
+      "tags": [
+        "Level4"
+      ]
+    }
+  ],
+  "scope": "PerLIFPerQ",
+  "objectKind": "DistributedServiceCard"
+},
   DropMetrics: {
   "name": "DropMetrics",
   "description": "Key index - Global ID",
@@ -3423,450 +3867,6 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   "scope": "PerMgmtPort",
   "objectKind": "NetworkInterface",
   "interfaceType": "uplink-mgmt"
-},
-  AccelHwRingMetrics: {
-  "name": "AccelHwRingMetrics",
-  "description": "Key indices - RId: ring ID, SubRId: sub-ring ID",
-  "displayName": "Metrics for hardware rings",
-  "fields": [
-    {
-      "name": "PIndex",
-      "displayName": "P Index",
-      "description": "ring producer index",
-      "units": "ID",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "CIndex",
-      "displayName": "C Index",
-      "description": "ring consumer index",
-      "units": "ID",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "InputBytes",
-      "displayName": "Input Bytes",
-      "description": "total input bytes (not available for cp_hot, dc_hot, xts_enc/dec, gcm_enc/dec)",
-      "units": "Bytes",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "OutputBytes",
-      "displayName": "Output Bytes",
-      "description": "total output bytes (not available for cp_hot, dc_hot, xts_enc/dec, gcm_enc/dec)",
-      "units": "Bytes",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SoftResets",
-      "displayName": "Soft Resets",
-      "description": "number of soft resets executed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "reporterID",
-      "description": "Name of reporting object",
-      "baseType": "string",
-      "jsType": "string",
-      "isTag": true,
-      "displayName": "reporterID",
-      "tags": [
-        "Level4"
-      ]
-    }
-  ],
-  "scope": "PerRingPerSubRing",
-  "objectKind": "DistributedServiceCard"
-},
-  AccelPfInfo: {
-  "name": "AccelPfInfo",
-  "description": "Key index - logical interface ID",
-  "displayName": "Device information",
-  "fields": [
-    {
-      "name": "HwLifId",
-      "displayName": "Hw Lif Id",
-      "description": "hardware logical interface ID",
-      "units": "ID",
-      "baseType": "uint64",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "NumSeqQueues",
-      "displayName": "Num Seq Queues",
-      "description": "number of sequencer queues available",
-      "units": "Count",
-      "baseType": "uint32",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "CryptoKeyIdxBase",
-      "displayName": "Crypto Key Idx Base",
-      "description": "crypto key base index",
-      "units": "Count",
-      "baseType": "uint32",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "NumCryptoKeysMax",
-      "displayName": "Num Crypto Keys Max",
-      "description": "maximum number of crypto keys allowed",
-      "units": "Count",
-      "baseType": "uint32",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "IntrBase",
-      "displayName": "Intr Base",
-      "description": "CPU interrupt base",
-      "units": "Count",
-      "baseType": "uint32",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "IntrCount",
-      "displayName": "Intr Count",
-      "description": "CPU interrupt vectors available",
-      "units": "Count",
-      "baseType": "uint32",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "reporterID",
-      "description": "Name of reporting object",
-      "baseType": "string",
-      "jsType": "string",
-      "isTag": true,
-      "displayName": "reporterID",
-      "tags": [
-        "Level4"
-      ]
-    }
-  ],
-  "scope": "PerLIF",
-  "objectKind": "NetworkInterface",
-  "interfaceType": "host-pf"
-},
-  AccelSeqQueueInfoMetrics: {
-  "name": "AccelSeqQueueInfoMetrics",
-  "description": "Key indices are - LifID and QId",
-  "displayName": "Sequencer queues information",
-  "fields": [
-    {
-      "name": "QStateAddr",
-      "displayName": "Q State Add",
-      "description": "queue state memory address",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "QGroup",
-      "displayName": "Q Group",
-      "description": "queue group\\n           : 0 - compress/decompress\\n           : 1 - compress/decompress status\\n           : 2 - crypto\\n           : 3 - crypto status\\n",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "CoreId",
-      "displayName": "Core Id",
-      "description": "CPU core ID (not available currently",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "reporterID",
-      "description": "Name of reporting object",
-      "baseType": "string",
-      "jsType": "string",
-      "isTag": true,
-      "displayName": "reporterID",
-      "tags": [
-        "Level4"
-      ]
-    }
-  ],
-  "scope": "PerLIFPerQ",
-  "objectKind": "DistributedServiceCard"
-},
-  AccelSeqQueueMetrics: {
-  "name": "AccelSeqQueueMetrics",
-  "description": "Key indices are - LifID and QId",
-  "displayName": "Metrics for sequencer queues",
-  "fields": [
-    {
-      "name": "InterruptsRaised",
-      "displayName": "Interrupts Raised",
-      "description": "CPU interrupts raised",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "NextDBsRung",
-      "displayName": "Next DBs Rung",
-      "description": "chaining doorbells rung",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SeqDescsProcessed",
-      "displayName": "Seq Descs Processed",
-      "description": "sequencer descriptors processed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SeqDescsAborted",
-      "displayName": "Seq Descs Aborted",
-      "description": "sequencer descriptors aborted (due to reset)",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "StatusPdmaXfers",
-      "displayName": "Status Pdma Xfers",
-      "description": "status descriptors copied",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "HwDescXfers",
-      "displayName": "Hw Desc Xfers",
-      "description": "descriptors transferred to hardware",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "HwBatchErrors",
-      "displayName": "Hw Batch Errors",
-      "description": "hardware batch (length) errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "HwOpErrors",
-      "displayName": "Hw Op Errors",
-      "description": "hardware operation errors",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "AolUpdateReqs",
-      "displayName": "Aol Update Reqs",
-      "description": "AOL list updates requested",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SglUpdateReqs",
-      "displayName": "Sgl Update Reqs",
-      "description": "scatter/gather list updates requested",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SglPdmaXfers",
-      "displayName": "Sgl Pdma Xfers",
-      "description": "payload DMA transfers executed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SglPdmaErrors",
-      "displayName": "Sgl Pdma Errors",
-      "description": "payload DMA errors encountered",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SglPadOnlyXfers",
-      "displayName": "Sgl Pad Only Xfers",
-      "description": "pad-data-only DMA transfers executed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SglPadOnlyErrors",
-      "displayName": "Sgl Pad Only Errors",
-      "description": "pad-data-only DMA errors encountered",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "AltDescsTaken",
-      "displayName": "Alt Descs Taken",
-      "description": "alternate (bypass-onfail) descriptors executed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "AltBufsTaken",
-      "displayName": "Alt Bufs Taken",
-      "description": "alternate buffers taken",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "LenUpdateReqs",
-      "displayName": "Len Update Reqs",
-      "description": "length updates requested",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "CpHeaderUpdates",
-      "displayName": "Cp Header Updates",
-      "description": "compression header updates requested",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "SeqHwBytes",
-      "displayName": "Seq Hw Bytes",
-      "description": "bytes processed",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number"
-    },
-    {
-      "name": "reporterID",
-      "description": "Name of reporting object",
-      "baseType": "string",
-      "jsType": "string",
-      "isTag": true,
-      "displayName": "reporterID",
-      "tags": [
-        "Level4"
-      ]
-    }
-  ],
-  "scope": "PerLIFPerQ",
-  "objectKind": "DistributedServiceCard"
 },
   LifMetrics: {
   "name": "LifMetrics",

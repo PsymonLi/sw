@@ -1,18 +1,21 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
     echo "Invalid number of arguments $# $0 $1 $2 $3 $4 "
-    echo " $0 <prefix> <protobuf file directory>"
+    echo " $0 <pipeline> <prefix> <protobuf file directory>"
     exit 1
 fi
 
-prefix=$1
-protopath=$2
+pipeline=$1
+prefix=$2
+protopath=$3
+
+mkdir -p ${pipeline} && cd ${pipeline}
 curdir=$(pwd)
 
 mkdir -p generated/${prefix}
 echo "++ generating manifest" ${prefix} ${protopath} ${curdir}
-cd ../${protopath}
+cd ../../${protopath}
 
 for protofile in *.proto
 do
@@ -42,8 +45,10 @@ do
         -I${GOPATH}/src/github.com/pensando/sw/vendor \
         -I${GOPATH}/src/github.com/pensando/sw/venice/utils/apigen/annotations \
         -I${GOPATH}/src/github.com/pensando/sw//nic/delphi/proto/delphi \
-        --grpc-gateway_out=S_prefix=${prefix},S_path=${curdir},logtostderr=false,gengw=false,v=7,templates=github.com/pensando/sw/metrics/templates/config.yaml,log_dir=${curdir}/tmp:${curdir}/generated/${prefix} \
+        --grpc-gateway_out=S_prefix=${prefix},S_path=${curdir},logtostderr=false,gengw=false,v=7,templates=github.com/pensando/sw/metrics/templates/config.yaml,log_dir=${curdir}/tmp:${curdir}/generated \
         ${line} || { echo "metrics generation failed" ; exit -1; }
 done < ${curdir}/generated/${prefix}/metrics_files
 
-cd ${curdir}
+rm -rf ${curdir}/generated/${prefix}
+
+cd ${curdir}/..

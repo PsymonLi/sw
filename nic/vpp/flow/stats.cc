@@ -11,7 +11,7 @@
 static sdk::metrics::schema_t vpp_schema = {
     FLOW_STATS_SCHEMA_NAME,
     sdk::metrics::SW,
-    "flowstats.json"
+    "flowstats_metrics.json"
 };
 
 void *

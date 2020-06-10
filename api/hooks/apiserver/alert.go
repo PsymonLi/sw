@@ -19,7 +19,7 @@ import (
 	"github.com/pensando/sw/api/generated/monitoring"
 	apiintf "github.com/pensando/sw/api/interfaces"
 	apiutils "github.com/pensando/sw/api/utils"
-	"github.com/pensando/sw/metrics/genfields"
+	"github.com/pensando/sw/metrics/iris/genfields"
 	"github.com/pensando/sw/venice/apiserver"
 	"github.com/pensando/sw/venice/utils"
 	authzgrpcctx "github.com/pensando/sw/venice/utils/authz/grpc/context"

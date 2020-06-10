@@ -35,25 +35,25 @@ sdk::metrics::schema_t hostif_schema = {
 sdk::metrics::schema_t memory_schema = {
     .name = "MemoryMetrics",
     .type = sdk::metrics::SW,
-    .filename = "sysmond.json"
+    .filename = "sysmond_metrics.json"
 };
 
 sdk::metrics::schema_t power_schema = {
     .name = "PowerMetrics",
     .type = sdk::metrics::SW,
-    .filename = "sysmond.json"
+    .filename = "sysmond_metrics.json"
 };
 
 sdk::metrics::schema_t asic_temperature_schema = {
     .name = "AsicTemperatureMetrics",
     .type = sdk::metrics::SW,
-    .filename = "sysmond.json"
+    .filename = "sysmond_metrics.json"
 };
 
 sdk::metrics::schema_t port_temperature_schema = {
     .name = "PortTemperatureMetrics",
     .type = sdk::metrics::SW,
-    .filename = "sysmond.json"
+    .filename = "sysmond_metrics.json"
 };
 
 }    // namespace api

@@ -62,7 +62,7 @@ const metricsOutput = path.join(process.cwd(), 'metrics/', 'generated/');
 const pipelines: Pipeline[] = [
   {
     pipeline: "Iris",
-    basePath: '../../../metrics/generated/',
+    basePath: '../../../metrics/iris/generated/',
   },
   {
     pipeline: "Apulu",

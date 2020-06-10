@@ -54,7 +54,7 @@ var metricsOutput = path.join(process.cwd(), 'metrics/', 'generated/');
 var pipelines = [
     {
         pipeline: "Iris",
-        basePath: '../../../metrics/generated/',
+        basePath: '../../../metrics/iris/generated/',
     },
     {
         pipeline: "Apulu",
