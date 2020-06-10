@@ -127,6 +127,12 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 			}
 			s, err := infraAPI.Read("Network", nw.GetKey())
 			if err != nil {
+				if attach == false {
+					// during config replay afer DSC comes up, it is possible to receive an intf update transitioning from a subnet
+					// which doesn't exist anymore due to configuration changes while the DSC was down
+					log.Infof("Ignoring, Network: %s not found during intf detach update | Err: %s", nw.GetKey(), err)
+					return nil
+				}
 				log.Errorf("Network: %s not found during update | Err: %s", nw.GetKey(), err)
 				return errors.Wrapf(types.ErrObjNotFound, "Network: %s not found during update | Err: %s", nw.GetKey(), err)
 			}
