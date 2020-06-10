@@ -51,6 +51,17 @@ IoctlDevStats(PVOID buf, ULONG inlen, ULONG outlen, PULONG outbytes)
         NdisMoveMemory(&resp->stats, &ionic->port_stats,
                        sizeof(resp->stats));
 
+        if (cb.Flags & ADAPTER_FLAG_RESET) {
+            for (int i = 0; i < MAX_LIF_COUNT; ++i) {
+                for (int j = 0; j < MAX_QUEUE_PER_LIF_COUNT; ++j) {
+                    struct dev_tx_ring_stats *tx_ring = &ionic->port_stats.lif_stats[i].tx_ring[j];
+                    struct dev_rx_ring_stats *rx_ring = &ionic->port_stats.lif_stats[i].rx_ring[j];
+                    NdisZeroMemory(tx_ring, sizeof(*tx_ring));
+                    NdisZeroMemory(rx_ring, sizeof(*rx_ring));
+                }
+            }
+        }
+
         *outbytes += sizeof(*resp);
 
         ++resp;

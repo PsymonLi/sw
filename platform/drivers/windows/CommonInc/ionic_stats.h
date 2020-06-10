@@ -122,6 +122,8 @@ struct dev_rx_ring_stats {
 	__le64		completion_count;
 	__le64		completion_errors;
 	__le64		buffers_posted;
+	__le64		pool_empty;
+	__le64		more_nbl;
 
 	__le64		directed_bytes;
 	__le64		directed_packets;

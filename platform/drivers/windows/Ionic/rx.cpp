@@ -1295,6 +1295,7 @@ ionic_rx_fill(struct qcq *qcq)
         rxq_pkt = ionic_get_next_rxq_pkt(q->lif);
 
         if (rxq_pkt == NULL) {
+            ++qcq->rx_stats->pool_empty;
             DbgTrace((TRACE_COMPONENT_IO, TRACE_LEVEL_ERROR,
                       "%s No rxq packets available on fill\n", __FUNCTION__));
             break;
@@ -1437,7 +1438,8 @@ ionic_rx_napi(struct lif *lif,
     NdisDprReleaseSpinLock(&qcq->rx_ring_lock);
 
 	if (rx_tot_work_done == (u32)receive_throttle_params->MaxNblsToIndicate &&
-		receive_throttle_params->MaxNblsToIndicate < lif->nrxq_descs) {
+		receive_throttle_params->MaxNblsToIndicate < qcq->cq.num_descs - 1) {
+        ++qcq->rx_stats->more_nbl;
 		receive_throttle_params->MoreNblsPending = TRUE;
 	}
 

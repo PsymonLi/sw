@@ -39,6 +39,8 @@ typedef struct _ADAPTER_CB {
     WCHAR       AdapterName[ADAPTER_NAME_MAX_SZ];
     ULONG       Skip;
     ULONG       Index;
+    ULONG       Flags;
+#define ADAPTER_FLAG_RESET 1
 } AdapterCB;
 
 //

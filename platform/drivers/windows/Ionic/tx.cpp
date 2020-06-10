@@ -2183,8 +2183,8 @@ tx_packet_dpc_callback( struct qcq *qcq,
 
 		work_done = ionic_tx_flush(qcq, budget);
 
-		if( (work_done == budget) &&
-		   RtlCheckBit(&qcq->q.lif->state, LIF_UP)) {
+		if ((work_done == budget && budget < qcq->cq.num_descs - 1) &&
+				RtlCheckBit(&qcq->q.lif->state, LIF_UP)) {
 			throttle_params->MoreNblsPending = 1;
 		}
 

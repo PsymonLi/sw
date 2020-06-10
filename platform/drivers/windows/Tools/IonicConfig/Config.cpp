@@ -278,6 +278,8 @@ DumpRxRingStats(const char *id, struct dev_rx_ring_stats *rx_stats)
     printf("\t\t\trx%s_comp:\t%I64u\n", id, rx_stats->completion_count);
     printf("\t\t\trx%s_comp_errors:\t%I64u\n", id, rx_stats->completion_errors);
     printf("\t\t\trx%s_buffers_posted:\t%I64u\n", id, rx_stats->buffers_posted);
+    printf("\t\t\trx%s_pool_empty:\t%I64u\n", id, rx_stats->pool_empty);
+    printf("\t\t\trx%s_more_nbl:\t%I64u\n", id, rx_stats->more_nbl);
     printf("\t\t\trx%s_ucast_bytes:\t%I64u\n", id, rx_stats->directed_bytes);
     printf("\t\t\trx%s_ucast_packets:\t%I64u\n", id, rx_stats->directed_packets);
     printf("\t\t\trx%s_bcast_bytes:\t%I64u\n", id, rx_stats->bcast_bytes);
@@ -358,6 +360,8 @@ DumpDevStats(void *Stats, bool per_queue)
                 rx_total.completion_count += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].completion_count;
                 rx_total.completion_errors += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].completion_errors;
                 rx_total.buffers_posted += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].buffers_posted;
+                rx_total.pool_empty += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].pool_empty;
+                rx_total.more_nbl += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].more_nbl;
                 rx_total.directed_bytes += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].directed_bytes;
                 rx_total.directed_packets += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].directed_packets;
                 rx_total.bcast_bytes += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].bcast_bytes;
@@ -1529,7 +1533,8 @@ CmdDevStatsOpts(bool hidden)
     OptAddDevName(opts);
 
     opts.add_options()
-        ("Totals,t", optype_flag(), "Suppress per-queue stats, print totals only.");
+        ("Totals,t", optype_flag(), "Suppress per-queue stats, print totals only.")
+        ("Reset,r", optype_flag(), "Reset counters.");
 
     return opts;
 }
@@ -1548,6 +1553,10 @@ CmdDevStatsRun(command_info& info)
 
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
+
+    if (info.vm.count("Reset")) {
+        cb.Flags |= ADAPTER_FLAG_RESET;
+    }
 
     per_queue = !info.vm.count("Totals");
 
