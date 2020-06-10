@@ -43,13 +43,13 @@ type MacMetrics struct {
 
 	FramesRxJabber metrics.Counter
 
-	FramesRxPripause metrics.Counter
+	FramesRxPripause metrics.Counter `structs:"-"`
 
-	FramesRxStompedCrc metrics.Counter
+	FramesRxStompedCrc metrics.Counter `structs:"-"`
 
 	FramesRxTooLong metrics.Counter
 
-	FramesRxVlanGood metrics.Counter
+	FramesRxVlanGood metrics.Counter `structs:"-"`
 
 	FramesRxDropped metrics.Counter
 
@@ -95,7 +95,7 @@ type MacMetrics struct {
 
 	FramesTxPause metrics.Counter
 
-	FramesTxPripause metrics.Counter
+	FramesTxPripause metrics.Counter `structs:"-"`
 
 	FramesTxVlan metrics.Counter
 
@@ -155,39 +155,39 @@ type MacMetrics struct {
 
 	FramesRxPri_7 metrics.Counter
 
-	TxPripause_0_1UsCount metrics.Counter
+	TxPripause_0_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_1_1UsCount metrics.Counter
+	TxPripause_1_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_2_1UsCount metrics.Counter
+	TxPripause_2_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_3_1UsCount metrics.Counter
+	TxPripause_3_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_4_1UsCount metrics.Counter
+	TxPripause_4_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_5_1UsCount metrics.Counter
+	TxPripause_5_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_6_1UsCount metrics.Counter
+	TxPripause_6_1UsCount metrics.Counter `structs:"-"`
 
-	TxPripause_7_1UsCount metrics.Counter
+	TxPripause_7_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_0_1UsCount metrics.Counter
+	RxPripause_0_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_1_1UsCount metrics.Counter
+	RxPripause_1_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_2_1UsCount metrics.Counter
+	RxPripause_2_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_3_1UsCount metrics.Counter
+	RxPripause_3_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_4_1UsCount metrics.Counter
+	RxPripause_4_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_5_1UsCount metrics.Counter
+	RxPripause_5_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_6_1UsCount metrics.Counter
+	RxPripause_6_1UsCount metrics.Counter `structs:"-"`
 
-	RxPripause_7_1UsCount metrics.Counter
+	RxPripause_7_1UsCount metrics.Counter `structs:"-"`
 
-	RxPause_1UsCount metrics.Counter
+	RxPause_1UsCount metrics.Counter `structs:"-"`
 
 	FramesTxTruncated metrics.Counter
 

@@ -114,30 +114,9 @@
           "BaseType": "Counter"
         },
         {
-          "Name": "FramesRxPripause",
-          "DisplayName": "Rx Priority Pause Frames",
-          "Description": "Priority Pause Frames Received",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesRxStompedCrc",
-          "DisplayName": "Rx Stomped CRC Frames",
-          "Description": "Stomped CRC Frames Received",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
           "Name": "FramesRxTooLong",
           "DisplayName": "Rx Too long Frames",
           "Description": "Received Frames Too Long",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesRxVlanGood",
-          "DisplayName": "Rx Good VLAN Frames",
-          "Description": "Received VLAN Frames (Good)",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -292,13 +271,6 @@
           "Name": "FramesTxPause",
           "DisplayName": "Tx Pause Frames",
           "Description": "Frames Transmitted of type PAUSE",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "FramesTxPripause",
-          "DisplayName": "Tx Priority Pause Frames",
-          "Description": "Frames Transmitted of type PriPAUSE",
           "Units": "Count",
           "BaseType": "Counter"
         },
@@ -502,125 +474,6 @@
           "Name": "FramesRxPri_7",
           "DisplayName": "Rx Pri7 Frames",
           "Description": "Pri#7 Frames Received",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_0_1UsCount",
-          "DisplayName": "Tx Pri0Pause1US Count",
-          "Description": "Transmit Pri#0 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_1_1UsCount",
-          "DisplayName": "Tx Pri1Pause1US Count",
-          "Description": "Transmit Pri#1 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_2_1UsCount",
-          "DisplayName": "Tx Pri2Pause1US Count",
-          "Description": "Transmit Pri#2 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_3_1UsCount",
-          "DisplayName": "Tx Pri3Pause1US Count",
-          "Description": "Transmit Pri#3 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_4_1UsCount",
-          "DisplayName": "Tx Pri4Pause1US Count",
-          "Description": "Transmit Pri#4 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_5_1UsCount",
-          "DisplayName": "Tx Pri5Pause1US Count",
-          "Description": "Transmit Pri#5 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_6_1UsCount",
-          "DisplayName": "Tx Pri6Pause1US Count",
-          "Description": "Transmit Pri#6 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPripause_7_1UsCount",
-          "DisplayName": "Tx Pri7Pause1US Count",
-          "Description": "Transmit Pri#7 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_0_1UsCount",
-          "DisplayName": "Rx Pri0Pause1US Count",
-          "Description": "Receive Pri#0 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_1_1UsCount",
-          "DisplayName": "Rx Pri1Pause1US Count",
-          "Description": "Receive Pri#1 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_2_1UsCount",
-          "DisplayName": "Rx Pri2Pause1US Count",
-          "Description": "Receive Pri#2 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_3_1UsCount",
-          "DisplayName": "Rx Pri3Pause1US Count",
-          "Description": "Receive Pri#3 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_4_1UsCount",
-          "DisplayName": "Rx Pri4Pause1US Count",
-          "Description": "Receive Pri#4 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_5_1UsCount",
-          "DisplayName": "Rx Pri5Pause1US Count",
-          "Description": "Receive Pri#5 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_6_1UsCount",
-          "DisplayName": "Rx Pri6Pause1US Count",
-          "Description": "Receive Pri#6 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPripause_7_1UsCount",
-          "DisplayName": "Rx Pri7Pause1US Count",
-          "Description": "Receive Pri#7 Pause 1US Count",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPause_1UsCount",
-          "DisplayName": "Rx Pause1US Count",
-          "Description": "Receive Standard Pause 1US Count",
           "Units": "Count",
           "BaseType": "Counter"
         },
