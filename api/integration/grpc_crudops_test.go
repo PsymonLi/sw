@@ -2848,6 +2848,18 @@ func TestStaging(t *testing.T) {
 		bufobj, err := restcl.StagingV1().Buffer().Get(ctx, &opts)
 		AssertOk(t, err, "failed to get staging buffer (%s)", err)
 		// restart the apiserver and apigateway
+
+		emptyBuffer := bufName + "Empty"
+		// Create an empty buffer
+		{ // Create a buffer
+			buf := staging.Buffer{}
+			buf.Name = emptyBuffer
+			buf.Tenant = tenantName
+			_, err := restcl.StagingV1().Buffer().Create(ctx, &buf)
+			if err != nil {
+				t.Fatalf("failed to create staging buffer %s", err)
+			}
+		}
 		restartAPIGatewayAndServer(t)
 		restcl.Close()
 		apicl.Close()
@@ -2856,6 +2868,11 @@ func TestStaging(t *testing.T) {
 			t.Fatalf("cannot create REST client")
 		}
 		defer restcl.Close()
+		stagecl1, err := apiclient.NewStagedRestAPIClient("https://localhost:"+tinfo.apigwport, emptyBuffer)
+		if err != nil {
+			t.Fatalf("cannot create Staged REST client")
+		}
+		defer stagecl1.Close()
 
 		apiserverAddr := "localhost" + ":" + tinfo.apiserverport
 		apicl, err = client.NewGrpcUpstream("test", apiserverAddr, tinfo.l)
@@ -2891,6 +2908,32 @@ func TestStaging(t *testing.T) {
 			_, err := restcl.BookstoreV1().Customer().Delete(ctx, &vopts)
 			AssertOk(t, err, "failed to delete via rest (%s)", err)
 		}
+
+		// Create in empty buffer and try
+		custTest := bookstore.Customer{
+			ObjectMeta: api.ObjectMeta{
+				Name: "customerTest",
+			},
+			TypeMeta: api.TypeMeta{
+				Kind: "Customer",
+			},
+			Spec: bookstore.CustomerSpec{
+				Address:  "1113 Wherewhich lane",
+				Password: []byte("Test123"),
+			},
+		}
+		_, err = stagecl1.BookstoreV1().Customer().Create(ctx, &custTest)
+		AssertOk(t, err, "Failed to create object on empty buffer after reboot (%s)", err)
+		{
+			buf := staging.Buffer{}
+			buf.Name = emptyBuffer
+			buf.Tenant = tenantName
+			_, err := restcl.StagingV1().Buffer().Delete(ctx, &buf.ObjectMeta)
+			if err != nil {
+				t.Fatalf("failed to delete staging buffer %s", err)
+			}
+		}
+
 	}
 	{ // Delete staging object
 		objMeta := api.ObjectMeta{}

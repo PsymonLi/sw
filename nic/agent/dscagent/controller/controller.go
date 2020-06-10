@@ -18,31 +18,29 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pensando/sw/api/generated/cluster"
-	"github.com/pensando/sw/venice/utils/nodemetrics"
-
-	export "github.com/pensando/sw/venice/utils/techsupport/exporter"
-
-	"github.com/pensando/sw/nic/agent/protos/tsproto"
-	"github.com/pensando/sw/venice/globals"
-
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/httputils"
 	"github.com/pensando/sw/nic/agent/protos/generated/nimbus"
 	restapi "github.com/pensando/sw/nic/agent/protos/generated/restapi/netagent"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/nic/agent/protos/tsproto"
+	"github.com/pensando/sw/venice/evtsproxy/rpcserver"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/events/dispatcher"
 	"github.com/pensando/sw/venice/utils/events/exporters"
 	"github.com/pensando/sw/venice/utils/events/policy"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/nodemetrics"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
+	export "github.com/pensando/sw/venice/utils/techsupport/exporter"
 	"github.com/pensando/sw/venice/utils/tsdb"
 )
 
@@ -64,6 +62,7 @@ type API struct {
 	evtsDispatcher events.Dispatcher
 	policyMgr      *policy.Manager
 	policyWatcher  *policy.Watcher
+	evtsRPCServer  *rpcserver.RPCServer
 }
 
 // RestServer implements REST APIs
@@ -395,6 +394,10 @@ func (c *API) stopAlertPoliciesWatch() {
 		c.evtsDispatcher.Shutdown()
 		c.evtsDispatcher = nil
 	}
+	if c.evtsRPCServer != nil {
+		c.evtsRPCServer.Stop()
+		c.evtsRPCServer = nil
+	}
 }
 
 // WatchAlertPolicies watches for alert/event policies & handles alerts. Cloud Pipeline only
@@ -458,6 +461,15 @@ func (c *API) WatchAlertPolicies(ctx context.Context) error {
 	}
 	c.startPolicyWatcher()
 
+	// create RPC server
+	serverURL := fmt.Sprintf("127.0.0.1:%s", globals.EvtsProxyRPCPort)
+	rpcServer, err := rpcserver.NewRPCServer(globals.EvtsProxy, serverURL, c.evtsDispatcher, defLogger)
+	if err != nil {
+		log.Errorf("error instantiating events proxy RPC server (%s)", err)
+		return errors.Wrap(err, "error instantiating events proxy RPC server")
+	}
+
+	c.evtsRPCServer = rpcServer
 	c.evtsDispatcher.Start()
 	log.Info("Controller API: Started Events Dispatcher")
 	c.PipelineAPI.HandleAlerts(ctx, c.evtsDispatcher)

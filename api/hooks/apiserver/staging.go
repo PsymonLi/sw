@@ -15,6 +15,7 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/cache"
 	apierrors "github.com/pensando/sw/api/errors"
+	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/staging"
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/venice/apiserver"
@@ -288,6 +289,21 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 	return buf, false, err
 }
 
+func (h *stagingHooks) restoreEmptyOverlays(kvs kvstore.Interface, logger log.Logger) {
+	list := staging.BufferList{}
+	key := strings.TrimSuffix(list.MakeKey(string(apiclient.GroupStaging)), "/")
+	err := kvs.List(context.TODO(), key, &list)
+	if err != nil {
+
+	}
+	apisrv := apisrvpkg.MustGetAPIServer()
+	for _, b := range list.Items {
+		if _, err := cache.GetOverlay(b.Tenant, b.Name); err != nil {
+			apisrv.CreateOverlay(b.Tenant, b.Name, globals.StagingBasePath)
+		}
+	}
+}
+
 func registerStagingHooks(svc apiserver.Service, logger log.Logger) {
 	h := stagingHooks{}
 	h.svc = svc
@@ -300,6 +316,8 @@ func registerStagingHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetMethod("Commit").WithPreCommitHook(h.commitAction)
 	svc.GetMethod("Clear").WithPreCommitHook(h.clearAction)
 	svc.GetMethod("Bulkedit").WithPreCommitHook(h.bulkeditAction)
+	apisrv := apisrvpkg.MustGetAPIServer()
+	apisrv.RegisterRestoreCallback(h.restoreEmptyOverlays)
 }
 
 func init() {
