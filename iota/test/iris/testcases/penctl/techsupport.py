@@ -4,7 +4,7 @@ import iota.protos.pygen.topo_svc_pb2 as topo_svc_pb2
 import iota.test.iris.testcases.penctl.penctldefs as penctldefs
 import iota.test.iris.testcases.penctl.common as common
 
-def_tech_support_file_name = "naples-tech-support.tar.gz"
+def_tech_support_file_name = "dsc-tech-support.tar.gz"
 def_tech_support_dir_name = "PenctlTechSupportRequest"
 def_tech_support_dirs = ["CollectActions", "core", "data-misc", "dscagent-state", "events", "obfl-logs", "out.sh", "pen-logs", "PrepActions", "sysmgr-logs", "update"]
 def_tech_support_log_files = ["hal.log", "nicmgr.log", "pciemgrd.log", "linkmgr.log"]

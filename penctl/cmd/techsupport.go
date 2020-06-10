@@ -108,7 +108,7 @@ func showTechCmdHandler(cmd *cobra.Command, args []string) error {
 	jsonFormat = false
 	skipCores = false
 	if !cmd.Flags().Changed("tarball") {
-		tarFile = "naples-tech-support"
+		tarFile = "dsc-tech-support"
 	}
 	if !cmd.Flags().Changed("odir") {
 		tarFileDir = "./"
