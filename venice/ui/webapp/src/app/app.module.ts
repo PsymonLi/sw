@@ -44,6 +44,7 @@ import { NetworkService} from '@app/services/generated/network.service';
 import { BrowserService } from '@app/services/generated/browser.service';
 import { OrchestrationService } from '@app/services/generated/orchestration.service';
 import { FwlogService } from '@app/services/generated/fwlog.service';
+import { DiagnosticsService } from '@app/services/generated/diagnostics.service';
 
 // Pensando UI components
 import { AppRoutingModule } from '@app/app.routing';
@@ -189,7 +190,7 @@ import { LicenseService } from './services/license.service';
     OrchestrationService,
     FwlogService,
     LicenseService,
-
+    DiagnosticsService,
     { provide: LocationStrategy, useClass: HashLocationStrategy },
     { provide: HTTP_INTERCEPTORS, useClass: VeniceUIHttpInterceptor, multi: true },
   ],

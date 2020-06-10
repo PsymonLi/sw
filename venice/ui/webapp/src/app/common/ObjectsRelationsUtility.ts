@@ -1,5 +1,5 @@
 import { WorkloadWorkload, IWorkloadWorkload, IApiStatus, WorkloadWorkloadIntfSpec, IWorkloadAutoMsgWorkloadWatchHelper } from '@sdk/v1/models/generated/workload';
-import { ClusterDistributedServiceCard, ClusterHost, IClusterDistributedServiceCardID, IClusterAutoMsgHostWatchHelper } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterHost, IClusterDistributedServiceCardID, IClusterAutoMsgHostWatchHelper, ClusterDSCProfile, ClusterDSCProfileSpec_feature_set } from '@sdk/v1/models/generated/cluster';
 import { Utility } from '@app/common/Utility';
 import { SecuritySecurityGroup, SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
@@ -708,5 +708,50 @@ export class ObjectsRelationsUtility {
             }
         }
         return dscname ? dscname + '-' + typePart : niName;
+    }
+
+    public static getDSCFromNetworkinterface(selectedNetworkInterface: NetworkNetworkInterface, naplesList: ClusterDistributedServiceCard[]): ClusterDistributedServiceCard {
+       const dscMac = selectedNetworkInterface.status.dsc;
+       return naplesList.find( (dsc: ClusterDistributedServiceCard) => dsc.meta.name === dscMac);
+    }
+
+    public static getDSCProfileFromDSC(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[] ): ClusterDSCProfile {
+        const dscProfilenameFromDSC = dsc.spec.dscprofile;
+        const dscProfile = dscprofiles.find( (profile: ClusterDSCProfile ) => profile.meta.name === dscProfilenameFromDSC);
+        return dscProfile;
+    }
+
+    public static isDSCInDSCProfileFeatureSet(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[], featureSet: ClusterDSCProfileSpec_feature_set ): boolean {
+        const profile: ClusterDSCProfile = this.getDSCProfileFromDSC(dsc, dscprofiles);
+        if (!profile) {
+            return false;
+        }
+        return (profile.spec['feature-set'] === featureSet);
+    }
+
+    /**
+     * This API is needed in DSC metrics charts.
+     * When creating a graph with a stats category like session stats (available with the flow-aware or flow-aware+firewall Feature Sets), ensure that only DSC’s in that mode are selectable
+     *
+     * @param dsc
+     * @param dscprofiles
+     * @param featureSet
+     */
+    public static isDSCInFlowawareOrFallwallMode(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[] ): boolean {
+        return (this.isDSCInDSCProfileFeatureSet(dsc, dscprofiles, ClusterDSCProfileSpec_feature_set.flowaware) ||
+               this.isDSCInDSCProfileFeatureSet(dsc, dscprofiles, ClusterDSCProfileSpec_feature_set.flowaware_firewall) );
+    }
+
+    /**
+     * This API is needed in Network Interface metrics charts
+     * We first find the DSC which owns the given selectedNetworkInterface object
+     * Then, we compute wheter the DSC is the right mode
+     * @param selectedNetworkInterface
+     * @param dscs
+     * @param dscprofiles
+     */
+    public static isNetworkInterfaceInFlowawareOrFallwallMode(selectedNetworkInterface: NetworkNetworkInterface, dscs: ClusterDistributedServiceCard[], dscprofiles: ClusterDSCProfile[] ): boolean {
+        const  dsc: ClusterDistributedServiceCard = this.getDSCFromNetworkinterface(selectedNetworkInterface, dscs);
+        return this.isDSCInFlowawareOrFallwallMode(dsc, dscprofiles);
     }
 }

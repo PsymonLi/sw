@@ -21,6 +21,7 @@ import { ClusterupdateComponent } from './clusterupdate/clusterupdate.component'
 import { NodeConditionValues } from '@app/components/cluster-group/naples';
 import { TimeRange, KeyOperatorValueKeyword } from '@app/components/shared/timerange/utility';
 import { GraphConfig } from '@app/models/frontend/shared/userpreference.interface';
+import { DiagnosticsService } from '@app/services/generated/diagnostics.service';
 
 @Component({
   selector: 'app-cluster',
@@ -89,6 +90,7 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
     protected uiconfigService: UIConfigsService,
     protected _controllerService: ControllerService,
     protected metricsqueryService: MetricsqueryService,
+    protected diagnosticsService: DiagnosticsService,
     protected dialog: MatDialog,
   ) {
     super(_controllerService, uiconfigService);
@@ -98,6 +100,9 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
     // VS-1581 - try to avoid collision getMetrics() call and other fetch data REST call.
      this.getCluster();
      this.getNodes();
+     if (this.uiconfigService.isFeatureEnabled('cloud')) {
+       this.getModules();
+     }
     setTimeout(() => {
       this.getMetrics();
     }, 1000);
@@ -160,6 +165,48 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
         this.nodeEventUtility.processEvents(response);
       },
       this._controllerService.webSocketErrorHandler('Failed to get Nodes'),
+    );
+    this.subscriptions.push(subscription);
+  }
+
+  /**
+   * Fetch diagnostics module
+   */
+  getModules() {
+    const subscription = this.diagnosticsService.ListModuleCache().subscribe(
+      (response) => {
+        /* module json looks like this
+          {
+              "kind": "Module",
+              "api-version": "v1",
+              "meta": {
+                "name": "node3-pen-perseus",
+                "self-link": "/configs/diagnostics/v1/modules/node3-pen-perseus"
+              },
+              "spec": {
+                "log-level": "info"
+              },
+              "status": {
+                "node": "node3",
+                "module": "pen-perseus",
+                "category": "venice",
+                "service": "pen-pegasus-68f8c67b-7h7mc",
+                "service-ports": [
+                  {
+                    "name": "pen-perseus",
+                    "port": 9060
+                  }
+                ]
+              }
+            }
+        */
+        const perseusNodes = response.data.filter(module => module.status.module === 'pen-perseus');
+        // find nodes that host "pen-perseus" module
+        // user routing.proto HealthStatus to figure out RR health
+      },
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Error', 'Failed to fetch modules');
+      }
     );
     this.subscriptions.push(subscription);
   }

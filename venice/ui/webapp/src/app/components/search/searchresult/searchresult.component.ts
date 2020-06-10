@@ -372,7 +372,9 @@ export class SearchresultComponent extends BaseComponent implements OnInit, OnDe
     const list = [];
     const keys = Object.keys(eventValue);
     keys.forEach(key => {
-      list.push(key + ' = ' + Utility.getObjectValueByPropertyPath(eventValue, [key]));
+      if (key !== '_ui') { // exclude _ui key
+         list.push(key + ' = ' + Utility.getObjectValueByPropertyPath(eventValue, [key]));
+      }
     });
     return list.join(', ');
   }

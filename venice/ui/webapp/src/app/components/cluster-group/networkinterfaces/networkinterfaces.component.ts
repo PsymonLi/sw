@@ -87,8 +87,12 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   };
 
   cols: TableCol[] = [
-    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: '280px', notReorderable: true },
-    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '220px' },
+    { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: '150px', notReorderable: true },
+    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '150px' },
+    { field: 'spec.attach-tenant', header: 'Attach Tenant', class: ' networkinterfaces-column-tenant', sortable: true, width: '150px' },
+    { field: 'spec.attach-network', header: 'Attach Network', class: ' networkinterfaces-column-network', sortable: true, width: '150px' },
+    { field: 'status.if-host-status.mac-address', header: 'Mac Address', class: ' networkinterfaces-column-mac', sortable: true, width: '150px' },
+    // TODO: add ip column
     { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: '125px' },
     { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: '100px' },
     { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
@@ -145,6 +149,12 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     return this.constructor.name;
   }
 
+  filterColumns() {
+    this.cols = this.cols.filter((col: TableCol) => {
+      return !((this.uiconfigsService.isFeatureEnabled('enterprise') && (col.field === 'spec.attach-tenant' || col.field === 'spec.attach-network')));
+    });
+  }
+
   ngOnInit() {
     this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
       'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
@@ -156,6 +166,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
       }
     });
     this.tableLoading = true;
+    this.filterColumns();
     this.setDefaultToolbar();
     this.watchNetworkInterfaces();
     this.watchNaples();

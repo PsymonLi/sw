@@ -8,7 +8,7 @@ import { ChartOptions, ChartData } from 'chart.js';
 import { StatArrowDirection, CardStates, Stat } from '@app/components/shared/basecard/basecard.component';
 import { FlipState, FlipComponent } from '@app/components/shared/flip/flip.component';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
-import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase, IClusterDistributedServiceCardList } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase, IClusterDistributedServiceCardList, ClusterDSCCondition_status } from '@sdk/v1/models/generated/cluster';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { ControllerService } from '@app/services/controller.service';
 import { Subscription } from 'rxjs';
@@ -160,6 +160,8 @@ export class NaplesComponent implements OnInit, OnChanges, AfterViewInit, OnDest
   pieChartText: string = '';
   pieChartPercent: string = '';
 
+  dscsConditionMap: { [key: string]: string[]; } = {};
+
   constructor(private controllerService: ControllerService,
     protected metricsqueryService: MetricsqueryService,
     protected uiconfigsService: UIConfigsService,
@@ -216,11 +218,14 @@ export class NaplesComponent implements OnInit, OnChanges, AfterViewInit, OnDest
           },
           footer: () => {
             const maxNames = 3;
-            const length = this.unhealthyNaples.length || 0;
+            // we want to display non-admitted naples.
+            const length =  this.naples.length - this.healthyNaplesCount || 0;
             const objectLabel = length === 1 ? 'DSC' : 'DSCs';
             const displayArr = [];
+            //  this.dscsConditionMap has dsc.condition distribution map
             if (length > 0) {
-              displayArr.push(`${length} unhealthy ${objectLabel}:`);
+              displayArr.push(`${length} ${objectLabel} with a non-healthy or unknown status:`);
+              // VS-1847 - besides healthy state, there are other 5 non healthy DSC states. We can not list all. So, just use "non-healthy" label.
             }
             for (let i = 0; i < length && i < maxNames; i++) {
               displayArr.push(this.unhealthyNaples[i]);
@@ -434,8 +439,20 @@ this.healthyNaplesCount = 0;
 this.unknownNaplesCount = 0;
 this.unhealthyNaples = [];
 const admittedNics = [];
-this.naples.forEach((naple) => {
-  if (!Utility.isNICConditionNotAdmitted(naple)) {
+
+this.naples.forEach((naple, index) => {
+   /*  To create a DSC a condition, we can manually manipulate DSC status like below.  Make sure not to check in these code block. VS-1847
+   if ( index < 8) {naple.status.conditions[0].status =  (index % 3 ) === 0 ? ClusterDSCCondition_status.unknown :   ClusterDSCCondition_status.false;}
+   // */
+   const dscCondition = Utility.getNaplesCondition(naple);
+   if (dscCondition !== NaplesConditionValues.HEALTHY) {
+      if (!this.dscsConditionMap[dscCondition]) {
+        this.dscsConditionMap[dscCondition] = [];
+      }
+   }
+   this.dscsConditionMap[dscCondition].push(naple.meta.name);
+
+   if (!Utility.isNICConditionNotAdmitted(naple)) {
     if (Utility.isNaplesNICHealthy(naple)) {
       this.healthyNaplesCount += 1;
     } else if (Utility.getNaplesCondition(naple) === NaplesConditionValues.UNKNOWN) {

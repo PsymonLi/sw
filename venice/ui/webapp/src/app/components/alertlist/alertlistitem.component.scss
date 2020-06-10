@@ -60,7 +60,7 @@
 
 .alertlistitem-display-text-bold {
   min-height: 34px;
-  /** https://pensando.atlassian.net/browse/VS-296  alert.desc can be very long */
+  /** https://pensando.atlassian.net/browse/VS-296  VS-1843 alert.desc can be very long */
   font-size: 14px;
   font-weight: 700;
   font-style: normal;
@@ -69,6 +69,9 @@
   letter-spacing: normal;
   text-align: left;
   color: #676763;
+  max-height: 120px;
+  overflow: auto;
+  overflow-wrap: break-word;
 }
 
 .alertlistitem-check {

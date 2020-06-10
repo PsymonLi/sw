@@ -1376,9 +1376,11 @@ export class Utility {
       case 'Network':
         return 'network';
       case 'Orchestrator':
-          return 'controller/vcenter';
+        return 'controller/vcenter';
       case 'ArchiveRequest':
-            return 'monitoring/archive';
+        return 'monitoring/archive';
+      case 'Tenant':
+        return ''; // VS-1849, link tenant to dashboard page.
       default:
         return (!isToUseDefault) ? null : cat + '/' + pluralize.plural(kind.toLowerCase()) + '/' + name;
     }
@@ -2071,7 +2073,7 @@ export class Utility {
     }
   }
 
-  public static getNaplesConditionObject(naples: Readonly<ClusterDistributedServiceCard>): NaplesCondition {
+  public static getNaplesConditionObject(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): NaplesCondition {
     if (!naples || naples.status['admission-phase'] !== ClusterDistributedServiceCardStatus_admission_phase.admitted) {
       return { isHealthy: false, condition: _.upperFirst(NaplesConditionValues.NOTADMITTED), rebootNeeded: this.isNaplesNeedReboot(naples) };
     } else if (naples.status.conditions == null || naples.status.conditions.length === 0) {
@@ -2095,7 +2097,7 @@ export class Utility {
     }
   }
 
-  public static isNaplesNeedReboot(naples: Readonly<ClusterDistributedServiceCard>): boolean {
+  public static isNaplesNeedReboot(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): boolean {
     if (naples && naples.status && naples.status.conditions) {  // VS-1274. When a DSC is of DSC.status["admission-phase] === "decommissioned”.     status.conditions  property  is missing out.
       for (const cond of naples.status.conditions) {
         if (cond && cond.type === ClusterDSCCondition_type.reboot_needed) {
@@ -2106,27 +2108,27 @@ export class Utility {
     return false;
   }
 
-  public static isNaplesNICHealthy(naples: Readonly<ClusterDistributedServiceCard>): boolean {
+  public static isNaplesNICHealthy(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): boolean {
     return this.getNaplesConditionObject(naples).isHealthy;
   }
 
-  public static isNaplesNICHealthUnknown(naples: Readonly<ClusterDistributedServiceCard>): boolean {
+  public static isNaplesNICHealthUnknown(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): boolean {
     const cond: NaplesCondition = this.getNaplesConditionObject(naples);
     return !cond.isHealthy && cond.condition === NaplesConditionValues.UNKNOWN;
   }
 
-  public static isNaplesNICUnhealthy(naples: Readonly<ClusterDistributedServiceCard>): boolean {
+  public static isNaplesNICUnhealthy(naples: Readonly<ClusterDistributedServiceCard>| ClusterDistributedServiceCard): boolean {
     const cond: NaplesCondition = this.getNaplesConditionObject(naples);
     return !cond.isHealthy && cond.condition === NaplesConditionValues.UNHEALTHY;
   }
 
-  public static getNaplesCondition(naples: Readonly<ClusterDistributedServiceCard>): string {
+  public static getNaplesCondition(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): string {
     return this.getNaplesConditionObject(naples).condition;
   }
 
 
 
-  public static displayReasons(naples: Readonly<ClusterDistributedServiceCard>): string {
+  public static displayReasons(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): string {
     const reasonarray: string[] = [];
     if (naples && naples.status && naples.status.conditions) {
       for (let i = 0; i < naples.status['conditions'].length; i++) {
@@ -2147,7 +2149,7 @@ export class Utility {
   }
 
 
-  public static isNICConditionNotAdmitted(naples: Readonly<ClusterDistributedServiceCard>): boolean { // If this DSC is not admitted, condition in table is left blank
+  public static isNICConditionNotAdmitted(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): boolean { // If this DSC is not admitted, condition in table is left blank
     return this.getNaplesCondition(naples).toUpperCase() === NaplesConditionValues.NOTADMITTED.toUpperCase();
   }
 
