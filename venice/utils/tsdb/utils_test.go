@@ -17,18 +17,16 @@ func TestGetKeys(t *testing.T) {
 	tableName, err := getKeys(&ep, keys)
 	AssertOk(t, err, "unable to get keys")
 	Assert(t, tableName == "endpoint", "invalid table name: %s", tableName)
-	Assert(t, keys["Tenant"] == "dept1", "invalid tenant: %s", keys["Tenant"])
-	Assert(t, keys["Kind"] == "endpoint", "invalid kind: %s", keys["Kind"])
-	Assert(t, keys["Name"] == "vm-zone22", "invalid name: %s", keys["Name"])
+	Assert(t, keys["tenant"] == "dept1", "invalid tenant: %s", keys["tenant"])
+	Assert(t, keys["name"] == "vm-zone22", "invalid name: %s", keys["name"])
 
 	ep.ObjectMeta.Namespace = "prod"
 	tableName, err = getKeys(&ep, keys)
 	AssertOk(t, err, "unable to get keys")
 	Assert(t, tableName == "endpoint", "invalid table name: %s", tableName)
-	Assert(t, keys["Tenant"] == "dept1", "invalid tenant: %s", keys["Tenant"])
-	Assert(t, keys["Kind"] == "endpoint", "invalid kind: %s", keys["Kind"])
-	Assert(t, keys["Name"] == "vm-zone22", "invalid name: %s", keys["Name"])
-	Assert(t, keys["Namespace"] == "prod", "invalid namespace: %s", keys["Namespace"])
+	Assert(t, keys["tenant"] == "dept1", "invalid tenant: %s", keys["tenant"])
+	Assert(t, keys["name"] == "vm-zone22", "invalid name: %s", keys["name"])
+	Assert(t, keys["namespace"] == "prod", "invalid namespace: %s", keys["namespace"])
 }
 
 func TestFillFields(t *testing.T) {

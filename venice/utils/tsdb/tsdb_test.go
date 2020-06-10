@@ -199,9 +199,9 @@ func TestVeniceObj(t *testing.T) {
 
 		// verify three points
 		tags := []map[string]string{
-			{"Tenant": "test", "Namespace": "", "Kind": tName, "Name": "ucase1"},
-			{"Tenant": "test", "Namespace": "", "Kind": tName, "Name": "ucase2"},
-			{"Tenant": "test", "Namespace": "", "Kind": tName, "Name": "ucase3"},
+			{"tenant": "test", "namespace": "", "name": "ucase1"},
+			{"tenant": "test", "namespace": "", "name": "ucase2"},
+			{"tenant": "test", "namespace": "", "name": "ucase3"},
 		}
 		fields := []map[string]interface{}{
 			{
@@ -358,7 +358,7 @@ func TestAtomicAdds(t *testing.T) {
 		obj.AtomicEnd()
 
 		tags := []map[string]string{
-			{"Tenant": "test", "Namespace": "", "Kind": tName, "Name": "tcase1"},
+			{"tenant": "test", "namespace": "", "name": "tcase1"},
 		}
 		fields := []map[string]interface{}{
 			{
@@ -535,7 +535,7 @@ func TestHistogramCustomRangeVeniceObj(t *testing.T) {
 		time.Sleep(3 * testSendInterval)
 
 		tags := []map[string]string{
-			{"Tenant": "test", "Namespace": "", "Kind": tName, "Name": "tcase1"},
+			{"tenant": "test", "namespace": "", "Name": "tcase1"},
 		}
 		fields := []map[string]interface{}{
 			{
@@ -1102,7 +1102,7 @@ func TestVeniceObjPerf(t *testing.T) {
 	intsPerRec++       // TxBandwidth - summary (count)
 	floatsPerRec++     // TxBandwidth - summary (total)
 
-	tags := map[string]string{"Tenant": "test", "Kind": tName, "Name": "ucase1"}
+	tags := map[string]string{"tenant": "test", "name": "ucase1"}
 	AssertEventually(t, func() (bool, interface{}) {
 		return ts.metricServer.ValidateCount("", tags, numMetrics, intsPerRec, floatsPerRec, boolsPerRec, stringsPerRec), nil
 	}, "bundle didn't contain some metrics", "200ms", "2s")

@@ -27,9 +27,9 @@ var CQMeasurementGroupByMap = map[string]int{
 	"PcieMgrMetrics":         1,
 	"PciePortMetrics":        1,
 	"DropMetrics":            1,
-	"Cluster":                2,
-	"DistributedServiceCard": 2,
-	"Node":                   2,
+	"Cluster":                1,
+	"DistributedServiceCard": 1,
+	"Node":                   1,
 }
 
 // tagMap all column name in this list will NOT be considered as CQ field

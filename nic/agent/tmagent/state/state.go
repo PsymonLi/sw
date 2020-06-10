@@ -48,7 +48,6 @@ type PolicyState struct {
 	emstore                                  emstore.Emstore
 	netAgentURL                              string
 	fwLogCollectors                          sync.Map
-	fwTable                                  tsdb.Obj
 	objStoreClients                          map[string]objstore.Client // map[bucketName]Client
 	configuredID                             string
 	hostname                                 string

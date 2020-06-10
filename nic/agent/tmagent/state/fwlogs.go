@@ -82,13 +82,6 @@ func (s *PolicyState) TsdbInit(nodeUUID string, rc resolver.Interface) error {
 
 	// Init the TSDB
 	tsdb.Init(s.ctx, opts)
-
-	fwTable, err := tsdb.NewObj("Fwlogs", map[string]string{}, nil, &tsdb.ObjOpts{})
-	if err != nil {
-		return err
-	}
-	s.fwTable = fwTable
-
 	return nil
 }
 

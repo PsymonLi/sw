@@ -25,10 +25,9 @@ func getKeys(o interface{}, keys map[string]string) (string, error) {
 		return "", err
 	}
 	objKind := obj.GetObjectKind()
-	keys["Tenant"] = m.Tenant
-	keys["Namespace"] = m.Namespace
-	keys["Name"] = m.Name
-	keys["Kind"] = objKind
+	keys["tenant"] = m.Tenant
+	keys["namespace"] = m.Namespace
+	keys["name"] = m.Name
 
 	tableName := objKind
 
