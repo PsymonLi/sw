@@ -331,6 +331,7 @@ func flowShowCmdHandler(cmd *cobra.Command, args []string) {
 		cmdResp, err := HandleSvcReqCommandMsg(pds.Command_CMD_FLOW_DUMP, req)
 		if err != nil {
 			fmt.Printf("Command failed with %v error\n", err)
+			return
 		}
 		if cmdResp.ApiStatus != pds.ApiStatus_API_STATUS_OK {
 			fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
