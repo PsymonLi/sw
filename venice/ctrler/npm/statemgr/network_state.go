@@ -745,6 +745,10 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 		log.Infof("Error getting workload list %v", err)
 	}
 	for _, ns := range networkMap {
+		//Ignore internal network labeling if tenant is default
+		if ns.Tenant != "default" {
+			continue
+		}
 		if !IsObjInternal(ns.Labels) {
 			log.Infof("Updating Network %v with internal label", ns)
 			nwt := network.Network{
