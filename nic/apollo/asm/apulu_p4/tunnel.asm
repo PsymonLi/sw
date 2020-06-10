@@ -14,9 +14,18 @@ tunnel_info:
     bcf             [c1], tunnel_invalid
     mod             r1, k.p4e_i2e_entropy_hash[15:8], \
                         d.tunnel_info_d.num_nexthops
+
+    bbeq            k.control_metadata_erspan_copy, FALSE, not_erspan_copy
     seq             c1, d.tunnel_info_d.ip_type, IPTYPE_IPV4
+erspan_copy:
+    phvwr.c1        p.ipv4_00_dstAddr, d.tunnel_info_d.dipo
+    b               tunnel_info2
+    phvwr.!c1       p.ipv6_00_dstAddr, d.tunnel_info_d.dipo
+not_erspan_copy:
     phvwr.c1        p.ipv4_0_dstAddr, d.tunnel_info_d.dipo
     phvwr.!c1       p.ipv6_0_dstAddr, d.tunnel_info_d.dipo
+
+tunnel_info2:
     phvwr           p.rewrite_metadata_tunnel_vni, d.tunnel_info_d.vni
     phvwr           p.rewrite_metadata_ip_type, d.tunnel_info_d.ip_type
     phvwr           p.rewrite_metadata_tunnel_dmaci, d.tunnel_info_d.dmaci

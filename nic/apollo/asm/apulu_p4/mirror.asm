@@ -86,21 +86,11 @@ erspan_truncate:
     bal             r7, mirror_truncate
     seq             c7, r0, r0
 
-    // ethernet and ctag
-    seq             c1, d.u.erspan_d.ctag, r0
-    cmov            r7, c1, 14, 18
-    bcf             [c1], erspan_tag_done
-    cmov            r2, c1, ETHERTYPE_IPV4, ETHERTYPE_CTAG
-erspan_tagged:
-    phvwr           p.ctag_0_valid, 1
-    or              r3, ETHERTYPE_IPV4, d.u.erspan_d.ctag, 16
-    phvwr           p.{ctag_0_pcp,ctag_0_dei,ctag_0_vid,ctag_0_etherType}, r3
-
-erspan_tag_done:
-    phvwr           p.ethernet_0_valid, 1
+    // ethernet
     phvwr           p.ethernet_0_dstAddr, d.u.erspan_d.dmac
-    or              r3, r2, d.u.erspan_d.smac, 16
+    or              r3, ETHERTYPE_IPV4, d.u.erspan_d.smac, 16
     phvwr           p.{ethernet_0_srcAddr,ethernet_0_etherType}, r3
+    add             r7, r0, 14
 
     // ipv4
     phvwr           p.{ipv4_0_version,ipv4_0_ihl}, 0x45
@@ -126,8 +116,8 @@ erspan1:
     add             r6, r5, 24
     add             r7, r7, 24
     b               erspan_common
-    // 0000 1000 1001
-    add             r1, r0, 0x089
+    // 00 0010 0010 0101
+    add             r1, r0, 0x0225
 
 erspan2:
     phvwr           p.erspan2_version, 0x1
@@ -135,9 +125,9 @@ erspan2:
     cmov            r1, c5, 36, 32
     add             r6, r5, r1
     add             r7, r7, r1
-    // 0011 1000 1001 or 0010 1000 1001
+    // 00 1110 0010 0101 or 00 1010 0010 0101
     b               erspan_common
-    cmov            r1, c5, 0x389, 0x289
+    cmov            r1, c5, 0x0E25, 0x0A25
 
 erspan3:
     phvwr           p.gre_0_proto, GRE_PROTO_ERSPAN_T3
@@ -149,22 +139,23 @@ erspan3:
     cmov            r1, c5, 40, 36
     add             r6, r5, r1
     add             r7, r7, r1
-    // 0101 1000 1001 or 0100 1000 1001
-    cmov            r1, c5, 0x589, 0x489
+    // 01 0110 0010 0101 or 01 0010 0010 0101
+    cmov            r1, c5, 0x1625, 0x1225
 
 erspan_common:
     phvwr           p.{erspan3_opt_valid, erspan3_valid, erspan2_valid, \
                         gre_0_opt_seq_valid, gre_0_valid, vxlan_0_valid, \
                         udp_0_valid, ipv6_0_valid, ipv4_0_valid, \
-                        ipv4_0_udp_csum, ipv4_0_tcp_csum, ipv4_0_csum}, r1
+                        ipv4_0_udp_csum, ipv4_0_tcp_csum, ipv4_0_csum, \
+                        ctag_0_valid, ethernet_0_valid}, r1
     phvwr           p.ipv4_0_totalLen, r6
     add             r5, r5, r7
     phvwr           p.capri_p4_intrinsic_packet_len, r5
     phvwr           p.rewrite_metadata_nexthop_type, d.u.erspan_d.nexthop_type
     phvwr           p.p4e_i2e_nexthop_id, d.u.erspan_d.nexthop_id
-    phvwr           p.control_metadata_apply_tunnel2, d.u.erspan_d.apply_tunnel2
-    phvwr.e         p.rewrite_metadata_tunnel2_id, d.u.erspan_d.tunnel2_id
-    phvwr.f         p.rewrite_metadata_tunnel2_vni, d.u.erspan_d.tunnel2_vni
+    phvwr           p.vnic_metadata_egress_bd_id, d.u.erspan_d.egress_bd_id
+    phvwr.e         p.rewrite_metadata_flags, d.u.erspan_d.rewrite_flags
+    phvwr.f         p.control_metadata_erspan_copy, TRUE
 
 // r4 : adjust_len, r5 : packet_len, r6 : truncate_len, r7 : return address
 // c1 : is_erspan

@@ -58,10 +58,18 @@ action tunnel_info(nexthop_base, num_nexthops, vni, ip_type, dipo, dmaci,
     modify_field(p4e_i2e.nexthop_id, scratch_metadata.nexthop_id);
 
     modify_field(rewrite_metadata.ip_type, ip_type);
-    if (ip_type == IPTYPE_IPV4) {
-        modify_field(ipv4_0.dstAddr, dipo);
+    if (control_metadata.erspan_copy == FALSE) {
+        if (ip_type == IPTYPE_IPV4) {
+            modify_field(ipv4_0.dstAddr, dipo);
+        } else {
+            modify_field(ipv6_0.dstAddr, dipo);
+        }
     } else {
-        modify_field(ipv6_0.dstAddr, dipo);
+        if (ip_type == IPTYPE_IPV4) {
+            modify_field(ipv4_00.dstAddr, dipo);
+        } else {
+            modify_field(ipv6_00.dstAddr, dipo);
+        }
     }
     modify_field(rewrite_metadata.tunnel_dmaci, dmaci);
     modify_field(rewrite_metadata.tunnel_vni, vni);
@@ -84,7 +92,7 @@ table tunnel {
 /******************************************************************************
  * Nexthop
  *****************************************************************************/
-action encap_vlan(vlan) {
+action vlan_encap(vlan) {
     if (ctag_1.valid == FALSE) {
         add_header(ctag_1);
         modify_field(ctag_1.etherType, ethernet_1.etherType);
@@ -96,7 +104,19 @@ action encap_vlan(vlan) {
     modify_field(ctag_1.vid, vlan);
 }
 
-action decap_vlan() {
+action vlan_encap2(vlan) {
+    if (ctag_0.valid == FALSE) {
+        add_header(ctag_0);
+        modify_field(ctag_0.etherType, ethernet_0.etherType);
+        modify_field(ethernet_0.etherType, ETHERTYPE_VLAN);
+        add(capri_p4_intrinsic.packet_len, capri_p4_intrinsic.packet_len, 4);
+    }
+    modify_field(ctag_0.pcp, 0);
+    modify_field(ctag_0.dei, 0);
+    modify_field(ctag_0.vid, vlan);
+}
+
+action vlan_decap() {
     if (ctag_1.valid == TRUE) {
         remove_header(ctag_1);
         modify_field(ethernet_1.etherType, ctag_1.etherType);
@@ -200,6 +220,87 @@ action ipv6_vxlan_encap(dmac, smac) {
     add(capri_p4_intrinsic.packet_len, scratch_metadata.ip_totallen, (40 + 14));
 }
 
+action ipv4_vxlan_encap2(dmac, smac) {
+    // add tunnel headers
+    add_header(ethernet_00);
+    add_header(ipv4_00);
+    add_header(udp_00);
+    add_header(vxlan_00);
+
+    modify_field(scratch_metadata.ip_totallen, capri_p4_intrinsic.packet_len);
+    // account for new headers that are added
+    // 8 bytes of UDP header, 8 bytes of vxlan header, 20 bytes of IP header
+    add_to_field(scratch_metadata.ip_totallen, 20 + 8 + 8);
+
+    modify_field(ethernet_00.dstAddr, dmac);
+    modify_field(ethernet_00.srcAddr, smac);
+    modify_field(ethernet_00.etherType, ETHERTYPE_IPV4);
+
+    modify_field(ipv4_00.version, 4);
+    modify_field(ipv4_00.ihl, 5);
+    modify_field(ipv4_00.diffserv, rewrite_metadata.tunnel_tos);
+    modify_field(ipv4_00.totalLen, scratch_metadata.ip_totallen);
+    modify_field(ipv4_00.ttl, 64);
+    modify_field(ipv4_00.protocol, IP_PROTO_UDP);
+    modify_field(ipv4_00.srcAddr, rewrite_metadata.device_ipv4_addr);
+
+    modify_field(udp_00.srcPort, (0xC000 | p4e_i2e.entropy_hash));
+    modify_field(udp_00.dstPort, UDP_PORT_VXLAN);
+    subtract(udp_00.len, scratch_metadata.ip_totallen, 20);
+
+    modify_field(vxlan_00.flags, 0x8);
+    if (P4_REWRITE(rewrite_metadata.flags, VNI, FROM_TUNNEL) or
+        (rewrite_metadata.tunnel_vni != 0)) {
+        modify_field(vxlan_00.vni, rewrite_metadata.tunnel_vni);
+    } else {
+        modify_field(vxlan_00.vni, rewrite_metadata.vni);
+    }
+    modify_field(vxlan_00.reserved, 0);
+    modify_field(vxlan_00.reserved2, 0);
+
+    add(capri_p4_intrinsic.packet_len, scratch_metadata.ip_totallen, 14);
+}
+
+action ipv6_vxlan_encap2(dmac, smac) {
+    // add tunnel headers
+    add_header(ethernet_00);
+    add_header(ipv6_00);
+    add_header(udp_00);
+    add_header(vxlan_00);
+
+    modify_field(scratch_metadata.ip_totallen, capri_p4_intrinsic.packet_len);
+    // account for new headers that are added
+    // 8 bytes of UDP header, 8 bytes of vxlan header
+    add_to_field(scratch_metadata.ip_totallen, 8 + 8);
+
+    modify_field(ethernet_00.dstAddr, dmac);
+    modify_field(ethernet_00.srcAddr, smac);
+    modify_field(ethernet_00.etherType, ETHERTYPE_IPV6);
+
+    modify_field(ipv6_00.version, 6);
+    modify_field(ipv6_00.trafficClass, rewrite_metadata.tunnel_tos);
+    modify_field(ipv6_00.payloadLen, scratch_metadata.ip_totallen);
+    modify_field(ipv6_00.hopLimit, 64);
+    modify_field(ipv6_00.nextHdr, IP_PROTO_UDP);
+    modify_field(ipv6_00.srcAddr, rewrite_metadata.device_ipv6_addr);
+
+    modify_field(udp_00.srcPort, (0xC000 | p4e_i2e.entropy_hash));
+    modify_field(udp_00.dstPort, UDP_PORT_VXLAN);
+    modify_field(udp_00.len, scratch_metadata.ip_totallen);
+
+    modify_field(vxlan_00.flags, 0x8);
+    if (P4_REWRITE(rewrite_metadata.flags, VNI, FROM_TUNNEL) or
+        (rewrite_metadata.tunnel_vni != 0)) {
+        modify_field(vxlan_00.vni, rewrite_metadata.tunnel_vni);
+    } else {
+        modify_field(vxlan_00.vni, rewrite_metadata.vni);
+    }
+    modify_field(vxlan_00.reserved, 0);
+    modify_field(vxlan_00.reserved2, 0);
+
+    add(capri_p4_intrinsic.packet_len, scratch_metadata.ip_totallen, (40 + 14));
+}
+
 action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
                     dmaci, tunnel2_id, drop) {
     modify_field(scratch_metadata.flag, drop);
@@ -207,7 +308,7 @@ action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
         egress_drop(P4E_DROP_NEXTHOP_INVALID);
     }
 
-    if (tunnel2_id != 0) {
+    if ((control_metadata.erspan_copy == FALSE) and (tunnel2_id != 0)) {
         modify_field(control_metadata.apply_tunnel2, TRUE);
         modify_field(rewrite_metadata.tunnel2_id, tunnel2_id);
         modify_field(rewrite_metadata.tunnel2_vni, vlan);
@@ -235,17 +336,29 @@ action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
         modify_field(ethernet_1.srcAddr, rewrite_metadata.vrmac);
     }
     if (P4_REWRITE(rewrite_metadata.flags, ENCAP, VXLAN)) {
-        if (rewrite_metadata.ip_type == IPTYPE_IPV4) {
-            ipv4_vxlan_encap(dmaco, smaco);
+        if (control_metadata.erspan_copy == FALSE) {
+            if (rewrite_metadata.ip_type == IPTYPE_IPV4) {
+                ipv4_vxlan_encap(dmaco, smaco);
+            } else {
+                ipv6_vxlan_encap(dmaco, smaco);
+            }
         } else {
-            ipv6_vxlan_encap(dmaco, smaco);
+            if (rewrite_metadata.ip_type == IPTYPE_IPV4) {
+                ipv4_vxlan_encap2(dmaco, smaco);
+            } else {
+                ipv6_vxlan_encap2(dmaco, smaco);
+            }
         }
     } else {
         if (P4_REWRITE(rewrite_metadata.flags, VLAN, ENCAP)) {
-            encap_vlan(vlan);
+            if (control_metadata.erspan_copy == FALSE) {
+                vlan_encap(vlan);
+            } else {
+                vlan_encap2(vlan);
+            }
         }
         if (P4_REWRITE(rewrite_metadata.flags, VLAN, DECAP)) {
-            decap_vlan();
+            vlan_decap();
         }
     }
     modify_field(capri_intrinsic.tm_oport, port);

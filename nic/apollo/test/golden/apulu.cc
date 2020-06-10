@@ -159,7 +159,6 @@ uint64_t g_erspan_dmac1 = 0x000E0E0E0E0EULL;
 uint64_t g_erspan_smac1 = 0x00E1E2E3E4E5ULL;
 uint32_t g_erspan_dip1 = 0xC8010102;
 uint32_t g_erspan_sip1 = 0xC8010101;
-uint32_t g_tunnel2_id11 = 0x7B;
 
 uint32_t g_sip12 = 0x0B0B010C;
 uint16_t g_vnic_id12 = 0x20C;
@@ -1486,12 +1485,6 @@ tunnel2_init (void)
     tunnel2_info->ip_type = IPTYPE_IPV4;
     tunnel2_info->encap_type = P4_REWRITE_ENCAP_VXLAN;
     entry_write(tbl_id, g_tunnel2_id5, 0, 0, &data, false, 0);
-
-    memset(&data, 0, sizeof(data));
-    memcpy(tunnel2_info->dipo, &g_dipo1, 4);
-    tunnel2_info->ip_type = IPTYPE_IPV4;
-    tunnel2_info->encap_type = P4_REWRITE_ENCAP_VXLAN;
-    entry_write(tbl_id, g_tunnel2_id11, 0, 0, &data, false, 0);
 }
 
 static void
@@ -1534,9 +1527,12 @@ mirror_init (void)
     memcpy(erspan_info->smac, &g_erspan_smac1, 6);
     erspan_info->dip = g_erspan_dip1;
     erspan_info->sip = g_erspan_sip1;
-    erspan_info->nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    erspan_info->nexthop_id = g_nexthop_id1;
+    erspan_info->nexthop_type = NEXTHOP_TYPE_TUNNEL;
+    erspan_info->nexthop_id = g_tunnel_id1;
     erspan_info->span_id = g_mirror_id1;
+    erspan_info->rewrite_flags =
+        (P4_REWRITE_ENCAP_VXLAN << P4_REWRITE_ENCAP_START);
+    erspan_info->egress_bd_id = g_egress_bd_id1;
     entry_write(tbl_id, g_mirror_id1, 0, 0, &data, false, 0);
 
     memset(&data, 0, sizeof(data));
@@ -1546,11 +1542,8 @@ mirror_init (void)
     erspan_info->dip = g_erspan_dip1;
     erspan_info->sip = g_erspan_sip1;
     erspan_info->nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-    erspan_info->nexthop_id = g_nexthop_id1;
+    erspan_info->nexthop_id = g_nexthop_id2;
     erspan_info->span_id = g_mirror_id2;
-    erspan_info->apply_tunnel2 = 1;
-    erspan_info->tunnel2_id = g_tunnel2_id11;
-    erspan_info->tunnel2_vni = g_vni1;
     entry_write(tbl_id, g_mirror_id2, 0, 0, &data, false, 0);
 }
 
@@ -1931,16 +1924,16 @@ TEST_F(apulu_test, test1)
         memcpy(epkt.data(), g_rcv_pkt11, sizeof(g_rcv_pkt11));
         mpkt1.resize(sizeof(g_rcv_mpkt11_1));
         memcpy(mpkt1.data(), g_rcv_mpkt11_1, sizeof(g_rcv_mpkt11_1));
-        std::cout << "[TCID=" << tcid << "] Tx SPAN" << std::endl;
         mpkt2.resize(sizeof(g_rcv_mpkt11_2));
         memcpy(mpkt2.data(), g_rcv_mpkt11_2, sizeof(g_rcv_mpkt11_2));
+        std::cout << "[TCID=" << tcid << "] Tx SPAN" << std::endl;
         for (i = 0; i < tcscale; i++) {
             testcase_begin(tcid, i + 1);
             step_network_pkt(ipkt, TM_PORT_UPLINK_0);
             if (!getenv("SKIP_VERIFY")) {
                 get_next_pkt(opkt, port, cos);
                 EXPECT_TRUE(opkt == mpkt1);
-                EXPECT_TRUE(port == TM_PORT_UPLINK_1);
+                EXPECT_TRUE(port == TM_PORT_UPLINK_0);
                 get_next_pkt(opkt, port, cos);
                 EXPECT_TRUE(is_equal_encap_pkt(opkt, mpkt2));
                 EXPECT_TRUE(port == TM_PORT_UPLINK_1);

@@ -301,7 +301,7 @@ opkt = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
 mpkt1 = Ether(dst='00:0E:0E:0E:0E:0E', src='00:E1:E2:E3:E4:E5') / \
         IP(dst='200.1.1.2', src='200.1.1.1', id=0, ttl=64) / \
         GRE() / \
-        ERSPAN(vlan=100, sessionid=1, d=0, gra=3) / \
+        ERSPAN(vlan=100, sessionid=5, d=0, gra=3) / \
         ipkt
 mpkt2 = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
         IP(dst='12.12.1.1', src='100.101.102.103', id=0, ttl=64) / \
@@ -309,7 +309,7 @@ mpkt2 = Ether(dst='00:12:34:56:78:90', src='00:AA:BB:CC:DD:EE') / \
         Ether(dst='00:0E:0E:0E:0E:0E', src='00:E1:E2:E3:E4:E5') / \
         IP(dst='200.1.1.2', src='200.1.1.1', id=0, ttl=64) / \
         GRE() / \
-        ERSPAN(vlan=100, sessionid=5, d=0, gra=3) / \
+        ERSPAN(vlan=100, sessionid=1, d=0, gra=3) / \
         ipkt
 dump_pkt(ipkt, 'g_snd_pkt11')
 dump_pkt(opkt, 'g_rcv_pkt11')

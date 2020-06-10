@@ -59,9 +59,9 @@ action rspan(nexthop_type, nexthop_id, ctag, truncate_len, span_tm_oq) {
     add_to_field(capri_p4_intrinsic.packet_len, 4);
 }
 
-action erspan(nexthop_type, nexthop_id, apply_tunnel2, tunnel2_id, tunnel2_vni,
-              ctag, truncate_len, dmac, smac, sip, dip, span_id, dscp,
-              span_tm_oq, vlan_strip_en, erspan_type, gre_seq_en, pad6,
+action erspan(nexthop_type, nexthop_id, egress_bd_id, rewrite_flags,
+              truncate_len, dmac, smac, sip, dip, span_id, dscp,
+              span_tm_oq, vlan_strip_en, erspan_type, gre_seq_en,
               seq_num, npkts, nbytes) {
     subtract(capri_p4_intrinsic.packet_len, capri_p4_intrinsic.frame_size,
              offset_metadata.l2_1);
@@ -106,16 +106,8 @@ action erspan(nexthop_type, nexthop_id, apply_tunnel2, tunnel2_id, tunnel2_vni,
     add_header(ethernet_0);
     modify_field(ethernet_0.dstAddr, dmac);
     modify_field(ethernet_0.srcAddr, smac);
-    if (ctag == 0) {
-        modify_field(ethernet_0.etherType, ETHERTYPE_IPV4);
-        modify_field(scratch_metadata.packet_len, 14);
-    } else {
-        add_header(ctag_0);
-        modify_field(ethernet_0.etherType, ETHERTYPE_VLAN);
-        modify_field(ctag_0.vid, ctag);
-        modify_field(ctag_0.etherType, ETHERTYPE_IPV4);
-        modify_field(scratch_metadata.packet_len, 18);
-    }
+    modify_field(ethernet_0.etherType, ETHERTYPE_IPV4);
+    modify_field(scratch_metadata.packet_len, 14);
 
     // ipv4
     add_header(ipv4_0);
@@ -194,10 +186,9 @@ action erspan(nexthop_type, nexthop_id, apply_tunnel2, tunnel2_id, tunnel2_vni,
     add_to_field(capri_p4_intrinsic.packet_len, scratch_metadata.packet_len);
     modify_field(rewrite_metadata.nexthop_type, nexthop_type);
     modify_field(p4e_i2e.nexthop_id, nexthop_id);
-    modify_field(control_metadata.apply_tunnel2, apply_tunnel2);
-    modify_field(rewrite_metadata.tunnel2_id, tunnel2_id);
-    modify_field(rewrite_metadata.tunnel2_vni, tunnel2_vni);
-    modify_field(scratch_metadata.pad6, pad6);
+    modify_field(vnic_metadata.egress_bd_id, egress_bd_id);
+    modify_field(rewrite_metadata.flags, rewrite_flags);
+    modify_field(control_metadata.erspan_copy, TRUE);
     modify_field(scratch_metadata.erspan_type, erspan_type);
 }
 

@@ -66,11 +66,11 @@ control egress {
     } else {
         mapping();
         session_lookup();
-        output_properties();
         nat();
         policers();
         meter_stats();
     }
+    output_properties();
     nexthops();
     update_checksums();
     egress_stats();

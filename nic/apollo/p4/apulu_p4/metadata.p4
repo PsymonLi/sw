@@ -85,6 +85,7 @@ header_type control_metadata_t {
         is_local                : 1;
         ip_fragment             : 1;
         ip2_fragment            : 1;
+        erspan_copy             : 1;
         lif_tx_stats_id         : 16;
     }
 }
@@ -154,7 +155,6 @@ header_type scratch_metadata_t {
         meter_id            : 10;
         priority            : 5;
         erspan_type         : 2;
-        pad6                : 6;
         drop_reason         : 8;
 
         // policer

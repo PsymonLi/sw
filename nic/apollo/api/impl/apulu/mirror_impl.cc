@@ -232,28 +232,9 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
             mirror_data.erspan_action.dip =
                 spec->erspan_spec.ip_addr.addr.v4_addr;
             if (mapping->is_local()) {
-                mirror_data.erspan_action.apply_tunnel2 = FALSE;
+                // local vnic
             } else {
-                // for remote mappings, set apply_tunnel2 to TRUE for outer
-                // VxLAN header to be added
-                mirror_data.erspan_action.apply_tunnel2 = TRUE;
-                if (mirror_data.erspan_action.nexthop_type ==
-                        NEXTHOP_TYPE_ECMP) {
-                    // TODO: in this case, mapping is pointing to OVERLAY ECMP
-                    //       (i.e. group of TEPs) and we don't know which tunnel
-                    //       datapath will pick up, so not filling at this point
-                    // mirror_data.erspan_action.tunnel2_id = ;
-                } else {
-                    // nexthop type is NEXTHOP_TYPE_TUNNEL, fetch the TEP's h/w
-                    // id and populate TUNNEL table idx of that tunnel
-                    mirror_data.erspan_action.tunnel2_id =
-                        mapping_impl_obj->nexthop_id();
-                }
-                // VxLAN vnid = mapping's BD vnid
-                mirror_data.erspan_action.tunnel2_vni =
-                    subnet->fabric_encap().val.vnid;
-                // no outer vlan header added to the mirrored packet
-                mirror_data.erspan_action.ctag = 0;
+                // remote vnic
             }
             mapping_entry::soft_delete(mapping);
         }
