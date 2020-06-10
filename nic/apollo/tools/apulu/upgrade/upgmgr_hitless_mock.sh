@@ -20,6 +20,11 @@ elif [[ $STAGE_NAME == "UPG_STAGE_PREPARE" && $STAGE_TYPE == "PRE" ]]; then
     # get the next domain to be booted up
     dom=$( upgmgr_get_alt_domain  )
     echo $dom > /tmp/start_new
+elif [[ $STAGE_NAME == "UPG_STAGE_PRE_SWITCHOVER" && $STAGE_TYPE == "POST" ]]; then
+    # give some time here for process B to bringup its interfaces before
+    # switchover. otherwise program_bin re-config may hang. this is because 
+    # quiesce does not work in sim
+    sleep 20
 else
     echo "unknown input"
     exit 1

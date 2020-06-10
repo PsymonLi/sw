@@ -57,7 +57,6 @@ function upgmgr_init_domain() {
                 echo "Invalid domain id"
                 exit 1
             fi
-            export UPGRADE_DOMAIN_ID=$dom # TODO for ipc now. remove it later
             echo "$dom"
             return
         fi
@@ -90,7 +89,6 @@ function upgmgr_set_init_domain() {
     mkdir -p "$(dirname "$UPGRADE_INIT_DOM_FILE")"
     echo $dom > $UPGRADE_INIT_DOM_FILE
     upgmgr_set_init_mode "hitless"
-    export UPGRADE_DOMAIN_ID=$dom # TODO for ipc now. remove it later
     return 0
 }
 

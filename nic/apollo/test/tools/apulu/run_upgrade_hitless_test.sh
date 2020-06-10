@@ -8,11 +8,19 @@ export PIPELINE=apulu
 source $MY_DIR/../../../tools/setup_env_sim.sh $PIPELINE
 source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
 
+function remove_shm_files () {
+    rm -f /dev/shm/pds_* /dev/shm/ipc_* /dev/shm/metrics_* /dev/shm/alerts
+    rm -f /dev/shm/nicmgr_shm /dev/shm/sysmgr /dev/shm/vpp /dev/shm/upgrade*
+}
+
 # clear any upgrade specific data from previous failed run
 rm -rf /update/*       # upgrade init mode
 rm -rf /root/.pcie*  # pciemgrd saves here in sim mode
 rm -rf /sw/nic/*.log /sw/nic/core.*
 mkdir -p /update
+rm -rf /tmp/dom*
+rm -rf /.upgrade*  # TODO move all the above to a function
+remove_shm_files
 
 function terminate() {
     pid=`pgrep -f "$1"`
@@ -26,7 +34,7 @@ function check_status() {
     file=$1
     count=0
     while [ ! -f $file ];do
-        echo "waiting for file $f"
+        #echo "waiting for file $f"
         sleep 1
         count=`expr $count + 1`
         if [ $count -ge 240 ];then
@@ -65,6 +73,7 @@ export PDSPKG_TOPDIR="/tmp/$UPGRADE_DOMAIN_A"
 #/sw/dol/main.py $DOL_ARGS 2>&1 | tee dol.log
 #status=${PIPESTATUS[0]}
 
+sleep 30 # for all processes to be up
 $BUILD_DIR/bin/pdsupgclient -m hitless &
 
 # wait for second process request

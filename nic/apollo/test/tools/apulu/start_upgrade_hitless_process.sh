@@ -28,6 +28,7 @@ if [[ $SET_DOM = "1" ]];then
     # set upgrade mode
     source $PDSPKG_TOPDIR/sdk/upgrade/core/upgmgr_core_base.sh
     upgmgr_set_init_domain $HITLESS_DOM
+    export IPC_SUFFIX="_${HITLESS_DOM}"
 fi
 
 function trap_finish () {
@@ -40,30 +41,29 @@ function trap_finish () {
 }
 trap trap_finish EXIT
 
-# temp fix till nicmgr is ready
-if [[ $HITLESS_DOM == "dom_b" ]];then
-    cp /tmp/dom_a/conf/gen/device_info.txt $PDSPKG_TOPDIR/conf/gen
-fi
 
 # start processes
 $BUILD_DIR/bin/pciemgrd -d &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
+
 # temp fix till nicmgr is ready
 if [[ $HITLESS_DOM == "dom_b" ]];then
     while [ ! -f $PDSPKG_TOPDIR/nicmgr.log ];do
-	sleep 1
+        sleep 1
     done
-    sleep 2
+    # use the config from dom_a
+    cp /tmp/dom_a/conf/gen/device_info.txt $PDSPKG_TOPDIR/conf/gen
     cp /tmp/dom_a/nicmgr.log $PDSPKG_TOPDIR/
+else
+    upg_wait_for_pdsagent
 fi
 
 $PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS} &
 
-upg_wait_for_pdsagent
-touch /tmp/agent_up
-
 # start upgrade manager
 upg_setup $BUILD_DIR/gen/upgrade_hitless_sim.json upgrade_hitless.json
 $BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > $PDSPKG_TOPDIR/upgrade_mgr.log 2>&1 &
+
+touch /tmp/agent_up
 
 wait

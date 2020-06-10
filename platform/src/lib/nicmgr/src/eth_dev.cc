@@ -423,7 +423,7 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec) {
     PortConfigMem(false);
     PortStatusMem(false);
     DevcmdInit();
-    DevcmdStart();
+    // DevcmdStart(); TODO @karthi - commented out for SIM working
     StatsInit();
 }
 

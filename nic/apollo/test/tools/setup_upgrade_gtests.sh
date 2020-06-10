@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -e
+# set -e
 
 export OPERD_REGIONS=$CONFIG_PATH/operd-regions.json
 OPERD_REGION='upgradelog'
@@ -136,6 +136,8 @@ function hitless_copy_files() {
     # this has to be in tools
     mkdir -p $PDSPKG_TOPDIR/tools/
     cp ./sdk/upgrade/core/upgmgr_core_base.sh $PDSPKG_TOPDIR/tools/
+    cp ./operd/metrics/cloud/* $PDSPKG_TOPDIR/conf
+    cp ./operd/metrics/common/* $PDSPKG_TOPDIR/conf
     rm -rf $PDSPKG_TOPDIR/conf/gen/*
 }
 

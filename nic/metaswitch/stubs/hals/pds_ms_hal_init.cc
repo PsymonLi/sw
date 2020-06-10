@@ -275,6 +275,13 @@ pds_ms_upg_cb_ev_switchover (api::upg_ev_params_t *params)
 }
 
 static sdk_ret_t
+pds_ms_upg_cb_ev_pre_switchover (api::upg_ev_params_t *params)
+{
+    PDS_TRACE_DEBUG("In PDS MS upgrade pre switchover callback...");
+    return SDK_RET_OK;
+}
+
+static sdk_ret_t
 pds_ms_upg_cb_ev_repeal (api::upg_ev_params_t *params)
 {
     PDS_TRACE_DEBUG("In PDS MS upgrade repeal callback...");
@@ -295,6 +302,7 @@ pds_ms_upg_hitless_init (void)
     ev_hdlr.config_replay_hdlr = pds_ms_upg_cb_ev_config_replay;
     ev_hdlr.sync_hdlr = pds_ms_upg_cb_ev_sync;
     ev_hdlr.quiesce_hdlr = pds_ms_upg_cb_ev_quiesce;
+    ev_hdlr.pre_switchover_hdlr = pds_ms_upg_cb_ev_pre_switchover;
     ev_hdlr.switchover_hdlr = pds_ms_upg_cb_ev_switchover;
     ev_hdlr.repeal_hdlr = pds_ms_upg_cb_ev_repeal;
 

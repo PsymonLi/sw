@@ -428,11 +428,11 @@ upg_ev_switchover (upg_ev_params_t *params)
 {
     sdk_ret_t ret, rv;
 
-    // sim it always fail, so ignore
     ret = sdk::asic::pd::asicpd_quiesce_start();
     if (ret != SDK_RET_OK) {
        PDS_TRACE_ERR("Upgrade pipeline quiesce start failed");
     }
+    // sim it always fail, so ignore the error
     if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
         ret = SDK_RET_OK;
     }
@@ -451,6 +451,10 @@ upg_ev_switchover (upg_ev_params_t *params)
     }
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade pipeline switchover failed, err %u", ret);
+    }
+    // sim it always fail, so ignore the error
+    if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
+        ret = SDK_RET_OK;
     }
     return ret;
 }
