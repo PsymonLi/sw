@@ -8,6 +8,7 @@ package orchestrationGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -69,9 +70,18 @@ func (a adapterOrchestratorV1) AutoAddOrchestrator(oldctx oldcontext.Context, t 
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*orchestration.Orchestrator)
-		return a.service.AutoAddOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddOrchestrator(inctx, in)
+		}
+		return a.service.AutoAddOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -96,9 +106,18 @@ func (a adapterOrchestratorV1) AutoDeleteOrchestrator(oldctx oldcontext.Context,
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*orchestration.Orchestrator)
-		return a.service.AutoDeleteOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteOrchestrator(inctx, in)
+		}
+		return a.service.AutoDeleteOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -123,9 +142,18 @@ func (a adapterOrchestratorV1) AutoGetOrchestrator(oldctx oldcontext.Context, t 
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*orchestration.Orchestrator)
-		return a.service.AutoGetOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetOrchestrator(inctx, in)
+		}
+		return a.service.AutoGetOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -150,9 +178,18 @@ func (a adapterOrchestratorV1) AutoLabelOrchestrator(oldctx oldcontext.Context, 
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelOrchestrator(inctx, in)
+		}
+		return a.service.AutoLabelOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -180,9 +217,18 @@ func (a adapterOrchestratorV1) AutoListOrchestrator(oldctx oldcontext.Context, t
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListOrchestrator(inctx, in)
+		}
+		return a.service.AutoListOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -207,9 +253,18 @@ func (a adapterOrchestratorV1) AutoUpdateOrchestrator(oldctx oldcontext.Context,
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*orchestration.Orchestrator)
-		return a.service.AutoUpdateOrchestrator(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(orchestration.OrchestratorV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateOrchestrator(inctx, in)
+		}
+		return a.service.AutoUpdateOrchestrator(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

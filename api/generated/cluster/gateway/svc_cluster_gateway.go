@@ -8,6 +8,7 @@ package clusterGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -69,9 +70,18 @@ func (a adapterClusterV1) AuthBootstrapComplete(oldctx oldcontext.Context, t *cl
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ClusterAuthBootstrapRequest)
-		return a.service.AuthBootstrapComplete(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AuthBootstrapComplete(inctx, in)
+		}
+		return a.service.AuthBootstrapComplete(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -96,9 +106,18 @@ func (a adapterClusterV1) AutoAddCluster(oldctx oldcontext.Context, t *cluster.C
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Cluster)
-		return a.service.AutoAddCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddCluster(inctx, in)
+		}
+		return a.service.AutoAddCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -123,9 +142,18 @@ func (a adapterClusterV1) AutoAddConfigurationSnapshot(oldctx oldcontext.Context
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ConfigurationSnapshot)
-		return a.service.AutoAddConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoAddConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -150,9 +178,18 @@ func (a adapterClusterV1) AutoAddCredentials(oldctx oldcontext.Context, t *clust
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Credentials)
-		return a.service.AutoAddCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddCredentials(inctx, in)
+		}
+		return a.service.AutoAddCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -177,9 +214,18 @@ func (a adapterClusterV1) AutoAddDSCProfile(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DSCProfile)
-		return a.service.AutoAddDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddDSCProfile(inctx, in)
+		}
+		return a.service.AutoAddDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -204,9 +250,18 @@ func (a adapterClusterV1) AutoAddDistributedServiceCard(oldctx oldcontext.Contex
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DistributedServiceCard)
-		return a.service.AutoAddDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoAddDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -231,9 +286,18 @@ func (a adapterClusterV1) AutoAddHost(oldctx oldcontext.Context, t *cluster.Host
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Host)
-		return a.service.AutoAddHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddHost(inctx, in)
+		}
+		return a.service.AutoAddHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -258,9 +322,18 @@ func (a adapterClusterV1) AutoAddLicense(oldctx oldcontext.Context, t *cluster.L
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.License)
-		return a.service.AutoAddLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddLicense(inctx, in)
+		}
+		return a.service.AutoAddLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -285,9 +358,18 @@ func (a adapterClusterV1) AutoAddNode(oldctx oldcontext.Context, t *cluster.Node
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Node)
-		return a.service.AutoAddNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddNode(inctx, in)
+		}
+		return a.service.AutoAddNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -312,9 +394,18 @@ func (a adapterClusterV1) AutoAddSnapshotRestore(oldctx oldcontext.Context, t *c
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.SnapshotRestore)
-		return a.service.AutoAddSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoAddSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -339,9 +430,18 @@ func (a adapterClusterV1) AutoAddTenant(oldctx oldcontext.Context, t *cluster.Te
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Tenant)
-		return a.service.AutoAddTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddTenant(inctx, in)
+		}
+		return a.service.AutoAddTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -366,9 +466,18 @@ func (a adapterClusterV1) AutoAddVersion(oldctx oldcontext.Context, t *cluster.V
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Version)
-		return a.service.AutoAddVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddVersion(inctx, in)
+		}
+		return a.service.AutoAddVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -393,9 +502,18 @@ func (a adapterClusterV1) AutoDeleteCluster(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Cluster)
-		return a.service.AutoDeleteCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteCluster(inctx, in)
+		}
+		return a.service.AutoDeleteCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -420,9 +538,18 @@ func (a adapterClusterV1) AutoDeleteConfigurationSnapshot(oldctx oldcontext.Cont
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ConfigurationSnapshot)
-		return a.service.AutoDeleteConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoDeleteConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -447,9 +574,18 @@ func (a adapterClusterV1) AutoDeleteCredentials(oldctx oldcontext.Context, t *cl
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Credentials)
-		return a.service.AutoDeleteCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteCredentials(inctx, in)
+		}
+		return a.service.AutoDeleteCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -474,9 +610,18 @@ func (a adapterClusterV1) AutoDeleteDSCProfile(oldctx oldcontext.Context, t *clu
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DSCProfile)
-		return a.service.AutoDeleteDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteDSCProfile(inctx, in)
+		}
+		return a.service.AutoDeleteDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -501,9 +646,18 @@ func (a adapterClusterV1) AutoDeleteDistributedServiceCard(oldctx oldcontext.Con
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DistributedServiceCard)
-		return a.service.AutoDeleteDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoDeleteDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -528,9 +682,18 @@ func (a adapterClusterV1) AutoDeleteHost(oldctx oldcontext.Context, t *cluster.H
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Host)
-		return a.service.AutoDeleteHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteHost(inctx, in)
+		}
+		return a.service.AutoDeleteHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -555,9 +718,18 @@ func (a adapterClusterV1) AutoDeleteLicense(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.License)
-		return a.service.AutoDeleteLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteLicense(inctx, in)
+		}
+		return a.service.AutoDeleteLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -582,9 +754,18 @@ func (a adapterClusterV1) AutoDeleteNode(oldctx oldcontext.Context, t *cluster.N
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Node)
-		return a.service.AutoDeleteNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteNode(inctx, in)
+		}
+		return a.service.AutoDeleteNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -609,9 +790,18 @@ func (a adapterClusterV1) AutoDeleteSnapshotRestore(oldctx oldcontext.Context, t
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.SnapshotRestore)
-		return a.service.AutoDeleteSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoDeleteSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -636,9 +826,18 @@ func (a adapterClusterV1) AutoDeleteTenant(oldctx oldcontext.Context, t *cluster
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Tenant)
-		return a.service.AutoDeleteTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteTenant(inctx, in)
+		}
+		return a.service.AutoDeleteTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -663,9 +862,18 @@ func (a adapterClusterV1) AutoDeleteVersion(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Version)
-		return a.service.AutoDeleteVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteVersion(inctx, in)
+		}
+		return a.service.AutoDeleteVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -690,9 +898,18 @@ func (a adapterClusterV1) AutoGetCluster(oldctx oldcontext.Context, t *cluster.C
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Cluster)
-		return a.service.AutoGetCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetCluster(inctx, in)
+		}
+		return a.service.AutoGetCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -717,9 +934,18 @@ func (a adapterClusterV1) AutoGetConfigurationSnapshot(oldctx oldcontext.Context
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ConfigurationSnapshot)
-		return a.service.AutoGetConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoGetConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -744,9 +970,18 @@ func (a adapterClusterV1) AutoGetCredentials(oldctx oldcontext.Context, t *clust
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Credentials)
-		return a.service.AutoGetCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetCredentials(inctx, in)
+		}
+		return a.service.AutoGetCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -771,9 +1006,18 @@ func (a adapterClusterV1) AutoGetDSCProfile(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DSCProfile)
-		return a.service.AutoGetDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetDSCProfile(inctx, in)
+		}
+		return a.service.AutoGetDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -798,9 +1042,18 @@ func (a adapterClusterV1) AutoGetDistributedServiceCard(oldctx oldcontext.Contex
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DistributedServiceCard)
-		return a.service.AutoGetDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoGetDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -825,9 +1078,18 @@ func (a adapterClusterV1) AutoGetHost(oldctx oldcontext.Context, t *cluster.Host
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Host)
-		return a.service.AutoGetHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetHost(inctx, in)
+		}
+		return a.service.AutoGetHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -852,9 +1114,18 @@ func (a adapterClusterV1) AutoGetLicense(oldctx oldcontext.Context, t *cluster.L
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.License)
-		return a.service.AutoGetLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetLicense(inctx, in)
+		}
+		return a.service.AutoGetLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -879,9 +1150,18 @@ func (a adapterClusterV1) AutoGetNode(oldctx oldcontext.Context, t *cluster.Node
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Node)
-		return a.service.AutoGetNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetNode(inctx, in)
+		}
+		return a.service.AutoGetNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -906,9 +1186,18 @@ func (a adapterClusterV1) AutoGetSnapshotRestore(oldctx oldcontext.Context, t *c
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.SnapshotRestore)
-		return a.service.AutoGetSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoGetSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -933,9 +1222,18 @@ func (a adapterClusterV1) AutoGetTenant(oldctx oldcontext.Context, t *cluster.Te
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Tenant)
-		return a.service.AutoGetTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetTenant(inctx, in)
+		}
+		return a.service.AutoGetTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -960,9 +1258,18 @@ func (a adapterClusterV1) AutoGetVersion(oldctx oldcontext.Context, t *cluster.V
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Version)
-		return a.service.AutoGetVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetVersion(inctx, in)
+		}
+		return a.service.AutoGetVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -987,9 +1294,18 @@ func (a adapterClusterV1) AutoLabelCluster(oldctx oldcontext.Context, t *api.Lab
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelCluster(inctx, in)
+		}
+		return a.service.AutoLabelCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1014,9 +1330,18 @@ func (a adapterClusterV1) AutoLabelConfigurationSnapshot(oldctx oldcontext.Conte
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoLabelConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1041,9 +1366,18 @@ func (a adapterClusterV1) AutoLabelCredentials(oldctx oldcontext.Context, t *api
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelCredentials(inctx, in)
+		}
+		return a.service.AutoLabelCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1068,9 +1402,18 @@ func (a adapterClusterV1) AutoLabelDSCProfile(oldctx oldcontext.Context, t *api.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelDSCProfile(inctx, in)
+		}
+		return a.service.AutoLabelDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1095,9 +1438,18 @@ func (a adapterClusterV1) AutoLabelDistributedServiceCard(oldctx oldcontext.Cont
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoLabelDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1122,9 +1474,18 @@ func (a adapterClusterV1) AutoLabelHost(oldctx oldcontext.Context, t *api.Label,
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelHost(inctx, in)
+		}
+		return a.service.AutoLabelHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1149,9 +1510,18 @@ func (a adapterClusterV1) AutoLabelLicense(oldctx oldcontext.Context, t *api.Lab
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelLicense(inctx, in)
+		}
+		return a.service.AutoLabelLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1176,9 +1546,18 @@ func (a adapterClusterV1) AutoLabelNode(oldctx oldcontext.Context, t *api.Label,
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelNode(inctx, in)
+		}
+		return a.service.AutoLabelNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1203,9 +1582,18 @@ func (a adapterClusterV1) AutoLabelSnapshotRestore(oldctx oldcontext.Context, t 
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoLabelSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1230,9 +1618,18 @@ func (a adapterClusterV1) AutoLabelTenant(oldctx oldcontext.Context, t *api.Labe
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelTenant(inctx, in)
+		}
+		return a.service.AutoLabelTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1257,9 +1654,18 @@ func (a adapterClusterV1) AutoLabelVersion(oldctx oldcontext.Context, t *api.Lab
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelVersion(inctx, in)
+		}
+		return a.service.AutoLabelVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1287,9 +1693,18 @@ func (a adapterClusterV1) AutoListCluster(oldctx oldcontext.Context, t *api.List
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListCluster(inctx, in)
+		}
+		return a.service.AutoListCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1317,9 +1732,18 @@ func (a adapterClusterV1) AutoListConfigurationSnapshot(oldctx oldcontext.Contex
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoListConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1347,9 +1771,18 @@ func (a adapterClusterV1) AutoListCredentials(oldctx oldcontext.Context, t *api.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListCredentials(inctx, in)
+		}
+		return a.service.AutoListCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1377,9 +1810,18 @@ func (a adapterClusterV1) AutoListDSCProfile(oldctx oldcontext.Context, t *api.L
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListDSCProfile(inctx, in)
+		}
+		return a.service.AutoListDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1407,9 +1849,18 @@ func (a adapterClusterV1) AutoListDistributedServiceCard(oldctx oldcontext.Conte
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoListDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1437,9 +1888,18 @@ func (a adapterClusterV1) AutoListHost(oldctx oldcontext.Context, t *api.ListWat
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListHost(inctx, in)
+		}
+		return a.service.AutoListHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1467,9 +1927,18 @@ func (a adapterClusterV1) AutoListLicense(oldctx oldcontext.Context, t *api.List
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListLicense(inctx, in)
+		}
+		return a.service.AutoListLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1497,9 +1966,18 @@ func (a adapterClusterV1) AutoListNode(oldctx oldcontext.Context, t *api.ListWat
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListNode(inctx, in)
+		}
+		return a.service.AutoListNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1527,9 +2005,18 @@ func (a adapterClusterV1) AutoListSnapshotRestore(oldctx oldcontext.Context, t *
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoListSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1557,9 +2044,18 @@ func (a adapterClusterV1) AutoListTenant(oldctx oldcontext.Context, t *api.ListW
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListTenant(inctx, in)
+		}
+		return a.service.AutoListTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1587,9 +2083,18 @@ func (a adapterClusterV1) AutoListVersion(oldctx oldcontext.Context, t *api.List
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListVersion(inctx, in)
+		}
+		return a.service.AutoListVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1614,9 +2119,18 @@ func (a adapterClusterV1) AutoUpdateCluster(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Cluster)
-		return a.service.AutoUpdateCluster(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateCluster(inctx, in)
+		}
+		return a.service.AutoUpdateCluster(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1641,9 +2155,18 @@ func (a adapterClusterV1) AutoUpdateConfigurationSnapshot(oldctx oldcontext.Cont
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ConfigurationSnapshot)
-		return a.service.AutoUpdateConfigurationSnapshot(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateConfigurationSnapshot(inctx, in)
+		}
+		return a.service.AutoUpdateConfigurationSnapshot(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1668,9 +2191,18 @@ func (a adapterClusterV1) AutoUpdateCredentials(oldctx oldcontext.Context, t *cl
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Credentials)
-		return a.service.AutoUpdateCredentials(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateCredentials(inctx, in)
+		}
+		return a.service.AutoUpdateCredentials(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1695,9 +2227,18 @@ func (a adapterClusterV1) AutoUpdateDSCProfile(oldctx oldcontext.Context, t *clu
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DSCProfile)
-		return a.service.AutoUpdateDSCProfile(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateDSCProfile(inctx, in)
+		}
+		return a.service.AutoUpdateDSCProfile(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1722,9 +2263,18 @@ func (a adapterClusterV1) AutoUpdateDistributedServiceCard(oldctx oldcontext.Con
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.DistributedServiceCard)
-		return a.service.AutoUpdateDistributedServiceCard(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateDistributedServiceCard(inctx, in)
+		}
+		return a.service.AutoUpdateDistributedServiceCard(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1749,9 +2299,18 @@ func (a adapterClusterV1) AutoUpdateHost(oldctx oldcontext.Context, t *cluster.H
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Host)
-		return a.service.AutoUpdateHost(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateHost(inctx, in)
+		}
+		return a.service.AutoUpdateHost(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1776,9 +2335,18 @@ func (a adapterClusterV1) AutoUpdateLicense(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.License)
-		return a.service.AutoUpdateLicense(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateLicense(inctx, in)
+		}
+		return a.service.AutoUpdateLicense(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1803,9 +2371,18 @@ func (a adapterClusterV1) AutoUpdateNode(oldctx oldcontext.Context, t *cluster.N
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Node)
-		return a.service.AutoUpdateNode(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateNode(inctx, in)
+		}
+		return a.service.AutoUpdateNode(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1830,9 +2407,18 @@ func (a adapterClusterV1) AutoUpdateSnapshotRestore(oldctx oldcontext.Context, t
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.SnapshotRestore)
-		return a.service.AutoUpdateSnapshotRestore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateSnapshotRestore(inctx, in)
+		}
+		return a.service.AutoUpdateSnapshotRestore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1857,9 +2443,18 @@ func (a adapterClusterV1) AutoUpdateTenant(oldctx oldcontext.Context, t *cluster
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Tenant)
-		return a.service.AutoUpdateTenant(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateTenant(inctx, in)
+		}
+		return a.service.AutoUpdateTenant(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1884,9 +2479,18 @@ func (a adapterClusterV1) AutoUpdateVersion(oldctx oldcontext.Context, t *cluste
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.Version)
-		return a.service.AutoUpdateVersion(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateVersion(inctx, in)
+		}
+		return a.service.AutoUpdateVersion(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1911,9 +2515,18 @@ func (a adapterClusterV1) Restore(oldctx oldcontext.Context, t *cluster.Snapshot
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.SnapshotRestore)
-		return a.service.Restore(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.Restore(inctx, in)
+		}
+		return a.service.Restore(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1938,9 +2551,18 @@ func (a adapterClusterV1) Save(oldctx oldcontext.Context, t *cluster.Configurati
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.ConfigurationSnapshotRequest)
-		return a.service.Save(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.Save(inctx, in)
+		}
+		return a.service.Save(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -1965,9 +2587,18 @@ func (a adapterClusterV1) UpdateTLSConfig(oldctx oldcontext.Context, t *cluster.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*cluster.UpdateTLSConfigRequest)
-		return a.service.UpdateTLSConfig(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(cluster.ClusterV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.UpdateTLSConfig(inctx, in)
+		}
+		return a.service.UpdateTLSConfig(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

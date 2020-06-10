@@ -8,6 +8,7 @@ package eventsGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -65,9 +66,18 @@ func (a adapterEventsV1) GetEvent(oldctx oldcontext.Context, t *events.GetEventR
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*events.GetEventRequest)
-		return a.service.GetEvent(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(events.EventsV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.GetEvent(inctx, in)
+		}
+		return a.service.GetEvent(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -88,9 +98,18 @@ func (a adapterEventsV1) GetEvents(oldctx oldcontext.Context, t *api.ListWatchOp
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.GetEvents(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(events.EventsV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.GetEvents(inctx, in)
+		}
+		return a.service.GetEvents(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

@@ -32,6 +32,8 @@ const (
 	CtxKeyGetPersistedKV      = "GetPersistedKV"
 	CtxKeyPersistDirectKV     = "CtxKeyPersistDirectKV"
 	CtxKeyAPISrvLargeBuffer   = "APISrvLargeBuffer"
+	CtxKeyAPIGwOverrideClient = "CtxKeyAPIGwOverrideClient"
+	CtxKeyAPIGwCleanupCB      = "CtxKeyAPIGwCleanupCB"
 )
 
 var (

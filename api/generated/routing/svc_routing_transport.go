@@ -25,72 +25,48 @@ var _ api.ObjectMeta
 type grpcServerRoutingV1 struct {
 	Endpoints EndpointsRoutingV1Server
 
-	AutoAddNeighborHdlr    grpctransport.Handler
-	AutoDeleteNeighborHdlr grpctransport.Handler
-	AutoGetNeighborHdlr    grpctransport.Handler
-	AutoLabelNeighborHdlr  grpctransport.Handler
-	AutoListNeighborHdlr   grpctransport.Handler
-	AutoUpdateNeighborHdlr grpctransport.Handler
+	GetNeighborHdlr   grpctransport.Handler
+	HealthZHdlr       grpctransport.Handler
+	ListNeighborsHdlr grpctransport.Handler
 }
 
 // MakeGRPCServerRoutingV1 creates a GRPC server for RoutingV1 service
 func MakeGRPCServerRoutingV1(ctx context.Context, endpoints EndpointsRoutingV1Server, logger log.Logger) RoutingV1Server {
 	return &grpcServerRoutingV1{
 		Endpoints: endpoints,
-		AutoAddNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoAddNeighborEndpoint,
-			DecodeGrpcReqNeighbor,
+		GetNeighborHdlr: grpctransport.NewServer(
+			endpoints.GetNeighborEndpoint,
+			DecodeGrpcReqNeighborFilter,
 			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoAddNeighbor", logger)))...,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("GetNeighbor", logger)))...,
 		),
 
-		AutoDeleteNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoDeleteNeighborEndpoint,
-			DecodeGrpcReqNeighbor,
-			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoDeleteNeighbor", logger)))...,
+		HealthZHdlr: grpctransport.NewServer(
+			endpoints.HealthZEndpoint,
+			DecodeGrpcReqEmptyReq,
+			EncodeGrpcRespHealth,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("HealthZ", logger)))...,
 		),
 
-		AutoGetNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoGetNeighborEndpoint,
-			DecodeGrpcReqNeighbor,
-			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoGetNeighbor", logger)))...,
-		),
-
-		AutoLabelNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoLabelNeighborEndpoint,
-			DecodeGrpcReqLabel,
-			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoLabelNeighbor", logger)))...,
-		),
-
-		AutoListNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoListNeighborEndpoint,
-			DecodeGrpcReqListWatchOptions,
+		ListNeighborsHdlr: grpctransport.NewServer(
+			endpoints.ListNeighborsEndpoint,
+			DecodeGrpcReqNeighborFilter,
 			EncodeGrpcRespNeighborList,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoListNeighbor", logger)))...,
-		),
-
-		AutoUpdateNeighborHdlr: grpctransport.NewServer(
-			endpoints.AutoUpdateNeighborEndpoint,
-			DecodeGrpcReqNeighbor,
-			EncodeGrpcRespNeighbor,
-			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("AutoUpdateNeighbor", logger)))...,
+			append([]grpctransport.ServerOption{grpctransport.ServerErrorLogger(logger), grpctransport.ServerBefore(recoverVersion)}, grpctransport.ServerBefore(trace.FromGRPCRequest("ListNeighbors", logger)))...,
 		),
 	}
 }
 
-func (s *grpcServerRoutingV1) AutoAddNeighbor(ctx oldcontext.Context, req *Neighbor) (*Neighbor, error) {
-	_, resp, err := s.AutoAddNeighborHdlr.ServeGRPC(ctx, req)
+func (s *grpcServerRoutingV1) GetNeighbor(ctx oldcontext.Context, req *NeighborFilter) (*Neighbor, error) {
+	_, resp, err := s.GetNeighborHdlr.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	r := resp.(respRoutingV1AutoAddNeighbor).V
-	return &r, resp.(respRoutingV1AutoAddNeighbor).Err
+	r := resp.(respRoutingV1GetNeighbor).V
+	return &r, resp.(respRoutingV1GetNeighbor).Err
 }
 
-func decodeHTTPrespRoutingV1AutoAddNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeHTTPrespRoutingV1GetNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errorDecoder(r)
 	}
@@ -99,70 +75,34 @@ func decodeHTTPrespRoutingV1AutoAddNeighbor(_ context.Context, r *http.Response)
 	return &resp, err
 }
 
-func (s *grpcServerRoutingV1) AutoDeleteNeighbor(ctx oldcontext.Context, req *Neighbor) (*Neighbor, error) {
-	_, resp, err := s.AutoDeleteNeighborHdlr.ServeGRPC(ctx, req)
+func (s *grpcServerRoutingV1) HealthZ(ctx oldcontext.Context, req *EmptyReq) (*Health, error) {
+	_, resp, err := s.HealthZHdlr.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	r := resp.(respRoutingV1AutoDeleteNeighbor).V
-	return &r, resp.(respRoutingV1AutoDeleteNeighbor).Err
+	r := resp.(respRoutingV1HealthZ).V
+	return &r, resp.(respRoutingV1HealthZ).Err
 }
 
-func decodeHTTPrespRoutingV1AutoDeleteNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeHTTPrespRoutingV1HealthZ(_ context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errorDecoder(r)
 	}
-	var resp Neighbor
+	var resp Health
 	err := json.NewDecoder(r.Body).Decode(&resp)
 	return &resp, err
 }
 
-func (s *grpcServerRoutingV1) AutoGetNeighbor(ctx oldcontext.Context, req *Neighbor) (*Neighbor, error) {
-	_, resp, err := s.AutoGetNeighborHdlr.ServeGRPC(ctx, req)
+func (s *grpcServerRoutingV1) ListNeighbors(ctx oldcontext.Context, req *NeighborFilter) (*NeighborList, error) {
+	_, resp, err := s.ListNeighborsHdlr.ServeGRPC(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	r := resp.(respRoutingV1AutoGetNeighbor).V
-	return &r, resp.(respRoutingV1AutoGetNeighbor).Err
+	r := resp.(respRoutingV1ListNeighbors).V
+	return &r, resp.(respRoutingV1ListNeighbors).Err
 }
 
-func decodeHTTPrespRoutingV1AutoGetNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errorDecoder(r)
-	}
-	var resp Neighbor
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return &resp, err
-}
-
-func (s *grpcServerRoutingV1) AutoLabelNeighbor(ctx oldcontext.Context, req *api.Label) (*Neighbor, error) {
-	_, resp, err := s.AutoLabelNeighborHdlr.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	r := resp.(respRoutingV1AutoLabelNeighbor).V
-	return &r, resp.(respRoutingV1AutoLabelNeighbor).Err
-}
-
-func decodeHTTPrespRoutingV1AutoLabelNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errorDecoder(r)
-	}
-	var resp Neighbor
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return &resp, err
-}
-
-func (s *grpcServerRoutingV1) AutoListNeighbor(ctx oldcontext.Context, req *api.ListWatchOptions) (*NeighborList, error) {
-	_, resp, err := s.AutoListNeighborHdlr.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	r := resp.(respRoutingV1AutoListNeighbor).V
-	return &r, resp.(respRoutingV1AutoListNeighbor).Err
-}
-
-func decodeHTTPrespRoutingV1AutoListNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
+func decodeHTTPrespRoutingV1ListNeighbors(_ context.Context, r *http.Response) (interface{}, error) {
 	if r.StatusCode != http.StatusOK {
 		return nil, errorDecoder(r)
 	}
@@ -171,62 +111,6 @@ func decodeHTTPrespRoutingV1AutoListNeighbor(_ context.Context, r *http.Response
 	return &resp, err
 }
 
-func (s *grpcServerRoutingV1) AutoUpdateNeighbor(ctx oldcontext.Context, req *Neighbor) (*Neighbor, error) {
-	_, resp, err := s.AutoUpdateNeighborHdlr.ServeGRPC(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	r := resp.(respRoutingV1AutoUpdateNeighbor).V
-	return &r, resp.(respRoutingV1AutoUpdateNeighbor).Err
-}
-
-func decodeHTTPrespRoutingV1AutoUpdateNeighbor(_ context.Context, r *http.Response) (interface{}, error) {
-	if r.StatusCode != http.StatusOK {
-		return nil, errorDecoder(r)
-	}
-	var resp Neighbor
-	err := json.NewDecoder(r.Body).Decode(&resp)
-	return &resp, err
-}
-
 func (s *grpcServerRoutingV1) AutoWatchSvcRoutingV1(in *api.AggWatchOptions, stream RoutingV1_AutoWatchSvcRoutingV1Server) error {
 	return s.Endpoints.AutoWatchSvcRoutingV1(in, stream)
-}
-
-func (s *grpcServerRoutingV1) AutoWatchNeighbor(in *api.ListWatchOptions, stream RoutingV1_AutoWatchNeighborServer) error {
-	return s.Endpoints.AutoWatchNeighbor(in, stream)
-}
-
-func encodeHTTPNeighborList(ctx context.Context, req *http.Request, request interface{}) error {
-	return encodeHTTPRequest(ctx, req, request)
-}
-
-func decodeHTTPNeighborList(_ context.Context, r *http.Request) (interface{}, error) {
-	var req NeighborList
-	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
-		return nil, e
-	}
-	return req, nil
-}
-
-// EncodeGrpcReqNeighborList encodes GRPC request
-func EncodeGrpcReqNeighborList(ctx context.Context, request interface{}) (interface{}, error) {
-	req := request.(*NeighborList)
-	return req, nil
-}
-
-// DecodeGrpcReqNeighborList decodes GRPC request
-func DecodeGrpcReqNeighborList(ctx context.Context, request interface{}) (interface{}, error) {
-	req := request.(*NeighborList)
-	return req, nil
-}
-
-// EncodeGrpcRespNeighborList endodes the GRPC response
-func EncodeGrpcRespNeighborList(ctx context.Context, response interface{}) (interface{}, error) {
-	return response, nil
-}
-
-// DecodeGrpcRespNeighborList decodes the GRPC response
-func DecodeGrpcRespNeighborList(ctx context.Context, response interface{}) (interface{}, error) {
-	return response, nil
 }

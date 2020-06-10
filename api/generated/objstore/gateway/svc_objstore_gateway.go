@@ -8,6 +8,7 @@ package objstoreGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -69,9 +70,18 @@ func (a adapterObjstoreV1) AutoAddBucket(oldctx oldcontext.Context, t *objstore.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Bucket)
-		return a.service.AutoAddBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddBucket(inctx, in)
+		}
+		return a.service.AutoAddBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -96,9 +106,18 @@ func (a adapterObjstoreV1) AutoAddObject(oldctx oldcontext.Context, t *objstore.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Object)
-		return a.service.AutoAddObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoAddObject(inctx, in)
+		}
+		return a.service.AutoAddObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -123,9 +142,18 @@ func (a adapterObjstoreV1) AutoDeleteBucket(oldctx oldcontext.Context, t *objsto
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Bucket)
-		return a.service.AutoDeleteBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteBucket(inctx, in)
+		}
+		return a.service.AutoDeleteBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -150,9 +178,18 @@ func (a adapterObjstoreV1) AutoDeleteObject(oldctx oldcontext.Context, t *objsto
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Object)
-		return a.service.AutoDeleteObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoDeleteObject(inctx, in)
+		}
+		return a.service.AutoDeleteObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -177,9 +214,18 @@ func (a adapterObjstoreV1) AutoGetBucket(oldctx oldcontext.Context, t *objstore.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Bucket)
-		return a.service.AutoGetBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetBucket(inctx, in)
+		}
+		return a.service.AutoGetBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -204,9 +250,18 @@ func (a adapterObjstoreV1) AutoGetObject(oldctx oldcontext.Context, t *objstore.
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Object)
-		return a.service.AutoGetObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoGetObject(inctx, in)
+		}
+		return a.service.AutoGetObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -231,9 +286,18 @@ func (a adapterObjstoreV1) AutoLabelBucket(oldctx oldcontext.Context, t *api.Lab
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelBucket(inctx, in)
+		}
+		return a.service.AutoLabelBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -258,9 +322,18 @@ func (a adapterObjstoreV1) AutoLabelObject(oldctx oldcontext.Context, t *api.Lab
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.Label)
-		return a.service.AutoLabelObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoLabelObject(inctx, in)
+		}
+		return a.service.AutoLabelObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -288,9 +361,18 @@ func (a adapterObjstoreV1) AutoListBucket(oldctx oldcontext.Context, t *api.List
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListBucket(inctx, in)
+		}
+		return a.service.AutoListBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -319,9 +401,18 @@ func (a adapterObjstoreV1) AutoListObject(oldctx oldcontext.Context, t *api.List
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoListObject(inctx, in)
+		}
+		return a.service.AutoListObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -346,9 +437,18 @@ func (a adapterObjstoreV1) AutoUpdateBucket(oldctx oldcontext.Context, t *objsto
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Bucket)
-		return a.service.AutoUpdateBucket(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateBucket(inctx, in)
+		}
+		return a.service.AutoUpdateBucket(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -373,9 +473,18 @@ func (a adapterObjstoreV1) AutoUpdateObject(oldctx oldcontext.Context, t *objsto
 	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
 	ctx = apigwpkg.NewContextWithOperations(ctx, op)
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*objstore.Object)
-		return a.service.AutoUpdateObject(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(objstore.ObjstoreV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.AutoUpdateObject(inctx, in)
+		}
+		return a.service.AutoUpdateObject(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

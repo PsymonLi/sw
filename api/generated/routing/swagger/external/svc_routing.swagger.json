@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "Routing API reference",
-    "description": "\n API Objects are: Neighbor ",
+    "description": "\n",
     "version": "v1"
   },
   "schemes": [
@@ -16,99 +16,107 @@
     "application/json"
   ],
   "paths": {
-    "/routing/v1/neighbors": {
+    "/routing/v1/{Instance}/health": {
       "get": {
-        "summary": "List Neighbor objects",
-        "operationId": "ListNeighbor",
+        "operationId": "GetHealthZ",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/routingHealth"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Instance",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "routing/v1"
+        ]
+      }
+    },
+    "/routing/v1/{Instance}/neighbors": {
+      "get": {
+        "summary": "option (venice.apiRestService) = { Object: \"Neighbor\" Method: [  \"list\" ] };",
+        "operationId": "GetListNeighbors",
         "responses": {
           "200": {
             "description": "",
             "schema": {
               "$ref": "#/definitions/routingNeighborList"
             }
-          },
-          "400": {
-            "description": "Bad request parameters",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
-          },
-          "401": {
-            "description": "Unauthorized request",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
-          },
-          "409": {
-            "description": "Conflict while processing request",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
-          },
-          "412": {
-            "description": "Pre-condition failed",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
-          },
-          "501": {
-            "description": "Request not implemented",
-            "schema": {
-              "$ref": "#/definitions/apiStatus"
-            }
           }
         },
         "parameters": [
           {
-            "name": "O.name",
+            "name": "Instance",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "T.kind",
+            "description": "Kind represents the type of the API object.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "T.api-version",
+            "description": "APIVersion defines the version of the API object. This can only be set by the server.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.name",
             "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.tenant",
+            "name": "meta.tenant",
             "description": "Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.namespace",
+            "name": "meta.namespace",
             "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.generation-id",
+            "name": "meta.generation-id",
             "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.resource-version",
+            "name": "meta.resource-version",
             "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.uuid",
+            "name": "meta.uuid",
             "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "O.creation-time",
+            "name": "meta.creation-time",
             "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
@@ -116,7 +124,7 @@
             "format": "date-time"
           },
           {
-            "name": "O.mod-time",
+            "name": "meta.mod-time",
             "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
@@ -124,55 +132,123 @@
             "format": "date-time"
           },
           {
-            "name": "O.self-link",
+            "name": "meta.self-link",
             "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "label-selector",
-            "description": "LabelSelector to select on labels in list or watch results.",
+            "name": "neighbor",
             "in": "query",
             "required": false,
             "type": "string"
-          },
-          {
-            "name": "field-selector",
-            "description": "FieldSelector to select on field values in list or watch results.",
-            "in": "query",
-            "required": false,
-            "type": "string"
-          },
-          {
-            "name": "field-change-selector",
-            "description": "FieldChangeSelector specifies to generate a watch notification on change in field(s) specified.",
-            "in": "query",
-            "required": false,
-            "type": "array",
-            "items": {
-              "type": "string"
+          }
+        ],
+        "tags": [
+          "routing/v1"
+        ]
+      }
+    },
+    "/routing/v1/{Instance}/neighbors/{Neighbor}": {
+      "get": {
+        "operationId": "GetGetNeighbor",
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/routingNeighbor"
             }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Instance",
+            "in": "path",
+            "required": true,
+            "type": "string"
           },
           {
-            "name": "from",
-            "description": "From represents the start index number (1 based - first object starts from index 1), of the results list. The results returned would be in the range [from ... (from + (max-results - 1))]. If From = 0, the server will attempt to return all the results in the list without pagination.",
+            "name": "Neighbor",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "T.kind",
+            "description": "Kind represents the type of the API object.",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           },
           {
-            "name": "max-results",
-            "description": "MaxResults is the maximum number of results to be returned as part of the response, per page If MaxResults is more than the maximum number of results per page supported by the server, the server will return an err If MaxResults is 0, the server will return all the results without pagination.",
+            "name": "T.api-version",
+            "description": "APIVersion defines the version of the API object. This can only be set by the server.",
             "in": "query",
             "required": false,
-            "type": "integer",
-            "format": "int32"
+            "type": "string"
           },
           {
-            "name": "sort-order",
-            "description": "order to sort List results in.",
+            "name": "meta.name",
+            "description": "Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.tenant",
+            "description": "Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.namespace",
+            "description": "Namespace of the object, for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.generation-id",
+            "description": "GenerationID is the generation Id for the object. This is incremented anytime there is an update to the user intent, including Spec update and any update to ObjectMeta. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.resource-version",
+            "description": "Resource version in the object store. This is updated anytime there is any change to the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.uuid",
+            "description": "UUID is the unique identifier for the object. This is generated on creation of the object. System generated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "meta.creation-time",
+            "description": "CreationTime is the creation time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.mod-time",
+            "description": "ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "meta.self-link",
+            "description": "SelfLink is a link for accessing this object. When the object is served from the API-GW it is the URI path. Example: - \"/v1/tenants/tenants/tenant2\" System generated and updated, not updatable by user.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -185,6 +261,19 @@
     }
   },
   "definitions": {
+    "HealthStatusPeeringStatus": {
+      "type": "object",
+      "properties": {
+        "configured": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "established": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "apiAggWatchOptions": {
       "type": "object",
       "properties": {
@@ -221,65 +310,6 @@
           "$ref": "#/definitions/apiListWatchOptions"
         }
       }
-    },
-    "apiLabel": {
-      "type": "object",
-      "properties": {
-        "kind": {
-          "type": "string"
-        },
-        "api-version": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 64,
-          "pattern": "^[a-zA-Z0-9][\\w\\-\\.]*[a-zA-Z0-9]$",
-          "description": "Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64."
-        },
-        "tenant": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 48,
-          "pattern": "^[a-zA-Z0-9]+$",
-          "description": "Must be alpha-numerics. Length of string should be between 1 and 48."
-        },
-        "namespace": {
-          "type": "string",
-          "minLength": 2,
-          "maxLength": 64,
-          "pattern": "^[a-zA-Z0-9][\\w\\-\\.]*[a-zA-Z0-9]$",
-          "description": "Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64."
-        },
-        "generation-id": {
-          "type": "string"
-        },
-        "resource-version": {
-          "type": "string"
-        },
-        "uuid": {
-          "type": "string"
-        },
-        "labels": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "creation-time": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "mod-time": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "self-link": {
-          "type": "string"
-        }
-      },
-      "description": "Label is the input for label operations."
     },
     "apiListMeta": {
       "type": "object",
@@ -706,26 +736,53 @@
         }
       }
     },
-    "routingAutoMsgNeighborWatchHelper": {
+    "routingEmptyReq": {
       "type": "object",
       "properties": {
-        "events": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/routingAutoMsgNeighborWatchHelperWatchEvent"
-          }
+        "Instance": {
+          "type": "string",
+          "description": "Empty of course."
         }
-      },
-      "description": "AutoMsgNeighborWatchHelper is a wrapper object for watch events for Neighbor objects."
+      }
     },
-    "routingAutoMsgNeighborWatchHelperWatchEvent": {
+    "routingHealth": {
       "type": "object",
       "properties": {
-        "type": {
+        "kind": {
           "type": "string"
         },
-        "object": {
-          "$ref": "#/definitions/routingNeighbor"
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "spec": {
+          "$ref": "#/definitions/routingHealthSpec"
+        },
+        "status": {
+          "$ref": "#/definitions/routingHealthStatus"
+        }
+      }
+    },
+    "routingHealthSpec": {
+      "type": "object"
+    },
+    "routingHealthStatus": {
+      "type": "object",
+      "properties": {
+        "router-id": {
+          "type": "string"
+        },
+        "internal-peers": {
+          "$ref": "#/definitions/HealthStatusPeeringStatus"
+        },
+        "external-peers": {
+          "$ref": "#/definitions/HealthStatusPeeringStatus"
+        },
+        "unexpected-peers": {
+          "type": "integer",
+          "format": "int32"
         }
       }
     },
@@ -749,6 +806,26 @@
         }
       }
     },
+    "routingNeighborFilter": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "api-version": {
+          "type": "string"
+        },
+        "meta": {
+          "$ref": "#/definitions/apiObjectMeta"
+        },
+        "instance": {
+          "type": "string"
+        },
+        "neighbor": {
+          "type": "string"
+        }
+      }
+    },
     "routingNeighborList": {
       "type": "object",
       "properties": {
@@ -765,11 +842,9 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/routingNeighbor"
-          },
-          "description": "List of Neighbor objects."
+          }
         }
-      },
-      "description": "NeighborList is a container object for list of Neighbor objects."
+      }
     },
     "routingNeighborStatus": {
       "type": "object",

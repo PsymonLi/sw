@@ -258,6 +258,8 @@ message Permission {
         FwLog            = 5 [(venice.enumValueStr) = "FwLog"]; // ui-hint: Firewall Logs
         // TokenAuth
         TokenAuth        = 6 [(venice.enumValueStr) = "TokenAuth"]; // ui-hint: TokenAuth
+        // RoutingStatus
+        RoutingStatus = 7 [(venice.enumValueStr) = "RoutingStatus"]; // ui-hint: Query Routing Status
     }
 
     // ActionType is an action on a resource that a permission allows

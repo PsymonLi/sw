@@ -8,6 +8,7 @@ package searchGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -65,9 +66,18 @@ func (a adapterSearchV1) PolicyQuery(oldctx oldcontext.Context, t *search.Policy
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*search.PolicySearchRequest)
-		return a.service.PolicyQuery(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(search.SearchV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.PolicyQuery(inctx, in)
+		}
+		return a.service.PolicyQuery(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -88,9 +98,18 @@ func (a adapterSearchV1) Query(oldctx oldcontext.Context, t *search.SearchReques
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*search.SearchRequest)
-		return a.service.Query(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(search.SearchV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.Query(inctx, in)
+		}
+		return a.service.Query(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

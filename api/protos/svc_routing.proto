@@ -18,10 +18,27 @@ service RoutingV1 {
     option (venice.apiPrefix)           = "";
     option (venice.apiVersion)          = "v1";
 
-    option (venice.apiGrpcCrudService)  = "Neighbor";
+//    option (venice.apiGrpcCrudService)  = "Neighbor";
 
-    option (venice.apiRestService) = {
-         Object: "Neighbor"
-         Method: [  "list" ]
+//    option (venice.apiRestService) = {
+//         Object: "Neighbor"
+//         Method: [  "list" ]
+//    };
+    rpc ListNeighbors(NeighborFilter) returns(NeighborList) {
+        option (google.api.http) = {
+            get: "/{Instance}/neighbors"
+        };
     };
+
+    rpc GetNeighbor(NeighborFilter) returns(Neighbor) {
+        option (google.api.http) = {
+            get: "/{Instance}/neighbors/{Neighbor}"
+        };
+    };
+
+    rpc HealthZ(EmptyReq) returns(Health) {
+        option (google.api.http) = {
+            get: "/{Instance}/health"
+        };
+    }
 }

@@ -8,6 +8,7 @@ package telemetry_queryGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -65,9 +66,18 @@ func (a adapterTelemetryV1) Metrics(oldctx oldcontext.Context, t *telemetry_quer
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*telemetry_query.MetricsQueryList)
-		return a.service.Metrics(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(telemetry_query.TelemetryV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.Metrics(inctx, in)
+		}
+		return a.service.Metrics(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

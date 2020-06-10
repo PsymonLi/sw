@@ -12,6 +12,20 @@ import (
 	"github.com/pensando/sw/venice/cli/gen"
 )
 
+// CreateHealthFlags specifies flags for Health create operation
+var CreateHealthFlags = []gen.CliFlag{}
+
+func removeHealthOper(obj interface{}) error {
+	if v, ok := obj.(*routing.Health); ok {
+		v.UUID = ""
+		v.ResourceVersion = ""
+		v.CreationTime = api.Timestamp{}
+		v.ModTime = api.Timestamp{}
+		v.Status = routing.HealthStatus{}
+	}
+	return nil
+}
+
 // CreateNeighborFlags specifies flags for Neighbor create operation
 var CreateNeighborFlags = []gen.CliFlag{}
 
@@ -28,6 +42,8 @@ func removeNeighborOper(obj interface{}) error {
 
 func init() {
 	cl := gen.GetInfo()
+
+	cl.AddRemoveObjOperFunc("routing.Health", removeHealthOper)
 
 	cl.AddRemoveObjOperFunc("routing.Neighbor", removeNeighborOper)
 

@@ -4,7 +4,7 @@ import { Observable } from '../../../../webapp/node_modules/rxjs';
 import { Injectable } from '../../../../webapp/node_modules/@angular/core';
 import { TrimDefaultsAndEmptyFields, TrimUIFields } from '../../../v1/utils/utility';
 
-import { IRoutingNeighborList,RoutingNeighborList,IApiStatus,ApiStatus } from '../../models/generated/routing';
+import { IRoutingHealth,RoutingHealth,IRoutingNeighborList,RoutingNeighborList,IRoutingNeighbor,RoutingNeighbor } from '../../models/generated/routing';
 
 @Injectable()
 export class Routingv1Service extends AbstractService {
@@ -22,15 +22,39 @@ export class Routingv1Service extends AbstractService {
   bufferDelayMap: { [key: string]: number } = {
   }
 
-  /** List Neighbor objects */
-  public ListNeighbor(queryParam: any = null):Observable<{body: IRoutingNeighborList | IApiStatus | Error, statusCode: number}> {
-    let url = this['baseUrlAndPort'] + '/routing/v1/neighbors';
+  public GetHealthZ(Instance, queryParam: any = null):Observable<{body: IRoutingHealth | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/health';
+    url = url.replace('{Instance}', Instance);
     const opts = {
-      eventID: 'ListNeighbor',
+      eventID: 'GetHealthZ',
+      objType: 'RoutingHealth',
+      isStaging: false,
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingHealth | Error, statusCode: number}>;
+  }
+  
+  /** option (venice.apiRestService) = { Object: "Neighbor" Method: [  "list" ] }; */
+  public GetListNeighbors(Instance, queryParam: any = null):Observable<{body: IRoutingNeighborList | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/neighbors';
+    url = url.replace('{Instance}', Instance);
+    const opts = {
+      eventID: 'GetListNeighbors',
       objType: 'RoutingNeighborList',
       isStaging: false,
     }
-    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingNeighborList | IApiStatus | Error, statusCode: number}>;
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingNeighborList | Error, statusCode: number}>;
+  }
+  
+  public GetGetNeighbor(Instance,Neighbor, queryParam: any = null):Observable<{body: IRoutingNeighbor | Error, statusCode: number}> {
+    let url = this['baseUrlAndPort'] + '/routing/v1/{Instance}/neighbors/{Neighbor}';
+    url = url.replace('{Instance}', Instance);
+    url = url.replace('{Neighbor}', Neighbor);
+    const opts = {
+      eventID: 'GetGetNeighbor',
+      objType: 'RoutingNeighbor',
+      isStaging: false,
+    }
+    return this.invokeAJAXGetCall(url, queryParam, opts) as Observable<{body: IRoutingNeighbor | Error, statusCode: number}>;
   }
   
 }

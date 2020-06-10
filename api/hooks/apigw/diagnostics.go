@@ -25,6 +25,9 @@ type diagnosticsHooks struct {
 	diagSvc      diagnostics.Service
 }
 
+// commonModuleGetter is saved so other components running on the APIGw can use module services
+var commonModuleGetter diagnostics.Getter
+
 // DebugPreCallHook implements Debug action for module object
 func (d *diagnosticsHooks) DebugPreCallHook(ctx context.Context, in, out interface{}) (context.Context, interface{}, interface{}, bool, error) {
 	obj, ok := in.(*diagapi.DiagnosticsRequest)
@@ -74,6 +77,7 @@ func registerDiagnosticsHooks(svc apigw.APIGatewayService, l log.Logger) error {
 		diagSvc:   gw.GetDiagnosticsService(),
 	}
 	d.moduleGetter = module.NewGetter(d.apiServer, d.rslvr, d.logger)
+	commonModuleGetter = d.moduleGetter
 	return d.registerDebugPreCallHook(svc)
 }
 

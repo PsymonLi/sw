@@ -16,83 +16,10 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-import io "io"
-
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-// AutoMsgNeighborWatchHelper is a wrapper object for watch events for Neighbor objects
-type AutoMsgNeighborWatchHelper struct {
-	Events []*AutoMsgNeighborWatchHelper_WatchEvent `protobuf:"bytes,1,rep,name=Events,json=events" json:"events"`
-}
-
-func (m *AutoMsgNeighborWatchHelper) Reset()         { *m = AutoMsgNeighborWatchHelper{} }
-func (m *AutoMsgNeighborWatchHelper) String() string { return proto.CompactTextString(m) }
-func (*AutoMsgNeighborWatchHelper) ProtoMessage()    {}
-func (*AutoMsgNeighborWatchHelper) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvcRouting, []int{0}
-}
-
-func (m *AutoMsgNeighborWatchHelper) GetEvents() []*AutoMsgNeighborWatchHelper_WatchEvent {
-	if m != nil {
-		return m.Events
-	}
-	return nil
-}
-
-type AutoMsgNeighborWatchHelper_WatchEvent struct {
-	Type   string    `protobuf:"bytes,1,opt,name=Type,proto3" json:"type,omitempty"`
-	Object *Neighbor `protobuf:"bytes,2,opt,name=Object" json:"object,omitempty"`
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) Reset()         { *m = AutoMsgNeighborWatchHelper_WatchEvent{} }
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) String() string { return proto.CompactTextString(m) }
-func (*AutoMsgNeighborWatchHelper_WatchEvent) ProtoMessage()    {}
-func (*AutoMsgNeighborWatchHelper_WatchEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptorSvcRouting, []int{0, 0}
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) GetType() string {
-	if m != nil {
-		return m.Type
-	}
-	return ""
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) GetObject() *Neighbor {
-	if m != nil {
-		return m.Object
-	}
-	return nil
-}
-
-// NeighborList is a container object for list of Neighbor objects
-type NeighborList struct {
-	api.TypeMeta `protobuf:"bytes,2,opt,name=T,json=,inline,embedded=T" json:",inline"`
-	api.ListMeta `protobuf:"bytes,3,opt,name=ListMeta,json=list-meta,inline,embedded=ListMeta" json:"list-meta,inline"`
-	// List of Neighbor objects
-	Items []*Neighbor `protobuf:"bytes,4,rep,name=Items,json=items" json:"items"`
-}
-
-func (m *NeighborList) Reset()                    { *m = NeighborList{} }
-func (m *NeighborList) String() string            { return proto.CompactTextString(m) }
-func (*NeighborList) ProtoMessage()               {}
-func (*NeighborList) Descriptor() ([]byte, []int) { return fileDescriptorSvcRouting, []int{1} }
-
-func (m *NeighborList) GetItems() []*Neighbor {
-	if m != nil {
-		return m.Items
-	}
-	return nil
-}
-
-func init() {
-	proto.RegisterType((*AutoMsgNeighborWatchHelper)(nil), "routing.AutoMsgNeighborWatchHelper")
-	proto.RegisterType((*AutoMsgNeighborWatchHelper_WatchEvent)(nil), "routing.AutoMsgNeighborWatchHelper.WatchEvent")
-	proto.RegisterType((*NeighborList)(nil), "routing.NeighborList")
-}
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
@@ -105,21 +32,16 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for RoutingV1 service
 
 type RoutingV1Client interface {
-	// Create Neighbor object
-	AutoAddNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error)
-	// Delete Neighbor object
-	AutoDeleteNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error)
-	// Get Neighbor object
-	AutoGetNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error)
-	// Label Neighbor object
-	AutoLabelNeighbor(ctx context.Context, in *api.Label, opts ...grpc.CallOption) (*Neighbor, error)
-	// List Neighbor objects
-	AutoListNeighbor(ctx context.Context, in *api.ListWatchOptions, opts ...grpc.CallOption) (*NeighborList, error)
-	// Update Neighbor object
-	AutoUpdateNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error)
-	// Watch Neighbor objects. Supports WebSockets or HTTP long poll
-	AutoWatchNeighbor(ctx context.Context, in *api.ListWatchOptions, opts ...grpc.CallOption) (RoutingV1_AutoWatchNeighborClient, error)
 	AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions, opts ...grpc.CallOption) (RoutingV1_AutoWatchSvcRoutingV1Client, error)
+	//
+	GetNeighbor(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*Neighbor, error)
+	//
+	HealthZ(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Health, error)
+	//    option (venice.apiRestService) = {
+	//         Object: "Neighbor"
+	//         Method: [  "list" ]
+	//    };
+	ListNeighbors(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*NeighborList, error)
 }
 
 type routingV1Client struct {
@@ -130,94 +52,8 @@ func NewRoutingV1Client(cc *grpc.ClientConn) RoutingV1Client {
 	return &routingV1Client{cc}
 }
 
-func (c *routingV1Client) AutoAddNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error) {
-	out := new(Neighbor)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoAddNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoDeleteNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error) {
-	out := new(Neighbor)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoDeleteNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoGetNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error) {
-	out := new(Neighbor)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoGetNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoLabelNeighbor(ctx context.Context, in *api.Label, opts ...grpc.CallOption) (*Neighbor, error) {
-	out := new(Neighbor)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoLabelNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoListNeighbor(ctx context.Context, in *api.ListWatchOptions, opts ...grpc.CallOption) (*NeighborList, error) {
-	out := new(NeighborList)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoListNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoUpdateNeighbor(ctx context.Context, in *Neighbor, opts ...grpc.CallOption) (*Neighbor, error) {
-	out := new(Neighbor)
-	err := grpc.Invoke(ctx, "/routing.RoutingV1/AutoUpdateNeighbor", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *routingV1Client) AutoWatchNeighbor(ctx context.Context, in *api.ListWatchOptions, opts ...grpc.CallOption) (RoutingV1_AutoWatchNeighborClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_RoutingV1_serviceDesc.Streams[0], c.cc, "/routing.RoutingV1/AutoWatchNeighbor", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &routingV1AutoWatchNeighborClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type RoutingV1_AutoWatchNeighborClient interface {
-	Recv() (*AutoMsgNeighborWatchHelper, error)
-	grpc.ClientStream
-}
-
-type routingV1AutoWatchNeighborClient struct {
-	grpc.ClientStream
-}
-
-func (x *routingV1AutoWatchNeighborClient) Recv() (*AutoMsgNeighborWatchHelper, error) {
-	m := new(AutoMsgNeighborWatchHelper)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *routingV1Client) AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions, opts ...grpc.CallOption) (RoutingV1_AutoWatchSvcRoutingV1Client, error) {
-	stream, err := grpc.NewClientStream(ctx, &_RoutingV1_serviceDesc.Streams[1], c.cc, "/routing.RoutingV1/AutoWatchSvcRoutingV1", opts...)
+	stream, err := grpc.NewClientStream(ctx, &_RoutingV1_serviceDesc.Streams[0], c.cc, "/routing.RoutingV1/AutoWatchSvcRoutingV1", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -248,157 +84,50 @@ func (x *routingV1AutoWatchSvcRoutingV1Client) Recv() (*api.WatchEventList, erro
 	return m, nil
 }
 
+func (c *routingV1Client) GetNeighbor(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*Neighbor, error) {
+	out := new(Neighbor)
+	err := grpc.Invoke(ctx, "/routing.RoutingV1/GetNeighbor", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *routingV1Client) HealthZ(ctx context.Context, in *EmptyReq, opts ...grpc.CallOption) (*Health, error) {
+	out := new(Health)
+	err := grpc.Invoke(ctx, "/routing.RoutingV1/HealthZ", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *routingV1Client) ListNeighbors(ctx context.Context, in *NeighborFilter, opts ...grpc.CallOption) (*NeighborList, error) {
+	out := new(NeighborList)
+	err := grpc.Invoke(ctx, "/routing.RoutingV1/ListNeighbors", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for RoutingV1 service
 
 type RoutingV1Server interface {
-	// Create Neighbor object
-	AutoAddNeighbor(context.Context, *Neighbor) (*Neighbor, error)
-	// Delete Neighbor object
-	AutoDeleteNeighbor(context.Context, *Neighbor) (*Neighbor, error)
-	// Get Neighbor object
-	AutoGetNeighbor(context.Context, *Neighbor) (*Neighbor, error)
-	// Label Neighbor object
-	AutoLabelNeighbor(context.Context, *api.Label) (*Neighbor, error)
-	// List Neighbor objects
-	AutoListNeighbor(context.Context, *api.ListWatchOptions) (*NeighborList, error)
-	// Update Neighbor object
-	AutoUpdateNeighbor(context.Context, *Neighbor) (*Neighbor, error)
-	// Watch Neighbor objects. Supports WebSockets or HTTP long poll
-	AutoWatchNeighbor(*api.ListWatchOptions, RoutingV1_AutoWatchNeighborServer) error
 	AutoWatchSvcRoutingV1(*api.AggWatchOptions, RoutingV1_AutoWatchSvcRoutingV1Server) error
+	//
+	GetNeighbor(context.Context, *NeighborFilter) (*Neighbor, error)
+	//
+	HealthZ(context.Context, *EmptyReq) (*Health, error)
+	//    option (venice.apiRestService) = {
+	//         Object: "Neighbor"
+	//         Method: [  "list" ]
+	//    };
+	ListNeighbors(context.Context, *NeighborFilter) (*NeighborList, error)
 }
 
 func RegisterRoutingV1Server(s *grpc.Server, srv RoutingV1Server) {
 	s.RegisterService(&_RoutingV1_serviceDesc, srv)
-}
-
-func _RoutingV1_AutoAddNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Neighbor)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoAddNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoAddNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoAddNeighbor(ctx, req.(*Neighbor))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoDeleteNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Neighbor)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoDeleteNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoDeleteNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoDeleteNeighbor(ctx, req.(*Neighbor))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoGetNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Neighbor)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoGetNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoGetNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoGetNeighbor(ctx, req.(*Neighbor))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoLabelNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(api.Label)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoLabelNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoLabelNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoLabelNeighbor(ctx, req.(*api.Label))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoListNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(api.ListWatchOptions)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoListNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoListNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoListNeighbor(ctx, req.(*api.ListWatchOptions))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoUpdateNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Neighbor)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RoutingV1Server).AutoUpdateNeighbor(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/routing.RoutingV1/AutoUpdateNeighbor",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RoutingV1Server).AutoUpdateNeighbor(ctx, req.(*Neighbor))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _RoutingV1_AutoWatchNeighbor_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(api.ListWatchOptions)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(RoutingV1Server).AutoWatchNeighbor(m, &routingV1AutoWatchNeighborServer{stream})
-}
-
-type RoutingV1_AutoWatchNeighborServer interface {
-	Send(*AutoMsgNeighborWatchHelper) error
-	grpc.ServerStream
-}
-
-type routingV1AutoWatchNeighborServer struct {
-	grpc.ServerStream
-}
-
-func (x *routingV1AutoWatchNeighborServer) Send(m *AutoMsgNeighborWatchHelper) error {
-	return x.ServerStream.SendMsg(m)
 }
 
 func _RoutingV1_AutoWatchSvcRoutingV1_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -422,41 +151,78 @@ func (x *routingV1AutoWatchSvcRoutingV1Server) Send(m *api.WatchEventList) error
 	return x.ServerStream.SendMsg(m)
 }
 
+func _RoutingV1_GetNeighbor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NeighborFilter)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoutingV1Server).GetNeighbor(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routing.RoutingV1/GetNeighbor",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoutingV1Server).GetNeighbor(ctx, req.(*NeighborFilter))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoutingV1_HealthZ_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoutingV1Server).HealthZ(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routing.RoutingV1/HealthZ",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoutingV1Server).HealthZ(ctx, req.(*EmptyReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoutingV1_ListNeighbors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NeighborFilter)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoutingV1Server).ListNeighbors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routing.RoutingV1/ListNeighbors",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoutingV1Server).ListNeighbors(ctx, req.(*NeighborFilter))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _RoutingV1_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "routing.RoutingV1",
 	HandlerType: (*RoutingV1Server)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "AutoAddNeighbor",
-			Handler:    _RoutingV1_AutoAddNeighbor_Handler,
+			MethodName: "GetNeighbor",
+			Handler:    _RoutingV1_GetNeighbor_Handler,
 		},
 		{
-			MethodName: "AutoDeleteNeighbor",
-			Handler:    _RoutingV1_AutoDeleteNeighbor_Handler,
+			MethodName: "HealthZ",
+			Handler:    _RoutingV1_HealthZ_Handler,
 		},
 		{
-			MethodName: "AutoGetNeighbor",
-			Handler:    _RoutingV1_AutoGetNeighbor_Handler,
-		},
-		{
-			MethodName: "AutoLabelNeighbor",
-			Handler:    _RoutingV1_AutoLabelNeighbor_Handler,
-		},
-		{
-			MethodName: "AutoListNeighbor",
-			Handler:    _RoutingV1_AutoListNeighbor_Handler,
-		},
-		{
-			MethodName: "AutoUpdateNeighbor",
-			Handler:    _RoutingV1_AutoUpdateNeighbor_Handler,
+			MethodName: "ListNeighbors",
+			Handler:    _RoutingV1_ListNeighbors_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "AutoWatchNeighbor",
-			Handler:       _RoutingV1_AutoWatchNeighbor_Handler,
-			ServerStreams: true,
-		},
 		{
 			StreamName:    "AutoWatchSvcRoutingV1",
 			Handler:       _RoutingV1_AutoWatchSvcRoutingV1_Handler,
@@ -466,667 +232,35 @@ var _RoutingV1_serviceDesc = grpc.ServiceDesc{
 	Metadata: "svc_routing.proto",
 }
 
-func (m *AutoMsgNeighborWatchHelper) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AutoMsgNeighborWatchHelper) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Events) > 0 {
-		for _, msg := range m.Events {
-			dAtA[i] = 0xa
-			i++
-			i = encodeVarintSvcRouting(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Type) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintSvcRouting(dAtA, i, uint64(len(m.Type)))
-		i += copy(dAtA[i:], m.Type)
-	}
-	if m.Object != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintSvcRouting(dAtA, i, uint64(m.Object.Size()))
-		n1, err := m.Object.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	return i, nil
-}
-
-func (m *NeighborList) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *NeighborList) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintSvcRouting(dAtA, i, uint64(m.TypeMeta.Size()))
-	n2, err := m.TypeMeta.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n2
-	dAtA[i] = 0x1a
-	i++
-	i = encodeVarintSvcRouting(dAtA, i, uint64(m.ListMeta.Size()))
-	n3, err := m.ListMeta.MarshalTo(dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n3
-	if len(m.Items) > 0 {
-		for _, msg := range m.Items {
-			dAtA[i] = 0x22
-			i++
-			i = encodeVarintSvcRouting(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func encodeVarintSvcRouting(dAtA []byte, offset int, v uint64) int {
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return offset + 1
-}
-func (m *AutoMsgNeighborWatchHelper) Size() (n int) {
-	var l int
-	_ = l
-	if len(m.Events) > 0 {
-		for _, e := range m.Events {
-			l = e.Size()
-			n += 1 + l + sovSvcRouting(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) Size() (n int) {
-	var l int
-	_ = l
-	l = len(m.Type)
-	if l > 0 {
-		n += 1 + l + sovSvcRouting(uint64(l))
-	}
-	if m.Object != nil {
-		l = m.Object.Size()
-		n += 1 + l + sovSvcRouting(uint64(l))
-	}
-	return n
-}
-
-func (m *NeighborList) Size() (n int) {
-	var l int
-	_ = l
-	l = m.TypeMeta.Size()
-	n += 1 + l + sovSvcRouting(uint64(l))
-	l = m.ListMeta.Size()
-	n += 1 + l + sovSvcRouting(uint64(l))
-	if len(m.Items) > 0 {
-		for _, e := range m.Items {
-			l = e.Size()
-			n += 1 + l + sovSvcRouting(uint64(l))
-		}
-	}
-	return n
-}
-
-func sovSvcRouting(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
-}
-func sozSvcRouting(x uint64) (n int) {
-	return sovSvcRouting(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *AutoMsgNeighborWatchHelper) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvcRouting
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: AutoMsgNeighborWatchHelper: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AutoMsgNeighborWatchHelper: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Events", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Events = append(m.Events, &AutoMsgNeighborWatchHelper_WatchEvent{})
-			if err := m.Events[len(m.Events)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvcRouting(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *AutoMsgNeighborWatchHelper_WatchEvent) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvcRouting
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: WatchEvent: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: WatchEvent: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Type = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Object", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Object == nil {
-				m.Object = &Neighbor{}
-			}
-			if err := m.Object.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvcRouting(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *NeighborList) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowSvcRouting
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: NeighborList: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: NeighborList: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field TypeMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.TypeMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ListMeta", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if err := m.ListMeta.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Items", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Items = append(m.Items, &Neighbor{})
-			if err := m.Items[len(m.Items)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipSvcRouting(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthSvcRouting
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipSvcRouting(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowSvcRouting
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-			return iNdEx, nil
-		case 1:
-			iNdEx += 8
-			return iNdEx, nil
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowSvcRouting
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			iNdEx += length
-			if length < 0 {
-				return 0, ErrInvalidLengthSvcRouting
-			}
-			return iNdEx, nil
-		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowSvcRouting
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipSvcRouting(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-			}
-			return iNdEx, nil
-		case 4:
-			return iNdEx, nil
-		case 5:
-			iNdEx += 4
-			return iNdEx, nil
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-	}
-	panic("unreachable")
-}
-
-var (
-	ErrInvalidLengthSvcRouting = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowSvcRouting   = fmt.Errorf("proto: integer overflow")
-)
-
 func init() { proto.RegisterFile("svc_routing.proto", fileDescriptorSvcRouting) }
 
 var fileDescriptorSvcRouting = []byte{
-	// 724 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x94, 0xcf, 0x4f, 0x13, 0x41,
-	0x14, 0xc7, 0xbb, 0x40, 0x0b, 0x4c, 0x05, 0xda, 0x05, 0x92, 0xee, 0x06, 0xdb, 0xa6, 0x46, 0x43,
-	0x0c, 0xec, 0x4a, 0x4d, 0x34, 0xe1, 0x46, 0x23, 0x11, 0x23, 0x3f, 0xb4, 0xa2, 0x1c, 0xcd, 0x76,
-	0xfb, 0xdc, 0x8e, 0xd9, 0xee, 0x6c, 0x3a, 0xb3, 0x25, 0x5c, 0xdb, 0xf2, 0x0f, 0xe8, 0x8d, 0x93,
-	0xf1, 0xc8, 0xb1, 0x27, 0x8f, 0x1e, 0x89, 0x27, 0x12, 0x6f, 0x98, 0x34, 0xa6, 0xf1, 0x60, 0xfa,
-	0x57, 0x98, 0x99, 0xed, 0x6e, 0x4b, 0x0a, 0x51, 0x39, 0xed, 0xcc, 0xdb, 0xf7, 0xfd, 0xbc, 0xef,
-	0xbc, 0xb7, 0xb3, 0x28, 0x49, 0xeb, 0xe6, 0xdb, 0x1a, 0xf1, 0x18, 0x76, 0x2c, 0xcd, 0xad, 0x11,
-	0x46, 0xe4, 0xc9, 0xfe, 0x56, 0x5d, 0xb2, 0x08, 0xb1, 0x6c, 0xd0, 0x0d, 0x17, 0xeb, 0x86, 0xe3,
-	0x10, 0x66, 0x30, 0x4c, 0x1c, 0xea, 0xa7, 0xa9, 0x9b, 0x16, 0x66, 0x15, 0xaf, 0xa4, 0x99, 0xa4,
-	0xaa, 0xbb, 0xe0, 0x50, 0xc3, 0x29, 0x13, 0x9d, 0x1e, 0xea, 0x75, 0x70, 0xb0, 0x09, 0xba, 0xc7,
-	0xb0, 0x4d, 0xb9, 0xd4, 0x02, 0x67, 0x58, 0xad, 0x63, 0xc7, 0xb4, 0xbd, 0x32, 0x04, 0x98, 0xd5,
-	0x21, 0x8c, 0x45, 0x2c, 0xa2, 0x8b, 0x70, 0xc9, 0x7b, 0x27, 0x76, 0x62, 0x23, 0x56, 0xfd, 0xf4,
-	0x99, 0x4b, 0x5e, 0xd5, 0xbb, 0xd7, 0x98, 0xe0, 0x96, 0xab, 0xc0, 0x0c, 0x3f, 0x2d, 0xd7, 0x93,
-	0x90, 0xba, 0xe1, 0x31, 0xb2, 0x43, 0xad, 0x5d, 0xc0, 0x56, 0xa5, 0x44, 0x6a, 0x07, 0x06, 0x33,
-	0x2b, 0x5b, 0x60, 0xbb, 0x50, 0x93, 0x8b, 0x28, 0xb6, 0x59, 0x07, 0x87, 0xd1, 0x94, 0x94, 0x1d,
-	0x5f, 0x8e, 0xe7, 0x35, 0x2d, 0xa8, 0x72, 0xbd, 0x48, 0x13, 0x6b, 0x21, 0x2b, 0xa0, 0x5e, 0x27,
-	0x13, 0x03, 0x41, 0x28, 0xf6, 0x9f, 0xaa, 0x85, 0xd0, 0x20, 0x43, 0xce, 0xa2, 0x89, 0xfd, 0x23,
-	0x17, 0x52, 0x52, 0x56, 0x5a, 0x9e, 0x2e, 0xc8, 0xbd, 0x4e, 0x66, 0x96, 0x1d, 0xb9, 0xb0, 0x42,
-	0xaa, 0x98, 0x41, 0xd5, 0x65, 0x47, 0xf2, 0x63, 0x14, 0xdb, 0x2b, 0xbd, 0x07, 0x93, 0xa5, 0xc6,
-	0xb2, 0xd2, 0x72, 0x3c, 0x9f, 0x0c, 0x3d, 0x04, 0xc5, 0x0b, 0x0b, 0xbd, 0x4e, 0x26, 0x41, 0x44,
-	0xd2, 0x40, 0xb8, 0x3e, 0x77, 0x71, 0xac, 0xc4, 0x0f, 0x79, 0xa9, 0x8a, 0x30, 0x96, 0xfb, 0x21,
-	0xa1, 0x5b, 0x81, 0x66, 0x1b, 0x53, 0x26, 0x3f, 0x42, 0xd2, 0x7e, 0x9f, 0x3a, 0xa3, 0x19, 0x2e,
-	0xd6, 0xb8, 0x95, 0x1d, 0x60, 0x46, 0x61, 0xfe, 0xac, 0x93, 0x89, 0x9c, 0x77, 0x32, 0x52, 0xaf,
-	0x93, 0x99, 0x5c, 0xc1, 0x8e, 0x8d, 0x1d, 0x28, 0x06, 0x0b, 0x79, 0x0f, 0x4d, 0x71, 0x3d, 0xcf,
-	0x4c, 0x8d, 0x0f, 0xc9, 0x83, 0x60, 0x61, 0x69, 0x48, 0x9e, 0xb0, 0x31, 0x65, 0xab, 0xbc, 0xe7,
-	0x01, 0x67, 0x24, 0x22, 0xe7, 0x51, 0xf4, 0x19, 0x83, 0x2a, 0x4d, 0x4d, 0x88, 0x36, 0x5f, 0x71,
-	0xc4, 0xe9, 0x5e, 0x27, 0x13, 0xe5, 0x27, 0xa3, 0x45, 0xff, 0xb1, 0x3e, 0x7b, 0x71, 0xac, 0x20,
-	0x4e, 0xf2, 0x4f, 0x97, 0xef, 0x45, 0xd1, 0x74, 0xd1, 0x97, 0xbd, 0x59, 0x93, 0x9f, 0xa3, 0x39,
-	0x3e, 0xa2, 0x8d, 0x72, 0x39, 0x40, 0xc8, 0xa3, 0x54, 0x75, 0x34, 0x94, 0x93, 0xdb, 0x2d, 0x25,
-	0x66, 0xd6, 0xc0, 0x60, 0xf0, 0xa5, 0xa5, 0x48, 0x5f, 0x5b, 0x4a, 0x44, 0xde, 0x45, 0x32, 0x87,
-	0x3d, 0x01, 0x1b, 0x18, 0xdc, 0x84, 0x57, 0x16, 0xca, 0x90, 0xb7, 0xe5, 0x9b, 0x7b, 0x0a, 0xec,
-	0x3f, 0x61, 0x73, 0xed, 0x96, 0x32, 0x6e, 0x01, 0x0b, 0x49, 0x2f, 0x51, 0x92, 0x93, 0xb6, 0x8d,
-	0x12, 0xd8, 0x21, 0x0b, 0xf9, 0xc3, 0xe0, 0xb1, 0xab, 0x20, 0xb7, 0xdb, 0x2d, 0x25, 0x6a, 0xf3,
-	0xb7, 0x01, 0xe6, 0x5b, 0x4b, 0x99, 0x0a, 0xd5, 0x15, 0x94, 0x10, 0x48, 0x4c, 0x07, 0xee, 0x16,
-	0xc3, 0xf1, 0x8a, 0x4f, 0x77, 0xcf, 0x15, 0x37, 0x56, 0x5d, 0x1c, 0x81, 0xf3, 0x94, 0xdc, 0xbd,
-	0x76, 0x4b, 0x99, 0xe0, 0x93, 0x09, 0xf8, 0x8d, 0xef, 0xbf, 0x3e, 0x8e, 0x25, 0x50, 0x64, 0x3d,
-	0x22, 0x23, 0xdd, 0xe9, 0xa7, 0xd2, 0xa0, 0xad, 0xaf, 0xdd, 0xb2, 0x71, 0xb3, 0xb6, 0x7a, 0x42,
-	0x19, 0x36, 0xa3, 0xec, 0x37, 0x43, 0x58, 0xfc, 0x9b, 0xf5, 0x3b, 0xff, 0x70, 0x93, 0x73, 0x49,
-	0xde, 0x29, 0x71, 0x83, 0x82, 0x1a, 0x0f, 0x24, 0xf9, 0x00, 0x2d, 0x86, 0x55, 0x5e, 0xd5, 0xcd,
-	0xc1, 0x27, 0xb7, 0x20, 0x2a, 0x6d, 0x58, 0xd6, 0xa5, 0x42, 0xf3, 0x22, 0x3a, 0xb8, 0xf1, 0xa2,
-	0x43, 0x57, 0x81, 0xd5, 0xfb, 0x1f, 0x9a, 0xca, 0x58, 0x7d, 0xed, 0xa4, 0xa9, 0x44, 0x3e, 0x37,
-	0x07, 0x03, 0x39, 0x6d, 0x2a, 0x09, 0x34, 0x18, 0x8f, 0x68, 0x6c, 0x41, 0x3b, 0x69, 0x28, 0x71,
-	0x17, 0x9c, 0x55, 0x17, 0x6a, 0x14, 0x3c, 0xfa, 0xa9, 0xa1, 0x44, 0x4e, 0x1b, 0x4a, 0xf0, 0x87,
-	0x3e, 0xeb, 0xa6, 0xa5, 0xf3, 0x6e, 0x5a, 0xfa, 0xd9, 0x4d, 0x4b, 0xbf, 0xbb, 0xe9, 0xc8, 0x0b,
-	0xa9, 0x14, 0x13, 0x3f, 0xbc, 0x87, 0x7f, 0x02, 0x00, 0x00, 0xff, 0xff, 0x59, 0xfa, 0x17, 0xf8,
-	0xd8, 0x05, 0x00, 0x00,
+	// 425 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x92, 0x41, 0x6b, 0x14, 0x31,
+	0x18, 0x86, 0x77, 0x2a, 0x5a, 0x9c, 0x52, 0x64, 0x63, 0x97, 0x92, 0xa0, 0x8b, 0x2c, 0x08, 0x5e,
+	0x3a, 0xb1, 0xfa, 0x0b, 0x2a, 0xac, 0x5a, 0x10, 0x95, 0x0a, 0x16, 0x3c, 0x28, 0xd9, 0xf4, 0x33,
+	0x13, 0x98, 0x4d, 0xe2, 0xe4, 0x9b, 0x29, 0x52, 0x0a, 0x32, 0xdd, 0x5f, 0xa0, 0xb7, 0x9e, 0x3c,
+	0x7b, 0xf4, 0xe4, 0xd1, 0xa3, 0x47, 0xc1, 0x3f, 0x20, 0x83, 0x07, 0x7f, 0x86, 0x4c, 0x66, 0xc7,
+	0xae, 0xd4, 0xbd, 0xcd, 0xf7, 0xbe, 0xef, 0xf7, 0xf2, 0x4c, 0x92, 0xb8, 0xef, 0x4b, 0xf9, 0x2a,
+	0xb7, 0x05, 0x6a, 0xa3, 0x12, 0x97, 0x5b, 0xb4, 0x64, 0x75, 0x3e, 0xb2, 0x6b, 0xca, 0x5a, 0x95,
+	0x01, 0x17, 0x4e, 0x73, 0x61, 0x8c, 0x45, 0x81, 0xda, 0x1a, 0xdf, 0xc6, 0xd8, 0x58, 0x69, 0x4c,
+	0x8b, 0x49, 0x22, 0xed, 0x94, 0x3b, 0x30, 0x5e, 0x98, 0x03, 0xcb, 0xfd, 0x21, 0x2f, 0xc1, 0x68,
+	0x09, 0xbc, 0x40, 0x9d, 0xf9, 0x66, 0x55, 0x81, 0x59, 0xdc, 0xe6, 0xda, 0xc8, 0xac, 0x38, 0x80,
+	0xae, 0x66, 0x6b, 0xa1, 0x46, 0x59, 0x65, 0x79, 0x90, 0x27, 0xc5, 0xeb, 0x30, 0x85, 0x21, 0x7c,
+	0xcd, 0xe3, 0xeb, 0xff, 0xb0, 0xb2, 0x9b, 0x4b, 0x20, 0x1a, 0xe4, 0x29, 0xa0, 0x68, 0x63, 0x77,
+	0xde, 0x5d, 0x88, 0x2f, 0xef, 0xb5, 0x8b, 0xcf, 0xb7, 0xc9, 0x7e, 0x3c, 0xd8, 0x29, 0xd0, 0xee,
+	0x0b, 0x94, 0xe9, 0xb3, 0x52, 0x9e, 0x19, 0x1b, 0x89, 0x70, 0x3a, 0xd9, 0x51, 0x2a, 0x58, 0x4f,
+	0x5c, 0x00, 0x66, 0x57, 0x83, 0x1a, 0xa4, 0x71, 0x09, 0x06, 0x1f, 0x69, 0x8f, 0xa3, 0xfe, 0xe7,
+	0x19, 0xbd, 0x78, 0xd8, 0x68, 0x5f, 0x66, 0x34, 0xfa, 0x3a, 0xa3, 0xbd, 0xdb, 0x11, 0x91, 0xf1,
+	0xda, 0x03, 0xc0, 0xc7, 0xa0, 0x55, 0x3a, 0xb1, 0x39, 0xd9, 0x4c, 0x3a, 0xd8, 0x4e, 0xba, 0xaf,
+	0x33, 0x84, 0x9c, 0xf5, 0xcf, 0x19, 0xa3, 0x5b, 0xd5, 0x8f, 0x5f, 0x1f, 0x56, 0x46, 0xe4, 0x06,
+	0x3f, 0xda, 0x35, 0x1e, 0x85, 0x91, 0x70, 0xcc, 0xcd, 0xdc, 0xf5, 0xfc, 0xa8, 0x0b, 0x1e, 0x93,
+	0xdd, 0x78, 0xf5, 0x21, 0x88, 0x0c, 0xd3, 0x17, 0xe4, 0xac, 0x67, 0x3c, 0x75, 0xf8, 0x76, 0x0f,
+	0xde, 0xb0, 0x2b, 0x7f, 0xa5, 0x36, 0x34, 0x62, 0xa1, 0x78, 0x83, 0x90, 0xc5, 0xe2, 0x34, 0x78,
+	0xe4, 0x65, 0xbc, 0xde, 0xfc, 0x4c, 0xd7, 0xed, 0x97, 0x13, 0x0f, 0xce, 0x19, 0xe1, 0x14, 0xae,
+	0x87, 0xf2, 0x4d, 0x32, 0xf8, 0x2f, 0x35, 0x8b, 0xdf, 0x9f, 0xd0, 0x95, 0x72, 0xfb, 0xf4, 0x84,
+	0xf6, 0xee, 0x25, 0xa7, 0x15, 0x5d, 0x73, 0x60, 0xb6, 0x1c, 0xe4, 0x1e, 0x0a, 0xff, 0xb1, 0xa2,
+	0xbd, 0x4f, 0x15, 0xed, 0x1e, 0xdb, 0xb7, 0x7a, 0x18, 0x7d, 0xaf, 0x87, 0xd1, 0xcf, 0x7a, 0x18,
+	0xfd, 0xae, 0x87, 0xbd, 0xa7, 0xd1, 0xe4, 0x52, 0xb8, 0xbb, 0xbb, 0x7f, 0x02, 0x00, 0x00, 0xff,
+	0xff, 0xfc, 0xae, 0xe3, 0x76, 0xa3, 0x02, 0x00, 0x00,
 }

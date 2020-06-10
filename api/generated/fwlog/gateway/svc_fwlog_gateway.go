@@ -8,6 +8,7 @@ package fwlogGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -65,9 +66,18 @@ func (a adapterFwLogV1) DownloadFwLogFileContent(oldctx oldcontext.Context, t *a
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*api.ListWatchOptions)
-		return a.service.DownloadFwLogFileContent(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(fwlog.FwLogV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.DownloadFwLogFileContent(inctx, in)
+		}
+		return a.service.DownloadFwLogFileContent(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -88,9 +98,18 @@ func (a adapterFwLogV1) GetLogs(oldctx oldcontext.Context, t *fwlog.FwLogQuery, 
 		return nil, errors.New("unknown service profile")
 	}
 
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
 		in := i.(*fwlog.FwLogQuery)
-		return a.service.GetLogs(ctx, in)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(fwlog.FwLogV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.GetLogs(inctx, in)
+		}
+		return a.service.GetLogs(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {

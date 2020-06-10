@@ -80,20 +80,22 @@ func (x LdapServerStatus_LdapResult) String() string {
 
 // Permission_ResrcKind_normal is a map of normalized values for the enum
 var Permission_ResrcKind_normal = map[string]string{
-	"APIEndpoint":  "APIEndpoint",
-	"AuditEvent":   "AuditEvent",
-	"Event":        "Event",
-	"FwLog":        "FwLog",
-	"MetricsQuery": "MetricsQuery",
-	"Search":       "Search",
-	"TokenAuth":    "TokenAuth",
-	"apiendpoint":  "APIEndpoint",
-	"auditevent":   "AuditEvent",
-	"event":        "Event",
-	"fwlog":        "FwLog",
-	"metricsquery": "MetricsQuery",
-	"search":       "Search",
-	"tokenauth":    "TokenAuth",
+	"APIEndpoint":   "APIEndpoint",
+	"AuditEvent":    "AuditEvent",
+	"Event":         "Event",
+	"FwLog":         "FwLog",
+	"MetricsQuery":  "MetricsQuery",
+	"RoutingStatus": "RoutingStatus",
+	"Search":        "Search",
+	"TokenAuth":     "TokenAuth",
+	"apiendpoint":   "APIEndpoint",
+	"auditevent":    "AuditEvent",
+	"event":         "Event",
+	"fwlog":         "FwLog",
+	"metricsquery":  "MetricsQuery",
+	"routingstatus": "RoutingStatus",
+	"search":        "Search",
+	"tokenauth":     "TokenAuth",
 }
 
 var Permission_ResrcKind_vname = map[int32]string{
@@ -104,16 +106,18 @@ var Permission_ResrcKind_vname = map[int32]string{
 	4: "AuditEvent",
 	5: "FwLog",
 	6: "TokenAuth",
+	7: "RoutingStatus",
 }
 
 var Permission_ResrcKind_vvalue = map[string]int32{
-	"APIEndpoint":  0,
-	"Search":       1,
-	"Event":        2,
-	"MetricsQuery": 3,
-	"AuditEvent":   4,
-	"FwLog":        5,
-	"TokenAuth":    6,
+	"APIEndpoint":   0,
+	"Search":        1,
+	"Event":         2,
+	"MetricsQuery":  3,
+	"AuditEvent":    4,
+	"FwLog":         5,
+	"TokenAuth":     6,
+	"RoutingStatus": 7,
 }
 
 func (x Permission_ResrcKind) String() string {

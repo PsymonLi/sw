@@ -65,6 +65,16 @@ var _ validators.DummyVar
 var validatorMapRouting = make(map[string]map[string][]func(string, interface{}) error)
 
 // MakeKey generates a KV store key for the object
+func (m *Health) MakeKey(prefix string) string {
+	return fmt.Sprint(globals.ConfigRootPrefix, "/", prefix, "/", "health/", m.Name)
+}
+
+func (m *Health) MakeURI(cat, ver, prefix string) string {
+	in := m
+	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/health/", in.Name)
+}
+
+// MakeKey generates a KV store key for the object
 func (m *Neighbor) MakeKey(prefix string) string {
 	return fmt.Sprint(globals.ConfigRootPrefix, "/", prefix, "/", "neighbors/", m.Name)
 }
@@ -72,6 +82,127 @@ func (m *Neighbor) MakeKey(prefix string) string {
 func (m *Neighbor) MakeURI(cat, ver, prefix string) string {
 	in := m
 	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/neighbors/", in.Name)
+}
+
+// MakeKey generates a KV store key for the object
+func (m *NeighborFilter) MakeKey(prefix string) string {
+	return fmt.Sprint(globals.ConfigRootPrefix, "/", prefix, "/", "neighborfilter/", m.Name)
+}
+
+func (m *NeighborFilter) MakeURI(cat, ver, prefix string) string {
+	in := m
+	return fmt.Sprint("/", cat, "/", prefix, "/", ver, "/neighborfilter/", in.Name)
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *EmptyReq) Clone(into interface{}) (interface{}, error) {
+	var out *EmptyReq
+	var ok bool
+	if into == nil {
+		out = &EmptyReq{}
+	} else {
+		out, ok = into.(*EmptyReq)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*EmptyReq))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *EmptyReq) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *Health) Clone(into interface{}) (interface{}, error) {
+	var out *Health
+	var ok bool
+	if into == nil {
+		out = &Health{}
+	} else {
+		out, ok = into.(*Health)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*Health))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *Health) Defaults(ver string) bool {
+	var ret bool
+	m.Kind = "Health"
+	ret = m.Tenant != "" || m.Namespace != ""
+	if ret {
+		m.Tenant, m.Namespace = "", ""
+	}
+	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *HealthSpec) Clone(into interface{}) (interface{}, error) {
+	var out *HealthSpec
+	var ok bool
+	if into == nil {
+		out = &HealthSpec{}
+	} else {
+		out, ok = into.(*HealthSpec)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*HealthSpec))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *HealthSpec) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *HealthStatus) Clone(into interface{}) (interface{}, error) {
+	var out *HealthStatus
+	var ok bool
+	if into == nil {
+		out = &HealthStatus{}
+	} else {
+		out, ok = into.(*HealthStatus)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*HealthStatus))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *HealthStatus) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *HealthStatus_PeeringStatus) Clone(into interface{}) (interface{}, error) {
+	var out *HealthStatus_PeeringStatus
+	var ok bool
+	if into == nil {
+		out = &HealthStatus_PeeringStatus{}
+	} else {
+		out, ok = into.(*HealthStatus_PeeringStatus)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*HealthStatus_PeeringStatus))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *HealthStatus_PeeringStatus) Defaults(ver string) bool {
+	return false
 }
 
 // Clone clones the object into into or creates one of into is nil
@@ -103,6 +234,55 @@ func (m *Neighbor) Defaults(ver string) bool {
 }
 
 // Clone clones the object into into or creates one of into is nil
+func (m *NeighborFilter) Clone(into interface{}) (interface{}, error) {
+	var out *NeighborFilter
+	var ok bool
+	if into == nil {
+		out = &NeighborFilter{}
+	} else {
+		out, ok = into.(*NeighborFilter)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*NeighborFilter))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *NeighborFilter) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
+func (m *NeighborList) Clone(into interface{}) (interface{}, error) {
+	var out *NeighborList
+	var ok bool
+	if into == nil {
+		out = &NeighborList{}
+	} else {
+		out, ok = into.(*NeighborList)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*NeighborList))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *NeighborList) Defaults(ver string) bool {
+	var ret bool
+	for k := range m.Items {
+		if m.Items[k] != nil {
+			i := m.Items[k]
+			ret = i.Defaults(ver) || ret
+		}
+	}
+	return ret
+}
+
+// Clone clones the object into into or creates one of into is nil
 func (m *NeighborStatus) Clone(into interface{}) (interface{}, error) {
 	var out *NeighborStatus
 	var ok bool
@@ -130,6 +310,91 @@ func (m *NeighborStatus) Defaults(ver string) bool {
 }
 
 // Validators and Requirements
+
+func (m *EmptyReq) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *EmptyReq) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *EmptyReq) Normalize() {
+
+}
+
+func (m *Health) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *Health) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	if m.Tenant != "" {
+		ret = append(ret, errors.New("Tenant not allowed for Health"))
+	}
+	if m.Namespace != "" {
+		ret = append(ret, errors.New("Namespace not allowed for Health"))
+	}
+
+	{
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := path + dlmtr + "ObjectMeta"
+		if errs := m.ObjectMeta.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *Health) Normalize() {
+
+	m.ObjectMeta.Normalize()
+
+}
+
+func (m *HealthSpec) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *HealthSpec) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *HealthSpec) Normalize() {
+
+}
+
+func (m *HealthStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *HealthStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *HealthStatus) Normalize() {
+
+}
+
+func (m *HealthStatus_PeeringStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *HealthStatus_PeeringStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *HealthStatus_PeeringStatus) Normalize() {
+
+}
 
 func (m *Neighbor) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 
@@ -203,6 +468,52 @@ func (m *Neighbor) Normalize() {
 
 }
 
+func (m *NeighborFilter) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *NeighborFilter) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+
+	return ret
+}
+
+func (m *NeighborFilter) Normalize() {
+
+	m.ObjectMeta.Normalize()
+
+}
+
+func (m *NeighborList) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *NeighborList) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	for k, v := range m.Items {
+		dlmtr := "."
+		if path == "" {
+			dlmtr = ""
+		}
+		npath := fmt.Sprintf("%s%sItems[%v]", path, dlmtr, k)
+		if errs := v.Validate(ver, npath, ignoreStatus, ignoreSpec); errs != nil {
+			ret = append(ret, errs...)
+		}
+	}
+	return ret
+}
+
+func (m *NeighborList) Normalize() {
+
+	for k, v := range m.Items {
+		if v != nil {
+			v.Normalize()
+			m.Items[k] = v
+		}
+	}
+
+}
+
 func (m *NeighborStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 
 }
@@ -268,10 +579,30 @@ func (st *storageNeighborTransformer) TransformToStorage(ctx context.Context, i 
 	return r, nil
 }
 
+func (m *NeighborList) ApplyStorageTransformer(ctx context.Context, toStorage bool) error {
+	for i, v := range m.Items {
+		c := *v
+		if err := c.ApplyStorageTransformer(ctx, toStorage); err != nil {
+			return err
+		}
+		m.Items[i] = &c
+	}
+	return nil
+}
+
+func (m *NeighborList) EraseSecrets() {
+	for _, v := range m.Items {
+		v.EraseSecrets()
+	}
+	return
+}
+
 func init() {
 	scheme := runtime.GetDefaultScheme()
 	scheme.AddKnownTypes(
+		&Health{},
 		&Neighbor{},
+		&NeighborFilter{},
 	)
 
 	validatorMapRouting = make(map[string]map[string][]func(string, interface{}) error)

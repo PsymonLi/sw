@@ -28,8 +28,6 @@ import (
 	orchestrationClient "github.com/pensando/sw/api/generated/orchestration/grpc/client"
 	rollout "github.com/pensando/sw/api/generated/rollout"
 	rolloutClient "github.com/pensando/sw/api/generated/rollout/grpc/client"
-	routing "github.com/pensando/sw/api/generated/routing"
-	routingClient "github.com/pensando/sw/api/generated/routing/grpc/client"
 	security "github.com/pensando/sw/api/generated/security"
 	securityClient "github.com/pensando/sw/api/generated/security/grpc/client"
 	staging "github.com/pensando/sw/api/generated/staging"
@@ -56,7 +54,6 @@ const (
 	GroupObjstore      APIGroup = "objstore"
 	GroupOrchestration APIGroup = "orchestration"
 	GroupRollout       APIGroup = "rollout"
-	GroupRouting       APIGroup = "routing"
 	GroupSecurity      APIGroup = "security"
 	GroupStaging       APIGroup = "staging"
 	GroupWorkload      APIGroup = "workload"
@@ -88,8 +85,6 @@ type Services interface {
 	OrchestratorV1() orchestration.OrchestratorV1Interface
 	// Package is rollout and len of messages is 2
 	RolloutV1() rollout.RolloutV1Interface
-	// Package is routing and len of messages is 1
-	RoutingV1() routing.RoutingV1Interface
 	// Package is security and len of messages is 6
 	SecurityV1() security.SecurityV1Interface
 	// Package is staging and len of messages is 1
@@ -114,7 +109,6 @@ type apiGrpcServerClient struct {
 	aObjstoreV1     objstore.ObjstoreV1Interface
 	aOrchestratorV1 orchestration.OrchestratorV1Interface
 	aRolloutV1      rollout.RolloutV1Interface
-	aRoutingV1      routing.RoutingV1Interface
 	aSecurityV1     security.SecurityV1Interface
 	aStagingV1      staging.StagingV1Interface
 	aWorkloadV1     workload.WorkloadV1Interface
@@ -169,10 +163,6 @@ func (a *apiGrpcServerClient) RolloutV1() rollout.RolloutV1Interface {
 	return a.aRolloutV1
 }
 
-func (a *apiGrpcServerClient) RoutingV1() routing.RoutingV1Interface {
-	return a.aRoutingV1
-}
-
 func (a *apiGrpcServerClient) SecurityV1() security.SecurityV1Interface {
 	return a.aSecurityV1
 }
@@ -209,7 +199,6 @@ func NewGrpcAPIClient(clientName, url string, logger log.Logger, opts ...rpckit.
 		aObjstoreV1:     objstoreClient.NewGrpcCrudClientObjstoreV1(client.ClientConn, logger),
 		aOrchestratorV1: orchestrationClient.NewGrpcCrudClientOrchestratorV1(client.ClientConn, logger),
 		aRolloutV1:      rolloutClient.NewGrpcCrudClientRolloutV1(client.ClientConn, logger),
-		aRoutingV1:      routingClient.NewGrpcCrudClientRoutingV1(client.ClientConn, logger),
 		aSecurityV1:     securityClient.NewGrpcCrudClientSecurityV1(client.ClientConn, logger),
 		aStagingV1:      stagingClient.NewGrpcCrudClientStagingV1(client.ClientConn, logger),
 		aWorkloadV1:     workloadClient.NewGrpcCrudClientWorkloadV1(client.ClientConn, logger),
@@ -232,7 +221,6 @@ type apiRestServerClient struct {
 	aObjstoreV1     objstore.ObjstoreV1Interface
 	aOrchestratorV1 orchestration.OrchestratorV1Interface
 	aRolloutV1      rollout.RolloutV1Interface
-	aRoutingV1      routing.RoutingV1Interface
 	aSecurityV1     security.SecurityV1Interface
 	aStagingV1      staging.StagingV1Interface
 	aWorkloadV1     workload.WorkloadV1Interface
@@ -290,10 +278,6 @@ func (a *apiRestServerClient) RolloutV1() rollout.RolloutV1Interface {
 	return a.aRolloutV1
 }
 
-func (a *apiRestServerClient) RoutingV1() routing.RoutingV1Interface {
-	return a.aRoutingV1
-}
-
 func (a *apiRestServerClient) SecurityV1() security.SecurityV1Interface {
 	return a.aSecurityV1
 }
@@ -331,7 +315,6 @@ func NewRestAPIClient(url string) (Services, error) {
 		aObjstoreV1:     objstoreClient.NewRestCrudClientObjstoreV1(url, httpClient),
 		aOrchestratorV1: orchestrationClient.NewRestCrudClientOrchestratorV1(url, httpClient),
 		aRolloutV1:      rolloutClient.NewRestCrudClientRolloutV1(url, httpClient),
-		aRoutingV1:      routingClient.NewRestCrudClientRoutingV1(url, httpClient),
 		aSecurityV1:     securityClient.NewRestCrudClientSecurityV1(url, httpClient),
 		aStagingV1:      stagingClient.NewRestCrudClientStagingV1(url, httpClient),
 		aWorkloadV1:     workloadClient.NewRestCrudClientWorkloadV1(url, httpClient),
@@ -363,7 +346,6 @@ func NewStagedRestAPIClient(url string, bufferId string) (Services, error) {
 		aObjstoreV1:     objstoreClient.NewStagedRestCrudClientObjstoreV1(url, bufferId, httpClient),
 		aOrchestratorV1: orchestrationClient.NewStagedRestCrudClientOrchestratorV1(url, bufferId, httpClient),
 		aRolloutV1:      rolloutClient.NewStagedRestCrudClientRolloutV1(url, bufferId, httpClient),
-		aRoutingV1:      routingClient.NewStagedRestCrudClientRoutingV1(url, bufferId, httpClient),
 		aSecurityV1:     securityClient.NewStagedRestCrudClientSecurityV1(url, bufferId, httpClient),
 		aStagingV1:      stagingClient.NewStagedRestCrudClientStagingV1(url, bufferId, httpClient),
 		aWorkloadV1:     workloadClient.NewStagedRestCrudClientWorkloadV1(url, bufferId, httpClient),

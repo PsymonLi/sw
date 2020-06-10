@@ -521,42 +521,77 @@ func peerStateToBool(p *pdstypes.BGPPeerStatus) bool {
 
 type monitorSvc struct{}
 
-// AutoAddNeighbor creates Neighbor object
-func (m *ServiceHandlers) AutoAddNeighbor(context.Context, *routing.Neighbor) (*routing.Neighbor, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoDeleteNeighbor deletes Neighbor object
-func (m *ServiceHandlers) AutoDeleteNeighbor(context.Context, *routing.Neighbor) (*routing.Neighbor, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoGetNeighbor get Neighbor object
-func (m *ServiceHandlers) AutoGetNeighbor(context.Context, *routing.Neighbor) (*routing.Neighbor, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoLabelNeighbor applies labels Neighbor object
-func (m *ServiceHandlers) AutoLabelNeighbor(context.Context, *api.Label) (*routing.Neighbor, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoListNeighbor lists Neighbor objects
-func (m *ServiceHandlers) AutoListNeighbor(context.Context, *api.ListWatchOptions) (*routing.NeighborList, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoUpdateNeighbor updates Neighbor object
-func (m *ServiceHandlers) AutoUpdateNeighbor(context.Context, *routing.Neighbor) (*routing.Neighbor, error) {
-	return nil, fmt.Errorf("not implemented")
-}
-
-// AutoWatchNeighbor watches Neighbor objects. Supports WebSockets or HTTP long poll
-func (m *ServiceHandlers) AutoWatchNeighbor(*api.ListWatchOptions, routing.RoutingV1_AutoWatchNeighborServer) error {
-	return fmt.Errorf("not implemented")
-}
-
 // AutoWatchSvcRoutingV1 is a service watcher
 func (m *ServiceHandlers) AutoWatchSvcRoutingV1(*api.AggWatchOptions, routing.RoutingV1_AutoWatchSvcRoutingV1Server) error {
 	return fmt.Errorf("not implemented")
+}
+
+// GetNeighbor gets one neighbor
+func (m *ServiceHandlers) GetNeighbor(ctx context.Context, in *routing.NeighborFilter) (*routing.Neighbor, error) {
+	log.Infof("got call for Get Neighbors [%+v]", in)
+	return &routing.Neighbor{}, nil
+}
+
+// ListNeighbors lists neighbors
+func (m *ServiceHandlers) ListNeighbors(ctx context.Context, in *routing.NeighborFilter) (*routing.NeighborList, error) {
+	log.Infof("got call for ListNeighbors [%+v]", in)
+	return &routing.NeighborList{}, nil
+}
+
+type peerHealth struct {
+	peer     string
+	estab    bool
+	internal bool
+}
+
+// HealthZ returns the health of the RR
+func (m *ServiceHandlers) HealthZ(ctx context.Context, in *routing.EmptyReq) (*routing.Health, error) {
+	log.Infof("got call for HealthZ [%+v]", in)
+	ret := &routing.Health{}
+	if cache.config.Spec.BGPConfig != nil {
+		peerMap := make(map[string]peerHealth)
+		ret.Status.RouterID = cache.config.Spec.BGPConfig.RouterId
+		for _, p := range cache.config.Spec.BGPConfig.Neighbors {
+			if !p.DSCAutoConfig {
+				peerMap[p.IPAddress] = peerHealth{peer: p.IPAddress}
+			}
+		}
+		for _, p := range m.snicMap {
+			peerMap[p.ip] = peerHealth{peer: p.ip, internal: true}
+		}
+		resp, err := m.pegasusClient.BGPPeerGet(context.Background(), &pdstypes.BGPPeerGetRequest{})
+		if err == nil && resp.ApiStatus == pdstypes.ApiStatus_API_STATUS_OK {
+			for _, p := range resp.Response {
+				s, ok := peerMap[pdsIPToString(p.Spec.PeerAddr)]
+				if !ok {
+					ret.Status.UnexpectedPeers++
+				} else {
+					s.estab = peerStateToBool(p.Status)
+				}
+				peerMap[pdsIPToString(p.Spec.PeerAddr)] = s
+			}
+		} else {
+			return ret, fmt.Errorf("error getting peers state (%s)", err)
+		}
+		var internal, internalEstab, external, externalEstab int32
+		for _, s := range peerMap {
+			if s.internal {
+				internal++
+				if s.estab {
+					internalEstab++
+				}
+			} else {
+				external++
+				if s.estab {
+					externalEstab++
+				}
+			}
+		}
+		ret.Status.ExternalPeers.Configured = external
+		ret.Status.ExternalPeers.Established = externalEstab
+		ret.Status.InternalPeers.Configured = internal
+		ret.Status.InternalPeers.Established = internalEstab
+	}
+
+	return ret, nil
 }

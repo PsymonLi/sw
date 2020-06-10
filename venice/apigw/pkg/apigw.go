@@ -38,6 +38,7 @@ import (
 	"github.com/pensando/sw/api/generated/auth"
 	diagapi "github.com/pensando/sw/api/generated/diagnostics"
 	"github.com/pensando/sw/api/login"
+	"github.com/pensando/sw/api/utils"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/apigw"
 	"github.com/pensando/sw/venice/globals"
@@ -630,9 +631,8 @@ func (a *apiGw) cleanupObjMeta(i interface{}) {
 }
 
 // HandleRequest handles the API gateway request and applies all Hooks
-func (a *apiGw) HandleRequest(ctx context.Context, in interface{}, prof apigw.ServiceProfile, call func(ctx context.Context, in interface{}) (interface{}, error)) (interface{}, error) {
+func (a *apiGw) HandleRequest(ctx context.Context, in interface{}, prof apigw.ServiceProfile, call func(ctx context.Context, in interface{}) (interface{}, error)) (retintf interface{}, err error) {
 	var out, i interface{}
-	var err error
 	i = in
 	nctx := ctx
 
@@ -735,8 +735,17 @@ func (a *apiGw) HandleRequest(ctx context.Context, in interface{}, prof apigw.Se
 		}
 		skipCall = skip || skipCall
 	}
+	cb, ok := apiutils.GetVar(nctx, apiutils.CtxKeyAPIGwCleanupCB)
+	if ok && cb != nil {
+		cleanCB := cb.(apigw.CallCleanupCB)
+		defer func() {
+			cleanCB(err)
+		}()
+	}
 	out = i
 	if !skipCall {
+		ovr, ok := apiutils.GetVar(nctx, apiutils.CtxKeyAPIGwOverrideClient)
+		log.Infof("GetVar returned [%v][%p][%t][%v]", ok, ovr, ovr, ovr)
 		out, err = call(nctx, i)
 		if err != nil {
 			a.audit(nctx, user, nil, out, operations, auditLevel, auditapi.Stage_RequestProcessing, auditapi.Outcome_Failure, err, clientIPs, reqURI)

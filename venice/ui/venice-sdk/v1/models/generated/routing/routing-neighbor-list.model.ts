@@ -25,7 +25,6 @@ export class RoutingNeighborList extends BaseModel implements IRoutingNeighborLi
     'kind': string = null;
     'api-version': string = null;
     'list-meta': ApiListMeta = null;
-    /** List of Neighbor objects. */
     'items': Array<RoutingNeighbor> = null;
     public static propInfo: { [prop in keyof IRoutingNeighborList]: PropInfoItem } = {
         'kind': {
@@ -41,7 +40,6 @@ export class RoutingNeighborList extends BaseModel implements IRoutingNeighborLi
             type: 'object'
         },
         'items': {
-            description:  `List of Neighbor objects.`,
             required: false,
             type: 'object'
         },

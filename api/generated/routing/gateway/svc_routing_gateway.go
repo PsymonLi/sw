@@ -8,6 +8,7 @@ package routingGwService
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -53,25 +54,30 @@ type adapterRoutingV1 struct {
 	gw      apigw.APIGateway
 }
 
-func (a adapterRoutingV1) AutoAddNeighbor(oldctx oldcontext.Context, t *routing.Neighbor, options ...grpc.CallOption) (*routing.Neighbor, error) {
+func (a adapterRoutingV1) GetNeighbor(oldctx oldcontext.Context, t *routing.NeighborFilter, options ...grpc.CallOption) (*routing.Neighbor, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
 	defer func() {
-		hdr.Record("apigw.RoutingV1AutoAddNeighbor", time.Since(trackTime))
+		hdr.Record("apigw.RoutingV1GetNeighbor", time.Since(trackTime))
 	}()
 	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoAddNeighbor")
+	prof, err := a.gwSvc.GetServiceProfile("GetNeighbor")
 	if err != nil {
 		return nil, errors.New("unknown service profile")
 	}
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.CreateOper, "Neighbor", t.Tenant, t.Namespace, "routing", t.Name, strings.Title(string(apiintf.CreateOper))
 
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*routing.Neighbor)
-		return a.service.AutoAddNeighbor(ctx, in)
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*routing.NeighborFilter)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(routing.RoutingV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.GetNeighbor(inctx, in)
+		}
+		return a.service.GetNeighbor(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
@@ -80,142 +86,68 @@ func (a adapterRoutingV1) AutoAddNeighbor(oldctx oldcontext.Context, t *routing.
 	return ret.(*routing.Neighbor), err
 }
 
-func (a adapterRoutingV1) AutoDeleteNeighbor(oldctx oldcontext.Context, t *routing.Neighbor, options ...grpc.CallOption) (*routing.Neighbor, error) {
+func (a adapterRoutingV1) HealthZ(oldctx oldcontext.Context, t *routing.EmptyReq, options ...grpc.CallOption) (*routing.Health, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
 	defer func() {
-		hdr.Record("apigw.RoutingV1AutoDeleteNeighbor", time.Since(trackTime))
+		hdr.Record("apigw.RoutingV1HealthZ", time.Since(trackTime))
 	}()
 	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoDeleteNeighbor")
+	prof, err := a.gwSvc.GetServiceProfile("HealthZ")
 	if err != nil {
 		return nil, errors.New("unknown service profile")
 	}
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.DeleteOper, "Neighbor", t.Tenant, t.Namespace, "routing", t.Name, strings.Title(string(apiintf.DeleteOper))
 
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*routing.Neighbor)
-		return a.service.AutoDeleteNeighbor(ctx, in)
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*routing.EmptyReq)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(routing.RoutingV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.HealthZ(inctx, in)
+		}
+		return a.service.HealthZ(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
 		return nil, err
 	}
-	return ret.(*routing.Neighbor), err
+	return ret.(*routing.Health), err
 }
 
-func (a adapterRoutingV1) AutoGetNeighbor(oldctx oldcontext.Context, t *routing.Neighbor, options ...grpc.CallOption) (*routing.Neighbor, error) {
+func (a adapterRoutingV1) ListNeighbors(oldctx oldcontext.Context, t *routing.NeighborFilter, options ...grpc.CallOption) (*routing.NeighborList, error) {
 	// Not using options for now. Will be passed through context as needed.
 	trackTime := time.Now()
 	defer func() {
-		hdr.Record("apigw.RoutingV1AutoGetNeighbor", time.Since(trackTime))
+		hdr.Record("apigw.RoutingV1ListNeighbors", time.Since(trackTime))
 	}()
 	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoGetNeighbor")
-	if err != nil {
-		return nil, errors.New("unknown service profile")
-	}
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.GetOper, "Neighbor", t.Tenant, t.Namespace, "routing", t.Name, strings.Title(string(apiintf.GetOper))
-
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*routing.Neighbor)
-		return a.service.AutoGetNeighbor(ctx, in)
-	}
-	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
-	if ret == nil {
-		return nil, err
-	}
-	return ret.(*routing.Neighbor), err
-}
-
-func (a adapterRoutingV1) AutoLabelNeighbor(oldctx oldcontext.Context, t *api.Label, options ...grpc.CallOption) (*routing.Neighbor, error) {
-	// Not using options for now. Will be passed through context as needed.
-	trackTime := time.Now()
-	defer func() {
-		hdr.Record("apigw.RoutingV1AutoLabelNeighbor", time.Since(trackTime))
-	}()
-	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoLabelNeighbor")
-	if err != nil {
-		return nil, errors.New("unknown service profile")
-	}
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "Neighbor", t.Tenant, t.Namespace, "routing", t.Name, strings.Title(string(apiintf.LabelOper))
-
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*api.Label)
-		return a.service.AutoLabelNeighbor(ctx, in)
-	}
-	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
-	if ret == nil {
-		return nil, err
-	}
-	return ret.(*routing.Neighbor), err
-}
-
-func (a adapterRoutingV1) AutoListNeighbor(oldctx oldcontext.Context, t *api.ListWatchOptions, options ...grpc.CallOption) (*routing.NeighborList, error) {
-	// Not using options for now. Will be passed through context as needed.
-	trackTime := time.Now()
-	defer func() {
-		hdr.Record("apigw.RoutingV1AutoListNeighbor", time.Since(trackTime))
-	}()
-	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoListNeighbor")
+	prof, err := a.gwSvc.GetServiceProfile("ListNeighbors")
 	if err != nil {
 		return nil, errors.New("unknown service profile")
 	}
 
-	t.Tenant = ""
-	t.Namespace = ""
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.ListOper, "Neighbor", t.Tenant, t.Namespace, "routing", "", strings.Title(string(apiintf.ListOper))
-
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*api.ListWatchOptions)
-		return a.service.AutoListNeighbor(ctx, in)
+	fn := func(inctx context.Context, i interface{}) (interface{}, error) {
+		in := i.(*routing.NeighborFilter)
+		cl, ok := apiutils.GetVar(inctx, apiutils.CtxKeyAPIGwOverrideClient)
+		if ok {
+			srvCl, ok := cl.(routing.RoutingV1Client)
+			if !ok {
+				log.Errorf("invalid client override [%p][%+v]", srvCl, srvCl)
+				return nil, fmt.Errorf("internal error: invalid client override[%p][%+v]", srvCl, srvCl)
+			}
+			return srvCl.ListNeighbors(inctx, in)
+		}
+		return a.service.ListNeighbors(inctx, in)
 	}
 	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
 	if ret == nil {
 		return nil, err
 	}
 	return ret.(*routing.NeighborList), err
-}
-
-func (a adapterRoutingV1) AutoUpdateNeighbor(oldctx oldcontext.Context, t *routing.Neighbor, options ...grpc.CallOption) (*routing.Neighbor, error) {
-	// Not using options for now. Will be passed through context as needed.
-	trackTime := time.Now()
-	defer func() {
-		hdr.Record("apigw.RoutingV1AutoUpdateNeighbor", time.Since(trackTime))
-	}()
-	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoUpdateNeighbor")
-	if err != nil {
-		return nil, errors.New("unknown service profile")
-	}
-	oper, kind, tenant, namespace, group, name, auditAction := apiintf.UpdateOper, "Neighbor", t.Tenant, t.Namespace, "routing", t.Name, strings.Title(string(apiintf.UpdateOper))
-
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, name), oper, auditAction)
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*routing.Neighbor)
-		return a.service.AutoUpdateNeighbor(ctx, in)
-	}
-	ret, err := a.gw.HandleRequest(ctx, t, prof, fn)
-	if ret == nil {
-		return nil, err
-	}
-	return ret.(*routing.Neighbor), err
 }
 
 func (a adapterRoutingV1) AutoWatchSvcRoutingV1(oldctx oldcontext.Context, in *api.AggWatchOptions, options ...grpc.CallOption) (routing.RoutingV1_AutoWatchSvcRoutingV1Client, error) {
@@ -272,69 +204,16 @@ func (a adapterRoutingV1) AutoWatchSvcRoutingV1(oldctx oldcontext.Context, in *a
 	return ret.(routing.RoutingV1_AutoWatchSvcRoutingV1Client), err
 }
 
-func (a adapterRoutingV1) AutoWatchNeighbor(oldctx oldcontext.Context, in *api.ListWatchOptions, options ...grpc.CallOption) (routing.RoutingV1_AutoWatchNeighborClient, error) {
-	ctx := context.Context(oldctx)
-	prof, err := a.gwSvc.GetServiceProfile("AutoWatchNeighbor")
-	if err != nil {
-		return nil, errors.New("unknown service profile")
-	}
-
-	in.Tenant = ""
-	in.Namespace = ""
-	oper, kind, tenant, namespace, group := apiintf.WatchOper, "Neighbor", in.Tenant, in.Namespace, "routing"
-	op := authz.NewAPIServerOperation(authz.NewResource(tenant, group, kind, namespace, ""), oper, strings.Title(string(oper)))
-	ctx = apigwpkg.NewContextWithOperations(ctx, op)
-	fn := func(ctx context.Context, i interface{}) (interface{}, error) {
-		in := i.(*api.ListWatchOptions)
-		iws, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwWebSocketWatch)
-		if ok && iws.(bool) {
-			nctx, cancel := context.WithCancel(ctx)
-			ir, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPReq)
-			if !ok {
-				return nil, errors.New("unable to retrieve request")
-			}
-			iw, ok := apiutils.GetVar(ctx, apiutils.CtxKeyAPIGwHTTPWriter)
-			if !ok {
-				return nil, errors.New("unable to retrieve writer")
-			}
-			conn, err := wsUpgrader.Upgrade(iw.(http.ResponseWriter), ir.(*http.Request), nil)
-			if err != nil {
-				log.Errorf("WebSocket Upgrade failed (%s)", err)
-				return nil, err
-			}
-			ctx = apiutils.SetVar(nctx, apiutils.CtxKeyAPIGwWebSocketConn, conn)
-			conn.SetCloseHandler(func(code int, text string) error {
-				cancel()
-				log.Infof("received close notification on websocket [AutoWatchNeighbor] (%v/%v)", code, text)
-				return nil
-			})
-			// start a dummy reciever
-			go func() {
-				for {
-					_, _, err := conn.ReadMessage()
-					if err != nil {
-						log.Errorf("received error on websocket receive (%s)", err)
-						cancel()
-						return
-					}
-				}
-			}()
-		}
-		return a.service.AutoWatchNeighbor(ctx, in)
-	}
-	ret, err := a.gw.HandleRequest(ctx, in, prof, fn)
-	if ret == nil {
-		return nil, err
-	}
-	return ret.(routing.RoutingV1_AutoWatchNeighborClient), err
-}
-
 func (e *sRoutingV1GwService) setupSvcProfile() {
 	e.defSvcProf = apigwpkg.NewServiceProfile(nil, "", "", apiintf.UnknownOper)
 	e.defSvcProf.SetDefaults()
 	e.svcProf = make(map[string]apigw.ServiceProfile)
 
-	e.svcProf["AutoListNeighbor"] = apigwpkg.NewServiceProfile(e.defSvcProf, "NeighborList", "", apiintf.ListOper)
+	e.svcProf["GetNeighbor"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
+
+	e.svcProf["HealthZ"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
+
+	e.svcProf["ListNeighbors"] = apigwpkg.NewServiceProfile(e.defSvcProf, "", "", apiintf.UnknownOper)
 }
 
 // GetDefaultServiceProfile returns the default fallback service profile for this service

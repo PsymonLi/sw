@@ -14,4 +14,5 @@ var _ context.Context
 var _ api.ObjectMeta
 var _ kvstore.Interface
 
+const KindHealth ObjKind = "Health"
 const KindNeighbor ObjKind = "Neighbor"

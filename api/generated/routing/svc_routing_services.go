@@ -19,26 +19,16 @@ var _ api.ObjectMeta
 type ServiceRoutingV1Client interface {
 	AutoWatchSvcRoutingV1(ctx context.Context, in *api.AggWatchOptions) (RoutingV1_AutoWatchSvcRoutingV1Client, error)
 
-	AutoAddNeighbor(ctx context.Context, t *Neighbor) (*Neighbor, error)
-	AutoDeleteNeighbor(ctx context.Context, t *Neighbor) (*Neighbor, error)
-	AutoGetNeighbor(ctx context.Context, t *Neighbor) (*Neighbor, error)
-	AutoLabelNeighbor(ctx context.Context, t *api.Label) (*Neighbor, error)
-	AutoListNeighbor(ctx context.Context, t *api.ListWatchOptions) (*NeighborList, error)
-	AutoUpdateNeighbor(ctx context.Context, t *Neighbor) (*Neighbor, error)
-
-	AutoWatchNeighbor(ctx context.Context, in *api.ListWatchOptions) (RoutingV1_AutoWatchNeighborClient, error)
+	GetNeighbor(ctx context.Context, t *NeighborFilter) (*Neighbor, error)
+	HealthZ(ctx context.Context, t *EmptyReq) (*Health, error)
+	ListNeighbors(ctx context.Context, t *NeighborFilter) (*NeighborList, error)
 }
 
 // ServiceRoutingV1Server is the server interface for the service.
 type ServiceRoutingV1Server interface {
 	AutoWatchSvcRoutingV1(in *api.AggWatchOptions, stream RoutingV1_AutoWatchSvcRoutingV1Server) error
 
-	AutoAddNeighbor(ctx context.Context, t Neighbor) (Neighbor, error)
-	AutoDeleteNeighbor(ctx context.Context, t Neighbor) (Neighbor, error)
-	AutoGetNeighbor(ctx context.Context, t Neighbor) (Neighbor, error)
-	AutoLabelNeighbor(ctx context.Context, t api.Label) (Neighbor, error)
-	AutoListNeighbor(ctx context.Context, t api.ListWatchOptions) (NeighborList, error)
-	AutoUpdateNeighbor(ctx context.Context, t Neighbor) (Neighbor, error)
-
-	AutoWatchNeighbor(in *api.ListWatchOptions, stream RoutingV1_AutoWatchNeighborServer) error
+	GetNeighbor(ctx context.Context, t NeighborFilter) (Neighbor, error)
+	HealthZ(ctx context.Context, t EmptyReq) (Health, error)
+	ListNeighbors(ctx context.Context, t NeighborFilter) (NeighborList, error)
 }

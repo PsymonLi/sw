@@ -7,39 +7,40 @@ import { Validators, FormControl, FormGroup, FormArray, ValidatorFn } from '@ang
 import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthValidator, required, enumValidator, patternValidator, CustomFormControl, CustomFormGroup } from '../../../utils/validators';
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
-import { RoutingAutoMsgNeighborWatchHelperWatchEvent, IRoutingAutoMsgNeighborWatchHelperWatchEvent } from './routing-auto-msg-neighbor-watch-helper-watch-event.model';
 
-export interface IRoutingAutoMsgNeighborWatchHelper {
-    'events'?: Array<IRoutingAutoMsgNeighborWatchHelperWatchEvent>;
+export interface IRoutingEmptyReq {
+    'Instance'?: string;
     '_ui'?: any;
 }
 
 
-export class RoutingAutoMsgNeighborWatchHelper extends BaseModel implements IRoutingAutoMsgNeighborWatchHelper {
+export class RoutingEmptyReq extends BaseModel implements IRoutingEmptyReq {
     /** Field for holding arbitrary ui state */
     '_ui': any = {};
-    'events': Array<RoutingAutoMsgNeighborWatchHelperWatchEvent> = null;
-    public static propInfo: { [prop in keyof IRoutingAutoMsgNeighborWatchHelper]: PropInfoItem } = {
-        'events': {
+    /** Empty of course. */
+    'Instance': string = null;
+    public static propInfo: { [prop in keyof IRoutingEmptyReq]: PropInfoItem } = {
+        'Instance': {
+            description:  `Empty of course.`,
             required: false,
-            type: 'object'
+            type: 'string'
         },
     }
 
     public getPropInfo(propName: string): PropInfoItem {
-        return RoutingAutoMsgNeighborWatchHelper.propInfo[propName];
+        return RoutingEmptyReq.propInfo[propName];
     }
 
     public getPropInfoConfig(): { [key:string]:PropInfoItem } {
-        return RoutingAutoMsgNeighborWatchHelper.propInfo;
+        return RoutingEmptyReq.propInfo;
     }
 
     /**
      * Returns whether or not there is an enum property with a default value
     */
     public static hasDefaultValue(prop) {
-        return (RoutingAutoMsgNeighborWatchHelper.propInfo[prop] != null &&
-                        RoutingAutoMsgNeighborWatchHelper.propInfo[prop].default != null);
+        return (RoutingEmptyReq.propInfo[prop] != null &&
+                        RoutingEmptyReq.propInfo[prop].default != null);
     }
 
     /**
@@ -48,7 +49,6 @@ export class RoutingAutoMsgNeighborWatchHelper extends BaseModel implements IRou
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
-        this['events'] = new Array<RoutingAutoMsgNeighborWatchHelperWatchEvent>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -61,10 +61,12 @@ export class RoutingAutoMsgNeighborWatchHelper extends BaseModel implements IRou
         if (values && values['_ui']) {
             this['_ui'] = values['_ui']
         }
-        if (values) {
-            this.fillModelArray<RoutingAutoMsgNeighborWatchHelperWatchEvent>(this, 'events', values['events'], RoutingAutoMsgNeighborWatchHelperWatchEvent);
+        if (values && values['Instance'] != null) {
+            this['Instance'] = values['Instance'];
+        } else if (fillDefaults && RoutingEmptyReq.hasDefaultValue('Instance')) {
+            this['Instance'] = RoutingEmptyReq.propInfo['Instance'].default;
         } else {
-            this['events'] = [];
+            this['Instance'] = null
         }
         this.setFormGroupValuesToBeModelValues();
     }
@@ -73,14 +75,7 @@ export class RoutingAutoMsgNeighborWatchHelper extends BaseModel implements IRou
     protected getFormGroup(): FormGroup {
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
-                'events': new FormArray([]),
-            });
-            // generate FormArray control elements
-            this.fillFormArray<RoutingAutoMsgNeighborWatchHelperWatchEvent>('events', this['events'], RoutingAutoMsgNeighborWatchHelperWatchEvent);
-            // We force recalculation of controls under a form group
-            Object.keys((this._formGroup.get('events') as FormGroup).controls).forEach(field => {
-                const control = this._formGroup.get('events').get(field);
-                control.updateValueAndValidity();
+                'Instance': CustomFormControl(new FormControl(this['Instance']), RoutingEmptyReq.propInfo['Instance']),
             });
         }
         return this._formGroup;
@@ -92,7 +87,7 @@ export class RoutingAutoMsgNeighborWatchHelper extends BaseModel implements IRou
 
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
-            this.fillModelArray<RoutingAutoMsgNeighborWatchHelperWatchEvent>(this, 'events', this['events'], RoutingAutoMsgNeighborWatchHelperWatchEvent);
+            this._formGroup.controls['Instance'].setValue(this['Instance']);
         }
     }
 }

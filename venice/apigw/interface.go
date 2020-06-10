@@ -29,6 +29,9 @@ type APIGatewayService interface {
 // ServiceHookCb is a function callack for registering hooks
 type ServiceHookCb func(srv APIGatewayService, logger log.Logger) error
 
+// CallCleanupCB is a callback that can be used to cleanup after a call
+type CallCleanupCB func(result error)
+
 // APIGateway is satisfied by the API Gateway implementation.
 type APIGateway interface {
 	// Register registers a service to the API Gateway.

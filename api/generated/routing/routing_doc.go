@@ -7,7 +7,14 @@ Input file: routing.proto
 
 The following Messages are defined.
 
+  EmptyReq
+  Health
+  HealthSpec
+  HealthStatus
+  HealthStatus_PeeringStatus
   Neighbor
+  NeighborFilter
+  NeighborList
   NeighborStatus
 
 The following Services and Methods are defined.

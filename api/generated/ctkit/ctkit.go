@@ -20,7 +20,6 @@ import (
 	"github.com/pensando/sw/api/generated/objstore"
 	"github.com/pensando/sw/api/generated/orchestration"
 	"github.com/pensando/sw/api/generated/rollout"
-	"github.com/pensando/sw/api/generated/routing"
 	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/api/generated/staging"
 	"github.com/pensando/sw/api/generated/workload"
@@ -233,7 +232,6 @@ type Controller interface {
 	Orchestrator() OrchestratorAPI                       // return Orchestrator API interface
 	Rollout() RolloutAPI                                 // return Rollout API interface
 	RolloutAction() RolloutActionAPI                     // return RolloutAction API interface
-	Neighbor() NeighborAPI                               // return Neighbor API interface
 	SecurityGroup() SecurityGroupAPI                     // return SecurityGroup API interface
 	NetworkSecurityPolicy() NetworkSecurityPolicyAPI     // return NetworkSecurityPolicy API interface
 	App() AppAPI                                         // return App API interface
@@ -620,9 +618,6 @@ func (ct *ctrlerCtx) sweepObjects(kind string, watchTS time.Time) {
 			case "RolloutAction":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*RolloutAction).RolloutAction)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleRolloutActionEventParallel})
-			case "Neighbor":
-				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*Neighbor).Neighbor)}
-				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleNeighborEventParallel})
 			case "SecurityGroup":
 				ev := kvstore.WatchEvent{Type: kvstore.Deleted, Object: &(obj.RuntimeObject().(*SecurityGroup).SecurityGroup)}
 				sweepObjs = append(sweepObjs, workerObject{ev: &ev, workFunc: ct.handleSecurityGroupEventParallel})
@@ -831,9 +826,6 @@ func (ct *ctrlerCtx) FindObject(kind string, ometa *api.ObjectMeta) (runtime.Obj
 	case "RolloutAction":
 		obj := rolloutactionAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
-	case "Neighbor":
-		obj := neighborAPI{}
-		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "SecurityGroup":
 		obj := securitygroupAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
@@ -1017,9 +1009,6 @@ func (ct *ctrlerCtx) IsPending(kind string, ometa *api.ObjectMeta) (bool, error)
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "RolloutAction":
 		obj := rolloutactionAPI{}
-		key = obj.getFullKey(ometa.Tenant, ometa.Name)
-	case "Neighbor":
-		obj := neighborAPI{}
 		key = obj.getFullKey(ometa.Tenant, ometa.Name)
 	case "SecurityGroup":
 		obj := securitygroupAPI{}
@@ -1456,9 +1445,6 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 						case "RolloutAction":
 							wopts.ResourceVersion = ev.Object.(*rollout.RolloutAction).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleRolloutActionEventParallel}
-						case "Neighbor":
-							wopts.ResourceVersion = ev.Object.(*routing.Neighbor).GetResourceVersion()
-							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleNeighborEventParallel}
 						case "SecurityGroup":
 							wopts.ResourceVersion = ev.Object.(*security.SecurityGroup).GetResourceVersion()
 							evWorkChannel <- workerObject{ev: ev, workFunc: ct.handleSecurityGroupEventParallel}
@@ -1857,13 +1843,6 @@ func (agg *aggwatchAPI) Start(reactor AggWatchReactor, kinds []AggKind) error {
 			} else {
 				wopts.WatchOptions = append(wopts.WatchOptions,
 					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetRolloutActionWatchOptions()})
-			}
-		case "Neighbor":
-			if reactor, ok := kind.Reactor.(NeighborHandler); !ok {
-				return fmt.Errorf("%v reactor not implemented", "Neighbor")
-			} else {
-				wopts.WatchOptions = append(wopts.WatchOptions,
-					api.KindWatchOptions{Kind: kind.Kind, Group: kind.Group, Options: *reactor.GetNeighborWatchOptions()})
 			}
 		case "SecurityGroup":
 			if reactor, ok := kind.Reactor.(SecurityGroupHandler); !ok {

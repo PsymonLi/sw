@@ -41,7 +41,6 @@ import { ObjstoreObject } from './objstore';
 import { OrchestrationOrchestrator } from './orchestration';
 import { RolloutRollout } from './rollout';
 import { RolloutRolloutAction } from './rollout';
-import { RoutingNeighbor } from './routing';
 import { SecuritySecurityGroup } from './security';
 import { SecurityNetworkSecurityPolicy } from './security';
 import { SecurityApp } from './security';
@@ -290,13 +289,6 @@ export const CategoryMapping: CatMap  = {
     },
     "RolloutAction" : {
       instance: new RolloutRolloutAction(),
-      scopes: [ 'cluster', ] ,
-      actions:  [] ,
-    },
-  },
-  "Routing" : {
-    "Neighbor" : {
-      instance: new RoutingNeighbor(),
       scopes: [ 'cluster', ] ,
       actions:  [] ,
     },

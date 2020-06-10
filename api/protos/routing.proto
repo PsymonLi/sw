@@ -8,6 +8,36 @@ import "github.com/pensando/sw/api/meta.proto";
 
 import "route.proto";
 
+message EmptyReq {
+    // Empty of course
+    string Instance = 1;
+}
+
+message HealthSpec {
+    // Empty
+}
+
+message HealthStatus {
+    message PeeringStatus{
+        int32 Configured = 1  [(gogoproto.jsontag) = "configured"];
+        int32 Established = 2 [(gogoproto.jsontag) = "established"];
+    }
+
+    string RouterID             = 1 [(gogoproto.jsontag) = "router-id"];
+    PeeringStatus InternalPeers = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "internal-peers"];
+    PeeringStatus ExternalPeers = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "external-peers"];
+    int32 UnexpectedPeers       = 4 [(gogoproto.jsontag) = "unexpected-peers"];
+}
+
+message Health {
+    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    option (venice.objectPrefix) = {Collection: "health"};
+
+    HealthSpec      Spec    = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec"];
+    HealthStatus    Status  = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status"];
+}
+
 message NeighborStatus {
     enum State {
         Idle            = 0;
@@ -20,6 +50,15 @@ message NeighborStatus {
     string Status = 1 [(gogoproto.jsontag) = "status", (venice.check) = "StrEnum(NeighborStatus.State)"];
 }
 
+message NeighborFilter {
+    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
+    option (venice.objectPrefix) = {Collection: "neighborfilter"};
+
+    string Instance = 3 [(gogoproto.jsontag) = "instance"];
+    string Neighbor = 4 [(gogoproto.jsontag) = "neighbor"];
+}
+
 message Neighbor {
     api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
     api.ObjectMeta O    = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "meta,inline"];
@@ -27,4 +66,11 @@ message Neighbor {
 
     network.BGPNeighbor Spec    = 3 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "spec"];
     NeighborStatus Status       = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "status"];
+}
+
+message NeighborList {
+    api.TypeMeta T      = 1  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = ",inline"];
+    api.ListMeta  L      = 2  [(gogoproto.embed) = true, (gogoproto.nullable) = false, (gogoproto.jsontag) = "list-meta,inline"];
+
+    repeated Neighbor Items = 3 [(gogoproto.jsontag) = "items,"];
 }
