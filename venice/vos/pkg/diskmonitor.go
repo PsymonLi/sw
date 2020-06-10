@@ -65,7 +65,7 @@ func diskUsage(path string, thresholdPercent float64) (bool, uint64, uint64, err
 }
 
 func (w *storeWatcher) monitorDisks(ctx context.Context,
-	monitorTimeout time.Duration, wg *sync.WaitGroup, paths map[string]float64) {
+	monitorTimeout time.Duration, wg *sync.WaitGroup, paths *sync.Map) {
 	defer wg.Done()
 
 	for {
@@ -78,11 +78,13 @@ func (w *storeWatcher) monitorDisks(ctx context.Context,
 	}
 }
 
-func (w *storeWatcher) statDisk(paths map[string]float64) {
-	for p, t := range paths {
+func (w *storeWatcher) statDisk(paths *sync.Map) {
+	paths.Range(func(k interface{}, v interface{}) bool {
+		p := k.(string)
+		t := v.(float64)
 		reached, all, used, err := diskUsage(p, t)
 		if err != nil {
-			continue
+			return false
 		}
 
 		// Generate notification only if the disk threshold is reached
@@ -98,7 +100,8 @@ func (w *storeWatcher) statDisk(paths map[string]float64) {
 				}
 			}
 		}
-	}
+		return true
+	})
 }
 
 func makeEvent(path string, all, used uint64) runtime.Object {

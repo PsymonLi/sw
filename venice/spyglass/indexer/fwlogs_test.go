@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -207,11 +208,13 @@ func stopKibana(t *testing.T) {
 
 func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, credentialManagerChannel <-chan interface{}) {
 	go func() {
+		paths := new(sync.Map)
+		paths.Store("/disk1/default.fwlogs", 0.000001)
 		args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/disk1"}
 		_, err := vospkg.New(ctx, false, url,
 			credentialManagerChannel,
 			vospkg.WithBootupArgs(args),
-			vospkg.WithBucketDiskThresholds(map[string]float64{"/disk1/default.fwlogs": 0.000001}))
+			vospkg.WithBucketDiskThresholds(paths))
 		AssertOk(t, err, "error in initiating Vos")
 	}()
 }

@@ -209,14 +209,19 @@ func TestOptions(t *testing.T) {
 	f = WithBucketDiskThresholds(GetBucketDiskThresholds())
 	Assert(t, f != nil, "bucket diskthreshold option function is nil")
 	f(inst)
-	Assert(t, len(inst.bucketDiskThresholds) == 2, "fwlogs bucket diskthreshold is missing")
+	Assert(t, inst.bucketDiskThresholds != nil, "fwlogs bucket diskthreshold is missing")
 
 	dth := GetBucketDiskThresholds()
-	Assert(t, len(dth) == 2, "incorrect disk threshold arguments, expected /disk1/default.fwlogs, /disk2/default.fwlogs")
-	th, ok := dth["/disk1/default.fwlogs"]
+	config := map[string]float64{}
+	dth.Range(func(k interface{}, v interface{}) bool {
+		config[k.(string)] = v.(float64)
+		return true
+	})
+	Assert(t, len(config) == 2, "incorrect disk threshold arguments, expected /disk1/default.fwlogs, /disk2/default.fwlogs")
+	th, ok := config["/disk1/default.fwlogs"]
 	Assert(t, th == 50.00, "incorrect threshold")
 	Assert(t, ok, "fwlogs bucket threshold missing")
-	th, ok = dth["/disk2/default.fwlogs"]
+	th, ok = config["/disk2/default.fwlogs"]
 	Assert(t, th == 50.00, "incorrect threshold")
 	Assert(t, ok, "fwlogs bucket threshold missing")
 }

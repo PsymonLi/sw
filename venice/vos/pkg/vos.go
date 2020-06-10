@@ -78,7 +78,7 @@ type instance struct {
 	pfxWatcher           watchstream.WatchedPrefixes
 	client               vos.BackendClient
 	bootupArgs           []string
-	bucketDiskThresholds map[string]float64
+	bucketDiskThresholds *sync.Map
 }
 
 func (i *instance) Init(client vos.BackendClient) {
@@ -194,7 +194,7 @@ func (i *instance) createBucket(bucket string, lifecycle string, addWatcher bool
 	return nil
 }
 
-func (i *instance) createDiskUpdateWatcher(paths map[string]float64) error {
+func (i *instance) createDiskUpdateWatcher(paths *sync.Map) error {
 	watcher := &storeWatcher{bucket: "", client: nil, watchPrefixes: i.pfxWatcher}
 	i.watcherMap[diskUpdateWatchPath] = watcher
 	i.wg.Add(1)
@@ -398,7 +398,7 @@ func WithBootupArgs(args []string) func(vos.Interface) {
 }
 
 // WithBucketDiskThresholds sets the disk threshold for Minio buckets
-func WithBucketDiskThresholds(th map[string]float64) func(vos.Interface) {
+func WithBucketDiskThresholds(th *sync.Map) func(vos.Interface) {
 	return func(i vos.Interface) {
 		if inst, ok := i.(*instance); ok {
 			inst.bucketDiskThresholds = th
@@ -407,7 +407,9 @@ func WithBucketDiskThresholds(th map[string]float64) func(vos.Interface) {
 }
 
 // GetBucketDiskThresholds returns the bucket disk thresholds
-func GetBucketDiskThresholds() map[string]float64 {
-	return map[string]float64{DiskPaths[0] + "/" + "default." + fwlogsBucketName: 50.00,
-		DiskPaths[1] + "/" + "default." + fwlogsBucketName: 50.00}
+func GetBucketDiskThresholds() *sync.Map {
+	m := new(sync.Map)
+	m.Store(DiskPaths[0]+"/"+"default."+fwlogsBucketName, 50.00)
+	m.Store(DiskPaths[1]+"/"+"default."+fwlogsBucketName, 50.00)
+	return m
 }

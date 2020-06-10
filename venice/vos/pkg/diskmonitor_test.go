@@ -2,6 +2,7 @@ package vospkg
 
 import (
 	"context"
+	"sync"
 	"testing"
 
 	minioclient "github.com/minio/minio-go/v6"
@@ -73,7 +74,8 @@ func TestDiskUpdateOps(t *testing.T) {
 	fw := &fakeDiskUpdateWatchServer{ctx: cctx}
 	go srv.WatchDiskThresholdUpdates(&api.ListWatchOptions{}, fw)
 
-	paths := map[string]float64{"./": 0.00001}
+	paths := new(sync.Map)
+	paths.Store("./", 0.00001)
 	err := inst.createDiskUpdateWatcher(paths)
 	Assert(t, err == nil, "failed to create disk update watcher")
 

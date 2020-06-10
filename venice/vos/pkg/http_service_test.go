@@ -3,19 +3,25 @@ package vospkg
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/go-martini/martini"
+	"github.com/gorilla/mux"
 	minioclient "github.com/minio/minio-go/v6"
 	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/api/generated/objstore"
+	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/vos"
 
 	. "github.com/pensando/sw/venice/utils/testutils"
@@ -239,4 +245,78 @@ func TestMetricsHandler(t *testing.T) {
 	handler := srv.minioMetricsHandler("dummy", "dummy")
 	handler(wr, req)
 	Assert(t, wr.Code == http.StatusInternalServerError, "expecting failure due to metrics path not implemented in mock backend")
+}
+
+func TestDebugConfigHandler(t *testing.T) {
+	paths := new(sync.Map)
+	paths.Store("/root/dummy_path1", 40.00)
+	paths.Store("/root/dummy_path2", 30.00)
+	fb := &mockBackend{}
+	inst := &instance{bucketDiskThresholds: paths}
+	inst.Init(fb)
+	srv := httpHandler{client: fb, instance: inst}
+	router := mux.NewRouter()
+	router.Methods("GET", "POST").Subrouter().Handle("/debug/config", http.HandlerFunc(srv.debugConfigHandler()))
+	go http.ListenAndServe(fmt.Sprintf("127.0.0.1:%s", globals.VosHTTPPort), router)
+	time.Sleep(time.Second * 2)
+	getHelper := func(uri string) map[string]interface{} {
+		resp, err := http.Get(uri)
+		AssertOk(t, err, "error is getting %s", uri)
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		AssertOk(t, err, "error is reading response of %s", uri)
+		config := map[string]interface{}{}
+		err = json.Unmarshal(body, &config)
+		AssertOk(t, err, "error is unmarshaling response of %s", uri)
+		return config
+	}
+
+	uri := strings.TrimSpace(fmt.Sprintf("http://127.0.0.1:%s", globals.VosHTTPPort) + "/debug/config")
+	config := getHelper(uri)
+	th, ok := config[bucketDiskThresholdKey]
+	Assert(t, ok, "bucketDiskThreshold config is not present in /debug/config response, response:", th)
+	ths, ok := th.(map[string]interface{})
+	Assert(t, ok, "bucketDiskThreshold type is not map[string]interface{}, response:", th)
+	Assert(t, len(ths) == 2, "incorrect number of disk entries, response:", th)
+	for path, threshold := range ths {
+		if path == "/root/dummy_path1" {
+			Assert(t, threshold.(float64) == 40.00, "incorrect threshold value")
+		} else if path == "/root/dummy_path2" {
+			Assert(t, threshold.(float64) == 30.00, "incorrect threshold value")
+		} else {
+			Assert(t, false, "unknown path found in response ", path)
+		}
+	}
+	reqBody, err := json.Marshal(map[string]interface{}{
+		bucketDiskThresholdKey: map[string]interface{}{
+			"/root/dummy_path1": 80.00,
+			"/root/dummy_path2": 80.00,
+		},
+	})
+
+	AssertOk(t, err, "error is marshaling POST request for /debug/config")
+	req, err := http.NewRequest("POST", uri, bytes.NewBuffer(reqBody))
+	AssertOk(t, err, "error is creating POST request for /debug/config")
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	AssertOk(t, err, "error is POSTing request for /debug/config")
+	defer resp.Body.Close()
+	Assert(t, resp.Status == "200 OK", "incorrect response status")
+	// Veirfy that indexing is disabled
+	config = getHelper(uri)
+	th, ok = config[bucketDiskThresholdKey]
+	Assert(t, ok, "bucketDiskThreshold config is not present in /debug/config response, response:", th)
+	ths, ok = th.(map[string]interface{})
+	Assert(t, ok, "bucketDiskThreshold type is not map[string]interface{}, response:", th)
+	Assert(t, len(ths) == 2, "incorrect number of disk entries, response:", th)
+	for path, threshold := range ths {
+		if path == "/root/dummy_path1" {
+			Assert(t, threshold.(float64) == 80.00, "incorrect threshold value")
+		} else if path == "/root/dummy_path2" {
+			Assert(t, threshold.(float64) == 80.00, "incorrect threshold value")
+		} else {
+			Assert(t, false, "unknown path found in response ", path)
+		}
+	}
 }

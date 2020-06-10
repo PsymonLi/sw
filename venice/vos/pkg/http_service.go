@@ -27,10 +27,11 @@ import (
 )
 
 const (
-	apiPrefix           = "/apis/v1"
-	uploadImagesPath    = "/uploads/images/"
-	uploadSnapshotsPath = "/uploads/snapshots/"
-	downloadPath        = "/downloads/images/**"
+	apiPrefix              = "/apis/v1"
+	uploadImagesPath       = "/uploads/images/"
+	uploadSnapshotsPath    = "/uploads/snapshots/"
+	downloadPath           = "/downloads/images/**"
+	bucketDiskThresholdKey = "bucketDiskThresholds"
 )
 
 type httpHandler struct {
@@ -55,7 +56,11 @@ func (h *httpHandler) start(ctx context.Context, port, minioKey, minioSecret str
 	h.handler.Post(apiPrefix+uploadSnapshotsPath, h.uploadSnapshotsHandler)
 	log.InfoLog("msg", "adding path", "path", "/debug/vars")
 	h.handler.Get("/debug/vars", expvar.Handler())
+	log.InfoLog("msg", "adding path", "path", "/debug/minio/metrics")
 	h.handler.Get("/debug/minio/metrics", h.minioMetricsHandler(minioKey, minioSecret))
+	log.InfoLog("msg", "adding path", "path", "/debug/config")
+	h.handler.Get("/debug/config", h.debugConfigHandler())
+	h.handler.Post("/debug/config", h.debugConfigHandler())
 
 	done := make(chan error)
 	var ln net.Listener
@@ -306,4 +311,65 @@ func generateTokenForMetrics(accessKey, secretKey string) (string, error) {
 		return "", err
 	}
 	return jwt.Signed(signer).Claims(claims).CompactSerialize()
+}
+
+func (h *httpHandler) debugConfigHandler() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			config := map[string]interface{}{}
+			ths := map[string]float64{}
+			h.instance.bucketDiskThresholds.Range(func(k interface{}, v interface{}) bool {
+				ths[k.(string)] = v.(float64)
+				return true
+			})
+			config[bucketDiskThresholdKey] = ths
+
+			out, err := json.Marshal(config)
+			if err != nil {
+				log.Errorf("Error in marshling output: %v", err)
+				http.Error(w, "error in marshling output", http.StatusInternalServerError)
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json; charset=utf-8")
+			w.Write(out)
+		case "POST":
+			body, err := ioutil.ReadAll(r.Body)
+			if err != nil {
+				log.Errorf("Error reading body: %v", err)
+				http.Error(w, "can't read body", http.StatusBadRequest)
+				return
+			}
+
+			config := map[string]interface{}{}
+			err = json.Unmarshal(body, &config)
+			if err != nil {
+				log.Errorf("Error in unmarshaling body: %v", err)
+				http.Error(w, "error in unmarshaling body", http.StatusBadRequest)
+				return
+			}
+
+			h.updateBucketThresholdPaths(w, config)
+		default:
+			http.Error(w, "only GET and POST are supported", http.StatusBadRequest)
+		}
+	}
+}
+
+func (h *httpHandler) updateBucketThresholdPaths(w http.ResponseWriter, config map[string]interface{}) {
+	if v, ok := config[bucketDiskThresholdKey]; ok {
+		data, ok := v.(map[string]interface{})
+		if !ok {
+			http.Error(w, "bucket disk threshold config should be in form map[string]float64", http.StatusBadRequest)
+			return
+		}
+		for p, v := range data {
+			t, ok := v.(float64)
+			if !ok {
+				http.Error(w, "bucket disk threshold config should be in form map[string]float64", http.StatusBadRequest)
+				return
+			}
+			h.instance.bucketDiskThresholds.Store(p, t)
+		}
+	}
 }
