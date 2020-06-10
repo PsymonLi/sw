@@ -147,8 +147,12 @@ func bgpShowCmdHandler(cmd *cobra.Command, args []string) error {
 }
 
 const (
-	bgpPeerFmt = `%-10s %-16v %-5v %-10v %-16v %-40v`
-	bgpPeerHdr = "AdminState,Remote Address,ASN,Auth,Status,FSM Established Time"
+	bgpPeerFmt    = `%-10s %-16v %-5v %-10v %-16v %-40v %-40v`
+	bgpPeerLegend = `Legend
+FSM Established Time : This timer indicates how long in seconds this peer has
+                       been in the Established state or how long since this peer
+                       was last in the Established state.`
+	bgpPeerHdr = "AdminState,Remote Address,ASN,Auth,Status,FSM Established Time,FSM Established Transitions"
 
 	bgpPeerDetStr = `BGP Peer details
 ------------------------------------
@@ -229,6 +233,7 @@ func bgpPeersShowCmdHandler(cmd *cobra.Command, args []string) error {
 	doDetail := cmd.Flag("detail").Value.String() == "true"
 
 	if !doJSON && !doDetail {
+		fmt.Println(bgpPeerLegend)
 		utils.PrintHeader(bgpPeerFmt, bgpPeerHdr)
 	}
 	peers := []*utils.ShadowBGPPeer{}
@@ -264,7 +269,7 @@ func bgpPeersShowCmdHandler(cmd *cobra.Command, args []string) error {
 					peer.Status.FsmEstablishedTime, peer.Status.InUpdatesElpsTime,
 					peer.Status.InOpens, peer.Status.OutOpens)
 			} else {
-				fmt.Printf(bgpPeerFmt, peer.Spec.State, peer.Spec.PeerAddr, peer.Spec.RemoteASN, peer.Spec.Password, peer.Status.Status, peer.Status.FsmEstablishedTime)
+				fmt.Printf(bgpPeerFmt, peer.Spec.State, peer.Spec.PeerAddr, peer.Spec.RemoteASN, peer.Spec.Password, peer.Status.Status, peer.Status.FsmEstablishedTime, peer.Status.FsmEstTransitions)
 				fmt.Printf("\n")
 			}
 		}
