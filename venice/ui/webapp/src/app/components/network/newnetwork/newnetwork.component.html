@@ -44,7 +44,7 @@
   <div fxFlex="590px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
     <span fxFlex="none" fxLayout="row" [ngClass]="{
         'new-network-orchestrator-selectbox': true,
-        'requiredField': isFieldEmpty(orchestrator.get(['orchestrator-name']))
+        'requiredField': !isFieldEmpty(orchestrator.get(['namespace'])) && isFieldEmpty(orchestrator.get(['orchestrator-name']))
     }">
       <p-dropdown appFloatLabel="vCenter Name" appendTo="body" class="new-network-select"
                   (onChange)="onVcenterChange(orchestrator)"
@@ -57,7 +57,7 @@
     <div fxFlex="15px"></div>
     <span fxFlex="none" fxLayout="row" [ngClass]="{
         'new-network-orchestrator-selectbox': true,
-        'requiredField': isFieldEmpty(orchestrator.get(['namespace']))
+        'requiredField': isFieldEmpty(orchestrator.get(['namespace'])) && !isFieldEmpty(orchestrator.get(['orchestrator-name']))
     }">
       <p-multiSelect appFloatLabel="datacenter Names" appendTo="body"
                      formControlName="namespace" class="new-network-select"
