@@ -30,6 +30,18 @@ func getFreeRadiusNoGroupUserConfig() *RadiusConfig {
 	}
 }
 
+func getFreeRadiusNoTenantUserConfig() *RadiusConfig {
+	return &RadiusConfig{
+		URL:        "10.2.60.91:1812",
+		NasID:      "Venice",
+		NasSecret:  "testing123",
+		User:       "notenant",
+		Password:   "password",
+		Tenant:     "nonexistent",
+		UserGroups: []string{},
+	}
+}
+
 func TestFreeRadiusAuthentication(t *testing.T) {
 	config := getFreeRadiusConfig()
 	testAuthenticator(t, config)

@@ -1350,3 +1350,52 @@ func TestTokenSecretGenerate(t *testing.T) {
 		return err == nil, err
 	}, "unable to retrieve user after re-login")
 }
+
+func TestExternalUserTenantedLogin(t *testing.T) {
+	config := getFreeRadiusNoTenantUserConfig()
+	localUserCred := &auth.PasswordCredential{
+		Username: testUser,
+		Password: testPassword,
+		Tenant:   globals.DefaultTenant,
+	}
+	radiusConf := &auth.Radius{
+		Domains: []*auth.RadiusDomain{
+			{
+				Servers: []*auth.RadiusServer{
+					// correct config
+					{
+						Url:        config.URL,
+						Secret:     config.NasSecret,
+						AuthMethod: auth.Radius_PAP.String(),
+					},
+				},
+				NasID: config.NasID,
+			},
+		},
+	}
+	// create tenant and admin user
+	if err := SetupAuth(tinfo.apiServerAddr, true, nil, radiusConf, localUserCred, tinfo.l); err != nil {
+		t.Fatalf("auth setup failed")
+	}
+	defer CleanupAuth(tinfo.apiServerAddr, true, true, localUserCred, tinfo.l)
+	// login with radius user for which tenant has not been created
+	radiusUserCred := &auth.PasswordCredential{
+		Username: config.User,
+		Password: config.Password,
+	}
+	var resp *http.Response
+	var statusCode int
+	expectedStatusCode := http.StatusInternalServerError
+	AssertEventually(t, func() (bool, interface{}) {
+		var err error
+		resp, err = Login(fmt.Sprintf("https://%s", tinfo.apiGwAddr), radiusUserCred)
+		if err == nil {
+			statusCode = resp.StatusCode
+		}
+		return err == nil && statusCode == expectedStatusCode, err
+	}, fmt.Sprintf("login request failed, Status code: %d", statusCode))
+	var apiStatus api.Status
+	err := json.NewDecoder(resp.Body).Decode(&apiStatus)
+	AssertOk(t, err, "unexpected login response")
+	Assert(t, strings.Contains(fmt.Sprintf("%v", apiStatus.Message), "required object not found"), fmt.Sprintf("unexpected api status: %v", apiStatus))
+}

@@ -199,7 +199,17 @@ func (s *loginV1GwService) CompleteRegistration(ctx context.Context,
 					case nil:
 						// do nothing
 					default:
-						s.httpErrorHandler(w, req, err.Error(), http.StatusInternalServerError)
+						errMsg := err.Error()
+						grpcStatus, ok := status.FromError(err)
+						if ok {
+							msgs := grpcStatus.Details()
+							for _, msg := range msgs {
+								// msg is of type api.Status and only one is expected
+								errMsg = fmt.Sprintf("%v ", msg)
+								break
+							}
+						}
+						s.httpErrorHandler(w, req, errMsg, http.StatusInternalServerError)
 						return
 					}
 					// remove user password
