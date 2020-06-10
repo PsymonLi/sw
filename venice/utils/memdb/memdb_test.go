@@ -5505,4 +5505,38 @@ func TestMemdbCtrlWatchNwUpdate(t *testing.T) {
 			break
 		}
 	}
+
+	nw3 := &netproto.Network{
+		TypeMeta: api.TypeMeta{Kind: "Network"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "tenant1",
+			Name:      "network-test1",
+			Namespace: "default",
+		},
+		Spec: netproto.NetworkSpec{
+			VrfName:               "vrf-test",
+			IngV4SecurityPolicies: []string{"sgpolicy-test1", "sgpolicy-test2"},
+			EgV4SecurityPolicies:  []string{"sgpolicy-test3"},
+		},
+	}
+
+	md.topoHandler.handleUpdateEvent(nil, nw3, "tenant1/default/network-test1")
+
+	nwIf4 := &netproto.Interface{
+		TypeMeta: api.TypeMeta{Kind: "Interface"},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    "tenant",
+			Name:      "netif-test1",
+			Namespace: "default",
+		},
+		Spec: netproto.InterfaceSpec{
+			VrfName: "tenant1",
+			Network: "network-test2",
+		},
+		Status: netproto.InterfaceStatus{
+			DSC: "00:00:00:00:00:01",
+		},
+	}
+
+	md.topoHandler.handleUpdateEvent(nil, nwIf4, nwIf4.GetObjectMeta().GetKey())
 }

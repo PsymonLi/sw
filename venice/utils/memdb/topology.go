@@ -555,6 +555,7 @@ func (tn *topoNode) addNode(obj Object, objKey string, propUpdate *PropagationSt
 
 		if tenant != "" && nwIf.Spec.Network != "" {
 			topoRefs.refs["Network"] = []string{nwIf.Spec.Network}
+			topoRefs.refs["Tenant"] = []string{nwIf.Spec.VrfName}
 			k1 := getKey(tenant, obj.GetObjectMeta().Namespace, nwIf.Spec.Network)
 			tn.tm.addObjBackref(k1, "Network", objKey, kind)
 			tn.topo[objKey] = topoRefs
@@ -662,6 +663,7 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpd
 		fwRefs := topoRefs.refs
 		if tenant != "" && nwIf.Spec.Network != "" {
 			delete(fwRefs, "Network")
+			delete(fwRefs, "Tenant")
 
 			k1 := getKey(tenant, obj.GetObjectMeta().Namespace, nwIf.Spec.Network)
 			// clear the back reference
@@ -756,9 +758,11 @@ func (tn *topoNode) deleteNode(obj Object, evalOpts bool, objKey string, propUpd
 
 func consolidatePropUpdate(propUpdate *PropagationStTopoUpdate) {
 	if len(propUpdate.AddDSCs) != 0 && len(propUpdate.DelDSCs) != 0 {
-		if propUpdate.AddDSCs[0] == propUpdate.DelDSCs[0] {
-			propUpdate.AddDSCs = []string{}
-			propUpdate.DelDSCs = []string{}
+		if propUpdate.AddObjects["Vrf"][0] == propUpdate.DelObjects["Vrf"][0] {
+			propUpdate.AddObjects["Vrf"] = []string{}
+			propUpdate.DelObjects["Vrf"] = []string{}
+			propUpdate.AddObjects["Network"] = []string{}
+			propUpdate.DelObjects["Network"] = []string{}
 		}
 	}
 
@@ -813,6 +817,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 		newObj := new.(*netproto.Interface)
 
 		log.Infof("key: %s | Old interface spec: %v | dsc: %v | new spec: %v | dsc: %v", objKey, oldObj.Spec, oldObj.Status.DSC, newObj.Spec, newObj.Status.DSC)
+
 		newTenant := newObj.Spec.VrfName
 		newNw := newObj.Spec.Network
 
@@ -948,16 +953,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 
 		// fix sgpolicy refs
 		if len(delSg) != 0 || len(addSg) != 0 {
-			mod |= updateSgPolicy
-
-			for _, a := range delSg {
-				// update references
-				fwRefs["NetworkSecurityPolicy"] = deleteElement(fwRefs["NetworkSecurityPolicy"], a)
-			}
-
-			if len(addSg) != 0 {
-				fwRefs["NetworkSecurityPolicy"] = append(fwRefs["NetworkSecurityPolicy"], addSg...)
-			}
+			fwRefs["NetworkSecurityPolicy"] = nsgPolicies
 		}
 
 		// update all the dscs with the new options
@@ -973,6 +969,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 			for _, a := range delSg {
 				tn.tm.refCounts.delRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, a)
 				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, a) == 0 {
+					mod |= updateSgPolicy
 					updated = true
 					propUpdate.DelObjects["NetworkSecurityPolicy"] = append(propUpdate.DelObjects["NetworkSecurityPolicy"], a)
 					if len(propUpdate.DelDSCs) == 0 {
@@ -984,6 +981,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 			for _, b := range addSg {
 				tn.tm.refCounts.addRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, b)
 				if tn.tm.refCounts.getRefCnt(dsc, "NetworkSecurityPolicy", oldObj.Tenant, b) == 1 {
+					mod |= updateSgPolicy
 					updated = true
 					propUpdate.AddObjects["NetworkSecurityPolicy"] = append(propUpdate.AddObjects["NetworkSecurityPolicy"], b)
 					if len(propUpdate.AddDSCs) == 0 {
@@ -1142,31 +1140,46 @@ func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[str
 
 func getSgPolicyDiffs(old, new []string) ([]string, []string) {
 	dels, adds := []string{}, []string{}
-	map1, map2 := map[string]struct{}{}, map[string]struct{}{}
+	oldMap, newMap := map[string]int{}, map[string]int{}
 
 	for _, s := range old {
-		if _, ok := map1[s]; !ok {
-			map1[s] = struct{}{}
+		oldMap[s]++
+	}
+
+	for _, s1 := range new {
+		newMap[s1]++
+	}
+
+	for k := range oldMap {
+		if _, ok := newMap[k]; !ok {
+			for c := 0; c < oldMap[k]; c++ {
+				dels = append(dels, k)
+			}
+		} else {
+			if oldMap[k] == newMap[k] {
+				continue
+			} else if oldMap[k] > newMap[k] {
+				cnt := oldMap[k] - newMap[k]
+				for c := 0; c < cnt; c++ {
+					dels = append(dels, k)
+				}
+			} else {
+				cnt := newMap[k] - oldMap[k]
+				for c := 0; c < cnt; c++ {
+					adds = append(adds, k)
+				}
+			}
 		}
 	}
 
-	for _, s := range new {
-		if _, ok := map2[s]; !ok {
-			map2[s] = struct{}{}
+	for k := range newMap {
+		if _, ok := oldMap[k]; !ok {
+			for c := 0; c < newMap[k]; c++ {
+				adds = append(adds, k)
+			}
 		}
 	}
 
-	for k := range map1 {
-		if _, ok := map2[k]; !ok {
-			dels = append(dels, k)
-		}
-	}
-
-	for k := range map2 {
-		if _, ok := map1[k]; !ok {
-			adds = append(adds, k)
-		}
-	}
 	return dels, adds
 }
 
@@ -1370,8 +1383,40 @@ func (tm *topoMgr) handleVrfCreate(old, new Object, key string) (bool, *Propagat
 }
 
 func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
-	oldObj := old.(*netproto.Vrf)
-	newObj := new.(*netproto.Vrf)
+	var oldObj, newObj *netproto.Vrf
+	if new == nil {
+		log.Errorf("Invalid update received for key: %s | old: %v | new: %v", key, old, new)
+		return false, nil
+	}
+	if old == nil {
+		create := true
+		// due do dependency resolution, the old object may be set to nil
+		// build the old object based on the toporefs
+		if node, ok := tm.topology[new.GetObjectKind()]; ok {
+			rr := node.getRefs(key)
+			if rr != nil {
+				refs := rr.refs
+				if refs != nil {
+					ipamRef := refs["IPAMPolicy"]
+					oldObj = &netproto.Vrf{}
+					if len(ipamRef) != 0 {
+						oldObj.Spec.IPAMPolicy = ipamRef[0]
+					}
+					create = false
+					log.Infof("Building the oldobj from topo for vrf update: %v", oldObj)
+				}
+			}
+		}
+		if create == true {
+			log.Info("Update recieved with old object as nil, treat it as an add")
+			tm.handleVrfCreate(old, new, key)
+			return false, nil
+		}
+	} else {
+		oldObj = old.(*netproto.Vrf)
+	}
+	newObj = new.(*netproto.Vrf)
+	oldObj.ObjectMeta = newObj.ObjectMeta
 
 	if oldObj.Spec.IPAMPolicy == newObj.Spec.IPAMPolicy {
 		// not a topo trigger
@@ -1379,7 +1424,7 @@ func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) (bool, *Propagat
 	}
 
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(old, new, key, newPropUpdate())
+		node.updateNode(oldObj, new, key, newPropUpdate())
 	} else {
 		log.Error("Object doesn't exist in the topo", new)
 	}
@@ -1432,21 +1477,67 @@ func sgPoliciesSame(str1, str2 []string) bool {
 }
 
 func (tm *topoMgr) handleNetworkUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
-	oldObj := old.(*netproto.Network)
-	newObj := new.(*netproto.Network)
+	var oldObj, newObj *netproto.Network
+	if new == nil {
+		log.Errorf("Invalid update received for key: %s | old: %v | new: %v", key, old, new)
+		return false, nil
+	}
+	if old == nil {
+		create := true
+		// due do dependency resolution, the old object may be set to nil
+		// build the old object based on the toporefs
+		if node, ok := tm.topology[new.GetObjectKind()]; ok {
+			rr := node.getRefs(key)
+			if rr != nil {
+				refs := rr.refs
+				if refs != nil {
+					ipamRef := refs["IPAMPolicy"]
+					sgPolicyRefs := refs["NetworkSecurityPolicy"]
+					vrfRef := refs["Vrf"]
+					oldObj = &netproto.Network{}
+					if len(ipamRef) != 0 {
+						oldObj.Spec.IPAMPolicy = ipamRef[0]
+					}
+					oldObj.Spec.IngV4SecurityPolicies = sgPolicyRefs
+					oldObj.Spec.VrfName = vrfRef[0]
+					create = false
+					log.Infof("Building the oldobj from topo for network update: %v", oldObj)
+				}
+			}
+		}
+		if create == true {
+			log.Info("Update recieved with old object as nil, treat it as an add")
+			tm.handleNetworkCreate(old, new, key)
+			return false, nil
+		}
+	} else {
+		oldObj = old.(*netproto.Network)
+	}
+
+	newObj = new.(*netproto.Network)
+	oldObj.ObjectMeta = newObj.ObjectMeta
+
+	sgPolicies := []string{}
+	sgPolicies = append(sgPolicies, oldObj.Spec.IngV4SecurityPolicies...)
+	sgPolicies = append(sgPolicies, oldObj.Spec.EgV4SecurityPolicies...)
+	sgPolicies = append(sgPolicies, oldObj.Spec.IngV6SecurityPolicies...)
+	sgPolicies = append(sgPolicies, oldObj.Spec.EgV6SecurityPolicies...)
+
+	nsgPolicies := []string{}
+	nsgPolicies = append(nsgPolicies, newObj.Spec.IngV4SecurityPolicies...)
+	nsgPolicies = append(nsgPolicies, newObj.Spec.EgV4SecurityPolicies...)
+	nsgPolicies = append(nsgPolicies, newObj.Spec.IngV6SecurityPolicies...)
+	nsgPolicies = append(nsgPolicies, newObj.Spec.EgV6SecurityPolicies...)
 
 	// TODO use objDiff??
 	if oldObj.Spec.IPAMPolicy == newObj.Spec.IPAMPolicy && oldObj.Spec.VrfName == newObj.Spec.VrfName &&
-		sgPoliciesSame(oldObj.Spec.IngV4SecurityPolicies, newObj.Spec.IngV4SecurityPolicies) &&
-		sgPoliciesSame(oldObj.Spec.EgV4SecurityPolicies, newObj.Spec.EgV4SecurityPolicies) &&
-		sgPoliciesSame(oldObj.Spec.IngV6SecurityPolicies, newObj.Spec.IngV6SecurityPolicies) &&
-		sgPoliciesSame(oldObj.Spec.EgV4SecurityPolicies, newObj.Spec.EgV6SecurityPolicies) {
+		sgPoliciesSame(sgPolicies, nsgPolicies) {
 		// not a topology trigger
 		return false, nil
 	}
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
 		update := newPropUpdate()
-		updated := node.updateNode(old, new, key, update)
+		updated := node.updateNode(oldObj, new, key, update)
 		return updated, update
 	}
 	log.Error("Object doesn't exist in the topo", new)
@@ -1480,17 +1571,45 @@ func (tm *topoMgr) handleInterfaceDelete(old, new Object, key string) (bool, *Pr
 }
 
 func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) (bool, *PropagationStTopoUpdate) {
+	var oldObj, newObj *netproto.Interface
 	if new == nil {
 		log.Errorf("Invalid update received for key: %s | old: %v | new: %v", key, old, new)
 		return false, nil
 	}
 	if old == nil {
-		log.Info("Update recieved with old object as nil, treat it as an add")
-		tm.handleInterfaceCreate(old, new, key)
-		return false, nil
+		create := true
+		// due do dependency resolution, the old object may be set to nil
+		// build the old object based on the toporefs
+		if node, ok := tm.topology[new.GetObjectKind()]; ok {
+			rr := node.getRefs(key)
+			if rr != nil {
+				refs := rr.refs
+				if refs != nil {
+					nwRef := refs["Network"]
+					tenantRef := refs["Tenant"]
+					oldObj = &netproto.Interface{}
+					if len(tenantRef) != 0 {
+						oldObj.Spec.VrfName = tenantRef[0]
+					}
+					if len(nwRef) != 0 {
+						oldObj.Spec.Network = nwRef[0]
+					}
+					create = false
+					log.Infof("Building the oldobj from topo for interface update: %v", oldObj)
+				}
+			}
+		}
+		if create == true {
+			log.Info("Update recieved with old object as nil, treat it as an add")
+			tm.handleInterfaceCreate(old, new, key)
+			return false, nil
+		}
+	} else {
+		oldObj = old.(*netproto.Interface)
 	}
-	oldObj := old.(*netproto.Interface)
-	newObj := new.(*netproto.Interface)
+	newObj = new.(*netproto.Interface)
+	oldObj.ObjectMeta = newObj.ObjectMeta
+	oldObj.Status.DSC = newObj.Status.DSC
 	log.Infof("Interface update received for old: %v, new: %v", oldObj.Spec, newObj.Spec)
 	// TODO use objDiff??
 	if oldObj.Spec.Network == newObj.Spec.Network && oldObj.Spec.VrfName == newObj.Spec.VrfName {
@@ -1499,7 +1618,7 @@ func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) (bool, *Pr
 	}
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
 		update := newPropUpdate()
-		updated := node.updateNode(old, new, key, update)
+		updated := node.updateNode(oldObj, new, key, update)
 		return updated, update
 	}
 	log.Error("Object doesn't exist in the topo", new)
