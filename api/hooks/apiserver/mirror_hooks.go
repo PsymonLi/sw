@@ -8,6 +8,8 @@ import (
 
 	govldtr "github.com/asaskevich/govalidator"
 
+	"github.com/pensando/sw/venice/utils/apigen/validators"
+
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
 	apiintf "github.com/pensando/sw/api/interfaces"
@@ -87,8 +89,6 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	if len(ms.Spec.Collectors) == 0 || len(ms.Spec.Collectors) > veniceMaxCollectorsPerSession {
 		return i, false, fmt.Errorf("Need atleast one mirror collector, upto %d max", veniceMaxCollectorsPerSession)
 	}
-	numVeniceCollectors := 0
-
 	var mirrors monitoring.MirrorSessionList
 	mirror := monitoring.MirrorSession{}
 	mirrorKey := strings.TrimSuffix(mirror.MakeKey(string(apiclient.GroupMonitoring)), "/")
@@ -117,7 +117,7 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			// Checking for Destition and other parameters inside ExportCfg XXX
 		} else {
 			// this is already checked by venice.check
-			return i, false, fmt.Errorf("Unsupported collector type")
+			return i, false, fmt.Errorf("Unsupported collector type : %v", c.Type)
 		}
 
 	}
@@ -125,8 +125,8 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	if err := globalMirrorSessionValidator(&ms, &mirrors); err != nil {
 		return i, false, err
 	}
-	if numVeniceCollectors > 0 && ms.Spec.PacketSize > veniceMaxPacketSize {
-		errStr := fmt.Errorf("Max packet size allowed by Venice collector is %v", veniceMaxPacketSize)
+	if ms.Spec.PacketSize > veniceMaxPacketSize {
+		errStr := fmt.Errorf("Max packet size allowed by collector is %v", veniceMaxPacketSize)
 		return i, false, errStr
 	}
 	if ms.Spec.StartConditions.ScheduleTime != nil {
@@ -156,7 +156,6 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	if len(ms.Spec.MatchRules) == 0 {
 		matchAll = true
 	}
-
 	for _, mr := range ms.Spec.MatchRules {
 
 		if mr.AppProtoSel != nil {
@@ -179,11 +178,21 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			if len(mr.Src.IPAddresses) == 0 && len(mr.Src.MACAddresses) == 0 {
 				allSrc = true
 			}
+			for _, ipv4 := range mr.Src.IPAddresses {
+				if err := validators.IPv4(ipv4); err != nil {
+					return i, false, fmt.Errorf("error in src match-rule, %v", err)
+				}
+			}
 			// TBD - Ensure only one of the three is specified? not all.
 		}
 		if mr.Dst != nil {
 			if len(mr.Dst.IPAddresses) == 0 && len(mr.Dst.MACAddresses) == 0 {
 				allDst = true
+			}
+			for _, ipv4 := range mr.Dst.IPAddresses {
+				if err := validators.IPv4(ipv4); err != nil {
+					return i, false, fmt.Errorf("error in dst match-rule, %v", err)
+				}
 			}
 		}
 		if allSrc && allDst {

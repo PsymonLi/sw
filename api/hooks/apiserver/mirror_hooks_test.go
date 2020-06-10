@@ -4,8 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/gogo/protobuf/types"
-
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/api/labels"
 
@@ -54,6 +52,7 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			},
 		},
 	},
+	/* XXX : Depricated
 	{
 		// 2 venice collectors
 		ObjectMeta: api.ObjectMeta{
@@ -92,7 +91,7 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 				},
 			},
 		},
-	},
+	},*/
 	{
 		// bad max pkt count
 		ObjectMeta: api.ObjectMeta{
@@ -104,11 +103,14 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			APIVersion: "v1",
 		},
 		Spec: monitoring.MirrorSessionSpec{
-			PacketSize:    128,
+			PacketSize:    2049,
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -135,7 +137,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -162,9 +167,6 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
-				},
-				{
 					Type: "ERSPAN_TYPE_3",
 					ExportCfg: &monitoring.MirrorExportConfig{
 						Destination: "111.1.1.1",
@@ -176,35 +178,14 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 						Destination: "111.1.1.2",
 					},
 				},
-			},
-			MatchRules: []monitoring.MatchRule{},
-		},
-	},
-	{
-		// bad max pkt count
-		ObjectMeta: api.ObjectMeta{
-			Name:   "Test Mirror Session 6",
-			Tenant: "Tenant 1",
-		},
-		TypeMeta: api.TypeMeta{
-			Kind:       "MirrorSession",
-			APIVersion: "v1",
-		},
-		Spec: monitoring.MirrorSessionSpec{
-			PacketSize:    128,
-			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
-			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
-				},
-			},
-			MatchRules: []monitoring.MatchRule{
-				{
-					AppProtoSel: &monitoring.AppProtoSelector{
-						ProtoPorts: []string{"UDP"},
+					Type: "ERSPAN_TYPE_2",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.3",
 					},
 				},
 			},
+			MatchRules: []monitoring.MatchRule{},
 		},
 	},
 	{
@@ -222,7 +203,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -254,7 +238,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			Interfaces: &monitoring.InterfaceMirror{
@@ -277,7 +264,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -306,7 +296,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -343,7 +336,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String(), monitoring.MirrorSessionSpec_NETWORK_POLICY_DROP.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{
@@ -354,36 +350,6 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 						ProtoPorts: []string{"UDP"},
 					},
 				},
-				{
-					Src: &monitoring.MatchSelector{
-						IPAddresses: []string{"192.168.100.2"},
-					},
-					AppProtoSel: &monitoring.AppProtoSelector{
-						ProtoPorts: []string{"1234"},
-					},
-				},
-			},
-		},
-	},
-	{
-		// max pkt size
-		ObjectMeta: api.ObjectMeta{
-			Name:   "Test Mirror Session 12",
-			Tenant: "Tenant 1",
-		},
-		TypeMeta: api.TypeMeta{
-			Kind:       "MirrorSession",
-			APIVersion: "v1",
-		},
-		Spec: monitoring.MirrorSessionSpec{
-			PacketSize:    1024,
-			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
-			Collectors: []monitoring.MirrorCollector{
-				{
-					Type: "VENICE",
-				},
-			},
-			MatchRules: []monitoring.MatchRule{
 				{
 					Src: &monitoring.MatchSelector{
 						IPAddresses: []string{"192.168.100.2"},
@@ -410,7 +376,10 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
 			Collectors: []monitoring.MirrorCollector{
 				{
-					Type: "VENICE",
+					Type: "ERSPAN_TYPE_3",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "111.1.1.1",
+					},
 				},
 			},
 			MatchRules: []monitoring.MatchRule{},
@@ -455,6 +424,66 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 
 			Interfaces: &monitoring.InterfaceMirror{
 				Selectors: []*labels.Selector{labels.SelectorFromSet(labels.Set{"app": "procurement"})},
+			},
+		},
+	},
+	{
+		// both match src invalid ip
+		ObjectMeta: api.ObjectMeta{
+			Name:   "Test Mirror Session 15",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketSize: 128,
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: "ERSPAN_TYPE_2",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "127.0.10.1",
+						Gateway:     "127.0.10.254",
+					},
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.2,1.1.1.1"},
+					},
+				},
+			},
+		},
+	},
+	{
+		// both match dst invalid ip
+		ObjectMeta: api.ObjectMeta{
+			Name:   "Test Mirror Session 16",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketSize: 128,
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: "ERSPAN_TYPE_2",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "127.0.10.1",
+						Gateway:     "127.0.10.254",
+					},
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.2,1.1.1.1"},
+					},
+				},
 			},
 		},
 	},
@@ -570,6 +599,41 @@ var testGoodMirrorSession = []monitoring.MirrorSession{
 			},
 		},
 	},
+	{
+		ObjectMeta: api.ObjectMeta{
+			Name:   "multiple ip match",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "10.1.1.1",
+					},
+					StripVlanHdr: true,
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.2", "192.168.100.1"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.3", "192.168.100.4"},
+					},
+					AppProtoSel: &monitoring.AppProtoSelector{
+						ProtoPorts: []string{"1234"},
+					},
+				},
+			},
+		},
+	},
 }
 
 func TestMirrorSessions(t *testing.T) {
@@ -602,6 +666,7 @@ func TestMirrorSessions(t *testing.T) {
 	}
 	txn := kvs.NewTxn()
 	for _, ms := range testBadMirrorSessions {
+		ms.Normalize()
 		_, ok, err := s.validateMirrorSession(ctx, kvs, txn, ms.MakeKey(""), apiintf.CreateOper, false, ms)
 		if ok {
 			t.Errorf("validation passed, expecting to fail for %v", ms.Name)
@@ -609,11 +674,14 @@ func TestMirrorSessions(t *testing.T) {
 		}
 		l.Infof("Session %v : Error %v", ms.Name, err)
 	}
-	ms := &testGoodMirrorSession[0]
-	ms.Normalize()
-	_, ok, err := s.validateMirrorSession(ctx, kvs, txn, ms.MakeKey(""), apiintf.CreateOper, false, *ms)
-	if !ok && err != nil {
-		t.Errorf("Failed to create a good mirror session (%s)", err)
+	for _, ms := range testGoodMirrorSession {
+		ms.Normalize()
+		_, ok, err := s.validateMirrorSession(ctx, kvs, txn, ms.MakeKey(""), apiintf.CreateOper, false, ms)
+		if !ok && err != nil {
+			t.Errorf("Failed to create a good mirror session (%s)", err)
+			continue
+		}
+		l.Infof("Session %v : ok %v", ms.Name, ok)
 	}
 	maxExportSession := &testGoodMirrorSession[0]
 	maxExportList := &monitoring.MirrorSessionList{
