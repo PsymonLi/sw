@@ -253,7 +253,8 @@ class Node(object):
             if GlobalOptions.dryrun:
                 return
             if self.__nic_static_routes:
-                self.__console_hdl.Close()
+                if self.__console_hdl:
+                    self.__console_hdl.Close()
                 for rt in self.__nic_static_routes:
                     print("Restoring static route %s via %s " % (rt.Route, rt.Nexthop))
                     self.__console_hdl.RunCmdGetOp("ip route add " + rt.Route + " via " + rt.Nexthop)
@@ -263,9 +264,12 @@ class Node(object):
         def SetNicFirewallRules(self):
             if GlobalOptions.dryrun:
                 return
-            if self.GetNaplesPipeline() == "apulu":
+            if self.GetNaplesPipeline() == "apulu" and self.__nic_console_ip:
                 print("Setting NIC firewall rules")
-                self.__console_hdl.Close()
+                if self.__console_hdl:
+                    self.__console_hdl.Close()
+                else:
+                    self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
                 self.__console_hdl.RunCmdGetOp("iptables -D tcp_inbound -p tcp -m tcp --dport 11357:11360 -j DROP")
 
         def GetDataNetworks(self):

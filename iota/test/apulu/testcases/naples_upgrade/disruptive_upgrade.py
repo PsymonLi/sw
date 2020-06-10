@@ -7,17 +7,28 @@ import iota.harness.api as api
 import iota.test.common.utils.naples_upgrade.utils as utils
 import iota.test.common.utils.copy_tech_support as techsupp
 import iota.test.apulu.config.api as config_api
+import iota.test.apulu.utils.learn as learn_utils
 import iota.test.apulu.utils.connectivity as conn_utils
 import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
 import iota.test.apulu.utils.pdsctl as pdsctl
 import iota.test.apulu.utils.misc as misc_utils
 import iota.test.utils.ping as ping
+import iota.test.utils.arping as arping
 
 def_upg_tech_support_files = ["/data/techsupport/DSC_TechSupport.tar.gz"]
 UPGRADE_NAPLES_PKG = "naples_fw_venice.tar"
 NAPLES_PKG = "naples_fw.tar"
 
 def ChooseWorkLoads(tc):
+
+    tc.wloads = []
+    for node in tc.Nodes:
+        learn_mac_objs = learn_utils.GetLearnMACObjects(node)
+        for obj in learn_mac_objs:
+            wl = config_api.FindWorkloadByVnic(obj)
+            tc.wloads.append(wl)
+            api.Logger.info("WL %s added to the list of WL from VNIC"%wl.workload_name)
+
     tc.workload_pairs = config_api.GetWorkloadPairs(
             conn_utils.GetWorkloadType(tc.iterators),
             conn_utils.GetWorkloadScope(tc.iterators))
@@ -127,6 +138,9 @@ def Setup(tc):
     if result != api.types.status.SUCCESS or tc.skip:
         api.Logger.error("Failed to Choose Workloads.")
         return result
+
+    # Send Grat Arp for learning
+    arping.SendGratArp(tc.wloads)
 
     # verify connectivity
     result = VerifyConnectivity(tc)
@@ -271,6 +285,12 @@ def Verify(tc):
 #    # push interface config updates after upgrade completes
 #    UpdateConfigAfterUpgrade(tc)
 
+    for i in range(10):
+        api.Logger.info("Sending ARPing, retry count %s"%i)
+        # Send Grat Arp for learning
+        arping.SendGratArp(tc.wloads)
+        misc_utils.Sleep(1)
+
     result = CheckRolloutStatus(tc)
 
     # ensure connectivity after upgrade
@@ -307,7 +327,6 @@ def Verify(tc):
 
     if upgrade_utils.VerifyUpgLog(tc.Nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrade logs")
-        #result = api.types.status.FAILURE
 
     return result
 
