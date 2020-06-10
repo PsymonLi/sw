@@ -943,7 +943,7 @@ ionic_en_uplink_mtu_set(vmk_AddrCookie driver_data,               // IN
 {
         VMK_ReturnStatus status = VMK_OK;
         struct lif *lif;
-        vmk_uint32 cur_mtu, i;
+        vmk_uint32 cur_mtu, max_mtu, min_mtu, i;
         struct ionic_en_priv_data *priv_data =
                 (struct ionic_en_priv_data *) driver_data.ptr;
         struct ionic_en_uplink_handle *uplink_handle = &priv_data->uplink_handle;
@@ -972,7 +972,12 @@ ionic_en_uplink_mtu_set(vmk_AddrCookie driver_data,               // IN
         cur_mtu = uplink_handle->uplink_shared_data.mtu;
         IONIC_EN_SHARED_AREA_END_READ(uplink_handle);
 
-        if (new_mtu > IONIC_MAX_MTU || new_mtu < IONIC_MIN_MTU) {
+        max_mtu = IONIC_MIN(IONIC_MAX_MTU,
+                            lif->ionic->ident.lif.eth.max_frame_size);
+        min_mtu = IONIC_MAX(IONIC_MIN_MTU,
+                            lif->ionic->ident.lif.eth.min_frame_size);
+        if (new_mtu > max_mtu ||
+            new_mtu < min_mtu) {
                 ionic_en_warn("Invalid MTU size: %d", new_mtu);
                 status = VMK_BAD_PARAM;
                 goto out;
@@ -2116,7 +2121,14 @@ ionic_en_uplink_init(struct ionic_en_priv_data *priv_data)         // IN
         uplink_shared_data->link.state  = VMK_LINK_STATE_DOWN;
         uplink_shared_data->link.speed  = VMK_LINK_SPEED_AUTO;
         uplink_shared_data->link.duplex = VMK_LINK_DUPLEX_AUTO;
-        uplink_shared_data->mtu         = IONIC_EN_DEFAULT_MTU_SIZE;
+
+        if (priv_data->ionic.ident.lif.eth.min_frame_size <= IONIC_EN_DEFAULT_MTU_SIZE) { 
+                uplink_shared_data->mtu = IONIC_EN_DEFAULT_MTU_SIZE;
+        } else {
+                ionic_en_warn("The min MTU this device supports is larger than %d. Use %d as default MTU",
+                              IONIC_EN_DEFAULT_MTU_SIZE, priv_data->ionic.ident.lif.eth.min_frame_size);
+                uplink_shared_data->mtu = priv_data->ionic.ident.lif.eth.min_frame_size;
+        }
         uplink_shared_data->queueInfo   = uplink_q_info;
 
         uplink_handle->admin_link_status.state = VMK_LINK_STATE_UP;
