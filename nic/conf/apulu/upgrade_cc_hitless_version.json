@@ -12,6 +12,8 @@
         "//": "compat checks on p4 - tables, table engine configs etc",
         "p4": "1",
         "//": "compat checks on p4plus - tables, table engine configs etc",
-        "p4plus": "1"
+        "p4plus": "1",
+        "//": "compat checks on linkmgr",
+        "linkmgr": "1"
     }
 }
