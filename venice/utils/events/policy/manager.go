@@ -3,6 +3,8 @@ package policy
 import (
 	"strings"
 
+	"github.com/pensando/sw/venice/utils/runtime"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
 	evtsmgrprotos "github.com/pensando/sw/nic/agent/protos/evtprotos"
@@ -30,6 +32,7 @@ import (
 // Manager represents the event policy manager
 type Manager struct {
 	hostname   string // user friendly hostname
+	node       runtime.Object
 	dispatcher events.Dispatcher
 	expMgr     *ExportMgr
 	store      emstore.Emstore
@@ -43,6 +46,13 @@ type MOption func(*Manager)
 func WithStore(store emstore.Emstore) MOption {
 	return func(m *Manager) {
 		m.store = store
+	}
+}
+
+// WithNodeObj passes a store for the manager
+func WithNodeObj(nodeObj runtime.Object) MOption {
+	return func(m *Manager) {
+		m.node = nodeObj
 	}
 }
 
@@ -66,6 +76,8 @@ func NewManager(hostname string, dispatcher events.Dispatcher, logger log.Logger
 			opt(m)
 		}
 	}
+
+	expMgr.node = m.node
 
 	// read existing policies from the store and create exporters
 	m.readExistingPoliciesFromStore()

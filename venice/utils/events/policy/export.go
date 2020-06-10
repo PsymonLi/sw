@@ -3,9 +3,15 @@ package policy
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/venice/utils/runtime"
+
+	"github.com/pensando/netlink"
 
 	"github.com/pensando/sw/api/generated/monitoring"
 	evtsmgrprotos "github.com/pensando/sw/nic/agent/protos/evtprotos"
@@ -22,6 +28,7 @@ import (
 type ExportMgr struct {
 	sync.RWMutex
 	hostname   string
+	node       runtime.Object
 	dispatcher events.Dispatcher
 	logger     log.Logger
 	exporters  map[string]map[exporters.Type]interface{}
@@ -295,6 +302,41 @@ func (m *ExportMgr) createSyslogWriters(ctx context.Context, syslogExportCfg *mo
 	}
 
 	writers := make(map[string]*syslogWriter)
+
+	addDelRouteWithGateway := func(target *monitoring.ExportConfig) {
+		_, dest, err := net.ParseCIDR(target.GetDestination() + "/32")
+		if err != nil {
+			log.Errorf("Failed to Parse Destination address %v in export manager %v, Err: %v", target.GetDestination(), m, err)
+			return
+		}
+
+		if len(target.GetGateway()) == 0 {
+			route := &netlink.Route{Dst: dest}
+			if err := netlink.RouteDel(route); err != nil {
+				log.Errorf("Failed to delete static route %v in export manager %v, Err: %v", route, m, err)
+				return
+			}
+
+			log.Infof("Deleted static route %v in export manager %v", route, m)
+			return
+		}
+
+		// Gateway address is configured.
+		route := &netlink.Route{Dst: dest, Gw: net.ParseIP(target.GetGateway())}
+		if err := netlink.RouteReplace(route); err != nil {
+			log.Errorf("Failed to configure static route %v in export manager %v, Err: %v", route, m, err)
+			return
+		}
+
+		log.Infof("Added static route %v in export manager %v", route, m)
+	}
+
+	if m.node != nil && m.node.GetObjectKind() == string(cluster.KindDistributedServiceCard) {
+		for _, target := range targets {
+			addDelRouteWithGateway(target)
+		}
+	}
+
 	for _, target := range targets {
 		tmp := strings.Split(target.GetTransport(), "/")                                                      // e.g. transport = tcp/514
 		network, remoteAddr := strings.ToLower(tmp[0]), fmt.Sprintf("%s:%s", target.GetDestination(), tmp[1]) // {tcp, udp, etc.}, <remote_addr>:<port>

@@ -366,7 +366,8 @@ func (e *evtServices) start(mode string, maintenanceMode bool) {
 	}
 
 	// start events policy manager
-	if e.policyMgr, err = policy.NewManager(e.nodeName, e.eps.GetEventsDispatcher(), e.logger, policy.WithStore(e.agentStore)); err != nil {
+	node := &cluster.DistributedServiceCard{TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"}, ObjectMeta: api.ObjectMeta{Name: e.nodeName}}
+	if e.policyMgr, err = policy.NewManager(e.nodeName, e.eps.GetEventsDispatcher(), e.logger, policy.WithStore(e.agentStore), policy.WithNodeObj(node)); err != nil {
 		e.logger.Fatalf("failed to create event policy manager, err: %v", err)
 	}
 
