@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
-	"reflect"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -24,7 +23,7 @@ import (
 	"github.com/pensando/sw/venice/ctrler/tpm/rpcserver"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/balancer"
-	debugStats "github.com/pensando/sw/venice/utils/debug/stats"
+	"github.com/pensando/sw/venice/utils/debug/stats"
 	"github.com/pensando/sw/venice/utils/diagnostics"
 	"github.com/pensando/sw/venice/utils/diagnostics/module"
 	"github.com/pensando/sw/venice/utils/kvstore"
@@ -212,85 +211,95 @@ func (pm *PolicyManager) processEvents(parentCtx context.Context) error {
 	// stop all watch channels
 	defer cancelWatch()
 
-	watchList := map[int]string{}
 	opts := api.ListWatchOptions{FieldChangeSelector: []string{"Spec"}}
-	selCases := []reflect.SelectCase{}
 
 	// fwlog
-	watcher, err := pm.apiClient.MonitoringV1().FwlogPolicy().Watch(ctx, &opts)
+	fw, err := pm.apiClient.MonitoringV1().FwlogPolicy().Watch(ctx, &opts)
 	if err != nil {
 		pmLog.Errorf("failed to watch fwlog policy, error: {%s}", err)
 		return err
 	}
 
-	watchList[len(selCases)] = "fwlog"
-	selCases = append(selCases, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(watcher.EventChan())})
+	fwWatch := fw.EventChan()
 
 	// export
-	watcher, err = pm.apiClient.MonitoringV1().FlowExportPolicy().Watch(ctx, &opts)
+	ew, err := pm.apiClient.MonitoringV1().FlowExportPolicy().Watch(ctx, &opts)
 	if err != nil {
 		pmLog.Errorf("failed to watch export policy, error: {%s}", err)
 		return err
 	}
 
-	watchList[len(selCases)] = "export"
-	selCases = append(selCases, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(watcher.EventChan())})
+	exWatch := ew.EventChan()
 
 	// watch tenants
-	watcher, err = pm.apiClient.ClusterV1().Tenant().Watch(ctx, &opts)
+	tw, err := pm.apiClient.ClusterV1().Tenant().Watch(ctx, &opts)
 	if err != nil {
 		pmLog.Errorf("failed to watch tenant, error: {%s}", err)
 		return err
 	}
 
-	watchList[len(selCases)] = "tenant"
-	selCases = append(selCases, reflect.SelectCase{
-		Dir:  reflect.SelectRecv,
-		Chan: reflect.ValueOf(watcher.EventChan())})
-
-	// ctx done
-	watchList[len(selCases)] = "ctx-canceled"
-	selCases = append(selCases, reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ctx.Done())})
+	tnWatch := tw.EventChan()
 
 	// event loop
 	for {
-		id, recVal, ok := reflect.Select(selCases)
-		if !ok {
-			pmLog.Errorf("{%s} channel closed", watchList[id])
-			return fmt.Errorf("channel closed")
-		}
+		select {
+		case ev, ok := <-exWatch:
+			if !ok {
+				pmLog.Errorf("flowexp channel closed")
+				return fmt.Errorf("channel closed")
+			}
 
-		event, ok := recVal.Interface().(*kvstore.WatchEvent)
-		if !ok {
-			pmLog.Errorf("unknon policy object received from {%s}: %+v", watchList[id], recVal.Interface())
-			return fmt.Errorf("unknown policy")
-		}
+			pmLog.Infof("received event %#v", ev)
 
-		pmLog.Infof("received event %#v", event)
+			polObj, ok := ev.Object.(*telemetry.FlowExportPolicy)
+			if !ok {
+				pmLog.Errorf("invalid object from flowexp %T", ev.Object)
+				return fmt.Errorf("invalid object")
+			}
 
-		switch polObj := event.Object.(type) {
-		case *telemetry.FlowExportPolicy:
-			if err := pm.processExportPolicy(event.Type, polObj); err != nil {
+			if err := pm.processExportPolicy(ev.Type, polObj); err != nil {
 				pmLog.Errorf("failed to process flow export policy, %v", err)
 			}
 
-		case *telemetry.FwlogPolicy:
-			if err := pm.processFwlogPolicy(event.Type, polObj); err != nil {
+		case ev, ok := <-fwWatch:
+			if !ok {
+				pmLog.Errorf("fwlog channel closed")
+				return fmt.Errorf("channel closed")
+			}
+
+			pmLog.Infof("received event %#v", ev)
+
+			polObj, ok := ev.Object.(*telemetry.FwlogPolicy)
+			if !ok {
+				pmLog.Errorf("invalid object from fwlog %T", ev.Object)
+				return fmt.Errorf("invalid object")
+			}
+
+			if err := pm.processFwlogPolicy(ev.Type, polObj); err != nil {
 				pmLog.Errorf("failed to process fwlog policy, %v", err)
 			}
 
-		case *cluster.Tenant:
-			if err := pm.processTenants(ctx, event.Type, polObj); err != nil {
+		case ev, ok := <-tnWatch:
+			if !ok {
+				pmLog.Errorf("tenant channel closed")
+				return fmt.Errorf("channel closed")
+			}
+
+			pmLog.Infof("received event %#v", ev)
+
+			polObj, ok := ev.Object.(*cluster.Tenant)
+			if !ok {
+				pmLog.Errorf("invalid object from fwlog %T", ev.Object)
+				return fmt.Errorf("invalid object")
+			}
+
+			if err := pm.processTenants(ctx, ev.Type, polObj); err != nil {
 				pmLog.Errorf("failed to process tenant, %v", err)
 			}
 
-		default:
-			pmLog.Errorf("invalid event type received from {%s}, %+v", watchList[id], event)
-			return fmt.Errorf("invalid event type")
+		case <-ctx.Done():
+			pmLog.Errorf("done event received ")
+			return fmt.Errorf("done event")
 		}
 	}
 }

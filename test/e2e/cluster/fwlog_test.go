@@ -1070,5 +1070,89 @@ var _ = Describe("fwlog policy tests", func() {
 			Expect(err).ShouldNot(BeNil(), fmt.Sprintf("policy create didn't fail, %v", err))
 
 		})
+		It("fwlog policy with gateway", func() {
+			ctx := ts.tu.MustGetLoggedInContext(context.Background())
+
+			collector := "10.7.100.11"
+			gwy := "192.168.30.9"
+
+			By("create fwlog Policy")
+			fwPolicy := &monitoring.FwlogPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "fwLogPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Name:      "fwpolicy-gwy",
+					Tenant:    globals.DefaultTenant,
+					Namespace: globals.DefaultNamespace,
+				},
+				Spec: monitoring.FwlogPolicySpec{
+					VrfName: globals.DefaultVrf,
+					Targets: []monitoring.ExportConfig{
+						{
+							Destination: collector,
+							Gateway:     gwy,
+							Transport:   "udp/10001",
+						},
+					},
+					Format: monitoring.MonitoringExportFormat_SYSLOG_BSD.String(),
+					Filter: []string{monitoring.FwlogFilter_FIREWALL_ACTION_ALL.String()},
+				},
+			}
+			_, err := fwlogClient.Create(ctx, fwPolicy)
+			Expect(err).ShouldNot(HaveOccurred())
+			Eventually(func() error {
+				for _, naples := range ts.tu.NaplesNodes {
+					By(fmt.Sprintf("verify route in %v", naples))
+					cmd := fmt.Sprintf("bash -c \"ip route get %v\"", collector)
+					st := ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec -i %v %v", naples, cmd))
+					fmt.Printf("naples-%v: route %v \n", naples, st)
+					if !strings.Contains(st, gwy) {
+						return fmt.Errorf("no gwy found")
+					}
+				}
+				return nil
+			}, 300, 2).Should(BeNil(), "failed to find route")
+
+			// remove gateway
+			fwPolicy = &monitoring.FwlogPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "fwLogPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Name:      "fwpolicy-gwy",
+					Tenant:    globals.DefaultTenant,
+					Namespace: globals.DefaultNamespace,
+				},
+				Spec: monitoring.FwlogPolicySpec{
+					VrfName: globals.DefaultVrf,
+					Targets: []monitoring.ExportConfig{
+						{
+							Destination: collector,
+							Transport:   "udp/10002",
+						},
+					},
+					Format: monitoring.MonitoringExportFormat_SYSLOG_BSD.String(),
+					Filter: []string{monitoring.FwlogFilter_FIREWALL_ACTION_ALL.String()},
+				},
+			}
+
+			By("delete gateway")
+			_, err = fwlogClient.Update(ctx, fwPolicy)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Eventually(func() error {
+				for _, naples := range ts.tu.NaplesNodes {
+					By(fmt.Sprintf("verify route in %v", naples))
+					cmd := fmt.Sprintf("bash -c \"ip route get %v\"", collector)
+					st := ts.tu.LocalCommandOutput(fmt.Sprintf("docker exec -i %v %v", naples, cmd))
+					fmt.Printf("naples-%v: route %v \n", naples, st)
+					if strings.Contains(st, gwy) {
+						return fmt.Errorf("gwy found")
+					}
+				}
+				return nil
+			}, 300, 2).Should(BeNil(), "failed to find route")
+		})
 	})
 })

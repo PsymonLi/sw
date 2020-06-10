@@ -685,11 +685,7 @@ func init() {
 
 	validatorMapExport["ExportConfig"]["all"] = append(validatorMapExport["ExportConfig"]["all"], func(path string, i interface{}) error {
 		m := i.(*ExportConfig)
-		args := make([]string, 0)
-		args = append(args, "0")
-		args = append(args, "2048")
-
-		if err := validators.StrLen(m.Gateway, args); err != nil {
+		if err := validators.EmptyOr(validators.IPv4, m.Gateway, nil); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"Gateway", err.Error())
 		}
 		return nil

@@ -185,7 +185,6 @@ func (s *RestServer) ReportMetrics(frequency time.Duration, dclient clientApi.Cl
 	// create tsdb objects
 	for kind := range s.gensrv.GetPointsFuncList {
 		if _, ok := dscMetricsList[kind]; !ok {
-			log.Infof("skip metrics %v", kind)
 			continue
 		}
 		log.Infof("report metrics %v", kind)

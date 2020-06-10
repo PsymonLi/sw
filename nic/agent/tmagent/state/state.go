@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pensando/netlink"
+
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/nic/agent/ipc"
@@ -74,6 +76,7 @@ type syslogFwlogCollector struct {
 	port        string
 	proto       string
 	destination string
+	gateway     string
 	facility    syslog.Priority
 	filter      uint32
 	format      string
@@ -85,8 +88,8 @@ type syslogFwlogCollector struct {
 
 func (f *syslogFwlogCollector) String() string {
 	if f != nil {
-		return fmt.Sprintf("vrf:%d format:%v proto:%v destination:%v port:%v fd:%v txCount:%d txErr:%d txSize:%v",
-			f.vrf, f.format, f.proto, f.destination, f.port, f.syslogFd != nil, f.txCount, f.txErr, f.txSize)
+		return fmt.Sprintf("vrf:%d format:%v proto:%v destination:%v gateway:%v port:%v fd:%v txCount:%d txErr:%d txSize:%v",
+			f.vrf, f.format, f.proto, f.destination, f.gateway, f.port, f.syslogFd != nil, f.txCount, f.txErr, f.txSize)
 	}
 	return ""
 }
@@ -166,9 +169,14 @@ func (s *PolicyState) connectSyslog() error {
 					if c, ok := v.(*syslogFwlogCollector); ok {
 						c.Lock()
 						if c.syslogFd == nil {
-							// reconnect to collector that was never connected or had write error
-							if err := s.newSyslog(c); err != nil {
-								log.Warnf("failed to connect to collector %s:%s:%s, err:%v", c.proto, c.destination, c.port, err)
+							if err := s.addRoute(c.destination, c.gateway); err == nil {
+								// reconnect to collector that was never connected or had write error
+								if err := s.newSyslog(c); err != nil {
+									log.Warnf("failed to connect to collector %s:%s:%s, err:%v", c.proto, c.destination, c.port, err)
+								}
+							} else {
+								log.Warnf("waiting to configure gateway %v for collector %v",
+									c.gateway, c.destination)
 							}
 						}
 						c.Unlock()
@@ -199,7 +207,7 @@ func (s *PolicyState) getCollectorKey(vrf uint64, policy *tpmprotos.FwlogPolicy,
 	if policy.Spec.Config != nil {
 		key = append(key, policy.Spec.Config.FacilityOverride)
 	}
-	key = append(key, m.Destination, m.Transport)
+	key = append(key, m.Destination, m.Gateway, m.Transport)
 
 	return strings.Join(key, ":")
 }
@@ -494,6 +502,31 @@ func (s *PolicyState) Reset() error {
 	return nil
 }
 
+func (s *PolicyState) addRoute(dest, gw string) error {
+	dstIP := net.ParseIP(dest)
+	if err := netlink.RouteDel(&netlink.Route{Dst: &net.IPNet{IP: dstIP,
+		Mask: net.IPv4Mask(255, 255, 255, 255)}}); err != nil {
+		log.Warnf("failed to delete %v, err %v", dstIP, err)
+		// route doesn't exist, continue
+	}
+
+	if gw == "" {
+		return nil
+	}
+
+	log.Infof("adding route %v gw %v ", dstIP, gw)
+
+	r := &netlink.Route{Dst: &net.IPNet{IP: dstIP, Mask: net.IPv4Mask(255, 255, 255, 255)},
+		Gw: net.ParseIP(gw)}
+
+	if err := netlink.RouteReplace(r); err != nil {
+		log.Errorf("failed to add route %v", err)
+		return err
+	}
+
+	return nil
+}
+
 // CreateFwlogPolicy is the POST() entry point
 func (s *PolicyState) CreateFwlogPolicy(ctx context.Context, p *tpmprotos.FwlogPolicy) (err error) {
 	log.Infof("POST: fwlog policy %+v", p)
@@ -533,6 +566,7 @@ func (s *PolicyState) CreateFwlogPolicy(ctx context.Context, p *tpmprotos.FwlogP
 			filter:      filter,
 			format:      p.Spec.Format,
 			destination: target.Destination,
+			gateway:     target.Gateway,
 			proto:       transport[0],
 			port:        transport[1],
 		}
@@ -615,6 +649,7 @@ func (s *PolicyState) UpdateFwlogPolicy(ctx context.Context, p *tpmprotos.FwlogP
 			filter:      oldFilter,
 			format:      sp.Spec.Format,
 			destination: target.Destination,
+			gateway:     target.Gateway,
 			proto:       transport[0],
 			port:        transport[1],
 		}
@@ -647,6 +682,7 @@ func (s *PolicyState) UpdateFwlogPolicy(ctx context.Context, p *tpmprotos.FwlogP
 			filter:      filter,
 			format:      p.Spec.Format,
 			destination: target.Destination,
+			gateway:     target.Gateway,
 			proto:       transport[0],
 			port:        transport[1],
 		}
