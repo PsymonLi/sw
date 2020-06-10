@@ -290,7 +290,7 @@ func init() {
 		m := i.(*FirewallProfileSpec)
 		args := make([]string, 0)
 		args = append(args, "0")
-		args = append(args, "128000")
+		args = append(args, "32768")
 
 		if err := validators.IntRange(m.IcmpActiveSessionLimit, args); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"IcmpActiveSessionLimit", err.Error())
@@ -374,7 +374,7 @@ func init() {
 		m := i.(*FirewallProfileSpec)
 		args := make([]string, 0)
 		args = append(args, "0")
-		args = append(args, "128000")
+		args = append(args, "32768")
 
 		if err := validators.IntRange(m.TcpHalfOpenSessionLimit, args); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"TcpHalfOpenSessionLimit", err.Error())
@@ -410,7 +410,7 @@ func init() {
 		m := i.(*FirewallProfileSpec)
 		args := make([]string, 0)
 		args = append(args, "0")
-		args = append(args, "128000")
+		args = append(args, "32768")
 
 		if err := validators.IntRange(m.UdpActiveSessionLimit, args); err != nil {
 			return fmt.Errorf("%v failed validation: %s", path+"."+"UdpActiveSessionLimit", err.Error())

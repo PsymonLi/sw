@@ -523,11 +523,11 @@ func (it *integTestSuite) TestNpmFwProfileCreateDelete(c *C) {
 	// invalid range checks
 	fwp.Spec.TcpHalfOpenSessionLimit = 128001
 	_, err = it.apisrvClient.SecurityV1().FirewallProfile().Update(context.Background(), &fwp)
-	Assert(c, err != nil, "Invalid range above 128000 must fail for SessionLimit")
+	Assert(c, err != nil, "Invalid range above 32768 must fail for SessionLimit")
 
 	// change conn track and session timeout
 	fwp.Spec.SessionIdleTimeout = "5m"
-	fwp.Spec.TcpHalfOpenSessionLimit = 128000
+	fwp.Spec.TcpHalfOpenSessionLimit = 32768
 	fwp.Spec.DetectApp = true
 	_, err = it.apisrvClient.SecurityV1().FirewallProfile().Update(context.Background(), &fwp)
 	AssertOk(c, err, "Error updating firewall profile")
