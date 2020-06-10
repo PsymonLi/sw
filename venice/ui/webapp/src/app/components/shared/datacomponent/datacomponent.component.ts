@@ -183,6 +183,9 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
     this.bulkEditHelper(selectedDataObjects, stagingBulkEditAction, successMsg, failureMsg);
   }
 
+  // Override if component needs to do anything as the delete request is sent out (e.g. loading animation, etc)
+  onDeleteConfirm() {}
+
   /**
    * This API is used in html template. P-table with checkbox enables user to select multiple records. User can delete multiple records.
    * This function asks for user confirmation and invokes the REST API.
@@ -190,15 +193,17 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
   onDeleteSelectedRows($event) {
     const selectedDataObjects = this.getSelectedDataObjects();
     this.controllerService.invokeConfirm({
-      header: 'Delete selected ' + selectedDataObjects.length + ' records?',
+      header: `Delete ${selectedDataObjects.length} selected ${selectedDataObjects.length === 1 ? 'record' : 'records'}?`,
       message: 'This action cannot be reversed',
       acceptLabel: 'Delete',
       accept: () => {
         if (this.getSelectedDataObjects().length <= 0) {
           return;
         }
-        const successMsg = 'Successfully deleted  ' + selectedDataObjects.length + ' records.';
-        const failureMsg = 'Failed to delete ' + selectedDataObjects.length + ' records.';
+        this.onDeleteConfirm();
+        const countMsg = `${selectedDataObjects.length} ${selectedDataObjects.length === 1 ? 'record' : 'records'}`;
+        const successMsg = `Successfully deleted ${countMsg}`;
+        const failureMsg = `Failed to delete ${countMsg}`;
         this.invokeDeleteMultipleRecordsBulkedit(successMsg, failureMsg);  // use bulkedit
       }
     });

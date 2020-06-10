@@ -1,16 +1,16 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { LabeleditorComponent } from './labeleditor.component';
-import {RouterTestingModule} from '@angular/router/testing';
-import {HttpClientTestingModule} from '@angular/common/http/testing';
-import {NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {MaterialdesignModule} from '@lib/materialdesign.module';
-import {PrimengModule} from '@lib/primeng.module';
-import {FormsModule} from '@angular/forms';
-import {ClusterDistributedServiceCard} from '@sdk/v1/models/generated/cluster';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
+import { By } from '@angular/platform-browser';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { RouterTestingModule } from '@angular/router/testing';
+import { MaterialdesignModule } from '@lib/materialdesign.module';
+import { PrimengModule } from '@lib/primeng.module';
 import { configureTestSuite } from 'ng-bullet';
-import {By} from '@angular/platform-browser';
-import {TestingUtility} from '@common/TestingUtility';
+import { SpinnerComponent } from '@app/components/shared/spinner/spinner.component';
+import { TestingUtility } from '@common/TestingUtility';
+import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
+import { LabeleditorComponent } from './labeleditor.component';
 
 describe('LabeleditorComponent', () => {
   let component: LabeleditorComponent;
@@ -40,7 +40,10 @@ describe('LabeleditorComponent', () => {
 
   configureTestSuite(() => {
     TestBed.configureTestingModule({
-      declarations: [LabeleditorComponent],
+      declarations: [
+        LabeleditorComponent,
+        SpinnerComponent,
+      ],
       imports: [
         RouterTestingModule,
         HttpClientTestingModule,

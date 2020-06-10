@@ -53,6 +53,8 @@ export class LabeleditorComponent implements OnInit, OnChanges {
   @Input() myBuildModel: Function;
   // inLabelEditMode is contolling the dialog popup
   @Input() inLabelEditMode: boolean;
+  // show spinner when loading are waiting for request response
+  @Input() loading: boolean;
 
 
   // get edited meta.labels as an array format

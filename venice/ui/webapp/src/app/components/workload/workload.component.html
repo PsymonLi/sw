@@ -207,6 +207,7 @@
         <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
                          (saveEmitter)="handleEditSave($event)"
                          [inLabelEditMode]="inLabelEditMode"
+                         [loading]="labelLoading"
                          [metadata]="labelEditorMetaData"
                          [nameKey]="'meta.name'"
                          [objects]="getSelectedDataObjects()">

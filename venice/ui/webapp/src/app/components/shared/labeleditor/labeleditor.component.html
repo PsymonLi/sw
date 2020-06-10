@@ -80,4 +80,8 @@
       {{metadata.cancelTxt ? metadata.cancelTxt : 'CANCEL'}}
     </button>
   </div>
+
+  <div *ngIf="loading" class="labeleditor-spinner">
+    <app-spinner></app-spinner>
+  </div>
 </ng-template>

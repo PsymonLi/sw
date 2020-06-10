@@ -148,6 +148,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   workloadDSCHostTupleMap: { [key: string]: WorkloadDSCHostSecurityTuple } = {};
   labelEditorMetaData: LabelEditorMetadataModel;
   inLabelEditMode: boolean = false;
+  labelLoading: boolean = false;
 
   hostObjects: ReadonlyArray<ClusterHost>;
   hostOptions: SelectItem[] = [];
@@ -554,6 +555,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   }
 
   handleEditSave(updatedWorkloads: WorkloadWorkload[]) {
+    this.labelLoading = true;
     let performBulkEdit = true;
     for (const workload of updatedWorkloads) {
       if (Utility.isWorkloadSystemGenerated(workload) === true) {
@@ -580,18 +582,24 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
 
   onInvokeAPIonMultipleRecordsSuccess () {
     this.inLabelEditMode = false;
+    this.labelLoading = false;
   }
 
   onInvokeAPIonMultipleRecordsFailure() {
-      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.labelLoading = false;
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
     this.inLabelEditMode = false;
+    this.labelLoading = false;
+    this.uiModelLoading = false;
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
-      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.labelLoading = false;
+    this.uiModelLoading = false;
   }
 
   /**
@@ -599,7 +607,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
    * @param updatedWorkloads
    */
   bulkeditLabels(updatedWorkloads: WorkloadWorkload[]) {
-    const successMsg: string = 'Updated ' + updatedWorkloads.length + ' workload labels';
+    const successMsg: string = `Updated labels of ${updatedWorkloads.length} ${updatedWorkloads.length === 1 ? 'workload' : 'workloads'}`;
     const failureMsg: string = 'Failed to update workload labels';
     const stagingBulkEditAction = this.buildBulkEditLabelsPayload(updatedWorkloads);
     this.bulkEditHelper(updatedWorkloads, stagingBulkEditAction, successMsg, failureMsg );
@@ -608,10 +616,9 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   updateWithForkjoin(updatedWorkloads: WorkloadWorkload[]) {
     const observables = this.getObservables(updatedWorkloads);
     if (observables.length > 0) {
-      const allSuccessSummary = 'Update';
-      const partialSuccessSummary = 'Partially update';
-      const msg = 'Marked selected ' + updatedWorkloads.length + '  updated.';
-      const self = this;
+      const allSuccessSummary = 'Update successful';
+      const partialSuccessSummary = 'Partial update successful';
+      const msg = `${updatedWorkloads.length} ${updatedWorkloads.length === 1 ? 'workload' : 'workloads'} updated`;
       this.invokeAPIonMultipleRecords(observables, allSuccessSummary, partialSuccessSummary, msg);
     }
   }
@@ -738,6 +745,10 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
       }
     }
     return false;
+  }
+
+  onDeleteConfirm() {
+    this.uiModelLoading = true;
   }
 
   onDeleteSelectedWorkloads(event) {
