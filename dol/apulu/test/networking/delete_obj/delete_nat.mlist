@@ -1,0 +1,46 @@
+feature:
+    id          : networking
+    sub         : delete_nat
+    package     : test.networking
+    module      : networking
+    runorder    : 8990
+    enable      : True
+    ignore      : False
+
+modules:
+# specify all the filters that are used in the packet testcases that will follow
+    - module:
+        name    : NAT_WORKFLOW_START
+        spec    : crud_workflow.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+
+    - module:
+        name    : DEL_NAT
+        spec    : crud_cfg_object.testspec
+        args    :
+            - object    : nat
+              operation : Delete
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+
+    - module:
+        name    : RESTORE_NAT
+        spec    : crud_cfg_object.testspec
+        args    :
+            - object    : nat
+              operation : Create
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+
+    # mlists to run post nat restore
+    #- module:
+        #name    : Local2Remote_PostNatRestore
+        #mlist   : local2igw.mlist
+        #ignore  : True
+
+    - module:
+        name    : NAT_WORKFLOW_END
+        spec    : crud_workflow.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING

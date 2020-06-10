@@ -11,7 +11,6 @@
 #include "nat_api.h"
 
 // TODO move to right place
-#define PDS_MAX_VPC 64
 #define PDS_MAX_DYNAMIC_NAT 32768
 #define PDS_DYNAMIC_NAT_START_INDEX 1000
 
@@ -170,7 +169,7 @@ typedef CLIB_PACKED (union nat_pub_key_s {
 typedef struct pds_nat_main_s {
     clib_spinlock_t lock;
     u8 *hw_index_pool;
-    nat_vpc_config_t vpc_config[PDS_MAX_VPC];
+    nat_vpc_config_t **vpc_config;
     u8 proto_map[255];
     u8 nat_proto_map[NAT_PROTO_NUM + 1];
 } pds_nat_main_t;
@@ -244,10 +243,15 @@ nat_port_block_add(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id, ip4_address_t addr,
     nat_proto_t nat_proto;
     nat_pub_key_t pub_key = { 0 };
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
     ASSERT(nat_addr_type < NAT_ADDR_TYPE_NUM);
 
-    vpc = &nat_main.vpc_config[vpc_id];
+    vec_validate(nat_main.vpc_config, vpc_id);
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
+    if (vpc == NULL) {
+        vpc = clib_mem_alloc_no_fail(sizeof(*vpc));
+        clib_memset(vpc, 0, sizeof(*vpc));
+        vec_elt(nat_main.vpc_config, vpc_id) = vpc;
+    }
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -300,10 +304,9 @@ nat_port_block_update(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id,
     nat_vpc_config_t *vpc;
     nat_proto_t nat_proto;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
     ASSERT(nat_addr_type < NAT_ADDR_TYPE_NUM);
 
-    vpc = &nat_main.vpc_config[vpc_id];
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -332,8 +335,13 @@ always_inline void
 nat_port_block_del_inline(nat_vpc_config_t *vpc, nat_port_block_t *pb,
                           nat_proto_t nat_proto, nat_addr_type_t nat_addr_type)
 {
+    nat_pub_key_t pub_key = { 0 };
+
+    pub_key.nat_addr_type = (u8)nat_addr_type;
+    pub_key.nat_proto = (u8)nat_proto;
+    pub_key.pub_ip = pb->addr;
     clib_spinlock_lock(&vpc->lock);
-    hash_unset(vpc->nat_public_ip_ht, pb->addr.as_u32);
+    hash_unset(vpc->nat_public_ip_ht, pub_key.as_u64);
     pool_put(vpc->nat_pb[nat_addr_type][nat_proto - 1], pb);
     vpc->num_port_blocks--;
     if (vpc->num_port_blocks == 0) {
@@ -354,9 +362,7 @@ nat_port_block_del(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id,
     nat_vpc_config_t *vpc;
     nat_proto_t nat_proto;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-
-    vpc = &nat_main.vpc_config[vpc_id];
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -392,10 +398,9 @@ nat_port_block_commit(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id,
     nat_vpc_config_t *vpc;
     nat_proto_t nat_proto;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
     ASSERT(nat_addr_type < NAT_ADDR_TYPE_NUM);
 
-    vpc = &nat_main.vpc_config[vpc_id];
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -439,10 +444,14 @@ nat_port_block_get_stats(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id,
     nat_proto_t nat_proto;
     u32 in_use_cnt = 0, session_cnt = 0;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
     ASSERT(nat_addr_type < NAT_ADDR_TYPE_NUM);
 
-    vpc = &nat_main.vpc_config[vpc_id];
+    if (vpc_id >= vec_len(nat_main.vpc_config)) {
+        export_pb->in_use_cnt = 0;
+        export_pb->session_cnt = 0;
+        return NAT_ERR_NOT_FOUND;
+    }
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -872,9 +881,10 @@ nat_flow_alloc(u32 vpc_id, ip4_address_t dip, u16 dport,
     nat_proto_t nat_proto;
     nat_port_block_t *nat_pb;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-
-    vpc = &nat_main.vpc_config[vpc_id];
+    if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
+        return NAT_ERR_NO_RESOURCE;
+    }
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
     if (PREDICT_FALSE(!vpc || vpc->num_port_blocks == 0)) {
         return NAT_ERR_NO_RESOURCE;
     }
@@ -1035,8 +1045,10 @@ nat_flow_dealloc(u32 vpc_id, ip4_address_t dip, u16 dport, u8 protocol,
     ip4_address_t pvt_ip;
     u16 pvt_port;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-    vpc = &nat_main.vpc_config[vpc_id];
+    if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
+        return NAT_ERR_NOT_FOUND;
+    }
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     key.dip = dip;
     key.sip = sip;
@@ -1098,9 +1110,10 @@ nat_flow_is_dst_valid(u32 vpc_id, ip4_address_t dip, u16 dport,
     nat_proto_t nat_proto;
     nat_port_block_t *nat_pb;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-
-    vpc = &nat_main.vpc_config[vpc_id];
+    if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
+        return false;
+    }
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
     if (PREDICT_FALSE(!vpc || vpc->num_port_blocks == 0)) {
         return false;
     }
@@ -1144,8 +1157,10 @@ nat_flow_xlate(u32 vpc_id, ip4_address_t dip, u16 dport,
     uword *data, hw_index;
     nat_vpc_config_t *vpc;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-    vpc = &nat_main.vpc_config[vpc_id];
+    if (PREDICT_FALSE(vpc_id >= vec_len(nat_main.vpc_config))) {
+        return NAT_ERR_NOT_FOUND;
+    }
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     key.dip = dip;
     key.sip = sip;
@@ -1191,9 +1206,7 @@ nat_usage(u32 vpc_id, u8 protocol, nat_addr_type_t nat_addr_type,
     *num_ports_alloc = 0;
     *num_flows_alloc = 0;
 
-    ASSERT(vpc_id < PDS_MAX_VPC);
-
-    vpc = &nat_main.vpc_config[vpc_id];
+    vpc = vec_elt(nat_main.vpc_config, vpc_id);
 
     nat_pb = vpc->nat_pb[nat_addr_type][nat_proto - 1];
 
@@ -1222,8 +1235,8 @@ nat_hw_usage(u32 *total_hw_indices, u32 *total_alloc_indices)
 uint16_t
 nat_pb_count() {
     uint16_t count = 0;
-    for (int i = 0; i < PDS_MAX_VPC; i++) {
-        count += nat_main.vpc_config[i].num_port_blocks;
+    for (int i = 0; i < vec_len(nat_main.vpc_config); i++) {
+        count += nat_main.vpc_config[i]->num_port_blocks;
     }
     return count;
 }
@@ -1241,9 +1254,9 @@ nat_flow_iterate(void *ctxt, nat_flow_iter_cb_t iter_cb)
     nat_flow_key_t *key;
     u64 value;
 
-    for (int vpc_id = 0; vpc_id < PDS_MAX_VPC; vpc_id++) {
-        vpc = &nat_main.vpc_config[vpc_id];
-        if (vpc->num_port_blocks == 0) {
+    for (int vpc_id = 0; vpc_id < vec_len(nat_main.vpc_config); vpc_id++) {
+        vpc = vec_elt(nat_main.vpc_config, vpc_id);
+        if (!vpc || vpc->num_port_blocks == 0) {
             continue;
         }
         hash_foreach_mem(key, value, vpc->nat_flow_ht,

@@ -4,6 +4,8 @@ import pdb
 
 from infra.common.logging import logger
 import apollo.test.callbacks.networking.packets as packets
+import apollo.config.utils as utils
+import apollo.config.objects.nat_pb as nat_pb
 
 def __get_module_args_value(modargs, attr):
     if modargs is not None:
@@ -57,6 +59,12 @@ def GetCfgObject(tc):
         cfgObject = tc.config.localmapping.VNIC.SUBNET.VPC
     elif objname == 'securityprofile':
         cfgObject = tc.config.securityprofile
+    elif objname == 'nat':
+        all_nat_obj = nat_pb.client.GetVpcNatPortBlocks(utils.NAT_ADDR_TYPE_PUBLIC, \
+                                             tc.config.localmapping.VNIC.SUBNET.VPC.GetKey())
+        if len(all_nat_obj) > 0:
+            # return the first object
+            cfgObject = all_nat_obj[0]
     logger.info(" Selecting %s for %s" % (cfgObject, objname))
     return cfgObject
 
