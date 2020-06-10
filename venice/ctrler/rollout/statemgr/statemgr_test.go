@@ -972,7 +972,7 @@ func TestPreUpgFail(t *testing.T) {
 func TestPreUpgTimeout(t *testing.T) {
 
 	savedPreupgradeTimeout := preUpgradeTimeout
-	preUpgradeTimeout = 100 * time.Millisecond
+	preUpgradeTimeout = 500 * time.Millisecond
 	defer func() {
 		preUpgradeTimeout = savedPreupgradeTimeout
 	}()
@@ -1037,7 +1037,7 @@ func TestPreUpgTimeout(t *testing.T) {
 func TestMaxFailuresNotHit(t *testing.T) {
 
 	savedPreupgradeTimeout := preUpgradeTimeout
-	preUpgradeTimeout = 100 * time.Millisecond
+	preUpgradeTimeout = 500 * time.Millisecond
 	defer func() {
 		preUpgradeTimeout = savedPreupgradeTimeout
 	}()
@@ -1104,7 +1104,7 @@ func TestMaxFailuresNotHit(t *testing.T) {
 func TestMaxFailuresHit(t *testing.T) {
 
 	savedPreupgradeTimeout := preUpgradeTimeout
-	preUpgradeTimeout = 100 * time.Millisecond
+	preUpgradeTimeout = 500 * time.Millisecond
 	defer func() {
 		preUpgradeTimeout = savedPreupgradeTimeout
 	}()
