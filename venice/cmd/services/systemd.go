@@ -1,12 +1,21 @@
 package services
 
 import (
+	"context"
 	"sync"
+	"time"
 
 	"github.com/pensando/sw/venice/cmd/types"
+	"github.com/pensando/sw/venice/utils"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/systemd"
 )
+
+// We have seen cases where systemd commands just hang on calls to functions like StartUnit()
+// For the moment we just introduce a timeout here, however we should upgrade
+// github.com/coreos/go-systemd/dbus and github.com/godbus/dbus as latest versions allow
+// passing in a context and can clean up properly on timeout.
+var systemdInterfaceTimeout = 30 * time.Second
 
 // systemdService provides interface to start systemd units + watch + Notify on change
 type systemdService struct {
@@ -104,7 +113,14 @@ func (s *systemdService) Stop() {
 
 // StartUnit starts a systemd unit and watch for its health
 func (s *systemdService) StartUnit(name string) error {
-	err := s.systemdIf.StartTarget(name)
+	s.Lock()
+	defer s.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), systemdInterfaceTimeout)
+	defer cancel()
+	_, err := utils.ExecuteWithContext(ctx, func(ctx context.Context) (interface{}, error) {
+		return nil, s.systemdIf.StartTarget(name)
+	})
 	if err == nil {
 		s.units[name] = nil
 		s.w.Subscribe(name)
@@ -117,7 +133,11 @@ func (s *systemdService) StopUnit(name string) error {
 	s.Lock()
 	defer s.Unlock()
 
-	err := s.systemdIf.StopTarget(name)
+	ctx, cancel := context.WithTimeout(context.Background(), systemdInterfaceTimeout)
+	defer cancel()
+	_, err := utils.ExecuteWithContext(ctx, func(ctx context.Context) (interface{}, error) {
+		return nil, s.systemdIf.StopTarget(name)
+	})
 	if err == nil {
 		if s.w != nil {
 			s.w.Unsubscribe(name)
