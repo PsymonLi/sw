@@ -9,12 +9,9 @@
 #include <vnet/plugin/plugin.h>
 #include <sess.h>
 #include <system.h>
-#include <time.h>
-#include <nic/vpp/infra/shm_ipc/shm_ipc.h>
 #include <inttypes.h>
 #include "node.h"
 #include "cli_helper.h"
-#include "pdsa_hdlr.h"
 
 // *INDENT-OFF*
 VLIB_PLUGIN_REGISTER () = {

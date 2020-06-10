@@ -23,7 +23,8 @@ typedef struct sess_info_ {
     uint32_t iflow_rx : 1;
     uint32_t nat : 1;
     uint32_t drop : 1;
-    uint32_t vnic_id : 7;
+    uint8_t src_vnic_id;
+    uint8_t dst_vnic_id;
     uint64_t iflow_handle;
     uint64_t rflow_handle;
     void *flow_table;

@@ -22,6 +22,7 @@
 #include "vnic.h"
 #include <netinet/ether.h>
 #include "gen/p4gen/p4/include/ftl.h"
+#include "sess_helper.h"
 
 #define PDS_FLOW_UPLINK0_LIF_ID     0x0
 #define PDS_FLOW_UPLINK1_LIF_ID     0x1
@@ -1445,15 +1446,14 @@ pds_program_cached_sessions(void)
     int i,j, size = ftlv4_cache_get_count(thread_index);
     u64 i_handle, r_handle;
     ftlv4 *table = pds_flow_prog_get_table4();
-    pds_flow_rewrite_flags_t *rewrite_flags;
 
     // Program the flows
     for (i = 0, j = 0; i < size; i+=2, j++) {
         struct session_info_entry_t actiondata = {0};
+        u16 tx_rewrite_flags, rx_rewrite_flags;
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(j,
                                                                   thread_index);
         u32 session_index = sess->id;
-        pds_impl_db_vnic_entry_t *vnic;
         pds_flow_hw_ctx_t *ctx;
         int ret;
 
@@ -1487,16 +1487,14 @@ pds_program_cached_sessions(void)
         ctx->monitor_seen = 0;
         ctx->nat = sess->nat;
         ctx->drop = sess->drop;
-        ctx->src_vnic_id = sess->vnic_id;
+        ctx->src_vnic_id = sess->src_vnic_id;
+        ctx->dst_vnic_id = sess->dst_vnic_id;
 
         // FIXME: Need to fill Nat related fields in actiondata
-        vnic = pds_impl_db_vnic_get(ctx->src_vnic_id);
-        rewrite_flags = vec_elt_at_index(fm->rewrite_flags,
-                                         ctx->packet_type);
-        actiondata.tx_rewrite_flags = rewrite_flags->tx_rewrite;
-        actiondata.rx_rewrite_flags = rewrite_flags->rx_rewrite |
-            (pds_is_flow_rx_vlan_from_flags(pds_get_cpu_flags_from_vnic(vnic)) ?
-                (P4_REWRITE_VLAN_ENCAP << P4_REWRITE_VLAN_START) : 0);
+        pds_session_get_rewrite_flags(session_index, ctx->packet_type,
+                                      &tx_rewrite_flags, &rx_rewrite_flags);
+        actiondata.tx_rewrite_flags = tx_rewrite_flags;
+        actiondata.rx_rewrite_flags = rx_rewrite_flags;
         actiondata.session_tracking_en = fm->con_track_en &&
             (ctx->proto == PDS_FLOW_PROTO_TCP);
         actiondata.drop = ctx->drop;

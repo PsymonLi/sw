@@ -57,35 +57,48 @@ enum FlowSvc {
   FLOW_SVC_NAT_SVC_MAP = 4;
 }
 
-message SessV4Info {
+message SessInfo {
   uint32      Id                         = 1;
   uint32      Proto                      = 2;
   FlowState   State                      = 3;
   FlowSubType Subtype                    = 4;
   FlowSvc     SvcType                    = 5;
-  uint32      VnicId                     = 6;
-  bool        TwiceNAT                   = 7;
-  bool        IsLocalToLocal             = 8;
-  bool        IsMissHit                  = 9;
-  bool        IsFlowDrop                 = 10;
-  uint32      IngressBD                  = 11;
-  uint32      InitiatorFlowSrcIp         = 12;
-  uint32      InitiatorFlowDstIp         = 13;
-  uint32      InitiatorFlowSrcPort       = 14;
-  uint32      InitiatorFlowDstPort       = 15;
-  uint32      InitiatorFlowNhId          = 16;
-  uint32      InitiatorFlowNhType        = 17;
-  uint32      InitiatorFlowNhValid       = 18;
-  uint32      InitiatorFlowPriority      = 19;
-  uint32      EgressBD                   = 20;
-  uint32      ResponderFlowSrcIp         = 21;
-  uint32      ResponderFlowDstIp         = 22;
-  uint32      ResponderFlowSrcPort       = 23;
-  uint32      ResponderFlowDstPort       = 24;
-  uint32      ResponderFlowNhId          = 25;
-  uint32      ResponderFlowNhType        = 26;
-  uint32      ResponderFlowNhValid       = 27;
-  uint32      ResponderFlowPriority      = 28;
-  bool        IsInitiatorFlowRx          = 29;
+  uint32      SrcVnicId                  = 6;
+  uint32      DstVnicId                  = 7;
+  bool        TwiceNAT                   = 8;
+  bool        IsLocalToLocal             = 9;
+  bool        IsMissHit                  = 10;
+  bool        IsFlowDrop                 = 11;
+  uint32      IngressBD                  = 12;
+  uint32      InitiatorFlowSrcIpV4       = 13;
+  uint32      InitiatorFlowDstIpV4       = 14;
+  uint32      InitiatorFlowSrcPort       = 15;
+  uint32      InitiatorFlowDstPort       = 16;
+  uint32      InitiatorFlowNhId          = 17;
+  uint32      InitiatorFlowNhType        = 18;
+  uint32      InitiatorFlowNhValid       = 19;
+  uint32      InitiatorFlowPriority      = 20;
+  uint32      InitiatorFlowEpoch         = 21;
+  uint32      EgressBD                   = 22;
+  uint32      ResponderFlowSrcIpV4       = 23;
+  uint32      ResponderFlowDstIpV4       = 24;
+  uint32      ResponderFlowSrcPort       = 25;
+  uint32      ResponderFlowDstPort       = 26;
+  uint32      ResponderFlowNhId          = 27;
+  uint32      ResponderFlowNhType        = 28;
+  uint32      ResponderFlowNhValid       = 29;
+  uint32      ResponderFlowPriority      = 30;
+  uint32      ResponderFlowEpoch         = 31;
+  bool        IsInitiatorFlowRx          = 32;
+  bytes       InitiatorFlowSrcIpV6       = 33;
+  bytes       InitiatorFlowDstIpV6       = 34;
+  bytes       ResponderFlowSrcIpV6       = 35;
+  bytes       ResponderFlowDstIpV6       = 36;
+  uint64      InitiatorFlowSrcMac        = 37;
+  uint64      InitiatorFlowDstMac        = 38;
+  uint32      InitiatorFlowEtherType     = 39;
+  uint64      ResponderFlowSrcMac        = 40;
+  uint64      ResponderFlowDstMac        = 41;
+  uint32      ResponderFlowEtherType     = 42;
 }
 

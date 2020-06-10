@@ -455,7 +455,7 @@ pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id, u16 vnic_id, u8 thre
 //  rflow - 2.2.2.2 -> 1.1.1.1 -> 2 ==> 2.2.2.2 -> 1.1.1.1 -> 2 -> no change.
 //2.L2L inter -> L2R inter
 //  iflow - 1.1.1.1 -> 2.2.2.2 -> 1 ==> 1.1.1.1 -> 2.2.2.2 -> 1 -> no change
-//  rflow - 2.2.2.2 -> 1.1.1.1 -> 1 ==> 2.2.2.2 -> 1.1.1.1 -> 2 -> Delete and
+//  rflow - 2.2.2.2 -> 1.1.1.1 -> 2 ==> 2.2.2.2 -> 1.1.1.1 -> 1 -> Delete and
 //  Add new as key is changing
 //3.R2L inter subnet - > L2L inter
 //  iflow - 1.1.1.1 -> 2.2.2.2 -> 2 ==> 1.1.1.1 -> 2.2.2.2 -> 1 -> Delete and

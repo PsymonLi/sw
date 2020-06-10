@@ -73,7 +73,8 @@ pds_sess_v4_sync_cb (uint8_t *data, uint8_t *len, void *opaq)
     sess.iflow_rx = hw_ctx->iflow_rx;
     sess.nat = hw_ctx->nat;
     sess.drop = hw_ctx->drop;
-    sess.vnic_id = hw_ctx->src_vnic_id;
+    sess.src_vnic_id = hw_ctx->src_vnic_id;
+    sess.dst_vnic_id = hw_ctx->dst_vnic_id;
     sess.ingress_bd = hw_ctx->ingress_bd;
     sess.flow_table = iter->flow_table;
     // encode
