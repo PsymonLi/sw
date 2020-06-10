@@ -1318,8 +1318,8 @@ ep_pd_depgm_quiesce_entry (pd_ep_t *pd_ep)
     acl_tcam  *acl_tbl = g_hal_state_pd->acl_table();
     hal_ret_t  ret = HAL_RET_OK;
 
-    HAL_TRACE_VERBOSE("EP Quiesce NACL remove at: Src:{} Dst:{}.",
-                      pd_ep->ep_quiesce_src_nacl_hdl, pd_ep->ep_quiesce_dst_nacl_hdl);
+    HAL_TRACE_DEBUG("EP Quiesce NACL remove at: Src:{} Dst:{}.",
+                    pd_ep->ep_quiesce_src_nacl_hdl, pd_ep->ep_quiesce_dst_nacl_hdl);
 
     if (pd_ep->ep_quiesce_src_nacl_hdl != INVALID_INDEXER_INDEX) {
         ret = acl_tbl->remove(pd_ep->ep_quiesce_src_nacl_hdl);

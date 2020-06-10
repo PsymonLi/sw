@@ -30,12 +30,11 @@ session_create_in_fte (SessionSpec *spec, SessionResponse *rsp)
 
     //Init context
     ret = ctx.init(spec, rsp,  iflow, rflow, feature_state, num_features);
-    if (ret != HAL_RET_OK) {
+    if (ret == HAL_RET_OK) {
+        ret = ctx.process();
+    } else {
         HAL_TRACE_ERR("fte: failied to init context, ret={}", ret);
-        goto end;
     }
-
-    ret = ctx.process();
 
     // close the config db
     fte::impl::cfg_db_close();
@@ -98,13 +97,11 @@ sync_session_in_fte (fte_session_args_t *sess_args)
         if (ret == HAL_RET_ENTRY_EXISTS) {
             HAL_TRACE_VERBOSE("fte: local session exists");
             updt_ep_to_session_db(ctx.sep(), ctx.dep(), ctx.session(), false);
-            continue;
         } else if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("fte: failied to init context, ret={}", ret);
-            continue;
+        } else {
+            ctx.process();
         }
-
-        ctx.process();
 
         // close the config db
         fte::impl::cfg_db_close();
@@ -195,21 +192,19 @@ session_delete_in_fte (hal_handle_t session_handle, bool force_delete)
     
     //Init context
     ret = ctx.init(session, iflow, rflow, feature_state, num_features);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failied to init context, ret={}", ret);
-        goto end;
-    }
-    ctx.set_force_delete(force_delete);
-    ctx.set_pipeline_event(FTE_SESSION_DELETE);
+    if (ret == HAL_RET_OK) {
+        ctx.set_force_delete(force_delete);
+        ctx.set_pipeline_event(FTE_SESSION_DELETE);
 
-    ret = ctx.process();
+        ret = ctx.process();
+    } else {
+        HAL_TRACE_ERR("fte: failied to init context, ret={}", ret);
+    }
 
     // close the config db
     fte::impl::cfg_db_close();
 
 end:
-
-
     if (feature_state) {
         HAL_FREE(hal::HAL_MEM_ALLOC_FTE, feature_state);
     }
@@ -280,14 +275,14 @@ session_update_in_fte (hal_handle_t session_handle, uint64_t featureid_bitmap)
 
     //Init context
     ret = ctx.init(session, iflow, rflow, feature_state, num_features);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init context, ret={}", ret);
-        goto end;
-    }
-    ctx.set_pipeline_event(FTE_SESSION_UPDATE);
-    ctx.set_featureid_bitmap(featureid_bitmap);
+    if (ret == HAL_RET_OK) {
+        ctx.set_pipeline_event(FTE_SESSION_UPDATE);
+        ctx.set_featureid_bitmap(featureid_bitmap);
 
-    ret = ctx.process();
+        ret = ctx.process();
+    } else {
+        HAL_TRACE_ERR("fte: failed to init context, ret={}", ret);
+    }
 
     // close the config db
     fte::impl::cfg_db_close();

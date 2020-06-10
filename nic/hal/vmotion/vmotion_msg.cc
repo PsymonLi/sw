@@ -36,7 +36,7 @@ vmotion_send_msg (VmotionMessage& msg, SSL *ssl)
     coded_output->WriteVarint32(msg.ByteSize());
     msg.SerializeToCodedStream(coded_output);
 
-    proto_msg_dump(msg);
+    //proto_msg_dump(msg);
     if ((byte_count = SSL_write(ssl, (void *)pkt, msg_len)) <= 0) {
         HAL_TRACE_ERR("vmotion unable to send. hdr_len: {}, data_len: {}, msg_len: {} Err: {}",
                        VMOTION_MSG_HDR_LEN, msg.ByteSize(), msg_len, SSL_get_error(ssl, byte_count));

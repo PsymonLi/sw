@@ -2596,7 +2596,7 @@ ep_session_delete_cb(void *timer, uint32_t timer_id, void *ctxt)
     ep_updt = (ep_session_upd_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPD_LIST,
                                                   sizeof(ep_session_upd_args_t));
 
-    HAL_TRACE_VERBOSE("Ep Session delete walk cb");
+    HAL_TRACE_DEBUG("Ep Session delete walk cb");
     // delete all sessions
     dllist_ctxt_t  *curr = NULL, *next = NULL;
     dllist_for_each_safe(curr, next, &args->session_list) {
