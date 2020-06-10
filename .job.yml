@@ -234,8 +234,8 @@ jobs:
     labels: ["daily"]
   iota/test/standalone/regression/windows:
     labels: ["daily"]
-#  iota/test/standalone/regression/linkmgr:
-#    labels: ["daily"]
+  iota/test/standalone/regression/linkmgr:
+    labels: ["daily"]
   iota/test/standalone/compat/compat-server/esx6.7:
     labels: ["compat-server"]
   iota/test/standalone/compat/compat-server/windows2019:
