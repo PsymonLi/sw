@@ -176,15 +176,16 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 		return err
 	}
 
-	obj.Lock()
-	defer obj.Unlock()
+	obj.NetworkInterfaceState.Lock()
 	//For now Update only operation status
 	opStatus := strings.ToUpper(agentNetif.Status.OperStatus)
 	if obj.NetworkInterfaceState.Status.OperStatus == opStatus {
+		obj.NetworkInterfaceState.Unlock()
 		return nil
 	}
 	log.Infof("Updating network interface state %v : %v", agentNetif.Name, opStatus)
 	obj.NetworkInterfaceState.Status.OperStatus = opStatus
+	obj.NetworkInterfaceState.Unlock()
 	// retry till it succeeds
 	now := time.Now()
 	retries := 0
