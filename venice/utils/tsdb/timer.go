@@ -3,6 +3,7 @@ package tsdb
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -258,6 +259,14 @@ func createNewMetricPoint(obj *iObj, ts time.Time) {
 	obj.ts = time.Time{}
 }
 
+// normalizeFieldName normalizes field names
+func normalizeFieldName(s string) string {
+	// remove all spaces
+	r := strings.ReplaceAll(s, " ", "")
+	// replace -
+	return strings.ReplaceAll(r, "-", "_")
+}
+
 // createNewMetricPointFromKeysFields is the most primitive function to
 // create a point in a time series, it takes keys and fields directly
 // from the user to create a metric point for a specified obj name
@@ -281,7 +290,8 @@ func createNewMetricPointFromKeysFields(obj *iObj, keys map[string]string, field
 	obj.Unlock()
 
 	mfs := make(map[string]*metric.Field)
-	for key, field := range fields {
+	for k, field := range fields {
+		key := normalizeFieldName(k)
 		switch k := field.(type) {
 		case int64:
 			v := field.(int64)

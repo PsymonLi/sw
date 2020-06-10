@@ -106,6 +106,7 @@ func Setup(startLocalServer bool) error {
 }
 
 func TestFwlogPointLimits(t *testing.T) {
+	defer ts.metricServer.ClearMetrics()
 	// stop collector
 	ts.rpcServer.Stop()
 
@@ -134,6 +135,32 @@ func TestFwlogPointLimits(t *testing.T) {
 	}, time.Now())
 	AssertOk(t, err, "unable to create point")
 
+}
+func TestFieldName(t *testing.T) {
+	ts.metricServer.ClearMetrics()
+	keyTags := map[string]string{objID: t.Name()}
+	obj, err := NewObj(t.Name(), keyTags, nil, nil)
+	AssertOk(t, err, "unable to create obj")
+	defer obj.Delete()
+
+	p := &Point{
+		Tags:   map[string]string{"src": "10.1.1.1", "dest": "11.1.1.1", "port": "8080"},
+		Fields: map[string]interface{}{"Rx Pkts": uint64(1), "Tx Pkts": uint64(2), "Drop-Pkts": uint64(2)},
+	}
+
+	f := []map[string]interface{}{{"RxPkts": uint64(1), "TxPkts": uint64(2), "Drop_Pkts": uint64(2)}}
+
+	AssertEventually(t, func() (bool, interface{}) {
+		ts.metricServer.ClearMetrics()
+		tm := time.Now()
+		err = obj.Points([]*Point{p}, tm)
+		if err != nil {
+			return false, err.Error() + "unable to create point"
+		}
+		time.Sleep(testSendInterval * 2)
+		return ts.metricServer.Validate(t.Name(), tm, []map[string]string{p.Tags},
+			f, true) == true, nil
+	}, "validation failed")
 }
 
 func TestVeniceObj(t *testing.T) {
