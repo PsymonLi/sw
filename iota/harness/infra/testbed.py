@@ -845,10 +845,13 @@ class _Testbed:
                 vlanRange = vlans[x]
                 vlanRangeString = self.__buildVlanRangeString(vlanRange)
                 for entry in vmp:
-                    if not self.__getVlanAllocatorByPort(entry.node, entry.nic, entry.port):
-                        allocator = resmgr.TestbedVlanManagerByNodeNicPort(vgId,vlanRange)
+                    allocator = self.__getVlanAllocatorByGroupId(vgId)
+                    if not allocator:
+                        allocator = resmgr.TestbedMultiVlanAllocator(vgId, vlanRange[0], len(vlanRange), "classic")
                         allocator.addMember(entry.node, entry.nic, entry.port)
                         self.__addMultiVlanAllocator(allocator)
+                    if not allocator.isMember(entry.node, entry.nic, entry.port):
+                        allocator.addMember(entry.node, entry.nic, entry.port)
                     node = topo.GetNodeByName(entry.node) #this returns topo node object
                     port = node.GetPortByIndex(entry.nic, entry.port)
                     self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),

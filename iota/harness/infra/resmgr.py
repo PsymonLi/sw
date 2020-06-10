@@ -175,27 +175,44 @@ class TestbedVlanManager(object):
         self.__count = len(self.__vlans)
 
 
-class TestbedVlanManagerByNodeNicPort(object):
-    def __init__(self, groupId, vlans):
+class TestbedMultiVlanAllocator(object):
+    def __init__(self, groupId, vlan_base, count, mode):
+        self.__start = vlan_base
+        self.__count = count
         self.__groupId = groupId
-        self.__vlans = vlans
-        self.__pool = None
-        self.__count = 0
+        self.__vlans = []
         self.__members = {}
+        self.__pool = None
         self.Reset()
 
-    def Vlans(self):
-        return self.__vlans
+        if mode == 'hostpin':
+            self.__start += TESTBED_NUM_VLANS_HOSTPIN
+            self.__count = TESTBED_NUM_VLANS_HOSTPIN
+
+        self.__pool = iter(range(self.__start, self.__start + self.__count))
+        return
 
     def Alloc(self):
-        return next(self.__pool)
+        try:
+            return next(self.__pool) 
+        except:
+            self.__pool = iter(range(self.__start, self.__start + self.__count))
+            return next(self.__pool)
+
+    def Reset(self):
+        self.__pool = iter(range(self.__start, self.__start + self.__count))
 
     def Count(self):
         return self.__count
 
-    def Reset(self):
-        self.__pool = iter(self.__vlans)
-        self.__count = len(self.__vlans)
+    def Vlans(self):
+        return copy.deepcopy(range(self.__start, self.__start + self.__count))
+
+    def VlanRange(self):
+        return str(self.__start) + "-" + str(self.__start + self.__count)
+
+    def VlanNative(self):
+        return self.__start
 
     def GetId(self):
         return self.__groupId
