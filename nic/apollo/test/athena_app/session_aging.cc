@@ -84,7 +84,8 @@ session_table_clear_full(test_vparam_ref_t vparam)
             break;
         }
     }
-    TEST_LOG_INFO("Cleared %u session entries\n", key.session_info_id);
+    TEST_LOG_INFO("Cleared %u session entries: ret %d\n",
+                  key.session_info_id, ret);
     return SESSION_DELETE_RET_VALIDATE(ret);
 }
 
@@ -118,8 +119,8 @@ session_populate_simple(test_vparam_ref_t vparam)
         session_tolerance.create_id_map_insert(spec.key.session_info_id);
     }
 
-    TEST_LOG_INFO("Session entries created: %d\n",
-                  session_tolerance.create_id_map_size());
+    TEST_LOG_INFO("Session entries created: %d, ret %d\n",
+                  session_tolerance.create_id_map_size(), ret);
     return SESSION_CREATE_RET_VALIDATE(ret);
 }
 
@@ -168,8 +169,8 @@ session_populate_random(test_vparam_ref_t vparam)
         }
     }
 
-    TEST_LOG_INFO("Session entries created: %u\n",
-                  session_tolerance.create_id_map_size());
+    TEST_LOG_INFO("Session entries created: %u, ret %d\n",
+                  session_tolerance.create_id_map_size(), ret);
     return SESSION_CREATE_RET_VALIDATE(ret);
 }
 
@@ -197,8 +198,8 @@ session_populate_full(test_vparam_ref_t vparam)
         session_tolerance.create_id_map_insert(spec.key.session_info_id);
     }
 
-    TEST_LOG_INFO("Session entries created: %u\n",
-                  session_tolerance.create_id_map_size());
+    TEST_LOG_INFO("Session entries created: %u, ret %d\n",
+                  session_tolerance.create_id_map_size(), ret);
     return SESSION_CREATE_RET_VALIDATE(ret);
 }
 
@@ -221,6 +222,11 @@ session_and_cache_clear_full(test_vparam_ref_t vparam)
 
         data.index = key.session_info_id;
         ret = pds_flow_cache_entry_delete_by_flow_info(&data);
+        if (ret == PDS_RET_RETRY) {
+
+            // Skip this entry
+            continue;
+        }
         if (!SESSION_DELETE_RET_VALIDATE(ret)) {
             break;
         }
@@ -229,7 +235,8 @@ session_and_cache_clear_full(test_vparam_ref_t vparam)
             break;
         }
     }
-    TEST_LOG_INFO("Cleared %u entries\n", key.session_info_id);
+    TEST_LOG_INFO("Cleared %u entries: ret %d\n",
+                  key.session_info_id, ret);
     return SESSION_DELETE_RET_VALIDATE(ret);
 }
 
@@ -378,8 +385,8 @@ session_and_cache_populate(test_vparam_ref_t vparam)
     }
 
 done:
-    TEST_LOG_INFO("Session entries created: %d\n",
-                  session_tolerance.create_id_map_size());
+    TEST_LOG_INFO("Session entries created: %d, ret %d cache_ret %d\n",
+                  session_tolerance.create_id_map_size(), ret, cache_ret);
     /*
      * Flow cache entry creations were best effort due to hash outcomes
      * so any non-zero count would be considered a success.
