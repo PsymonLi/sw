@@ -721,10 +721,6 @@ bgp_rm_ent_pre_set (BGPSpec &req, NBB_LONG row_status,
     req.set_state (state);
     PDS_TRACE_VERBOSE ("BGP Rm Ent admin status is updated to %s",
                         (state == ADMIN_STATE_DISABLE) ? "Disable" : "Enable");
-    if (mgmt_state_t::thread_context().state()->rr_mode()) {
-        // Set identical Cluster ID on RRs
-        req.set_clusterid(0x01010101);
-    }
 }
 
 NBB_VOID
@@ -1111,11 +1107,14 @@ pds_ms_fill_amb_bgp_rm_afi_safi (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
         AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
 
     } else if (conf->afi == AMB_BGP_AFI_IPV4 && conf->safi == AMB_BGP_UNICAST) {
-        // Set state_kept by default for IPv4 - it is only used when 
-        // coming up in hitless upgrade mode - i.e. do_graceful_restart is set
-        PDS_TRACE_DEBUG("Set state_kept for IPv4 unicast");
-        data->state_kept = AMB_TRUE;
-        AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
+        if (mgmt_state_t::bgp_gr_supported()) {
+            // Set state_kept by default for IPv4 in restart supported platform.
+            // It is only used when coming up in hitless upgrade mode
+            //  - i.e. do_graceful_restart is set
+            PDS_TRACE_DEBUG("Set state_kept for IPv4 unicast");
+            data->state_kept = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_AFI_STATE_KEPT);
+        }
     }
 
     NBB_TRC_EXIT();

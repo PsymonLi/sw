@@ -274,13 +274,28 @@ static void create_l2f_test_mac_ip_proto_grpc (uint32_t subnet_id, uint32_t iter
     ipaddr->set_v4addr(g_test_conf_.local_mai_ip[subnet_id-1][iter]);
     uint8_t mac_addr[] = {0x00,0xee,0x00,0x00,0x00,0x02};
     if (subnet_id == 2) {
-        mac_addr[5] = 6;
+        mac_addr[3] = 1;
     }
-    mac_addr[5] = mac_addr[5]+iter;
+    if (g_node_id == 3) {
+        mac_addr[4] = 1;
+    }
+    if (iter == 4) {
+        // Iter 4 is move of first mac - so swap the first MAC between node 2 and 3
+        mac_addr[5] = 2;
+        if (g_node_id == 3) {
+            mac_addr[4] = 0;
+        } else {
+            mac_addr[4] = 1;
+        }
+    } else {
+        mac_addr[5] = mac_addr[5]+iter;
+    }
+
+    printf ("MAC-IP learn - BD %d iter %d IP %s MAC %s\n", subnet_id, iter,
+            ipv4addr2str(g_test_conf_.local_mai_ip[subnet_id-1][iter]), macaddr2str(mac_addr));
     proto_spec->set_macaddr (mac_addr, 6);
     proto_spec->set_ifid (g_test_conf_.lif_if_index+subnet_id-1);
 
-    printf ("Simulating EVPN MAC/IP learn...\n");
     ret_status = g_cp_test_stub_->CPL2fTestCreate(&context, request, &response);
     if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
         printf("%s failed! ret_status=%d (%s) response.status=%d\n",
@@ -714,6 +729,12 @@ int main(int argc, char** argv)
                     create_l2f_test_mac_ip_proto_grpc(subnet_id, iter);
                 }
             }
+            if (g_node_id == 3) {
+                sleep(1);
+                for (uint32_t iter=0; iter < 1; ++iter) {
+                    create_l2f_test_mac_ip_proto_grpc(subnet_id, iter);
+                }
+            }
         }
         printf ("Testapp Config Init is successful!\n");
         return 0;
@@ -725,7 +746,7 @@ int main(int argc, char** argv)
             get_evpn_mac_ip_all();
             return 0;
         } else if (!strcmp (argv[1], "mac-move")) {
-            create_l2f_test_mac_ip_proto_grpc(1, 0);
+            create_l2f_test_mac_ip_proto_grpc(1, 4);
             return 0;
         } else if (!strcmp (argv[1], "subnet-del")) {
 #if 0

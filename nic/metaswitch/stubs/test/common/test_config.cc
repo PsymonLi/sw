@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include "nic/metaswitch/stubs/test/common/test_config.hpp"
+#include "nic/sdk/include/sdk/ip.hpp"
 #include <arpa/inet.h>
 #include <iostream>
 
@@ -82,6 +83,8 @@ parse_json_config (test_config_t *conf, uint8_t node) {
     conf->local_mai_ip[0][2]   = inet_network (value.c_str());
     value                   = pt.get <std::string>("local.ac-ip3");
     conf->local_mai_ip[0][3]   = inet_network (value.c_str());
+    value                   = pt.get <std::string>("local.ac-ip4");
+    conf->local_mai_ip[0][4]   = inet_network (value.c_str());
     value                   = pt.get <std::string>("local.ac-ip10");
     conf->local_mai_ip[1][0]   = inet_network (value.c_str());
     value                   = pt.get <std::string>("local.ac-ip11");
@@ -90,6 +93,8 @@ parse_json_config (test_config_t *conf, uint8_t node) {
     conf->local_mai_ip[1][2]   = inet_network (value.c_str());
     value                   = pt.get <std::string>("local.ac-ip13");
     conf->local_mai_ip[1][3]   = inet_network (value.c_str());
+    value                   = pt.get <std::string>("local.ac-ip14");
+    conf->local_mai_ip[1][4]   = inet_network (value.c_str());
     value                   = pt.get <std::string>("remote.ip");
     conf->remote_ip_addr    = inet_network (value.c_str());
     value                   = pt.get <std::string>("remote.ip2");

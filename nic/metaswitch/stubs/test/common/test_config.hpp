@@ -15,7 +15,7 @@ typedef struct test_config_s {
     uint32_t    remote_ip_addr_2;
     uint32_t    remote_lo_ip_addr;
     uint32_t    remote_lo_ip_addr_2;
-    uint32_t    local_mai_ip[2][4];
+    uint32_t    local_mai_ip[2][5];
     uint32_t    eth_if_index;
     uint32_t    eth_if_index_2;
     uint32_t    lif_if_index;
