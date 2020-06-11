@@ -1,6 +1,8 @@
 #! /usr/bin/python3
 import iota.harness.api as api
 
+import iota.test.apulu.utils.naples as naples_utils
+
 def Setup(tc):
     tc.skip = False
     tc.result = api.types.status.SUCCESS
@@ -41,3 +43,17 @@ def Verify(tc):
         return api.types.status.SUCCESS
 
     return tc.result
+
+def Teardown(tc):
+    if tc.skip:
+        return api.types.status.SUCCESS
+
+    if not naples_utils.EnableReachability(tc.node_names):
+        api.Logger.error(f"Failed to enable reachability to naples {tc.node_names} post reboot")
+        return api.types.status.FAILURE
+
+    if not naples_utils.VerifyMgmtConnectivity(tc.node_names):
+        api.Logger.error(f"Failed to reach naples {tc.node_names} post reboot")
+        return api.types.status.FAILURE
+
+    return api.types.status.SUCCESS

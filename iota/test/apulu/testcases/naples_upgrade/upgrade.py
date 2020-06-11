@@ -6,6 +6,7 @@ import iota.harness.api as api
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.testcases.naples_upgrade.upgrade_utils as upgrade_utils
 import iota.test.utils.ping as ping
+import iota.test.apulu.utils.naples as naples_utils
 import iota.test.apulu.utils.misc as misc_utils
 
 # Following come from DOL
@@ -248,15 +249,8 @@ def Verify(tc):
     api.Logger.info("Sleep for 120 secs before checking for /update/pds_upg_status.txt")
     misc_utils.Sleep(120)
 
-    try:
-        # Restore naples static route for mgmt port reachability
-        for node in tc.nodes:
-            api.RestoreNicStaticRoutes(node)
-            api.Logger.info(f"Configured NIC Static Routes after Upgrade on {node}")
-            api.SetNicFirewallRules(node)
-            api.Logger.info(f"Configured NIC Firewall Rules after Upgrade on {node}")
-    except Exception as e:
-        api.Logger.error("Failed in Switchover during Upgrade with exception: %s"%e)
+    if not naples_utils.EnableReachability(tc.nodes):
+        api.Logger.error(f"Failed to reach naples {tc.nodes} post upgrade switchover")
         return api.types.status.FAILURE
 
     misc_utils.Sleep(1)
