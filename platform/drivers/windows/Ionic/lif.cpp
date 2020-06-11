@@ -2264,7 +2264,7 @@ ionic_lif_quiesce(struct lif *lif)
     ctx.cmd.lif_setattr.opcode = CMD_OPCODE_LIF_SETATTR;
     ctx.cmd.lif_setattr.attr = IONIC_LIF_ATTR_STATE;
     ctx.cmd.lif_setattr.index = (__le16)lif->index;
-    ctx.cmd.lif_setattr.state = IONIC_LIF_DISABLE;
+    ctx.cmd.lif_setattr.state = IONIC_LIF_QUIESCE;
 
     status = ionic_adminq_post_wait(lif, &ctx);
     if (status != NDIS_STATUS_SUCCESS) {

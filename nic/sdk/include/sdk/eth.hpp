@@ -69,6 +69,11 @@ typedef struct eth_hdr_s {
 
 #define IS_MCAST_MAC_ADDR(mac_addr)            ((mac_addr)[0] & 0x1)
 
+static inline bool
+is_multicast(uint64_t mac) {
+    return ((mac & 0x010000000000) == 0x010000000000);
+}
+
 static inline void
 mac_str_to_addr (const char *str, mac_addr_t mac_addr)
 {

@@ -13,6 +13,7 @@ using namespace std;
 #include "eth_pstate.hpp"
 #include "ev.h"
 #include <unordered_map>
+#include <queue>
 
 namespace pt = boost::property_tree;
 
@@ -131,8 +132,13 @@ class EthLif
     EV_P;
 
     /* Station mac address */
-    void GetMacAddr(uint8_t macaddr[6]);
-    void SetMacAddr(uint8_t macaddr[6]);
+    void GetStationMac(uint8_t macaddr[6]);
+    void SetStationMac(uint8_t macaddr[6]);
+
+    /* Default vlan */
+    uint16_t GetVlan();
+    void SetVlan(uint16_t vlan);
+    status_code_t AddVFVlanFilter(uint16_t vlan);
 
     /* LIF admin state */
     status_code_t SetAdminState(uint8_t admin_state);
@@ -157,8 +163,6 @@ class EthLif
     status_code_t GetMaxTxRate(uint32_t *rate_in_mbps);
 
     /* PF VF functions */
-    void SubscribePfAdminState();
-    void UnsubscribePfAdminState();
     void AddAdminStateSubscriber(EthLif *vf_lif);
     void DelAdminStateSubscriber(EthLif *vf_lif);
     void NotifyAdminStateChange();
@@ -166,6 +170,7 @@ class EthLif
     /* Attributes */
     uint64_t GetLifId() { return hal_lif_info_.lif_id; };
     std::string GetName() { return hal_lif_info_.name; };
+
 private:
     Eth *dev;
     std::unordered_map<uint64_t, EthLif *> subscribers_map;
@@ -208,10 +213,11 @@ private:
     map<uint64_t, uint64_t> mac_addrs;
     map<uint64_t, uint16_t> vlans;
     map<uint64_t, tuple<uint64_t, uint16_t>> mac_vlans;
+    queue<tuple<int, uint64_t, uint16_t>> deferred_filters;
+    uint32_t mtu;
     // Tasks
     ev_timer stats_timer = {0};
     ev_timer sched_eval_timer = {0};
-    bool stats_timer_init_done = false;
 
     // persistent config
     ethlif_pstate_t *lif_pstate;
@@ -268,11 +274,27 @@ private:
     static void SchedBulkEvalHandler(EV_P_ ev_timer *w, int events);
 
     // Helper methods
+    bool IsLifTypeCpu(void);
+    bool IsLifInitialized();
+    bool IsTrustedLif();
+
+    /* Filters */
+    status_code_t _AddFilter(int type, uint64_t mac_addr, uint16_t vlan,
+                             uint32_t *filter_id);
+    status_code_t _AddMacFilter(uint64_t mac_addr, uint32_t *filter_id);
+    status_code_t _AddVlanFilter(uint16_t vlan, uint32_t *filter_id);
+    status_code_t _AddMacVlanFilter(uint64_t mac_addr, uint16_t vlan,
+                                   uint32_t *filter_id);
+    status_code_t _CheckRxMacFilterPerm(uint64_t mac);
+
+    /* Rx mode */
+    status_code_t _CheckRxModePerm(int mode);
+
+    void _DeferFilter(int filter_type, uint64_t mac_addr, uint16_t vlan);
+    void _AddDeferredFilters();
     void FreeUpMacFilters();
     void FreeUpVlanFilters();
     void FreeUpMacVlanFilters();
-    bool IsLifTypeCpu(void);
-    bool IsLifInitialized();
 
     status_code_t UpdateQFeatures();
 
@@ -288,7 +310,7 @@ private:
     // Lif state functions
     status_code_t SetLifLinkState();
     void NotifyLifLinkState();
-    status_code_t UpdateHalLifAdminStatus();
+    status_code_t UpdateHalLifAdminStatus(lif_state_t hal_lif_admin_state);
 
     static const char *lif_state_to_str(enum eth_lif_state state);
     static const char *port_status_to_str(uint8_t port_status);

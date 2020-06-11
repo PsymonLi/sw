@@ -359,7 +359,7 @@ struct ionic_lif_logical_qtype {
  * enum ionic_lif_state - LIF state
  * @IONIC_LIF_DISABLE:     LIF disabled
  * @IONIC_LIF_ENABLE:      LIF enabled
- * @IONIC_LIF_HANG_RESET:  LIF hung, being reset
+ * @IONIC_LIF_QUIESCE:     LIF Quiesced
  */
 enum ionic_lif_state {
 	IONIC_LIF_QUIESCE	= 0,
@@ -373,6 +373,7 @@ enum ionic_lif_state {
  * @name:           LIF name
  * @mtu:            MTU
  * @mac:            Station MAC address
+ * @vlan:           Default Vlan ID
  * @features:       Features (enum ionic_eth_hw_features)
  * @queue_count:    Queue counts per queue-type
  */
@@ -383,7 +384,7 @@ union ionic_lif_config {
 		char   name[IONIC_IFNAMSIZ];
 		__le32 mtu;
 		u8     mac[6];
-		u8     rsvd2[2];
+		__le16 vlan;
 		__le64 features;
 		__le32 queue_count[IONIC_QTYPE_MAX];
 	} __attribute__((packed));

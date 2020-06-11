@@ -341,9 +341,9 @@ struct lif_logical_qtype {
 };
 
 enum lif_state {
-	IONIC_LIF_DISABLE	= 0,
+	IONIC_LIF_QUIESCE	= 0,
 	IONIC_LIF_ENABLE	= 1,
-	IONIC_LIF_HANG_RESET	= 2,
+	IONIC_LIF_DISABLE	= 2,
 };
 
 /**

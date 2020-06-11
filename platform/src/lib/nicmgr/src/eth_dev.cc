@@ -231,7 +231,6 @@ Eth::Eth(devapi *dev_api, void *dev_spec, PdClient *pd_client, EV_P) {
     this->pd = pd_client;
     this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->pf_dev = NULL;
     this->shm_mem = nicmgr_shm::getInstance();
     NIC_LOG_DEBUG("{}: eth device initializing", spec->name);
 }
@@ -244,13 +243,12 @@ Eth::Eth(devapi *dev_api, struct EthDevInfo *dev_info, PdClient *pd_client, EV_P
     this->dev_resources = *(dev_info->eth_res);
     this->is_device_upgrade = false; // this is used only during graceful upgrade
     this->loop = loop;
-    this->pf_dev = NULL;
     this->shm_mem = nicmgr_shm::getInstance();
     NIC_LOG_DEBUG("{}: Restoring eth device in Upgrade mode", spec->name);
 }
 
 void
-Eth::DeviceInit(Eth *pf_dev)
+Eth::DeviceInit()
 {
     // Set bus type
     if (spec->eth_type == ETH_HOST || spec->eth_type == ETH_HOST_MGMT) {
@@ -262,21 +260,16 @@ Eth::DeviceInit(Eth *pf_dev)
     // Set trust type of device
     this->trust_type = spec->vf_dev ? DEV_UNTRUSTED : DEV_TRUSTED;
 
-    // PF VF associations
-    this->pf_dev = pf_dev;
-    if (this->pf_dev) {
-        pf_dev->AddVfDev(this);
-    }
 }
 
 void
-Eth::Init(Eth *pf_dev) {
+Eth::Init() {
     uint64_t        lif_id;
     eth_lif_res_t   *lif_res;
     EthLif          *eth_lif;
 
     // Set device attributes
-    DeviceInit(pf_dev);
+    DeviceInit();
 
     dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
                                                                  sizeof(*dev_pstate));
@@ -331,7 +324,7 @@ Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
 
     // Set device attributes
     // TODO: Add VF support
-    DeviceInit(NULL);
+    DeviceInit();
     dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
                                                                  sizeof(*dev_pstate));
 
@@ -383,7 +376,7 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec) {
 
     // Set device attributes
     // TODO: Add VF support
-    DeviceInit(NULL);
+    DeviceInit();
     dev_pstate = (ethdev_pstate_t*)shm_mem->alloc_find_pstate(spec->name.c_str(),
                                                                  sizeof(*dev_pstate));
 
@@ -763,7 +756,7 @@ Eth::factory(devapi *dev_api,
 
     // Create object for PF device
     pf_dev = new Eth(dev_api, spec, pd_client, EV_A);
-    pf_dev->Init(NULL);
+    pf_dev->Init();
     eth_devs.push_back(pf_dev);
 
     NIC_LOG_DEBUG("{}: num_vfs: {}", spec->name, spec->pcie_total_vfs);
@@ -784,8 +777,9 @@ Eth::factory(devapi *dev_api,
         vf_spec->barmap_size = 0;
         // Create object for VF device
         vf_dev = new Eth(dev_api, vf_spec, pd_client, EV_A);
-        vf_dev->Init(pf_dev);
+        vf_dev->Init();
         eth_devs.push_back(vf_dev);
+        pf_dev->AddVFDev(vf_dev);
     }
 
     return eth_devs;
@@ -2372,24 +2366,25 @@ Eth::_CmdVFSetAttr(void *req, void *req_data, void *resp, void *resp_data)
             vf_eth_dev->SetTrustType((enum DevTrustType)cmd->trust);
             break;
         case IONIC_VF_ATTR_MAC:
-            vf_lif->SetMacAddr(cmd->macaddr);
+            vf_lif->SetStationMac(cmd->macaddr);
             break;
         case IONIC_VF_ATTR_LINKSTATE:
             vf_link_status = (enum ionic_vf_link_status)cmd->linkstate;
             if (vf_link_status == IONIC_VF_LINK_STATUS_AUTO) {
-                vf_lif->SubscribePfAdminState();
+                pf_lif->AddAdminStateSubscriber(vf_lif);
                 // Copy PF lif's link state
                 state = pf_lif->GetAdminState();
             } else {
                 state = (cmd->linkstate == IONIC_VF_LINK_STATUS_UP)
                             ? IONIC_PORT_ADMIN_STATE_UP
                             : IONIC_PORT_ADMIN_STATE_DOWN;
-                vf_lif->UnsubscribePfAdminState();
+                pf_lif->DelAdminStateSubscriber(vf_lif);
             }
             status = vf_lif->SetProxyAdminState(state);
             break;
         case IONIC_VF_ATTR_VLAN:
-            status = IONIC_RC_ENOSUPP;
+            vf_lif->SetVlan(cmd->vlanid);
+            status = vf_lif->AddVFVlanFilter(cmd->vlanid);
             break;
         case IONIC_VF_ATTR_RATE:
             status = vf_lif->SetMaxTxRate(cmd->maxrate);
@@ -2445,7 +2440,7 @@ Eth::_CmdVFGetAttr(void *req, void *req_data, void *resp, void *resp_data)
             comp->trust = vf_eth_dev->GetTrustType();
             break;
         case IONIC_VF_ATTR_MAC:
-            vf_lif->GetMacAddr(comp->macaddr);
+            vf_lif->GetStationMac(comp->macaddr);
             break;
         case IONIC_VF_ATTR_LINKSTATE:
             comp->linkstate = (vf_lif->GetAdminState()
@@ -2454,7 +2449,7 @@ Eth::_CmdVFGetAttr(void *req, void *req_data, void *resp, void *resp_data)
                                 : IONIC_VF_LINK_STATUS_DOWN;
             break;
         case IONIC_VF_ATTR_VLAN:
-            status = IONIC_RC_ENOSUPP;
+            comp->vlanid = vf_lif->GetVlan();
             break;
         case IONIC_VF_ATTR_RATE:
             status = vf_lif->GetMaxTxRate(&comp->maxrate);
@@ -2939,7 +2934,7 @@ Eth::QosDevReset()
 }
 
 void
-Eth::AddVfDev(Eth *vf_eth_dev)
+Eth::AddVFDev(Eth *vf_eth_dev)
 {
     vf_devs.push_back(vf_eth_dev);
 }

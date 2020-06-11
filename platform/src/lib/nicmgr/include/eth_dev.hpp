@@ -145,13 +145,12 @@ public:
     ~Eth();
 
     static std::vector<Eth *> factory(devapi *dev_api, void *dev_spec, PdClient *pd_client, EV_P);
-    void Init(Eth *pf_dev);
+    void Init();
     void UpgradeGracefulInit(struct eth_devspec *spec);
     void UpgradeHitlessInit(struct eth_devspec *spec);
 
     std::string GetName() { return spec->name; }
     EthDevType GetEthType() { return spec->eth_type; }
-    Eth *GetPfDev() { return pf_dev; }
 
     void DevcmdHandler();
     status_code_t CmdProxyHandler(void *req, void *req_data, void *resp, void *resp_data);
@@ -190,7 +189,7 @@ public:
     static std::string eth_type_to_str(EthDevType type);
     static EthDevType str_to_eth_type(std::string const &s);
 
-    void AddVfDev(Eth *vf_eth_dev);
+    void AddVFDev(Eth *vf_eth_dev);
     EthLif* GetLifByIndex(uint32_t idx);
 
 private:
@@ -204,7 +203,6 @@ private:
     std::map<uint64_t, EthLif *> lif_map;
     // Resources
     std::vector<Eth*> vf_devs;
-    Eth *pf_dev;
     struct eth_dev_res dev_resources;
     // Devcmd
     uint64_t devcmd_mem_addr;
@@ -239,7 +237,7 @@ private:
 
     bool LoadOprom();
 
-    void DeviceInit(Eth *pf_dev);
+    void DeviceInit();
 
     // Devcmd Memory/control opertions
     void DevcmdRegInit(void);

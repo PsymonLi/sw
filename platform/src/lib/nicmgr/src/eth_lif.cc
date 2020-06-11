@@ -144,8 +144,8 @@ EthLif::Init(void)
 
     // Create LIF
     lif_pstate->state = LIF_STATE_CREATING;
-    lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
-    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
+    lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_UP;
+    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->port_status = IONIC_PORT_OPER_STATUS_DOWN;
 
     // set the lif name
@@ -209,8 +209,8 @@ EthLif::UpgradeGracefulInit(void)
 
     // Create LIF
     lif_pstate->state = LIF_STATE_CREATING;
-    lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
-    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
+    lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_UP;
+    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->port_status = IONIC_PORT_OPER_STATUS_DOWN;
 
     // set the lif name
@@ -396,6 +396,7 @@ EthLif::QinfoInit(void) {
 
 void
 EthLif::LifConfigStatusMem(bool mem_clr) {
+    uint64_t mac;
     // Lif Config
     lif_config_addr = pd->nicmgr_mem_alloc(sizeof(union ionic_lif_config));
     lif_pstate->host_lif_config_addr = 0;
@@ -411,6 +412,11 @@ EthLif::LifConfigStatusMem(bool mem_clr) {
     }
 
     NIC_LOG_INFO("{}: lif_config_addr {:#x}", hal_lif_info_.name, lif_config_addr);
+
+    /* Initialize the station mac */
+    mac = be64toh(spec->mac_addr) >> (8 * sizeof(spec->mac_addr) - 8 * sizeof(uint8_t[6]));
+    memcpy((uint8_t *)lif_config->mac, (uint8_t *)&mac,
+           sizeof(lif_config->mac));
 
     // Lif Status
     lif_status_addr = pd->nicmgr_mem_alloc(sizeof(struct ionic_lif_status));
@@ -709,8 +715,9 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     LifStatsClear();
 
     lif_pstate->state = LIF_STATE_INIT;
-    lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_UP;
-    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_UP;
+
+    /* Add deferred filters */
+    _AddDeferredFilters();
 
     return (IONIC_RC_SUCCESS);
 }
@@ -792,6 +799,9 @@ EthLif::Reset()
     // to avoid name collisions during re-addition of the lifs
     // TODO: Lif delete has to be called here instead of just
     // doing an update
+
+    // TODO: Optimize the 3 HAL calls below to fewer calls.
+    UpdateHalLifAdminStatus((lif_state_t)sdk::types::LIF_STATE_DOWN);
     dev_api->lif_upd_name(hal_lif_info_.lif_id, std::to_string(hal_lif_info_.lif_id));
     dev_api->lif_reset(hal_lif_info_.lif_id);
     FreeUpMacFilters();
@@ -878,11 +888,7 @@ EthLif::Reset()
     }
 
     lif_pstate->state = LIF_STATE_RESET;
-
-    UnsubscribePfAdminState();
     lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
-    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
-
 
     return (IONIC_RC_SUCCESS);
 }
@@ -942,9 +948,6 @@ EthLif::_CmdAccessCheck(cmd_opcode_t opcode)
     switch(opcode) {
         case IONIC_CMD_FW_DOWNLOAD:
         case IONIC_CMD_FW_CONTROL:
-        case IONIC_CMD_RX_MODE_SET:
-        case IONIC_CMD_RX_FILTER_ADD:
-        case IONIC_CMD_RX_FILTER_DEL:
             status = IONIC_RC_EPERM;
             break;
         default:
@@ -2244,7 +2247,6 @@ EthLif::_CmdGetAttr(void *req, void *req_data, void *resp, void *resp_data)
 {
     struct ionic_lif_getattr_cmd *cmd = (struct ionic_lif_getattr_cmd *)req;
     struct ionic_lif_getattr_comp *comp = (struct ionic_lif_getattr_comp *)resp;
-    uint64_t mac_addr;
 
     NIC_LOG_DEBUG("{}: {}: attr {}", hal_lif_info_.name, opcode_to_str((cmd_opcode_t)cmd->opcode),
                   cmd->attr);
@@ -2265,10 +2267,8 @@ EthLif::_CmdGetAttr(void *req, void *req_data, void *resp, void *resp_data)
         comp->mtu = lif_pstate->mtu;
         break;
     case IONIC_LIF_ATTR_MAC:
-        mac_addr =
-            be64toh(spec->mac_addr) >> (8 * sizeof(spec->mac_addr) - 8 * sizeof(uint8_t[6]));
-        memcpy((uint8_t *)comp->mac, (uint8_t *)&mac_addr, sizeof(comp->mac));
-        NIC_LOG_DEBUG("{}: station mac address {}", hal_lif_info_.name, mac2str(mac_addr));
+        GetStationMac(comp->mac);
+        NIC_LOG_DEBUG("{}: station mac address {}", hal_lif_info_.name, macaddr2str(comp->mac));
         break;
     case IONIC_LIF_ATTR_FEATURES:
         break;
@@ -2480,7 +2480,6 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
     int64_t addr, off;
     struct ionic_q_control_cmd *cmd = (struct ionic_q_control_cmd *)req;
     lif_state_t hal_lif_admin_state;
-    sdk_ret_t ret;
     // q_enable_comp *comp = (q_enable_comp *)resp;
     union {
         eth_qstate_cfg_t eth;
@@ -2529,14 +2528,14 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
         if (cmd->oper == IONIC_Q_DISABLE)
             ev_sleep(RXDMA_Q_QUIESCE_WAIT_S);
 
-        hal_lif_admin_state = cmd->oper == IONIC_Q_ENABLE ?
-                            sdk::types::LIF_STATE_UP :
-                            sdk::types::LIF_STATE_DOWN;
-        ret = dev_api->eth_dev_admin_status_update(hal_lif_info_.lif_id,
-                hal_lif_admin_state);
-        if (ret != SDK_RET_OK) {
-            NIC_LOG_ERR("{}: Failed to update admin state in HAL",
-                hal_lif_info_.name);
+        if (cmd->index == 0) {
+            /*
+             * Use RX queue enable/disable event on index 0 as a trigger to update
+             * the hal lif's admin status.
+             */
+            hal_lif_admin_state = cmd->oper == IONIC_Q_ENABLE ?
+                    sdk::types::LIF_STATE_UP : sdk::types::LIF_STATE_DOWN;
+            UpdateHalLifAdminStatus(hal_lif_admin_state);
         }
         break;
     case IONIC_QTYPE_TXQ:
@@ -2592,6 +2591,24 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
 }
 
 status_code_t
+EthLif::_CheckRxModePerm(int mode)
+{
+    if (IsTrustedLif()) {
+        return (IONIC_RC_SUCCESS);
+    }
+
+    /*
+     * For untrusted lif promiscuous and all mulitcast modes are denied.
+     */
+    if (mode & IONIC_RX_MODE_F_PROMISC || mode & IONIC_RX_MODE_F_ALLMULTI) {
+        NIC_LOG_ERR("{}: Rx Mode PROMISC or ALLMULTI not allowed", hal_lif_info_.name);
+        return (IONIC_RC_EPERM);
+    } else {
+        return (IONIC_RC_SUCCESS);
+    }
+}
+
+status_code_t
 EthLif::_CmdRxSetMode(void *req, void *req_data, void *resp, void *resp_data)
 {
     struct ionic_rx_mode_set_cmd *cmd = (struct ionic_rx_mode_set_cmd *)req;
@@ -2612,6 +2629,10 @@ EthLif::_CmdRxSetMode(void *req, void *req_data, void *resp, void *resp_data)
         return (IONIC_RC_ERROR);
     }
 
+    if (_CheckRxModePerm(cmd->rx_mode) != IONIC_RC_SUCCESS) {
+        return (IONIC_RC_EPERM);
+    }
+
     // TODO: Check for unsupported flags
 
     DEVAPI_CHECK
@@ -2619,6 +2640,7 @@ EthLif::_CmdRxSetMode(void *req, void *req_data, void *resp, void *resp_data)
     bool broadcast = cmd->rx_mode & IONIC_RX_MODE_F_BROADCAST;
     bool all_multicast = cmd->rx_mode & IONIC_RX_MODE_F_ALLMULTI;
     bool promiscuous = cmd->rx_mode & IONIC_RX_MODE_F_PROMISC;
+
 
     ret = dev_api->lif_upd_rx_mode(hal_lif_info_.lif_id, broadcast, all_multicast, promiscuous);
     if (ret != SDK_RET_OK) {
@@ -2637,95 +2659,228 @@ EthLif::_CmdRxSetMode(void *req, void *req_data, void *resp, void *resp_data)
 }
 
 status_code_t
+EthLif::_AddMacFilter(uint64_t mac_addr, uint32_t *filter_id)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_MAC mac {}", hal_lif_info_.name, mac2str(mac_addr));
+
+    DEVAPI_CHECK
+    ret = dev_api->lif_add_mac(hal_lif_info_.lif_id, mac_addr);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_WARN("{}: Failed Add Mac:{} ret: {}", hal_lif_info_.name, mac2str(mac_addr),
+                        ret);
+        if (ret == sdk::SDK_RET_ENTRY_EXISTS)
+            return (IONIC_RC_EEXIST);
+        else
+            return (IONIC_RC_ERROR);
+    }
+
+    // Store filter
+    if (fltr_allocator->alloc(filter_id) != sdk::lib::indexer::SUCCESS) {
+        NIC_LOG_ERR("Failed to allocate MAC address filter");
+        return (IONIC_RC_ERROR);
+    }
+    mac_addrs[*filter_id] = mac_addr;
+
+    return (IONIC_RC_SUCCESS);
+}
+
+status_code_t
+EthLif::_AddVlanFilter(uint16_t vlan, uint32_t *filter_id)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_VLAN vlan {}", hal_lif_info_.name, vlan);
+
+    DEVAPI_CHECK
+    ret = dev_api->lif_add_vlan(hal_lif_info_.lif_id, vlan);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_WARN("{}: Failed Add Vlan:{}. ret: {}", hal_lif_info_.name, vlan, ret);
+        if (ret == sdk::SDK_RET_ENTRY_EXISTS)
+            return (IONIC_RC_EEXIST);
+        else
+            return (IONIC_RC_ERROR);
+    }
+
+    // Store filter
+    if (fltr_allocator->alloc(filter_id) != sdk::lib::indexer::SUCCESS) {
+        NIC_LOG_ERR("Failed to allocate VLAN filter");
+        return (IONIC_RC_ERROR);
+    }
+    vlans[*filter_id] = vlan;
+
+    return (IONIC_RC_SUCCESS);
+}
+
+status_code_t
+EthLif::_AddMacVlanFilter(uint64_t mac_addr, uint16_t vlan, uint32_t *filter_id)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_MAC_VLAN mac {} vlan {}", hal_lif_info_.name,
+                  mac2str(mac_addr), vlan);
+
+    DEVAPI_CHECK
+    ret = dev_api->lif_add_macvlan(hal_lif_info_.lif_id, mac_addr, vlan);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_WARN("{}: Failed Add Mac-Vlan:{}-{}. ret: {}", hal_lif_info_.name,
+                        mac2str(mac_addr), vlan, ret);
+        if (ret == sdk::SDK_RET_ENTRY_EXISTS)
+            return (IONIC_RC_EEXIST);
+        else
+            return (IONIC_RC_ERROR);
+    }
+
+    // Store filter
+    if (fltr_allocator->alloc(filter_id) != sdk::lib::indexer::SUCCESS) {
+        NIC_LOG_ERR("Failed to allocate VLAN filter");
+        return (IONIC_RC_ERROR);
+    }
+    mac_vlans[*filter_id] = std::make_tuple(mac_addr, vlan);
+
+    return (IONIC_RC_SUCCESS);
+}
+
+status_code_t
+EthLif::AddVFVlanFilter(uint16_t vlan)
+{
+    uint32_t filter_id;
+    sdk_ret_t ret = SDK_RET_OK;
+    bool vlan_strip = true;
+    bool vlan_insert = true;
+
+    /* Enable Vlan stripping & Vlan insert for the VF */
+    ret = dev_api->lif_upd_vlan_offload(hal_lif_info_.lif_id,
+                                        vlan_strip, vlan_insert);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_ERR("{}: Failed to update Vlan offload", hal_lif_info_.name);
+        return (IONIC_RC_ERROR);
+    }
+
+    if (!IsLifInitialized()) {
+        NIC_LOG_WARN("{}: Lif is not initialized, deferring filter creation",
+                     hal_lif_info_.name);
+        _DeferFilter(IONIC_RX_FILTER_MATCH_VLAN, 0, vlan);
+        return (IONIC_RC_SUCCESS);
+    }
+
+    return _AddVlanFilter(vlan, &filter_id);
+}
+
+void
+EthLif::_DeferFilter(int filter_type, uint64_t mac_addr, uint16_t vlan)
+{
+    deferred_filters.push(std::make_tuple(filter_type, mac_addr, vlan));
+}
+
+void
+EthLif::_AddDeferredFilters()
+{
+    uint32_t filter_id;
+    int i = 0;
+
+    if (deferred_filters.empty()) {
+        return;
+    }
+
+    NIC_LOG_INFO("{}: Adding deferred filters", hal_lif_info_.name);
+    do {
+        auto &it = deferred_filters.front();
+        deferred_filters.pop();
+        _AddFilter(std::get<0>(it), std::get<1>(it), std::get<2>(it),
+                   &filter_id);
+        i++;
+    } while (!deferred_filters.empty());
+    NIC_LOG_INFO("{}: Done adding {} deferred filters", hal_lif_info_.name, i);
+}
+
+status_code_t
+EthLif::_AddFilter(int type, uint64_t mac_addr, uint16_t vlan, uint32_t *filter_id)
+{
+    status_code_t ret;
+
+    switch (type) {
+    case  IONIC_RX_FILTER_MATCH_MAC:
+        ret = _AddMacFilter(mac_addr, filter_id);
+        break;
+    case IONIC_RX_FILTER_MATCH_VLAN:
+        ret = _AddVlanFilter(vlan, filter_id);
+        break;
+    case IONIC_RX_FILTER_MATCH_MAC_VLAN:
+        ret = _AddMacVlanFilter(mac_addr, vlan, filter_id);
+        break;
+    default:
+        NIC_LOG_ERR("{}: Invalid filter type {}", hal_lif_info_.name, type);
+        ret = IONIC_RC_ENOSUPP;
+        break;
+    }
+    return ret;
+}
+
+status_code_t
+EthLif::_CheckRxMacFilterPerm(uint64_t mac)
+{
+    uint64_t station_mac;
+
+    if (IsTrustedLif()) {
+        return (IONIC_RC_SUCCESS);
+    }
+
+    if (is_multicast(mac)) {
+        return (IONIC_RC_SUCCESS);
+    }
+
+    station_mac = MAC_TO_UINT64(lif_config->mac);
+    if (station_mac == mac) {
+        return (IONIC_RC_SUCCESS);
+    }
+
+    NIC_LOG_ERR("{}: Station mac: {} does not match mac: {} in filter",
+                    hal_lif_info_.name, mac2str(station_mac), mac2str(mac));
+    return (IONIC_RC_EPERM);
+}
+
+status_code_t
 EthLif::_CmdRxFilterAdd(void *req, void *req_data, void *resp, void *resp_data)
 {
     // int status;
-    uint64_t mac_addr;
-    uint16_t vlan;
+    uint64_t mac_addr = 0;
+    uint16_t vlan = 0;
     uint32_t filter_id = 0;
     struct ionic_rx_filter_add_cmd *cmd = (struct ionic_rx_filter_add_cmd *)req;
     struct ionic_rx_filter_add_comp *comp = (struct ionic_rx_filter_add_comp *)resp;
-    sdk_ret_t ret = SDK_RET_OK;
+    status_code_t ret;
 
     if (!IsLifInitialized()) {
         NIC_LOG_ERR("{}: Lif is not initialized", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
 
-    DEVAPI_CHECK
-
     if (cmd->match == IONIC_RX_FILTER_MATCH_MAC) {
-
         memcpy((uint8_t *)&mac_addr, (uint8_t *)&cmd->mac.addr, sizeof(cmd->mac.addr));
         mac_addr = be64toh(mac_addr) >> (8 * sizeof(mac_addr) - 8 * sizeof(cmd->mac.addr));
-
-        NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_MAC mac {}", hal_lif_info_.name, mac2str(mac_addr));
-
-        ret = dev_api->lif_add_mac(hal_lif_info_.lif_id, mac_addr);
-        if (ret != SDK_RET_OK) {
-            NIC_LOG_WARN("{}: Failed Add Mac:{} ret: {}", hal_lif_info_.name, mac2str(mac_addr),
-                         ret);
-            if (ret == sdk::SDK_RET_ENTRY_EXISTS)
-                return (IONIC_RC_EEXIST);
-            else
-                return (IONIC_RC_ERROR);
+        if (_CheckRxMacFilterPerm(mac_addr) != IONIC_RC_SUCCESS) {
+            return (IONIC_RC_EPERM);
         }
-
-        // Store filter
-        if (fltr_allocator->alloc(&filter_id) != sdk::lib::indexer::SUCCESS) {
-            NIC_LOG_ERR("Failed to allocate MAC address filter");
-            return (IONIC_RC_ERROR);
-        }
-        mac_addrs[filter_id] = mac_addr;
     } else if (cmd->match == IONIC_RX_FILTER_MATCH_VLAN) {
         vlan = cmd->vlan.vlan;
-
-        NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_VLAN vlan {}", hal_lif_info_.name, vlan);
-
-        ret = dev_api->lif_add_vlan(hal_lif_info_.lif_id, vlan);
-        if (ret != SDK_RET_OK) {
-            NIC_LOG_WARN("{}: Failed Add Vlan:{}. ret: {}", hal_lif_info_.name, vlan, ret);
-            if (ret == sdk::SDK_RET_ENTRY_EXISTS)
-                return (IONIC_RC_EEXIST);
-            else
-                return (IONIC_RC_ERROR);
-        }
-
-        // Store filter
-        if (fltr_allocator->alloc(&filter_id) != sdk::lib::indexer::SUCCESS) {
-            NIC_LOG_ERR("Failed to allocate VLAN filter");
-            return (IONIC_RC_ERROR);
-        }
-        vlans[filter_id] = vlan;
     } else {
         memcpy((uint8_t *)&mac_addr, (uint8_t *)&cmd->mac_vlan.addr, sizeof(cmd->mac_vlan.addr));
         mac_addr = be64toh(mac_addr) >> (8 * sizeof(mac_addr) - 8 * sizeof(cmd->mac_vlan.addr));
         vlan = cmd->mac_vlan.vlan;
-
-        NIC_LOG_DEBUG("{}: Add RX_FILTER_MATCH_MAC_VLAN mac {} vlan {}", hal_lif_info_.name,
-                      mac2str(mac_addr), vlan);
-
-        ret = dev_api->lif_add_macvlan(hal_lif_info_.lif_id, mac_addr, vlan);
-        if (ret != SDK_RET_OK) {
-            NIC_LOG_WARN("{}: Failed Add Mac-Vlan:{}-{}. ret: {}", hal_lif_info_.name,
-                         mac2str(mac_addr), vlan, ret);
-            if (ret == sdk::SDK_RET_ENTRY_EXISTS)
-                return (IONIC_RC_EEXIST);
-            else
-                return (IONIC_RC_ERROR);
+        if (_CheckRxMacFilterPerm(mac_addr) != IONIC_RC_SUCCESS) {
+            return (IONIC_RC_EPERM);
         }
-
-        // Store filter
-        if (fltr_allocator->alloc(&filter_id) != sdk::lib::indexer::SUCCESS) {
-            NIC_LOG_ERR("Failed to allocate VLAN filter");
-            return (IONIC_RC_ERROR);
-        }
-        mac_vlans[filter_id] = std::make_tuple(mac_addr, vlan);
     }
 
-    comp->filter_id = filter_id;
-    NIC_LOG_DEBUG("{}: filter_id {}", hal_lif_info_.name, comp->filter_id);
-    return (IONIC_RC_SUCCESS);
+    ret = _AddFilter(cmd->match, mac_addr, vlan, &filter_id);
+
+    if (ret == IONIC_RC_SUCCESS) {
+        comp->filter_id = filter_id;
+        NIC_LOG_DEBUG("{}: filter_id {}", hal_lif_info_.name, comp->filter_id);
+    }
+    return ret;
 }
 
 status_code_t
@@ -3509,20 +3664,41 @@ EthLif::IsLifInitialized()
     return lif_pstate->state >= LIF_STATE_INIT;
 }
 
-void
-EthLif::GetMacAddr(uint8_t macaddr[6])
+bool
+EthLif::IsTrustedLif()
 {
-    //Check byte order
-    memcpy((uint8_t *)macaddr, (uint8_t *)lif_config->mac,
-           sizeof(lif_config->mac));
+    return dev->GetTrustType() == DEV_TRUSTED;
 }
 
 void
-EthLif::SetMacAddr(uint8_t macaddr[6])
+EthLif::GetStationMac(uint8_t macaddr[6])
 {
-    // Check byte order
+    memcpy((uint8_t *)macaddr, (uint8_t *)lif_config->mac,
+           sizeof(lif_config->mac));
+    NIC_LOG_DEBUG("{}: Get station mac {}", hal_lif_info_.name, macaddr2str(macaddr));
+}
+
+void
+EthLif::SetStationMac(uint8_t macaddr[6])
+{
     memcpy((uint8_t *)lif_config->mac, (uint8_t *)macaddr,
            sizeof(lif_config->mac));
+    NIC_LOG_DEBUG("{}: Set station mac {}", hal_lif_info_.name, macaddr2str(macaddr));
+}
+
+void
+EthLif::SetVlan(uint16_t vlan)
+{
+    lif_config->vlan = vlan;
+    NIC_LOG_DEBUG("{}: Set VLAN {}", hal_lif_info_.name, vlan);
+
+}
+
+uint16_t
+EthLif::GetVlan()
+{
+    NIC_LOG_DEBUG("{}: Get VLAN {}", hal_lif_info_.name, lif_config->vlan);
+    return lif_config->vlan;
 }
 
 /*
@@ -3550,16 +3726,26 @@ EthLif::SetLifLinkState()
         return (IONIC_RC_ERROR);
     }
 
-    if (lif_pstate->admin_state == IONIC_PORT_ADMIN_STATE_UP &&
-        lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP &&
-        lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP) {
+    if (!spec->vf_dev && lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP) {
+        /*
+         * For a PF lif link status just depends on uplink port status.
+         */
+        next_lif_state = LIF_STATE_UP;
+    } else if (spec->vf_dev &&
+               lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP &&
+               lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP) {
+        /*
+         * VF lif link status depends on uplink port status and proxy_admin_state.
+         * proxy_admin_state indicates a VF's admin_status controlled by PF.
+         */
         next_lif_state = LIF_STATE_UP;
     } else {
         next_lif_state = LIF_STATE_DOWN;
     }
 
-    // Track LINK DOWN events
-    if (lif_pstate->state == LIF_STATE_UP && next_lif_state == LIF_STATE_DOWN) {
+    // Track LIF LINK DOWN events
+    if (lif_pstate->state == LIF_STATE_UP &&
+        next_lif_state == LIF_STATE_DOWN) {
         // FIXME: This counter now tracks LIF DOWN events instead of PORT DOWN
         ++lif_status->link_down_count;
     }
@@ -3742,7 +3928,6 @@ EthLif::SetProxyAdminState(uint8_t next_state)
     }
 
     lif_pstate->proxy_admin_state = next_state;
-    UpdateHalLifAdminStatus();
     status = SetLifLinkState();
 
     return status;
@@ -3771,7 +3956,6 @@ EthLif::SetAdminState(uint8_t next_state)
     }
 
     lif_pstate->admin_state = next_state;
-    UpdateHalLifAdminStatus();
     status = SetLifLinkState();
 
     //FIXME: Notfity the corresponding VFs using event timer cb to reduce devcmd delay
@@ -3781,18 +3965,10 @@ EthLif::SetAdminState(uint8_t next_state)
 }
 
 status_code_t
-EthLif::UpdateHalLifAdminStatus()
+EthLif::UpdateHalLifAdminStatus(lif_state_t hal_lif_admin_state)
 {
-    lif_state_t hal_lif_admin_state;
     sdk_ret_t ret;
     const char *admin_state_str;
-
-    if (lif_pstate->admin_state == IONIC_PORT_ADMIN_STATE_UP &&
-        lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP) {
-        hal_lif_admin_state = sdk::types::LIF_STATE_UP;
-    } else {
-        hal_lif_admin_state = sdk::types::LIF_STATE_DOWN;
-    }
 
     admin_state_str = hal_lif_admin_state == sdk::types::LIF_STATE_UP ?
                        "LIF_STATE_UP" : "LIF_STATE_DOWN";
@@ -3886,52 +4062,6 @@ EthLif::GetMaxTxRate(uint32_t *rate_in_mbps)
     *rate_in_mbps = (rate_in_Bps * 8) / (1024 * 1024);
 
     return (IONIC_RC_SUCCESS);
-}
-
-void
-EthLif::SubscribePfAdminState()
-{
-    Eth *pf_dev;
-    EthLif *pf_lif;
-
-    if (dev->GetBusType() != BUS_TYPE_PCIE_VF) {
-        NIC_LOG_WARN("NA for PF device");
-        return;
-    }
-
-    pf_dev = dev->GetPfDev();
-    if (!pf_dev) {
-        NIC_LOG_ERR("{}: No associated PF device", hal_lif_info_.name);
-        return;
-    }
-
-    pf_lif = pf_dev->GetLifByIndex(0);
-    assert(pf_lif);
-
-    pf_lif->AddAdminStateSubscriber(this);
-}
-
-void
-EthLif::UnsubscribePfAdminState()
-{
-    Eth *pf_dev;
-    EthLif *pf_lif;
-
-    if (dev->GetBusType() != BUS_TYPE_PCIE_VF) {
-        NIC_LOG_WARN("NA for PF device");
-        return;
-    }
-
-    pf_dev = dev->GetPfDev();
-    if (!pf_dev) {
-        NIC_LOG_ERR("{}: No associated PF device", hal_lif_info_.name);
-        return;
-    }
-
-    pf_lif = pf_dev->GetLifByIndex(0);
-    assert(pf_lif);
-
-    pf_lif->DelAdminStateSubscriber(this);
 }
 
 void
