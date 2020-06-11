@@ -335,6 +335,11 @@ action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
     if (P4_REWRITE(rewrite_metadata.flags, SMAC, FROM_VRMAC)) {
         modify_field(ethernet_1.srcAddr, rewrite_metadata.vrmac);
     }
+    if ((control_metadata.erspan_copy == TRUE) and
+        (P4_REWRITE(rewrite_metadata.flags, DMAC, FROM_NEXTHOP))) {
+        modify_field(ethernet_0.dstAddr, dmaco);
+        modify_field(ethernet_0.srcAddr, smaco);
+    }
     if (P4_REWRITE(rewrite_metadata.flags, ENCAP, VXLAN)) {
         if (control_metadata.erspan_copy == FALSE) {
             if (rewrite_metadata.ip_type == IPTYPE_IPV4) {
