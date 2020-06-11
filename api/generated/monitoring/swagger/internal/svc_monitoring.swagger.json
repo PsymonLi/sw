@@ -18285,8 +18285,8 @@
         },
         "transport": {
           "type": "string",
-          "example": "udp/1234, arp",
-          "description": "protocol and Port number where an external collector is gathering the data example \"UDP/2055\". Should be a valid layer 3 or layer 4 protocol and port/type."
+          "example": "udp/1234",
+          "description": "protocol and Port number where an external collector is gathering the data example \"UDP/2055\". Should be a valid layer 3 or layer 4 protocol and port/type (only support UDP currently)."
         },
         "credentials": {
           "$ref": "#/definitions/monitoringExternalCred",

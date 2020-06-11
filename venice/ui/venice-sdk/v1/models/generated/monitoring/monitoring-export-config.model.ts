@@ -25,7 +25,7 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
     'destination': string = null;
     /** Gateway of the dest IP address to which the data is to be exported. Should be a valid IPv4 address. */
     'gateway': string = null;
-    /** Protocol and Port number where an external collector is gathering the data example "UDP/2055". Should be a valid layer 3 or layer 4 protocol and port/type. */
+    /** Protocol and Port number where an external collector is gathering the data example "UDP/2055". Should be a valid layer 3 or layer 4 protocol and port/type (only support UDP currently). */
     'transport': string = null;
     /** Credentials provide secure access to the collector. */
     'credentials': MonitoringExternalCred = null;
@@ -43,8 +43,8 @@ export class MonitoringExportConfig extends BaseModel implements IMonitoringExpo
             type: 'string'
         },
         'transport': {
-            description:  `Protocol and Port number where an external collector is gathering the data example "UDP/2055". Should be a valid layer 3 or layer 4 protocol and port/type.`,
-            hint:  'udp/1234, arp',
+            description:  `Protocol and Port number where an external collector is gathering the data example "UDP/2055". Should be a valid layer 3 or layer 4 protocol and port/type (only support UDP currently).`,
+            hint:  'udp/1234',
             required: false,
             type: 'string'
         },
