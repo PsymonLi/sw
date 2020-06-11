@@ -1,6 +1,8 @@
 #include "Config.h"
 #include "NetCfg.h"
-
+#include <fstream>
+#include "EvtLogHelper.h"
+#include "WMIhelper.h"
 
 int
 _cdecl
@@ -27,6 +29,7 @@ wmain(int argc, wchar_t* argv[])
     info.cmds.push_back(CmdRegKeys());
     info.cmds.push_back(CmdInfo());
     info.cmds.push_back(CmdQueueInfo());
+    info.cmds.push_back(CmdCollectDbgInfo());
     //info.cmds.push_back(CmdOidStats());
     //info.cmds.push_back(CmdFwcmdStats());
 
@@ -235,77 +238,83 @@ CmdVersion()
 
 #include "UserCommon.h"
 
+#define PRINT_BUFFER_SIZE   128
+
 char *
 GetLifTypeName(ULONG type);
 
 void
-DumpTxRingStats(const char *id, struct dev_tx_ring_stats *tx_stats)
+DumpTxRingStats(const char *id, struct dev_tx_ring_stats *tx_stats, std::ostream& outfile)
 {
-    printf("\t\t\ttx%s_full:\t%I64u\n", id, tx_stats->full);
-    printf("\t\t\ttx%s_wake:\t%I64u\n", id, tx_stats->wake);
-    printf("\t\t\ttx%s_no_descs:\t%I64u\n", id, tx_stats->no_descs);
-    printf("\t\t\ttx%s_doorbell:\t%I64u\n", id, tx_stats->doorbell_count);
-    printf("\t\t\ttx%s_comp:\t%I64u\n", id, tx_stats->comp_count);
-    printf("\t\t\ttx%s_defrag:\t%I64u\n", id, tx_stats->defrag_count);
-    printf("\t\t\ttx%s_tso_defrag:\t%I64u\n", id, tx_stats->tso_defrag_count);
-    printf("\t\t\ttx%s_tso_fail:\t%I64u\n", id, tx_stats->tso_fail_count);
-    printf("\t\t\ttx%s_ucast_bytes:\t%I64u\n", id, tx_stats->directed_bytes);
-    printf("\t\t\ttx%s_ucast_packets:\t%I64u\n", id, tx_stats->directed_packets);
-    printf("\t\t\ttx%s_bcast_bytes:\t%I64u\n", id, tx_stats->bcast_bytes);
-    printf("\t\t\ttx%s_mcast_bytes:\t%I64u\n", id, tx_stats->mcast_bytes);
-    printf("\t\t\ttx%s_mcast_packets:\t%I64u\n", id, tx_stats->mcast_packets);
-    printf("\t\t\ttx%s_tso_bytes:\t%I64u\n", id, tx_stats->tso_bytes);
-    printf("\t\t\ttx%s_tso_packets:\t%I64u\n", id, tx_stats->tso_packets);
-    printf("\t\t\ttx%s_max_tso_packet:\t%I64u\n", id, tx_stats->max_tso_sz);
-    printf("\t\t\ttx%s_last_tso_packets:\t%I64u\n", id, tx_stats->last_tso_sz);
-    printf("\t\t\ttx%s_encap_tso_bytes:\t%I64u\n", id, tx_stats->encap_tso_bytes);
-    printf("\t\t\ttx%s_encap_tso_packets:\t%I64u\n", id, tx_stats->encap_tso_packets);
-    printf("\t\t\ttx%s_csum_none:\t%I64u\n", id, tx_stats->csum_none);
+    char TempBuf[PRINT_BUFFER_SIZE];
+
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_full:\t%I64u\n", id, tx_stats->full); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_wake:\t%I64u\n", id, tx_stats->wake); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_no_descs:\t%I64u\n", id, tx_stats->no_descs); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_doorbell:\t%I64u\n", id, tx_stats->doorbell_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_comp:\t%I64u\n", id, tx_stats->comp_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_defrag:\t%I64u\n", id, tx_stats->defrag_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_tso_defrag:\t%I64u\n", id, tx_stats->tso_defrag_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_tso_fail:\t%I64u\n", id, tx_stats->tso_fail_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_ucast_bytes:\t%I64u\n", id, tx_stats->directed_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_ucast_packets:\t%I64u\n", id, tx_stats->directed_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_bcast_bytes:\t%I64u\n", id, tx_stats->bcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_mcast_bytes:\t%I64u\n", id, tx_stats->mcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_mcast_packets:\t%I64u\n", id, tx_stats->mcast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_tso_bytes:\t%I64u\n", id, tx_stats->tso_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_tso_packets:\t%I64u\n", id, tx_stats->tso_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_max_tso_packet:\t%I64u\n", id, tx_stats->max_tso_sz); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_last_tso_packets:\t%I64u\n", id, tx_stats->last_tso_sz); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_encap_tso_bytes:\t%I64u\n", id, tx_stats->encap_tso_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_encap_tso_packets:\t%I64u\n", id, tx_stats->encap_tso_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_csum_none:\t%I64u\n", id, tx_stats->csum_none); outfile << TempBuf;
     //TODO: remove csum_partial counters, not used anymore
-    //printf("\t\t\ttx%s_csum_partial:\t%I64u\n", id, tx_stats->csum_partial);
-    //printf("\t\t\ttx%s_csum_partial_inner:\t%I64u\n", id, tx_stats->csum_partial_inner);
-    printf("\t\t\ttx%s_csum_hw:\t%I64u\n", id, tx_stats->csum_hw);
-    printf("\t\t\ttx%s_csum_hw_inner:\t%I64u\n", id, tx_stats->csum_hw_inner);
-    printf("\t\t\ttx%s_vlan_inserted:\t%I64u\n", id, tx_stats->vlan_inserted);
-    printf("\t\t\ttx%s_dma_map_error:\t%I64u\n", id, tx_stats->dma_map_error);
+    //_snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_csum_partial:\t%I64u\n", id, tx_stats->csum_partial); outfile << TempBuf;
+    //_snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_csum_partial_inner:\t%I64u\n", id, tx_stats->csum_partial_inner); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_csum_hw:\t%I64u\n", id, tx_stats->csum_hw); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_csum_hw_inner:\t%I64u\n", id, tx_stats->csum_hw_inner); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_vlan_inserted:\t%I64u\n", id, tx_stats->vlan_inserted); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\ttx%s_dma_map_error:\t%I64u\n", id, tx_stats->dma_map_error); outfile << TempBuf;
 }
 
 void
-DumpRxRingStats(const char *id, struct dev_rx_ring_stats *rx_stats)
+DumpRxRingStats(const char *id, struct dev_rx_ring_stats *rx_stats, std::ostream& outfile)
 {
-    printf("\t\t\trx%s_poll:\t%I64u\n", id, rx_stats->poll);
-    printf("\t\t\trx%s_arm:\t%I64u\n", id, rx_stats->arm);
-    printf("\t\t\trx%s_comp:\t%I64u\n", id, rx_stats->completion_count);
-    printf("\t\t\trx%s_comp_errors:\t%I64u\n", id, rx_stats->completion_errors);
-    printf("\t\t\trx%s_buffers_posted:\t%I64u\n", id, rx_stats->buffers_posted);
-    printf("\t\t\trx%s_pool_empty:\t%I64u\n", id, rx_stats->pool_empty);
-    printf("\t\t\trx%s_more_nbl:\t%I64u\n", id, rx_stats->more_nbl);
-    printf("\t\t\trx%s_ucast_bytes:\t%I64u\n", id, rx_stats->directed_bytes);
-    printf("\t\t\trx%s_ucast_packets:\t%I64u\n", id, rx_stats->directed_packets);
-    printf("\t\t\trx%s_bcast_bytes:\t%I64u\n", id, rx_stats->bcast_bytes);
-    printf("\t\t\trx%s_bcast_packets:\t%I64u\n", id, rx_stats->bcast_packets);
-    printf("\t\t\trx%s_mcast_bytes:\t%I64u\n", id, rx_stats->mcast_bytes);
-    printf("\t\t\trx%s_mcast_packets:\t%I64u\n", id, rx_stats->mcast_packets);
+    char TempBuf[PRINT_BUFFER_SIZE];
+
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_poll:\t%I64u\n", id, rx_stats->poll); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_arm:\t%I64u\n", id, rx_stats->arm); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_comp:\t%I64u\n", id, rx_stats->completion_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_comp_errors:\t%I64u\n", id, rx_stats->completion_errors); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_buffers_posted:\t%I64u\n", id, rx_stats->buffers_posted); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_pool_empty:\t%I64u\n", id, rx_stats->pool_empty); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_more_nbl:\t%I64u\n", id, rx_stats->more_nbl); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_ucast_bytes:\t%I64u\n", id, rx_stats->directed_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_ucast_packets:\t%I64u\n", id, rx_stats->directed_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_bcast_bytes:\t%I64u\n", id, rx_stats->bcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_bcast_packets:\t%I64u\n", id, rx_stats->bcast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_mcast_bytes:\t%I64u\n", id, rx_stats->mcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_mcast_packets:\t%I64u\n", id, rx_stats->mcast_packets); outfile << TempBuf;
     //TODO: remove lro_packets, we don't support
-    //printf("\t\t\trx%s_lro_packets:\t%I64u\n", id, rx_stats->lro_packets);
-    printf("\t\t\trx%s_csum_none:\t%I64u\n", id, rx_stats->csum_none);
-    printf("\t\t\trx%s_csum_complete:\t%I64u\n", id, rx_stats->csum_complete);
-    printf("\t\t\trx%s_csum_verified:\t%I64u\n", id, rx_stats->csum_verified);
-    printf("\t\t\trx%s_csum_ip:\t%I64u\n", id, rx_stats->csum_ip);
-    printf("\t\t\trx%s_csum_ip_bad:\t%I64u\n", id, rx_stats->csum_ip_bad);
-    printf("\t\t\trx%s_csum_udp:\t%I64u\n", id, rx_stats->csum_udp);
-    printf("\t\t\trx%s_csum_udp_bad:\t%I64u\n", id, rx_stats->csum_udp_bad);
-    printf("\t\t\trx%s_csum_tcp:\t%I64u\n", id, rx_stats->csum_tcp);
-    printf("\t\t\trx%s_csum_tcp_bad:\t%I64u\n", id, rx_stats->csum_tcp_bad);
-    printf("\t\t\trx%s_vlan_stripped:\t%I64u\n", id, rx_stats->vlan_stripped);
-    printf("\t\t\trx%s_rsc_bytes:\t%I64u\n", id, rx_stats->rsc_bytes);
-    printf("\t\t\trx%s_rsc_packets:\t%I64u\n", id, rx_stats->rsc_packets);
-    printf("\t\t\trx%s_rsc_events:\t%I64u\n", id, rx_stats->rsc_events);
-    printf("\t\t\trx%s_rsc_aborts:\t%I64u\n", id, rx_stats->rsc_aborts);
+    //_snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_lro_packets:\t%I64u\n", id, rx_stats->lro_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_none:\t%I64u\n", id, rx_stats->csum_none); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_complete:\t%I64u\n", id, rx_stats->csum_complete); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_verified:\t%I64u\n", id, rx_stats->csum_verified); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_ip:\t%I64u\n", id, rx_stats->csum_ip); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_ip_bad:\t%I64u\n", id, rx_stats->csum_ip_bad); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_udp:\t%I64u\n", id, rx_stats->csum_udp); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_udp_bad:\t%I64u\n", id, rx_stats->csum_udp_bad); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_tcp:\t%I64u\n", id, rx_stats->csum_tcp); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_csum_tcp_bad:\t%I64u\n", id, rx_stats->csum_tcp_bad); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_vlan_stripped:\t%I64u\n", id, rx_stats->vlan_stripped); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_bytes:\t%I64u\n", id, rx_stats->rsc_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_packets:\t%I64u\n", id, rx_stats->rsc_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_events:\t%I64u\n", id, rx_stats->rsc_events); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\t\trx%s_rsc_aborts:\t%I64u\n", id, rx_stats->rsc_aborts); outfile << TempBuf;
 }
 
 DWORD
-DumpDevStats(void *Stats, bool per_queue)
+DumpDevStats(void *Stats, bool per_queue, std::ostream& outfile)
 {
     DevStatsRespCB *resp = (DevStatsRespCB *)Stats;
     struct dev_port_stats *dev_stats = NULL;
@@ -313,6 +322,7 @@ DumpDevStats(void *Stats, bool per_queue)
     ULONG ulLifCount = 0;
     ULONG ulRxCnt = 0;
     ULONG ulTxCnt = 0;
+    char TempBuf[PRINT_BUFFER_SIZE];
 
     while(resp->adapter_name[0])
     {
@@ -325,34 +335,34 @@ DumpDevStats(void *Stats, bool per_queue)
         get_interface_name(name, ADAPTER_NAME_MAX_SZ, NULL, 0,
                            resp->adapter_name, ADAPTER_NAME_MAX_SZ);
 
-        printf("Adapter %S\n", resp->adapter_name);
-        printf("Interface %S\n", name);
-        printf("Mgmt %s RSS %s VMQ %s SRIOV %s Up %d Dwn %d\n",
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Adapter %S\n", resp->adapter_name); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Interface %S\n", name); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Mgmt %s RSS %s VMQ %s SRIOV %s Up %d Dwn %d\n", 
                (dev_stats->device_id == PCI_DEVICE_ID_PENSANDO_IONIC_ETH_MGMT)?"Yes":"No",
                (dev_stats->flags & IONIC_PORT_FLAG_RSS)?"Yes":"No",
                (dev_stats->flags & IONIC_PORT_FLAG_VMQ)?"Yes":"No",
                (dev_stats->flags & IONIC_PORT_FLAG_SRIOV)?"Yes":"No",
                (ULONG)dev_stats->link_up,
-               (ULONG)dev_stats->link_dn);
+               (ULONG)dev_stats->link_dn); outfile << TempBuf;
 
-        printf("\tVendor %04lX\n", dev_stats->vendor_id);
-        printf("\tDevice %04lX\n", dev_stats->device_id);
-        printf("\tLif Count %d\n", dev_stats->lif_count);
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tVendor %04lX\n", dev_stats->vendor_id); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tDevice %04lX\n", dev_stats->device_id); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tLif Count %d\n", dev_stats->lif_count); outfile << TempBuf;
 
         ulLifCount = 0;
         while (ulLifCount < dev_stats->lif_count)
         {
-            printf("\tLif %d\n", dev_stats->lif_stats[ ulLifCount].lif_id);
-            printf("\t\tLif type: %s", GetLifTypeName( dev_stats->lif_stats[ ulLifCount].lif_type));
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tLif %d\n", dev_stats->lif_stats[ ulLifCount].lif_id); outfile << TempBuf;
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tLif type: %s", GetLifTypeName( dev_stats->lif_stats[ ulLifCount].lif_type)); outfile << TempBuf;
 
-            printf("\t\tLif name: %s\n", dev_stats->lif_stats[ ulLifCount].lif_name);
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tLif name: %s\n", dev_stats->lif_stats[ ulLifCount].lif_name); outfile << TempBuf;
 
-            printf("\t\tRx Count: %d\n", dev_stats->lif_stats[ ulLifCount].rx_count);
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tRx Count: %d\n", dev_stats->lif_stats[ ulLifCount].rx_count); outfile << TempBuf;
             for (ulRxCnt = 0; ulRxCnt < dev_stats->lif_stats[ulLifCount].rx_count; ++ulRxCnt)
             {
                 if (per_queue) {
                     snprintf(id, sizeof(id), "_%lu", ulRxCnt);
-                    DumpRxRingStats(id, &dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt]);
+                    DumpRxRingStats(id, &dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt], outfile);
                 }
 
                 rx_total.poll += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].poll;
@@ -386,14 +396,14 @@ DumpDevStats(void *Stats, bool per_queue)
                 rx_total.rsc_aborts += dev_stats->lif_stats[ulLifCount].rx_ring[ulRxCnt].rsc_aborts;
             }
             id[0] = 0;
-            DumpRxRingStats(id, &rx_total);
+            DumpRxRingStats(id, &rx_total, outfile);
 
-            printf("\t\tTx Count: %d\n", dev_stats->lif_stats[ ulLifCount].tx_count);
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tTx Count: %d\n", dev_stats->lif_stats[ ulLifCount].tx_count); outfile << TempBuf;
             for (ulTxCnt = 0; ulTxCnt < dev_stats->lif_stats[ulLifCount].tx_count; ++ulTxCnt)
             {
                 if (per_queue) {
-                    snprintf(id, sizeof(id), "_%lu", ulTxCnt);
-                    DumpTxRingStats(id, &dev_stats->lif_stats[ulLifCount].tx_ring[ulTxCnt]);
+                    snprintf(id, sizeof(id), "_%lu", ulTxCnt); outfile << TempBuf;
+                    DumpTxRingStats(id, &dev_stats->lif_stats[ulLifCount].tx_ring[ulTxCnt], outfile);
                 }
 
                 tx_total.full += dev_stats->lif_stats[ulLifCount].tx_ring[ulTxCnt].full;
@@ -423,12 +433,12 @@ DumpDevStats(void *Stats, bool per_queue)
                 tx_total.dma_map_error += dev_stats->lif_stats[ulLifCount].tx_ring[ulTxCnt].dma_map_error;
             }
             id[0] = 0;
-            DumpTxRingStats(id, &tx_total);
+            DumpTxRingStats(id, &tx_total, outfile);
 
             ulLifCount++;
         }
 
-        printf("\n");
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
 
         ++resp;
         ++ulDevCount;
@@ -438,72 +448,74 @@ DumpDevStats(void *Stats, bool per_queue)
 }
 
 void
-DumpMgmtStats(void *Stats)
+DumpMgmtStats(void *Stats, std::ostream& outfile)
 {
     MgmtStatsRespCB *resp = (MgmtStatsRespCB *)Stats;
     struct mgmt_port_stats *mgmt_stats = &resp->stats;
     WCHAR name[ADAPTER_NAME_MAX_SZ] = {};
+    char TempBuf[PRINT_BUFFER_SIZE];
 
     // one adapter per response
 
     get_interface_name(name, ADAPTER_NAME_MAX_SZ, NULL, 0,
                        resp->adapter_name, ADAPTER_NAME_MAX_SZ);
 
-    printf("Mgmt Port Stats: %S\n", resp->adapter_name);
-    printf("Interface: %S\n", name);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Mgmt Port Stats: %S\n", resp->adapter_name); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Interface: %S\n", name); outfile << TempBuf;
 
-    printf("\tRx frames all: %I64u\n", mgmt_stats->frames_rx_all);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames all: %I64u\n", mgmt_stats->frames_rx_all); outfile << TempBuf;
 
-    printf("\n");
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
 }
 
 void
-DumpPortStats(void *Stats)
+DumpPortStats(void *Stats, std::ostream& outfile)
 {
     PortStatsRespCB *resp = (PortStatsRespCB *)Stats;
     struct port_stats *port_stats = &resp->stats;
     WCHAR name[ADAPTER_NAME_MAX_SZ] = {};
     ULONGLONG ull9216Frames = 0;
+    char TempBuf[PRINT_BUFFER_SIZE];
 
     // one adapter per response
 
     get_interface_name(name, ADAPTER_NAME_MAX_SZ, NULL, 0,
                        resp->adapter_name, ADAPTER_NAME_MAX_SZ);
 
-    printf("Port Stats: %S\n", resp->adapter_name);
-    printf("Interface: %S\n", name);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Port Stats: %S\n", resp->adapter_name); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Interface: %S\n", name); outfile << TempBuf;
 
-    printf("\tRx frames ok:\t\t%I64u\n", port_stats->frames_rx_ok);
-    printf("\tRx frames all:\t\t%I64u\n", port_stats->frames_rx_all);
-    printf("\tRx fcs errors:\t\t%I64u\n", port_stats->frames_rx_bad_fcs);
-    printf("\tRx crc errors:\t\t%I64u\n", port_stats->frames_rx_bad_all);
-    printf("\tRx bytes ok:\t\t%I64u\n", port_stats->octets_rx_ok);
-    printf("\tRx bytes all:\t\t%I64u\n", port_stats->octets_rx_all);
-    printf("\tRx u-cast:\t\t%I64u\n", port_stats->frames_rx_unicast);
-    printf("\tRx m-cast:\t\t%I64u\n", port_stats->frames_rx_multicast);
-    printf("\tRx b-cast:\t\t%I64u\n", port_stats->frames_rx_broadcast);
-    printf("\tRx pause:\t\t%I64u\n", port_stats->frames_rx_pause);
-    printf("\tRx bad length:\t\t%I64u\n", port_stats->frames_rx_bad_length);
-    printf("\tRx undersized:\t\t%I64u\n", port_stats->frames_rx_undersized);
-    printf("\tRx oversized:\t\t%I64u\n", port_stats->frames_rx_oversized);
-    printf("\tRx fragments:\t\t%I64u\n", port_stats->frames_rx_fragments);
-    printf("\tRx jabber:\t\t%I64u\n", port_stats->frames_rx_jabber);
-    printf("\tRx pfc frames:\t\t%I64u\n", port_stats->frames_rx_pripause);
-    printf("\tRx crc stomped:\t\t%I64u\n", port_stats->frames_rx_stomped_crc);
-    printf("\tRx too long:\t\t%I64u\n", port_stats->frames_rx_too_long);
-    printf("\tRx vlan ok:\t\t%I64u\n", port_stats->frames_rx_vlan_good);
-    printf("\tRx dropped frames:\t%I64u\n", port_stats->frames_rx_dropped);
-    printf("\tRx frames < 64:\t\t%I64u\n", port_stats->frames_rx_less_than_64b);
-    printf("\tRx frames = 64:\t\t%I64u\n", port_stats->frames_rx_64b);
-    printf("\tRx frames 65-127:\t%I64u\n", port_stats->frames_rx_65b_127b);
-    printf("\tRx frames 128-255:\t%I64u\n", port_stats->frames_rx_128b_255b);
-    printf("\tRx frames 256-511:\t%I64u\n", port_stats->frames_rx_256b_511b);
-    printf("\tRx frames 512-1023:\t%I64u\n", port_stats->frames_rx_512b_1023b);
-    printf("\tRx frames 1024-1518:\t%I64u\n", port_stats->frames_rx_1024b_1518b);
-    printf("\tRx frames 1519-2047:\t%I64u\n", port_stats->frames_rx_1519b_2047b);
-    printf("\tRx frames 2048-4095:\t%I64u\n", port_stats->frames_rx_2048b_4095b);
-    printf("\tRx frames 4096-8191:\t%I64u\n", port_stats->frames_rx_4096b_8191b);
-    printf("\tRx frames 8192-9215:\t%I64u\n", port_stats->frames_rx_8192b_9215b);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames ok:\t\t%I64u\n", port_stats->frames_rx_ok); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames all:\t\t%I64u\n", port_stats->frames_rx_all); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx fcs errors:\t\t%I64u\n", port_stats->frames_rx_bad_fcs); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx crc errors:\t\t%I64u\n", port_stats->frames_rx_bad_all); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx bytes ok:\t\t%I64u\n", port_stats->octets_rx_ok); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx bytes all:\t\t%I64u\n", port_stats->octets_rx_all); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx u-cast:\t\t%I64u\n", port_stats->frames_rx_unicast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx m-cast:\t\t%I64u\n", port_stats->frames_rx_multicast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx b-cast:\t\t%I64u\n", port_stats->frames_rx_broadcast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pause:\t\t%I64u\n", port_stats->frames_rx_pause); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx bad length:\t\t%I64u\n", port_stats->frames_rx_bad_length); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx undersized:\t\t%I64u\n", port_stats->frames_rx_undersized); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx oversized:\t\t%I64u\n", port_stats->frames_rx_oversized); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx fragments:\t\t%I64u\n", port_stats->frames_rx_fragments); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx jabber:\t\t%I64u\n", port_stats->frames_rx_jabber); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pfc frames:\t\t%I64u\n", port_stats->frames_rx_pripause); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx crc stomped:\t\t%I64u\n", port_stats->frames_rx_stomped_crc); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx too long:\t\t%I64u\n", port_stats->frames_rx_too_long); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx vlan ok:\t\t%I64u\n", port_stats->frames_rx_vlan_good); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx dropped frames:\t%I64u\n", port_stats->frames_rx_dropped); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames < 64:\t\t%I64u\n", port_stats->frames_rx_less_than_64b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames = 64:\t\t%I64u\n", port_stats->frames_rx_64b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 65-127:\t%I64u\n", port_stats->frames_rx_65b_127b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 128-255:\t%I64u\n", port_stats->frames_rx_128b_255b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 256-511:\t%I64u\n", port_stats->frames_rx_256b_511b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 512-1023:\t%I64u\n", port_stats->frames_rx_512b_1023b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 1024-1518:\t%I64u\n", port_stats->frames_rx_1024b_1518b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 1519-2047:\t%I64u\n", port_stats->frames_rx_1519b_2047b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 2048-4095:\t%I64u\n", port_stats->frames_rx_2048b_4095b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 4096-8191:\t%I64u\n", port_stats->frames_rx_4096b_8191b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames 8192-9215:\t%I64u\n", port_stats->frames_rx_8192b_9215b); outfile << TempBuf;
 
     ull9216Frames = port_stats->frames_rx_all - ( port_stats->frames_rx_dropped +
                                                     port_stats->frames_rx_less_than_64b +
@@ -518,30 +530,30 @@ DumpPortStats(void *Stats)
                                                     port_stats->frames_rx_4096b_8191b +
                                                     port_stats->frames_rx_8192b_9215b);
 
-    printf("\tRx frames >= 9216:\t%I64u\n", ull9216Frames);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx frames >= 9216:\t%I64u\n", ull9216Frames); outfile << TempBuf;
 
-    printf("\tTx frames ok:\t\t%I64u\n", port_stats->frames_tx_ok);
-    printf("\tTx frames all:\t\t%I64u\n", port_stats->frames_tx_all);
-    printf("\tTx frames bad:\t\t%I64u\n", port_stats->frames_tx_bad);
-    printf("\tTx bytes ok:\t\t%I64u\n", port_stats->octets_tx_ok);
-    printf("\tTx bytes all:\t\t%I64u\n", port_stats->octets_tx_total);
-    printf("\tTx u-cast:\t\t%I64u\n", port_stats->frames_tx_unicast);
-    printf("\tTx m-cast:\t\t%I64u\n", port_stats->frames_tx_multicast);
-    printf("\tTx b-cast:\t\t%I64u\n", port_stats->frames_tx_broadcast);
-    printf("\tTx pause frames:\t%I64u\n", port_stats->frames_tx_pause);
-    printf("\tTx pfc frames:\t\t%I64u\n", port_stats->frames_tx_pripause);
-    printf("\tTx vlan frames:\t\t%I64u\n", port_stats->frames_tx_vlan);
-    printf("\tTx frames < 64:\t\t%I64u\n", port_stats->frames_tx_less_than_64b);
-    printf("\tTx frames = 64:\t\t%I64u\n", port_stats->frames_tx_64b);
-    printf("\tTx frames 65-127:\t%I64u\n", port_stats->frames_tx_65b_127b);
-    printf("\tTx frames 128-255:\t%I64u\n", port_stats->frames_tx_128b_255b);
-    printf("\tTx frames 256-511:\t%I64u\n", port_stats->frames_tx_256b_511b);
-    printf("\tTx frames 512-1023:\t%I64u\n", port_stats->frames_tx_512b_1023b);
-    printf("\tTx frames 1024-1518:\t%I64u\n", port_stats->frames_tx_1024b_1518b);
-    printf("\tTx frames 1519-2047:\t%I64u\n", port_stats->frames_tx_1519b_2047b);
-    printf("\tTx frames 2048-4095:\t%I64u\n", port_stats->frames_tx_2048b_4095b);
-    printf("\tTx frames 4096-8191:\t%I64u\n", port_stats->frames_tx_4096b_8191b);
-    printf("\tTx frames 8192-9215:\t%I64u\n", port_stats->frames_tx_8192b_9215b);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames ok:\t\t%I64u\n", port_stats->frames_tx_ok); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames all:\t\t%I64u\n", port_stats->frames_tx_all); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames bad:\t\t%I64u\n", port_stats->frames_tx_bad); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx bytes ok:\t\t%I64u\n", port_stats->octets_tx_ok); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx bytes all:\t\t%I64u\n", port_stats->octets_tx_total); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx u-cast:\t\t%I64u\n", port_stats->frames_tx_unicast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx m-cast:\t\t%I64u\n", port_stats->frames_tx_multicast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx b-cast:\t\t%I64u\n", port_stats->frames_tx_broadcast); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pause frames:\t%I64u\n", port_stats->frames_tx_pause); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pfc frames:\t\t%I64u\n", port_stats->frames_tx_pripause); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx vlan frames:\t\t%I64u\n", port_stats->frames_tx_vlan); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames < 64:\t\t%I64u\n", port_stats->frames_tx_less_than_64b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames = 64:\t\t%I64u\n", port_stats->frames_tx_64b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 65-127:\t%I64u\n", port_stats->frames_tx_65b_127b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 128-255:\t%I64u\n", port_stats->frames_tx_128b_255b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 256-511:\t%I64u\n", port_stats->frames_tx_256b_511b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 512-1023:\t%I64u\n", port_stats->frames_tx_512b_1023b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 1024-1518:\t%I64u\n", port_stats->frames_tx_1024b_1518b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 1519-2047:\t%I64u\n", port_stats->frames_tx_1519b_2047b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 2048-4095:\t%I64u\n", port_stats->frames_tx_2048b_4095b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 4096-8191:\t%I64u\n", port_stats->frames_tx_4096b_8191b); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames 8192-9215:\t%I64u\n", port_stats->frames_tx_8192b_9215b); outfile << TempBuf;
 
     ull9216Frames = port_stats->frames_tx_all - ( port_stats->frames_tx_less_than_64b +
                                                     port_stats->frames_tx_64b +
@@ -555,108 +567,109 @@ DumpPortStats(void *Stats)
                                                     port_stats->frames_tx_4096b_8191b +
                                                     port_stats->frames_tx_8192b_9215b);
 
-    printf("\tTx frames >= 9216:\t%I64u\n", ull9216Frames);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx frames >= 9216:\t%I64u\n", ull9216Frames); outfile << TempBuf;
 
-    printf("\tTx pri-0:\t\t%I64u\n", port_stats->frames_tx_pri_0);
-    printf("\tTx pri-1:\t\t%I64u\n", port_stats->frames_tx_pri_1);
-    printf("\tTx pri-2:\t\t%I64u\n", port_stats->frames_tx_pri_2);
-    printf("\tTx pri-3:\t\t%I64u\n", port_stats->frames_tx_pri_3);
-    printf("\tTx pri-4:\t\t%I64u\n", port_stats->frames_tx_pri_4);
-    printf("\tTx pri-5:\t\t%I64u\n", port_stats->frames_tx_pri_5);
-    printf("\tTx pri-6:\t\t%I64u\n", port_stats->frames_tx_pri_6);
-    printf("\tTx pri-7:\t\t%I64u\n", port_stats->frames_tx_pri_7);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-0:\t\t%I64u\n", port_stats->frames_tx_pri_0); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-1:\t\t%I64u\n", port_stats->frames_tx_pri_1); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-2:\t\t%I64u\n", port_stats->frames_tx_pri_2); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-3:\t\t%I64u\n", port_stats->frames_tx_pri_3); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-4:\t\t%I64u\n", port_stats->frames_tx_pri_4); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-5:\t\t%I64u\n", port_stats->frames_tx_pri_5); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-6:\t\t%I64u\n", port_stats->frames_tx_pri_6); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-7:\t\t%I64u\n", port_stats->frames_tx_pri_7); outfile << TempBuf;
 
-    printf("\tRx pri-0:\t\t%I64u\n", port_stats->frames_rx_pri_0);
-    printf("\tRx pri-1:\t\t%I64u\n", port_stats->frames_rx_pri_1);
-    printf("\tRx pri-2:\t\t%I64u\n", port_stats->frames_rx_pri_2);
-    printf("\tRx pri-3:\t\t%I64u\n", port_stats->frames_rx_pri_3);
-    printf("\tRx pri-4:\t\t%I64u\n", port_stats->frames_rx_pri_4);
-    printf("\tRx pri-5:\t\t%I64u\n", port_stats->frames_rx_pri_5);
-    printf("\tRx pri-6:\t\t%I64u\n", port_stats->frames_rx_pri_6);
-    printf("\tRx pri-7:\t\t%I64u\n", port_stats->frames_rx_pri_7);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-0:\t\t%I64u\n", port_stats->frames_rx_pri_0); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-1:\t\t%I64u\n", port_stats->frames_rx_pri_1); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-2:\t\t%I64u\n", port_stats->frames_rx_pri_2); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-3:\t\t%I64u\n", port_stats->frames_rx_pri_3); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-4:\t\t%I64u\n", port_stats->frames_rx_pri_4); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-5:\t\t%I64u\n", port_stats->frames_rx_pri_5); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-6:\t\t%I64u\n", port_stats->frames_rx_pri_6); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-7:\t\t%I64u\n", port_stats->frames_rx_pri_7); outfile << TempBuf;
 
-    printf("\tTx pri-0 pause:\t\t%I64u\n", port_stats->tx_pripause_0_1us_count);
-    printf("\tTx pri-1 pause:\t\t%I64u\n", port_stats->tx_pripause_1_1us_count);
-    printf("\tTx pri-2 pause:\t\t%I64u\n", port_stats->tx_pripause_2_1us_count);
-    printf("\tTx pri-3 pause:\t\t%I64u\n", port_stats->tx_pripause_3_1us_count);
-    printf("\tTx pri-4 pause:\t\t%I64u\n", port_stats->tx_pripause_4_1us_count);
-    printf("\tTx pri-5 pause:\t\t%I64u\n", port_stats->tx_pripause_5_1us_count);
-    printf("\tTx pri-6 pause:\t\t%I64u\n", port_stats->tx_pripause_6_1us_count);
-    printf("\tTx pri-7 pause:\t\t%I64u\n", port_stats->tx_pripause_7_1us_count);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-0 pause:\t\t%I64u\n", port_stats->tx_pripause_0_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-1 pause:\t\t%I64u\n", port_stats->tx_pripause_1_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-2 pause:\t\t%I64u\n", port_stats->tx_pripause_2_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-3 pause:\t\t%I64u\n", port_stats->tx_pripause_3_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-4 pause:\t\t%I64u\n", port_stats->tx_pripause_4_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-5 pause:\t\t%I64u\n", port_stats->tx_pripause_5_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-6 pause:\t\t%I64u\n", port_stats->tx_pripause_6_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx pri-7 pause:\t\t%I64u\n", port_stats->tx_pripause_7_1us_count); outfile << TempBuf;
 
-    printf("\tRx pri-0 pause:\t\t%I64u\n", port_stats->rx_pripause_0_1us_count);
-    printf("\tRx pri-1 pause:\t\t%I64u\n", port_stats->rx_pripause_1_1us_count);
-    printf("\tRx pri-2 pause:\t\t%I64u\n", port_stats->rx_pripause_2_1us_count);
-    printf("\tRx pri-3 pause:\t\t%I64u\n", port_stats->rx_pripause_3_1us_count);
-    printf("\tRx pri-4 pause:\t\t%I64u\n", port_stats->rx_pripause_4_1us_count);
-    printf("\tRx pri-5 pause:\t\t%I64u\n", port_stats->rx_pripause_5_1us_count);
-    printf("\tRx pri-6 pause:\t\t%I64u\n", port_stats->rx_pripause_6_1us_count);
-    printf("\tRx pri-7 pause:\t\t%I64u\n", port_stats->rx_pripause_7_1us_count);
-    printf("\tRx pause 1us  :\t\t%I64u\n", port_stats->rx_pause_1us_count);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-0 pause:\t\t%I64u\n", port_stats->rx_pripause_0_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-1 pause:\t\t%I64u\n", port_stats->rx_pripause_1_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-2 pause:\t\t%I64u\n", port_stats->rx_pripause_2_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-3 pause:\t\t%I64u\n", port_stats->rx_pripause_3_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-4 pause:\t\t%I64u\n", port_stats->rx_pripause_4_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-5 pause:\t\t%I64u\n", port_stats->rx_pripause_5_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-6 pause:\t\t%I64u\n", port_stats->rx_pripause_6_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pri-7 pause:\t\t%I64u\n", port_stats->rx_pripause_7_1us_count); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx pause 1us  :\t\t%I64u\n", port_stats->rx_pause_1us_count); outfile << TempBuf;
 
-    printf("\tFrames truncated:\t%I64u\n", port_stats->frames_tx_truncated);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tFrames truncated:\t%I64u\n", port_stats->frames_tx_truncated); outfile << TempBuf;
 
-    printf("\n");
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
 }
 
 void
-DumpLifStats(void *Stats)
+DumpLifStats(void *Stats, std::ostream& outfile)
 {
     LifStatsRespCB *resp = (LifStatsRespCB *)Stats;
     struct lif_stats *lif_stats = &resp->stats;
     WCHAR name[ADAPTER_NAME_MAX_SZ] = {};
+    char TempBuf[PRINT_BUFFER_SIZE];
 
     // one adapter per response
 
     get_interface_name(name, ADAPTER_NAME_MAX_SZ, NULL, 0,
                        resp->adapter_name, ADAPTER_NAME_MAX_SZ);
 
-    printf("Adapter %S\n", resp->adapter_name);
-    printf("Interface %S\n", name);
-    printf("Lif %u Stats\n", resp->lif_index);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Adapter %S\n", resp->adapter_name); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Interface %S\n", name); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Lif %u Stats\n", resp->lif_index); outfile << TempBuf;
 
-    printf("\tRx u-cast bytes: \t\t%I64u\n", lif_stats->rx_ucast_bytes);
-    printf("\tRx u-cast packets: \t\t%I64u\n", lif_stats->rx_ucast_packets);
-    printf("\tRx m-cast bytes: \t\t%I64u\n", lif_stats->rx_mcast_bytes);
-    printf("\tRx m-cast packets: \t\t%I64u\n", lif_stats->rx_mcast_packets);
-    printf("\tRx b-cast bytes: \t\t%I64u\n", lif_stats->rx_bcast_bytes);
-    printf("\tRx b-cast packets: \t\t%I64u\n", lif_stats->rx_bcast_packets);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx u-cast bytes: \t\t%I64u\n", lif_stats->rx_ucast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx u-cast packets: \t\t%I64u\n", lif_stats->rx_ucast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx m-cast bytes: \t\t%I64u\n", lif_stats->rx_mcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx m-cast packets: \t\t%I64u\n", lif_stats->rx_mcast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx b-cast bytes: \t\t%I64u\n", lif_stats->rx_bcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx b-cast packets: \t\t%I64u\n", lif_stats->rx_bcast_packets); outfile << TempBuf;
 
-    printf("\tRx drop u-cast bytes: \t\t%I64u\n", lif_stats->rx_ucast_drop_bytes);
-    printf("\tRx drop u-cast packets: \t%I64u\n", lif_stats->rx_ucast_drop_packets);
-    printf("\tRx drop m-cast bytes: \t\t%I64u\n", lif_stats->rx_mcast_drop_bytes);
-    printf("\tRx drop m-cast packets: \t%I64u\n", lif_stats->rx_mcast_drop_packets);
-    printf("\tRx drop b-cast bytes: \t\t%I64u\n", lif_stats->rx_bcast_drop_bytes);
-    printf("\tRx drop b-cast packets: \t%I64u\n", lif_stats->rx_bcast_drop_packets);
-    printf("\tRx dma error: \t\t\t%I64u\n", lif_stats->rx_dma_error);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop u-cast bytes: \t\t%I64u\n", lif_stats->rx_ucast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop u-cast packets: \t%I64u\n", lif_stats->rx_ucast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop m-cast bytes: \t\t%I64u\n", lif_stats->rx_mcast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop m-cast packets: \t%I64u\n", lif_stats->rx_mcast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop b-cast bytes: \t\t%I64u\n", lif_stats->rx_bcast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx drop b-cast packets: \t%I64u\n", lif_stats->rx_bcast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx dma error: \t\t\t%I64u\n", lif_stats->rx_dma_error); outfile << TempBuf;
 
-    printf("\tTx u-cast bytes: \t\t%I64u\n", lif_stats->tx_ucast_bytes);
-    printf("\tTx u-cast packets: \t\t%I64u\n", lif_stats->tx_ucast_packets);
-    printf("\tTx m-cast bytes: \t\t%I64u\n", lif_stats->tx_mcast_bytes);
-    printf("\tTx m-cast packets: \t\t%I64u\n", lif_stats->tx_mcast_packets);
-    printf("\tTx b-cast bytes: \t\t%I64u\n", lif_stats->tx_bcast_bytes);
-    printf("\tTx b-cast packets: \t\t%I64u\n", lif_stats->tx_bcast_packets);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx u-cast bytes: \t\t%I64u\n", lif_stats->tx_ucast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx u-cast packets: \t\t%I64u\n", lif_stats->tx_ucast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx m-cast bytes: \t\t%I64u\n", lif_stats->tx_mcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx m-cast packets: \t\t%I64u\n", lif_stats->tx_mcast_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx b-cast bytes: \t\t%I64u\n", lif_stats->tx_bcast_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx b-cast packets: \t\t%I64u\n", lif_stats->tx_bcast_packets); outfile << TempBuf;
     
-    printf("\tTx drop u-cast bytes: \t\t%I64u\n", lif_stats->tx_ucast_drop_bytes);
-    printf("\tTx drop u-cast packets: \t%I64u\n", lif_stats->tx_ucast_drop_packets);
-    printf("\tTx drop m-cast bytes: \t\t%I64u\n", lif_stats->tx_mcast_drop_bytes);
-    printf("\tTx drop m-cast packets: \t%I64u\n", lif_stats->tx_mcast_drop_packets);
-    printf("\tTx drop b-cast bytes: \t\t%I64u\n", lif_stats->tx_bcast_drop_bytes);
-    printf("\tTx drop b-cast packets: \t%I64u\n", lif_stats->tx_bcast_drop_packets);
-    printf("\tTx dma error: \t\t\t%I64u\n", lif_stats->tx_dma_error);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop u-cast bytes: \t\t%I64u\n", lif_stats->tx_ucast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop u-cast packets: \t%I64u\n", lif_stats->tx_ucast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop m-cast bytes: \t\t%I64u\n", lif_stats->tx_mcast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop m-cast packets: \t%I64u\n", lif_stats->tx_mcast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop b-cast bytes: \t\t%I64u\n", lif_stats->tx_bcast_drop_bytes); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx drop b-cast packets: \t%I64u\n", lif_stats->tx_bcast_drop_packets); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx dma error: \t\t\t%I64u\n", lif_stats->tx_dma_error); outfile << TempBuf;
 
-    printf("\tRx queue disabled drops: \t%I64u\n", lif_stats->rx_queue_disabled);
-    printf("\tRx queue empty drops: \t\t%I64u\n", lif_stats->rx_queue_empty);
-    printf("\tRx queue error count: \t\t%I64u\n", lif_stats->rx_queue_error);
-    printf("\tRx descriptor fetch errors: \t%I64u\n", lif_stats->rx_desc_fetch_error);
-    printf("\tRx descriptor data errors: \t%I64u\n", lif_stats->rx_desc_data_error);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx queue disabled drops: \t%I64u\n", lif_stats->rx_queue_disabled); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx queue empty drops: \t\t%I64u\n", lif_stats->rx_queue_empty); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx queue error count: \t\t%I64u\n", lif_stats->rx_queue_error); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx descriptor fetch errors: \t%I64u\n", lif_stats->rx_desc_fetch_error); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tRx descriptor data errors: \t%I64u\n", lif_stats->rx_desc_data_error); outfile << TempBuf;
 
-    printf("\tTx queue disabled drops: \t%I64u\n", lif_stats->tx_queue_disabled);
-    printf("\tTx queue error count: \t\t%I64u\n", lif_stats->tx_queue_error);
-    printf("\tTx descriptor fetch errors: \t%I64u\n", lif_stats->tx_desc_fetch_error);
-    printf("\tTx descriptor data errors: \t%I64u\n", lif_stats->tx_desc_data_error);
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx queue disabled drops: \t%I64u\n", lif_stats->tx_queue_disabled); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx queue error count: \t\t%I64u\n", lif_stats->tx_queue_error); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx descriptor fetch errors: \t%I64u\n", lif_stats->tx_desc_fetch_error); outfile << TempBuf;
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tTx descriptor data errors: \t%I64u\n", lif_stats->tx_desc_data_error); outfile << TempBuf;
 
-    printf("\n");
+    _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
 }
 
 char *
@@ -676,7 +689,7 @@ GetLifTypeName(ULONG type)
 }
 
 ULONG
-DumpPerfStats(void *Stats, DWORD Size)
+DumpPerfStats(void *Stats, DWORD Size, std::ostream& outfile)
 {
     struct _PERF_MON_CB *perf_stats = (struct _PERF_MON_CB *)Stats;
     struct _PERF_MON_ADAPTER_STATS *adapter_stats = NULL;
@@ -687,6 +700,7 @@ DumpPerfStats(void *Stats, DWORD Size)
     ULONG lif_cnt = 0;
     ULONG rx_cnt = 0;
     ULONG tx_cnt = 0;
+    char TempBuf[PRINT_BUFFER_SIZE];
 
     // XXX tricky data, must be careful not to advance the pointers out of bounds
     UNREFERENCED_PARAMETER(Size);
@@ -699,32 +713,32 @@ DumpPerfStats(void *Stats, DWORD Size)
         get_interface_name(name, ADAPTER_NAME_MAX_SZ, NULL, 0,
                            adapter_stats->name, ADAPTER_NAME_MAX_SZ);
 
-        printf("Adapter: %S\n", adapter_stats->name);
-        printf("Interface: %S\n", name);
-        printf("Mgmt: %s Lif cnt: %d Core redirect cnt: %d\n", 
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Adapter: %S\n", adapter_stats->name); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Interface: %S\n", name); outfile << TempBuf;
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "Mgmt: %s Lif cnt: %d Core redirect cnt: %d\n",  
                adapter_stats->mgmt_device ? "Yes" : "No",
                adapter_stats->lif_count,
-               adapter_stats->core_redirection_count);
+               adapter_stats->core_redirection_count); outfile << TempBuf;
 
         lif_stats = (struct _PERF_MON_LIF_STATS *)((char *)adapter_stats + sizeof( struct _PERF_MON_ADAPTER_STATS));
 
         for (lif_cnt = 0; lif_cnt < adapter_stats->lif_count; lif_cnt++) {
 
-            printf("\tLif: %s Rx cnt: %d Tx cnt: %d\n",
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\tLif: %s Rx cnt: %d Tx cnt: %d\n", 
                             lif_stats->name,
                             lif_stats->rx_queue_count,
-                            lif_stats->tx_queue_count);
+                            lif_stats->tx_queue_count); outfile << TempBuf;
 
             rx_stats = (struct _PERF_MON_RX_QUEUE_STATS *)((char *)lif_stats + sizeof( struct _PERF_MON_LIF_STATS));
 
             for (rx_cnt = 0; rx_cnt < lif_stats->rx_queue_count; rx_cnt++) {
 
-                printf("\t\tRx: %d queue len: %ld max queue len %ld\n",
+                _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tRx: %d queue len: %ld max queue len %ld\n", 
                        rx_cnt,
                        rx_stats->queue_len,
-                       rx_stats->max_queue_len);
+                       rx_stats->max_queue_len); outfile << TempBuf;
 
-                printf("\t\tdpc total time: %lld dpc latency %lld\n"
+                _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tdpc total time: %lld dpc latency %lld\n"
                        "\t\tdpc to dpc time: %lld dpc indicate time %lld\n"
                        "\t\tdpc walk time: %lld dpc fill time %lld\n"
                        "\t\tdpc rate: %lld\n",
@@ -734,42 +748,42 @@ DumpPerfStats(void *Stats, DWORD Size)
                        rx_stats->dpc_indicate_time,
                        rx_stats->dpc_walk_time,
                        rx_stats->dpc_fill_time,
-                       rx_stats->dpc_rate);
+                       rx_stats->dpc_rate); outfile << TempBuf;
 
                 rx_stats = (struct _PERF_MON_RX_QUEUE_STATS *)((char *)rx_stats + sizeof( struct _PERF_MON_RX_QUEUE_STATS));
             }
 
-            printf("\n");
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
 
             tx_stats = (struct _PERF_MON_TX_QUEUE_STATS *)rx_stats;
 
             for (tx_cnt = 0; tx_cnt < lif_stats->tx_queue_count; tx_cnt++) {
 
-                printf("\t\tTx: %d queue len: %ld max queue len: %ld\n",
+                _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tTx: %d queue len: %ld max queue len: %ld\n", 
                        tx_cnt,
                        tx_stats->queue_len,
-                       tx_stats->max_queue_len);
+                       tx_stats->max_queue_len); outfile << TempBuf;
 
-                printf("\t\tnbl count: %ld nb count: %ld out nb: %ld\n",
+                _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tnbl count: %ld nb count: %ld out nb: %ld\n", 
                        tx_stats->nbl_count,
                        tx_stats->nb_count,
-                       tx_stats->outstanding_nb_count);
+                       tx_stats->outstanding_nb_count); outfile << TempBuf;
 
-                printf("\t\tdpc total time: %lld dpc to dpc time: %lld\n"
+                _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\t\tdpc total time: %lld dpc to dpc time: %lld\n"
                        "\t\tdpc rate: %lld\n",
                        tx_stats->dpc_total_time,
                        tx_stats->dpc_to_dpc,
-                       tx_stats->dpc_rate);
+                       tx_stats->dpc_rate); outfile << TempBuf;
 
                 tx_stats = (struct _PERF_MON_TX_QUEUE_STATS *)((char *)tx_stats + sizeof( struct _PERF_MON_TX_QUEUE_STATS));
             }
 
             lif_stats = (struct _PERF_MON_LIF_STATS *)tx_stats;
-            printf("\n");
+            _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
         }
        
         adapter_stats = (struct _PERF_MON_ADAPTER_STATS *)lif_stats;
-        printf("\n");
+        _snprintf_s(TempBuf, PRINT_BUFFER_SIZE, _TRUNCATE, "\n"); outfile << TempBuf;
     }
 
     return adapter_cnt;
@@ -1260,26 +1274,34 @@ CmdGetTraceOpts(bool hidden)
 
 static
 int
+GetTrace(command_info& info, std::ostream& outfile)
+{
+    DWORD Size = MAXIMUM_TRACE_BUFFER_SIZE * 1024;
+    char* pTraceBuffer = (char*)malloc((size_t)Size + 1);
+
+    memset(pTraceBuffer, 0, (size_t)Size + 1);
+
+    if (DoIoctl(IOCTL_IONIC_GET_TRACE, NULL, 0, pTraceBuffer, Size, NULL, info.dryrun) != ERROR_SUCCESS) {
+        info.status = 1;
+    }
+    else {
+        outfile << pTraceBuffer << std::endl;
+    }
+
+    free(pTraceBuffer);
+    return info.status;
+}
+
+
+static
+int
 CmdGetTraceRun(command_info& info)
 {
     if (info.usage) {
         std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
         return info.status;
     }
-
-    DWORD Size = MAXIMUM_TRACE_BUFFER_SIZE * 1024;
-    char *pTraceBuffer = (char *)malloc(Size + 1);
-
-    memset(pTraceBuffer, 0, Size + 1);
-
-    if (DoIoctl(IOCTL_IONIC_GET_TRACE, NULL, 0, pTraceBuffer, Size, NULL, info.dryrun) != ERROR_SUCCESS) {
-        info.status = 1;
-    } else {
-        std::cout << pTraceBuffer << std::endl;
-    }
-
-    free(pTraceBuffer);
-    return info.status;
+    return GetTrace(info, std::cout);
 }
 
 command
@@ -1326,18 +1348,10 @@ CmdPortStatsPos()
 
     return pos;
 }
-
-static
+static 
 int
-CmdPortStatsRun(command_info& info)
-{
+PortStats(command_info& info, std::ostream& outfile) {
     DWORD error = ERROR_SUCCESS;
-
-    if (info.usage) {
-        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
-        return info.status;
-    }
-
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
 
@@ -1353,12 +1367,24 @@ CmdPortStatsRun(command_info& info)
             break;
         }
 
-        DumpPortStats(pStatsBuffer);
+        DumpPortStats(pStatsBuffer, outfile);
         ++cb.Skip;
     } while (error == ERROR_MORE_DATA);
 
     free(pStatsBuffer);
     return info.status;
+}
+
+static
+int
+CmdPortStatsRun(command_info& info)
+{
+
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+    return PortStats(info, std::cout);
 }
 
 command
@@ -1408,18 +1434,13 @@ CmdLifStatsPos()
 
 static
 int
-CmdLifStatsRun(command_info& info)
+LifStats(command_info& info, ULONG Index, std::ostream& outfile)
 {
     ULONG error;
 
-    if (info.usage) {
-        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
-        return info.status;
-    }
-
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
-    cb.Index = opval_long(info.vm, "Lif");
+    cb.Index = Index;
 
     DWORD Size = 10 * 1024 * 1024;
     char *pStatsBuffer = (char *)malloc(Size);
@@ -1433,12 +1454,23 @@ CmdLifStatsRun(command_info& info)
             break;
         }
 
-        DumpLifStats(pStatsBuffer);
+        DumpLifStats(pStatsBuffer, outfile);
         ++cb.Skip;
     } while (error == ERROR_MORE_DATA);
 
     free(pStatsBuffer);
     return info.status;
+}
+
+static
+int
+CmdLifStatsRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+    return LifStats(info, opval_long(info.vm, "Lif"), std::cout);
 }
 
 command
@@ -1473,14 +1505,9 @@ CmdMgmtStatsOpts(bool hidden)
 
 static
 int
-CmdMgmtStatsRun(command_info& info)
+MgmtStats(command_info& info, std::ostream& outfile)
 {
     ULONG error = ERROR_SUCCESS;
-
-    if (info.usage) {
-        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
-        return info.status;
-    }
 
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
@@ -1497,12 +1524,23 @@ CmdMgmtStatsRun(command_info& info)
             break;
         }
 
-        DumpMgmtStats(pStatsBuffer);
+        DumpMgmtStats(pStatsBuffer, outfile);
         ++cb.Skip;
     } while (error == ERROR_MORE_DATA);
 
     free(pStatsBuffer);
     return info.status;
+}
+
+static
+int
+CmdMgmtStatsRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+    return MgmtStats(info, std::cout);
 }
 
 command
@@ -1541,15 +1579,10 @@ CmdDevStatsOpts(bool hidden)
 
 static
 int
-CmdDevStatsRun(command_info& info)
+DevStats(command_info& info, std::ostream& outfile)
 {
     ULONG error = ERROR_SUCCESS;
     bool per_queue;
-
-    if (info.usage) {
-        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
-        return info.status;
-    }
 
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
@@ -1572,11 +1605,22 @@ CmdDevStatsRun(command_info& info)
             break;
         }
 
-        cb.Skip += DumpDevStats(pStatsBuffer, per_queue);
+        cb.Skip += DumpDevStats(pStatsBuffer, per_queue, outfile);
     } while (error == ERROR_MORE_DATA);
 
     free(pStatsBuffer);
     return info.status;
+}
+
+static
+int
+CmdDevStatsRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+    return DevStats(info, std::cout);
 }
 
 command
@@ -1611,14 +1655,9 @@ CmdPerfStatsOpts(bool hidden)
 
 static
 int
-CmdPerfStatsRun(command_info& info)
+PerfStats(command_info& info, std::ostream& outfile)
 {
     ULONG error = ERROR_SUCCESS;
-
-    if (info.usage) {
-        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
-        return info.status;
-    }
 
     AdapterCB cb = {};
     OptGetDevName(info, cb.AdapterName, sizeof(cb.AdapterName), false);
@@ -1637,11 +1676,22 @@ CmdPerfStatsRun(command_info& info)
             break;
         }
 
-        cb.Skip += DumpPerfStats(pStatsBuffer, BytesReturned);
+        cb.Skip += DumpPerfStats(pStatsBuffer, BytesReturned, outfile);
     } while (error == ERROR_MORE_DATA);
 
     free(pStatsBuffer);
     return info.status;
+}
+
+static
+int
+CmdPerfStatsRun(command_info& info)
+{
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+    return PerfStats(info, std::cout);
 }
 
 command
@@ -2109,6 +2159,99 @@ CmdQueueInfo()
 
     cmd.opts = CmdQueueInfoOpts;
     cmd.run = CmdQueueInfoRun;
+
+    return cmd;
+}
+
+
+
+//
+// -CollectDbgInfo
+//
+
+static
+po::options_description
+CmdCollectDbgInfoOpts(bool hidden)
+{
+    po::options_description opts("IonicConfig.exe [-h] CollectDbgInfo [options ...]");
+
+    opts.add_options()
+        ("lbfo,l", optype_flag(), "Collect debug info about Team NIC");
+
+    return opts;
+}
+
+static
+int
+CmdCollectDbgInfoRun(command_info& info)
+{
+    DWORD error = ERROR_SUCCESS;
+    BOOL bLbfo = FALSE;
+    if (info.usage) {
+        std::cout << info.cmd.opts(info.hidden) << info.cmd.desc << std::endl;
+        return info.status;
+    }
+
+    if (info.vm.count("lbfo")) {
+        bLbfo = TRUE;
+    }
+    boost::filesystem::path dstFolder = "DebugInfo";
+    if (boost::filesystem::exists(dstFolder)) {
+        boost::filesystem::remove_all(dstFolder);
+    }
+    boost::filesystem::create_directory(dstFolder);
+
+    std::wofstream fs1("DebugInfo\\IonicEvtLog.csv");
+    EvtLogHelperGetEvtLogs(bLbfo ? EVTLOG_IONICLBFO_QUERY : EVTLOG_IONIC_QUERY, fs1);
+    fs1 << std::endl << std::flush;
+
+    std::wofstream fs2("DebugInfo\\IonicNetAdapter.txt");
+    if (SUCCEEDED(WMIHelperInitialize())) {
+        WMIhelperGetIonicNetAdapters(fs2);
+        if (bLbfo) {
+            std::wofstream fs3("DebugInfo\\LbfoInfo.txt");
+            WMIhelperGetLbfoInfo(fs3);
+            fs3 << std::endl << std::flush;
+        }
+        WMIHelperRelease();
+    }
+    fs2 << std::endl << std::flush;
+
+    std::cout << "Collecting Trace Logs" << std::endl;
+    std::ofstream fs4("DebugInfo\\IonicTraceLog.txt");
+    GetTrace(info, fs4);
+    fs4 << std::endl << std::flush;
+    std::cout << "Finished collecting Trace Logs" << std::endl;
+
+    // should we get hidden stats?
+    std::cout << "Collecting Stats" << std::endl;
+    std::ofstream fs5("DebugInfo\\IonicStats.txt");
+    std::cout << "Collecting DevStats" << std::endl;
+    DevStats(info, fs5);
+    std::cout << "Collecting LifStats" << std::endl;
+    LifStats(info, 0, fs5);
+    std::cout << "Collecting PortStats" << std::endl;
+    PortStats(info, fs5);
+    std::cout << "Collecting PerfStats" << std::endl;
+    PerfStats(info, fs5);
+    std::cout << "Collecting MgmtStats" << std::endl;
+    MgmtStats(info, fs5);
+    fs5 << std::endl << std::flush;
+    std::cout << std::endl << "Finished collecting Ionic Stats" << std::endl;
+
+    return info.status;
+}
+
+command
+CmdCollectDbgInfo()
+{
+    command cmd;
+
+    cmd.name = "CollectDbgInfo";
+    cmd.desc = "Collect debug information logs in \"DebugInfo\" folder";
+
+    cmd.opts = CmdCollectDbgInfoOpts;
+    cmd.run = CmdCollectDbgInfoRun;
 
     return cmd;
 }

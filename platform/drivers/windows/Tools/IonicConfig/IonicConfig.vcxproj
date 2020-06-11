@@ -19,15 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EvtLogHelper.cpp" />
     <ClCompile Include="NetCfg.cpp" />
     <ClCompile Include="Config.cpp" />
     <ClCompile Include="Port.cpp" />
     <ClCompile Include="pscmd.cpp" />
+    <ClCompile Include="WMIhelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
+    <ClInclude Include="EvtLogHelper.h" />
     <ClInclude Include="NetCfg.h" />
     <ClInclude Include="version.h" />
+    <ClInclude Include="WMIhelper.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -108,7 +112,6 @@
     <IonicConfigVerBuild>27</IonicConfigVerBuild>
     <IonicConfigVerBuild Condition="'$(IONIC_VERSION_BUILD)' != ''">$(IONIC_VERSION_BUILD)</IonicConfigVerBuild>
   </PropertyGroup>
-  
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>

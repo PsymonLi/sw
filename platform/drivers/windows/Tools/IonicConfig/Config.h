@@ -170,6 +170,7 @@ command CmdPerfStats();
 command CmdRegKeys();
 command CmdInfo();
 command CmdQueueInfo();
+command CmdCollectDbgInfo();
 //TODO command CmdOidStats();
 //TODO command CmdFwcmdStats();
 
