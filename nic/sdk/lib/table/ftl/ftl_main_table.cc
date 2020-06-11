@@ -279,6 +279,7 @@ __label__ done;
         match_ctx->params->handle.sindex(match_ctx->table_index);
         ctx->params->handle.sindex(match_ctx->table_index);
     }
+    ctx->params->handle.epoch(match_ctx->bucket->epoch_);
 
     ctx->params->entry->copy_key_data(match_ctx->entry);
 

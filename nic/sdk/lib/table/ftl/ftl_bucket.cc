@@ -211,6 +211,7 @@ Bucket::update_(Apictx *ctx) {
         ctx->params->handle.sindex(ctx->table_index);
         FTL_TRACE_VERBOSE("sindex: %d", ctx->params->handle.sindex());
     }
+    ctx->params->handle.epoch(epoch_);
 
     // New entry, write required.
     ctx->write_pending = true;
