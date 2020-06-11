@@ -53,7 +53,12 @@
     <ng-container *ngSwitchCase="'status.status'">
 
       <div *ngIf="!isTechsupportCompleted(rowData, col)">
+        <span class="techsupport-running" *ngIf="!timeoutOrFailure(rowData)">
+          {{displayColumn(rowData, col)}}
+        </span>
+
         <span (click)="onFailureReasonClick(rowData)" class="techsupport-failure-msg"
+              *ngIf="timeoutOrFailure(rowData)"
               [matTooltip]="'Click to see error message'">{{displayColumn(rowData, col)}} </span>
         <mat-icon *ngIf="timeoutOrFailure(rowData)"
                   fxFlex="nogrow" [inline]="true"
