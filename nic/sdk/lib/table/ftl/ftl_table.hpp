@@ -52,6 +52,7 @@ public:
     }
 
     sdk_ret_t iterate_(Apictx *ctx);
+    sdk_ret_t invoke_iterate_cb_(Apictx *ctx);
     sdk_ret_t clear_(Apictx *ctx);
 };
 

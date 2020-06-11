@@ -37,7 +37,6 @@ private:
     sdk_ret_t delink_(Apictx *ctx);
     sdk_ret_t defragment_(Apictx *ectx,
                           Apictx *tctx);
-    sdk_ret_t iterate_(Apictx *ctx);
 
     bool is_locked_() {
         return (locked_ ? true : false);

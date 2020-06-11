@@ -558,24 +558,3 @@ Bucket::defragment_(Apictx *ectx, Apictx *tctx) {
     }
     return SDK_RET_OK;
 }
-
-sdk_ret_t
-Bucket::iterate_(Apictx *ctx) {
-    bool force_hwread = ctx->params->force_hwread;
-
-    ctx->entry->set_entry_valid(false);
-    if (valid_ || force_hwread) {
-        sdk_table_api_params_t params = { 0 };
-        read_(ctx, force_hwread);
-        // Set the Handle
-        if (ctx->is_main()) {
-            params.handle.pindex(ctx->table_index);
-        } else {
-            params.handle.sindex(ctx->table_index);
-        }
-        params.entry = ctx->entry;
-        params.cbdata = ctx->params->cbdata;
-        ctx->params->itercb(&params);
-    }
-    return SDK_RET_OK;
-}

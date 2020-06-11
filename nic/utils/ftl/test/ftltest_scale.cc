@@ -90,6 +90,9 @@ TEST_F(scale, insert1M_with_hash) {
     sdk_ret_t rs;
     rs = insert(1024*1024, sdk::SDK_RET_OK, WITH_HASH);
     ASSERT_TRUE(rs == sdk::SDK_RET_OK);
+    rs = iterate(1024*1024, sdk::SDK_RET_OK, WITH_HASH, 0, false);
+    ASSERT_TRUE(rs == sdk::SDK_RET_OK);
+
 }
 
 TEST_F(scale, remove1M_with_hash) {

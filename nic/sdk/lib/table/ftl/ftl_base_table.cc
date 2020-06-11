@@ -36,16 +36,21 @@ base_table::destroy_(base_table *table) {
 }
 
 sdk_ret_t
-base_table::iterate_(Apictx *ctx) {
-    uint32_t i = (ctx->is_main()) ? 0 : 1;
+base_table::invoke_iterate_cb_(Apictx *ctx) {
+    sdk_table_api_params_t params = { 0 };
 
-    ctx->table_id = table_id_;
-    for ( ; i < table_size_; i++) {
-        ctx->table_index = i;
-        buckets_[i].lock_();
-        buckets_[i].iterate_(ctx);
-        buckets_[i].unlock_();
+    // set the Handle
+    if (ctx->is_main()) {
+        params.handle.pindex(ctx->pindex);
+    } else {
+        params.handle.pindex(ctx->pindex);
+        params.handle.sindex(ctx->table_index);
     }
+    params.handle.epoch(ctx->bucket->epoch_);
+    params.entry = ctx->entry;
+    params.cbdata = ctx->params->cbdata;
+    ctx->params->itercb(&params);
+
     return SDK_RET_OK;
 }
 

@@ -313,12 +313,46 @@ done:
 //---------------------------------------------------------------------------
 sdk_ret_t
 main_table::iterate_(Apictx *ctx) {
-    auto ret = base_table::iterate_(ctx);
-    FTL_RET_CHECK_AND_GOTO(ret, done, "main table iterate r:%d", ret);
+__label__ cont_outer_loop;
+    uint32_t i = 0;
+    uint32_t hintX = 0;
 
-    ret = hint_table_->iterate_(ctx);
-    FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
-done:
+    for (i = 0; i < table_size_; i++) {
+        // init context
+        ctx->table_id = table_id_;
+        ctx->table_index = i;
+        ctx->pindex = i;
+        ctx->bucket = &buckets_[ctx->table_index];
+
+        lock_(ctx);
+        if (buckets_[i].valid_ == false) {
+            unlock_(ctx);
+            continue;
+        }
+        SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
+        base_table::invoke_iterate_cb_(ctx);
+
+        // walk the hint list
+        for (uint32_t j = 1; j <= ctx->props->num_hints; j++) {
+            ctx->entry->get_hint(j, hintX);
+            if (HINT_IS_VALID(hintX) == false) {
+                goto cont_outer_loop;
+            }
+            ctx->hint_slot = j;
+            ctx->hint = hintX;
+            hint_table_->iterate_(ctx);
+        }
+        // check for more hint
+        ctx->entry->get_hint(Apictx::hint_slot::HINT_SLOT_MORE, hintX);
+        if (HINT_IS_VALID(hintX)) {
+            ctx->hint_slot = ctx->entry->get_more_hint_slot();
+            ctx->hint = hintX;
+            hint_table_->iterate_(ctx);
+        }
+cont_outer_loop:
+        unlock_(ctx);
+    }
+
     return SDK_RET_OK;
 }
 

@@ -419,10 +419,36 @@ done:
 //---------------------------------------------------------------------------
 sdk_ret_t
 hint_table::iterate_(Apictx *ctx) {
-    // Initialize the context
+    uint32_t hintX = 0;
+
+    // initialize the context
     auto hctx = ctxnew_(ctx);
-    auto ret = base_table::iterate_(hctx);
-    FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
+    SDK_ASSERT_RETURN(hctx->is_max_recircs() == false, SDK_RET_MAX_RECIRC_EXCEED);
+    SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
+    SDK_ASSERT(hctx->bucket->read_(hctx) == SDK_RET_OK);
+    auto ret = base_table::invoke_iterate_cb_(hctx);
+
+    // walk the hint list
+    for(uint32_t i = 1; i <= hctx->props->num_hints; i++) {
+        hctx->entry->get_hint(i, hintX);
+        // due to defragmentation all hints are assumed to
+        // be contiguous
+        if (HINT_IS_VALID(hintX) == false) {
+            goto done;
+        }
+        hctx->hint_slot = i;
+        hctx->hint = hintX;
+        ret = iterate_(hctx);
+        FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
+    }
+    hctx->entry->get_hint(Apictx::hint_slot::HINT_SLOT_MORE, hintX);
+    if (HINT_IS_VALID(hintX)) {
+        hctx->hint_slot = hctx->entry->get_more_hint_slot();
+        hctx->hint = hintX;
+        ret = iterate_(hctx);
+        FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
+    }
+
 done:
     return SDK_RET_OK;
 }

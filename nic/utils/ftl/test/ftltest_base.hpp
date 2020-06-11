@@ -281,7 +281,9 @@ public:
         vector<flow_hash_entry_t> entry_vec;
         vector<flow_hash_entry_t>::iterator it;
 #endif
-        params.cbdata = (void*)&entry_vec;
+        if (validate) {
+            params.cbdata = (void*)&entry_vec;
+        }
         params.itercb = iterate_callback;
         params.thread_id = thread_id;
         auto ret = table->iterate(&params);
