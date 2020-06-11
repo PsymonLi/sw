@@ -8,7 +8,7 @@ testcases:
     -   name: UPGRADE_DIRECT_GRACEFUL
         testcase    : testcases.naples_upgrade.upgrade
         disable     : False
-        ignore      : True
+        ignore      : False
         stress      : True
         iterators   :
             type    : nested
