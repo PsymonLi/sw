@@ -172,6 +172,8 @@ static struct rte_mempool * pktmbuf_pool[NB_SOCKETS];
 
 pds_flow_stats_t flow_stats[FTE_MAX_CORES];
 pds_flow_stats_t g_flow_stats;
+pds_l2_flow_stats_t g_l2_flow_stats;
+pds_l2_flow_stats_t l2_flow_stats[FTE_MAX_CORES];
 static bool fte_threads_started;
 static bool fte_threads_done;
 
@@ -581,6 +583,46 @@ fte_dump_flows(const char *fname,
 }
 
 static void
+dump_l2_stats (pds_l2_flow_stats_t *stats)
+{
+    STATS_DUMP_LOG("\nPrinting L2 Flow cache statistics\n");
+    STATS_DUMP_LOG("Insert %lu, Insert_fail_dupl %lu, Insert_fail %lu, "
+                    "Insert_fail_recirc %lu\n"
+                    "Remove %lu, Remove_not_found %lu, Remove_fail %lu\n"
+                    "Update %lu, Update_fail %lu\n"
+                    "Get %lu, Get_fail %lu\n"
+                    "Reserve %lu, reserve_fail %lu\n"
+                    "Release %lu, Release_fail %lu\n"
+                    "Tbl_entries %lu, Tbl_collision %lu\n"
+                    "Tbl_insert %lu, Tbl_remove %lu, Tbl_read %lu, Tbl_write %lu\n",
+                    stats->api_insert,
+                    stats->api_insert_duplicate,
+                    stats->api_insert_fail,
+                    stats->api_insert_recirc_fail,
+                    stats->api_remove,
+                    stats->api_remove_not_found,
+                    stats->api_remove_fail,
+                    stats->api_update,
+                    stats->api_update_fail,
+                    stats->api_get,
+                    stats->api_get_fail,
+                    stats->api_reserve,
+                    stats->api_reserve_fail,
+                    stats->api_release,
+                    stats->api_release_fail,
+                    stats->table_entries,
+                    stats->table_collisions,
+                    stats->table_insert,
+                    stats->table_remove,
+                    stats->table_read,
+                    stats->table_write);
+    for (int i= 0; i < PDS_FLOW_TABLE_MAX_RECIRC; i++) {
+         STATS_DUMP_LOG("Tbl_lvl %u, Tbl_insert %lu, Tbl_remove %lu\n",
+                         i, stats->table_insert_lvl[i],
+                         stats->table_remove_lvl[i]);
+    }
+}
+static void
 dump_stats (pds_flow_stats_t *stats)
 {
     STATS_DUMP_LOG("\nPrinting Flow cache statistics\n");
@@ -618,6 +660,38 @@ dump_stats (pds_flow_stats_t *stats)
          STATS_DUMP_LOG("Tbl_lvl %u, Tbl_insert %lu, Tbl_remove %lu\n",
                          i, stats->table_insert_lvl[i],
                          stats->table_remove_lvl[i]);
+    }
+    return;
+}
+
+void
+accumulate_l2_stats (pds_l2_flow_stats_t *stats)
+{
+    g_l2_flow_stats.api_insert += stats->api_insert;
+    g_l2_flow_stats.api_insert_duplicate += stats->api_insert_duplicate;
+    g_l2_flow_stats.api_insert_fail += stats->api_insert_fail;
+    g_l2_flow_stats.api_insert_recirc_fail += stats->api_insert_recirc_fail;
+    g_l2_flow_stats.api_remove += stats->api_remove;
+    g_l2_flow_stats.api_remove_not_found += stats->api_remove_not_found;
+    g_l2_flow_stats.api_remove_fail += stats->api_remove_fail;
+    g_l2_flow_stats.api_update += stats->api_update;
+    g_l2_flow_stats.api_update_fail += stats->api_update_fail;
+    g_l2_flow_stats.api_get += stats->api_get;
+    g_l2_flow_stats.api_get_fail += stats->api_get_fail;
+    g_l2_flow_stats.api_reserve += stats->api_reserve;
+    g_l2_flow_stats.api_reserve_fail += stats->api_reserve_fail;
+    g_l2_flow_stats.api_release += stats->api_release;
+    g_l2_flow_stats.api_release_fail += stats->api_release_fail;
+
+    g_l2_flow_stats.table_entries += stats->table_entries;
+    g_l2_flow_stats.table_collisions += stats->table_collisions;
+    g_l2_flow_stats.table_insert += stats->table_insert;
+    g_l2_flow_stats.table_remove += stats->table_remove;
+    g_l2_flow_stats.table_read += stats->table_read;
+    g_l2_flow_stats.table_write += stats->table_write;
+    for (int i = 0; i < PDS_FLOW_TABLE_MAX_RECIRC; i++) {
+         g_l2_flow_stats.table_insert_lvl[i] += stats->table_insert_lvl[i];
+         g_l2_flow_stats.table_remove_lvl[i] += stats->table_remove_lvl[i];
     }
     return;
 }
@@ -880,6 +954,19 @@ fte_dump_flow_stats(zmq_msg_t *rx_msg,
          }
     }
     dump_stats(&g_flow_stats);
+    STATS_DUMP_LOG("\n Printing L2 Flow Stats \n");
+
+    memset(&g_l2_flow_stats, 0, sizeof(pds_l2_flow_stats_t));
+    for (int i = 0; i < FTE_MAX_CORES; i++) {
+         memset(&l2_flow_stats[i], 0, sizeof(pds_l2_flow_stats_t));
+         if (pds_l2_flow_cache_stats_get(i, &l2_flow_stats[i])
+             == PDS_RET_OK) {
+             accumulate_l2_stats(&l2_flow_stats[i]);
+         } else {
+             PDS_TRACE_ERR("Stats get failed for core#%u\n", i);
+         }
+    }
+    dump_l2_stats(&g_l2_flow_stats);
 
 done:
     if (req) {

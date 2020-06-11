@@ -637,6 +637,7 @@ fte_flow_h2s_rewrite_geneve (struct rte_mbuf *m,
 
     memcpy(pkt_start, h2s_udp_encap_hdr, sizeof(h2s_udp_encap_hdr));
     udph = (struct udp_hdr *)pkt_start;
+    udph->src_port = idx++;
     udph->dst_port = rte_cpu_to_be_16(0x17C1);
     udp_len = (m->pkt_len - (sizeof(h2s_l2vlan_encap_hdr) +
                sizeof(h2s_ip_encap_hdr)));
@@ -1217,6 +1218,7 @@ fte_flow_prog (struct rte_mbuf *m)
                             &h2s_rewrite_id, &s2h_rewrite_id);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_get_session_rewrite_id failed. \n");
+        fte_session_index_free(session_index);
         return ret;
     }
 
@@ -1224,12 +1226,14 @@ fte_flow_prog (struct rte_mbuf *m)
                                   s2h_rewrite_id);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_session_info_create failed. \n");
+        fte_session_index_free(session_index);
         return ret;
     }
 
     ret = (sdk_ret_t)pds_flow_cache_entry_create(&flow_spec);
     if ((ret != SDK_RET_OK) && (ret != SDK_RET_ENTRY_EXISTS)) {
         PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
+        fte_session_index_free(session_index);
         return ret;
     }
 
@@ -1239,6 +1243,7 @@ fte_flow_prog (struct rte_mbuf *m)
         if (ret != SDK_RET_OK) {
             PDS_TRACE_DEBUG("fte_l2_flow_cache_entry_create "
                             "failed. \n");
+            fte_session_index_free(session_index);
             return ret;
         }
     }
