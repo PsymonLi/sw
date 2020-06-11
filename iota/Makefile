@@ -66,6 +66,7 @@ asset-tools:
 
 iota-test-bins:
 	go test -c github.com/pensando/sw/iota/test/venice/testsuites/equinix -o bin/equinix.test
+	go test -c github.com/pensando/sw/iota/test/venice/testsuites/apulu2apulu -o bin/equinix-rollout.test
 
 
 iota: iota-proto bin/penctl bin/server/iota_server bin/agent/iota_agent bin/agent/iota_agent.freebsd bin/esx-setup bin/build-util bin/jenkins-util bin/tools/fuz bin/iota-cmd iota-test iota-test-bins asset-tools
