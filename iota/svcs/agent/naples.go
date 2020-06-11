@@ -87,14 +87,6 @@ type naplesHwNode struct {
 	windowsPortNameMapping map[string]map[string]string
 }
 
-type naplesBitwHwNode struct {
-	naplesHwNode
-}
-
-type naplesBitwPerfHwNode struct {
-	naplesHwNode
-}
-
 type naplesMultiSimNode struct {
 	dataNode
 }
@@ -1121,16 +1113,6 @@ func (naples *naplesHwNode) initNaplesMgmtInterface(nodeOs iota.TestBedNodeOs, n
 //Init initalize node type
 func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 
-	if in.StartupScript != "" {
-		_, stdout, err := Utils.Run(strings.Split(in.StartupScript, " "), 0, false, true, nil)
-		if err != nil {
-			msg := fmt.Sprintf("Start up script failed %v up err : %v", err, stdout)
-			naples.logger.Error(msg)
-			// Don't return error as start up would have been completed before.
-			//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
-		}
-	}
-
 	naples.init(in)
 	naples.iotaNode.name = in.GetName()
 	/*if in.GetNaplesConfig() == nil {
@@ -1139,13 +1121,38 @@ func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 
 	//cmd := []string{naplesScript}
 	for index, naplesConfig := range in.GetNaplesConfigs().GetConfigs() {
-		hostIntfs, err := naples.getHostInterfaces(nodOSMap[in.GetOs()], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
-		if err != nil {
-			naples.logger.Error(err.Error())
-			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
+		if in.StartupScript != "" {
+			options := ""
+			switch naplesConfig.GetNaplesMode() {
+			case iota.NaplesOperationMode_NAPLES_MODE_BITW:
+				options += " --no-mgmt "
+			case iota.NaplesOperationMode_NAPLES_MODE_CLASSIC:
+				options += " "
+			}
+			_, stdout, err := Utils.Run(strings.Split(in.StartupScript, options), 0, false, true, nil)
+			if err != nil {
+				msg := fmt.Sprintf("Start up script failed %v up err : %v", err, stdout)
+				naples.logger.Error(msg)
+				// Don't return error as start up would have been completed before.
+				//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+			}
 		}
-		naplesConfig.HostIntfs = hostIntfs
-		naples.logger.Printf("Naples host interfaces : %v", naplesConfig.HostIntfs)
+
+		switch naplesConfig.GetNaplesMode() {
+		case iota.NaplesOperationMode_NAPLES_MODE_CLASSIC:
+
+			if naplesConfig.GetNaplesMode() != iota.NaplesOperationMode_NAPLES_MODE_BITW {
+				hostIntfs, err := naples.getHostInterfaces(nodOSMap[in.GetOs()], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
+				if err != nil {
+					naples.logger.Error(err.Error())
+					return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
+				}
+				naplesConfig.HostIntfs = hostIntfs
+				naples.logger.Printf("Naples host interfaces : %v", naplesConfig.HostIntfs)
+			}
+		default:
+			naples.logger.Printf("Skipping host interface detection on naples")
+		}
 		if in.GetOs() == iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS && naples.windowsPortNameMapping == nil {
 			f, err := os.Open(Common.WindowsPortMappingFile)
 			if err != nil {
@@ -1388,112 +1395,6 @@ func (thirdParty *thirdPartyDataNode) Init(in *iota.Node) (resp *iota.Node, err 
 	return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK},
 		Name: in.GetName(), IpAddress: in.GetIpAddress(), Type: in.GetType(),
 		NodeInfo: &iota.Node_ThirdPartyNicConfig{ThirdPartyNicConfig: in.GetThirdPartyNicConfig()}}, nil
-}
-
-//Init initalize node type
-func (bitwNaples *naplesBitwHwNode) Init(in *iota.Node) (resp *iota.Node, err error) {
-
-	if in.StartupScript != "" {
-		_, stdout, err := Utils.Run(strings.Split(in.StartupScript, " --mode bitw "), 0, false, true, nil)
-		if err != nil {
-			msg := fmt.Sprintf("Start up script failed %v up err : %v", err, stdout)
-			bitwNaples.logger.Error(msg)
-			// Don't return error as start up would have been completed before.
-			//return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
-		}
-	}
-
-	bitwNaples.init(in)
-	bitwNaples.iotaNode.name = in.GetName()
-
-	naplesConfigs := in.GetNaplesConfigs().GetConfigs()
-
-	if len(naplesConfigs) == 0 {
-		msg := fmt.Sprintf("Naples config not specified")
-		bitwNaples.logger.Errorf(msg)
-		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, errors.New(msg)
-	}
-
-	for _, naplesConfig := range naplesConfigs {
-		if err := bitwNaples.initNaplesMgmtInterface(in.GetOs(), naplesConfig); err != nil {
-			bitwNaples.logger.Error("Failed to initialize mgmt interface")
-			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR}}, err
-		}
-		/*
-			hostIntfs, err := bitwNaples.getHostInterfaces(nodOSMap[in.GetOs()], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
-			if err != nil {
-				bitwNaples.logger.Error(err.Error())
-				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
-
-			}
-
-			i := 0 // output index
-			for _, intf := range hostIntfs {
-				if up, err := Utils.IsInterfaceUp(intf); err == nil && up {
-					hostIntfs[i] = intf
-					i++
-				}
-			}
-			hostIntfs = hostIntfs[:i]
-
-			if len(hostIntfs) != 1 {
-				msg := fmt.Sprintf("Invalid number if interfaces for bump in the wire model : %v", len(hostIntfs))
-				bitwNaples.logger.Error(msg)
-				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, errors.New(msg)
-			}
-
-			naplesConfig.HostIntfs = hostIntfs
-			bitwNaples.logger.Printf("Naples interfaces in BITW mode : %v", naplesConfig.HostIntfs)
-		*/
-
-		/* Finally add entity type */
-		if err := bitwNaples.addNodeEntities(in); err != nil {
-			bitwNaples.logger.Error("Adding node entities failed")
-			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR}}, err
-		}
-
-	}
-
-	return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK},
-		Name: in.GetName(), IpAddress: in.GetIpAddress(), Type: in.GetType(),
-		NodeInfo: &iota.Node_NaplesConfigs{NaplesConfigs: in.GetNaplesConfigs()}}, nil
-}
-
-//Init initalize node type
-func (bitwNaples *naplesBitwPerfHwNode) Init(in *iota.Node) (resp *iota.Node, err error) {
-
-	bitwNaples.init(in)
-	bitwNaples.iotaNode.name = in.GetName()
-
-	naplesConfigs := in.GetNaplesConfigs().GetConfigs()
-
-	if len(naplesConfigs) == 0 {
-		msg := fmt.Sprintf("Naples config not specified")
-		bitwNaples.logger.Errorf(msg)
-		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, errors.New(msg)
-	}
-
-	for _, naplesConfig := range naplesConfigs {
-		hostIntfs, err := bitwNaples.getHostInterfaces(nodOSMap[in.GetOs()], naplesConfig.GetNicType(), naplesConfig.GetNicHint())
-		if err != nil {
-			bitwNaples.logger.Error(err.Error())
-			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
-
-		}
-
-		naplesConfig.HostIntfs = hostIntfs
-		bitwNaples.logger.Printf("Naples interfaces in BITW mode : %v", naplesConfig.HostIntfs)
-
-		/* Finally add entity type */
-		if err := bitwNaples.addNodeEntities(in); err != nil {
-			bitwNaples.logger.Error("Adding node entities failed")
-			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR}}, err
-		}
-	}
-
-	return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK},
-		Name: in.GetName(), IpAddress: in.GetIpAddress(), Type: in.GetType(),
-		NodeInfo: &iota.Node_NaplesConfigs{NaplesConfigs: in.GetNaplesConfigs()}}, nil
 }
 
 func (dnode *dataNode) GetWorkloadMsgs() []*iota.Workload {

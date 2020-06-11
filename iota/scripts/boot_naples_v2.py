@@ -472,9 +472,11 @@ class NaplesManagement(EntityManagement):
     def __run_dhclient(self):
         try:
             self.SendlineExpect("dhclient " + GlobalOptions.mgmt_intf, "#", timeout = 10)
+            return True
         except:
             #Send Ctrl-c as we did not get IP
             self.SendlineExpect('\003', "#")
+            return False
 
     @_exceptionWrapper(_errCodes.NAPLES_LOGIN_FAILED, "Failed to login to naples")
     def __login(self, force_connect=True):
@@ -627,8 +629,9 @@ class NaplesManagement(EntityManagement):
 
     def ReadExternalIP(self):
         if not self.IsOOBAvailable():
-            return
-        self.__run_dhclient()
+            return False
+        if not self.__run_dhclient():
+            return False
         for _ in range(5):
             output = self.RunCommandOnConsoleWithOutput("ifconfig " + GlobalOptions.mgmt_intf)
             ifconfig_regexp = "addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
@@ -637,13 +640,16 @@ class NaplesManagement(EntityManagement):
                 self.ipaddr = x[0]
                 print("Read OOB IP {0}".format(self.ipaddr))
                 self.SSHPassInit()
-                return
+                return True
             else:
                 print("Did not Read OOB IP  {0}".format(self.ipaddr))
         print("Not able read OOB IP after 5 retries")
+        return False
 
     #if oob is not available read internal IP
     def ReadInternalIP(self):
+        if GlobalOptions.no_mgmt:
+            return
         for _ in range(5):
             try:
                 output = self.RunCommandOnConsoleWithOutput("ifconfig int_mnic0")
@@ -683,8 +689,9 @@ class NaplesManagement(EntityManagement):
     def Login(self, bringup_oob=True, force_connect=True):
         self.__login(force_connect)
         if bringup_oob and self.__read_mac():
-            self.ReadExternalIP()
-        elif not GlobalOptions.no_mgmt:
+            self.ReadInternalIP()
+            self.ReadExternalIP() 
+        else:
             self.ReadInternalIP()
 
     @_exceptionWrapper(_errCodes.NAPLES_GOLDFW_UNKNOWN, "Gold FW unknown")
@@ -715,7 +722,13 @@ class NaplesManagement(EntityManagement):
             if re.search('\nmainfw',fwType):
                 print('determined running firmware to be type MAIN')
                 return FIRMWARE_TYPE_MAIN
+            elif re.search('mainfw',fwType):
+                print('determined running firmware to be type MAIN')
+                return FIRMWARE_TYPE_MAIN
             elif re.search('\ngoldfw',fwType):
+                print('determined running firmware to be type GOLD')
+                return FIRMWARE_TYPE_GOLD
+            elif re.search('goldfw',fwType):
                 print('determined running firmware to be type GOLD')
                 return FIRMWARE_TYPE_GOLD
         print("failed to determine running firmware type from output: {0}".format(fwType))
@@ -1520,10 +1533,6 @@ class PenOrchestrator:
                 for naples_inst in self.__naples:
                     naples_inst.Connect(force_connect=False)
   
-                    naples_inst.ReadInternalIP()
-                    #Read External IP to try oob path first
-                    naples_inst.ReadExternalIP()
-
                   #Read Naples Gold FW version if system in good state.
                     #If not able to read then we will reset
                     naples_inst.ReadGoldFwVersion()
@@ -1550,14 +1559,12 @@ class PenOrchestrator:
 
                 self.__host.WaitForSsh()
                 self.__host.UnloadDriver()
-        else:
-            for naples_inst in self.__naples:
-                naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover))
-                self.__host.WaitForSsh()
 
         self.__ipmi_reboot_allowed = True
         install_mainfw_via_host = False
         for naples_inst in self.__naples:
+            naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover))
+            self.__host.WaitForSsh()
             naples_inst.StartSSH()
             fwType = naples_inst.ReadRunningFirmwareType()
             

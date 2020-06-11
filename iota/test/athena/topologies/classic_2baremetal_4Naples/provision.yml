@@ -1,0 +1,41 @@
+meta:
+    name: ATHENA-IRIS DualNIC
+    description: Dual NIC Baremetal Provision Scheme
+
+spec:
+    images:
+        - 1.5.0-E-14
+
+nodes:
+    - node: 
+        name: node1
+        nics: 
+            - nic : 
+                name            : naples1
+                pipeline        : athena
+                naples_type     : capri
+                image           : /sw/images/latest.json
+                mode            : bitw
+            - nic :
+                name            : naples2
+                pipeline        : iris
+                naples_type     : capri
+                image           : /sw/images/1.5.0-E-14.json
+                mode            : classic
+
+    - node: 
+        name: node2
+        nics: 
+            - nic : 
+                name            : naples1
+                pipeline        : athena
+                naples_type     : capri
+                image           : /sw/images/latest.json
+                mode            : bitw
+            - nic :
+                name            : naples2
+                pipeline        : iris
+                naples_type     : capri
+                image           : /sw/images/1.5.0-E-14.json
+                mode            : classic
+

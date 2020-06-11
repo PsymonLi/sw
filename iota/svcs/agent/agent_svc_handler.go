@@ -330,8 +330,6 @@ func newService() *Service {
 
 var iotaNodes = map[iota.PersonalityType]func() IotaNode{
 	iota.PersonalityType_PERSONALITY_NAPLES:               newNaples,
-	iota.PersonalityType_PERSONALITY_NAPLES_BITW:          newNaplesBitw,
-	iota.PersonalityType_PERSONALITY_NAPLES_BITW_PERF:     newNaplesBitwPerf,
 	iota.PersonalityType_PERSONALITY_NAPLES_SIM:           newNaplesSim,
 	iota.PersonalityType_PERSONALITY_NAPLES_MULTI_SIM:     newNaplesMultiSim,
 	iota.PersonalityType_PERSONALITY_NAPLES_CONTROL_SIM:   newNaplesControlSim,
@@ -345,14 +343,6 @@ var iotaNodes = map[iota.PersonalityType]func() IotaNode{
 
 func newNaples() IotaNode {
 	return &naplesHwNode{dataNode: dataNode{iotaNode: iotaNode{name: "naples"}}}
-}
-
-func newNaplesBitw() IotaNode {
-	return &naplesBitwHwNode{naplesHwNode{dataNode: dataNode{iotaNode: iotaNode{name: "naples"}}}}
-}
-
-func newNaplesBitwPerf() IotaNode {
-	return &naplesBitwPerfHwNode{naplesHwNode{dataNode: dataNode{iotaNode: iotaNode{name: "naples"}}}}
 }
 
 func newEsxNaples() IotaNode {

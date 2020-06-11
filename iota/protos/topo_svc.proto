@@ -134,6 +134,14 @@ message ReloadMsg {
     bool use_ncsi                   = 5;
 }
 
+enum NaplesOperationMode {
+    // Naples in regular mode ( 2 host interfaces)
+    NAPLES_MODE_CLASSIC                 = 0;
+
+    // Naples in bitw mode (no hostintf)
+    NAPLES_MODE_BITW                    = 1;
+}
+
 enum PersonalityType {
     PERSONALITY_NONE                    = 0;
     PERSONALITY_NAPLES_SIM              = 1;
@@ -147,9 +155,6 @@ enum PersonalityType {
     PERSONALITY_NAPLES_SIM_WITH_QEMU    = 5;
     // Naples Hardware
     PERSONALITY_NAPLES                  = 6;
-    PERSONALITY_NAPLES_BITW             = 7;
-    //Naples BITW model to run on one host for performance
-    PERSONALITY_NAPLES_BITW_PERF        = 8;
     PERSONALITY_THIRD_PARTY_NIC         = 9;
     PERSONALITY_MELLANOX                = 10;
     PERSONALITY_BROADCOM                = 11;
@@ -372,6 +377,8 @@ message NaplesConfig {
 
     // unique Identifier
     string name                 = 13;
+
+    NaplesOperationMode naples_mode     = 14;
 }
 
 message NaplesConfigs {

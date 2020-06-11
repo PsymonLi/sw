@@ -38,8 +38,6 @@ def GetNodePersonalityByNicType(nic_type, mode = None):
     if nic_type in ['pensando', 'naples']:
         if mode == "dvs":
             return topo_pb2.PERSONALITY_NAPLES_DVS
-        elif mode == "bitw":
-            return topo_pb2.PERSONALITY_NAPLES_BITW
         return topo_pb2.PERSONALITY_NAPLES
     elif nic_type == 'mellanox':
         if mode == "dvs":
@@ -58,6 +56,10 @@ def GetNodePersonalityByNicType(nic_type, mode = None):
     else:
         return None
 
+def GetNaplesOperationMode(mode = 'classic'):
+    if mode == 'bitw':
+        return topo_pb2.NAPLES_MODE_BITW
+    return topo_pb2.NAPLES_MODE_CLASSIC 
 
 def GetNodeType(role):
     if role in ['PERSONALITY_NAPLES_SIM', 'PERSONALITY_VENICE', 'PERSONALITY_VCENTER_NODE', 'PERSONALITY_K8S_MASTER']:
@@ -627,10 +629,6 @@ class Node(object):
         return self.__role == topo_pb2.PERSONALITY_NAPLES_MULTI_SIM
     def IsNaplesHw(self):
         return self.__role in[ topo_pb2.PERSONALITY_NAPLES, topo_pb2.PERSONALITY_NAPLES_DVS]
-    def IsNaplesHwWithBumpInTheWire(self):
-        return self.__role == topo_pb2.PERSONALITY_NAPLES_BITW
-    def IsNaplesHwWithBumpInTheWirePerf(self):
-        return self.__role == topo_pb2.PERSONALITY_NAPLES_BITW_PERF
     def IsNaplesCloudPipeline(self):
         return GlobalOptions.pipeline in [ "apulu" ]
 
@@ -638,7 +636,7 @@ class Node(object):
         return self.__role == topo_pb2.PERSONALITY_VCENTER_NODE
 
     def IsNaples(self):
-        return self.IsNaplesSim() or self.IsNaplesHw() or self.IsNaplesHwWithBumpInTheWire()
+        return self.IsNaplesSim() or self.IsNaplesHw()
 
     def IsMellanox(self):
         return self.__role in [ topo_pb2.PERSONALITY_MELLANOX, topo_pb2.PERSONALITY_THIRD_PARTY_NIC_DVS]
@@ -781,7 +779,7 @@ class Node(object):
         elif self.Role() == topo_pb2.PERSONALITY_K8S_MASTER:
             pass # TODO
         else:
-            if self.IsThirdParty() and not self.IsNaplesHwWithBumpInTheWire():
+            if self.IsThirdParty():
                 msg.third_party_nic_config.nic_type = self.GetNicType()
             elif self.Role() == topo_pb2.PERSONALITY_NAPLES_MULTI_SIM:
                 msg.naples_multi_sim_config.num_instances = 3
@@ -804,6 +802,7 @@ class Node(object):
                     naples_config.naples_password = "pen123"
                     #Enable this with Brad's PR
                     naples_config.nic_hint = device.GetMac()
+                    naples_config.naples_mode = GetNaplesOperationMode(device.GetMode())
 
                     if device.GetNicIntMgmtIP() == "N/A" or self.IsNaplesCloudPipeline():
                         naples_config.naples_ip_address = device.GetNicMgmtIP()
@@ -855,22 +854,10 @@ class Node(object):
                 device.SetHostIntfs(resp.third_party_nic_config.host_intfs)
                 self.__host_intfs = resp.third_party_nic_config.host_intfs
         Logger.info("Node: %s Host Interfaces: %s" % (self.__name, self.__host_intfs))
-        if len(self.__host_intfs) == 0 and  not self.IsVenice() and self.__role not in [topo_pb2.PERSONALITY_NAPLES_BITW, topo_pb2.PERSONALITY_NAPLES_BITW_PERF]:
-            if GlobalOptions.dryrun:
-                self.__host_intfs = ["dummy_intf0", "dummy_intf1"]
-            else:
-                Logger.error("Interfaces not found on Host: ", self.MgmtIpAddress())
-                if self.IsNaples():
-                    if not GlobalOptions.skip_host_intf_check:
-                        Logger.error("Check if IONIC driver is installed.")
-                        sys.exit(1)
-                    else:
-                        Logger.error("Ignoring Host interface check")
-
         return
 
     def GetStartUpScript(self):
-        if self.IsNaplesHw() or self.IsNaplesHwWithBumpInTheWire():
+        if self.IsNaplesHw():
             return api.HOST_NAPLES_DIR + "/" + "nodeinit.sh"
         return None
 
