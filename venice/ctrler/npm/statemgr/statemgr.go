@@ -411,25 +411,33 @@ func (sm *Statemgr) registerForDscUpdate(object dscUpdateIntf) {
 
 func (sm *Statemgr) sendDscUpdateNotification(dsc *cluster.DistributedServiceCard) {
 	sm.Lock()
-	defer sm.Unlock()
+	updateObjects := []dscUpdateObj{}
 	for _, obj := range sm.dscUpdateNotifObjects {
 		if obj.isMarkedForDelete() {
 			delete(sm.dscUpdateNotifObjects, obj.GetKey())
 		} else {
-			sm.dscObjUpdateQueue <- dscUpdateObj{ev: UpdateEvent, dsc: dsc, obj: obj}
+			updateObjects = append(updateObjects, dscUpdateObj{ev: UpdateEvent, dsc: dsc, obj: obj})
 		}
+	}
+	sm.Unlock()
+	for _, obj := range updateObjects {
+		sm.dscObjUpdateQueue <- obj
 	}
 }
 
 func (sm *Statemgr) sendDscDeleteNotification(dsc *cluster.DistributedServiceCard) {
 	sm.Lock()
-	defer sm.Unlock()
+	updateObjects := []dscUpdateObj{}
 	for _, obj := range sm.dscUpdateNotifObjects {
 		if obj.isMarkedForDelete() {
 			delete(sm.dscUpdateNotifObjects, obj.GetKey())
 		} else {
-			sm.dscObjUpdateQueue <- dscUpdateObj{ev: DeleteEvent, dsc: dsc, obj: obj}
+			updateObjects = append(updateObjects, dscUpdateObj{ev: DeleteEvent, dsc: dsc, obj: obj})
 		}
+	}
+	sm.Unlock()
+	for _, obj := range updateObjects {
+		sm.dscObjUpdateQueue <- obj
 	}
 }
 
