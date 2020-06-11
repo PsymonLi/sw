@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
 	"github.com/pensando/sw/venice/utils/log"
 
@@ -35,7 +36,7 @@ var _ = Describe("rollout apulu2apulu tests", func() {
 
 		It("Perform Apulu to Apulu' Rollout", func() {
 
-			rollout, err := ts.model.GetRolloutObject("apulu-bundle", ts.scaleData)
+			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{BundleType: "apulu-bundle", TargetBranch: "master"}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			workloadPairs := ts.model.WorkloadPairs().WithinNetwork().Any(40)

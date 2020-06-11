@@ -184,7 +184,6 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 
 	bundleScript := fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/utils/bundle.sh", os.Getenv("GOPATH"))
 	if spec.Local {
-
 		cmd := []string{bundleScript, "--local"}
 		if spec.Pipeline != "" {
 			cmd = append(cmd, "--pipeline")
@@ -202,7 +201,6 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 		}
 
 		version = strings.Split(stdoutStderr, "\n")[0]
-		log.Infof("Successfully built local upgrade bundle : %v", stdoutStderr)
 	} else if spec.TargetVersion != "" {
 
 		cmd := []string{bundleScript, "--pull", "--version", spec.TargetVersion}
@@ -233,7 +231,12 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 				continue
 			}
 			log.Errorf("ts:%s Trying to download bundle.tar, version: %s clusterVersion %s", time.Now().String(), version, clusterVersion)
-			url := fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
+			var url string
+			if spec.BundleType == "apulu-bundle" {
+				url = fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/apulu-bundle/bundle.tar", version)
+			} else {
+				url = fmt.Sprintf("http://pxe.pensando.io/builds/hourly/%s/bundle/bundle.tar", version)
+			}
 			jsonUrl := []string{url, "--output", bundleLocalFilePath, "-f"}
 
 			fmt.Println(fmt.Sprintf("curl string: %v\n", jsonUrl))
@@ -316,7 +319,7 @@ func (sm *SysModel) GetRolloutObject(spec common.RolloutSpec, scaleData bool) (*
 // PerformImageUpload triggers image upgrade
 func (sm *SysModel) PerformImageUpload(bundleType string) error {
 
-	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 10*time.Minute)
+	bkCtx, cancelFunc := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancelFunc()
 	ctx, err := sm.VeniceLoggedInCtx(bkCtx)
 	if err != nil {
