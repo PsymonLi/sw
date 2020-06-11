@@ -1076,6 +1076,9 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 			IPv4Gateway: "10.1.1.1",
 			VlanID:      11,
 		},
+		Status: network.NetworkStatus{ // setting operstate to help compare received object, we don't need to normally set this
+			OperState: network.OperState_Active.String(),
+		},
 	}
 
 	n1, err := types.MarshalAny(&netw1)
@@ -1204,7 +1207,7 @@ func TestStagingBufferBulkeditAuditLogs(t *testing.T) {
 
 			events := resp.AggregatedEntries.Tenants[globals.DefaultTenant].Categories[globals.Kind2Category("AuditEvent")].Kinds[auth.Permission_AuditEvent.String()].Entries
 			if events[0].Object.GetRequestObject() != "" {
-				Assert(t, strings.Compare(string(itemsJsons[i]), events[0].Object.GetRequestObject()) == 0, "RequestObject in audit log doesn't match")
+				Assert(t, strings.Compare(string(itemsJsons[i]), events[0].Object.GetRequestObject()) == 0, fmt.Sprintf("RequestObject in audit log doesn't match, got %s", events[0].Object.GetRequestObject()))
 			}
 			Assert(t, (events[0].Object.Action == string(apiintf.CreateOper)) &&
 				(events[0].Object.Resource.Kind == string("Network")) &&
