@@ -1196,24 +1196,10 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 			}
 		}
 
-		// Create minio credentials object as Rel A has these credentials hard-coded
-		credentials, err := minio.GenerateObjectStoreCredentials()
+		err = cl.createMinioCredentials(ctx, kvs, txn)
 		if err != nil {
-			cl.logger.Errorf("(nodePreCommitHook) credentials generation error %+v", err)
 			// TODO: what should the behavior be if this fails?
 			return i, true, nil
-		}
-		credentialsKey := credentials.MakeKey(string(apiclient.GroupCluster))
-		intoCredentials := cluster.Credentials{}
-		err = kvs.Get(ctx, credentialsKey, &intoCredentials)
-		if err != nil {
-			cl.logger.Infof("(nodePreCommitHook) credentials not found (%+v). Creating now", err)
-			err = txn.Create(credentialsKey, credentials)
-			if err != nil {
-				cl.logger.Errorf("(nodePreCommitHook) credentials creation Error %+v", err)
-				// TODO: what should the behavior be if this fails?
-				return i, true, nil
-			}
 		}
 
 		into := cluster.DistributedServiceCardList{}
@@ -1239,8 +1225,43 @@ func (cl *clusterHooks) nodePreCommitHook(ctx context.Context, kvs kvstore.Inter
 				}
 			}
 		}
+	} else if rolloutMajorVersion == relAMajorVersion && rolloutMinorVersion > relAMinorVersion {
+		// TODO this is a temporary fix to save QA setup, remove this once credential creation for upgrade case is resolved
+		// ideally, credentials creation only happens for upgrades from relA
+		err := cl.createMinioCredentials(ctx, kvs, txn)
+		if err != nil {
+			// TODO: what should the behavior be if this fails?
+			return i, true, nil
+		}
 	}
 	return i, true, nil
+}
+
+func (cl *clusterHooks) createMinioCredentials(ctx context.Context, kvs kvstore.Interface, txn kvstore.Txn) error {
+	// Create minio credentials object as Rel A has these credentials hard-coded
+	credentials, err := minio.GenerateObjectStoreCredentials()
+	if err != nil {
+		cl.logger.Errorf("(nodePreCommitHook) credentials generation error %+v", err)
+		return err
+	}
+	credentialsKey := credentials.MakeKey(string(apiclient.GroupCluster))
+	intoCredentials := cluster.Credentials{}
+	err = kvs.Get(ctx, credentialsKey, &intoCredentials)
+	if err != nil {
+		cl.logger.Infof("(nodePreCommitHook) credentials not found (%+v). Creating now", err)
+		err = credentials.ApplyStorageTransformer(ctx, true)
+		if err != nil {
+			cl.logger.Errorf("(nodePreCommitHook) credentials encryption error %+v", err)
+			return err
+		}
+
+		err = txn.Create(credentialsKey, credentials)
+		if err != nil {
+			cl.logger.Errorf("(nodePreCommitHook) credentials creation error %+v", err)
+			return err
+		}
+	}
+	return nil
 }
 
 func (cl *clusterHooks) applyFeatureFlags(ctx context.Context, oper apiintf.APIOperType, i interface{}, dryRun bool) {

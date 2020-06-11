@@ -164,14 +164,17 @@ func GenerateObjectStoreCredentials() (*cluster.Credentials, error) {
 		},
 	}
 	credentials.SelfLink = credentials.MakeKey("cluster")
-	accessKey, err := generateRandomKey()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to generate random access key")
-	}
-	secretKey, err := generateRandomKey()
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to generate random secret key")
-	}
+	//accessKey, err := generateRandomKey()
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to generate random access key")
+	//}
+	//secretKey, err := generateRandomKey()
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "unable to generate random secret key")
+	//}
+	// TODO: This is a temporary fix to unblock QA, will be reverted to random keys once upgrade issue is resolved.
+	accessKey := "miniokey"
+	secretKey := "minio0523"
 	credentials.Spec = cluster.CredentialsSpec{
 		KeyValuePairs: []cluster.KeyValue{
 			{

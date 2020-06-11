@@ -232,7 +232,9 @@ func assertCredentialsCreation(t *testing.T, txn *mocks.FakeTxn) {
 	for _, op := range txn.Ops {
 		if op.Op == "create" && strings.Contains(op.Key, "credentials") {
 			credentials := op.Obj.(*cluster.Credentials)
-			err := minio.ValidateObjectStoreCredentials(credentials)
+			err := credentials.ApplyStorageTransformer(context.TODO(), false)
+			AssertOk(t, err, "Credentials object should have been decrypted successfully")
+			err = minio.ValidateObjectStoreCredentials(credentials)
 			AssertOk(t, err, "Invalid credentials object attempted to be created")
 			return
 		}
