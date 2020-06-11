@@ -961,7 +961,13 @@ apulu_impl::upgrade_switchover(void) {
     if (ret != SDK_RET_OK) {
         return ret;
     }
-    // TODO: DMA sram/tcam shadow copy to memory
+    // flush the sram/tcam shadow memory to the asic
+    ret = sdk::asic::pd::asicpd_flush_shadow_mem();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to flush shadow memory to SRAM/TCAM, err %u",
+                      ret);
+        return ret;
+    }
 
     // update pc offsets for qstate
     q = api::g_upg_state->qstate_cfg();
@@ -973,7 +979,7 @@ apulu_impl::upgrade_switchover(void) {
         }
         PAL_barrier();
         sdk::asic::pd::asicpd_p4plus_invalidate_cache(it->addr, it->size,
-                                                      P4PLUS_CACHE_INVALIDATE_BOTH);
+                           P4PLUS_CACHE_INVALIDATE_BOTH);
     }
 
     // update rss config
@@ -984,9 +990,10 @@ apulu_impl::upgrade_switchover(void) {
 
 // backup all the existing configs which will be modified during switchover.
 // during A to B upgrade, this will be invoked by A and B
-// if there is a switchover failue from A to B, during rollbacking, this backed up config
-// will be applied as B might have overwritten some of these configs
-// B invokes this to save the current config and during switchover it writes the saved data
+// if there is a switchover failue from A to B, during rollbacking, this backed
+// up config will be applied as B might have overwritten some of these configs
+// B invokes this to save the current config and during switchover it writes
+// the saved data
 // pipeline switchover and pipeline backup should be in sync
 // sequence : A(backup) -> upgrade -> A2B(switchover) ->
 //          : B(switchover_failure) -> rollback -> B2A(switchover) -> success/failure
@@ -1228,8 +1235,8 @@ program_lif_table (uint16_t lif_hw_id, uint8_t lif_type, uint16_t vpc_hw_id,
     lif_actiondata_t lif_data;
 
     PDS_TRACE_DEBUG("Programming LIF table at idx %u, vpc hw id %u, "
-                    "bd hw id %u, vnic hw id %u mac addr %s", lif_hw_id, vpc_hw_id,
-                    bd_hw_id, vnic_hw_id, macaddr2str(vr_mac));
+                    "bd hw id %u, vnic hw id %u mac addr %s", lif_hw_id,
+                    vpc_hw_id, bd_hw_id, vnic_hw_id, macaddr2str(vr_mac));
 
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_LIF, lif_hw_id,
                                       NULL, NULL, &lif_data);
