@@ -5,17 +5,10 @@ import json
 import os
 import time
 import iota.test.athena.utils.athena_app as athena_app_utils
+import iota.test.athena.utils.install_pkg as install
 import iota.harness.infra.store as store
+import iota.test.athena.utils.misc as utils
 from collections import defaultdict
-
-NUM_VLANS_PER_VNIC = 2
-
-def get_uplink_vlan(vnic_id, uplink):
-    if uplink < 0 or uplink > 1:
-        raise Exception("Invalid uplink {}".format(uplink))
-
-    vlan_offset = (vnic_id * NUM_VLANS_PER_VNIC) + uplink
-    return (api.Testbed_GetVlanBase() + vlan_offset)
 
 def Setup(tc):
     # Set absolute path for json files.
@@ -67,8 +60,8 @@ def Setup(tc):
         api.Logger.error('Failed to get host interfaces')
         return api.types.status.FAILURE
 
-    tc.up0_intf = host_intfs[0]
-    tc.up1_intf = host_intfs[1]
+    up0_intf = host_intfs[0]
+    up1_intf = host_intfs[1]
 
     vnics = plcy_obj['vnic']
 
@@ -81,42 +74,56 @@ def Setup(tc):
 
         api.Logger.info('Setup policy.json file for No.%s vnic' % (vnic_id))
 
-        # get uplink vlans
-        tc.up0_vlan = get_uplink_vlan(int(vnic_id), 0)
-        tc.up1_vlan = get_uplink_vlan(int(vnic_id), 1)
-
-        tc.up0_mac, tc.up1_mac = None, None
+        up0_vlan, up1_vlan = None, None           
+        up0_mac, up1_mac = None, None
 
         mac_lo = 'ff:ff:ff:ff:ff:ff'
         mac_hi = '00:00:00:00:00:00'
-        for wl in workloads:
-            if wl.parent_interface == tc.up0_intf and wl.uplink_vlan == tc.up0_vlan:
-                tc.up0_mac = wl.mac_address  
-        
-            if wl.parent_interface == tc.up1_intf and wl.uplink_vlan == tc.up1_vlan:
-                tc.up1_mac = wl.mac_address
 
-        if not tc.up0_mac or not tc.up1_mac:
+        wl_up0_idx = utils.get_wl_idx(0, int(vnic_id))
+        wl_up1_idx = utils.get_wl_idx(1, int(vnic_id))
+
+        wl_up0 = workloads[wl_up0_idx]
+        wl_up1 = workloads[wl_up1_idx]
+
+        if wl_up0.parent_interface == up0_intf:
+            up0_vlan = wl_up0.uplink_vlan
+            up0_mac = wl_up0.mac_address
+        else:
+            api.Logger.error('The interface order prediction is wrong')
+
+        if wl_up1.parent_interface == up1_intf:
+            up1_vlan = wl_up1.uplink_vlan
+            up1_mac = wl_up1.mac_address
+        else:
+            api.Logger.error('The interface order prediction is wrong')
+
+        if not up0_mac or not up1_mac:
             api.Logger.error('Failed to get workload sub-intf mac addresses')
             return api.types.status.FAILURE
 
-        mac_lo = min(mac_lo, tc.up0_mac, tc.up1_mac)
-        mac_hi = max(mac_hi, tc.up0_mac, tc.up1_mac)
+        if not up0_vlan or not up1_vlan:
+            api.Logger.error('Failed to get workload sub-intf vlan value')
+            return api.types.status.FAILURE
+
+        mac_lo = min(mac_lo, up0_mac, up1_mac)
+        mac_hi = max(mac_hi, up0_mac, up1_mac)
+
         api.Logger.info('Workload0: up0_intf %s up0_vlan %s up0_mac %s' % (
-                        tc.up0_intf, tc.up0_vlan, tc.up0_mac))
+                        up0_intf, up0_vlan, up0_mac))
         api.Logger.info('Workload1: up1_intf %s up1_vlan %s up1_mac %s' % (
-                        tc.up1_intf, tc.up1_vlan, tc.up1_mac))
+                        up1_intf, up1_vlan, up1_mac))
         api.Logger.info('mac_lo %s mac_hi %s' % (mac_lo, mac_hi))
 
         # these keys need to be changed for both L2 and L3 with or without NAT.
-        vnic['vlan_id'] = str(tc.up1_vlan)
-        vnic['rewrite_underlay']['vlan_id'] = str(tc.up0_vlan)
-        vnic['session']['to_switch']['host_mac'] = str(tc.up1_mac)
-        vnic['rewrite_underlay']['dmac'] = str(tc.up0_mac)
+        vnic['vlan_id'] = str(up1_vlan)
+        vnic['rewrite_underlay']['vlan_id'] = str(up0_vlan)
+        vnic['session']['to_switch']['host_mac'] = str(up1_mac)
+        vnic['rewrite_underlay']['dmac'] = str(up0_mac)
 
         # these fields need to be changed only for L3
         if tc.vnic_type == 'L3':
-            vnic['rewrite_host']['dmac'] = str(tc.up1_mac)
+            vnic['rewrite_host']['dmac'] = str(up1_mac)
 
         # only applicable to L2 vnics
         if tc.vnic_type == 'L2':
@@ -133,7 +140,10 @@ def Setup(tc):
     for node in tc.nodes:
         if node is tc.bitw_node:
             policy_json_fname = tc.dp_policy_json_path
-            api.CopyToNaples(node.Name(), [policy_json_fname], "") 
+            api.CopyToNaples(node.Name(), [policy_json_fname], "")
+    
+    # Install python scapy packages
+    install.InstallScapyPackge(tc, [tc.wl_node_name])
 
     return api.types.status.SUCCESS
 

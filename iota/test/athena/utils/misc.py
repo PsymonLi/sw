@@ -48,14 +48,18 @@ def get_vnic_id(plcy_obj, _vnic_type, _nat):
     return int(vnic['vnic_id'])
 
 # ===========================================
-# Return: uplink vlan offset for vnic
-# gets vlan offset of vnic based on
+# Return: workload index for vnic
+# gets workload index of vnic based on
 # vnic id
 # ===========================================
-def get_uplink_vlan(vnic_id, uplink, num_vlans_per_vnic):
+def get_wl_idx(uplink, vnic_id):
+    # in workloads list, the interface is alternatively assigned to wl
+    # skip the fist two workloads in list which have vlan == 0
 
     if uplink < 0 or uplink > 1:
         raise Exception("Invalid uplink {}".format(uplink))
 
-    vlan_offset = (vnic_id * num_vlans_per_vnic) + uplink
-    return (api.Testbed_GetVlanBase() + vlan_offset)
+    if uplink == 0:
+        return (2 * vnic_id)
+    if uplink == 1:
+        return (2 * vnic_id + 1)

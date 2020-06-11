@@ -29,7 +29,6 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 SNIFF_TIMEOUT = 3
-NUM_VLANS_PER_VNIC = 2
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
@@ -276,20 +275,19 @@ def Setup(tc):
     tc.up1_intf = host_intfs[1] 
     
     # get uplink vlans
-    tc.up0_vlan = utils.get_uplink_vlan(tc.vnic_id, 0, NUM_VLANS_PER_VNIC)
-    tc.up1_vlan = utils.get_uplink_vlan(tc.vnic_id, 1, NUM_VLANS_PER_VNIC)
+    tc.up0_vlan = tc.vnic['rewrite_underlay']['vlan_id']
+    tc.up1_vlan = tc.vnic['vlan_id']
 
-    tc.up0_mac, tc.up1_mac = None, None
-
-    for wl in workloads:
-        if wl.parent_interface == tc.up0_intf and wl.uplink_vlan == tc.up0_vlan:
-            tc.up0_mac = wl.mac_address  
-    
-        if wl.parent_interface == tc.up1_intf and wl.uplink_vlan == tc.up1_vlan:
-            tc.up1_mac = wl.mac_address
+    # get uplink mac
+    tc.up0_mac = tc.vnic['rewrite_underlay']['dmac']
+    tc.up1_mac = tc.vnic['session']['to_switch']['host_mac']
 
     if not tc.up0_mac or not tc.up1_mac:
         api.Logger.error('Failed to get workload sub-intf mac addresses')
+        return api.types.status.FAILURE
+
+    if not tc.up0_vlan or not tc.up1_vlan:
+        api.Logger.error('Failed to get workload sub-intf vlan value')
         return api.types.status.FAILURE
 
     api.Logger.info('Workload0: up0_intf %s up0_vlan %s up0_mac %s' % (
