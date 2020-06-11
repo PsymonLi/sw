@@ -80,7 +80,7 @@ main (int argc, char **argv)
     };
 
     // parse CLI options
-    while ((oc = getopt_long(argc, argv, ":hdc:i:s:z:W;",
+    while ((oc = getopt_long(argc, argv, ":hdc:i:s:zW;",
                              longopts, NULL)) != -1) {
         switch (oc) {
         case 'd':

@@ -24,6 +24,7 @@
 char *g_input_cfg_file = NULL;   // test Config file
 char *g_cfg_file = NULL;         // hal config file
 bool g_daemon_mode = false;      // daemon mode
+bool g_nocleanup = false;        // cleanup of config
 string g_profile;                // profile file
 
 // scale test base class
@@ -82,9 +83,11 @@ TEST_F(scale_test, scale_test_create)
 
     printf("DONE pushing configs!\n");
 
-    rv = delete_objects();
-    ASSERT_TRUE(rv == SDK_RET_OK);
-    printf("DONE deleting configs!\n");
+    if (!g_nocleanup) {
+        rv = delete_objects();
+        ASSERT_TRUE(rv == SDK_RET_OK);
+        printf("DONE deleting configs!\n");
+    }
 
     if (g_daemon_mode) {
         printf("Entering forever loop ...\n");
@@ -108,15 +111,16 @@ main (int argc, char **argv)
 {
     int oc;
     struct option longopts[] = {
-        {"config",  required_argument, NULL, 'c'},
-        {"daemon",  required_argument, NULL, 'd'},
-        {"profile", required_argument, NULL, 'p'},
-        {"help", no_argument, NULL, 'h'},
+        {"config",     required_argument, NULL, 'c'},
+        {"daemon",     required_argument, NULL, 'd'},
+        {"profile",    required_argument, NULL, 'p'},
+        {"no-cleanup", no_argument,       NULL, 'z'},
+        {"help",       no_argument,       NULL, 'h'},
         {0, 0, 0, 0}
     };
 
     // parse CLI options
-    while ((oc = getopt_long(argc, argv, ":hdc:i:p:W;", longopts, NULL)) != -1) {
+    while ((oc = getopt_long(argc, argv, ":hdc:i:p:zW;", longopts, NULL)) != -1) {
         switch (oc) {
         case 'c':
             g_cfg_file = optarg;
@@ -148,6 +152,10 @@ main (int argc, char **argv)
                 print_usage(argv);
                 exit(1);
             }
+            break;
+
+        case 'z':
+            g_nocleanup = true;
             break;
 
         default:
