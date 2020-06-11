@@ -62,6 +62,10 @@ func interruptClearCmdHandler(cmd *cobra.Command, args []string) {
 
 	// handle command
 	cmdResp, err := HandleCommand(cmdCtxt)
+	if cmdResp == nil {
+		fmt.Printf("Command failed with nil response\n")
+		return
+	}
 	if cmdResp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
 		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
 		return
@@ -85,6 +89,10 @@ func interruptShowCmdHandler(cmd *cobra.Command, args []string) {
 
 	// handle command
 	cmdResp, err := HandleCommand(cmdCtxt)
+	if cmdResp == nil {
+		fmt.Printf("Command failed with nil response\n")
+		return
+	}
 	if cmdResp.ApiStatus != halproto.ApiStatus_API_STATUS_OK {
 		fmt.Printf("Command failed with %v error\n", cmdResp.ApiStatus)
 		return
