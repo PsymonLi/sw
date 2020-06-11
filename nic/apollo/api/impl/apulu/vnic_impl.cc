@@ -1308,13 +1308,12 @@ vnic_impl::fill_vpp_stats_(pds_vnic_stats_t *stats) {
     request.vnic_stats_get.vnic_hw_id = hw_id_;
     sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CMD, &request,
                       sizeof(request), pds_cmd_response_handler_cb,
-                      &response);
+                      &response, PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
     if (response.status == sdk::SDK_RET_OK) {
         stats->active_sessions = response.vnic_stats.active_sessions;
     }
-    return (sdk::sdk_ret_t )response.status;
+    return (sdk::sdk_ret_t)response.status;
 }
-
 
 sdk_ret_t
 vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {

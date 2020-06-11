@@ -9,6 +9,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/internal/ipc.hpp"
 
 namespace api {
@@ -19,8 +20,11 @@ pds_cmd_response_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ret)
 {
     pds_cmd_rsp_t *response = (pds_cmd_rsp_t *)ret;
 
+    if (!msg) {
+        response->status = SDK_RET_TIMEOUT;
+    }
     if (msg->length() != sizeof(pds_cmd_rsp_t)) {
-        response->status = sdk::SDK_RET_INVALID_ARG;
+        response->status = SDK_RET_INVALID_ARG;
         return;
     }
     memcpy(response, msg->data(), msg->length());
@@ -30,7 +34,12 @@ pds_cmd_response_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ret)
 static void
 cfg_get_ipc_reply_cb (sdk::ipc::ipc_msg_ptr msg, const void *reply)
 {
-    memcpy((void *)reply, msg->data(), sizeof(pds_cfg_get_rsp_t));
+    pds_cfg_get_rsp_t *rsp = (pds_cfg_get_rsp_t *)reply;
+    if (msg) {
+        memcpy((void *)reply, msg->data(), sizeof(pds_cfg_get_rsp_t));
+    } else {
+        rsp->status = SDK_RET_TIMEOUT;
+    }
 }
 
 /// \brief read a single config object via IPC
@@ -48,8 +57,9 @@ pds_ipc_cfg_get (pds_ipc_id_t ipc_id, obj_id_t obj_id,
     if ((ipc_id == PDS_IPC_ID_VPP) &&
         (api::g_pds_state.ipc_mock() == false)) {
         sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CFG_OBJ_GET, &request,
-                          sizeof(request), cfg_get_ipc_reply_cb, &reply);
-        retval = (sdk::sdk_ret_t )reply.status;
+                          sizeof(request), cfg_get_ipc_reply_cb, &reply,
+                          PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
+        retval = (sdk::sdk_ret_t)reply.status;
         if (retval != sdk::SDK_RET_OK) {
             return retval;
         }
@@ -72,7 +82,6 @@ pds_ipc_cfg_get (pds_ipc_id_t ipc_id, obj_id_t obj_id,
     default:
         return sdk::SDK_RET_INVALID_OP;
     }
-
     return retval;
 }
 
@@ -105,7 +114,8 @@ pds_ipc_cfg_get_all (pds_ipc_id_t ipc_id, obj_id_t obj_id,
         (api::g_pds_state.ipc_mock() == false)) {
         sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CFG_OBJ_GET_ALL,
                           &request, sizeof(request),
-                          cfg_get_all_ipc_reply_cb, &ctxt);
+                          cfg_get_all_ipc_reply_cb, &ctxt,
+                          PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
     } else {
         reply->status = sdk::SDK_RET_OK;
         reply->count = 0;

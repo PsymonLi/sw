@@ -13,6 +13,7 @@
 #include "nic/apollo/framework/api_msg.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
+#include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/obj_api.hpp"
 #include "nic/apollo/api/policy.hpp"
 #include "nic/apollo/api/pds_state.hpp"
@@ -257,7 +258,7 @@ pds_security_profile_read (_In_ pds_security_profile_read_cb_t cb,
     request.obj_count_get.obj_id = OBJ_ID_SECURITY_PROFILE;
     sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CMD, &request,
                       sizeof(request), api::pds_cmd_response_handler_cb,
-                      &response);
+                      &response, PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
     if (response.status != (uint32_t )sdk::SDK_RET_OK) {
         return (sdk::sdk_ret_t )response.status;
     }

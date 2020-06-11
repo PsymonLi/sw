@@ -20,6 +20,7 @@
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/core/msg.h"
 #include "nic/apollo/core/msg.hpp"
+#include "nic/apollo/include/globals.hpp"
 
 #define PDS_API_PREPROCESS_COUNTER_INC(cntr_, val)           \
             counters_.preprocess.cntr_ += (val)
@@ -71,10 +72,6 @@
 
 #define PDS_API_ABORT_COUNTER_INC(cntr_, val)                \
             counters_.abort.cntr_ += (val)
-
-// in most extreme cases when the IPC peer dies, we need to bail out
-// and so 10 secs is long enough for that
-#define PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT             10.0
 
 namespace api {
 

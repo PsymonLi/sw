@@ -16,6 +16,7 @@
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/nat.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/internal/ipc.hpp"
 
 namespace api {
@@ -141,7 +142,7 @@ nat_port_block::read_all(nat_port_block_read_cb_t cb, void *ctxt) {
     request.obj_count_get.obj_id = OBJ_ID_NAT_PORT_BLOCK;
     sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CMD, &request,
                             sizeof(request), api::pds_cmd_response_handler_cb,
-                            &reply);
+                            &reply, PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
     // abort on error
     if (reply.status != (uint32_t )SDK_RET_OK) {
         return (sdk_ret_t )reply.status;

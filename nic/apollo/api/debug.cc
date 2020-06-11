@@ -18,6 +18,7 @@
 #include "nic/apollo/api/debug.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/core/core.hpp"
+#include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/api/utils.hpp"
 #include "nic/vpp/flow/pdsa_hdlr.h"
 
@@ -314,7 +315,11 @@ pds_session_clear (uint32_t idx)
 void
 flow_clear_resp_cb(sdk::ipc::ipc_msg_ptr msg, const void *ret)
 {
-    *(sdk_ret_t *)ret = *(sdk_ret_t *)msg->data();
+    if (msg) {
+        *(sdk_ret_t *)ret = *(sdk_ret_t *)msg->data();
+    } else {
+        *(sdk_ret_t *)ret = SDK_RET_TIMEOUT;
+    }
 }
 
 sdk_ret_t
@@ -330,7 +335,8 @@ pds_flow_clear (pds_flow_key_t key)
 
     // send a msg to VPP to clear flows
     sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CMD, &request,
-                      sizeof(request), flow_clear_resp_cb, &ret);
+                      sizeof(request), flow_clear_resp_cb, &ret,
+                      PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
 
     return ret;
 }
