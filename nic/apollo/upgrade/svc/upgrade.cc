@@ -62,7 +62,11 @@ UpgSvcImpl::UpgRequest(ServerContext *context,
     if (request.packagename().empty()) {
         UPG_TRACE_ERR("Invalid upgrade package name");
         goto err_exit;
+    } else {
+        UPG_TRACE_INFO("Upgrade package name %s",
+                       request.packagename().c_str());
     }
+
     strncpy(msg.fw_pkgname, request.packagename().c_str(), sizeof(msg.fw_pkgname));
     sdk::ipc::request(SDK_IPC_ID_UPGMGR, UPG_REQ_MSG_ID_START, &msg,
                       sizeof(msg), upg_sync_response_hdlr, &status);

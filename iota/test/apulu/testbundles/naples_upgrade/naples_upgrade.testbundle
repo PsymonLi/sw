@@ -16,6 +16,8 @@ testcases:
             selection : [ any, all ]  # upgrade all or any
         args        :
             sleep   : 150
+        verifs:
+            - step : verif.utils.collect_techsupport
 
     -   name        : DISRUPTIVE_UPGRADE_GRACEFUL
         testcase    : testcases.naples_upgrade.disruptive_upgrade
@@ -33,3 +35,5 @@ testcases:
             sleep   : 300
             mode    : "graceful"
             allowed_down_time : 40
+        verifs:
+            - step : verif.utils.collect_techsupport
