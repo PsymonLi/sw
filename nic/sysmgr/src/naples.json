@@ -1,7 +1,7 @@
 [
     {
         "name": "network",
-        "command": "/bin/sh /nic/tools/bringup_mgmt_ifs.sh",
+        "command": "/bin/bash /nic/tools/bringup_mgmt_ifs.sh 0xD",
         "kind": "oneshot",
         "dependencies": [],
         "flags": [],

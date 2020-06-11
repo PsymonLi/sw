@@ -7,6 +7,7 @@ from .utils.ping import ping
 from .utils.getcfg import getcfg
 from .utils.ncsi_ops import check_set_ncsi
 from .utils.ncsi_ops import check_ncsi_conn
+import iota.test.iris.testcases.penctl.enable_ssh as enable_ssh
 import time
 import traceback
 
@@ -22,7 +23,7 @@ def Setup(tc):
     if not cimc_info:
         api.Logger.error("CimcInfo is None, exiting")
         return api.types.status.ERROR
-        
+
     tc.ilo_ip = cimc_info.GetIp()
     tc.ilo_ncsi_ip = cimc_info.GetNcsiIp()
     tc.cimc_info = cimc_info
@@ -50,6 +51,13 @@ def Trigger(tc):
                 api.Logger.error("Unable to connect ot ILO in NCSI mode")
                 return api.types.status.FAILURE
             api.Logger.info("APC power cycle successfull")
+
+            if enable_ssh.Main(None) != api.types.status.SUCCESS:
+                api.Logger.info("Enabling SSH failed after reboot")
+                return api.types.status.FAILURE
+
+            api.Logger.info("Enabled Naples SSH after power cycle")
+
     except Exception as e:
         api.Logger.error(str(e))
         return api.types.status.FAILURE
