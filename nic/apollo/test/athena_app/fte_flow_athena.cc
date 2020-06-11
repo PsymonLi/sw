@@ -26,6 +26,7 @@
 #include <stdbool.h>
 
 #include <rte_mbuf.h>
+#include <rte_malloc.h>
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
@@ -174,7 +175,7 @@ fte_is_vnic_type_l2 (uint16_t vnic_id)
 }
 
 void
-fte_l2_flow_range_bmap_destroy (void)
+fte_l2_flow_range_bmp_destroy (void)
 {
     l2_flows_range_info_t *flow_range;
     uint16_t vnic_id, i;
@@ -186,8 +187,10 @@ fte_l2_flow_range_bmap_destroy (void)
         }
 
         flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
-        bitmap::destroy(flow_range->h2s_bmap);
-        bitmap::destroy(flow_range->s2h_bmap);
+        rte_bitmap_free(flow_range->h2s_bmp);
+        rte_free((void *)flow_range->h2s_bmp);
+        rte_bitmap_free(flow_range->s2h_bmp);
+        rte_free((void *)flow_range->s2h_bmp);
     }
 
     return;
@@ -895,8 +898,8 @@ static sdk_ret_t
 fte_l2_flow_check_macaddr (uint16_t vnic_id, uint8_t flow_dir,
                            l2_flows_range_info_t *flow_range,
                            struct ether_hdr *eth_hdr,
-                           uint32_t *h2s_bmap_posn,
-                           uint32_t *s2h_bmap_posn)
+                           uint32_t *h2s_bmp_posn,
+                           uint32_t *s2h_bmp_posn)
 {
     uint64_t h2s_mac = 0, s2h_mac = 0;
 
@@ -934,8 +937,8 @@ fte_l2_flow_check_macaddr (uint16_t vnic_id, uint8_t flow_dir,
         }
     }
 
-    *h2s_bmap_posn = (h2s_mac - flow_range->h2s_mac_lo);
-    *s2h_bmap_posn = (s2h_mac - flow_range->s2h_mac_lo);
+    *h2s_bmp_posn = (h2s_mac - flow_range->h2s_mac_lo);
+    *s2h_bmp_posn = (s2h_mac - flow_range->s2h_mac_lo);
 
     return SDK_RET_OK;
 }
@@ -950,13 +953,13 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
     pds_l2_flow_spec_t spec_h2s;
     pds_l2_flow_spec_t spec_s2h;
     l2_flows_range_info_t *flow_range;
-    uint32_t h2s_bmap_posn = 0;
-    uint32_t s2h_bmap_posn = 0;
+    uint32_t h2s_bmp_posn = 0;
+    uint32_t s2h_bmp_posn = 0;
 
     flow_range = &(g_flow_cache_policy[vnic_id].l2_flows_range);
     ret = fte_l2_flow_check_macaddr(vnic_id, flow_dir,
                                     flow_range, eth_hdr,
-                                    &h2s_bmap_posn, &s2h_bmap_posn);
+                                    &h2s_bmp_posn, &s2h_bmp_posn);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_DEBUG("fte_l2_flow_check_macaddr failed.\n");
         return ret;
@@ -983,25 +986,37 @@ fte_l2_flow_cache_entry_create (uint16_t vnic_id, uint8_t flow_dir,
     spec_h2s.data.index = h2s_rewrite_id;
     spec_s2h.data.index = s2h_rewrite_id;
 
-    if (!(flow_range->h2s_bmap->is_set(h2s_bmap_posn))) {
+    rte_spinlock_lock(&(flow_range->h2s_bmp_slock));
+    if (!(rte_bitmap_get(flow_range->h2s_bmp, h2s_bmp_posn))) {
+        rte_bitmap_set(flow_range->h2s_bmp, h2s_bmp_posn);
+        rte_spinlock_unlock(&(flow_range->h2s_bmp_slock));
+
         ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_h2s);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
                             "H2S failed. \n");
+            rte_bitmap_clear(flow_range->h2s_bmp, h2s_bmp_posn);
             return ret;
         }
+    } else {
+        rte_spinlock_unlock(&(flow_range->h2s_bmp_slock));
     }
-    flow_range->h2s_bmap->set(h2s_bmap_posn);
 
-    if (!(flow_range->s2h_bmap->is_set(s2h_bmap_posn))) {
+    rte_spinlock_lock(&(flow_range->s2h_bmp_slock));
+    if (!(rte_bitmap_get(flow_range->s2h_bmp, s2h_bmp_posn))) {
+        rte_bitmap_set(flow_range->s2h_bmp, s2h_bmp_posn);
+        rte_spinlock_unlock(&(flow_range->s2h_bmp_slock));
+
         ret = (sdk_ret_t)pds_l2_flow_cache_entry_create(&spec_s2h);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_DEBUG("pds_l2_flow_cache_entry_create "
                             "S2H failed. \n");
+            rte_bitmap_clear(flow_range->s2h_bmp, s2h_bmp_posn);
             return ret;
         }
+    } else {
+        rte_spinlock_unlock(&(flow_range->s2h_bmp_slock));
     }
-    flow_range->s2h_bmap->set(s2h_bmap_posn);
 
     return SDK_RET_OK;
 }
@@ -1814,7 +1829,9 @@ fte_setup_flow (void)
     flow_cache_policy_info_t *policy;
     rewrite_underlay_info_t *rewrite_underlay;
     rewrite_host_info_t *rewrite_host;
-    uint32_t h2s_bmap_size = 0, s2h_bmap_size = 0;
+    uint32_t h2s_bmp_size = 0, s2h_bmp_size = 0;
+    uint32_t bmp_size = 0;
+    void *bmp_mem;
     uint16_t vnic_id;
     uint16_t i;
 
@@ -1838,25 +1855,48 @@ fte_setup_flow (void)
         }
 
         if (policy->vnic_type == VNIC_L2) {
-            h2s_bmap_size = ((policy->l2_flows_range.h2s_mac_hi -
-                             policy->l2_flows_range.h2s_mac_lo) + 1);
-            policy->l2_flows_range.h2s_bmap =
-                bitmap::factory(h2s_bmap_size, 1);
-            if (policy->l2_flows_range.h2s_bmap == NULL) {
-                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.h2s_bmap "
-                                "init failed. \n", vnic_id);
+            h2s_bmp_size = ((policy->l2_flows_range.h2s_mac_hi -
+                            policy->l2_flows_range.h2s_mac_lo) + 1);
+            bmp_size = rte_bitmap_get_memory_footprint(h2s_bmp_size);
+            bmp_mem = rte_zmalloc("l2_flows_range_bmp", bmp_size,
+                                  RTE_CACHE_LINE_SIZE);
+            if (bmp_mem == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range h2s bmp_mem "
+                                "alloc failed. \n", vnic_id);
                 return SDK_RET_ERR;
             }
 
-            s2h_bmap_size = ((policy->l2_flows_range.s2h_mac_hi -
-                             policy->l2_flows_range.s2h_mac_lo) + 1);
-            policy->l2_flows_range.s2h_bmap =
-                bitmap::factory(s2h_bmap_size, 1);
-            if (policy->l2_flows_range.s2h_bmap == NULL) {
-                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.s2h_bmap "
+            policy->l2_flows_range.h2s_bmp =
+                rte_bitmap_init(h2s_bmp_size, (uint8_t *) bmp_mem,
+                                bmp_size);
+            if (policy->l2_flows_range.h2s_bmp == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.h2s_bmp "
+                               "init failed. \n", vnic_id);
+                return SDK_RET_ERR;
+            }
+            rte_spinlock_init(&(policy->l2_flows_range.h2s_bmp_slock));
+
+            bmp_size = 0;
+            bmp_mem = NULL;
+            s2h_bmp_size = ((policy->l2_flows_range.s2h_mac_hi -
+                            policy->l2_flows_range.s2h_mac_lo) + 1);
+            bmp_size = rte_bitmap_get_memory_footprint(s2h_bmp_size);
+            bmp_mem = rte_zmalloc("l2_flows_range_bmp", bmp_size,
+                                  RTE_CACHE_LINE_SIZE);
+            if (bmp_mem == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range s2h bmp_mem "
+                                "alloc failed. \n", vnic_id);
+                return SDK_RET_ERR;
+            }
+            policy->l2_flows_range.s2h_bmp =
+                rte_bitmap_init(s2h_bmp_size, (uint8_t *) bmp_mem,
+                                bmp_size);
+            if (policy->l2_flows_range.s2h_bmp == NULL) {
+                PDS_TRACE_DEBUG("VNIC:%u l2_flows_range.s2h_bmp "
                                 "init failed. \n", vnic_id);
                 return SDK_RET_ERR;
             }
+            rte_spinlock_init(&(policy->l2_flows_range.s2h_bmp_slock));
         }
 
         if (policy->nat_enabled) {

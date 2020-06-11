@@ -1,13 +1,14 @@
 #ifndef __PDS_POLICY_HPP__
 #define __PDS_POLICY_HPP__
 
+#include <rte_bitmap.h>
+#include <rte_spinlock.h>
 #include "boost/foreach.hpp"
 #include "boost/optional.hpp"
 #include "boost/property_tree/ptree.hpp"
 #include "boost/property_tree/json_parser.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
-#include "nic/sdk/lib/bitmap/bitmap.hpp"
 
 namespace fte_ath {
 
@@ -28,8 +29,10 @@ typedef struct l2_flows_range_info_s {
     uint64_t h2s_mac_hi;
     uint64_t s2h_mac_lo;
     uint64_t s2h_mac_hi;
-    bitmap *h2s_bmap;
-    bitmap *s2h_bmap;
+    struct rte_bitmap *h2s_bmp;
+    struct rte_bitmap *s2h_bmp;
+    rte_spinlock_t h2s_bmp_slock;
+    rte_spinlock_t s2h_bmp_slock;
 } l2_flows_range_info_t;
  
 typedef struct session_info_s {

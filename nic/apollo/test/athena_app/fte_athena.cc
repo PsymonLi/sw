@@ -1438,7 +1438,7 @@ fte_fini (void)
      * Anything else in fte_athena that needs explicit cleanup goes here.
      */
     fte_session_indexer_destroy();
-    fte_l2_flow_range_bmap_destroy();
+    fte_l2_flow_range_bmp_destroy();
 }
 
 } // namespace fte

@@ -37,7 +37,7 @@ void fte_init(pds_cinit_params_t *init_params);
 void fte_fini(void);
 sdk_ret_t fte_session_indexer_init(void);
 void fte_session_indexer_destroy(void);
-void fte_l2_flow_range_bmap_destroy(void);
+void fte_l2_flow_range_bmp_destroy(void);
 
 sdk_ret_t fte_flow_prog(struct rte_mbuf *m);
 void fte_thread_init(unsigned int core_id);
