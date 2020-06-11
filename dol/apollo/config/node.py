@@ -145,6 +145,7 @@ class NodeObject(base.ConfigObjectBase):
             return
         logger.info("Creating objects in pds-agent for node ", node)
 
+        InterfaceClient.LoadHostDrivers(node)
         BatchClient.Start(node)
         DeviceClient.CreateObjects(node)
         if (EzAccessStoreClient[node].IsDeviceOverlayRoutingEnabled()):

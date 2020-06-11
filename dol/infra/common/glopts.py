@@ -97,6 +97,9 @@ parser.add_argument('--pcapdir', dest='pcapdir',
                     help='PCAP Directory.')
 parser.add_argument('--naplescontainer', dest='naples_container', action='store_true',
                     help='Nic running(hal,model) inside container.')
+parser.add_argument('--skip_host_driver_load', dest='skip_host_driver_load', action='store_true',
+                    help='Skip loading host drivers',
+                    default=False)
 parser.add_argument('--netagent', dest='netagent', action='store_true',
                     help='Use REST queries to netagent instead of GRPC',
                     default=False)

@@ -205,8 +205,12 @@ def GetFilteredObjects(objs, maxlimits, randomize=False):
         return GetRandomSamples(objs, num)
     return objs[0:num]
 
+def IsSkipHostDriverLoad():
+    skip_host_driver_load = getattr(GlobalOptions, 'skip_host_driver_load', False)
+    return skip_host_driver_load
+
 def IsSkipSetup():
-    skip_setup = getattr(GlobalOptions, 'skip_setup', None)
+    skip_setup = getattr(GlobalOptions, 'skip_setup', False)
     return skip_setup
 
 def IsNetAgentMode():

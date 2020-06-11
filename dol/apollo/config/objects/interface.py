@@ -260,7 +260,7 @@ class HostInterfaceObject(InterfaceObject):
         self.RESTKey = None
         if utils.IsDol() and utils.IsHostLifSupported() and spec.lifns:
             self.obj_helper_lif = lif.LifObjectHelper(node)
-            self.__create_lifs(spec)
+            self.__generate_lifs(spec)
         self.UpdateImplicit()
         self.Show()
         return
@@ -287,13 +287,15 @@ class HostInterfaceObject(InterfaceObject):
             logger.info(f"Agent-IFName: {self.RESTKey}")
         return
 
-    def __create_lifs(self, spec):
+    def __generate_lifs(self, spec):
         self.obj_helper_lif.Generate(spec.lifinfo, spec.lifspec, spec.lifns)
-        self.obj_helper_lif.Configure()
         self.lif = self.obj_helper_lif.GetRandomHostLif()
         logger.info(" Selecting %s for Test" % self.lif.GID())
         self.lif.Show()
         return
+
+    def ConfigureLifs(self):
+        self.obj_helper_lif.Configure()
 
     def UpdateVrfAndNetwork(self, subnet, dissociate):
         if self.InterfaceId == subnet.HostIfIdx[0]:
@@ -559,6 +561,18 @@ class InterfaceObjectClient(base.ConfigClientBase):
                 self.__hostifs[node].update({hostif.InterfaceId: hostif})
         if self.__hostifs[node]:
             self.__hostifs_iter[node] = utils.rrobiniter(sorted(self.__hostifs[node].keys()))
+        return
+
+    def LoadHostDrivers(self, node):
+        if not utils.IsDol():
+            return
+        elif utils.IsSkipHostDriverLoad():
+            logger.info("Skip loading host drivers")
+            return
+        logger.info("Loading host drivers")
+        hostintfs = self.__hostifs[node]
+        for intf in hostintfs.values():
+            intf.ConfigureLifs()
         return
 
     def GenerateHostInterfaces(self, node, topospec):
