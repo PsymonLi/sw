@@ -81,10 +81,10 @@ service TopologyApi {
     // WorkloadMoveMsg moves workloads
     rpc MoveWorkloads(WorkloadMoveMsg) returns  (WorkloadMoveMsg) {};
 
-    //Add  Netowrks
+    //Add Networks
     rpc AddNetworks(NetworksMsg) returns  (NetworksMsg) {};
 
-    //Remove  Netowrks
+    //Remove Networks
     rpc RemoveNetworks(NetworksMsg) returns  (NetworksMsg) {};
 }
 
@@ -230,6 +230,14 @@ message NaplesSimInfo {
     string              ip_address         = 3;
 }
 
+message K8sMasterConfig {
+    // k8s master IP - not used for master node
+    string k8s_master_ip        = 1;
+
+    // k8s master token
+    string k8s_master_token     = 2;
+}
+
 // Node captures personality details of an E2E node
 message Node {
     // PersonalityType captures the node personality. naples node, venice node or qemu
@@ -260,13 +268,15 @@ message Node {
 
         // naples multiple sim on same node
         NaplesControlSimConfig    naples_control_sim_config    = 10;
-        
+
         VcenterConfig           vcenter_config = 11;
+
+        // kubernetes master config
+        K8sMasterConfig         kube_config    = 12;
     }
 
     // NodeStatus captures the details of the node action
-    IotaAPIResponse     node_status     = 12;
-
+    IotaAPIResponse     node_status     = 13;
 
     // Optionally run a start up script during add or reload.
     string              startup_script  = 14;
@@ -283,7 +293,7 @@ message Node {
 
     string              RestartMethod   = 19;
 
- }
+}
 
 message ApcInfo {
     string ip = 1;
@@ -379,6 +389,8 @@ message NaplesConfig {
     string name                 = 13;
 
     NaplesOperationMode naples_mode     = 14;
+    // k8s master info
+    K8sMasterConfig kubeInfo    = 15;
 }
 
 message NaplesConfigs {

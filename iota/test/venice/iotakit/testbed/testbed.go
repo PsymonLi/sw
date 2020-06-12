@@ -215,6 +215,7 @@ type TestNode struct {
 	NaplesSimConfig     iota.NaplesControlSimConfig // naples specific config
 	NaplesMultSimConfig iota.NaplesMultiSimConfig   // naples multiple sim specific config
 	VcenterConfig       iota.VcenterConfig          // vcenter config
+	K8sMasterConfig     iota.K8SMasterConfig        // K8s master config
 	iotaNode            *iota.Node                  // node info we got from iota
 	instParams          *InstanceParams             // instance params we got from warmd.json
 	topoNode            *TopoNode                   // node info from topology
@@ -612,7 +613,7 @@ func allocatePensandoOUI() string {
 	return macAddr
 }
 
-func (tb *TestBed) preapareNodeParams(nodeType iota.TestBedNodeType, personality iota.PersonalityType, node *TestNode) error {
+func (tb *TestBed) prepareNodeParams(nodeType iota.TestBedNodeType, personality iota.PersonalityType, node *TestNode) error {
 
 	// check if testbed node can take this personality
 	switch nodeType {
@@ -764,6 +765,11 @@ func (tb *TestBed) preapareNodeParams(nodeType iota.TestBedNodeType, personality
 	case iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER:
 		switch personality {
 		case iota.PersonalityType_PERSONALITY_K8S_MASTER:
+			node.K8sMasterConfig = iota.K8SMasterConfig{
+				K8SMasterIp: node.NodeMgmtIP + ":6443",
+				// TODO use random number
+				K8SMasterToken: "f0c861.753c505740ecde4c",
+			}
 		default:
 			return fmt.Errorf("unsupported node personality %v", personality)
 		}
@@ -917,7 +923,6 @@ func (tb *TestBed) setupVcenterNode(node *TestNode) error {
 							Password: tb.Params.Provision.Vars["EsxPassword"]})
 				}
 			}
-
 		}
 	}
 	return nil
@@ -985,7 +990,6 @@ func (tb *TestBed) setupVeniceIPs(node *TestNode) error {
 				}
 			}
 		}
-
 	}
 	return nil
 }
@@ -1051,6 +1055,7 @@ func (tb *TestBed) setupNode(node *TestNode) error {
 		log.Errorf("Error in setting up vcenter  nodes: ApiResp: %+v. ", err.Error())
 		return err
 	}
+
 	resp, err := client.InitNodes(context.Background(), initNodeMsg)
 	if err != nil {
 		log.Errorf("Error initing nodes:  Err %v", err)
@@ -1209,7 +1214,7 @@ func (tb *TestBed) AddNodes(personality iota.PersonalityType, names []string) ([
 		if IsHWNode(personality) && node.topoNode.HostOS == "" {
 			node.topoNode.HostOS = tb.Params.Provision.Vars["BmOs"]
 		}
-		if err := tb.preapareNodeParams(nodeType, personality, node); err != nil {
+		if err := tb.prepareNodeParams(nodeType, personality, node); err != nil {
 			return nil, err
 		}
 
@@ -1303,13 +1308,12 @@ func (tb *TestBed) initNodeState() error {
 			topoNode:    tnode,
 		}
 
-		if err := tb.preapareNodeParams(tnode.Type, tnode.Personality, &node); err != nil {
+		if err := tb.prepareNodeParams(tnode.Type, tnode.Personality, &node); err != nil {
 			return err
 		}
 
 		if IsHWNode(tnode.Personality) && node.topoNode.HostOS == "" {
 			node.topoNode.HostOS = tb.Params.Provision.Vars["BmOs"]
-
 		}
 		tb.Nodes[count] = &node
 		count++
@@ -1721,7 +1725,7 @@ func (tb *TestBed) setupTestBed() error {
 				log.Errorf("Error during InitTestBed(). ApiResponse: %+v Err: %v", instResp.ApiResponse, err)
 				return fmt.Errorf("Error during install image: %v", instResp.ApiResponse)
 			}
-			//Image installted, no need to resinstall on retry
+			//Image installed, no need to reinstall on retry
 			os.Setenv("SKIP_INSTALL", "1")
 		}
 
@@ -1782,6 +1786,7 @@ func (tb *TestBed) setupTestBed() error {
 		MakeCluster: true,
 	}
 
+	var kubeInfo *iota.K8SMasterConfig
 	for i := 0; i < len(tb.Nodes); i++ {
 		node := tb.Nodes[i]
 		tbn := iota.Node{
@@ -1809,6 +1814,13 @@ func (tb *TestBed) setupTestBed() error {
 			fallthrough
 		case iota.PersonalityType_PERSONALITY_NAPLES:
 			tbn.StartupScript = "/naples/nodeinit.sh"
+			// only need to set first one
+			if kubeInfo != nil {
+				node.NaplesConfigs.Configs[0].KubeInfo = &iota.K8SMasterConfig{
+					K8SMasterIp:    kubeInfo.K8SMasterIp,
+					K8SMasterToken: kubeInfo.K8SMasterToken,
+				}
+			}
 			fallthrough
 		case iota.PersonalityType_PERSONALITY_NAPLES_SIM:
 			tbn.Image = filepath.Base(tb.Topo.NaplesImage)
@@ -1894,6 +1906,11 @@ func (tb *TestBed) setupTestBed() error {
 					Type: iota.EntityType_ENTITY_TYPE_HOST,
 					Name: node.NodeName + "_venice",
 				},
+			}
+		case iota.PersonalityType_PERSONALITY_K8S_MASTER:
+			kubeInfo = &node.K8sMasterConfig
+			tbn.NodeInfo = &iota.Node_KubeConfig{
+				KubeConfig: &node.K8sMasterConfig,
 			}
 		}
 

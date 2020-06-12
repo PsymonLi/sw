@@ -65,6 +65,7 @@ func (venice *veniceNode) bringUpVenice(image string, hostname string,
 				return errors.Wrap(err, stdout)
 			}
 			time.Sleep(1 * time.Second)
+			continue
 		}
 		break
 	}

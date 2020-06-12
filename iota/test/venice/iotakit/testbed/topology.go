@@ -162,6 +162,17 @@ func ParseTopology(fileName string) (*Topology, error) {
 		break
 	}
 
+	for i := 0; i < topoMeta.Nodes.K8sMaster.Instances; i++ {
+		topo.Nodes = append(topo.Nodes, TopoNode{
+			NodeName:    "k8s-master-" + fmt.Sprintf("%v", i+1),
+			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER,
+			Personality: iota.PersonalityType_PERSONALITY_K8S_MASTER,
+		})
+
+		// TODO: support more than 1 master
+		break
+	}
+
 	if topoMeta.Nodes.Naples.Instances != 0 {
 		log.Infof("Number of naples instances : %v", topoMeta.Nodes.Naples.Instances)
 		for i := 0; i < topoMeta.Nodes.Naples.Instances; i++ {
@@ -216,16 +227,6 @@ func ParseTopology(fileName string) (*Topology, error) {
 		})
 	}
 
-	for i := 0; i < topoMeta.Nodes.K8sMaster.Instances; i++ {
-		topo.Nodes = append(topo.Nodes, TopoNode{
-			NodeName:    "k8s-master-" + fmt.Sprintf("%v", i+1),
-			Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER,
-			Personality: iota.PersonalityType_PERSONALITY_K8S_MASTER,
-		})
-
-		// TODO: start from 1
-		break
-	}
 	for i := 0; i < topoMeta.Nodes.Command.Instances; i++ {
 		topo.Nodes = append(topo.Nodes, TopoNode{
 			NodeName:    "command-node-" + fmt.Sprintf("%v", i+1),

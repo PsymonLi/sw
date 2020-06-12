@@ -27,6 +27,7 @@
 		VmwareESXConfig
 		VcenterConfig
 		NaplesSimInfo
+		K8SMasterConfig
 		Node
 		ApcInfo
 		NaplesMultiSimConfig

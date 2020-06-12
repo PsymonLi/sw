@@ -108,8 +108,16 @@ func (kube *kubeMasterNode) Init(in *iota.Node) (*iota.Node, error) {
 	kube.iotaNode.nodeMsg = in
 	kube.logger.Printf("Bring up request received for : %v. Req: %+v", in.GetName(), in)
 
-	if err := kube.bringUpKube(in.IpAddress, in.GetName(), in.GetReload(), "f0c861.753c505740ecde4c"); err != nil {
-		kube.logger.Println("K8s master node bring up failed.")
+	conf := in.GetKubeConfig()
+	if conf == nil {
+		msg := "K8s master node config is N.A."
+		kube.logger.Println(msg)
+		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
+			ErrorMsg: msg,
+		}}, errors.New(msg)
+	}
+
+	if err := kube.bringUpKube(in.IpAddress, in.GetName(), in.GetReload(), conf.K8SMasterToken); err != nil {
 		msg := fmt.Sprintf("k8s master node bring up failed: %v", err.Error())
 		kube.logger.Println(msg)
 		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR,
