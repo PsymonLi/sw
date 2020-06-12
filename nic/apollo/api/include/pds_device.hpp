@@ -47,6 +47,9 @@ typedef enum pds_device_profile_e {
 
 typedef enum pds_memory_profile_e {
     PDS_MEMORY_PROFILE_DEFAULT = 0,
+    // router profile will support 256K routes per IPv4
+    // route table and a total of 32 such route tables
+    PDS_MEMORY_PROFILE_ROUTER  = 1,
 } pds_memory_profile_t;
 
 /// \brief device specification

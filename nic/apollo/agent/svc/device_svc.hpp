@@ -99,6 +99,9 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
         break;
     }
     switch (api_spec->memory_profile) {
+    case PDS_MEMORY_PROFILE_ROUTER:
+        proto_spec->set_memoryprofile(pds::MEMORY_PROFILE_ROUTER);
+        break;
     case PDS_MEMORY_PROFILE_DEFAULT:
     default:
         proto_spec->set_memoryprofile(pds::MEMORY_PROFILE_DEFAULT);
@@ -235,6 +238,9 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         break;
     }
     switch (proto_spec.memoryprofile()) {
+    case pds::MEMORY_PROFILE_ROUTER:
+        api_spec->memory_profile = PDS_MEMORY_PROFILE_ROUTER;
+        break;
     case pds::MEMORY_PROFILE_DEFAULT:
     default:
         api_spec->memory_profile = PDS_MEMORY_PROFILE_DEFAULT;

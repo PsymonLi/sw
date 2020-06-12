@@ -20,6 +20,9 @@ service DeviceSvc {
 
 enum MemoryProfile {
   MEMORY_PROFILE_DEFAULT = 0;
+  // router profile will support 256K routes per IPv4
+  // route table and a total of 32 such route tables
+  MEMORY_PROFILE_ROUTER  = 1;
 }
 
 enum DeviceProfile {
