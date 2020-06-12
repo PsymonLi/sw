@@ -650,7 +650,8 @@ class NaplesManagement(EntityManagement):
 
     #if oob is not available read internal IP
     def ReadInternalIP(self):
-        if GlobalOptions.no_mgmt:
+        fw_type = self.ReadRunningFirmwareType()
+        if GlobalOptions.no_mgmt and fw_type != FIRMWARE_TYPE_GOLD:
             return
         for _ in range(5):
             try:
@@ -691,8 +692,10 @@ class NaplesManagement(EntityManagement):
     def Login(self, bringup_oob=True, force_connect=True):
         self.__login(force_connect)
         if bringup_oob and self.__read_mac():
-            self.ReadInternalIP()
-            self.ReadExternalIP() 
+            self.ReadExternalIP()
+            if not self.IsSSHUP():
+                #If External IP is not up, internal IP should be up at least
+                self.ReadInternalIP()
         else:
             self.ReadInternalIP()
 
