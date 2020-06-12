@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"net"
 	"strconv"
 
@@ -228,4 +229,57 @@ func IfIndexToStr(ifIndex uint32) string {
 		return ifTypeStr + slotStr + "/" + parentPortStr
 	}
 	return "-"
+}
+
+// Round rounding a value
+func Round(val float64, roundOn float64, places int) (newVal float64) {
+	var round float64
+	pow := math.Pow(10, float64(places))
+	digit := pow * val
+	_, div := math.Modf(digit)
+	if div >= roundOn {
+		round = math.Ceil(digit)
+	} else {
+		round = math.Floor(digit)
+	}
+	newVal = round / pow
+	return
+}
+
+// Convert1024BaseType base type
+type Convert1024BaseType int32
+
+// Convert1024BaseTypepps types
+const (
+	Convert1024BaseTypepps Convert1024BaseType = 0
+	Convert1024BaseTypebps Convert1024BaseType = 1
+)
+
+// Convert1024Base convert value to 1024 base
+func Convert1024Base(val float64, baseType Convert1024BaseType) string {
+	var suffixes [5]string
+	var base float64
+	var getSize float64
+	if baseType == Convert1024BaseTypepps {
+		suffixes[0] = "pps"
+		suffixes[1] = "Kpps"
+		suffixes[2] = "Mpps"
+		suffixes[3] = "Gpps"
+		suffixes[4] = "Tpps"
+	} else {
+		suffixes[0] = "bps"
+		suffixes[1] = "Kbps"
+		suffixes[2] = "Mbps"
+		suffixes[3] = "Gbps"
+		suffixes[4] = "Tbps"
+	}
+
+	base = 0
+	getSize = 0
+	if val != 0 {
+		base = math.Log(val) / math.Log(1024)
+		getSize = Round(math.Pow(1024, base-math.Floor(base)), .5, 3)
+	}
+	getSuffix := suffixes[int(math.Floor(base))]
+	return (strconv.FormatFloat(getSize, 'f', -1, 64) + " " + string(getSuffix))
 }

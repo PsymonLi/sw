@@ -1234,7 +1234,8 @@ port_mgmt_metrics_update (uint32_t port_num, port_args_t *port_args)
              rx_pkts = 0, curr_rx_pkts = 0, rx_bytes = 0, curr_rx_bytes = 0;
     float interval = (float)HAL_STATS_DELPHI_PUBLISH_INTVL/TIME_MSECS_PER_SEC;
 
-    mac_metrics_old = delphi::objects::MgmtMacMetrics::Find(port_num);
+    mac_metrics_old = delphi::objects::MgmtMacMetrics::Find(\
+                        ETH_IFINDEX_TO_UPLINK_IFINDEX(sdk::lib::catalog::logical_port_to_ifindex(port_num)));
 
     mgmt_mac_metrics.frames_rx_ok = port_args->stats_data[port::MgmtMacStatsType::MGMT_MAC_FRAMES_RX_OK];
     mgmt_mac_metrics.frames_rx_all = port_args->stats_data[port::MgmtMacStatsType::MGMT_MAC_FRAMES_RX_ALL];

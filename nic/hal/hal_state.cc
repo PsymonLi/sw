@@ -176,7 +176,7 @@ hal_cfg_db::init_pss(hal_cfg_t *hal_cfg, shmmgr *mmgr)
     SDK_ASSERT_RETURN((slab != NULL), false);
 
     slab = register_slab(HAL_SLAB_HANDLE_ID_LIST_ENTRY, slab_args={.name="hal_hdl_id_list_ent",
-                        .size=sizeof(hal_handle_id_list_entry_t), .num_elements=64,
+                        .size=sizeof(hal_handle_id_list_entry_t), .num_elements=10000,
                        .thread_safe=true, .grow_on_demand=true, .zero_on_alloc=true});
     SDK_ASSERT_RETURN((slab != NULL), false);
 

@@ -19,7 +19,9 @@ import (
 	"github.com/pensando/sw/nic/agent/netagent/datapath/halproto"
 )
 
-var ()
+var (
+	bwDetail bool
+)
 
 var systemBwStatsShowCmd = &cobra.Command{
 	Use:   "bw",
@@ -30,6 +32,7 @@ var systemBwStatsShowCmd = &cobra.Command{
 
 func init() {
 	systemStatsShowCmd.AddCommand(systemBwStatsShowCmd)
+	systemBwStatsShowCmd.Flags().BoolVar(&bwDetail, "detail", false, "Complete output")
 }
 
 func systemBwStatsShowCmdHandler(cmd *cobra.Command, args []string) {
@@ -54,13 +57,13 @@ func systemBwStatsShowCmdHandler(cmd *cobra.Command, args []string) {
 
 func bwShowHeader() {
 	fmt.Printf("\n")
-	hdrLine := strings.Repeat("-", 65)
+	hdrLine := strings.Repeat("-", 75)
 	fmt.Printf("Bandwidth Statistics:\n")
 	fmt.Printf("PPS: Packets per second     BPS: Bytes per second\n")
 	fmt.Println(hdrLine)
-	fmt.Printf("%-15s%-7s%-17s | %-7s%-17s\n",
+	fmt.Printf("%-15s%-9s%-21s | %-9s%-21s\n",
 		"", "", "TX", "", "RX")
-	fmt.Printf("%-15s%-12s%-12s | %-12s%-12s\n",
+	fmt.Printf("%-15s%-15s%-15s | %-15s%-15s\n",
 		"IF", "PPS", "BPS", "PPS", "BPS")
 	fmt.Println(hdrLine)
 }
@@ -112,8 +115,17 @@ func ifBwOneResp(resp *halproto.InterfaceGetResponse) {
 	txBps = resp.GetStatus().GetUplinkInfo().GetTxBytesps()
 	rxPps = resp.GetStatus().GetUplinkInfo().GetRxPps()
 	rxBps = resp.GetStatus().GetUplinkInfo().GetRxBytesps()
-	fmt.Printf("%-15s%-12d%-12d | %-12d%-12d\n",
-		intfStr, txPps, txBps, rxPps, rxBps)
+	if bwDetail == true {
+		fmt.Printf("%-15s%-15d%-15d | %-15d%-15d\n",
+			intfStr, txPps, txBps, rxPps, rxBps)
+	} else {
+		fmt.Printf("%-15s%-15s%-15s | %-15s%-15s\n",
+			intfStr,
+			utils.Convert1024Base(float64(txPps), utils.Convert1024BaseTypepps),
+			utils.Convert1024Base(float64(txBps)*8, utils.Convert1024BaseTypebps),
+			utils.Convert1024Base(float64(rxPps), utils.Convert1024BaseTypepps),
+			utils.Convert1024Base(float64(rxBps)*8, utils.Convert1024BaseTypebps))
+	}
 }
 
 func bwLifShow(c *grpc.ClientConn) {
@@ -167,6 +179,15 @@ func lifBwOneResp(resp *halproto.LifGetResponse) {
 	txBps = txStats.GetBytesps()
 	rxPps = rxStats.GetPps()
 	rxBps = rxStats.GetBytesps()
-	fmt.Printf("%-15s%-12d%-12d | %-12d%-12d\n",
-		intfStr, txPps, txBps, rxPps, rxBps)
+	if bwDetail == true {
+		fmt.Printf("%-15s%-15d%-15d | %-15d%-15d\n",
+			intfStr, txPps, txBps, rxPps, rxBps)
+	} else {
+		fmt.Printf("%-15s%-15s%-15s | %-15s%-15s\n",
+			intfStr,
+			utils.Convert1024Base(float64(txPps), utils.Convert1024BaseTypepps),
+			utils.Convert1024Base(float64(txBps)*8, utils.Convert1024BaseTypebps),
+			utils.Convert1024Base(float64(rxPps), utils.Convert1024BaseTypepps),
+			utils.Convert1024Base(float64(rxBps)*8, utils.Convert1024BaseTypebps))
+	}
 }
