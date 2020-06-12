@@ -98,7 +98,8 @@ const (
 	ObflLogDir = "/obfl"
 
 	// Events directory
-	EventsDir = "/var/lib/pensando/events"
+	EventsDir    = "/var/lib/pensando/events"
+	DSCEventsDir = LogDir + "/events"
 
 	// Cores directory
 	CoresDir = "/data/core"

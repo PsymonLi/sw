@@ -417,7 +417,7 @@ func (c *API) WatchAlertPolicies(ctx context.Context) error {
 	nodeName := c.InfraAPI.GetDscName()
 	defLogger := log.GetDefaultInstance()
 	storeConfig := &events.StoreConfig{
-		Dir:         globals.EventsDir,
+		Dir:         globals.DSCEventsDir,
 		MaxFileSize: 1 * 1000 * 1000, // 1mb
 		MaxNumFiles: 4,
 	}

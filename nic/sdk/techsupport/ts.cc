@@ -100,11 +100,10 @@ techsupport::setup_fsink_(void) {
 void
 techsupport::setup_working_dir_(void) {
     string mkdir_cmd;
-    char dir_template[] = "DSC_Techsupport-XXXXXX";
     vector<string> cmds;
 
-    // create a directory to work on
-    work_dir_.assign(mkdtemp(dir_template));
+    // create a directory with filename (excluding extension) to work on
+    work_dir_ = dst_file_.substr(0, dst_file_.find(".tar.gz"));
     mkdir_cmd = "mkdir -p " + dst_dir_ + "/" + work_dir_;
     cmds.push_back(mkdir_cmd);
     techsupport_run_sys_cmds(cmds);

@@ -18,7 +18,7 @@ get_techsupport_filename (void)
     time_t current_time = time(NULL);
 
     strftime(timestring, PATH_MAX, "%Y%m%d%H%M%S", gmtime(&current_time));
-    snprintf(filename, PATH_MAX, "tech-support-%s.tar.gz", timestring);
+    snprintf(filename, PATH_MAX, "dsc-tech-support-%s.tar.gz", timestring);
 
     return std::string(filename);
 }
@@ -26,12 +26,15 @@ get_techsupport_filename (void)
 static inline std::string
 get_techsupport_binary (void)
 {
+    const char* nic_dir;
     std::string ts_bin_path;
     std::string ts_bin = "/bin/techsupport";
 
-    ts_bin_path = std::string(std::getenv("PDSPKG_TOPDIR"));
-    if (ts_bin_path.empty()) {
+    nic_dir = std::getenv("PDSPKG_TOPDIR");
+    if (nic_dir == NULL) {
         ts_bin_path = std::string("/nic/");
+    } else {
+        ts_bin_path.assign(nic_dir);
     }
     ts_bin_path += ts_bin;
 
@@ -41,12 +44,15 @@ get_techsupport_binary (void)
 static inline std::string
 get_techsupport_config (void)
 {
+    const char* nic_conf_dir;
     std::string ts_cfg_path;
     std::string ts_cfg = "/techsupport.json";
 
-    ts_cfg_path = std::string(std::getenv("CONFIG_PATH"));
-    if (ts_cfg_path.empty()) {
+    nic_conf_dir = std::getenv("CONFIG_PATH");
+    if (nic_conf_dir == NULL) {
         ts_cfg_path = std::string("/nic/conf/");
+    } else {
+        ts_cfg_path.assign(nic_conf_dir);
     }
     ts_cfg_path += ts_cfg;
 
