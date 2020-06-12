@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
 import { Animations } from '@app/animations';
 import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -15,7 +15,14 @@ import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { VcenterWorkloadsTuple, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
 import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
-
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
+import { FormArray } from '@angular/forms';
+import { FieldsRequirement } from '@sdk/v1/models/generated/search';
+import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
+import { SearchUtil } from '@app/components/search/SearchUtil';
 
 interface VcenterUIModel {
   associatedWorkloads: WorkloadWorkload[];
@@ -35,7 +42,10 @@ interface VcenterUIModel {
   animations: [Animations]
 })
 
-export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchestrationOrchestrator, OrchestrationOrchestrator> implements OnInit {
+export class VcenterIntegrationsComponent extends DataComponent implements OnInit {
+
+  @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
+  @ViewChild('vCenterIntegrationTable') vCenterIntegrationTable: PentableComponent;
 
   bodyicon: Icon = {
     margin: {
@@ -66,7 +76,7 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
   };
 
   subscriptions: Subscription[] = [];
-  dataObjects: ReadonlyArray<OrchestrationOrchestrator>;
+  dataObjects: ReadonlyArray<OrchestrationOrchestrator> = [];
 
   workloadList: WorkloadWorkload[] = [];
 
@@ -86,13 +96,56 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
     { field: 'status.connection-status', header: 'Connection Status', class: 'vcenter-integration-column-status', sortable: true, width: 30 },
     { field: 'status.last-transition-time', header: 'Connection Transition Time', class: 'vcenter-integration-column-lastconnected', sortable: true, width: '180px' },
   ];
+  maxSearchRecords: number = 8000;
+  advSearchCols: TableCol[] = [];
+  fieldFormArray = new FormArray([]);
+
+  dataObjectsBackUp: ReadonlyArray<OrchestrationOrchestrator> = [];
 
   constructor(private orchestrationService: OrchestrationService,
     protected cdr: ChangeDetectorRef,
     protected uiconfigsService: UIConfigsService,
     protected workloadService: WorkloadService,
     protected controllerService: ControllerService) {
-    super(controllerService, cdr, uiconfigsService);
+    super(controllerService, uiconfigsService);
+  }
+
+  clearSelectedDataObjects() {
+    this.vCenterIntegrationTable.selectedDataObjects = [];
+  }
+
+  getSelectedDataObjects() {
+    return this.vCenterIntegrationTable.selectedDataObjects;
+  }
+
+  ngOnInit() {
+    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
+    });
+    this.setDefaultToolbar();
+    this.tableLoading = true;
+    this.getVcenterIntegrations();
+    this.watchWorkloads();
+    this.buildAdvSearchCols();
+  }
+
+   /**
+  * Execute table search
+  * @param field
+  * @param order
+  */
+  onSearchvCenterIntegrations(field = this.vCenterIntegrationTable.sortField, order = this.vCenterIntegrationTable.sortOrder) {
+    const searchResults = this.onSearchDataObjects(field, order, 'Orchestrator', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.vCenterIntegrationTable.advancedSearchComponent);
+    if (searchResults && searchResults.length > 0) {
+      this.dataObjects = [];
+      this.dataObjects = searchResults;
+    }
+  }
+
+   // advance search APIs
+  onCancelSearch($event) {
+    this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
+    this.dataObjects = this.dataObjectsBackUp;
   }
 
   getVcenterIntegrations() {
@@ -104,6 +157,8 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
         this.dataObjects = response.data;
         this.buildVCenterDatacenters();
         this.buildVCenterWorkloadsMap();
+        this.tableLoading = false;
+        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
       },
       this.controllerService.webSocketErrorHandler('Failed to get vCenters')
     );
@@ -116,8 +171,8 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
       buttons = [{
         cssClass: 'global-button-primary vcenter-integrations-button vcenter-integrations-button-ADD',
         text: 'ADD VCENTER',
-        computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-        callback: () => { this.createNewObject(); }
+        computeClass: () => !this.vCenterIntegrationTable.showRowExpand ? '' : 'global-button-disabled',
+        callback: () => { this.vCenterIntegrationTable.createNewObject(); }
       }];
     }
     this.controllerService.setToolbarData({
@@ -139,11 +194,6 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
   hasWorkloads(rowData: OrchestrationOrchestrator): boolean {
     const workloads = rowData._ui.associatedWorkloads;
     return workloads && workloads.length > 0;
-  }
-
-  postNgInit() {
-    this.getVcenterIntegrations();
-    this.watchWorkloads();
   }
 
   /**
@@ -177,6 +227,7 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
         };
         vcenter._ui = uiModel;
       });
+      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
     }
   }
 
@@ -195,6 +246,7 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
         vcenter._ui = uiModel;
         return vcenter;
       });
+      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
     }
   }
 
@@ -213,4 +265,68 @@ export class VcenterIntegrationsComponent extends TablevieweditAbstract<IOrchest
   getClassName(): string {
     return this.constructor.name;
   }
+
+  buildAdvSearchCols() {
+    this.advSearchCols = this.cols.filter((col: TableCol) => {
+      return (col.field !== 'meta.creation-time'  && col.field !== 'status.last-transition-time'  && col.field !== 'associatedWorkloads' );
+    });
+
+    this.advSearchCols.push({
+      field: 'associatedWorkloads', header: 'Workloads', localSearch: true, kind: 'Orchestrator',
+      filterfunction: this.searchWorkloads,
+      advancedSearchOperator: SearchUtil.stringOperators
+    });
+  }
+  searchWorkloads(requirement: FieldsRequirement, data = this.dataObjects): any[] {
+    const outputs: any[] = [];
+    for (let i = 0; data && i < data.length; i++) {
+      const workloads = (data[i]._ui as VcenterUIModel).associatedWorkloads;
+      for (let k = 0; k < workloads.length; k++) {
+        const recordValueName = _.get(workloads[k], ['meta', 'name']);
+        const searchValues = requirement.values;
+        let operator = String(requirement.operator);
+        operator = TableUtility.convertOperator(operator);
+        for (let j = 0; j < searchValues.length; j++) {
+          const activateFunc = TableUtility.filterConstraints[operator];
+          if (activateFunc && activateFunc(recordValueName, searchValues[j])) {
+            outputs.push(data[i]);
+          }
+        }
+      }
+    }
+    return outputs;
+  }
+  onColumnSelectChange(event) {
+    this.vCenterIntegrationTable.onColumnSelectChange(event);
+  }
+
+  creationFormClose() {
+    this.vCenterIntegrationTable.creationFormClose();
+  }
+
+  editFormClose(rowData) {
+    if (this.vCenterIntegrationTable.showRowExpand) {
+      this.vCenterIntegrationTable.toggleRow(rowData);
+    }
+  }
+
+  expandRowRequest(event, rowData) {
+    if (!this.vCenterIntegrationTable.showRowExpand) {
+      this.vCenterIntegrationTable.toggleRow(rowData, event);
+    }
+  }
+
+  onDeleteRecord(event, object) {
+    this.vCenterIntegrationTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this),
+      () => {
+        this.vCenterIntegrationTable.selectedDataObjects = [];
+      }
+    );
+  }
+
 }

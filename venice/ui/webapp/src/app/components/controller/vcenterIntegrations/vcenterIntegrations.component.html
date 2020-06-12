@@ -1,39 +1,41 @@
 <app-pagebody [icon]="bodyicon" header="vCenter Overview">
   <div fxFlex class="vcenter-integrations-table-container">
-    <ng-container *ngTemplateOutlet="DataTable"></ng-container>
+    <app-pentable #vCenterIntegrationTable
+                  [actionTemplate]="actionTemplate"
+                  [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate"
+                  [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects"
+                  [enableCheckbox]="false"
+                  [expandTemplate]="expandTemplate"
+                  [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true"
+                  [searchFormArray]="fieldFormArray"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchvCenterIntegrations()"
+                  (searchCancelledEmitter)="onCancelSearch($event)"
+                  searchKind="Orchestrator"
+                  [exportFilename]="exportFilename"
+                  [exportMap]="exportMap">
+
+    </app-pentable>
   </div>
 </app-pagebody>
-<ng-template #DataTable>
-  <app-tableviewedit fxLayout="column" style="height: 100%;"
-                     [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand"
-                     [data]="dataObjects"
-                     [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate"
-                     [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate"
-                     [createTemplate]="createTemplate"
-                     [enableCheckbox]="false"
-                     [tableLoading]="tableLoading"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
-</ng-template>
+
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <div fxFlex fxLayout="column">
-    <div fxLayout="row">
-      <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="tableMenuItems"
-                       title="vCenters"
-                       [total]="dataObjects.length" [icon]="headerIcon"
-                       [enableColumnSelect]="true"
-                       [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
-      </app-tableheader>
-    </div>
+  <div fxLayout="row">
+    <app-tableheader fxFlex="auto" fxLayout="row"
+                     [tableMenuItems]="vCenterIntegrationTable.tableMenuItems"
+                     title="vCenters"
+                     [total]="dataObjects.length" [icon]="headerIcon"
+                     [enableColumnSelect]="true"
+                     [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+    </app-tableheader>
   </div>
-
 </ng-template>
 
 <ng-template #createTemplate>
@@ -99,6 +101,6 @@
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newvcenter-integration [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
-                              (formClose)="closeRowExpand()" fxFlex="none">
+                              (formClose)="editFormClose(rowData)" fxFlex="none">
   </app-newvcenter-integration>
 </ng-template>
