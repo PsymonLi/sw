@@ -15,7 +15,6 @@ mv -f /target/usr/lib/systemd/system/* /host/usr/lib/systemd/system/
 # No component should mount /etc/pensando except CMD.
 # /etc/pensando/shared/common is shared across all components.
 mkdir -p /host/etc/pensando/configs/shared/common
-mkdir -p /host/etc/pensando/configs/pen-influx
 mkdir -p /host/etc/pensando/configs/pen-apiserver
 mkdir -p /host/etc/pensando/configs/pen-cmd
 mkdir -p /host/etc/pensando/configs/pen-elastic
@@ -37,7 +36,6 @@ mkdir -p /host/var/lib/pensando
 # We need to differentiate build time configs from the configs that get generated runt-time based on user-config
 # as of now - keep a copy of the build time configs at /host/etc/pensando/configs.
 # even during node cleanup we just copy from this to the expected path
-cp -f /target/etc/pensando/pen-influx/influxdb.conf /host/etc/pensando/configs/pen-influx/influxdb.conf
 cp -f /target/etc/pensando/shared/common/venice.json /host/etc/pensando/configs/shared/common/venice.json
 cp -f /target/etc/pensando/shared/common/venice.conf /host/etc/pensando/configs/shared/common/venice.conf
 cp -f /target/usr/bin/gettechsupport.sh /host/usr/pensando/bin/gettechsupport.sh

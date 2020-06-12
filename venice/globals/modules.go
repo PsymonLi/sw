@@ -12,7 +12,6 @@ const (
 	Ntp                   = "pen-ntp"
 	OrchHub               = "pen-orchhub"
 	Npm                   = "pen-npm"
-	Influx                = "pen-influx"
 	EvtsMgr               = "pen-evtsmgr"
 	Spyglass              = "pen-spyglass"
 	ElasticSearch         = "pen-elastic"
