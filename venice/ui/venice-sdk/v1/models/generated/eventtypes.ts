@@ -14,6 +14,9 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'ORCH_ALREADY_MANAGED',
     'ORCH_CONFIG_PUSH_FAILURE',
     'ORCH_CONNECTION_ERROR',
+    'ORCH_DSC_MODE_INCOMPATIBLE',
+    'ORCH_DSC_NOT_ADMITTED',
+    'ORCH_HOST_CONFLICT',
     'ORCH_INVALID_ACTION',
     'ORCH_LOGIN_FAILURE',
     'ORCH_UNSUPPORTED_VERSION',
@@ -50,8 +53,6 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'NODE_HEALTHY',
     'NODE_JOINED',
     'NODE_UNREACHABLE',
-    'ORCH_DSC_MODE_INCOMPATIBLE',
-    'ORCH_DSC_NOT_ADMITTED',
     'OTHER_ACTIVE_SESSION_LIMIT_APPROACH',
     'OTHER_ACTIVE_SESSION_LIMIT_REACHED',
     'PASSWORD_CHANGED',
@@ -138,6 +139,21 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "ORCH_CONNECTION_ERROR",
       "Severity": EventsEvent_severity.critical,
       "Desc": "Failed to connect to orchestrator",
+  },
+  'ORCH_DSC_MODE_INCOMPATIBLE' : {
+      "Name": "ORCH_DSC_MODE_INCOMPATIBLE",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC mode is incompatible.",
+  },
+  'ORCH_DSC_NOT_ADMITTED' : {
+      "Name": "ORCH_DSC_NOT_ADMITTED",
+      "Severity": EventsEvent_severity.warn,
+      "Desc": "Workload provisioned on a host with no admitted DSC",
+  },
+  'ORCH_HOST_CONFLICT' : {
+      "Name": "ORCH_HOST_CONFLICT",
+      "Severity": EventsEvent_severity.warn,
+      "Desc": "Unable to create host due to conflicts with a user created host",
   },
   'ORCH_INVALID_ACTION' : {
       "Name": "ORCH_INVALID_ACTION",
@@ -308,16 +324,6 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "NODE_UNREACHABLE",
       "Severity": EventsEvent_severity.critical,
       "Desc": "Node is unreachable",
-  },
-  'ORCH_DSC_MODE_INCOMPATIBLE' : {
-      "Name": "ORCH_DSC_MODE_INCOMPATIBLE",
-      "Severity": EventsEvent_severity.critical,
-      "Desc": "DSC mode is incompatible.",
-  },
-  'ORCH_DSC_NOT_ADMITTED' : {
-      "Name": "ORCH_DSC_NOT_ADMITTED",
-      "Severity": EventsEvent_severity.warn,
-      "Desc": "Workload provisioned on a host with no admitted DSC",
   },
   'OTHER_ACTIVE_SESSION_LIMIT_APPROACH' : {
       "Name": "OTHER_ACTIVE_SESSION_LIMIT_APPROACH",

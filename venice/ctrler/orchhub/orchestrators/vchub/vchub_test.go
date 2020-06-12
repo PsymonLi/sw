@@ -2345,6 +2345,11 @@ func TestDiscoveredDCs(t *testing.T) {
 		vchub.vcReadCh <- deleteDCEvent(dc.Obj.Self.Value)
 	}
 
+	// Modify stateMgr status. Should be overwritten correctly
+	o, err := sm.Controller().Orchestrator().Find(&vchub.OrchConfig.ObjectMeta)
+	AssertOk(t, err, "Failed to get orch config")
+	o.Orchestrator.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
+
 	addDC(dcName4)
 	renameDC(dc3, dcName5)
 	removeDC(dc2)
@@ -2353,6 +2358,9 @@ func TestDiscoveredDCs(t *testing.T) {
 		o, err := sm.Controller().Orchestrator().Find(&vchub.OrchConfig.ObjectMeta)
 		if err != nil {
 			return false, fmt.Errorf("Failed to find orchestrator object. Err : %v", err)
+		}
+		if o.Orchestrator.Status.Status == orchestration.OrchestratorStatus_Unknown.String() {
+			return false, fmt.Errorf("Status was rewritten")
 		}
 		act := o.Orchestrator.Status.DiscoveredNamespaces
 		exp := []string{dcName1, dcName4, dcName5}
@@ -3509,10 +3517,9 @@ func createDistributedServiceCard(stateMgr *smmock.Statemgr, tenant, name, id st
 	np := cluster.DistributedServiceCard{
 		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
 		ObjectMeta: api.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-			Tenant:    tenant,
-			Labels:    labels,
+			Name:   name,
+			Tenant: tenant,
+			Labels: labels,
 		},
 		Spec: cluster.DistributedServiceCardSpec{DSCProfile: "default", ID: id},
 		Status: cluster.DistributedServiceCardStatus{

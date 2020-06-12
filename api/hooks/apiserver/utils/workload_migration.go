@@ -33,6 +33,9 @@ func IsWorkloadMigrating(wlObj *workload.Workload) bool {
 	if wlObj == nil || wlObj.Status.MigrationStatus == nil {
 		return false
 	}
+	if wlObj.Status.MigrationStatus.Stage == "" || wlObj.Status.MigrationStatus.Status == "" {
+		return false
+	}
 	// If migration is not started
 	// If migration is Done
 	// If migration is aborted, and datapath is in terminal state

@@ -31,6 +31,21 @@
    "Desc": "Failed to connect to orchestrator"
   },
   {
+   "Name": "ORCH_DSC_MODE_INCOMPATIBLE",
+   "Severity": "critical",
+   "Desc": "DSC mode is incompatible."
+  },
+  {
+   "Name": "ORCH_DSC_NOT_ADMITTED",
+   "Severity": "warn",
+   "Desc": "Workload provisioned on a host with no admitted DSC"
+  },
+  {
+   "Name": "ORCH_HOST_CONFLICT",
+   "Severity": "warn",
+   "Desc": "Unable to create host due to conflicts with a user created host"
+  },
+  {
    "Name": "ORCH_INVALID_ACTION",
    "Severity": "warn",
    "Desc": "User performed an action that is not supported"
@@ -201,16 +216,6 @@
    "Name": "NODE_UNREACHABLE",
    "Severity": "critical",
    "Desc": "Node is unreachable"
-  },
-  {
-   "Name": "ORCH_DSC_MODE_INCOMPATIBLE",
-   "Severity": "critical",
-   "Desc": "DSC mode is incompatible."
-  },
-  {
-   "Name": "ORCH_DSC_NOT_ADMITTED",
-   "Severity": "warn",
-   "Desc": "Workload provisioned on a host with no admitted DSC"
   },
   {
    "Name": "OTHER_ACTIVE_SESSION_LIMIT_APPROACH",

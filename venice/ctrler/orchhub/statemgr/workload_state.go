@@ -45,12 +45,18 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 		return nil
 	}
 	err = sm.SendProbeEvent(w.Workload.GetObjectMeta(), w.Workload.GetObjectKind(), kvstore.Created, orchKey)
-	return err
+	if err != nil {
+		sm.logger.Errorf("Failed to send event: %v", err)
+	}
+
+	return nil
 }
 
 // OnWorkloadUpdate handles update event
 func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nw *workload.Workload) error {
-	_, err := WorkloadStateFromObj(w)
+	if _, err := WorkloadStateFromObj(w); err != nil {
+		return err
+	}
 	currState := ""
 	if w.Status.MigrationStatus != nil {
 		currState = w.Status.MigrationStatus.Status
@@ -65,9 +71,12 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nw *workload.Workload) e
 			sm.logger.Errorf("Could not extract orch key from workload label, %v ", nw.ObjectMeta)
 			return nil
 		}
-		err = sm.SendProbeEvent(nw.GetObjectMeta(), nw.GetObjectKind(), kvstore.Updated, orchKey)
+		err := sm.SendProbeEvent(nw.GetObjectMeta(), nw.GetObjectKind(), kvstore.Updated, orchKey)
+		if err != nil {
+			sm.logger.Errorf("Failed to send event: %v", err)
+		}
 	}
-	return err
+	return nil
 }
 
 // OnWorkloadDelete deletes a workload

@@ -713,7 +713,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			continue
 		}
 		if skipped := ev.GetEvent().Key - lastEvent; skipped > 1 {
-			v.Log.Errorf("Skipped %d events on %s", skipped, ref.Value)
+			v.Log.Errorf("Skipped %d events on %s, lastEvent %v currentEvent %v", skipped, ref.Value, lastEvent, ev.GetEvent().Key)
 		}
 		lastEvent = ev.GetEvent().Key
 

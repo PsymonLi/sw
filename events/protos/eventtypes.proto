@@ -382,12 +382,15 @@ enum EventTypes {
     ORCH_UNSUPPORTED_VERSION               = 1008 [(category) = Orchestration,
                                            (severity) = WARN,
                                            (desc)     = "Unsupported orchestrator version"];
-    ORCH_DSC_NOT_ADMITTED                  = 1009 [(category)    = Cluster,
+    ORCH_DSC_NOT_ADMITTED                  = 1009 [(category)    = Orchestration,
                                            (severity)    = WARN,
                                            (desc)        = "Workload provisioned on a host with no admitted DSC"];
-    ORCH_DSC_MODE_INCOMPATIBLE             = 1010 [(category)    = Cluster,
+    ORCH_DSC_MODE_INCOMPATIBLE             = 1010 [(category)    = Orchestration,
                                            (severity)    = CRITICAL,
                                            (desc)        = "DSC mode is incompatible."];
+    ORCH_HOST_CONFLICT                     = 1011 [(category)    = Orchestration,
+                                           (severity)    = WARN,
+                                           (desc)        = "Unable to create host due to conflicts with a user created host"];
     // ------------------------- Controller events ------------------------- //
     COLLECTOR_REACHABLE                    = 1101 [(category) = Network,
                                            (severity)         = INFO,

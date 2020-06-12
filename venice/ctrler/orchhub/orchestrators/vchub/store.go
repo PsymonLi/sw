@@ -73,8 +73,8 @@ func (v *VCHub) startEventsListener() {
 					return
 				}
 
-				previousState := o.Orchestrator.Status.Status
-				previousMsg := o.Orchestrator.Status.Message
+				previousState := v.OrchConfig.Status.Status
+				previousMsg := v.OrchConfig.Status.Message
 
 				v.Log.Infof("Updating orchestrator connection status to %v", connStatus.State)
 
@@ -166,17 +166,17 @@ func (v *VCHub) startEventsListener() {
 
 				v.Log.Infof("Writing status update")
 				v.orchUpdateLock.Lock()
-				o.Orchestrator.Status.Status = connStatus.State
-				o.Orchestrator.Status.LastTransitionTime = &api.Timestamp{}
-				o.Orchestrator.Status.LastTransitionTime.SetTime(time.Now())
-				o.Orchestrator.Status.Message = msg
-				o.Status.OrchID = v.OrchConfig.Status.OrchID
+				v.OrchConfig.Status.Status = connStatus.State
+				v.OrchConfig.Status.LastTransitionTime = &api.Timestamp{}
+				v.OrchConfig.Status.LastTransitionTime.SetTime(time.Now())
+				v.OrchConfig.Status.Message = msg
 				if connStatus.State == orchestration.OrchestratorStatus_Failure.String() {
 					v.discoveredDCsLock.Lock()
 					v.discoveredDCs = []string{}
 					v.discoveredDCsLock.Unlock()
-					o.Status.DiscoveredNamespaces = []string{}
+					v.OrchConfig.Status.DiscoveredNamespaces = []string{}
 				}
+				o.Orchestrator.Status = v.OrchConfig.Status
 				o.Write()
 				v.orchUpdateLock.Unlock()
 
@@ -418,7 +418,8 @@ func (v *VCHub) removeDiscoveredDC(dcName string) {
 			return
 		}
 
-		o.Orchestrator.Status.DiscoveredNamespaces = dcList
+		v.OrchConfig.Status.DiscoveredNamespaces = dcList
+		o.Orchestrator.Status = v.OrchConfig.Status
 		err = o.Write()
 
 		if err != nil {
@@ -458,7 +459,8 @@ func (v *VCHub) addDiscoveredDC(dcName string) {
 			return
 		}
 
-		o.Orchestrator.Status.DiscoveredNamespaces = dcList
+		v.OrchConfig.Status.DiscoveredNamespaces = dcList
+		o.Orchestrator.Status = v.OrchConfig.Status
 		err = o.Write()
 
 		if err != nil {
@@ -499,7 +501,8 @@ func (v *VCHub) renameDiscoveredDC(oldName, newName string) {
 			return
 		}
 
-		o.Orchestrator.Status.DiscoveredNamespaces = dcList
+		v.OrchConfig.Status.DiscoveredNamespaces = dcList
+		o.Orchestrator.Status = v.OrchConfig.Status
 		err = o.Write()
 
 		if err != nil {

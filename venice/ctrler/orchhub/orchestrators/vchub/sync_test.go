@@ -1226,7 +1226,7 @@ func TestHostDeleteFromDVS(t *testing.T) {
 
 	err = createDSCProfile(sm)
 	AssertOk(t, err, "Failed to create DSC profile")
-	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, map[string]string{})
+	err = createDistributedServiceCard(sm, "", dscMac, dscMac, map[string]string{})
 	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	hName2 := "Host2"
@@ -1241,7 +1241,7 @@ func TestHostDeleteFromDVS(t *testing.T) {
 	hostSystem2.ClearNics()
 	err = hostSystem2.AddNic("vmnic0", dscMac2)
 
-	err = createDistributedServiceCard(sm, "default", dscMac2, dscMac2, map[string]string{})
+	err = createDistributedServiceCard(sm, "", dscMac2, dscMac2, map[string]string{})
 	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create vmkNIC

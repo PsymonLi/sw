@@ -447,15 +447,13 @@ func TestHostCreateList(t *testing.T) {
 }
 
 // createDistributedServiceCard utility function to create a DistributedServiceCard
-func createDistributedServiceCard(stateMgr *Statemgr, tenant, name, id string, labels map[string]string) error {
+func createDistributedServiceCard(stateMgr *Statemgr, name, id string, labels map[string]string) error {
 	// DistributedServiceCard params
 	np := cluster.DistributedServiceCard{
 		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
 		ObjectMeta: api.ObjectMeta{
-			Name:      name,
-			Namespace: "default",
-			Tenant:    tenant,
-			Labels:    labels,
+			Name:   name,
+			Labels: labels,
 		},
 		Spec:   cluster.DistributedServiceCardSpec{DSCProfile: "default", ID: id},
 		Status: cluster.DistributedServiceCardStatus{PrimaryMAC: name},
@@ -505,14 +503,14 @@ func TestDistributedServiceCardCreateList(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "default", "prod-beef", "", nil)
+	err = createDistributedServiceCard(sm, "prod-beef", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
-	err = createDistributedServiceCard(sm, "default", "prod-bebe", "", nil)
+	err = createDistributedServiceCard(sm, "prod-bebe", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	labels := map[string]string{"color": "green"}
-	err = createDistributedServiceCard(sm, "default", "dev-caca", "", labels)
+	err = createDistributedServiceCard(sm, "dev-caca", "", labels)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	nw, err := sm.ctrler.DistributedServiceCard().List(context.Background(), &api.ListWatchOptions{})
@@ -524,8 +522,7 @@ func TestDistributedServiceCardCreateList(t *testing.T) {
 	Assert(t, len(nw) == 1, "found more DistributedServiceCards than expected. [%v]", len(nw))
 
 	meta := api.ObjectMeta{
-		Name:      "prod-bebe",
-		Namespace: "default",
+		Name: "prod-bebe",
 		//DSC is cluster object, tenant not required
 		//Tenant:    "default",
 	}
@@ -718,7 +715,7 @@ func TestUpdateDSCProfile(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "default", "prod-beef", "", nil)
+	err = createDistributedServiceCard(sm, "prod-beef", "", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	dscProfile.Spec.DeploymentTarget = cluster.DSCProfileSpec_HOST.String()
@@ -763,7 +760,7 @@ func TestFindDSC(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "default", "prod-beef", "beef-id", nil)
+	err = createDistributedServiceCard(sm, "prod-beef", "beef-id", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	d := sm.FindDSC("", "prod-tee")
@@ -812,7 +809,7 @@ func TestWorkload(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "default", "prod-beef", "beef-id", nil)
+	err = createDistributedServiceCard(sm, "prod-beef", "beef-id", nil)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	err = createWorkload(sm, "default", "prod-bebe", nil)
@@ -883,7 +880,7 @@ func TestHostMigrationCompat(t *testing.T) {
 		return false, nil
 	}, "Profile not found", "1ms", "1s")
 
-	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+	err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
 	Assert(t, (err == nil), "DistributedServiceCard could not be created")
 
 	meta := api.ObjectMeta{
@@ -979,7 +976,7 @@ func TestIncompatList(t *testing.T) {
 	}
 
 	for _, dscMac := range dscList {
-		err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+		err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
 		Assert(t, (err == nil), "DistributedServiceCard could not be created")
 	}
 
@@ -1160,14 +1157,13 @@ func TestIncompat2(t *testing.T) {
 	}
 
 	for _, dscMac := range dscList {
-		err = createDistributedServiceCard(sm, "default", dscMac, dscMac, prodMap)
+		err = createDistributedServiceCard(sm, dscMac, dscMac, prodMap)
 		Assert(t, (err == nil), "DistributedServiceCard could not be created")
 	}
 
 	for _, dscMac := range dscList {
 		orchMeta := api.ObjectMeta{
-			Name:      dscMac,
-			Namespace: "default",
+			Name: dscMac,
 		}
 
 		nobj, err := sm.Controller().DistributedServiceCard().Find(&orchMeta)

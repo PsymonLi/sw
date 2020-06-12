@@ -100,7 +100,13 @@ func (v *VCHub) handleWorkloadEvent(evtType kvstore.WatchEventType, objMeta *api
 		v.Log.Infof("Processing status done/failed for %s", wl.Name)
 		if wl.Status.MigrationStatus.Stage != stageMigrationAbort && wl.Status.MigrationStatus.Stage != stageMigrationDone {
 			v.Log.Infof("Calling finish migration for %s", wl.Name)
-			v.finishMigration(wl)
+			if v.isNonPensandoMigration(wl) {
+				// Set state to none, not using action
+				wl.Status.MigrationStatus = nil
+				v.pCache.Set(string(workload.KindWorkload), wl)
+			} else {
+				v.finishMigration(wl)
+			}
 		}
 		v.resyncWorkload(wl)
 	}
@@ -307,6 +313,14 @@ func (v *VCHub) handleVM(m defs.VCEventMsg) {
 		return
 	}
 
+	if existingWorkload != nil && existingWorkload.Spec.HostName != workloadObj.Spec.HostName {
+		// Received event for new host and not migrating, remove workload migration status
+		// If it's in stage migrationFromNonPensandoHost, host update is when we want to write the workload
+		if workloadObj.Status.MigrationStatus != nil && workloadObj.Status.MigrationStatus.Stage != stageMigrationFromNonPenHost {
+			workloadObj.Status.MigrationStatus = nil
+		}
+	}
+
 	v.syncUsegs(m.DcID, m.DcName, m.Key, existingWorkload, workloadObj)
 	// TODO: pcache debug logs not showing up in debug mode
 	v.pCache.Set(string(workload.KindWorkload), workloadObj)
@@ -402,20 +416,6 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		return
 	}
 
-	curHostMigrationCompat := v.isHostMigrationCompatible(curHostName)
-	destHostMigrationCompat := v.isHostMigrationCompatible(hostName)
-
-	if !curHostMigrationCompat && destHostMigrationCompat {
-		v.Log.Infof("Current host %v is no longer vmotion compatible.", curHostName)
-		v.migrateFromNonPensandoHost(workloadObj, destDc, hostName)
-		return
-	}
-
-	if !destHostMigrationCompat {
-		v.Log.Infof("Ignore VMotionStart Event for VM %s. Destination host %v is no longer vmotion compatible.", m.VMKey, hostName)
-		return
-	}
-
 	// Both src and destination hosts are pensando, Trigger vMotion
 	v.Log.Infof("Trigger vMotion for %s from %s to %s host", wlName, curHostName, hostName)
 
@@ -461,8 +461,7 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 
 func (v *VCHub) migrateFromNonPensandoHost(wlObj *workload.Workload, destDc *PenDC, hostName string) {
 	// Set the migration stage to indicate migration from non-pensando host. The wl object will
-	// get committed to apiserver when new host and vnic info becomes avaialble.
-	// TBD: update workload and commit it early - allocate new useg vlans on new host
+	// get committed to apiserver when new host and vnic info update comes.
 	if wlObj.Status.MigrationStatus == nil {
 		wlObj.Status.MigrationStatus = &workload.WorkloadMigrationStatus{}
 	}
@@ -471,7 +470,15 @@ func (v *VCHub) migrateFromNonPensandoHost(wlObj *workload.Workload, destDc *Pen
 	wlObj.Status.MigrationStatus.StartedAt = &api.Timestamp{}
 	wlObj.Status.MigrationStatus.StartedAt.SetTime(time.Now())
 	wlObj.Status.MigrationStatus.CompletedAt = &api.Timestamp{}
-	wlObj.Status.HostName = ""
+
+	v.pCache.Set(string(workload.KindWorkload), wlObj)
+}
+
+func (v *VCHub) isNonPensandoMigration(wlObj *workload.Workload) bool {
+	if wlObj.Status.MigrationStatus == nil || wlObj.Status.MigrationStatus.Stage != stageMigrationFromNonPenHost {
+		return false
+	}
+	return true
 }
 
 func (v *VCHub) handleVMotionFailed(m defs.VMotionFailedMsg) {
@@ -483,6 +490,13 @@ func (v *VCHub) handleVMotionFailed(m defs.VMotionFailedMsg) {
 		v.Log.Errorf("Ignore Cancel vMotion for %s - no workload found", wlName)
 		return
 	}
+	// Check if this is a non pensando migration. If so, clear migration status before resyncing
+	if v.isNonPensandoMigration(wlObj) {
+		wlObj.Status.MigrationStatus = nil
+		v.pCache.Set(string(workload.KindWorkload), wlObj)
+		return
+	}
+
 	if wlObj.Spec.HostName != hostName {
 		v.Log.Errorf("Ignore cancel vMotion for %s - incorrect host information %s", m.VMKey, hostName)
 		return
@@ -698,6 +712,7 @@ func (v *VCHub) finalSyncMigration(wlObj *workload.Workload) {
 }
 
 func (v *VCHub) finishMigration(wlObj *workload.Workload) {
+	v.Log.Infof("Finish migration called for %s", wlObj.Name)
 	// release the old useg vlans (from the status)
 	if err := v.releaseUsegVlans(wlObj, true /*old*/); err != nil {
 		v.Log.Errorf("Failed to relase old useg values during vMotion for %s - %s", wlObj.Name, err)

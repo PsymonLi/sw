@@ -1,6 +1,7 @@
 package vchub
 
 import (
+	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock"
 	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
@@ -736,6 +738,225 @@ func TestHosts(t *testing.T) {
 					_, err = v.StateMgr.Controller().Workload().Find(expWorkloadMeta)
 					return err == nil, nil
 				}, "Host and workload should be in statemgr")
+			},
+		},
+		{
+			name: "delete stale host",
+			events: []defs.Probe2StoreMsg{
+				// use multiple events to create host
+				// send name property before config property
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "Host_Named_Foo",
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.HostConfigInfo{
+									Network: &types.HostNetworkInfo{
+										Pnic: []types.PhysicalNic{
+											types.PhysicalNic{
+												Key: "pnic-1",
+												Mac: macStr,
+											},
+										},
+										ProxySwitch: []types.HostProxySwitch{
+											types.HostProxySwitch{
+												DvsName: dvsName,
+												Pnic:    []string{"pnic-1"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName)
+				staleHost := &cluster.Host{
+					TypeMeta: api.TypeMeta{
+						Kind:       "Host",
+						APIVersion: "v1",
+					},
+					ObjectMeta: api.ObjectMeta{
+						Name: vchub.createHostName(dcName, "hostsystem-100000"),
+						Labels: map[string]string{
+							utils.OrchNameKey:  "randomOrch",
+							utils.NamespaceKey: "n1",
+						},
+					},
+					Spec: cluster.HostSpec{
+						DSCs: []cluster.DistributedServiceCardID{
+							cluster.DistributedServiceCardID{
+								MACAddress: macStr,
+							},
+						},
+					},
+				}
+				vchub.StateMgr.Controller().Host().Create(staleHost)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				expMeta := &api.ObjectMeta{
+					Name: v.createHostName(dcName, "hostsystem-44"),
+				}
+				expHost := &cluster.Host{
+					TypeMeta: api.TypeMeta{
+						Kind:       "Host",
+						APIVersion: "v1",
+					},
+					ObjectMeta: *expMeta,
+					Spec: cluster.HostSpec{
+						DSCs: []cluster.DistributedServiceCardID{
+							cluster.DistributedServiceCardID{
+								MACAddress: macStr,
+							},
+						},
+					},
+				}
+
+				AssertEventually(t, func() (bool, interface{}) {
+					hostAPI := v.StateMgr.Controller().Host()
+					_, err := hostAPI.Find(expMeta)
+					return err == nil, err
+				}, "Host not in statemgr")
+
+				hostAPI := v.StateMgr.Controller().Host()
+				h, err := hostAPI.Find(expMeta)
+				Assert(t, err == nil, "Failed to get host: err %v", err)
+				Assert(t, h.ObjectMeta.Name == expHost.ObjectMeta.Name, "hosts are not same")
+				Assert(t, h.Labels != nil, "No Labels found on the host")
+				orchName, ok := h.Labels[utils.OrchNameKey]
+				Assert(t, ok, "Failed to get Orch Name Label")
+				AssertEquals(t, orchName, v.VcID, "Orch Name does not match")
+				dispName, ok := h.Labels[NameKey]
+				Assert(t, ok, "Failed to get Orch Name Label")
+				AssertEquals(t, dispName, "Host_Named_Foo", "Orch Name does not match")
+				hosts, err := hostAPI.List(context.Background(), &api.ListWatchOptions{})
+				AssertOk(t, err, "Failed to list hosts")
+				AssertEquals(t, 1, len(hosts), "Stale host was not deleted")
+			},
+		},
+		{
+			name: "raise event for user host conflict",
+			events: []defs.Probe2StoreMsg{
+				// use multiple events to create host
+				// send name property before config property
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "Host_Named_Foo",
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.HostConfigInfo{
+									Network: &types.HostNetworkInfo{
+										Pnic: []types.PhysicalNic{
+											types.PhysicalNic{
+												Key: "pnic-1",
+												Mac: macStr,
+											},
+										},
+										ProxySwitch: []types.HostProxySwitch{
+											types.HostProxySwitch{
+												DvsName: dvsName,
+												Pnic:    []string{"pnic-1"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName)
+				err := createDSCProfile(vchub.StateMgr)
+				AssertOk(t, err, "Failed to create profile")
+
+				createDistributedServiceCard(vchub.StateMgr, "", macStr, "dsc-1", map[string]string{})
+				conflictHost := &cluster.Host{
+					TypeMeta: api.TypeMeta{
+						Kind:       "Host",
+						APIVersion: "v1",
+					},
+					ObjectMeta: api.ObjectMeta{
+						Name: vchub.createHostName(dcName, "userHost"),
+					},
+					Spec: cluster.HostSpec{
+						DSCs: []cluster.DistributedServiceCardID{
+							cluster.DistributedServiceCardID{
+								ID: "dsc-1",
+							},
+						},
+					},
+				}
+				vchub.StateMgr.Controller().Host().Create(conflictHost)
+				eventRecorder.ClearEvents()
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				AssertEventually(t, func() (bool, interface{}) {
+					for _, evt := range eventRecorder.GetEvents() {
+						if evt.EventType == eventtypes.ORCH_HOST_CONFLICT.String() {
+							return true, nil
+						}
+					}
+					return false, fmt.Errorf("Failed to find event in: %+v", eventRecorder.GetEvents())
+				}, "Host not in statemgr")
+
+				hostAPI := v.StateMgr.Controller().Host()
+				hosts, err := hostAPI.List(context.Background(), &api.ListWatchOptions{})
+				AssertOk(t, err, "Failed to list hosts")
+				// Conflicting host will be written since there are no api hooks to reject it.
+				AssertEquals(t, 2, len(hosts), "Conflict host should not be deleted")
 			},
 		},
 	}

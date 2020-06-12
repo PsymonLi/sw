@@ -8,6 +8,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/types"
@@ -522,9 +523,10 @@ func TestVmotionWithWatchers(t *testing.T) {
 	AssertOk(t, err, "Failed to get pg")
 
 	// Create Host1 (pensando)
-	penHost1, err := dc1.AddHost("host1")
+	penHost1Name := "host1"
+	penHost1, err := dc1.AddHost(penHost1Name)
 	AssertOk(t, err, "failed to add Host to DC")
-	penHost1.Obj.Name = "host1"
+	penHost1.Obj.Name = penHost1Name
 	err = dvs1.AddHost(penHost1)
 	AssertOk(t, err, "failed to add Host to DVS")
 
@@ -537,7 +539,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	err = createDSCProfile(sm)
 	AssertOk(t, err, "Failed to create DSC profile")
 
-	err = createDistributedServiceCard(sm, "default", dscMac, dscMac, map[string]string{})
+	err = createDistributedServiceCard(sm, "", dscMac, dscMac, map[string]string{})
 	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create Host2 (pensando)
@@ -553,7 +555,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	err = penHost2.AddNic("vmnic0", dscMac2)
 	AssertOk(t, err, "failed to add pNic")
 
-	err = createDistributedServiceCard(sm, "default", dscMac2, dscMac2, map[string]string{})
+	err = createDistributedServiceCard(sm, "", dscMac2, dscMac2, map[string]string{})
 	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	// Create Host3 (pensando) on DC2
@@ -569,7 +571,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	err = penHost3.AddNic("vmnic0", dscMac3)
 	AssertOk(t, err, "failed to add pNic")
 
-	err = createDistributedServiceCard(sm, "default", dscMac3, dscMac3, map[string]string{})
+	err = createDistributedServiceCard(sm, "", dscMac3, dscMac3, map[string]string{})
 	AssertOk(t, err, "DistributedServiceCard could not be created")
 
 	penHost1.ClearVmkNics()
@@ -577,7 +579,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 	penHost3.ClearVmkNics()
 
 	// Create a VM on host1
-	vm1, err := dc1.AddVM("vm1", "host1", []sim.VNIC{
+	vm1, err := dc1.AddVM("vm1", penHost1Name, []sim.VNIC{
 		sim.VNIC{
 			MacAddress:   "aa:aa:bb:bb:dd:dd",
 			PortgroupKey: pg.Reference().Value,
@@ -799,7 +801,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 				}
 				if isAcrossDC && statusHost != nil {
 					port := "11"
-					if statusHost.Obj.Name != "host1" {
+					if statusHost.Obj.Name != penHost1Name {
 						port = "21"
 					}
 					// port override should be on port 21
@@ -829,7 +831,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 				PortKey:      "11",
 			},
 		}
-		vm1, err = dc1.AddVM("vm1", "host1", vnics)
+		vm1, err = dc1.AddVM("vm1", penHost1Name, vnics)
 		AssertOk(t, err, "Failed to create vm1")
 
 		// Reset port overrides
@@ -1018,8 +1020,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			// Update data path
 			updateMigrationStatus(statusTimedOut)
 
-			// Check finish migration
-			checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationDone)
+			// Check migration is wiped after resyncing
+			checkMigrationState(t, sm, vchub.OrchID, wlName, "")
 
 			// Now that we are done migrating, verify new vnic was added
 			// verify we are on the old host
@@ -1287,9 +1289,189 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 	logger.Infof("===== Start Tests =====")
 	testCases(penHost2, dc1)
+	vchub.Destroy(false)
 	// Commenting out since vcsim starts sending incorrect events when across DC
 	// testCases(penHost3, dc2)
 
+	logger.Infof("===== Start non pensando migration Tests =====")
+
+	// Make host1 no longer a pensando host
+	penHost1Name = "host1-1"
+	penHost1, err = dc1.AddHost(penHost1Name)
+	AssertOk(t, err, "failed to add Host to DC")
+	deleteVM(false)
+	recreateVM()
+
+	nonPensandoTestCases := func(dstHost *sim.Host, dstDC *sim.Datacenter) {
+		isAcrossDC := dstDC.Obj.Name != defaultTestParams.TestDCName
+		{
+			/** ---------- VMotion Happy case ----------
+			1. VM moves from non pensando h1 -> h2
+			2. VM update host config -> workload should be created
+			3. Datapath says completed
+			4. VM migration completed -> migration status should be removed
+			*/
+
+			logger.Infof("===== Test: non pensando migration VMotion Happy case - AcrossDC: %v =====", isAcrossDC)
+
+			eventRecorder.ClearEvents()
+			// Start migration
+			vMotionStart(dstHost, dstDC)
+
+			// Workload shouldn't be created
+			meta := &api.ObjectMeta{
+				Name: vchub.createVMWorkloadName("", vm1.Self.Value),
+				// TODO: Don't use default tenant
+				Tenant:    globals.DefaultTenant,
+				Namespace: globals.DefaultNamespace,
+			}
+			_, err := sm.Controller().Workload().Find(meta)
+			Assert(t, err != nil, "Workload should not have been created yet")
+
+			// Add vnic, will NOT be ignored since we are migrating
+			addVnic(dstDC, isAcrossDC)
+
+			// Trigger config update
+			vmConfigUpdate(dstHost, dstDC, isAcrossDC)
+
+			// Check Migration stage
+			checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationFromNonPenHost)
+			verifyWorkload(dstHost, nil, 2, isAcrossDC)
+
+			// Update data path
+			updateMigrationStatus(statusDone)
+
+			// Check migration status is cleared
+			checkMigrationState(t, sm, vchub.OrchID, wlName, "")
+
+			verifyNoEvents()
+
+			// CLEANUP
+			vchub.Destroy(false)
+			vchubDummy.Destroy(false)
+			deleteVM(false)
+			recreateVM()
+			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			waitForWatch()
+		}
+		{
+			/** ---------- VMotion Abort case ----------
+			1. VM moves from non pensando h1 -> h2
+			2. Vmotion is aborted, migration should be cleared
+			*/
+
+			logger.Infof("===== Test: non pensando migration VMotion abort case - AcrossDC: %v =====", isAcrossDC)
+
+			eventRecorder.ClearEvents()
+			// Start migration
+			vMotionStart(dstHost, dstDC)
+
+			// Workload shouldn't be created
+			meta := &api.ObjectMeta{
+				Name: vchub.createVMWorkloadName("", vm1.Self.Value),
+				// TODO: Don't use default tenant
+				Tenant:    globals.DefaultTenant,
+				Namespace: globals.DefaultNamespace,
+			}
+			_, err := sm.Controller().Workload().Find(meta)
+			Assert(t, err != nil, "Workload should not have been created yet")
+
+			// Add vnic, will NOT be ignored since we are migrating
+			addVnic(dstDC, isAcrossDC)
+
+			// Trigger config update
+			vmAbort(dstHost, dstDC, isAcrossDC)
+
+			// Check Migration stage of pcache copy
+			AssertEventually(t, func() (bool, interface{}) {
+				wl := vchub.pCache.GetWorkloadByName(wlName)
+				if wl == nil {
+					return false, fmt.Errorf("Couldn't find workload in pcache")
+				}
+				if wl.Status.MigrationStatus != nil {
+					return false, fmt.Errorf("Migration status was not %v", wl.Status.MigrationStatus)
+				}
+				return true, nil
+			}, "Migration status did not move to nil")
+
+			verifyNoEvents()
+
+			// CLEANUP
+			vchub.Destroy(false)
+			vchubDummy.Destroy(false)
+			deleteVM(false)
+			recreateVM()
+			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			waitForWatch()
+		}
+		{
+			/** ---------- VMotion restart before vm update case ----------
+			1. VM moves from non pensando h1 -> h2
+			2. VM update host config -> workload should be created
+			3. Restart vchub
+			4. Datapath says completed
+			5. VM migration completed -> migration status should be removed
+			*/
+
+			logger.Infof("===== Test: non pensando migration VMotion restart before vm update - AcrossDC: %v =====", isAcrossDC)
+
+			eventRecorder.ClearEvents()
+			// Start migration
+			vMotionStart(dstHost, dstDC)
+
+			// Workload shouldn't be created
+			meta := &api.ObjectMeta{
+				Name: vchub.createVMWorkloadName("", vm1.Self.Value),
+				// TODO: Don't use default tenant
+				Tenant:    globals.DefaultTenant,
+				Namespace: globals.DefaultNamespace,
+			}
+			_, err := sm.Controller().Workload().Find(meta)
+			Assert(t, err != nil, "Workload should not have been created yet")
+
+			// Add vnic, will NOT be ignored since we are migrating
+			addVnic(dstDC, isAcrossDC)
+
+			// Trigger config update
+			vmConfigUpdate(dstHost, dstDC, isAcrossDC)
+
+			// Check Migration stage
+			checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationFromNonPenHost)
+			verifyWorkload(dstHost, nil, 2, isAcrossDC)
+
+			vchub.Destroy(false)
+			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			waitForWatch()
+
+			// Check Migration stage
+			checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationFromNonPenHost)
+			verifyWorkload(dstHost, nil, 2, isAcrossDC)
+
+			// Update data path
+			updateMigrationStatus(statusDone)
+
+			// Check migration status is cleared
+			checkMigrationState(t, sm, vchub.OrchID, wlName, "")
+
+			verifyNoEvents()
+
+			// CLEANUP
+			vchub.Destroy(false)
+			vchubDummy.Destroy(false)
+			deleteVM(false)
+			recreateVM()
+			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			waitForWatch()
+		}
+	}
+
+	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	waitForWatch()
+	time.Sleep(1 * time.Second)
+	nonPensandoTestCases(penHost2, dc1)
 	vchub.Destroy(false)
 }
 
@@ -1305,6 +1487,9 @@ func checkMigrationState(t *testing.T, sm *smmock.Statemgr, vcID, wlName, stage 
 		obj, err := sm.Controller().Workload().Find(meta)
 		if err != nil {
 			return false, err
+		}
+		if stage == "" && obj.Status.MigrationStatus == nil {
+			return true, nil
 		}
 		if obj.Status.MigrationStatus == nil || obj.Status.MigrationStatus.Stage != stage {
 			foundStage := ""

@@ -9,8 +9,10 @@ import (
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/workload"
+	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
+	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/netutils"
 	"github.com/pensando/sw/venice/utils/ref"
 	conv "github.com/pensando/sw/venice/utils/strconv"
@@ -231,18 +233,35 @@ func (v *VCHub) fixStaleHost(host *cluster.Host) error {
 	// List hosts
 	hosts := v.pCache.ListHosts(v.Ctx)
 	var hostFound *cluster.Host
+	var matchingDSC string
 searchHosts:
-	for _, eh := range hosts {
-		for i, dsc := range eh.Spec.DSCs {
-			if i >= len(host.Spec.DSCs) {
+	for _, hostNIC := range host.Spec.DSCs {
+		// Check for dsc object to get ID
+		dsc, err := v.StateMgr.Controller().DistributedServiceCard().Find(&api.ObjectMeta{
+			Name: hostNIC.MACAddress,
+		})
+		dscID := ""
+		if err == nil {
+			dscID = dsc.DistributedServiceCard.Spec.ID
+		}
+		for _, otherHost := range hosts {
+			if host.Name == otherHost.Name {
 				continue
 			}
-			if dsc.MACAddress == host.Spec.DSCs[i].MACAddress {
-				hostFound = eh
-				break searchHosts
+			for _, otherHostDSC := range otherHost.Spec.DSCs {
+				if otherHostDSC.MACAddress == hostNIC.MACAddress || (dscID != "" && otherHostDSC.ID == dscID) {
+					// Match found
+					hostFound = otherHost
+					matchingDSC = hostNIC.MACAddress
+					if dsc != nil {
+						matchingDSC = dsc.DistributedServiceCard.Spec.ID
+					}
+					break searchHosts
+				}
 			}
 		}
 	}
+
 	if hostFound == nil {
 		v.Log.Infof("No duplicate host found")
 		return nil
@@ -255,6 +274,10 @@ searchHosts:
 	if !ok {
 		err := fmt.Errorf("Duplicate Host %s is being used by non-VC application", hostFound.Name)
 		v.Log.Infof("%s", err)
+		evtMsg := fmt.Sprintf("%v : Failed to create host due to DSC %s being used by host %s. PSM host object must be deleted and host must be re-added to DVS.", v.State.OrchConfig.Name, matchingDSC, hostFound.Name)
+
+		v.Log.Infof("%s", evtMsg)
+		recorder.Event(eventtypes.ORCH_HOST_CONFLICT, evtMsg, hostFound)
 		return err
 	}
 

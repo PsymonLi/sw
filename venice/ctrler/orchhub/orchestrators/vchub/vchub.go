@@ -138,21 +138,6 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 
 	orchID := fmt.Sprintf("orch%d", config.Status.OrchID)
 
-	// Set connection status as unknown
-	o, err := stateMgr.Controller().Orchestrator().Find(&config.ObjectMeta)
-	if err != nil {
-		logger.Errorf("Orchestrator Object %v does not exist",
-			config.GetKey())
-	} else {
-		v.orchUpdateLock.Lock()
-		o.Orchestrator.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
-		o.Orchestrator.Status.LastTransitionTime = &api.Timestamp{}
-		o.Orchestrator.Status.LastTransitionTime.SetTime(time.Now())
-		o.Orchestrator.Status.Message = ""
-		o.Write()
-		v.orchUpdateLock.Unlock()
-	}
-
 	state := defs.State{
 		VcURL:        vcURL,
 		VcID:         config.GetName(),
@@ -179,6 +164,23 @@ func (v *VCHub) setupVCHub(stateMgr *statemgr.Statemgr, config *orchestration.Or
 	v.discoveredDCs = []string{}
 	v.tagSyncInitializedMap = map[string]bool{}
 	v.launchTime = time.Now().String()
+
+	// Set connection status as unknown
+	o, err := stateMgr.Controller().Orchestrator().Find(&config.ObjectMeta)
+	if err != nil {
+		logger.Errorf("Orchestrator Object %v does not exist",
+			config.GetKey())
+	} else {
+		v.orchUpdateLock.Lock()
+		v.OrchConfig.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
+		v.OrchConfig.Status.LastTransitionTime = &api.Timestamp{}
+		v.OrchConfig.Status.LastTransitionTime.SetTime(time.Now())
+		v.OrchConfig.Status.Message = ""
+
+		o.Orchestrator.Status = v.OrchConfig.Status
+		o.Write()
+		v.orchUpdateLock.Unlock()
+	}
 
 	v.setupPCache()
 

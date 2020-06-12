@@ -583,15 +583,22 @@ func init() {
 	eventTypes[ORCH_DSC_NOT_ADMITTED] = &EventTypeAttributes{
 		EType:      ORCH_DSC_NOT_ADMITTED.String(),
 		Severity:   "warn",
-		Category:   "cluster",
+		Category:   "",
 		Desc:       "Workload provisioned on a host with no admitted DSC",
 		SuppressMM: false}
 
 	eventTypes[ORCH_DSC_MODE_INCOMPATIBLE] = &EventTypeAttributes{
 		EType:      ORCH_DSC_MODE_INCOMPATIBLE.String(),
 		Severity:   "critical",
-		Category:   "cluster",
+		Category:   "",
 		Desc:       "DSC mode is incompatible.",
+		SuppressMM: false}
+
+	eventTypes[ORCH_HOST_CONFLICT] = &EventTypeAttributes{
+		EType:      ORCH_HOST_CONFLICT.String(),
+		Severity:   "warn",
+		Category:   "",
+		Desc:       "Unable to create host due to conflicts with a user created host",
 		SuppressMM: false}
 
 	eventTypes[COLLECTOR_REACHABLE] = &EventTypeAttributes{
