@@ -88,9 +88,7 @@ e2e-targets:
        count: 2
        resources:
          servers:
-           - type: hpe
-           - type: server-a
-           - type: server-d
+           - type: ae-hpe
          nic-type: naples
    provision:
        username: vm
@@ -264,9 +262,7 @@ e2e-targets:
        count: 2
        resources:
          servers:
-           - type: hpe
-           - type: server-a
-           - type: server-d
+           - type: ae-hpe
          nic-type: naples
    provision:
        username: vm
@@ -315,6 +311,7 @@ e2e-targets:
           BmOs: linux
 
  # single bare-metal instance of freebsd-12.1
+ # installing freebsd on HPE is not tested yet
  freebsd12.1:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
@@ -326,7 +323,7 @@ e2e-targets:
        count: 1
        resources:
          servers:
-           - type: server-d
+           - type: ae-hpe
          nic-type: naples
    provision:
        username: vm
@@ -335,6 +332,7 @@ e2e-targets:
           BmOs: freebsd
 
  # two bare-metal instance of freebsd-12.1
+ # installing freebsd on HPE is not tested yet
  2freebsd12.1:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
@@ -346,7 +344,7 @@ e2e-targets:
        count: 2
        resources:
          servers:
-           - type: server-d
+           - type: ae-hpe
          nic-type: naples
    provision:
        username: vm
