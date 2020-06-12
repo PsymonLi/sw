@@ -856,13 +856,15 @@
             "allow",
             "deny",
             "reject",
-            "implicit_deny"
+            "implicit_deny",
+            "none"
           ],
           "default": "allow",
           "x-ui-hints": {
             "allow": "Allow",
             "deny": "Deny",
             "implicit_deny": "Implicit-deny",
+            "none": "None",
             "reject": "Reject"
           },
           "description": "Action."
@@ -1010,13 +1012,15 @@
             "allow",
             "deny",
             "reject",
-            "implicit_deny"
+            "implicit_deny",
+            "none"
           ],
           "default": "allow",
           "x-ui-hints": {
             "allow": "Allow",
             "deny": "Deny",
             "implicit_deny": "Implicit-deny",
+            "none": "None",
             "reject": "Reject"
           },
           "description": "OR of actions to be matched. Only one action can be specified and can only be specified if either source IP or destination IP is present."
@@ -1129,13 +1133,15 @@
             "allow",
             "deny",
             "reject",
-            "implicit_deny"
+            "implicit_deny",
+            "none"
           ],
           "default": "allow",
           "x-ui-hints": {
             "allow": "Allow",
             "deny": "Deny",
             "implicit_deny": "Implicit-deny",
+            "none": "None",
             "reject": "Reject"
           },
           "description": "OR of actions to be matched. Only one action can be specified and can only be specified if either source IP or destination IP is present."

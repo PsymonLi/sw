@@ -31,6 +31,7 @@ var FwLogActions_normal = map[string]string{
 	"allow":         "allow",
 	"deny":          "deny",
 	"implicit_deny": "implicit_deny",
+	"none":          "none",
 	"reject":        "reject",
 }
 
@@ -39,6 +40,7 @@ var FwLogActions_vname = map[int32]string{
 	1: "deny",
 	2: "reject",
 	3: "implicit_deny",
+	4: "none",
 }
 
 var FwLogActions_vvalue = map[string]int32{
@@ -46,6 +48,7 @@ var FwLogActions_vvalue = map[string]int32{
 	"deny":          1,
 	"reject":        2,
 	"implicit_deny": 3,
+	"none":          4,
 }
 
 func (x FwLogActions) String() string {

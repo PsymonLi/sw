@@ -20,6 +20,8 @@ enum FwLogActions {
     reject = 2;
     // ui-hint: Implicit-deny
     implicit_deny = 3;
+    // ui-hint: None
+    none = 4;
 }
 
 enum FwLogDirections {

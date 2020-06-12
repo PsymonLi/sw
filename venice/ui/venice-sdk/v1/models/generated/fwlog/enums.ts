@@ -23,6 +23,7 @@ export enum FwlogFwLog_action {
     'deny' = "deny",
     'reject' = "reject",
     'implicit_deny' = "implicit_deny",
+    'none' = "none",
 }
 
 export enum FwlogFwLog_direction {
@@ -35,6 +36,7 @@ export enum FwlogFwLogQuery_actions {
     'deny' = "deny",
     'reject' = "reject",
     'implicit_deny' = "implicit_deny",
+    'none' = "none",
 }
 
 export enum FwlogFwLogQuery_sort_order {
@@ -59,6 +61,7 @@ export enum FwlogFwLog_action_uihint {
     'allow' = "Allow",
     'deny' = "Deny",
     'implicit_deny' = "Implicit-deny",
+    'none' = "None",
     'reject' = "Reject",
 }
 
@@ -71,6 +74,7 @@ export enum FwlogFwLogQuery_actions_uihint {
     'allow' = "Allow",
     'deny' = "Deny",
     'implicit_deny' = "Implicit-deny",
+    'none' = "None",
     'reject' = "Reject",
 }
 
