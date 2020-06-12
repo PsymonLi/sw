@@ -1,0 +1,11 @@
+# cut out all third-party open source libs
+-/sw/nic/sdk/third-party/dhcp-server-pkg
+-/sw/nic/sdk/third-party/edit
+-/sw/nic/sdk/third-party/libev
+-/sw/nic/sdk/third-party/liblmdb
+-/sw/nic/sdk/third-party/libz
+-/sw/nic/sdk/third-party/ncurses
+-/sw/nic/sdk/third-party/openssl
+-/sw/nic/sdk/third-party/libzmq.so
+-/sw/nic/sdk/third-party/libJudy.so
+-/sw/nic/hal/third-party/google/x86_64
