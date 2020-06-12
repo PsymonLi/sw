@@ -230,7 +230,7 @@ func periodicTransmit(fls *objstoreFlowlogsState) {
 	perVrfBufferedLogs := map[uint64]*vrfBufferedLogs{}
 
 	helper := func(vrf uint64) {
-		if c != nil {
+		if c != nil && len(perVrfBufferedLogs[vrf].bufferedLogs) > 0 {
 			fls.w.postWorkItem(transmitLogs(fls.ctx,
 				c, vrf, perVrfBufferedLogs[vrf].bufferedLogs,
 				perVrfBufferedLogs[vrf].index,
