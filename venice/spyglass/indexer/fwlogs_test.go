@@ -141,10 +141,10 @@ func SkipTestFlowLogsRateLimitingAtDSC(t *testing.T) {
 		AccessKey: "testAccessKey",
 		SecretKey: "testSecretKey",
 	}, nil).AnyTimes()
-	setupTmAgent(ctx, t, r, mockCredentialManager)
+	agentstate := setupTmAgent(ctx, t, r, mockCredentialManager)
 	// TestDebuhRESTHandle
 	t.Run("TestVosRateLimitingAndEvents", func(t *testing.T) {
-		verifyVosRateLimitingAndEventsAtDSC(ctx, t, r, mockCredentialManager, logger)
+		verifyVosRateLimitingAndEventsAtDSC(ctx, t, r, mockCredentialManager, agentstate, logger)
 	})
 }
 
@@ -512,7 +512,8 @@ func verifyVosRateLimitingAndEventsAtSpyglass(t *testing.T) {
 	}, "failed to find flow logs rate limited event", "2s", "60s")
 }
 
-func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager, logger log.Logger) {
+func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context,
+	t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager, agentstate *tmagentstate.PolicyState, logger log.Logger) {
 	vosCtx, stopVos := context.WithCancel(ctx)
 	defer func() {
 		stopVos()
@@ -520,14 +521,16 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 		os.Unsetenv("MINIO_API_REQUESTS_DEADLINE")
 	}()
 	os.Setenv("MINIO_API_REQUESTS_MAX", "1")
-	os.Setenv("MINIO_API_REQUESTS_DEADLINE", "1ns")
+	os.Setenv("MINIO_API_REQUESTS_DEADLINE", "0.5ns")
 
 	credsMgrChannel := make(chan interface{}, 1)
 	credsMgrChannel <- credsManager
 	setupVos(t, vosCtx, logger, "127.0.0.1", credsMgrChannel)
-	startFwLogGen(10000, 200000)
+	startFwLogGen(2000, 200000)
+	agentstate.UpdateHostName(dscID)
 	AssertEventually(t, func() (bool, interface{}) {
 		for _, ev := range mockEventsRecorder.GetEvents() {
+			fmt.Println("Shrey event", ev)
 			if ev.EventType == eventtypes.FLOWLOGS_REPORTING_ERROR.String() &&
 				ev.Category == "system" &&
 				ev.Severity == "warn" &&
@@ -537,12 +540,11 @@ func verifyVosRateLimitingAndEventsAtDSC(ctx context.Context, t *testing.T, r re
 			}
 		}
 		return false, nil
-	}, "failed to find flow logs reporting error event", "2s", "60s")
+	}, "failed to find flow logs reporting error event", "2s", "120s")
 }
 
-func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager) {
+func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, credsManager minio.CredentialsManager) *tmagentstate.PolicyState {
 	ps, err := tmagentstate.NewTpAgent(ctx, strings.Split(types.DefaultAgentRestURL, ":")[1])
-	ps.UpdateHostName(dscID)
 	AssertOk(t, err, "failed to create tp agent")
 	Assert(t, ps != nil, "invalid policy state received")
 
@@ -552,6 +554,8 @@ func setupTmAgent(ctx context.Context, t *testing.T, r resolver.Interface, creds
 	tmagentstate.InitMinioCredsManager(credsManager)
 	err = ps.ObjStoreInit("1", r, time.Duration(1)*time.Second, nil)
 	AssertOk(t, err, "objstore init failed")
+
+	return ps
 }
 
 func startFwLogGen(rate, total int) {

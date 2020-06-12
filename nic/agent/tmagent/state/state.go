@@ -55,6 +55,7 @@ type PolicyState struct {
 	shm                                      *ipc.SharedMem
 	ipc                                      []*ipc.IPC
 	wg                                       sync.WaitGroup
+	objstorefls                              *objstoreFlowlogsState
 	logsChannel                              chan singleLog
 	objStoreFileFormat                       fileFormat
 	zipObjects                               bool
@@ -608,6 +609,9 @@ func (s *PolicyState) UpdateHostName(hostname string) {
 	// Not suing the origibal s.hostname property because that gets defaulted to linux hostname.
 	// We dont want to use that in absence of user configured DSC's ID.
 	s.configuredID = hostname
+	if s.objstorefls != nil {
+		s.objstorefls.setConfiguredID(hostname)
+	}
 }
 
 // UpdateFwlogPolicy is the PUT entry point

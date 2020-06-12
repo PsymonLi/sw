@@ -119,6 +119,21 @@ type vrfBufferedLogs struct {
 	lastReportedTs time.Time
 }
 
+type objstoreFlowlogsState struct {
+	lock                 sync.Mutex
+	ctx                  context.Context
+	configuredID         string
+	nodeUUID             string
+	ff                   fileFormat
+	zip                  bool
+	w                    *workers
+	shouldRaiseEvent     func(string, eventattrs.Severity) bool
+	periodicTransmitTime time.Duration
+	rc                   resolver.Interface
+	lc                   <-chan singleLog
+	testChannel          chan<- TestObject
+}
+
 func newVrfBufferedLogs() *vrfBufferedLogs {
 	return &vrfBufferedLogs{
 		bufferedLogs: []interface{}{},
@@ -126,6 +141,18 @@ func newVrfBufferedLogs() *vrfBufferedLogs {
 		trends:       map[string]interface{}{},
 		sessionIDs:   map[string]struct{}{},
 	}
+}
+
+func (fls *objstoreFlowlogsState) getConfiguredID() string {
+	fls.lock.Lock()
+	defer fls.lock.Unlock()
+	return fls.configuredID
+}
+
+func (fls *objstoreFlowlogsState) setConfiguredID(id string) {
+	fls.lock.Lock()
+	defer fls.lock.Unlock()
+	fls.configuredID = id
 }
 
 // ObjStoreInit initializes minio and fwlog object
@@ -159,17 +186,25 @@ func (s *PolicyState) ObjStoreInit(nodeUUID string, rc resolver.Interface, perio
 		return false
 	}
 
-	go periodicTransmit(s.ctx, rc, s.logsChannel,
-		periodicTransmitTime, testChannel, s.configuredID,
-		nodeUUID, s.objStoreFileFormat, s.zipObjects,
-		w, shouldRaiseEvent)
+	s.objstorefls = &objstoreFlowlogsState{
+		ctx:                  s.ctx,
+		rc:                   rc,
+		lc:                   s.logsChannel,
+		periodicTransmitTime: periodicTransmitTime,
+		testChannel:          testChannel,
+		configuredID:         s.configuredID,
+		nodeUUID:             nodeUUID,
+		ff:                   s.objStoreFileFormat,
+		zip:                  s.zipObjects,
+		w:                    w,
+		shouldRaiseEvent:     shouldRaiseEvent,
+	}
+
+	go periodicTransmit(s.objstorefls)
 	return nil
 }
 
-func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan singleLog,
-	periodicTransmitTime time.Duration, testChannel chan<- TestObject,
-	nodeID, nodeUUID string, ff fileFormat, zip bool, w *workers,
-	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
+func periodicTransmit(fls *objstoreFlowlogsState) {
 
 	var c objstore.Client
 	clientChannel := make(chan interface{}, 1)
@@ -182,7 +217,7 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 			case <-ctx.Done():
 				cc <- fmt.Errorf("Not connecting to MinIO Client, context cancelled")
 			default:
-				if c, err := createBucketClient(ctx, rc, "default", "fwlogs"); c != nil {
+				if c, err := createBucketClient(ctx, fls.rc, "default", "fwlogs"); c != nil {
 					cc <- c
 					break loop
 				} else if err != nil {
@@ -190,21 +225,20 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 				}
 			}
 		}
-	}(ctx, clientChannel)
+	}(fls.ctx, clientChannel)
 
 	perVrfBufferedLogs := map[uint64]*vrfBufferedLogs{}
 
 	helper := func(vrf uint64) {
 		if c != nil {
-			w.postWorkItem(transmitLogs(ctx,
+			fls.w.postWorkItem(transmitLogs(fls.ctx,
 				c, vrf, perVrfBufferedLogs[vrf].bufferedLogs,
 				perVrfBufferedLogs[vrf].index,
 				perVrfBufferedLogs[vrf].trends,
 				len(perVrfBufferedLogs[vrf].bufferedLogs),
 				perVrfBufferedLogs[vrf].startTs,
 				perVrfBufferedLogs[vrf].endTs,
-				testChannel, nodeID, nodeUUID, ff, zip,
-				shouldRaiseEvent))
+				fls))
 		}
 
 		// If client has not been initialized yet then drop the collected logs and move on.
@@ -220,11 +254,11 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 
 	// The go version that we are using does not have time.Duration.Milliseconds() method.
 	totalTicksForPeriodicTransmit :=
-		int64((periodicTransmitTime.Seconds() * 1000) / (timerTickDuration.Seconds() * 1000))
+		int64((fls.periodicTransmitTime.Seconds() * 1000) / (timerTickDuration.Seconds() * 1000))
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-fls.ctx.Done():
 			log.Errorf("context cancelled")
 			return
 		case data := <-clientChannel:
@@ -240,7 +274,7 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 			} else if client, ok := data.(objstore.Client); ok {
 				c = client
 			}
-		case l := <-lc:
+		case l := <-fls.lc:
 
 			// startTs gets set when:
 			// 1. logs buffer is empty - happens in the beginning
@@ -278,7 +312,7 @@ func periodicTransmit(ctx context.Context, rc resolver.Interface, lc <-chan sing
 			ticks++
 			if ticks >= totalTicksForPeriodicTransmit {
 				for vrfid, perVrfLogs := range perVrfBufferedLogs {
-					if time.Now().Sub(perVrfLogs.lastReportedTs) >= periodicTransmitTime && len(perVrfLogs.bufferedLogs) > 0 {
+					if time.Now().Sub(perVrfLogs.lastReportedTs) >= fls.periodicTransmitTime && len(perVrfLogs.bufferedLogs) > 0 {
 						helper(vrfid)
 					}
 				}
@@ -294,12 +328,11 @@ func transmitLogs(ctx context.Context,
 	index map[string]string,
 	trends map[string]interface{},
 	numLogs int, startTs time.Time, endTs time.Time,
-	testChannel chan<- TestObject, nodeID, nodeUUID string, ff fileFormat,
-	zip bool, shouldRaiseEvent func(string, eventattrs.Severity) bool) func() {
+	fls *objstoreFlowlogsState) func() {
 	return func() {
 		// TODO: this can be optimized. Bucket name should be calcualted only once per hour.
 		tenantName := getTenantNameFromSourceVrf(vrf)
-		bucketName := getBucketName(bucketPrefix, tenantName, vrf, nodeUUID, startTs)
+		bucketName := getBucketName(bucketPrefix, tenantName, vrf, fls.nodeUUID, startTs)
 		indexBucketName := getIndexBucketName(bucketName)
 
 		// The logs in input slice logs are already sorted according to their Ts.
@@ -311,7 +344,7 @@ func transmitLogs(ctx context.Context,
 		fEndTs := endTs.UTC().Format(timeFormat)
 		y, m, d := startTs.Date()
 		h, _, _ := startTs.Clock()
-		objNameBuffer.WriteString(strings.ToLower(strings.Replace(nodeUUID, ":", "-", -1)))
+		objNameBuffer.WriteString(strings.ToLower(strings.Replace(fls.nodeUUID, ":", "-", -1)))
 		objNameBuffer.WriteString("/")
 		objNameBuffer.WriteString(strconv.Itoa(y))
 		objNameBuffer.WriteString("/")
@@ -325,11 +358,11 @@ func transmitLogs(ctx context.Context,
 		objNameBuffer.WriteString("_")
 		objNameBuffer.WriteString(strings.ReplaceAll(fEndTs, ":", ""))
 		objNameBuffer.WriteString(".csv")
-		if zip {
+		if fls.zip {
 			objNameBuffer.WriteString(".gzip")
 		}
-		getCSVObjectBuffer(logs, &objBuffer, zip)
-		getCSVIndexBuffer(index, &indexBuffer, zip)
+		getCSVObjectBuffer(logs, &objBuffer, fls.zip)
+		getCSVIndexBuffer(index, &indexBuffer, fls.zip)
 
 		// Object meta
 		meta := map[string]string{}
@@ -339,14 +372,15 @@ func transmitLogs(ctx context.Context,
 		meta["csvversion"] = fwLogCSVVersion
 		meta["metaversion"] = fwLogMetaVersion
 		meta["creation-Time"] = time.Now().Format(time.RFC3339Nano)
-		if nodeID != "" {
-			meta["nodeid"] = nodeID
+		configuredID := fls.getConfiguredID()
+		if configuredID != "" {
+			meta["nodeid"] = configuredID
 		}
 		populateMetaWithTrends(meta, trends)
 
 		// Send the file on to the channel for testing
-		if testChannel != nil {
-			testChannel <- TestObject{
+		if fls.testChannel != nil {
+			fls.testChannel <- TestObject{
 				BucketName:      bucketName,
 				IndexBucketName: indexBucketName,
 				ObjectName:      objNameBuffer.String(),
@@ -365,11 +399,11 @@ func transmitLogs(ctx context.Context,
 				Kind: "DistributedServiceCard",
 			},
 			ObjectMeta: api.ObjectMeta{
-				Name:   nodeUUID,
+				Name:   fls.nodeUUID,
 				Tenant: tenantName,
 			},
 			Spec: cluster.DistributedServiceCardSpec{
-				ID: nodeID,
+				ID: configuredID,
 			},
 		}
 
@@ -377,15 +411,15 @@ func transmitLogs(ctx context.Context,
 		r := bytes.NewReader(objBuffer.Bytes())
 		putObjectHelper(ctx, c, bucketName,
 			objNameBuffer.String(), r, len(objBuffer.Bytes()),
-			meta, meta["logcount"], nodeID, nodeUUID, nic, true,
-			tenantName, shouldRaiseEvent)
+			meta, meta["logcount"], configuredID, fls.nodeUUID, nic, true,
+			tenantName, fls.shouldRaiseEvent)
 
 		// The index's object name is same as the data object name
 		ir := bytes.NewReader(indexBuffer.Bytes())
 		putObjectHelper(ctx, c, indexBucketName,
 			objNameBuffer.String(), ir, len(indexBuffer.Bytes()),
-			map[string]string{}, "", nodeID, nodeUUID, nic, false,
-			tenantName, shouldRaiseEvent)
+			map[string]string{}, "", configuredID, fls.nodeUUID, nic, false,
+			tenantName, fls.shouldRaiseEvent)
 	}
 }
 
