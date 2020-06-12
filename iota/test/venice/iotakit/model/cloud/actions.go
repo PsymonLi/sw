@@ -415,7 +415,7 @@ func (sm *SysModel) runCommandOnGivenNaples(np *objects.Naples, cmd string) (str
 	return cmdResp.Stdout, nil
 }
 
-// PortFlap flaps one port from each naples in the collection
+// PortFlap flaps one uplink port from each naples in the collection
 func (sm *SysModel) PortFlap(npc *objects.NaplesCollection) error {
 	for _, naples := range npc.Nodes {
 		naplesName := naples.NodeName()
@@ -499,44 +499,53 @@ func (sm *SysModel) LinkDownEventsSince(since time.Time, npc *objects.NaplesColl
 // StartEventsGenOnNaples generates SYSTEM_COLDBOOT events from the Naples events generation test app.
 // TODO: Generate all possible events
 func (sm *SysModel) StartEventsGenOnNaples(npc *objects.NaplesCollection, rate, count string) error {
-	var naples *objects.Naples
-	var naplesName string
-	var genEvtCmd string
+	genNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib/:/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/nic/conf/operd-regions.json /nic/bin/alerts_gen -t 4 -r %s -n %s", rate, count)
+	genFakeNaplesEvtCmd := fmt.Sprintf("PATH=$PATH:/naples/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/naples/nic/lib/:/naples/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/alerts_gen -t 4 -r %s -n %s", rate, count)
 
-	if len(npc.Nodes) > 0 {
-		naples = npc.Nodes[0]
-		naplesName = naples.NodeName()
-		genEvtCmd = fmt.Sprintf("PATH=$PATH:/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib/:/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/nic/conf/operd-regions.json /nic/bin/alerts_gen -t 4 -r %s -n %s", rate, count)
-	} else {
-		naples = npc.FakeNodes[0]
-		naplesName = naples.NodeName()
-		genEvtCmd = fmt.Sprintf("PATH=$PATH:/naples/nic/bin/; LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/naples/nic/lib/:/naples/nic/lib64/; export PATH; export LD_LIBRARY_PATH; OPERD_REGIONS=/naples/nic/conf/operd-regions.json /naples/nic/bin/alerts_gen -t 4 -r %s -n %s", rate, count)
+	for _, naples := range npc.Nodes {
+		naplesName := naples.NodeName()
+		_, err := sm.runCommandOnGivenNaples(naples, genNaplesEvtCmd)
+		if err != nil {
+			log.Errorf("command(%v) failed on naples: %v, Err: %v", genNaplesEvtCmd, naplesName, err)
+			return err
+		}
 	}
 
-	_, err := sm.runCommandOnGivenNaples(naples, genEvtCmd)
-	if err != nil {
-		log.Errorf("command(%v) failed on naples: %v, Err: %v", genEvtCmd, naplesName, err)
-		return err
+	for _, naples := range npc.FakeNodes {
+		naplesName := naples.NodeName()
+		_, err := sm.runCommandOnGivenNaples(naples, genFakeNaplesEvtCmd)
+		if err != nil {
+			log.Errorf("command(%v) failed on naples: %v, Err: %v", genFakeNaplesEvtCmd, naplesName, err)
+			return err
+		}
 	}
 
 	return nil
 }
 
-// VerifyPortFlapEvents verifies that there are at least 1 link down/up events since given time.
+// VerifyPortFlapEvents verifies that there are at least 1 link down/up events per naples since given time.
 func (sm *SysModel) VerifyPortFlapEvents(since time.Time, npc *objects.NaplesCollection) error {
+	var err error
+
+	err = nil
+	nodeCount := len(npc.Names())
 	ec := sm.LinkDownEventsSince(since, npc)
-	if !ec.LenGreaterThanEqualTo(1) {
-		log.Errorf("got less than 1 link down event")
-		return fmt.Errorf("got less than 1 link down event")
+	if !ec.LenGreaterThanEqualTo(nodeCount) {
+		log.Errorf("Expected %v link down event(s) but got only %v", nodeCount, ec.Count())
+		err = fmt.Errorf("Expected %v link down event(s) but got only %v", nodeCount, ec.Count())
+	} else {
+		log.Infof("Expected %v link down event(s) and got all %v", nodeCount, ec.Count())
 	}
 
 	ec = sm.LinkUpEventsSince(since, npc)
-	if !ec.LenGreaterThanEqualTo(1) {
-		log.Errorf("got less than 1 link up event")
-		return fmt.Errorf("got less than 1 link up event")
+	if !ec.LenGreaterThanEqualTo(nodeCount) {
+		log.Errorf("Expected %v link up event(s) but got only %v", nodeCount, ec.Count())
+		err = fmt.Errorf("Expected %v link up event(s) but got only %v", nodeCount, ec.Count())
+	} else {
+		log.Infof("Expected %v link up event(s) and got all %v", nodeCount, ec.Count())
 	}
 
-	return nil
+	return err
 }
 
 // SystemBootEvents returns all SYSTEM_COLDBOOT events.

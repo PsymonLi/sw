@@ -11,6 +11,11 @@ type EventsCollection struct {
 	err  error
 }
 
+// Count return the number of events in collection
+func (ec *EventsCollection) Count() int {
+	return len(ec.List.Items)
+}
+
 // LenGreaterThanEqualTo return true when the events collection/list matches the expected len
 func (ec *EventsCollection) LenGreaterThanEqualTo(expectedLen int) bool {
 	return len(ec.List.Items) >= expectedLen
