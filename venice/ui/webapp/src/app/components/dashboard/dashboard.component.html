@@ -1,5 +1,6 @@
 <div fxLayout="column" fxLayoutGap="10px">
-  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
+  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px"
+       *featureGuard="'enterprise'">
     <app-dsbdworkloads *roleGuard="{ req: ['workloadworkload_read', 'clusterhost_read']}"
                        fxFlex="none"></app-dsbdworkloads>
     <app-dsbdpolicyhealth *roleGuard="'metrics_read'" fxFlex="none"></app-dsbdpolicyhealth>

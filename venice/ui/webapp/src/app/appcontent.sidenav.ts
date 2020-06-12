@@ -93,6 +93,7 @@ export const sideNavMenu: SideNavItem[] = [
     icon: {
       cssClass: 'app-l-side-nav-network',
     },
+    featureGuard: Features.enterprise,
     roleGuard: UIRolePermissions.networknetwork_read,
     link: ['/network']
   },
@@ -102,6 +103,7 @@ export const sideNavMenu: SideNavItem[] = [
       cssClass: 'app-l-side-nav-security',
     },
     link: ['/security'],
+    featureGuard: Features.enterprise,
     roleGuard: {
       opt: [UIRolePermissions.securitysecuritygroup_read, UIRolePermissions.securityapp_read]
     },
@@ -136,6 +138,7 @@ export const sideNavMenu: SideNavItem[] = [
         icon: {
           cssClass: 'app-l-side-nav-firewall-profiles'
         },
+        featureGuard: Features.enterprise,
         roleGuard: UIRolePermissions.securityfirewallprofile_read,
         link: ['/security', 'firewallprofiles']
       }
@@ -224,6 +227,7 @@ export const sideNavMenu: SideNavItem[] = [
       matIconName: 'build_outlined'
     },
     link: ['/troubleshoot'],
+    featureGuard: Features.enterprise,
     roleGuard: {
       opt: [
         UIRolePermissions.monitoringflowexportpolicy_read,
@@ -255,6 +259,7 @@ export const sideNavMenu: SideNavItem[] = [
         icon: {
           cssClass: 'app-l-side-nav-monitoring-mirrorsession'
         },
+        featureGuard: Features.enterprise,
         roleGuard: UIRolePermissions.monitoringmirrorsession_read,
         link: ['/troubleshoot', 'mirrorsessions']
       }
