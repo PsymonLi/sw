@@ -87,9 +87,10 @@ done
 if [ $retcode -eq 0 ] ; then
 	# create a tarball of the RPMs
 	echo "$PROG: $count RPMs created in $TOPDIR/platform/gen"
-	rm -f $TOPDIR/platform/gen/linux-rpms.tar $TOPDIR/platform/gen/linux-rpms.tar.xz
-	tar cf $TOPDIR/platform/gen/linux-rpms.tar -C $TOPDIR/platform/gen/ *.rpm
-	xz $TOPDIR/platform/gen/linux-rpms.tar
+	cd $TOPDIR/platform/gen
+	rm -f linux-rpms.tar linux-rpms.tar.xz
+	tar cf linux-rpms.tar *.rpm
+	xz linux-rpms.tar
 else
 	echo "$PROG: errors seen, so not creating final tar of RPMs."
 fi
