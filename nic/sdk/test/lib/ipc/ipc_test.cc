@@ -138,6 +138,11 @@ void req_1_callback_ev (ipc_msg_ptr msg, const void *ctx)
     respond(msg, rsp, sizeof(rsp));
 }
 
+void req_2_callback_ev (ipc_msg_ptr msg, const void *ctx)
+{
+    printf("Ignoring message: %s\n", (char *)msg->data());
+}
+
 static void
 req_2_response_handler (ipc_msg_ptr msg, const void *request_cookie)
 {
@@ -167,6 +172,7 @@ void *ev_thread_run (void *arg)
     ipc_init_ev_default(T_CLIENT_2);
 
     reg_request_handler(1, req_1_callback_ev, NULL);
+    reg_request_handler(2, req_2_callback_ev, NULL);
     reg_request_handler(99, req_99_callback_ev, NULL);
 
     subscribe(2, sub_2_callback_ev, NULL);
@@ -181,6 +187,12 @@ rsp_1_callback (ipc_msg_ptr msg, const void *cookie, const void *ctx)
 {
     printf("got response: %s\n",
            (char *)msg->data());
+}
+
+void
+rsp_2_callback (ipc_msg_ptr msg, const void *cookie, const void *ctx)
+{
+    assert(msg == nullptr);
 }
 
 void
@@ -226,9 +238,12 @@ sync_thread3_run (void *arg)
     sleep(1);
     
     broadcast(2, msg, sizeof(msg));
-    
-    reg_response_handler(99, rsp_99_callback, NULL);    
+
+    reg_response_handler(99, rsp_99_callback, NULL);
     request(*client, 99, NULL, 0, NULL);
+
+    reg_response_handler(2, rsp_2_callback, NULL);
+    request(*client, 2, NULL, 0, NULL, 1.0);
     
     return NULL;
 }

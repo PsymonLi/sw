@@ -1,6 +1,4 @@
-//------------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
-//------------------------------------------------------------------------------
 
 #ifndef __SDK_ZMQ_IPC_H__
 #define __SDK_ZMQ_IPC_H__
@@ -138,7 +136,7 @@ public:
     virtual void broadcast(uint32_t msg_code, const void *data,
                            size_t data_length) override;
     zmq_ipc_user_msg_ptr send_recv(uint32_t msg_code, const void *data,
-                                   size_t data_length);
+                                   size_t data_length, double timeout);
 };
 typedef std::shared_ptr<zmq_ipc_client_sync> zmq_ipc_client_sync_ptr;
 

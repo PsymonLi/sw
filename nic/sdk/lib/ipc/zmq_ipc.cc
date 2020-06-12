@@ -604,9 +604,10 @@ zmq_ipc_client_sync::create_socket(void) {
 
 zmq_ipc_user_msg_ptr
 zmq_ipc_client_sync::send_recv(uint32_t msg_code, const void *data,
-                               size_t data_length) {
+                               size_t data_length, double timeout) {
     zmq_ipc_user_msg_ptr msg = std::make_shared<zmq_ipc_user_msg>();
     int rc;
+    int timeoutms;
 
     // Take ZMQ LOCK
     this->zlock();
@@ -624,9 +625,23 @@ zmq_ipc_client_sync::send_recv(uint32_t msg_code, const void *data,
     // Take ZMQ LOCK
     this->zlock();
 
+    if (timeout == 0.0) {
+        timeoutms = -1;
+    } else {
+        timeoutms = timeout * 1000;
+    }
+    rc = zmq_setsockopt(this->zsocket_, ZMQ_RCVTIMEO, &timeoutms,
+                        sizeof(timeoutms));
+    assert(rc != -1);
+    
     // We use a Dealer socket talking to Router socket. See ZMQ documentation
     // why we need this
     rc = zmq_recv(this->zsocket_, NULL, 0, 0);
+    if (rc == -1) {
+        assert(zmq_errno() == EAGAIN);
+        this->zunlock();
+        return nullptr;
+    }
     assert(rc != -1);
 
     // Release ZMQ LOCK

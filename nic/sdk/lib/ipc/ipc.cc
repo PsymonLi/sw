@@ -321,9 +321,9 @@ ipc_service_sync::request(uint32_t recipient, uint32_t msg_code,
         std::dynamic_pointer_cast<zmq_ipc_client_sync>(
             this->get_client_(recipient));
 
-    ipc_msg_ptr msg = client->send_recv(msg_code, data, data_length);
+    ipc_msg_ptr msg = client->send_recv(msg_code, data, data_length, timeout);
 
-    this->handle_response_(msg->code(), msg, cb, cookie);
+    this->handle_response_(msg_code, msg, cb, cookie);
 }
 
 zmq_ipc_client_ptr

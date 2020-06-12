@@ -39,7 +39,6 @@ public:
 };
 typedef std::shared_ptr<struct ipc_msg> ipc_msg_ptr;
 
-
 ///
 /// Callbacks
 ///
@@ -53,7 +52,6 @@ typedef void (*response_oneshot_cb)(ipc_msg_ptr msg,
                                     const void *request_cookie);
 
 typedef void (*subscription_cb)(ipc_msg_ptr msg, const void *ctx);
-
 
 ///
 /// Init
@@ -119,7 +117,6 @@ extern void subscribe(uint32_t msg_code, subscription_cb callback,
 // This is to be used in sync cases when we want to receive requests or
 // subscription messages
 extern void receive(void);
-
 
 ///
 /// Configuration
