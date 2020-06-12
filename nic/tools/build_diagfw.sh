@@ -99,7 +99,7 @@ else
     #Publish the artifacts if RELEASE is non-zero
     if [ ! -z $RELEASE ]; then
         docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
-        DEST="/release-arfifacts/fw"
+        DEST="/release-artifacts/fw"
         mkdir -p $DEST
         mv $TOPDIR/nic/buildroot/output_diag/images/naples_diagfw.tar $DEST/
 

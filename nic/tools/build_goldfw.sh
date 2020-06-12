@@ -157,7 +157,7 @@ else
     cd $TOPDIR/platform && tar -czf gold_drv.tar.gz hosttools
     docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
 
-    DEST="/release-arfifacts/gold"
+    DEST="/release-artifacts/gold"
     mkdir -p $DEST
     mv $TOPDIR/nic/buildroot/output_gold/images/naples_goldfw.tar $DEST/
     mv $TOPDIR/platform/gold_drv.tar.gz $DEST

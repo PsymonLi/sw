@@ -156,7 +156,7 @@ else
 
     docker_exec "cd /usr/src/github.com/pensando/sw/asset-build/asset-push && go build"
 
-    DEST="/release-arfifacts/gold"
+    DEST="/release-artifacts/gold"
     mkdir -p $DEST
     mv $TOPDIR/nic/buildroot/output_minigold/images/naples_minigoldfw.tar $DEST/
     cd $TOPDIR
