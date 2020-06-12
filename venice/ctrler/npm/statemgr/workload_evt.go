@@ -458,12 +458,20 @@ func (ws *WorkloadState) createEndpoints() error {
 			epInfo.Status.IPv4Addresses = ws.Workload.Spec.Interfaces[ii].IpAddresses
 		}
 
-		if ws.Workload.Status.MigrationStatus != nil && ws.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_FROM_NON_PEN_HOST.String() {
-			epInfo.Status.Migration.Status = workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String()
+		if ws.isMigrating() && ws.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_FROM_NON_PEN_HOST.String() {
+			epInfo.Status.Migration = &workload.EndpointMigrationStatus{Status: workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String()}
 		}
 
 		eps = append(eps, &epInfo)
 
+	}
+
+	if ws.isMigrating() && ws.Workload.Status.MigrationStatus.Stage == workload.WorkloadMigrationStatus_MIGRATION_FROM_NON_PEN_HOST.String() {
+		ws.Workload.Status.MigrationStatus.StartedAt = &api.Timestamp{}
+		ws.Workload.Status.MigrationStatus.StartedAt.SetTime(time.Now())
+		ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_DONE.String()
+		ws.Workload.Status.MigrationStatus.CompletedAt = &api.Timestamp{}
+		ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
 	}
 
 	ws.stateMgr.Unlock()
@@ -719,6 +727,26 @@ func (ws *WorkloadState) handleMigration() error {
 		ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
 		ws.Workload.Write()
 		return nil
+	case workload.WorkloadMigrationStatus_MIGRATION_FROM_NON_PEN_HOST.String():
+		log.Infof("Migrating EPs from non-pensando host for workload %v", ws.Workload.Name)
+		ws.Workload.Status.MigrationStatus.StartedAt = &api.Timestamp{}
+		ws.Workload.Status.MigrationStatus.StartedAt.SetTime(time.Now())
+		destHost, err := ws.stateMgr.FindHost("", ws.Workload.Spec.HostName)
+		if err != nil {
+			log.Errorf("Error finding the host %s for workload %v. Err: %v", ws.Workload.Spec.HostName, ws.Workload.Name, err)
+			return kvstore.NewKeyNotFoundError(ws.Workload.Spec.HostName, 0)
+		}
+
+		destDSCs = destHost.getDSCs()
+		err = ws.updateEndpoints(sourceDSCs, destDSCs)
+		if err != nil {
+			log.Errorf("failed to update EPs. Err : %v", err)
+		}
+
+		ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_DONE.String()
+		ws.Workload.Status.MigrationStatus.CompletedAt = &api.Timestamp{}
+		ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
+		return ws.Workload.Write()
 	default:
 		log.Errorf("unknown migration stage %v", ws.Workload.Status.MigrationStatus.Stage)
 		return fmt.Errorf("unknown migration stage %v", ws.Workload.Status.MigrationStatus.Stage)
@@ -729,7 +757,9 @@ func (ws *WorkloadState) handleMigration() error {
 
 // updateEndpoints tries to update all endpoints for a workload
 func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServiceCardState) error {
-	if len(sourceDSCs) == 0 || len(destDSCs) == 0 {
+	log.Infof("Updating EPs for Wokload : %v", ws.Workload.Name)
+	if len(destDSCs) == 0 {
+		log.Errorf("DSC list is empty. Cannot update EPS.")
 		return fmt.Errorf("DSC list is empty, cannot update endpoints")
 	}
 
@@ -756,8 +786,12 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 		name, _ := strconv.ParseMacAddr(ws.Workload.Spec.Interfaces[ii].MACAddress)
 		epName := ws.Workload.Name + "-" + name
 
-		sourceNodeUUID := sourceDSCs[0].DistributedServiceCard.Name
-		sourceHostAddress := sourceDSCs[0].DistributedServiceCard.Status.IPConfig.IPAddress
+		sourceNodeUUID := ""
+		sourceHostAddress := ""
+		if len(sourceDSCs) > 0 {
+			sourceNodeUUID = sourceDSCs[0].DistributedServiceCard.Name
+			sourceHostAddress = sourceDSCs[0].DistributedServiceCard.Status.IPConfig.IPAddress
+		}
 
 		destNodeUUID := destDSCs[0].DistributedServiceCard.Name
 		destHostAddress := destDSCs[0].DistributedServiceCard.Status.IPConfig.IPAddress
@@ -797,7 +831,6 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 					MacAddress:         epMac,
 					HomingHostAddr:     sourceHostAddress,
 					HomingHostName:     ws.Workload.Status.HostName,
-					MicroSegmentVlan:   ws.Workload.Status.Interfaces[ii].MicroSegVlan,
 					Migration:          &workload.EndpointMigrationStatus{},
 				},
 			}
@@ -805,13 +838,20 @@ func (ws *WorkloadState) updateEndpoints(sourceDSCs, destDSCs []*DistributedServ
 			switch ws.Workload.Status.MigrationStatus.Stage {
 			case workload.WorkloadMigrationStatus_MIGRATION_START.String():
 				epInfo.Status.Migration.Status = workload.EndpointMigrationStatus_START.String()
+				epInfo.Status.MicroSegmentVlan = ws.Workload.Status.Interfaces[ii].MicroSegVlan
 			case workload.WorkloadMigrationStatus_MIGRATION_FINAL_SYNC.String():
 				epInfo.Status.Migration.Status = workload.EndpointMigrationStatus_FINAL_SYNC.String()
+				epInfo.Status.MicroSegmentVlan = ws.Workload.Status.Interfaces[ii].MicroSegVlan
 			case workload.WorkloadMigrationStatus_MIGRATION_DONE.String():
+				epInfo.Status.MicroSegmentVlan = ws.Workload.Status.Interfaces[ii].MicroSegVlan
 				//epInfo.Status.NodeUUID = epInfo.Spec.NodeUUID
 			case workload.WorkloadMigrationStatus_MIGRATION_ABORT.String():
+				epInfo.Status.MicroSegmentVlan = ws.Workload.Status.Interfaces[ii].MicroSegVlan
 				epInfo.Spec.NodeUUID = epInfo.Status.NodeUUID
 				epInfo.Status.Migration.Status = workload.EndpointMigrationStatus_ABORTED.String()
+			case workload.WorkloadMigrationStatus_MIGRATION_FROM_NON_PEN_HOST.String():
+				epInfo.Status.MicroSegmentVlan = ws.Workload.Spec.Interfaces[ii].MicroSegVlan
+				epInfo.Status.Migration = &workload.EndpointMigrationStatus{Status: workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String()}
 			}
 
 			if len(ws.Workload.Spec.Interfaces[ii].IpAddresses) > 0 {
@@ -910,6 +950,16 @@ func (ws *WorkloadState) trackMigration(sourceDSCs, destDSCs []*DistributedServi
 				vmName, dcName, orchName := ws.getOrchestrationLabels()
 				recorder.Event(eventtypes.MIGRATION_TIMED_OUT,
 					fmt.Sprintf("%v : VM %v (%v) in Datacenter %v migration timed out. Traffic may be affected.", orchName, vmName, ws.Workload.Name, dcName),
+					nil)
+			} else {
+				log.Errorf("Workload [%v] migration failed.", ws.Workload.Name)
+
+				// Wait for EP move goroutines to exit before updating the status to API Server
+				ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_FAILED.String()
+
+				vmName, dcName, orchName := ws.getOrchestrationLabels()
+				recorder.Event(eventtypes.MIGRATION_FAILED,
+					fmt.Sprintf("%v : VM %v (%v) in Datacenter %v migration FAILED. Traffic may be affected.", orchName, vmName, ws.Workload.Name, dcName),
 					nil)
 			}
 
