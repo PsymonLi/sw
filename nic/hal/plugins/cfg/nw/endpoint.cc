@@ -3209,16 +3209,18 @@ ep_del_session (ep_t *ep, session_t *session)
 
     ep_lock(ep, __FILENAME__, __LINE__, __func__);      // lock
 
-    if (session->sep_handle == ep->hal_handle) {
-        curr = session->sep_sess_list_entry_ctxt;
+    if (!dllist_empty(&ep->session_list_head[session->fte_id])) {
+        if (session->sep_handle == ep->hal_handle) {
+            curr = session->sep_sess_list_entry_ctxt;
 
-        // clean up the session to ctxt reference
-        session->sep_sess_list_entry_ctxt = NULL;
-    } else if (session->dep_handle == ep->hal_handle) {
-        curr = session->dep_sess_list_entry_ctxt;
+            // clean up the session to ctxt reference
+            session->sep_sess_list_entry_ctxt = NULL;
+        } else if (session->dep_handle == ep->hal_handle) {
+            curr = session->dep_sess_list_entry_ctxt;
 
-        // clean up the session to ctxt reference
-        session->dep_sess_list_entry_ctxt = NULL;
+            // clean up the session to ctxt reference
+            session->dep_sess_list_entry_ctxt = NULL;
+        }
     }
     if (curr != NULL) {
         entry = dllist_entry(curr, hal_handle_id_list_entry_t, dllist_ctxt);

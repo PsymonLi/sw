@@ -86,7 +86,7 @@ sync_session_in_fte (fte_session_args_t *sess_args)
         status = sess_args->sync_msg.sessions(i).status();
         stats  = sess_args->sync_msg.sessions(i).stats();
 
-        hal::proto_msg_dump(spec);
+        //hal::proto_msg_dump(spec);
 
         // Process pkt with db open
         fte::impl::cfg_db_open();

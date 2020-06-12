@@ -446,20 +446,20 @@ vmotion_ep::init(ep_t *ep, ep_vmotion_type_t type)
         sm_ = new fsm_state_machine_t(get_vmotion()->get_dst_host_fsm_def_func,
                                       STATE_DST_HOST_INIT,
                                       STATE_DST_HOST_END,
-                                      STATE_DST_HOST_END, // TODO STATE_DST_HOST_TIMEOUT,
-                                      STATE_DST_HOST_END, // TODO STATE_DST_HOST_REMOVE,
+                                      STATE_DST_HOST_END,
+                                      STATE_DST_HOST_END,
                                       (fsm_state_ctx)this,
-                                      NULL);  // TODO get_timer_func);
+                                      NULL);
 
         spawn_dst_host_thread();
     } else {
         sm_ = new fsm_state_machine_t(get_vmotion()->get_src_host_fsm_def_func,
                                       STATE_SRC_HOST_INIT,
                                       STATE_SRC_HOST_END,
-                                      STATE_SRC_HOST_END, // TODO STATE_DST_HOST_TIMEOUT,
-                                      STATE_SRC_HOST_END, // TODO STATE_DST_HOST_REMOVE,
+                                      STATE_SRC_HOST_END,
+                                      STATE_SRC_HOST_END,
                                       (fsm_state_ctx)this,
-                                      NULL);  // TODO get_timer_func);
+                                      NULL);
     }
 
     // Stats

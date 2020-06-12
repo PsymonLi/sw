@@ -337,8 +337,13 @@ src_host_proc_init_msg(vmotion *vmn, VmotionMessage msg, vmotion_thread_ctx_t *t
     MAC_UINT64_TO_ADDR(mac, init_msg.mac_address());
     auto ep = find_ep_by_mac(mac);
     if (!ep) {
+        // There is a possibility that, EP could have deleted little early in the source host,
+        // before sync request is received from the new host. (For e.g., this can happen in 
+        // a scenario where NPM is restarted, NetAgent could be sending EP del in old host
+        // before EP Crt (with vMotion start) in new host). 
+        // In this scenario, ignore the vMotion session sync, new host will normally create EP.
+        // Already existing flows could have impact. 
         HAL_TRACE_ERR("EP Not exists in Init Msg. MAC: {}", init_msg.mac_address());
-        SDK_ASSERT(0);
         return NULL;
     }
 
