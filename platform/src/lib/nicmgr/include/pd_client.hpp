@@ -77,18 +77,14 @@ public:
     directmap    **p4plus_rxdma_dm_tables_;
     directmap    **p4plus_txdma_dm_tables_;
 
-    int lif_qstate_map_init(uint64_t hw_lif_id,
-                            lif_info_t *lif_info,
-                            struct queue_info* queue_info,
-                            uint8_t coses);
+    sdk_ret_t program_qstate(struct queue_info* queue_info,
+                             lif_info_t *lif_info,
+                             uint8_t coses);
 
-    int lif_qstate_init(uint64_t hw_lif_id,
-                        lif_info_t *lif_info,
-                        struct queue_info* queue_info);
+    sdk_ret_t reserve_qstate(struct queue_info* queue_info,
+                             lif_info_t *lif_info,
+                             uint8_t coses);
 
-    int program_qstate(struct queue_info* queue_info,
-                       lif_info_t *lif_info,
-                       uint8_t coses);
     int lif_qstate_map_read(uint64_t hw_lif_id,
                             lif_info_t *lif_info,
                             struct queue_info* queue_info);
@@ -155,6 +151,16 @@ private:
     std::map<uint64_t, uint64_t> cmb_allocation_sizes_;
 
     sdk::lib::indexer *intr_allocator;
+
+    /// qstate helper functions
+    sdk_ret_t lif_qstate_init(uint64_t hw_lif_id,
+                              lif_info_t *lif_info,
+                              struct queue_info* queue_info);
+
+    sdk_ret_t lif_qstate_map_init(lif_qstate_t* qstate,
+                                  lif_info_t *lif_info,
+                                  struct queue_info* queue_info,
+                                  uint8_t coses);
 };
 
 #endif //__PD_CLIENT_HPP__

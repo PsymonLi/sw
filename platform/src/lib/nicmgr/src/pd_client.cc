@@ -603,15 +603,13 @@ void PdClient::destroy(PdClient *pdc)
 }
 
 
-int
-PdClient::lif_qstate_map_init(uint64_t hw_lif_id,
-    lif_info_t *lif_info, struct queue_info* queue_info, uint8_t coses)
+sdk_ret_t
+PdClient::lif_qstate_map_init(lif_qstate_t* qstate,
+                    lif_info_t *lif_info,
+                    struct queue_info* queue_info,
+                    uint8_t coses)
 {
-    lif_qstate_t qstate;
-
-    memset(&qstate, 0, sizeof(lif_qstate_t));
-
-    qstate.lif_id = hw_lif_id;
+    sdk_ret_t ret = SDK_RET_OK;
 
     for (uint32_t i = 0; i < NUM_QUEUE_TYPES; i++) {
         auto & qinfo = queue_info[i];
@@ -620,38 +618,42 @@ PdClient::lif_qstate_map_init(uint64_t hw_lif_id,
         if (qinfo.size > 7 || qinfo.entries > 24) {
             NIC_LOG_ERR("Invalid entry in LifSpec : size={} entries={}",
                           qinfo.size, qinfo.entries);
-            return -1;
+            return SDK_RET_INVALID_ARG;
         }
 
         if (qinfo.purpose > sdk::platform::LIF_QUEUE_PURPOSE_MAX) {
             NIC_LOG_ERR("Invalid entry in LifSpec : purpose={}", qinfo.purpose);
-            return -1;
+            return SDK_RET_INVALID_ARG;
         }
 
-        qstate.type[qinfo.type_num].qtype_info.size = qinfo.size;
-        qstate.type[qinfo.type_num].qtype_info.entries = qinfo.entries;
+        qstate->type[qinfo.type_num].qtype_info.size = qinfo.size;
+        qstate->type[qinfo.type_num].qtype_info.entries = qinfo.entries;
 
         // Set both cosA,cosB to admin_cos(cosA) value for admin-qtype.
         if (qinfo.purpose != sdk::platform::LIF_QUEUE_PURPOSE_ADMIN) {
-            qstate.type[qinfo.type_num].qtype_info.cosA = (coses & 0x0f);
-            qstate.type[qinfo.type_num].qtype_info.cosB = (coses & 0xf0) >> 4;
+            qstate->type[qinfo.type_num].qtype_info.cosA = (coses & 0x0f);
+            qstate->type[qinfo.type_num].qtype_info.cosB = (coses & 0xf0) >> 4;
         } else {
-            qstate.type[qinfo.type_num].qtype_info.cosA =
-                qstate.type[qinfo.type_num].qtype_info.cosB = (coses & 0x0f);
+            qstate->type[qinfo.type_num].qtype_info.cosA =
+                qstate->type[qinfo.type_num].qtype_info.cosB = (coses & 0x0f);
         }
     }
 
-    qstate.hint_cos = (coses & 0xf0) >> 4;
+    qstate->hint_cos = (coses & 0xf0) >> 4;
 
     // Reserve lif id
-    lm_->reserve_id(qstate.lif_id, 1);
+    lm_->reserve_id(qstate->lif_id, 1);
 
-    NIC_LOG_INFO("lif{}: Started initializing lif", qstate.lif_id);
+    NIC_LOG_INFO("lif{}: Started initializing lif", qstate->lif_id);
 
     // Init the lif & allocate qstate memory
-    lm_->init(&qstate);
+    ret = lm_->init(qstate);
+    if (ret != SDK_RET_OK) {
+        NIC_LOG_ERR("lif{}: Failed initializing lif", qstate->lif_id);
+        return ret;
+    }
 
-    NIC_LOG_INFO("lif{}: Finished initializing lif", qstate.lif_id);
+    NIC_LOG_INFO("lif{}: Finished initializing lif", qstate->lif_id);
 
     // populate lif info with queue info
     for (uint8_t type = 0; type < NUM_QUEUE_TYPES; type++) {
@@ -665,13 +667,15 @@ PdClient::lif_qstate_map_init(uint64_t hw_lif_id,
                      type, lif_info->qstate_addr[type]);
     }
 
-    return 0;
+    return ret;
 }
 
-int
+
+sdk_ret_t
 PdClient::lif_qstate_init(uint64_t hw_lif_id,
     lif_info_t *lif_info, struct queue_info* queue_info)
 {
+    sdk_ret_t ret = SDK_RET_OK;
     uint64_t addr = 0;
     uint32_t size = 0;
 
@@ -690,35 +694,78 @@ PdClient::lif_qstate_init(uint64_t hw_lif_id,
 
     NIC_LOG_INFO("lif{}: Finished initializing Qstate", hw_lif_id);
 
-    return 0;
+    return ret;
 }
 
-int
+sdk_ret_t
 PdClient::program_qstate(struct queue_info* queue_info,
-                             lif_info_t *lif_info,
-                             uint8_t coses)
+                         lif_info_t *lif_info,
+                         uint8_t coses)
 {
-    int ret;
+    sdk_ret_t ret;
+    lif_qstate_t qstate;
+
+    memset(&qstate, 0, sizeof(lif_qstate_t));
+    qstate.lif_id = lif_info->lif_id;
 
     NIC_LOG_DEBUG("lif-{}: Programming qstate", lif_info->lif_id);
 
     // init queue state map - allocates qstate memory
-    ret = lif_qstate_map_init(lif_info->lif_id, lif_info, queue_info, coses);
-    if (ret != 0) {
-        return -1;
+    ret = lif_qstate_map_init(&qstate, lif_info, queue_info, coses);
+    if (ret != SDK_RET_OK) {
+        return SDK_RET_ERR;
     }
+
+    // save qstate hbm address and size
+    lif_info->qstate_mem_address = qstate.hbm_address;
+    lif_info->qstate_mem_size = qstate.allocation_size;
 
     // init queues - initializes qstate memory
     ret = lif_qstate_init(lif_info->lif_id, lif_info, queue_info);
-    if (ret != 0) {
+    if (ret != SDK_RET_OK) {
         NIC_LOG_ERR("Failed to do lif qstate: ret: {}", ret);
-        return -1;
+        return SDK_RET_ERR;
     }
 
     // Penable the lif - programs lif qstate map in hw
     lm_->enable(lif_info->lif_id);
 
-    return 0;
+    NIC_LOG_DEBUG("lif-{}: Programming qstate completed", lif_info->lif_id);
+
+    return ret;
+}
+
+sdk_ret_t
+PdClient::reserve_qstate(struct queue_info* queue_info,
+                         lif_info_t *lif_info,
+                         uint8_t coses)
+{
+    sdk_ret_t ret;
+    lif_qstate_t qstate;
+
+    memset(&qstate, 0, sizeof(lif_qstate_t));
+
+    qstate.lif_id = lif_info->lif_id;
+
+    assert(lif_info->qstate_mem_address != 0);
+    assert(lif_info->qstate_mem_size != 0);
+
+    // pass hbm address in case of reserve
+    qstate.hbm_address = lif_info->qstate_mem_address;
+    qstate.allocation_size = lif_info->qstate_mem_size;
+
+    NIC_LOG_INFO("lif-{}: Reserving qstate hbm addr {:#x} alloc size {}",
+                  lif_info->lif_id,
+                  lif_info->qstate_mem_address,
+                  lif_info->qstate_mem_size);
+
+    // reserve queue state map
+    ret = lif_qstate_map_init(&qstate, lif_info, queue_info, coses);
+    if (ret != SDK_RET_OK) {
+        return SDK_RET_ERR;
+    }
+
+    return ret;
 }
 
 int

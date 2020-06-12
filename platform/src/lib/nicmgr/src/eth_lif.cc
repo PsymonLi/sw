@@ -171,10 +171,16 @@ EthLif::Init(void)
     QinfoInit();
 
 #ifdef __x86_64__
-    pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info, &hal_lif_info_, 0x0);
+    pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info,
+                       &hal_lif_info_, 0x0);
+
+    // update queue state info in persistent memory
+    lif_pstate->qstate_mem_address = hal_lif_info_.qstate_mem_address;
+    lif_pstate->qstate_mem_size = hal_lif_info_.qstate_mem_size;
 #endif
 
-    NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}", spec->name, hal_lif_info_.lif_id,
+    NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}",
+                 spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
 
     LifStatsInit();
@@ -236,10 +242,16 @@ EthLif::UpgradeGracefulInit(void)
     QinfoInit();
 
 #ifdef __x86_64__
-    pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info, &hal_lif_info_, 0x0);
+    pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info,
+                       &hal_lif_info_, 0x0);
+
+    // update queue state info in persistent memory
+    lif_pstate->qstate_mem_address = hal_lif_info_.qstate_mem_address;
+    lif_pstate->qstate_mem_size = hal_lif_info_.qstate_mem_size;
 #endif
 
-    NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}", spec->name, hal_lif_info_.lif_id,
+    NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}",
+                 spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
 
     LifStatsInit();
@@ -279,6 +291,8 @@ EthLif::UpgradeHitlessInit(void)
     hal_lif_info_.enable_rdma = spec->enable_rdma;
     hal_lif_info_.tx_sched_table_offset = lif_pstate->tx_sched_table_offset;
     hal_lif_info_.tx_sched_num_table_entries = lif_pstate->tx_sched_num_table_entries;
+    hal_lif_info_.qstate_mem_address = lif_pstate->qstate_mem_address;
+    hal_lif_info_.qstate_mem_size = lif_pstate->qstate_mem_size;
     MAC_UINT64_TO_ADDR(hal_lif_info_.mac, spec->mac_addr);
 
     // For debugging: by default enables rdma sniffer on all host ifs
@@ -289,6 +303,11 @@ EthLif::UpgradeHitlessInit(void)
 #endif
 
     QinfoInit();
+
+    if (lif_pstate->state >= LIF_STATE_INIT) {
+        pd->reserve_qstate((struct queue_info *)hal_lif_info_.queue_info,
+                           &hal_lif_info_, 0x0);
+    }
 
     NIC_LOG_INFO("{}: created lif_id {} mac {} uplink {}", spec->name, hal_lif_info_.lif_id,
                  mac2str(spec->mac_addr), spec->uplink_port_num);
@@ -561,8 +580,12 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     // first time, program txdma scheduler
     if (pre_state == LIF_STATE_CREATED) {
 #ifndef __x86_64__
-        //TODO: Revisit for Hitless Upgrade
-        pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info, &hal_lif_info_, 0x0);
+        pd->program_qstate((struct queue_info *)hal_lif_info_.queue_info,
+                           &hal_lif_info_, 0x0);
+
+        // update queue state info in persistent memory
+        lif_pstate->qstate_mem_address = hal_lif_info_.qstate_mem_address;
+        lif_pstate->qstate_mem_size = hal_lif_info_.qstate_mem_size;
 #endif
         hal_lif_info_.lif_state = ConvertEthLifStateToLifState(lif_pstate->state);
         rs = dev_api->lif_init(&hal_lif_info_);

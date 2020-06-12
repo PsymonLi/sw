@@ -57,6 +57,8 @@ typedef struct ethlif_pstate_v1_s {
         mtu = 0;
         tx_sched_table_offset = INVALID_INDEXER_INDEX;
         tx_sched_num_table_entries = 0;
+        qstate_mem_address = 0;
+        qstate_mem_size = 0;
         active_q_ref_cnt = 0;
         admin_state = 0;
         proxy_admin_state = 0;
@@ -89,6 +91,12 @@ typedef struct ethlif_pstate_v1_s {
 
     /// txdma table entries
     uint32_t    tx_sched_num_table_entries;
+
+    /// qstate memory address
+    uint64_t qstate_mem_address;
+
+    /// qstate memory size
+    uint32_t qstate_mem_size;
 
     /// RSS config
     uint16_t rss_type;

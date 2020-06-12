@@ -123,6 +123,8 @@ typedef struct lif_info_s {
     bool pushed_to_hal;  // TODO: Remove from here
     lif_queue_info_t queue_info[NUM_QUEUE_TYPES];
     uint64_t qstate_addr[NUM_QUEUE_TYPES];
+    uint64_t qstate_mem_address;
+    uint64_t qstate_mem_size;
     lif_state_t lif_state;
     mac_addr_t mac;
     lif_bcast_filter_t bcast_filter;

@@ -310,6 +310,7 @@ lif_mgr::init(lif_qstate_t *qstate)
     }
     state->allocation_size = running_offset;
 
+
     // Insert into map
     elem = lifs_.insert(std::pair<uint32_t, lif_qstate_t*>(lif_id, state));
     if (elem.second == false) {
@@ -321,17 +322,33 @@ lif_mgr::init(lif_qstate_t *qstate)
     // have been obtained from HW and copied to state->hbm_address above.
     if (sdk::asic::asic_is_hard_init()) {
 
-        // Compute hbm base
+        // Compute hbm alloc units
         alloc_units = (state->allocation_size + kAllocUnit - 1) & ~(kAllocUnit - 1);
         alloc_units /= kAllocUnit;
-        irs = hbm_indexer_->alloc_block(&alloc_offset, alloc_units);
-        if (irs != indexer::SUCCESS) {
-            ret = SDK_RET_NO_RESOURCE;
-            goto end;
+        if (state->hbm_address == 0) {
+            // Allocate HBM memory
+            irs = hbm_indexer_->alloc_block(&alloc_offset, alloc_units);
+            if (irs != indexer::SUCCESS) {
+                ret = SDK_RET_NO_RESOURCE;
+                goto end;
+            }
+            allocation_sizes_[alloc_offset] = alloc_units;
+            alloc_offset *= kAllocUnit;
+            state->hbm_address = hbm_base_ + alloc_offset;
+        } else {
+            // make sure reserve old size
+            assert(state->allocation_size == qstate->allocation_size);
+
+            alloc_offset = (state->hbm_address - hbm_base_) / kAllocUnit;
+
+            // reserve Memory if offset passed
+            irs = hbm_indexer_->alloc_withid(alloc_offset, alloc_units);
+            if (irs != indexer::SUCCESS) {
+                ret = SDK_RET_NO_RESOURCE;
+                goto end;
+            }
+            allocation_sizes_[alloc_offset] = alloc_units;
         }
-        allocation_sizes_[alloc_offset] = alloc_units;
-        alloc_offset *= kAllocUnit;
-        state->hbm_address = hbm_base_ + alloc_offset;
     }
 
 end:
@@ -573,7 +590,7 @@ lif_mgr::lifs_reset (uint32_t start_lif, uint32_t end_lif)
     if (num_instances_) {
         lock = true;
     }
-        
+
     if (lock) {
         LIF_MGR_API_START_LOCK();
     }
