@@ -13,6 +13,24 @@
 #include "platform/pcieport/include/pcieport.h"
 #include "pcieportpd.h"
 
+unsigned int
+pciesd_sbus_rd(const unsigned int addr,
+               const unsigned int reg)
+{
+    // XXX ELBA-TODO
+    assert(0);
+    return 0;
+}
+
+void
+pciesd_sbus_wr(const unsigned int addr,
+               const unsigned int reg,
+               const unsigned int data)
+{
+    // XXX ELBA-TODO
+    assert(0);
+}
+
 static uint64_t
 pp_pcsd_interrupt_addr(const int lane)
 {

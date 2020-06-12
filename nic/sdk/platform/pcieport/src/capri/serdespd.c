@@ -10,12 +10,28 @@
 #include <inttypes.h>
 
 #include "cap_sw_glue.h"
+#include "cap_sbus_api.h"
 #include "cap_pcie_api.h"
 
 #include "platform/pal/include/pal.h"
 #include "platform/pciemgrutils/include/pciesys.h"
 #include "platform/pcieport/include/pcieport.h"
 #include "pcieportpd.h"
+
+unsigned int
+pciesd_sbus_rd(const unsigned int addr,
+               const unsigned int reg)
+{
+    return cap_pp_sbus_read(0, addr, reg);
+}
+
+void
+pciesd_sbus_wr(const unsigned int addr,
+               const unsigned int reg,
+               const unsigned int data)
+{
+    cap_pp_sbus_write(0, addr, reg, data);
+}
 
 static uint64_t
 pp_pcsd_interrupt_addr(const int lane)

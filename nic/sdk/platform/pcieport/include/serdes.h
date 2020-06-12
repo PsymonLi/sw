@@ -23,6 +23,12 @@ void pciesd_core_interrupt(const uint16_t lanemask,
                            const uint16_t data,
                            laneinfo_t *dataout);
 
+unsigned int pciesd_sbus_rd(const unsigned int addr,
+                            const unsigned int reg);
+void pciesd_sbus_wr(const unsigned int addr,
+                    const unsigned int reg,
+                    const unsigned int data);
+
 #ifdef __cplusplus
 }
 #endif

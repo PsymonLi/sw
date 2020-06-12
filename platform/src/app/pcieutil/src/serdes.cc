@@ -144,3 +144,58 @@ CMDFUNC(serdesint,
 "    -d <data>          int data\n"
 "    -l <lanemask>      use lanemask (default port lanemask)\n"
 "    -t                 display elapsed time taken for interrupt\n");
+
+static void
+sbus_rw(int argc, char *argv[])
+{
+    int opt, addr, reg, data, got_addr, got_reg;
+
+    got_addr = 0;
+    got_reg = 0;
+    addr = 0;
+    reg = 0;
+    data = 0;
+    optind = 0;
+    while ((opt = getopt(argc, argv, "a:r:")) != -1) {
+        switch (opt) {
+        case 'a':
+            addr = strtoul(optarg, NULL, 0);
+            got_addr = 1;
+            break;
+        case 'r':
+            reg = strtoul(optarg, NULL, 0);
+            got_reg = 1;
+            break;
+        default:
+            fprintf(stderr,
+                    "Usage: %s -a <addr> -r <register> [<data>]\n",
+                    argv[0]);
+            return;
+        }
+    }
+
+    if (!got_addr || !got_reg) {
+        fprintf(stderr,
+                "Usage: %s -a <addr> -r <register> [<data>]\n",
+                argv[0]);
+        return;
+    }
+
+    if (optind < argc) {
+        data = strtoul(argv[optind], NULL, 0);
+        pal_wr_lock(SBUSLOCK);
+        pciesd_sbus_wr(addr, reg, data);
+        pal_wr_unlock(SBUSLOCK);
+    } else {
+        pal_wr_lock(SBUSLOCK);
+        data = pciesd_sbus_rd(addr, reg);
+        pal_wr_unlock(SBUSLOCK);
+        printf("%02d:0x%08x 0x%08x\n", addr, reg, data);
+    }
+}
+CMDFUNC(sbus_rw,
+"sbus register read/write",
+"sbus_rw -a <addr> -r <register> [<data>]\n"
+"    -a <addr>          receiver address\n"
+"    -r <register>      register address\n"
+"    <data>             data to write (else read)\n");

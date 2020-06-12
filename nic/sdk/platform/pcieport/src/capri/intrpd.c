@@ -11,6 +11,9 @@
 #include <inttypes.h>
 #include <sys/time.h>
 
+#include "cap_sw_glue.h"
+#include "cap_sbus_api.h"
+
 #include "platform/pal/include/pal.h"
 #include "platform/pciemgrutils/include/pciesys.h"
 #include "platform/pcieport/include/pcieport.h"
@@ -22,6 +25,8 @@
     ASIC_(PXC_CSR_INT_GROUPS_INTREG_INT_C_MAC_INTERRUPT_FIELD_MASK)
 #define INT_PP_INTERRUPT \
     ASIC_(PP_CSR_INT_GROUPS_INTREG_INT_PP_INTERRUPT_FIELD_MASK)
+#define PP_INTREGF_(REG) \
+    ASIC_(PP_CSR_INT_PP_INTREG_ ## REG ## _INTERRUPT_FIELD_MASK)
 
 /*
  * This is the pcie application leaf register
@@ -324,6 +329,41 @@ pcieport_poweron(pcieport_t *p)
     }
 }
 
+static void
+pcieport_handle_ppsd_ints(const u_int32_t pp_intreg_errs)
+{
+    int lane, laneaddr;
+    u_int32_t regs[16];
+    const int log_max = 10;
+    static int log_count;
+
+    pciesys_sbus_lock();
+    /*
+     * We don't expect to see these interrupts, so if we do let's log them.
+     * But if we see them perhaps something is wrong with hw so we avoid
+     * flooding the logs with this.  We are incrementing counters too.
+     */
+    if (log_count++ < log_max) {
+        pciesys_loginfo("ppsd_ints: pp_intreg_errs 0x%x count %d\n",
+                        pp_intreg_errs, log_count);
+        for (laneaddr = 2, lane = 0; lane < 16; lane++, laneaddr += 2) {
+            regs[lane] = cap_pp_sbus_read(0, laneaddr, 0xc);
+        }
+        for (laneaddr = 2, lane = 0; lane < 16; lane +=4, laneaddr += 8) {
+            pciesys_loginfo("ppsd_ints:    laneaddr %2d:"
+                            "0x%08x 0x%08x 0x%08x 0x%08x\n",
+                            laneaddr,
+                            regs[lane + 0], regs[lane + 1],
+                            regs[lane + 2], regs[lane + 3]);
+        }
+    }
+    for (laneaddr = 2, lane = 0; lane < 16; lane++, laneaddr += 2) {
+        /* write-1-to-clear */
+        cap_pp_sbus_write(0, laneaddr, 0xc, 0xc0000000);
+    }
+    pciesys_sbus_unlock();
+}
+
 /*
  * PERSTxN indicates PCIe clock is good.
  * This happens on HAPS at poweron once host power is stable
@@ -364,8 +404,14 @@ pcieport_handle_pp_intr(pcieport_t *p)
      * We don't want to ack any port intrs that are not for our port.
      * We'll process them when/if we process the other port(s).
      */
-    pp_intreg_errs = int_pp & 0x7;
+    pp_intreg_errs = int_pp & (PP_INTREGF_(PPSD_SBE) |
+                               PP_INTREGF_(PPSD_DBE) |
+                               PP_INTREGF_(SBUS_ERR));
     if (pp_intreg_errs) {
+        if (pp_intreg_errs & (PP_INTREGF_(PPSD_SBE) |
+                              PP_INTREGF_(PPSD_DBE))) {
+            pcieport_handle_ppsd_ints(pp_intreg_errs);
+        }
         /* write-1-to-clear acknowledge the interrupt */
         pal_reg_wr32(PP_(INT_PP_INTREG, p->port), pp_intreg_errs);
         pcieport_pp_intreg_stats(p, pp_intreg_errs);

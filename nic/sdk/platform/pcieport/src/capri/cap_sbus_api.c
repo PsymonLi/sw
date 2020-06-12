@@ -324,6 +324,7 @@ void upload_sbus_master_firmware(int chip_id, int sbus_ring_ms, int device_addr,
 
      cap_pp_sbus_write(chip_id, device_addr, 0x0, 0x0); // IMEM override off
      cap_pp_sbus_write(chip_id, device_addr, 0xb, 0xc0000); // Turn ECC on
+     cap_pp_sbus_write(chip_id, device_addr, 0xc, 0xc0000000); // Clear pending ECC errors
      cap_pp_sbus_write(chip_id, device_addr, 0x7, 0x2); // Turn SPICO Enable on
      cap_pp_sbus_write(chip_id, device_addr, 0x8, 0x0); // Enable core and hw interrupts
 
@@ -389,6 +390,7 @@ upload_pp_sbus_fw(const int device_addr, void *rom_info)
 
     cap_pp_sbus_write(chip_id, device_addr, 0x0, 0x0); // IMEM override off
     cap_pp_sbus_write(chip_id, device_addr, 0xb, 0xc0000); // Turn ECC on
+    cap_pp_sbus_write(chip_id, device_addr, 0xc, 0xc0000000); // Clear pending ECC errors
     cap_pp_sbus_write(chip_id, device_addr, 0x7, 0x2); // Turn SPICO Enable on
     // Enable core and hw interrupts
     cap_pp_sbus_write(chip_id, device_addr, 0x8, 0x0);
