@@ -5,17 +5,26 @@ import "fmt"
 const (
 	// DefaultDiskHighThreshold default disk usage threshold for creating CRITICAL events
 	DefaultDiskHighThreshold = 75.0
+
+	// DefaultDiskHighSecondThreshold default disk usage threshold for creating second event
+	DefaultDiskHighSecondThreshold = 85.0
 )
 
 var (
 	// DiskHighThreshold tolerable limit for disk usage; CRITICAL events will be created when the usage exceeds.
 	DiskHighThreshold = DefaultDiskHighThreshold
 
+	// DiskHighSecondThreshold tolerable limit for disk usage; Second event will be created when the usage exceeds.
+	DiskHighSecondThreshold = DefaultDiskHighSecondThreshold
+
 	// ThresholdEventConfig setting to generate event when threshold is exceeded
 	ThresholdEventConfig = true
 
 	// DiskHighThresholdMessage message to be included in the disk threshold event
 	DiskHighThresholdMessage = fmt.Sprintf("Disk threshold exceeded %v%%", DiskHighThreshold)
+
+	// DiskHighSecondThresholdMessage message to be included in the disk second threshold event
+	DiskHighSecondThresholdMessage = fmt.Sprintf("Disk threshold exceeded %v%%", DiskHighSecondThreshold)
 
 	// DiskPHighThresholdMessagePrefix prefix of the message to be included in the disk partition threshold event
 	// Example of disk partition threshold event message:
@@ -27,4 +36,13 @@ var (
 
 	// DiskHighThresholdEventStatus event already raised or not
 	DiskHighThresholdEventStatus = false
+
+	// DiskPHighSecondThresholdMessagePrefix prefix of the message to be included in the disk partition second threshold event
+	DiskPHighSecondThresholdMessagePrefix = fmt.Sprintf("Disk partition exceeded threshold %v%%", DiskHighSecondThreshold)
+
+	// DiskPHighSecondThresholdMessageSuffix suffix of the message to be included in the disk partition second threshold event
+	DiskPHighSecondThresholdMessageSuffix = fmt.Sprintf(", current usage")
+
+	// DiskHighSecondThresholdEventStatus second event already raised or not
+	DiskHighSecondThresholdEventStatus = false
 )

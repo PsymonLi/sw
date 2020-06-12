@@ -420,10 +420,14 @@ func (a *alertEngineImpl) createAlert(reqID string, apCl apiclient.Services, ale
 			message := evt.GetMessage()
 			if evt.GetCategory() == eventattrs.Category_Resource.String() {
 				if eventtypes.EventType(eventtypes.EventType_value[evt.GetType()]) == eventtypes.DISK_THRESHOLD_EXCEEDED {
-					if strings.Contains(message, globals.DiskPHighThresholdMessagePrefix) {
-						message = strings.Split(message, globals.DiskPHighThresholdMessageSuffix)[0]
-					} else {
+					if strings.Contains(message, globals.DiskHighThresholdMessage) {
 						message = globals.DiskHighThresholdMessage
+					} else if strings.Contains(message, globals.DiskHighSecondThresholdMessage) {
+						message = globals.DiskHighSecondThresholdMessage
+					} else if strings.Contains(message, globals.DiskPHighThresholdMessagePrefix) {
+						message = strings.Split(message, globals.DiskPHighThresholdMessageSuffix)[0]
+					} else if strings.Contains(message, globals.DiskPHighSecondThresholdMessagePrefix) {
+						message = strings.Split(message, globals.DiskPHighSecondThresholdMessagePrefix)[0]
 					}
 				}
 			}

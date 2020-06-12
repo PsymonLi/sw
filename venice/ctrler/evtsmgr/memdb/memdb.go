@@ -101,9 +101,14 @@ func (m *MemDb) AddOrUpdateAlertToGrps(alert *monitoring.Alert) {
 		if strings.Contains(message, globals.DiskHighThresholdMessage) {
 			message = globals.DiskHighThresholdMessage
 		}
-
+		if strings.Contains(message, globals.DiskHighSecondThresholdMessage) {
+			message = globals.DiskHighSecondThresholdMessage
+		}
 		if strings.Contains(message, globals.DiskPHighThresholdMessagePrefix) {
 			message = strings.Split(message, globals.DiskPHighThresholdMessageSuffix)[0]
+		}
+		if strings.Contains(message, globals.DiskPHighSecondThresholdMessagePrefix) {
+			message = strings.Split(message, globals.DiskPHighSecondThresholdMessageSuffix)[0]
 		}
 
 		evtMessageObjRefKey = fmt.Sprintf("%s.%s", message, alert.Status.ObjectRef.String())
@@ -170,9 +175,14 @@ func (m *MemDb) DeleteAlertFromGrps(alert *monitoring.Alert) {
 				if strings.Contains(message, globals.DiskHighThresholdMessage) {
 					message = globals.DiskHighThresholdMessage
 				}
-
+				if strings.Contains(message, globals.DiskHighSecondThresholdMessage) {
+					message = globals.DiskHighSecondThresholdMessage
+				}
 				if strings.Contains(message, globals.DiskPHighThresholdMessagePrefix) {
 					message = strings.Split(message, globals.DiskPHighThresholdMessageSuffix)[0]
+				}
+				if strings.Contains(message, globals.DiskPHighSecondThresholdMessagePrefix) {
+					message = strings.Split(message, globals.DiskPHighSecondThresholdMessageSuffix)[0]
 				}
 
 				evtMessageObjRefKey := fmt.Sprintf("%s.%s", message, alert.Status.ObjectRef.String())

@@ -56,8 +56,13 @@ type nodemetrics struct {
 	metricObj *nodeMetrics
 	// Disk partition high usage event status.
 	// A critical event/alert is raised when a disk partition usage exceeds configured threshold.
-	diskPEvtStatus map[string]bool
+	diskPEvtStatus map[string]diskPartitionEventStatus
 	logger         log.Logger
+}
+
+type diskPartitionEventStatus struct {
+	firstThreshold  bool
+	secondThreshold bool
 }
 
 // NodeInterface provides functions to manage nodemetrics
@@ -79,7 +84,7 @@ func NewNodeMetrics(pctx context.Context, obj runtime.Object, frequency time.Dur
 		return nil, err
 	}
 
-	diskPEvtStatus := make(map[string]bool)
+	diskPEvtStatus := make(map[string]diskPartitionEventStatus)
 
 	ctx, cancel := context.WithCancel(pctx)
 	w := &nodemetrics{
@@ -174,16 +179,33 @@ func (w *nodemetrics) periodicUpdate(ctx context.Context) {
 						continue
 					}
 					partitionUsedPercent := math.Ceil(float64(usage.Used*10000)/float64(usage.Total)) / 100
-					if partitionUsedPercent > globals.DiskHighThreshold {
-						s, found := w.diskPEvtStatus[p.Mountpoint]
-						if !found || !s {
+					s, found := w.diskPEvtStatus[p.Mountpoint]
+					if !found {
+						s = diskPartitionEventStatus{false, false}
+					}
+					if partitionUsedPercent > globals.DiskHighSecondThreshold {
+						if !s.firstThreshold {
 							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
 								fmt.Sprintf("%s, partition %s%s %v%%", globals.DiskPHighThresholdMessagePrefix, p.Mountpoint, globals.DiskPHighThresholdMessageSuffix, partitionUsedPercent), nil)
-							w.diskPEvtStatus[p.Mountpoint] = true
+							s.firstThreshold = true
 						}
+						if !s.secondThreshold {
+							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
+								fmt.Sprintf("%s, partition %s%s %v%%", globals.DiskPHighSecondThresholdMessagePrefix, p.Mountpoint, globals.DiskPHighSecondThresholdMessageSuffix, partitionUsedPercent), nil)
+							s.secondThreshold = true
+						}
+					} else if partitionUsedPercent > globals.DiskHighThreshold {
+						if !s.firstThreshold {
+							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
+								fmt.Sprintf("%s, partition %s%s %v%%", globals.DiskPHighThresholdMessagePrefix, p.Mountpoint, globals.DiskPHighThresholdMessageSuffix, partitionUsedPercent), nil)
+							s.firstThreshold = true
+						}
+						s.secondThreshold = false
 					} else {
-						w.diskPEvtStatus[p.Mountpoint] = false
+						s.firstThreshold = false
+						s.secondThreshold = false
 					}
+					w.diskPEvtStatus[p.Mountpoint] = s
 				}
 
 				diskFree += usage.Free
@@ -198,14 +220,27 @@ func (w *nodemetrics) periodicUpdate(ctx context.Context) {
 				w.metricObj.DiskUsedPercent.Set(diskUsedPercent)
 
 				if globals.ThresholdEventConfig {
-					if diskUsedPercent > globals.DiskHighThreshold {
+					if diskUsedPercent > globals.DiskHighSecondThreshold {
 						if !globals.DiskHighThresholdEventStatus {
 							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
 								fmt.Sprintf("%s, current usage: %v%%", globals.DiskHighThresholdMessage, diskUsedPercent), nil)
 							globals.DiskHighThresholdEventStatus = true
 						}
+						if !globals.DiskHighSecondThresholdEventStatus {
+							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
+								fmt.Sprintf("%s, current usage: %v%%", globals.DiskHighSecondThresholdMessage, diskUsedPercent), nil)
+							globals.DiskHighSecondThresholdEventStatus = true
+						}
+					} else if diskUsedPercent > globals.DiskHighThreshold {
+						if !globals.DiskHighThresholdEventStatus {
+							recorder.Event(eventtypes.DISK_THRESHOLD_EXCEEDED,
+								fmt.Sprintf("%s, current usage: %v%%", globals.DiskHighThresholdMessage, diskUsedPercent), nil)
+							globals.DiskHighThresholdEventStatus = true
+						}
+						globals.DiskHighSecondThresholdEventStatus = false
 					} else {
 						globals.DiskHighThresholdEventStatus = false
+						globals.DiskHighSecondThresholdEventStatus = false
 					}
 				}
 			}
