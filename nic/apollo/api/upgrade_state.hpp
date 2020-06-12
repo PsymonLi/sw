@@ -16,6 +16,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
@@ -129,9 +130,26 @@ public:
     /// \brief get backup/restore status
     bool backup_status(void) { return backup_status_; }
     /// \brief upgrade store instance
-    void insert_upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type,
-                             sdk::lib::shmstore *store);
-    sdk::lib::shmstore *upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t);
+    void insert_backup_shmstore(uint32_t id, bool vstore,
+                                sdk::lib::shmstore *store);
+    sdk::lib::shmstore *backup_shmstore(uint32_t id, bool vstore);
+    void insert_restore_shmstore(uint32_t id, bool vstore,
+                                sdk::lib::shmstore *store);
+    sdk::lib::shmstore *restore_shmstore(uint32_t id, bool vstore);
+    /// \brief module versions, indexed using module id
+    void insert_module_version(uint32_t id, module_version_t &version) {
+        module_version_map_.insert(std::make_pair(id, version));
+    }
+    module_version_t module_version(uint32_t id) const {
+        return module_version_map_.at(id);
+    }
+    void insert_module_prev_version(uint32_t id, module_version_t &version) {
+        module_prev_version_map_.insert(std::make_pair(id, version));
+    }
+    module_version_t module_prev_version(uint32_t id) const {
+        return module_prev_version_map_.at(id);
+    }
+
 private:
     /// lif qstate mpu program offset map
     std::list<qstate_cfg_t> qstate_cfgs_;
@@ -154,9 +172,14 @@ private:
     sdk::upg::upg_dom_t upg_init_dom_;
     /// backup status
     bool backup_status_;
-    /// upgrade object store. indexed using thread-id and store type
+    /// upgrade object store. indexed using a unique id and store type
     std::unordered_map<uint32_t, sdk::lib::shmstore *>
-        upg_shmstore_[UPGRADE_SVC_SHMSTORE_TYPE_MAX];
+        backup_shmstore_[UPGRADE_SHMSTORE_TYPE_MAX];
+    std::unordered_map<uint32_t, sdk::lib::shmstore *>
+        restore_shmstore_[UPGRADE_SHMSTORE_TYPE_MAX];
+    /// module versions indexed using a unique id
+    std::unordered_map<uint32_t, module_version_t> module_version_map_;
+    std::unordered_map<uint32_t, module_version_t> module_prev_version_map_;
 private:
     void init_(pds_init_params_t *params);
 };

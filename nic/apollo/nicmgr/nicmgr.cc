@@ -48,6 +48,7 @@ void
 nicmgrapi::nicmgr_thread_init(void *ctxt) {
     pds_state *state;
     string device_cfg_file;
+    uint32_t thread_id = core::PDS_THREAD_ID_NICMGR;
     sdk::event_thread::event_thread *curr_thread;
     devicemgr_cfg_t cfg;
     upg_init_mode = api::g_upg_state ?
@@ -87,6 +88,12 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     cfg.memory_profile = state->memory_profile_string();
     cfg.device_profile = state->device_profile_string();
     cfg.catalog = state->catalogue();
+    cfg.backup_store = api::g_upg_state->backup_shmstore(thread_id, true);
+    cfg.restore_store = api::g_upg_state->restore_shmstore(thread_id, true);
+    cfg.cur_version = api::g_upg_state->module_version(thread_id);
+    cfg.prev_version = api::g_upg_state->module_prev_version(thread_id);
+
+    // initialize the linkmgr
     cfg.EV_A = curr_thread->ev_loop();
 
     g_devmgr = new DeviceManager(&cfg);

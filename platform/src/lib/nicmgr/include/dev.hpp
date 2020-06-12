@@ -15,7 +15,7 @@
 #include "pal_compat.hpp"
 
 #include "nic/sdk/lib/thread/thread.hpp"
-#include "nic/sdk/lib/shmmgr/shmmgr.hpp"
+#include "nic/sdk/lib/shmstore/shmstore.hpp"
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
@@ -78,6 +78,14 @@ typedef struct devicemgr_cfg_s {
     std::string device_profile;
     // catalog file captures h/w specific attributes
     sdk::lib::catalog *catalog;
+    sdk::lib::shmstore *backup_store;   // shared memory backup store instance
+                                        // from HAL for backing up the states
+    sdk::lib::shmstore *restore_store;  // shared memory backup store instance
+                                        // from HAL for restoring the states
+                                        // during bringup
+    module_version_t cur_version;       // curent version
+    module_version_t prev_version;      // previous version info passed from hal,
+                                        // valid only in upgrade scenarios
     EV_P;
 } devicemgr_cfg_t;
 

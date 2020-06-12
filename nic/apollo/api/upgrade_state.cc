@@ -45,7 +45,8 @@ upg_state::factory(pds_init_params_t *params) {
 }
 
 uint32_t
-upg_state::tbl_eng_cfg(p4pd_pipeline_t pipe, p4_tbl_eng_cfg_t **cfg, uint32_t *max_cfgs) {
+upg_state::tbl_eng_cfg(p4pd_pipeline_t pipe, p4_tbl_eng_cfg_t **cfg,
+                       uint32_t *max_cfgs) {
     *cfg = &tbl_eng_cfgs_[pipe][0];
     *max_cfgs = P4TBL_ID_MAX;
     return tbl_eng_cfgs_count_[pipe];
@@ -66,18 +67,35 @@ upg_state::set_qstate_cfg(uint64_t addr, uint32_t size, uint32_t pgm_off) {
 }
 
 void
-upg_state::insert_upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type,
+upg_state::insert_backup_shmstore(uint32_t id, bool vstore,
                                sdk::lib::shmstore *store) {
-    SDK_ASSERT(upg_shmstore(thread_id, type) == NULL);
-    upg_shmstore_[type].insert(std::make_pair(thread_id, store));
+    SDK_ASSERT(backup_shmstore(id, vstore == true) == NULL);
+    backup_shmstore_[vstore == true].insert(std::make_pair(id, store));
 }
 
 sdk::lib::shmstore *
-upg_state::upg_shmstore(uint32_t thread_id, upg_svc_shmstore_type_t type) {
+upg_state::backup_shmstore(uint32_t id, bool vstore) {
     std::unordered_map<uint32_t, sdk::lib::shmstore *>::iterator it;
 
-    it = upg_shmstore_[type].find(thread_id);
-    return it == upg_shmstore_[type].end() ? NULL : it->second;
+    it = backup_shmstore_[vstore == true].find(id);
+    return it == backup_shmstore_[vstore == true].end() ? NULL : it->second;
 }
+
+void
+upg_state::insert_restore_shmstore(uint32_t id, bool vstore,
+                               sdk::lib::shmstore *store) {
+    SDK_ASSERT(restore_shmstore(id, vstore == true) == NULL);
+    restore_shmstore_[vstore == true].insert(std::make_pair(id, store));
+}
+
+sdk::lib::shmstore *
+upg_state::restore_shmstore(uint32_t id, bool vstore) {
+    std::unordered_map<uint32_t, sdk::lib::shmstore *>::iterator it;
+
+    it = restore_shmstore_[vstore == true].find(id);
+    return it == restore_shmstore_[vstore == true].end() ? NULL : it->second;
+}
+
+
 
 }    // namespace api

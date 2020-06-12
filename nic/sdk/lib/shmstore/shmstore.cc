@@ -15,15 +15,14 @@ namespace sdk {
 namespace lib {
 
 sdk_ret_t
-shmstore::file_init_(const char *name, size_t size, bool create) {
-    sdk::lib::shm_mode_e mode = create ? sdk::lib::SHM_CREATE_ONLY :
-                                         sdk::lib::SHM_OPEN_READ_ONLY;
-    const char *op = create ? "create" : "open";
+shmstore::file_init_(const char *name, size_t size, enum shm_mode_e mode) {
+    const char *op = mode == sdk::lib::SHM_CREATE_ONLY ? "create" :
+                     mode == sdk::lib::SHM_OPEN_READ_ONLY ? "open" : "read-write";
 
     try {
         // if create, delete and re-create as previous size and current size
         // may be different
-        if (create) {
+        if (mode == sdk::lib::SHM_CREATE_ONLY) {
             shmmgr::remove(name);
         }
         shmmgr_ = shmmgr::factory(name, size, mode, NULL);
@@ -83,12 +82,12 @@ shmstore::factory(void) {
 
 sdk_ret_t
 shmstore::create(const char *name, size_t size) {
-    return file_init_(name, size, true);
+    return file_init_(name, size, sdk::lib::SHM_CREATE_ONLY);
 }
 
 sdk_ret_t
-shmstore::open(const char *name) {
-    return file_init_(name, 0, false);
+shmstore::open(const char *name, enum shm_mode_e mode) {
+    return file_init_(name, 0, mode);
 }
 
 size_t

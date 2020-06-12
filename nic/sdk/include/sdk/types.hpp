@@ -332,6 +332,15 @@ std::string pkttype2str (pkt_type_t pkt_type) {
     return "invalid pkt type";
 }
 
+// module version
+typedef union module_version_s {
+        uint32_t version;
+        struct {
+            uint16_t major;
+            uint16_t minor;
+        };
+} module_version_t;
+
 }    // namespace types
 }    // namespace sdk
 
@@ -359,6 +368,7 @@ using sdk::types::xcvr_pid_t;
 using sdk::types::lif_state_t;
 using sdk::types::pkt_type_t;
 using sdk::types::monitor_type_t;
+using sdk::types::module_version_t;
 
 #endif    // __SDK_TYPES_HPP__
 

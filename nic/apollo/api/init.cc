@@ -92,6 +92,7 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
 {
     linkmgr_cfg_t cfg;
     marvell_cfg_t marvell_cfg;
+    uint32_t thread_id = sdk::linkmgr::LINKMGR_THREAD_ID_CFG;
 
     // initialize the marvell switch
     memset(&marvell_cfg, 0, sizeof(marvell_cfg_t));
@@ -107,6 +108,10 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
     cfg.port_log_fn = NULL;
     cfg.admin_state = port_admin_state_t::PORT_ADMIN_STATE_UP;
     cfg.mempartition = g_pds_state.mempartition();
+    cfg.backup_store = g_upg_state->backup_shmstore(thread_id, true);
+    cfg.restore_store = g_upg_state->restore_shmstore(thread_id, true);
+    cfg.cur_version = g_upg_state->module_version(thread_id);
+    cfg.prev_version = g_upg_state->module_prev_version(thread_id);
 
     // initialize the linkmgr
     sdk::linkmgr::linkmgr_init(&cfg);

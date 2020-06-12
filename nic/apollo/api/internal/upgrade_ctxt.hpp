@@ -96,8 +96,8 @@ typedef struct upg_obj_info_s {
 
 
 upg_ctxt *upg_shmstore_objctx_create(uint32_t thread_id, const char *obj_name,
-                                     size_t obj_size,
-                                     upg_svc_shmstore_type_t type);
+                                     size_t obj_size);
+upg_ctxt *upg_shmstore_objctx_open(uint32_t thread_id, const char *obj_name);
 
 }    // namespace api
 #endif    // __API_INTERNAL_UPGRADE_HPP__

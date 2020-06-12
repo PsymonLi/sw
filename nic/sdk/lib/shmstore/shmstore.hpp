@@ -35,7 +35,8 @@ public:
 
     /// \brief open a store for read
     /// \param[in] name name of the store
-    sdk_ret_t open(const char *name);
+    /// \param[in] mode open mode
+    sdk_ret_t open(const char *name, enum shm_mode_e mode = SHM_OPEN_READ_ONLY);
 
     /// \brief get the size of the store
     size_t size(void);
@@ -58,7 +59,7 @@ private:
     /// shared memory manager
     sdk::lib::shmmgr *shmmgr_;
 private:
-    sdk_ret_t file_init_(const char *name, size_t size, bool create);
+    sdk_ret_t file_init_(const char *name, size_t size, enum shm_mode_e mode);
     void *segment_init_(const char *name, size_t size, bool create);
 };
 

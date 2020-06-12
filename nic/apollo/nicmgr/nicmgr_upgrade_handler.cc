@@ -262,9 +262,8 @@ backup_objs (upg_mode_t mode)
     sdk_ret_t ret = SDK_RET_OK;
 
     ctx = api::upg_shmstore_objctx_create(core::PDS_THREAD_ID_NICMGR,
-                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG,
-                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE,
-                                          UPGRADE_SVC_SHMSTORE_TYPE_BACKUP);
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME,
+                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_SIZE);
     SDK_ASSERT(ctx);
     meta = (upg_obj_stash_meta_t *)ctx->mem();
 
@@ -317,9 +316,8 @@ restore_objs (void)
 
     PDS_TRACE_DEBUG("Retrieving saved objects");
 
-    ctx = api::upg_shmstore_objctx_create(core::PDS_THREAD_ID_NICMGR,
-                                          PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG,
-                                          0, UPGRADE_SVC_SHMSTORE_TYPE_RESTORE);
+    ctx = api::upg_shmstore_objctx_open(core::PDS_THREAD_ID_NICMGR,
+                                        PDS_NICMGR_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
     SDK_ASSERT(ctx);
 
     NICMGR_RESTORE_OBJS(proto_port, nicmgr_upg_restore_uplink_info,

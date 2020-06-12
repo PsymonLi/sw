@@ -8,7 +8,7 @@
 #include "lib/catalog/catalog.hpp"
 #include "platform/utils/mpartition.hpp"
 #include "include/sdk/timestamp.hpp"
-#include "lib/shmmgr/shmmgr.hpp"
+#include "lib/shmstore/shmstore.hpp"
 #include "lib/utils/in_mem_fsm_logger.hpp"
 
 #define MAX_MAC_STATS 89
@@ -43,10 +43,17 @@ typedef struct linkmgr_cfg_s {
     xcvr_event_notify_t xcvr_event_cb;
     port_log_fn_t       port_log_fn;
     bool                process_mode;
-    port_admin_state_t  admin_state; // default port admin state
-    mpartition          *mempartition; // memory partition context from HAL
-    sdk::lib::shmmgr    *shmmgr; // shared memory manager instance from HAL
-} __PACK__ linkmgr_cfg_t;
+    port_admin_state_t  admin_state;    // default port admin state
+    mpartition          *mempartition;  // memory partition context from HAL
+    sdk::lib::shmstore  *backup_store;  // shared memory backup store instance
+                                        // from HAL for backing up the states
+    sdk::lib::shmstore  *restore_store; // shared memory backup store instance
+                                        // from HAL for restoring the states
+                                        // during bringup
+    module_version_t    cur_version;    // curent version
+    module_version_t    prev_version;   // previous version info passed from hal,
+                                        // valid only in upgrade scenarios
+} linkmgr_cfg_t;
 extern linkmgr_cfg_t g_linkmgr_cfg;
 
 typedef struct port_args_s {

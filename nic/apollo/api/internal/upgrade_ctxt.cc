@@ -58,36 +58,47 @@ upg_ctxt::destroy(upg_ctxt *uctxt) {
 
 upg_ctxt *
 upg_shmstore_objctx_create (uint32_t thread_id, const char *obj_name,
-                            size_t obj_size, upg_svc_shmstore_type_t type)
+                            size_t obj_size)
+{
+    upg_ctxt *ctx;
+    void *mem;
+    sdk::lib::shmstore *store;
+
+    ctx = upg_ctxt::factory();
+    store = api::g_upg_state->backup_shmstore(thread_id, false);
+    SDK_ASSERT(store);
+    mem = store->create_segment(obj_name, obj_size);
+    if (!mem) {
+        PDS_TRACE_ERR("Upgrade segment allocation for object %s failed",
+                      obj_name);
+        return NULL;
+    }
+    ctx->init(mem, obj_size, true);
+    return ctx;
+}
+
+upg_ctxt *
+upg_shmstore_objctx_open (uint32_t thread_id, const char *obj_name)
 {
     upg_ctxt *ctx;
     size_t size;
     void *mem;
-    sdk::lib::shmstore *store = api::g_upg_state->upg_shmstore(thread_id, type);
+    sdk::lib::shmstore *store;
 
-    SDK_ASSERT(store);
     ctx = upg_ctxt::factory();
-    if (type == UPGRADE_SVC_SHMSTORE_TYPE_BACKUP) {
-        mem = store->create_segment(obj_name, obj_size);
-        if (!mem) {
-            PDS_TRACE_ERR("Upgrade segment allocation for object %s failed",
-                          obj_name);
-            return NULL;
-        }
-        ctx->init(mem, obj_size, true);
-    } else if (type == UPGRADE_SVC_SHMSTORE_TYPE_RESTORE) {
-        mem = store->open_segment(obj_name);
-        if (!mem) {
-            PDS_TRACE_ERR("Upgrade segment open for object %s failed", obj_name);
-            return NULL;
-        }
-        size = store->segment_size(obj_name);
-        SDK_ASSERT(size != 0);
-        ctx->init(mem, size, false);
-    } else {
-        SDK_ASSERT(0);
+    store = api::g_upg_state->restore_shmstore(thread_id, false);
+    SDK_ASSERT(store);
+    mem = store->open_segment(obj_name);
+    if (!mem) {
+        PDS_TRACE_ERR("Upgrade segment open for object %s failed", obj_name);
+        return NULL;
     }
+    size = store->segment_size(obj_name);
+    SDK_ASSERT(size != 0);
+    ctx->init(mem, size, false);
     return ctx;
 }
+
+
 
 } // namespace api

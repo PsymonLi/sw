@@ -159,14 +159,6 @@ upg_init_domain (void)
     return dom_id;
 }
 
-/// \brief upgrade shared memory store type for services
-typedef enum upg_svc_shmstore_type_e {
-    UPGRADE_SVC_SHMSTORE_TYPE_BACKUP,     ///< store is for backing up the objects
-    UPGRADE_SVC_SHMSTORE_TYPE_RESTORE,    ///< store is for restoring the objects
-    UPGRADE_SVC_SHMSTORE_TYPE_MAX         ///< invalid type
-} upg_svc_shmstore_type_t;
-
-
 /// \brief upgrade event msg
 typedef struct upg_ev_params_s {
     upg_ev_id_t id;                         ///< upgrade event id
@@ -279,11 +271,6 @@ using sdk::upg::upg_ev_id_t::UPG_EV_PRE_RESPAWN;
 using sdk::upg::upg_ev_id_t::UPG_EV_RESPAWN;
 using sdk::upg::upg_ev_id_t::UPG_EV_FINISH;
 using sdk::upg::upg_ev_id_t::UPG_EV_MAX;
-
-using sdk::upg::upg_svc_shmstore_type_t;
-using sdk::upg::upg_svc_shmstore_type_t::UPGRADE_SVC_SHMSTORE_TYPE_BACKUP;
-using sdk::upg::upg_svc_shmstore_type_t::UPGRADE_SVC_SHMSTORE_TYPE_RESTORE;
-using sdk::upg::upg_svc_shmstore_type_t::UPGRADE_SVC_SHMSTORE_TYPE_MAX;
 
 /// @}
 

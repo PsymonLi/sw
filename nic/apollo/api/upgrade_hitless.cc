@@ -235,9 +235,8 @@ upg_ev_backup (upg_ev_params_t *params)
     upg_ctxt *ctx;
 
     ctx = upg_shmstore_objctx_create(core::PDS_THREAD_ID_API,
-                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG,
-                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_SIZE,
-                                     UPGRADE_SVC_SHMSTORE_TYPE_BACKUP);
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME,
+                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_SIZE);
     SDK_ASSERT(ctx);
     // set the backup status to true. will set to false if there is a failure
     g_upg_state->set_backup_status(true);
@@ -371,9 +370,8 @@ upg_ev_restore (upg_ev_params_t *params)
     upg_obj_info_t info;
     upg_ctxt *ctx;
 
-    ctx = upg_shmstore_objctx_create(core::PDS_THREAD_ID_API,
-                                     PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG,
-                                     0, UPGRADE_SVC_SHMSTORE_TYPE_RESTORE);
+    ctx = upg_shmstore_objctx_open(core::PDS_THREAD_ID_API,
+                                   PDS_AGENT_UPGRADE_SHMSTORE_OBJ_SEG_NAME);
     SDK_ASSERT(ctx);
     hdr = (upg_obj_stash_meta_t *)ctx->mem();
 
