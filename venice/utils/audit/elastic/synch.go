@@ -2,8 +2,11 @@ package elastic
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	es "github.com/olivere/elastic"
 
 	"github.com/pensando/sw/api"
 	auditapi "github.com/pensando/sw/api/generated/audit"
@@ -77,43 +80,48 @@ func (a *synchAuditor) ProcessEvents(events ...*auditapi.AuditEvent) error {
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(90*time.Second))
 		defer cancel()
 		_, err = utils.ExecuteWithContext(ctx, func(nctx context.Context) (interface{}, error) {
-			if _, err := utils.ExecuteWithRetry(func(mctx context.Context) (interface{}, error) {
-				// index multiple audit events; construct bulk audit events request
-				requests := make([]*elastic.BulkRequest, len(events))
-				for i, evt := range events {
-					requests[i] = &elastic.BulkRequest{
-						RequestType: "index",
-						IndexType:   elastic.GetDocType(globals.AuditLogs),
-						ID:          evt.GetUUID(),
-						Obj:         evt,
-						Index:       elastic.GetIndex(globals.AuditLogs, evt.GetTenant()),
-					}
+			// index multiple audit events; construct bulk audit events request
+			requests := make([]*elastic.BulkRequest, len(events))
+			for i, evt := range events {
+				requests[i] = &elastic.BulkRequest{
+					RequestType: "index",
+					IndexType:   elastic.GetDocType(globals.AuditLogs),
+					ID:          evt.GetUUID(),
+					Obj:         evt,
+					Index:       elastic.GetIndex(globals.AuditLogs, evt.GetTenant()),
 				}
-				fn := func(requests []*elastic.BulkRequest) (bool, error) {
-					if bulkResp, err := a.elasticClient.Bulk(ctx, requests); err != nil {
+			}
+			fn := func(requests []*elastic.BulkRequest) (bool, error) {
+				result, err := utils.ExecuteWithRetry(func(mctx context.Context) (interface{}, error) {
+					bulkResp, err := a.elasticClient.Bulk(ctx, requests)
+					if err != nil {
 						a.logger.Errorf("error logging bulk audit events to elastic, err: %v", err)
-						return false, err
-					} else if len(bulkResp.Failed()) > 0 {
-						a.logger.Errorf("bulk audit events logging failed on elastic")
-						return false, err
+						return nil, err
+					}
+					return bulkResp, nil
+				}, 500*time.Millisecond, 6)
+				if err != nil {
+					return false, err
+				}
+				bulkResp := result.(*es.BulkResponse)
+				if len(bulkResp.Failed()) > 0 {
+					a.logger.Errorf(fmt.Sprintf("bulk audit events logging failed for some events on elastic: %d", len(bulkResp.Failed())))
+					return false, errors.New("bulk elastic request failed for some audit events")
+				}
+				return true, nil
+			}
+			batchSize := 50
+			j := len(events) / batchSize
+			for i := 0; i <= j; i++ {
+				if i == j {
+					if len(events) > j*batchSize {
+						return fn(requests[j*batchSize:])
 					}
 					return true, nil
 				}
-				j := len(events) / 100
-				for i := 0; i <= j; i++ {
-					if i == j {
-						if len(events) > j*100 {
-							return fn(requests[j*100:])
-						}
-						return true, nil
-					}
-					if ok, err := fn(requests[i*100 : (i+1)*100]); err != nil {
-						return ok, err
-					}
+				if ok, err := fn(requests[i*batchSize : (i+1)*batchSize]); err != nil {
+					return ok, err
 				}
-				return true, nil
-			}, 5*time.Second, 6); err != nil {
-				return false, err
 			}
 			return true, nil
 		})
