@@ -130,8 +130,14 @@ public:
     void set_device_profile(pds_device_profile_t profile) {
         device_profile_ = profile;
     }
+    void set_device_oper_mode(pds_device_oper_mode_t oper_mode) {
+        device_oper_mode_ = oper_mode;
+    }
     pds_memory_profile_t memory_profile(void) const { return memory_profile_; }
     pds_device_profile_t device_profile(void) const { return device_profile_; }
+    pds_device_oper_mode_t device_oper_mode(void) const {
+        return device_oper_mode_;
+    }
     void set_memory_profile_string(string profile) {
         memory_profile_str_ = profile;
     }
@@ -272,6 +278,7 @@ private:
     platform_type_t         platform_type_;
     pds_memory_profile_t    memory_profile_;
     pds_device_profile_t    device_profile_;
+    pds_device_oper_mode_t  device_oper_mode_;
     string                  memory_profile_str_;
     string                  device_profile_str_;
     string                  firmware_version_str_;

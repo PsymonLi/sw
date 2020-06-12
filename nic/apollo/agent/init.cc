@@ -146,7 +146,8 @@ sdk_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
 //------------------------------------------------------------------------------
 static inline sdk_ret_t
 init_pds (std::string cfg_file, std::string memory_profile,
-          std::string device_profile, std::string pipeline)
+          std::string device_profile, std::string pipeline,
+          std::string oper_mode)
 {
     sdk_ret_t ret;
     pds_init_params_t init_params;
@@ -174,6 +175,11 @@ init_pds (std::string cfg_file, std::string memory_profile,
         } else if (device_profile.compare("8pf") == 0) {
             init_params.device_profile = PDS_DEVICE_PROFILE_8PF;
         }
+    }
+    if (oper_mode == "bitw") {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW;
+    } else {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_HOST;
     }
     init_params.event_cb = handle_event_ntfn;
     ret = pds_init(&init_params);
@@ -259,38 +265,30 @@ logger_init (void)
 }
 
 //------------------------------------------------------------------------------
-// Get memory profile from device.conf
+// read device.conf file
 //------------------------------------------------------------------------------
-static inline std::string
-memory_profile_read (void)
+static inline void
+device_conf_read (std::string& device_profile, std::string& memory_profile,
+                  std::string& device_oper_mode)
 {
     boost::property_tree::ptree pt;
 
-    PDS_TRACE_DEBUG("Reading memory profile...");
+    PDS_TRACE_DEBUG("Reading device conf ...");
     try {
         std::ifstream json_cfg(DEVICE_CONF_FILE);
         read_json(json_cfg, pt);
-        return pt.get<std::string>("memory-profile", "default");
+        if (device_profile.empty()) {
+            device_profile = pt.get<std::string>("device-profile", "default");
+        }
+        if (memory_profile.empty()) {
+            memory_profile = pt.get<std::string>("memory-profile", "default");
+        }
+        device_oper_mode = pt.get<std::string>("oper-mode", "host");
     } catch (...) {
-        return std::string("default");
-    }
-}
-
-//------------------------------------------------------------------------------
-// Get device profile from device.conf
-//------------------------------------------------------------------------------
-static inline std::string
-device_profile_read (void)
-{
-    boost::property_tree::ptree pt;
-
-    PDS_TRACE_DEBUG("Reading device profile...");
-    try {
-        std::ifstream json_cfg(DEVICE_CONF_FILE);
-        read_json(json_cfg, pt);
-        return pt.get<std::string>("device-profile", "default");
-    } catch (...) {
-        return std::string("default");
+        // we will hit this if DEVICE_CONF_FILE doesn't exist
+        device_profile = "default";
+        memory_profile = "default";
+        device_oper_mode = "host";
     }
 }
 
@@ -323,21 +321,15 @@ sdk_ret_t
 agent_init (std::string cfg_file, std::string memory_profile,
             std::string device_profile, std::string pipeline)
 {
-    sdk_ret_t        ret;
+    sdk_ret_t ret;
     sdk::lib::thread *thread;
+    std::string device_oper_mode;
 
     // initialize the logger instance
     logger_init();
 
-    // read memory profile, if it exists
-    if (memory_profile.empty()) {
-        memory_profile = memory_profile_read();
-    }
-
-    // read device profile
-    if (device_profile.empty()) {
-        device_profile = device_profile_read();
-    }
+    // read device.conf file
+    device_conf_read(device_profile, memory_profile, device_oper_mode);
 
     // init agent state
     ret = core::agent_state::init();
@@ -346,7 +338,8 @@ agent_init (std::string cfg_file, std::string memory_profile,
     }
 
     // initialize PDS library
-    ret = init_pds(cfg_file, memory_profile, device_profile, pipeline);
+    ret = init_pds(cfg_file, memory_profile, device_profile,
+                   pipeline, device_oper_mode);
 
     // spawn service server thread
     ret = spawn_svc_server_thread();

@@ -40,6 +40,7 @@ typedef struct pds_init_params_s {
                                                 ///<       is picked based on
                                                 ///<        this profile
     pds_device_profile_t      device_profile;   ///< PF/VF device profile
+    pds_device_oper_mode_t    device_oper_mode; ///< device operational mode
     std::string               cfg_file;         ///< config files directory path
                                                 ///< all config files are present,
                                                 ///< files under \<cfg_path\>/pipeline/

@@ -17,6 +17,68 @@
 
 #define DEVICE_CONF_FILE "/sysconfig/config0/device.conf"
 
+static inline void
+device_conf_update (pds_device_spec_t *spec)
+{
+    boost::property_tree::ptree pt, output;
+    boost::property_tree::ptree::iterator pos;
+
+    try {
+        // copy existing data from device.conf
+        std::ifstream json_cfg(DEVICE_CONF_FILE);
+        read_json(json_cfg, pt);
+
+        for (pos = pt.begin(); pos != pt.end();) {
+            output.put(pos->first.data(), pos->second.data());
+            ++pos;
+        }
+    } catch (...) {}
+
+    // update the device profile
+    if (spec->device_profile == PDS_DEVICE_PROFILE_DEFAULT) {
+        output.put("device-profile", "default");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_2PF) {
+        output.put("device-profile", "2pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_3PF) {
+        output.put("device-profile", "3pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_4PF) {
+        output.put("device-profile", "4pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_5PF) {
+        output.put("device-profile", "5pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_6PF) {
+        output.put("device-profile", "6pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_7PF) {
+        output.put("device-profile", "7pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_8PF) {
+        output.put("device-profile", "8pf");
+    }
+
+    // update the memory profile
+    if (spec->memory_profile == PDS_MEMORY_PROFILE_DEFAULT) {
+        output.put("memory-profile", "default");
+    }
+
+    // update the forwarding mode
+    if ((spec->dev_oper_mode == PDS_DEV_OPER_MODE_NONE) ||
+        (spec->dev_oper_mode == PDS_DEV_OPER_MODE_HOST)) {
+        // host (pcie) enabled mode
+        output.put("oper-mode", "host");
+    } else {
+        // bump-in-the-wire mode
+        output.put("oper-mode", "bitw");
+    }
+
+    // set the port admin state
+    output.put("port-admin-state", "PORT_ADMIN_STATE_ENABLE");
+
+    try {
+        // write back the updated configuration
+        boost::property_tree::write_json(DEVICE_CONF_FILE, output);
+    } catch (...) {
+        PDS_TRACE_ERR("Failed to update {}", DEVICE_CONF_FILE);
+    }
+}
+
 sdk_ret_t
 pds_svc_device_create (const pds::DeviceRequest *proto_req,
                        pds::DeviceResponse *proto_rsp)
@@ -62,8 +124,14 @@ pds_svc_device_create (const pds::DeviceRequest *proto_req,
             }
             goto end;
         }
-        memcpy(core::agent_state::state()->device(), api_spec, sizeof(pds_device_spec_t));
+        memcpy(core::agent_state::state()->device(), api_spec,
+               sizeof(pds_device_spec_t));
     }
+
+    // update device.conf with persistent attrs
+    // TODO: ideally this should be done during commit time (and we need to
+    //       handle aborting/rollback here)
+    device_conf_update(api_spec);
 
     if (batched_internally) {
         // commit the internal batch
@@ -74,73 +142,6 @@ end:
 
     proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
     return ret;
-}
-
-static inline void
-device_profile_update (pds::DeviceProfile profile)
-{
-    boost::property_tree::ptree pt, output;
-    boost::property_tree::ptree::iterator pos;
-
-    try {
-        // copy existing data from device.conf
-        std::ifstream json_cfg(DEVICE_CONF_FILE);
-        read_json(json_cfg, pt);
-
-        for (pos = pt.begin(); pos != pt.end();) {
-            output.put(pos->first.data(), pos->second.data());
-            ++pos;
-        }
-    } catch (...) {}
-
-    if (profile == pds::DEVICE_PROFILE_DEFAULT) {
-        output.put("device-profile", "default");
-    } else if (profile == pds::DEVICE_PROFILE_2PF) {
-        output.put("device-profile", "2pf");
-    } else if (profile == pds::DEVICE_PROFILE_3PF) {
-        output.put("device-profile", "3pf");
-    } else if (profile == pds::DEVICE_PROFILE_4PF) {
-        output.put("device-profile", "4pf");
-    } else if (profile == pds::DEVICE_PROFILE_5PF) {
-        output.put("device-profile", "5pf");
-    } else if (profile == pds::DEVICE_PROFILE_6PF) {
-        output.put("device-profile", "6pf");
-    } else if (profile == pds::DEVICE_PROFILE_7PF) {
-        output.put("device-profile", "7pf");
-    } else if (profile == pds::DEVICE_PROFILE_8PF) {
-        output.put("device-profile", "8pf");
-    }
-
-    boost::property_tree::write_json(DEVICE_CONF_FILE, output);
-
-    return;
-}
-
-static inline void
-memory_profile_update (pds::MemoryProfile profile)
-{
-    boost::property_tree::ptree pt, output;
-    boost::property_tree::ptree::iterator pos;
-
-    try {
-        // copy existing data from device.conf
-        std::ifstream json_cfg(DEVICE_CONF_FILE);
-        read_json(json_cfg, pt);
-
-        for (pos = pt.begin(); pos != pt.end();) {
-            output.put(pos->first.data(), pos->second.data());
-            ++pos;
-        }
-    } catch (...) {}
-
-    if (profile == pds::MEMORY_PROFILE_DEFAULT) {
-        output.put("memory-profile", "default");
-    }
-    output.put("port-admin-state", "PORT_ADMIN_STATE_ENABLE");
-
-    boost::property_tree::write_json(DEVICE_CONF_FILE, output);
-
-    return;
 }
 
 sdk_ret_t
@@ -160,8 +161,6 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
 
     // create an internal batch, if this is not part of an existing API batch
     bctxt = proto_req->batchctxt().batchcookie();
-    auto memory_profile = proto_req->request().memoryprofile();
-    auto device_profile = proto_req->request().deviceprofile();
     if (bctxt == PDS_BATCH_CTXT_INVALID) {
         batch_params.epoch = core::agent_state::state()->new_epoch();
         batch_params.async = false;
@@ -184,16 +183,14 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
             }
             goto end;
         }
-        memcpy(core::agent_state::state()->device(), &api_spec, sizeof(pds_device_spec_t));
+        memcpy(core::agent_state::state()->device(), &api_spec,
+               sizeof(pds_device_spec_t));
     }
 
-    // update device.conf with memory-profile
+    // update device.conf with persistent attrs
     // TODO: ideally this should be done during commit time (and we need to
     //       handle aborting/rollback here)
-    memory_profile_update(memory_profile);
-
-    // update device.conf with device-profile
-    device_profile_update(device_profile);
+    device_conf_update(&api_spec);
 
     if (batched_internally) {
         // commit the internal batch
@@ -243,6 +240,9 @@ pds_svc_device_delete (const pds::DeviceDeleteRequest *proto_req,
         }
         memset(api_spec, 0, sizeof(pds_device_spec_t));
     }
+
+    // delete the device.conf file
+    unlink(DEVICE_CONF_FILE);
 
     if (batched_internally) {
         // commit the internal batch
