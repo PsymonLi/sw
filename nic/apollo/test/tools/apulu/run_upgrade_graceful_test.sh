@@ -7,6 +7,7 @@ UPGRADE_STATUS_FILE='/update/pds_upg_status.txt'
 mkdir -p /update
 rm -rf /update/*       # upgrade init mode
 rm -rf /root/.pcie*    # pciemgrd saves here in sim mode
+rm -rf /.upgrade*
 
 # setup dol
 DOL_ARGS='--pipeline apulu --topo learn --feature learn'

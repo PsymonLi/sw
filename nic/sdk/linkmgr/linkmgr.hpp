@@ -50,7 +50,7 @@ typedef struct linkmgr_cfg_s {
     sdk::lib::shmstore  *restore_store; // shared memory backup store instance
                                         // from HAL for restoring the states
                                         // during bringup
-    module_version_t    cur_version;    // curent version
+    module_version_t    curr_version;   // curent version
     module_version_t    prev_version;   // previous version info passed from hal,
                                         // valid only in upgrade scenarios
 } linkmgr_cfg_t;

@@ -31,20 +31,20 @@ read_module_version (uint32_t thread_id)
 
 static std::string
 upg_shmstore_name (uint32_t thread_id, const char *name, upg_mode_t mode,
-                   bool current_version, bool vstore)
+                   bool curr_mod_version, bool vstore)
 {
     std::string fname = std::string(name);
-    module_version_t cur_version;
+    module_version_t curr_version;
     module_version_t prev_version;
 
     // versioned stores are used only for operational state objects and it is
     // present in volatile store
     if (vstore) {
-        cur_version = g_upg_state->module_version(thread_id);
+        curr_version = g_upg_state->module_version(thread_id);
         prev_version = g_upg_state->module_prev_version(thread_id);
-        if (current_version) {
-            fname = fname + "." + std::to_string(cur_version.major) + "." +
-                std::to_string(cur_version.minor);
+        if (curr_mod_version) {
+            fname = fname + "." + std::to_string(curr_version.major) + "." +
+                std::to_string(curr_version.minor);
         } else {
             fname = fname + "." + std::to_string(prev_version.major) + "." +
                 std::to_string(prev_version.minor);
@@ -169,13 +169,13 @@ upg_shmstore_open (upg_mode_t mode, bool vstore)
 }
 
 static sdk_ret_t
-upg_shmstore_oper_create (uint32_t thread_id, const char *name, size_t size,
+upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
                           upg_mode_t mode)
 {
     sdk_ret_t ret;
     bool rw_mode = false;
     bool vstore = true;
-    module_version_t cur_version, prev_version;
+    module_version_t curr_version, prev_version;
 
     read_module_version(thread_id);
     // linkmgr follow inline shared memory state model. so need two
@@ -191,9 +191,9 @@ upg_shmstore_oper_create (uint32_t thread_id, const char *name, size_t size,
                     g_upg_state->module_prev_version(thread_id).major,
                     g_upg_state->module_prev_version(thread_id).minor);
     if (sdk::platform::upgrade_mode_hitless(mode)) {
-        cur_version = g_upg_state->module_version(thread_id);
+        curr_version = g_upg_state->module_version(thread_id);
         prev_version = g_upg_state->module_prev_version(thread_id);
-        if (cur_version.version == prev_version.version) {
+        if (curr_version.version == prev_version.version) {
             rw_mode = true;
         }
         ret = upg_shmstore_open_(thread_id, name, mode, vstore, rw_mode);
@@ -214,7 +214,7 @@ upg_shmstore_oper_create (uint32_t thread_id, const char *name, size_t size,
 sdk_ret_t
 linkmgr_shmstore_create (upg_mode_t mode)
 {
-    return upg_shmstore_oper_create(sdk::linkmgr::LINKMGR_THREAD_ID_CFG,
+    return upg_oper_shmstore_create(sdk::linkmgr::LINKMGR_THREAD_ID_CFG,
                                     PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_NAME,
                                     PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_SIZE, mode);
 }
@@ -222,7 +222,7 @@ linkmgr_shmstore_create (upg_mode_t mode)
 sdk_ret_t
 nicmgr_shmstore_create (upg_mode_t mode)
 {
-    return upg_shmstore_oper_create(core::PDS_THREAD_ID_NICMGR,
+    return upg_oper_shmstore_create(core::PDS_THREAD_ID_NICMGR,
                                     PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME,
                                     PDS_NICMGR_UPGRADE_OPER_SHMSTORE_SIZE, mode);
 }

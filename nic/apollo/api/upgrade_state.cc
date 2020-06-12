@@ -83,7 +83,7 @@ upg_state::backup_shmstore(uint32_t id, bool vstore) {
 
 void
 upg_state::insert_restore_shmstore(uint32_t id, bool vstore,
-                               sdk::lib::shmstore *store) {
+                                   sdk::lib::shmstore *store) {
     SDK_ASSERT(restore_shmstore(id, vstore == true) == NULL);
     restore_shmstore_[vstore == true].insert(std::make_pair(id, store));
 }
