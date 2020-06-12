@@ -1537,6 +1537,8 @@ class PenOrchestrator:
                     #If not able to read then we will reset
                     naples_inst.ReadGoldFwVersion()
 
+                    #Check whether we can run ssh command
+                    naples_inst.RunSshCmd("date")
                 if not self.__host.IsSSHUP():
                     raise
 
@@ -1549,6 +1551,7 @@ class PenOrchestrator:
                 # Because ForceSwitchToGoldFW is time-sensetive operation (sending Ctrl-c), allowing both IpmiReset
                 self.__ipmi_reboot_allowed = True
                 for naples_inst in self.__naples:
+                    naples_inst.Close()
                     naples_inst.ForceSwitchToGoldFW()
 
                 try:
