@@ -234,6 +234,7 @@ session_and_cache_clear_full(test_vparam_ref_t vparam)
         if (!SESSION_DELETE_RET_VALIDATE(ret)) {
             break;
         }
+        fte_ath::fte_session_index_free(key.session_info_id);
     }
     TEST_LOG_INFO("Cleared %u entries: ret %d\n",
                   key.session_info_id, ret);

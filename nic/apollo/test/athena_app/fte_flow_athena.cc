@@ -895,6 +895,17 @@ fte_session_info_create (uint32_t session_index,
 }
 
 static sdk_ret_t
+fte_session_info_delete (uint32_t session_index)
+{
+    pds_flow_session_key_t session_key;
+
+    memset(&session_key, 0, sizeof(session_key));
+    session_key.session_info_id = session_index;
+    session_key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
+    return (sdk_ret_t)pds_flow_session_info_delete(&session_key);
+}
+
+static sdk_ret_t
 fte_l2_flow_check_macaddr (uint16_t vnic_id, uint8_t flow_dir,
                            l2_flows_range_info_t *flow_range,
                            struct ether_hdr *eth_hdr,
@@ -1248,6 +1259,7 @@ fte_flow_prog (struct rte_mbuf *m)
     ret = (sdk_ret_t)pds_flow_cache_entry_create(&flow_spec);
     if ((ret != SDK_RET_OK) && (ret != SDK_RET_ENTRY_EXISTS)) {
         PDS_TRACE_DEBUG("pds_flow_cache_entry_create failed. \n");
+        fte_session_info_delete(session_index);
         fte_session_index_free(session_index);
         return ret;
     }
@@ -1256,8 +1268,14 @@ fte_flow_prog (struct rte_mbuf *m)
         ret = fte_l2_flow_cache_entry_create(vnic_id, flow_dir,
                     l2_flow_eth_hdr, h2s_rewrite_id, s2h_rewrite_id);
         if (ret != SDK_RET_OK) {
+            pds_flow_data_t flow_data;
             PDS_TRACE_DEBUG("fte_l2_flow_cache_entry_create "
                             "failed. \n");
+            memset(&flow_data, 0, sizeof(flow_data));
+            flow_data.index = session_index;
+            flow_data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
+            pds_flow_cache_entry_delete_by_flow_info(&flow_data);
+            fte_session_info_delete(session_index);
             fte_session_index_free(session_index);
             return ret;
         }

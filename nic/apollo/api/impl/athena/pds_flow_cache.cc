@@ -43,6 +43,11 @@ typedef struct pds_flow_iterate_cbdata_s {
     pds_flow_iter_cb_arg_t    *iter_cb_arg;
 } pds_flow_iter_cbdata_t;
 
+static void
+ftl_table_entry_move (base_table_entry_t *base_entry,
+                      handle_t old_handle, 
+                      handle_t new_handle,
+                      bool move_complete);
 static char *
 pds_flow6_key2str (void *key)
 {
@@ -183,6 +188,10 @@ pds_flow_cache_entry_create (pds_flow_spec_t *spec)
         //                  PRIx64, index, params.handle.tou64());
         ret = (sdk_ret_t)pds_flow_session_ctx_set(index,
                                                   params.handle.tou64());
+        if (ret != SDK_RET_OK) {
+            params.movecb = ftl_table_entry_move;
+            ftl_table->remove(&params);
+        }
     }
     return (pds_ret_t) ret;
 }
@@ -274,6 +283,10 @@ pds_flow_cache_entry_update (pds_flow_spec_t *spec)
             if (IS_INDEX_TYPE_SESSION(index_type)) {
                 ret = (sdk_ret_t)pds_flow_session_ctx_set(index,
                                                           params.handle.tou64());
+                if (ret != SDK_RET_OK) {
+                    params.movecb = ftl_table_entry_move;
+                    ftl_table->remove(&params);
+                }
             }
         }
     }

@@ -307,7 +307,11 @@ pds_flow_session_ctx_move(uint32_t session_id,
     } else {
         ctx_entry_t *ctx = session_ctx.ctx_entry_get(session_id);
         if (ctx) {
-            SDK_ATOMIC_STORE_UINT64(&ctx->handle, &handle);
+            uint64_t old_handle;
+            SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
+            if (!old_handle) {
+                SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
+            }
         }
     }
 }
