@@ -2,7 +2,7 @@
 version: 2.0
 targets:
   linux-rpm-build:
-    commands: [ "sh", "-c", "if [ x$RELEASE = x ] ; then echo RELEASE is not set ; else tar zxf /sw/naples_fw_all.tgz -C /sw && cd /sw && TOPDIR=/sw /sw/platform/tools/drivers-linux-eth/generate-rpms.sh && mkdir -p /release-artifacts/drivers/linux/rpm  && mv /sw/platform/gen/linux-rpms.tar.xz /release-artifacts/drivers/linux/rpm/ && asset-push builds hourly $RELEASE /release-artifacts/drivers/linux/rpm/linux-rpms.tar.xz ; fi"]
+    commands: [ "sh", "-c", "if [ x$RELEASE = x ] ; then echo RELEASE is not set ; else tar zxf /sw/naples_fw_all.tgz -C /sw && cd /sw && TOPDIR=/sw /sw/platform/tools/drivers-linux-eth/generate-rpms.sh && mkdir -p /release-artifacts/drivers && mv /sw/platform/gen/linux-rpms.tar.xz /release-artifacts/drivers/ && asset-push builds hourly $RELEASE /release-artifacts/drivers/linux-rpms.tar.xz ; fi"]
     owners: ["email:snelson@pensando.io"]
     area:
     sub-area:
@@ -22,4 +22,4 @@ image:
   work_dir: "/sw/platform"
 
 logfiles:
-  - /release-artifacts/drivers/linux/rpm/linux-rpms.tar.xz
+  - /release-artifacts/drivers/linux-rpms.tar.xz
