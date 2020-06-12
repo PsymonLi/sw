@@ -1,13 +1,17 @@
-#include "watchdog.hpp"
-
 #include <memory>
 #include <string>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
+#include <sys/wait.h>
 
 #include "nic/sdk/platform/pal/include/pal.h"
-
+#include "watchdog.hpp"
 #include "fault_watcher.hpp"
 #include "log.hpp"
 #include "timer_watcher.hpp"
+#include "nic/sysmgr/penvisor/penvisor.h"
 
 class PALWatchdog : public AbstractWatchdog {
 public:
@@ -16,6 +20,19 @@ public:
     virtual void kick();
 };
 typedef std::shared_ptr<PALWatchdog> PALWatchdogPtr;
+
+class PenvisorWatchdog : public AbstractWatchdog {
+public:
+    static std::shared_ptr<PenvisorWatchdog> create();
+    PenvisorWatchdog();
+    virtual void kick();
+
+private:
+    int fd_;
+    struct sockaddr_un addr_;
+    penvisor_command_t command_;
+};
+typedef std::shared_ptr<PenvisorWatchdog> PenvisorWatchdogPtr;
 
 class SimulationWatchdog : public AbstractWatchdog,
                            public TimerReactor
@@ -44,6 +61,35 @@ PALWatchdog::PALWatchdog()
 void PALWatchdog::kick()
 {
     pal_watchdog_kick();
+}
+
+PenvisorWatchdogPtr
+PenvisorWatchdog::create() {
+    PenvisorWatchdogPtr watchdog = std::make_shared<PenvisorWatchdog>();
+    return watchdog;
+}
+
+PenvisorWatchdog::PenvisorWatchdog() {
+    this->fd_ = socket(AF_UNIX, SOCK_DGRAM, 0);
+
+    memset(&this->addr_, 0, sizeof(this->addr_));
+    this->addr_.sun_family = AF_UNIX;
+    strncpy(this->addr_.sun_path, PENVISOR_PATH, sizeof(this->addr_.sun_path));
+    this->addr_.sun_path[sizeof(this->addr_.sun_path) - 1] = '\0';
+
+    memset(&this->command_, 0, sizeof(this->command_));
+    this->command_.action = PENVISOR_HEARTBEAT;
+}
+
+void
+PenvisorWatchdog::kick() {
+    int rc;
+    
+    rc = sendto(this->fd_, &this->command_, sizeof(this->command_), 0,
+                (struct sockaddr *)&this->addr_, sizeof(this->addr_));
+    if (rc == -1) {
+        g_log->err("sendto failed: %s(%d)", strerror(errno), errno);
+    }
 }
 
 SimulationWatchdogPtr SimulationWatchdog::create()
@@ -81,10 +127,12 @@ WatchdogPtr Watchdog::create()
 
     g_log->debug("Creating watchdog");
 
-    // If file "/data/no_watchdog" is present or NO_WATCHDOG is set then use
-    // the simulation watchdog
-    if ((access("/data/no_watchdog", F_OK) != -1) ||
-        (std::getenv("NO_WATCHDOG"))) {
+    if ((access("/.instance_a", F_OK) != -1) ||
+        (access("/.instance_b", F_OK) != -1)) {
+        wchdg->watchdog = PenvisorWatchdog::create();
+        g_log->info("Using Penvisor watchdog");
+    } else if ((access("/data/no_watchdog", F_OK) != -1) ||
+               (std::getenv("NO_WATCHDOG"))) {
         wchdg->watchdog = SimulationWatchdog::create();
         g_log->info("Using Simulation watchdog");
     } else {

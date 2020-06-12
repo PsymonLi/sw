@@ -13,15 +13,15 @@ typedef enum penvisor_instance_e_ {
 } penvisor_instance_e;
 
 typedef enum penvisor_action_e_ {
-    PENVISOR_SYSRESET   = 0,
-    PENVISOR_INSTLOAD   = 1,
-    PENVISOR_INSTSWITCH = 2,
-    PENVISOR_INSTUNLOAD = 3,
+    PENVISOR_HEARTBEAT  = 0,
+    PENVISOR_SYSRESET   = 1,
+    PENVISOR_INSTLOAD   = 2,
+    PENVISOR_INSTSWITCH = 3,
+    PENVISOR_INSTUNLOAD = 4,
 } penvisor_action_e;
 
 typedef struct penvisor_command_t_ {
     penvisor_action_e   action;
-    penvisor_instance_e instance;
     uint64_t            _reserved;
 } __attribute__((packed)) penvisor_command_t;
 
