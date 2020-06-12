@@ -231,11 +231,11 @@ var _ = Describe("Vc hub workload tests", func() {
 			// wait for sessions to estabblish before starting migration
 			time.Sleep(10 * time.Second)
 
-			log.Infof("Migrate workload %s", moveWl.Name())
+			log.Infof("Migrate workload %s -> %s", moveWl.Name(), dstHost.Name())
 			err = ts.model.MoveWorkloads(mvWlc, dstHosts)
-			Expect(err == nil)
+			Expect(err).ShouldNot(HaveOccurred())
 			err = <-tErr
-			Expect(err == nil)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			Eventually(func() error {
 				return ts.model.VerifyWorkloadMigrationStatus(mvWlc)
@@ -249,19 +249,38 @@ var _ = Describe("Vc hub workload tests", func() {
 			// Eventually(func() error {
 			// 		return ts.model.VerifyWorkloadMigrationStatus(mvWlc)
 			// 	}).Should(Succeed())
-			dstHosts = objects.NewHostCollection(workloads.Client, workloads.Testbed)
-			dstHosts.Hosts = append(dstHosts.Hosts, srcHost)
-
 			log.Infof("Start Traffic between all local and remote pair")
 			// check traffic between all local and remote workloads
 			go runTraffic(wlp, tErr)
 			time.Sleep(5 * time.Second)
-			log.Infof("Migrate workload back %s", moveWl.Name())
+
+			// move the workload back.. simultenously Find a diffrent WL on srchost and move to other host
+			dstHosts = objects.NewHostCollection(workloads.Client, workloads.Testbed)
+			dstHosts.Hosts = append(dstHosts.Hosts, srcHost)
+			for _, rp := range remotePairs.Pairs {
+				if rp.First.Name() != moveWl.Name() && rp.First.NodeName() == srcHost.Name() {
+					mvWlc.Workloads = append(mvWlc.Workloads, rp.First)
+					dstHosts.Hosts = append(dstHosts.Hosts, rp.Second.Host())
+					log.Infof("Migrate workloads %s to %s", rp.First.Name(), rp.Second.Host().Name())
+				} else if rp.Second.Name() != moveWl.Name() && rp.Second.NodeName() == srcHost.Name() {
+					mvWlc.Workloads = append(mvWlc.Workloads, rp.Second)
+					dstHosts.Hosts = append(dstHosts.Hosts, rp.First.Host())
+					log.Infof("Migrate workloads %s to %s", rp.Second.Name(), rp.First.Host().Name())
+				} else {
+					continue
+				}
+				break
+			}
+			Expect(len(mvWlc.Workloads) == len(dstHosts.Hosts))
+			for i, wl := range mvWlc.Workloads {
+				log.Infof("Migrate workloads %s from %s to %s", wl.Name(), wl.NodeName(), dstHosts.Hosts[i].Name())
+			}
+
 			err = ts.model.MoveWorkloads(mvWlc, dstHosts)
-			Expect(err == nil)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			err = <-tErr
-			Expect(err == nil)
+			Expect(err).ShouldNot(HaveOccurred())
 
 			// verify workload status is good, Put all check w.r.t to venice here.
 			Eventually(func() error {

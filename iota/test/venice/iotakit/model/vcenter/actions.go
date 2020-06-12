@@ -227,7 +227,7 @@ func (sm *VcenterSysModel) VerifyWorkloadMigrationStatus(wc *objects.WorkloadCol
 //MoveWorkloads not supported here
 func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *objects.HostCollection) error {
 
-	if len(hc.Hosts) != 1 {
+	if len(hc.Hosts) == 0 {
 		return fmt.Errorf("Invalid number of hosts for move %v", len(hc.Hosts))
 	}
 
@@ -242,10 +242,14 @@ func (sm *VcenterSysModel) MoveWorkloads(wc *objects.WorkloadCollection, hc *obj
 	wMove := &iota.WorkloadMoveMsg{
 		OrchestratorNode: orch.Orchestrators[0].Name,
 	}
-	for _, w := range wc.Workloads {
+	for i, w := range wc.Workloads {
+		dstNodeName := hc.Hosts[0].Name()
+		if len(hc.Hosts) > i {
+			dstNodeName = hc.Hosts[i].Name()
+		}
 		wMove.WorkloadMoves = append(wMove.WorkloadMoves, &iota.WorkloadMove{
 			WorkloadName: w.Name(),
-			DstNodeName:  hc.Hosts[0].Name(),
+			DstNodeName:  dstNodeName,
 			SrcNodeName:  w.NodeName(),
 		})
 	}

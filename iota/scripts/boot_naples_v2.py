@@ -21,7 +21,7 @@ from enum import auto, Enum, unique
 HOST_NAPLES_DIR                 = "/naples"
 NAPLES_TMP_DIR                  = "/data"
 HOST_ESX_NAPLES_IMAGES_DIR      = "/home/vm"
-UPGRADE_TIMEOUT                 = 600
+UPGRADE_TIMEOUT                 = 900
 NAPLES_CONFIG_SPEC_LOCAL        = "/tmp/system-config.json"
 
 parser = argparse.ArgumentParser(description='Naples Boot Script')
@@ -555,8 +555,10 @@ class NaplesManagement(EntityManagement):
             self.CopyIN(os.path.join(GlobalOptions.wsdir, self.fw_images.image), entity_dir = NAPLES_TMP_DIR)
         self.SendlineExpect("", "#", trySync=True)
         self.SendlineExpect("", "#", trySync=True)
+        self.clear_buffer()
         self.SendlineExpect("/nic/tools/sysupdate.sh -p " + NAPLES_TMP_DIR + "/" + os.path.basename(self.fw_images.image),
                             "#", timeout = UPGRADE_TIMEOUT)
+        self.SendlineExpect("", "#", timeout = UPGRADE_TIMEOUT)
         self.SyncLine()
         #if self.ReadSavedFirmwareType() != FIRMWARE_TYPE_MAIN:
         #    raise Exception('failed to switch firmware to mainfwa')

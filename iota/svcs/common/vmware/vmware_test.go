@@ -6,8 +6,16 @@ import (
 	"os"
 	"testing"
 	"time"
+    "strconv"
 
 	TestUtils "github.com/pensando/sw/venice/utils/testutils"
+
+    "github.com/pensando/sw/venice/utils/netutils"
+    conv "github.com/pensando/sw/venice/utils/strconv"
+
+    "github.com/vmware/govmomi/vim25/mo"
+    "github.com/vmware/govmomi/vim25/types"
+    "github.com/vmware/govmomi/object"
 )
 
 func TestMain(m *testing.M) {
@@ -184,7 +192,7 @@ func Test_vcenter_find_host(t *testing.T) {
 	//TestUtils.Assert(t, err == nil, "successfuly found dvs")
 	//TestUtils.Assert(t, dvs != nil, "dvs nil")
 
-	vm, err2 := dc.NewVM("workload-host-1-w1")
+    vm, err2 = dc.NewVM("workload-host-1-w1")
 	TestUtils.Assert(t, err2 == nil, "VM FOUND")
 	//TestUtils.Assert(t, vm != nil, "VM FOND")
 
@@ -209,7 +217,7 @@ func Test_vcenter_find_host(t *testing.T) {
 	TestUtils.Assert(t, err == nil, "VM Clone failed")
 	TestUtils.Assert(t, nvm != nil, "VM FOND")
 
-		TestUtils.Assert(t, false, "Ds not created") */
+    TestUtils.Assert(t, false, "Ds not created")
 
 	err2 = dc.ReconfigureVMNetwork(vm, "iota-def-network", "#Pen-DVS-sudhiaithal-iota-dc", "#Pen-PG-Network-Vlan-1", 1, true)
 	fmt.Printf("Error %v", err2)
@@ -397,6 +405,242 @@ func Test_vcenter_vmotion_vmk(t *testing.T) {
 	// fmt.Printf("Remove vmks on host %s\n", vHost.Name)
 	// err = vHost.RemoveKernelNic("#Pen-PG-Network-Vlan-1")
 	// TestUtils.Assert(t, err == nil, "Failed to remove vmknic %v", err)
+}
+
+func Test_vcenter_hosts(t *testing.T) {
+
+    // Parag:
+    //    TestUtils.Assert(t, false, "Ds not created")
+
+    ctx, _ := context.WithCancel(context.Background())
+    vc, err := NewVcenter(ctx, "barun-vc-7.pensando.io", "administrator@pensando.io", "N0isystem$",
+        "YN69K-6YK5J-78X8T-0M3RH-0T12H")
+
+    TestUtils.Assert(t, err == nil, "Connected to venter")
+    TestUtils.Assert(t, vc != nil, "Vencter context set")
+
+    dcName := "HPE-ESX1"
+    dc, err := vc.SetupDataCenter(dcName)
+    TestUtils.Assert(t, err == nil, "successfuly setup dc")
+    dc, ok := vc.datacenters[dcName]
+    TestUtils.Assert(t, ok, dcName)
+
+    dvsName := "#Pen-DVS-" + dcName
+    dvs, err := dc.findDvs(dvsName)
+    TestUtils.Assert(t, err == nil, "successfuly found dvs")
+    TestUtils.Assert(t, dvs != nil, "dvs nil")
+
+    var dvsInfo mo.DistributedVirtualSwitch
+    err = dvs.Properties(vc.Ctx(), dvs.Reference(), []string{"name", "config"}, &dvsInfo)
+    TestUtils.Assert(t, err == nil, "Failed to get dvs props")
+
+    fmt.Printf("DVS Name %s, ConfigVersion %s\n", dvsInfo.Name, dvsInfo.Config.GetDVSConfigInfo().ConfigVersion)
+
+    fmt.Printf("====Find Hosts\n")
+    finder := vc.Finder()
+    finder.SetDatacenter(dc.ref)
+    hosts, err := finder.HostSystemList(vc.Ctx(), "*")
+    TestUtils.AssertOk(t, err, "Failed to get hosts from DC")
+    var moHosts []mo.HostSystem
+    for _, host := range hosts {
+        fmt.Printf("Host found %s\n", host.Name())
+        var moHost mo.HostSystem
+        err = host.Properties(vc.Ctx(), host.Reference(), []string{"name", "config"}, &moHost)
+        moHosts = append(moHosts, moHost)
+    }
+    // check if host has pensando nic connected
+    pnicsUsed := map[string](map[string]bool){}
+    for _, mHost := range moHosts {
+        for _, ps := range  mHost.Config.Network.ProxySwitch {
+            for _, pnic := range ps.Pnic {
+                fmt.Printf("Host %s, Pnic - %s\n", mHost.Name, pnic)
+                if _,ok := pnicsUsed[mHost.Name]; ok {
+                    pnicsUsed[mHost.Name][pnic] = true
+                } else {
+                    pnicsUsed[mHost.Name] = map[string]bool{}
+                    pnicsUsed[mHost.Name][pnic] = true
+                }
+            }
+        }
+    }
+    fmt.Printf("pnics used : %v\n", pnicsUsed)
+
+    hostName1 := "192.168.71.139"
+    addRemoveHosts := map[string]bool{}
+    addRemoveHosts[hostName1] = true
+    reconfigureHostSpec := []types.DistributedVirtualSwitchHostMemberConfigSpec{}
+    for i:=0; i<1; i++ {
+    for _, mHost := range moHosts {
+        if _, ok := addRemoveHosts[mHost.Name]; !ok {
+            continue
+        }
+        backing :=  new(types.DistributedVirtualSwitchHostMemberPnicBacking)
+        hostSpec := types.DistributedVirtualSwitchHostMemberConfigSpec{
+            Host: mHost.Reference(),
+            Operation: string(types.ConfigSpecOperationEdit),
+            Backing: backing,
+        }
+        uplink := 0
+        for _,pnic := range mHost.Config.Network.Pnic {
+            macStr, _ := conv.ParseMacAddr(pnic.Mac)
+            if !netutils.IsPensandoMACAddress(macStr) {
+                continue
+            }
+            used := false
+            if _, ok := pnicsUsed[mHost.Name]; ok {
+                _, used = pnicsUsed[mHost.Name][pnic.Key]
+            }
+            fmt.Printf("Pnic - %s : %s : %v\n", pnic.Device, macStr, used)
+            // don't add vmnic10
+            if !used && pnic.Device != "vmnic10" {
+                // add it
+                uplink++
+                uplinkStr := strconv.FormatInt(int64(uplink), 10)
+                backing.PnicSpec = append(backing.PnicSpec, 
+                    types.DistributedVirtualSwitchHostMemberPnicSpec{
+                        PnicDevice: pnic.Device,
+                        UplinkPortgroupKey: "dvportgroup-1104",
+                        UplinkPortKey: uplinkStr,})
+            }
+        }
+        if len(backing.PnicSpec) == 0 {
+            fmt.Printf("Removing all pnics\n")
+        } else {
+            fmt.Printf("Adding all pnics\n")
+        }
+        reconfigureHostSpec = append(reconfigureHostSpec, hostSpec)
+    }
+    // just set the values that we change??
+    dvsCfg := &types.DVSConfigSpec{
+        ConfigVersion: dvsInfo.Config.GetDVSConfigInfo().ConfigVersion,
+        Name: dvsInfo.Name,
+        Host: reconfigureHostSpec,
+    }
+    task, err := dvs.Reconfigure(vc.Ctx(), dvsCfg)
+    TestUtils.AssertOk(t, err, "Reconfigure DVS failed %s", err)
+    _, err = task.WaitForResult(vc.Ctx())
+    TestUtils.AssertOk(t, err, "Reconfigure DVS Task failed %s", err)
+
+    // time.Sleep(10*time.Second)
+    }
+}
+
+type vmRelocationSpec struct {
+    vmName string
+    srcDcName, srcHostName string
+    dstDcName, dstHostName string
+}
+
+func Test_vmotions(t *testing.T) {
+
+    // Parag:
+    //    TestUtils.Assert(t, false, "Ds not created")
+
+    ctx, _ := context.WithCancel(context.Background())
+    vc, err := NewVcenter(ctx, "barun-vc-7.pensando.io", "administrator@pensando.io", "N0isystem$",
+        "YN69K-6YK5J-78X8T-0M3RH-0T12H")
+
+    TestUtils.Assert(t, err == nil, "Connected to venter")
+    TestUtils.Assert(t, vc != nil, "Vencter context set")
+
+    // specify all vms to be moved
+    vmRelocations := []vmRelocationSpec {
+        {    vmName: "testnode8",
+            srcDcName: "HPE-ESX1",
+            srcHostName: "192.168.71.139",
+            dstDcName: "HPE-ESX1",
+            dstHostName: "192.168.70.205",
+        },
+        {    vmName: "testnode3",
+            srcDcName: "HPE-ESX1",
+            srcHostName: "192.168.70.205",
+            dstDcName: "HPE-ESX1",
+            dstHostName: "192.168.71.139",
+        },
+    }
+    for i:=0; i<2; i++ {
+    relocationTasks := map[string]*object.Task{}
+    for _, relo := range vmRelocations {
+        srcHostName := relo.srcHostName
+        dstHostName := relo.dstHostName
+        srcDcName := relo.srcDcName
+        dstDcName := relo.dstDcName
+        if (i % 2) == 0 {
+            // reverse
+            srcHostName = relo.dstHostName
+            dstHostName = relo.srcHostName
+            srcDcName = relo.dstDcName
+            dstDcName = relo.srcDcName
+        }
+        // src
+        dc, err := vc.SetupDataCenter(srcDcName)
+        srcHost := dc.findVcHost("", srcHostName)
+        TestUtils.Assert(t, srcHost != nil, "Src host %s not found", srcHostName)
+        vm := dc.findVcVM(relo.vmName)
+        TestUtils.Assert(t, vm != nil, "VM %s not found", relo.vmName)
+        // dst
+        dc, err = vc.SetupDataCenter(dstDcName)
+        dstHost := dc.findVcHost("", dstHostName)
+        var moHost mo.HostSystem
+        err = dstHost.Properties(vc.Ctx(), dstHost.Reference(), []string{"datastore", "config", "parent"}, &moHost)
+
+        TestUtils.Assert(t, dstHost != nil, "Dst host %s not found", dstHostName)
+        dsRef := moHost.Datastore[0].Reference()
+        hostRef := moHost.Reference()
+        rsPool, err := dstHost.ResourcePool(vc.Ctx())
+        TestUtils.AssertOk(t, err, "Resource pool")
+        rsPoolRef := rsPool.Reference()
+        relocateSpec := types.VirtualMachineRelocateSpec{
+            Datastore: &dsRef,
+            Host: &hostRef,
+            Pool: &rsPoolRef,
+        }
+        task, err := vm.Relocate(vc.Ctx(), relocateSpec, types.VirtualMachineMovePriorityDefaultPriority)
+        TestUtils.AssertOk(t, err, "Failed to Start relocation")
+        relocationTasks[relo.vmName] = task
+    }
+    for vmName, task := range relocationTasks {
+        fmt.Printf("Wait for vmotion %s", vmName)
+        _, err = task.WaitForResult(vc.Ctx())
+        TestUtils.AssertOk(t, err, "Relocation of VM %s failed %s", vmName, err)
+    }
+    time.Sleep(5*time.Second)
+    }
+}
+
+func (dc *DataCenter) findVcVM(vmName string) *object.VirtualMachine {
+    finder := dc.Finder()
+    vms, err := finder.VirtualMachineList(dc.vc.Ctx(), "*")
+    if err != nil {
+        fmt.Printf("VM list error %s\n", err)
+        return nil
+    }
+    for _, vm := range vms {
+        fmt.Printf("VM found %s\n", vm.Name())
+        if vm.Name() == vmName {
+            return vm
+        }
+    }
+    return nil
+}
+
+func (dc *DataCenter) findVcHost(clusterName, hostName string) *object.HostSystem {
+    // Cluster TBD
+    fmt.Printf("====Find Host %s\n", hostName)
+    finder := dc.Finder()
+    hosts, err := finder.HostSystemList(dc.vc.Ctx(), "*")
+    if err != nil {
+        fmt.Printf("Host list error %s\n", err)
+        return nil
+    }
+    for _, host := range hosts {
+        fmt.Printf("Host found %s\n", host.Name())
+        if host.Name() == hostName {
+            return host
+        }
+    }
+    fmt.Printf("Host not found\n")
+    return nil
 }
 
 func Test_vcenter_ovf_deploy(t *testing.T) {
