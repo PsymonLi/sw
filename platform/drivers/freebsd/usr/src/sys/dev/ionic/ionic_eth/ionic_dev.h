@@ -32,8 +32,6 @@
 #include "ionic_api.h"
 #include "ionic_regs.h"
 
-#define IONIC_MIN_MTU	ETHER_MIN_LEN
-#define IONIC_MAX_MTU	(9216 - ETHER_HDR_LEN - ETHER_VLAN_ENCAP_LEN - ETHER_CRC_LEN)
 #define IONIC_LIFS_MAX			1024
 
 #define IONIC_WDOG_HB_DEFAULT_MS	(10 * 1000) /* 10s */

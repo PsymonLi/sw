@@ -1168,9 +1168,10 @@ int
 ionic_change_mtu(struct ifnet *ifp, int new_mtu)
 {
 	struct ionic_lif *lif = if_getsoftc(ifp);
+	struct ionic_identity *ident = &lif->ionic->ident;
 	struct ionic_rxque *rxq;
 	uint32_t old_mbuf_size;
-	int i, err;
+	int i, err, frame_size, max_mtu, min_mtu;
 	bool mbuf_size_changed;
 
 	struct ionic_admin_ctx ctx = {
@@ -1188,8 +1189,15 @@ ionic_change_mtu(struct ifnet *ifp, int new_mtu)
 		return (0);
 	}
 
-	if (new_mtu < IONIC_MIN_MTU || new_mtu > IONIC_MAX_MTU) {
-		IONIC_NETDEV_ERROR(ifp, "invalid MTU: %d\n", new_mtu);
+	frame_size = new_mtu + ETH_HLEN + VLAN_HLEN;
+	min_mtu = le32_to_cpu(ident->lif.eth.min_frame_size) - (ETH_HLEN + VLAN_HLEN);
+	max_mtu = le32_to_cpu(ident->lif.eth.max_frame_size) - (ETH_HLEN + VLAN_HLEN);
+	/* Get the OS range. */
+	min_mtu = MAX(min_mtu, IF_MINMTU);
+	max_mtu = MIN(max_mtu, IF_MAXMTU);
+	if (new_mtu < min_mtu || new_mtu > max_mtu) {
+		IONIC_NETDEV_ERROR(ifp, "mtu: %d of of range (%d, %d)\n",
+			new_mtu, min_mtu, max_mtu);
 		return (EINVAL);
 	}
 
