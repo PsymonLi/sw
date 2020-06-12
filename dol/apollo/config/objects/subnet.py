@@ -36,33 +36,6 @@ class SubnetStatus(base.StatusObjectBase):
         super().__init__(api.ObjectTypes.SUBNET)
 
 class SubnetObject(base.ConfigObjectBase):
-    @staticmethod
-    def __get_policies(subnet, spec, node, parent, af, direction, generate=True):
-
-        def __get_policies_frm_count(node, vpcid, count, cb):
-            policyids = []
-            for c in range(count):
-                id = cb(node, parent.VPCId)
-                policyids.append(id)
-            return policyids
-
-        policy_attr_map = {
-            "V4ingress" : ("v4ingrpolicycount", "v4ingrpolicies", PolicyClient.GetIngV4SecurityPolicyId),
-            "V6ingress" : ("v6ingrpolicycount", "v6ingrpolicies", PolicyClient.GetIngV6SecurityPolicyId),
-            "V4egress"  : ("v4egrpolicycount", "v4egrpolicies", PolicyClient.GetEgV4SecurityPolicyId),
-            "V6egress"  : ("v6igrpolicycount", "v6igrpolicies", PolicyClient.GetEgV6SecurityPolicyId)
-        }
-        count_attr, specific_attr, cb = policy_attr_map[af+direction]
-        policyids = getattr(spec, specific_attr, None)
-        if policyids: return policyids
-        count = getattr(spec, count_attr, 0)
-        if count == 0: return []
-        policy_id = cb(node, parent.VPCId)
-        if generate:
-            return PolicyClient.GenerateSubnetPolicies(subnet, policy_id, count, direction, True if af == 'V6' else False)
-        else:
-            return __get_policies_frm_count(node, parent.VPCId, count, cb)
-
     def __init__(self, node, parent, spec, poolid):
         super().__init__(api.ObjectTypes.SUBNET, node)
         if hasattr(spec, 'origin'):
@@ -93,10 +66,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, parent.VPCId)
 
-        self.IngV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V4", "ingress")
-        self.IngV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V6", "ingress")
-        self.EgV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V4", "egress")
-        self.EgV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, node, parent, "V6", "egress")
+        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V4", "ingress")
+        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V6", "ingress")
+        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V4", "egress")
+        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V6", "egress")
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
@@ -591,14 +564,14 @@ class SubnetObject(base.ConfigObjectBase):
         return True
 
     def ReconfigAttribs(self, spec):
-        self.IngV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
-                                      self.Node, self.VPC, "V4", "ingress", False)
-        self.EgV4SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
-                                     self.Node, self.VPC, "V4", "egress", False)
-        self.IngV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
-                                      self.Node, self.VPC, "V6", "ingress", False)
-        self.EgV6SecurityPolicyIds = SubnetObject.__get_policies(self, spec, \
-                                     self.Node, self.VPC, "V6", "egress", False)
+        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                      self.VPC, "V4", "ingress", True, False)
+        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                     self.VPC, "V4", "egress", True, False)
+        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                      self.VPC, "V6", "ingress", True, False)
+        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                     self.VPC, "V6", "egress", True, False)
         self.AddToReconfigState('update')
         logger.info("Object Updated")
         self.Show()

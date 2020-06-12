@@ -75,6 +75,10 @@ vpc:
         - count     : 1
           v4prefixlen : 10
           v6prefixlen : 64
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - count   : 1
               ipcount : 32

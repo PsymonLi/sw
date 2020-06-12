@@ -141,13 +141,20 @@ vpc:
         - count     : 1
           v4prefixlen : 10
           v6prefixlen : 64
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - count     : 1
               ipcount   : 32
               public    : true
               tagged    : false
               policy:
-                count   : 5
+                v4ingrpolicycount: 5
+                v4egrpolicycount : 5
+                v6ingrpolicycount: 5
+                v6egrpolicycount : 5
               rxpolicer : 1
               txpolicer : 2
             - count     : 3
@@ -155,7 +162,10 @@ vpc:
               public    : true
               tagged    : true
               policy:
-                count   : 5
+                v4ingrpolicycount: 5
+                v4egrpolicycount : 5
+                v6ingrpolicycount: 5
+                v6egrpolicycount : 5
               rxpolicer : 3
               txpolicer : 4
             - count     : 12

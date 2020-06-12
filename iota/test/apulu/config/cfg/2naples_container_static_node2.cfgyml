@@ -128,6 +128,10 @@ vpc:
           fabricencapvalue : 202
           v4routerip       : '2.1.0.0'
           vroutermac       : macaddr/0055.0100.0001
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 1
               count     : 1             # 1 untagged VNIC

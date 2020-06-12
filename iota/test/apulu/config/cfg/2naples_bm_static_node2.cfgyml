@@ -163,6 +163,10 @@ vpc:
           v4routerip       : '2.1.0.1'
           vroutermac       : macaddr/0055.0100.0001
           dhcppolicy       : 10
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 1
               count     : 1             # 1 untagged VNIC
@@ -196,6 +200,10 @@ vpc:
           v4prefix         : '3.1.0.0\24'
           fabricencap      : vxlan # vxlan or mplsodup
           fabricencapvalue : 302
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           rmap:                       # Remote IP mappings per subnet
             - id       : 3
               count    : 1
@@ -221,6 +229,10 @@ vpc:
           v4routerip       : '9.0.0.1'
           vroutermac       : macaddr/0055.0100.0004
           dhcppolicy       : 13
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 3
               count     : 1             # 1 untagged VNIC
@@ -289,6 +301,10 @@ vpc:
           v4routerip       : '64.0.0.1'
           vroutermac       : macaddr/0055.0100.0002
           dhcppolicy       : 11
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 100
               count     : 1             # 1 untagged VNIC
@@ -323,6 +339,10 @@ vpc:
           v4routerip       : '10.0.200.1'
           vroutermac       : macaddr/0055.0100.0003
           dhcppolicy       : 12
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 101
               count     : 1             # 1 untagged VNIC
@@ -389,6 +409,10 @@ vpc:
           fabricencapvalue : 12
           v4routerip       : '11.1.2.1'
           vroutermac       : macaddr/0066.0100.0001
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
           vnic:
             - id        : 51
               count     : 1             # 1 untagged VNIC

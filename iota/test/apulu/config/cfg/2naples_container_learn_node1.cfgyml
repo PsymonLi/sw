@@ -150,6 +150,10 @@ vpc:
         - count            : 2
           v4prefixlen      : 24
           fabricencap      : vxlan
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
 
           vnic:
             - count     : 1             # 1 untagged VNIC
@@ -166,6 +170,10 @@ vpc:
         - count            : 1
           v4prefixlen      : 24
           fabricencap      : vxlan
+          v4ingrpolicycount: 1
+          v4egrpolicycount : 1
+          v6ingrpolicycount: 1
+          v6egrpolicycount : 1
 
           vnic:
             - count     : 1             # 1 untagged VNIC

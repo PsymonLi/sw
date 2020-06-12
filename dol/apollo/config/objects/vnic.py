@@ -138,43 +138,14 @@ class VnicObject(base.ConfigObjectBase):
         policerid = getattr(spec, 'txpolicer', 0)
         self.TxPolicer = PolicerClient.GetPolicerObject(node, policerid)
 
-        #specific vnic policy attachment case, autogen will be handled below
-        v4ingrpolicies = getattr(spec, 'v4ingrpolicies', None)
-        v6ingrpolicies = getattr(spec, 'v6ingrpolicies', None)
-        v4egrpolicies = getattr(spec, 'v4egrpolicies', None)
-        v6egrpolicies = getattr(spec, 'v6egrpolicies', None)
-
-        if v4ingrpolicies != None:
-            self.IngV4SecurityPolicyIds = []
-            for policyid in v4ingrpolicies:
-                self.IngV4SecurityPolicyIds.append(policyid)
-
-        if v6ingrpolicies != None:
-            self.IngV6SecurityPolicyIds = []
-            for policyid in v6ingrpolicies:
-                self.IngV6SecurityPolicyIds.append(policyid)
-
-        if v4egrpolicies != None:
-            self.EgV4SecurityPolicyIds = []
-            for policyid in v4egrpolicies:
-                self.EgV4SecurityPolicyIds.append(policyid)
-
-        if v6egrpolicies != None:
-            self.EgV6SecurityPolicyIds = []
-            for policyid in v6egrpolicies:
-                self.EgV6SecurityPolicyIds.append(policyid)
-
         ################# PRIVATE ATTRIBUTES OF VNIC OBJECT #####################
         vnicPolicySpec = getattr(spec, 'policy', None)
         if vnicPolicySpec and utils.IsVnicPolicySupported():
-            count = getattr(vnicPolicySpec, 'count', 'random')
-            if count == 'random':
-                # get num of policies [0-5] in rrob fashion
-                self.__numpolicy = ResmgrClient[node].NumVnicPolicyAllocator.rrnext()
-            else:
-                self.__numpolicy = int(count)
-        else:
-            self.__numpolicy = 0
+            self.IngV4SecurityPolicyIds = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V4", "ingress", False)
+            self.IngV6SecurityPolicyIds = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V6", "ingress", False)
+            self.EgV4SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V4", "egress", False)
+            self.EgV6SecurityPolicyIds  = utils.GetPolicies(self.SUBNET, vnicPolicySpec, node, self.SUBNET.VPC, "V6", "egress", False)
+
         self.QinQenabled = False
         self.DeriveOperInfo(node)
         self.Mutable = True if (utils.IsUpdateSupported() and self.IsOriginFixed()) else False
@@ -223,7 +194,6 @@ class VnicObject(base.ConfigObjectBase):
                 logger.info("- HostIf:%s" % self.SUBNET.HostIfUuid[0])
         logger.info(f"- IngressPolicer:{self.RxPolicer}")
         logger.info(f"- EgressPolicer:{self.TxPolicer}")
-        logger.info(f"- NumSecurityPolicies:{self.__numpolicy}")
         logger.info(f"- Ing V4 Policies:{self.IngV4SecurityPolicyIds}")
         logger.info(f"- Ing V6 Policies:{self.IngV6SecurityPolicyIds}")
         logger.info(f"- Egr V4 Policies:{self.EgV4SecurityPolicyIds}")
@@ -371,18 +341,6 @@ class VnicObject(base.ConfigObjectBase):
     def GetStatus(self):
         return self.Status
 
-    def Generate_vnic_security_policies(self):
-        if self.__numpolicy == 0:
-            return
-        numpolicy = self.__numpolicy
-        subnetobj = self.SUBNET
-        self.IngV4SecurityPolicyIds = PolicyClient.GenerateVnicPolicies(numpolicy, subnetobj, 'ingress')
-        self.EgV4SecurityPolicyIds = PolicyClient.GenerateVnicPolicies(numpolicy, subnetobj, 'egress')
-        if self.SUBNET.VPC.IsV6Stack():
-            self.IngV6SecurityPolicyIds = PolicyClient.GenerateVnicPolicies(numpolicy, subnetobj, 'ingress', True)
-            self.EgV6SecurityPolicyIds = PolicyClient.GenerateVnicPolicies(numpolicy, subnetobj, 'egress', True)
-        return
-
     def IsEncapTypeVLAN(self):
         return self.Dot1Qenabled
 
@@ -416,7 +374,6 @@ class VnicObject(base.ConfigObjectBase):
         for txmirrorid in self.TxMirror:
             txmirrorobj = mirror.client.GetMirrorObject(node, txmirrorid)
             self.TxMirrorObjs.update({txmirrorid: txmirrorobj})
-        self.Generate_vnic_security_policies()
         super().DeriveOperInfo()
         return
 
@@ -532,6 +489,20 @@ class VnicObject(base.ConfigObjectBase):
         self.CommitUpdate()
         return
 
+    def ReconfigAttribs(self, spec):
+        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                      self.VPC, "V4", "ingress", False, False)
+        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                     self.VPC, "V4", "egress", False, False)
+        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                      self.VPC, "V6", "ingress", False, False)
+        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
+                                     self.VPC, "V6", "egress", False, False)
+        self.AddToReconfigState('update')
+        logger.info("Object Updated")
+        self.Show()
+        return
+
 class VnicObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.VNIC, Resmgr.MAX_VNIC)
@@ -611,6 +582,11 @@ class VnicObjectClient(base.ConfigClientBase):
 
     def GenerateObjects(self, node, parent, subnet_spec_obj):
         if getattr(subnet_spec_obj, 'vnic', None) == None:
+            return
+
+        if utils.IsReconfigInProgress(node):
+            for spec in subnet_spec_obj.vnic:
+                self.Reconfig(node, spec)
             return
 
         def __get_mirrors(vnicspec, attr):

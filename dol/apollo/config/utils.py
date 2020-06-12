@@ -1179,6 +1179,35 @@ def ValidatePolicyAttr(obj, spec):
                 return False
     return True
 
+def GetPolicies(subnet, spec, node, parent, af, direction, is_subnet=True, generate=True):
+    def __get_policies_frm_count(node, vpcid, count, cb):
+        policyids = []
+        for c in range(count):
+            id = cb(node, vpcid)
+            policyids.append(id)
+        return policyids
+
+    PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
+    policy_attr_map = {
+        "V4ingress" : ("v4ingrpolicycount", "v4ingrpolicies", PolicyClient.GetIngV4SecurityPolicyId),
+        "V6ingress" : ("v6ingrpolicycount", "v6ingrpolicies", PolicyClient.GetIngV6SecurityPolicyId),
+        "V4egress"  : ("v4egrpolicycount", "v4egrpolicies", PolicyClient.GetEgV4SecurityPolicyId),
+        "V6egress"  : ("v6egrpolicycount", "v6egrpolicies", PolicyClient.GetEgV6SecurityPolicyId)
+    }
+    count_attr, specific_attr, cb = policy_attr_map[af+direction]
+    policyids = getattr(spec, specific_attr, None)
+    if policyids: return policyids
+    count = getattr(spec, count_attr, 0)
+    if count == 0: return []
+    if generate:
+        if is_subnet:
+            policy_id = cb(node, parent.VPCId)
+            return PolicyClient.GenerateSubnetPolicies(subnet, policy_id, count, direction, True if af == 'V6' else False)
+        else:
+            return PolicyClient.GenerateVnicPolicies(count, subnet, direction, True if af == 'V6' else False)
+    else:
+        return __get_policies_frm_count(node, parent.VPCId, count, cb)
+
 def GetTopoSpec(filename):
     path = '%s/config/topology/%s' % \
             (GlobalOptions.pipeline, GlobalOptions.topology)
