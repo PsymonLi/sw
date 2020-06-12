@@ -45,6 +45,7 @@ function upgmgr_setup() {
 }
 
 function upgmgr_pkgcheck() {
+    MODE=$1
     local CC_CHECK_TOOL=${PDSPKG_TOPDIR}/tools/upgmgr_cc_meta.py
 
     # verify the image
@@ -65,7 +66,7 @@ function upgmgr_pkgcheck() {
     [[ $? -ne 0 ]] && echo "Meta extraction from running fw failed!" && exit 1
 
     # compare the extracted files
-    python $CC_CHECK_TOOL $META_RUNNING $RUNNING_IMAGE $META_NEW
+    python $CC_CHECK_TOOL $META_RUNNING $RUNNING_IMAGE $META_NEW $MODE
     if [[ $? -ne 0 ]];then
         rm -rf $META_NEW $META_RUNNING
         echo "Meta comparison failed!"

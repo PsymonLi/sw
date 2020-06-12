@@ -19,7 +19,7 @@ echo "Starting commands for $STAGE_NAME"
 if [[ $STAGE_NAME = "UPG_STAGE_COMPAT_CHECK" && $STAGE_TYPE == "PRE" ]];then
     upgmgr_set_upgrade_status  "in-progress"
     upgmgr_setup
-    upgmgr_pkgcheck
+    upgmgr_pkgcheck "graceful"
     upgmgr_clear_respawn_status
     [[ $? -ne 0 ]] && echo "Package check failed!" && exit 1
 
