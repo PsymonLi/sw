@@ -20,9 +20,9 @@ def __find_err_in_upg_log(node, records):
 def __is_record_type_state(record):
     ret = False
     if record:
-        if "Executing pre-hook" in record['msg']:
+        if "Started stage execution" in record['msg']:
             ret = True
-        elif "Executing post-hook" in record['msg']:
+        elif "Finished stage execution" in record['msg']:
             ret = True
     return ret
 

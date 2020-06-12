@@ -364,9 +364,10 @@ static upg_stage_t
 lookup_stage_transition (upg_stage_t cur, svc_rsp_code_t rsp)
 {
     upg_stage_t next_stage = UPG_STAGE_EXIT;
+
+    LOG_STAGE_FINISHED(upg_stage2str(cur));
     next_stage = fsm_lookup_tbl[std::to_string(cur) + std::to_string(rsp)];
-    LOG_STAGE_TRANSITION(upg_stage2str(cur),
-                         upg_stage2str(next_stage));
+    LOG_STAGE_STARTED(upg_stage2str(next_stage));
     return next_stage;
 }
 
@@ -812,12 +813,11 @@ init_fsm (fsm_init_params_t *params)
 
     SDK_ASSERT (fsm_states.is_discovery() == true);
     fsm_states.set_init_params(params);
+    LOG_STAGE_STARTED(upg_stage2str(fsm_states.current_stage()));
     if (!execute_pre_hooks(fsm_states.current_stage())) {
         fsm_states.update_stage_progress(SVC_RSP_FAIL);
         execute_exit_script(get_exit_status());
         return SDK_RET_ERR;
-    } else {
-        LOG_STAGE_TRANSITION("NONE", upg_stage2str(fsm_states.current_stage()))
     }
     send_discovery_event(IPC_SVC_DOM_ID_A, fsm_states.current_stage());
     return SDK_RET_OK;

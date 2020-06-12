@@ -74,8 +74,11 @@ extern const char *g_upg_log_pfx;
 {                                                                         \
 }
 
-#define LOG_STAGE_TRANSITION(from, to)                                         \
-    UPG_TRACE_INFO("Stage is transitioning from %s to %s", from, to);
+#define LOG_STAGE_STARTED(stage)                                               \
+    UPG_TRACE_INFO("Started stage execution %s", stage);
+
+#define LOG_STAGE_FINISHED(stage)                                              \
+    UPG_TRACE_INFO("Finished stage execution %s", stage);
 
 #define LOG_INVALID_OBJ(obj, obj_name)                                         \
     UPG_TRACE_ERR("Not a valid %s %s", obj, obj_name);
