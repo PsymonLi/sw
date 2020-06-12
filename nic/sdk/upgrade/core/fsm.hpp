@@ -104,12 +104,16 @@ public:
     void set_init_params(fsm_init_params_t *params) { init_params_ = *params; }
     ipc_svc_dom_id_t domain(void) const { return domain_; };
     void set_domain(ipc_svc_dom_id_t dom ) { domain_ = dom; };
+    std::string pending_svcs(void) ;
+    void set_pending_svc(std::string svc);
+    void clear_pending_svc(std::string svc);
 private:
     void update_stage_progress_internal_(void);
     upg_stage_t current_stage_;
     upg_stage_t start_stage_;
     upg_stage_t end_stage_;
     uint32_t pending_response_;
+    svc_sequence_list pending_svcs_;
     uint32_t size_;
     svc_sequence_list svc_sequence_;
     ev_tstamp timeout_;

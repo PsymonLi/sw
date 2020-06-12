@@ -60,6 +60,7 @@ dispatch_event (ipc_svc_dom_id_t dom, upg_stage_t id, upg_svc svc)
             fsm_states.init_params()->upg_event_fwd_cb(id, svc.name(),
                                                        svc.ipc_id());
         } else {
+            fsm_states.set_pending_svc(svc.name());
             svc.dispatch_event(dom, id, fsm_states.init_params()->upg_mode);
         }
     }
@@ -313,6 +314,7 @@ upg_event_handler (upg_event_msg_t *event)
 
     LOG_RESPONSE_MSG(event->rsp_svc_name, upg_status2str(event->rsp_status));
     if (event->stage == id && fsm_states.is_valid_service(svc_name)) {
+        fsm_states.clear_pending_svc(svc_name);
 
         if ((event->stage == fsm_states.start_stage()) ||
             fsm_states.is_discovery()) {
@@ -449,8 +451,13 @@ fsm::update_stage_progress(const svc_rsp_code_t rsp) {
                           upg_stage2str(current_stage_));
             break;
         case SVC_RSP_NONE:
-            UPG_TRACE_ERR("Timer expired, no service response so far"
-                          " in stage %s",upg_stage2str(current_stage_));
+            if (fsm_states.is_discovery()) {
+                UPG_TRACE_ERR("Timer expired, no service response so far");
+            } else {
+                std::string svcs = fsm_states.pending_svcs();
+                UPG_TRACE_ERR("Timer expired, no service response from %s",
+                              svcs.c_str());
+            }
             break;
         default:
             break;
@@ -508,6 +515,30 @@ fsm::next_svc(void) const {
     return svc;
 }
 
+std::string
+fsm::pending_svcs(void)
+{
+    std::string svcs;
+    for (auto const& s : pending_svcs_) {
+        svcs += s + ", ";
+    }
+    return svcs;
+}
+
+void
+fsm::clear_pending_svc(std::string svc)
+{
+    auto itr = std::find(pending_svcs_.begin(), pending_svcs_.end(), svc);
+    if (itr != pending_svcs_.end()) {
+        pending_svcs_.erase(itr);
+    }
+}
+
+void
+fsm::set_pending_svc(std::string svc)
+{
+    pending_svcs_.push_back(svc);
+}
 const char*
 fsm::get_event_sequence_type(void) const {
     SDK_ASSERT(fsm_stages.find(current_stage_) != fsm_stages.end());
