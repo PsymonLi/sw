@@ -878,6 +878,9 @@ apulu_impl::pipeline_upgrade_hitless_init(void) {
     p4pd_cfg_t p4pd_cfg;
     std::string cfg_path = api::g_pds_state.cfg_path();
 
+    // start writing to shadow memory only until switchover stage
+    sdk::asic::pd::asicpd_write_to_hw(false);
+
     p4pd_cfg.cfg_path = cfg_path.c_str();
     ret = pipeline_p4_hbm_init(&p4pd_cfg, false);
     SDK_ASSERT(ret == SDK_RET_OK);
@@ -968,6 +971,8 @@ apulu_impl::upgrade_switchover(void) {
                       ret);
         return ret;
     }
+    // start writing to h/w from thi point onwards
+    sdk::asic::pd::asicpd_write_to_hw(true);
 
     // update pc offsets for qstate
     q = api::g_upg_state->qstate_cfg();
