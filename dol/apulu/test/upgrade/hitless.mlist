@@ -1,0 +1,27 @@
+# Hitless Upgrade feature test
+feature:
+    id          : upgrade
+    sub         : hitless
+    package     : test.upgrade
+    module      : upgrade
+    runorder    : 100
+    enable      : False
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : PACKET_TEST_PRE_UPGRADE
+        spec    : l2r_icmp_echo_reply.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+
+    - module:
+        name    : UPGRADE_TRIGGER_HITLESS
+        spec    : hitless.testspec
+
+    - module:
+        name    : PACKET_TEST_POST_UPGRADE
+        spec    : l2r_icmp_echo_reply.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING

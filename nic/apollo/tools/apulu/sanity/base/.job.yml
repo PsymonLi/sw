@@ -100,6 +100,16 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/upgrade:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/upgrade"]
+    owners: ["email:karthik@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
+
   apulu/pds_scale_test_mock:
     commands: ["make", "PIPELINE=apulu", "jobd/apulu/pds_scale_test_mock"]
     owners: ["email:akoradha@pensando.io" ]

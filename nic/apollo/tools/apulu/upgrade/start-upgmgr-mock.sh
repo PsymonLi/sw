@@ -3,7 +3,7 @@
 export PIPELINE=apulu
 CUR_DIR=$( readlink -f $( dirname $0 ))
 
-source  ${CUR_DIR}/../../tools/setup_env_mock.sh $PIPELINE
+source  ${CUR_DIR}/../../../tools/setup_env_mock.sh $PIPELINE
 
 export OPERD_REGIONS=$CONFIG_PATH/operd-regions.json
 
@@ -19,5 +19,5 @@ function finish {
 }
 trap finish EXIT
 
-CMD="pdsupgmgr $* 2>&1"
+CMD="$BUILD_DIR/bin/pdsupgmgr $* 2>&1 &"
 $GDB $CMD

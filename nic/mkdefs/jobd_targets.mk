@@ -516,6 +516,10 @@ jobd/apulu/metaswitch_store_test: ${JOBD_PREREQS}
 jobd/dol/apulu/vxlan: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature networking
 
+.PHONY: jobd/dol/apulu/upgrade
+jobd/dol/apulu/upgrade: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo hostvxlan --feature upgrade
+
 .PHONY: jobd/dol/apulu/l2
 jobd/dol/apulu/l2: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo l2_hostvxlan --feature networking --dry

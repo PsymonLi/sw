@@ -14,6 +14,7 @@ import pdb
 
 import types_pb2 as types_pb2
 import tunnel_pb2 as tunnel_pb2
+import upgrade_pb2 as upgrade_pb2
 import infra.common.defs as defs
 import infra.common.parser as parser
 import apollo.config.agent.api as api
@@ -859,6 +860,14 @@ def GetRpcSecurityRuleAction(action):
     else:
         return types_pb2.SECURITY_RULE_ACTION_NONE
 
+def GetRpcUpgradeMode(mode):
+    if mode == "hitless":
+        return upgrade_pb2.UPGRADE_MODE_HITLESS
+    elif mode == "graceful":
+        return upgrade_pb2.UPGRADE_MODE_GRACEFUL
+    else:
+        return upgrade_pb2.UPGRADE_MODE_NONE
+
 def GetPortIDfromInterface(interfaceid):
     return topo.INTF2PORT_TBL.get(interfaceid, topo.PortTypes.NONE)
 
@@ -1026,7 +1035,7 @@ def ReadTestcaseStats(obj):
     return
 
 def DumpTestcaseConfig(obj):
-    tcAttrs = [ 'route', 'tunnel', 'policy', 'localmapping', 'remotemapping']
+    tcAttrs = [ 'route', 'tunnel', 'policy', 'localmapping', 'remotemapping', 'upgrade']
     logger.info("========== Testcase config start ==========")
     for attr in tcAttrs:
         cfgObj = getattr(obj, attr, None)

@@ -39,6 +39,7 @@ from apollo.config.objects.metaswitch.evpnevi import client as EvpnEviClient
 from apollo.config.objects.metaswitch.evpnevirt import client as EvpnEviRtClient
 from apollo.config.objects.metaswitch.evpnipvrf import client as EvpnIpVrfClient
 from apollo.config.objects.metaswitch.evpnipvrfrt import client as EvpnIpVrfRtClient
+from apollo.oper.upgrade import client as UpgradeClient
 from infra.common.glopts import GlobalOptions
 from apollo.config.store import EzAccessStore
 from apollo.config.store import client as EzAccessStoreClient
@@ -135,6 +136,9 @@ class NodeObject(base.ConfigObjectBase):
         VpcClient.GenerateObjects(node, topospec)
         OperClient.GenerateObjects(node)
         AlertsClient.GenerateObjects(node)
+        if utils.IsDol() and not utils.IsNetAgentMode():
+            UpgradeClient.GenerateObjects(node)
+
         NodeObject.__validate(node)
         return
 
@@ -161,7 +165,7 @@ class NodeObject(base.ConfigObjectBase):
         SecurityProfileClient.CreateObjects(node)
         BatchClient.Commit(node)
 
-        if not utils.IsDol() and GlobalOptions.netagent:
+        if not utils.IsDol() and utils.IsNetAgentMode():
             SubnetClient.UpdateHostInterfaces(node)
 
         # Start separate batch for mirror
@@ -301,6 +305,14 @@ class NodeObjectClient():
             self.Objs[node].Read()
         else:
             logger.error('No generator for node %s' % (node))
+            assert(0)
+        return
+
+    def Create(self, node):
+        if node in self.Objs.keys():
+            self.Objs[node].Create()
+        else:
+            logger.error('Failed to Create, No generator for node %s' % (node))
             assert(0)
         return
 

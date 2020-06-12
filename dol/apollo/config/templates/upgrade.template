@@ -1,0 +1,9 @@
+# Upgrade Object Template
+meta:
+    id      : UPGRADE
+    package : config
+    module  : upgrade
+    feature_set:
+        - apollo
+
+UpgMode : None

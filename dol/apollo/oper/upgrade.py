@@ -4,6 +4,9 @@ import pdb
 from infra.common.logging import logger
 
 from apollo.config.resmgr import Resmgr
+from apollo.config.store import EzAccessStore
+from apollo.config.store import client as EzAccessStoreClient
+from infra.e2e.ns import run as RunCmd
 
 import apollo.config.agent.api as api
 import apollo.config.utils as utils
@@ -66,10 +69,10 @@ class UpgradeObject(base.ConfigObjectBase):
     def ValidateResponse(self, resps):
         if utils.IsDryRun(): return None
         for r in resps:
+            self.Status.Update(r)
             if not r.Status == upgrade_pb2.UPGRADE_STATUS_OK:
                 logger.error(f"Upgrade request failed with {r}")
                 continue
-            self.Status.Update(r)
         return self.Status.GetLastUpgradeStatus()
 
     def GetGrpcUpgradeRequestMessage(self):
@@ -83,11 +86,77 @@ class UpgradeObject(base.ConfigObjectBase):
     def SetUpgMode(self, upgMode=upgrade_pb2.UPGRADE_MODE_HITLESS):
         self.UpgMode = upgMode
 
+    def UpdateUpgradeMode(self, spec=None):
+        if hasattr(spec, "UpgMode"):
+            mode = getattr(spec, "UpgMode", "hitless")
+            self.UpgMode = utils.GetRpcUpgradeMode(mode)
+            self.Show()
+        return True
+
     def UpgradeReq(self, ip=None):
         self.Show()
+        if utils.IsDryRun():
+            return upgrade_pb2.UPGRADE_STATUS_OK
         msg = self.GetGrpcUpgradeRequestMessage()
         resp = api.upgradeClient[self.Node].Request(self.ObjType, 'UpgRequest', [msg])
         return self.ValidateResponse(resp)
+
+    def TriggerUpgradeReq(self, spec=None):
+        if self.UpgradeReq() != upgrade_pb2.UPGRADE_STATUS_OK:
+            logger.error("TriggerUpgradeReq: Failed")
+            return False
+        logger.info("TriggerUpgradeReq: Success")
+        return True
+
+    def VerifyUpgradeStatus(self, spec=None):
+        if self.Status.GetLastUpgradeStatus() != upgrade_pb2.UPGRADE_STATUS_OK:
+            logger.error("VerifyUpgradeStatus: Failed")
+            return False
+        logger.info("VerifyUpgradeStatus: Success")
+        return True
+
+    def WaitForConfigReplayNotif(self, spec=None):
+        logger.info("Wait for Config Replay Notif...")
+
+        utils.Sleep(3)
+        # TODO. Add to connect to grpc channel to get notified of config replay stage,
+        # once connected we can move to push config by calling TriggerCfgPushPostUpgrade
+        logger.info("WaitForConfigReplayNotif: Success")
+        return True
+
+    def TriggerCfgPushPostUpgrade(self, spec=None):
+        from apollo.config.node import client as NodeClient
+        logger.info("TriggerCfgPushPostUpgrade: Pushing Config Post Upgrade")
+        NodeClient.Create(self.Node)
+        return True
+
+    def ValidateCfgPostUpgrade(self, spec=None):
+        from apollo.config.node import client as NodeClient
+        logger.info("Validate Config Post Upgrade")
+        NodeClient.Read(self.Node)
+        return True
+
+    def SetupCfgFilesForUpgrade(self, spec=None):
+        # For hardware nothing to setup specifically
+        if not utils.IsDol():
+            return True
+        mode = "hitless"
+        if hasattr(spec, "UpgMode"):
+            mode = getattr(spec, "UpgMode", "hitless")
+        logger.info("Setup Upgrade Config Files for %s mode"%mode)
+
+        # For now cfg file setup done only for hitless mode
+        if mode == "hitless":
+            # setup hitless upgrade config files
+            upg_setup_cmds = "apollo/test/tools/apulu/setup_hitless_upgrade_cfg_sim.sh"
+            if not RunCmd(upg_setup_cmds, timeout=20, background=False):
+                logger.error("Command Execution Failed: %s"%upg_setup_cmds)
+                return False
+        return True
+
+    def SetupTestcaseConfig(self, obj):
+        obj.root = self
+        return
 
 class UpgradeObjectsClient(base.ConfigClientBase):
     def __init__(self):
@@ -103,6 +172,7 @@ class UpgradeObjectsClient(base.ConfigClientBase):
         obj = UpgradeObject(node)
         self.UpgradeObjs[node] = obj
         self.Objs[node].update({obj.GID: obj})
+        EzAccessStoreClient[node].SetUpgrade(obj)
 
     def GenerateObjects(self, node):
         self.GenerateUpgradeObjects(node)
@@ -114,3 +184,9 @@ class UpgradeObjectsClient(base.ConfigClientBase):
         return self.UpgradeObjs[node].LastUpgradeStatus()
 
 client = UpgradeObjectsClient()
+
+
+def GetMatchingObjects(selectors):
+    dutNode = EzAccessStore.GetDUTNode()
+    upgradeobjs = [EzAccessStoreClient[dutNode].GetUpgrade()]
+    return utils.GetFilteredObjects(upgradeobjs, selectors.maxlimits, False)

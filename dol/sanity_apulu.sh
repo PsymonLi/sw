@@ -15,6 +15,7 @@ DryRunSanity dsc_hostvxlan operd DSCAGENTMODE
 DryRunSanity hostvxlan networking
 DryRunSanity l2_hostvxlan networking
 DryRunSanity learn learn
+DryRunSanity hostvxlan upgrade
 export USE_UDS=1
 export BATCHING_DISABLED=1
 DryRunSanity hostvxlan networking

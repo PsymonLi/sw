@@ -84,6 +84,19 @@ function start_processes () {
     start_dhcp_server
 }
 
+function start_upgrade_manager () {
+    if [ $PIPELINE == 'apulu' ];then
+        echo "======> Starting Upgrade Manager"
+        $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade/start-upgmgr-mock.sh -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > upgrade_mgr.log &
+    fi
+}
+
+function stop_upgrade_manager () {
+    if [ $PIPELINE == 'apulu' ];then
+        pkill pdsupgmgr
+    fi
+}
+
 function remove_db () {
     rm -f $PDSPKG_TOPDIR/pdsagent.db
     rm -f $PDSPKG_TOPDIR/pdsagent.db-lock
@@ -163,6 +176,7 @@ function finish () {
     echo "======> Starting shutdown sequence"
     collect_techsupport
     if [ $DRYRUN == 0 ]; then
+        stop_upgrade_manager
         stop_processes
         stop_model
         # unmount hugetlbfs
@@ -261,6 +275,7 @@ function setup_env () {
 
 function setup () {
     # Cleanup of previous run if required
+    stop_upgrade_manager
     stop_processes
     stop_model
     # remove stale files from older runs
@@ -278,5 +293,6 @@ fi
 if [ $DRYRUN == 0 ]; then
     start_model
     start_processes
+    start_upgrade_manager
     check_health
 fi
