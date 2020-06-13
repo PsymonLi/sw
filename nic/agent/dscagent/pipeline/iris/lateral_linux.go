@@ -270,31 +270,34 @@ func DeleteLateralNetAgentObjects(infraAPI types.InfraAPI, intfClient halapi.Int
 		}
 	}
 
+	// Remove owner from lateralDB. This will remove the collector composite key as well.
+	for k := range lateralDB {
+		counter := 0
+		for _, dep := range lateralDB[k] {
+			if dep != owner {
+				lateralDB[k][counter] = dep
+				counter++
+			}
+		}
+		lateralDB[k] = lateralDB[k][:counter]
+	}
+
 	arpResolverKey := destIP + "-" + gwIP
 	if lateralEP == nil {
 		log.Errorf("Lateral EP not found for destIP: %s", destIP)
-		cancel, ok := doneCache[arpResolverKey]
-		if ok {
-			log.Infof("Calling cancel for IP: %v gw: %v", destIP, gwIP)
-			cancel()
-			cleanup(destIP, gwIP)
+		// Remove the control loop only if destIP is no longer referred.
+		if len(lateralDB[destIP]) == 0 {
+			cancel, ok := doneCache[arpResolverKey]
+			if ok {
+				log.Infof("Calling cancel for IP: %v gw: %v", destIP, gwIP)
+				cancel()
+				cleanup(destIP, gwIP)
+			}
 		}
 		//Todo check with abhi if we have to handle idemopotncy. for idempotency case to pass retun nil
 		return nil
 		//return fmt.Errorf("endpoint not found Owner: %v Obj: %v", owner, destIP)
 	}
-
-	objName := fmt.Sprintf("_internal-%s", lateralEP.Spec.MacAddress)
-	collectorCompositeKey := fmt.Sprintf("collector|%s", objName)
-
-	counter = 0
-	for _, dep := range lateralDB[collectorCompositeKey] {
-		if dep != owner {
-			lateralDB[collectorCompositeKey][counter] = dep
-			counter++
-		}
-	}
-	lateralDB[collectorCompositeKey] = lateralDB[collectorCompositeKey][:counter]
 
 	_, internalEP := GwCache.Load(destIP)
 	if internalEP && len(lateralDB[destIP]) == 0 {
@@ -433,7 +436,6 @@ func ResolveWatch() {
 	for {
 		p, _, err := ArpClient.Read()
 		if err != nil {
-			log.Errorf("ArpClient Read failed: %v", err)
 			continue
 		}
 
@@ -507,13 +509,13 @@ func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.Interfac
 	}
 
 	if lateralEP == nil {
-		log.Errorf("Lateral EP not found for destIP: %s", destIP)
+		log.Errorf("Lateral EP not found for destIP: %s owner: %s", destIP, owner)
 		return nil
 	}
 
 	objName := fmt.Sprintf("_internal-%s", lateralEP.Spec.MacAddress)
 	collectorCompositeKey := fmt.Sprintf("collector|%s", objName)
-	log.Infof("Lateral object endpoint DB pre refcount decrement: %v", lateralDB)
+	log.Infof("Lateral object endpoint DB pre refcount decrement: %v owner: %s", lateralDB, owner)
 	counter := 0
 	for _, dep := range lateralDB[collectorCompositeKey] {
 		if dep != owner {
