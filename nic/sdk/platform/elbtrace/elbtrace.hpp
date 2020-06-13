@@ -290,23 +290,38 @@ typedef struct sdptrace_trace_hdr_s {
   uint8_t enable;     
   uint8_t trace_trigger_enable;     
   uint8_t sw_reset_enable;  //elbtrace reset_sdp will take care of this   
+
+  uint8_t __pad[2];    // Pad to 64 bytes boundary
   uint8_t no_trace_when_full;
   uint8_t stop_when_full;   
   uint32_t ctl_base_addr;
+
   uint32_t phv_base_addr;
   uint32_t ring_size;
+
   uint32_t ctl_ring_wr_ptr;
   uint32_t phv_ring_wr_ptr;
   
-  uint512_t trigger_data; //todo: shd this map to PHV?    
-  uint512_t trigger_mask;    //todo: shd this map to PHV?
+  uint64_t trigger_data[8]; //todo: shd this map to PHV?    
+  uint64_t trigger_mask[8]; //todo: shd this map to PHV?
 
-  uint8_t __pad[2];    // Pad to 64 bytes boundary
 } sdptrace_trace_hdr_t;
 
   //todo: it's 158, but somehow reads as 190. Check why
-  static_assert(sizeof(sdptrace_trace_hdr_t) == 192,
-		"sdp trace instance struct should be 192B");
+  static_assert(sizeof(sdptrace_trace_hdr_t) == 160,
+		"sdp trace instance struct should be 160B");
+
+
+
+typedef struct test_s {
+  uint64_t trigger_data[8]; //todo: shd this map to PHV?    
+  uint64_t trigger_mask[8];    //todo: shd this map to PHV?
+} test_t;
+
+  static_assert(sizeof(test_t) == 128,
+		"test instance struct should be 128B");
+
+
 
 typedef struct  dmatrace_trace_hdr_s {
   uint8_t pipeline_num;

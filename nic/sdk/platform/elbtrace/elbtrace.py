@@ -3,7 +3,10 @@
 import os
 import re
 import argparse
-from trace import decode_mpu_trace_file, decode_instruction, MpuTraceHeader, decode_dma_trace_file
+from enum import Enum
+from trace import decode_mpu_trace_file, decode_instruction, MpuTraceHeader
+from dmatrace import decode_dma_trace_file
+from sdptrace import decode_sdp_trace_file
 from syms import *
 from itertools import product
 from common import get_bits, reverse_bytes
@@ -50,8 +53,7 @@ m_file_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader 
 m_file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header filters')
 
 s_file_parser = subparsers.add_parser('decode_sdp', help='Parse SDP Trace file')
-s_file_parser.add_argument('file', help='SDP Trace file path')
-s_file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header filters')
+s_file_parser.add_argument('sdp_file', help='SDP Trace file path')
 
 d_file_parser = subparsers.add_parser('decode_dma', help='Parse DMA Trace file')
 d_file_parser.add_argument('dma_file', help='DMA Trace file path')
@@ -60,6 +62,12 @@ d_file_parser.add_argument('--print', default="def", help='short, all, def',
 d_file_parser.add_argument('--sort', default="", help='Sort by fieldname')
 
 args = parser.parse_args()
+
+class INST_SEL(Enum):
+    ALU    = 3
+    PHVWR  = 2
+    LD_ST  = 1
+    BRANCH = 0
 
 if args.command == "gen_syms":
     sym_dir = 'build/aarch64/{}/{}/out/'.format(args.pipeline, args.asic)
@@ -243,18 +251,34 @@ elif args.command == "decode_mpu":
                                 instr_inst,
                             ))
 
-                        #todo: add variations for 4 functions    
-                        print("# ALU: 0x{:x}, 0x{:x}, 0x{:x}, 0x{:x}".format(
+                        print("{}:".format(INST_SEL(instr.inst_sel).name))
+                        if (INST_SEL(instr.inst_sel).name == "ALU"):
+                            print("rsrcB      \t\t alu_result \t\t tsrc_src2b \t\t src1b") 
+                        elif (INST_SEL(instr.inst_sel).name == "BRANCH"):
+                            print("rsrc       \t\t rdst       \t\t -- \t\t\t --") 
+                        elif (INST_SEL(instr.inst_sel).name == "PHVWR"):
+                            print("phvwr_data \t\t phvwr_mask \t\t -- \t\t\t --") 
+                        elif (INST_SEL(instr.inst_sel).name == "LD_ST"):
+                            print("ld_addr    \t\t ld_data    \t\t -- \t\t\t --") 
+
+                        print("0x{:<15x} \t 0x{:<15x} \t 0x{:<15x} \t 0x{:<15x}".format(
                             instr.rsrcB,
                             instr.alu_result,
                             instr.tsrc_src2b,
                             instr.src1b,
                         ))
+                        
+                        print()
+                        print("=====MPU Intruction Header start")
+                        for fld in (instr._fields_):
+                            if not fld[0].startswith('_'):
+                                print("{:50} {:#x}".format(fld[0], getattr(instr, fld[0])))
+                        print("=====MPU Intruction Header End")
 
                         print()
 
                         prev_time = instr.timestamp
-
+        
 elif args.command == "decode_dma":
 
     with open(args.dma_file, "rb") as f:
@@ -266,3 +290,13 @@ elif args.command == "decode_dma":
         decode_dma_trace_file(f.read(), print_type, sort_type)
 
         print("decode_dma done")
+
+elif args.command == "decode_sdp":
+
+    with open(args.sdp_file, "rb") as f:
+
+        trace = defaultdict(list)
+
+        decode_sdp_trace_file(f.read())
+
+        print("decode_sdp done")
