@@ -26,18 +26,8 @@ if [ $? -ne 0 ]; then
     rm -rf /data/delphi.dat
 fi
 
-#Reload the keys if asked to keep the persistent across reloads.
-source /nic/conf/system_boot_config
-if [ "${SSH_KEYS_PERSIST}" = "on" ]; then
-    # Restore "authorized_keys"
-    SAVED_AUTHORIZED_KEYS=/sysconfig/config0/.authorized_keys
-    AUTHORIZED_KEYS=/root/.ssh/authorized_keys
-    if [ -f ${SAVED_AUTHORIZED_KEYS} ]; then
-        mkdir -p $(dirname ${AUTHORIZED_KEYS})
-        cp ${SAVED_AUTHORIZED_KEYS} ${AUTHORIZED_KEYS}
-        chmod 0600 ${AUTHORIZED_KEYS}
-    fi
-fi
+# (Re)Load ssh public keys if asked to keep them persistent across reloads.
+source /nic/tools/copy_ssh_pub_keys.sh
 
 # Reserving port for HAL GRPC server
 sysctl -w net.ipv4.ip_local_reserved_ports=50054

@@ -165,6 +165,7 @@ nic/build/$ARCH/$PIPELINE/bin/pdsctl                              /nic/bin/
 
 # system level tools and binaries
 nic/tools/sysupdate.sh                                            /nic/tools/
+nic/tools/copy_ssh_pub_keys.sh                                    /nic/tools/
 nic/apollo/tools/$PIPELINE/sysinit.sh                             /nic/tools/
 nic/apollo/tools/$PIPELINE/syskill.sh                             /nic/tools/
 nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs.sh                    /nic/tools/

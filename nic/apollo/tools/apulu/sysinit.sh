@@ -22,6 +22,9 @@ else
     cp  /update/upgmgr_init_mode.txt /.upgrade_init_mode
 fi
 
+# (Re)Load ssh public keys if asked to keep them persistent across reloads.
+source /nic/tools/copy_ssh_pub_keys.sh
+
 # POST
 if [[ -f $SYSCONFIG/post_disable ]]; then
     echo "Skipping Power On Self Test (POST)"

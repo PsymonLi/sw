@@ -238,6 +238,7 @@ nic/e2etests/go/agent/configs/golden                                /nic/conf/
 
 nic/tools/start-hal-haps.sh                                         /nic/tools/
 nic/tools/start-nmd.sh                                              /nic/tools/
+nic/tools/copy_ssh_pub_keys.sh                                      /nic/tools/
 nic/tools/sysinit.sh                                                /nic/tools/
 nic/tools/syskill.sh                                                /nic/tools/
 nic/tools/sysreset.sh                                               /nic/tools/

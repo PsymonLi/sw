@@ -16,6 +16,10 @@ export AGENT_TEST_HOOKS_LIB=libflowtestagenthooks.so
 export PERSISTENT_LOG_DIR='/obfl/'
 
 ulimit -c unlimited
+
+# (Re)Load ssh public keys if asked to keep them persistent across reloads.
+source /nic/tools/copy_ssh_pub_keys.sh
+
 cd /
 ifconfig lo up
 

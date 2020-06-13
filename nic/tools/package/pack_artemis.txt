@@ -168,6 +168,7 @@ nic/build/$ARCH/$PIPELINE/bin/pciemgrd-gold                       /nic/bin/
 
 # system level tools and binaries
 nic/tools/sysupdate.sh                                            /nic/tools/
+nic/tools/copy_ssh_pub_keys.sh                                    /nic/tools/
 nic/apollo/tools/artemis/sysinit.sh                               /nic/tools/
 nic/apollo/tools/artemis/syskill.sh                               /nic/tools/
 nic/apollo/tools/sysreset.sh                                      /nic/tools/
