@@ -413,20 +413,20 @@ def GetOrchestratorNode():
 def GetNodeOs(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNodeOs(node_name)
 
-def GetNicMgmtIP(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicMgmtIP(node_name)
+def GetNicMgmtIP(node_name, device=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicMgmtIP(node_name, device)
 
-def GetNicConsoleIP(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicConsoleIP(node_name)
+def GetNicConsoleIP(node_name, device=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicConsoleIP(node_name, device)
 
-def GetNicConsolePort(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicConsolePort(node_name)
+def GetNicConsolePort(node_name, device=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicConsolePort(node_name, device)
 
-def GetNicIntMgmtIP(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicIntMgmtIP(node_name)
+def GetNicIntMgmtIP(node_name, device=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicIntMgmtIP(node_name, device)
 
-def GetHostNicIntMgmtIP(node_name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetHostNicIntMgmtIP(node_name)
+def GetHostNicIntMgmtIP(node_name, device=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetHostNicIntMgmtIP(node_name, device)
 
 def GetNicUnderlayIPs(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetNicUnderlayIPs(node_name)
@@ -896,12 +896,17 @@ def Trigger_AddHostCommand(req, node_name, command,
     return Trigger_AddCommand(req, node_name, "%s_host" % node_name,
                               command, background, rundir, timeout)
 
-def Trigger_AddNaplesCommand(req, node_name, command,
+def Trigger_AddNaplesCommand(req, node_name, command, naples = None,
                              background = False, rundir = "",
                              timeout = DEFAULT_COMMAND_TIMEOUT):
-    naples = store.GetTestbed().GetCurrentTestsuite().GetTopology().GetDefaultNaples(node_name)
-    return Trigger_AddCommand(req, node_name, naples,
-                              command, background, rundir, timeout)
+    if not naples:
+        all_naples = store.GetTestbed().GetCurrentTestsuite().GetTopology().GetDeviceNames(node_name)
+        for n in all_naples:
+            Trigger_AddCommand(req, node_name, n,
+                               command, background, rundir, timeout)
+    else:
+        return Trigger_AddCommand(req, node_name, naples,
+                                  command, background, rundir, timeout)
 
 def Trigger_IsBackgroundCommand(cmd):
     return cmd.handle != ""

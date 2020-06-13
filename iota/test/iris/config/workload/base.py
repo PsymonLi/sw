@@ -170,7 +170,7 @@ class SubInterfaceWorkload(object):
     Store = {}
 
     def __new__(cls, nic_hint, ifindex, wlDefn, default_vlan, allocate_vlan):
-        key = '%d' % ifindex
+        key = '%s-%d' % (nic_hint, ifindex)
         if key in cls.Store:
             return cls.Store[key]
 
@@ -180,10 +180,13 @@ class SubInterfaceWorkload(object):
 
         inst.__NicHint = nic_hint
         inst.__IfIndex = ifindex
-        if allocate_vlan:
+        if cls.Store and allocate_vlan:
             inst.__vlan = api.Testbed_AllocateVlan()
+            api.Logger.info("Allocating new vlan %d for key %s" % (inst.__vlan, key))
         else:
             inst.__vlan = default_vlan
+            api.Logger.info("Resusing default-vlan %d for key %s" % (default_vlan, key))
+
         wl_spec = TopoWorkloadConfig.GetWorkloadSpecByName(wlDefn)
         inst.__NetworkSpec = TopoWorkloadConfig.GetNetworkSpecByName(wl_spec.network_spec)
         inst.__PrimaryIpv4Allocator = TopoWorkloadConfig.AllocIpv4SubnetAllocator(inst.__NetworkSpec.name)
@@ -295,12 +298,6 @@ class NodeWorkloads(object):
         self.__wlSpec = wlSpec
         self.__node = wlSpec.node
         self.__default_vlan = default_vlan
-        if self.__wlSpec.count == 'auto':
-            # Uncomment this once the bug PS-724 is fixed
-            #num_subifs = (api.Testbed_GetVlanCount() - 1) # 1 for native
-            self.__num_subifs = 32 
-        else:
-            self.__num_subifs = int(self.__wlSpec.count)
 
         self.__interfaces = {}
         self.__nic_devices = api.GetDeviceNames(self.__node)
@@ -315,11 +312,15 @@ class NodeWorkloads(object):
                 iflist.append(obj)
             self.__interfaces[dev_name] = iflist
 
-        # self api.GetDeviceMapping(node)
-        #self.__node_ifs = {}
-        #for node in api.GetWorkloadNodeHostnames():
-        #    assert(devices)
-        #    self.__node_ifs[node] = devices
+        if self.__wlSpec.count == 'auto':
+            # Review following with bug PS-724 is fixed
+            self.__num_subifs = int((api.Testbed_GetVlanCount() - 2) / len(self.__nic_devices)) # 1 for native
+            api.Logger.info("With %d nic-devices, evaluating %d sub-ifs with %d vlans" % 
+                    (len(self.__nic_devices), self.__num_subifs, api.Testbed_GetVlanCount()))
+            # self.__num_subifs = 32 
+        else:
+            self.__num_subifs = int(self.__wlSpec.count)
+
         self.portUdpAllocator = resmgr.TestbedPortAllocator(20000)
         self.portTcpAllocator = resmgr.TestbedPortAllocator(30000)
 
@@ -383,12 +384,11 @@ class NodeWorkloads(object):
     def CreateTaggedWorkloads(self, req):
 
         for device_name, interfaces in self.__interfaces.items(): 
-            nic_hint = api.GetDeviceHint(self.__node, device_name)
             for subif_indx in range(self.__num_subifs):
                 wl_msg = req.workloads.add()
                 intf = wl_msg.interfaces.add()
                 intfObj = interfaces[subif_indx % 2] # TODO enhance for unequal distribution of workloads
-                nw_spec = self.GetSubInterfaceNetworkSpec(nic_hint, subif_indx, self.__wlSpec.spec)
+                nw_spec = self.GetSubInterfaceNetworkSpec(device_name, subif_indx, self.__wlSpec.spec)
                 ipv4_allocator = nw_spec.GetPrimaryIPv4Allocator() # ipv4_allocators[i]
                 ipv6_allocator = nw_spec.GetPrimaryIPv6Allocator() # ipv6_allocators[i]
                 vlan = nw_spec.GetVLAN() # vlans[i]
@@ -535,21 +535,24 @@ def AddConfigClassicWorkloads(req, target_node = None):
     # Using up first vlan for native
 
     req.workload_op = topo_svc.ADD
-    api.Logger.info("Allocating native VLAN") 
     native_vlan = api.Testbed_AllocateVlan()
+    api.Logger.info("Allocating native VLAN %d" % native_vlan) 
     # Forming native workloads
     for workload in TopoWorkloadConfig.GetNativeWorkloadInstances():
         wl = workload.workload
+        if target_node and target_node != wl.node:
+            continue
         node_wlm = NodeWorkloads(wl, native_vlan)
         node_wlm.CreateNativeWorkloads(req)
 
-    api.Logger.info("Allocating tagged VLAN") 
     tagged_vlan = api.Testbed_AllocateVlan()
+    api.Logger.info("Allocating tagged VLAN %d" % tagged_vlan) 
     for workload in TopoWorkloadConfig.GetTaggedWorkloadInstances():
         wl = workload.workload
+        if target_node and target_node != wl.node:
+            continue
         node_wlm = NodeWorkloads(wl, tagged_vlan)
         node_wlm.CreateTaggedWorkloads(req)
 
     return
-
 

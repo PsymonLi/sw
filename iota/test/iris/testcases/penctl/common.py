@@ -72,25 +72,30 @@ def RunLocalCommand(cmd):
     api.Logger.info("Command output is : {}".format(out))
 
 
-def GetNaplesMgmtIP(node):
-    return api.GetNicIntMgmtIP(node)
+def GetNaplesMgmtIP(node, device=None):
+    return api.GetNicIntMgmtIP(node, device)
 
 
-def GetNaplesMgmtIntf(node):
+def GetNaplesMgmtIntf(node, device=None):
     naples_host_mgmt_if = naples_host_util.GetHostInternalMgmtInterfaces(node)
     return naples_host_mgmt_if[0]
 
 
-def __get_pen_ctl_cmd(node):
+def __get_pen_ctl_cmd(node, device=None):
     if api.GetFirmwareVersion() == "1.1.1-E-15":
         return "DSC_URL=http://%s %s --compat-1.1 " % (
-            GetNaplesMgmtIP(node), PENCTL_EXEC[node])
-    return "DSC_URL=http://%s %s " % (GetNaplesMgmtIP(node), PENCTL_EXEC[node])
+            GetNaplesMgmtIP(node, device), PENCTL_EXEC[node])
+    return "DSC_URL=http://%s %s " % (GetNaplesMgmtIP(node, device), PENCTL_EXEC[node])
 
 
-def AddPenctlCommand(req, node, cmd):
-    api.Trigger_AddHostCommand(req, node, __get_pen_ctl_cmd(
-        node) + cmd, background=False, timeout=60 * 120)
+def AddPenctlCommand(req, node, cmd, device=None):
+    if device:
+        api.Trigger_AddHostCommand(req, node, __get_pen_ctl_cmd(
+            node, device) + cmd, background=False, timeout=60 * 120)
+    else:
+        for naples in api.GetDeviceNames(node):
+            api.Trigger_AddHostCommand(req, node, __get_pen_ctl_cmd(
+                node, naples) + cmd, background=False, timeout=60 * 120)
 
 
 def SendTraffic(tc):
@@ -115,10 +120,11 @@ def SendTraffic(tc):
 
 def CreateNaplesCores(n):
     req = api.Trigger_CreateExecuteCommandsRequest()
-    for core_file in core_file_names:
-        api.Trigger_AddNaplesCommand(
-            req, n, "touch /data/core/%s" %
-            (core_file))
+    for naples in api.GetDeviceNames(n):
+        for core_file in core_file_names:
+            api.Trigger_AddNaplesCommand(
+                req, n, "touch /data/core/%s" %
+                (core_file), naples=naples)
     resp = api.Trigger(req)
     for cmd_resp in resp.commands:
         api.PrintCommandResults(cmd_resp)
@@ -263,9 +269,9 @@ def StartDhcpServer(remote_node, remote_intf):
     return api.types.status.SUCCESS
 
 
-def GetNaplesSystemInfoJson(n):
+def GetNaplesSystemInfoJson(n, device=None):
     cmd = 'curl -X GET -H "Content-Type:application/json" {}:8888/api/system/info/'.format(
-        GetNaplesMgmtIP(n))
+        GetNaplesMgmtIP(n, device))
     req = api.Trigger_CreateExecuteCommandsRequest()
     result = api.types.status.SUCCESS
 
@@ -281,20 +287,20 @@ def GetNaplesSystemInfoJson(n):
     return cmd_resp.stdout
 
 
-def ShowNaples(n):
+def ShowNaples(n, device=None):
 
     req = api.Trigger_CreateExecuteCommandsRequest()
-    AddPenctlCommand(req, n, "show dsc --json")
+    AddPenctlCommand(req, n, "show dsc --json", device)
 
     resp = api.Trigger(req)
     cmd_resp = resp.commands[0]
     api.PrintCommandResults(cmd_resp)
 
 
-def GetNaplesCfgSpecJson(n):
+def GetNaplesCfgSpecJson(n, device=None):
 
     req = api.Trigger_CreateExecuteCommandsRequest()
-    AddPenctlCommand(req, n, "show dsc --json")
+    AddPenctlCommand(req, n, "show dsc --json", device)
 
     resp = api.Trigger(req)
     cmd_resp = resp.commands[0]
@@ -305,9 +311,9 @@ def GetNaplesCfgSpecJson(n):
     return cmd_resp.stdout
 
 
-def GetNaplesSpec(n):
+def GetNaplesSpec(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["spec"]
@@ -319,9 +325,9 @@ def GetNaplesSpec(n):
     return "FAILED"
 
 
-def GetNaplesStatus(n):
+def GetNaplesStatus(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["status"]
@@ -334,9 +340,9 @@ def GetNaplesStatus(n):
     return "FAILED"
 
 
-def IsNaplesHostManagedDefault(n):
-    naples_spec = GetNaplesSpec(n)
-    naples_status = GetNaplesStatus(n)
+def IsNaplesHostManagedDefault(n, device):
+    naples_spec = GetNaplesSpec(n, device)
+    naples_status = GetNaplesStatus(n, device)
 
     if naples_spec["mode"] != naples_status["mode"] and naples_spec["mode"] != "HOST":
         return api.types.status.FAILURE
@@ -350,11 +356,16 @@ def IsNaplesHostManagedDefault(n):
     return api.types.status.SUCCESS
 
 
-def GetDelphictlNapleStatusJson(n):
+def GetDelphictlNapleStatusJson(n, device=None):
 
     req = api.Trigger_CreateExecuteCommandsRequest()
-    api.Trigger_AddNaplesCommand(
-        req, n, "delphictl db get NaplesStatus --json")
+    if device:
+        api.Trigger_AddNaplesCommand(
+            req, n, "delphictl db get NaplesStatus --json", naples=device)
+    else:
+        for naples in api.GetDeviceNames(n):
+            api.Trigger_AddNaplesCommand(
+                req, n, "delphictl db get NaplesStatus --json", naples=naples)
 
     resp = api.Trigger(req)
     cmd_resp = resp.commands[0]
@@ -397,9 +408,9 @@ def StopRemoteDhcp(n):
     return KillDhcpServer(remote_name)
 
 
-def RunPenctlOnHost(n, cmd):
+def RunPenctlOnHost(n, cmd, device=None):
     req = api.Trigger_CreateExecuteCommandsRequest()
-    AddPenctlCommand(req, n, cmd)
+    AddPenctlCommand(req, n, cmd, device)
 
     resp = api.Trigger(req)
     cmd_resp = resp.commands[0]
@@ -414,41 +425,41 @@ def RunPenctlOnHost(n, cmd):
         return cmd_resp.stdout
 
 
-def SetNaplesModeInband_Static(n, controllerip, mgmtip):
+def SetNaplesModeInband_Static(n, controllerip, mgmtip, device=None):
     cmd = "update dsc --id IOTATEST_INB --mgmt-ip {} --managed-by network --controllers {} --management-network inband".format(
         mgmtip, controllerip)
-    return RunPenctlOnHost(n, cmd)
+    return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeInband_Dynamic(n):
+def SetNaplesModeInband_Dynamic(n, device=None):
     api.Logger.info("Setting Naples network mode to Inband Dynamic.")
     cmd = "update dsc --id IOTATEST_INB --managed-by network --management-network inband"
-    return RunPenctlOnHost(n, cmd)
+    return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeOOB_Static(n, controllerip, mgmtip):
+def SetNaplesModeOOB_Static(n, controllerip, mgmtip, device=None):
     api.Logger.info(
         "Setting Naples OOB network management IP statically for {}.".format(n))
     cmd = "update dsc --id IOTATEST_OOB --mgmt-ip {} --managed-by network --controllers {} --management-network oob".format(
         mgmtip, controllerip)
-    return RunPenctlOnHost(n, cmd)
+    return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeOOB_Dynamic(n):
+def SetNaplesModeOOB_Dynamic(n, device):
     api.Logger.info("Setting Naples network mode to OOB Dynamic.")
     cmd = "update dsc --id IOTATEST_OOB --managed-by network --management-network inband --controllers 4.4.4.4"
-    return RunPenctlOnHost(n, cmd)
+    return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeHost(n):
+def SetNaplesModeHost(n, device):
     api.Logger.info("Setting Naples network mode to Host Managed.")
     cmd = "update dsc --id IOTATEST_OOB --managed-by host"
-    return RunPenctlOnHost(n, cmd)
+    return RunPenctlOnHost(n, cmd, device)
 
 
-def PenctlGetMode(n):
+def PenctlGetMode(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["spec"]["mode"]
@@ -460,9 +471,9 @@ def PenctlGetMode(n):
     return "FAILED"
 
 
-def PenctlGetModeStatus(n):
+def PenctlGetModeStatus(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["status"]["mode"]
@@ -474,10 +485,10 @@ def PenctlGetModeStatus(n):
     return "FAILED"
 
 
-def PenctlGetNaplesMgtmIp(n):
+def PenctlGetNaplesMgtmIp(n, device=None):
     api.Logger.info("Getting Naples network management IP for {}.".format(n))
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             naplesNetworkManagement = penctl_json_parsed["spec"]["ip-config"]["ip-address"]
@@ -492,9 +503,9 @@ def PenctlGetNaplesMgtmIp(n):
     return None
 
 
-def PenctlGetNetworkMode(n):
+def PenctlGetNetworkMode(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["spec"]["network-mode"]
@@ -506,9 +517,9 @@ def PenctlGetNetworkMode(n):
     return "FAILED"
 
 
-def PenctlGetControllers(n):
+def PenctlGetControllers(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["spec"]["controllers"]
@@ -520,9 +531,9 @@ def PenctlGetControllers(n):
     return "FAILED"
 
 
-def PenctlGetControllersStatus(n):
+def PenctlGetControllersStatus(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["status"]["controllers"]
@@ -534,9 +545,9 @@ def PenctlGetControllersStatus(n):
     return "FAILED"
 
 
-def PenctlStaticControllersCheck(n):
-    spec_controllers = PenctlGetControllers(n)
-    status_controllers = PenctlGetControllersStatus(n)
+def PenctlStaticControllersCheck(n, device=None):
+    spec_controllers = PenctlGetControllers(n, device)
+    status_controllers = PenctlGetControllersStatus(n, device)
 
     if len(spec_controllers) <= 0 or len(status_controllers) <= 0:
         return api.types.status.FAILURE
@@ -547,9 +558,9 @@ def PenctlStaticControllersCheck(n):
     api.types.status.SUCCESS
 
 
-def PenctlGetTransitionPhaseStatus(n):
+def PenctlGetTransitionPhaseStatus(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["status"]["transition-phase"]
@@ -563,9 +574,9 @@ def PenctlGetTransitionPhaseStatus(n):
     return "FAILED"
 
 
-def PenctlGetAdmissionPhaseStatus(n):
+def PenctlGetAdmissionPhaseStatus(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             result = penctl_json_parsed["status"]["admission-phase"]
@@ -684,31 +695,33 @@ def DelphictlGetControllers(n):
 def DeleteNMDDb(n):
     api.Logger.info("Deleting NMD DB.")
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
-    api.Trigger_AddNaplesCommand(req, n, "rm -rf /sysconfig/config0/nmd.db")
-    api.Trigger_AddNaplesCommand(
-        req, n, "rm -f /sysconfig/config0/clusterTrustRoots.pem")
+    for naples in api.GetDeviceNames(n):
+        api.Trigger_AddNaplesCommand(req, n, "rm -rf /sysconfig/config0/nmd.db", naples=naples)
+        api.Trigger_AddNaplesCommand(
+            req, n, "rm -f /sysconfig/config0/clusterTrustRoots.pem", naples=naples)
     resp = api.Trigger(req)
 
 
 def ResetNMDState(n):
     api.Logger.info("Resetting NMD State.")
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
-    api.Trigger_AddNaplesCommand(
-        req, n, "rm -rf /var/log/pensando/pen-nmd.log")
-    api.Trigger_AddNaplesCommand(req, n, "rm -rf /sysconfig/config0/nmd.db")
-    api.Trigger_AddNaplesCommand(
-        req, n, "rm -rf /sysconfig/config0/app-start.conf")
-    api.Trigger_AddNaplesCommand(
-        req, n, "rm -rf /sysconfig/config0/device.conf")
-    api.Trigger_AddNaplesCommand(
-        req, n, "rm -f /sysconfig/config0/clusterTrustRoots.pem")
+    for naples in api.GetDeviceNames(n):
+        api.Trigger_AddNaplesCommand(
+            req, n, "rm -rf /var/log/pensando/pen-nmd.log")
+        api.Trigger_AddNaplesCommand(req, n, "rm -rf /sysconfig/config0/nmd.db", naples=naples)
+        api.Trigger_AddNaplesCommand(
+            req, n, "rm -rf /sysconfig/config0/app-start.conf", naples=naples)
+        api.Trigger_AddNaplesCommand(
+            req, n, "rm -rf /sysconfig/config0/device.conf", naples=naples)
+        api.Trigger_AddNaplesCommand(
+            req, n, "rm -f /sysconfig/config0/clusterTrustRoots.pem", naples=naples)
     resp = api.Trigger(req)
 
 
-def GetNaplesFruJson(n):
+def GetNaplesFruJson(n, device=None):
     api.Logger.info("Getting FRU information from Nalpes.")
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
-    api.Trigger_AddNaplesCommand(req, n, "cat /tmp/fru.json")
+    api.Trigger_AddNaplesCommand(req, n, "cat /tmp/fru.json", naples=device)
     resp = api.Trigger(req)
 
     if resp.commands[0].exit_code != 0:
@@ -746,17 +759,17 @@ def GetNaplesFrequency(n):
         return -1
 
 
-def GetNaplesUUID(n):
-    naples_fru = GetNaplesFruJson(n)
+def GetNaplesUUID(n, device=None):
+    naples_fru = GetNaplesFruJson(n, device)
     if naples_fru is None:
         return "FAILED"
 
     return naples_fru["mac-address"]
 
 
-def GetPenctlFruJson(n):
+def GetPenctlFruJson(n, device=None):
     for i in range(0, retryCount):
-        penctl_json = GetNaplesCfgSpecJson(n)
+        penctl_json = GetNaplesCfgSpecJson(n, device)
         try:
             penctl_json_parsed = json.loads(penctl_json)
             return penctl_json_parsed["status"]["fru"]
@@ -767,9 +780,9 @@ def GetPenctlFruJson(n):
     return ""
 
 
-def CheckFruInfo(n):
-    naples_fru = GetNaplesFruJson(n)
-    penctl_fru = GetPenctlFruJson(n)
+def CheckFruInfo(n, device=None):
+    naples_fru = GetNaplesFruJson(n, device)
+    penctl_fru = GetPenctlFruJson(n, device)
 
     if naples_fru is None or penctl_fru == "":
         api.Logger.info("Failed to get FRU")

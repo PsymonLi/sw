@@ -90,7 +90,7 @@ def __PR_AddCommand(intf, tc, req, cmd, bg):
     if tc.on_host[intf]:
         api.Trigger_AddHostCommand(req, tc.naples_node, cmd, bg)
     else:
-        api.Trigger_AddNaplesCommand(req, tc.naples_node, cmd, bg)
+        api.Trigger_AddNaplesCommand(req, tc.naples_node, cmd, background=bg)
 
 def Trigger(tc):
 

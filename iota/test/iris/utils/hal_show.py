@@ -101,35 +101,35 @@ def GetIntfName2LifId_mapping(naples_node):
     if not result:
         api.Logger.critical("unknown response from Naples")
         return intfName2lifId_dict
-    cmd = resp.commands[0]
-
-    perLifOutput = cmd.stdout.split("---")
-
     os = api.GetNodeOs(naples_node)
     if os == host.OS_TYPE_WINDOWS:
         mapping = host.GetWindowsPortMapping(naples_node)
 
-    for lif in perLifOutput:
-        lifObj = yaml.load(lif, Loader=yaml.Loader)
-        if lifObj is not None:
-            lifid = lifObj['spec']['keyorhandle']['keyorhandle']['lifid']
-            intfName = lifObj['spec']['name']
-            #TODO: mnic interface names are appended with "/lif<lif_id>"
-            # eg., inb_mnic0/lif67
-            # so until that is fixed, temp hack to strip the "/lif<lif_id>" suffix
-            intfName = intfName.split("/")[0]
-            if os == host.OS_TYPE_WINDOWS and intfName[3] == "~":
-                found = False
-                for intf in mapping.values():
-                    fullName = intf["ifDesc"]
-                    if intfName[4:] == fullName[4 - len(intfName):] and intfName[:3] == fullName[:3]:
-                        intfName = intf["LinuxName"]
-                        found = True
-                        break
-                if not found:
-                    api.Logger.error("not able to find windows adapter name", intfName)
-                    return intfName2lifId_dict
-            intfName2lifId_dict.update({intfName: lifid})
+    for cmd in resp.commands:
+
+        perLifOutput = cmd.stdout.split("---")
+
+        for lif in perLifOutput:
+            lifObj = yaml.load(lif, Loader=yaml.Loader)
+            if lifObj is not None:
+                lifid = lifObj['spec']['keyorhandle']['keyorhandle']['lifid']
+                intfName = lifObj['spec']['name']
+                #TODO: mnic interface names are appended with "/lif<lif_id>"
+                # eg., inb_mnic0/lif67
+                # so until that is fixed, temp hack to strip the "/lif<lif_id>" suffix
+                intfName = intfName.split("/")[0]
+                if os == host.OS_TYPE_WINDOWS and intfName[3] == "~":
+                    found = False
+                    for intf in mapping.values():
+                        fullName = intf["ifDesc"]
+                        if intfName[4:] == fullName[4 - len(intfName):] and intfName[:3] == fullName[:3]:
+                            intfName = intf["LinuxName"]
+                            found = True
+                            break
+                    if not found:
+                        api.Logger.error("not able to find windows adapter name", intfName)
+                        return intfName2lifId_dict
+                intfName2lifId_dict.update({intfName: lifid})
 
     return intfName2lifId_dict
 

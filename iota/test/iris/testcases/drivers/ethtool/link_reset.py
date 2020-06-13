@@ -27,7 +27,14 @@ def Setup(tc):
     tc.nodes = api.GetNaplesHostnames()
     tc.os = api.GetNodeOs(tc.nodes[0])
 
-    return api.types.status.SUCCESS
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    for n in tc.nodes:
+        intfs = api.GetNaplesHostInterfaces(n)
+        api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl show port --yaml")
+    tc.before_resp = api.Trigger(req)
+    if api.Trigger_IsSuccess(tc.before_resp):
+        return api.types.status.SUCCESS
+    return api.types.status.FAILURE
 
 def Trigger(tc):
 
@@ -36,9 +43,6 @@ def Trigger(tc):
     tc.cmd_cookies = []
 
     for n in tc.nodes:
-        intfs = api.GetNaplesHostInterfaces(n)
-        api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl show port --yaml")
-        tc.cmd_cookies.append('before')
         # we use halctl until we find better, consistent way
         for np in range(len(naplesPortNames)):
             api.Logger.info("admin-state toggle trigger on node %s intf %s" % (n, naplesPortNames[np]))
@@ -47,22 +51,24 @@ def Trigger(tc):
             api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl debug port --port %s --admin-state down" % naplesPortNames[np])
             api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl debug port --port %s --admin-state up" % naplesPortNames[np])
         api.Trigger_AddNaplesCommand(req, n, "sleep %d" % waitTime, timeout=300)
-        api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl show port --yaml")
-        tc.cmd_cookies.append('after')
         tc.cmd_cookies.append(n)
 
     tc.resp = api.Trigger(req)
 
-    if tc.resp == None:
+    if not api.Trigger_IsSuccess(tc.resp):
+        api.Logger.error("Failed executing command : admin-state toggle trigger on node")
         return api.types.status.FAILURE
 
-    for cmd in tc.resp.commands:
-        if cmd.exit_code != 0:
-            api.Logger.error("Failed executing command %s" % cmd.command)
-            api.Logger.info(cmd.stderr)
-            testStatus = api.types.status.FAILURE
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
+    for n in tc.nodes:
+        intfs = api.GetNaplesHostInterfaces(n)
+        api.Trigger_AddNaplesCommand(req, n, "/nic/bin/halctl show port --yaml")
+    tc.after_resp = api.Trigger(req)
 
-    return testStatus
+    if api.Trigger_IsSuccess(tc.after_resp):
+        return api.types.status.SUCCESS
+
+    return api.types.status.FAILURE
 
 def parsePortYaml(yamlData):
     operList = {}
@@ -159,23 +165,13 @@ def Verify(tc):
     cookie_idx = 0
     testStatus = api.types.status.SUCCESS
 
-    for cmd in tc.resp.commands:
-        if (cmd.command.find("yaml") != -1):
-            if (tc.cmd_cookies[cookie_idx] == 'before'):
-                before = cmd.stdout
-            if (tc.cmd_cookies[cookie_idx] == 'after'):
-                after = cmd.stdout
-                # parse before/after port yaml
-                beforeList = parsePortYaml(before)
-                afterList = parsePortYaml(after)
-                cookie_idx += 1
-                testStatus = validateResults(tc.cmd_cookies[cookie_idx], beforeList, afterList)
-
-            cookie_idx += 1
-
-        # is EXIT code !0?
-        if cmd.exit_code != 0:
-            return api.types.status.FAILURE
+    for before_cmd, after_cmd in zip(tc.before_resp.commands, tc.after_resp.commands):
+        beforeList = parsePortYaml(before_cmd.stdout)
+        afterList = parsePortYaml(after_cmd.stdout)
+        testStatus = validateResults(tc.cmd_cookies[cookie_idx], beforeList, afterList)
+        cookie_idx += 1
+        if testStatus != api.types.status.SUCCESS:
+            break
 
     return testStatus
 

@@ -1,0 +1,35 @@
+---
+version: 2.0
+image:
+  bind_dir: "/sw"
+  work_dir: "/sw/iota/test/standalone"
+
+queue_name: baremetal
+
+e2e-targets:
+ e2e-windows-bm-dualnic:
+   commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_windows --enable-multi-naples"]
+   owners: ["email:srivatsa@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-40
+       count: 2
+       resources:
+         servers:
+           - type: compat-dell-r640
+           - type: compat-dell-r740
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+
+logfiles:
+  - /sw/iota/iota_sanity_logs.tar.gz
+  - /sw/iota/all_corefiles.tgz

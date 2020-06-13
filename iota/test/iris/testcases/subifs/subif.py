@@ -205,6 +205,7 @@ def Trigger(tc):
             if not verifyEndPoints(tc):
                 verify_result = api.types.status.FAILURE
                 result = api.types.status.FAILURE
+                tc.cmd_mac_validation_results[tc.iter_cnt] = verify_result
                 break
             else:
                 verify_result = api.types.status.SUCCESS
