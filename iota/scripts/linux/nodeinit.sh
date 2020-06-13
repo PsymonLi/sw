@@ -99,6 +99,10 @@ dhcp_disable() {
         else
             sudo service network restart
         fi
+        # Make sure Network Manager is using ifcfg-* scripts
+        sed -i "s/^#plugins=/plugins=/" /etc/NetworkManager/NetworkManager.conf
+        # Required for all changes to take effect
+        sudo nmcli connection reload
     fi
     # Bringup all interfaces
     for i in $ifs

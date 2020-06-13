@@ -24,6 +24,7 @@ rhel77-build.pensando.io
 rhel78-build.pensando.io
 rhel80-build.pensando.io
 rhel81-build.pensando.io
+rhel82-build.pensando.io
 sles12sp4-build.pensando.io
 sles12sp5-build.pensando.io
 sles15-build.pensando.io
