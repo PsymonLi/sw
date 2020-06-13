@@ -1,5 +1,6 @@
 nic/conf/init_bins                                                /nic/conf/init_bins/
 nic/conf/$PIPELINE/hal_hw.json                                    /nic/conf/$PIPELINE/
+nic/conf/$PIPELINE/8g/hbm_mem_router.json                         /nic/conf/$PIPELINE/8g/
 nic/conf/$PIPELINE/8g/hbm_mem.json                                /nic/conf/$PIPELINE/8g/
 nic/conf/$PIPELINE/4g/hbm_mem.json                                /nic/conf/$PIPELINE/4g/
 nic/conf/$PIPELINE/operd-regions.json                             /nic/conf/
@@ -298,6 +299,7 @@ nic/build/$ARCH/$PIPELINE/bin/$PIPELINE_test                      /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/apollo_scale_test                   /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/ftl_test                            /nic/bin/
 nic/apollo/test/scale/$PIPELINE/scale_cfg.json                    /nic/conf/
+nic/apollo/test/scale/$PIPELINE/scale_cfg_router.json             /nic/conf/
 nic/apollo/test/scale/$PIPELINE/ibm_fcs_scale.json                /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_bitw.json               /nic/conf/
 nic/apollo/test/scale/$PIPELINE/scale_cfg_1vpc.json               /nic/conf/

@@ -396,7 +396,7 @@
             "_comment": "(32+1) * (64 + 16 * 64 + 16^2 * 64 + 16^3 * 64 + 16^4 * 64)",
             "size": "141M",
             "block_size": "4473920B",
-            "max_elements": "32",
+            "max_elements": "256K",
             "cache": "p4plus-txdma"
         },
         {
@@ -405,7 +405,7 @@
             "_comment": "(32+1) * (64 + 8 * 64 + 8^2 * 64 + 8^3 * 64)",
             "size": "1K",
             "block_size": "1B",
-            "max_elements": "32",
+            "max_elements": "256K",
             "cache": "p4plus-txdma"
         },
         {

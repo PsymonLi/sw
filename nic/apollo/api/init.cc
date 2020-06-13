@@ -318,6 +318,8 @@ mpartition_init (pds_init_params_t *params, std::string mem_str)
     // parse hbm memory region configuration file
     if (params->memory_profile == PDS_MEMORY_PROFILE_DEFAULT) {
         mem_json = "hbm_mem.json";
+    } else if (params->memory_profile == PDS_MEMORY_PROFILE_ROUTER) {
+        mem_json = "hbm_mem_router.json";
     } else {
         PDS_TRACE_ERR("Unknown profile %u, aborting ...",
                       params->memory_profile);

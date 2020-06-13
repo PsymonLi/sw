@@ -56,6 +56,7 @@ typedef struct test_params_s {
         bool v4_outer;
         bool dual_stack;
         pds_device_oper_mode_t dev_oper_mode;
+        pds_memory_profile_t memory_profile;
     };
     // dhcp policy config
     struct {
@@ -279,6 +280,12 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                     test_params->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
                 } else {
                     test_params->dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
+                }
+                str = obj.second.get<std::string>("memory-profile", "default");
+                if (!str.compare("router")) {
+                    test_params->memory_profile = PDS_MEMORY_PROFILE_ROUTER;
+                } else {
+                    test_params->memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
                 }
             } else if (kind == "tep") {
                 test_params->num_teps =

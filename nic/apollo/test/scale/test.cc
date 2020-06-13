@@ -1525,7 +1525,8 @@ create_teps (uint32_t num_teps, ip_prefix_t *ip_pfx)
 }
 
 sdk_ret_t
-create_device_cfg (ip_addr_t *ipaddr, uint64_t macaddr, ip_addr_t *gwip)
+create_device_cfg (ip_addr_t *ipaddr, uint64_t macaddr,
+                   ip_addr_t *gwip, pds_memory_profile_t memory_profile)
 {
     sdk_ret_t            rv;
 
@@ -1541,6 +1542,7 @@ create_device_cfg (ip_addr_t *ipaddr, uint64_t macaddr, ip_addr_t *gwip)
         // other pipelines don't support host mode
         g_device.dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
     }
+    g_device.memory_profile = memory_profile;
     rv = create_device(&g_device);
 
     return rv;
@@ -2001,7 +2003,7 @@ create_objects (void)
 
     // create device config
     ret = create_device_cfg(&g_test_params.device_ip, g_test_params.device_mac,
-                            &g_test_params.device_gw_ip);
+                            &g_test_params.device_gw_ip, g_test_params.memory_profile);
     if (ret != SDK_RET_OK) {
         printf("Create device failed\n");
         return ret;

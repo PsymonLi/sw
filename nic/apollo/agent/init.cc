@@ -158,6 +158,11 @@ init_pds (std::string cfg_file, std::string memory_profile,
     init_params.pipeline  = pipeline;
     init_params.cfg_file  = cfg_file;
     init_params.memory_profile = PDS_MEMORY_PROFILE_DEFAULT;
+    if (!memory_profile.empty()) {
+        if (memory_profile.compare("router") == 0) {
+            init_params.memory_profile = PDS_MEMORY_PROFILE_ROUTER;
+        }
+    }
     init_params.device_profile = PDS_DEVICE_PROFILE_DEFAULT;
     if (!device_profile.empty()) {
         if (device_profile.compare("2pf") == 0) {
