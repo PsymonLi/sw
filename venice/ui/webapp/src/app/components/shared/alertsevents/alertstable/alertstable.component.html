@@ -1,4 +1,4 @@
-<div fxFlex class="alertsevents-events-table">
+<div class="alertsevents-events-table">
   <!-- <app-tableviewedit fxFlex="auto" fxLayout="column"
                      [data]="dataObjects"
                      [cols]="cols" [virtualRowHeight]="36" [sortField]="'meta.mod-time'"
@@ -43,10 +43,10 @@
 
 <ng-template #captionTemplate>
   <div class="alertdetail-caption" fxLayout="column">
-    <div *ngIf="this.selectedAlert" [@slideInOut] fxFlex="auto">
+    <div *ngIf="this.selectedAlert" [@slideInOut]>
       <ng-container *ngTemplateOutlet="selectedAlertDetail;"></ng-container>
     </div>
-    <app-tableheader fxFlex title="Alerts" [count]="dataObjects.length" [total]="alerts.length"
+    <app-tableheader title="Alerts" [count]="dataObjects.length" [total]="alerts.length"
                      [icon]="alertsIcon"
                      [enableColumnSelect]="false" width="250px">
       <div fxFlex="50" fxLayoutAlign="start center">
@@ -67,15 +67,15 @@
             priority_high
           </mat-icon>
         </div>
-        <div fxFlex></div>
+        <div class="ui-flex"></div>
         <div *ngIf="selector && selector.alertSelector && selector.alertSelector.name"
              class="alertsevents-filter-sourcenode">
           Filtering by {{selector.alertSelector.name}}
         </div>
       </div>
-      <div fxFlex="none" fxLayoutAlign="end center">
+      <div fxLayoutAlign="end center">
         <!-- Checkboxes for Open, Ack, Resolved states -->
-        <div fxFlex="none" fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
+        <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
           <ng-container *ngFor="let state of possibleFilterStates">
             <p-checkbox name="stateFilter" styleClass="alertsevents-checkbox"
                         labelStyleClass="alertsevents-checkbox-label" [value]="state"
@@ -114,42 +114,42 @@
 </ng-template>
 
 <ng-template #selectedAlertDetail>
-  <div fxFlex class="alertdetail-container">
-    <div fxFlex fxLayout="column">
-      <div class="alertdetail-header" fxFlex fxLayout="row">
-        <a fxFlex fxLayoutAlign="start center">Alert Details:</a>
+  <div class="alertdetail-container ui-flex">
+    <div class="ui-flex" fxLayout="column">
+      <div class="alertdetail-header ui-flex" fxLayout="row">
+        <a class="ui-flex" fxLayoutAlign="start center">Alert Details:</a>
         <mat-icon class="alertdetail-close" (click)="closeDetails()">close</mat-icon>
       </div>
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-key">Severity:</a>
-            <a fxFlex fxLayoutAlign="start center"
-               class="alertdetail-value">{{this.selectedAlert.status.severity}}</a>
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Severity:</a>
+            <a fxLayoutAlign="start center"
+               class="alertdetail-value ui-flex">{{this.selectedAlert.status.severity}}</a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-key">State:</a>
-            <a fxFlex fxLayoutAlign="start center"
-               class="alertdetail-value">{{this.selectedAlert.spec.state}}</a>
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">State:</a>
+            <a fxLayoutAlign="start center"
+               class="alertdetail-value ui-flex">{{this.selectedAlert.spec.state}}</a>
           </div>
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-key">Modification Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-value">
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Modification Time:</a>
+            <a fxLayoutAlign="start center" class="alertdetail-value ui-flex">
               {{ dateToString(this.selectedAlert.meta['mod-time']) | PrettyDate }}
             </a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-key">Creation Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="alertdetail-value">
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Creation Time:</a>
+            <a fxLayoutAlign="start center" class="alertdetail-value ui-flex">
               {{ dateToString(this.selectedAlert.meta['creation-time']) | PrettyDate }}
             </a>
           </div>
@@ -157,8 +157,8 @@
       </div>
 
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
             <a fxFlex="25" fxLayoutAlign="start center" class="alertdetail-key">Source Node &
               Component:</a>
@@ -172,8 +172,8 @@
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
             <a fxFlex="25" fxLayoutAlign="start center" class="alertdetail-key">Event URI:</a>
             <a fxFlex="75" fxLayoutAlign="start center" class="alertdetail-value alertdetail-link"
@@ -185,8 +185,8 @@
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
             <a fxFlex="25" fxLayoutAlign="start center" class="alertdetail-key">Message:</a>
             <a fxFlex="75" fxLayoutAlign="start center" class="alertdetail-value">

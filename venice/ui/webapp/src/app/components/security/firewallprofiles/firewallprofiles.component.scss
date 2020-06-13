@@ -17,6 +17,10 @@ $vertical-gutter: 5px;
   font-size: 16px;
 }
 
+.firewallprofiles-detail-key {
+  @include primary-font(14px, #676763);
+}
+
 .firewallprofiles-button,
 .firewallprofiles-update-button {
   padding-left: $horizontal-gutter;
