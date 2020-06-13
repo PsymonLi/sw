@@ -1,10 +1,3 @@
-import {ApiObjectMeta} from '@sdk/v1/models/generated/cluster';
-
-export interface VeniceObject {
-  'kind'?: string;
-  'api-version'?: string;
-  'meta'?: ApiObjectMeta;
-}
 
 export interface LabelEditorModel {
   key: string;

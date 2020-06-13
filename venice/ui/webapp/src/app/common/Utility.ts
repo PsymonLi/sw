@@ -27,6 +27,7 @@ import { Eventtypes } from '../enum/eventtypes.enum';
 import { ControllerService } from '../services/controller.service';
 import { LogService } from '../services/logging/log.service';
 import { UIConfigsService } from '../services/uiconfigs.service';
+import {IApiObjectMeta} from '@sdk/v1/models/generated/cluster';
 
 /**
  * VeniceObjectCacheStore is for data-cache.
@@ -48,6 +49,12 @@ export interface VeniceObjectCache {
   timestamp?: number; // (new Date()).getTime()
   duration?: number; // how many seconds
   data?: any[];
+}
+
+export interface VeniceObject {
+  'kind'?: string;
+  'api-version'?: string;
+  'meta'?: IApiObjectMeta;
 }
 
 export class Utility {
@@ -2211,7 +2218,11 @@ export class Utility {
     return query;
   }
 
-  public static isWorkloadSystemGenerated(rowData: WorkloadWorkload): boolean {
+  public static isWorkloadSystemGenerated(rowData: VeniceObject): boolean {
+    return this.doesObjectHaveSystemLabel(rowData);
+  }
+
+  public static doesObjectHaveSystemLabel(rowData: VeniceObject): boolean {
     return rowData && rowData.meta.labels && Object.keys(rowData.meta.labels).some(key => key.indexOf('io.pensando') >= 0);
   }
 

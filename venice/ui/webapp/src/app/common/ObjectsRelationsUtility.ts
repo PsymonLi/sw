@@ -1,5 +1,5 @@
 import { WorkloadWorkload, IWorkloadWorkload, IApiStatus, WorkloadWorkloadIntfSpec, IWorkloadAutoMsgWorkloadWatchHelper } from '@sdk/v1/models/generated/workload';
-import { ClusterDistributedServiceCard, ClusterHost, IClusterDistributedServiceCardID, IClusterAutoMsgHostWatchHelper, ClusterDSCProfile, ClusterDSCProfileSpec_feature_set } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterHost, IClusterDistributedServiceCardID, IClusterAutoMsgHostWatchHelper, ClusterDSCProfile, ClusterDSCProfileSpec_feature_set, ClusterDSCProfileSpec_deployment_target } from '@sdk/v1/models/generated/cluster';
 import { Utility } from '@app/common/Utility';
 import { SecuritySecurityGroup, SecurityNetworkSecurityPolicy } from '@sdk/v1/models/generated/security';
 import { OrchestrationOrchestrator } from '@sdk/v1/models/generated/orchestration';
@@ -728,6 +728,15 @@ export class ObjectsRelationsUtility {
         }
         return (profile.spec['feature-set'] === featureSet);
     }
+
+    public static isDSCInDSCProfileDeploymentTarget(dsc: ClusterDistributedServiceCard, dscprofiles: ClusterDSCProfile[], deploymentTarget: ClusterDSCProfileSpec_deployment_target): boolean {
+        const profile: ClusterDSCProfile = this.getDSCProfileFromDSC(dsc, dscprofiles);
+        if (!profile) {
+            return false;
+        }
+        return (profile.spec['deployment-target'] === deploymentTarget);
+    }
+
 
     /**
      * This API is needed in DSC metrics charts.

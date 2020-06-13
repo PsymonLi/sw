@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { BaseComponent } from '@app/components/base/base.component';
 import { Animations } from '@app/animations';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
-import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase_uihint, IClusterDistributedServiceCard, ClusterDSCProfile } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase_uihint, IClusterDistributedServiceCard, ClusterDSCProfile, ClusterDSCProfileSpec_feature_set,  ClusterDSCProfileSpec_deployment_target } from '@sdk/v1/models/generated/cluster';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { HeroCardOptions } from '@app/components/shared/herocard/herocard.component';
 import { MetricsUtility } from '@app/common/MetricsUtility';
@@ -1098,7 +1098,32 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
   // update dsc profile
 
   assignDSCProfile() {
-    this.inProfileAssigningMode = !this.inProfileAssigningMode;
+    let shouldAllowProfileChange = true;
+
+    if (ObjectsRelationsUtility.isDSCInDSCProfileFeatureSet(this.selectedObj as ClusterDistributedServiceCard, this.dscprofiles as ClusterDSCProfile[], ClusterDSCProfileSpec_feature_set.flowaware_firewall)
+    && (ObjectsRelationsUtility.isDSCInDSCProfileDeploymentTarget(this.selectedObj as ClusterDistributedServiceCard, this.dscprofiles as ClusterDSCProfile[], ClusterDSCProfileSpec_deployment_target.virtualized))) {
+      if (Utility.doesObjectHaveSystemLabel(this.selectedObj)) {
+          shouldAllowProfileChange = false;
+        }
+    }
+
+    if (shouldAllowProfileChange === true) {
+      this.inProfileAssigningMode = !this.inProfileAssigningMode;
+    } else {
+      const printMessage = `This DSC is managed by an orchestrator.<br />
+      Changing the profile will negatively impact integration features.`;
+      this._controllerService.invokeConfirm({
+        header: 'Are you sure you want to change the profile?',
+        message: printMessage,
+        acceptLabel: 'Yes',
+        rejectLabel: 'No',
+        accept: () => {
+          if (!this.inProfileAssigningMode) {
+            this.inProfileAssigningMode = true;
+          }
+        },
+      });
+    }
   }
 
   /**

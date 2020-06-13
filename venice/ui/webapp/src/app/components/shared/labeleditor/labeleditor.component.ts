@@ -8,9 +8,10 @@ import {
   Output,
   EventEmitter,
 } from '@angular/core';
-import {LabelEditorMetadataModel, LabelEditorModel, VeniceObject} from './index';
+import {LabelEditorMetadataModel, LabelEditorModel} from './index';
 import {Utility} from '@common/Utility';
 import {FormArray, FormControl, FormGroup} from '@angular/forms';
+import {VeniceObject} from '@app/common/Utility';
 
 // Label Editor Widget
 // This widget will allow user to edit the key value pair in meta.labels for multiple objects at the same time.

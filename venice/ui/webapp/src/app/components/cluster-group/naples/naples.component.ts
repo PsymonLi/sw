@@ -20,7 +20,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { SearchUtil } from '@components/search/SearchUtil';
 import { AdvancedSearchComponent } from '@components/shared/advanced-search/advanced-search.component';
 import { LabelEditorMetadataModel } from '@components/shared/labeleditor';
-import { ClusterDistributedServiceCard, ClusterDistributedServiceCardSpec_mgmt_mode, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile, IClusterDistributedServiceCard, ClusterHost } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterDistributedServiceCardSpec_mgmt_mode, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile, IClusterDistributedServiceCard, ClusterHost, ClusterDSCProfileSpec_feature_set, ClusterDSCProfileSpec_deployment_target} from '@sdk/v1/models/generated/cluster';
 import { IApiStatus } from '@sdk/v1/models/generated/monitoring';
 import { FieldsRequirement, ISearchSearchResponse, SearchSearchRequest, SearchSearchResponse } from '@sdk/v1/models/generated/search';
 import { IBulkeditBulkEditItem, IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
@@ -34,7 +34,6 @@ import { NaplesCondition, NaplesConditionValues } from '.';
 import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
-
 
 interface ChartData {
   // macs or ids of the dsc
@@ -1049,8 +1048,37 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   }
 
   assignDSCProfile() {
-    if (!this.inProfileAssigningMode) {
-      this.inProfileAssigningMode = true;
+    const updatedNaples = this.dscTable.selectedDataObjects;
+    const systemGenDSC = [];
+    for (const napleObject of updatedNaples) {
+      if (ObjectsRelationsUtility.isDSCInDSCProfileFeatureSet(napleObject, this.dscprofiles as ClusterDSCProfile[], ClusterDSCProfileSpec_feature_set.flowaware_firewall )
+      && ObjectsRelationsUtility.isDSCInDSCProfileDeploymentTarget(napleObject, this.dscprofiles as ClusterDSCProfile[], ClusterDSCProfileSpec_deployment_target.virtualized)) {
+        if (Utility.doesObjectHaveSystemLabel(napleObject)) {
+          systemGenDSC.push(napleObject.spec.id ? napleObject.spec.id : napleObject.meta.name);
+          }
+        }
+    }
+
+    if (systemGenDSC.length > 0) {
+      const displayLen = 5;
+      const printMessage = `${systemGenDSC.length} of ${updatedNaples.length} selected DSC(s) are managed by an orchestrator:<br />
+      ${systemGenDSC.slice(0, displayLen).join(', ')}${systemGenDSC.length > displayLen ? ', ...' : ''}<br /><br />
+      Changing their profiles will negatively impact integration features.`;
+      this.controllerService.invokeConfirm({
+        header: 'Are you sure you want to change the profile(s)?',
+        message: printMessage,
+        acceptLabel: 'Yes',
+        rejectLabel: 'No',
+        accept: () => {
+          if (!this.inProfileAssigningMode) {
+            this.inProfileAssigningMode = true;
+          }
+        }
+      });
+    } else {
+      if (!this.inProfileAssigningMode) {
+        this.inProfileAssigningMode = true;
+      }
     }
   }
 
@@ -1352,6 +1380,7 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   // }
 
   onSaveProfileToDSCs() {
+
     const updatedNaples = this.dscTable.selectedDataObjects;
     if (this.selectedDSCProfiles) {
       // this.updateDSCProfilesWithForkjoin(updatedNaples);
