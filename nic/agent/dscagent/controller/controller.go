@@ -167,12 +167,6 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 			return nil
 		}
 
-		// Clean up older go-routines. This makes calls to Start idempotent
-		log.Info("Controller API stopping watches")
-		if err := c.Stop(); err != nil {
-			log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
-		}
-
 		c.Lock()
 		c.InfraAPI.StoreConfig(obj)
 		dat, _ := json.Marshal(obj)
@@ -204,9 +198,11 @@ func (c *API) HandleVeniceCoordinates(obj types.DistributedServiceCardStatus) er
 		}()
 
 	} else if strings.Contains(strings.ToLower(obj.DSCMode), "host") {
+		c.Lock()
 		if err := c.Stop(); err != nil {
 			log.Error(errors.Wrapf(types.ErrControllerWatcherStop, "Controller API: %s", err))
 		}
+		c.Unlock()
 		c.InfraAPI.StoreConfig(obj)
 
 		if err := c.PipelineAPI.PurgeConfigs(true); err != nil {
@@ -631,6 +627,7 @@ func (c *API) Stop() error {
 	}
 
 	c.cancelWatcher()
+	c.cancelWatcher = nil
 
 	c.closeConnections()
 	c.stopAlertPoliciesWatch()
@@ -638,7 +635,6 @@ func (c *API) Stop() error {
 	c.Wait()
 
 	c.WatchCtx = nil
-	c.cancelWatcher = nil
 	c.nimbusClient = nil
 
 	return nil
