@@ -473,8 +473,10 @@ pds_init (pds_init_params_t *params)
     // set global params
     api::g_pds_state.set_device_profile(params->device_profile);
     api::g_pds_state.set_memory_profile(params->memory_profile);
-    api::g_pds_state.set_memory_profile_string(pds_memory_profile_to_string(params->memory_profile));
-    api::g_pds_state.set_device_profile_string(pds_device_profile_to_string(params->device_profile));
+    api::g_pds_state.set_memory_profile_string(
+                         pds_memory_profile_to_string(params->memory_profile));
+    api::g_pds_state.set_device_profile_string(
+                         pds_device_profile_to_string(params->device_profile));
     api::g_pds_state.set_device_oper_mode(params->device_oper_mode);
 
     PDS_TRACE_INFO("Initializing PDS with device profile %u, memory profile %u",

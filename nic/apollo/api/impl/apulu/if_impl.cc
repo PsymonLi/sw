@@ -284,8 +284,15 @@ if_impl::activate_create_(pds_epoch_t epoch, if_entry *intf,
         }
         // program LIF table
         lif_data.action_id = LIF_LIF_INFO_ID;
-        lif_data.lif_action.direction = P4_LIF_DIR_UPLINK;
-        lif_data.lif_action.lif_type = P4_LIF_TYPE_UPLINK;
+        if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_HOST) {
+            // in "host" enabled mode, uplinks are uplinks
+            lif_data.lif_action.direction = P4_LIF_DIR_UPLINK;
+            lif_data.lif_action.lif_type = P4_LIF_TYPE_UPLINK;
+        } else {
+            // in "bitw" mode, we program uplinks as host interfaces
+            lif_data.lif_action.direction = P4_LIF_DIR_HOST;
+            lif_data.lif_action.lif_type = P4_LIF_TYPE_HOST;
+        }
         lif_data.lif_action.vnic_id = PDS_IMPL_RSVD_VNIC_HW_ID;
         lif_data.lif_action.bd_id = PDS_IMPL_RSVD_BD_HW_ID;
         lif_data.lif_action.vpc_id = PDS_IMPL_RSVD_VPC_HW_ID;
