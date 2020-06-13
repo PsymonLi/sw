@@ -96,7 +96,9 @@ hal_qos_config_init (hal_cfg_t *hal_cfg)
         } else if (qos_group[i] == kh::QosGroup::CONTROL) {
             spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(99);
         } else if (qos_group[i] == kh::QosGroup::SPAN) {
-            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(1);
+            /* SPAN should take way less bw compared to data queues */
+            /* BW of 0 will program a quota of 10k */
+            spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(0);
         } else {
             spec.mutable_sched()->mutable_dwrr()->set_bw_percentage(50);
         }

@@ -1321,6 +1321,17 @@ qos_class_pd_program_hw (pd_qos_class_t *pd_qos_class)
         ret = qos_class_pd_program_scheduler(pd_qos_class);
     } else {
         ret = qos_class_pd_sched_pgm(pd_qos_class);
+
+        /* TODO: Revisit to fix this properly.
+         * Reprogram SPAN and CONTROL queues after CPU-COPY 
+         * since CPU-COPY is replacing them */
+        if (qos_group == QOS_GROUP_CPU_COPY) {
+            qos_class_t *span_qos_class = find_qos_class_by_group(QOS_GROUP_SPAN);
+            qos_class_pd_program_scheduler(span_qos_class->pd);
+
+            qos_class_t *ctrl_qos_class = find_qos_class_by_group(QOS_GROUP_CONTROL);
+            qos_class_pd_program_scheduler(ctrl_qos_class->pd);
+        }
     }
     if (ret != HAL_RET_OK) {
         // TODO: What to do in case of hw programming error ?

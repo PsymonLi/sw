@@ -161,7 +161,11 @@ populate_asic_profile (capri_tm_asic_profile_t *asic_profile)
     asic_profile->hbm_fifo_alloc_units = CAPRI_TM_HBM_FIFO_ALLOC_SIZE;
     asic_profile->hbm_fifo_control_scale_factor = 50;
     asic_profile->cpu_copy_tail_drop_threshold = 900;
-    asic_profile->span_tail_drop_threshold = 100;
+    // With less quota for SPAN, P4-Egress does not dequeue enough SPAN packets.
+    // This reduces the number of credits for P4-Ingress to enqueue actual data packets.
+    // To solve this, set the span tail drop threshold to a very low value so that 
+    // the number of span packets generated is less.
+    asic_profile->span_tail_drop_threshold = 2;
 
     asic_profile->port[TM_PORT_TYPE_UPLINK].reserved_mtus = 0;
     asic_profile->port[TM_PORT_TYPE_UPLINK].headroom_cells = 100;
