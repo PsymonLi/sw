@@ -47,7 +47,7 @@ var _ = Describe("Interface tests", func() {
 				newLoopbackIP := fmt.Sprintf("%s.%s.%s.%v/32", ipBytes[0], ipBytes[1], ipBytes[2],
 					(lastByte+1)%256)
 				if fakeNaples {
-					newLoopbackIP = fmt.Sprintf("10.8.250.%v/32", i+1)
+					newLoopbackIP = fmt.Sprintf("10.8.%v.%v/32", (250 + (i % 5)), (i+1)%251)
 				}
 				intf.Spec.IPAllocType = "static"
 				log.Infof("New Loopback ip : %s", newLoopbackIP)

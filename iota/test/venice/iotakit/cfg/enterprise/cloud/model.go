@@ -80,9 +80,9 @@ func (cl *CloudCfg) PopulateConfig(params *base.ConfigParams) error {
 	cl.Cfg.NumNeighbors = 2 //+ len(params.Dscs) //2 Ecx and from 3rd, naples
 
 	if params.Scale {
-		cl.Cfg.NumOfTenants = 1
-		cl.Cfg.NumOfVRFsPerTenant = 50
-		cl.Cfg.NumOfSubnetsPerVpc = 20
+		cl.Cfg.NumOfTenants = 50
+		cl.Cfg.NumOfVRFsPerTenant = 1
+		cl.Cfg.NumOfSubnetsPerVpc = 6
 		cl.Cfg.NumOfIPAMPsPerTenant = 1
 		cl.Cfg.NumUnderlayRoutingConfigs = 1 // Same as other AS number
 		cl.Cfg.NumUnderlayNeighbors = 1      //TOR AS nubr

@@ -101,12 +101,16 @@ var _ = Describe("Routing Config Tests", func() {
 				for _, cmdLine := range cmdResp {
 					RoutingData := []netproto.RoutingConfig{}
 					err = json.Unmarshal([]byte(cmdLine.Stdout), &RoutingData)
+					if err != nil {
+						log.Errorf("Routing config pull failed %v", cmdLine.EntityName)
+					}
 					Expect(err).ShouldNot(HaveOccurred())
 
 					for _, v := range RoutingData {
 						for _, n := range v.Spec.BGPConfig.Neighbors {
 							out := strings.Join(n.EnableAddressFamilies, " ")
 							if strings.Contains(string(out), "ipv4-unicast") {
+								log.Infof("Routing Config ASN: Node %v/%v ASN %v", cmdLine.NodeName, cmdLine.EntityName, n.RemoteAS)
 								Expect(n.RemoteAS == testASN).Should(BeTrue())
 							}
 						}

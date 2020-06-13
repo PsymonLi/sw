@@ -475,7 +475,7 @@ func (sm *SysModel) createMultiSimNaples(node *testbed.TestNode) error {
 			}
 
 			if !success {
-				err = fmt.Errorf("Failed to get smartnc object for name %v. Err: %+v", node.NodeName, err)
+				err = fmt.Errorf("Failed to get smartnc object for name %v : %v. %v Err: %+v", node.NodeName, simName, err)
 				log.Errorf("%v", err)
 				break
 			}

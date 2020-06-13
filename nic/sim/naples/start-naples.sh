@@ -25,6 +25,7 @@ export CMD_GRPC_UNAUTH_PORT=9002
 export NPM_RPC_PORT=9005
 export DISABLE_NICMGR_HAL_THREAD=1  # using fake nicmgr configuration, so disabling
 export OPERD_REGIONS="/naples/nic/conf/operd-regions.json"
+export CONFIG_PATH=$HAL_CONFIG_PATH
 
 #Setup ssh
 echo "root:pen123" | chpasswd

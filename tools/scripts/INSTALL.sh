@@ -55,6 +55,19 @@ function elasticSysctl() {
     sysctl -p
 }
 
+function optmemSysctl() {
+    TARGET_KEY="net.core.optmem_max"
+    CONFIG_FILE="/etc/sysctl.conf"
+    REPLACEMENT_VALUE=25165824
+
+    if grep -q "^[ 	]*$TARGET_KEY[ 	]*=" "$CONFIG_FILE"; then
+        sed -i -e "s^\\([ 	]*$TARGET_KEY[ 	]*=[ 	]*\\).*$\\1$REPLACEMENT_VALUE" "$CONFIG_FILE"
+    else
+        echo "$TARGET_KEY = $REPLACEMENT_VALUE" | tee -a $CONFIG_FILE
+    fi
+    sysctl -p
+}
+
 function disableNTP() {
     systemctl stop chronyd || echo
     systemctl disable chronyd || echo
@@ -111,6 +124,7 @@ elasticSysctl
 disableNTP
 clockSettings
 dockerSettings
+optmemSysctl
 
 mkdir -p /data /run/initramfs/live /usr/local/bin
 

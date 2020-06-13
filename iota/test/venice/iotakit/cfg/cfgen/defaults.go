@@ -289,7 +289,7 @@ var scaleCfgenParams = &Cfgen{
 			},
 			Spec: network.NetworkSpec{
 				Type:        "routed",
-				IPv4Subnet:  "{{ipv4-subnet:10.x.0.0/24}}",
+				IPv4Subnet:  "{{ipv4-subnet:10.x.0.0/16}}",
 				IPv4Gateway: "{{ipv4-gateway:10.x.0.1}}",
 				VxlanVNI:    9998,
 				RouteImportExport: &network.RDSpec{
