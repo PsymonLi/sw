@@ -452,6 +452,11 @@ nat_port_block_get_stats(const u8 id[PDS_MAX_KEY_LEN], u32 vpc_id,
         return NAT_ERR_NOT_FOUND;
     }
     vpc = vec_elt(nat_main.vpc_config, vpc_id);
+    if (vpc == NULL) {
+        export_pb->in_use_cnt = 0;
+        export_pb->session_cnt = 0;
+        return NAT_ERR_NOT_FOUND;
+    }
 
     nat_proto = get_nat_proto_from_proto(protocol);
     if (nat_proto == NAT_PROTO_UNKNOWN) {
@@ -1049,6 +1054,9 @@ nat_flow_dealloc(u32 vpc_id, ip4_address_t dip, u16 dport, u8 protocol,
         return NAT_ERR_NOT_FOUND;
     }
     vpc = vec_elt(nat_main.vpc_config, vpc_id);
+    if (PREDICT_FALSE(!vpc)) {
+        return NAT_ERR_NOT_FOUND;
+    }
 
     key.dip = dip;
     key.sip = sip;
@@ -1161,6 +1169,9 @@ nat_flow_xlate(u32 vpc_id, ip4_address_t dip, u16 dport,
         return NAT_ERR_NOT_FOUND;
     }
     vpc = vec_elt(nat_main.vpc_config, vpc_id);
+    if (PREDICT_FALSE(!vpc)) {
+        return NAT_ERR_NOT_FOUND;
+    }
 
     key.dip = dip;
     key.sip = sip;
