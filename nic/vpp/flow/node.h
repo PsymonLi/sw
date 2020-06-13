@@ -522,7 +522,7 @@ always_inline pds_flow_hw_ctx_t * pds_flow_get_hw_ctx (u32 ses_id)
 
     if (PREDICT_FALSE((ses_id == 0) ||
         pool_is_free_index(fm->session_index_pool, (ses_id - 1)))) {
-        return false;
+        return NULL;
     }
     ctx = pool_elt_at_index(fm->session_index_pool, (ses_id - 1));
     if (PREDICT_FALSE(ctx->is_in_use == 0)) {

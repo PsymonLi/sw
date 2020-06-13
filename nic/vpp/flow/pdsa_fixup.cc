@@ -49,8 +49,8 @@ pds_vpp_bd_hw_id_get (pds_obj_key_t key, uint16_t *bd_hw_id)
     return 0;
 }
 
-int
-pds_ipc_ip_move_handle (core::event_t *event)
+static bool
+pds_ipc_ip_move_handle (core::event_t *event, bool del_event)
 {
     learn_event_info_t *move_evt = &event->learn;
     ip_addr_t ip_addr = move_evt->ip_addr;
@@ -59,19 +59,21 @@ pds_ipc_ip_move_handle (core::event_t *event)
 
     if (likely(ip_addr.af == IP_AF_IPV4)) {
         ipv4_addr = ip_addr.addr.v4_addr;
-        if (unlikely(pds_vpp_bd_hw_id_get(move_evt->subnet, &bd_hw_id) == -1)) {
-            flow_log_error("subnet %s does not exist. Move event %u addr %s",
+        if (unlikely(!del_event &&
+            pds_vpp_bd_hw_id_get(move_evt->subnet, &bd_hw_id) == -1)) {
+            flow_log_error("Subnet %s does not exist. Move event %u addr %s",
                            move_evt->subnet.str(),
                            event->event_id, move_evt->ip_addr);
-            return -1;
+            return false;
         }
-        pds_ip_flow_fixup(pds_event_id_to_vpp_event_id(event->event_id), ipv4_addr,
-                          bd_hw_id, move_evt->vnic_hw_id);
-        flow_log_notice("received ip move event %u %u %u", ipv4_addr, bd_hw_id,
-                        move_evt->vnic_hw_id);
+        flow_log_notice("Received event[%u], IP[0x%x], BD[%u], vnic[%u]",
+                        event->event_id, ipv4_addr,
+                        bd_hw_id, move_evt->vnic_hw_id);
+        pds_ip_flow_fixup(pds_event_id_to_vpp_event_id(event->event_id),
+                          ipv4_addr, bd_hw_id, move_evt->vnic_hw_id);
     }
 
-    return 0;
+    return true;
 }
 
 void
@@ -86,14 +88,16 @@ pds_ipc_ip_move_handle_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
     switch (event->event_id) {
     case EVENT_ID_IP_MOVE_L2R:
     case EVENT_ID_IP_MOVE_R2L:
+        (void)pds_ipc_ip_move_handle(event, false);
+        break;
     case EVENT_ID_IP_DELETE:
     case EVENT_ID_IP_AGE:
-        pds_ipc_ip_move_handle(event);
+        (void)pds_ipc_ip_move_handle(event, true);
+        break;
     default:
-        flow_log_error("unhandled move event %u", event->event_id);
+        flow_log_error("Unhandled move event %u", event->event_id);
         break;
     }
-    flow_log_notice("received move event:%u", event->event_id);
     return;
 }
 

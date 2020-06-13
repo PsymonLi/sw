@@ -427,8 +427,9 @@ pds_flow_fixup_data_set (pds_flow_fixup_data_t *data, u32 ses_id, bool iflow,
     data->valid = true;
 }
 
-always_inline int
-pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id, u16 vnic_id, u8 thread_id)
+always_inline void
+pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id,
+                         u16 vnic_id, u8 thread_id)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_fixup_data_t *data = &fm->fixup_data;
@@ -445,7 +446,7 @@ pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id, u16 vnic_id, u8 thre
             (void *) pds_flow_fixup_internal_cb)) {
         usleep(100000);
     }
-    return 0;
+    return;
 }
 
 // 1.1.1.1 (belonging to bd 1) and 2.2.2.2 (belonging to bd 2)
@@ -467,50 +468,52 @@ pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id, u16 vnic_id, u8 thre
 //  Add new as key is changing.
 //5. intra subnet cases(except R2L_INTRA_SUBNET) - only session flags need to be
 //updated
-always_inline int
+always_inline bool
 pds_each_flow_fixup (u32 event_id, u32 addr, u32 ses_id, u16 bd_id, u16 vnic_id)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    bool ret = true, iflow;
 
     if (PREDICT_FALSE(session == NULL)) {
-        return 0;
+        ret = false;
+        goto done;
     }
 
-    if (event_id == PDS_FLOW_IP_DELETE) {
-        vec_add1(fm->delete_sessions, ses_id);
-        return 0;
-    }
     if (session->v4) {
         ipv4_flow_params_t flow_params;
+        int ret_val;
 
-        if (PREDICT_FALSE((pds_get_ipv4_flow_params(ses_id, &flow_params)) == -1)) {
-            return -1;
+        ret_val = pds_get_ipv4_flow_params(ses_id, &flow_params);
+        if (PREDICT_FALSE(ret_val == -1)) {
+            ret = false;
+            goto done;
         }
 
         if (addr == flow_params.sip) {
-            // We are changing from L2L to R2L or vice versa. In both cases,
-            // iflow needs to be changed
-            if (PREDICT_FALSE(pds_flow_fixup_internal(ses_id, true, bd_id, vnic_id,
-                                                      flow_params.thread_id) != 0)) {
-                flow_log_error("Flow fixup failed for src %d move for session %d",
-                               event_id, ses_id);
-                return -1;
-            }
+            iflow = true;
         } else if (addr == flow_params.dip) {
-            // We are changing from L2L to L2R or vice versa. In both cases,
-            // rflow needs to be changed
-            if (PREDICT_FALSE(pds_flow_fixup_internal(ses_id, false, bd_id, vnic_id,
-                                                      flow_params.thread_id) != 0)) {
-                flow_log_error("Flow fixup failed for src %d move for session %d",
-                               event_id, ses_id);
-                return -1;
-            }
+            iflow = false;
+        } else {
+            ret = false;
+            goto done;
         }
+
+        if (event_id == PDS_FLOW_IP_DELETE) {
+            vec_add1(fm->delete_sessions, ses_id);
+            goto done;
+        }
+        // if we are changing from L2L to R2L or vice versa iflow needs
+        // to be changed.
+        // if we are changing from L2R to L2L or vice versa rflow needs
+        // to be changed.
+        pds_flow_fixup_internal(ses_id, iflow, bd_id, vnic_id,
+                                flow_params.thread_id);
     } else {
         // TODO Handle ipv6
     }
-    return 0;
+done:
+    return ret;
 }
 
 always_inline void
