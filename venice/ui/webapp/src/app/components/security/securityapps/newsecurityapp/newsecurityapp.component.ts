@@ -234,6 +234,14 @@ export class NewsecurityappComponent extends CreationForm<ISecurityApp, Security
     }
   }
 
+  onPickedOptionChange() {
+    if (this.pickedOption === SecurityAppOptions.ALGONLY) {
+      this.selectedType = SecurityALG_type.icmp;
+      this.securityForm.get(['spec', 'alg', 'type']).setValue(SecurityALG_type.icmp);
+      this.processALGValues();
+    }
+  }
+
   processALGValues() {
     if (this.pickedOption === SecurityAppOptions.PROTOCOLSANDPORTS) {
       this.resetDNSValues();

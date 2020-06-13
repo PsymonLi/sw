@@ -28,7 +28,8 @@
       <div fxFlex="none" fxLayout="row">
         <mat-radio-group fxFlex="nogrow" fxLayout="row" fxLayoutAlign="space-between center"
                          class="newsecurityapp-radios" [(ngModel)]="pickedOption"
-                         [ngModelOptions]="{standalone: true}">
+                         [ngModelOptions]="{standalone: true}"
+                         (ngModelChange)="onPickedOptionChange()">
           <mat-radio-button fxFlex="nogrow" color="primary" [disableRipple]="true"
                             *ngFor="let option of secOptions"
                             [value]="option.label">
@@ -112,7 +113,7 @@
           </p-dropdown>
         </div>
       </div>
-      <div fxFlex *ngIf="selectedType != null" fxLayout="row">
+      <div *ngIf="selectedType != null" fxLayout="row">
         <ng-container [ngSwitch]="selectedType">
           <ng-container *ngSwitchCase="algEnumOptions.icmp" [formGroupName]="'icmp'">
             <div fxLayout="row" [@slideInOut] class="newsecurityapp-alg-content">

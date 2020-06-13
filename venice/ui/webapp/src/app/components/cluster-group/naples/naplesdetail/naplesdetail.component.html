@@ -87,6 +87,10 @@
                        fxLayoutAlign="start center">
                     <div>Host:</div>
                   </div>
+                  <div class="naplesdetail-node-fieldtitle" fxFlex="30px" fxLayout="row"
+                       fxLayoutAlign="start center">
+                    <div>Network Mode:</div>
+                  </div>
                 </div>
               </div>
               <div fxFlex="40px"></div>
@@ -147,6 +151,12 @@
                      class="naplesdetail-node-value">
                   <div class="naplesdetail-panel-version">
                     <a routerLink="/cluster/hosts"> {{ selectedObj?.status.host }}</a>
+                  </div>
+                </div>
+                <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
+                     class="naplesdetail-node-value">
+                  <div class="naplesdetail-panel-network-mode">
+                    {{ selectedObj?.spec['network-mode'] }}
                   </div>
                 </div>
               </div>
