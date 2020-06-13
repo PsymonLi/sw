@@ -74,6 +74,7 @@ export const categoryToEventType: { [cat: string]: string[] } = {
   network: [
     'BGP_SESSION_DOWN',
     'BGP_SESSION_ESTABLISHED',
+    'BOND0_NO_IP',
     'COLLECTOR_REACHABLE',
     'COLLECTOR_UNREACHABLE',
     'LINK_DOWN',
@@ -409,6 +410,11 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "BGP_SESSION_ESTABLISHED",
       "Severity": EventsEvent_severity.info,
       "Desc": "BGP session is established",
+  },
+  'BOND0_NO_IP' : {
+      "Name": "BOND0_NO_IP",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "No IP address on bond0",
   },
   'COLLECTOR_REACHABLE' : {
       "Name": "COLLECTOR_REACHABLE",

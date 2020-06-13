@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/nic/agent/dscagent/common"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
@@ -1250,6 +1251,10 @@ func (i *IrisAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netp
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			utils.RaiseEvent(
+				eventtypes.BOND0_NO_IP,
+				fmt.Sprintf("IPFIX/ERSPAN features will not work unless IP address is assigned to datapath bond0 interface on DSC %s using DHCP or Static Method using Penctl", i.InfraAPI.GetDscName()),
+				i.InfraAPI.GetDscName())
 			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
@@ -1372,6 +1377,10 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			utils.RaiseEvent(
+				eventtypes.BOND0_NO_IP,
+				fmt.Sprintf("IPFIX/ERSPAN features will not work unless IP address is assigned to datapath bond0 interface on DSC %s using DHCP or Static Method using Penctl", i.InfraAPI.GetDscName()),
+				i.InfraAPI.GetDscName())
 			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}
@@ -1500,6 +1509,10 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
 			log.Error(errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink))
+			utils.RaiseEvent(
+				eventtypes.BOND0_NO_IP,
+				fmt.Sprintf("IPFIX/ERSPAN features will not work unless IP address is assigned to datapath bond0 interface on DSC %s using DHCP or Static Method using Penctl", i.InfraAPI.GetDscName()),
+				i.InfraAPI.GetDscName())
 			return nil, errors.Wrapf(types.ErrNoIpForMgmtIntf, "Could not get ip address for intf %v", iris.MgmtLink)
 		}
 	}

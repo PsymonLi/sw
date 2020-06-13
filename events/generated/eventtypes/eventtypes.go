@@ -650,6 +650,13 @@ func init() {
 		Desc:       "Flowlogs rate limited",
 		SuppressMM: true}
 
+	eventTypes[BOND0_NO_IP] = &EventTypeAttributes{
+		EType:      BOND0_NO_IP.String(),
+		Severity:   "critical",
+		Category:   "network",
+		Desc:       "No IP address on bond0",
+		SuppressMM: false}
+
 }
 
 func GetEventTypeAttrs(eType EventType) *EventTypeAttributes {

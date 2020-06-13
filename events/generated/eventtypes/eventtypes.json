@@ -307,6 +307,11 @@
    "Desc": "BGP session is established"
   },
   {
+   "Name": "BOND0_NO_IP",
+   "Severity": "critical",
+   "Desc": "No IP address on bond0"
+  },
+  {
    "Name": "COLLECTOR_REACHABLE",
    "Severity": "info",
    "Desc": "Collector reachable from DSC"

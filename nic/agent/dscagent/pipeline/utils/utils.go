@@ -16,8 +16,11 @@ import (
 	"google.golang.org/grpc/connectivity"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/generated/cluster"
+	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
+	"github.com/pensando/sw/venice/utils/events/recorder"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/rpckit"
 )
@@ -542,4 +545,18 @@ func MirrorDir(dir netproto.MirrorDir) int {
 	default:
 		return 0
 	}
+}
+
+// RaiseEvent raises an event to venice
+func RaiseEvent(eventType eventtypes.EventType, message, dscName string) {
+	nic := &cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{
+			Kind: "DistributedServiceCard",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: dscName,
+		},
+	}
+	recorder.Event(eventType, message, nic)
+	log.Infof("Event raised %s", message)
 }

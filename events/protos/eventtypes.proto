@@ -421,4 +421,7 @@ enum EventTypes {
                                             (severity)          = CRITICAL,
                                             (desc)              = "Flowlogs rate limited",
                                             (suppress_mm)       = true];
+    BOND0_NO_IP		                  = 1401 [(category)    = Network,
+                                           (severity)    	= CRITICAL,
+                                           (desc)        	= "No IP address on bond0"];
 }
