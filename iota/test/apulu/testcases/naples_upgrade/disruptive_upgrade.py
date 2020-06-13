@@ -43,15 +43,11 @@ def ChooseWorkLoads(tc):
 
 
 def VerifyConnectivity(tc):
-    tc.pktsize = 128
-    tc.duration = tc.sleep
-    tc.interval = 0.001 #1msec
-
     if api.GlobalOptions.dryrun:
         return api.types.status.SUCCESS
 
     # ensure connectivity with foreground ping before test
-    if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
+    if ping.TestPing(tc, 'user_input', "ipv4", pktsize=128, interval=0.001, \
             count=5) != api.types.status.SUCCESS:
         api.Logger.info("Connectivity Verification Failed")
         return api.types.status.FAILURE

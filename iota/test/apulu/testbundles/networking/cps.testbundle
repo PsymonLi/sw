@@ -34,7 +34,7 @@ testcases:
         ignore  : False
         args    :
             type: remote_only
-            objtype : [ vnic, subnet ]
+            objtype : [ subnet, vnic ]
             triggers : True
             security_profile:
                 conntrack      : True

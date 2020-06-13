@@ -39,6 +39,20 @@ def GetPdsDefaultLogLevel(node_name):
     # hence returning default trace level as debug
     return 'debug'
 
+def isVppAlive(node_name=None):
+    node_list = []
+    if not node_name:
+        node_list = api.GetNaplesHostnames()
+    else:
+        node_list.append(node_name)
+
+    for n in node_list:
+        try:
+            GetProcPid(n, "vpp")
+        except:
+            return api.types.status.FAILURE
+    return api.types.status.SUCCESS
+
 def isPdsAlive(node_name=None):
     node_list = []
     if not node_name:
@@ -48,16 +62,18 @@ def isPdsAlive(node_name=None):
 
     for n in node_list:
         try:
-            GetPdsPid(n)
+            GetProcPid(n, "pdsagent")
         except:
             return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
-def GetPdsPid(node_name):
+def GetProcPid(node_name, proc_name):
     if not node_name:
-        raise Exception("Invalid node name Argument")
+        raise Exception("Invalid node name argument")
+    if not proc_name:
+        raise Exception("Invalid process name argument")
 
-    cmd = "pidof pdsagent"
+    cmd = "pidof {}".format(proc_name)
     req = api.Trigger_CreateExecuteCommandsRequest()
     api.Trigger_AddNaplesCommand(req, node_name,cmd)
     resp = api.Trigger(req)
@@ -65,6 +81,6 @@ def GetPdsPid(node_name):
     for cmd in resp.commands:
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:
-            raise Exception("Could not find the PDS Agent process on %s"%(node_name))
+            raise Exception("Could not find %s process on %s"%(proc_name, node_name))
         else:
             return int(cmd.stdout.strip())

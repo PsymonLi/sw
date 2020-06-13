@@ -160,7 +160,7 @@ def configDeleteTrigger(tc):
         if op == 'Delete':
             tc.is_config_deleted = True
         if res != api.types.status.SUCCESS:
-            api.Logger.error(f"config delete operation failed : {res}")
+            api.Logger.error(f"configDeleteTrigger operation failed : {res}")
             break;
     api.Logger.debug("configDeleteTrigger for %s completed with result: %s"%(tc.obj_sel, res))
     return res
@@ -172,7 +172,7 @@ def configRestoreTrigger(tc):
         api.Logger.debug("configRestoreTrigger oper: %s for objtype: %s"%(tc.opers, tc.obj_sel))
         rs = config_api.RestoreObjects('Delete', tc.selected_objs)
         if rs is False:
-            api.Logger.error(f"config restore operation failed : {rs}")
+            api.Logger.error(f"configRestoreTrigger operation failed : {rs}")
             res = api.types.status.FAILURE
     api.Logger.debug("configRestoreTrigger:%s for %s completed with result: %s"%(tc.is_config_deleted, tc.obj_sel, res))
     return res
@@ -380,11 +380,18 @@ def Verify(tc):
     udp_tolerance = 0.5
     server, client = tc.workload_pair[0], tc.workload_pair[1]
 
-    ret = pds_utils.isPdsAlive()
-    if ret != api.types.status.SUCCESS:
+    retval = api.types.status.SUCCESS
+    if pds_utils.isPdsAlive() != api.types.status.SUCCESS:
         api.Logger.error("PDS Agent is DEAD...")
+        retval = api.types.status.FAILURE
     else:
         api.Logger.info("PDS Agent is ALIVE...")
+
+    if pds_utils.isVppAlive() != api.types.status.SUCCESS:
+        api.Logger.error("VPP is DEAD...")
+        retval = api.types.status.FAILURE
+    else:
+        api.Logger.info("VPP is ALIVE...")
 
     try:
         tc.serverHandle.stop()
@@ -458,7 +465,7 @@ def Verify(tc):
         #cleanup(tc)
         return api.types.status.FAILURE
 
-    return api.types.status.SUCCESS
+    return retval
 
 def cleanup(tc):
     try:
