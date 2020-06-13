@@ -41,7 +41,7 @@
 </ng-template>
 
 <ng-template #vcenterRowTemplate let-orchestrator="item" let-index="index">
-  <div fxFlex="590px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
+  <div fxFlex="595px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
     <span fxFlex="none" fxLayout="row" [ngClass]="{
         'new-network-orchestrator-selectbox': true,
         'requiredField': !isFieldEmpty(orchestrator.get(['namespace'])) && isFieldEmpty(orchestrator.get(['orchestrator-name']))
@@ -54,19 +54,11 @@
         </ng-template>
       </p-dropdown>
     </span>
-    <div fxFlex="15px"></div>
-    <span fxFlex="none" fxLayout="row" [ngClass]="{
-        'new-network-orchestrator-selectbox': true,
-        'requiredField': isFieldEmpty(orchestrator.get(['namespace'])) && !isFieldEmpty(orchestrator.get(['orchestrator-name']))
-    }">
-      <p-multiSelect appFloatLabel="datacenter Names" appendTo="body"
-                     formControlName="namespace" class="new-network-select"
-                     [appErrorTooltip]="'Datacenter in the orchestrator in which this network should be created in. Type \'ALL\' for all datacenters.'"
-                     [options]="orchestrator.datacenterOptions || []"
-                     [filter]="false" [showHeader]="false" [showToggleAll]="false"
-                     [disabled]="isFieldEmpty(orchestrator.get(['orchestrator-name']))"
-                     (onChange)="onDatacenterOptionChange($event, orchestrator)">
-      </p-multiSelect>
-    </span>
+    <div fxFlex="25px"></div>
+    <app-psmmultiselectbox fxFlex="285px" label="Datacenter Names" formControlName="namespace"
+                           [hintTooltip]="'Datacenter in the orchestrator in which this network should be created in. Type \'ALL\' for all datacenters.'"
+                           [options]="orchestrator.datacenterOptions || []"
+                           [allOption]="orchestrator.allOption">
+    </app-psmmultiselectbox>
   </div>
 </ng-template>

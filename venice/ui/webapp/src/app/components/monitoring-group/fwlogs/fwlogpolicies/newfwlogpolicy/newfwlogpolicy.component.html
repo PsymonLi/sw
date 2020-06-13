@@ -41,16 +41,11 @@
               </div>
             </div>
             <div fxFlex="25px"></div> -->
-        <span formGroupName="spec" class="newfwlog-export-box">
-          <p-multiSelect appFloatLabel="EXPORT" #logOptions class="newfwlogpolicy-filter"
-                         fxFlex="none"
-                         formControlName="filter" appendTo="body" styleClass="newfwlogpolicy-font"
-                         [filter]="false"
-                         [showToggleAll]="false" [showHeader]="false" defaultLabel="All Logs"
-                         [options]="filterOptions"
-                         (onChange)="onLogOptionChange($event)"></p-multiSelect>
-        </span>
-
+        <div fxFlex="20px"></div>
+        <app-psmmultiselectbox fxFlex="255px" label="Export"
+                               [formControl]="newObject.$formGroup.get(['spec', 'filter'])"
+                               [options]="filterOptions" [allOption]="filterAllOption">
+        </app-psmmultiselectbox>
       </div>
       <div fxFlex="noshrink" fxLayout="row" class="newfwlogpolicy-toggle-div" formGroupName="spec">
         <div formGroupName="psm-target">

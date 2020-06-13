@@ -1,0 +1,13 @@
+<span [class]="getSpanClasses()">
+  <p-multiSelect appendTo="body" [class]="getComponentClass()"
+                 [options]="allOptions" [filter]="filter"
+                 [showHeader]="showHeader"
+                 [showToggleAll]="showToggleAll"
+                 [styleClass]="componentStyleClass"
+                 [disabled]="disabled" [matTooltip]="getTooltip()"
+                 [matTooltipClass]="currentTooltipClass"
+                 [(ngModel)]="innerValue" (onBlur)="onBoxTouched()"
+                 (ngModelChange)="onInnerCtrlChange()">
+  </p-multiSelect>
+  <label *ngIf="label" [for]="boxId">{{ label }}</label>
+</span>

@@ -92,9 +92,7 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       if (orchestrators && orchestrators.length > 0) {
         orchestrators.controls.forEach((orchestrator: FormGroup) => {
           if (orchestrator.value && orchestrator.value['orchestrator-name']) {
-            const orchestratorObj = orchestrator as any;
-            orchestratorObj.datacenterOptions =
-              this.generateDCNamesOptions(orchestrator.value['orchestrator-name']);
+            this.generateDCNamesOptions(orchestrator.value['orchestrator-name'], orchestrator as any);
           }
         });
       }
@@ -142,8 +140,7 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
   addOrchestrator() {
     const orchestrators = this.newObject.$formGroup.get(['spec', 'orchestrators']) as FormArray;
     const newOrchestrator = new NetworkOrchestratorInfo().$formGroup;
-    newOrchestrator.addControl('datacenterChoice', CustomFormControl(new FormControl('', null), {}));
-    newOrchestrator.get('datacenterChoice').setValue(this.ALL_DATACENTERS);
+    newOrchestrator.get(['namespace']).disable();
     orchestrators.insert(orchestrators.length, newOrchestrator);
     this.newObject.$formGroup.markAsDirty();
   }
@@ -258,9 +255,12 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
 
   onVcenterChange(orchestrator: FormGroup) {
     orchestrator.get(['namespace']).setValue(null);
-    const orchestratorObj = orchestrator as any;
-    orchestratorObj.datacenterOptions =
-      this.generateDCNamesOptions(orchestrator.value['orchestrator-name']);
+    if (orchestrator.get(['orchestrator-name']).value) {
+      orchestrator.get(['namespace']).enable();
+    } else {
+      orchestrator.get(['namespace']).disable();
+    }
+    this.generateDCNamesOptions(orchestrator.value['orchestrator-name'], orchestrator as any);
     this.cdr.detectChanges();
   }
 
@@ -283,7 +283,7 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
 }
 
 
-  generateDCNamesOptions(vCenter: string): SelectItem[] {
+  generateDCNamesOptions(vCenter: string, orchestratorObj: any): SelectItem[] {
     if (vCenter && this.vcenters && this.vcenters.length > 0) {
       const vcenterObj: OrchestrationOrchestrator = this.vcenters.find(
         item => item && item.meta && item.meta.name === vCenter
@@ -295,19 +295,24 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
             value: item
           };
         });
-        return options;
-      }
-      const discoveredDatacenters: string[] = vcenterObj.status['discovered-namespaces'];
-      if (discoveredDatacenters && discoveredDatacenters.length > 0) {
-        const options: SelectItem[] =  discoveredDatacenters.map(item => {
-          return {
-            label: item,
-            value: item,
-            disable: false
+        orchestratorObj.allOption = null;
+        orchestratorObj.datacenterOptions = options;
+      } else {
+        const discoveredDatacenters: string[] = vcenterObj.status['discovered-namespaces'];
+        if (discoveredDatacenters && discoveredDatacenters.length > 0) {
+          const options: SelectItem[] =  discoveredDatacenters.map(item => {
+            return {
+              label: item,
+              value: item,
+              disable: false
+            };
+          });
+          orchestratorObj.allOption = {
+            label: 'All Datacenters',
+            value: this.ALL_DATACENTERS
           };
-        });
-        options.unshift({ label: 'All Datacenters', value: this.ALL_DATACENTERS });
-        return options;
+          orchestratorObj.datacenterOptions = options;
+        }
       }
     }
     return [];

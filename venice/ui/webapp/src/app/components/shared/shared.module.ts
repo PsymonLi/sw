@@ -23,6 +23,7 @@ import { FieldselectorComponent } from './fieldselector/fieldselector.component'
 import { HerocardComponent } from './herocard/herocard.component';
 import { WidgetsModule } from 'web-app-framework';
 import { WorkloadsColumnComponent } from './table-columns/workloadscolumn.component';
+import { PsmMultiSelectComponent } from './form/inputcomponent/psmmultiselectbox/psmmultiselectbox.component';
 import { PsmCalendarComponent } from './form/inputcomponent/psmcalendar/psmcalendar.component';
 import { ListContainerComponent } from './form/layout/listcontainer.component';
 import { FieldContainerComponent } from './form/layout/fieldcontainer.component';
@@ -85,6 +86,7 @@ import { ExportLogsComponent } from './exportlogs/exportlogs.component';
     FieldselectorComponent,
     HerocardComponent,
     WorkloadsColumnComponent,
+    PsmMultiSelectComponent,
     PsmCalendarComponent,
     ListContainerComponent,
     FieldContainerComponent,
@@ -134,6 +136,7 @@ import { ExportLogsComponent } from './exportlogs/exportlogs.component';
     FieldselectorComponent,
     HerocardComponent,
     WorkloadsColumnComponent,
+    PsmMultiSelectComponent,
     PsmCalendarComponent,
     ListContainerComponent,
     FieldContainerComponent,

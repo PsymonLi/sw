@@ -1,5 +1,5 @@
 import { Component, Input, ViewEncapsulation, OnInit, OnChanges, SimpleChanges, forwardRef, Injector, ElementRef, ChangeDetectionStrategy, ChangeDetectorRef, AfterViewInit } from '@angular/core';
-import { NG_VALUE_ACCESSOR, ControlValueAccessor, FormControl, NgControl } from '@angular/forms';
+import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { Utility } from '@app/common/Utility';
 import { FormInputComponent } from '../forminput.component';
 
@@ -26,14 +26,6 @@ export class PsmCalendarComponent extends FormInputComponent implements OnInit, 
 
   protected defaultSpanClass: string = 'psm-form-calender-container';
   protected defaultComponentClass: string = 'psm-form-calender-box';
-
-  ngControl: NgControl;
-  innerValue: any;
-
-  // Function to call when the rating changes.
-  onChange = (val: any) => {};
-  // Function to call when the input is touched (when a star is clicked).
-  onTouched = () => {};
 
   constructor(protected inj: Injector, protected el: ElementRef, protected cdr: ChangeDetectorRef) {
     super(inj, el, cdr);
@@ -95,17 +87,4 @@ export class PsmCalendarComponent extends FormInputComponent implements OnInit, 
     }
     return Utility.convertLocalTimeToUTCTime(newDate);
   }
-
-  // Allows Angular to register a function to call when the model changes.
-  // Save the function as a property to call later here.
-  registerOnChange(fn: (rating: number) => void): void {
-    this.onChange = fn;
-  }
-
-  // Allows Angular to register a function to call when the input has been touched.
-  // Save the function as a property to call later here.
-  registerOnTouched(fn: () => void): void {
-    this.onTouched = fn;
-  }
-
 }

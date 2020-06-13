@@ -31,6 +31,7 @@ export class NewfwlogpolicyComponent extends CreationForm<IMonitoringFwlogPolicy
   @Input() existingObjects: MonitoringFwlogPolicy[] = [];
 
   filterOptions: SelectItem[] = Utility.convertEnumToSelectItem(MonitoringFwlogPolicySpec.propInfo['filter'].enum, [NewfwlogpolicyComponent.LOGOPTIONS_NONE]);
+  filterAllOption: SelectItem = this.filterOptions[0];
 
   constructor(protected _controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
@@ -45,6 +46,7 @@ export class NewfwlogpolicyComponent extends CreationForm<IMonitoringFwlogPolicy
   }
 
   postNgInit() {
+    this.filterOptions.shift();
     // Existing fwl-policies may not have spec['psm-target'],  so we  build it
     if (!this.newObject.spec[NewfwlogpolicyComponent.PSM_TARGET]) {
       this.newObject.spec[NewfwlogpolicyComponent.PSM_TARGET] =  new MonitoringPSMExportTarget(this.newObject.spec[NewfwlogpolicyComponent.PSM_TARGET]);
@@ -139,27 +141,5 @@ export class NewfwlogpolicyComponent extends CreationForm<IMonitoringFwlogPolicy
 
   generateUpdateSuccessMsg(object: IMonitoringFwlogPolicy) {
     return 'Updated policy ' + object.meta.name;
-  }
-
-  /**
-   * event.itemValue is the changed item. event.value has the selections
-   * @param event
-   */
-  /* VS-124.
-     When there is any NONE-ALL options selected, OPTION_ALL will be removed
-     When none is seleced, we set OPTION_ALL as default.
-  */
-  onLogOptionChange(event) {
-    const values = this.logOptionsMultiSelect.value;
-    if (values.length >= 1 && values.includes(NewfwlogpolicyComponent.LOGOPTIONS_ALL)) {
-      // When all is set, we untoggle everything else.
-      if (event.itemValue === NewfwlogpolicyComponent.LOGOPTIONS_ALL) {
-        this.logOptionsMultiSelect.value = [NewfwlogpolicyComponent.LOGOPTIONS_ALL];
-      } else {
-        const index = values.indexOf(NewfwlogpolicyComponent.LOGOPTIONS_ALL);
-        values.splice(index, 1);
-        this.logOptionsMultiSelect.value = values;
-      }
-    }
   }
 }

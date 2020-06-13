@@ -54,6 +54,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   ngAfterViewInit() {
     setTimeout(() => {this.cdr.detectChanges(); }, 0);
     if (this.ngControl && this.ngControl.control) {
+      this.disabled = this.ngControl.disabled;
       const sub = this.ngControl.valueChanges.subscribe(() => {
         if (this.disabled !== this.ngControl.disabled) {
           this.disabled = this.ngControl.disabled;
