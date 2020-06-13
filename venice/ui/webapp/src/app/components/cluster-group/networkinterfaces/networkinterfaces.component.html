@@ -9,6 +9,8 @@
                 [exportFilename]="exportFilename"
                 [exportMap]="exportMap"
                 [loading]="tableLoading"
+                (rowClickEmitter)="selectNetworkInterface($event)"
+                [rowHeight]="36"
                 [searchable]="true"
                 (searchCancelledEmitter)="onCancelSearch()"
                 [searchCols]="advSearchCols"
@@ -19,24 +21,22 @@
 </app-pagebody>
 
 <ng-template #captionTemplate let-count="count">
-  <div class="networknetworkinterface-table-caption">
+  <div class="networknetworkinterface-table-caption" fxLayout="column">
     <div *ngIf="selectedNetworkInterface" fxFlex="auto"
          class="networknetworkinterface-detail-container">
       <ng-container *ngTemplateOutlet="selectedNetworkInterfaceDetail;"></ng-container>
     </div>
-    <div style="border-bottom: 1px solid #d9d9d9;">
-      <app-tableheader [cols]="cols"
-                       (columnSelectChange)="onColumnSelectChange($event)"
-                       [enableColumnSelect]="true"
-                       [icon]="headerIcon"
-                       fxFlex="auto"
-                       fxLayout="auto"
-                       [tableMenuItems]="networkInterfaceTable.tableMenuItems"
-                       title="Network Interfaces"
-                       [total]="count">
-        <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
-      </app-tableheader>
-    </div>
+    <app-tableheader [cols]="cols"
+                     (columnSelectChange)="onColumnSelectChange($event)"
+                     [enableColumnSelect]="true"
+                     [icon]="headerIcon"
+                     fxFlex="auto"
+                     fxLayout="auto"
+                     [tableMenuItems]="networkInterfaceTable.tableMenuItems"
+                     title="Network Interfaces"
+                     [total]="count">
+      <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
+    </app-tableheader>
   </div>
 </ng-template>
 
@@ -108,91 +108,91 @@
 </ng-template>
 
 <ng-template #selectedNetworkInterfaceDetail>
-  <div fxFlex>
-    <div fxFlex fxLayout="column">
-      <div class="networknetworkinterface-detail-header" fxFlex fxLayout="row">
-        <a fxFlex fxLayoutAlign="start center">Network Interface Details:</a>
+  <div class="ui-flex">
+    <div class="ui-flex" fxLayout="column">
+      <div class="networknetworkinterface-detail-header ui-flex" fxLayout="row">
+        <a class="ui-flex" fxLayoutAlign="start center">Network Interface Details:</a>
         <mat-icon class="networknetworkinterface-detail-close" (click)="closeDetails()">close
         </mat-icon>
       </div>
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">Name:</a>
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-value">{{this.selectedNetworkInterface._ui.networkinterfaceUIName}}</a>
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Name:</a>
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-value ui-flex">{{this.selectedNetworkInterface._ui.networkinterfaceUIName}}</a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">DSC:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value"><a
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">DSC:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex"><a
                  routerLink="/cluster/dscs/{{this.selectedNetworkInterface.status.dsc}}">
                 {{this.selectedNetworkInterface._ui && this.selectedNetworkInterface._ui['associatedDSC'] ? this.selectedNetworkInterface._ui['associatedDSC'] : this.selectedNetworkInterface.status.dsc}}</a></a>
           </div>
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">Modification Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Modification Time:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{ $any(this.selectedNetworkInterface.meta['mod-time']) | PrettyDate }}
             </a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">Creation Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Creation Time:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{ $any(this.selectedNetworkInterface.meta['mod-time']) | PrettyDate }}
             </a>
           </div>
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-key">Admin
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-key ui-flex">Admin
               Status:
               Time:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{this.selectedNetworkInterface.spec['admin-status']}}
             </a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">Type:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Type:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{this.selectedNetworkInterface.spec.type}}
             </a>
           </div>
         </div>
       </div>
 
-      <div fxFlex fxLayout="row">
-        <div fxFlex fxLayout="column">
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center"
-               class="networknetworkinterface-detail-key">Labels:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Labels:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{formatLabels(this.selectedNetworkInterface.meta.labels)}}
             </a>
           </div>
         </div>
-        <div fxFlex fxLayout="column">
+        <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-key">OP
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-key ui-flex">OP
               Status:</a>
-            <a fxFlex fxLayoutAlign="start center" class="networknetworkinterface-detail-value">
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
               {{this.selectedNetworkInterface.status['oper-status']}}
             </a>
           </div>

@@ -65,7 +65,7 @@
       <div *ngFor="let w of rowData._ui.associatedDSCS let i=index" class="dscprofile-dsc-div">
         <ng-container *roleGuard="'clusterDistributedservicecard_read'">
           <a *ngIf="i < maxDSCsPerRow" routerLink="/cluster/dscs/{{w.meta.name}}"
-             [matTooltip]="'This DSC is admitted in PSM and assigned this profile. Click to go to DSC detail page'">{{w?.spec.id}}</a>
+             [matTooltip]=" (w ? 'This DSC is '+ w.status['admission-phase'] + ' in PSM. ' : '') + 'Click to view more details.'">{{w?.spec.id}}</a>
           <a *ngIf="i === maxDSCsPerRow" routerLink="/cluster/dscs"
              [matTooltip]="buildMoreDSCsTooltip(rowData)">
             ... {{rowData._ui.associatedDSCS.length - maxDSCsPerRow}} more</a>
