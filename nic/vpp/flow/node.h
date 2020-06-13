@@ -113,8 +113,8 @@
         _(SYN, "SYN packet processed" )                             \
         _(FIN, "FIN packet processed")                              \
         _(RST, "RST packet processed" )                             \
-        _(ACK, "ACK packet processed")                              \
         _(OTHER, "Other packet processed")                          \
+        _(DROP, "Drop packet processed")                            \
         _(SESSION_INVALID, "Session Invalid")                       \
 
 #define foreach_flow_timer                                          \
@@ -316,14 +316,13 @@ typedef struct pds_flow_main_s {
     pds_flow_rewrite_flags_t *rewrite_flags;
     char *stats_buf;
     u8 *rx_vxlan_template;
-    f64 tcp_con_setup_timeout;
-    f64 tcp_half_close_timeout;
-    f64 tcp_close_timeout;
-    f64 tcp_keep_alive_timeout;
-    f64 *idle_timeout;
-    f64 *drop_timeout;
+    u64 tcp_con_setup_timeout;
+    u64 tcp_half_close_timeout;
+    u64 tcp_close_timeout;
+    u64 tcp_keep_alive_timeout;
+    u64 *idle_timeout;
+    u64 *drop_timeout;
     u64 *idle_timeout_ticks;
-    u64 *drop_timeout_ticks;
     // per worker worker timer wheel
     tw_timer_wheel_16t_1w_2048sl_t *timer_wheel;
     u32 max_sessions;

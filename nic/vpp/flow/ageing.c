@@ -32,13 +32,10 @@ vlib_node_registration_t pds_flow_age_node,
                          pds_flow_age_setup_node;
 
 always_inline void
-pds_flow_age_setup_syn_x2 (u32 session_id0, u32 session_id1, u16 thread)
+pds_flow_age_setup_syn_x2 (pds_flow_hw_ctx_t *ctx0, pds_flow_hw_ctx_t *ctx1,
+                           u32 session_id0, u32 session_id1, u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0, *ctx1;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
-    ctx1 = pds_flow_get_hw_ctx(session_id1);
 
     // If session is already in conn_setup state, then this is a duplicate packet,
     // so ignore
@@ -65,13 +62,10 @@ end:
 }
 
 always_inline void
-pds_flow_age_setup_rst_x2 (u32 session_id0, u32 session_id1, u16 thread)
+pds_flow_age_setup_rst_x2 (pds_flow_hw_ctx_t *ctx0, pds_flow_hw_ctx_t *ctx1,
+                           u32 session_id0, u32 session_id1, u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0, *ctx1;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
-    ctx1 = pds_flow_get_hw_ctx(session_id1);
 
     if (PREDICT_FALSE(ctx0->flow_state >= PDS_FLOW_STATE_CLOSE)) {
         goto ctx1;
@@ -100,14 +94,13 @@ end:
 }
 
 always_inline void
-pds_flow_age_setup_con_established_x2 (u32 session_id0, u32 session_id1,
+pds_flow_age_setup_con_established_x2 (pds_flow_hw_ctx_t *ctx0,
+                                       pds_flow_hw_ctx_t *ctx1,
+                                       u32 session_id0,
+                                       u32 session_id1,
                                        u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0, *ctx1;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
-    ctx1 = pds_flow_get_hw_ctx(session_id1);
 
     if (PREDICT_FALSE(ctx0->flow_state >= PDS_FLOW_STATE_ESTABLISHED)) {
         goto ctx1;
@@ -135,12 +128,24 @@ end:
 }
 
 always_inline void
-pds_flow_age_setup_syn_x1 (u32 session_id0, u16 thread)
+pds_flow_age_setup_drop (pds_flow_hw_ctx_t *ctx0,
+                         u32 session_id0, u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0;
 
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
+    ctx0->flow_state = PDS_FLOW_STATE_CONN_INIT;
+    ctx0->timer_hdl = tw_timer_start_16t_1w_2048sl(&fm->timer_wheel[thread],
+                                                   session_id0,
+                                                   PDS_FLOW_DROP_TIMER,
+                                                   fm->drop_timeout[ctx0->proto]);
+    return;
+}
+
+always_inline void
+pds_flow_age_setup_syn_x1 (pds_flow_hw_ctx_t *ctx0,
+                           u32 session_id0, u16 thread)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
 
     if (PREDICT_FALSE(ctx0->flow_state >= PDS_FLOW_STATE_CONN_SETUP)) {
         return;
@@ -155,15 +160,13 @@ pds_flow_age_setup_syn_x1 (u32 session_id0, u16 thread)
 }
 
 always_inline void
-pds_flow_age_setup_fin_x1 (u32 session_id0, u16 thread, bool rflow)
+pds_flow_age_setup_fin_x1 (pds_flow_hw_ctx_t *ctx0,
+                           u32 session_id0, u16 thread, bool rflow)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0;
     u32 timer;
     u64 timeout;
     u8 state;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
 
     if (PREDICT_FALSE(ctx0->flow_state < PDS_FLOW_STATE_ESTABLISHED)) {
         return;
@@ -208,12 +211,10 @@ pds_flow_age_setup_fin_x1 (u32 session_id0, u16 thread, bool rflow)
 }
 
 always_inline void
-pds_flow_age_setup_rst_x1 (u32 session_id0, u16 thread)
+pds_flow_age_setup_rst_x1 (pds_flow_hw_ctx_t *ctx0,
+                           u32 session_id0, u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
 
     if (ctx0->flow_state >= PDS_FLOW_STATE_CLOSE) {
         return;
@@ -229,12 +230,10 @@ pds_flow_age_setup_rst_x1 (u32 session_id0, u16 thread)
 }
 
 always_inline void
-pds_flow_age_setup_con_established_x1 (u32 session_id0, u16 thread)
+pds_flow_age_setup_con_established_x1 (pds_flow_hw_ctx_t *ctx0,
+                                       u32 session_id0, u16 thread)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *ctx0;
-
-    ctx0 = pds_flow_get_hw_ctx(session_id0);
 
     if (PREDICT_FALSE(ctx0->flow_state >= PDS_FLOW_STATE_ESTABLISHED)) {
         return;
@@ -346,41 +345,44 @@ pds_flow_age_setup (vlib_main_t *vm,
             u32 session_id0, session_id1;
             u16 tcp_flags0, tcp_flags1;
             bool rflow0, rflow1;
-            bool ses_valid0, ses_valid1;
+            pds_flow_hw_ctx_t *ctx0, *ctx1;
 
             b0 = PDS_PACKET_BUFFER(0);
             b1 = PDS_PACKET_BUFFER(1);
 
             session_id0 = vnet_buffer(b0)->pds_flow_data.ses_id;
             session_id1 = vnet_buffer(b1)->pds_flow_data.ses_id;
-            ses_valid0 = pds_flow_ses_id_valid(session_id0);
-            ses_valid1 = pds_flow_ses_id_valid(session_id1);
+            ctx0 = pds_flow_get_hw_ctx(session_id0);
+            ctx1 = pds_flow_get_hw_ctx(session_id1);
             tcp_flags0 = vnet_buffer(b0)->pds_flow_data.tcp_flags;
             tcp_flags1 = vnet_buffer(b1)->pds_flow_data.tcp_flags;
-            if (!ses_valid0 || !ses_valid1) {
+            if (!ctx0 || !ctx1 || ctx0->drop || ctx1->drop) {
                 goto pak0;
             }
             if (tcp_flags0 == tcp_flags1) {
                 if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
-                    pds_flow_age_setup_syn_x2(session_id0, session_id1,
+                    pds_flow_age_setup_syn_x2(ctx0, ctx1,
+                                              session_id0, session_id1,
                                               node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_SYN] += 2;
                 } else if (tcp_flags0 & TCP_FLAG_FIN) {
                     rflow0 = pds_is_rflow(b0);
                     rflow1 = pds_is_rflow(b1);
-                    pds_flow_age_setup_fin_x1(session_id0,
+                    pds_flow_age_setup_fin_x1(ctx0, session_id0,
                                               node->thread_index, rflow0);
-                    pds_flow_age_setup_fin_x1(session_id1,
+                    pds_flow_age_setup_fin_x1(ctx1, session_id1,
                                               node->thread_index, rflow1);
                     counter[FLOW_AGE_SETUP_COUNTER_FIN] += 2;
                 } else if (PREDICT_FALSE(tcp_flags0 & TCP_FLAG_RST)) {
-                    pds_flow_age_setup_rst_x2(session_id0, session_id1,
+                    pds_flow_age_setup_rst_x2(ctx0, ctx1,
+                                              session_id0, session_id1,
                                               node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_RST] += 2;
                 } else {
                     // no connection tracking required,
                     // so move state to established and start idle timeout
-                    pds_flow_age_setup_con_established_x2(session_id0,
+                    pds_flow_age_setup_con_established_x2(ctx0, ctx1,
+                                                          session_id0,
                                                           session_id1,
                                                           node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_OTHER] += 2;
@@ -389,50 +391,66 @@ pds_flow_age_setup (vlib_main_t *vm,
                 *PDS_PACKET_NEXT_NODE_PTR(1) = FLOW_AGE_SETUP_NEXT_FWD_FLOW;
             } else {
             pak0:
-                if (!ses_valid0) {
+                if (!ctx0) {
                     counter[FLOW_AGE_SETUP_COUNTER_SESSION_INVALID]++;
                     *PDS_PACKET_NEXT_NODE_PTR(0) = FLOW_AGE_SETUP_NEXT_DROP;
                     goto pak1;
                 }
-                if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
-                    pds_flow_age_setup_syn_x1(session_id0, node->thread_index);
+                if (PREDICT_FALSE(ctx0->drop)) {
+                    pds_flow_age_setup_drop(ctx0, session_id0,
+                                            node->thread_index);
+                    counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
+                } else if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
+                    pds_flow_age_setup_syn_x1(ctx0, session_id0,
+                                              node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
                 } else if (tcp_flags0 & TCP_FLAG_FIN) {
                     rflow0 = pds_is_rflow(b0);
-                    pds_flow_age_setup_fin_x1(session_id0, node->thread_index,
+                    pds_flow_age_setup_fin_x1(ctx0, session_id0,
+                                              node->thread_index,
                                               rflow0);
                     counter[FLOW_AGE_SETUP_COUNTER_FIN]++;
                 } else if (PREDICT_FALSE(tcp_flags0 & TCP_FLAG_RST)) {
-                    pds_flow_age_setup_rst_x1(session_id0, node->thread_index);
+                    pds_flow_age_setup_rst_x1(ctx0, session_id0,
+                                              node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_RST]++;
                 } else {
                     // no connection tracking required,
                     // so move state to established and start idle timeout
-                    pds_flow_age_setup_con_established_x1(session_id0,
+                    pds_flow_age_setup_con_established_x1(ctx0,
+                                                          session_id0,
                                                           node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_OTHER]++;
                 }
             pak1:
-                if (!ses_valid1) {
+                if (!ctx1) {
                     counter[FLOW_AGE_SETUP_COUNTER_SESSION_INVALID]++;
                     *PDS_PACKET_NEXT_NODE_PTR(1) = FLOW_AGE_SETUP_NEXT_DROP;
                     goto done;
                 }
-                if (fm->con_track_en && (tcp_flags1 & TCP_FLAG_SYN)) {
-                    pds_flow_age_setup_syn_x1(session_id1, node->thread_index);
+                if (PREDICT_FALSE(ctx1->drop)) {
+                    pds_flow_age_setup_drop(ctx1, session_id1,
+                                            node->thread_index);
+                    counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
+                } else if (fm->con_track_en && (tcp_flags1 & TCP_FLAG_SYN)) {
+                    pds_flow_age_setup_syn_x1(ctx1, session_id1,
+                                              node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
                 } else if (tcp_flags1 & TCP_FLAG_FIN) {
                     rflow1 = pds_is_rflow(b1);
-                    pds_flow_age_setup_fin_x1(session_id1, node->thread_index,
+                    pds_flow_age_setup_fin_x1(ctx1, session_id1,
+                                              node->thread_index,
                                               rflow1);
                     counter[FLOW_AGE_SETUP_COUNTER_FIN]++;
                 } else if (PREDICT_FALSE(tcp_flags1 & TCP_FLAG_RST)) {
-                    pds_flow_age_setup_rst_x1(session_id1, node->thread_index);
+                    pds_flow_age_setup_rst_x1(ctx1, session_id1,
+                                              node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_RST]++;
                 } else {
                     // no connection tracking required,
                     // so move state to established and start idle timeout
-                    pds_flow_age_setup_con_established_x1(session_id1,
+                    pds_flow_age_setup_con_established_x1(ctx1,
+                                                          session_id1,
                                                           node->thread_index);
                     counter[FLOW_AGE_SETUP_COUNTER_OTHER]++;
                 }
@@ -448,33 +466,41 @@ pds_flow_age_setup (vlib_main_t *vm,
             u32 session_id0;
             u8 tcp_flags0;
             bool rflow0;
-            bool ses_valid0;
+            pds_flow_hw_ctx_t *ctx0;
 
             b0 = PDS_PACKET_BUFFER(0);
 
             session_id0 = vnet_buffer(b0)->pds_flow_data.ses_id;
-            ses_valid0 = pds_flow_ses_id_valid(session_id0);
+            ctx0 = pds_flow_get_hw_ctx(session_id0);
             tcp_flags0 = vnet_buffer(b0)->pds_flow_data.tcp_flags;
-            if (!ses_valid0) {
+            if (!ctx0) {
                 counter[FLOW_AGE_SETUP_COUNTER_SESSION_INVALID]++;
                 *PDS_PACKET_NEXT_NODE_PTR(0) = FLOW_AGE_SETUP_NEXT_DROP;
                 goto end;
             }
-            if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
-                pds_flow_age_setup_syn_x1(session_id0, node->thread_index);
+            if (PREDICT_FALSE(ctx0->drop)) {
+                pds_flow_age_setup_drop(ctx0, session_id0,
+                                        node->thread_index);
+                counter[FLOW_AGE_SETUP_COUNTER_DROP]++;
+            } else if (fm->con_track_en && (tcp_flags0 & TCP_FLAG_SYN)) {
+                pds_flow_age_setup_syn_x1(ctx0, session_id0,
+                                          node->thread_index);
                 counter[FLOW_AGE_SETUP_COUNTER_SYN]++;
             } else if (tcp_flags0 & TCP_FLAG_FIN) {
                 rflow0 = pds_is_rflow(b0);
-                pds_flow_age_setup_fin_x1(session_id0, node->thread_index,
+                pds_flow_age_setup_fin_x1(ctx0, session_id0,
+                                          node->thread_index,
                                           rflow0);
                 counter[FLOW_AGE_SETUP_COUNTER_FIN]++;
             } else if (PREDICT_FALSE(tcp_flags0 & TCP_FLAG_RST)) {
-                pds_flow_age_setup_rst_x1(session_id0, node->thread_index);
+                pds_flow_age_setup_rst_x1(ctx0, session_id0,
+                                          node->thread_index);
                 counter[FLOW_AGE_SETUP_COUNTER_RST]++;
             } else {
                 // no connection tracking required,
                 // so move state to established and start idle timeout
-                pds_flow_age_setup_con_established_x1(session_id0,
+                pds_flow_age_setup_con_established_x1(ctx0,
+                                                      session_id0,
                                                       node->thread_index);
                 counter[FLOW_AGE_SETUP_COUNTER_OTHER]++;
             }
@@ -1009,7 +1035,6 @@ pds_flow_age_init (vlib_main_t *vm)
     vec_validate_init_empty(fm->idle_timeout, PDS_FLOW_PROTO_OTHER, 0);
     vec_validate_init_empty(fm->idle_timeout_ticks, PDS_FLOW_PROTO_OTHER, 0);
     vec_validate_init_empty(fm->drop_timeout, PDS_FLOW_PROTO_OTHER, 0);
-    vec_validate_init_empty(fm->drop_timeout_ticks, PDS_FLOW_PROTO_OTHER, 0);
 
     pds_local_mapping_table_init();
 

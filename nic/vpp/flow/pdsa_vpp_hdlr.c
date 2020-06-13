@@ -33,7 +33,5 @@ pds_flow_cfg_set (uint8_t con_track_en,
                 pds_system_get_ticks(flow_idle_timeout[i]);
         vec_elt(fm->drop_timeout, i) =
                 PDS_FLOW_SEC_TO_TIMER_TICK(flow_drop_timeout[i]);
-        vec_elt(fm->drop_timeout_ticks, i) =
-                        pds_system_get_ticks(flow_drop_timeout[i]);
     }
 }

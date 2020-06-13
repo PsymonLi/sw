@@ -122,7 +122,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_hw_ctx_t *ctx;
     pds_flow_timer_t timer;
-    f64 timeout;
+    u64 timeout;
 
     for (u32 i = 0; i < sess_info_cache_batch_get_count(thread_id); i++) {
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(i, thread_id);
