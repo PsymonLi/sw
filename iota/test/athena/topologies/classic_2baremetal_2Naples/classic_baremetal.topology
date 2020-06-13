@@ -29,15 +29,15 @@ vlan_mappings:
     vlan_group_1:
         - node: node1
           nic: 1
-          port: 1
+          port: 2
         - node: node2
           nic: 1
-          port: 1
+          port: 2
     vlan_group_2:
         - node: node1
           nic: 1
-          port: 2
+          port: 3
         - node: node2
           nic: 1
-          port: 2
+          port: 3
 

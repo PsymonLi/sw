@@ -513,11 +513,14 @@ class Node(object):
             instId = self.GetNodeInfo()["InstanceID"]
             for node in warmd['Instances']:
                 if instId == node.get('ID',None):
-                    for nic in node.get('Nics',[]):
-                        ports = nic.get('Ports',[])
-                        if len(ports) < portNum:
-                            raise Exception("port number {0} is > len of port list ({1})".format(portNum, len(ports)))
-                        return ports[portNum]
+                    nics = node.get('Nics',[])
+                    if len(nics) < nicNum:
+                        raise Exception("nic number {0} is > len of nics list ({1})".format(nicNum, len(nics)))
+                    nic = nics[nicNum-1]
+                    ports = nic.get('Ports',[])
+                    if len(ports) < portNum:
+                        raise Exception("port number {0} is > len of port list ({1})".format(portNum, len(ports)))
+                    return ports[portNum-1]
         raise Exception("failed to find port index in warmd.json for node ID {0}, nicNum {1}, portNum {2}".format(instId, nicNum, portNum))
 
     def GetApcInfo(self):
