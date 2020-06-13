@@ -57,6 +57,7 @@ dispatch_event (ipc_svc_dom_id_t dom, upg_stage_t id, upg_svc svc)
     if (svc.has_valid_ipc_id()) {
         if (dom == IPC_SVC_DOM_ID_B &&
             fsm_states.init_params()->upg_event_fwd_cb) {
+            fsm_states.clear_pending_svcs();
             fsm_states.init_params()->upg_event_fwd_cb(id, svc.name(),
                                                        svc.ipc_id());
         } else {
@@ -90,11 +91,13 @@ send_discovery_event (ipc_svc_dom_id_t dom, upg_stage_t id)
     LOG_BROADCAST_MSG(ipc_svc_dom_id_to_name(dom));
     if (dom == IPC_SVC_DOM_ID_B &&
         fsm_states.init_params()->upg_event_fwd_cb) {
+            fsm_states.clear_pending_svcs();
             std::string svc_name = fsm_states.next_svc();
             upg_svc svc = fsm_services[svc_name];
             fsm_states.init_params()->upg_event_fwd_cb(id, svc_name,
                                                        svc.ipc_id());
     } else {
+        fsm_states.set_pending_svcs();
         upg_send_broadcast_request(dom, id, fsm_states.init_params()->upg_mode,
                                    fsm_services.size(), fsm_states.timeout());
     }
@@ -260,6 +263,7 @@ move_to_nextstage (void)
     if (fsm_states.current_stage() == fsm_states.end_stage()) {
         upg_status_t status = get_exit_status();
         execute_exit_script(status);
+        LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         fsm_states.init_params()->fsm_completion_cb(status);
         SDK_ASSERT(0);
     }
@@ -328,6 +332,7 @@ upg_event_handler (upg_event_msg_t *event)
             if (fsm_states.current_stage() == fsm_states.end_stage()) {
                 upg_status_t status = get_exit_status();
                 execute_exit_script(status);
+                LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
                 // not expeting to come back here
                 fsm_states.init_params()->fsm_completion_cb(status);
                 SDK_ASSERT(0);
@@ -355,6 +360,7 @@ timeout_cb (EV_P_ ev_timer *w, int revents)
     } else {
         UPG_TRACE_WARN("Upgrade must not wait for response in last stage");
         execute_exit_script(get_exit_status());
+        LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         fsm_states.init_params()->fsm_completion_cb(UPG_STATUS_FAIL);
         SDK_ASSERT(0);
     }
@@ -381,6 +387,7 @@ fsm::set_current_stage(const upg_stage_t stage_id) {
 
     upg_stage stage = fsm_stages[current_stage_];
     svc_sequence_ = stage.svc_sequence();
+    pending_svcs_.clear();
     size_ = 0;
     for (auto x : svc_sequence_) {
         size_++;
@@ -452,8 +459,8 @@ fsm::update_stage_progress(const svc_rsp_code_t rsp) {
                           upg_stage2str(current_stage_));
             break;
         case SVC_RSP_NONE:
-            if (fsm_states.is_discovery()) {
-                UPG_TRACE_ERR("Timer expired, no service response so far");
+            if (fsm_states.is_empty_pending_svcs()) {
+                UPG_TRACE_ERR("Timer expired, no service response across ipc domain");
             } else {
                 std::string svcs = fsm_states.pending_svcs();
                 UPG_TRACE_ERR("Timer expired, no service response from %s",
@@ -536,10 +543,13 @@ fsm::clear_pending_svc(std::string svc)
 }
 
 void
-fsm::set_pending_svc(std::string svc)
+fsm::set_pending_svcs(void)
 {
-    pending_svcs_.push_back(svc);
+    for (auto svc : svc_sequence_) {
+        pending_svcs_.push_back(svc);
+    }
 }
+
 const char*
 fsm::get_event_sequence_type(void) const {
     SDK_ASSERT(fsm_stages.find(current_stage_) != fsm_stages.end());
@@ -817,6 +827,7 @@ init_fsm (fsm_init_params_t *params)
     if (!execute_pre_hooks(fsm_states.current_stage())) {
         fsm_states.update_stage_progress(SVC_RSP_FAIL);
         execute_exit_script(get_exit_status());
+        LOG_STAGE_FINISHED(upg_stage2str(fsm_states.current_stage()));
         return SDK_RET_ERR;
     }
     send_discovery_event(IPC_SVC_DOM_ID_A, fsm_states.current_stage());

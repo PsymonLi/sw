@@ -105,8 +105,11 @@ public:
     ipc_svc_dom_id_t domain(void) const { return domain_; };
     void set_domain(ipc_svc_dom_id_t dom ) { domain_ = dom; };
     std::string pending_svcs(void) ;
-    void set_pending_svc(std::string svc);
+    void set_pending_svcs(void);
     void clear_pending_svc(std::string svc);
+    void set_pending_svc(std::string svc) { pending_svcs_.push_back(svc); }
+    bool is_empty_pending_svcs(void) const { return pending_svcs_.empty(); }
+    void clear_pending_svcs(void) { pending_svcs_.clear(); }
 private:
     void update_stage_progress_internal_(void);
     upg_stage_t current_stage_;

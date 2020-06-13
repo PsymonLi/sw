@@ -224,28 +224,78 @@
     },
 
     "test_case_9" : {
-            "description" : "Testing with response delay injection is start stage",
-            "svc" : {
-                "svc1" : {
-                    "ipc_id" : "51"
-                },
-                "svc2" : {
-                    "ipc_id" : "52",
-                    "svc_rsp_code" : "noresponse",
-                    "rsp_time_delay" : "60000",
-                    "svc_rsp_stage" : "UPG_STAGE_START"
-                }
+        "description" : "Testing with response delay injection is serial/start stage",
+        "svc" : {
+            "svc1" : {
+                "ipc_id" : "51"
             },
+            "svc2" : {
+                "ipc_id" : "52",
+                "svc_rsp_code" : "noresponse",
+                "rsp_time_delay" : "60000",
+                "svc_rsp_stage" : "UPG_STAGE_START"
+            }
+        },
 
-            "expected_result" : {
-                "api_return_code" : "1",
-                "log": {
-                    "fsm_svc_svc1": ["", ""],
-                    "fsm_svc_svc2": ["", ""],
-                    "upgrade": ["fail", ""]
-                }
+        "expected_result" : {
+            "api_return_code" : "1",
+            "log": {
+                "fsm_svc_svc1": ["", ""],
+                "fsm_svc_svc2": ["", ""],
+                "upgrade": ["fail", ""]
             }
         }
+    },
 
+    "test_case_10" : {
+        "description" : "Testing with response delay injection is discovery/compat stage",
+        "svc" : {
+            "svc1" : {
+                "ipc_id" : "51"
+            },
+            "svc2" : {
+                "ipc_id" : "52",
+                "svc_rsp_code" : "noresponse",
+                "rsp_time_delay" : "60000",
+                "svc_rsp_stage" : "UPG_STAGE_COMPAT_CHECK"
+            }
+        },
+
+        "expected_result" : {
+            "api_return_code" : "1",
+            "log": {
+                "fsm_svc_svc1": ["", ""],
+                "fsm_svc_svc2": ["", ""],
+                "upgrade": ["fail", ""]
+            }
+        }
+    },
+
+    "test_case_11" : {
+        "description" : "Testing with response delay injection is parallel stage",
+        "svc" : {
+            "svc1" : {
+                "ipc_id" : "51",
+                "svc_rsp_code" : "noresponse",
+                "rsp_time_delay" : "60000",
+                "svc_rsp_stage" : "UPG_STAGE_BACKUP"
+            },
+            "svc2" : {
+                "ipc_id" : "52",
+                "svc_rsp_code" : "noresponse",
+                "rsp_time_delay" : "60000",
+                "svc_rsp_stage" : "UPG_STAGE_BACKUP"
+            }
+        },
+
+        "expected_result" : {
+            "api_return_code" : "1",
+            "log": {
+                "fsm_svc_svc1": ["", ""],
+                "fsm_svc_svc2": ["", ""],
+                "upgrade": ["fail", ""]
+            }
+        }
+    }
 
 }
