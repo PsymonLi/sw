@@ -18,6 +18,12 @@ modules:
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
 
     - module:
+        name    : L2IGW_IPV4_TCP_POLICY_CHG
+        spec    : l2igw_flow_fixup.testspec
+        iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=IGW,Label=NETWORKING
+
+    - module:
         name    : L2L_IPV4_TCP_IFLOW_EPOCH_CHG
         spec    : l2l_flow_fixup.testspec
         iterate :

@@ -595,7 +595,7 @@ pds_flow_mapping_over_route_check (p4_rx_cpu_hdr_t *hdr,
     }
 
     // no route, then mapping wins always
-    if (hdr->drop || (0 == hdr->nexthop_id)) {
+    if (0 == hdr->nexthop_id) {
         return true;
     }
 

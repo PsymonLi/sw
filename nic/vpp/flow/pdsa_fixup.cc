@@ -61,9 +61,10 @@ pds_ipc_ip_move_handle (core::event_t *event, bool del_event)
         ipv4_addr = ip_addr.addr.v4_addr;
         if (unlikely(!del_event &&
             pds_vpp_bd_hw_id_get(move_evt->subnet, &bd_hw_id) == -1)) {
-            flow_log_error("Subnet %s does not exist. Move event %u addr %s",
-                           move_evt->subnet.str(),
-                           event->event_id, move_evt->ip_addr);
+            flow_log_error("Subnet[%s] does not exist for move event[%u], "
+                           "address 0x%x",
+                           move_evt->subnet.str(), event->event_id,
+                           move_evt->ip_addr.addr.v4_addr);
             return false;
         }
         flow_log_notice("Received event[%u], IP[0x%x], BD[%u], vnic[%u]",

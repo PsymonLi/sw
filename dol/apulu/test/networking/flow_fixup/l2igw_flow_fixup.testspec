@@ -1,0 +1,216 @@
+# Test Spec
+selectors:
+    root: ref://store/templates/id=FLOW
+    maxlimits: 1
+    flow: filter://SourceGuard=False
+    route: filter://VPCPeeringEnabled=False,HasBlackHoleRoute=False
+
+packets:
+    - packet:
+        id          : BASE_PKT # Base Packet
+        payloadsize : ref://factory/payloads/id=PAYLOAD_ZERO64/size
+        template    : callback://networking/packets/GetPacketTemplateFromMapping/proto=UDP
+        headers     :
+            ipv4:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : callback://networking/packets/GetUsableHostFromRoute
+                ttl     : 64
+            ipv6:
+                src     : ref://testcase/config/localmapping/IP
+                dst     : callback://networking/packets/GetUsableHostFromRoute
+                hlim    : 64
+            udp:
+                sport   : 100
+                dport   : 200
+            payload:
+                data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
+
+    - packet:
+        id          : FROM_HOST_PKT # Input packet from host
+        clone       : ref://testcase/packets/id=BASE_PKT
+        encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
+        headers     :
+            eth:
+                src     : ref://testcase/config/localmapping/VNIC/MACAddr
+                dst     : 00:02:00:00:00:00
+            qtag:
+                vlan    : ref://testcase/config/localmapping/VNIC/VlanId
+
+    - packet:
+        id          : TO_SWITCH_PKT # Expected packet to network
+        clone       : ref://testcase/packets/id=BASE_PKT
+        encaps      : callback://networking/packets/GetPacketEncapFromMapping
+        headers     :
+            outereth:
+                src     : callback://networking/packets/GetUplinkPortMac
+                dst     : callback://networking/packets/GetUnderlayRemoteMac
+            outeripv4:
+                src     : ref://testcase/config/devicecfg/IP
+                dst     : callback://networking/packets/GetTunnelIPFromRoute
+                ttl     : 64
+                tos     : 0
+                id      : 0
+            vxlan:
+                vni     : ref://testcase/config/route/VPC/Vnid
+            eth:
+                src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2N
+                dst     : ref://testcase/config/route/TUNNEL/MACAddr
+            ipv4:
+                src     : callback://networking/packets/GetIPFromLocalMapping
+                ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2N,ipkt=FROM_HOST_PKT
+            ipv6:
+                src     : callback://networking/packets/GetIPFromLocalMapping
+
+buffers:
+    - buffer:
+        id      : BUF1
+        template: ref://factory/templates/id=ETH_BUFFER
+        fields:
+           bind : True
+           size : ref://testcase/packets/id=FROM_HOST_PKT/size
+           data : ref://testcase/packets/id=FROM_HOST_PKT/rawbytes
+
+descriptors:
+    - descriptor:
+        id      : DESC1
+        template: ref://factory/templates/id=DESCR_ETH_TX
+        fields:
+            _buf  : ref://testcase/buffers/id=BUF1
+            addr  : ref://testcase/buffers/id=BUF1/addr
+            len   : ref://testcase/buffers/id=BUF1/size
+
+    - descriptor:
+        id      : DESC2 # Expected Descriptor
+        template: ref://factory/templates/id=DESCR_ETH_TX_CQ
+        fields:
+            status     : 0x0
+
+session:
+    - step:
+        trigger:
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+            configs:
+                - object        : ref://testcase/config/localmapping/VNIC
+                  method        : Read
+
+        expect:
+            delay    :    1
+            packets:
+                - packet:
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+            configs:
+                - object    : ref://testcase/config/localmapping/VNIC
+                  method    : VerifyVnicStats
+                  fields    : callback://common/config/GetExpectedStats/direction=TX,npkts=1,ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT
+
+    - step:
+        trigger:
+            configs:
+                - object: ref://testcase/config/localmapping/VNIC/SUBNET
+                  method: ChangePolicyAction
+                  fields:
+                      af: ipv4
+                      direction: egress
+                      # following are policy attrributes
+                      # TODO: enhance DOL infra to allow fields as dict of dict
+                      DefaultFWAction : deny
+                      Action : deny
+        expect:
+            delay    :    5
+
+    - step:
+        trigger:
+            # sending in burst of packets may result in some packet taking transient flow
+            # so, send packets with delay
+            # TODO: Update session entry and then fix flows from VPP to handle packet burst scenario
+            delay    :    2
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+        expect:
+            delay    :    1
+            packets:
+                - packet:
+                    object  : None
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+
+    - step:
+        trigger:
+            delay    :    2
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+        expect:
+            delay    :    1
+            packets:
+                - packet:
+                    object  : None
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+
+
+    - step:
+        trigger:
+            configs:
+                - object: ref://testcase/config/localmapping/VNIC/SUBNET
+                  method: ChangePolicyAction
+                  fields:
+                      af: ipv4
+                      direction: egress
+                      DefaultFWAction : allow
+                      Action : allow
+        expect:
+            delay    :    5
+
+    - step:
+        trigger:
+            delay    :    2
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+        expect:
+            delay    :    1
+            packets:
+                - packet:
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+
+    - step:
+        trigger:
+            delay    :    2
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC1
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
+        expect:
+            delay    :    1
+            packets:
+                - packet:
+                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
+                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+            descriptors:
+                - descriptor:
+                    object  : ref://testcase/descriptors/id=DESC2
+                    ring    : callback://networking/packets/GetRingFromMapping/type=local,qid=TX
