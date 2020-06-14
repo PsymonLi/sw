@@ -1,6 +1,8 @@
 #! /usr/bin/python3
 import time
+import re
 import iota.harness.api as api
+import iota.test.utils.p4ctl as p4ctl
 from iota.harness.infra.glopts import GlobalOptions
 
 def Sleep(timeout=5):
@@ -63,3 +65,113 @@ def get_wl_idx(uplink, vnic_id):
         return (2 * vnic_id)
     if uplink == 1:
         return (2 * vnic_id + 1)
+
+# ===========================================
+# Return: flow_hit_count
+# get flow hit count from p4ctl table read
+# convert it from little endian hex to decimal
+# ===========================================
+def get_flow_hit_count(node):
+
+    # Dump table from p4ctl and verify flow hit counter
+    output_lines = p4ctl.RunP4CtlCmd_READ_TABLE(node, "p4e_stats", "all")
+    pattern = "(flow_hit : 0x)(\w*)"
+    mo = re.search(pattern,output_lines)
+
+    flow_hit_bit = re.sub(r"(?<=\w)(?=(?:\w\w)+$)", " ", mo.group(2))
+    flow_hit_count = int("".join(flow_hit_bit.split()[::-1]), 16)
+
+    api.Logger.info("p4ctl shows flow_hit_count: %d" % flow_hit_count)
+
+    return flow_hit_count
+
+# ===========================================
+# Return: True or False
+# Match flows with flow entries in flow cache
+# Check src_ip, dst_ip, proto, 
+# for UDP/TCP, add check for sport and dport
+# ===========================================
+def match_dynamic_flows(tc, vnic_id, flow):
+
+    # Dump all flow entries from flow cache
+    req = api.Trigger_CreateExecuteCommandsRequest()
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "export PATH=$PATH:/nic/lib && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib && /nic/bin/athena_client --flow_cache_dump /data/flow_dump_iota.log")
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "cat /data/flow_dump_iota.log")
+
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code != 0:
+            api.Logger.error("Error: Dump flow through athena_client failed")
+            return api.types.status.FAILURE
+
+    flow_dump_req = api.Trigger_CreateExecuteCommandsRequest()
+
+    # If reverse L3/L4 tuples for the s2h direction to make s2h 
+    # and h2s share the same flow, then we only have one flow entries per loop
+    flow_dump_cmd = ""
+    flow_dump_cmd_h2s = ""
+    flow_dump_cmd_s2h = ""
+
+    flow_dump_cmd += ("grep VNICID:" + str(vnic_id) + " /data/flow_dump_iota.log")
+    flow_dump_cmd += (" | grep Proto:" + str(flow.proto_num) + "\ ")
+
+    if flow.proto == 'ICMP' and tc.nat == 'yes':
+        # for ICMP flow with nat we only verify vnic_id, proto, source and dst ip
+        flow_dump_cmd += (" | grep SrcIP:" + flow.sip)
+        flow_dump_cmd += (" | grep DstIP:" + flow.dip)
+        flow_dump_cmd += (" | grep Sport:" + flow.icmp_type)
+        flow_dump_cmd += (" | grep Dport:" + flow.icmp_code)
+        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd)
+    
+    else:
+        if tc.nat == 'no':
+            # for UDP, TCP and ICMP flow without nat, we should get two flow entires with exchanged source ip and dst ip, 
+            # UDP and TCP also has exchanged source port and dst port
+            flow_dump_cmd_h2s = flow_dump_cmd + (" | grep SrcIP:" + flow.sip)
+            flow_dump_cmd_h2s += (" | grep DstIP:" + flow.dip)
+
+            flow_dump_cmd_s2h = flow_dump_cmd + (" | grep SrcIP:" + flow.dip)
+            flow_dump_cmd_s2h += (" | grep DstIP:" + flow.sip)
+
+
+            if flow.proto == 'ICMP':
+                flow_dump_cmd_h2s += (" | grep Sport:" + flow.icmp_type)
+                flow_dump_cmd_h2s += (" | grep Dport:" + flow.icmp_code)
+
+                flow_dump_cmd_s2h += (" | grep Sport:" + flow.icmp_type)
+                flow_dump_cmd_s2h += (" | grep Dport:" + flow.icmp_code)
+            else:
+                flow_dump_cmd_h2s += (" | grep Sport:" + str(flow.sport))
+                flow_dump_cmd_h2s += (" | grep Dport:" + str(flow.dport))
+
+                flow_dump_cmd_s2h += (" | grep Sport:" + str(flow.dport))
+                flow_dump_cmd_s2h += (" | grep Dport:" + str(flow.sport))
+
+        else:
+            # for UDP and TCP flow with nat, we should get two flow entires
+            # with exchanged source port and dst port
+            flow_dump_cmd += (" | grep SrcIP:" + flow.sip)
+            flow_dump_cmd += (" | grep DstIP:" + flow.dip)
+
+            flow_dump_cmd_h2s = flow_dump_cmd + (" | grep Sport:" + str(flow.sport))
+            flow_dump_cmd_h2s += (" | grep Dport:" + str(flow.dport))
+
+            flow_dump_cmd_s2h = flow_dump_cmd + (" | grep Sport:" + str(flow.dport))
+            flow_dump_cmd_s2h += (" | grep Dport:" + str(flow.sport))
+
+        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd_h2s)
+        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd_s2h)
+
+    # TODO: Change response in tc.response, and verify in the middle
+    flow_dump_resp = api.Trigger(flow_dump_req)
+    for cmd in flow_dump_resp.commands:
+        api.PrintCommandResults(cmd)
+        if cmd.exit_code != 0:
+            api.Logger.info("Verify this flow hasn't been successfully installed yet.")
+            return False
+
+    api.Logger.info('Verify this flow has already been installed in flow cache.')
+
+    return True
+

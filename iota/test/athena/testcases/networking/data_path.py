@@ -4,6 +4,7 @@ import json
 import os
 import time
 import logging
+import re
 from scapy.all import *
 from scapy.contrib.mpls import MPLS
 from scapy.contrib.geneve import GENEVE
@@ -29,6 +30,8 @@ CURR_DIR = os.path.dirname(os.path.realpath(__file__))
 
 DEFAULT_PAYLOAD = 'abcdefghijklmnopqrstuvwzxyabcdefghijklmnopqrstuvwzxy'
 SNIFF_TIMEOUT = 3
+
+NUM_FIRST_PKT_PER_FLOW = 1
 
 logging.basicConfig(level=logging.INFO, handlers=[logging.StreamHandler(sys.stdout)])
 
@@ -214,6 +217,108 @@ def get_flows(tc):
 
     return flows_resp
 
+def send_pkt(tc, node, pkt_gen, pkt_cnt):
+
+    # ==========================================
+    # Send and Receive packets in H2S direction
+    # ==========================================
+    pkt_gen.set_dir_('h2s')
+    pkt_gen.set_nat_flows_h2s_tx(nat_flows_h2s_tx)
+    pkt_gen.set_nat_flows_h2s_rx(nat_flows_h2s_rx)
+    h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+
+    # ==========
+    # Rx Packet
+    # ==========
+    pkt_gen.set_encap(True)
+    pkt_gen.set_Rx(True)
+    pkt_gen.set_vlan(tc.up0_vlan)
+    pkt_gen.set_smac(tc.up1_mac)
+    pkt_gen.set_dmac(tc.up0_mac)
+
+    pkt_gen.setup_pkt()
+    recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
+                "--timeout %s --pkt_cnt %d" % (tc.up0_intf, 
+                DEFAULT_H2S_RECV_PKT_FILENAME, 
+                str(SNIFF_TIMEOUT), pkt_cnt)
+
+    api.Trigger_AddHostCommand(h2s_req, node.Name(), recv_cmd,
+                                        background=True)
+
+    # ==========
+    # Tx Packet
+    # ==========
+    pkt_gen.set_encap(False)
+    pkt_gen.set_Rx(False)
+    pkt_gen.set_smac(tc.up1_mac)
+    pkt_gen.set_dmac(tc.up0_mac)
+    pkt_gen.set_vlan(tc.up1_vlan)
+
+    pkt_gen.setup_pkt()
+    send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
+                "--pkt_cnt %d" % (tc.up1_intf, 
+                DEFAULT_H2S_GEN_PKT_FILENAME, pkt_cnt)
+
+    api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 0.5')
+    api.Trigger_AddHostCommand(h2s_req, node.Name(), send_cmd)
+
+    trig_resp = api.Trigger(h2s_req)
+    time.sleep(SNIFF_TIMEOUT) 
+    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+
+    h2s_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+    tc.resp.append(h2s_resp)
+
+    # ==========================================
+    # Send and Receive packets in S2H direction
+    # ==========================================
+    pkt_gen.set_dir_('s2h')
+    pkt_gen.set_nat_flows_s2h_tx(nat_flows_s2h_tx)
+    pkt_gen.set_nat_flows_s2h_rx(nat_flows_s2h_rx)
+    s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+
+    # ==========
+    # Rx Packet
+    # ==========
+    pkt_gen.set_encap(False)
+    pkt_gen.set_Rx(True)
+    pkt_gen.set_smac(tc.up0_mac)
+    pkt_gen.set_dmac(tc.up1_mac)
+    pkt_gen.set_vlan(tc.up1_vlan)
+
+    pkt_gen.setup_pkt()
+    recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
+                "--timeout %s --pkt_cnt %d" % (tc.up1_intf, 
+                DEFAULT_S2H_RECV_PKT_FILENAME, 
+                str(SNIFF_TIMEOUT), pkt_cnt)
+
+    api.Trigger_AddHostCommand(s2h_req, node.Name(), recv_cmd,
+                                        background=True)
+
+    # ==========
+    # Tx Packet
+    # ==========
+    pkt_gen.set_encap(True)
+    pkt_gen.set_Rx(False)
+    pkt_gen.set_smac(tc.up0_mac)
+    pkt_gen.set_dmac(tc.up1_mac)
+    pkt_gen.set_vlan(tc.up0_vlan)
+
+    pkt_gen.setup_pkt()
+    send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
+                "--pkt_cnt %d" % (tc.up0_intf, 
+                DEFAULT_S2H_GEN_PKT_FILENAME, pkt_cnt)
+
+    api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 0.5')
+    api.Trigger_AddHostCommand(s2h_req, node.Name(), send_cmd)
+
+    trig_resp = api.Trigger(s2h_req)
+    time.sleep(SNIFF_TIMEOUT) 
+    term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+
+    s2h_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
+    tc.resp.append(s2h_resp)
+
 def Setup(tc):
 
     # parse iterator args
@@ -342,108 +447,64 @@ def Trigger(tc):
                 pkt_gen.set_sport(flow.sport)
                 pkt_gen.set_dport(flow.dport)
             else:
+                api.Logger.info("flow.icmp_type: %s, flow.icmp_code: %s" % (flow.icmp_type, flow.icmp_code))
                 pkt_gen.set_icmp_type(flow.icmp_type)
                 pkt_gen.set_icmp_code(flow.icmp_code)
 
-            # ==========================================
-            # Send and Receive packets in H2S direction
-            # ==========================================
-            pkt_gen.set_dir_('h2s')
-            pkt_gen.set_nat_flows_h2s_tx(nat_flows_h2s_tx)
-            pkt_gen.set_nat_flows_h2s_rx(nat_flows_h2s_rx)
-            h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+            # Calculate the difference of flow cache hit count before and after sending pkt
+            flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
 
-            # ==========
-            # Rx Packet
-            # ==========
-            pkt_gen.set_encap(True)
-            pkt_gen.set_Rx(True)
-            pkt_gen.set_vlan(tc.up0_vlan)
-            pkt_gen.set_smac(tc.up1_mac)
-            pkt_gen.set_dmac(tc.up0_mac)
+            # If flow is already installed in the flow cache, send all pkts at once
+            # If not, send the first pkt, verify flows and send the rest of them
+            find_match = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
 
-            pkt_gen.setup_pkt()
-            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
-                        "--timeout %s --pkt_cnt %d" % (tc.up0_intf, 
-                        DEFAULT_H2S_RECV_PKT_FILENAME, 
-                        str(SNIFF_TIMEOUT), tc.pkt_cnt)
+            if find_match:
+                api.Logger.info("Will send all %d packets to fast path" % tc.pkt_cnt)
+                send_pkt(tc, node, pkt_gen, tc.pkt_cnt)
 
-            api.Trigger_AddHostCommand(h2s_req, node.Name(), recv_cmd,
-                                                background=True)
+            else:
+                # Send the first pkt
+                api.Logger.info("Will send the first packet to slow path")
+                send_pkt(tc, node, pkt_gen, NUM_FIRST_PKT_PER_FLOW)
 
-            # ==========
-            # Tx Packet
-            # ==========
-            pkt_gen.set_encap(False)
-            pkt_gen.set_Rx(False)
-            pkt_gen.set_smac(tc.up1_mac)
-            pkt_gen.set_dmac(tc.up0_mac)
-            pkt_gen.set_vlan(tc.up1_vlan)
+                utils.match_dynamic_flows(tc, tc.vnic_id, flow)
 
-            pkt_gen.setup_pkt()
-            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
-                        "--pkt_cnt %d" % (tc.up1_intf, 
-                        DEFAULT_H2S_GEN_PKT_FILENAME, tc.pkt_cnt)
+                # Send the rest of pkts
+                if tc.pkt_cnt > NUM_FIRST_PKT_PER_FLOW:
+                    send_pkt(tc, node, pkt_gen, tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW)
 
-            api.Trigger_AddHostCommand(h2s_req, node.Name(), 'sleep 0.5')
-            api.Trigger_AddHostCommand(h2s_req, node.Name(), send_cmd)
 
-            trig_resp = api.Trigger(h2s_req)
-            time.sleep(SNIFF_TIMEOUT) 
-            term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+            # The difference of flow cache hit count shoule be equal to
+            # 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW) for s2h and h2s
+            # If reverse L3/L4 tuples for the s2h direction to make s2h 
+            # and h2s share the same flow, the difference is 
+            # 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW) + 1
 
-            h2s_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
-            tc.resp.append(h2s_resp)
+            flow_hit_count_after = utils.get_flow_hit_count(tc.bitw_node_name)
 
-            # ==========================================
-            # Send and Receive packets in S2H direction
-            # ==========================================
-            pkt_gen.set_dir_('s2h')
-            pkt_gen.set_nat_flows_s2h_tx(nat_flows_s2h_tx)
-            pkt_gen.set_nat_flows_s2h_rx(nat_flows_s2h_rx)
-            s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
+            if flow_hit_count_after < flow_hit_count_before:
+                api.Logger.error("Flow hit counter dump is wrong, check p4ctl or rerun")
+                return api.types.status.FAILURE
 
-            # ==========
-            # Rx Packet
-            # ==========
-            pkt_gen.set_encap(False)
-            pkt_gen.set_Rx(True)
-            pkt_gen.set_smac(tc.up0_mac)
-            pkt_gen.set_dmac(tc.up1_mac)
-            pkt_gen.set_vlan(tc.up1_vlan)
+            flow_hit_count = flow_hit_count_after - flow_hit_count_before
 
-            pkt_gen.setup_pkt()
-            recv_cmd = "./recv_pkt.py --intf_name %s --pcap_fname %s "\
-                        "--timeout %s --pkt_cnt %d" % (tc.up1_intf, 
-                        DEFAULT_S2H_RECV_PKT_FILENAME, 
-                        str(SNIFF_TIMEOUT), tc.pkt_cnt)
 
-            api.Trigger_AddHostCommand(s2h_req, node.Name(), recv_cmd,
-                                                background=True)
-   
-            # ==========
-            # Tx Packet
-            # ==========
-            pkt_gen.set_encap(True)
-            pkt_gen.set_Rx(False)
-            pkt_gen.set_smac(tc.up0_mac)
-            pkt_gen.set_dmac(tc.up1_mac)
-            pkt_gen.set_vlan(tc.up0_vlan)
+            if find_match:
+                # If flow is already installed in the flow cache, all pkts should go to fast path
+                cal_flow_hit_count = 2 * tc.pkt_cnt
 
-            pkt_gen.setup_pkt()
-            send_cmd = "./send_pkt.py --intf_name %s --pcap_fname %s "\
-                        "--pkt_cnt %d" % (tc.up0_intf, 
-                        DEFAULT_S2H_GEN_PKT_FILENAME, tc.pkt_cnt)
+            elif flow.proto == 'ICMP' and tc.nat == 'yes':  
+                cal_flow_hit_count = 2 * tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW
 
-            api.Trigger_AddHostCommand(s2h_req, node.Name(), 'sleep 0.5')
-            api.Trigger_AddHostCommand(s2h_req, node.Name(), send_cmd)
+            else:
+                cal_flow_hit_count = 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW)
 
-            trig_resp = api.Trigger(s2h_req)
-            time.sleep(SNIFF_TIMEOUT) 
-            term_resp = api.Trigger_TerminateAllCommands(trig_resp)
+            if flow_hit_count != cal_flow_hit_count:
+                api.Logger.error("P4ctl shows %d pkts hit flow cache" % (flow_hit_count))
+                api.Logger.error("Calculated flow hit count is %d" % (cal_flow_hit_count))
+                return api.types.status.FAILURE
 
-            s2h_resp = api.Trigger_AggregateCommandsResponse(trig_resp, term_resp)
-            tc.resp.append(s2h_resp)
+            api.Logger.info("Verify %d pkts go through fast path" % (flow_hit_count))
 
     return api.types.status.SUCCESS
 
