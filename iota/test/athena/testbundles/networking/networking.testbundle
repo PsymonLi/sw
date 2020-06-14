@@ -8,6 +8,10 @@ testcases:
         testcase: testcases.networking.athena_app_no_dpdk_verify
         enable  : True
 
+#    -   name    : Verify_KNI_Ping
+#        testcase: testcases.networking.kni_ping
+#        enable  : True
+
     -   name    : Pdsctl_Port_Cmd
         testcase: testcases.networking.pdsctl_port
         enable  : True
