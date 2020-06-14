@@ -8,11 +8,13 @@ import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthVali
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 import { NetworkRouteDistinguisher, INetworkRouteDistinguisher } from './network-route-distinguisher.model';
+import { SecurityPropagationStatus, ISecurityPropagationStatus } from './security-propagation-status.model';
 
 export interface INetworkVirtualRouterStatus {
     'id'?: string;
     'route-table'?: string;
     'rd'?: INetworkRouteDistinguisher;
+    'propagation-status'?: ISecurityPropagationStatus;
     '_ui'?: any;
 }
 
@@ -24,6 +26,8 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
     'id': string = null;
     'route-table': string = null;
     'rd': NetworkRouteDistinguisher = null;
+    /** The status of the configuration propagation to the Naples. */
+    'propagation-status': SecurityPropagationStatus = null;
     public static propInfo: { [prop in keyof INetworkVirtualRouterStatus]: PropInfoItem } = {
         'id': {
             description:  `Handle allocated in the system.`,
@@ -35,6 +39,11 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
             type: 'string'
         },
         'rd': {
+            required: false,
+            type: 'object'
+        },
+        'propagation-status': {
+            description:  `The status of the configuration propagation to the Naples.`,
             required: false,
             type: 'object'
         },
@@ -63,6 +72,7 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
     constructor(values?: any, setDefaults:boolean = true) {
         super();
         this['rd'] = new NetworkRouteDistinguisher();
+        this['propagation-status'] = new SecurityPropagationStatus();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -94,6 +104,11 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
         } else {
             this['rd'].setValues(null, fillDefaults);
         }
+        if (values) {
+            this['propagation-status'].setValues(values['propagation-status'], fillDefaults);
+        } else {
+            this['propagation-status'].setValues(null, fillDefaults);
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -104,10 +119,16 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
                 'id': CustomFormControl(new FormControl(this['id']), NetworkVirtualRouterStatus.propInfo['id']),
                 'route-table': CustomFormControl(new FormControl(this['route-table']), NetworkVirtualRouterStatus.propInfo['route-table']),
                 'rd': CustomFormGroup(this['rd'].$formGroup, NetworkVirtualRouterStatus.propInfo['rd'].required),
+                'propagation-status': CustomFormGroup(this['propagation-status'].$formGroup, NetworkVirtualRouterStatus.propInfo['propagation-status'].required),
             });
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('rd') as FormGroup).controls).forEach(field => {
                 const control = this._formGroup.get('rd').get(field);
+                control.updateValueAndValidity();
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('propagation-status') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('propagation-status').get(field);
                 control.updateValueAndValidity();
             });
         }
@@ -123,6 +144,7 @@ export class NetworkVirtualRouterStatus extends BaseModel implements INetworkVir
             this._formGroup.controls['id'].setValue(this['id']);
             this._formGroup.controls['route-table'].setValue(this['route-table']);
             this['rd'].setFormGroupValuesToBeModelValues();
+            this['propagation-status'].setFormGroupValuesToBeModelValues();
         }
     }
 }

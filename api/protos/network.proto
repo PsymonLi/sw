@@ -17,7 +17,6 @@ import "route.proto";
 import "smartnic.proto";
 import "sgpolicy.proto";
 
-
 // ----------------------------- Network Object -----------------------------
 
 enum NetworkType {
@@ -76,7 +75,9 @@ message NetworkStatus {
     bytes AllocatedIPv4Addrs = 2 [(gogoproto.nullable) = true, (gogoproto.jsontag) = "allocated-ipv4-addrs,omitempty", (gogoproto.moretags)="venice:\"sskip\""];
     // Handle is the internal Handle allocated to this network
     uint64 Handle = 3 [(gogoproto.jsontag) = "id,omitempty"];
-	string OperState = 4 [(gogoproto.jsontag) = "oper-state,omitempty", (venice.check) = "EmptyOr(StrEnum(OperState))"];
+    string OperState = 4 [(gogoproto.jsontag) = "oper-state,omitempty", (venice.check) = "EmptyOr(StrEnum(OperState))"];
+    // The status of the configuration propagation to the Naples
+    security.PropagationStatus PropagationStatus = 5 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "propagation-status"];
 }
 
 // Network represents a subnet

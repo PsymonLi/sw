@@ -87,3 +87,4 @@ export * from './network-virtual-router.model';
 export * from './network-virtual-router-list.model';
 export * from './network-virtual-router-spec.model';
 export * from './network-virtual-router-status.model';
+export * from './security-propagation-status.model';

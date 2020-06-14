@@ -3,10 +3,12 @@
 package statemgr
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/pensando/sw/venice/utils/featureflags"
+	"github.com/pensando/sw/venice/utils/memdb"
 
 	"sync"
 	"time"
@@ -15,8 +17,10 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/ref"
@@ -38,6 +42,7 @@ func (sma *SmVirtualRouter) CompleteRegistration() {
 	}
 
 	sma.sm.SetVirtualRouterReactor(sma)
+	sma.sm.SetVrfStatusReactor(sma)
 }
 
 func init() {
@@ -51,9 +56,11 @@ func init() {
 
 // VirtualRouterState is a wrapper for virtual router object
 type VirtualRouterState struct {
+	smObjectTracker
 	sync.Mutex
-	VirtualRouter *ctkit.VirtualRouter `json:"-"` // VirtualRouter object
-	stateMgr      *Statemgr            // pointer to the network manager
+	VirtualRouter   *ctkit.VirtualRouter `json:"-"` // VirtualRouter object
+	stateMgr        *Statemgr            // pointer to the network manager
+	markedForDelete bool
 }
 
 // GetVirtualRouterWatchOptions gets options
@@ -139,6 +146,7 @@ func NewVirtualRouterState(vir *ctkit.VirtualRouter, sm *Statemgr) (*VirtualRout
 		stateMgr:      sm,
 	}
 	vir.HandlerCtx = vr
+	vr.smObjectTracker.init(vr)
 	return vr, nil
 }
 
@@ -157,7 +165,7 @@ func (sma *SmVirtualRouter) OnVirtualRouterCreate(obj *ctkit.VirtualRouter) erro
 	defRTName := defaultRTName(&vr.VirtualRouter.VirtualRouter)
 	vr.VirtualRouter.Status.RouteTable = defRTName
 
-	err = sma.sm.mbus.AddObjectWithReferences(obj.MakeKey(string(apiclient.GroupNetwork)), convertVirtualRouter(vr), references(obj))
+	err = sma.sm.AddObjectToMbus(obj.MakeKey(string(apiclient.GroupNetwork)), vr, references(obj))
 	if err != nil {
 		log.Errorf("could not add VirtualRouter to DB (%s)", err)
 	}
@@ -188,7 +196,7 @@ func (sma *SmVirtualRouter) OnVirtualRouterUpdate(oldvr *ctkit.VirtualRouter, ne
 	oldvr.ObjectMeta = newvr.ObjectMeta
 	oldvr.Spec = newvr.Spec
 
-	err = sma.sm.mbus.UpdateObjectWithReferences(newvr.MakeKey(string(apiclient.GroupNetwork)), convertVirtualRouter(vr), references(newvr))
+	err = sma.sm.UpdateObjectToMbus(newvr.MakeKey(string(apiclient.GroupNetwork)), vr, references(newvr))
 	if err != nil {
 		log.Errorf("could not add VirtualRouter to DB (%s)", err)
 	}
@@ -209,8 +217,7 @@ func (sma *SmVirtualRouter) OnVirtualRouterDelete(obj *ctkit.VirtualRouter) erro
 	}
 	log.Info("OnVirtualRouterDelete: found virtual router: ", vr.VirtualRouter.Spec)
 	// delete it from the DB
-	return sma.sm.mbus.DeleteObjectWithReferences(obj.MakeKey(string(apiclient.GroupNetwork)),
-		convertVirtualRouter(vr), references(obj))
+	return sma.sm.DeleteObjectToMbus(obj.MakeKey(string(apiclient.GroupNetwork)), vr, references(obj))
 }
 
 // OnVirtualRouterReconnect is called when ctkit reconnects to apiserver
@@ -295,4 +302,182 @@ func (sm *Statemgr) OnVirtualRouterDelete(obj *ctkit.VirtualRouter) error {
 // OnVirtualRouterReconnect is called when ctkit reconnects to apiserver
 func (sm *Statemgr) OnVirtualRouterReconnect() {
 	return
+}
+
+// Write writes the object to api server
+func (vs *VirtualRouterState) Write() error {
+	var err error
+
+	vs.VirtualRouter.Lock()
+	defer vs.VirtualRouter.Unlock()
+
+	prop := &vs.VirtualRouter.Status.PropagationStatus
+	propStatus := vs.getPropStatus()
+	newProp := &security.PropagationStatus{
+		GenerationID:  propStatus.generationID,
+		MinVersion:    propStatus.minVersion,
+		Pending:       propStatus.pending,
+		PendingNaples: propStatus.pendingDSCs,
+		Updated:       propStatus.updated,
+		Status:        propStatus.status,
+	}
+
+	//Do write only if changed
+	if vs.stateMgr.propgatationStatusDifferent(prop, newProp) {
+		vs.VirtualRouter.Status.PropagationStatus = *newProp
+		err = vs.VirtualRouter.Write()
+		if err != nil {
+			vs.VirtualRouter.Status.PropagationStatus = *prop
+		}
+	}
+	return err
+}
+
+// OnVrfCreateReq gets called when agent sends create request
+func (sma *SmVirtualRouter) OnVrfCreateReq(nodeID string, objinfo *netproto.Vrf) error {
+	return nil
+}
+
+// OnVrfUpdateReq gets called when agent sends update request
+func (sma *SmVirtualRouter) OnVrfUpdateReq(nodeID string, objinfo *netproto.Vrf) error {
+	return nil
+}
+
+// OnVrfDeleteReq gets called when agent sends delete request
+func (sma *SmVirtualRouter) OnVrfDeleteReq(nodeID string, objinfo *netproto.Vrf) error {
+	return nil
+}
+
+// OnVrfOperUpdate gets called when policy updates arrive from agents
+func (sma *SmVirtualRouter) OnVrfOperUpdate(nodeID string, objinfo *netproto.Vrf) error {
+	sma.UpdateVirtualRouterStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+	return nil
+}
+
+// OnVrfOperDelete gets called when policy delete arrives from agent
+func (sma *SmVirtualRouter) OnVrfOperDelete(nodeID string, objinfo *netproto.Vrf) error {
+	return nil
+}
+
+//GetDBObject get db object
+func (vs *VirtualRouterState) GetDBObject() memdb.Object {
+	return convertVirtualRouter(vs)
+}
+
+// GetKey returns the key of VirtualRouter
+func (vs *VirtualRouterState) GetKey() string {
+	return vs.VirtualRouter.GetKey()
+}
+
+func (vs *VirtualRouterState) isMarkedForDelete() bool {
+	return vs.markedForDelete
+}
+
+//TrackedDSCs keeps a list of DSCs being tracked for propagation status
+func (vs *VirtualRouterState) TrackedDSCs() []string {
+	dscs, _ := vs.stateMgr.ListDistributedServiceCards()
+
+	trackedDSCs := []string{}
+	for _, dsc := range dscs {
+		if vs.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) && vs.stateMgr.IsObjectValidForDSC(dsc.DistributedServiceCard.DistributedServiceCard.Status.PrimaryMAC, "Vrf", vs.VirtualRouter.ObjectMeta) {
+			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
+		}
+	}
+	return trackedDSCs
+}
+
+func (vs *VirtualRouterState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
+	vs.VirtualRouter.Lock()
+	defer vs.VirtualRouter.Unlock()
+
+	if vs.stateMgr.isDscEnforcednMode(dsc) && vs.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Vrf", vs.VirtualRouter.ObjectMeta) {
+		vs.smObjectTracker.startDSCTracking(dsc.Name)
+	} else {
+		vs.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+func (vs *VirtualRouterState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
+	vs.VirtualRouter.Lock()
+	defer vs.VirtualRouter.Unlock()
+	if vs.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Vrf", vs.VirtualRouter.ObjectMeta) == true {
+		vs.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+// UpdateVirtualRouterStatus updates the status of an sg policy
+func (sma *SmVirtualRouter) UpdateVirtualRouterStatus(nodeuuid, tenant, name, generationID string) {
+	vs, err := sma.FindVirtualRouter(tenant, "default", name)
+	if err != nil {
+		return
+	}
+	vs.updateNodeVersion(nodeuuid, generationID)
+}
+
+func (sm *Statemgr) listVrfsByTenant(tenant string) ([]*VirtualRouterState, error) {
+	objs := sm.ListObjects("VirtualRouter")
+
+	var vrfs []*VirtualRouterState
+	for _, obj := range objs {
+		vro, err := VirtualRouterStateFromObj(obj)
+		if err != nil {
+			return vrfs, err
+		}
+
+		if vro.VirtualRouter.Tenant == tenant {
+			vrfs = append(vrfs, vro)
+		}
+	}
+
+	return vrfs, nil
+}
+
+func (sm *Statemgr) handleVrfPropTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+
+	if update == nil {
+		log.Errorf("handleVrfPropTopoUpdate invalid update received")
+		return
+	}
+
+	// check if vrf status needs updates
+	for _, d1 := range update.AddDSCs {
+		if t, ok := update.AddObjects["Vrf"]; ok {
+			// find all vrfs with the tenant
+			vrfs, err := sm.listVrfsByTenant(t[0])
+			if err != nil {
+				sm.logger.Errorf("Vrfs look up failed for tenant: %s", t[0])
+				return
+			}
+
+			for _, vr := range vrfs {
+				vr.VirtualRouter.Lock()
+				vr.smObjectTracker.startDSCTracking(d1)
+				vr.VirtualRouter.Unlock()
+			}
+		}
+	}
+
+	for _, d2 := range update.DelDSCs {
+		if t, ok := update.DelObjects["Vrf"]; ok {
+			// find all vrfs with the tenant
+			vrfs, err := sm.listVrfsByTenant(t[0])
+			if err != nil {
+				sm.logger.Errorf("vrfs look up failed for tenant: %s", t[0])
+				return
+			}
+
+			for _, vr := range vrfs {
+				vr.VirtualRouter.Lock()
+				vr.smObjectTracker.stopDSCTracking(d2)
+				vr.VirtualRouter.Unlock()
+			}
+		}
+	}
+}
+
+// GetAgentWatchFilter is called when filter get is happening based on netagent watchoptions
+func (sma *SmVirtualRouter) GetAgentWatchFilter(ctx context.Context, kind string, opts *api.ListWatchOptions) []memdb.FilterFn {
+	return sma.sm.GetAgentWatchFilter(ctx, kind, opts)
 }

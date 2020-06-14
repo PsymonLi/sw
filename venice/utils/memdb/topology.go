@@ -126,11 +126,15 @@ func (tr *topoRefCnt) delRefCnt(dsc, kind, tenant, name string) {
 
 func (tr *topoRefCnt) getRefCnt(dsc, kind, tenant, name string) int {
 	var key1, key2 string
-	key1 = dsc + "%" + kind
 	switch kind {
 	case "IPAMPolicy", "NetworkSecurityPolicy":
+		key1 = dsc + "%" + kind
 		key2 = tenant + "%" + name
 	case "Tenant":
+		key1 = dsc + "%" + kind
+		key2 = tenant
+	case "Vrf", "Network":
+		key1 = dsc + "%" + "Tenant"
 		key2 = tenant
 	default:
 		return 0
@@ -141,9 +145,7 @@ func (tr *topoRefCnt) getRefCnt(dsc, kind, tenant, name string) int {
 			return a[key2]
 		}
 	}
-
 	return 0
-
 }
 
 func (tr *topoRefCnt) getWatchOptions(dsc, kind string) (api.ListWatchOptions, bool) {
@@ -355,7 +357,7 @@ func getKey(tenant, ns, name string) string {
 }
 
 func (tn *topoNode) updateRefCounts(key, dsc, tenant, ns string, add bool, propUpdate *PropagationStTopoUpdate) (mod uint) {
-	log.Infof("Received for key: %s | dsc: %s | tenat: %s | ns: %s | add: %v", key, dsc, tenant, ns, add)
+	log.Infof("Received for key: %s | dsc: %s | tenant: %s | ns: %s | add: %v", key, dsc, tenant, ns, add)
 
 	if add == true {
 		tn.tm.refCounts.addRefCnt(dsc, "Tenant", tenant, "")
@@ -956,14 +958,36 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 			fwRefs["NetworkSecurityPolicy"] = nsgPolicies
 		}
 
+		updateDSCs := func(dscs []string, dsc string) []string {
+			for _, d := range dscs {
+				if d == dsc {
+					return dscs
+				}
+			}
+			dscs = append(dscs, dsc)
+			return dscs
+		}
+
 		// update all the dscs with the new options
 		for dsc := range updateMap {
 			if mod&updateIPAM == updateIPAM {
 				if newIPAM != "" {
 					tn.tm.refCounts.addRefCnt(dsc, "IPAMPolicy", oldObj.Tenant, newIPAM)
+					if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", oldObj.Tenant, newIPAM) == 1 {
+						updated = true
+						propUpdate.AddDSCs = updateDSCs(propUpdate.AddDSCs, dsc)
+						propUpdate.AddObjects["IPAMPolicy"] = []string{newIPAM}
+						propUpdate.AddObjects["Tenant"] = []string{oldObj.Tenant}
+					}
 				}
 				if oldIPAM != "" {
 					tn.tm.refCounts.delRefCnt(dsc, "IPAMPolicy", oldObj.Tenant, oldIPAM)
+					if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", oldObj.Tenant, oldIPAM) == 0 {
+						updated = true
+						propUpdate.DelDSCs = updateDSCs(propUpdate.DelDSCs, dsc)
+						propUpdate.DelObjects["IPAMPolicy"] = []string{oldIPAM}
+						propUpdate.DelObjects["Tenant"] = []string{oldObj.Tenant}
+					}
 				}
 			}
 			for _, a := range delSg {
@@ -972,10 +996,8 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 					mod |= updateSgPolicy
 					updated = true
 					propUpdate.DelObjects["NetworkSecurityPolicy"] = append(propUpdate.DelObjects["NetworkSecurityPolicy"], a)
-					if len(propUpdate.DelDSCs) == 0 {
-						propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
-						propUpdate.DelObjects["Tenant"] = []string{oldObj.Tenant}
-					}
+					propUpdate.DelDSCs = updateDSCs(propUpdate.DelDSCs, dsc)
+					propUpdate.DelObjects["Tenant"] = []string{oldObj.Tenant}
 				}
 			}
 			for _, b := range addSg {
@@ -984,10 +1006,8 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 					mod |= updateSgPolicy
 					updated = true
 					propUpdate.AddObjects["NetworkSecurityPolicy"] = append(propUpdate.AddObjects["NetworkSecurityPolicy"], b)
-					if len(propUpdate.AddDSCs) == 0 {
-						propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
-						propUpdate.AddObjects["Tenant"] = []string{oldObj.Tenant}
-					}
+					propUpdate.AddDSCs = updateDSCs(propUpdate.AddDSCs, dsc)
+					propUpdate.AddObjects["Tenant"] = []string{oldObj.Tenant}
 				}
 			}
 			tn.tm.refCounts.dump()
@@ -1054,7 +1074,7 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 			if nwRef, ok := backRefs["Network"]; ok && len(nwRef) != 0 {
 				// loop through all the networks using this vpc
 				for _, n := range nwRef {
-					tn.vrfIPAMUpdate(n, oldObj.Tenant, oldIPAM, newIPAM, updateMap)
+					tn.vrfIPAMUpdate(n, oldObj.Tenant, oldIPAM, newIPAM, updateMap, propUpdate)
 				}
 			}
 		}
@@ -1082,10 +1102,13 @@ func (tn *topoNode) updateNode(old, new Object, objKey string, propUpdate *Propa
 			}
 		}
 	}
+	if len(propUpdate.AddDSCs) != 0 || len(propUpdate.DelDSCs) != 0 {
+		return true
+	}
 	return false
 }
 
-func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[string]string) {
+func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[string]string, propUpdate *PropagationStTopoUpdate) {
 	log.Infof("vrfIPAMUpdate nw: %s | tenant: %s | oldipam: %s | newipam: %s", nw, tenant, oldIPAM, newIPAM)
 	node := tn.tm.topology["Network"]
 	rr := node.getRefs(nw)
@@ -1097,6 +1120,7 @@ func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[str
 				return
 			}
 		}
+
 		br := rr.backRefs
 		if br != nil {
 			if nwIfRef, ok := br["Interface"]; ok && len(nwIfRef) != 0 {
@@ -1124,10 +1148,20 @@ func (tn *topoNode) vrfIPAMUpdate(nw, tenant, oldIPAM, newIPAM string, m map[str
 						// decrement the ref-cnt for the old ipam for this dsc
 						if oldIPAM != "" {
 							tn.tm.refCounts.delRefCnt(dsc, "IPAMPolicy", tenant, oldIPAM)
+							if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, oldIPAM) == 0 {
+								propUpdate.DelDSCs = append(propUpdate.DelDSCs, dsc)
+								propUpdate.DelObjects["IPAMPolicy"] = []string{oldIPAM}
+								propUpdate.DelObjects["Tenant"] = []string{tenant}
+							}
 						}
 						// update the ref-cnt for the new ipam for this dsc
 						if newIPAM != "" {
 							tn.tm.refCounts.addRefCnt(dsc, "IPAMPolicy", tenant, newIPAM)
+							if tn.tm.refCounts.getRefCnt(dsc, "IPAMPolicy", tenant, newIPAM) == 1 {
+								propUpdate.AddDSCs = append(propUpdate.AddDSCs, dsc)
+								propUpdate.AddObjects["IPAMPolicy"] = []string{newIPAM}
+								propUpdate.AddObjects["Tenant"] = []string{tenant}
+							}
 						}
 						log.Infof("Need update IPAM options for DSC: %s", dsc)
 						m[dsc] = tenant
@@ -1424,10 +1458,11 @@ func (tm *topoMgr) handleVrfUpdate(old, new Object, key string) (bool, *Propagat
 	}
 
 	if node, ok := tm.topology[new.GetObjectKind()]; ok {
-		node.updateNode(oldObj, new, key, newPropUpdate())
-	} else {
-		log.Error("Object doesn't exist in the topo", new)
+		update := newPropUpdate()
+		updated := node.updateNode(oldObj, new, key, update)
+		return updated, update
 	}
+	log.Error("Object doesn't exist in the topo", new)
 	return false, nil
 }
 

@@ -92,6 +92,8 @@ var typesMapVrf = map[string]*api.Struct{
 			"RouteTable": api.Field{Name: "RouteTable", CLITag: api.CLIInfo{ID: "route-table", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "route-table", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
 
 			"RD": api.Field{Name: "RD", CLITag: api.CLIInfo{ID: "rd", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "rd", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "network.RouteDistinguisher"},
+
+			"PropagationStatus": api.Field{Name: "PropagationStatus", CLITag: api.CLIInfo{ID: "propagation-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "propagation-status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "security.PropagationStatus"},
 		},
 	},
 }

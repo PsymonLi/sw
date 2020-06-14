@@ -91,7 +91,9 @@ var typesMapIpam = map[string]*api.Struct{
 	},
 	"network.IPAMPolicyStatus": &api.Struct{
 		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(IPAMPolicyStatus{}) },
-		Fields: map[string]api.Field{},
+		Fields: map[string]api.Field{
+			"PropagationStatus": api.Field{Name: "PropagationStatus", CLITag: api.CLIInfo{ID: "propagation-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "propagation-status", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "security.PropagationStatus"},
+		},
 	},
 }
 

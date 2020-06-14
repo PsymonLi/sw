@@ -541,10 +541,10 @@ func (sm *Statemgr) UpdateSgpolicyStatus(nodeuuid, tenant, name, generationID st
 
 }
 
-func (sm *Statemgr) handlePropagationTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+func (sm *Statemgr) handleSgPolicyPropTopoUpdate(update *memdb.PropagationStTopoUpdate) {
 
 	if update == nil {
-		log.Errorf("handlePropagationTopoUpdate invalid update received")
+		log.Errorf("handleSgPolicyPropTopoUpdate invalid update received")
 		return
 	}
 

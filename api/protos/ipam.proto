@@ -12,6 +12,7 @@ import "github.com/pensando/sw/api/meta.proto";
 import "github.com/pensando/sw/api/labels/selector.proto";
 
 import "tenant.proto";
+import "sgpolicy.proto";
 
 // DHCPServer specifies details about each server.
 message DHCPServer {
@@ -35,7 +36,8 @@ message IPAMPolicySpec {
 }
 
 message IPAMPolicyStatus {
-    // Empty
+    // The status of the configuration propagation to the Naples
+    security.PropagationStatus PropagationStatus = 1 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "propagation-status"];
 }
 
 message IPAMPolicy {

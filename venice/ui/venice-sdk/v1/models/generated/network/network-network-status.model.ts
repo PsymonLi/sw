@@ -8,12 +8,14 @@ import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthVali
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 import { NetworkNetworkStatus_oper_state,  } from './enums';
+import { SecurityPropagationStatus, ISecurityPropagationStatus } from './security-propagation-status.model';
 
 export interface INetworkNetworkStatus {
     'workloads'?: Array<string>;
     'allocated-ipv4-addrs'?: string;
     'id'?: string;
     'oper-state'?: NetworkNetworkStatus_oper_state;
+    'propagation-status'?: ISecurityPropagationStatus;
     '_ui'?: any;
 }
 
@@ -28,6 +30,8 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
     /** Handle is the internal Handle allocated to this network. */
     'id': string = null;
     'oper-state': NetworkNetworkStatus_oper_state = null;
+    /** The status of the configuration propagation to the Naples. */
+    'propagation-status': SecurityPropagationStatus = null;
     public static propInfo: { [prop in keyof INetworkNetworkStatus]: PropInfoItem } = {
         'workloads': {
             description:  `List of all workloads in this network.`,
@@ -49,6 +53,11 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
             default: 'active',
             required: false,
             type: 'string'
+        },
+        'propagation-status': {
+            description:  `The status of the configuration propagation to the Naples.`,
+            required: false,
+            type: 'object'
         },
     }
 
@@ -75,6 +84,7 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
     constructor(values?: any, setDefaults:boolean = true) {
         super();
         this['workloads'] = new Array<string>();
+        this['propagation-status'] = new SecurityPropagationStatus();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -115,6 +125,11 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
         } else {
             this['oper-state'] = null
         }
+        if (values) {
+            this['propagation-status'].setValues(values['propagation-status'], fillDefaults);
+        } else {
+            this['propagation-status'].setValues(null, fillDefaults);
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -126,6 +141,12 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
                 'allocated-ipv4-addrs': CustomFormControl(new FormControl(this['allocated-ipv4-addrs']), NetworkNetworkStatus.propInfo['allocated-ipv4-addrs']),
                 'id': CustomFormControl(new FormControl(this['id']), NetworkNetworkStatus.propInfo['id']),
                 'oper-state': CustomFormControl(new FormControl(this['oper-state'], [enumValidator(NetworkNetworkStatus_oper_state), ]), NetworkNetworkStatus.propInfo['oper-state']),
+                'propagation-status': CustomFormGroup(this['propagation-status'].$formGroup, NetworkNetworkStatus.propInfo['propagation-status'].required),
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('propagation-status') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('propagation-status').get(field);
+                control.updateValueAndValidity();
             });
         }
         return this._formGroup;
@@ -141,6 +162,7 @@ export class NetworkNetworkStatus extends BaseModel implements INetworkNetworkSt
             this._formGroup.controls['allocated-ipv4-addrs'].setValue(this['allocated-ipv4-addrs']);
             this._formGroup.controls['id'].setValue(this['id']);
             this._formGroup.controls['oper-state'].setValue(this['oper-state']);
+            this['propagation-status'].setFormGroupValuesToBeModelValues();
         }
     }
 }

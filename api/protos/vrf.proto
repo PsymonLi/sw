@@ -12,6 +12,7 @@ import "github.com/pensando/sw/api/meta.proto";
 
 import "route.proto";
 import "ipam.proto";
+import "sgpolicy.proto";
 
 message VirtualRouterSpec {
     enum VPCTypes {
@@ -39,6 +40,8 @@ message VirtualRouterStatus {
     uint64 Handle               = 1 [(gogoproto.jsontag) = "id,omitempty"];
     string RouteTable           = 2 [(gogoproto.jsontag) = "route-table,omitempty", (venice.objRelation) = {Type: "NamedRef", To: "network/RouteTable"}];
     RouteDistinguisher RD       = 3 [(gogoproto.jsontag) = "rd,omitempty"];
+    // The status of the configuration propagation to the Naples
+    security.PropagationStatus PropagationStatus = 4 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "propagation-status"];
 }
 
 // VirtualRouter - represents a forwarding instance. Could be multiple per tenant.

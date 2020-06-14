@@ -7,8 +7,10 @@ import { Validators, FormControl, FormGroup, FormArray, ValidatorFn } from '@ang
 import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthValidator, required, enumValidator, patternValidator, CustomFormControl, CustomFormGroup } from '../../../utils/validators';
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
+import { SecurityPropagationStatus, ISecurityPropagationStatus } from './security-propagation-status.model';
 
 export interface INetworkIPAMPolicyStatus {
+    'propagation-status'?: ISecurityPropagationStatus;
     '_ui'?: any;
 }
 
@@ -16,7 +18,14 @@ export interface INetworkIPAMPolicyStatus {
 export class NetworkIPAMPolicyStatus extends BaseModel implements INetworkIPAMPolicyStatus {
     /** Field for holding arbitrary ui state */
     '_ui': any = {};
+    /** The status of the configuration propagation to the Naples. */
+    'propagation-status': SecurityPropagationStatus = null;
     public static propInfo: { [prop in keyof INetworkIPAMPolicyStatus]: PropInfoItem } = {
+        'propagation-status': {
+            description:  `The status of the configuration propagation to the Naples.`,
+            required: false,
+            type: 'object'
+        },
     }
 
     public getPropInfo(propName: string): PropInfoItem {
@@ -41,6 +50,7 @@ export class NetworkIPAMPolicyStatus extends BaseModel implements INetworkIPAMPo
     */
     constructor(values?: any, setDefaults:boolean = true) {
         super();
+        this['propagation-status'] = new SecurityPropagationStatus();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -53,6 +63,11 @@ export class NetworkIPAMPolicyStatus extends BaseModel implements INetworkIPAMPo
         if (values && values['_ui']) {
             this['_ui'] = values['_ui']
         }
+        if (values) {
+            this['propagation-status'].setValues(values['propagation-status'], fillDefaults);
+        } else {
+            this['propagation-status'].setValues(null, fillDefaults);
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -60,6 +75,12 @@ export class NetworkIPAMPolicyStatus extends BaseModel implements INetworkIPAMPo
     protected getFormGroup(): FormGroup {
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
+                'propagation-status': CustomFormGroup(this['propagation-status'].$formGroup, NetworkIPAMPolicyStatus.propInfo['propagation-status'].required),
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('propagation-status') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('propagation-status').get(field);
+                control.updateValueAndValidity();
             });
         }
         return this._formGroup;
@@ -71,6 +92,7 @@ export class NetworkIPAMPolicyStatus extends BaseModel implements INetworkIPAMPo
 
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
+            this['propagation-status'].setFormGroupValuesToBeModelValues();
         }
     }
 }

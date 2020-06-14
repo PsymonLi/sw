@@ -17,10 +17,13 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
@@ -40,6 +43,7 @@ const (
 
 // NetworkState is a wrapper for network object
 type NetworkState struct {
+	smObjectTracker
 	Network    *ctkit.Network            `json:"-"` // network object
 	endpointDB map[string]*EndpointState // endpoint database
 	macaddrDB  map[string]*EndpointState // mapping of mac address to endpoint
@@ -400,6 +404,7 @@ func NewNetworkState(nw *ctkit.Network, stateMgr *Statemgr) (*NetworkState, erro
 		return nil, err
 	}
 
+	ns.smObjectTracker.init(ns)
 	return ns, nil
 }
 
@@ -443,6 +448,24 @@ func (sm *Statemgr) ListNetworks() ([]*NetworkState, error) {
 		}
 
 		networks = append(networks, nso)
+	}
+
+	return networks, nil
+}
+
+func (sm *Statemgr) listNetworksByTenant(tenant string) ([]*NetworkState, error) {
+	objs := sm.ListObjects("Network")
+
+	var networks []*NetworkState
+	for _, obj := range objs {
+		nso, err := NetworkStateFromObj(obj)
+		if err != nil {
+			return networks, err
+		}
+
+		if nso.Network.Tenant == tenant {
+			networks = append(networks, nso)
+		}
 	}
 
 	return networks, nil
@@ -496,7 +519,7 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 	if isOk {
 		nw.Status.OperState = network.OperState_Active.String()
 		// store it in local DB
-		sm.mbus.AddObjectWithReferences(nw.MakeKey("network"), convertNetwork(ns), references(nw))
+		sm.AddObjectToMbus(nw.MakeKey("network"), ns, references(nw))
 	} else {
 		nw.Status.OperState = network.OperState_Rejected.String()
 	}
@@ -531,7 +554,7 @@ func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) err
 	nw.ObjectMeta = nnw.ObjectMeta
 	nw.Spec = nnw.Spec
 
-	err = sm.mbus.UpdateObjectWithReferences(nnw.MakeKey(string(apiclient.GroupNetwork)), convertNetwork(nwState), references(nnw))
+	err = sm.UpdateObjectToMbus(nnw.MakeKey(string(apiclient.GroupNetwork)), nwState, references(nnw))
 	if err != nil {
 		log.Errorf("could not add Network to DB (%s)", err)
 	}
@@ -562,8 +585,7 @@ func (sm *Statemgr) OnNetworkDelete(nto *ctkit.Network) error {
 		return err
 	}
 	// delete it from the DB
-	err = sm.mbus.DeleteObjectWithReferences(nto.MakeKey("network"),
-		convertNetwork(ns), references(nto))
+	err = sm.DeleteObjectToMbus(nto.MakeKey("network"), ns, references(nto))
 	if err == nil {
 		// If there was another network with same vlanid that was in rejected state, it can be
 		// accepted now
@@ -773,5 +795,162 @@ func (sm *Statemgr) labelInternalNetworkObjects() {
 
 		}
 	}
+}
 
+// Write writes the object to api server
+func (ns *NetworkState) Write() error {
+	var err error
+
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
+
+	prop := &ns.Network.Status.PropagationStatus
+	propStatus := ns.getPropStatus()
+	newProp := &security.PropagationStatus{
+		GenerationID:  propStatus.generationID,
+		MinVersion:    propStatus.minVersion,
+		Pending:       propStatus.pending,
+		PendingNaples: propStatus.pendingDSCs,
+		Updated:       propStatus.updated,
+		Status:        propStatus.status,
+	}
+
+	//Do write only if changed
+	if ns.stateMgr.propgatationStatusDifferent(prop, newProp) {
+		ns.Network.Status.PropagationStatus = *newProp
+		err = ns.Network.Write()
+		if err != nil {
+			ns.Network.Status.PropagationStatus = *prop
+		}
+	}
+
+	return err
+}
+
+// OnNetworkCreateReq gets called when agent sends create request
+func (sm *Statemgr) OnNetworkCreateReq(nodeID string, objinfo *netproto.Network) error {
+	return nil
+}
+
+// OnNetworkUpdateReq gets called when agent sends update request
+func (sm *Statemgr) OnNetworkUpdateReq(nodeID string, objinfo *netproto.Network) error {
+	return nil
+}
+
+// OnNetworkDeleteReq gets called when agent sends delete request
+func (sm *Statemgr) OnNetworkDeleteReq(nodeID string, objinfo *netproto.Network) error {
+	return nil
+}
+
+// OnNetworkOperUpdate gets called when policy updates arrive from agents
+func (sm *Statemgr) OnNetworkOperUpdate(nodeID string, objinfo *netproto.Network) error {
+	sm.UpdateNetworkStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+	return nil
+}
+
+// OnNetworkOperDelete gets called when policy delete arrives from agent
+func (sm *Statemgr) OnNetworkOperDelete(nodeID string, objinfo *netproto.Network) error {
+	return nil
+}
+
+//GetDBObject get db object
+func (ns *NetworkState) GetDBObject() memdb.Object {
+	return convertNetwork(ns)
+}
+
+// GetKey returns the key of Network
+func (ns *NetworkState) GetKey() string {
+	return ns.Network.GetKey()
+}
+
+func (ns *NetworkState) isMarkedForDelete() bool {
+	return (ns.curState == networkMarkDelete)
+}
+
+//TrackedDSCs keeps a list of DSCs being tracked for propagation status
+func (ns *NetworkState) TrackedDSCs() []string {
+	dscs, _ := ns.stateMgr.ListDistributedServiceCards()
+
+	trackedDSCs := []string{}
+	for _, dsc := range dscs {
+		if ns.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) && ns.stateMgr.IsObjectValidForDSC(dsc.DistributedServiceCard.DistributedServiceCard.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) {
+			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
+		}
+	}
+	return trackedDSCs
+}
+
+func (ns *NetworkState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
+
+	if ns.stateMgr.isDscEnforcednMode(dsc) && ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) {
+		ns.smObjectTracker.startDSCTracking(dsc.Name)
+	} else {
+		ns.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+func (ns *NetworkState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
+	ns.Network.Lock()
+	defer ns.Network.Unlock()
+	if ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) == true {
+		ns.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+// UpdateNetworkStatus updates the status of an sg policy
+func (sm *Statemgr) UpdateNetworkStatus(nodeuuid, tenant, name, generationID string) {
+	nw, err := sm.FindNetwork(tenant, name)
+	if err != nil {
+		return
+	}
+
+	nw.updateNodeVersion(nodeuuid, generationID)
+
+}
+
+func (sm *Statemgr) handleNetworkPropTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+
+	if update == nil {
+		log.Errorf("handleNetworkPropTopoUpdate invalid update received")
+		return
+	}
+
+	// check if network status needs updates
+	for _, d1 := range update.AddDSCs {
+		if t, ok := update.AddObjects["Network"]; ok {
+			// find all networks with the tenant
+			networks, err := sm.listNetworksByTenant(t[0])
+			if err != nil {
+				sm.logger.Errorf("networks look up failed for tenant: %s", t[0])
+				return
+			}
+
+			for _, nw := range networks {
+				nw.Network.Lock()
+				nw.smObjectTracker.startDSCTracking(d1)
+				nw.Network.Unlock()
+			}
+		}
+	}
+
+	for _, d2 := range update.DelDSCs {
+		if t, ok := update.DelObjects["Network"]; ok {
+			// find all networks with the tenant
+			networks, err := sm.listNetworksByTenant(t[0])
+			if err != nil {
+				sm.logger.Errorf("networks look up failed for tenant: %s", t[0])
+				return
+			}
+
+			for _, nw := range networks {
+				nw.Network.Lock()
+				nw.smObjectTracker.stopDSCTracking(d2)
+				nw.Network.Unlock()
+			}
+		}
+	}
 }

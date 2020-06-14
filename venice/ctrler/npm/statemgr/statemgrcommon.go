@@ -27,6 +27,7 @@ func (sm *Statemgr) CompleteRegistration() {
 	sm.SetNetworkInterfaceStatusReactor(sm)
 	sm.SetAggregateStatusReactor(sm)
 	sm.SetProfileStatusReactor(sm)
+	sm.SetNetworkStatusReactor(sm)
 
 	if featureflags.IsOVerlayRoutingEnabled() == false {
 		sm.SetDistributedServiceCardReactor(sm)

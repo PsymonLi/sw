@@ -3,16 +3,19 @@
 package statemgr
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
@@ -33,6 +36,7 @@ func (sma *SmIPAM) CompleteRegistration() {
 	}
 
 	sma.sm.SetIPAMPolicyReactor(smgrIPAM)
+	sma.sm.SetIPAMPolicyStatusReactor(smgrIPAM)
 }
 
 func init() {
@@ -46,8 +50,10 @@ func init() {
 
 // IPAMState is a wrapper for ipam policy object
 type IPAMState struct {
-	sync.Mutex
-	IPAMPolicy *ctkit.IPAMPolicy `json:"-"` // IPAMPolicy object
+	smObjectTracker
+	IPAMPolicy      *ctkit.IPAMPolicy `json:"-"` // IPAMPolicy object
+	stateMgr        *Statemgr
+	markedForDelete bool
 }
 
 // IPAMPolicyStateFromObj converts from memdb object to IPAMPoliocy state
@@ -118,8 +124,10 @@ func convertIPAMPolicy(ipam *IPAMState) *netproto.IPAMPolicy {
 func NewIPAMPolicyState(policy *ctkit.IPAMPolicy, sma *SmIPAM) (*IPAMState, error) {
 	ipam := &IPAMState{
 		IPAMPolicy: policy,
+		stateMgr:   sma.sm,
 	}
 	policy.HandlerCtx = ipam
+	ipam.smObjectTracker.init(ipam)
 	return ipam, nil
 }
 
@@ -135,7 +143,7 @@ func (sma *SmIPAM) OnIPAMPolicyCreate(obj *ctkit.IPAMPolicy) error {
 	}
 
 	// store it in local DB
-	sma.sm.AddObject(convertIPAMPolicy(ipam))
+	sma.sm.AddObjectToMbus("", ipam, nil)
 
 	return nil
 }
@@ -163,7 +171,7 @@ func (sma *SmIPAM) OnIPAMPolicyUpdate(oldpolicy *ctkit.IPAMPolicy, newpolicy *ne
 	}
 
 	// store it in local DB
-	err = sma.sm.UpdateObject(convertIPAMPolicy(policy))
+	err = sma.sm.UpdateObjectToMbus("", policy, nil)
 	if err != nil {
 		log.Errorf("Error storing the IPAM policy in memdb. Err: %v", err)
 		return err
@@ -184,10 +192,181 @@ func (sma *SmIPAM) OnIPAMPolicyDelete(obj *ctkit.IPAMPolicy) error {
 	}
 
 	// delete it from the DB
-	return sma.sm.DeleteObject(convertIPAMPolicy(policy))
+	return sma.sm.DeleteObjectToMbus("", policy, nil)
 }
 
 // OnIPAMPolicyReconnect is called when ctkit reconnects to apiserver
 func (sma *SmIPAM) OnIPAMPolicyReconnect() {
 	return
+}
+
+// Write writes the object to api server
+func (ips *IPAMState) Write() error {
+	var err error
+
+	ips.IPAMPolicy.Lock()
+	defer ips.IPAMPolicy.Unlock()
+
+	prop := &ips.IPAMPolicy.Status.PropagationStatus
+	propStatus := ips.getPropStatus()
+	newProp := &security.PropagationStatus{
+		GenerationID:  propStatus.generationID,
+		MinVersion:    propStatus.minVersion,
+		Pending:       propStatus.pending,
+		PendingNaples: propStatus.pendingDSCs,
+		Updated:       propStatus.updated,
+		Status:        propStatus.status,
+	}
+
+	//Do write only if changed
+	if ips.stateMgr.propgatationStatusDifferent(prop, newProp) {
+		ips.IPAMPolicy.Status.PropagationStatus = *newProp
+		err = ips.IPAMPolicy.Write()
+		if err != nil {
+			ips.IPAMPolicy.Status.PropagationStatus = *prop
+		}
+	}
+	return err
+}
+
+// OnIPAMPolicyCreateReq gets called when agent sends create request
+func (sma *SmIPAM) OnIPAMPolicyCreateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	return nil
+}
+
+// OnIPAMPolicyUpdateReq gets called when agent sends update request
+func (sma *SmIPAM) OnIPAMPolicyUpdateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	return nil
+}
+
+// OnIPAMPolicyDeleteReq gets called when agent sends delete request
+func (sma *SmIPAM) OnIPAMPolicyDeleteReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	return nil
+}
+
+// OnIPAMPolicyOperUpdate gets called when policy updates arrive from agents
+func (sma *SmIPAM) OnIPAMPolicyOperUpdate(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	sma.UpdateIPAMPolicyStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+	return nil
+}
+
+// OnIPAMPolicyOperDelete gets called when policy delete arrives from agent
+func (sma *SmIPAM) OnIPAMPolicyOperDelete(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	return nil
+}
+
+//GetDBObject get db object
+func (ips *IPAMState) GetDBObject() memdb.Object {
+	return convertIPAMPolicy(ips)
+}
+
+// GetKey returns the key of IPAMPolicy
+func (ips *IPAMState) GetKey() string {
+	return ips.IPAMPolicy.GetKey()
+}
+
+func (ips *IPAMState) isMarkedForDelete() bool {
+	return ips.markedForDelete
+}
+
+//TrackedDSCs keeps a list of DSCs being tracked for propagation status
+func (ips *IPAMState) TrackedDSCs() []string {
+	dscs, _ := ips.stateMgr.ListDistributedServiceCards()
+
+	trackedDSCs := []string{}
+	for _, dsc := range dscs {
+		if ips.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) && ips.stateMgr.IsObjectValidForDSC(dsc.DistributedServiceCard.DistributedServiceCard.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) {
+			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
+		}
+	}
+	return trackedDSCs
+}
+
+func (ips *IPAMState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
+	ips.IPAMPolicy.Lock()
+	defer ips.IPAMPolicy.Unlock()
+
+	if ips.stateMgr.isDscEnforcednMode(dsc) && ips.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) {
+		ips.smObjectTracker.startDSCTracking(dsc.Name)
+	} else {
+		ips.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+func (ips *IPAMState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
+	ips.IPAMPolicy.Lock()
+	defer ips.IPAMPolicy.Unlock()
+	if ips.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) == true {
+		ips.smObjectTracker.stopDSCTracking(dsc.Name)
+	}
+	return nil
+}
+
+// UpdateIPAMPolicyStatus updates the status of an sg policy
+func (sma *SmIPAM) UpdateIPAMPolicyStatus(nodeuuid, tenant, name, generationID string) {
+	ips, err := sma.FindIPAMPolicy(tenant, "default", name)
+	if err != nil {
+		return
+	}
+
+	ips.updateNodeVersion(nodeuuid, generationID)
+
+}
+
+// FindIPAMPolicy finds IPAM policy by name
+func (sm *Statemgr) FindIPAMPolicy(tenant, ns, name string) (*IPAMState, error) {
+	// find it in db
+	obj, err := sm.FindObject("IPAMPolicy", tenant, ns, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return IPAMPolicyStateFromObj(obj)
+}
+
+func (sm *Statemgr) handleIPAMPropTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+
+	if update == nil {
+		log.Errorf("handleIPAMPropTopoUpdate invalid update received")
+		return
+	}
+
+	// check if IPAM status needs updates
+	for _, d1 := range update.AddDSCs {
+		if i1, ok := update.AddObjects["IPAMPolicy"]; ok {
+			tenant := update.AddObjects["Tenant"][0]
+			for _, ii := range i1 {
+				ipam, err := sm.FindIPAMPolicy(tenant, "default", ii)
+				if err != nil {
+					sm.logger.Errorf("ipam look up failed for tenant: %s | name: %s", tenant, ii)
+					continue
+				}
+				ipam.IPAMPolicy.Lock()
+				ipam.smObjectTracker.startDSCTracking(d1)
+				ipam.IPAMPolicy.Unlock()
+			}
+		}
+	}
+
+	for _, d2 := range update.DelDSCs {
+		if i1, ok := update.DelObjects["IPAMPolicy"]; ok {
+			tenant := update.DelObjects["Tenant"][0]
+			for _, ii := range i1 {
+				ipam, err := sm.FindIPAMPolicy(tenant, "default", ii)
+				if err != nil {
+					sm.logger.Errorf("ipam look up failed for tenant: %s | name: %s", tenant, ii)
+					continue
+				}
+				ipam.IPAMPolicy.Lock()
+				ipam.smObjectTracker.stopDSCTracking(d2)
+				ipam.IPAMPolicy.Unlock()
+			}
+		}
+	}
+}
+
+// GetAgentWatchFilter is called when filter get is happening based on netagent watchoptions
+func (sma *SmIPAM) GetAgentWatchFilter(ctx context.Context, kind string, opts *api.ListWatchOptions) []memdb.FilterFn {
+	return sma.sm.GetAgentWatchFilter(ctx, kind, opts)
 }

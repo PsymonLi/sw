@@ -77,6 +77,7 @@ type Topics struct {
 	IPAMPolicyTopic            *nimbus.IPAMPolicyTopic
 	RoutingConfigTopic         *nimbus.RoutingConfigTopic
 	ProfileTopic               *nimbus.ProfileTopic
+	VrfTopic                   *nimbus.VrfTopic
 }
 
 // Statemgr is the object state manager
@@ -127,6 +128,7 @@ type Statemgr struct {
 	AggregateStatusReactor             nimbus.AggStatusReactor
 	RoutingConfigStatusReactor         nimbus.RoutingConfigStatusReactor
 	ProfileStatusReactor               nimbus.ProfileStatusReactor
+	VrfStatusReactor                   nimbus.VrfStatusReactor
 }
 
 // SetProfileStatusReactor sets the ProfileStatusReactor
@@ -147,6 +149,11 @@ func (sm *Statemgr) SetNetworkInterfaceStatusReactor(handler nimbus.InterfaceSta
 // SetAppStatusReactor sets the AppStatusReactor
 func (sm *Statemgr) SetAppStatusReactor(handler nimbus.AppStatusReactor) {
 	sm.AppStatusReactor = handler
+}
+
+// SetVrfStatusReactor sets the NetworkStatusReactor
+func (sm *Statemgr) SetVrfStatusReactor(handler nimbus.VrfStatusReactor) {
+	sm.VrfStatusReactor = handler
 }
 
 // SetNetworkStatusReactor sets the NetworkStatusReactor
@@ -521,7 +528,10 @@ func (sm *Statemgr) runPropagationTopoUpdater(c <-chan *memdb.PropagationStTopoU
 				log.Infof("runPropagationTopoUpdater exiting")
 				return
 			}
-			sm.handlePropagationTopoUpdate(update)
+			sm.handleSgPolicyPropTopoUpdate(update)
+			sm.handleNetworkPropTopoUpdate(update)
+			sm.handleVrfPropTopoUpdate(update)
+			sm.handleIPAMPropTopoUpdate(update)
 		}
 	}
 }
@@ -627,6 +637,11 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 	sm.topics.NetworkTopic, err = nimbus.AddNetworkTopic(mserver, sm.NetworkStatusReactor)
 	if err != nil {
 		logger.Errorf("Error starting network RPC server")
+		return err
+	}
+	sm.topics.VrfTopic, err = nimbus.AddVrfTopic(mserver, sm.VrfStatusReactor)
+	if err != nil {
+		logger.Errorf("Error starting vrf RPC server")
 		return err
 	}
 	sm.topics.NetworkInterfaceTopic, err = nimbus.AddInterfaceTopic(mserver, sm.NetworkInterfaceStatusReactor)
