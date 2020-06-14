@@ -456,7 +456,7 @@ export class MetricsUtility {
       return {
         'requirements': [
           {
-            'key': 'Name',
+            'key': 'name',
             'operator': FieldsRequirement_operator.equals,
             'values': [name]
           }

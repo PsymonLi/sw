@@ -294,7 +294,7 @@ func TestBuildMetricsCitadelQuery(t *testing.T) {
 				Name:   "test",
 				Fields: []string{"cpu"},
 			},
-			resp: `SELECT "cpu" FROM test-db WHERE "Name" = 'test' ORDER BY time ASC LIMIT ` + strconv.Itoa(maxPointsInQueryResponse),
+			resp: `SELECT "cpu" FROM test-db WHERE "name" = 'test' ORDER BY time ASC LIMIT ` + strconv.Itoa(maxPointsInQueryResponse),
 			pass: true,
 		},
 		{
@@ -306,7 +306,7 @@ func TestBuildMetricsCitadelQuery(t *testing.T) {
 				Selector: &fields.Selector{
 					Requirements: []*fields.Requirement{
 						&fields.Requirement{
-							Key:      "Name",
+							Key:      "name",
 							Operator: "gt",
 							Values:   []string{"2"},
 						},
@@ -314,7 +314,7 @@ func TestBuildMetricsCitadelQuery(t *testing.T) {
 				},
 				Fields: []string{"cpu"},
 			},
-			resp: `SELECT "cpu" FROM test-db WHERE "Name" > 2 ORDER BY time ASC LIMIT ` + strconv.Itoa(maxPointsInQueryResponse),
+			resp: `SELECT "cpu" FROM test-db WHERE "name" > 2 ORDER BY time ASC LIMIT ` + strconv.Itoa(maxPointsInQueryResponse),
 			pass: true,
 		},
 		{
@@ -997,7 +997,7 @@ func TestValidateQuerySpec(t *testing.T) {
 				Selector: &fields.Selector{
 					Requirements: []*fields.Requirement{
 						&fields.Requirement{
-							Key:      "Name",
+							Key:      "name",
 							Operator: "equals",
 						},
 					},
@@ -1021,7 +1021,7 @@ func TestValidateQuerySpec(t *testing.T) {
 				Selector: &fields.Selector{
 					Requirements: []*fields.Requirement{
 						&fields.Requirement{
-							Key:      "Name",
+							Key:      "name",
 							Operator: "equals",
 							Values:   []string{"test"},
 						},
@@ -1044,7 +1044,7 @@ func TestValidateQuerySpec(t *testing.T) {
 				Selector: &fields.Selector{
 					Requirements: []*fields.Requirement{
 						&fields.Requirement{
-							Key:      "Name",
+							Key:      "name",
 							Operator: "equals",
 							Values:   []string{"test"},
 						},
@@ -1135,7 +1135,7 @@ func TestMetricsQuery(t *testing.T) {
 						Selector: &fields.Selector{
 							Requirements: []*fields.Requirement{
 								&fields.Requirement{
-									Key:      "Name",
+									Key:      "name",
 									Operator: "equals",
 									Values:   []string{"test"},
 								},
@@ -1151,7 +1151,7 @@ func TestMetricsQuery(t *testing.T) {
 						Selector: &fields.Selector{
 							Requirements: []*fields.Requirement{
 								&fields.Requirement{
-									Key:      "Name",
+									Key:      "name",
 									Operator: "equals",
 									Values:   []string{"test1"},
 								},
@@ -1167,7 +1167,7 @@ func TestMetricsQuery(t *testing.T) {
 						Selector: &fields.Selector{
 							Requirements: []*fields.Requirement{
 								&fields.Requirement{
-									Key:      "Name",
+									Key:      "name",
 									Operator: "equals",
 									Values:   []string{"test2"},
 								},
@@ -1178,7 +1178,7 @@ func TestMetricsQuery(t *testing.T) {
 					},
 				},
 			},
-			citadelQuery: "SELECT * FROM Node WHERE \"Name\" = 'test' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse) + "; SELECT * FROM Node WHERE \"Name\" = 'test1' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse) + "; SELECT * FROM Node WHERE \"Name\" = 'test2' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse),
+			citadelQuery: "SELECT * FROM Node WHERE \"name\" = 'test' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse) + "; SELECT * FROM Node WHERE \"name\" = 'test1' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse) + "; SELECT * FROM Node WHERE \"name\" = 'test2' ORDER BY time ASC LIMIT " + strconv.Itoa(maxPointsInQueryResponse),
 			errMsg:       "",
 			clusterCheckResponse: &ClusterCheckResponse{
 				err: nil,

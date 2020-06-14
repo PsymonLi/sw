@@ -291,7 +291,7 @@ func buildCitadelMetricsQuery(qs *telemetry_query.MetricsQuerySpec) (string, err
 
 	if qs.Name != "" {
 		req := &fields.Requirement{
-			Key:      "Name",
+			Key:      "name",
 			Operator: "equals",
 			Values:   []string{qs.Name},
 		}
