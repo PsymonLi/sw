@@ -13,11 +13,16 @@ rm -rf /.upgrade*
 DOL_ARGS='--pipeline apulu --topo learn --feature learn'
 source $MY_DIR/../../../tools/setup_dol.sh $DOL_ARGS
 
-set -x
-
 # setup upgrade
 source $MY_DIR/../setup_upgrade_gtests.sh
 upg_operd_init
+upg_setup $BUILD_DIR/gen/upgrade_graceful_sim.json upgrade_graceful.json
+
+start_model
+start_processes
+start_upgrade_manager
+
+set -x
 
 upg_wait_for_pdsagent
 
@@ -36,11 +41,6 @@ trap trap_finish EXIT
 $DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
 status=${PIPESTATUS[0]}
 
-sleep 2
-
-# start upgrade manager
-upg_setup $BUILD_DIR/gen/upgrade_graceful_sim.json upgrade_graceful.json
-$BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade > upgrade_mgr.log 2>&1 &
 sleep 2
 
 # run client
@@ -63,22 +63,22 @@ sleep 2
 echo "respawning processes, delete all previously generated files, dpdk uses it"
 rm -f $PDSPKG_TOPDIR/conf/gen/dol_agentcfg.json
 rm -f $PDSPKG_TOPDIR/conf/gen/device_info.txt
-rm -f /tmp/pen_* /dev/shm/ipc_* /dev/shm/metrics_*
+remove_shm_files
+remove_ipc_files
 remove_db
 mv ./nicmgr.log ./nicmgr_old.log
 
 # respawn the services
 echo "starting new"
+upg_operd_init
 start_processes
 upg_wait_for_pdsagent
+start_upgrade_manager
+sleep 30  # TODO check status
 
-# spawn upgrade mgr to continue the post restart states
-# ideally spawning upgmgr should be moved up, which requires seperate service timeout
-# for sim and h/w mode. This can be taken up as an enhancement
-echo "respawning upgrademgr"
-$BUILD_DIR/bin/pdsupgmgr -t $PDSPKG_TOPDIR/apollo/tools/apulu/upgrade >> upgrade_mgr.log 2>&1 &
-sleep 2
-
+# dol always tries to connect to upgmgr. so  just spawn once
+rm /update/*
+start_upgrade_manager
 $DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
 status=${PIPESTATUS[0]}
 

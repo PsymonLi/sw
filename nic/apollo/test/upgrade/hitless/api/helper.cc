@@ -72,8 +72,10 @@ upg_obj_restore (upg_mode_t mode)
 {
     sdk_ret_t ret;
 
+    SDK_ASSERT(upgrade_mode_hitless(mode));
     PDS_TRACE_DEBUG("Upgrade object restore, mode %u", mode);
-    return ::api::upg_obj_restore(mode);
+    ::api::upg_shmstore_open(mode);
+    return ::api::upg_hitless_restore_api_objs();
 }
 
 }   // namespace api

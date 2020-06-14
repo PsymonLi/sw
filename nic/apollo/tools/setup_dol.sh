@@ -289,10 +289,3 @@ setup
 if [ $PIPELINE == 'artemis' ];then
     export AGENT_TEST_HOOKS_LIB='libdolagenthooks.so'
 fi
-
-if [ $DRYRUN == 0 ]; then
-    start_model
-    start_processes
-    start_upgrade_manager
-    check_health
-fi

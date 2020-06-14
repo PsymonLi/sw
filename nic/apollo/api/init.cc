@@ -510,9 +510,6 @@ pds_init (pds_init_params_t *params)
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
 
-        // restore objs in case of upgrade
-        ret = api::upg_obj_restore(upg_mode);
-        SDK_ASSERT(ret == SDK_RET_OK);
 
         // spawn threads
         api::spawn_core_threads();

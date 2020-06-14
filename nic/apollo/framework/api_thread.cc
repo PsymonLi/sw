@@ -12,6 +12,7 @@
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
+#include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/framework/api_thread.hpp"
 #include "nic/apollo/framework/api_msg.hpp"
@@ -22,6 +23,7 @@ namespace api {
 void
 api_thread_init_fn (void *ctxt)
 {
+    sdk_ret_t ret;
     sdk::lib::thread *curr_thread = (sdk::lib::thread *)ctxt;
     state_base *state = (state_base *)curr_thread->data();
 
@@ -29,6 +31,9 @@ api_thread_init_fn (void *ctxt)
     sdk::ipc::set_drip_feeding(true);
     sdk::ipc::reg_request_handler(API_MSG_ID_BATCH, api_thread_ipc_batch_cb,
                                   NULL);
+    // restore objs in case of upgrade
+    ret = upg_restore_api_objs();
+    SDK_ASSERT(ret == SDK_RET_OK);
 }
 
 void

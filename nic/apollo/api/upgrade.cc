@@ -3,6 +3,7 @@
 //
 //----------------------------------------------------------------------------
 
+#include <sys/stat.h>
 #include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
@@ -36,6 +37,7 @@ upg_shmstore_name (uint32_t thread_id, const char *name, upg_mode_t mode,
     std::string fname = std::string(name);
     module_version_t curr_version;
     module_version_t prev_version;
+    struct stat st = { 0 };
 
     // versioned stores are used only for operational state objects and it is
     // present in volatile store
@@ -49,7 +51,7 @@ upg_shmstore_name (uint32_t thread_id, const char *name, upg_mode_t mode,
             fname = fname + "." + std::to_string(prev_version.major) + "." +
                 std::to_string(prev_version.minor);
         }
-        if (sdk::platform::upgrade_mode_hitless(mode)) {
+        if (stat(PDS_UPGRADE_SHMSTORE_VPATH_HITLESS, &st) == 0) {
             return std::string(PDS_UPGRADE_SHMSTORE_VPATH_HITLESS) + "/" + fname;
         } else {
             return std::string(PDS_UPGRADE_SHMSTORE_VPATH_GRACEFUL) + "/" + fname;
@@ -90,7 +92,7 @@ upg_shmstore_open_ (uint32_t thread_id, const char *name, upg_mode_t mode,
     // agent store
     fname = upg_shmstore_name(thread_id, name, mode, false, vstore);
     store = sdk::lib::shmstore::factory();
-    ret = store->open(fname.c_str(), rw_mode ? sdk::lib::SHM_OPEN_OR_CREATE :
+    ret = store->open(fname.c_str(), rw_mode ? sdk::lib::SHM_OPEN_ONLY :
                                                sdk::lib::SHM_OPEN_READ_ONLY);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Upgrade store open failed for thread %u, ret %u",
@@ -306,7 +308,25 @@ upg_init (pds_init_params_t *params)
         return ret;
     }
 
+    // open the store of config objects
+    if (!sdk::platform::upgrade_mode_none(mode)) {
+        ret = upg_shmstore_open(mode);
+        if (ret != SDK_RET_OK) {
+            return ret;
+        }
+    }
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+upg_restore_api_objs (void)
+{
+    // TODO @sunny fix the hang
+    return SDK_RET_OK;
+
+    if (sdk::platform::upgrade_mode_hitless(g_upg_state->upg_init_mode())) {
+        return upg_hitless_restore_api_objs();
+    }
 }
 
 static sdk_ret_t
