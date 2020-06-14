@@ -20,22 +20,25 @@ public:
     pds_obj_key_t vpc;
     pds_mirror_session_type_t type;
     uint32_t snap_len;
-    pds_obj_key_t tep;
-    ip_addr_t dst_ip;
-    ip_addr_t src_ip;
+    uint32_t tep;
+    ip_addr_t dst_ip_addr;
     uint32_t span_id;
     uint32_t dscp;
     pds_obj_key_t interface;
     pds_encap_t encap;
+    pds_erspan_dst_type_t dst_type;
+    pds_erspan_type_t erspan_type;
+    bool vlan_strip_en;
 
     //Constructor
     mirror_session_feeder() { };
 
     // initalize feeder with base set of values
-    void init(pds_obj_key_t key, uint8_t max_ms,
+    void init(pds_obj_key_t key, uint8_t mirror_sess,
               pds_obj_key_t interface, uint16_t vlan_tag,
-              std::string src_ip, pds_obj_key_t tep,
-              uint32_t span_id = 1, uint32_t dscp = 1);
+              std::string dst_ip, uint32_t tep,
+              uint32_t span_id = 1, uint32_t dscp = 1,
+              bool vlan_strip_en = false);
 
     // Iterate helper routines
     void iter_next(int width = 1);

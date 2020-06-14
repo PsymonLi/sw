@@ -31,10 +31,9 @@ static const uint32_t k_tep_id3 = 200;
 static const char *const k_tep_ip3 = "10.1.3.1";
 static const pds_obj_key_t k_ifindex_id1 = uuid_from_objid(0x11010001);
 static const pds_obj_key_t k_ifindex_id2 = uuid_from_objid(0x11020001);
-static const char *const k_src_ip1 = "20.1.1.1";
-static const char *const k_src_ip2 = "20.1.2.1";
-static const char *const k_src_ip3 = "20.1.3.1";
-
+static const char *const k_dst_ip1 = "20.1.1.1";
+static const char *const k_dst_ip2 = "20.1.2.1";
+static const char *const k_dst_ip3 = "20.1.3.1";
 
 //----------------------------------------------------------------------------
 // Mirror session test class
@@ -83,9 +82,41 @@ protected:
 //----------------------------------------------------------------------------
 // Mirror session test cases implementation
 //----------------------------------------------------------------------------
-
+#if 0
 /// \defgroup MIRROR_TEST Mirror tests
 /// @{
+
+TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_b1) {
+    pds_obj_key_t key = int2pdsobjkey(k_base_ms);
+    mirror_session_feeder feeder;
+
+    feeder.init(key, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
+    workflow_b1<mirror_session_feeder>(feeder);
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
+    workflow_b1<mirror_session_feeder>(feeder);
+}
+
+TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_b2) {
+    pds_obj_key_t key = int2pdsobjkey(k_base_ms);
+    mirror_session_feeder feeder1, feeder1A;
+
+    uint16_t vlan_tag_1a = pdsobjkey2int(key) + PDS_MAX_MIRROR_SESSION;
+    uint32_t span_id_1a = PDS_MAX_MIRROR_SESSION;
+    feeder1.init(key, 1, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder1A.init(key, 1, k_ifindex_id2, vlan_tag_1a,
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
+    workflow_b2<mirror_session_feeder>(feeder1, feeder1A);
+    /*
+    feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
+    feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
+    workflow_b2<mirror_session_feeder>(feeder1, feeder1A);
+    */
+}
 
 /// \brief Mirror session WF_1
 /// \ref WF_1
@@ -93,8 +124,8 @@ TEST_F(mirror_session_test, mirror_session_workflow_1) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_1<mirror_session_feeder>(feeder);
 }
 /// \brief Mirror session WF_2
@@ -103,8 +134,8 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_2) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_2<mirror_session_feeder>(feeder);
 }
 
@@ -115,12 +146,12 @@ TEST_F(mirror_session_test, mirror_session_workflow_3) {
                   key3 = int2pdsobjkey(5);
     mirror_session_feeder feeder1, feeder2, feeder3;
 
-    feeder1.init(key1, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
-    feeder2.init(key2, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
-    feeder3.init(key3, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key1, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder2.init(key2, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder3.init(key3, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     workflow_3<mirror_session_feeder>(feeder1, feeder2, feeder3);
 }
 
@@ -130,8 +161,8 @@ TEST_F(mirror_session_test, mirror_session_workflow_4) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_4<mirror_session_feeder>(feeder);
 }
 
@@ -142,12 +173,12 @@ TEST_F(mirror_session_test, mirror_session_workflow_5) {
                   key3 = int2pdsobjkey(5);
     mirror_session_feeder feeder1, feeder2, feeder3;
 
-    feeder1.init(key1, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
-    feeder2.init(key2, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
-    feeder3.init(key3, 2, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key1, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder2.init(key2, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder3.init(key3, 2, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     workflow_5<mirror_session_feeder>(feeder1, feeder2, feeder3);
 }
 
@@ -163,11 +194,11 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_6) {
 
 
     feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     feeder1B.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1b,
-                  k_src_ip3, int2pdsobjkey(k_tep_id3), span_id_1b, 2);
+                  k_dst_ip3, k_tep_id3, span_id_1b, 2);
     workflow_6<mirror_session_feeder>(feeder1, feeder1A, feeder1B);
 }
 
@@ -183,11 +214,11 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_7) {
 
 
     feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     feeder1B.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1b,
-                  k_src_ip3, int2pdsobjkey(k_tep_id3), span_id_1b, 2);
+                  k_dst_ip3, k_tep_id3, span_id_1b, 2);
     workflow_7<mirror_session_feeder>(feeder1, feeder1A, feeder1B);
 }
 
@@ -204,11 +235,11 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_8) {
 
 
     feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, vlan_tag_1,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     feeder1B.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1b,
-                  k_src_ip3, int2pdsobjkey(k_tep_id3), span_id_1b, 2);
+                  k_dst_ip3, k_tep_id3, span_id_1b, 2);
     workflow_8<mirror_session_feeder>(feeder1, feeder1A, feeder1B);
 }
 
@@ -223,9 +254,9 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_9) {
 
 
     feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, vlan_tag_1,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     workflow_9<mirror_session_feeder>(feeder1, feeder1A);
 }
 
@@ -248,19 +279,19 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_10) {
     uint32_t span_id_3a = 5 * num_mirror_sessions;
 
     feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, vlan_tag_1,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder2.init(key2, num_mirror_sessions, k_ifindex_id1, vlan_tag_2,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder3.init(key3, num_mirror_sessions, k_ifindex_id1, vlan_tag_3,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
     feeder4.init(key4, num_mirror_sessions, k_ifindex_id1, vlan_tag_4,
-                 k_src_ip1, int2pdsobjkey(k_tep_id1));
+                 k_dst_ip1, k_tep_id1);
 
 
     feeder2A.init(key2, num_mirror_sessions, k_ifindex_id2, vlan_tag_2a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_2a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_2a, 2);
     feeder3A.init(key3, num_mirror_sessions, k_ifindex_id2, vlan_tag_3a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_3a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_3a, 2);
     workflow_10<mirror_session_feeder>(
         feeder1, feeder2, feeder2A, feeder3, feeder3A, feeder4);
 }
@@ -271,8 +302,8 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_1) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_neg_1<mirror_session_feeder>(feeder);
 }
 
@@ -282,8 +313,8 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_2) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions + 1, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions + 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_neg_2<mirror_session_feeder>(feeder);
 }
 
@@ -293,8 +324,8 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_3) {
     pds_obj_key_t key = int2pdsobjkey(k_base_ms + 8);
     mirror_session_feeder feeder;
 
-    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                int2pdsobjkey(k_tep_id1));
+    feeder.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1);
     workflow_neg_3<mirror_session_feeder>(feeder);
 }
 
@@ -305,10 +336,10 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_4) {
     mirror_session_feeder feeder1, feeder2;
     uint32_t num_mirror_sessions = 2;
 
-    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
-    feeder2.init(key2, num_mirror_sessions, k_ifindex_id1, 9, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
+    feeder2.init(key2, num_mirror_sessions, k_ifindex_id1, 9, k_dst_ip1,
+                 k_tep_id1);
     workflow_neg_4<mirror_session_feeder>(feeder1, feeder2);
 }
 
@@ -320,10 +351,10 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_5) {
     uint16_t vlan_tag_1a = pdsobjkey2int(key) + PDS_MAX_MIRROR_SESSION;
     uint32_t span_id_1a = PDS_MAX_MIRROR_SESSION;
 
-    feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     workflow_neg_5<mirror_session_feeder>(feeder1, feeder1A);
 }
 
@@ -335,10 +366,10 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_6) {
     uint16_t vlan_tag_1a = pdsobjkey2int(key) + PDS_MAX_MIRROR_SESSION;
     uint32_t span_id_1a = PDS_MAX_MIRROR_SESSION;
 
-    feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key, k_max_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     feeder1A.init(key, k_max_mirror_sessions + 1, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     workflow_neg_6<mirror_session_feeder>(feeder1, feeder1A);
 }
 
@@ -353,12 +384,12 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_7) {
     uint32_t span_id_2 = 2 * PDS_MAX_MIRROR_SESSION;
     uint32_t num_mirror_sessions = 2;
 
-    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     feeder1A.init(key1, num_mirror_sessions, k_ifindex_id2, vlan_tag_1a,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_1a, 2);
+                  k_dst_ip2, k_tep_id2, span_id_1a, 2);
     feeder2.init(key2, num_mirror_sessions, k_ifindex_id2, vlan_tag_2,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_2, 2);
+                  k_dst_ip2, k_tep_id2, span_id_2, 2);
     workflow_neg_7<mirror_session_feeder>(feeder1, feeder1A, feeder2);
 }
 
@@ -371,14 +402,14 @@ TEST_F(mirror_session_test, DISABLED_mirror_session_workflow_neg_8) {
     uint32_t span_id_2 = PDS_MAX_MIRROR_SESSION;
     uint32_t num_mirror_sessions = 2;
 
-    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_src_ip1,
-                 int2pdsobjkey(k_tep_id1));
+    feeder1.init(key1, num_mirror_sessions, k_ifindex_id1, 1, k_dst_ip1,
+                 k_tep_id1);
     feeder2.init(key2, num_mirror_sessions, k_ifindex_id2, vlan_tag_2,
-                  k_src_ip2, int2pdsobjkey(k_tep_id2), span_id_2, 2);
+                  k_dst_ip2, k_tep_id2, span_id_2, 2);
     workflow_neg_8<mirror_session_feeder>(feeder1, feeder2);
 }
+#endif
 /// @}
-
 }    // namespace api
 }    // namespace test
 
