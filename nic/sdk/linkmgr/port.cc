@@ -420,7 +420,7 @@ port::port_serdes_signal_detect(void)
 {
     uint32_t lane;
     bool signal_detect = false;
-    uint32_t sbus_addr;
+    uint32_t sbus_addr = 0;
 
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
@@ -444,7 +444,7 @@ port::port_serdes_rdy(void)
 {
     uint32_t lane;
     bool serdes_rdy = false;
-    uint32_t sbus_addr;
+    uint32_t sbus_addr = 0;
 
     for (lane = 0; lane < num_lanes_; ++lane) {
         sbus_addr = port_sbus_addr(lane);
@@ -1117,14 +1117,14 @@ port::port_link_sm_process(bool start_en_timer)
     an_ret_t an_ret = AN_DONE;
     dfe_ret_t dfe_ret = DFE_DONE;
 
-    //printf("%s:%d :%d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d :%d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		this->link_sm_, port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
     while (true) {
         retry_sm = false;
 
         switch (this->link_sm_) {
             case port_link_sm_t::PORT_LINK_SM_DISABLED:
- //   printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+ //   printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
                 // Enable MAC TX drain and set Tx/Rx=0x0
                 port_mac_tx_drain(true);
@@ -1166,7 +1166,7 @@ port::port_link_sm_process(bool start_en_timer)
                 break;
 
             case port_link_sm_t::PORT_LINK_SM_ENABLED:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 // link bringup time = last_up_ts - last_down_ts
@@ -1196,7 +1196,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_AN_CFG);
 
              case port_link_sm_t::PORT_LINK_SM_AN_CFG:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 if (is_auto_neg() == AUTO_NEG) {
@@ -1229,7 +1229,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_SERDES_CFG);
 
             case port_link_sm_t::PORT_LINK_SM_SERDES_CFG:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 SDK_PORT_SM_DEBUG(this, "SerDes CFG");
@@ -1246,7 +1246,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_WAIT_SERDES_RDY);
 
             case port_link_sm_t::PORT_LINK_SM_WAIT_SERDES_RDY:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 SDK_PORT_SM_DEBUG(this, "Wait SerDes RDY");
@@ -1273,7 +1273,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_MAC_CFG);
 
             case port_link_sm_t::PORT_LINK_SM_MAC_CFG:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 SDK_PORT_SM_DEBUG(this, "MAC CFG");
@@ -1328,7 +1328,7 @@ port::port_link_sm_process(bool start_en_timer)
                 break;
 
             case port_link_sm_t::PORT_LINK_SM_AN_DFE_TUNING:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
                 dfe_ret = port_link_sm_dfe_process();
                 if (dfe_ret == DFE_WAIT) {
@@ -1344,7 +1344,7 @@ port::port_link_sm_process(bool start_en_timer)
                 break;
 
             case port_link_sm_t::PORT_LINK_SM_SIGNAL_DETECT:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 // enable serdes
@@ -1374,7 +1374,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_DFE_TUNING);
 
             case port_link_sm_t::PORT_LINK_SM_DFE_TUNING:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 if (port_dfe_tuning_enabled()) {
@@ -1397,7 +1397,7 @@ port::port_link_sm_process(bool start_en_timer)
                         port_link_sm_t::PORT_LINK_SM_CLEAR_MAC_REMOTE_FAULTS);
 
             case port_link_sm_t::PORT_LINK_SM_CLEAR_MAC_REMOTE_FAULTS:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
                 SDK_PORT_SM_DEBUG(this, "Clear MAC remote faults");
 
@@ -1409,7 +1409,7 @@ port::port_link_sm_process(bool start_en_timer)
                                 port_link_sm_t::PORT_LINK_SM_WAIT_MAC_SYNC);
 
             case port_link_sm_t::PORT_LINK_SM_WAIT_MAC_SYNC:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
                 SDK_PORT_SM_DEBUG(this, "Wait MAC SYNC");
 
@@ -1444,7 +1444,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_WAIT_MAC_FAULTS_CLEAR);
 
             case port_link_sm_t::PORT_LINK_SM_WAIT_MAC_FAULTS_CLEAR:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 SDK_PORT_SM_DEBUG(this, "Wait MAC faults clear");
@@ -1498,7 +1498,7 @@ port::port_link_sm_process(bool start_en_timer)
                 this->set_port_link_sm(port_link_sm_t::PORT_LINK_SM_UP);
 
             case port_link_sm_t::PORT_LINK_SM_UP:
-    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 if (port_dfe_tuning_enabled()) {
@@ -1535,7 +1535,7 @@ port::port_link_sm_process(bool start_en_timer)
 
                 // update the AN oper mode
                 set_auto_neg_enable(is_auto_neg() == AUTO_NEG? true : false);
-    //printf("%s:%d :LINK UP retry_sm=%d, return %d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d :LINK UP retry_sm=%d, return %d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		retry_sm, this->link_sm_, port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
                 // notify others that link is up
@@ -1549,7 +1549,7 @@ port::port_link_sm_process(bool start_en_timer)
             break;
         }
     }
-    //printf("%s:%d :return %d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+    //printf("%s:%d :return %d:port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		this->link_sm_, port_num(), port_type(), port_speed(), mac_id(), mac_ch(), num_lanes());
 
     return SDK_RET_OK;
@@ -2167,7 +2167,7 @@ port::port_enable(port *port_p)
     //SDK_TRACE_DEBUG("port_enable2: %s:%d port_num %u port_mac_port_num_calc= 0x%llx, logical_port %d ",
      //               __FILE__, __LINE__, port_p->mac_id(), port_p->port_mac_port_num_calc(), port_p->port_num());
 
-   // printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__, 
+   // printf("%s:%d port_num:%d, port_type:%d, port_speed=%d, mac_ch:%d, mac_id:%d, num_lanes:%d\n", __FILE__, __LINE__,
 //		port_p->port_num(), port_p->port_type(), port_p->port_speed(), port_p->mac_id(), port_p->mac_ch(), port_p->num_lanes());
     linkmgr_entry_data_t data;
     data.ctxt  = port_p;
