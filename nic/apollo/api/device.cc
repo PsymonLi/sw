@@ -312,6 +312,48 @@ device_entry::delay_delete(void) {
     return delay_delete_to_slab(PDS_SLAB_ID_DEVICE, this);
 }
 
+sdk_ret_t
+device_entry::backup(upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds_device_info_t info;
+
+    memset(&info, 0, sizeof(pds_device_info_t));
+    fill_spec_(&info.spec);
+    ret = impl_->backup((impl::obj_info_t *)&info, upg_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to backup device, err %u", ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+device_entry::restore(upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    api_ctxt_t *api_ctxt;
+    pds_device_info_t info;
+
+    memset(&info, 0, sizeof(pds_device_info_t));
+    // fetch info from proto buf
+    ret = impl_->restore((impl::obj_info_t *)&info, upg_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore device, err %u", ret);
+        return ret;
+    }
+    // restore PI fields
+    api_ctxt = api::api_ctxt_alloc((obj_id_t)upg_info->obj_id, API_OP_NONE);
+    if (api_ctxt == NULL) {
+        return SDK_RET_OOM;
+    }
+    api_ctxt->api_params->device_spec = info.spec;
+    ret = init_config(api_ctxt);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore device, err %u", ret);
+        return ret;
+    }
+    api_ctxt_free(api_ctxt);
+    return ret;
+}
+
 /// \@}
 
 }    // namespace api

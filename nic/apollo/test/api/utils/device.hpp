@@ -31,6 +31,7 @@ enum device_attrs {
 class device_feeder : public feeder {
 public:
     pds_device_spec_t spec;
+    vector <pds_device_info_t *> vec;
 
     // Constructor
     device_feeder() { };
@@ -41,7 +42,8 @@ public:
               const char * gw_ip_str, bool bridge_en, bool learn_en,
               uint32_t learn_age_time, bool overlay_routing_en,
               pds_device_profile_t dp, pds_memory_profile_t mp,
-              pds_device_oper_mode_t dev_op_mode, int num_device = 1);
+              pds_device_oper_mode_t dev_op_mode, int num_device = 1,
+              bool stash_ = false);
 
     // Iterate helper routines
     void iter_next(int width = 1) { cur_iter_pos++; }
@@ -87,6 +89,7 @@ operator<<(std::ostream& os, const device_feeder& obj) {
 // CRUD prototypes
 API_CREATE(device);
 API_READ_SINGLETON(device);
+API_READ_CMP_SINGLETON(device);
 API_UPDATE(device);
 API_DELETE_SINGLETON(device);
 

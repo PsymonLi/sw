@@ -51,6 +51,18 @@ public:
     /// \return   sdk_ret_ok or error code
     static sdk_ret_t free(device_impl *impl);
 
+    /// \brief     stash this object into persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to put stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t backup(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
+    /// \brief     restore stashed object from persistent storage
+    /// \param[in] info pointer to the info object
+    /// \param[in] upg_info contains location to read stashed object
+    /// \return    sdk_ret_ok or error code
+    virtual sdk_ret_t restore(obj_info_t *info, upg_obj_info_t *upg_info) override;
+
     /// \brief     program all h/w tables relevant to this object except
     ///            stage 0 table(s), if any
     /// \param[in] api_obj  api object holding the resources
@@ -110,6 +122,11 @@ private:
 
     /// \brief destructor
     ~device_impl() {}
+
+    /// \brief      activate h/w tables for this obj from persistent storage
+    /// \param[in]  info pointer to the info object
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    virtual sdk_ret_t activate_restore_(obj_info_t *info);
 
     /// \brief      populate specification with hardware information
     /// \param[out] spec specification

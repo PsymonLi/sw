@@ -17,12 +17,13 @@ if [[ "$1" ==  --coveragerun ]]; then
     run_sdk_gtest
 fi
 
-run_gtest nh_upg
-run_gtest nh_group_upg
-run_gtest mapping_upg
-run_gtest tep_upg
-run_gtest vnic_upg
+run_gtest device_upg
 run_gtest vpc_upg
+run_gtest mapping_upg
+run_gtest vnic_upg
+run_gtest nh_group_upg
+run_gtest nh_upg
+run_gtest tep_upg
 
 # end of script
 clean_exit
