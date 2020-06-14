@@ -1393,8 +1393,6 @@ ionic_rx_napi(struct lif *lif,
 	unsigned int mini_budget = lif->ionic->RxMiniBudget;
 	unsigned int budget = 0;
 
-    NdisDprAcquireSpinLock(&qcq->rx_ring_lock);
-
 	if (mini_budget != 0) {
 		budget = mini_budget;
 	}
@@ -1411,11 +1409,14 @@ ionic_rx_napi(struct lif *lif,
 		packets_to_indicate = NULL;
 		rx_indicate_count = 0;
 
+		NdisDprAcquireSpinLock(&qcq->rx_ring_lock);
 		rx_work_done = ionic_rx_walk_cq(rxcq, budget, &packets_to_indicate, &rx_indicate_count);
-
 		if (rx_work_done) {
 			ionic_rx_fill(qcq);
+		}
+		NdisDprReleaseSpinLock(&qcq->rx_ring_lock);
 
+		if (rx_indicate_count) {
 			ionic_rq_indicate_bufs(lif, &lif->rxqcqs[qcq->q.index], qcq, rx_indicate_count,
 					packets_to_indicate);
 		}
@@ -1434,8 +1435,6 @@ ionic_rx_napi(struct lif *lif,
 
 		tot_budget -= budget;
 	}
-
-    NdisDprReleaseSpinLock(&qcq->rx_ring_lock);
 
 	if (rx_tot_work_done == (u32)receive_throttle_params->MaxNblsToIndicate &&
 		receive_throttle_params->MaxNblsToIndicate < qcq->cq.num_descs - 1) {
