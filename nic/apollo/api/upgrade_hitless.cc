@@ -21,7 +21,6 @@
 #include "nic/apollo/api/port.hpp"
 #include "nic/apollo/api/vnic.hpp"
 #include "nic/apollo/api/vpc.hpp"
-#include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 
 namespace api {
@@ -63,11 +62,6 @@ backup_stateful_obj_cb (void *obj, void *info)
     case OBJ_ID_VPC:
         keystr = ((vpc_entry *)obj)->key2str();
         ret = ((vpc_entry *)obj)->backup(upg_info);
-        break;
-
-    case OBJ_ID_DEVICE:
-        keystr = ((device_entry *)obj)->key2str();
-        ret = ((device_entry *)obj)->backup(upg_info);
         break;
 
     default:
@@ -206,18 +200,6 @@ backup_vpc (upg_obj_info_t *info)
 }
 
 static inline sdk_ret_t
-backup_device (upg_obj_info_t *info)
-{
-    sdk_ret_t ret;
-    upg_ctxt *ctx = info->ctx;
-
-    ret = device_db()->walk(backup_stateful_obj_cb, (void *)info);
-    // adjust the offset in persistent storage in the end of walk
-    ctx->incr_obj_offset(info->backup.total_size);
-    return ret;
-}
-
-static inline sdk_ret_t
 backup_mapping (upg_obj_info_t *info)
 {
     sdk::lib::kvstore *kvs;
@@ -312,13 +294,6 @@ upg_ev_backup (upg_ev_params_t *params)
             // update total number of vpc objs stashed
             hdr[id].obj_count = info.backup.stashed_obj_count;
             PDS_TRACE_INFO("Stashed %u vpc objs", hdr[id].obj_count);
-            break;
-
-        case OBJ_ID_DEVICE:
-            ret = backup_device(&info);
-            // update total number of device objs stashed
-            hdr[id].obj_count = info.backup.stashed_obj_count;
-            PDS_TRACE_INFO("Stashed %u device objs", hdr[id].obj_count);
             break;
 
         default:

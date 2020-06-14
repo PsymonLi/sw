@@ -61,12 +61,7 @@ sdk_ret_t api_info_compare(feeder_T& feeder, info_T *info,
 /// Compares only spec
 template <typename feeder_T, typename info_T>
 sdk_ret_t api_info_compare_singleton(
-    feeder_T& feeder, info_T *info,
-    info_T *bkup_info = NULL) {
-
-    if (bkup_info) {
-        memcpy(&feeder.spec, &bkup_info->spec, sizeof(feeder.spec));
-    }
+    feeder_T& feeder, info_T *info) {
 
     if (!feeder.spec_compare(&info->spec)) {
         cerr << "spec compare failed" << endl;
@@ -224,49 +219,20 @@ read_cmp(_api_str##_feeder& feeder) {                                        \
     return rv;                                                               \
 }
 
-/// \brief invokes the PDS read apis for test objects
-/// also it compares the config values with values previously
-/// stashed in peristent storage during backup
-#define API_READ_CMP_SINGLETON(_api_str)                                     \
-inline sdk_ret_t                                                             \
-read_cmp(_api_str##_feeder& feeder) {                                        \
-    sdk_ret_t rv;                                                            \
-    pds_##_api_str##_info_t info;                                            \
-    pds_##_api_str##_info_t *bkup_info;                                      \
-                                                                             \
-    memset(&info, 0, sizeof(pds_##_api_str##_info_t));                       \
-    if ((rv = pds_##_api_str##_read(&info)) != SDK_RET_OK)                   \
-        return rv;                                                           \
-                                                                             \
-    bkup_info  = feeder.vec.front();                                         \
-    rv = (api_info_compare_singleton<_api_str##_feeder,                      \
-             pds_##_api_str##_info_t>(feeder, &info, bkup_info));            \
-    delete(bkup_info );                                                      \
-    feeder.vec.erase(feeder.vec.begin());                                    \
-    return rv;                                                               \
-}
-
 /// \brief Invokes the PDS read apis for test objects
 /// Also it compares the config values with values read from hardware
 #define API_READ_SINGLETON(_api_str)                                         \
 inline sdk_ret_t                                                             \
 read(_api_str##_feeder& feeder) {                                            \
     sdk_ret_t rv;                                                            \
-    pds_##_api_str##_info_t *info;                                           \
+    pds_##_api_str##_info_t info;                                            \
                                                                              \
-    info = new (pds_##_api_str##_info_t);                                    \
-    memset(info, 0, sizeof(pds_##_api_str##_info_t));                        \
-    if ((rv = pds_##_api_str##_read(info)) != SDK_RET_OK)                    \
+    memset(&info, 0, sizeof(info));                                          \
+    if ((rv = pds_##_api_str##_read(&info)) != SDK_RET_OK)                   \
         return rv;                                                           \
                                                                              \
-    if (feeder.stash()) {                                                    \
-        feeder.vec.push_back(info);                                          \
-        return rv;                                                           \
-    }                                                                        \
-    rv = api_info_compare_singleton<_api_str##_feeder,                       \
-            pds_##_api_str##_info_t>(feeder, info);                          \
-    delete(info);                                                            \
-    return rv;                                                               \
+    return (api_info_compare_singleton<_api_str##_feeder,                    \
+            pds_##_api_str##_info_t>(feeder, &info));                        \
 }
 
 /// \brief Invokes the PDS update apis for test objects

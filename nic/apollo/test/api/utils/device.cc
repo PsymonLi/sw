@@ -17,8 +17,7 @@ device_feeder::init(const char * device_ip_str, std::string mac_addr_str,
                     const char *  gw_ip_str, bool bridge_en, bool learn_en,
                     uint32_t learn_age_timeout, bool overlay_routing_en,
                     pds_device_profile_t dp, pds_memory_profile_t mp,
-                    pds_device_oper_mode_t dev_op_mode, int num_device,
-                    bool stash) {
+                    pds_device_oper_mode_t dev_op_mode, int num_device) {
 
     memset(&spec, 0, sizeof(pds_device_spec_t));
 
@@ -39,13 +38,11 @@ device_feeder::init(const char * device_ip_str, std::string mac_addr_str,
         spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
     }
     num_obj = num_device;
-    stash_ = stash;
 }
 
 device_feeder::device_feeder(const device_feeder& feeder) {
     memcpy(&this->spec, &feeder.spec, sizeof(pds_device_spec_t));
     num_obj = feeder.num_obj;
-    this->stash_  = feeder.stash();
 }
 
 void
