@@ -157,18 +157,29 @@ if_impl::activate_delete_(pds_epoch_t epoch, if_entry *intf) {
 sdk_ret_t
 if_impl::activate_update_(pds_epoch_t epoch, if_entry *intf,
                           api_obj_ctxt_t *obj_ctxt) {
-    sdk_ret_t ret;
     pds_if_spec_t *spec = &obj_ctxt->api_params->if_spec;
 
-    if (spec->type == IF_TYPE_UPLINK) {
+    switch(spec->type) {
+    case IF_TYPE_UPLINK:
         if (obj_ctxt->upd_bmap & PDS_IF_UPD_ADMIN_STATE) {
             // TODO: @akoradha, we need to bring port down here !!
             return SDK_RET_INVALID_OP;
         }
         return SDK_RET_OK;
+
+    case IF_TYPE_CONTROL:
+        return SDK_RET_OK;
+
+    case IF_TYPE_L3:
+        return SDK_RET_OK;
+
+    case IF_TYPE_ETH:
+        return SDK_RET_OK;
+
+    default:
+        break;
     }
-    SDK_ASSERT_RETURN((spec->type == IF_TYPE_L3), SDK_RET_INVALID_ARG);
-    return SDK_RET_OK;
+    return SDK_RET_INVALID_ARG;
 }
 
 sdk_ret_t

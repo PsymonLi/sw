@@ -20,7 +20,7 @@ setup:
     config  :
         - step  : config.setup_workloads
         - step  : config.athena_app_config
-        #- step  : config.set_port_speed
+        - step  : config.set_port_speed
 
 common:
     verifs:

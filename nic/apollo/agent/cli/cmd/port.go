@@ -47,6 +47,7 @@ var (
 	portFecType    string
 	portAutoNeg    string
 	portSpeed      string
+	portNumLanes   uint32
 )
 
 var portShowCmd = &cobra.Command{
@@ -117,6 +118,15 @@ var portClearStatsCmd = &cobra.Command{
 	Run:   portClearStatsCmdHandler,
 }
 
+// ValidateNumLanes returns true if the numLanes is between 1 to 4
+func ValidateNumLanes(numLanes uint32) bool {
+	if numLanes < 1 || numLanes > 4 {
+		fmt.Printf("Invalid num-lanes. num-lanes must be in the range 1-4\n")
+		return false
+	}
+	return true
+}
+
 func init() {
 	showCmd.AddCommand(portShowCmd)
 	portShowCmd.AddCommand(portStatsShowCmd)
@@ -142,6 +152,7 @@ func init() {
 	portUpdateCmd.Flags().StringVar(&portFecType, "fec-type", "none", "Specify fec-type - rs, fc, none")
 	portUpdateCmd.Flags().StringVar(&portAutoNeg, "auto-neg", "enable", "Enable or disable auto-neg using enable | disable")
 	portUpdateCmd.Flags().StringVar(&portSpeed, "speed", "", "Set port speed - none, 1g, 10g, 25g, 40g, 50g, 100g")
+	portUpdateCmd.Flags().Uint32Var(&portNumLanes, "num-lanes", 4, "Specify number of lanes")
 	portUpdateCmd.MarkFlagRequired("port")
 
 	clearCmd.AddCommand(portClearCmd)
@@ -202,7 +213,8 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 	if cmd.Flags().Changed("admin-state") == false &&
 		cmd.Flags().Changed("auto-neg") == false &&
 		cmd.Flags().Changed("speed") == false &&
-		cmd.Flags().Changed("fec-type") == false {
+		cmd.Flags().Changed("fec-type") == false &&
+		cmd.Flags().Changed("num-lanes") == false {
 		fmt.Printf("Command arguments not provided correctly, refer to help string for guidance\n")
 		return
 	}
@@ -253,7 +265,13 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 			return
 		}
 		speed = inputToSpeed(strings.ToUpper(portSpeed))
-		autoNeg = false
+	}
+
+	if cmd.Flags().Changed("num-lanes") == true {
+		if ValidateNumLanes(portNumLanes) == false {
+			return
+		}
+		numLanes = portNumLanes
 	}
 
 	client := pds.NewPortSvcClient(c)
@@ -289,7 +307,9 @@ func portUpdateCmdHandler(cmd *cobra.Command, args []string) {
 		mtu = resp.GetSpec().GetMtu()
 		pauseType = resp.GetSpec().GetPauseType()
 		loopbackMode = resp.GetSpec().GetLoopbackMode()
-		numLanes = resp.GetSpec().GetNumLanes()
+		if cmd.Flags().Changed("num-lanes") == false {
+			numLanes = resp.GetSpec().GetNumLanes()
+		}
 		portType = resp.GetSpec().GetType()
 		txPauseEn = resp.GetSpec().GetTxPauseEn()
 		rxPauseEn = resp.GetSpec().GetRxPauseEn()

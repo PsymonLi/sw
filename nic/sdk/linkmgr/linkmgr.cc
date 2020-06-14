@@ -750,11 +750,12 @@ port_update_xcvr_event (void *pd_p, xcvr_event_info_t *xcvr_event_info)
 
     SDK_TRACE_DEBUG("port %u, phy_port %u, xcvr_event_port %u, "
                     "xcvr_state %u, user_admin %u, admin %u, "
-                    "AN_cfg %u, AN_enable %u, num_lanes_cfg %u",
+                    "speed %u, AN_cfg %u, AN_enable %u, num_lanes_cfg %u",
                     port_args.port_num, phy_port, xcvr_event_info->phy_port,
                     static_cast<uint32_t>(xcvr_event_info->state),
                     static_cast<uint32_t>(port_args.user_admin_state),
                     static_cast<uint32_t>(port_args.admin_state),
+                    static_cast<uint32_t>(port_args.port_speed),
                     port_args.auto_neg_cfg,
                     port_args.auto_neg_enable,
                     port_args.num_lanes_cfg);
@@ -835,6 +836,11 @@ port_args_set_by_xcvr_state_ (int phy_port, port_speed_t *port_speed,
             *num_lanes = 4;
             break;
 
+        case port_speed_t::PORT_SPEED_50G:
+            *fec_type = port_fec_type_t::PORT_FEC_TYPE_RS;
+            *num_lanes = 2;
+            break;
+
         case port_speed_t::PORT_SPEED_40G:
             *fec_type = port_fec_type_t::PORT_FEC_TYPE_NONE;
             *num_lanes = 4;
@@ -902,6 +908,7 @@ port_args_set_by_xcvr_state (port_args_t *port_args)
             port_args->toggle_neg_mode = false;
             port_args->toggle_fec_mode = false;
 
+
             // if AN=true and
             // (1) fiber cable is inserted
             //     auto_neg_enable = false
@@ -938,9 +945,11 @@ port_args_set_by_xcvr_state (port_args_t *port_args)
                     }
                 }
             }
-            SDK_TRACE_DEBUG("port %u auto_neg_enable %u toggle_an %u "
-                            "derived_fec_type %u, toggle_fec %u",
-                            port_args->port_num, port_args->auto_neg_enable,
+            SDK_TRACE_DEBUG("port %u speed %u num_lanes %u, auto_neg_enable %u "
+                            "toggle_an %u derived_fec_type %u, toggle_fec %u",
+                            port_args->port_num,
+                            static_cast<uint32_t>(port_args->port_speed),
+                            port_args->num_lanes, port_args->auto_neg_enable,
                             port_args->toggle_neg_mode,
                             static_cast<uint32_t>(port_args->derived_fec_type),
                             port_args->toggle_fec_mode);
