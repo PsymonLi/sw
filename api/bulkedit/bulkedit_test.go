@@ -19,8 +19,9 @@ func TestBulkeditActionUnmarshalJSON(t *testing.T) {
 			APIVersion: "v1",
 		},
 		ObjectMeta: api.ObjectMeta{
-			Name:   "TestNtwork1",
-			Tenant: "default",
+			Name:      "TestNtwork1",
+			Tenant:    "default",
+			Namespace: "default",
 		},
 		Spec: network.NetworkSpec{
 			Type:        network.NetworkType_Bridged.String(),

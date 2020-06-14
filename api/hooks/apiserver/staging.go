@@ -208,7 +208,6 @@ func (h *stagingHooks) clearAction(ctx context.Context, kv kvstore.Interface, tx
 
 func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryrun bool, i interface{}) (interface{}, bool, error) {
 	var err error
-
 	schema := runtime.GetDefaultScheme()
 	buf, ok := i.(staging.BulkEditAction)
 	if !ok {
@@ -234,7 +233,7 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 		})
 		err = nil
 		objURI := item.GetURI()
-		oper := item.GetMethod()
+		oper := strings.ToLower(item.GetMethod())
 
 		kind, group, objR, err := item.FetchObjectFromBulkEditItem()
 		resVer := objR.(runtime.ObjectMetaAccessor).GetObjectMeta().GetResourceVersion()
@@ -243,16 +242,32 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 		// TODO: Revisit when we have newer versions of out API which are not "V1"
 		svcName := group + "." + strings.Title(group) + "V1"
 
-		switch strings.ToLower(oper) {
-		case "create":
+		orig := objR
+		if oper == string(apiintf.CreateOper) || oper == string(apiintf.UpdateOper) {
+			objRintf := reflect.ValueOf(objR)
+			tm := objRintf.MethodByName("ApplyStorageTransformer")
+			if tm.IsValid() {
+				args := []reflect.Value{reflect.ValueOf(ctx), reflect.ValueOf(true)}
+				ev := tm.Call(args)
+				if !ev[0].IsNil() {
+					err = ev[0].Interface().(error)
+					h.l.Errorf("msg", "failed to tranform from storage", "error", err, "key")
+					goto handle_err
+				}
+				objR = (objRintf.Interface()).(runtime.Object)
+			}
+		}
+
+		switch oper {
+		case string(apiintf.CreateOper):
 			method := "AutoAdd" + kind
-			err = ov.CreatePrimary(ctx, svcName, method, objURI, objKey, objR, objR)
-		case "delete":
+			err = ov.CreatePrimary(ctx, svcName, method, objURI, objKey, orig, objR)
+		case string(apiintf.DeleteOper):
 			method := "AutoDelete" + kind
-			err = ov.DeletePrimary(ctx, svcName, method, objURI, objKey, objR, objR)
-		case "update":
+			err = ov.DeletePrimary(ctx, svcName, method, objURI, objKey, orig, objR)
+		case string(apiintf.UpdateOper):
 			method := "AutoUpdate" + kind
-			err = ov.UpdatePrimary(ctx, svcName, method, objURI, objKey, resVer, objR, objR, nil)
+			err = ov.UpdatePrimary(ctx, svcName, method, objURI, objKey, resVer, orig, objR, nil)
 		default:
 			err = errors.New("Unknown method string " + oper + " for ObjURI " + objURI)
 			h.l.Errorf("Unknown Method string " + oper + " for Obj " + objURI)
@@ -265,6 +280,7 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 			})
 		}
 
+	handle_err:
 		// Handle failure arising from switch case above
 		if err != nil {
 			err = fmt.Errorf("Performing operation %s on ObjURI %s failed: %v ", oper, objURI, err.Error())

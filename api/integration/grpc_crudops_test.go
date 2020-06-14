@@ -5467,6 +5467,9 @@ func TestRoutingSecrets(t *testing.T) {
 	ret, err = apicl.NetworkV1().RoutingConfig().Get(ctx, &rtCfg.ObjectMeta)
 	AssertOk(t, err, "gRPC get routing config failed {%s)", err)
 	Assert(t, reflect.DeepEqual(ret.Spec, rtCfg.Spec), "grpc get did not match [%v]/[%v]", rtCfg.Spec, ret.Spec)
+
+	_, err = apicl.NetworkV1().RoutingConfig().Delete(ctx, &rtCfg.ObjectMeta)
+	AssertOk(t, err, "gRPC delete routing config failed {%s)", err)
 }
 
 func TestStagingBulkEdit(t *testing.T) {
@@ -6194,10 +6197,166 @@ func TestStagingBulkEdit(t *testing.T) {
 		t.Fatalf("expecting 0 objects in list, got %d", len(wlRet))
 	}
 
+	_, err = apicl.StagingV1().Buffer().Delete(ctx, &api.ObjectMeta{
+		Name:   bufName,
+		Tenant: tenantName,
+	})
+	AssertOk(t, err, "delete staging buffer failed {%s)", err)
 }
 
 type aggEvents struct {
 	Type kvstore.WatchEventType
 	Kind string
 	Seq  int
+}
+
+// Validates the encryption funcitonality of apiserver when putting secrets into the kvstore through bulkedit
+func TestStagingBulkeditSecrets(t *testing.T) {
+
+	// REST Client
+	restcl, err := apiclient.NewRestAPIClient("https://localhost:" + tinfo.apigwport)
+	if err != nil {
+		t.Fatalf("cannot create REST client")
+	}
+	defer restcl.Close()
+
+	ctx := context.Background()
+	ctx, err = NewLoggedInContext(ctx, "https://localhost:"+tinfo.apigwport, tinfo.userCred)
+	AssertOk(t, err, "cannot create logged in context")
+
+	// gRPC client
+	apiserverAddr := "localhost" + ":" + tinfo.apiserverport
+	apicl, err := client.NewGrpcUpstream("test", apiserverAddr, tinfo.l)
+	if err != nil {
+		t.Fatalf("cannot create grpc client")
+	}
+	defer apicl.Close()
+
+	var (
+		bufName    = "StagingEnryptionTestBuffer"
+		tenantName = "default"
+	)
+	{ // Create a buffer
+		buf := staging.Buffer{}
+		buf.Name = bufName
+		buf.Tenant = tenantName
+		_, err := restcl.StagingV1().Buffer().Create(ctx, &buf)
+		if err != nil {
+			t.Fatalf("failed to create staging buffer %s", err)
+		}
+	}
+
+	// Staging Client
+	stagecl, err := apiclient.NewStagedRestAPIClient("https://localhost:"+tinfo.apigwport, bufName)
+	if err != nil {
+		t.Fatalf("cannot create Staged REST client")
+	}
+	defer stagecl.Close()
+
+	fts := []cluster.Feature{
+		{FeatureKey: featureflags.OverlayRouting, License: ""},
+	}
+	featureflags.Update(fts)
+
+	expRtCfg := network.RoutingConfig{
+		TypeMeta: api.TypeMeta{
+			Kind:       "RoutingConfig",
+			APIVersion: "v1",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: "secretsTest-2",
+		},
+		Spec: network.RoutingConfigSpec{
+			BGPConfig: &network.BGPConfig{
+				RouterId:          "1.1.1.1",
+				ASNumber:          api.BgpAsn{ASNumber: 6500},
+				KeepaliveInterval: 30,
+				Holdtime:          90,
+				Neighbors: []*network.BGPNeighbor{
+					{
+						IPAddress:             "10.1.1.1",
+						RemoteAS:              api.BgpAsn{ASNumber: 62000},
+						EnableAddressFamilies: []string{network.BGPAddressFamily_L2vpnEvpn.String()},
+						MultiHop:              6,
+					},
+					{
+						IPAddress:             "10.1.1.2",
+						RemoteAS:              api.BgpAsn{ASNumber: 63000},
+						MultiHop:              6,
+						EnableAddressFamilies: []string{network.BGPAddressFamily_L2vpnEvpn.String()},
+						Password:              "testPassword",
+					},
+					{
+						IPAddress:             "10.1.1.3",
+						RemoteAS:              api.BgpAsn{ASNumber: 6500},
+						MultiHop:              6,
+						EnableAddressFamilies: []string{network.BGPAddressFamily_L2vpnEvpn.String()},
+						Password:              "testPassword2",
+					},
+				},
+			},
+		},
+	}
+
+	rtCfgBytes, err := types.MarshalAny(&expRtCfg)
+	if err != nil {
+		t.Fatalf("Error marshaling routing config object %v", err)
+	}
+
+	bulkeditAction := &staging.BulkEditAction{
+		TypeMeta: api.TypeMeta{
+			Kind:       "BulkEditAction",
+			APIVersion: "v1",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name:      bufName,
+			Tenant:    tenantName,
+			Namespace: globals.DefaultNamespace,
+		},
+		Spec: bulkedit.BulkEditActionSpec{
+			Items: []*bulkedit.BulkEditItem{
+				&bulkedit.BulkEditItem{
+					Method: "create",
+					Object: &api.Any{Any: *rtCfgBytes},
+				},
+			},
+		},
+	}
+
+	_, err = restcl.StagingV1().Buffer().Bulkedit(ctx, bulkeditAction)
+	if err != nil {
+		t.Fatalf("Error performing bulkeditaction :%v", err)
+	}
+
+	// commit the buffer
+	ca := staging.CommitAction{}
+	ca.Name = bufName
+	ca.Tenant = tenantName
+	cresp, err := restcl.StagingV1().Buffer().Commit(ctx, &ca)
+	if err != nil {
+		t.Fatalf("failed to commit staging buffer (%s)", err)
+	}
+	if cresp.Status.Status != staging.CommitActionStatus_SUCCESS.String() {
+		t.Fatalf("commit operation failed %v", cresp.Status)
+	}
+
+	// Perform routing config get and check if password is accesible
+	rcdRtConfig, err := apicl.NetworkV1().RoutingConfig().Get(ctx, &expRtCfg.ObjectMeta)
+	if err != nil {
+		t.Fatalf("error fetching routing configs %v", err)
+	}
+
+	for i, expNeighbour := range expRtCfg.Spec.GetBGPConfig().GetNeighbors() {
+		rNeighbour := rcdRtConfig.Spec.GetBGPConfig().GetNeighbors()[i]
+		Assert(t, strings.Compare(expNeighbour.GetPassword(), rNeighbour.GetPassword()) == 0, fmt.Sprintf("(%d)Expect password %s did not match received password %s", i, expNeighbour.GetPassword(), rNeighbour.GetPassword()))
+	}
+
+	_, err = apicl.NetworkV1().RoutingConfig().Delete(ctx, &expRtCfg.ObjectMeta)
+	AssertOk(t, err, "delete routing config failed {%s)", err)
+
+	_, err = apicl.StagingV1().Buffer().Delete(ctx, &api.ObjectMeta{
+		Name:   bufName,
+		Tenant: tenantName,
+	})
+	AssertOk(t, err, "delete staging buffer failed {%s)", err)
 }

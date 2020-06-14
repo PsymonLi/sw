@@ -63,6 +63,15 @@ func (p *BulkEditItem) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	// TODO: We might have to come up with a different way of deriving this version string in the future.
+	// For example, have the client supply it as part of the bulkeditItem
+	versionStr := "v1"
+
+	defaultFn := reflect.ValueOf(obj1).MethodByName("Defaults")
+	if defaultFn.IsValid() {
+		defaultFn.Call([]reflect.Value{reflect.ValueOf(versionStr)})
+	}
+
 	makeKeyFn := reflect.ValueOf(obj1).MethodByName("MakeKey")
 
 	if !makeKeyFn.IsValid() {
@@ -70,7 +79,7 @@ func (p *BulkEditItem) UnmarshalJSON(b []byte) error {
 	}
 	pval := makeKeyFn.Call([]reflect.Value{reflect.ValueOf(group)})
 	objKey := pval[0].Interface().(string)
-	objURI := schema.GetURI(objKey, "v1")
+	objURI := schema.GetURI(objKey, versionStr)
 
 	protoAny, err := types.MarshalAny(obj1.(proto.Message))
 	if err != nil {
