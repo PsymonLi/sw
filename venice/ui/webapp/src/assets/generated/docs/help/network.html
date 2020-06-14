@@ -19,12 +19,12 @@ the VLAN Id and the Orchestrator information.
 <td>Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.</td>
 </tr>
 <tr>
-<td>vlan-id</td>
-<td>Vlan ID for the network. Value should be between 0 and 4095.</td>
+<td>VLAN</td>
+<td>VLAN Id, an integer value in the range 0 - 4095. This corresponds to the external VLAN ID that we would create the VMware DVS port group. This has to match the external VLAN ID the VM or workload.</td>
 </tr>
 <tr>
-<td>orchestrators</td>
-<td>If supplied, this network will only be applied to the orchestrators specified.</td>
+<td>Orchestrator</td>
+<td>One or more orchestrator registered with the PSM. The Orchestrator field contains vCenter name and DataCenter in which this network should be created in. Both the vCenter name and DataCenter are dropdown menu which will list all the objects that are registered in the Controler --&gt; vCenter section.</td>
 </tr>
 </tbody>
 </table>

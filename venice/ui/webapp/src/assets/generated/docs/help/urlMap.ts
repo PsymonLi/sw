@@ -21,6 +21,7 @@ export const UrlMap: { [url: string]: string } = {
   '/security/securityapps': 'apps',
   '/security/sgpolicies': 'policies',
   '/security/sgpolicies/:id': 'policies',
+  '/security/firewallprofiles': 'firewallprofiles',
   '/security/securitygroups': 'securitygroups',  
   '/troubleshoot/flowexport': 'flowexport',
   '/troubleshoot/mirrorsessions': 'mirrorsessions',

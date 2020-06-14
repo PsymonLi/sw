@@ -1,0 +1,172 @@
+<h2 id="firewallprofiles">Firewall Profiles</h2>
+<p>The distributed firewall uses user-imposed session limits and timeouts, to guard against brute-force TCP/UDP/ICMP flooding attacks or DDOS attacks. When the open/active session limit is exceeded, a syslog alert is generated, and any subsequent session establishment requests are dropped in the data-plane thus implicitly protecting the workload and host from flooding attacks. </p>
+<p>The Firewall profile comprise of three sections -</p>
+<ol>
+<li><p>Details</p></li>
+<li><p>Specifications (Specs)</p></li>
+<li><p>Status</p></li>
+</ol>
+<h3 id="detailssection">Details section:</h3>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>Name of the object, unique within a Namespace for scoped objects. Must start and end with alpha numeric and can have alphanumeric, -, _, . Length of string should be between 2 and 64.</td>
+</tr>
+<tr>
+<td>tenant</td>
+<td>Tenant to which the object belongs to. This can be automatically filled in many cases based on the tenant the user, who created the object, belongs to. Must be alpha-numerics. Length of string should be between 1 and 48.</td>
+</tr>
+<tr>
+<td>mod-time</td>
+<td>ModTime is the Last Modification time of the object. System generated and updated, not updatable by user.</td>
+</tr>
+<tr>
+<td>creation-time</td>
+<td>CreationTime is the creation time of the object. System generated and updated, not updatable by user.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="specificationsorspecssection">Specifications or Specs Section:</h3>
+<table>
+<thead>
+<tr>
+<th>Timeouts and Limits</th>
+<th>Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Session Idle Timeout</td>
+<td>90s</td>
+</tr>
+<tr>
+<td>TCP Connection Setup Timeout</td>
+<td>30s</td>
+</tr>
+<tr>
+<td>TCP Close Timeout</td>
+<td>15s</td>
+</tr>
+<tr>
+<td>TCP Half Closed Timeout</td>
+<td>120s</td>
+</tr>
+<tr>
+<td>TCP Drop Timeout</td>
+<td>90s</td>
+</tr>
+<tr>
+<td>UDP Drop Timeout</td>
+<td>60s</td>
+</tr>
+<tr>
+<td>ICMP Drop Timeout</td>
+<td>60s</td>
+</tr>
+<tr>
+<td>Drop Timeout</td>
+<td>60s</td>
+</tr>
+<tr>
+<td>TCP Timeout</td>
+<td>3600s</td>
+</tr>
+<tr>
+<td>UDP Timeout</td>
+<td>30s</td>
+</tr>
+<tr>
+<td>ICMP Timeout</td>
+<td>6h</td>
+</tr>
+<tr>
+<td>TCP Half Open Session Limit</td>
+<td>disabled</td>
+</tr>
+<tr>
+<td>UDP Active Session Limit</td>
+<td>disabled</td>
+</tr>
+<tr>
+<td>ICMP Active Session Limit</td>
+<td>disabled</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>session-idle-timeout</td>
+<td>Session idle timeout removes/deletes the session/flow if there is inactivity; this value is superceded by any value specified in App object. Should be a valid time duration between 30s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>tcp-connection-setup-timeout</td>
+<td>TCP Connection Setup Timeout is the period TCP session is kept to see the response of a SYN. Should be a valid time duration between 1s and 1m0s.</td>
+</tr>
+<tr>
+<td>tcp-close-timeout</td>
+<td>TCP Close Timeout is the time for which TCP session is kept after a FIN is seen. Should be a valid time duration between 1s and 5m0s.</td>
+</tr>
+<tr>
+<td>tcp-half-closed-timeout</td>
+<td>TCP Half Closed Timeout is the time for which tCP session is kept when connection is half closed i.e. FIN sent by FIN_Ack not received. Should be a valid time duration between 1s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>tcp-drop-timeout</td>
+<td>TCP Drop Timeout is the period for which a drop entry is installed for a denied TCP flow. Should be a valid time duration between 1s and 5m0s.</td>
+</tr>
+<tr>
+<td>udp-drop-timeout</td>
+<td>UDP Drop Timeout is the period for which a drop entry is installed for a denied UDP flow. Should be a valid time duration between 1s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>icmp-drop-timeout</td>
+<td>ICMP Drop Timeout is the period for which a drop entry is installed for a denied ICMP flow. Should be a valid time duration between 1s and 5m0s.</td>
+</tr>
+<tr>
+<td>drop-timeout</td>
+<td>Drop Timeout is the period for which a drop entry is installed for a denied non tcp/udp/icmp flow. Should be a valid time duration between 1s and 5m0s.</td>
+</tr>
+<tr>
+<td>tcp-timeout</td>
+<td>Tcp Timeout is the period for which a TCP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>udp-timeout</td>
+<td>Udp Timeout is the period for which a UDP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>icmp-timeout</td>
+<td>Icmp Timeout is the period for which a ICMP session is kept alive during inactivity. Should be a valid time duration between 1s and 48h0m0s.</td>
+</tr>
+<tr>
+<td>tcp-half-open-session-limit</td>
+<td>Tcp half open session limit config after which new open requests will be dropped. Value should be between 0 and 32768.</td>
+</tr>
+<tr>
+<td>udp-active-session-limit</td>
+<td>Udp active session limit config after which new requests will be dropped. Value should be between 0 and 32768.</td>
+</tr>
+<tr>
+<td>icmp-active-session-limit</td>
+<td>Icmp active session limit config after which new requests will be dropped. Value should be between 0 and 32768.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="statussection">Status section:</h3>
+<p>Propagation section:
+Complete or Pending</p>
+<p>The Update button on right hand top corner in the firewall profile provides the flexibility to adjust the timeouts and limits to values that are based upon individual customers' security requirements and environment. After modification, click on "Save Firewall profile" to save the settings. Use caution to change the default values.</p>

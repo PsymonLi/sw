@@ -13,6 +13,7 @@ export const HelpLinkMap: { [id: string]: string } = {
   "dscs" : "/assets/generated/docs/help/dscs.html",
   "firewalllogpolicy" : "/assets/generated/docs/help/firewalllogpolicy.html",
   "fwlogs" : "/assets/generated/docs/help/firewalllogs.html",
+  "firewallprofiles" : "/assets/generated/docs/help/firewallprofiles.html",
   "flowexport" : "/assets/generated/docs/help/flowexport.html",
   "hosts" : "/assets/generated/docs/help/hosts.html",
   "ldap" : "/assets/generated/docs/help/ldap.html",

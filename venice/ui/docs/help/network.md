@@ -14,10 +14,8 @@ The Network refers to the DSC network that PSM creates for network traffic. The 
 
 <load-table group:network obj:ApiObjectMeta
             include:name >
-<load-table group:network obj:NetworkNetworkSpec
-            include:vlan-id omitHeader:true>
-<load-table group:network obj:NetworkNetworkSpec
-            include:orchestrators omitHeader:true>
+| VLAN | VLAN Id, an integer value in the range 0 - 4095. This corresponds to the external VLAN ID that we would create the VMware DVS port group. This has to match the external VLAN ID the VM or workload. |
+| Orchestrator | One or more orchestrator registered with the PSM. The Orchestrator field contains vCenter name and DataCenter in which this network should be created in. Both the vCenter name and DataCenter are dropdown menu which will list all the objects that are registered in the Controler --> vCenter section. |
 
 ### Network Overview
 The network overview comprise of four columns including
