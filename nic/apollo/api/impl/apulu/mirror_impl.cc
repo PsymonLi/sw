@@ -252,17 +252,16 @@ mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
     mirror_actiondata_t mirror_data = { 0 };
 
     mirror_data.action_id = MIRROR_ERSPAN_ID;
-    mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_TUNNEL;
     mytep_ip = device_db()->find()->ip_addr();
     mirror_data.erspan_action.sip = mytep_ip.addr.v4_addr;
     if (spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
         tep = tep_find(&spec->erspan_spec.tep);
-        SDK_ASSERT(tep != NULL);
         mirror_data.erspan_action.nexthop_id =
             ((tep_impl *)(tep->impl()))->hw_id();
         mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
-        //mirror_data.erspan_action.dmac;
-        //mirror_data.erspan_action.smac;
+        // DMAC and SMAC both are picked from the NH this TEP resolves to
+        mirror_data.erspan_action.rewrite_flags = P4_REWRITE_DMAC_FROM_NEXTHOP;
     } else {
         SDK_ASSERT(spec->erspan_spec.dst_type ==
                        PDS_ERSPAN_DST_TYPE_IP);
