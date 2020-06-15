@@ -1051,6 +1051,21 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorS
 	return nil
 }
 
+// ListErrMirrorSessions list all session which are in err state
+func (sm *Statemgr) ListErrMirrorSessions() ([]*MirrorSessionState, error) {
+	emss := []*MirrorSessionState{}
+	mss, err := sm.ListMirrorSesssions()
+	if err != nil {
+		for _, ms := range mss {
+			if ms.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
+				emss = append(emss, ms)
+			}
+		}
+	}
+	return emss, err
+
+}
+
 // ListMirrorSesssions lists all mirror sessions
 func (sm *Statemgr) ListMirrorSesssions() ([]*MirrorSessionState, error) {
 	objs := sm.ListObjects("MirrorSession")
@@ -1160,20 +1175,25 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSess
 		smm.deleteMirrorSession(ms)
 
 		// bring-up any of the mirror session in failed state
-		ml, err := smm.sm.ListMirrorSesssions()
+		ml, err := smm.sm.ListErrMirrorSessions()
 		if err == nil {
 			for _, m := range ml {
-				if m.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
+				log.Infof("Got delete[%v] mirror retry for %#v", ms.MirrorSession.Name, m.MirrorSession.Name)
+				if m.MirrorSession.Name != ms.MirrorSession.Name {
 					log.Infof("retry session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
 					m.MirrorSession.Lock()
 					log.Infof("Attempting to program session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
-					m.setMirrorSessionRunning(&m.MirrorSession.MirrorSession)
-					if ms.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
-						log.Infof("retry failed session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
-						m.MirrorSession.Unlock()
-						continue
+					// before we get the lock the state may change we have to
+					// do the state check after the lock
+					if m.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
+						m.setMirrorSessionRunning(&m.MirrorSession.MirrorSession)
+						if m.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
+							log.Infof("retry failed session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
+							m.MirrorSession.Unlock()
+							continue
+						}
+						m.State = monitoring.MirrorSessionState_SCHEDULED
 					}
-					m.State = monitoring.MirrorSessionState_SCHEDULED
 					m.MirrorSession.Unlock()
 					return smm.addMirror(m)
 				}

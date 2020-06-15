@@ -133,6 +133,7 @@ var _ = Describe("mirror session tests", func() {
 				}
 				return true
 			}, 30, 5).Should(BeTrue(), fmt.Sprintf("Failed to delete mirror session after testing process"))
+			time.Sleep(5 * time.Second)
 		})
 
 		AfterEach(func() {
@@ -149,7 +150,7 @@ var _ = Describe("mirror session tests", func() {
 				}
 				return true
 			}, 30, 5).Should(BeTrue(), fmt.Sprintf("Failed to delete mirror session after testing process"))
-			time.Sleep(10 * time.Second)
+			time.Sleep(5 * time.Second)
 		})
 
 		It("Check max mirror sessions", func() {
@@ -218,7 +219,7 @@ var _ = Describe("mirror session tests", func() {
 				spec := tms.GetSpec()
 				listMirrorMap[tms.GetName()] = &spec
 				if tms.Status.ScheduleState != monitoring.MirrorSessionState_ACTIVE.String() {
-					By(fmt.Sprintf("mirror state: %v", tms.Status.ScheduleState))
+					By(fmt.Sprintf("mirror: %v state: %v", tms.Name, tms.Status.ScheduleState))
 					return false
 				}
 				By("Deep check obtained mirror session content------")
@@ -285,14 +286,14 @@ var _ = Describe("mirror session tests", func() {
 			Eventually(func() bool {
 				tmp, err := mirrorRestIf.Get(ctx, &ms.ObjectMeta)
 				if err != nil {
-					By(fmt.Sprintf("GET err:%s", err))
+					By(fmt.Sprintf("GET Mirror: %s err:%s", tmp.GetName(), err))
 					return false
 				}
 				tms = tmp
 				spec := tms.GetSpec()
 				listMirrorMap[tms.GetName()] = &spec
 				if tms.Status.ScheduleState != monitoring.MirrorSessionState_ACTIVE.String() {
-					By(fmt.Sprintf("mirror state: %v", tms.Status.ScheduleState))
+					By(fmt.Sprintf("mirror: %v state: %v", tms.Name, tms.Status.ScheduleState))
 					return false
 				}
 				By("Deep check obtained mirror session content------")
@@ -313,7 +314,7 @@ var _ = Describe("mirror session tests", func() {
 					}
 				}
 				return true
-			}, 5, 1).Should(BeTrue(), fmt.Sprintf("Failed to start %s", ms.Name))
+			}, 30, 5).Should(BeTrue(), fmt.Sprintf("Failed to start %s", ms.Name))
 
 			By("Checking mirror sessions on naples card")
 			Eventually(func() bool {
