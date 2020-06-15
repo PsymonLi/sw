@@ -9,6 +9,7 @@
            [dataKey]="dataKey"
            [first]="first"
            [loading]="loading"
+           (onPage)="onPage($event)"
            (onRowSelect)="rowSelected($event)"
            (onRowUnselect)="rowUnselected($event)"
            [paginator]="true"
@@ -44,8 +45,11 @@
       <tr>
         <th *ngIf="enableCheckbox" class="pentable-checkbox">
           <div class="pentable-th-box">
-            <p-tableHeaderCheckbox matTooltip="Select/Deselect All Records In Current Page">
-            </p-tableHeaderCheckbox>
+            <p-checkbox [binary]="true"
+                        matTooltip="Select/Deselect All Records In Current Page"
+                        (onChange)="onHeaderCheckboxToggle($event)"
+                        [(ngModel)]="pageSelected">
+            </p-checkbox>
           </div>
         </th>
         <th *ngFor="let col of selectedColumns; let last = last"

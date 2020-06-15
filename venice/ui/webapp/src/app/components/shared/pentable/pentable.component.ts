@@ -67,6 +67,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   hoveredRowID: string;
   rowsPerPageOptions: number[] = [10, 25, 50, 100];
   defaultRows: number = Math.min(...this.rowsPerPageOptions);
+  pageSelected: boolean = false;
   scrollHeight: string = `100%`;
   searchInitialized: boolean = false;
   selectedColumns: TableCol[] = [];
@@ -142,6 +143,12 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
           this.searchEmitter.emit(null);
         }, 0);
       }
+    }
+
+    // if a new set of data comes in (new alerts, new search, etc), clear out selection
+    if (change.data) {
+      this.selectedDataObjects = [];
+      this.pageSelected = false;
     }
   }
 
@@ -285,6 +292,22 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
         this.subscriptions.push(sub);
       }
     });
+  }
+
+  onHeaderCheckboxToggle(checked) {
+    this.selectedDataObjects = checked ? this.data.slice(this.first, this.first + this.numRows) : [];
+    setTimeout(() => {
+      this.pageSelected = this.selectedDataObjects.length > 0;
+    }, 0);
+  }
+
+  onPage(event) {
+    if (event.rows !== this.numRows) {
+      this.selectedDataObjects = [];
+    }
+    this.first = event.first;
+    this.numRows = event.rows;
+    this.pageSelected = Utility.getLodash().isEqual(this.selectedDataObjects, this.data.slice(this.first, this.first + this.numRows));
   }
 
   onSearch() {

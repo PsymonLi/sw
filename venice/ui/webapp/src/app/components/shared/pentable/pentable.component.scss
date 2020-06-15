@@ -92,6 +92,10 @@ app-pentable,
 
   .ui-chkbox {
     margin-right: 0;
+
+    .ui-chkbox-box {
+      box-shadow: none;
+    }
   }
 }
 
