@@ -417,6 +417,10 @@ Loop:
 						continue
 					}
 				}
+				if ros.Spec.GetSuspend() {
+					log.Infof("Skipping upgrade for %s as Rollout is suspended", snicState)
+					continue
+				}
 
 				log.Infof("Got work %#v Adding version:%+v op:%+v", snicState.Name, version, op)
 
