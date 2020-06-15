@@ -536,7 +536,6 @@ func (sm *Statemgr) UpdateSgpolicyStatus(nodeuuid, tenant, name, generationID st
 	if err != nil {
 		return
 	}
-
 	policy.updateNodeVersion(nodeuuid, generationID)
 
 }

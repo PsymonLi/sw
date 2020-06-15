@@ -10615,13 +10615,14 @@ func TestWorkloadProvisionAndAdmitDSC(t *testing.T) {
 	err = stateMgr.ctrler.DistributedServiceCard().Create(&snic)
 	AssertOk(t, err, "Could not create the smartNic")
 
+	stateMgr.PeriodicReconcile()
 	AssertEventually(t, func() (bool, interface{}) {
 		_, err := stateMgr.FindEndpoint("default", "testWorkload-0001.0203.0409")
 		if err == nil {
 			return true, nil
 		}
 		return false, nil
-	}, "Endpoint not found", "1ms", "1s")
+	}, "Endpoint not found", "10ms", "1s")
 
 	// verify we can find the endpoint associated with the workload
 	var foundEp *EndpointState

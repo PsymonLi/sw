@@ -22,6 +22,7 @@ type objectTrackerIntf interface {
 	startDSCTracking(string) error
 	stopDSCTracking(string) error
 	incrementGenID() string
+	updateNotificationEnabled() bool
 }
 
 type objPropagationStatus struct {
@@ -34,16 +35,20 @@ type objPropagationStatus struct {
 }
 
 type smObjectTracker struct {
-	sync.Mutex
 	nodeVersions  map[string]string // Map for node -> version
 	obj           stateObj
 	generationID  string
 	noUpdateNotif bool
+	trackerLock   sync.Mutex
 }
 
 func (objTracker *smObjectTracker) init(obj stateObj) {
 	objTracker.obj = obj
 	objTracker.nodeVersions = make(map[string]string)
+}
+
+func (objTracker *smObjectTracker) updateNotificationEnabled() bool {
+	return !objTracker.noUpdateNotif
 }
 
 func (objTracker *smObjectTracker) incrementGenID() string {
@@ -56,8 +61,8 @@ func (objTracker *smObjectTracker) incrementGenID() string {
 // initNodeVersions initializes node versions for the policy
 func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
 
-	objTracker.Lock()
-	defer objTracker.Unlock()
+	objTracker.trackerLock.Lock()
+	defer objTracker.trackerLock.Unlock()
 
 	dscs := objTracker.obj.TrackedDSCs()
 
@@ -70,15 +75,13 @@ func (objTracker *smObjectTracker) reinitObjTracking(genID string) error {
 	}
 
 	objTracker.generationID = genID
-	mgr := MustGetStatemgr()
-	mgr.PeriodicUpdaterPush(objTracker.obj)
 
 	return nil
 }
 
 func (objTracker *smObjectTracker) startDSCTracking(dsc string) error {
 
-	objTracker.Lock()
+	objTracker.trackerLock.Lock()
 
 	update := false
 	if _, ok := objTracker.nodeVersions[dsc]; !ok {
@@ -87,7 +90,7 @@ func (objTracker *smObjectTracker) startDSCTracking(dsc string) error {
 		update = true
 	}
 
-	objTracker.Unlock()
+	objTracker.trackerLock.Unlock()
 
 	if update && !objTracker.noUpdateNotif {
 		mgr := MustGetStatemgr()
@@ -103,7 +106,7 @@ func (objTracker *smObjectTracker) skipUpdateNotification() {
 
 func (objTracker *smObjectTracker) stopDSCTracking(dsc string) error {
 
-	objTracker.Lock()
+	objTracker.trackerLock.Lock()
 
 	update := false
 	_, ok := objTracker.nodeVersions[dsc]
@@ -112,7 +115,8 @@ func (objTracker *smObjectTracker) stopDSCTracking(dsc string) error {
 		delete(objTracker.nodeVersions, dsc)
 		update = true
 	}
-	objTracker.Unlock()
+
+	objTracker.trackerLock.Unlock()
 
 	if update && !objTracker.noUpdateNotif {
 		mgr := MustGetStatemgr()
@@ -123,7 +127,8 @@ func (objTracker *smObjectTracker) stopDSCTracking(dsc string) error {
 }
 
 func (objTracker *smObjectTracker) updateNodeVersion(nodeuuid, generationID string) {
-	objTracker.Lock()
+
+	objTracker.trackerLock.Lock()
 
 	update := false
 
@@ -134,7 +139,8 @@ func (objTracker *smObjectTracker) updateNodeVersion(nodeuuid, generationID stri
 		objTracker.nodeVersions[nodeuuid] = generationID
 		update = true
 	}
-	objTracker.Unlock()
+
+	objTracker.trackerLock.Unlock()
 
 	if update && !objTracker.noUpdateNotif {
 		mgr := MustGetStatemgr()
@@ -151,8 +157,9 @@ func versionToInt(v string) int {
 }
 
 func (objTracker *smObjectTracker) getPropStatus() objPropagationStatus {
-	objTracker.Lock()
-	defer objTracker.Unlock()
+
+	objTracker.trackerLock.Lock()
+	defer objTracker.trackerLock.Unlock()
 
 	propStatus := objPropagationStatus{generationID: objTracker.generationID}
 	for node, version := range objTracker.nodeVersions {

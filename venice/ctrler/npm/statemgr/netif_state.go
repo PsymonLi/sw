@@ -227,6 +227,7 @@ func (sm *Statemgr) OnInterfaceOperUpdate(nodeID string, agentNetif *netproto.In
 	if err != nil {
 		return err
 	}
+
 	eps.updateNodeVersion(nodeID, agentNetif.ObjectMeta.GenerationID)
 	return nil
 }
@@ -340,8 +341,6 @@ func NewNetworkInterfaceState(intf *ctkit.NetworkInterface, sma *SmNetworkInterf
 	}
 	intf.HandlerCtx = ifcfg
 	ifcfg.smObjectTracker.init(ifcfg)
-	//No need to send update notification as we are not updating status yet
-	ifcfg.smObjectTracker.skipUpdateNotification()
 	return ifcfg, nil
 }
 

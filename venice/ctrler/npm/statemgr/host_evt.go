@@ -123,13 +123,19 @@ func (sm *Statemgr) OnHostUpdate(host *ctkit.Host, nhst *cluster.Host) error {
 		}
 	}
 
+	//TODO: Fix for multiple DSCs
 	if rescanEps {
 		hs.workloads.Range(func(key, value interface{}) bool {
 			wmeta := value.(api.ObjectMeta)
 			wrk, err := sm.FindWorkload(wmeta.Tenant, wmeta.Name)
 			if err == nil {
-				sm.reconcileWorkload(wrk.Workload, hs, snic)
+				if snic == nil {
+					wrk.deleteEndpoints()
+				} else {
+					sm.reconcileWorkload(wrk.Workload, hs)
+				}
 			}
+
 			return true
 		})
 	}
@@ -183,4 +189,29 @@ func (hst *HostState) getDSCs() []*DistributedServiceCardState {
 	}
 
 	return dscs
+}
+
+func (hst *HostState) doReconcile() error {
+	host, err := hst.stateMgr.FindHost(hst.Host.Tenant, hst.Host.Name)
+	if err == nil {
+		host.Host.Lock()
+		hst.workloads.Range(func(key, value interface{}) bool {
+			wmeta := value.(api.ObjectMeta)
+			wrk, err := hst.stateMgr.FindWorkload(wmeta.Tenant, wmeta.Name)
+			if err == nil {
+				hst.stateMgr.reconcileWorkload(wrk.Workload, hst)
+			} else {
+				log.Errorf("Error finding workload. Err: %v", err)
+			}
+			return true
+		})
+		host.Host.Unlock()
+
+	}
+	return nil
+}
+
+//GetKey gets thekey
+func (hst *HostState) GetKey() string {
+	return hst.Host.GetKey()
 }

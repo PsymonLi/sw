@@ -173,25 +173,6 @@ func (sm *Statemgr) dscDecommissioned(dsc *cluster.DistributedServiceCard) bool 
 }
 
 func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard, sns *DistributedServiceCardState, sendSgPolicies bool) {
-	// see if smartnic is admitted
-	/*if sm.isDscAdmitted(&smartNic.DistributedServiceCard) {
-		if sendSgPolicies {
-			// Update SGPolicies
-			policies, _ := sm.ListSgpolicies()
-			for _, policy := range policies {
-				policy.NetworkSecurityPolicy.Lock()
-				policy.processDSCUpdate(&smartNic.DistributedServiceCard)
-				policy.NetworkSecurityPolicy.Unlock()
-			}
-		}
-		// Update FirewallProfiles
-		fwprofiles, _ := sm.ListFirewallProfiles()
-		for _, fwprofile := range fwprofiles {
-			fwprofile.FirewallProfile.Lock()
-			fwprofile.processDSCUpdate(&smartNic.DistributedServiceCard)
-			fwprofile.FirewallProfile.Unlock()
-		}
-	}*/
 
 	hosts, err := sm.ctrler.Host().List(context.Background(), &api.ListWatchOptions{})
 	if err != nil {
@@ -212,20 +193,9 @@ func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard,
 			host.Lock()
 			hs, err := sm.FindHost(host.Tenant, host.Name)
 			if err == nil {
-				hs.workloads.Range(func(key, value interface{}) bool {
-					wmeta := value.(api.ObjectMeta)
-					wrk, err := sm.FindWorkload(wmeta.Tenant, wmeta.Name)
-					if err == nil {
-						sm.reconcileWorkload(wrk.Workload, hs, sns)
-					} else {
-						log.Errorf("Error finding workload. Err: %v", err)
-					}
-					return true
-				})
-			} else {
-				log.Errorf("Error finding host %v. Err: %v", host.Name, err)
+				sm.addForReconcile(hs)
+				host.Unlock()
 			}
-			host.Unlock()
 		}
 	}
 }
@@ -426,7 +396,7 @@ func (sm *Statemgr) deleteDscRelatedObjects(smartNic *ctkit.DistributedServiceCa
 			}
 		}
 
-		// if this host and smartnic are associated, trigger workload reconciliation
+		// if this host and smartnic are associated, trigger workload delete
 		if associated {
 			hs, err := sm.FindHost(host.Tenant, host.Name)
 			if err == nil {
@@ -434,7 +404,7 @@ func (sm *Statemgr) deleteDscRelatedObjects(smartNic *ctkit.DistributedServiceCa
 					wmeta := value.(api.ObjectMeta)
 					wrk, err := sm.FindWorkload(wmeta.Tenant, wmeta.Name)
 					if err == nil {
-						sm.reconcileWorkload(wrk.Workload, hs, nil)
+						wrk.deleteEndpoints()
 					} else {
 						log.Errorf("Error finding workload. Err: %v", err)
 					}

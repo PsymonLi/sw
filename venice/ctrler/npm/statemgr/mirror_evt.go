@@ -399,12 +399,17 @@ func MirrorSessionStateFromObj(obj runtime.Object) (*MirrorSessionState, error) 
 type interfaceMirrorSession struct {
 	objectTrackerIntf
 	dscUpdateIntf
+	ms      *MirrorSessionState
 	obj     *netproto.InterfaceMirrorSession
 	pushObj memdb.PushObjectHandle
 }
 
 func (ms *interfaceMirrorSession) GetDBObject() memdb.Object {
 	return ms.obj
+}
+
+func (ms *interfaceMirrorSession) Write() error {
+	return ms.ms.Write()
 }
 
 //PushObject get push object
@@ -687,6 +692,7 @@ func (smm *SmMirrorSessionInterface) initInterfaceMirrorSession(ms *MirrorSessio
 				SpanID:     ms.MirrorSession.Spec.SpanID,
 			},
 		},
+		ms: ms,
 	}
 	ms.intfMirrorSession.objectTrackerIntf = ms
 	ms.intfMirrorSession.dscUpdateIntf = ms

@@ -193,9 +193,6 @@ type Memdb struct {
 	registeredKinds map[string]bool
 	pushdb          *pushDB
 	pObjDB          map[string]*pushObjDB //DB for all push objects
-	objGraph        graph.Interface
-	dbAddResolver   resolver
-	dbDelResolver   resolver
 	filterGroups    map[string]watchFiltersetInterface
 	// map of per object kind watch filter flags
 	filterFlags     map[string]uint
@@ -204,6 +201,14 @@ type Memdb struct {
 	wFilterDSCLock  sync.RWMutex
 	topoHandler     topoMgrInterface
 	propagationStCh chan *PropagationStTopoUpdate
+}
+
+//DBWithResolver is database of all objects
+type DBWithResolver struct {
+	Memdb
+	objGraph      graph.Interface
+	dbAddResolver resolver
+	dbDelResolver resolver
 }
 
 type objIntf interface {
@@ -334,24 +339,42 @@ func (od *Objdb) watchEventAgentFilter(obj objIntf, et EventType) error {
 }
 
 // NewMemdb creates a new memdb instance
+func initMemDB(md *Memdb) {
+	// create memdb instance
+	md.objdb = make(map[string]*Objdb)
+	md.registeredKinds = make(map[string]bool)
+	md.filterGroups = make(map[string]watchFiltersetInterface)
+	md.filterFlags = make(map[string]uint)
+	md.dscWatcherInfo = make(map[string]dscWatcherDBInterface)
+
+	md.pushdb = newPushDB(md)
+	md.topoHandler = newTopoMgr(md)
+
+}
+
+// NewMemdb creates a new memdb instance
 func NewMemdb() *Memdb {
 	// create memdb instance
-	md := Memdb{
-		objdb:           make(map[string]*Objdb),
-		registeredKinds: make(map[string]bool),
-		filterGroups:    make(map[string]watchFiltersetInterface),
-		filterFlags:     make(map[string]uint),
-		dscWatcherInfo:  make(map[string]dscWatcherDBInterface),
-	}
+	md := Memdb{}
 
-	md.dbAddResolver = newAddResolver(&md)
-	md.dbDelResolver = newDeleteResolver(&md)
+	initMemDB(&md)
 	md.pushdb = newPushDB(&md)
 	md.topoHandler = newTopoMgr(&md)
 
-	md.objGraph, _ = graph.NewCayleyStore()
-
 	return &md
+}
+
+// NewMemdbWithResolver creates a new memdb instance
+func NewMemdbWithResolver() *DBWithResolver {
+	// create memdb instance
+
+	db := DBWithResolver{}
+	initMemDB(&db.Memdb)
+	db.dbAddResolver = newAddResolver(&db)
+	db.dbDelResolver = newDeleteResolver(&db)
+	db.objGraph, _ = graph.NewCayleyStore()
+
+	return &db
 }
 
 //RegisterKind register a kind
@@ -514,6 +537,48 @@ func getSKindDKindFieldKey(key string) (string, string, string) {
 
 //AddPushObject add push object to memdb
 func (md *Memdb) AddPushObject(key string, obj Object, refs map[string]apiintf.ReferenceObj, receivers []objReceiver.Receiver) (PushObjectHandle, error) {
+
+	if obj.GetObjectKind() == "" {
+		log.Errorf("Object kind is empty: %+v", obj)
+	}
+	// get objdb
+	if key == "" {
+		key = memdbKey(obj.GetObjectMeta())
+	}
+
+	newObj := &pObjState{objState: objState{
+		key:          key,
+		obj:          obj,
+		nodeState:    make(map[string]Object),
+		resolveState: resolved, //setting to resolved as no resolver
+	},
+		bitMap:     bitset.New(maxReceivers),
+		sentBitMap: bitset.New(maxReceivers),
+		delBitMap:  bitset.New(maxReceivers),
+		pushdb:     md.pushdb,
+	}
+
+	for _, recv := range receivers {
+		r, ok := recv.(*receiver)
+		if !ok {
+			return nil, errors.New("Invalid receiver")
+		}
+		_, err := md.FindReceiver(r.ID)
+		if err != nil {
+			return nil, fmt.Errorf("Receiver %v not found", r.ID)
+		}
+		newObj.bitMap.Set(r.bitID)
+	}
+
+	err := md.addObject(md.getPushObjectDBByType(obj.GetObjectKind()), key, newObj, refs)
+	if err != nil {
+		return nil, err
+	}
+	return newObj, nil
+}
+
+//AddPushObject add push object to memdb
+func (md *DBWithResolver) AddPushObject(key string, obj Object, refs map[string]apiintf.ReferenceObj, receivers []objReceiver.Receiver) (PushObjectHandle, error) {
 
 	if obj.GetObjectKind() == "" {
 		log.Errorf("Object kind is empty: %+v", obj)
@@ -747,7 +812,7 @@ func (md *Memdb) sendPropagationUpdate(update *PropagationStTopoUpdate) {
 }
 
 //AddObjectWithReferences add object with refs
-func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+func (md *DBWithResolver) addObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
 	if obj.Object().GetObjectKind() == "" {
 		log.Errorf("Object kind is empty: %+v", obj)
 	}
@@ -782,7 +847,7 @@ func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[
 		if propTopoUpdate != nil {
 			md.sendPropagationUpdate(propTopoUpdate)
 		}
-		od.watchEvent(md, obj, CreateEvent)
+		od.watchEvent(&md.Memdb, obj, CreateEvent)
 		md.dbAddResolver.trigger(key)
 	} else {
 		obj.Lock()
@@ -794,7 +859,7 @@ func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[
 }
 
 // UpdateObjectWithReferences updates an object in memdb and sends out watch notifications
-func (md *Memdb) updateObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+func (md *DBWithResolver) updateObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
 	if key == "" {
 		key = memdbKey(obj.Object().GetObjectMeta())
 	}
@@ -852,7 +917,7 @@ func (md *Memdb) updateObject(od objDBInterface, key string, obj objIntf, refs m
 			}
 		}
 
-		od.watchEvent(md, ostate, event)
+		od.watchEvent(&md.Memdb, ostate, event)
 		md.dbAddResolver.trigger(key)
 	} else {
 		log.Infof("Update Object key %v unresolved", key)
@@ -876,13 +941,46 @@ func (md *Memdb) AddObjectWithReferences(key string, obj Object, refs map[string
 	return md.addObject(md.getObjectDBByType(obj.GetObjectKind()), key, newObj, refs)
 }
 
+//AddObjectWithReferences add object with refs
+func (md *DBWithResolver) AddObjectWithReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) error {
+	if key == "" {
+		key = memdbKey(obj.GetObjectMeta())
+	}
+	newObj := &objState{
+		key:       key,
+		obj:       obj,
+		nodeState: make(map[string]Object),
+	}
+
+	return md.addObject(md.getObjectDBByType(obj.GetObjectKind()), key, newObj, refs)
+}
+
 // AddObject adds an object to memdb and sends out watch notifications
 func (md *Memdb) AddObject(obj Object) error {
 	return md.AddObjectWithReferences("", obj, nil)
 }
 
+// AddObject adds an object to memdb and sends out watch notifications
+func (md *DBWithResolver) AddObject(obj Object) error {
+	return md.AddObjectWithReferences("", obj, nil)
+}
+
 // UpdateObjectWithReferences updates an object in memdb and sends out watch notifications
 func (md *Memdb) UpdateObjectWithReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) error {
+	if key == "" {
+		key = memdbKey(obj.GetObjectMeta())
+	}
+
+	updObj := &objState{
+		key:       key,
+		obj:       obj,
+		nodeState: make(map[string]Object),
+	}
+	return md.updateObject(md.getObjectDBByType(obj.GetObjectKind()), key, updObj, refs)
+}
+
+// UpdateObjectWithReferences updates an object in memdb and sends out watch notifications
+func (md *DBWithResolver) UpdateObjectWithReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) error {
 	if key == "" {
 		key = memdbKey(obj.GetObjectMeta())
 	}
@@ -905,7 +1003,17 @@ func (md *Memdb) UpdateObject(obj Object) error {
 	return md.updateObject(md.getObjectDBByType(obj.GetObjectKind()), "", updObj, nil)
 }
 
-func (md *Memdb) clearReferences(key string) {
+//UpdateObject update object with references
+func (md *DBWithResolver) UpdateObject(obj Object) error {
+	updObj := &objState{
+		key:       "",
+		obj:       obj,
+		nodeState: make(map[string]Object),
+	}
+	return md.updateObject(md.getObjectDBByType(obj.GetObjectKind()), "", updObj, nil)
+}
+
+func (md *DBWithResolver) clearReferences(key string) {
 	node := graph.Node{
 		This: key,
 		Refs: make(map[string][]string),
@@ -914,7 +1022,7 @@ func (md *Memdb) clearReferences(key string) {
 }
 
 //When object is updated, find out refs which are removed and call corresponding deletes
-func (md *Memdb) updateReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) {
+func (md *DBWithResolver) updateReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) {
 
 	oldNode := md.objGraph.References(key)
 
@@ -973,7 +1081,7 @@ func (md *Memdb) updateReferences(key string, obj Object, refs map[string]apiint
 }
 
 // DeleteObjectWithReferences deletes an object from memdb and sends out watch notifications
-func (md *Memdb) deleteObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+func (md *DBWithResolver) deleteObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
 	// if we dont have the object, return error
 	md.filterOutRefs(refs)
 	// lock object db
@@ -1002,17 +1110,105 @@ func (md *Memdb) deleteObject(od objDBInterface, key string, obj objIntf, refs m
 		od.Lock()
 		od.deleteObject(key)
 		od.Unlock()
+		md.topoHandler.handleDeleteEvent(obj.Object(), key)
+		od.watchEvent(&md.Memdb, existingObj, DeleteEvent)
 		propUpdate := md.topoHandler.handleDeleteEvent(obj.Object(), key)
 		if propUpdate != nil {
 			md.sendPropagationUpdate(propUpdate)
 		}
-		od.watchEvent(md, existingObj, DeleteEvent)
 		md.dbDelResolver.trigger(key)
 	} else {
 		log.Infof("Delete Object key %v unresolved, refs %v", key, refs)
 		existingObj.deleteUnResolved()
 		existingObj.Unlock()
 	}
+
+	return nil
+}
+
+//AddObjectWithReferences add object with refs
+func (md *Memdb) addObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+	if obj.Object().GetObjectKind() == "" {
+		log.Errorf("Object kind is empty: %+v", obj)
+	}
+
+	if key == "" {
+		key = memdbKey(obj.Object().GetObjectMeta())
+	}
+	// if we have the object, make this an update
+	od.Lock()
+	existingObj := od.getObject(key)
+	if existingObj != nil {
+		//If delete is not resolved, add to pending
+		od.Unlock()
+		return md.updateObject(od, key, obj, refs)
+	}
+
+	od.setObject(key, obj)
+	od.Unlock()
+
+	propUpdate := md.topoHandler.handleAddEvent(obj.Object(), key)
+	if propUpdate != nil {
+		md.sendPropagationUpdate(propUpdate)
+	}
+	od.watchEvent(md, obj, CreateEvent)
+
+	return nil
+}
+
+// UpdateObjectWithReferences updates an object in memdb and sends out watch notifications
+func (md *Memdb) updateObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+	if key == "" {
+		key = memdbKey(obj.Object().GetObjectMeta())
+	}
+
+	// lock object db
+	od.Lock()
+
+	// if we dont have the object, return error
+	ostate := od.getObject(key)
+	if ostate == nil {
+		od.Unlock()
+		log.Errorf("Object {%+v} not found", obj.Object().GetObjectMeta())
+		return errObjNotFound
+	}
+
+	// add it to db and send out watch notification
+
+	od.Unlock()
+	ostate.Lock()
+
+	log.Infof("Update for obj %v", key)
+	old := ostate.Object()
+	ostate.SetValue(obj.Object())
+	ostate.Unlock()
+
+	od.watchEvent(md, ostate, UpdateEvent)
+	propUpdate := md.topoHandler.handleUpdateEvent(old, obj.Object(), key)
+	if propUpdate != nil {
+		md.sendPropagationUpdate(propUpdate)
+	}
+	return nil
+}
+
+// DeleteObjectWithReferences deletes an object from memdb and sends out watch notifications
+func (md *Memdb) deleteObject(od objDBInterface, key string, obj objIntf, refs map[string]apiintf.ReferenceObj) error {
+	// if we dont have the object, return error
+	// lock object db
+	od.Lock()
+
+	existingObj := od.getObject(key)
+	if existingObj == nil {
+		od.Unlock()
+		log.Errorf("Object {%+v} not found", obj.Object().GetObjectMeta())
+		return errors.New("Object not found")
+	}
+
+	od.deleteObject(key)
+	od.Unlock()
+
+	md.topoHandler.handleDeleteEvent(obj.Object(), key)
+	od.watchEvent(md, existingObj, DeleteEvent)
 
 	return nil
 }
@@ -1031,8 +1227,27 @@ func (md *Memdb) DeleteObjectWithReferences(key string, obj Object, refs map[str
 	return md.deleteObject(md.getObjectDBByType(obj.GetObjectKind()), key, delObj, nil)
 }
 
+// DeleteObjectWithReferences deletes an object from memdb and sends out watch notifications
+func (md *DBWithResolver) DeleteObjectWithReferences(key string, obj Object, refs map[string]apiintf.ReferenceObj) error {
+	if key == "" {
+		key = memdbKey(obj.GetObjectMeta())
+	}
+
+	delObj := &objState{
+		key:       key,
+		obj:       obj,
+		nodeState: make(map[string]Object),
+	}
+	return md.deleteObject(md.getObjectDBByType(obj.GetObjectKind()), key, delObj, nil)
+}
+
 // DeleteObject deletes an object from memdb and sends out watch notifications
 func (md *Memdb) DeleteObject(obj Object) error {
+	return md.DeleteObjectWithReferences("", obj, nil)
+}
+
+// DeleteObject deletes an object from memdb and sends out watch notifications
+func (md *DBWithResolver) DeleteObject(obj Object) error {
 	return md.DeleteObjectWithReferences("", obj, nil)
 }
 
@@ -1055,7 +1270,7 @@ func (md *Memdb) FindObject(kind string, ometa *api.ObjectMeta) (Object, error) 
 }
 
 // ListObjects returns a list of all receivers
-func (md *Memdb) ListObjects(kind string, filters []FilterFn) []Object {
+func (md *DBWithResolver) ListObjects(kind string, filters []FilterFn) []Object {
 	done := false
 
 	// get objdb
@@ -1071,6 +1286,40 @@ func (md *Memdb) ListObjects(kind string, filters []FilterFn) []Object {
 		if !obj.isResolved() {
 			continue
 		}
+		if len(filters) == 0 {
+			objs = append(objs, obj.obj)
+		} else {
+			for _, filter := range filters {
+				if !filter(obj.obj, nil) {
+					done = true
+					break
+				}
+			}
+			if done == true {
+				done = false
+			} else {
+				objs = append(objs, obj.obj)
+			}
+		}
+	}
+
+	return objs
+}
+
+// ListObjects returns a list of all receivers
+func (md *Memdb) ListObjects(kind string, filters []FilterFn) []Object {
+	done := false
+
+	// get objdb
+	od := md.getObjdb(kind)
+
+	// lock object db
+	od.Lock()
+	defer od.Unlock()
+
+	// walk all objects and add it to return list
+	var objs []Object
+	for _, obj := range od.objects {
 		if len(filters) == 0 {
 			objs = append(objs, obj.obj)
 		} else {

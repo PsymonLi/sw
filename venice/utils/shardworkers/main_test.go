@@ -47,7 +47,7 @@ func (w myWorkCtx) Unlock() {
 
 func TestWorkerStartStop(t *testing.T) {
 
-	wp := NewWorkerPool(3)
+	wp := NewWorkerPool("worker", 3)
 
 	TestUtils.Assert(t, !wp.Running(), "Worker pool not running")
 	wp.Start()
@@ -84,7 +84,7 @@ func TestWorkerStartStop(t *testing.T) {
 
 func TestWorkerPeriodicJob(t *testing.T) {
 
-	wp := NewWorkerPool(30)
+	wp := NewWorkerPool("worker", 30)
 
 	TestUtils.Assert(t, !wp.Running(), "Worker pool not running")
 	wp.Start()
@@ -113,7 +113,7 @@ func TestWorkerPeriodicJob(t *testing.T) {
 
 func TestWorkerStartStopWithWorkFunc(t *testing.T) {
 
-	wp := NewWorkerPool(3)
+	wp := NewWorkerPool("worker", 3)
 
 	TestUtils.Assert(t, !wp.Running(), "Worker pool not running")
 	wp.Start()
@@ -146,6 +146,7 @@ func TestWorkerStartStopWithWorkFunc(t *testing.T) {
 	cnt, err = wp.GetCompletedJobsCount(1)
 	TestUtils.Assert(t, cnt == 1 && err == nil, "Jobs completed match on queue 1")
 
+	wp.DumpWorkerStats()
 	wp.Stop()
 	TestUtils.Assert(t, !wp.Running(), "Worker pool not running")
 

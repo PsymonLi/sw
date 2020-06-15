@@ -29,10 +29,10 @@ var singletonStatemgr Statemgr
 var once sync.Once
 var featuremgrs map[string]FeatureStateMgr
 
-var numberofWorkersPerKind = 64
+var numberofWorkersPerKind = 8
 
 // maxUpdateChannelSize is the size of the update pending channel
-const maxUpdateChannelSize = 16384
+const maxUpdateChannelSize = 32768
 
 // updatable is an interface all updatable objects have to implement
 type updatable interface {
@@ -56,6 +56,12 @@ type dscUpdateIntf interface {
 	processDSCUpdate(dsc *cluster.DistributedServiceCard) error
 	processDSCDelete(dsc *cluster.DistributedServiceCard) error
 	isMarkedForDelete() bool
+	GetKey() string
+}
+
+// reconcileIntf
+type reconcileIntf interface {
+	doReconcile() error
 	GetKey() string
 }
 
@@ -91,6 +97,7 @@ type Statemgr struct {
 	initialResyncDone     bool
 	resyncDone            chan bool
 	dscUpdateNotifObjects map[string]dscUpdateIntf // objects which are watching dsc update
+	reconcileObjects      map[string]reconcileIntf // objects which have to be reconciled
 	ctrler                ctkit.Controller         // controller instance
 	topics                Topics                   // message bus topics
 	networkKindLock       sync.Mutex               // lock on entire network kind, take when any changes are done to any network
@@ -186,6 +193,16 @@ func (sm *Statemgr) SetRoutingConfigStatusReactor(handler nimbus.RoutingConfigSt
 	sm.RoutingConfigStatusReactor = handler
 }
 
+//For kinds with huge config expected on scale, increase number of workers
+var workerKindCountMap = map[string]uint32{
+	"Workload":               64,
+	"Endpoint":               64,
+	"DistributedServiceCard": 64,
+	"Host":                   64,
+	"App":                    64,
+	"NetworkInterface":       64,
+}
+
 func (sm *Statemgr) addAggKind(group, kind string, reactor interface{}) {
 	sm.Lock()
 	defer sm.Unlock()
@@ -196,11 +213,13 @@ func (sm *Statemgr) addAggKind(group, kind string, reactor interface{}) {
 			return
 		}
 	}
-	log.Infof("Registring agg reactor for %v(%v) %p %T", kind, group, reactor, reactor)
+	workers, _ := workerKindCountMap[kind]
+	log.Infof("Registring agg reactor for %v(%v) with workers %v", kind, group, workers)
 	sm.aggKinds = append(sm.aggKinds, ctkit.AggKind{
 		Group:   group,
 		Kind:    kind,
 		Reactor: reactor,
+		Workers: workers,
 	})
 }
 
@@ -395,6 +414,7 @@ func (sm *featureMgrBase) ProcessDSCEvent(ev EventType, dsc *cluster.Distributed
 func initStatemgr() {
 	singletonStatemgr = Statemgr{
 		dscUpdateNotifObjects: make(map[string]dscUpdateIntf),
+		reconcileObjects:      make(map[string]reconcileIntf),
 		WatchFilterFlags:      make(map[string]uint),
 	}
 	featuremgrs = make(map[string]FeatureStateMgr)
@@ -417,8 +437,8 @@ func (sm *Statemgr) registerForDscUpdate(object dscUpdateIntf) {
 }
 
 func (sm *Statemgr) sendDscUpdateNotification(dsc *cluster.DistributedServiceCard) {
-	sm.Lock()
 	updateObjects := []dscUpdateObj{}
+	sm.Lock()
 	for _, obj := range sm.dscUpdateNotifObjects {
 		if obj.isMarkedForDelete() {
 			delete(sm.dscUpdateNotifObjects, obj.GetKey())
@@ -433,8 +453,8 @@ func (sm *Statemgr) sendDscUpdateNotification(dsc *cluster.DistributedServiceCar
 }
 
 func (sm *Statemgr) sendDscDeleteNotification(dsc *cluster.DistributedServiceCard) {
-	sm.Lock()
 	updateObjects := []dscUpdateObj{}
+	sm.Lock()
 	for _, obj := range sm.dscUpdateNotifObjects {
 		if obj.isMarkedForDelete() {
 			delete(sm.dscUpdateNotifObjects, obj.GetKey())
@@ -505,6 +525,29 @@ func (sm *Statemgr) setDefaultReactors(reactor ctkit.CtrlDefReactor) {
 
 }
 
+//PeriodicReconcile callback from ctkit when no new objects are received
+//and we can do some fixups or reconciliation necessary
+func (sm *Statemgr) PeriodicReconcile() {
+
+	objects := []reconcileIntf{}
+	sm.Lock()
+	for _, reconcileObj := range sm.reconcileObjects {
+		objects = append(objects, reconcileObj)
+	}
+	sm.reconcileObjects = make(map[string]reconcileIntf)
+	sm.Unlock()
+
+	for _, obj := range objects {
+		obj.doReconcile()
+	}
+}
+
+func (sm *Statemgr) addForReconcile(obj reconcileIntf) {
+	sm.Lock()
+	defer sm.Unlock()
+	sm.reconcileObjects[obj.GetKey()] = obj
+}
+
 //ResyncComplete callback from ctkit when resync of state is done
 func (sm *Statemgr) ResyncComplete() {
 
@@ -555,10 +598,11 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 	// disable object resolution
 
 	spec := ctkit.CtrlerSpec{
-		ApisrvURL:              apisrvURL,
-		Logger:                 logger,
-		Name:                   globals.Npm,
-		Resolver:               rslvr,
+		ApisrvURL: apisrvURL,
+		Logger:    logger,
+		Name:      globals.Npm,
+		Resolver:  rslvr,
+		//Can be overriden by aggkind
 		NumberofWorkersPerKind: numberofWorkersPerKind,
 		RpcServer:              rpcServer,
 		ResolveObjects:         useResolver,
@@ -1098,6 +1142,7 @@ func SetNetworkGarbageCollectionOption(seconds int) Option {
 type mbusObject interface {
 	objectTrackerIntf
 	dscUpdateIntf
+	Write() error
 	GetDBObject() memdb.Object
 }
 
@@ -1108,15 +1153,17 @@ type mbusPushObject interface {
 
 //AddObjectToMbus add object with tracking to gen ID
 func (sm *Statemgr) AddObjectToMbus(key string, obj mbusObject, refs map[string]apiintf.ReferenceObj) error {
-
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
-	//meta.GenerationID = obj.incrementGenID()
 	sm.Lock()
 	sm.registerForDscUpdate(obj)
 	obj.reinitObjTracking(meta.GenerationID)
 	sm.Unlock()
-	return sm.mbus.AddObjectWithReferences(key, dbObject, refs)
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
+	err := sm.mbus.AddObjectWithReferences(key, dbObject, refs)
+	return err
 }
 
 //UpdateObjectToMbus updates object with tracking to gen ID
@@ -1126,6 +1173,9 @@ func (sm *Statemgr) UpdateObjectToMbus(key string, obj mbusObject, refs map[stri
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
 	obj.reinitObjTracking(meta.GenerationID)
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
 	return sm.mbus.UpdateObjectWithReferences(key, dbObject, refs)
 }
 
@@ -1136,6 +1186,9 @@ func (sm *Statemgr) DeleteObjectToMbus(key string, obj mbusObject, refs map[stri
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
 	obj.reinitObjTracking(meta.GenerationID)
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
 	return sm.mbus.DeleteObjectWithReferences(key, dbObject, refs)
 }
 
@@ -1150,6 +1203,9 @@ func (sm *Statemgr) AddPushObjectToMbus(key string, obj mbusObject,
 	sm.registerForDscUpdate(obj)
 	obj.reinitObjTracking(meta.GenerationID)
 	sm.Unlock()
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
 
 	for _, recv := range receivers {
 		obj.startDSCTracking(recv.Name())
@@ -1168,6 +1224,9 @@ func (sm *Statemgr) UpdatePushObjectToMbus(key string, obj mbusPushObject,
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
 	obj.reinitObjTracking(meta.GenerationID)
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
 
 	return pushObject.UpdateObjectWithReferences(key, dbObject, refs)
 
@@ -1220,6 +1279,9 @@ func (sm *Statemgr) DeletePushObjectToMbus(key string, obj mbusPushObject,
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
 	obj.reinitObjTracking(meta.GenerationID)
+	if obj.updateNotificationEnabled() {
+		sm.PeriodicUpdaterPush(obj)
+	}
 
 	pushObject.RemoveAllObjReceivers()
 	return pushObject.DeleteObjectWithReferences(key, dbObject, refs)
@@ -1229,10 +1291,21 @@ func (sm *Statemgr) DeletePushObjectToMbus(key string, obj mbusPushObject,
 //GetObjectConfigPushStatus for debugging
 func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 	objConfigStatus := &objectConfigStatus{}
-
 	objConfigStatus.KindObjects = make(map[string][]*objectStatus)
+
+	addObjectStatus := func(kind string, obj interface{}) {
+		stateObj := obj.(stateObj)
+		propStatus := stateObj.getPropStatus()
+		objStaus := &objectStatus{}
+		objStaus.Key = stateObj.GetKey()
+		objStaus.Updated = propStatus.updated
+		objStaus.Pending = propStatus.pending
+		objStaus.Version = propStatus.generationID
+		objStaus.PendingDSCs = propStatus.pendingDSCs
+		objStaus.Status = propStatus.status
+		objConfigStatus.KindObjects[kind] = append(objConfigStatus.KindObjects[kind], objStaus)
+	}
 	for _, kind := range kinds {
-		var objects []interface{}
 		switch kind {
 		case "Endpoint":
 			eps, err := sm.ListEndpoints()
@@ -1240,9 +1313,10 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying Endpoint %v", err)
 				return fmt.Errorf("Error querying endpoints %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].Endpoint.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].Endpoint.Unlock()
 			}
 
 		case "App":
@@ -1251,9 +1325,10 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying App %v", err)
 				return fmt.Errorf("Error querying apps %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].App.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].App.Unlock()
 			}
 		case "FirewallProfile":
 			eps, err := sm.ListFirewallProfiles()
@@ -1261,9 +1336,10 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying FirewallProfile %v", err)
 				return fmt.Errorf("Error querying fwp %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].FirewallProfile.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].FirewallProfile.Unlock()
 			}
 		case "NetworkSecurityPolicy":
 			eps, err := sm.ListSgpolicies()
@@ -1271,9 +1347,10 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying NetworkSecurityPolicy %v", err)
 				return fmt.Errorf("Error querying policy %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].NetworkSecurityPolicy.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].NetworkSecurityPolicy.Unlock()
 			}
 		case "MirrorSession":
 			eps, err := sm.ListMirrorSesssions()
@@ -1281,9 +1358,10 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying MirrorSession %v", err)
 				return fmt.Errorf("Error querying mirror sessions %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].MirrorSession.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].MirrorSession.Unlock()
 			}
 		case "NetworkInterface":
 			eps, err := sm.ListNetworkInterfaces()
@@ -1291,24 +1369,13 @@ func (sm *Statemgr) GetObjectConfigPushStatus(kinds []string) interface{} {
 				log.Errorf("Error querying NetworkInterface %v", err)
 				return fmt.Errorf("Error querying network interfaces %v", err)
 			}
-			objects = make([]interface{}, len(eps))
 			for i := range eps {
-				objects[i] = eps[i]
+				eps[i].NetworkInterfaceState.Lock()
+				addObjectStatus(kind, eps[i])
+				eps[i].NetworkInterfaceState.Unlock()
 			}
 		}
 
-		for _, obj := range objects {
-			stateObj := obj.(stateObj)
-			propStatus := stateObj.getPropStatus()
-			objStaus := &objectStatus{}
-			objStaus.Key = stateObj.GetKey()
-			objStaus.Updated = propStatus.updated
-			objStaus.Pending = propStatus.pending
-			objStaus.Version = propStatus.generationID
-			objStaus.PendingDSCs = propStatus.pendingDSCs
-			objStaus.Status = propStatus.status
-			objConfigStatus.KindObjects[kind] = append(objConfigStatus.KindObjects[kind], objStaus)
-		}
 	}
 
 	return objConfigStatus

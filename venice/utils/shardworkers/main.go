@@ -8,7 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	hdr "github.com/pensando/sw/venice/utils/histogram"
+
 	"github.com/pensando/sw/venice/utils/kvstore"
+	"github.com/pensando/sw/venice/utils/log"
 )
 
 type workerState int
@@ -34,6 +37,7 @@ type WorkObj interface {
 type worker struct {
 	sync.Mutex
 	id         int
+	pool       string
 	queue      chan workCtx
 	state      workerState
 	workMaster *WorkerPool
@@ -70,10 +74,11 @@ func (w *worker) Run(ctx context.Context) {
 	w.Lock()
 	w.state = idle
 	w.Unlock()
-	ticker := time.NewTicker((1 * time.Second))
+	ticker := time.NewTicker((2 * time.Second))
 	for true {
 		select {
 		case workContext := <-w.queue:
+			startTime := time.Now()
 			w.Lock()
 			w.state = running
 			w.Unlock()
@@ -86,6 +91,7 @@ func (w *worker) Run(ctx context.Context) {
 				}
 				if w.retryError(err) {
 					// retry after a some time
+					log.Infof("Retry error for work %v", workContext.workObj.GetKey())
 					time.Sleep(20 * time.Millisecond * time.Duration(i+1))
 					continue
 				} else {
@@ -95,6 +101,7 @@ func (w *worker) Run(ctx context.Context) {
 
 			}
 			atomic.AddUint32(&w.doneCnt, 1)
+			hdr.Record(w.pool, time.Now().Sub(startTime))
 		case <-ticker.C:
 			if len(w.queue) == 0 {
 				w.Lock()
@@ -111,6 +118,7 @@ func (w *worker) Run(ctx context.Context) {
 //WorkerPool structure
 type WorkerPool struct {
 	numberOfWorkers uint32
+	name            string
 	workers         []*worker
 	state           workerState
 	StartWg         sync.WaitGroup
@@ -120,18 +128,20 @@ type WorkerPool struct {
 }
 
 //NewWorkerPool initialize new worker pool
-func NewWorkerPool(numOfWorkers uint32) *WorkerPool {
+func NewWorkerPool(name string, numOfWorkers uint32) *WorkerPool {
 	cancelCtx, cancel := context.WithCancel(context.Background())
-	return &WorkerPool{numberOfWorkers: numOfWorkers, state: notRunning,
+	return &WorkerPool{numberOfWorkers: numOfWorkers, state: notRunning, name: name,
 		cancelFunc: cancel, cancelCtx: cancelCtx}
 }
 
 //Start start all the workers.
 func (wp *WorkerPool) Start() error {
+	//Each workers max queue depth is 1k
+	workerQueueDepth := 1024
 
 	for i := 0; i < int(wp.numberOfWorkers); i++ {
-		wp.workers = append(wp.workers, &worker{id: i,
-			queue: make(chan workCtx, 16384), workMaster: wp})
+		wp.workers = append(wp.workers, &worker{id: i, pool: wp.name,
+			queue: make(chan workCtx, workerQueueDepth), workMaster: wp})
 		wp.StartWg.Add(1)
 		wp.DoneWg.Add(1)
 		go wp.workers[i].Run(wp.cancelCtx)
@@ -172,6 +182,25 @@ func (wp *WorkerPool) GetCompletedJobsCount(workerID uint32) (uint32, error) {
 	}
 
 	return wp.workers[workerID].doneCount(), nil
+}
+
+//DumpWorkerStats get completed job
+func (wp *WorkerPool) DumpWorkerStats() {
+	if !wp.Running() {
+		return
+	}
+
+	log.Infof("Dumping Stats for worker pool %v ", wp.name)
+	histStats := hdr.GetStats()
+	hstat, ok := histStats[wp.name]
+	if ok {
+		log.Infof("Histogram MaxMs : %v  MeanMs : %v, MinMs : %v", hstat.MaxMs, hstat.MeanMs, hstat.MinMs)
+	}
+	for workerID := 0; workerID < int(wp.numberOfWorkers); workerID++ {
+		log.Infof("Number of jobs done for worker %v : %v", workerID, wp.workers[workerID].doneCount())
+	}
+	log.Infof("Done Dumping Stats for worker pool %v ", wp.name)
+
 }
 
 func (wp *WorkerPool) getWorkerID(obj WorkObj) uint32 {

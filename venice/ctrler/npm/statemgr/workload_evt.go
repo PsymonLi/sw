@@ -134,11 +134,15 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 
 	// Upon restart, if a migration is in progress and not timed out
 	if ws.isMigrating() && len(snic) > 0 {
-		err = sm.reconcileWorkload(w, hsts, snic[0])
-		// For Workloads moving from non_pensando to pensando host, ensure the appropriate state is slected
-		if err != nil {
-			log.Errorf("Failed to reconcile workload [%v]. Err : %v", ws.Workload.Name, err)
-			return err
+		if len(snic) == 0 {
+			ws.deleteEndpoints()
+		} else {
+			err = sm.reconcileWorkload(w, hsts)
+			// For Workloads moving from non_pensando to pensando host, ensure the appropriate state is slected
+			if err != nil {
+				log.Errorf("Failed to reconcile workload [%v]. Err : %v", ws.Workload.Name, err)
+				return err
+			}
 		}
 
 		log.Infof("Handling migration for reconciled workload [%v]", ws.Workload.Name)
@@ -201,33 +205,26 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 }
 
 // reconcileWorkload checks if the endpoints are create for the workload and tries to create them
-func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState, snic *DistributedServiceCardState) error {
+func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState) error {
 	// find workload
 	log.Infof("Trying to reconcile workload %v", w.Name)
 	ws, err := sm.FindWorkload(w.Tenant, w.Name)
 	if err != nil {
 		return err
 	}
-	if snic == nil {
-		// delete all endpoint for this workload since we dont have an associated smartnic
-		err := ws.deleteEndpoints()
-		if err != nil {
-			log.Errorf("Error deleting all endpoints on workload %v: %v", w.Name, err)
-		}
-	} else {
-		// make sure we have endpoint for all workload interfaces
-		for ii := range w.Spec.Interfaces {
-			// check if we already have the endpoint for this workload
-			name, _ := strconv.ParseMacAddr(w.Spec.Interfaces[ii].MACAddress)
-			epName := w.Name + "-" + name
-			_, err := sm.FindEndpoint(w.Tenant, epName)
-			pending, _ := sm.EndpointIsPending(w.Tenant, epName)
-			if err != nil && !pending {
-				log.Infof("Crating endpoint as part of reconcile %v", w.Name)
-				err = ws.createEndpoints()
-				if err != nil {
-					log.Errorf("Error creating endpoints for workload. Err: %v", err)
-				}
+
+	// make sure we have endpoint for all workload interfaces
+	for ii := range w.Spec.Interfaces {
+		// check if we already have the endpoint for this workload
+		name, _ := strconv.ParseMacAddr(w.Spec.Interfaces[ii].MACAddress)
+		epName := w.Name + "-" + name
+		_, err := sm.FindEndpoint(w.Tenant, epName)
+		pending, _ := sm.EndpointIsPending(w.Tenant, epName)
+		if err != nil && !pending {
+			log.Infof("Crating endpoint as part of reconcile %v", w.Name)
+			err = ws.createEndpoints()
+			if err != nil {
+				log.Errorf("Error creating endpoints for workload. Err: %v", err)
 			}
 		}
 	}
@@ -347,7 +344,7 @@ func (ws *WorkloadState) createEndpoints() error {
 	}
 
 	// loop over each interface of the workload
-	ws.stateMgr.Lock()
+	//ws.stateMgr.Lock()
 	var eps []*workload.Endpoint
 	createErr := false
 	for ii := range ws.Workload.Spec.Interfaces {
@@ -387,7 +384,7 @@ func (ws *WorkloadState) createEndpoints() error {
 		dscs := host.getDSCs()
 		if len(dscs) == 0 {
 			log.Errorf("Failed to find DSC on host %v (%v)", host.Host.Name, epName)
-			ws.stateMgr.Unlock()
+			//ws.stateMgr.Unlock()
 			return fmt.Errorf("No DSC found for Host %v", host.Host.Name)
 		}
 
@@ -474,7 +471,7 @@ func (ws *WorkloadState) createEndpoints() error {
 		ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
 	}
 
-	ws.stateMgr.Unlock()
+	//ws.stateMgr.Unlock()
 	for _, epInfo := range eps {
 
 		//NodeUUID may not be set because DSC event may not be received yet.

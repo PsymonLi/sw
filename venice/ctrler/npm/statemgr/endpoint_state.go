@@ -213,11 +213,12 @@ func NewEndpointState(epinfo *ctkit.Endpoint, stateMgr *Statemgr) (*EndpointStat
 	}
 
 	// save it to api server
-	err = eps.Write()
-	if err != nil {
-		log.Errorf("Error writing the endpoint state to api server. Err: %v", err)
-		return nil, err
-	}
+	go func() {
+		err := eps.Write()
+		if err != nil {
+			log.Errorf("Error writing the endpoint state to api server. Err: %v", err)
+		}
+	}()
 
 	eps.smObjectTracker.init(&eps)
 	//No need to send update notification as we are not updating status yet
@@ -383,7 +384,6 @@ func (sm *Statemgr) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 			return fmt.Errorf("could not find the network %s for endpoint %+v. Err: %v", epinfo.Status.Network, epinfo.ObjectMeta, err)
 		}
 	}
-
 	// create a new endpoint instance
 	eps, err := NewEndpointState(epinfo, sm)
 	if err != nil {

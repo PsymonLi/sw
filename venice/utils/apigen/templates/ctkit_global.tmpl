@@ -312,12 +312,28 @@ func (ct *ctrlerCtx) Stop() error {
 }
 
 func (ct *ctrlerCtx) startWorkerPool(kind string) {
-	workerPool := shardworkers.NewWorkerPool(uint32(numberOfShardWorkers))
-	workerPool.Start()
-    ct.Lock()
-	ct.workPools[kind] = workerPool
-    ct.Unlock()
+	ct.startWorkerPoolWithWorkers(kind, 0)
 	return
+}
+
+func (ct *ctrlerCtx) startWorkerPoolWithWorkers(kind string, workers uint32) {
+	if workers == 0 {
+		workers = uint32(numberOfShardWorkers)
+	}
+	workerPool := shardworkers.NewWorkerPool(kind, workers)
+	workerPool.Start()
+	ct.Lock()
+	ct.workPools[kind] = workerPool
+	ct.Unlock()
+	return
+}
+
+func (ct *ctrlerCtx) dumpWorkerStats() {
+	ct.Lock()
+	for _, workerPool := range ct.workPools {
+		workerPool.DumpWorkerStats()
+	}
+	ct.Unlock()
 }
 
 func (ct *ctrlerCtx) apiClient() (apiclient.Services, error) {
@@ -600,6 +616,8 @@ type aggwatchAPI struct {
 type AggWatchReactor interface {
        //Callback from ctkit whenever resync is complete
        ResyncComplete()
+	   ///Callback from no events are being recived and change for reacotr to reconcile or do fixup
+	   PeriodicReconcile()
 }
 
 const (
@@ -614,6 +632,7 @@ type AggKind struct {
 	Group   string
 	Kind    string
 	Reactor interface{}
+	Workers uint32
 }
 
 type workerFunc func(evt *kvstore.WatchEvent) error
@@ -624,7 +643,8 @@ type workerObject struct {
 }
 
 const (
-	workerQueueSize = 16384
+	workerQueueSize = 32768
+	reconcileCode   = 255
 )
 
 
@@ -653,6 +673,15 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
             }
     }
 
+	workerPoolIdle := func() bool {
+		for _, kind := range wopts.WatchOptions {
+			if !agg.ct.workerPoolIdle(kind.Kind) {
+				return false
+			}
+		}
+		return true
+	}
+	
 	sweepObjects := func(watchTS time.Time) {
 		for _, kind := range wopts.WatchOptions {
 			log.Infof("Doing sweep of object %v", kind)
@@ -673,12 +702,18 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 				}
 				switch work.ev.Type {
 				case kvstore.WatcherControl:
-					//wait for current objects to be processed
-					waitForWorkerPoolIdle()
-					//Sweep objects which are not removed
-					sweepObjects(watchTS)
-					waitForWorkerPoolIdle()
-					reactor.ResyncComplete()
+					if work.ev.Control.Code == reconcileCode {
+						waitForWorkerPoolIdle()
+						reactor.PeriodicReconcile()
+					} else {
+						//wait for current objects to be processed
+						waitForWorkerPoolIdle()
+						//Sweep objects which are not removed
+						sweepObjects(watchTS)
+						waitForWorkerPoolIdle()
+						reactor.ResyncComplete()
+					}
+
 				default:
 					work.workFunc(work.ev)
 				}
@@ -727,12 +762,21 @@ func (agg *aggwatchAPI) runLoop(wopts *api.AggWatchOptions, reactor AggWatchReac
 		evWorkChannel := make(chan workerObject, workerQueueSize)
 		evWorkerDone := make(chan error)
 		go evWorker(watchTS, evWorkChannel, evWorkerDone)
+		periodicReconcile := time.NewTicker(time.Second * 10)
 	watchLoop:
 		for {
 			select {
 			case <-ctx.Done():
 				log.Infof("Stopped agg watch loop")
 				break watchLoop
+			case <-periodicReconcile.C:
+				//Call reconcile when idle
+				if len(evWorkChannel) == 0 && workerPoolIdle() {
+					evWorkChannel <- workerObject{ev: &kvstore.WatchEvent{Type: kvstore.WatcherControl,
+						Control: &kvstore.WatchControl{
+							Code: reconcileCode,
+						}}}
+				}
 			case ev, ok := <-watcher.EventChan():
 				if ok {
 					ev.WatchTS = watchTS.Unix()
@@ -790,7 +834,7 @@ func (agg *aggwatchAPI) Start(reactor AggWatchReactor, kinds []AggKind) error {
 		default:
 			return fmt.Errorf("Kind %v not found", kind.Kind)
 		}
-		agg.ct.startWorkerPool(kind.Kind)
+		agg.ct.startWorkerPoolWithWorkers(kind.Kind, kind.Workers)
 		log.Infof("Ctkit handler registration for agg reactor for %v(%v) %p %T", kind.Kind, kind.Group, kind.Reactor, kind.Reactor)
 		agg.ct.handlers[kind.Kind] = kind.Reactor
 		agg.ct.setKindStore(kind.Kind)

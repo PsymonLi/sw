@@ -295,8 +295,7 @@ func (r *deleteResolver) trigger(obj apiintf.CtkitObject) ([]apiintf.CtkitEvent,
 							}
 							referenceObj.ClearPendingEvents()
 						} else {
-							log.Infof("Object key %v unresolved (delete) by %v, refs %v",
-								referenceObj.GetKey(), obj.GetKey(), r.objGraph.Referrers(referenceObj.GetKey()))
+							log.Infof("Object key %v unresolved (delete) by %v", referenceObj.GetKey(), obj.GetKey())
 							//Break out as this is still not resolved.
 							//Add pending events  as we can't create until dep is done
 							for _, pobj := range thisObjPendingEvents {
@@ -420,6 +419,7 @@ func (resolver *ObjectResolver) processAddInternal(obj apiintf.CtkitObject) erro
 		//Send the object to consumer
 		log.Infof("Add Object key %v resolved", obj.GetKey())
 		resolver.md.ResolvedRun(obj)
+		log.Infof("Added Object key %v resolved to run", obj.GetKey())
 	} else {
 		//Don't Send the object to consumer as it is still not resolved
 		//Check if the any of the dependening objects
@@ -617,13 +617,13 @@ func (resolver *ObjectResolver) Resolve(event kvstore.WatchEventType, obj apiint
 		for _, pobj := range pendingObjects {
 			//When creates is resolved, only delete events will be queued
 			if pobj.Event == kvstore.Deleted {
-				log.Infof("Process pending delete of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending delete of key %v by (%v)", pobj.Obj.GetKey(), existingObj.GetKey())
 				resolver.processDeleteInternal(pobj.Obj)
 			} else if pobj.Event == kvstore.Updated {
-				log.Infof("Process pending update of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending update of key %v by (%v)", pobj.Obj.GetKey(), existingObj.GetKey())
 				resolver.processUpdateInternal(pobj.Obj)
 			} else if pobj.Event == kvstore.Created {
-				log.Infof("Process pending create of key %v", pobj.Obj.GetKey())
+				log.Infof("Process pending create of key %v by (%v)", pobj.Obj.GetKey(), existingObj.GetKey())
 				resolver.processAddInternal(pobj.Obj)
 			}
 		}
