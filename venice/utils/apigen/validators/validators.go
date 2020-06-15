@@ -505,9 +505,10 @@ func strProtoPortVldtr(in string, allowRange bool, allowAny bool) error {
 						return fmt.Errorf("Invalid port range format: %v", pr)
 					}
 				}
+				/* Let the backend handle this
 				if totalPorts > 50 {
 					return fmt.Errorf("too large port range, limit 50")
-				}
+				}*/
 			}
 		}
 	}

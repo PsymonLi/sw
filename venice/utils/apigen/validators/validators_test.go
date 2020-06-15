@@ -385,8 +385,9 @@ func TestL3L4ProtoAnyRange(t *testing.T) {
 		{s: "any"},
 		{s: "any/2345"},
 		{s: "any/1234-1236"},
+		{s: "any/1-65535"},
 		// Bad cases
-		{s: "TCP/1234-1294", errMsg: "too large port range, limit 50"},
+		//{s: "TCP/1234-1294", errMsg: "too large port range, limit 50"},
 		{s: "TCP/1234-1224", errMsg: "Invalid port range 1234-1224. first number bigger than second"},
 		{s: "", errMsg: "Protocol must be a valid L3 or L4 <protocol>/<port>"},
 		{s: "SCP/1234", errMsg: "Protocol must be a valid L3 or L4 <protocol>/<port>"},
@@ -434,8 +435,9 @@ func TestL3L4ProtoRange(t *testing.T) {
 		{s: "icmp/3/2"},
 		{s: "icmp/echo reply"},
 		{s: "icmp/redirect/5"},
+		{s: "udp/1-65535"},
 		// Bad cases
-		{s: "TCP/1234-1294", errMsg: "too large port range, limit 50"},
+		//{s: "TCP/1234-1294", errMsg: "too large port range, limit 50"},
 		{s: "TCP/1234-1224", errMsg: "Invalid port range 1234-1224. first number bigger than second"},
 		{s: "", errMsg: "Protocol must be a valid L3 or L4 <protocol>/<port>"},
 		{s: "SCP/1234", errMsg: "Protocol must be a valid L3 or L4 <protocol>/<port>"},
