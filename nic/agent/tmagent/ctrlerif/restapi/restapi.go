@@ -31,6 +31,8 @@ import (
 	"github.com/pensando/sw/venice/utils/tsdb"
 )
 
+const numPointsThreshold = 500
+
 // this package contains the REST API provided by the agent
 
 // RestServer is the REST api server
@@ -237,8 +239,7 @@ func (s *RestServer) ReportMetrics(frequency time.Duration, dclient clientApi.Cl
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		for {
-
+		for i := 0; ; i++ {
 			select {
 			case <-time.After(frequency):
 
@@ -261,6 +262,11 @@ func (s *RestServer) ReportMetrics(frequency time.Duration, dclient clientApi.Cl
 					// skip empty entry
 					if len(mi) == 0 {
 						s.incrStats(kind, "noPoints")
+						continue
+					}
+
+					// reduce the reporting frequency of large metrics
+					if len(mi) > numPointsThreshold && (i%2 == 0) {
 						continue
 					}
 
