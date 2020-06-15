@@ -132,8 +132,9 @@ type remoteWorkload struct {
 
 type bareMetalWorkload struct {
 	workloadBase
-	subIF  string
-	osType string
+	subIF    string
+	osType   string
+	osDistro string
 }
 
 type bareMetalMacVlanWorkload struct {
@@ -608,7 +609,13 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 	case "linux":
 		fallthrough
 	case "freebsd":
-		ifconfigCmd := []string{"ifconfig", spec.Parent, "up"}
+		ifconfigCmd := []string{}
+		switch app.osDistro {
+		case "rhel":
+			ifconfigCmd = append(ifconfigCmd, "ip", "link", "set", spec.Parent, "up")
+		default:
+			ifconfigCmd = append(ifconfigCmd, "ifconfig", spec.Parent, "up")
+		}
 		if retCode, stdout, _ := utils.Run(ifconfigCmd, 0, false, false, nil); retCode != 0 {
 			return "", errors.Errorf("Could not bring up parent interface %s : %s", spec.Parent, stdout)
 		}
@@ -633,8 +640,15 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		switch app.osType {
 		case "linux":
 			vlanintf = vlanIntf(spec.Parent, spec.PrimaryVlan)
-			delVlanCmd = []string{"ip", "link", "del", vlanintf}
-			addVlanCmd = []string{"ip", "link", "add", "link", spec.Parent, "name", vlanintf, "type", "vlan", "id", strconv.Itoa(spec.PrimaryVlan)}
+			delVlanCmd := []string{}
+			addVlanCmd := []string{}
+			switch app.osDistro {
+			case "rhel":
+				fallthrough // replace with RHEL specific commands
+			default:
+				delVlanCmd = append(delVlanCmd, "ip", "link", "del", vlanintf)
+				addVlanCmd = append(addVlanCmd, "ip", "link", "add", "link", spec.Parent, "name", vlanintf, "type", "vlan", "id", strconv.Itoa(spec.PrimaryVlan))
+			}
 			utils.Run(delVlanCmd, 0, false, false, nil)
 			if retCode, stdout, _ := utils.Run(addVlanCmd, 0, false, false, nil); retCode != 0 {
 				return "", errors.Errorf("add vlan failed %s:%d, err :%s", spec.Parent, spec.PrimaryVlan, stdout)
@@ -666,7 +680,13 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		switch app.osType {
 		case "linux":
 			//Mac address change only works on linux
-			setMacAddrCmd := []string{"ifconfig", intfToAttach, "hw", "ether", spec.Mac}
+			setMacAddrCmd := []string{}
+			switch app.osDistro {
+			case "rhel":
+				setMacAddrCmd = append(setMacAddrCmd, "ip", "link", "set", "dev", intfToAttach, "address", spec.Mac)
+			default:
+				setMacAddrCmd = append(setMacAddrCmd, "ifconfig", intfToAttach, "hw", "ether", spec.Mac)
+			}
 			if retCode, stdout, err := utils.Run(setMacAddrCmd, 0, false, false, nil); retCode != 0 {
 				return "", errors.Wrap(err, stdout)
 			}
@@ -688,7 +708,17 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		app.logger.Println("Adding IPv4 address ", spec.IPV4Address, " for ", intfToAttach)
 		switch app.osType {
 		case "linux":
-			fallthrough
+			cmd := []string{}
+			switch app.osDistro {
+			case "rhel":
+				// RHEL ifconfig is deprecated. Using ip cmd
+				cmd = append(cmd, "ip", "a", "add", spec.IPV4Address, "dev", intfToAttach)
+			default:
+				cmd = append(cmd, "ifconfig", intfToAttach, spec.IPV4Address)
+			}
+			if retCode, stdout, err := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
+				return "", errors.Wrap(err, stdout)
+			}
 		case "freebsd":
 			cmd := []string{"ifconfig", intfToAttach, spec.IPV4Address}
 			if retCode, stdout, err := utils.Run(cmd, 0, false, false, nil); retCode != 0 {
@@ -714,7 +744,21 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 		app.logger.Println("Adding IPv6 address ", spec.IPV6Address, " for ", intfToAttach)
 		switch app.osType {
 		case "linux":
-			fallthrough
+			cmdDel := []string{}
+			cmdAdd := []string{}
+			switch app.osDistro {
+			case "rhel":
+				// RHEL ifconfig is deprecated. Using ip cmd
+				cmdDel = append(cmdDel, "ip", "a", "del", spec.IPV6Address, "dev", intfToAttach)
+				cmdAdd = append(cmdDel, "ip", "a", "add", spec.IPV6Address, "dev", intfToAttach)
+			default:
+				cmdDel = append(cmdDel, "ifconfig", intfToAttach, "inet6", "del", spec.IPV6Address)
+				cmdAdd = append(cmdAdd, "ifconfig", intfToAttach, "inet6", "add", spec.IPV6Address)
+			}
+			utils.Run(cmdDel, 0, false, false, nil)
+			if retCode, stdout, err := utils.Run(cmdAdd, 0, false, false, nil); retCode != 0 {
+				return "", errors.Wrap(err, stdout)
+			}
 		case "freebsd":
 			//unset ipv6 address first
 			cmd := []string{"ifconfig", intfToAttach, "inet6", "del", spec.IPV6Address}
@@ -934,6 +978,10 @@ func (app *bareMetalWorkload) BringUp(args ...string) error {
 	f, err := os.Open(Common.WindowsPortMappingFile)
 	if err != nil {
 		app.osType = "linux"
+		osRelease, err := utils.ReadOsRelease()
+		if err != nil {
+			app.osDistro = osRelease["ID"]
+		}
 	} else {
 		app.osType = "windows"
 		var err error
