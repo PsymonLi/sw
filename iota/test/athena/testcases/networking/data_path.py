@@ -467,7 +467,10 @@ def Trigger(tc):
                 api.Logger.info("Will send the first packet to slow path")
                 send_pkt(tc, node, pkt_gen, NUM_FIRST_PKT_PER_FLOW)
 
-                utils.match_dynamic_flows(tc, tc.vnic_id, flow)
+                verify = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
+                if not verify:
+                    api.Logger.error("ERROR: flow is not installed in flow cache")
+                    return api.types.status.FAILURE
 
                 # Send the rest of pkts
                 if tc.pkt_cnt > NUM_FIRST_PKT_PER_FLOW:
