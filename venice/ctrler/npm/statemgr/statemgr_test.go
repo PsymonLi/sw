@@ -4155,8 +4155,33 @@ func deleteDSC(stateMgr *Statemgr, dscName string, mac string) (*cluster.Distrib
 	return &snic, err
 }
 
+func decommissionDSC(stateMgr *Statemgr, dscName string, mac string) (*cluster.DistributedServiceCard, error) {
+	snic := cluster.DistributedServiceCard{
+		TypeMeta: api.TypeMeta{Kind: "DistributedServiceCard"},
+		ObjectMeta: api.ObjectMeta{
+			Name: dscName,
+		},
+		Spec: cluster.DistributedServiceCardSpec{
+			Admit: false,
+		},
+		Status: cluster.DistributedServiceCardStatus{
+			PrimaryMAC:     mac,
+			AdmissionPhase: cluster.DistributedServiceCardStatus_DECOMMISSIONED.String(),
+		},
+	}
+
+	// create the smartNic
+	err := stateMgr.ctrler.DistributedServiceCard().Update(&snic)
+
+	return &snic, err
+}
+
+var macAddresses = []string{}
+
 func genMACAddresses(count int) []string {
-	var macAddresses []string
+	if len(macAddresses) != 0 {
+		return macAddresses
+	}
 	macAddress := make(map[uint64]bool)
 	for i := 0; i < count; i++ {
 		for true {
@@ -4196,6 +4221,19 @@ func deleteDSCs(stateMgr *Statemgr, start, end int) []*cluster.DistributedServic
 	for i := start; i < end; i++ {
 		id := strconv.Itoa(i)
 		dsc, _ := deleteDSC(stateMgr, "dsc"+id, macs[i])
+		dscs = append(dscs, dsc)
+	}
+
+	return dscs
+}
+
+func decommissionDSCs(stateMgr *Statemgr, start, end int) []*cluster.DistributedServiceCard {
+
+	dscs := []*cluster.DistributedServiceCard{}
+	macs := genMACAddresses(end - start + 1)
+	for i := start; i < end; i++ {
+		id := strconv.Itoa(i)
+		dsc, _ := decommissionDSC(stateMgr, "dsc"+id, macs[i])
 		dscs = append(dscs, dsc)
 	}
 
@@ -4294,6 +4332,65 @@ func TestNetworkInterfaceCreateDeleteAfterDSCDelete(t *testing.T) {
 		}
 		return false, nil
 	}, "Interface session still found", "1ms", "1s")
+
+	ometa := api.ObjectMeta{
+		Name: nwState.NetworkInterfaceState.MakeKey(string(apiclient.GroupNetwork)),
+	}
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrNetworkInterface.sm.mbus.FindPushObject("Interface", &ometa)
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Interface session still found", "1ms", "1s")
+
+}
+func TestNetworkInterfaceCreateDeleteAfterDSCDecommission(t *testing.T) {
+	// create network state manager
+	stateMgr, err := newStatemgr()
+	defer stateMgr.Stop()
+	if err != nil {
+		t.Fatalf("Could not create network manager. Err: %v", err)
+		return
+	}
+	// create tenant
+	err = createTenant(t, stateMgr, "default")
+	AssertOk(t, err, "Error creating the tenant")
+
+	dscs := createsDSCs(stateMgr, 0, 1)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	_, err = createNetworkInterface(stateMgr, "intf1", dscs[0].Status.PrimaryMAC, labels.Set{"env": "production", "app": "procurement"})
+	AssertOk(t, err, "Error creating interface ")
+
+	var nwState *NetworkInterfaceState
+	AssertEventually(t, func() (bool, interface{}) {
+		nwState, err = smgrNetworkInterface.FindNetworkInterface("intf1")
+		if err == nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Interface not found", "1ms", "1s")
+
+	intfs, err := smgrNetworkInterface.findInterfacesByLabel(labels.Set{"env": "production", "app": "procurement"})
+	AssertOk(t, err, "Error creating interface ")
+	Assert(t, len(intfs) == 1, "Number of interfaces don't match")
+
+	intfs, err = smgrNetworkInterface.findInterfacesByLabel(labels.Set{"env": "production1", "app": "procurement"})
+	AssertOk(t, err, "Error creating interface ")
+	Assert(t, len(intfs) == 0, "Number of interfaces don't match")
+
+	dscs = decommissionDSCs(stateMgr, 0, 1)
+	Assert(t, len(dscs) != 0, "Error creating the dscs")
+
+	AssertEventually(t, func() (bool, interface{}) {
+		_, err := smgrNetworkInterface.FindNetworkInterface("intf1")
+		if err != nil {
+			return true, nil
+		}
+		return false, nil
+	}, "Interface session still found", "1ms", "2s")
 
 	ometa := api.ObjectMeta{
 		Name: nwState.NetworkInterfaceState.MakeKey(string(apiclient.GroupNetwork)),

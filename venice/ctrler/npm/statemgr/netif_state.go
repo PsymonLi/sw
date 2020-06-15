@@ -1053,9 +1053,9 @@ func (sma *SmNetworkInterface) ProcessDSCEvent(ev EventType, dsc *cluster.Distri
 		return
 	}
 
+	log.Infof("Deleting interfaces as DSC %v is decommissioned/deleted", dsc.Name)
 	for _, nwIntf := range nwIntfs {
 		if nwIntf.NetworkInterfaceState.Status.DSC == dsc.Status.PrimaryMAC {
-
 			now := time.Now()
 			for {
 				err := sma.sm.ctrler.NetworkInterface().Delete(&nwIntf.NetworkInterfaceState.NetworkInterface)

@@ -264,7 +264,6 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 			}
 		}
 	}
-
 	if !sns.decommissioned {
 		sns, err = sm.updateDSC(smartNic, nsnic)
 		if err != nil {
@@ -272,6 +271,8 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 		}
 	}
 
+	smartNic.Spec = nsnic.Spec
+	smartNic.Status = nsnic.Status
 	sm.PeriodicUpdaterPush(sns)
 	return nil
 }

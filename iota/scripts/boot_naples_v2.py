@@ -653,6 +653,8 @@ class NaplesManagement(EntityManagement):
         fw_type = self.ReadRunningFirmwareType()
         if GlobalOptions.no_mgmt and fw_type != FIRMWARE_TYPE_GOLD:
             return
+        self.clear_buffer()
+        self.SendlineExpect("", "#")
         for _ in range(5):
             self.SyncLine()
             try:
@@ -668,6 +670,7 @@ class NaplesManagement(EntityManagement):
                     print("Did not Read Internal IP  {0}".format(self.ipaddr))
             except:
                     print("Did not Read Internal IP  {0}".format(self.ipaddr))
+            self.clear_buffer()
         raise Exception("Not able read internal IP")
 
 

@@ -381,9 +381,10 @@ var _ = Describe("Basnet Sanity", func() {
 					return ts.model.Naples().IsNotAdmitted()
 				}).Should(Succeed())
 
-				Expect(ts.model.Naples().ResetProfile()).Should(Succeed())
-				Expect(ts.model.Naples().Admit()).Should(Succeed())
-				//reload Nodes so that it can Join
+				Eventually(func() error {
+					return ts.model.Naples().Delete()
+				}).Should(Succeed())
+
 				Eventually(func() error {
 					return ts.model.ReloadHosts(ts.model.Hosts())
 				}).Should(Succeed())
@@ -391,6 +392,9 @@ var _ = Describe("Basnet Sanity", func() {
 				Eventually(func() error {
 					return ts.model.Naples().IsAdmitted()
 				}).Should(Succeed())
+
+				Expect(ts.model.Naples().ResetProfile()).Should(Succeed())
+				//reload Nodes so that it can Join
 
 				Eventually(func() error {
 					return verifyNoDatapathCollection(workloadPairs, veniceCollector)
