@@ -72,7 +72,7 @@ func handleTunnelShowCmd(cmd *cobra.Command, spec bool, status bool, mplsoudp bo
 	defer c.Close()
 
 	var req *halproto.InterfaceGetRequest
-	if cmd.Flags().Changed("id") {
+	if cmd != nil && cmd.Flags().Changed("id") {
 		// Get specific if
 		req = &halproto.InterfaceGetRequest{
 			KeyOrHandle: &halproto.InterfaceKeyHandle{
@@ -136,7 +136,7 @@ func mplsoudpShowCmdHandler(cmd *cobra.Command, args []string) {
 }
 
 func tunnelShowCmdHandler(cmd *cobra.Command, args []string) {
-	if cmd.Flags().Changed("yaml") {
+	if cmd != nil && cmd.Flags().Changed("yaml") {
 		tunnelDetailShowCmdHandler(cmd, args, false)
 		return
 	}

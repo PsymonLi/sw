@@ -227,6 +227,11 @@
                                         "Command" : "/nic/bin/delphictl metrics get LifMetrics"
                                 },
                                 {
+                                        "Name" : "DelphiObj MirrorMetrics",
+                                        "Method" : 0,
+                                        "Command" : "/nic/bin/delphictl metrics get MirrorMetrics"
+                                },
+                                {
                                         "Name" : "RDMA Queue State",
                                         "Method" : 0,
                                         "Command" : "/nic/tools/rdma_qstate.sh"
