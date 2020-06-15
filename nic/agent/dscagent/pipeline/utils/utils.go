@@ -421,49 +421,44 @@ func BuildCollectorKey(vrfName string, c netproto.ExportConfig) string {
 func GetMgmtInfo(config types.DistributedServiceCardStatus) (mgmtIntf *net.Interface, mgmtLink netlink.Link, err error) {
 	// Give preference to secondary management intf if any
 	if len(config.SecondaryMgmtIntfs) == 0 {
-		ip, _, _ := net.ParseCIDR(config.MgmtIP)
+		ip, _, errr := net.ParseCIDR(config.MgmtIP)
+		if errr != nil {
+			err = errors.Wrapf(types.ErrFailedToGetMgmtLink, "Mgmt Ip configured: %s err: %v", config.MgmtIP, errr)
+			return
+		}
 		mgmtLink = GetMgmtLink(ip.String())
 		if mgmtLink == nil {
 			err = errors.Wrapf(types.ErrFailedToGetMgmtLink, "Mgmt Ip: %s", ip.String())
 			return
 		}
-		log.Infof("Management Link: %v", mgmtLink.Attrs().Name)
 		mgmtIntf, _ = net.InterfaceByName(mgmtLink.Attrs().Name)
-		log.Infof("Management Inft: %v", mgmtIntf.Name)
 		return
 	}
 
 	secondaryIntf := config.SecondaryMgmtIntfs[0]
 	mgmtLink, err = netlink.LinkByName(secondaryIntf)
 	if err != nil {
-		log.Errorf("Failed to get the mgmt link. intf: %s: %v", secondaryIntf, err)
 		return
 	}
 
-	log.Infof("Management Link: %v", mgmtLink.Attrs().Name)
 	mgmtIntf, _ = net.InterfaceByName(mgmtLink.Attrs().Name)
-	log.Infof("Management Inft: %v", mgmtIntf.Name)
 	return
 }
 
 // GetMgmtIP returns the mgmt ip on inband bond0
 func GetMgmtIP(mgmtLink netlink.Link) string {
 	if mgmtLink == nil {
-		log.Error("Mgmt link not set for bond0")
 		return ""
 	}
 	addrs, err := netlink.AddrList(mgmtLink, netlink.FAMILY_V4)
 	if err != nil {
-		log.Errorf("Failed to get the mgmt ip addrs for link: %s: %v", mgmtLink.Attrs().Name, err)
 		return ""
 	}
 
 	for _, a := range addrs {
 		mgmtIP := a.IP.String()
-		log.Infof("Found IP: %s for bond0", mgmtIP)
 		return mgmtIP
 	}
-	log.Error("Could not get IP for bond0")
 	return ""
 }
 

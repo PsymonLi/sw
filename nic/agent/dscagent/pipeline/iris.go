@@ -6,6 +6,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -14,8 +15,6 @@ import (
 	"time"
 
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
-
-	"github.com/mdlayher/arp"
 
 	delphi "github.com/pensando/sw/nic/delphi/gosdk"
 	sysmgr "github.com/pensando/sw/nic/sysmgr/golib"
@@ -191,6 +190,25 @@ func (i *IrisAPI) PipelineInit() error {
 		return err
 	}
 
+	// Attempt setting up config
+	var obj types.DistributedServiceCardStatus
+	if dat, err := i.InfraAPI.Read(types.VeniceConfigKind, types.VeniceConfigKey); err == nil {
+		if err := json.Unmarshal(dat, &obj); err != nil {
+			log.Error(errors.Wrapf(types.ErrUnmarshal, "Err: %v", err))
+		} else {
+			i.InfraAPI.StoreConfig(obj)
+		}
+	} else {
+		log.Errorf("Could not read venice config key err: %v", err)
+	}
+
+	// Start the watch for bond0 IP so that ArpClient can be updated
+	log.Infof("Starting the IP watch on bond0")
+	iris.IPWatch(i.InfraAPI)
+
+	// Start the ARP receive loop. Should be singleton.
+	go iris.ResolveWatch()
+
 	// Push default profile as a part of init sequence.
 	// Replay Profile Object
 	profiles, err := i.InfraAPI.List("Profile")
@@ -226,28 +244,6 @@ func (i *IrisAPI) PipelineInit() error {
 
 // HandleVeniceCoordinates initializes the pipeline when VeniceCoordinates are discovered
 func (i *IrisAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatus) {
-	log.Infof("Iris API: received venice co-ordinates [%v]", dsc)
-	mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(i.InfraAPI.GetConfig())
-	if err != nil {
-		log.Errorf("Failed to get the mgmt information. config: %v: %v", i.InfraAPI.GetConfig(), err)
-		return
-	}
-	// Init Agent's ARP Client
-	i.Lock()
-	defer i.Unlock()
-	// Check for idempotency and close older ARP clients
-	if iris.ArpClient != nil {
-		iris.ArpClient.Close()
-	}
-	client, err := arp.Dial(mgmtIntf)
-	if err != nil {
-		log.Errorf("Failed to initiate an ARP client. Err: %v", err)
-		return
-	}
-	iris.ArpClient = client
-	iris.MgmtLink = mgmtLink
-	log.Infof("Starting the ARP watch loop")
-	go iris.ResolveWatch()
 }
 
 // RegisterControllerAPI ensures the handles for controller API is appropriately set up

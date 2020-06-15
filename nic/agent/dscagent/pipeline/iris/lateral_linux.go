@@ -432,6 +432,18 @@ func resolveIPAddress(ctx context.Context, destIP, gwIP string) string {
 
 // ResolveWatch looks for ARP replies and updates the ARP cache
 func ResolveWatch() {
+	ticker := time.NewTicker(time.Second * 1)
+loop:
+	for {
+		select {
+		case <-ticker.C:
+			if ArpClient != nil {
+				break loop
+			}
+		}
+	}
+
+	log.Infof("Starting ARP Watch loop")
 	// Loop and wait for replies
 	for {
 		p, _, err := ArpClient.Read()
@@ -481,6 +493,52 @@ func resolveWithDeadline(ctx context.Context, IP net.IP) (string, error) {
 	case mac := <-arpChan:
 		return mac, nil
 	}
+}
+
+func updateArpClient(mgmtIntf *net.Interface, mgmtLink netlink.Link) {
+	if mgmtIntf == nil {
+		return
+	}
+	// Check for idempotency and close older ARP clients
+	if ArpClient != nil {
+		ArpClient.Close()
+	}
+	client, err := arp.Dial(mgmtIntf)
+	if err != nil {
+		return
+	}
+	ArpClient = client
+	MgmtLink = mgmtLink
+}
+
+// IPWatch starts a watch for IP on bond0 interface and updates ArpClient and MgmtIntf
+func IPWatch(infraAPI types.InfraAPI) {
+	var mgmtIP string
+	mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
+	if err != nil {
+		log.Errorf("Failed to get the mgmt information. config: %v: %v", infraAPI.GetConfig(), err)
+	} else {
+		mgmtIP = utils.GetMgmtIP(mgmtLink)
+	}
+	updateArpClient(mgmtIntf, mgmtLink)
+	go func() {
+		ticker := time.NewTicker(time.Second * 1)
+		for {
+			select {
+			case <-ticker.C:
+				var ip string
+				mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
+				if err == nil {
+					ip = utils.GetMgmtIP(mgmtLink)
+					if ip != "" && ip != mgmtIP {
+						log.Infof("bond0 IP changed from %s to %s. Updating ArpClient", mgmtIP, ip)
+						updateArpClient(mgmtIntf, mgmtLink)
+						mgmtIP = ip
+					}
+				}
+			}
+		}
+	}()
 }
 
 func deleteOrUpdateLateralEP(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, vrfID uint64, owner, destIP string) error {
