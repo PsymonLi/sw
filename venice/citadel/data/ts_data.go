@@ -11,16 +11,14 @@ import (
 	"strings"
 	"time"
 
-	meta2 "github.com/influxdata/influxdb/services/meta"
-
 	"github.com/influxdata/influxdb/models"
 	"github.com/influxdata/influxdb/query"
+	meta2 "github.com/influxdata/influxdb/services/meta"
 	"golang.org/x/net/context"
-
-	"github.com/pensando/sw/venice/utils/log"
 
 	"github.com/pensando/sw/venice/citadel/meta"
 	"github.com/pensando/sw/venice/citadel/tproto"
+	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/ref"
 )
 

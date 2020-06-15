@@ -23,13 +23,20 @@ import (
 	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
 	"github.com/pensando/sw/venice/citadel/meta"
 	"github.com/pensando/sw/venice/citadel/tproto"
+	"github.com/pensando/sw/venice/utils/log"
 )
 
 const (
+	// database config
 	defaultRetentionPeriod = time.Duration(24) * time.Hour
 	defaultDBWaitFreq      = time.Duration(30) * time.Second
-	cqRoutineWakeupFreq    = time.Duration(5) * time.Minute
-	cqRoutineDuration      = time.Duration(1) * time.Hour
+	// metrics cleaner config
+	cleanerRoutineWakeupFreq = time.Duration(30) * time.Minute
+	cleanerShardmapWaitFreq  = time.Duration(30) * time.Second
+	ruleMetricsRetention     = time.Duration(1) * time.Hour
+	// continuoue query config
+	cqRoutineWakeupFreq = time.Duration(5) * time.Minute
+	cqRoutineDuration   = time.Duration(1) * time.Hour
 )
 
 // createDatabaseInReplica creates the database in replica
@@ -1159,12 +1166,12 @@ func (br *Broker) DeleteContinuousQuery(ctx context.Context, database string, cq
 // continuousQueryWaitDB launch goroutine for CQ until db is created
 func (br *Broker) continuousQueryWaitDB() {
 	for {
-		if br.cqCtx.Err() != nil {
+		if br.ctx.Err() != nil {
 			br.logger.Infof("Broker cq ctx cancel detected. Won't wait for default db creation anymore.")
 			return
 		}
 
-		databases, err := br.ReadDatabases(br.cqCtx)
+		databases, err := br.ReadDatabases(br.ctx)
 		if err != nil {
 			br.logger.Errorf("Error reading databases for cq routine. Err: %v", err)
 			time.Sleep(defaultDBWaitFreq)
@@ -1173,12 +1180,12 @@ func (br *Broker) continuousQueryWaitDB() {
 
 		for _, dbInfo := range databases {
 			if dbInfo.Name == "default" {
-				err := br.UpdateRetentionPolicy(br.cqCtx, "default", "default", uint64(defaultRetentionPeriod.Hours()))
+				err := br.UpdateRetentionPolicy(br.ctx, "default", "default", uint64(defaultRetentionPeriod.Hours()))
 				if err != nil {
 					br.logger.Errorf("Error updating default retention policy to %v hours duration. Err: %v", defaultRetentionPeriod, err)
 				}
 				if !br.cqRoutineCreated {
-					br.continuousQueryRoutine(br.cqCtx, "default")
+					br.continuousQueryRoutine(br.ctx, "default")
 				}
 				return
 			}
@@ -1293,5 +1300,126 @@ func (br *Broker) continuousQueryRoutine(ctx context.Context, database string) {
 			// wake up freq is cqRoutineWakeupFreq
 			time.Sleep(cqRoutineWakeupFreq)
 		}
+	}
+}
+
+// IsMetricsCleanerRoutineCreated return bool for whether cleaner routine created or not
+func (br *Broker) IsMetricsCleanerRoutineCreated() bool {
+	return br.cleanerRoutineCreated
+}
+
+// GetRoutineCtx return metrics cleaner ctx
+func (br *Broker) GetRoutineCtx() context.Context {
+	return br.ctx
+}
+
+// IsRoutineCtxCanceled return bool for whether cleaner ctx is cancaled or not
+func (br *Broker) IsRoutineCtxCanceled() bool {
+	return br.ctx.Err() != nil
+}
+
+// DeleteOldData delete data older than borderTime for specific measurement
+func (br *Broker) DeleteOldData(ctx context.Context, database, measurement, borderTime string) ([]*query.Result, error) {
+	var err error
+	var results []*query.Result
+	// get cluster
+	cl := br.GetCluster(meta.ClusterTypeTstore)
+	if cl == nil || cl.ShardMap == nil || len(cl.ShardMap.Shards) == 0 {
+		return results, errors.New("shard map is empty")
+	}
+
+	// get target shard
+	shard, err := cl.ShardMap.GetShardForPoint(database, measurement, "")
+	if err != nil {
+		br.logger.Errorf("Error getting shard for %s/%s. Err: %v", database, measurement, err)
+		return results, err
+	}
+
+	// make query to all shards
+	q := fmt.Sprintf(`DELETE FROM %s WHERE time < %s`, measurement, borderTime)
+	for _, repl := range shard.Replicas {
+		resp, err := br.sendQueryRequest(ctx, database, q, repl)
+		if err != nil {
+			br.logger.Errorf("Failed to send delete request to replica %v. Err: %v", repl, err)
+		}
+		// parse the response
+		for _, rs := range resp.Result {
+			rslt := query.Result{}
+			err := rslt.UnmarshalJSON(rs.Data)
+			if err != nil {
+				return results, err
+			}
+			// Since we are making each query individually,
+			// we need to manually set the StatementID
+			results = append(results, &rslt)
+		}
+	}
+
+	return results, nil
+}
+
+// MetricsCleanerRoutine goroutine to auto clean up some metrics data periodically
+func (br *Broker) MetricsCleanerRoutine(ctx context.Context, database string, leaderCheckFunc func() bool) {
+	if br.cleanerRoutineCreated {
+		br.logger.Infof("Metrics Cleaner routine already launched. Exit new MetricsCleanerRoutine.")
+	}
+	br.cleanerRoutineCreated = true
+	br.logger.Infof("Metrics Cleaner routine launched")
+
+	foundDefaultDB := false
+
+	// loop forever to create CQ for target measurement
+	for {
+		if ctx.Err() != nil {
+			br.logger.Infof("Broker metrics cleaner ctx cancel detected. Quit metrics cleaner goroutine.")
+			br.cleanerRoutineCreated = false
+			return
+		}
+
+		// only leader node will run metrics cleaner query
+		if leaderCheckFunc != nil && !leaderCheckFunc() {
+			time.Sleep(cleanerRoutineWakeupFreq)
+			continue
+		}
+
+		// get cluster
+		cl := br.GetCluster(meta.ClusterTypeTstore)
+		if cl == nil || cl.ShardMap == nil || len(cl.ShardMap.Shards) == 0 {
+			br.logger.Errorf("metrics cleaner got empty shard map")
+			time.Sleep(cleanerShardmapWaitFreq)
+			continue
+		}
+
+		if !foundDefaultDB {
+			databases, err := br.ReadDatabases(br.ctx)
+			if err != nil {
+				log.Errorf("Error reading databases for metrics cleaner routine. Err: %v", err)
+				time.Sleep(defaultDBWaitFreq)
+				continue
+			}
+
+			for _, dbInfo := range databases {
+				if dbInfo.Name == "default" {
+					foundDefaultDB = true
+				}
+			}
+
+			if !foundDefaultDB {
+				time.Sleep(defaultDBWaitFreq)
+				continue
+			}
+		}
+
+		OneHourAgoTimeString := time.Now().Add(-1 * ruleMetricsRetention).Format(time.RFC3339)
+		resp, err := br.DeleteOldData(ctx, "default", "RuleMetrics", `"`+OneHourAgoTimeString+`"`)
+		if len(resp) > 0 {
+			br.logger.Infof("Metrics cleaner received response: %+v", *resp[0])
+		}
+		if err != nil {
+			br.logger.Errorf("Error during ExecuteQuery rpc call. Err: %v", err)
+		}
+
+		// wake up freq is cleanerRoutineWakeupFreq
+		time.Sleep(cleanerRoutineWakeupFreq)
 	}
 }

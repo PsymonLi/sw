@@ -63,6 +63,7 @@ func NewHTTPServer(listenURL string, broker *broker.Broker, dn *data.DNode, dbg 
 	r.HandleFunc("/replica", hsrv.queryReplicaReqHandler).Methods("GET")
 	r.HandleFunc("/cmd", hsrv.showReqHandler).Methods("GET")
 	r.HandleFunc("/cmd", hsrv.showReqHandler).Methods("POST")
+	r.HandleFunc("/measurement", hsrv.measurementHander).Methods("DELETE")
 	r.HandleFunc("/dnode", hsrv.dnodeReqHandler).Methods("GET")
 	r.HandleFunc("/ping", hsrv.pingReqHandler).Methods("GET")
 	r.HandleFunc("/cq", netutils.MakeHTTPHandler(netutils.RestAPIFunc(hsrv.createcqReqHandler))).Methods("POST")
@@ -401,6 +402,57 @@ func (hsrv *HTTPServer) queryReqHandler(w http.ResponseWriter, r *http.Request) 
 
 	// execute the query
 	result, err := hsrv.broker.ExecuteQuery(context.Background(), database, qp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error executing the query: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// write 200 ok
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	var o struct {
+		Results []*query.Result `json:"results,omitempty"`
+		Err     string          `json:"error,omitempty"`
+	}
+
+	// loop thru each result
+	for _, res := range result {
+		o.Results = append(o.Results, res)
+	}
+
+	// Send HTTP response as Json
+	content, err := json.Marshal(o)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(content)
+
+	return
+}
+
+// measurementHander handles a query request
+func (hsrv *HTTPServer) measurementHander(w http.ResponseWriter, r *http.Request) {
+	// Attempt to read the form value from the "q" form value.
+	database := r.FormValue("db")
+	if database == "" {
+		database = globals.DefaultTenant
+	}
+	measurement := r.FormValue("measurement")
+	if measurement == "" {
+		http.Error(w, `missing required parameter "measurement"`, http.StatusBadRequest)
+		return
+	}
+	endime := r.FormValue("endime")
+	if endime == "" {
+		http.Error(w, `missing required parameter "endime"`, http.StatusBadRequest)
+		return
+	}
+
+	// execute the query
+	result, err := hsrv.broker.DeleteOldData(context.Background(), database, measurement, endime)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error executing the query: %v", err), http.StatusInternalServerError)
 		return

@@ -276,6 +276,11 @@ func TestBrokerTstoreBasic(t *testing.T) {
 		Assert(t, brokers[idx].IsStopped() == true, "Incorrect broker state")
 	}
 
+	// make sure routine ctx is canceled after stopping broker
+	Assert(t, brokers[0].IsRoutineCtxCanceled() == true, "Failed to cancel routine ctx after stopping broker")
+	// run this routine for test coverage, this go routine will return immediately since cleanerCtx is canceled
+	go brokers[0].MetricsCleanerRoutine(brokers[0].GetRoutineCtx(), "default", nil)
+
 	// test broker commands
 	err = brokers[0].CreateDatabase(context.Background(), "db0")
 	Assert(t, err != nil, "create database didn't fail")
@@ -465,6 +470,27 @@ func TestBrokerTstoreContinuousQuery(t *testing.T) {
 	_, err = brokers[0].GetContinuousQuery(context.Background(), "InvalidDBName", "")
 	Assert(t, err != nil, "Failed to raise error for getting continuous query with invalid database name")
 
+	// test routine ctx for test coverage
+	Assert(t, brokers[0].IsMetricsCleanerRoutineCreated() == false, "Cleaner routine should not have been created before running MetricsCleanerRoutine")
+	cleanerCtx := brokers[0].GetRoutineCtx()
+	Assert(t, (cleanerCtx.Err() != nil) == brokers[0].IsRoutineCtxCanceled(), "Get inconsistent cancel state from IsCleanerCtxCanceled() funciton")
+	_, err = brokers[0].DeleteOldData(cleanerCtx, "cqdb", "Node", "now()")
+	AssertOk(t, err, "Failed to delete old data by DeleteOldData. Err: %v", err)
+	go brokers[0].MetricsCleanerRoutine(cleanerCtx, "cqdb", nil)
+
+	// for test coverage
+	// this go routine will return immediately since this is a duplicated call
+	go brokers[0].MetricsCleanerRoutine(cleanerCtx, "cqdb", nil)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		return brokers[0].IsMetricsCleanerRoutineCreated(), nil
+	}, "Error start MetricsCleanerRoutine")
+
+	// check data after running DeleteOldData
+	checkQuery = "SELECT * FROM \"cqdb\".\"default\".\"Node\""
+	results, err = brokers[0].ExecuteQueryShard(context.Background(), "cqdb", checkQuery, uint(targetShard.ShardID)-1)
+	Assert(t, len(results[0].Series) == 0, "Failed to clean up all data after running DeleteOldData")
+
 	// make call delete continuous query
 	err = brokers[0].DeleteContinuousQuery(context.Background(), "cqdb", "testcq", "Node")
 	AssertOk(t, err, "Error deleting continuous query")
@@ -524,6 +550,8 @@ func TestBrokerTstoreContinuousQuery(t *testing.T) {
 	}, "Node is still a leader after stopping", "300ms", "30s")
 
 	log.Infof("--------------Stopped all data nodes -------------")
+
+	Assert(t, brokers[0].IsRoutineCtxCanceled() == true, "Failed to cancel routine ctx after stopping broker")
 
 	// delete the old cluster state
 	err = meta.DestroyClusterState(meta.DefaultClusterConfig(), meta.ClusterTypeTstore)

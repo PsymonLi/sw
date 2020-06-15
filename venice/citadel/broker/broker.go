@@ -49,16 +49,20 @@ type Inf interface {
 // Broker is the api broker that distributes writes and queries to data nodes
 type Broker struct {
 	sync.Mutex
-	nodeUUID    string
-	metaWatcher *meta.Watcher // metadata watcher
-	rpcClients  map[string]*rpckit.RPCClient
-	logger      log.Logger
+	nodeUUID      string
+	metaWatcher   *meta.Watcher // metadata watcher
+	rpcClients    map[string]*rpckit.RPCClient
+	logger        log.Logger
+	ctx           context.Context    // context for related go routine
+	ctxCancelFunc context.CancelFunc // cancel func for routine Ctx
 
-	cqCtx                context.Context
-	cqCtxCancelFunc      context.CancelFunc
+	// for continuous query
 	cqRoutineCreated     bool
 	metricsWithCQCreated map[string]bool   // original metrics name : true
 	cqInfoMap            map[string]string // cq name : query string
+
+	// for periodic metrics cleaner
+	cleanerRoutineCreated bool
 }
 
 // broker retry constants
@@ -87,10 +91,12 @@ func NewBroker(cfg *meta.ClusterConfig, nodeUUID string, logger log.Logger) (*Br
 		logger:      logger.WithContext("brokeruuid", nodeUUID),
 	}
 
+	// create routine context
+	broker.ctx, broker.ctxCancelFunc = context.WithCancel(context.Background())
+
 	// continuous query
 	broker.metricsWithCQCreated = make(map[string]bool)
 	broker.cqInfoMap = make(map[string]string)
-	broker.cqCtx, broker.cqCtxCancelFunc = context.WithCancel(context.Background())
 	go broker.continuousQueryWaitDB()
 
 	return &broker, nil
@@ -112,8 +118,8 @@ func (br *Broker) Stop() error {
 		br.metaWatcher = nil
 	}
 
-	// cancel continuous query context
-	br.cqCtxCancelFunc()
+	// cancel routine context
+	br.ctxCancelFunc()
 
 	// close the rpc clients
 	for idx, rc := range br.rpcClients {

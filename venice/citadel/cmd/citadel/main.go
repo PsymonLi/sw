@@ -45,6 +45,8 @@ import (
 
 const maxRetry = 120
 const thresholdUsage = 80
+const defaultDBWaitFreq = 30 * time.Second
+const defaultNodeLeaderCheckFreq = 30 * time.Minute
 
 // periodicFreeMemory forces garbage collection every minute and frees OS memory
 func periodicFreeMemory() {
@@ -201,6 +203,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating data node. Err: %v", err)
 	}
+	leaderCheckFunc := dn.IsLeader
 
 	br, err := broker.NewBroker(cfg, *nodeUUID, logger)
 	if err != nil {
@@ -248,6 +251,7 @@ func main() {
 
 	go periodicFreeMemory()
 	go reportStats(*nodeUUID, *dbPath, br)
+	go br.MetricsCleanerRoutine(br.GetRoutineCtx(), "default", leaderCheckFunc)
 
 	// Wait forever
 	select {}
