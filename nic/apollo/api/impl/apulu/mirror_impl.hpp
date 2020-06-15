@@ -137,6 +137,27 @@ private:
     /// \brief destructor
     ~mirror_impl() {}
 
+    /// \brief      program RSPAN type mirror session related tables
+    /// \param[in]  epoch epoch being programmed
+    /// \param[in]  spec    mirror session configuration
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t program_rspan_(pds_epoch_t epoch,
+                             pds_mirror_session_spec_t *spec);
+
+    /// \brief      program underlay ERSPAN type mirror session related tables
+    /// \param[in]  epoch epoch being programmed
+    /// \param[in]  spec    mirror session configuration
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t program_underlay_erspan_(pds_epoch_t epoch,
+                                       pds_mirror_session_spec_t *spec);
+
+    /// \brief      program overlay ERSPAN type mirror session related tables
+    /// \param[in]  epoch epoch being programmed
+    /// \param[in]  spec    mirror session configuration
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t program_overlay_erspan_(pds_epoch_t epoch,
+                                      pds_mirror_session_spec_t *spec);
+
     /// \brief      program mirror session related tables during mirror session
     ///             create by enabling stage0 tables corresponding to new epoch
     /// \param[in]  epoch epoch being activated

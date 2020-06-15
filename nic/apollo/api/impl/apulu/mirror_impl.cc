@@ -100,161 +100,58 @@ mirror_impl::nuke_resources(api_base *api_obj) {
 #define erspan_action        action_u.mirror_erspan
 #define lspan_action         action_u.mirror_lspan
 sdk_ret_t
-mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
-                              pds_mirror_session_spec_t *spec) {
+mirror_impl::program_rspan_(pds_epoch_t epoch,
+                            pds_mirror_session_spec_t *spec) {
     sdk_ret_t ret;
     lif_impl *lif;
     if_entry *intf;
-    vpc_entry *vpc;
-    tep_entry *tep;
     uint32_t oport;
-    ip_addr_t mytep_ip;
-    subnet_entry *subnet;
     p4pd_error_t p4pd_ret;
-    mapping_entry *mapping;
     nexthop_info_entry_t nh_data;
-    pds_mapping_key_t mapping_key;
-    mapping_impl *mapping_impl_obj;
     mirror_actiondata_t mirror_data = { 0 };
 
-    switch (spec->type) {
-    case PDS_MIRROR_SESSION_TYPE_RSPAN:
-        intf = if_find(&spec->rspan_spec.interface);
-        if (intf) {
-            intf = if_entry::eth_if(intf);
-            mirror_data.action_id = MIRROR_RSPAN_ID;
-            mirror_data.rspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-            mirror_data.rspan_action.nexthop_id = oport = if_impl::port(intf);
-            SDK_ASSERT(oport != PDS_PORT_INVALID);
-            mirror_data.rspan_action.ctag = spec->rspan_spec.encap.val.vlan_tag;
+    intf = if_find(&spec->rspan_spec.interface);
+    if (intf) {
+        intf = if_entry::eth_if(intf);
+        mirror_data.action_id = MIRROR_RSPAN_ID;
+        mirror_data.rspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+        mirror_data.rspan_action.nexthop_id = oport = if_impl::port(intf);
+        SDK_ASSERT(oport != PDS_PORT_INVALID);
+        mirror_data.rspan_action.ctag = spec->rspan_spec.encap.val.vlan_tag;
+        mirror_data.rspan_action.truncate_len = spec->snap_len;
+        // program the nexthop entry 1st
+        memset(&nh_data, 0, nh_data.entry_size());
+        nh_data.set_port(oport);
+        nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
+        ret = nh_data.write(oport);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
+                          "RSPAN mirror session %s programming failed",
+                          oport, spec->key.str());
+            return sdk::SDK_RET_HW_PROGRAM_ERR;
+        }
+    } else {
+        // local span case, get the lif and use its nexthop id
+        lif = lif_impl_db()->find(&spec->rspan_spec.interface);
+        mirror_data.action_id = MIRROR_LSPAN_ID;
+        mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+        switch (lif->type()) {
+        case sdk::platform::LIF_TYPE_HOST:
+        case sdk::platform::LIF_TYPE_MNIC_OOB_MGMT:
+        case sdk::platform::LIF_TYPE_MNIC_INBAND_MGMT:
+            mirror_data.lspan_action.nexthop_id = lif->nh_idx();
             mirror_data.rspan_action.truncate_len = spec->snap_len;
-            // program the nexthop entry 1st
-            memset(&nh_data, 0, nh_data.entry_size());
-            nh_data.set_port(oport);
-            nh_data.set_vlan(spec->rspan_spec.encap.val.vlan_tag);
-            ret = nh_data.write(oport);
-			if (ret != SDK_RET_OK) {
-				PDS_TRACE_ERR("Failed to program NEXTHOP table at idx %u, "
-                              "RSPAN mirror session %s programming failed",
-                              oport, spec->key.str());
-				return sdk::SDK_RET_HW_PROGRAM_ERR;
-			}
-        } else {
-            // local span case, get the lif and use its nexthop id
-            lif = lif_impl_db()->find(&spec->rspan_spec.interface);
-            mirror_data.action_id = MIRROR_LSPAN_ID;
+            break;
+        default:
+            // blackhole if some other type of lif is provided
+            PDS_TRACE_ERR("Unsupported lif type %u in mirror session %s, "
+                          "blackholing mirrored traffic",
+                          lif->type(), spec->key.str());
             mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-            switch (lif->type()) {
-            case sdk::platform::LIF_TYPE_HOST:
-            case sdk::platform::LIF_TYPE_MNIC_OOB_MGMT:
-            case sdk::platform::LIF_TYPE_MNIC_INBAND_MGMT:
-                mirror_data.lspan_action.nexthop_id = lif->nh_idx();
-                mirror_data.rspan_action.truncate_len = spec->snap_len;
-                break;
-            default:
-                // blackhole if some other type of lif is provided
-                PDS_TRACE_ERR("Unsupported lif type %u in mirror session %s, "
-                              "blackholing mirrored traffic",
-                              lif->type(), spec->key.str());
-                mirror_data.lspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-                mirror_data.lspan_action.nexthop_id =
-                    PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
-                break;
-            }
+            mirror_data.lspan_action.nexthop_id =
+                PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
+            break;
         }
-        break;
-
-    case PDS_MIRROR_SESSION_TYPE_ERSPAN:
-        mirror_data.action_id = MIRROR_ERSPAN_ID;
-        vpc = vpc_find(&spec->erspan_spec.vpc);
-        if (vpc->type() == PDS_VPC_TYPE_UNDERLAY) {
-            mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
-            mytep_ip = device_db()->find()->ip_addr();
-            mirror_data.erspan_action.sip = mytep_ip.addr.v4_addr;
-            if (spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
-                tep = tep_find(&spec->erspan_spec.tep);
-                SDK_ASSERT(tep != NULL);
-                mirror_data.erspan_action.nexthop_id =
-                    ((tep_impl *)(tep->impl()))->hw_id();
-                mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
-                //mirror_data.erspan_action.dmac;
-                //mirror_data.erspan_action.smac;
-            } else {
-                SDK_ASSERT(spec->erspan_spec.dst_type ==
-                               PDS_ERSPAN_DST_TYPE_IP);
-                // TODO: should we lookup for a TEP in this case first before
-                //       assuming it is a non-TEP IP ?
-                // destination is IP in the underlay, set the nexthop to point
-                // to system drop nexthop until we hear about its reachability
-                // from the routing stack
-                mirror_data.erspan_action.nexthop_id =
-                    PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
-                mirror_data.erspan_action.dip =
-                    spec->erspan_spec.ip_addr.addr.v4_addr;
-                // TODO: set these based on the nexthop information in the
-                //       update from the routing stack
-                //mirror_data.erspan_action.dmac;
-                //mirror_data.erspan_action.smac;
-            }
-        } else {
-            SDK_ASSERT(spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP);
-            // mirror destination is either local or remote mapping
-            mapping_key.type = PDS_MAPPING_TYPE_L3;
-            mapping_key.vpc = spec->erspan_spec.vpc;
-            mapping_key.ip_addr = spec->erspan_spec.ip_addr;
-            mapping = mapping_entry::build(&mapping_key);
-            if (mapping == NULL) {
-                PDS_TRACE_ERR("Failed to find ERSPAN mirror session %s dst IP "
-                              "mapping (%s, %s)", spec->key.str(),
-                              spec->erspan_spec.vpc.str(),
-                              ipaddr2str(&spec->erspan_spec.ip_addr));
-                return SDK_RET_INVALID_ARG;
-            }
-            subnet = ((mapping_impl *)(mapping->impl()))->subnet();
-            mapping_impl_obj = (mapping_impl *)mapping->impl();
-            subnet = mapping_impl_obj->subnet();
-
-            // forwarding mirror packet takes same forwarding path as any
-            // other traffic to this mappping
-            mirror_data.erspan_action.nexthop_type =
-                mapping_impl_obj->nexthop_type();
-            mirror_data.erspan_action.nexthop_id =
-                mapping_impl_obj->nexthop_id();
-            mirror_data.erspan_action.egress_bd_id =
-                mapping_impl_obj->subnet_hw_id();
-            // ERSPAN Eth header SMAC = VR IP
-            sdk::lib::memrev(mirror_data.erspan_action.smac,
-                             &subnet->vr_mac()[0], ETH_ADDR_LEN);
-            // ERSPAN Eth header DMAC = mapping's DMAC
-            sdk::lib::memrev(mirror_data.erspan_action.dmac,
-                             &mapping_impl_obj->mac()[0], ETH_ADDR_LEN);
-            // ERSPAN IP header SIP is IPv4 VR IP of mapping's subnet
-            mirror_data.erspan_action.sip = subnet->v4_vr_ip();
-            // ERSPAN IP header DIP is the collector IP
-            mirror_data.erspan_action.dip =
-                spec->erspan_spec.ip_addr.addr.v4_addr;
-            if (mapping->is_local()) {
-                // local vnic
-                mirror_data.erspan_action.rewrite_flags =
-                    P4_REWRITE_ENCAP_VXLAN;
-            } else {
-                // remote vnic
-                mirror_data.erspan_action.rewrite_flags =
-                    P4_REWRITE_ENCAP_VXLAN | P4_REWRITE_VNI_DEFAULT;
-            }
-            mapping_entry::soft_delete(mapping);
-        }
-        mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
-        mirror_data.erspan_action.gre_seq_en = TRUE;
-        mirror_data.erspan_action.vlan_strip_en =
-            spec->erspan_spec.vlan_strip_en;
-        mirror_data.erspan_action.truncate_len = spec->snap_len;
-        mirror_data.erspan_action.span_id = spec->erspan_spec.span_id;
-        mirror_data.erspan_action.dscp = spec->erspan_spec.dscp;
-        break;
-
-    default:
-        return SDK_RET_INVALID_ARG;
     }
 
     // program the mirror table
@@ -266,6 +163,164 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+mirror_impl::program_overlay_erspan_(pds_epoch_t epoch,
+                                     pds_mirror_session_spec_t *spec) {
+    sdk_ret_t ret;
+    subnet_entry *subnet;
+    p4pd_error_t p4pd_ret;
+    mapping_entry *mapping;
+    pds_mapping_key_t mapping_key;
+    mapping_impl *mapping_impl_obj;
+    mirror_actiondata_t mirror_data = { 0 };
+
+    SDK_ASSERT(spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP);
+    // mirror destination is either local or remote mapping
+    mapping_key.type = PDS_MAPPING_TYPE_L3;
+    mapping_key.vpc = spec->erspan_spec.vpc;
+    mapping_key.ip_addr = spec->erspan_spec.ip_addr;
+    mapping = mapping_entry::build(&mapping_key);
+    if (mapping == NULL) {
+        PDS_TRACE_ERR("Failed to find ERSPAN mirror session %s dst IP "
+                      "mapping (%s, %s)", spec->key.str(),
+                      spec->erspan_spec.vpc.str(),
+                      ipaddr2str(&spec->erspan_spec.ip_addr));
+        return SDK_RET_INVALID_ARG;
+    }
+    subnet = ((mapping_impl *)(mapping->impl()))->subnet();
+    mapping_impl_obj = (mapping_impl *)mapping->impl();
+    subnet = mapping_impl_obj->subnet();
+
+    mirror_data.action_id = MIRROR_ERSPAN_ID;
+    // forwarding mirror packet takes same forwarding path as any
+    // other traffic to this mappping
+    mirror_data.erspan_action.nexthop_type =
+        mapping_impl_obj->nexthop_type();
+    mirror_data.erspan_action.nexthop_id =
+        mapping_impl_obj->nexthop_id();
+    mirror_data.erspan_action.egress_bd_id =
+        mapping_impl_obj->subnet_hw_id();
+    // ERSPAN Eth header SMAC = VR IP
+    sdk::lib::memrev(mirror_data.erspan_action.smac,
+                     &subnet->vr_mac()[0], ETH_ADDR_LEN);
+    // ERSPAN Eth header DMAC = mapping's DMAC
+    sdk::lib::memrev(mirror_data.erspan_action.dmac,
+                     &mapping_impl_obj->mac()[0], ETH_ADDR_LEN);
+    // ERSPAN IP header SIP is IPv4 VR IP of mapping's subnet
+    mirror_data.erspan_action.sip = subnet->v4_vr_ip();
+    // ERSPAN IP header DIP is the collector IP
+    mirror_data.erspan_action.dip =
+        spec->erspan_spec.ip_addr.addr.v4_addr;
+    if (mapping->is_local()) {
+        // local vnic
+        mirror_data.erspan_action.rewrite_flags =
+            P4_REWRITE_ENCAP_VXLAN;
+    } else {
+        // remote vnic
+        mirror_data.erspan_action.rewrite_flags =
+            P4_REWRITE_ENCAP_VXLAN | P4_REWRITE_VNI_DEFAULT;
+    }
+    mapping_entry::soft_delete(mapping);
+    mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
+    mirror_data.erspan_action.gre_seq_en = TRUE;
+    mirror_data.erspan_action.vlan_strip_en =
+        spec->erspan_spec.vlan_strip_en;
+    mirror_data.erspan_action.truncate_len = spec->snap_len;
+    mirror_data.erspan_action.span_id = spec->erspan_spec.span_id;
+    mirror_data.erspan_action.dscp = spec->erspan_spec.dscp;
+
+    // program the mirror table
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
+                                       &mirror_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program mirror session %s at idx %u",
+                      spec->key.str(), hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
+                                      pds_mirror_session_spec_t *spec) {
+    sdk_ret_t ret;
+    tep_entry *tep;
+    ip_addr_t mytep_ip;
+    p4pd_error_t p4pd_ret;
+    mirror_actiondata_t mirror_data = { 0 };
+
+    mirror_data.action_id = MIRROR_ERSPAN_ID;
+    mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    mytep_ip = device_db()->find()->ip_addr();
+    mirror_data.erspan_action.sip = mytep_ip.addr.v4_addr;
+    if (spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
+        tep = tep_find(&spec->erspan_spec.tep);
+        SDK_ASSERT(tep != NULL);
+        mirror_data.erspan_action.nexthop_id =
+            ((tep_impl *)(tep->impl()))->hw_id();
+        mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
+        //mirror_data.erspan_action.dmac;
+        //mirror_data.erspan_action.smac;
+    } else {
+        SDK_ASSERT(spec->erspan_spec.dst_type ==
+                       PDS_ERSPAN_DST_TYPE_IP);
+        // TODO: should we lookup for a TEP in this case first before
+        //       assuming it is a non-TEP IP ?
+        // destination is IP in the underlay, set the nexthop to point
+        // to system drop nexthop until we hear about its reachability
+        // from the routing stack
+        mirror_data.erspan_action.nexthop_id =
+            PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
+        mirror_data.erspan_action.dip =
+            spec->erspan_spec.ip_addr.addr.v4_addr;
+        // TODO: set these based on the nexthop information in the
+        //       update from the routing stack
+        //mirror_data.erspan_action.dmac;
+        //mirror_data.erspan_action.smac;
+    }
+    mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
+    mirror_data.erspan_action.gre_seq_en = TRUE;
+    mirror_data.erspan_action.vlan_strip_en =
+        spec->erspan_spec.vlan_strip_en;
+    mirror_data.erspan_action.truncate_len = spec->snap_len;
+    mirror_data.erspan_action.span_id = spec->erspan_spec.span_id;
+    mirror_data.erspan_action.dscp = spec->erspan_spec.dscp;
+
+    // program the mirror table
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
+                                       &mirror_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program mirror session %s at idx %u",
+                      spec->key.str(), hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
+                              pds_mirror_session_spec_t *spec) {
+    vpc_entry *vpc;
+
+    switch (spec->type) {
+    case PDS_MIRROR_SESSION_TYPE_RSPAN:
+        return program_rspan_(epoch, spec);
+        break;
+
+    case PDS_MIRROR_SESSION_TYPE_ERSPAN:
+        vpc = vpc_find(&spec->erspan_spec.vpc);
+        if (vpc->type() == PDS_VPC_TYPE_UNDERLAY) {
+            return program_underlay_erspan_(epoch, spec);
+        } else {
+            return program_overlay_erspan_(epoch, spec);
+        }
+        break;
+    default:
+        break;
+    }
+    return SDK_RET_INVALID_ARG;
 }
 
 sdk_ret_t
