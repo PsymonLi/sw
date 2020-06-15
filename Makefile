@@ -85,6 +85,7 @@ BUILD_CMD ?= bash -c  "make ${TARGETS}"
 UPGRADE_TARGETS ?= ws-tools pull-assets-venice gen upgrade-build
 UPGRADE_BUILD_CMD ?= bash -c  "make ${UPGRADE_TARGETS}"
 PENCTL_BUILD_CMD ?= bash -c  "cd penctl && make"
+PSMCTL_BUILD_CMD ?= bash -c "cd psmctl && make"
 E2E_CONFIG ?= test/e2e/cluster/tb_config_dev.json
 E2E_DEV_CONFIG ?= test/e2e/cluster/tb_config_dev_2.json
 E2E_CP_CONFIG ?= test/e2e/cloud/tb_config_cp.json
@@ -185,7 +186,7 @@ ginkgo-src:
 	$(info +++ ginkgo dryrun)
 	@go test github.com/pensando/sw/test/e2e/cluster/... -ginkgo.v -ginkgo.dryRun
 
-.PHONY: build gopkglist gopkgsinstall ginkgo-src netagent-build penctl upgrade-penctl
+.PHONY: build gopkglist gopkgsinstall ginkgo-src netagent-build penctl upgrade-penctl psmctl upgrade-psmctl
 
 gopkgsinstall:
 	@$(shell cd ${GOPATH}/src/github.com/pensando/sw && CGO_LDFLAGS_ALLOW="-I/usr/local/share/libtool" go install ./vendor/github.com/haya14busa/gopkgs/cmd/gopkgs)
@@ -892,6 +893,14 @@ upgrade-penctl:
 		echo "+++ building penctl sources"; echo docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_UPGRADE_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PENCTL_BUILD_CMD} ; \
 		docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_UPGRADE_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PENCTL_BUILD_CMD} ; \
 
+psmctl:
+		echo "+++ building psmctl sources"; echo docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PSMCTL_BUILD_CMD} ; \
+		docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PSMCTL_BUILD_CMD} ; \
+
+upgrade-psmctl:
+		echo "+++ building psmctl sources"; echo docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_UPGRADE_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PSMCTL_BUILD_CMD} ; \
+		docker run --user $(shell id -u):$(shell id -g) -e "GIT_COMMIT=${GIT_COMMIT}" -e "GIT_VERSION=${GIT_UPGRADE_VERSION}" -e "BUILD_DATE=${BUILD_DATE}" -e "GOCACHE=/import/src/github.com/pensando/sw/.cache" --rm -v${PWD}:/import/src/github.com/pensando/sw${CACHEMOUNT} -v${PWD}/bin/pkg:/import/pkg${CACHEMOUNT} -v${PWD}/bin/cbin:/import/bin${CACHEMOUNT} -w /import/src/github.com/pensando/sw ${REGISTRY_URL}/${BUILD_CONTAINER} ${PSMCTL_BUILD_CMD} ; \
+
 venice-image:
 	printf "\n+++++++++++++++++ start container-compile $$(date) +++++++++++++++++\n"
 	$(MAKE) container-compile
@@ -899,6 +908,8 @@ venice-image:
 	$(MAKE) fixtures
 	printf "\n+++++++++++++++++ start penctl $$(date) +++++++++++++++++\n"
 	$(MAKE) penctl
+	printf "\n+++++++++++++++++ start psmctl $$(date) +++++++++++++++++\n"
+	$(MAKE) psmctl
 	printf "\n+++++++++++++++++ start install $$(date) +++++++++++++++++\n"
 	$(MAKE) install
 	printf "\n+++++++++++++++++ start tar $$(date) +++++++++++++++++\n"
@@ -919,6 +930,8 @@ venice-upgrade-image:
 	$(MAKE) upgrade-fixtures
 	printf "\n+++++++++++++++++ start upgrade-penctl $$(date) +++++++++++++++++\n"
 	$(MAKE) upgrade-penctl
+	printf "\n+++++++++++++++++ start upgrade-psmctl $$(date) +++++++++++++++++\n"
+	$(MAKE) upgrade-psmctl
 	printf "\n+++++++++++++++++ start upgrade-install $$(date) +++++++++++++++++\n"
 	$(MAKE) upgrade-install
 	printf "\n+++++++++++++++++ start tar $$(date) +++++++++++++++++\n"

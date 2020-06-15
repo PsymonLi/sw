@@ -353,4 +353,11 @@ if not bootstrap_psm():
 print "\n"
 write_log("* PSM bootstrap completed successfully")
 write_log("* you may access PSM at https://" + opts.PSM_IP[0])
+write_log("* Note: Use psmctl to fetch the security tokens for accessing DSCs and store them in a secure place")
+write_log("** Following are a few sample invocations to get token(s) for:")
+write_log("** - accessing DSC with specific mac address")
+write_log("**   # /usr/pensando/bin/psmctl get node-token --psm-ip localhost --psm-port 443 --audience \"00ae.cd00.112a\" --token-output \"~/dsc-tok\"")
+write_log("** - accessing any DSC in the cluster")
+write_log("**   # /usr/pensando/bin/psmctl get node-token --psm-ip localhost --psm-port 443 --audience \"*\" --token-output \"~/dsc-tok\"")
+write_log("** Refer '/usr/pensando/bin/psmctl help' for more information about the commands and options provided by psmctl")
 clean_exit()
