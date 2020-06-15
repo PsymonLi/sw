@@ -773,11 +773,11 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 					MatchRules: []*monitoring.MatchRule{
 						{
 							Src: &monitoring.MatchSelector{
-								IPAddresses: []string{"1.1.1.1"},
+								IPAddresses: []string{"1.1.1.1/8"},
 							},
 
 							Dst: &monitoring.MatchSelector{
-								IPAddresses: []string{"1.1.1.2"},
+								IPAddresses: []string{"1.1.1.2/24"},
 							},
 							AppProtoSel: &monitoring.AppProtoSelector{
 								ProtoPorts: []string{"TCP/1000"},
@@ -971,6 +971,174 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 						{
 							Destination: "10.1.1.100",
 							Transport:   "UDP/1234",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "src dst any any",
+			fail: false,
+			policy: monitoring.FlowExportPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Name:      "valid-gateway-policy",
+					Tenant:    globals.DefaultTenant,
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					MatchRules: []*monitoring.MatchRule{
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"any"},
+							},
+
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"any"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/1000"},
+							},
+						},
+					},
+
+					Interval:         "15s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "10.1.1.100",
+							Transport:   "UDP/1234",
+							Gateway:     "10.1.1.254",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid multiple src any any",
+			fail: true,
+			policy: monitoring.FlowExportPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Name:      "valid-gateway-policy",
+					Tenant:    globals.DefaultTenant,
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					MatchRules: []*monitoring.MatchRule{
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"1.1.1.1", "any"},
+							},
+
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"any"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/1000"},
+							},
+						},
+					},
+
+					Interval:         "15s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "10.1.1.100",
+							Transport:   "UDP/1234",
+							Gateway:     "10.1.1.254",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid multiple dst any any",
+			fail: true,
+			policy: monitoring.FlowExportPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Name:      "valid-gateway-policy",
+					Tenant:    globals.DefaultTenant,
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					MatchRules: []*monitoring.MatchRule{
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"any"},
+							},
+
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"1.1.1.1", "any"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/1000"},
+							},
+						},
+					},
+
+					Interval:         "15s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "10.1.1.100",
+							Transport:   "UDP/1234",
+							Gateway:     "10.1.1.254",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid ip string",
+			fail: true,
+			policy: monitoring.FlowExportPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Name:      "valid-gateway-policy",
+					Tenant:    globals.DefaultTenant,
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					MatchRules: []*monitoring.MatchRule{
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"any"},
+							},
+
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"1.1.1.1, 2.2.2.2"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/1000"},
+							},
+						},
+					},
+
+					Interval:         "15s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "10.1.1.100",
+							Transport:   "UDP/1234",
+							Gateway:     "10.1.1.254",
 						},
 					},
 				},

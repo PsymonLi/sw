@@ -487,6 +487,72 @@ var testBadMirrorSessions = []monitoring.MirrorSession{
 			},
 		},
 	},
+	{
+		// both match src any and other ip
+		ObjectMeta: api.ObjectMeta{
+			Name:   "Test Mirror Session 17",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketSize: 128,
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: "ERSPAN_TYPE_2",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "127.0.10.1",
+						Gateway:     "127.0.10.254",
+					},
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100", "any"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100"},
+					},
+				},
+			},
+		},
+	},
+	{
+		// both match dst any and other ip
+		ObjectMeta: api.ObjectMeta{
+			Name:   "Test Mirror Session 18",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketSize: 128,
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: "ERSPAN_TYPE_2",
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "127.0.10.1",
+						Gateway:     "127.0.10.254",
+					},
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"any"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100", "any", "1.1.1.1"},
+					},
+				},
+			},
+		},
+	},
 }
 
 var testGoodMirrorSession = []monitoring.MirrorSession{
@@ -629,6 +695,73 @@ var testGoodMirrorSession = []monitoring.MirrorSession{
 					},
 					AppProtoSel: &monitoring.AppProtoSelector{
 						ProtoPorts: []string{"1234"},
+					},
+				},
+			},
+		},
+	},
+	{
+		ObjectMeta: api.ObjectMeta{
+			Name:   "valid ip with netmask match",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "10.1.1.1",
+					},
+					StripVlanHdr: true,
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.2/8", "192.168.100.1"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"192.168.100.3", "192.168.100.4/24"},
+					},
+					AppProtoSel: &monitoring.AppProtoSelector{
+						ProtoPorts: []string{"1234"},
+					},
+				},
+			},
+		},
+	},
+	{
+		ObjectMeta: api.ObjectMeta{
+			Name:   "valid match with any any",
+			Tenant: "Tenant 1",
+		},
+		TypeMeta: api.TypeMeta{
+			Kind:       "MirrorSession",
+			APIVersion: "v1",
+		},
+		Spec: monitoring.MirrorSessionSpec{
+			PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_DROPS.String()},
+			Collectors: []monitoring.MirrorCollector{
+				{
+					Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+					ExportCfg: &monitoring.MirrorExportConfig{
+						Destination: "10.1.1.1",
+					},
+					StripVlanHdr: true,
+				},
+			},
+			MatchRules: []monitoring.MatchRule{
+				{
+					Src: &monitoring.MatchSelector{
+						IPAddresses: []string{"any"},
+					},
+					Dst: &monitoring.MatchSelector{
+						IPAddresses: []string{"any"},
 					},
 				},
 			},

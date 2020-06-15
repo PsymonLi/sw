@@ -7,9 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/monitoring"
-	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/ctrler/tpm"
 )
 
@@ -143,15 +141,15 @@ func isSubnetAddr(ip string) bool {
 }
 
 // ValidateMatchRules validates match rules
-func ValidateMatchRules(objMeta api.ObjectMeta, matchRules []netproto.MatchRule, findEndpoint func(api.ObjectMeta) (*netproto.Endpoint, error)) error {
+func ValidateMatchRules(matchRules []monitoring.MatchRule) error {
 	for _, rule := range matchRules {
 		srcSelectors := rule.Src
 		destSelectors := rule.Dst
 
 		if srcSelectors != nil {
 
-			if len(srcSelectors.Addresses) > 0 {
-				for _, ipAddr := range srcSelectors.Addresses {
+			if len(srcSelectors.IPAddresses) > 0 {
+				for _, ipAddr := range srcSelectors.IPAddresses {
 					if ipAddr == "any" {
 						continue
 					}
@@ -176,8 +174,8 @@ func ValidateMatchRules(objMeta api.ObjectMeta, matchRules []netproto.MatchRule,
 		}
 		if destSelectors != nil {
 
-			if len(destSelectors.Addresses) > 0 {
-				for _, ipAddr := range destSelectors.Addresses {
+			if len(destSelectors.IPAddresses) > 0 {
+				for _, ipAddr := range destSelectors.IPAddresses {
 					if ipAddr == "any" {
 						continue
 					}

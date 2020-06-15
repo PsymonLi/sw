@@ -11,12 +11,10 @@ import (
 
 	govldtr "github.com/asaskevich/govalidator"
 
-	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
 	hooksutils "github.com/pensando/sw/api/hooks/apiserver/utils"
 	apiintf "github.com/pensando/sw/api/interfaces"
-	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/apiserver"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
@@ -173,20 +171,43 @@ func flowexportPolicyValidator(p *monitoring.FlowExportPolicy) error {
 		return err
 	}
 
-	if len(spec.MatchRules) != 0 {
-		data, err := json.Marshal(spec.MatchRules)
-		if err != nil {
-			return fmt.Errorf("failed to marshal, %v", err)
-		}
+	matchrules := []monitoring.MatchRule{}
+	for _, mr := range spec.MatchRules {
+		matchrules = append(matchrules, *mr)
+	}
+	if err := hooksutils.ValidateMatchRules(matchrules); err != nil {
+		return fmt.Errorf("error in match-rule, %v", err)
+	}
+	for _, mr := range spec.MatchRules {
+		allSrc := false
+		allDst := false
+		if mr.Src != nil {
+			if len(mr.Src.IPAddresses) == 0 && len(mr.Src.MACAddresses) == 0 {
+				allSrc = true
+			}
 
-		matchrules := []netproto.MatchRule{}
-		if err := json.Unmarshal(data, &matchrules); err != nil {
-			return fmt.Errorf("failed to unmarshal, %v", err)
+			for _, ip := range mr.Src.IPAddresses {
+				if strings.ToLower(ip) == "any" {
+					allSrc = true
+				}
+			}
+			if allSrc && len(mr.Src.IPAddresses) > 1 {
+				return fmt.Errorf("Match-all type cannot have multiple src match rules")
+			}
+			// TBD - Ensure only one of the three is specified? not all.
 		}
-
-		if err := hooksutils.ValidateMatchRules(p.ObjectMeta, matchrules,
-			func(meta api.ObjectMeta) (*netproto.Endpoint, error) { return nil, nil }); err != nil {
-			return fmt.Errorf("error in match-rule, %v", err)
+		if mr.Dst != nil {
+			if len(mr.Dst.IPAddresses) == 0 && len(mr.Dst.MACAddresses) == 0 {
+				allDst = true
+			}
+			for _, ip := range mr.Dst.IPAddresses {
+				if strings.ToLower(ip) == "any" {
+					allDst = true
+				}
+			}
+			if allDst && len(mr.Dst.IPAddresses) > 1 {
+				return fmt.Errorf("Match-all type cannot have multiple dst match rules")
+			}
 		}
 	}
 

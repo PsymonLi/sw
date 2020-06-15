@@ -8,10 +8,9 @@ import (
 
 	govldtr "github.com/asaskevich/govalidator"
 
-	"github.com/pensando/sw/venice/utils/apigen/validators"
-
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
+	hooksutils "github.com/pensando/sw/api/hooks/apiserver/utils"
 	apiintf "github.com/pensando/sw/api/interfaces"
 	"github.com/pensando/sw/venice/apiserver"
 	"github.com/pensando/sw/venice/utils/kvstore"
@@ -156,6 +155,9 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 	if len(ms.Spec.MatchRules) == 0 {
 		matchAll = true
 	}
+	if err := hooksutils.ValidateMatchRules(ms.Spec.MatchRules); err != nil {
+		return i, false, fmt.Errorf("error in match-rule, %v", err)
+	}
 	for _, mr := range ms.Spec.MatchRules {
 
 		if mr.AppProtoSel != nil {
@@ -178,10 +180,14 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			if len(mr.Src.IPAddresses) == 0 && len(mr.Src.MACAddresses) == 0 {
 				allSrc = true
 			}
-			for _, ipv4 := range mr.Src.IPAddresses {
-				if err := validators.IPv4(ipv4); err != nil {
-					return i, false, fmt.Errorf("error in src match-rule, %v", err)
+
+			for _, ip := range mr.Src.IPAddresses {
+				if strings.ToLower(ip) == "any" {
+					allSrc = true
 				}
+			}
+			if allSrc && len(mr.Src.IPAddresses) > 1 {
+				return i, false, fmt.Errorf("Match-all type cannot have multiple src match rules")
 			}
 			// TBD - Ensure only one of the three is specified? not all.
 		}
@@ -189,10 +195,13 @@ func (r *mirrorSessionHooks) validateMirrorSession(ctx context.Context, kv kvsto
 			if len(mr.Dst.IPAddresses) == 0 && len(mr.Dst.MACAddresses) == 0 {
 				allDst = true
 			}
-			for _, ipv4 := range mr.Dst.IPAddresses {
-				if err := validators.IPv4(ipv4); err != nil {
-					return i, false, fmt.Errorf("error in dst match-rule, %v", err)
+			for _, ip := range mr.Dst.IPAddresses {
+				if strings.ToLower(ip) == "any" {
+					allDst = true
 				}
+			}
+			if allDst && len(mr.Dst.IPAddresses) > 1 {
+				return i, false, fmt.Errorf("Match-all type cannot have multiple dst match rules")
 			}
 		}
 		if allSrc && allDst {
