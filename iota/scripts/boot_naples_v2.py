@@ -654,6 +654,7 @@ class NaplesManagement(EntityManagement):
         if GlobalOptions.no_mgmt and fw_type != FIRMWARE_TYPE_GOLD:
             return
         for _ in range(5):
+            self.SyncLine()
             try:
                 output = self.RunCommandOnConsoleWithOutput("ifconfig int_mnic0")
                 ifconfig_regexp = "addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
@@ -1073,12 +1074,13 @@ class EsxHostManagement(HostManagement):
             naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover))
 
     @_exceptionWrapper(_errCodes.HOST_ESX_CTRL_VM_INIT_FAILED, "Ctrl VM init failed")
-    def __esx_host_init(self):
+    def __esx_host_init(self, ignore_naples_ssh=True):
         self.WaitForSsh(port=443)
         time.sleep(30)
-        if all(n.IsSSHUP() for n in self.naples):
-            print ("All Naples OOB is up, skipping ctrl vm initialization.")
-            return
+        if not ignore_naples_ssh:
+            if all(n.IsSSHUP() for n in self.naples):
+                print ("All Naples OOB is up, skipping ctrl vm initialization.")
+                return
         # Use first instance of naples
         naples_inst = self.naples[0]
         outFile = "/tmp/esx_" +  self.ipaddr + ".json"
@@ -1150,6 +1152,7 @@ class EsxHostManagement(HostManagement):
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FROM_HOST_FAILED, "FW install Failed")
     def InstallMainFirmware(self, mount_data = True, copy_fw = True):
 
+        self.__esx_host_init()
         for naples_inst in self.naples:
             naples_inst.InstallPrep()
 
@@ -1164,6 +1167,7 @@ class EsxHostManagement(HostManagement):
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FAILED, "Gold Firmware Install failed")
     def InstallGoldFirmware(self):
+        self.__esx_host_init()
         for naples_inst in self.naples: 
             if not naples_inst.IsNaplesGoldFWLatest():
                 self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.gold_fw_img),
