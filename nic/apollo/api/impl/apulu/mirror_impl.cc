@@ -220,6 +220,8 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
                 mapping_impl_obj->nexthop_type();
             mirror_data.erspan_action.nexthop_id =
                 mapping_impl_obj->nexthop_id();
+            mirror_data.erspan_action.egress_bd_id =
+                mapping_impl_obj->subnet_hw_id();
             // ERSPAN Eth header SMAC = VR IP
             sdk::lib::memrev(mirror_data.erspan_action.smac,
                              &subnet->vr_mac()[0], ETH_ADDR_LEN);
@@ -233,8 +235,12 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
                 spec->erspan_spec.ip_addr.addr.v4_addr;
             if (mapping->is_local()) {
                 // local vnic
+                mirror_data.erspan_action.rewrite_flags =
+                    P4_REWRITE_ENCAP_VXLAN;
             } else {
                 // remote vnic
+                mirror_data.erspan_action.rewrite_flags =
+                    P4_REWRITE_ENCAP_VXLAN | P4_REWRITE_VNI_DEFAULT;
             }
             mapping_entry::soft_delete(mapping);
         }
