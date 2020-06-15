@@ -1997,7 +1997,7 @@ pd_qos_set_dmac_cam_entry (uint32_t uplink_port, int cam_entry, uint64_t dmac)
         return;
     }
 
-    HAL_TRACE_ERR("Setting dmac {} at cam entry {} for uplink port {}",
+    HAL_TRACE_DEBUG("Setting dmac {} at cam entry {} for uplink port {}",
                     dmac, cam_entry, uplink_port);
     g_qos_cam_dmacs[uplink_port][cam_entry] = dmac;
 
