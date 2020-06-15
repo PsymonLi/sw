@@ -61,7 +61,7 @@
             "//": "backed up data from A will be restored here",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "pdsagent" ],
+                "names": [ "pdsagent", "vpp" ],
                 "domain": "A"
             },
             "events": [
@@ -163,7 +163,7 @@
         "repeal": {
             "//": "todo: needs discussion here on sysmgr A/B",
              "svc": {
-                "names": ["pdsagent" ],
+                "names": [ "vpp", "pdsagent" ],
                 "event_sequence": "serial",
                 "rsp_timeout": "2000ms",
                 "domain": "A"
@@ -180,7 +180,7 @@
             "//": "todo: failure or failure-non-recovarable status to netagent",
             "svc": {
                 "event_sequence": "serial",
-                "names": [ "pdsagent" ],
+                "names": [ "vpp", "pdsagent" ],
                 "domain": "A"
             },
             "events": [

@@ -10,8 +10,6 @@
 #include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 #include "hitless_upg_hdlr.hpp"
 
-static const char *grupg_str = "Graceful Upgrade";
-
 static void
 vpp_upg_ev_fill (sdk::upg::upg_ev_t &ev)
 {
@@ -40,13 +38,12 @@ vpp_graceful_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     if (params->id == sdk::upg::UPG_EV_PREPARE) {
         // Bring down all interfaces
-        upg_log_notice("%s: %s: Bringing down all interfaces\n", __FUNCTION__,
-                        grupg_str);
+        upg_log_notice("%s: Graceful Upgrade: Bringing down all interfaces\n",
+                       __FUNCTION__);
         // All worker threads must be suspended
         pds_vpp_set_suspend_resume_worker_threads(1);
         pds_infra_set_all_intfs_status(false);
-        upg_log_notice("%s: %s: Remove all interfaces\n", __FUNCTION__,
-                        grupg_str);
+        upg_log_notice("%s: Graceful Upgrade: Remove all interfaces\n", __FUNCTION__);
         pds_infra_remove_all_intfs();
     }
     return SDK_RET_OK;
@@ -58,17 +55,18 @@ vpp_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
     sdk_ret_t ret;
 
     if (!params) {
-        upg_log_error("%s: %s: Invalid Upgrade notification\n", __FUNCTION__,
-                      grupg_str);
+        upg_log_error("%s: Invalid Upgrade notification\n", __FUNCTION__);
         return SDK_RET_INVALID_ARG;
     }
     ret = SDK_RET_OK;
-    upg_log_notice("%s: %s: Handling Upgrade stage %u mode %u\n", __FUNCTION__,
-                   grupg_str, params->id, params->mode);
     pds_vpp_worker_thread_barrier();
     if (upgrade_mode_graceful(params->mode)) {
+        upg_log_notice("%s: Graceful Upgrade: Handling Upgrade stage %u mode %u\n",
+                       __FUNCTION__, params->id, params->mode);
         ret = vpp_graceful_upg_ev_hdlr(params);
     } else if (upgrade_mode_hitless(params->mode)) {
+        upg_log_notice("%s: Hitless Upgrade: Handling Upgrade stage %u mode %u\n",
+                       __FUNCTION__, params->id, params->mode);
         ret = vpp_hitless_upg_ev_hdlr(params);
     }
     pds_vpp_worker_thread_barrier_release();

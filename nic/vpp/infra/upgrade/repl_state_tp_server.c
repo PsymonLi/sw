@@ -12,7 +12,32 @@
 #include <vlib/unix/unix.h>
 #include "repl_state_tp_pvt.h"
 
-clib_socket_t repl_state_tp_server_sock;
+static clib_socket_t repl_state_tp_server_sock;
+static clib_socket_t repl_state_tp_client_sock;
+static uword repl_state_tp_server_file_index = ~0;
+static uword repl_state_tp_client_file_index = ~0;
+
+static void
+close_client_sock (void)
+{
+    if (repl_state_tp_client_file_index != ~0 ) {
+        clib_file_del_by_index(&file_main, repl_state_tp_client_file_index);
+        // closing of the socket happens in clib_file_del_by_index above
+        clib_socket_free(&repl_state_tp_client_sock);
+        repl_state_tp_client_file_index = ~0;
+    }
+}
+
+static void
+close_server_sock (void)
+{
+    if (repl_state_tp_server_file_index != ~0 ) {
+        clib_file_del_by_index(&file_main, repl_state_tp_server_file_index);
+        // closing of the socket happens in clib_file_del_by_index above
+        clib_socket_free(&repl_state_tp_server_sock);
+        repl_state_tp_server_file_index = ~0;
+    }
+}
 
 static clib_error_t *
 repl_state_tp_server_read (clib_file_t * uf)
@@ -29,7 +54,7 @@ repl_state_tp_server_read (clib_file_t * uf)
     if ((n = recv(uf->file_descriptor, input_buf, BUF_SIZE, 0)) < 0) {
         return clib_error_return_unix(0, "read");
     } else if (n == 0) {
-        clib_file_del(&file_main, uf);
+        close_client_sock();
         return clib_error_return_unix(0, "read-close");
     }
 
@@ -47,7 +72,7 @@ repl_state_tp_server_write (clib_file_t * uf)
 static clib_error_t *
 repl_state_tp_server_error (clib_file_t * uf)
 {
-    clib_file_del(&file_main, uf);
+    close_client_sock();
     return 0;
 }
 
@@ -57,10 +82,10 @@ repl_state_tp_server_accept (clib_file_t * uf)
 {
     clib_socket_t *s = &repl_state_tp_server_sock;
     clib_error_t *error;
-    clib_socket_t client;
+    clib_socket_t *client = &repl_state_tp_client_sock;
     clib_file_t clib_file = { 0 };
 
-    error = clib_socket_accept(s, &client);
+    error = clib_socket_accept(s, client);
     if (error) {
         return error;
     }
@@ -68,15 +93,15 @@ repl_state_tp_server_accept (clib_file_t * uf)
     clib_file.read_function = repl_state_tp_server_read;
     clib_file.write_function = repl_state_tp_server_write;
     clib_file.error_function = repl_state_tp_server_error;
-    clib_file.file_descriptor = client.fd;
+    clib_file.file_descriptor = client->fd;
     clib_file.private_data = 0;
     clib_file.description = format(0, "VPP Inter domain IPC client");
-    clib_file_add(&file_main, &clib_file);
+    repl_state_tp_client_file_index = clib_file_add(&file_main, &clib_file);
 
     /*
      * VPP from doman 'B' has connected. Ideally we need a protobuf message
      * to negotiate the queue name to use and know the client's capabilities
-     * like number of threads etc. We will do it in phase-2
+     * like number of threads etc. We will do it in phase-2.
      */
     repl_state_tp_sync(REPL_STATE_OBJ_ID_SESS, sqname);
     return 0;
@@ -84,7 +109,7 @@ repl_state_tp_server_accept (clib_file_t * uf)
 
 // Initialize a Unix Domain Socket and register the FD with VPP event loop
 int
-repl_state_tp_server_init()
+repl_state_tp_server_init (void)
 {
     clib_socket_t *s = &repl_state_tp_server_sock;
     clib_error_t *error = 0;
@@ -109,7 +134,15 @@ repl_state_tp_server_init()
     clib_file.read_function = repl_state_tp_server_accept;
     clib_file.file_descriptor = s->fd;
     clib_file.description = format(0, "VPP Inter domain IPC listener %s", s->config);
-    clib_file_add(&file_main, &clib_file);
+    repl_state_tp_server_file_index = clib_file_add(&file_main, &clib_file);
 
     return 0;
+}
+
+// Close the server socket and cleanup resources
+void
+repl_state_tp_server_stop (void)
+{
+    close_client_sock();
+    close_server_sock();
 }

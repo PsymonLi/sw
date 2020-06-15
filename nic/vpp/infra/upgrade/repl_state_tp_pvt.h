@@ -7,7 +7,7 @@
 
 #include "repl_state_tp_common.h"
 
-#define SOCKET_FILE "/run/vpp/vpp-domA.sock"
+#define SOCKET_FILE "/run/vpp/sync.sock"
 #define BUF_SIZE 4096
 #define sqname "vpp_sess_syncq"
 
