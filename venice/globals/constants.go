@@ -230,7 +230,8 @@ const (
 	TmAGENTRestPort = "9013"
 
 	// Rollout
-	RolloutRPCPort = "9015"
+	RolloutRPCPort       = "9015"
+	RolloutCtrlrRESTPort = "9026" // Rollout Ctrlr REST port for pprof
 
 	// TechSupport
 	VeniceTechSupport         = "pen-vtsa"

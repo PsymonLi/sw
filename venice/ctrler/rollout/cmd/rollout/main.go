@@ -3,9 +3,17 @@
 package main
 
 import (
+	"expvar"
 	"flag"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
+	_ "net/http/pprof"
+	"runtime/debug"
 	"strings"
+	"time"
+
+	"github.com/gorilla/mux"
 
 	diagapi "github.com/pensando/sw/api/generated/diagnostics"
 	"github.com/pensando/sw/venice/ctrler/rollout"
@@ -80,6 +88,34 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating controller instance: %v", err)
 	}
+
+	// set Garbage collection ratio and periodically free OS memory
+	debug.SetGCPercent(20)
+	go func() {
+		for {
+			select {
+			case <-time.After(2 * time.Minute):
+				// force GC and free OS memory
+				debug.FreeOSMemory()
+			}
+		}
+	}()
+
+	// run a REST server for pprof
+	router := mux.NewRouter()
+	router.Methods("GET").Subrouter().Handle("/debug/vars", expvar.Handler())
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/", pprof.Index)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/profile", pprof.Profile)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/trace", pprof.Trace)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/allocs", pprof.Handler("allocs").ServeHTTP)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/block", pprof.Handler("block").ServeHTTP)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/heap", pprof.Handler("heap").ServeHTTP)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/mutex", pprof.Handler("mutex").ServeHTTP)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/goroutine", pprof.Handler("goroutine").ServeHTTP)
+	router.Methods("GET").Subrouter().HandleFunc("/debug/pprof/threadcreate", pprof.Handler("threadcreate").ServeHTTP)
+	go http.ListenAndServe(fmt.Sprintf("127.0.0.1:%s", globals.RolloutCtrlrRESTPort), router)
 
 	log.Infof("rollout controller is running")
 
