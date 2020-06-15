@@ -171,7 +171,7 @@ mpart_cfg_path (void)
     std::transform(profile_name.begin(), profile_name.end(),
                    profile_name.begin(), ::tolower);
     mpart_json =  hal_cfg_path_ + "/" +
-        "iris" + "/hbm_mem_" + profile_name + ".json";
+        "iris" + "/hbm_mem" + profile_name + ".json";
 #endif
 
     return mpart_json;
