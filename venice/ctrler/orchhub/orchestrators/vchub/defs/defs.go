@@ -242,7 +242,7 @@ type State struct {
 	ForceDCNamesLock sync.RWMutex
 }
 
-const (
-	// MaxVmotionTimeout is the maximum time allowed for vmotion to complete
-	MaxVmotionTimeout = "100s"
-)
+// IsVCSim returns whether the AboutInfo belongs to a VC simulator
+func IsVCSim(aboutInfo *types.AboutInfo) bool {
+	return aboutInfo != nil && aboutInfo.FullName == "VCSIM - vCenter Server 6.5.0 build-5973321"
+}

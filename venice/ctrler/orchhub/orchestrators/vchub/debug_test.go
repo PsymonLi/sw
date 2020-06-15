@@ -66,7 +66,7 @@ func TestDebug(t *testing.T) {
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
 
-	vchub := LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub := LaunchVCHub(sm, orchConfig, logger)
 
 	AssertEventually(t, func() (bool, interface{}) {
 		return vchub.watchStarted, nil

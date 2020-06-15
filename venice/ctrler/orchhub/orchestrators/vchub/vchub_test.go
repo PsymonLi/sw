@@ -918,7 +918,7 @@ func TestUsegVlanLimit(t *testing.T) {
 	}
 	smmock.CreateNetwork(sm, "default", "pg1", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -1110,7 +1110,7 @@ func TestRapidEvents(t *testing.T) {
 	evCh := make(chan defs.Probe2StoreMsg, 2)
 	readCh := make(chan defs.Probe2StoreMsg, 2)
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe, WithVcEventsCh(evCh), WithVcReadCh(readCh))
+	vchub = LaunchVCHub(sm, orchConfig, logger, WithVcEventsCh(evCh), WithVcReadCh(readCh))
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -2440,7 +2440,7 @@ func TestDegradedConn(t *testing.T) {
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithTagSyncDelay(1*time.Second), WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger, WithTagSyncDelay(1*time.Second))
 
 	AssertEventually(t, func() (bool, interface{}) {
 		o, err := sm.Controller().Orchestrator().Find(&vchub.OrchConfig.ObjectMeta)
@@ -2562,7 +2562,7 @@ func TestVCHubStalePG(t *testing.T) {
 
 	err = sm.Controller().Orchestrator().Create(orchConfig)
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -2716,7 +2716,6 @@ func TestVCHubAPIServerReconnect(t *testing.T) {
 		},
 	})
 
-	// WithMockProbe uses a probe interceptor to handle issues with vcsim
 	apiServerConnected := false
 	apiSrvConnValidator := func(v *VCHub) {
 		workloadFn := func(in interface{}) (bool, bool) {
@@ -2736,7 +2735,7 @@ func TestVCHubAPIServerReconnect(t *testing.T) {
 		v.pCache.SetValidator(string(cluster.KindHost), hostFn)
 	}
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe, apiSrvConnValidator)
+	vchub = LaunchVCHub(sm, orchConfig, logger, apiSrvConnValidator)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -2875,7 +2874,7 @@ func TestVCHubDcDelete(t *testing.T) {
 		},
 	})
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -3028,7 +3027,7 @@ func TestVerifyOverride(t *testing.T) {
 	smmock.CreateNetwork(sm, "default", "pg1", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
 
 	overrideRewriteDelay = 500 * time.Millisecond
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -3224,7 +3223,7 @@ func TestHostUplinkModification(t *testing.T) {
 	smmock.CreateNetwork(sm, "default", "pg1", "11.1.1.0/24", "11.1.1.1", 500, nil, orchInfo1)
 
 	overrideRewriteDelay = 500 * time.Millisecond
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {
@@ -3344,7 +3343,7 @@ func TestHostStatusPreserved(t *testing.T) {
 	evCh := make(chan defs.Probe2StoreMsg, 2)
 	readCh := make(chan defs.Probe2StoreMsg, 2)
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe, WithVcEventsCh(evCh), WithVcReadCh(readCh))
+	vchub = LaunchVCHub(sm, orchConfig, logger, WithVcEventsCh(evCh), WithVcReadCh(readCh))
 
 	// Wait for it to come up
 	AssertEventually(t, func() (bool, interface{}) {

@@ -16,6 +16,8 @@ import (
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe"
+	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/session"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/globals"
@@ -90,6 +92,16 @@ func (v *VCHub) startEventsListener() {
 						}
 						// Sync was not completed on last connection event.
 					}
+
+					// Check if this is vcsim
+					if connStatus.IsVCSim {
+						if probe, ok := v.probe.(*vcprobe.VCProbe); ok {
+							// Replace with mock
+							v.Log.Infof("Wrapping probe with mock probe")
+							v.probe = mock.NewProbeMock(probe)
+						}
+					}
+
 					// sync and start watchers, network event watcher
 					// will not start until after sync finishes (blocked on processVeniceEvents flag)
 					v.discoveredDCsLock.Lock()

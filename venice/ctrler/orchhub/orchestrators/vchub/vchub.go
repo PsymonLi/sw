@@ -17,7 +17,6 @@ import (
 	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe"
-	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/vcprobe/mock"
 	"github.com/pensando/sw/venice/ctrler/orchhub/statemgr"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils/pcache"
@@ -71,7 +70,6 @@ type VCHub struct {
 	processVeniceEventsLock sync.Mutex
 	// Opts is options used during creation of this instance
 	opts                  []Option
-	useMockProbe          bool
 	tagSyncDelay          time.Duration
 	tagSyncInitializedMap map[string]bool
 	orchUpdateLock        sync.Mutex
@@ -79,11 +77,6 @@ type VCHub struct {
 
 // Option specifies optional values for vchub
 type Option func(*VCHub)
-
-// WithMockProbe uses a probe interceptor to handle issues with vcsim
-func WithMockProbe(v *VCHub) {
-	v.useMockProbe = true
-}
 
 // WithVcReadCh replaces the readCh
 func WithVcReadCh(ch chan defs.Probe2StoreMsg) Option {
@@ -221,12 +214,7 @@ func (v *VCHub) overrideCheckFn() {
 }
 
 func (v *VCHub) createProbe(config *orchestration.Orchestrator) {
-	probe := vcprobe.NewVCProbe(v.vcReadCh, v.vcEventCh, v.State)
-	if v.useMockProbe {
-		v.probe = mock.NewProbeMock(probe)
-	} else {
-		v.probe = probe
-	}
+	v.probe = vcprobe.NewVCProbe(v.vcReadCh, v.vcEventCh, v.State)
 	v.probe.Start()
 }
 

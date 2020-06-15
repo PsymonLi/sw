@@ -51,8 +51,9 @@ var (
 
 // ConnectionState contains info about the connection
 type ConnectionState struct {
-	State string
-	Err   error
+	State   string
+	Err     error
+	IsVCSim bool
 }
 
 // Session is a struct for maintaining vCenter client objects.
@@ -155,23 +156,29 @@ func (s *Session) ClearSession() {
 	s.SessionReady = false
 	s.sessionLock.Unlock()
 	if s.client != nil {
-		// Using background context since it's likely that
-		// VCHub's context has been cancelled
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		err := s.client.Logout(ctx)
-		if err != nil {
-			s.logger.Errorf("Received err while logging out %s", err)
+		// Skip logout if using vcsim due to race condition
+		if !defs.IsVCSim(&s.client.ServiceContent.About) {
+			// Using background context since it's likely that
+			// VCHub's context has been cancelled
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			err := s.client.Logout(ctx)
+			if err != nil {
+				s.logger.Errorf("Received err while logging out %s", err)
+			}
 		}
 	}
 	if s.tagClient != nil {
-		// Using background context since it's likely that
-		// VCHub's context has been cancelled
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		err := s.tagClient.Logout(ctx)
-		if err != nil {
-			s.logger.Errorf("Received err while logging tag client out %s", err)
+		// Skip logout if using vcsim due to race condition
+		if !defs.IsVCSim(&s.client.ServiceContent.About) {
+			// Using background context since it's likely that
+			// VCHub's context has been cancelled
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			err := s.tagClient.Logout(ctx)
+			if err != nil {
+				s.logger.Errorf("Received err while logging tag client out %s", err)
+			}
 		}
 	}
 	// Stop watchers and Event receivers
@@ -245,6 +252,7 @@ func (s *Session) PeriodicSessionCheck(wg *sync.WaitGroup) {
 			evt := ConnectionState{
 				orchestration.OrchestratorStatus_Failure.String(),
 				nil,
+				false,
 			}
 			retryDelay := connectionCheckDelay
 			if versionErr != nil {
@@ -288,6 +296,7 @@ func (s *Session) PeriodicSessionCheck(wg *sync.WaitGroup) {
 		evt := ConnectionState{
 			orchestration.OrchestratorStatus_Success.String(),
 			nil,
+			defs.IsVCSim(&s.client.ServiceContent.About),
 		}
 		s.sendConnEvent(evt)
 
@@ -323,6 +332,7 @@ func (s *Session) PeriodicSessionCheck(wg *sync.WaitGroup) {
 							evt := ConnectionState{
 								orchestration.OrchestratorStatus_Degraded.String(),
 								fmt.Errorf("Tags client received authentication error due to an invalid username or password. Tags/Labels functionality may be impacted"),
+								false,
 							}
 							s.sendConnEvent(evt)
 						} else {
@@ -331,6 +341,7 @@ func (s *Session) PeriodicSessionCheck(wg *sync.WaitGroup) {
 							evt := ConnectionState{
 								orchestration.OrchestratorStatus_Success.String(),
 								nil,
+								false,
 							}
 							s.sendConnEvent(evt)
 						}
@@ -378,6 +389,7 @@ func (s *Session) PeriodicSessionCheck(wg *sync.WaitGroup) {
 		evt = ConnectionState{
 			orchestration.OrchestratorStatus_Unknown.String(),
 			nil,
+			false,
 		}
 		s.sendConnEvent(evt)
 

@@ -149,7 +149,6 @@ func (tInfo *tInfo) setup() error {
 		ListenURL: url,
 		Resolver:  tInfo.resolver,
 		Logger:    l.WithContext("submodule", "pen-orchhub"),
-		VCHubOpts: []vchub.Option{vchub.WithMockProbe},
 	}
 	tsdb.Init(context.Background(), &tsdb.Opts{})
 	defer tsdb.Cleanup()

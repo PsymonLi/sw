@@ -589,9 +589,9 @@ func TestVmotionWithWatchers(t *testing.T) {
 	AssertOk(t, err, "Failed to create vm1")
 
 	logger.Infof("===== Launch VCHub =====")
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 	// Dummy vchub
-	vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+	vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 	wlName := vchub.createVMWorkloadName("", vm1.Self.Value)
 	deleteVM := func(sendEvent bool) {
 		// VM must be back on host in DC1 for deletions to work
@@ -897,8 +897,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 		}
 
@@ -941,8 +941,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 			waitVMReady()
 		}
@@ -989,8 +989,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 			waitVMReady()
 		}
@@ -1033,8 +1033,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 			waitVMReady()
 		}
@@ -1082,8 +1082,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchub.Destroy(false)
 			vchubDummy.Destroy(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 			waitVMReady()
 		}
@@ -1120,8 +1120,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 				vchubDummy.Destroy(false)
 				deleteVM(false)
 				recreateVM()
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-				vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
+				vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 				waitForWatch()
 				waitVMReady()
 			}
@@ -1151,7 +1151,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 				vmConfigUpdate(dstHost, dstDC, isAcrossDC)
 
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
 				waitForWatch()
 
 				verifyWorkload(dstHost, penHost1, 1, isAcrossDC) // Verify sync isn't writing any state
@@ -1162,7 +1162,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 				updateMigrationStatus(statusDone)
 
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
 				waitForWatch()
 				checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationDone)
 
@@ -1174,8 +1174,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 				vchubDummy.Destroy(false)
 				deleteVM(false)
 				recreateVM()
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-				vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
+				vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 				waitForWatch()
 				waitVMReady()
 			}
@@ -1208,7 +1208,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 				updateMigrationStatus(statusFailed)
 
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
 				waitForWatch()
 
 				checkMigrationState(t, sm, vchub.OrchID, wlName, stageMigrationDone)
@@ -1221,8 +1221,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 				vchubDummy.Destroy(false)
 				deleteVM(false)
 				recreateVM()
-				vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-				vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+				vchub = LaunchVCHub(sm, orchConfig, logger)
+				vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 				waitForWatch()
 				waitVMReady()
 			}
@@ -1255,7 +1255,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 
 			deleteVM(false)
 
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
 			waitForWatch()
 
 			AssertEventually(t, func() (bool, interface{}) {
@@ -1278,8 +1278,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchub.Destroy(false)
 			vchubDummy.Destroy(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 			waitVMReady()
 		}
@@ -1351,8 +1351,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 		}
 		{
@@ -1402,8 +1402,8 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 		}
 		{
@@ -1442,7 +1442,7 @@ func TestVmotionWithWatchers(t *testing.T) {
 			verifyWorkload(dstHost, nil, 2, isAcrossDC)
 
 			vchub.Destroy(false)
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
 			waitForWatch()
 
 			// Check Migration stage
@@ -1462,13 +1462,13 @@ func TestVmotionWithWatchers(t *testing.T) {
 			vchubDummy.Destroy(false)
 			deleteVM(false)
 			recreateVM()
-			vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
-			vchubDummy = LaunchVCHub(sm, orchConfig1, logger, WithMockProbe)
+			vchub = LaunchVCHub(sm, orchConfig, logger)
+			vchubDummy = LaunchVCHub(sm, orchConfig1, logger)
 			waitForWatch()
 		}
 	}
 
-	vchub = LaunchVCHub(sm, orchConfig, logger, WithMockProbe)
+	vchub = LaunchVCHub(sm, orchConfig, logger)
 	waitForWatch()
 	time.Sleep(1 * time.Second)
 	nonPensandoTestCases(penHost2, dc1)
