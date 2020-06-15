@@ -5,26 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/exec"
 
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/objstore/client"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
+	"github.com/pensando/sw/venice/utils/techsupport/actionengine"
 )
 
 // GenerateTechsupportZip archives the contents of the techsupport into a tarball
 func GenerateTechsupportZip(techsupportFile string, directory string) error {
 	log.Infof("Creating techsupport tarball : %v from the directory : %v", techsupportFile, directory)
 	cmdStr := fmt.Sprintf("pushd %s && tar -zcvf  %s %s/* && popd", directory, techsupportFile, directory)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Printf("tar command out:\n%s\n", string(out))
-		return fmt.Errorf("collecting log files failed with: %s", err)
-	}
-	return nil
+	return actionengine.RunShellCmd(cmdStr, directory)
 }
 
 // DeleteTechsupportZip deletes the techsupport tarball
