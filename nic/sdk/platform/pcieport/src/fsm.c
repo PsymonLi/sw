@@ -92,12 +92,16 @@ pcieport_clear_fault(pcieport_t *p)
 static int
 pcieport_drain(pcieport_t *p)
 {
-    if (pcieport_tgt_marker_rx_wait(p) < 0) {
-        pciesys_logerror("port%d: port tgt_marker_rx failed\n", p->port);
+    int r;
+
+    r = pcieport_tgt_marker_rx_wait(p);
+    if (r < 0) {
+        pciesys_logdebug("port%d: port tgt_marker_rx %d\n", p->port, r);
         return -1;
     }
-    if (pcieport_tgt_axi_pending_wait(p) < 0) {
-        pciesys_logerror("port%d: port tgt_axi_pending failed\n", p->port);
+    r = pcieport_tgt_axi_pending_wait(p);
+    if (r < 0) {
+        pciesys_logdebug("port%d: port tgt_axi_pending %d\n", p->port, r);
         return -1;
     }
     return 0;
