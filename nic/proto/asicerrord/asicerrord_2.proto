@@ -139,18 +139,18 @@ message Dprdpr1intreg2Metrics {
 
 message Dprdpr1intsramseccMetrics {
   fixed64 Key = 1;
-  delphi.Counter dpr_pktin_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktin_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_pktin_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktin_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpr_csum_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_csum_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_csum_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_csum_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpr_phv_fifo_uncorrectable = 6 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_phv_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_phv_fifo_correctable = 7 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_phv_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpr_ohi_fifo_uncorrectable = 8 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ohi_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_ohi_fifo_correctable = 9 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ohi_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpr_ptr_fifo_uncorrectable = 10 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ptr_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_ptr_fifo_correctable = 11 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ptr_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpr_pktout_fifo_uncorrectable = 12 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktout_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpr_pktout_fifo_correctable = 13 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktout_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_pktin_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktin_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_pktin_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktin_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_csum_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_csum_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_csum_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_csum_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_phv_fifo_uncorrectable = 6 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_phv_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_phv_fifo_correctable = 7 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_phv_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_ohi_fifo_uncorrectable = 8 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ohi_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_ohi_fifo_correctable = 9 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ohi_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_ptr_fifo_uncorrectable = 10 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ptr_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_ptr_fifo_correctable = 11 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_ptr_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpr_pktout_fifo_uncorrectable = 12 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktout_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpr_pktout_fifo_correctable = 13 [ (venice.metricsField) = { DisplayName: "dpr_dpr_1_int_srams_ecc_dpr_pktout_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 
 message Dprdpr1intfifoMetrics {
@@ -262,8 +262,8 @@ message Mcmc0intmcMetrics {
 
 message Mcmc0mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_0_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_0_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_0_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_0_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc1intmcMetrics {
@@ -273,8 +273,8 @@ message Mcmc1intmcMetrics {
 
 message Mcmc1mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_1_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_1_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_1_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_1_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc2intmcMetrics {
@@ -284,8 +284,8 @@ message Mcmc2intmcMetrics {
 
 message Mcmc2mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_2_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_2_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_2_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_2_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc3intmcMetrics {
@@ -295,8 +295,8 @@ message Mcmc3intmcMetrics {
 
 message Mcmc3mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_3_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_3_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_3_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_3_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc4intmcMetrics {
@@ -306,8 +306,8 @@ message Mcmc4intmcMetrics {
 
 message Mcmc4mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_4_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_4_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_4_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_4_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc5intmcMetrics {
@@ -317,8 +317,8 @@ message Mcmc5intmcMetrics {
 
 message Mcmc5mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_5_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_5_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_5_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_5_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc6intmcMetrics {
@@ -328,8 +328,8 @@ message Mcmc6intmcMetrics {
 
 message Mcmc6mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_6_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_6_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_6_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_6_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Mcmc7intmcMetrics {
@@ -339,8 +339,8 @@ message Mcmc7intmcMetrics {
 
 message Mcmc7mchintmcMetrics {
   fixed64 Key = 1;
-  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_7_mch_int_mc_ecc_1bit_thresh_ps1" Description: "" Units: Count } ];
-  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_7_mch_int_mc_ecc_1bit_thresh_ps0" Description: "" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps1 = 2 [ (venice.metricsField) = { DisplayName: "mc_mc_7_mch_int_mc_ecc_1bit_thresh_ps1" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
+  delphi.Counter ecc_1bit_thresh_ps0 = 3 [ (venice.metricsField) = { DisplayName: "mc_mc_7_mch_int_mc_ecc_1bit_thresh_ps0" Description: "1-bit/2-bit ECC errors - unravel information follows" Units: Count } ];
 }
 
 message Dppdpp0intreg1Metrics {
@@ -366,10 +366,10 @@ message Dppdpp0intreg1Metrics {
 
 message Dppdpp0intsramseccMetrics {
   fixed64 Key = 1;
-  delphi.Counter dpp_phv_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_phv_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpp_phv_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_phv_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpp_ohi_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_ohi_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpp_ohi_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_ohi_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpp_phv_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_phv_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpp_phv_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_phv_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpp_ohi_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_ohi_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpp_ohi_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpp_dpp_0_int_srams_ecc_dpp_ohi_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 
 message Dppdpp0intfifoMetrics {
@@ -454,10 +454,10 @@ message Dppdpp1intreg1Metrics {
 
 message Dppdpp1intsramseccMetrics {
   fixed64 Key = 1;
-  delphi.Counter dpp_phv_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_phv_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpp_phv_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_phv_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter dpp_ohi_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_ohi_fifo_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter dpp_ohi_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_ohi_fifo_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpp_phv_fifo_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_phv_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpp_phv_fifo_correctable = 3 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_phv_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter dpp_ohi_fifo_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_ohi_fifo_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter dpp_ohi_fifo_correctable = 5 [ (venice.metricsField) = { DisplayName: "dpp_dpp_1_int_srams_ecc_dpp_ohi_fifo_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 
 message Dppdpp1intfifoMetrics {
@@ -521,15 +521,14 @@ message Dppdpp1intcreditMetrics {
 
 message MsmsintmsMetrics {
   fixed64 Key = 1;
-  delphi.Counter sbus_err = 2 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_sbus_err" Description: "Software Error" Units: Count } ];
-  delphi.Counter rei_err = 3 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_rei_err" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter rei_pll_err = 4 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_rei_pll_err" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter pk_efuse_init_read_timeout = 5 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_init_read_timeout" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter pk_efuse_cpu_read_timeout = 6 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_cpu_read_timeout" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter pk_efuse_cpu_burn_timeout = 7 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_cpu_burn_timeout" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter pk_efuse_burn_imm_timeout = 8 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_burn_imm_timeout" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter ds16_efuse_init_read_timeout = 9 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_ds16_efuse_init_read_timeout" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter ds16_efuse_cpu_read_timeout = 10 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_ds16_efuse_cpu_read_timeout" Description: "Hardware Error" Units: Count } ];
+  delphi.Counter rei_err = 3 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_rei_err" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter rei_pll_err = 4 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_rei_pll_err" Description: "Problem with PLLs locking, problem with board voltages or oscillator" Units: Count } ];
+  delphi.Counter pk_efuse_init_read_timeout = 5 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_init_read_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter pk_efuse_cpu_read_timeout = 6 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_cpu_read_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter pk_efuse_cpu_burn_timeout = 7 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_cpu_burn_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter pk_efuse_burn_imm_timeout = 8 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_pk_efuse_burn_imm_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter ds16_efuse_init_read_timeout = 9 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_ds16_efuse_init_read_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
+  delphi.Counter ds16_efuse_cpu_read_timeout = 10 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_ds16_efuse_cpu_read_timeout" Description: "Efuse Error,problem with the voltage or non functioning fuse" Units: Count } ];
   delphi.Counter ahb_axi_err = 11 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_ahb_axi_err" Description: "Software Error" Units: Count } ];
   delphi.Counter emmc_pre_axi_err = 12 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_emmc_pre_axi_err" Description: "Software Error" Units: Count } ];
   delphi.Counter fl_axi_err = 13 [ (venice.metricsField) = { DisplayName: "ms_ms_int_ms_fl_axi_err" Description: "Software Error" Units: Count } ];
@@ -552,16 +551,10 @@ message MsmsintmsMetrics {
 
 message MsmsintmiscMetrics {
   fixed64 Key = 1;
-  delphi.Counter qspi_ram_ecc_uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_qspi_ram_ecc_uncorrectable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter qspi_ram_ecc_correctable = 3 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_qspi_ram_ecc_correctable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter elam_cap_ecc_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_elam_cap_ecc_uncorrectable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter elam_cap_ecc_correctable = 5 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_elam_cap_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter ahb_esec_data_ram_ecc_uncorrectable = 6 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_ahb_esec_data_ram_ecc_uncorrectable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter ahb_esec_data_ram_ecc_correctable = 7 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_ahb_esec_data_ram_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter ahb_esec_esystem_ram_ecc_uncorrectable = 8 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_ahb_esec_esystem_ram_ecc_uncorrectable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter ahb_esec_esystem_ram_ecc_correctable = 9 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_ahb_esec_esystem_ram_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
-  delphi.Counter bl2_ram_ecc_uncorrectable = 10 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_bl2_ram_ecc_uncorrectable" Description: "Hardware Error" Units: Count } ];
-  delphi.Counter bl2_ram_ecc_correctable = 11 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_bl2_ram_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter elam_cap_ecc_uncorrectable = 4 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_elam_cap_ecc_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter elam_cap_ecc_correctable = 5 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_elam_cap_ecc_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter bl2_ram_ecc_uncorrectable = 10 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_bl2_ram_ecc_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter bl2_ram_ecc_correctable = 11 [ (venice.metricsField) = { DisplayName: "ms_ms_int_misc_bl2_ram_ecc_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 
 message Msmsintprp1Metrics {
@@ -601,13 +594,13 @@ message Msmsintprp5Metrics {
 
 message Mxmx0intmacMetrics {
   fixed64 Key = 1;
-  delphi.Counter lane0_sbe = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane0_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane0_sbe = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane0_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane0_dbe = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane0_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane1_sbe = 4 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane1_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane1_sbe = 4 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane1_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane1_dbe = 5 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane1_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane2_sbe = 6 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane2_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane2_sbe = 6 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane2_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane2_dbe = 7 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane2_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane3_sbe = 8 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane3_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane3_sbe = 8 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane3_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane3_dbe = 9 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_lane3_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
   delphi.Counter m0pb_pbus_drdy = 12 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_m0pb_pbus_drdy" Description: "Debug PB config. Never happen; otherwise, it's hardware bug" Units: Count } ];
   delphi.Counter m1pb_pbus_drdy = 13 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_mac_m1pb_pbus_drdy" Description: "Debug PB config. Never happen; otherwise, it's hardware bug" Units: Count } ];
@@ -617,19 +610,19 @@ message Mxmx0intmacMetrics {
 
 message Mxmx0inteccMetrics {
   fixed64 Key = 1;
-  delphi.Counter uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_ecc_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter correctable = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_ecc_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter correctable = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_0_int_ecc_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 
 message Mxmx1intmacMetrics {
   fixed64 Key = 1;
-  delphi.Counter lane0_sbe = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane0_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane0_sbe = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane0_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane0_dbe = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane0_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane1_sbe = 4 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane1_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane1_sbe = 4 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane1_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane1_dbe = 5 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane1_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane2_sbe = 6 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane2_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane2_sbe = 6 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane2_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane2_dbe = 7 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane2_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
-  delphi.Counter lane3_sbe = 8 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane3_sbe" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter lane3_sbe = 8 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane3_sbe" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
   delphi.Counter lane3_dbe = 9 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_lane3_dbe" Description: "Double bit error in SerDes. Lane may go down" Units: Count } ];
   delphi.Counter m0pb_pbus_drdy = 12 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_m0pb_pbus_drdy" Description: "Debug PB config. Never happen; otherwise, it's hardware bug" Units: Count } ];
   delphi.Counter m1pb_pbus_drdy = 13 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_mac_m1pb_pbus_drdy" Description: "Debug PB config. Never happen; otherwise, it's hardware bug" Units: Count } ];
@@ -639,7 +632,7 @@ message Mxmx1intmacMetrics {
 
 message Mxmx1inteccMetrics {
   fixed64 Key = 1;
-  delphi.Counter uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_ecc_uncorrectable" Description: "ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip" Units: Count } ];
-  delphi.Counter correctable = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_ecc_correctable" Description: "ecc correctable single bit SOFT error, expect once per 25 years per chip" Units: Count } ];
+  delphi.Counter uncorrectable = 2 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_ecc_uncorrectable" Description: "FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip" Units: Count } ];
+  delphi.Counter correctable = 3 [ (venice.metricsField) = { DisplayName: "mx_mx_1_int_ecc_correctable" Description: "ecc correctable single bit SRAM error, expect once per 25 years per chip" Units: Count } ];
 }
 

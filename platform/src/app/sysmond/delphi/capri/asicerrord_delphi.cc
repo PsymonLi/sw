@@ -534,9 +534,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -573,9 +570,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -614,9 +608,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -653,9 +644,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -694,9 +682,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -733,9 +718,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -774,9 +756,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -813,9 +792,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -854,9 +830,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -893,9 +866,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -1278,9 +1248,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -1317,9 +1284,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -1358,9 +1322,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -1397,9 +1358,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -1438,9 +1396,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -1477,9 +1432,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -1518,9 +1470,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -1557,9 +1506,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -1598,9 +1544,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
         case 8:
             reg->pkt_size_chk++;
             break;
-        case 9:
-            reg->offset_jump_chk++;
-            break;
         case 10:
             reg->d1_not_valid++;
             break;
@@ -1637,9 +1580,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 8:
             reg->pkt_size_chk++;
-            break;
-        case 9:
-            reg->offset_jump_chk++;
             break;
         case 10:
             reg->d1_not_valid++;
@@ -4674,9 +4614,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
             break;
         case 5:
             reg->wr_invalid_cmd++;
-            break;
-        case 6:
-            reg->wr_seq_id++;
             break;
         case 7:
             reg->wr_no_data_pkt_cmd++;
@@ -12069,9 +12006,6 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
     {
         delphi::objects::msmsintmsmetrics_t *reg = &msmsintmsmetrics;
         switch (field_id) {
-        case 2:
-            reg->sbus_err++;
-            break;
         case 3:
             reg->rei_err++;
             break;
@@ -12160,29 +12094,11 @@ sdk_ret_t interrupt_notify (uint64_t reg_id, uint64_t field_id)
     {
         delphi::objects::msmsintmiscmetrics_t *reg = &msmsintmiscmetrics;
         switch (field_id) {
-        case 2:
-            reg->qspi_ram_ecc_uncorrectable++;
-            break;
-        case 3:
-            reg->qspi_ram_ecc_correctable++;
-            break;
         case 4:
             reg->elam_cap_ecc_uncorrectable++;
             break;
         case 5:
             reg->elam_cap_ecc_correctable++;
-            break;
-        case 6:
-            reg->ahb_esec_data_ram_ecc_uncorrectable++;
-            break;
-        case 7:
-            reg->ahb_esec_data_ram_ecc_correctable++;
-            break;
-        case 8:
-            reg->ahb_esec_esystem_ram_ecc_uncorrectable++;
-            break;
-        case 9:
-            reg->ahb_esec_esystem_ram_ecc_correctable++;
             break;
         case 10:
             reg->bl2_ram_ecc_uncorrectable++;

@@ -70,8 +70,8 @@
 intr_reg_t sgi_mpu_2_int_err = {  .name="sgi.mpu[2].int_err", .addr=0x3708630, .reg_type=0, .id=63, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -172,8 +172,8 @@ intr_reg_t pcr_te_0_int_groups_intreg = {  .name="pcr.te[0].int_groups.intreg", 
 intr_reg_t sgi_mpu_5_int_err = {  .name="sgi.mpu[5].int_err", .addr=0x3738630, .reg_type=0, .id=72, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -359,14 +359,14 @@ intr_reg_t pp_pp_port_c_5_int_c_mac = {  .name="pp.pp.port_c[5].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_5_int_c_ecc = {  .name="pp.pp.port_c[5].int_c_ecc", .addr=0x701b1c0, .reg_type=0, .id=171, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_5_int_groups_intreg = {  .name="pp.pp.port_c[5].int_groups.intreg", .addr=0x701b1a0, .reg_type=1, .id=172, .field_count=2, .fields=
@@ -389,8 +389,8 @@ intr_reg_t mc_mc_3_int_groups_intreg = {  .name="mc.mc[3].int_groups.intreg", .a
 
 intr_reg_t mc_mc_0_mch_int_mc = {  .name="mc.mc[0].mch.int_mc", .addr=0x6a100060, .reg_type=0, .id=396, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_0_mch_int_groups_intreg = {  .name="mc.mc[0].mch.int_groups.intreg", .addr=0x6a100050, .reg_type=1, .id=397, .field_count=1, .fields=
@@ -446,18 +446,18 @@ intr_reg_t dpr_dpr_1_int_reg2 = {  .name="dpr.dpr[1].int_reg2", .addr=0x33000c0,
 	} };
 intr_reg_t dpr_dpr_1_int_srams_ecc = {  .name="dpr.dpr[1].int_srams_ecc", .addr=0x3300080, .reg_type=0, .id=387, .field_count=12, .fields=
 	{
-		{  .name="dpr_pktin_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktin_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_csum_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_csum_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_phv_fifo_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ohi_fifo_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ptr_fifo_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ptr_fifo_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktout_fifo_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktout_fifo_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktin_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktin_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_csum_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_csum_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_phv_fifo_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ohi_fifo_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ptr_fifo_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ptr_fifo_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktout_fifo_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktout_fifo_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t dpr_dpr_1_int_fifo = {  .name="dpr.dpr[1].int_fifo", .addr=0x33000d0, .reg_type=0, .id=388, .field_count=6, .fields=
@@ -635,15 +635,15 @@ intr_reg_t pt_pt_psp_int_fatal = {  .name="pt.pt.psp.int_fatal", .addr=0x6206170
 	} };
 intr_reg_t pt_pt_psp_int_lif_qstate_map = {  .name="pt.pt.psp.int_lif_qstate_map", .addr=0x6210010, .reg_type=0, .id=184, .field_count=3, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="qid_invalid", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="lookup in lif table missed", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pt_pt_psp_int_sw_phv_mem = {  .name="pt.pt.psp.int_sw_phv_mem", .addr=0x6211010, .reg_type=0, .id=185, .field_count=12, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_sram", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="bad SW PHV sram programming", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_data", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="bad SW PHV sram programming", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_done0", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="SW PHV done info", .flags=INTR_FLAGS_NONE },
@@ -668,13 +668,13 @@ intr_reg_t pt_pt_psp_int_groups_intreg = {  .name="pt.pt.psp.int_groups.intreg",
 
 intr_reg_t mx_mx_1_int_mac = {  .name="mx.mx[1].int_mac", .addr=0x1e82080, .reg_type=0, .id=480, .field_count=30, .fields=
 	{
-		{  .name="lane0_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane0_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane0_dbe", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane1_sbe", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane1_sbe", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane1_dbe", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane2_sbe", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane2_sbe", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane2_dbe", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane3_sbe", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane3_sbe", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane3_dbe", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
 		{  .name="umac_CFG3_intr", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="umac_CFG3_pslverr", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_INFO, .desc="Invalid need to be masked", .flags=INTR_FLAGS_NONE },
@@ -702,8 +702,8 @@ intr_reg_t mx_mx_1_int_mac = {  .name="mx.mx[1].int_mac", .addr=0x1e82080, .reg_
 	} };
 intr_reg_t mx_mx_1_int_ecc = {  .name="mx.mx[1].int_ecc", .addr=0x1e820c0, .reg_type=0, .id=481, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mx_mx_1_int_groups_intreg = {  .name="mx.mx[1].int_groups.intreg", .addr=0x1e82070, .reg_type=1, .id=482, .field_count=2, .fields=
@@ -715,8 +715,8 @@ intr_reg_t mx_mx_1_int_groups_intreg = {  .name="mx.mx[1].int_groups.intreg", .a
 
 intr_reg_t mc_mc_2_mch_int_mc = {  .name="mc.mc[2].mch.int_mc", .addr=0x6a300060, .reg_type=0, .id=404, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_2_mch_int_groups_intreg = {  .name="mc.mc[2].mch.int_groups.intreg", .addr=0x6a300050, .reg_type=1, .id=405, .field_count=1, .fields=
@@ -747,12 +747,12 @@ intr_reg_t ppa_ppa_0_int_bndl1 = {  .name="ppa.ppa[0].int_bndl1", .addr=0x34402d
 	} };
 intr_reg_t ppa_ppa_0_int_ecc = {  .name="ppa.ppa[0].int_ecc", .addr=0x34402e0, .reg_type=0, .id=3, .field_count=6, .fields=
 	{
-		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl0_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl0_state_lkp_sram_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl1_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl1_state_lkp_sram_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl0_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl0_state_lkp_sram_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl1_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl1_state_lkp_sram_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t ppa_ppa_0_int_fifo1 = {  .name="ppa.ppa[0].int_fifo1", .addr=0x34402f0, .reg_type=0, .id=4, .field_count=30, .fields=
@@ -968,8 +968,8 @@ intr_reg_t ppa_ppa_0_int_pa = {  .name="ppa.ppa[0].int_pa", .addr=0x34403b0, .re
 	} };
 intr_reg_t ppa_ppa_0_int_sw_phv_mem = {  .name="ppa.ppa[0].int_sw_phv_mem", .addr=0x3441010, .reg_type=0, .id=17, .field_count=12, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_sram", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_data", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_done0", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
@@ -1078,8 +1078,8 @@ intr_reg_t pcr_te_6_int_groups_intreg = {  .name="pcr.te[6].int_groups.intreg", 
 
 intr_reg_t mc_mc_1_mch_int_mc = {  .name="mc.mc[1].mch.int_mc", .addr=0x6a200060, .reg_type=0, .id=400, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_1_mch_int_groups_intreg = {  .name="mc.mc[1].mch.int_groups.intreg", .addr=0x6a200050, .reg_type=1, .id=401, .field_count=1, .fields=
@@ -1091,8 +1091,8 @@ intr_reg_t mc_mc_1_mch_int_groups_intreg = {  .name="mc.mc[1].mch.int_groups.int
 intr_reg_t sge_mpu_1_int_err = {  .name="sge.mpu[1].int_err", .addr=0x3698630, .reg_type=0, .id=108, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -1196,18 +1196,18 @@ intr_reg_t dpr_dpr_0_int_reg2 = {  .name="dpr.dpr[0].int_reg2", .addr=0x32000c0,
 	} };
 intr_reg_t dpr_dpr_0_int_srams_ecc = {  .name="dpr.dpr[0].int_srams_ecc", .addr=0x3200080, .reg_type=0, .id=378, .field_count=12, .fields=
 	{
-		{  .name="dpr_pktin_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktin_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_csum_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_csum_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_phv_fifo_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ohi_fifo_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ptr_fifo_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_ptr_fifo_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktout_fifo_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpr_pktout_fifo_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktin_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktin_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_csum_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_csum_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_phv_fifo_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ohi_fifo_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ptr_fifo_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_ptr_fifo_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktout_fifo_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpr_pktout_fifo_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t dpr_dpr_0_int_fifo = {  .name="dpr.dpr[0].int_fifo", .addr=0x32000d0, .reg_type=0, .id=379, .field_count=6, .fields=
@@ -1350,14 +1350,14 @@ intr_reg_t pp_pp_port_c_0_int_c_mac = {  .name="pp.pp.port_c[0].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_0_int_c_ecc = {  .name="pp.pp.port_c[0].int_c_ecc", .addr=0x70111c0, .reg_type=0, .id=156, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_0_int_groups_intreg = {  .name="pp.pp.port_c[0].int_groups.intreg", .addr=0x70111a0, .reg_type=1, .id=157, .field_count=2, .fields=
@@ -1369,28 +1369,28 @@ intr_reg_t pp_pp_port_c_0_int_groups_intreg = {  .name="pp.pp.port_c[0].int_grou
 
 intr_reg_t pb_pbc_hbm_int_ecc_hbm_mtu = {  .name="pb.pbc.hbm.int_ecc_hbm_mtu", .addr=0x140d600, .reg_type=0, .id=325, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_hbm_int_ecc_hbm_rb = {  .name="pb.pbc.hbm.int_ecc_hbm_rb", .addr=0x140d640, .reg_type=0, .id=326, .field_count=4, .fields=
 	{
-		{  .name="rb_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="rb_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="cdt_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="cdt_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rb_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rb_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cdt_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cdt_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_hbm_int_ecc_hbm_wb = {  .name="pb.pbc.hbm.int_ecc_hbm_wb", .addr=0x140dc00, .reg_type=0, .id=327, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_hbm_int_ecc_hbm_ht = {  .name="pb.pbc.hbm.int_ecc_hbm_ht", .addr=0x140e350, .reg_type=0, .id=328, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_hbm_int_hbm_xoff = {  .name="pb.pbc.hbm.int_hbm_xoff", .addr=0x140e360, .reg_type=0, .id=329, .field_count=32, .fields=
@@ -1599,8 +1599,8 @@ intr_reg_t pb_pbc_hbm_int_groups_intreg = {  .name="pb.pbc.hbm.int_groups.intreg
 intr_reg_t pcr_mpu_0_int_err = {  .name="pcr.mpu[0].int_err", .addr=0x6448630, .reg_type=0, .id=217, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -1649,8 +1649,8 @@ intr_reg_t pcr_mpu_0_int_groups_intreg = {  .name="pcr.mpu[0].int_groups.intreg"
 intr_reg_t pct_mpu_0_int_err = {  .name="pct.mpu[0].int_err", .addr=0x64c8630, .reg_type=0, .id=269, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -1699,8 +1699,8 @@ intr_reg_t pct_mpu_0_int_groups_intreg = {  .name="pct.mpu[0].int_groups.intreg"
 intr_reg_t pct_mpu_4_int_err = {  .name="pct.mpu[4].int_err", .addr=0x6508630, .reg_type=0, .id=281, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -1748,8 +1748,8 @@ intr_reg_t pct_mpu_4_int_groups_intreg = {  .name="pct.mpu[4].int_groups.intreg"
 
 intr_reg_t tpc_pics_picc_int_picc = {  .name="tpc.pics.picc.int_picc", .addr=0x45a0020, .reg_type=0, .id=374, .field_count=7, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_stg_awlen_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_slverr", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_decerr", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
@@ -1765,8 +1765,8 @@ intr_reg_t tpc_pics_picc_int_groups_intreg = {  .name="tpc.pics.picc.int_groups.
 
 intr_reg_t mc_mc_4_mch_int_mc = {  .name="mc.mc[4].mch.int_mc", .addr=0x6a500060, .reg_type=0, .id=412, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_4_mch_int_groups_intreg = {  .name="mc.mc[4].mch.int_groups.intreg", .addr=0x6a500050, .reg_type=1, .id=413, .field_count=1, .fields=
@@ -1882,8 +1882,8 @@ intr_reg_t sgi_te_2_int_groups_intreg = {  .name="sgi.te[2].int_groups.intreg", 
 intr_reg_t pct_mpu_7_int_err = {  .name="pct.mpu[7].int_err", .addr=0x6538630, .reg_type=0, .id=290, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -1997,14 +1997,14 @@ intr_reg_t txs_txs_int_tmr = {  .name="txs.txs.int_tmr", .addr=0x200c0070, .reg_
 	} };
 intr_reg_t txs_txs_int_srams_ecc = {  .name="txs.txs.int_srams_ecc", .addr=0x200c0030, .reg_type=0, .id=243, .field_count=8, .fields=
 	{
-		{  .name="tmr_cnt_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="tmr_cnt_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_lif_map_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_lif_map_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_rlid_map_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_rlid_map_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_grp_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sch_grp_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="tmr_cnt_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="tmr_cnt_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_lif_map_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_lif_map_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_rlid_map_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_rlid_map_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_grp_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sch_grp_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t txs_txs_int_groups_intreg = {  .name="txs.txs.int_groups.intreg", .addr=0x200c0050, .reg_type=1, .id=244, .field_count=3, .fields=
@@ -2070,8 +2070,8 @@ intr_reg_t sgi_te_0_int_groups_intreg = {  .name="sgi.te[0].int_groups.intreg", 
 intr_reg_t pct_mpu_3_int_err = {  .name="pct.mpu[3].int_err", .addr=0x64f8630, .reg_type=0, .id=278, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -2120,8 +2120,8 @@ intr_reg_t pct_mpu_3_int_groups_intreg = {  .name="pct.mpu[3].int_groups.intreg"
 intr_reg_t pcr_mpu_4_int_err = {  .name="pcr.mpu[4].int_err", .addr=0x6488630, .reg_type=0, .id=229, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -2169,38 +2169,38 @@ intr_reg_t pcr_mpu_4_int_groups_intreg = {  .name="pcr.mpu[4].int_groups.intreg"
 
 intr_reg_t pb_pbc_int_ecc_fc_0 = {  .name="pb.pbc.int_ecc_fc_0", .addr=0x1404850, .reg_type=0, .id=293, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_ll_0 = {  .name="pb.pbc.int_ecc_ll_0", .addr=0x1404870, .reg_type=0, .id=294, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_desc_0 = {  .name="pb.pbc.int_ecc_desc_0", .addr=0x1404890, .reg_type=0, .id=295, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_fc_1 = {  .name="pb.pbc.int_ecc_fc_1", .addr=0x14048c0, .reg_type=0, .id=296, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_ll_1 = {  .name="pb.pbc.int_ecc_ll_1", .addr=0x14048e0, .reg_type=0, .id=297, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_desc_1 = {  .name="pb.pbc.int_ecc_desc_1", .addr=0x1404900, .reg_type=0, .id=298, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_write_0 = {  .name="pb.pbc.int_write_0", .addr=0x1400400, .reg_type=0, .id=299, .field_count=14, .fields=
@@ -2421,60 +2421,60 @@ intr_reg_t pb_pbc_int_write_11 = {  .name="pb.pbc.int_write_11", .addr=0x1404800
 	} };
 intr_reg_t pb_pbc_int_ecc_rc = {  .name="pb.pbc.int_ecc_rc", .addr=0x1404920, .reg_type=0, .id=311, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_pack = {  .name="pb.pbc.int_ecc_pack", .addr=0x1404810, .reg_type=0, .id=312, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_rwr = {  .name="pb.pbc.int_ecc_rwr", .addr=0x1404820, .reg_type=0, .id=313, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_sched = {  .name="pb.pbc.int_ecc_sched", .addr=0x1404940, .reg_type=0, .id=314, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_sideband = {  .name="pb.pbc.int_ecc_sideband", .addr=0x1408820, .reg_type=0, .id=315, .field_count=6, .fields=
 	{
-		{  .name="pck_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="pck_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rwr_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="rwr_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxd_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="rxd_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pck_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pck_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rwr_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rwr_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxd_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxd_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_nc = {  .name="pb.pbc.int_ecc_nc", .addr=0x1408930, .reg_type=0, .id=316, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_uc = {  .name="pb.pbc.int_ecc_uc", .addr=0x1408960, .reg_type=0, .id=317, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_port_mon_in = {  .name="pb.pbc.int_ecc_port_mon_in", .addr=0x1408980, .reg_type=0, .id=318, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc=" Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_ecc_port_mon_out = {  .name="pb.pbc.int_ecc_port_mon_out", .addr=0x14089a0, .reg_type=0, .id=319, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pb_pbc_int_rpl = {  .name="pb.pbc.int_rpl", .addr=0x1408840, .reg_type=0, .id=320, .field_count=2, .fields=
@@ -2646,8 +2646,8 @@ intr_reg_t pcr_te_4_int_groups_intreg = {  .name="pcr.te[4].int_groups.intreg", 
 
 intr_reg_t sse_pics_int_pics = {  .name="sse.pics.int_pics", .addr=0x2c01520, .reg_type=0, .id=356, .field_count=4, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="too_many_rl_sch_error", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="SW programming error", .flags=INTR_FLAGS_NONE },
 		{  .name="picc", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 
@@ -2759,14 +2759,14 @@ intr_reg_t pp_pp_port_p_1_int_p_ecc = {  .name="pp.pp.port_p[1].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_1_int_groups_intreg = {  .name="pp.pp.port_p[1].int_groups.intreg", .addr=0x7000980, .reg_type=1, .id=142, .field_count=1, .fields=
@@ -2829,8 +2829,8 @@ intr_reg_t sgi_te_1_int_groups_intreg = {  .name="sgi.te[1].int_groups.intreg", 
 
 intr_reg_t ssi_pics_int_pics = {  .name="ssi.pics.int_pics", .addr=0x2401520, .reg_type=0, .id=350, .field_count=4, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="too_many_rl_sch_error", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="SW programming error", .flags=INTR_FLAGS_NONE },
 		{  .name="picc", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 
@@ -2925,10 +2925,10 @@ intr_reg_t dpp_dpp_0_int_reg2 = {  .name="dpp.dpp[0].int_reg2", .addr=0x30000a0,
 	} };
 intr_reg_t dpp_dpp_0_int_srams_ecc = {  .name="dpp.dpp[0].int_srams_ecc", .addr=0x3000060, .reg_type=0, .id=428, .field_count=4, .fields=
 	{
-		{  .name="dpp_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_phv_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_ohi_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_phv_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_ohi_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t dpp_dpp_0_int_fifo = {  .name="dpp.dpp[0].int_fifo", .addr=0x30000b0, .reg_type=0, .id=429, .field_count=6, .fields=
@@ -3016,8 +3016,8 @@ intr_reg_t pr_pr_int_groups_intreg = {  .name="pr.pr.int_groups.intreg", .addr=0
 intr_reg_t sgi_mpu_1_int_err = {  .name="sgi.mpu[1].int_err", .addr=0x36f8630, .reg_type=0, .id=60, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -3065,8 +3065,8 @@ intr_reg_t sgi_mpu_1_int_groups_intreg = {  .name="sgi.mpu[1].int_groups.intreg"
 
 intr_reg_t tpc_pics_int_pics = {  .name="tpc.pics.int_pics", .addr=0x4401520, .reg_type=0, .id=370, .field_count=4, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="too_many_rl_sch_error", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="SW programming error", .flags=INTR_FLAGS_NONE },
 		{  .name="picc", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 
@@ -3228,8 +3228,8 @@ intr_reg_t pcr_te_7_int_groups_intreg = {  .name="pcr.te[7].int_groups.intreg", 
 intr_reg_t pcr_mpu_3_int_err = {  .name="pcr.mpu[3].int_err", .addr=0x6478630, .reg_type=0, .id=226, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -3300,14 +3300,14 @@ intr_reg_t pp_pp_port_c_1_int_c_mac = {  .name="pp.pp.port_c[1].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_1_int_c_ecc = {  .name="pp.pp.port_c[1].int_c_ecc", .addr=0x70131c0, .reg_type=0, .id=159, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_1_int_groups_intreg = {  .name="pp.pp.port_c[1].int_groups.intreg", .addr=0x70131a0, .reg_type=1, .id=160, .field_count=2, .fields=
@@ -3320,8 +3320,8 @@ intr_reg_t pp_pp_port_c_1_int_groups_intreg = {  .name="pp.pp.port_c[1].int_grou
 intr_reg_t pcr_mpu_1_int_err = {  .name="pcr.mpu[1].int_err", .addr=0x6458630, .reg_type=0, .id=220, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -3370,8 +3370,8 @@ intr_reg_t pcr_mpu_1_int_groups_intreg = {  .name="pcr.mpu[1].int_groups.intreg"
 intr_reg_t pcr_mpu_2_int_err = {  .name="pcr.mpu[2].int_err", .addr=0x6468630, .reg_type=0, .id=223, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -3420,8 +3420,8 @@ intr_reg_t pcr_mpu_2_int_groups_intreg = {  .name="pcr.mpu[2].int_groups.intreg"
 intr_reg_t sgi_mpu_3_int_err = {  .name="sgi.mpu[3].int_err", .addr=0x3718630, .reg_type=0, .id=66, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -3521,8 +3521,8 @@ intr_reg_t pct_te_6_int_groups_intreg = {  .name="pct.te[6].int_groups.intreg", 
 
 intr_reg_t mc_mc_7_mch_int_mc = {  .name="mc.mc[7].mch.int_mc", .addr=0x6a800060, .reg_type=0, .id=424, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_7_mch_int_groups_intreg = {  .name="mc.mc[7].mch.int_groups.intreg", .addr=0x6a800050, .reg_type=1, .id=425, .field_count=1, .fields=
@@ -3533,12 +3533,12 @@ intr_reg_t mc_mc_7_mch_int_groups_intreg = {  .name="mc.mc[7].mch.int_groups.int
 
 intr_reg_t pt_pt_ptd_int_ecc = {  .name="pt.pt.ptd.int_ecc", .addr=0x6220020, .reg_type=0, .id=187, .field_count=6, .fields=
 	{
-		{  .name="rdata_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rdata_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="lat_mem_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="lat_mem_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wdata_mem_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wdata_mem_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdata_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdata_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lat_mem_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lat_mem_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wdata_mem_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wdata_mem_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pt_pt_ptd_int_fifo = {  .name="pt.pt.ptd.int_fifo", .addr=0x6220030, .reg_type=0, .id=188, .field_count=9, .fields=
@@ -3619,13 +3619,13 @@ intr_reg_t pt_pt_ptd_int_groups_intreg = {  .name="pt.pt.ptd.int_groups.intreg",
 
 intr_reg_t mx_mx_0_int_mac = {  .name="mx.mx[0].int_mac", .addr=0x1d82080, .reg_type=0, .id=477, .field_count=30, .fields=
 	{
-		{  .name="lane0_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane0_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane0_dbe", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane1_sbe", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane1_sbe", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane1_dbe", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane2_sbe", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane2_sbe", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane2_dbe", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
-		{  .name="lane3_sbe", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane3_sbe", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane3_dbe", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
 		{  .name="umac_CFG3_intr", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="umac_CFG3_pslverr", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_INFO, .desc="Invalid need to be masked", .flags=INTR_FLAGS_NONE },
@@ -3653,8 +3653,8 @@ intr_reg_t mx_mx_0_int_mac = {  .name="mx.mx[0].int_mac", .addr=0x1d82080, .reg_
 	} };
 intr_reg_t mx_mx_0_int_ecc = {  .name="mx.mx[0].int_ecc", .addr=0x1d820c0, .reg_type=0, .id=478, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mx_mx_0_int_groups_intreg = {  .name="mx.mx[0].int_groups.intreg", .addr=0x1d82070, .reg_type=1, .id=479, .field_count=2, .fields=
@@ -3693,10 +3693,10 @@ intr_reg_t dpp_dpp_1_int_reg2 = {  .name="dpp.dpp[1].int_reg2", .addr=0x31000a0,
 	} };
 intr_reg_t dpp_dpp_1_int_srams_ecc = {  .name="dpp.dpp[1].int_srams_ecc", .addr=0x3100060, .reg_type=0, .id=435, .field_count=4, .fields=
 	{
-		{  .name="dpp_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_phv_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="dpp_ohi_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_phv_fifo_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_phv_fifo_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_ohi_fifo_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="dpp_ohi_fifo_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t dpp_dpp_1_int_fifo = {  .name="dpp.dpp[1].int_fifo", .addr=0x31000b0, .reg_type=0, .id=436, .field_count=6, .fields=
@@ -3771,8 +3771,8 @@ intr_reg_t dpp_dpp_1_int_groups_intreg = {  .name="dpp.dpp[1].int_groups.intreg"
 
 intr_reg_t rpc_pics_int_pics = {  .name="rpc.pics.int_pics", .addr=0x4c01520, .reg_type=0, .id=75, .field_count=4, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="too_many_rl_sch_error", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="SW programming error", .flags=INTR_FLAGS_NONE },
 		{  .name="picc", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 
@@ -3892,8 +3892,8 @@ intr_reg_t mc_mc_4_int_groups_intreg = {  .name="mc.mc[4].int_groups.intreg", .a
 
 intr_reg_t rpc_pics_picc_int_picc = {  .name="rpc.pics.picc.int_picc", .addr=0x4da0020, .reg_type=0, .id=79, .field_count=7, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_stg_awlen_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_slverr", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_decerr", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
@@ -3928,8 +3928,8 @@ intr_reg_t mp_mpns_int_groups_intreg = {  .name="mp.mpns.int_groups.intreg", .ad
 intr_reg_t pct_mpu_2_int_err = {  .name="pct.mpu[2].int_err", .addr=0x64e8630, .reg_type=0, .id=275, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -4000,14 +4000,14 @@ intr_reg_t pp_pp_port_c_3_int_c_mac = {  .name="pp.pp.port_c[3].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_3_int_c_ecc = {  .name="pp.pp.port_c[3].int_c_ecc", .addr=0x70171c0, .reg_type=0, .id=165, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_3_int_groups_intreg = {  .name="pp.pp.port_c[3].int_groups.intreg", .addr=0x70171a0, .reg_type=1, .id=166, .field_count=2, .fields=
@@ -4025,12 +4025,12 @@ intr_reg_t ms_em_int_groups_intreg = {  .name="ms.em.int_groups.intreg", .addr=0
 
 intr_reg_t intr_intr_int_intr_ecc = {  .name="intr.intr.int_intr_ecc", .addr=0x6080080, .reg_type=0, .id=81, .field_count=10, .fields=
 	{
-		{  .name="intr_state_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="intr_state_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="intr_pba_cfg_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="intr_pba_cfg_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="intr_coalesce_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="intr_coalesce_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_state_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_state_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_pba_cfg_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_pba_cfg_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_coalesce_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="intr_coalesce_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="intr_legacy_fifo_overrun", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="int_credit_positive_after_return", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_INFO, .desc="", .flags=INTR_FLAGS_IGNORE_ONCE },
 		{  .name="int_credits_max_debug_threshold", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
@@ -4046,8 +4046,8 @@ intr_reg_t intr_intr_int_groups_intreg = {  .name="intr.intr.int_groups.intreg",
 intr_reg_t sge_mpu_2_int_err = {  .name="sge.mpu[2].int_err", .addr=0x36a8630, .reg_type=0, .id=111, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -4170,14 +4170,14 @@ intr_reg_t pp_pp_port_c_6_int_c_mac = {  .name="pp.pp.port_c[6].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_6_int_c_ecc = {  .name="pp.pp.port_c[6].int_c_ecc", .addr=0x701d1c0, .reg_type=0, .id=174, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_6_int_groups_intreg = {  .name="pp.pp.port_c[6].int_groups.intreg", .addr=0x701d1a0, .reg_type=1, .id=175, .field_count=2, .fields=
@@ -4190,8 +4190,8 @@ intr_reg_t pp_pp_port_c_6_int_groups_intreg = {  .name="pp.pp.port_c[6].int_grou
 intr_reg_t sge_mpu_0_int_err = {  .name="sge.mpu[0].int_err", .addr=0x3688630, .reg_type=0, .id=105, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -4343,8 +4343,8 @@ intr_reg_t pcr_te_1_int_groups_intreg = {  .name="pcr.te[1].int_groups.intreg", 
 
 intr_reg_t mc_mc_5_mch_int_mc = {  .name="mc.mc[5].mch.int_mc", .addr=0x6a600060, .reg_type=0, .id=416, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_5_mch_int_groups_intreg = {  .name="mc.mc[5].mch.int_groups.intreg", .addr=0x6a600050, .reg_type=1, .id=417, .field_count=1, .fields=
@@ -4407,32 +4407,32 @@ intr_reg_t pcr_te_2_int_groups_intreg = {  .name="pcr.te[2].int_groups.intreg", 
 
 intr_reg_t pm_pbm_int_ecc_col0 = {  .name="pm.pbm.int_ecc_col0", .addr=0x1080030, .reg_type=0, .id=341, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pm_pbm_int_ecc_col1 = {  .name="pm.pbm.int_ecc_col1", .addr=0x1080110, .reg_type=0, .id=342, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pm_pbm_int_ecc_col2 = {  .name="pm.pbm.int_ecc_col2", .addr=0x1080210, .reg_type=0, .id=343, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pm_pbm_int_ecc_col3 = {  .name="pm.pbm.int_ecc_col3", .addr=0x1080310, .reg_type=0, .id=344, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pm_pbm_int_ecc_col4 = {  .name="pm.pbm.int_ecc_col4", .addr=0x1080410, .reg_type=0, .id=345, .field_count=2, .fields=
 	{
-		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pm_pbm_int_groups_intreg = {  .name="pm.pbm.int_groups.intreg", .addr=0x1080010, .reg_type=1, .id=346, .field_count=5, .fields=
@@ -4447,15 +4447,15 @@ intr_reg_t pm_pbm_int_groups_intreg = {  .name="pm.pbm.int_groups.intreg", .addr
 
 intr_reg_t ms_ms_int_ms = {  .name="ms.ms.int_ms", .addr=0x6a001060, .reg_type=0, .id=443, .field_count=27, .fields=
 	{
-		{  .name="sbus_err", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="Software Error", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="rei_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="rei_pll_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="pk_efuse_init_read_timeout", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="pk_efuse_cpu_read_timeout", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="pk_efuse_cpu_burn_timeout", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="pk_efuse_burn_imm_timeout", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="ds16_efuse_init_read_timeout", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="ds16_efuse_cpu_read_timeout", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
+		{  .name="sbus_err", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="Software Error", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="rei_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="rei_pll_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Problem with PLLs locking, problem with board voltages or oscillator", .flags=INTR_FLAGS_NONE },
+		{  .name="pk_efuse_init_read_timeout", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="pk_efuse_cpu_read_timeout", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="pk_efuse_cpu_burn_timeout", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="pk_efuse_burn_imm_timeout", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="ds16_efuse_init_read_timeout", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
+		{  .name="ds16_efuse_cpu_read_timeout", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Efuse Error,problem with the voltage or non functioning fuse", .flags=INTR_FLAGS_NONE },
 		{  .name="ahb_axi_err", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="Software Error", .flags=INTR_FLAGS_NONE },
 		{  .name="emmc_pre_axi_err", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="Software Error", .flags=INTR_FLAGS_NONE },
 		{  .name="fl_axi_err", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="Software Error", .flags=INTR_FLAGS_NONE },
@@ -4478,16 +4478,16 @@ intr_reg_t ms_ms_int_ms = {  .name="ms.ms.int_ms", .addr=0x6a001060, .reg_type=0
 	} };
 intr_reg_t ms_ms_int_misc = {  .name="ms.ms.int_misc", .addr=0x6a001070, .reg_type=0, .id=444, .field_count=22, .fields=
 	{
-		{  .name="qspi_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="qspi_ram_ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="Hardware Error", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="elam_cap_ecc_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="elam_cap_ecc_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ahb_esec_data_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="ahb_esec_data_ram_ecc_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="ahb_esec_esystem_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="ahb_esec_esystem_ram_ecc_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
-		{  .name="bl2_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="bl2_ram_ecc_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="qspi_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="qspi_ram_ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_INFO, .desc="Hardware Error", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="elam_cap_ecc_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="elam_cap_ecc_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ahb_esec_data_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="ahb_esec_data_ram_ecc_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_INFO, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="ahb_esec_esystem_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_INFO, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="ahb_esec_esystem_ram_ecc_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_INFO, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_IGNORE_ALL },
+		{  .name="bl2_ram_ecc_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bl2_ram_ecc_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="int_wr_stall_hit0", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="int_rd_stall_hit0", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="int_wr_stall_hit1", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
@@ -4722,8 +4722,8 @@ intr_reg_t ms_ms_int_groups_intreg = {  .name="ms.ms.int_groups.intreg", .addr=0
 
 intr_reg_t mc_mc_3_mch_int_mc = {  .name="mc.mc[3].mch.int_mc", .addr=0x6a400060, .reg_type=0, .id=408, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_3_mch_int_groups_intreg = {  .name="mc.mc[3].mch.int_groups.intreg", .addr=0x6a400050, .reg_type=1, .id=409, .field_count=1, .fields=
@@ -4734,8 +4734,8 @@ intr_reg_t mc_mc_3_mch_int_groups_intreg = {  .name="mc.mc[3].mch.int_groups.int
 
 intr_reg_t ssi_pics_picc_int_picc = {  .name="ssi.pics.picc.int_picc", .addr=0x25a0020, .reg_type=0, .id=354, .field_count=7, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_stg_awlen_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_slverr", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_decerr", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
@@ -4815,8 +4815,8 @@ intr_reg_t sgi_te_4_int_groups_intreg = {  .name="sgi.te[4].int_groups.intreg", 
 intr_reg_t pcr_mpu_7_int_err = {  .name="pcr.mpu[7].int_err", .addr=0x64b8630, .reg_type=0, .id=238, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -4865,8 +4865,8 @@ intr_reg_t pcr_mpu_7_int_groups_intreg = {  .name="pcr.mpu[7].int_groups.intreg"
 intr_reg_t pcr_mpu_5_int_err = {  .name="pcr.mpu[5].int_err", .addr=0x6498630, .reg_type=0, .id=232, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -4915,8 +4915,8 @@ intr_reg_t pcr_mpu_5_int_groups_intreg = {  .name="pcr.mpu[5].int_groups.intreg"
 intr_reg_t pct_mpu_5_int_err = {  .name="pct.mpu[5].int_err", .addr=0x6518630, .reg_type=0, .id=284, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -5016,10 +5016,10 @@ intr_reg_t pct_te_3_int_groups_intreg = {  .name="pct.te[3].int_groups.intreg", 
 
 intr_reg_t pr_pr_prd_int_ecc = {  .name="pr.pr.prd.int_ecc", .addr=0x6120020, .reg_type=0, .id=131, .field_count=4, .fields=
 	{
-		{  .name="rdata_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rdata_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdata_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdata_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pr_pr_prd_int_fifo = {  .name="pr.pr.prd.int_fifo", .addr=0x6120030, .reg_type=0, .id=132, .field_count=12, .fields=
@@ -5070,7 +5070,7 @@ intr_reg_t pr_pr_prd_int_grp2 = {  .name="pr.pr.prd.int_grp2", .addr=0x6120050, 
 		{  .name="wr_axi_rd_resp", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
 		{  .name="wr_not_enuf_pkt_bytes", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="software error. dma command trying to access more packet bytes than what's available in packet", .flags=INTR_FLAGS_NONE },
 		{  .name="wr_invalid_cmd", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="software error. Unexpected dma commands seen", .flags=INTR_FLAGS_NONE },
-		{  .name="wr_seq_id", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="software error. dma command and packet size out of sync causing seq_id error", .flags=INTR_FLAGS_NONE },
+		{  .name="wr_seq_id", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="software error. dma command and packet size out of sync causing seq_id error", .flags=INTR_FLAGS_NONE },
 		{  .name="wr_no_data_pkt_cmd", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="software error. no_data set in phv, but pkt command seen", .flags=INTR_FLAGS_NONE },
 		{  .name="rdrsp_axi", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
 		{  .name="wrrsp_axi", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
@@ -5112,56 +5112,56 @@ intr_reg_t pr_pr_prd_int_groups_intreg = {  .name="pr.pr.prd.int_groups.intreg",
 
 intr_reg_t pxb_pxb_int_tgt_ecc = {  .name="pxb.pxb.int_tgt_ecc", .addr=0x719a5a0, .reg_type=0, .id=83, .field_count=28, .fields=
 	{
-		{  .name="aximst_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_0_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_1_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_1_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_2_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_2_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_4_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="aximst_4_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_0_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_0_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_1_uncorrectable", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_1_correctable", .next_ptr=nullptr, .id=15, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_2_uncorrectable", .next_ptr=nullptr, .id=16, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_2_correctable", .next_ptr=nullptr, .id=17, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_3_uncorrectable", .next_ptr=nullptr, .id=18, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxcrbfr_3_correctable", .next_ptr=nullptr, .id=19, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxinfo_uncorrectable", .next_ptr=nullptr, .id=20, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxinfo_correctable", .next_ptr=nullptr, .id=21, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="cplst_uncorrectable", .next_ptr=nullptr, .id=22, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="cplst_correctable", .next_ptr=nullptr, .id=23, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="romask_uncorrectable", .next_ptr=nullptr, .id=24, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="romask_correctable", .next_ptr=nullptr, .id=25, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pmr_uncorrectable", .next_ptr=nullptr, .id=26, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pmr_correctable", .next_ptr=nullptr, .id=27, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="prt_uncorrectable", .next_ptr=nullptr, .id=28, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="prt_correctable", .next_ptr=nullptr, .id=29, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_0_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_1_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_1_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_2_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_2_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_4_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="aximst_4_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_0_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_0_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_1_uncorrectable", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_1_correctable", .next_ptr=nullptr, .id=15, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_2_uncorrectable", .next_ptr=nullptr, .id=16, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_2_correctable", .next_ptr=nullptr, .id=17, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_3_uncorrectable", .next_ptr=nullptr, .id=18, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxcrbfr_3_correctable", .next_ptr=nullptr, .id=19, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxinfo_uncorrectable", .next_ptr=nullptr, .id=20, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxinfo_correctable", .next_ptr=nullptr, .id=21, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cplst_uncorrectable", .next_ptr=nullptr, .id=22, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cplst_correctable", .next_ptr=nullptr, .id=23, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="romask_uncorrectable", .next_ptr=nullptr, .id=24, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="romask_correctable", .next_ptr=nullptr, .id=25, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pmr_uncorrectable", .next_ptr=nullptr, .id=26, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pmr_correctable", .next_ptr=nullptr, .id=27, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="prt_uncorrectable", .next_ptr=nullptr, .id=28, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="prt_correctable", .next_ptr=nullptr, .id=29, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pxb_pxb_int_itr_ecc = {  .name="pxb.pxb.int_itr_ecc", .addr=0x719a590, .reg_type=0, .id=84, .field_count=18, .fields=
 	{
-		{  .name="pcihdrt_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pcihdrt_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="portmap_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="portmap_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrhdr_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrhdr_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rdhdr_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rdhdr_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_0_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_0_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_1_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_1_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_2_uncorrectable", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_2_correctable", .next_ptr=nullptr, .id=15, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_3_uncorrectable", .next_ptr=nullptr, .id=16, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="wrbfr_3_correctable", .next_ptr=nullptr, .id=17, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="cplbfr_uncorrectable", .next_ptr=nullptr, .id=18, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="cplbfr_correctable", .next_ptr=nullptr, .id=19, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pcihdrt_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pcihdrt_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="portmap_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="portmap_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrhdr_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrhdr_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdhdr_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rdhdr_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_0_uncorrectable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_0_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_1_uncorrectable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_1_correctable", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_2_uncorrectable", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_2_correctable", .next_ptr=nullptr, .id=15, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_3_uncorrectable", .next_ptr=nullptr, .id=16, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="wrbfr_3_correctable", .next_ptr=nullptr, .id=17, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cplbfr_uncorrectable", .next_ptr=nullptr, .id=18, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="cplbfr_correctable", .next_ptr=nullptr, .id=19, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pxb_pxb_int_err = {  .name="pxb.pxb.int_err", .addr=0x719a5b0, .reg_type=0, .id=85, .field_count=20, .fields=
@@ -5170,7 +5170,7 @@ intr_reg_t pxb_pxb_int_err = {  .name="pxb.pxb.int_err", .addr=0x719a5b0, .reg_t
 		{  .name="cpl_rxbuf_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="cpl_stat", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 		{  .name="cpl_unexp", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="cpl_timeout", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_FATAL, .desc="Completion timeout for initiator requests, maybe link issue or host is hung or something fatal across pcie link", .flags=INTR_FLAGS_NONE },
+		{  .name="cpl_timeout", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 		{  .name="cpl_len", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 		{  .name="cpl_poison", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 		{  .name="cpl_lowaddr", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
@@ -5178,7 +5178,7 @@ intr_reg_t pxb_pxb_int_err = {  .name="pxb.pxb.int_err", .addr=0x719a5b0, .reg_t
 		{  .name="tgt_axi_rsp_unexp", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
 		{  .name="tgt_axi_rsp_err", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
 		{  .name="tgt_req_4k_err", .next_ptr=nullptr, .id=13, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="itr_req_bdfmiss", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="itr_req_bdfmiss", .next_ptr=nullptr, .id=14, .severity=INTR_SEV_TYPE_ERR, .desc="Request was sent towards PCIE host with LIF number that is not configured", .flags=INTR_FLAGS_NONE },
 		{  .name="itr_req_axi_unsupp", .next_ptr=nullptr, .id=15, .severity=INTR_SEV_TYPE_ERR, .desc="Access to invalid address, missing address range in the NOC, or slave sent back an error", .flags=INTR_FLAGS_NONE },
 		{  .name="itr_req_msg_align_err", .next_ptr=nullptr, .id=16, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 		{  .name="itr_bus_master_dis", .next_ptr=nullptr, .id=17, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
@@ -5273,14 +5273,14 @@ intr_reg_t pp_pp_port_c_4_int_c_mac = {  .name="pp.pp.port_c[4].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_4_int_c_ecc = {  .name="pp.pp.port_c[4].int_c_ecc", .addr=0x70191c0, .reg_type=0, .id=168, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_4_int_groups_intreg = {  .name="pp.pp.port_c[4].int_groups.intreg", .addr=0x70191a0, .reg_type=1, .id=169, .field_count=2, .fields=
@@ -5501,8 +5501,8 @@ intr_reg_t sge_te_1_int_groups_intreg = {  .name="sge.te[1].int_groups.intreg", 
 intr_reg_t pcr_mpu_6_int_err = {  .name="pcr.mpu[6].int_err", .addr=0x64a8630, .reg_type=0, .id=235, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -5553,14 +5553,14 @@ intr_reg_t pp_pp_port_p_7_int_p_ecc = {  .name="pp.pp.port_p[7].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_7_int_groups_intreg = {  .name="pp.pp.port_p[7].int_groups.intreg", .addr=0x7000f80, .reg_type=1, .id=154, .field_count=1, .fields=
@@ -5572,8 +5572,8 @@ intr_reg_t pp_pp_port_p_7_int_groups_intreg = {  .name="pp.pp.port_p[7].int_grou
 intr_reg_t sge_mpu_4_int_err = {  .name="sge.mpu[4].int_err", .addr=0x36c8630, .reg_type=0, .id=117, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -5624,14 +5624,14 @@ intr_reg_t pp_pp_port_p_4_int_p_ecc = {  .name="pp.pp.port_p[4].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_4_int_groups_intreg = {  .name="pp.pp.port_p[4].int_groups.intreg", .addr=0x7000c80, .reg_type=1, .id=148, .field_count=1, .fields=
@@ -5645,14 +5645,14 @@ intr_reg_t pp_pp_port_p_5_int_p_ecc = {  .name="pp.pp.port_p[5].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_5_int_groups_intreg = {  .name="pp.pp.port_p[5].int_groups.intreg", .addr=0x7000d80, .reg_type=1, .id=150, .field_count=1, .fields=
@@ -5666,14 +5666,14 @@ intr_reg_t pp_pp_port_p_6_int_p_ecc = {  .name="pp.pp.port_p[6].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_6_int_groups_intreg = {  .name="pp.pp.port_p[6].int_groups.intreg", .addr=0x7000e80, .reg_type=1, .id=152, .field_count=1, .fields=
@@ -5739,14 +5739,14 @@ intr_reg_t pp_pp_port_p_0_int_p_ecc = {  .name="pp.pp.port_p[0].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_0_int_groups_intreg = {  .name="pp.pp.port_p[0].int_groups.intreg", .addr=0x7000880, .reg_type=1, .id=140, .field_count=1, .fields=
@@ -5815,15 +5815,15 @@ intr_reg_t pr_pr_psp_int_fatal = {  .name="pr.pr.psp.int_fatal", .addr=0x6106170
 	} };
 intr_reg_t pr_pr_psp_int_lif_qstate_map = {  .name="pr.pr.psp.int_lif_qstate_map", .addr=0x6110010, .reg_type=0, .id=128, .field_count=3, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="qid_invalid", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="lookup in lif table missed", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pr_pr_psp_int_sw_phv_mem = {  .name="pr.pr.psp.int_sw_phv_mem", .addr=0x6111010, .reg_type=0, .id=129, .field_count=12, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_sram", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="bad SW PHV sram programming", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_data", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="bad SW PHV sram programming", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_done0", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="SW PHV done info", .flags=INTR_FLAGS_NONE },
@@ -5851,14 +5851,14 @@ intr_reg_t pp_pp_port_p_2_int_p_ecc = {  .name="pp.pp.port_p[2].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_2_int_groups_intreg = {  .name="pp.pp.port_p[2].int_groups.intreg", .addr=0x7000a80, .reg_type=1, .id=144, .field_count=1, .fields=
@@ -5921,8 +5921,8 @@ intr_reg_t pct_te_0_int_groups_intreg = {  .name="pct.te[0].int_groups.intreg", 
 
 intr_reg_t sse_pics_picc_int_picc = {  .name="sse.pics.picc.int_picc", .addr=0x2da0020, .reg_type=0, .id=360, .field_count=7, .fields=
 	{
-		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_ecc", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="correctable_ecc", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_stg_awlen_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_slverr", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
 		{  .name="cache_hbm_rresp_decerr", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_FATAL, .desc="HBM access fatal error", .flags=INTR_FLAGS_NONE },
@@ -5991,8 +5991,8 @@ intr_reg_t sge_te_3_int_groups_intreg = {  .name="sge.te[3].int_groups.intreg", 
 intr_reg_t pct_mpu_6_int_err = {  .name="pct.mpu[6].int_err", .addr=0x6528630, .reg_type=0, .id=287, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6040,7 +6040,7 @@ intr_reg_t pct_mpu_6_int_groups_intreg = {  .name="pct.mpu[6].int_groups.intreg"
 
 intr_reg_t bx_bx_int_mac = {  .name="bx.bx.int_mac", .addr=0x1000240, .reg_type=0, .id=362, .field_count=9, .fields=
 	{
-		{  .name="lane_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="lane_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="lane_dbe", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
 		{  .name="xdmac10_intr", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="xdmac10_pslverr", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Invalid need to be masked", .flags=INTR_FLAGS_NONE },
@@ -6059,8 +6059,8 @@ intr_reg_t bx_bx_int_groups_intreg = {  .name="bx.bx.int_groups.intreg", .addr=0
 
 intr_reg_t pp_pp_int_pp = {  .name="pp.pp.int_pp", .addr=0x70202e0, .reg_type=0, .id=137, .field_count=27, .fields=
 	{
-		{  .name="ppsd_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ppsd_dbe", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ppsd_sbe", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ppsd_dbe", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Double bit error in SerDes. Lane may go down", .flags=INTR_FLAGS_NONE },
 		{  .name="sbus_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="", .flags=INTR_FLAGS_IGNORE_ALL },
 		{  .name="port7_c_int", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="port7_p_int", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
@@ -6119,14 +6119,14 @@ intr_reg_t pp_pp_port_c_2_int_c_mac = {  .name="pp.pp.port_c[2].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_2_int_c_ecc = {  .name="pp.pp.port_c[2].int_c_ecc", .addr=0x70151c0, .reg_type=0, .id=162, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_2_int_groups_intreg = {  .name="pp.pp.port_c[2].int_groups.intreg", .addr=0x70151a0, .reg_type=1, .id=163, .field_count=2, .fields=
@@ -6138,8 +6138,8 @@ intr_reg_t pp_pp_port_c_2_int_groups_intreg = {  .name="pp.pp.port_c[2].int_grou
 
 intr_reg_t mc_mc_6_mch_int_mc = {  .name="mc.mc[6].mch.int_mc", .addr=0x6a700060, .reg_type=0, .id=420, .field_count=2, .fields=
 	{
-		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps1", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_1bit_thresh_ps0", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="1-bit/2-bit ECC errors - unravel information follows", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t mc_mc_6_mch_int_groups_intreg = {  .name="mc.mc[6].mch.int_groups.intreg", .addr=0x6a700050, .reg_type=1, .id=421, .field_count=1, .fields=
@@ -6151,8 +6151,8 @@ intr_reg_t mc_mc_6_mch_int_groups_intreg = {  .name="mc.mc[6].mch.int_groups.int
 intr_reg_t sgi_mpu_4_int_err = {  .name="sgi.mpu[4].int_err", .addr=0x3728630, .reg_type=0, .id=69, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6214,12 +6214,12 @@ intr_reg_t ppa_ppa_1_int_bndl1 = {  .name="ppa.ppa[1].int_bndl1", .addr=0x34c02d
 	} };
 intr_reg_t ppa_ppa_1_int_ecc = {  .name="ppa.ppa[1].int_ecc", .addr=0x34c02e0, .reg_type=0, .id=22, .field_count=6, .fields=
 	{
-		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl0_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl0_state_lkp_sram_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl1_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="bndl1_state_lkp_sram_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="pkt_mem_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl0_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl0_state_lkp_sram_correctable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl1_state_lkp_sram_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="bndl1_state_lkp_sram_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t ppa_ppa_1_int_fifo1 = {  .name="ppa.ppa[1].int_fifo1", .addr=0x34c02f0, .reg_type=0, .id=23, .field_count=30, .fields=
@@ -6435,8 +6435,8 @@ intr_reg_t ppa_ppa_1_int_pa = {  .name="ppa.ppa[1].int_pa", .addr=0x34c03b0, .re
 	} };
 intr_reg_t ppa_ppa_1_int_sw_phv_mem = {  .name="ppa.ppa[1].int_sw_phv_mem", .addr=0x34c1010, .reg_type=0, .id=36, .field_count=12, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_sram", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_invalid_data", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
 		{  .name="phv_done0", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
@@ -6494,8 +6494,8 @@ intr_reg_t ppa_ppa_1_int_groups_intreg = {  .name="ppa.ppa[1].int_groups.intreg"
 intr_reg_t pct_mpu_1_int_err = {  .name="pct.mpu[1].int_err", .addr=0x64d8630, .reg_type=0, .id=272, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6546,14 +6546,14 @@ intr_reg_t pp_pp_port_p_3_int_p_ecc = {  .name="pp.pp.port_p[3].int_p_ecc", .add
 		{  .name="rxbfr_overflow", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="replay_bfr_overflow", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_FATAL, .desc="Fatal error, try to reproduce in lab and debug the configuration settings using PCIE Analyzer", .flags=INTR_FLAGS_NONE },
 		{  .name="rxtlp_err", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_INFO, .desc="Info only, no action", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_uncorrectable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_uncorrectable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_uncorrectable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_0_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_1_correctable", .next_ptr=nullptr, .id=10, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_2_correctable", .next_ptr=nullptr, .id=11, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="txbuf_3_correctable", .next_ptr=nullptr, .id=12, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_p_3_int_groups_intreg = {  .name="pp.pp.port_p[3].int_groups.intreg", .addr=0x7000b80, .reg_type=1, .id=146, .field_count=1, .fields=
@@ -6576,8 +6576,8 @@ intr_reg_t mc_mc_2_int_groups_intreg = {  .name="mc.mc[2].int_groups.intreg", .a
 intr_reg_t sge_mpu_3_int_err = {  .name="sge.mpu[3].int_err", .addr=0x36b8630, .reg_type=0, .id=114, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6648,14 +6648,14 @@ intr_reg_t pp_pp_port_c_7_int_c_mac = {  .name="pp.pp.port_c[7].int_c_mac", .add
 	} };
 intr_reg_t pp_pp_port_c_7_int_c_ecc = {  .name="pp.pp.port_c[7].int_c_ecc", .addr=0x701f1c0, .reg_type=0, .id=177, .field_count=8, .fields=
 	{
-		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_uncorrectable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_uncorrectable", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_0_correctable", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_1_correctable", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_2_correctable", .next_ptr=nullptr, .id=8, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="rxbuf_3_correctable", .next_ptr=nullptr, .id=9, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t pp_pp_port_c_7_int_groups_intreg = {  .name="pp.pp.port_c[7].int_groups.intreg", .addr=0x701f1a0, .reg_type=1, .id=178, .field_count=2, .fields=
@@ -6680,19 +6680,19 @@ intr_reg_t md_hens_int_ipcore = {  .name="md.hens.int_ipcore", .addr=0x6584030, 
 intr_reg_t md_hens_int_pk_ecc = {  .name="md.hens.int_pk_ecc", .addr=0x6584040, .reg_type=0, .id=365, .field_count=2, .fields=
 	{
 		{  .name="correctable_err", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t md_hens_int_drbg_intram_ecc = {  .name="md.hens.int_drbg_intram_ecc", .addr=0x6584050, .reg_type=0, .id=366, .field_count=2, .fields=
 	{
 		{  .name="correctable_err", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t md_hens_int_drbg_cryptoram_ecc = {  .name="md.hens.int_drbg_cryptoram_ecc", .addr=0x6584060, .reg_type=0, .id=367, .field_count=2, .fields=
 	{
 		{  .name="correctable_err", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_ERR, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
-		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="Hardware Error", .flags=INTR_FLAGS_NONE },
+		{  .name="uncorrectable_err", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
 
 	} };
 intr_reg_t md_hens_int_axi_err = {  .name="md.hens.int_axi_err", .addr=0x6584070, .reg_type=0, .id=368, .field_count=2, .fields=
@@ -6726,8 +6726,8 @@ intr_reg_t pt_pt_int_groups_intreg = {  .name="pt.pt.int_groups.intreg", .addr=0
 intr_reg_t sgi_mpu_0_int_err = {  .name="sgi.mpu[0].int_err", .addr=0x36e8630, .reg_type=0, .id=57, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6776,8 +6776,8 @@ intr_reg_t sgi_mpu_0_int_groups_intreg = {  .name="sgi.mpu[0].int_groups.intreg"
 intr_reg_t sge_mpu_5_int_err = {  .name="sge.mpu[5].int_err", .addr=0x36d8630, .reg_type=0, .id=120, .field_count=27, .fields=
 	{
 		{  .name="results_mismatch", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_INFO, .desc="mask this interrupt, not fully implemented", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_uncorrectable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="sdp_mem_correctable", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_0", .next_ptr=nullptr, .id=5, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_1", .next_ptr=nullptr, .id=6, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
 		{  .name="illegal_op_2", .next_ptr=nullptr, .id=7, .severity=INTR_SEV_TYPE_ERR, .desc="MPU executed illegal opcode (likely a jump to bad address or code space written over by DMA)", .flags=INTR_FLAGS_NONE },
@@ -6825,8 +6825,8 @@ intr_reg_t sge_mpu_5_int_groups_intreg = {  .name="sge.mpu[5].int_groups.intreg"
 
 intr_reg_t db_wa_int_lif_qstate_map = {  .name="db.wa.int_lif_qstate_map", .addr=0x8e30010, .reg_type=0, .id=347, .field_count=3, .fields=
 	{
-		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="ecc uncorrectable DOUBLE bit SOFT error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
-		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SOFT error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_uncorrectable", .next_ptr=nullptr, .id=2, .severity=INTR_SEV_TYPE_HW_RMA, .desc="FATAL/STUCK ecc uncorrectable DOUBLE bit SRAM error, expect once per 250 years per chip", .flags=INTR_FLAGS_NONE },
+		{  .name="ecc_correctable", .next_ptr=nullptr, .id=3, .severity=INTR_SEV_TYPE_ERR, .desc="ecc correctable single bit SRAM error, expect once per 25 years per chip", .flags=INTR_FLAGS_NONE },
 		{  .name="qid_invalid", .next_ptr=nullptr, .id=4, .severity=INTR_SEV_TYPE_ERR, .desc="", .flags=INTR_FLAGS_NONE },
 
 	} };

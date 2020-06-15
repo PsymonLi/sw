@@ -10747,8 +10747,6 @@ type MsmsintmsMetrics struct {
 
 	key uint64
 
-	SbusErr metrics.Counter
-
 	ReiErr metrics.Counter
 
 	ReiPllErr metrics.Counter
@@ -10813,8 +10811,6 @@ func (mtr *MsmsintmsMetrics) GetKey() uint64 {
 func (mtr *MsmsintmsMetrics) Size() int {
 	sz := 0
 
-	sz += mtr.SbusErr.Size()
-
 	sz += mtr.ReiErr.Size()
 
 	sz += mtr.ReiPllErr.Size()
@@ -10875,9 +10871,6 @@ func (mtr *MsmsintmsMetrics) Unmarshal() error {
 	var offset int
 
 	gometrics.DecodeScalarKey(&mtr.key, mtr.metrics.GetKey())
-
-	mtr.SbusErr = mtr.metrics.GetCounter(offset)
-	offset += mtr.SbusErr.Size()
 
 	mtr.ReiErr = mtr.metrics.GetCounter(offset)
 	offset += mtr.ReiErr.Size()
@@ -10963,11 +10956,6 @@ func (mtr *MsmsintmsMetrics) Unmarshal() error {
 // getOffset returns the offset for raw counters in shared memory
 func (mtr *MsmsintmsMetrics) getOffset(fldName string) int {
 	var offset int
-
-	if fldName == "SbusErr" {
-		return offset
-	}
-	offset += mtr.SbusErr.Size()
 
 	if fldName == "ReiErr" {
 		return offset
@@ -11100,12 +11088,6 @@ func (mtr *MsmsintmsMetrics) getOffset(fldName string) int {
 	offset += mtr.AddrFilterRead.Size()
 
 	return offset
-}
-
-// SetSbusErr sets cunter in shared memory
-func (mtr *MsmsintmsMetrics) SetSbusErr(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("SbusErr"))
-	return nil
 }
 
 // SetReiErr sets cunter in shared memory
@@ -11344,21 +11326,9 @@ type MsmsintmiscMetrics struct {
 
 	key uint64
 
-	QspiRamEccUncorrectable metrics.Counter
-
-	QspiRamEccCorrectable metrics.Counter
-
 	ElamCapEccUncorrectable metrics.Counter
 
 	ElamCapEccCorrectable metrics.Counter
-
-	AhbEsecDataRamEccUncorrectable metrics.Counter
-
-	AhbEsecDataRamEccCorrectable metrics.Counter
-
-	AhbEsecEsystemRamEccUncorrectable metrics.Counter
-
-	AhbEsecEsystemRamEccCorrectable metrics.Counter
 
 	Bl2RamEccUncorrectable metrics.Counter
 
@@ -11376,21 +11346,9 @@ func (mtr *MsmsintmiscMetrics) GetKey() uint64 {
 func (mtr *MsmsintmiscMetrics) Size() int {
 	sz := 0
 
-	sz += mtr.QspiRamEccUncorrectable.Size()
-
-	sz += mtr.QspiRamEccCorrectable.Size()
-
 	sz += mtr.ElamCapEccUncorrectable.Size()
 
 	sz += mtr.ElamCapEccCorrectable.Size()
-
-	sz += mtr.AhbEsecDataRamEccUncorrectable.Size()
-
-	sz += mtr.AhbEsecDataRamEccCorrectable.Size()
-
-	sz += mtr.AhbEsecEsystemRamEccUncorrectable.Size()
-
-	sz += mtr.AhbEsecEsystemRamEccCorrectable.Size()
 
 	sz += mtr.Bl2RamEccUncorrectable.Size()
 
@@ -11405,29 +11363,11 @@ func (mtr *MsmsintmiscMetrics) Unmarshal() error {
 
 	gometrics.DecodeScalarKey(&mtr.key, mtr.metrics.GetKey())
 
-	mtr.QspiRamEccUncorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.QspiRamEccUncorrectable.Size()
-
-	mtr.QspiRamEccCorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.QspiRamEccCorrectable.Size()
-
 	mtr.ElamCapEccUncorrectable = mtr.metrics.GetCounter(offset)
 	offset += mtr.ElamCapEccUncorrectable.Size()
 
 	mtr.ElamCapEccCorrectable = mtr.metrics.GetCounter(offset)
 	offset += mtr.ElamCapEccCorrectable.Size()
-
-	mtr.AhbEsecDataRamEccUncorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.AhbEsecDataRamEccUncorrectable.Size()
-
-	mtr.AhbEsecDataRamEccCorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.AhbEsecDataRamEccCorrectable.Size()
-
-	mtr.AhbEsecEsystemRamEccUncorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.AhbEsecEsystemRamEccUncorrectable.Size()
-
-	mtr.AhbEsecEsystemRamEccCorrectable = mtr.metrics.GetCounter(offset)
-	offset += mtr.AhbEsecEsystemRamEccCorrectable.Size()
 
 	mtr.Bl2RamEccUncorrectable = mtr.metrics.GetCounter(offset)
 	offset += mtr.Bl2RamEccUncorrectable.Size()
@@ -11442,16 +11382,6 @@ func (mtr *MsmsintmiscMetrics) Unmarshal() error {
 func (mtr *MsmsintmiscMetrics) getOffset(fldName string) int {
 	var offset int
 
-	if fldName == "QspiRamEccUncorrectable" {
-		return offset
-	}
-	offset += mtr.QspiRamEccUncorrectable.Size()
-
-	if fldName == "QspiRamEccCorrectable" {
-		return offset
-	}
-	offset += mtr.QspiRamEccCorrectable.Size()
-
 	if fldName == "ElamCapEccUncorrectable" {
 		return offset
 	}
@@ -11461,26 +11391,6 @@ func (mtr *MsmsintmiscMetrics) getOffset(fldName string) int {
 		return offset
 	}
 	offset += mtr.ElamCapEccCorrectable.Size()
-
-	if fldName == "AhbEsecDataRamEccUncorrectable" {
-		return offset
-	}
-	offset += mtr.AhbEsecDataRamEccUncorrectable.Size()
-
-	if fldName == "AhbEsecDataRamEccCorrectable" {
-		return offset
-	}
-	offset += mtr.AhbEsecDataRamEccCorrectable.Size()
-
-	if fldName == "AhbEsecEsystemRamEccUncorrectable" {
-		return offset
-	}
-	offset += mtr.AhbEsecEsystemRamEccUncorrectable.Size()
-
-	if fldName == "AhbEsecEsystemRamEccCorrectable" {
-		return offset
-	}
-	offset += mtr.AhbEsecEsystemRamEccCorrectable.Size()
 
 	if fldName == "Bl2RamEccUncorrectable" {
 		return offset
@@ -11495,18 +11405,6 @@ func (mtr *MsmsintmiscMetrics) getOffset(fldName string) int {
 	return offset
 }
 
-// SetQspiRamEccUncorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetQspiRamEccUncorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("QspiRamEccUncorrectable"))
-	return nil
-}
-
-// SetQspiRamEccCorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetQspiRamEccCorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("QspiRamEccCorrectable"))
-	return nil
-}
-
 // SetElamCapEccUncorrectable sets cunter in shared memory
 func (mtr *MsmsintmiscMetrics) SetElamCapEccUncorrectable(val metrics.Counter) error {
 	mtr.metrics.SetCounter(val, mtr.getOffset("ElamCapEccUncorrectable"))
@@ -11516,30 +11414,6 @@ func (mtr *MsmsintmiscMetrics) SetElamCapEccUncorrectable(val metrics.Counter) e
 // SetElamCapEccCorrectable sets cunter in shared memory
 func (mtr *MsmsintmiscMetrics) SetElamCapEccCorrectable(val metrics.Counter) error {
 	mtr.metrics.SetCounter(val, mtr.getOffset("ElamCapEccCorrectable"))
-	return nil
-}
-
-// SetAhbEsecDataRamEccUncorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetAhbEsecDataRamEccUncorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("AhbEsecDataRamEccUncorrectable"))
-	return nil
-}
-
-// SetAhbEsecDataRamEccCorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetAhbEsecDataRamEccCorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("AhbEsecDataRamEccCorrectable"))
-	return nil
-}
-
-// SetAhbEsecEsystemRamEccUncorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetAhbEsecEsystemRamEccUncorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("AhbEsecEsystemRamEccUncorrectable"))
-	return nil
-}
-
-// SetAhbEsecEsystemRamEccCorrectable sets cunter in shared memory
-func (mtr *MsmsintmiscMetrics) SetAhbEsecEsystemRamEccCorrectable(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("AhbEsecEsystemRamEccCorrectable"))
 	return nil
 }
 
