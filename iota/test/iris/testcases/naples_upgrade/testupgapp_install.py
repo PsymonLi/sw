@@ -17,10 +17,18 @@ def Main(step):
 
     binary_path = os.path.join(BIN_PATH, testupgapp_utils.UPGRADE_TEST_APP + "_bin", 
                                testupgapp_utils.UPGRADE_TEST_APP + ".bin")
+
+    fullpath = os.path.join(api.GetTopDir(), binary_path)
+    if not os.path.isfile(fullpath):
+        ALT_BIN_PATH="nic/build/aarch64/iris/capri/out/"
+        binary_path = os.path.join(ALT_BIN_PATH, testupgapp_utils.UPGRADE_TEST_APP + "_bin",
+                                   testupgapp_utils.UPGRADE_TEST_APP + ".bin")
+
     for naplesHost in naplesHosts:
         testupgapp_utils.stopTestUpgApp(naplesHost, True)
         ret = utils.installBinary(naplesHost, binary_path)
         if ret != api.types.status.SUCCESS:
+            api.Logger.error("Failed in test upgrade app %s copy to Naples" % binary_path)
             return ret
 
     req = api.Trigger_CreateExecuteCommandsRequest()
