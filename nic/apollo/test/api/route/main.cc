@@ -30,7 +30,9 @@ static const std::string k_base_v4_pfx_2  = "100.100.100.1/16";
 static const std::string k_base_v4_pfx_3  = "100.150.100.1/16";
 static const std::string k_base_v4_pfx_4  = "100.200.100.1/16";
 static const std::string k_base_v4_pfx_5  = "100.225.100.1/16";
+static const std::string k_base_v4_pfx_6  = "100.201.100.1/16";
 static int k_max_route_per_tbl = PDS_MAX_ROUTE_PER_TABLE;
+
 //----------------------------------------------------------------------------
 // Route test class
 //----------------------------------------------------------------------------
@@ -656,6 +658,90 @@ TEST_F(route_test, route_workflow_neg_8) {
     workflow_neg_8<route_feeder>(feeder1, feeder2);
     bctxt = batch_start();
     sample_route_table_teardown(bctxt, k_route_table_id, k_num_route_tables);
+    batch_commit(bctxt);
+}
+/// @}
+//---------------------------------------------------------------------
+// Non templatized test cases
+//---------------------------------------------------------------------
+/// \brief change route-table and routes in the same batch
+TEST_F(route_test, route_update_rt_tbl_rt) {
+    pds_batch_ctxt_t bctxt;
+    route_feeder feeder;
+    route_table_feeder rt_feeder;
+    sdk_ret_t ret;
+
+    // create route_table and add routes in the same batch
+    bctxt = batch_start();
+    rt_feeder.init(k_base_v4_pfx_2, IP_AF_IPV4, 100,
+                   k_num_route_tables, 1);
+    feeder.init(k_base_v4_pfx_6, 25, 101, k_route_table_id,
+                PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
+                false);
+    ret = many_create<route_table_feeder>(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    ret = many_create<route_feeder>(bctxt, feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    ret = many_read<route_feeder>(feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    feeder.init(k_base_v4_pfx_2, 100, 1, k_route_table_id,
+                PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
+                false);
+    ret = many_read<route_feeder>(feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    bctxt = batch_start();
+    // teardown the route-table
+    rt_feeder.init("0.0.0.0/0", IP_AF_IPV4, PDS_MAX_ROUTE_PER_TABLE,
+                   k_num_route_tables, k_route_table_id);
+    ret = many_delete(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    // create route-table and delete routes in same batch
+    bctxt = batch_start();
+    rt_feeder.init(k_base_v4_pfx_2, IP_AF_IPV4, 125,
+                   k_num_route_tables, 1);
+    feeder.init(k_base_v4_pfx_6, 25, 101, k_route_table_id,
+                PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
+                false);
+    ret = many_create<route_table_feeder>(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    ret = many_delete<route_feeder>(bctxt, feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    ret = many_read<route_feeder>(feeder, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    // tear-down route-table
+    bctxt = batch_start();
+    rt_feeder.init("0.0.0.0/0", IP_AF_IPV4, PDS_MAX_ROUTE_PER_TABLE,
+                   k_num_route_tables, k_route_table_id);
+    ret = many_delete(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    // create route-table and update routes in same batch
+    bctxt = batch_start();
+    rt_feeder.init(k_base_v4_pfx_2, IP_AF_IPV4, 125,
+                   k_num_route_tables, 1);
+    feeder.init(k_base_v4_pfx_6, 25, 101, k_route_table_id,
+                PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
+                false);
+    ret = many_create<route_table_feeder>(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    ret = many_update<route_feeder>(bctxt, feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    ret = many_read<route_feeder>(feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    bctxt = batch_start();
+    rt_feeder.init("0.0.0.0/0", IP_AF_IPV4, PDS_MAX_ROUTE_PER_TABLE,
+                   k_num_route_tables, k_route_table_id);
+    ret = many_delete(bctxt, rt_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
     batch_commit(bctxt);
 }
 }    // namespace api

@@ -118,7 +118,6 @@ TEST_F(route_test, v4v6_route_table_workflow_b1) {
         feeder.init(k_base_v6_pfx, IP_AF_IPV6, 0, 1);
         workflow_b1<route_table_feeder>(feeder);
     }
-
     // test one v4 route table with max routes
     feeder.init(k_base_v4_pfx, IP_AF_IPV4, k_max_route_per_tbl, 1);
     workflow_b1<route_table_feeder>(feeder);

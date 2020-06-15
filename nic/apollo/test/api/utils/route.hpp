@@ -46,7 +46,7 @@ public:
               uint32_t num_routes=16,
               uint32_t num_route_tables=1,
               uint32_t id = 1,
-              bool priority_en = false,
+              bool priority_en = true,
               bool stash = false);
 
     // Iterate helper routines
@@ -57,8 +57,6 @@ public:
     // Build routines
     void key_build(pds_obj_key_t *key) const;
     void spec_build(pds_route_table_spec_t *spec) const;
-    void spec_fill(pds_nh_type_t type,
-                   pds_route_table_spec_t *spec, uint32_t index) const;
     // Compare routines
     bool key_compare(const pds_obj_key_t *key) const;
     bool spec_compare(const pds_route_table_spec_t *spec) const;
@@ -292,10 +290,6 @@ API_ROUTE_READ(route);
 API_UPDATE(route);
 API_ROUTE_DELETE(route);
 
-// Route CRUD helper functions
-void create_route_spec (ip_prefix_t route_pfx, uint8_t nh_type,
-                        uint8_t src_nat_type, bool meter,
-                        pds_route_spec_t *spec);
 }    // namespace api
 }    // namespace test
 

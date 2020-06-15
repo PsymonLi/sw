@@ -40,9 +40,10 @@ learn_nhtypes_supported (uint16_t &nhtypes_bmap)
 }
 
 static uint16_t g_nhtypes_supported_bmap;
-static const uint8_t k_num_nhtypes_supported = learn_nhtypes_supported(g_nhtypes_supported_bmap);
+static const uint8_t k_num_nhtypes_supported =
+                     learn_nhtypes_supported(g_nhtypes_supported_bmap);
 static uint8_t k_route_class_priority = 1;
-static const char* k_dst_nat_ip = "100.100.100.1";
+static const uint16_t MAX_NH_TYPES = 9;
 //----------------------------------------------------------------------------
 // Route table feeder class routines
 //----------------------------------------------------------------------------
@@ -88,47 +89,6 @@ route_table_feeder::spec_build(pds_route_table_spec_t *spec) const {
                             this->spec.route_info->num_routes, this->num_obj,
                             (pds_route_table_spec_t *)spec,
                             this->spec.route_info->priority_en);
-}
-
-void
-route_table_feeder::spec_fill(pds_nh_type_t type,
-                              pds_route_table_spec_t *spec,
-                              uint32_t index) const {
-    uint32_t num = 0;
-    uint32_t base_id = 1;
-    uint32_t base_tep_id = 2;
-
-    spec->route_info->routes[index].key = int2pdsobjkey(index + 1);
-    spec->route_info->routes[index].attrs.nh_type = type;
-    switch (type) {
-    case PDS_NH_TYPE_OVERLAY:
-        num = (index % PDS_MAX_TEP);
-        spec->route_info->routes[index].attrs.tep =
-            int2pdsobjkey(base_tep_id + num);
-        break;
-    case PDS_NH_TYPE_OVERLAY_ECMP:
-        num = (index % (PDS_MAX_NEXTHOP_GROUP-1));
-        spec->route_info->routes[index].attrs.nh_group =
-            int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_PEER_VPC:
-        num = (index % PDS_MAX_VPC);
-        spec->route_info->routes[index].attrs.vpc =
-            int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_VNIC:
-        num = (index % PDS_MAX_VNIC);
-        spec->route_info->routes[index].attrs.vnic =
-            int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_IP:
-        num = (index % PDS_MAX_NEXTHOP);
-        spec->route_info->routes[index].attrs.nh = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_BLACKHOLE:
-    default:
-        break;
-    }
 }
 
 bool
@@ -211,46 +171,51 @@ route_table_feeder::status_compare(
 }
 
 // route-table CRUD helper functions
-void
-spec_fill (pds_nh_type_t type,pds_route_table_spec_t *spec,
-          uint32_t index)
+inline void
+fill_route_attrs (pds_route_attrs_t *attrs, pds_nh_type_t type,
+                  uint32_t route_id, ip_prefix_t route_pfx,
+                  bool priority_en, uint8_t src_nat_type, bool meter)
 {
     uint32_t num = 0;
     uint32_t base_id = 1;
     uint32_t base_tep_id = 2;
 
-    spec->route_info->routes[index].key = int2pdsobjkey(index + 1);
-    spec->route_info->routes[index].attrs.nh_type = type;
+    attrs->nh_type = type;
+    attrs->prefix = route_pfx;
+    attrs->class_priority = k_route_class_priority;
+    if (priority_en) {
+        attrs->priority = (route_id % MAX_ROUTE_PRIORITY);
+    }
     switch (type) {
     case PDS_NH_TYPE_OVERLAY:
-        num = (index % PDS_MAX_TEP);
-        spec->route_info->routes[index].attrs.tep =
-            int2pdsobjkey(base_tep_id + num);
+        num = (route_id % PDS_MAX_TEP);
+        attrs->tep = int2pdsobjkey(base_tep_id + num);
         break;
     case PDS_NH_TYPE_OVERLAY_ECMP:
-        num = (index % (PDS_MAX_NEXTHOP_GROUP-1));
-        spec->route_info->routes[index].attrs.nh_group =
-            int2pdsobjkey(base_id + num);
+        num = (route_id % (PDS_MAX_NEXTHOP_GROUP-1));
+        attrs->nh_group = int2pdsobjkey(base_id + num);
         break;
     case PDS_NH_TYPE_PEER_VPC:
-        num = (index % PDS_MAX_VPC);
-        spec->route_info->routes[index].attrs.vpc =
-            int2pdsobjkey(base_id + num);
+        num = (route_id % PDS_MAX_VPC);
+        attrs->vpc = int2pdsobjkey(base_id + num);
         break;
     case PDS_NH_TYPE_VNIC:
-        num = (index % PDS_MAX_VNIC);
-        spec->route_info->routes[index].attrs.vnic =
-            int2pdsobjkey(base_id + num);
+        num = (route_id % PDS_MAX_VNIC);
+        attrs->vnic = int2pdsobjkey(base_id + num);
         break;
     case PDS_NH_TYPE_IP:
-        num = (index % PDS_MAX_NEXTHOP);
-        spec->route_info->routes[index].attrs.nh =
-            int2pdsobjkey(base_id + num);
+        num = (route_id % PDS_MAX_NEXTHOP);
+        attrs->nh = int2pdsobjkey(base_id + num);
         break;
     case PDS_NH_TYPE_BLACKHOLE:
     default:
         break;
     }
+    attrs->nat.src_nat_type = (pds_nat_type_t)src_nat_type;
+    // Not setting dst_nat_ip as upon setting dst_nat_ip,
+    // reservation of the resources fail for the route-table
+    // str2ipaddr(k_dst_nat_ip, &attrs->nat.dst_nat_ip);
+    attrs->meter = meter;
 }
 
 void
@@ -265,6 +230,9 @@ create_route_table_spec (std::string base_route_pfx_str,
     uint32_t num_routes_per_type, route_index = 0;
     uint16_t tmp_bmap;
     uint32_t index = 0;
+    bool meter = false;
+    uint8_t src_nat_type = PDS_NAT_TYPE_NONE;
+    pds_route_t *route;
 
     test::extract_ip_pfx(base_route_pfx_str.c_str(), &route_pfx);
     spec->route_info =
@@ -278,14 +246,11 @@ create_route_table_spec (std::string base_route_pfx_str,
     while (tmp_bmap) {
         if (tmp_bmap & 0x1) {
             for (uint32_t j = 0; j < num_routes_per_type; j++) {
-                spec->route_info->routes[route_index].attrs.prefix =
-                    route_pfx;
-                // updating route_priority based on route_index
-                if(spec->route_info->priority_en){
-                    spec->route_info->routes[route_index].attrs.priority =
-                        route_index;
-                }
-                spec_fill((pds_nh_type_e)index, spec, route_index);
+                route = &(spec->route_info->routes[route_index]);
+                route->key = int2pdsobjkey(route_index+1);
+                fill_route_attrs(&route->attrs,(pds_nh_type_e)index,
+                                 route_index+1, route_pfx,
+                                 priority_en, src_nat_type, meter);
                 ip_prefix_ip_next(&route_pfx, &route_addr);
                 route_pfx.addr = route_addr;
                 route_index++;
@@ -296,12 +261,10 @@ create_route_table_spec (std::string base_route_pfx_str,
     }
 
     while (route_index < num_routes) {
-        spec->route_info->routes[route_index].attrs.prefix = route_pfx;
-        // updating route_priority based on route_index
-        if(spec->route_info->priority_en){
-            spec->route_info->routes[route_index].attrs.priority = route_index;
-        }
-        spec_fill(k_rt_def_nh_type, spec, route_index);
+        route = &(spec->route_info->routes[route_index]);
+        route->key = int2pdsobjkey(route_index+1);
+        fill_route_attrs(&route->attrs, k_rt_def_nh_type, route_index+1,
+                        route_pfx, priority_en, src_nat_type, meter);
         ip_prefix_ip_next(&route_pfx, &route_addr);
         route_pfx.addr = route_addr;
         route_index++;
@@ -407,48 +370,52 @@ route_feeder::init(std::string base_route_pfx_str,
     spec.key.route_id = int2pdsobjkey(route_id);
     spec.key.route_table_id = int2pdsobjkey(route_table_id);
     test::extract_ip_pfx(base_route_pfx_str.c_str(), &spec.attrs.prefix);
-    create_route_spec(spec.attrs.prefix, nh_type, src_nat_type, meter, &spec);
+    fill_route_attrs((pds_route_attrs_t*)&spec.attrs, (pds_nh_type_e)nh_type,
+                     route_id, spec.attrs.prefix, true, src_nat_type, meter);
+}
+
+inline pds_nh_type_t
+get_nth_nh_type(uint16_t nh_type_bucket)
+{
+    uint16_t nh_type = 0;
+
+    // iterate over the bitmap to find current nh_type
+    while ((nh_type_bucket > 0) && (nh_type < MAX_NH_TYPES)) {
+        if (bit_isset(g_nhtypes_supported_bmap, bit(nh_type))) {
+            nh_type_bucket--;
+        }
+        nh_type++;
+    }
+    // to handle the routes which fall under the last bucket
+    if (nh_type < MAX_NH_TYPES) {
+        nh_type--;
+        return (pds_nh_type_e)nh_type;
+    }
+    return k_rt_def_nh_type;
 }
 
 void
 route_feeder::iter_next(int width) {
     ip_addr_t ip_addr;
     uint32_t route_id = 0;
-    uint32_t num = 0;
-    uint32_t base_id = 1;
-    uint32_t base_tep_id = 2;
+    ip_prefix_t route_pfx;
+    uint16_t nh_type_bucket = 0;
+    pds_nh_type_t nh_type = k_rt_def_nh_type;
 
     route_id  = pdsobjkey2int(spec.key.route_id) + width;
     spec.key.route_id = int2pdsobjkey(route_id);
     cur_iter_pos++;
     ip_prefix_ip_next(&spec.attrs.prefix, &ip_addr);
-    spec.attrs.prefix.addr = ip_addr;
-    spec.attrs.priority = (route_id % MAX_ROUTE_PRIORITY);
-    switch (spec.attrs.nh_type) {
-    case PDS_NH_TYPE_OVERLAY:
-        num = (route_id % PDS_MAX_TEP);
-        spec.attrs.tep = int2pdsobjkey(base_tep_id + num);
-        break;
-    case PDS_NH_TYPE_OVERLAY_ECMP:
-        num = (route_id % (PDS_MAX_NEXTHOP_GROUP-1));
-        spec.attrs.nh_group = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_PEER_VPC:
-        num = (route_id % PDS_MAX_VPC);
-        spec.attrs.vpc = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_IP:
-        num = (route_id % PDS_MAX_NEXTHOP);
-        spec.attrs.nh = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_VNIC:
-        num = (route_id % PDS_MAX_VNIC);
-        spec.attrs.vnic = int2pdsobjkey(base_id + num);
-        break;
-    default:
-        break;
+    route_pfx.addr = ip_addr;
+    route_pfx.len = spec.attrs.prefix.len;
+    if (num_obj >= k_num_nhtypes_supported) {
+        nh_type_bucket =
+            (cur_iter_pos / (num_obj / k_num_nhtypes_supported)) + 1;
+        nh_type = get_nth_nh_type(nh_type_bucket);
     }
-
+    fill_route_attrs((pds_route_attrs_t*)&spec.attrs, nh_type, route_id,
+                     route_pfx, true, spec.attrs.nat.src_nat_type,
+                     spec.attrs.meter);
 }
 
 void
@@ -461,9 +428,11 @@ route_feeder::key_build(pds_route_key_t *key) const {
 void
 route_feeder::spec_build(pds_route_spec_t *spec) const {
     memcpy(spec, &this->spec, sizeof(pds_route_spec_t));
-    create_route_spec(this->spec.attrs.prefix, this->spec.attrs.nh_type,
-                      this->spec.attrs.nat.src_nat_type, this->spec.attrs.meter,
-                      (pds_route_spec_t *)spec);
+    uint32_t route_id = pdsobjkey2int(spec->key.route_id);
+    fill_route_attrs((pds_route_attrs_t *)&spec->attrs,
+                     this->spec.attrs.nh_type, route_id,
+                     this->spec.attrs.prefix, true,
+                     this->spec.attrs.nat.src_nat_type, this->spec.attrs.meter);
 }
 
 bool
@@ -525,58 +494,6 @@ route_feeder::status_compare(
     const pds_route_status_t *status1,
     const pds_route_status_t *status2) const {
     return true;
-}
-
-//----------------------------------------------------------------------------
-// ROUTE CRUD helper routines
-//--
-void
-create_route_spec (ip_prefix_t route_pfx, uint8_t nh_type,
-                   uint8_t src_nat_type, bool meter,
-                   pds_route_spec_t *spec)
-{
-    ip_addr_t dst_nat_ip_addr;
-    uint32_t num = 0;
-    uint32_t base_id = 1;
-    uint32_t base_tep_id = 2;
-    uint32_t route_id = 0;
-
-    route_id = pdsobjkey2int(spec->key.route_id);
-    spec->attrs.prefix = route_pfx;
-    spec->attrs.class_priority = k_route_class_priority;
-    spec->attrs.priority = (route_id % MAX_ROUTE_PRIORITY);
-    spec->attrs.nh_type = (pds_nh_type_t)nh_type;
-    switch (nh_type) {
-    case PDS_NH_TYPE_OVERLAY:
-        num = (route_id % PDS_MAX_TEP);
-        spec->attrs.tep = int2pdsobjkey(base_tep_id + num);
-        break;
-    case PDS_NH_TYPE_OVERLAY_ECMP:
-        num = (route_id % (PDS_MAX_NEXTHOP_GROUP-1));
-        spec->attrs.nh_group = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_PEER_VPC:
-        num = (route_id % PDS_MAX_VPC);
-        spec->attrs.vpc = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_IP:
-        num = (route_id % PDS_MAX_NEXTHOP);
-        spec->attrs.nh = int2pdsobjkey(base_id + num);
-        break;
-    case PDS_NH_TYPE_VNIC:
-        num = (route_id % PDS_MAX_VNIC);
-        spec->attrs.vnic = int2pdsobjkey(base_id + num);
-        break;
-    default:
-        break;
-    }
-    spec->attrs.nat.src_nat_type = (pds_nat_type_t)src_nat_type;
-    // Currently setting dst_nat_ip to const value
-    // Need to see better way to program it
-    str2ipaddr(k_dst_nat_ip, &dst_nat_ip_addr);
-    spec->attrs.nat.dst_nat_ip = dst_nat_ip_addr;
-    spec->attrs.meter = meter;
-
 }
 
 }    // namespace api
