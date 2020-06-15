@@ -1200,9 +1200,10 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
     if (event) {
       event.stopPropagation();
     }
+    const printMessage = `Once you decommission DSC ${object.spec.id ? object.spec.id : object.meta.name}, it can not be undone.`;
     this.controllerService.invokeConfirm({
       header: 'Are you sure that you want to decommission the card?',
-      message: 'Once the card is decommissioned, it can not be brought back through UI.',
+      message: printMessage,
       acceptLabel: 'Decommission',
       accept: () => {
         const updatedObject: ClusterDistributedServiceCard = new ClusterDistributedServiceCard(object);
@@ -1217,9 +1218,10 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
     if (event) {
       event.stopPropagation();
     }
+    const printMessage = `Once you admit DSC ${object.spec.id ? object.spec.id : object.meta.name}, it can not be undone.`;
     this.controllerService.invokeConfirm({
       header: 'Are you sure that you want to admit the card?',
-      message: 'Once the card is admitted, This action can not be undone.',
+      message: printMessage,
       acceptLabel: 'Admit',
       accept: () => {
         const updatedObject: ClusterDistributedServiceCard = new ClusterDistributedServiceCard(object);
