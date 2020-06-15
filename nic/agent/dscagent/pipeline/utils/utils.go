@@ -556,6 +556,9 @@ func RaiseEvent(eventType eventtypes.EventType, message, dscName string) {
 		ObjectMeta: api.ObjectMeta{
 			Name: dscName,
 		},
+		Spec: cluster.DistributedServiceCardSpec{
+			ID: dscName,
+		},
 	}
 	recorder.Event(eventType, message, nic)
 	log.Infof("Event raised %s", message)
