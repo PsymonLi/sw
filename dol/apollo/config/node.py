@@ -215,10 +215,10 @@ class NodeObject(base.ConfigObjectBase):
         return
 
     def __get_topospec(self, filename):
-        path = '%s/config/topology/%s' % \
-        (GlobalOptions.pipeline, GlobalOptions.topology)
+        path = f'{GlobalOptions.pipeline}/config/topology/'
         spec = parser.ParseFile(path, filename)
         nodespec = getattr(spec, 'node', None)
+        logger.info(f'Loading topo {filename}')
         if not nodespec:
             assert(0)
         return nodespec[0]
@@ -228,6 +228,7 @@ class NodeObject(base.ConfigObjectBase):
         if not args:
             return
         topos = args.topos
+        logger.info(f'Loading topos {topos}')
         if not topos:
             return
         path = '%s/config/topology/%s' % \
@@ -261,14 +262,22 @@ class NodeObject(base.ConfigObjectBase):
             assert(0)
         self.Generate(topospec)
         timeprofiler.ConfigTimeProfiler.Start()
-        if self.ReconfigState.InProgress:
-            self.ProcessReconfigured()
-        else:
+        if not self.ReconfigState.InProgress:
             self.Create()
-        timeprofiler.ConfigTimeProfiler.Stop()
-        self.Read()
-        self.ConnectToModel()
+            timeprofiler.ConfigTimeProfiler.Stop()
+            self.Read()
+            self.ConnectToModel()
+        else:
+            self.ProcessReconfigured()
+            timeprofiler.ConfigTimeProfiler.Stop()
         return True
+
+    def ReconfigRead(self, spec=None):
+        for obj in self.ReconfigState.Created:
+            obj.Read()
+        for obj in self.ReconfigState.Updated:
+            obj.Read()
+        return
 
     def Teardown(self, spec):
         for obj in self.ReconfigState.Updated[:]:

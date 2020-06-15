@@ -15,26 +15,18 @@ def __get_topo_file():
 
 def __get_topo_path(default=False):
     pipeline = utils.GetPipelineName()
-    if default:
-        pipeline = 'apollo'
-    topo_file = '%s/config/topology/%s/' % (pipeline, GlobalOptions.topology)
+    topo_file = f'{pipeline}/config/topology/'
     return topo_file
 
 def __get_topo_spec():
     topofile = __get_topo_file()
-    topopaths = []
-    # get pipeline specfic topo
-    topopaths.append(__get_topo_path())
-    # fallback to apollo topo
-    topopaths.append(__get_topo_path(True))
-    for path in topopaths:
-        logger.info("Generating Configuration for Topology %s/%s" % (path, topofile))
-        topospec = parser.ParseFile(path, topofile)
-        if topospec:
-            return topospec
-    logger.error("Invalid topofile %s" % (topofile))
-    assert(0)
-    return None
+    path = __get_topo_path()
+    topospec = parser.ParseFile(path, topofile)
+    if not topospec:
+        logger.error("Invalid topofile %s" % (topofile))
+        assert(0)
+        return None
+    return topospec
 
 def Main():
     topospec = __get_topo_spec()

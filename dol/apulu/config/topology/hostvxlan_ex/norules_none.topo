@@ -1,0 +1,10 @@
+node:
+  - id : 1
+
+    vpc : 
+          -   id : 2
+              policy:
+                  -   policytype      : specific
+                      type : specific
+                      direction : bidir
+                      defaultfwaction : none

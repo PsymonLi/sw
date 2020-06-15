@@ -567,9 +567,13 @@ jobd/dol/apulu/lpm: ${JOBD_PREREQS}
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo lpm_overlap_priority --feature lpm --sub v4_overlap
 	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --topo lpm_full_overlap_priority --feature lpm --sub v4_full_overlap
 
-.PHONY: jobd/dol/apulu/policy
-jobd/dol/apulu/policy: ${JOBD_PREREQS}
-	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy
+.PHONY: jobd/dol/apulu/dual_policy
+jobd/dol/apulu/dual_policy: ${JOBD_PREREQS}
+	LOG_SIZE=(80*1024*1024) ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy
+
+.PHONY: jobd/dol/apulu/dual_policy_anydeny
+jobd/dol/apulu/dual_policy_anydeny: ${JOBD_PREREQS}
+	LOG_SIZE=(80*1024*1024) ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex_anydeny --sub multi_policy
 
 .PHONY: jobd/dol/apulu/learn
 jobd/dol/apulu/learn: ${JOBD_PREREQS}

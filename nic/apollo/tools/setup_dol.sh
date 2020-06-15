@@ -11,8 +11,12 @@ TS_NAME=nic_sanity_logs.tar.gz
 
 NAPLES_INTERFACES=("dsc0" "dsc1" "eth1" "oob_mnic0")
 
-# set file size limit to 50GB so that model logs will not exceed that.
-ulimit -f $((50*1024*1024))
+# set file size limit to LOG_SIZE if set or 50 GB, so that model logs will not
+# exceed that.
+if [[ -z "${LOG_SIZE}" ]]; then
+    LOG_SIZE=$((50*1024*1024))
+fi
+ulimit -f $LOG_SIZE
 
 CMDARGS=""
 argc=$#

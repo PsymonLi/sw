@@ -11,4 +11,4 @@ trigger:
 expect:
     configs:
         - object: ref://testcase/config/root
-          method: Read 
+          #method: ReconfigRead 

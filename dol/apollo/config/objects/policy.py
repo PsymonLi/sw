@@ -436,6 +436,7 @@ class PolicyObject(base.ConfigObjectBase):
         self.Mutable = True if (utils.IsUpdateSupported() and self.IsOriginFixed()) else False
         self.DefaultFWAction = defaultfwaction
         self.AddToReconfigState('create')
+        self.Client = client
         self.Show()
         return
 
@@ -661,6 +662,13 @@ class PolicyObject(base.ConfigObjectBase):
         utils.DumpTestcaseConfig(obj)
         return
 
+    def Cleanup(self):
+        self.Client.Objs[self.Node].pop(self.PolicyId)
+        objs = self.Client.GetObjsList(self.Direction, self.AddrFamily)
+        if objs:
+            objs[self.Node][self.VPCId].remove(self)
+        return
+
 class PolicyObjectClient(base.ConfigClientBase):
     def __init__(self):
         def __isObjSupported():
@@ -808,6 +816,14 @@ class PolicyObjectClient(base.ConfigClientBase):
         if len(self.__v6egressobjs[node]) == 0 or len(self.__v6egressobjs[node][vpcid]) == 0:
             return 0
         return self.__v6epolicyiter[node][vpcid].rrnext().PolicyId
+
+    def GetObjsList(self, dir, af):
+        af_map = {
+            'IPV4' : '__v4',
+            'IPV6' : '__v6'
+        }
+        name = '_' + type(self).__name__ + af_map[af] + dir + 'objs'
+        return getattr(self, name, None)
 
     def Add_V4Policy(self, node, vpcid, direction, v4rules, policytype, overlaptype, level='subnet',
                      defaultfwaction='allow', fwdmode=None):

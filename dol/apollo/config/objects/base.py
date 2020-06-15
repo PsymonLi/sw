@@ -223,7 +223,11 @@ class ConfigObjectBase(base.ConfigObjectBase):
             expApiStatus = types_pb2.API_STATUS_NOT_FOUND
         return utils.ReadObject(self, expApiStatus)
 
+    def Cleanup(self):
+        return
+
     def Delete(self, spec=None):
+        self.Cleanup()
         return utils.DeleteObject(self)
 
     def Destroy(self):

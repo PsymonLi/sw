@@ -521,11 +521,12 @@ def __get_final_result(tc_rule, match_rule, testcase):
 
 def __match_and_get_final_result(policies, pkt, direction, testcase):
     packet_tuples = __get_packet_tuples(pkt)
-    tc_rule = testcase.config.tc_rule
+    tc_rule = getattr(testcase.config, 'tc_rule', None)
     rules = []
     for policyid in policies:
         policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
-        rules = sorted(policyobj.rules, key=lambda x: x.Priority)
+        if policyobj:
+            rules = sorted(policyobj.rules, key=lambda x: x.Priority)
         match_rule = None
         for rule in rules:
             if __is_matching_rule(packet_tuples, rule, direction, testcase):
@@ -542,7 +543,8 @@ def __get_matching_rule(policies, pkt, direction, testcase):
     rules = []
     for policyid in policies:
         policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
-        rules.extend(policyobj.rules)
+        if policyobj:
+            rules.extend(policyobj.rules)
     # Get a new copy of stable sorted (based on priority) rules
     # Note: lower the value of rule.Priority higher the Priority
     rules = sorted(rules, key=lambda x: x.Priority)

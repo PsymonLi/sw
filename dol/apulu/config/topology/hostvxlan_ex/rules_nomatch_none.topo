@@ -1,0 +1,20 @@
+node:
+  - id : 1
+
+    vpc : 
+          -   id : 2
+              policy:
+                  -   policytype        : specific
+                      type              : specific
+                      direction         : bidir
+                      rule :
+                      # some arbitrary rules that doesnt match
+                          -   protocol  : any
+                              priority  : 'MAXPRIO'
+                              action    : allow
+                              v4pfx     : '200.200.0.0\16'
+                              v6pfx     : '200::\16'
+                              sportlow  : 0
+                              sporthigh : 1 
+                              dportlow  : 0
+                              dporthigh : 1
