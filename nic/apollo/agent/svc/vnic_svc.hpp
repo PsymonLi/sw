@@ -111,7 +111,7 @@ pds_vnic_api_info_to_proto (pds_vnic_info_t *api_info, void *ctxt)
     pds_vnic_api_stats_to_proto(proto_stats, &api_info->stats);
 }
 
-// build VNIC api spec from proto buf spec
+// build vnic api spec from proto buf spec
 static inline sdk_ret_t
 pds_vnic_proto_to_api_spec (pds_vnic_spec_t *api_spec,
                             const pds::VnicSpec &proto_spec)

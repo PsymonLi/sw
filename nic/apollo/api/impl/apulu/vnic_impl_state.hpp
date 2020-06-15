@@ -98,6 +98,8 @@ private:
     friend class mapping_impl;
     ///< lif_impl class is friend of vnic_impl_state
     friend class lif_impl;
+    ///< vport_impl class is friend of vnic_impl_state
+    friend class vport_impl;
 
 private:
     // NOTE: there is no explicit table mgmt for rx and tx stats, we directly
@@ -105,7 +107,7 @@ private:
     slab         *vnic_impl_slab_;
     ///< indexer to allocate hw vnic id
     rte_indexer  *vnic_idxr_;
-    ///< hash table for hw_id to vpc key
+    ///< hash table for hw_id to vnic key
     ht *impl_ht_;
 };
 

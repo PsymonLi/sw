@@ -36,6 +36,7 @@
 #include "nic/apollo/api/policer_state.hpp"
 #include "nic/apollo/api/nat_state.hpp"
 #include "nic/apollo/api/dhcp_state.hpp"
+#include "nic/apollo/api/vport_state.hpp"
 #include "nic/apollo/api/security_profile.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
@@ -71,7 +72,8 @@ namespace api {
     ENTRY(PDS_STATE_LEARN,          21,            "learn")         \
     ENTRY(PDS_STATE_ROUTE,          22,            "route")         \
     ENTRY(PDS_STATE_POLICY_RULE,    23,            "policy-rule")   \
-    ENTRY(PDS_STATE_MAX,            24,            "max")
+    ENTRY(PDS_STATE_VPORT,          24,            "vport")         \
+    ENTRY(PDS_STATE_MAX,            25,            "max")
 
 SDK_DEFINE_ENUM(pds_state_t, PDS_STATE)
 SDK_DEFINE_ENUM_TO_STR(pds_state_t, PDS_STATE)
@@ -89,18 +91,7 @@ typedef struct state_walk_ctxt_s {
  */
 
 //--------------------------------------------------------------------------
-// TODO:
-// to speed up framework processing and avoid recursive walks during update
-// processing we can maintain map of lists for the following:
-// 1. policy key -> list of subnets
-// 2. policy key -> list of vnics
-// 3. route-table key -> list of vpcs
-// 4. route-table key -> list of subnets
-// 5. vpc key -> list of subnets
-// 6. subnet key -> list of vnics
-// with these auxiliary databases, we can avoid walks in add_deps()
-//
-// NOTE: while adding objs, add_to_db() needs to add to all relevant datbases
+// NOTE: while adding objs, add_to_db() needs to add to all relevant databases
 //       while deleteing objs, del_from_db() needs to delete from all relevant
 //       databases
 //       while updating db (with cloned obj), we need to both of the above
@@ -243,6 +234,9 @@ public:
     }
     policy_rule_state *policy_rule_db(void) {
         return (policy_rule_state *)state_[PDS_STATE_POLICY_RULE];
+    }
+    vport_state *vport_db(void) {
+        return (vport_state *)state_[PDS_STATE_VPORT];
     }
     pds_event_cb_t event_cb(void) const { return event_cb_; }
     void set_event_cb(pds_event_cb_t event_cb) { event_cb_ = event_cb; }
@@ -448,6 +442,12 @@ static inline policy_rule_state *
 policy_rule_db (void)
 {
     return api::g_pds_state.policy_rule_db();
+}
+
+static inline vport_state *
+vport_db (void)
+{
+    return api::g_pds_state.vport_db();
 }
 
 #endif    // __PDS_STATE_HPP__

@@ -94,7 +94,7 @@ message VnicSpec {
 
 // operational status of Vnic, if any
 message VnicStatus {
-  uint32 HwId = 1;      // vnic hw id
+  uint32 HwId   = 1;    // vnic hw id
   uint32 NhHwId = 2;    // nexthop hw id
 }
 
@@ -140,18 +140,21 @@ message VnicRequest {
 // vnic create and update response
 message VnicResponse {
   types.ApiStatus     ApiStatus = 1;
-  repeated VnicStatus Response  = 2; // batched response
+  // batched response
+  repeated VnicStatus Response  = 2;
 }
 
 // vnic get request
 message VnicGetRequest {
-  repeated bytes Id = 1; // batched request
+  // batched request
+  repeated bytes Id = 1;
 }
 
 // vnic get response
 message VnicGetResponse {
   types.ApiStatus ApiStatus = 1;
-  repeated Vnic   Response  = 2; // batched response
+  // batched response
+  repeated Vnic   Response  = 2;
 }
 
 // vnic delete request
@@ -159,10 +162,11 @@ message VnicDeleteRequest {
   // optional batch context, if this request is part of batch of API calls
   types.BatchCtxt BatchCtxt = 1;
   // batched request
-  repeated bytes Id     = 2;
+  repeated bytes Id         = 2;
 }
 
 // vnic delete response
 message VnicDeleteResponse {
-  repeated types.ApiStatus ApiStatus = 1; // batched response
+  // batched response
+  repeated types.ApiStatus ApiStatus = 1;
 }

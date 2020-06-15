@@ -1,25 +1,20 @@
 //
-// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 //
 //----------------------------------------------------------------------------
 ///
 /// \file
-/// vnic implementation in the p4/hw
+/// vport implementation in the p4/hw
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __VNIC_IMPL_HPP__
-#define __VNIC_IMPL_HPP__
+#ifndef __VPORT_IMPL_HPP__
+#define __VPORT_IMPL_HPP__
 
 #include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
-#include "nic/apollo/api/include/pds_vnic.hpp"
-#include "nic/apollo/api/vpc.hpp"
-#include "nic/apollo/api/subnet.hpp"
-#include "nic/apollo/api/vnic.hpp"
-#include "nic/apollo/api/route.hpp"
-#include "nic/apollo/api/policy.hpp"
+#include "nic/apollo/api/include/pds_vport.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_rxdma/include/p4plus_rxdma_p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
@@ -29,27 +24,27 @@ using sdk::table::handle_t;
 namespace api {
 namespace impl {
 
-/// \defgroup PDS_VNIC_IMPL - vnic functionality
-/// \ingroup PDS_VNIC
+/// \defgroup PDS_VPORT_IMPL - vport functionality
+/// \ingroup PDS_VPORT
 /// @{
 
-// initial epoch value when vnic is created
-#define PDS_IMPL_VNIC_EPOCH_START          0x0
+// initial epoch value when vport is created
+#define PDS_IMPL_VPORT_EPOCH_START          0x0
 
-/// \brief vnic implementation
-class vnic_impl : public impl_base {
+/// \brief vport implementation
+class vport_impl : public impl_base {
 public:
-    /// \brief     factory method to allocate & initialize vnic impl instance
-    /// \param[in] spec vnic specification
-    /// \return    new instance of vnic or NULL, in case of error
-    static vnic_impl *factory(pds_vnic_spec_t *spec);
+    /// \brief     factory method to allocate & initialize vport impl instance
+    /// \param[in] spec vport specification
+    /// \return    new instance of vport or NULL, in case of error
+    static vport_impl *factory(pds_vport_spec_t *spec);
 
-    /// \brief     release all the s/w state associated with the given VNIC,
+    /// \brief     release all the s/w state associated with the given vport,
     ///            if any, and free the memory
-    /// \param[in] impl vnic impl instance to be freed
+    /// \param[in] impl vport impl instance to be freed
     /// \NOTE      h/w entries should have been cleaned up (by calling
     ///            impl->cleanup_hw() before calling this)
-    static void destroy(vnic_impl *impl);
+    static void destroy(vport_impl *impl);
 
     /// \brief    clone this object by copying all the h/w resources
     ///           allocated for this object into new object and return the
@@ -61,19 +56,7 @@ public:
     ///           touching any of the databases or h/w etc.
     /// \param[in] impl impl instance to be freed
     /// \return   sdk_ret_ok or error code
-    static sdk_ret_t free(vnic_impl *impl);
-
-    /// \brief     stash this object into persistent storage
-    /// \param[in] info pointer to the info object
-    /// \param[in] upg_info contains location to put stashed object
-    /// \return    sdk_ret_ok or error code
-    virtual sdk_ret_t backup(obj_info_t *info, upg_obj_info_t *upg_info) override;
-
-    /// \brief     restore stashed object from persistent storage
-    /// \param[in] info pointer to the info object
-    /// \param[in] upg_info contains location to read stashed object
-    /// \return    sdk_ret_ok or error code
-    virtual sdk_ret_t restore(obj_info_t *info, upg_obj_info_t *upg_info) override;
+    static sdk_ret_t free(vport_impl *impl);
 
     /// \brief     allocate/reserve h/w resources for this object
     /// \param[in] api_obj  object for which resources are being reserved
@@ -176,184 +159,107 @@ public:
 
     /// \brief      read spec, statistics and status from hw tables
     /// \param[in]  api_obj  API object
-    /// \param[in]  key  pointer to vnic key
-    /// \param[out] info pointer to vnic info
+    /// \param[in]  key  pointer to vport key
+    /// \param[out] info pointer to vport info
     /// \return     SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
 
-    /// \brief      reset all the statistics associated with the vnic
-    /// \return     SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t reset_stats(void) override;
-
-    /// \brief     return vnic's current epoch
-    /// \return    epoch of the vnic
+    /// \brief     return vport's current epoch
+    /// \return    epoch of the vport
     uint8_t epoch(void) const { return epoch_; }
 
-    /// \brief     return vnic's h/w id
-    /// \return    h/w id assigned to the vnic
+    /// \brief     return vport's h/w id
+    /// \return    h/w id assigned to the vport
     uint16_t hw_id(void) const { return hw_id_; }
 
-    /// \brief     return nexthop idx allocated for this vnic
-    /// \return    nexthop index corresponding to this vnic
+    /// \brief     return nexthop idx allocated for this vport
+    /// \return    nexthop index corresponding to this vport
     uint16_t nh_idx(void) const { return nh_idx_; }
-
-    /// \brief     return vnic's h/w id in IP_MAC_BINDING table table
-    /// \return    h/w id assigned to the vnic in IP_MAC_BINDING table
-    uint32_t binding_hw_id(void) const { return binding_hw_id_; }
 
     /// \brief      get the key from entry in hash table context
     /// \param[in]  entry in the hash table context
     /// \return     hw id from the entry
     static void *key_get(void *entry) {
-        vnic_impl *vnic = (vnic_impl *) entry;
-        return (void *)&(vnic->hw_id_);
+        vport_impl *vport = (vport_impl *)entry;
+        return (void *)&(vport->hw_id_);
     }
-
-    /// \brief      accessor API for key
-    pds_obj_key_t *key(void) { return &key_; }
 
     /// \brief      accessor API for hash table context
     ht_ctxt_t *ht_ctxt(void) { return &ht_ctxt_; }
 
 private:
     /// \brief constructor
-    vnic_impl() {
-        epoch_ = PDS_IMPL_VNIC_EPOCH_START;
+    vport_impl() {
+        epoch_ = PDS_IMPL_VPORT_EPOCH_START;
         hw_id_ = 0xFFFF;
         nh_idx_ = 0xFFFF;
-        local_mapping_hdl_ = handle_t::null();
-        mapping_hdl_ = handle_t::null();
-        binding_hw_id_ = PDS_IMPL_RSVD_IP_MAC_BINDING_HW_ID;
         ht_ctxt_.reset();
     }
 
     /// \brief  constructor with spec
-    vnic_impl(pds_vnic_spec_t *spec) {
-        vnic_impl();
-        key_ = spec->key;
+    vport_impl(pds_vport_spec_t *spec) {
+        vport_impl();
     }
 
     /// \brief destructor
-    ~vnic_impl() {}
-
-    /// \brief      populate rxdma vnic info table entry's policy tree root
-    ///             address
-    /// \param[in]  vnic_info_data    vnic info data to be programmed
-    /// \param[in]  idx               policy LPM root entry index
-    /// \param[in]  addr              policy tree root address
-    /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t populate_rxdma_vnic_info_policy_root_(
-                  vnic_info_rxdma_actiondata_t *vnic_info_data,
-                  uint32_t idx, mem_addr_t addr);
-
-    /// \brief      program vnic info tables in rxdma and txdma
-    /// \param[in]  vnic      vnic being created/updated
-    /// \param[in]  vpc       vpc of the vnic
-    /// \param[in]  subnet    subnet of the vnic
-    /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t program_rxdma_vnic_info_(vnic_entry *vnic, vpc_entry *vpc,
-                                       subnet_entry *subnet);
-
-    /// \brief     add an entry to LOCAL_MAPPING table
-    /// \param[in] epoch epoch being activated
-    /// \param[in] vpc vpc of this vnic
-    /// \param[in] subnet subnet of this vnic
-    /// \param[in] vnic  vnic obj being programmed
-    /// \param[in] spec  vnic configuration
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t add_local_mapping_entry_(pds_epoch_t epoch, vpc_entry *vpc,
-                                       subnet_entry *subnet, vnic_entry *vnic,
-                                       pds_vnic_spec_t *spec);
+    ~vport_impl() {}
 
     /// \brief     add an entry to VLAN table
     /// \param[in] epoch epoch being activated
-    /// \param[in] vpc vpc of this vnic
-    /// \param[in] subnet subnet of this vnic
-    /// \param[in] vnic  vnic obj being programmed
-    /// \param[in] spec  vnic configuration
+    /// \param[in] vport  vport obj being programmed
+    /// \param[in] spec  vport configuration
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t add_vlan_entry_(pds_epoch_t epoch, vpc_entry *vpc,
-                              subnet_entry *subnet, vnic_entry *vnic,
-                              pds_vnic_spec_t *spec);
+    sdk_ret_t add_vlan_entry_(pds_epoch_t epoch, vport_entry *vport,
+                              pds_vport_spec_t *spec);
 
-    /// \brief     add an entry to MAPPING table
-    /// \param[in] epoch epoch being activated
-    /// \param[in] vpc vpc of this vnic
-    /// \param[in] subnet subnet of this vnic
-    /// \param[in] vnic  vnic obj being programmed
-    /// \param[in] spec  vnic configuration
-    /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t add_mapping_entry_(pds_epoch_t epoch, vpc_entry *vpc,
-                                 subnet_entry *subnet, vnic_entry *vnic,
-                                 pds_vnic_spec_t *spec);
-
-    /// \brief     program vnic related tables during vnic create by enabling
+    /// \brief     program vport related tables during vport create by enabling
     ///            stage0 tables corresponding to the new epoch
     /// \param[in] epoch epoch being activated
-    /// \param[in] vnic  vnic obj being programmed
-    /// \param[in] spec  vnic configuration
+    /// \param[in] vport  vport obj being programmed
+    /// \param[in] spec  vport configuration
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_create_(pds_epoch_t epoch, vnic_entry *vnic,
-                               pds_vnic_spec_t *spec);
+    sdk_ret_t activate_create_(pds_epoch_t epoch, vport_entry *vport,
+                               pds_vport_spec_t *spec);
 
-    /// \brief     program vnic related tables during vnic delete by disabling
+    /// \brief     program vport related tables during vport delete by disabling
     ///            stage0 tables corresponding to the new epoch
     /// \param[in] epoch epoch being activated
-    /// \param[in] vnic  vnic obj being programmed
+    /// \param[in] vport  vport obj being programmed
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_delete_(pds_epoch_t epoch, vnic_entry *vnic);
+    sdk_ret_t activate_delete_(pds_epoch_t epoch, vport_entry *vport);
 
-    /// \brief      program vnic related tables during vnic update by
+    /// \brief      program vport related tables during vport update by
     ///             enabling stage0 tables corresponding to the new epoch
     /// \param[in] epoch epoch being activated
-    /// \param[in] vnic  vnic obj being programmed
-    /// \param[in] orig_vnic  original vnic obj that is being modified
+    /// \param[in] vport  vport obj being programmed
+    /// \param[in] orig_vport  original vport obj that is being modified
     /// \param[in] obj_ctxt transient state associated with this API
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
-                               vnic_entry *orig_vnic, api_obj_ctxt_t *obj_ctxt);
+    sdk_ret_t activate_update_(pds_epoch_t epoch, vport_entry *vport,
+                               vport_entry *orig_vport,
+                               api_obj_ctxt_t *obj_ctxt);
 
-    /// \brief      restore h/w resources for this obj from persistent storage
-    /// \param[in]  info pointer to the info object
-    /// \return     #SDK_RET_OK on success, failure status code on error
-    virtual sdk_ret_t restore_resources(obj_info_t *info) override;
-
-    /// \brief      fill the vnic spec
-    /// \param[out] spec specification
-    /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_spec_(pds_vnic_spec_t *spec);
-
-    /// \brief      fill the vnic stats
+    /// \brief      fill the vport stats
     /// \param[out] stats statistics
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_stats_(pds_vnic_stats_t *stats);
+    sdk_ret_t fill_stats_(pds_vport_stats_t *stats);
 
-    /// \brief      fill the vnic status
+    /// \brief      fill the vport status
     /// \param[out] status status
-    void fill_status_(pds_vnic_status_t *status);
+    void fill_status_(pds_vport_status_t *status);
 
-    /// \brief      retrieve vnic stats from VPP
+    /// \brief      retrieve vport stats from vpp, if any
     /// \param[out] stats statistics
     /// \return     #SDK_RET_OK on success, failure status code on error
-    sdk_ret_t fill_vpp_stats_(pds_vnic_stats_t *stats);
+    sdk_ret_t fill_vpp_stats_(pds_vport_stats_t *stats);
 
 private:
     // P4 datapath specific state
-    uint8_t epoch_;                    ///< datapath epoch of the vnic
-    uint16_t hw_id_;                   ///< hardware id
-    uint16_t nh_idx_;                  ///< nexthop table index for this vnic
-    ///< handle for LOCAL_MAPPING and MAPPING table entries (note that handles
-    ///< are valid only in a transaction)
-    handle_t local_mapping_hdl_;
-    handle_t mapping_hdl_;
-    // h/w id for IP_MAC_BINDING table
-    uint32_t binding_hw_id_;
-    /// PI specific info
-    struct {
-        pds_obj_key_t key_;
-    };
-    ht_ctxt_t ht_ctxt_;
+    uint8_t epoch_;      ///< datapath epoch of the vport
+    uint16_t hw_id_;     ///< hardware id
+    uint16_t nh_idx_;    ///< nexthop table index for this vport
+    ht_ctxt_t ht_ctxt_;  ///< hash table ctxt for this entry
 };
 
 /// \@}
@@ -361,4 +267,4 @@ private:
 }    // namespace impl
 }    // namespace api
 
-#endif    // __VNIC_IMPL_HPP__
+#endif    // __VPORT_IMPL_HPP__

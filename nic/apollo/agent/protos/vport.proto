@@ -1,0 +1,96 @@
+//------------------------------------------------------------------------------
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// protobuf specification for a virtual port object
+//------------------------------------------------------------------------------
+
+syntax = "proto3";
+package pds;
+
+import "gogo.proto";
+import "meta/meta.proto";
+import "types.proto";
+
+service VportSvc {
+  rpc VportCreate (VportRequest) returns (VportResponse) {}
+  rpc VportUpdate (VportRequest) returns (VportResponse) {}
+  rpc VportGet (VportGetRequest) returns (VportGetResponse) {}
+  rpc VportDelete (VportDeleteRequest) returns (VportDeleteResponse) {}
+}
+
+// vport specification
+// NOTE: a vport (virtual port) is not local to the DSC and is represented
+//       with its encap and/or combination of some other attributes (e.g.
+//       remote port#). vport is an anchor on which policies can be applied
+message VportSpec {
+  // unique vport id
+  bytes          Id                    = 1 [(gogoproto.moretags) = "meta:mandatory,immutable"];
+  // vport encap information to be used while sending packets to this vport
+  types.Encap    Encap                 = 2 [(gogoproto.moretags) = "meta:mandatory,immutable"];
+  // identifier of ingress IPv4 security policy to be enforced
+  repeated bytes IngV4SecurityPolicyId = 3;
+  // identifier of ingress IPv6 security policy to be enforced
+  repeated bytes IngV6SecurityPolicyId = 4;
+  // identifier of egress IPv4 security policy to be enforced
+  repeated bytes EgV4SecurityPolicyId  = 5;
+  // identifier of egress IPv6 security policy to be enforced
+  repeated bytes EgV6SecurityPolicyId  = 6;
+}
+
+// operational status of vport, if any
+message VportStatus {
+}
+
+// stats of vport, if any
+message VportStats {
+}
+// vport object
+message Vport {
+  meta.TypeMeta TypeMeta = 1 [(gogoproto.embed) = true, (gogoproto.jsontag) = ",inline"];
+  meta.ObjMeta  ObjMeta  = 2 [(gogoproto.embed) = true, (gogoproto.jsontag) = "meta,omitempty"];
+  VportSpec     Spec     = 3 [(gogoproto.jsontag) = "spec,omitempty"];
+  VportStatus   Status   = 4 [(gogoproto.jsontag) = "status,omitempty"];
+  VportStats    Stats    = 5 [(gogoproto.jsontag) = "stats,omitempty"];
+}
+
+// vport create and update request
+message VportRequest {
+  // optional batch context, if this request is part of batch of API calls
+  types.BatchCtxt    BatchCtxt = 1;
+  // batched request
+  repeated VportSpec Request   = 2;
+}
+
+// vport create and update response
+message VportResponse {
+  types.ApiStatus      ApiStatus = 1;
+  // batched response
+  repeated VportStatus Response  = 2;
+}
+
+// vport get request
+message VportGetRequest {
+  // batched request
+  repeated bytes Id = 1;
+}
+
+// vport get response
+message VportGetResponse {
+  types.ApiStatus ApiStatus = 1;
+  // batched response
+  repeated Vport  Response  = 2;
+}
+
+// vport delete request
+message VportDeleteRequest {
+  // optional batch context, if this request is part of batch of API calls
+  types.BatchCtxt BatchCtxt = 1;
+  // batched request
+  repeated bytes  Id        = 2;
+}
+
+// vport delete response
+message VportDeleteResponse {
+  // batched response
+  repeated types.ApiStatus ApiStatus = 1;
+}

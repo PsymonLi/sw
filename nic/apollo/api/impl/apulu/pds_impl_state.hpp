@@ -30,17 +30,19 @@
 #include "nic/apollo/api/impl/apulu/policer_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/dhcp_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/qos_impl_state.hpp"
+#include "nic/apollo/api/impl/apulu/vport_impl_state.hpp"
 
 namespace api {
 namespace impl {
 
 /// \brief slab types
 enum {
-    PDS_SLAB_ID_IMPL_MIN     = 8192,
-    PDS_SLAB_ID_VNIC_IMPL,
-    PDS_SLAB_ID_MAPPING_IMPL,
-    PDS_SLAB_ID_SVC_MAPPING_IMPL,
-    PDS_SLAB_ID_MIRROR_IMPL,
+    PDS_SLAB_ID_IMPL_MIN          = 8192,
+    PDS_SLAB_ID_VNIC_IMPL         = 8193,
+    PDS_SLAB_ID_MAPPING_IMPL      = 8194,
+    PDS_SLAB_ID_SVC_MAPPING_IMPL  = 8195,
+    PDS_SLAB_ID_MIRROR_IMPL       = 8196,
+    PDS_SLAB_ID_VPORT_IMPL        = 8197,
 };
 
 /// \brief impl state/db types
@@ -63,6 +65,7 @@ enum {
     PDS_IMPL_STATE_POLICER,
     PDS_IMPL_STATE_DHCP,
     PDS_IMPL_STATE_QOS,
+    PDS_IMPL_STATE_VPORT,
     PDS_IMPL_STATE_MAX,
 };
 
@@ -128,6 +131,9 @@ public:
     }
     qos_impl_state *qos_impl_db(void) const {
         return (qos_impl_state *)impl_state_[PDS_IMPL_STATE_QOS];
+    }
+    vport_impl_state *vport_impl_db(void) const {
+        return (vport_impl_state*)impl_state_[PDS_IMPL_STATE_VPORT];
     }
 
 private:
@@ -230,6 +236,12 @@ static inline qos_impl_state *
 qos_impl_db (void)
 {
     return g_pds_impl_state.qos_impl_db();
+}
+
+static inline vport_impl_state *
+vport_impl_db (void)
+{
+    return g_pds_impl_state.vport_impl_db();
 }
 
 /// \@}

@@ -204,9 +204,9 @@ message RuleMatch {
 // QinQ vlan tag
 message QinQTag {
   // Customer VLAN tag
-  uint32 cTag = 1 [(gogoproto.moretags) = "meta:mandatory"];
+  uint32 CTag = 1 [(gogoproto.moretags) = "meta:mandatory"];
   // Service VLAN tag
-  uint32 sTag = 2 [(gogoproto.moretags) = "meta:mandatory"];
+  uint32 STag = 2 [(gogoproto.moretags) = "meta:mandatory"];
 }
 
 // encap types in the network

@@ -17,16 +17,16 @@ extern "C" {
 
 /// \brief API operation
 typedef enum api_op_e {
-    API_OP_NONE,       ///< None
-    API_OP_CREATE,     ///< Create
-    API_OP_DELETE,     ///< Delete
-    API_OP_UPDATE,     ///< Update
-    API_OP_INVALID,    ///< Invalid
+    API_OP_NONE,       ///< none
+    API_OP_CREATE,     ///< create
+    API_OP_DELETE,     ///< delete
+    API_OP_UPDATE,     ///< update
+    API_OP_INVALID,    ///< invalid
 } api_op_t;
 
 /// \brief Object identifiers
 typedef enum obj_id_e {
-    OBJ_ID_NONE               = 0,     ///< None
+    OBJ_ID_NONE               = 0,     ///< none
     OBJ_ID_BATCH              = 1,     ///< batch
     OBJ_ID_DEVICE             = 2,     ///< device
     OBJ_ID_PORT               = 3,     ///< port
@@ -51,6 +51,7 @@ typedef enum obj_id_e {
     OBJ_ID_SECURITY_PROFILE   = 22,    ///< security profile
     OBJ_ID_ROUTE              = 23,    ///< route inside route table
     OBJ_ID_POLICY_RULE        = 24,    ///< rule inside a policy
+    OBJ_ID_VPORT              = 25,    ///< vport
     OBJ_ID_MAX
 } obj_id_t;
 
