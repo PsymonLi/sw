@@ -157,7 +157,9 @@ ionic_complete(struct ionic_completion *completion)               // IN
         if (completion &&
             (completion->validation_id == IONIC_EN_COMPL_VALIDATION_ID) &&
             (completion->lock)) {
+                vmk_SpinlockLockIgnoreDeathPending(completion->lock);
                 completion->done = VMK_TRUE;
+                vmk_SpinlockUnlock(completion->lock);
                 vmk_WorldWakeup(completion->event_id);
         }
 }
@@ -203,7 +205,7 @@ ionic_wait_for_completion_timeout(struct ionic_completion *completion,    // IN
                 } else if (status == VMK_WAIT_INTERRUPTED && !completion->done) {
                         is_timeout = VMK_TRUE;
                 } else if (status == VMK_TIMEOUT && !completion->done) {
-                        is_timeout =  VMK_TRUE;
+                        is_timeout = VMK_TRUE;
                 }
 
         } else {
