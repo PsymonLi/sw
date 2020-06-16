@@ -132,9 +132,10 @@ func (o *OrchestratorState) checkAndUpdateDSCList() error {
 	for dsc := range o.incompatibleDscs {
 		dscState := o.stateMgr.FindDSC(dsc, "")
 		// If DSC is now compatible, remove from the Incompatible list
-		if dscState.isOrchestratorCompatible() {
+		if err := dscState.isOrchestratorCompatible(); err == nil {
 			delete(o.incompatibleDscs, dsc)
 		}
+
 	}
 
 	return o.updateIncompatibleList()

@@ -74,10 +74,10 @@ func (sm *Statemgr) OnHostCreate(nh *ctkit.Host) error {
 			sm.logger.Errorf("Failed to update orchhub label for DSC %v [%v]. Err : %v", snic.DistributedServiceCard.Name, snic.DistributedServiceCard.Spec.ID, apierrors.FromError(err))
 		}
 
-		if !snic.isOrchestratorCompatible() {
+		if err := snic.isOrchestratorCompatible(); err != nil {
 			sm.AddIncompatibleDSCToOrch(snic.DistributedServiceCard.Name, orchNameValue)
 			recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature", snic.DistributedServiceCard.Spec.ID), &snic.DistributedServiceCard.DistributedServiceCard)
+				fmt.Sprintf("DSC %v has mode incompatible for orchestration feature, %v", snic.DistributedServiceCard.Spec.ID, err), &snic.DistributedServiceCard.DistributedServiceCard)
 		}
 	}
 
@@ -283,8 +283,8 @@ func (sm *Statemgr) CheckHostMigrationCompliance(hostName string) error {
 		return fmt.Errorf("DSC for host %v is not admitted", hostState.Host.Name)
 	}
 
-	if !snic.isOrchestratorCompatible() {
-		sm.logger.Infof("DSC %v is not orchestration compatible.", snic.DistributedServiceCard.Name)
+	if err := snic.isOrchestratorCompatible(); err != nil {
+		sm.logger.Infof("DSC %v is not orchestration compatible. Err : %v", snic.DistributedServiceCard.Name, err)
 		return fmt.Errorf("dsc %v is not orchestration compatible", snic.DistributedServiceCard.Name)
 	}
 
@@ -307,7 +307,8 @@ func (sm *Statemgr) IsHostOrchestratorCompatible(hostName string) bool {
 	for jj := range host.Host.Spec.DSCs {
 		snic := sm.FindDSC(host.Host.Spec.DSCs[jj].MACAddress, host.Host.Spec.DSCs[jj].ID)
 		if snic != nil {
-			return snic.isOrchestratorCompatible()
+			err := snic.isOrchestratorCompatible()
+			return err == nil
 		}
 	}
 

@@ -409,6 +409,9 @@ func setupTopo(stateMgr *Statemgr, sourceHost, destHost string, t *testing.T) {
 	err := createTenant(t, stateMgr, "default")
 	AssertOk(t, err, "Error creating the tenant")
 
+	err = createNetwork(t, stateMgr, "default", "Network-Vlan-1", "10.1.1.0/24", "10.1.1.254", 1)
+	AssertOk(t, err, "Error creating network")
+
 	// create DSC profile
 	dscprof := cluster.DSCProfile{
 		TypeMeta: api.TypeMeta{Kind: "DSCProfile"},

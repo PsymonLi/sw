@@ -85,10 +85,10 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(dsc *ctkit.DistributedService
 
 		// If label is found, and the DSC is not compatible, raise an event
 		if ok {
-			if !dscState.isOrchestratorCompatible() {
+			if err := dscState.isOrchestratorCompatible(); err != nil {
 				sm.AddIncompatibleDSCToOrch(dscState.DistributedServiceCard.Name, orchVal)
 				recorder.Event(eventtypes.ORCH_DSC_MODE_INCOMPATIBLE,
-					fmt.Sprintf("Profile %v added to DSC %v is incompatible with orchestration feature", newProfile, dscState.DistributedServiceCard.DistributedServiceCard.Spec.ID), &dscState.DistributedServiceCard.DistributedServiceCard)
+					fmt.Sprintf("Profile %v added to DSC %v is incompatible with orchestration feature, %v", newProfile, dscState.DistributedServiceCard.DistributedServiceCard.Spec.ID, err), &dscState.DistributedServiceCard.DistributedServiceCard)
 			} else {
 				sm.RemoveIncompatibleDSCFromOrch(dscState.DistributedServiceCard.Name, orchVal)
 			}
@@ -171,18 +171,18 @@ func DistributedServiceCardStateFromObj(obj runtime.Object) (*DistributedService
 	}
 }
 
-func (dscState *DistributedServiceCardState) isOrchestratorCompatible() bool {
+func (dscState *DistributedServiceCardState) isOrchestratorCompatible() error {
 	dscProfile := dscState.DistributedServiceCard.Spec.DSCProfile
 	dscProfileState, _ := dscState.stateMgr.FindDSCProfile("default", dscProfile)
 	if dscProfileState == nil {
-		return false
+		return fmt.Errorf("profile %v does not exist", dscProfile)
 	}
 
 	if dscProfileState.DSCProfile.Spec.DeploymentTarget != cluster.DSCProfileSpec_VIRTUALIZED.String() || dscProfileState.DSCProfile.Spec.FeatureSet != cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String() {
-		return false
+		return fmt.Errorf("(deployment/featureset) required (%v/%v) found (%v/%v)", cluster.DSCProfileSpec_VIRTUALIZED.String(), cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String(), dscProfileState.DSCProfile.Spec.DeploymentTarget, dscProfileState.DSCProfile.Spec.FeatureSet)
 	}
 
-	return true
+	return nil
 }
 
 // FindDSC Get DSC State by ID
