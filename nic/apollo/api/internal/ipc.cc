@@ -22,6 +22,7 @@ pds_cmd_response_handler_cb (sdk::ipc::ipc_msg_ptr msg, const void *ret)
 
     if (!msg) {
         response->status = SDK_RET_TIMEOUT;
+        return;
     }
     if (msg->length() != sizeof(pds_cmd_rsp_t)) {
         response->status = SDK_RET_INVALID_ARG;

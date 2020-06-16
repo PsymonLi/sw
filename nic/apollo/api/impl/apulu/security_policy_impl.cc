@@ -124,7 +124,7 @@ security_policy_impl::alloc_tag_class_id_cb_(uint32_t tag, uint32_t *class_id,
 
     ret = vpc_impl_db()->alloc_class_id(tag, false, class_id);
     if (ret == SDK_RET_OK) {
-        policy_impl->class_ids_.push_back(*class_id);
+        policy_impl->class_ids_.insert(*class_id);
     }
     return ret;
 }

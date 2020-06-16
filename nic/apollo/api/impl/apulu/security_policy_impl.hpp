@@ -11,7 +11,7 @@
 #ifndef __SECURITY_POLICY_IMPL_HPP__
 #define __SECURITY_POLICY_IMPL_HPP__
 
-#include <list>
+#include <set>
 #include "nic/apollo/framework/api.hpp"
 #include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
@@ -160,7 +160,7 @@ private:
     void fill_status_(pds_policy_status_t *status);
 
 private:
-    std::list<uint32_t> class_ids_;
+    std::set<uint32_t> class_ids_;
     // P4 datapath specific state
     mem_addr_t  security_policy_root_addr_;    ///< policy root node address
 };
