@@ -13,8 +13,7 @@ IRIS_PATHS =\
 
 # Apulu metric jsons are hand maintained in nic/operd/metrics.
 APULU_PATHS =\
-	nic/operd/metrics/venice \
-	nic/operd/metrics/common
+	nic/operd/metrics/venice
 
 # all generated files are in the <pipeline>/generated/ path
 all:

@@ -1,7 +1,5 @@
 #! /bin/bash
 
-set -e
-
 export ASIC="${ASIC:-capri}"
 CUR_DIR=$( readlink -f $( dirname $0 ) )
 source $CUR_DIR/../../../tools/setup_env_mock.sh $PIPELINE
@@ -12,7 +10,6 @@ export VAL_CMD=valgrind
 export IPC_MOCK_MODE=1
 
 function remove_conf_files () {
-    find $PDSPKG_TOPDIR/operd/metrics/common/ -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
     find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink ${CONFIG_PATH}/%P > /dev/null 2>&1 \n" | sh | echo -n ""
     sudo rm -f ${CONFIG_PATH}/pipeline.json ${CONFIG_PATH}/vpp_startup.conf
 }
@@ -35,7 +32,6 @@ function finish () {
 trap finish EXIT
 
 function setup_metrics_conf_files () {
-    ln -s $PDSPKG_TOPDIR/operd/metrics/common/*.json $CONFIG_PATH/
     ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/
 }
 

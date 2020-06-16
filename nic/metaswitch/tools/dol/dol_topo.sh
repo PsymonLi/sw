@@ -46,12 +46,10 @@ for (( j=0; j<argc; j++ )); do
 done
 
 function remove_conf_files () {
-    find ${NICDIR}/operd/metrics/common/ -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
     find ${NICDIR}/operd/metrics/cloud/ -name "*.json" -printf "rm -f ${NICDIR}/conf/%P \n" | sh
 }
 
 function setup_metrics_conf_files () {
-    cp $NICDIR/operd/metrics/common/*.json ${NICDIR}/conf/
     cp $NICDIR/operd/metrics/cloud/*.json ${NICDIR}/conf/
 }
 setup_metrics_conf_files

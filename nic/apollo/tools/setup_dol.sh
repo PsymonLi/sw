@@ -42,6 +42,9 @@ source $CUR_DIR/setup_env_sim.sh $PIPELINE
 
 if [[ $DSCAGENTMODE == 1 ]]; then
     SIM_PROCESSES+=("nmd" "netagent")
+    METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/venice/
+else
+    METRICS_CONF_DIR=$PDSPKG_TOPDIR/operd/metrics/cloud/
 fi
 
 function stop_model() {
@@ -123,11 +126,7 @@ function remove_interfaces () {
 }
 
 function remove_metrics_conf_files () {
-    find $PDSPKG_TOPDIR/operd/metrics/common/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
-    find $PDSPKG_TOPDIR/operd/metrics/cloud/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
-    if [[ $DSCAGENTMODE == 1 ]]; then
-        find $PDSPKG_TOPDIR/operd/metrics/venice/ -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
-    fi
+    find $METRICS_CONF_DIR -name "*.json" -printf "unlink $CONFIG_PATH/%P > /dev/null 2>&1 \n" | sh | echo -n ""
 }
 
 function remove_conf_files () {
@@ -219,11 +218,7 @@ function check_health () {
 }
 
 function setup_metrics_conf_files () {
-    ln -s $PDSPKG_TOPDIR/operd/metrics/common/*.json $CONFIG_PATH/ | echo -n ""
-    ln -s $PDSPKG_TOPDIR/operd/metrics/cloud/*.json $CONFIG_PATH/ | echo -n ""
-    if [[ $DSCAGENTMODE == 1 ]]; then
-        ln -s $PDSPKG_TOPDIR/operd/metrics/venice/*.json $CONFIG_PATH/ | echo -n ""
-    fi
+    ln -s $METRICS_CONF_DIR/*.json $CONFIG_PATH/ | echo -n ""
 }
 
 function setup_conf_files () {

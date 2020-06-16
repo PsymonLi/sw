@@ -1,11 +1,10 @@
 {
-  "Package": "metrics",
-  "Prefix": "nicmgr",
   "Messages": [
     {
       "Name": "LifMetrics",
       "Description": "Logical interface metrics",
       "DisplayName": "Logical interface statistics",
+      "Scope": "PerLIF",
       "Fields": [
         {
           "Name": "Octets Rx unicast",
@@ -793,11 +792,7 @@
           "DisplayName": "-",
           "Description": "-"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerLIF"
+      ]
     }
   ]
 }

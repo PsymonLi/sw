@@ -113,9 +113,8 @@ def get_files_from_dir(dir, ext):
     return files
 
 def remove_conf_files():
-    metrics_dir = os.environ.get('PDSPKG_TOPDIR', nic_dir) + "/operd/metrics/"
-    metrics_conf_files = get_files_from_dir(metrics_dir + "/common/", "json")
-    metrics_conf_files += get_files_from_dir(metrics_dir + "/cloud/", "json")
+    metrics_dir = os.environ.get('PDSPKG_TOPDIR', nic_dir) + "/operd/metrics/cloud/"
+    metrics_conf_files = get_files_from_dir(metrics_dir, "json")
     conf_dir = os.environ.get('CONFIG_PATH', nic_dir + "/conf") + "/"
     for f in metrics_conf_files:
         try:
@@ -667,10 +666,8 @@ def run_offload_test(port, args):
 
 def setup_conf_files():
     DST_DIR = os.environ['CONFIG_PATH'] + "/"
-    METRICS_SRC_FILES_1 = os.environ['PDSPKG_TOPDIR'] + "/operd/metrics/common/*.json"
-    METRICS_SRC_FILES_2 = os.environ['PDSPKG_TOPDIR'] + "/operd/metrics/cloud/*.json"
-    os.system("ln -s " + METRICS_SRC_FILES_1 + " " + DST_DIR)
-    os.system("ln -s " + METRICS_SRC_FILES_2 + " " + DST_DIR)
+    METRICS_SRC_FILES = os.environ['PDSPKG_TOPDIR'] + "/operd/metrics/cloud/*.json"
+    os.system("ln -s " + METRICS_SRC_FILES + " " + DST_DIR)
     return
 
 # Run athena app

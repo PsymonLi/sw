@@ -1,11 +1,10 @@
 {
-  "Package": "metrics",
-  "Prefix": "linkmgr",
   "Messages": [
     {
       "Name": "MacMetrics",
       "Description": "Uplink metrics",
       "DisplayName": "Uplink interface packet statistics",
+      "Scope": "PerEthPort",
       "Fields": [
         {
           "Name": "Frames Rx ok",
@@ -630,16 +629,13 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerEthPort"
+      ]
     },
     {
       "Name": "MgmtMacMetrics",
       "Description": "Management/out-of-band (OOB) interface metrics",
       "DisplayName": "Management interface packet statistics",
+      "Scope": "PerMgmtPort",
       "Fields": [
         {
           "Name": "Frames Rx ok",
@@ -865,11 +861,7 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level4"
-      ],
-      "Scope": "PerMgmtPort"
+      ]
     }
   ]
 }

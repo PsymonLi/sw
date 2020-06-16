@@ -11,7 +11,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   "scope": "PerASIC",
   "fields": [
     {
-      "name": "TCP sessions over IPv4",
+      "name": "TCPSessionsOverIPv4",
       "displayName": "TCP sessions over IPv4",
       "description": "TCP sessions over IPv4",
       "units": "Count",
@@ -22,7 +22,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "UDP sessions over IPv4",
+      "name": "UDPSessionsOverIPv4",
       "displayName": "UDP sessions over IPv4",
       "description": "UDP sessions over IPv4",
       "units": "Count",
@@ -33,7 +33,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "ICMP sessions over IPv4",
+      "name": "ICMPSessionsOverIPv4",
       "displayName": "ICMP sessions over IPv4",
       "description": "ICMP sessions over IPv4",
       "units": "Count",
@@ -44,7 +44,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Other sessions over IPv4",
+      "name": "OtherSessionsOverIPv4",
       "displayName": "Other sessions over IPv4",
       "description": "Other sessions over IPv4",
       "units": "Count",
@@ -55,7 +55,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "TCP sessions over IPv6",
+      "name": "TCPSessionsOverIPv6",
       "displayName": "TCP sessions over IPv6",
       "description": "TCP sessions over IPv6",
       "units": "Count",
@@ -66,7 +66,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "UDP sessions over IPv6",
+      "name": "UDPSessionsOverIPv6",
       "displayName": "UDP sessions over IPv6",
       "description": "UDP sessions over IPv6",
       "units": "Count",
@@ -77,7 +77,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "ICMP sessions over IPv6",
+      "name": "ICMPSessionsOverIPv6",
       "displayName": "ICMP sessions over IPv6",
       "description": "ICMP sessions over IPv6",
       "units": "Count",
@@ -88,7 +88,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Other sessions over IPv6",
+      "name": "OtherSessionsOverIPv6",
       "displayName": "Other sessions over IPv6",
       "description": "Other sessions over IPv6",
       "units": "Count",
@@ -99,7 +99,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "L2 sessions",
+      "name": "L2Sessions",
       "displayName": "L2 sessions",
       "description": "L2 sessions",
       "units": "Count",
@@ -110,7 +110,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "Session create errors",
+      "name": "SessionCreateErrors",
       "displayName": "Session create errors",
       "description": "Session create errors",
       "units": "Count",
@@ -1849,6 +1849,10 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   "name": "PcieMgrMetrics",
   "description": "pcie port metrics",
   "displayName": "PCIe Manager information",
+  "tags": [
+    "Level7"
+  ],
+  "scope": "PerPciePort",
   "fields": [
     {
       "name": "NotIntr",
@@ -2291,16 +2295,16 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ]
     }
   ],
-  "tags": [
-    "Level7"
-  ],
-  "scope": "PerPciePort",
   "objectKind": "DistributedServiceCard"
 },
   PciePortMetrics: {
   "name": "PciePortMetrics",
   "description": "Key index - pcie port",
   "displayName": "PCIe port information",
+  "tags": [
+    "Level7"
+  ],
+  "scope": "PerPciePort",
   "fields": [
     {
       "name": "IntrTotal",
@@ -2831,10 +2835,6 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ]
     }
   ],
-  "tags": [
-    "Level7"
-  ],
-  "scope": "PerPciePort",
   "objectKind": "DistributedServiceCard"
 },
   MemoryMetrics: {

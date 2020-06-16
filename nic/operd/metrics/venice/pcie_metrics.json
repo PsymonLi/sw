@@ -6,6 +6,10 @@
       "Name": "PcieMgrMetrics",
       "Description": "pcie port metrics",
       "DisplayName": "PCIe Manager information",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerPciePort",
       "Fields": [
         {
           "Name": "NotIntr",
@@ -280,16 +284,16 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerPciePort"
+      ]
     },
     {
       "Name": "PciePortMetrics",
       "Description": "Key index - pcie port",
       "DisplayName": "PCIe port information",
+      "Tags": [
+        "Level7"
+      ],
+      "Scope": "PerPciePort",
       "Fields": [
         {
           "Name": "IntrTotal",
@@ -620,11 +624,7 @@
           "Units": "Count",
           "BaseType": "Counter"
         }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerPciePort"
+      ]
     }
   ]
 }

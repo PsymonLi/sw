@@ -1,15 +1,10 @@
 {
   "Package": "pciemgr",
-  "Pipeline": "apulu",
-  "Prefix": "pciemgr",
   "Messages": [
     {
       "Name": "PcieMgrMetrics",
       "Description": "pcie port metrics",
       "DisplayName": "PCIe Manager information",
-      "Tags": [
-        "Level7"
-      ],
       "Scope": "PerPciePort",
       "Fields": [
         {
