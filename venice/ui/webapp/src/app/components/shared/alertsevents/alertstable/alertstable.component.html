@@ -14,9 +14,15 @@
   <app-pentable #alertsTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
                 [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
                 [dataKey]="'meta.name'" [enableCheckbox]="true"
-                [exportFilename]="exportFilename" [numRows]="25"
-                (rowClickEmitter)="selectAlert($event)" [rowHeight]="36">
-  </app-pentable>
+                [exportFilename]="exportFilename" [loading]="alertsLoading" [numRows]="25"
+                (rowClickEmitter)="selectAlert($event)" [rowHeight]="36"
+                [searchable]="showAlertsAdvSearch"
+                (searchCancelledEmitter)="onCancelSearch()"
+                [searchCols]="advSearchCols"
+                (searchEmitter)="onSearchAlerts()"
+                [searchFormArray]="fieldFormArray"
+                searchKind="Alert"></app-pentable>
+
 </div>
 
 
@@ -48,7 +54,7 @@
     </div>
     <app-tableheader title="Alerts" [count]="dataObjects.length" [total]="alerts.length"
                      [icon]="alertsIcon"
-                     [enableColumnSelect]="false" width="250px">
+                     [enableColumnSelect]="false" width="250px" class="alertdetail-tableheader">
       <div fxFlex="50" fxLayoutAlign="start center">
         <div fxFlex="none">
           <mat-icon *ngIf="showBatchResolveIcon()" matTooltip="Resolve Selected Alerts"
@@ -73,7 +79,7 @@
           Filtering by {{selector.alertSelector.name}}
         </div>
       </div>
-      <div fxLayoutAlign="end center">
+      <div fxFlex="none" fxLayoutAlign="end center">
         <!-- Checkboxes for Open, Ack, Resolved states -->
         <div fxLayout="row" fxLayoutAlign="start center" fxLayoutGap="10px">
           <ng-container *ngFor="let state of possibleFilterStates">

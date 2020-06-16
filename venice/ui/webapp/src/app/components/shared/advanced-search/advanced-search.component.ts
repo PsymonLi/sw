@@ -576,6 +576,11 @@ export class AdvancedSearchComponent implements OnInit {
    * Cancel Clicked logic
    */
   cancelClicked() {
+    this.clearSearchForm();
+    this.cancelEmitter.emit(null);
+  }
+
+  clearSearchForm() {
     this.search = '';
     this.generalSearch = '';
     this.formArray = new FormArray([]);
@@ -583,7 +588,6 @@ export class AdvancedSearchComponent implements OnInit {
       this.fieldRepeater.formArray = new FormArray([]);
       this.fieldRepeater.initData();
     }
-    this.cancelEmitter.emit(null);
   }
 
 }

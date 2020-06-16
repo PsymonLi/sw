@@ -117,6 +117,7 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
 
   subscriptions: Subscription[] = [];
 
+  allowTimeRangeEvent: boolean = true;
 
 
   startTimeCalendar: Date;
@@ -149,11 +150,13 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
   }
 
   calendarStartSelect(value) {
+    this.allowTimeRangeEvent = true;
     const newValue = Utility.convertUTCTimeToLocalTime(value);
     this.timeFormGroup.get('startTime').reset(newValue.toISOString());
   }
 
   calendarEndSelect(value) {
+    this.allowTimeRangeEvent = true;
     const newValue = Utility.convertUTCTimeToLocalTime(value);
     this.timeFormGroup.get('endTime').reset(newValue.toISOString());
   }
@@ -169,6 +172,7 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
         }
         const start = this.lastSelectedTimeRange.startTime.getString();
         const end = this.lastSelectedTimeRange.endTime.getString();
+        this.allowTimeRangeEvent = false;
         this.timeFormGroup.reset({
           startTime: start,
           endTime: end
@@ -196,6 +200,8 @@ export class TimeRangeComponent implements OnInit, AfterViewInit, OnDestroy, OnC
   setTimeRange(opt: TimeRangeOption) {
     const startTime = opt.startTime;
     let endTime = opt.endTime;
+    this.allowTimeRangeEvent = true;
+
     if (endTime == null) {
       endTime = 'now';
     }

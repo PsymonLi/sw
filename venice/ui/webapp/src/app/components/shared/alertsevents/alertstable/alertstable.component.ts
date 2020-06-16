@@ -1,6 +1,6 @@
-import { Component, OnInit, Input, ViewChild, ChangeDetectorRef, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation } from '@angular/core';
-import { IMonitoringAlert, MonitoringAlert, MonitoringAlertSpec_state, MonitoringAlertStatus_severity, MonitoringAlertSpec_state_uihint } from '@sdk/v1/models/generated/monitoring';
-import { EventsEvent_severity, EventsEventAttributes_severity, IApiListWatchOptions, IEventsEvent, ApiListWatchOptions_sort_order } from '@sdk/v1/models/generated/events';
+import { Component, OnInit, Input, ViewChild, SimpleChanges, OnChanges, OnDestroy, ViewEncapsulation } from '@angular/core';
+import { MonitoringAlert, MonitoringAlertSpec_state, MonitoringAlertStatus_severity, MonitoringAlertSpec_state_uihint } from '@sdk/v1/models/generated/monitoring';
+import { EventsEventAttributes_severity } from '@sdk/v1/models/generated/events';
 import { TimeRange } from '@app/components/shared/timerange/utility';
 import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
@@ -14,11 +14,10 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { Observable, forkJoin, throwError, Subscription } from 'rxjs';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { AlertsEventsSelector } from '@app/components/shared/alertsevents/alertsevents.component';
-import { IApiStatus } from '@sdk/v1/models/generated/search';
 import { Animations } from '@app/animations';
 import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
-import { TimeRangeComponent } from '../../timerange/timerange.component';
-import { ValidationErrors } from '@angular/forms';
+import { TimeRangeComponent } from '@app/components/shared/timerange/timerange.component';
+import { ValidationErrors, FormArray } from '@angular/forms';
 import { IStagingBulkEditAction, IBulkeditBulkEditItem } from '@sdk/v1/models/generated/staging';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
@@ -51,6 +50,12 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   // holds a subset (possibly all) of this.alerts
   // This are the alerts that will be displayed
   dataObjects: ReadonlyArray<MonitoringAlert> = [];
+  dataObjectsBackup: ReadonlyArray<MonitoringAlert> = [];
+
+  fieldFormArray = new FormArray([]);
+  maxSearchRecords: number = 4000;
+  alertsLoading = false;
+  advSearchCols: TableCol[] = [];
 
   subscriptions: Subscription[] = [];
   alertSubscription: Subscription;
@@ -119,6 +124,9 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
     });
     this.alertUpdatable = this.uiconfigsService.isAuthorized(UIRolePermissions.monitoringalert_update);
+    if (this.showAlertsAdvSearch) {
+      this.buildAdvSearchCols();
+    }
     this.genQueryBodies();
     // If get alerts/events wasn't triggered by on change
     if (!this.alertSubscription) {
@@ -128,6 +136,18 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       this.getSearchedAlert();
     }
   }
+
+  buildAdvSearchCols() {
+    this.advSearchCols = this.cols.filter((col: TableCol) => {
+      return (col.field !== 'status.source');
+    });
+
+    this.advSearchCols.push(
+      { field: 'status.source.node-name', header: 'Source Node', kind: 'Alert' },
+      { field: 'status.source.component', header: 'Source Component', kind: 'Alert' }
+    );
+  }
+
 
   getSelectedDataObjects() {
     return this.alertsTable.selectedDataObjects;
@@ -143,6 +163,16 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       'warn': 0,
       'critical': 0,
     };
+  }
+
+  setAlertNumbersObject() {
+    // Reset counters
+    Object.keys(MonitoringAlertStatus_severity).forEach(severity => {
+      this.alertNumbers[severity] = 0;
+    });
+    this.alerts.forEach(alert => {
+      this.alertNumbers[alert.status.severity] += 1;
+    });
   }
 
   getSearchedAlert() {
@@ -165,6 +195,8 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
 
   getAlerts() {
     this.dataObjects = [];
+    this.dataObjectsBackup = [];
+    this.alertsLoading = true;
     this.alertsEventUtility = new HttpEventUtility<MonitoringAlert>(MonitoringAlert);
     this.alerts = this.alertsEventUtility.array;
     if (this.alertSubscription) {
@@ -172,19 +204,28 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     }
     this.alertSubscription = this.monitoringService.WatchAlert(this.alertQuery).subscribe(
       response => {
+        if (this.showAlertsAdvSearch) {
+          this.alertsTable.clearSearch();
+        }
         this.alertsEventUtility.processEvents(response);
-        // Reset counters
-        Object.keys(MonitoringAlertStatus_severity).forEach(severity => {
-          this.alertNumbers[severity] = 0;
-        });
-        this.alerts.forEach(alert => {
-          this.alertNumbers[alert.status.severity] += 1;
-        });
+        this.dataObjectsBackup = Utility.getLodash().cloneDeepWith(this.alerts);
+        this.setAlertNumbersObject();
         this.filterAlerts();
       },
-      this._controllerService.webSocketErrorHandler('Failed to get Alert')
+      (error) => {
+        this.alertsLoading = false;
+        this._controllerService.webSocketErrorHandler('Failed to get Alert');
+      }
     );
     this.subscriptions.push(this.alertSubscription);
+    setTimeout(() => {
+      if (this.alerts.length === 0) {
+        if (this.showAlertsAdvSearch) {
+          this.alertsTable.clearSearch();
+        }
+        this.alertsLoading = false;
+      }
+    }, 5000);
   }
 
   /**
@@ -213,21 +254,15 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   }
 
   filterAlerts() {
-    // We put the filtering into a set timeout so that it gets pushed to the end of
-    // the micro task queue.
-    // Otherwise, the table rendering of the items happens before the user's action on the checkbox
-    // becomes visible. This allows the checkbox animation to happen immediately, and then we render
-    // the new table.
-    setTimeout(() => {
-      this.dataObjects = this.alerts.filter((item) => {
-        // Checking severity filter
-        if (this.currentAlertSeverityFilter != null && item.status.severity !== this.currentAlertSeverityFilter) {
-          return false;
-        }
-        // checking state filter
-        return this.selectedStateFilters.includes(MonitoringAlertSpec_state_uihint[item.spec.state]);
-      });
-    }, 0);
+    this.dataObjects = this.alerts.filter((item) => {
+      // Checking severity filter
+      if (this.currentAlertSeverityFilter != null && item.status.severity !== this.currentAlertSeverityFilter) {
+        return false;
+      }
+      // checking state filter
+      return this.selectedStateFilters.includes(MonitoringAlertSpec_state_uihint[item.spec.state]);
+    });
+    this.alertsLoading = false;
   }
 
   /**
@@ -350,13 +385,15 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   setAlertsTimeRange(timeRange: TimeRange) {
     // update query and call getEvents
     setTimeout(() => {
-      this.alertsSelectedTimeRange = timeRange;
-      const start = this.alertsSelectedTimeRange.getTime().startTime.toISOString() as any;
-      const end = this.alertsSelectedTimeRange.getTime().endTime.toISOString() as any;
-      this.alertsTimeConstraints = 'meta.mod-time<' + end + ',' + 'meta.mod-time>' + start;
-      this.clearAlertNumbersObject();
-      this.genQueryBodies();
-      this.getAlerts();
+      if (this.timeRangeComponent.allowTimeRangeEvent) {
+        this.alertsSelectedTimeRange = timeRange;
+        const start = this.alertsSelectedTimeRange.getTime().startTime.toISOString() as any;
+        const end = this.alertsSelectedTimeRange.getTime().endTime.toISOString() as any;
+        this.alertsTimeConstraints = 'meta.mod-time<' + end + ',' + 'meta.mod-time>' + start;
+        this.clearAlertNumbersObject();
+        this.genQueryBodies();
+        this.getAlerts();
+      }
     }, 0);
   }
 
@@ -505,6 +542,31 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
 
     if (this.alertSubscription != null) {
       this.alertSubscription.unsubscribe();
+    }
+  }
+
+
+  onCancelSearch() {
+    this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
+    this.alerts = this.dataObjectsBackup;
+    this.setAlertNumbersObject();
+    this.filterAlerts();
+  }
+
+  /**
+   * Execute table search
+   * @param field
+   * @param order
+   */
+  onSearchAlerts(field = this.alertsTable.sortField, order = this.alertsTable.sortOrder) {
+    this.alertsLoading = true;
+    const searchResults = this.onSearchDataObjects(field, order, 'Alert', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.alertsTable.advancedSearchComponent);
+    if (searchResults && searchResults.length > 0) {
+      this.alerts = searchResults;
+      this.setAlertNumbersObject();
+      this.filterAlerts();
+    } else {
+      this.alertsLoading = false;
     }
   }
 }

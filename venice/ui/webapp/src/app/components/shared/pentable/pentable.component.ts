@@ -324,6 +324,11 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     this.searchCancelledEmitter.emit();
   }
 
+  clearSearch() {
+    this.advancedSearchComponent.clearSearchForm();
+    this.controllerService.navigate([], { queryParams: null });
+  }
+
   onThMouseDown(event) {
     if (event.target.classList.contains('ui-column-resizer')) {
       this.colMouseMoveUnlisten = this.renderer.listen('document', 'mousemove', () => {
