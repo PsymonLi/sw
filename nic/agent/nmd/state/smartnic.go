@@ -89,13 +89,6 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 
 	log.Infof("Current SmartNIC State: %v", oldNic)
 	log.Infof("Updated SmartNIC State: %v", nic)
-
-	// update nic in the DB
-	n.SetSmartNIC(nic)
-	err = n.store.Write(nic)
-	if err != nil {
-		log.Errorf("Error updating NMD state %+v: %v", nic, err)
-	}
 	n.modeChange.Unlock()
 
 	// Handle de-admission and decommission
@@ -191,12 +184,14 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 					if err != nil {
 						log.Errorf("Error deleting persisted DSC Interface IP Config")
 					}
+					n.modeChange.Lock()
 					// update nic in the DB
 					n.SetSmartNIC(nic)
 					err = n.store.Write(nic)
 					if err != nil {
 						log.Errorf("Error updating NMD state %+v: %v", nic, err)
 					}
+					n.modeChange.Unlock()
 				} else {
 					recorder.Event(eventtypes.DSC_DEADMITTED, fmt.Sprintf("DSC %s(%s) de-admitted from the cluster", nic.Spec.ID, nic.Name), nic)
 
