@@ -965,6 +965,8 @@ func (api *endpointAPI) ClearCache(handler EndpointHandler) {
 
 // Endpoint returns EndpointAPI
 func (ct *ctrlerCtx) Endpoint() EndpointAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Endpoint"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &endpointAPI{ct: ct}
@@ -2139,6 +2141,8 @@ func (api *workloadAPI) RegisterLocalSyncAbortMigrationHandler(fn func(*workload
 
 // Workload returns WorkloadAPI
 func (ct *ctrlerCtx) Workload() WorkloadAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Workload"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &workloadAPI{ct: ct}

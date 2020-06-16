@@ -1080,6 +1080,8 @@ func (api *orderAPI) RegisterLocalSyncCleardiscountHandler(fn func(*bookstore.Ap
 
 // Order returns OrderAPI
 func (ct *ctrlerCtx) Order() OrderAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Order"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &orderAPI{ct: ct}
@@ -2083,6 +2085,8 @@ func (api *bookAPI) RegisterLocalSyncRestockHandler(fn func(*bookstore.RestockRe
 
 // Book returns BookAPI
 func (ct *ctrlerCtx) Book() BookAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Book"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &bookAPI{ct: ct}
@@ -3028,6 +3032,8 @@ func (api *publisherAPI) ClearCache(handler PublisherHandler) {
 
 // Publisher returns PublisherAPI
 func (ct *ctrlerCtx) Publisher() PublisherAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Publisher"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &publisherAPI{ct: ct}
@@ -4031,6 +4037,8 @@ func (api *storeAPI) RegisterLocalSyncAddOutageHandler(fn func(*bookstore.Outage
 
 // Store returns StoreAPI
 func (ct *ctrlerCtx) Store() StoreAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Store"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &storeAPI{ct: ct}
@@ -4976,6 +4984,8 @@ func (api *couponAPI) ClearCache(handler CouponHandler) {
 
 // Coupon returns CouponAPI
 func (ct *ctrlerCtx) Coupon() CouponAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Coupon"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &couponAPI{ct: ct}
@@ -5929,6 +5939,8 @@ func (api *customerAPI) ClearCache(handler CustomerHandler) {
 
 // Customer returns CustomerAPI
 func (ct *ctrlerCtx) Customer() CustomerAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Customer"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &customerAPI{ct: ct}

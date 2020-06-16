@@ -1088,6 +1088,8 @@ func (api *clusterAPI) RegisterLocalSyncUpdateTLSConfigHandler(fn func(*cluster.
 
 // Cluster returns ClusterAPI
 func (ct *ctrlerCtx) Cluster() ClusterAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Cluster"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &clusterAPI{ct: ct}
@@ -2033,6 +2035,8 @@ func (api *nodeAPI) ClearCache(handler NodeHandler) {
 
 // Node returns NodeAPI
 func (ct *ctrlerCtx) Node() NodeAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Node"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &nodeAPI{ct: ct}
@@ -2978,6 +2982,8 @@ func (api *hostAPI) ClearCache(handler HostHandler) {
 
 // Host returns HostAPI
 func (ct *ctrlerCtx) Host() HostAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Host"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &hostAPI{ct: ct}
@@ -3923,6 +3929,8 @@ func (api *distributedservicecardAPI) ClearCache(handler DistributedServiceCardH
 
 // DistributedServiceCard returns DistributedServiceCardAPI
 func (ct *ctrlerCtx) DistributedServiceCard() DistributedServiceCardAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "DistributedServiceCard"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &distributedservicecardAPI{ct: ct}
@@ -4868,6 +4876,8 @@ func (api *tenantAPI) ClearCache(handler TenantHandler) {
 
 // Tenant returns TenantAPI
 func (ct *ctrlerCtx) Tenant() TenantAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Tenant"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &tenantAPI{ct: ct}
@@ -5813,6 +5823,8 @@ func (api *versionAPI) ClearCache(handler VersionHandler) {
 
 // Version returns VersionAPI
 func (ct *ctrlerCtx) Version() VersionAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Version"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &versionAPI{ct: ct}
@@ -6816,6 +6828,8 @@ func (api *configurationsnapshotAPI) RegisterLocalSyncSaveHandler(fn func(*clust
 
 // ConfigurationSnapshot returns ConfigurationSnapshotAPI
 func (ct *ctrlerCtx) ConfigurationSnapshot() ConfigurationSnapshotAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "ConfigurationSnapshot"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &configurationsnapshotAPI{ct: ct}
@@ -7819,6 +7833,8 @@ func (api *snapshotrestoreAPI) RegisterLocalSyncRestoreHandler(fn func(*cluster.
 
 // SnapshotRestore returns SnapshotRestoreAPI
 func (ct *ctrlerCtx) SnapshotRestore() SnapshotRestoreAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "SnapshotRestore"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &snapshotrestoreAPI{ct: ct}
@@ -8764,6 +8780,8 @@ func (api *licenseAPI) ClearCache(handler LicenseHandler) {
 
 // License returns LicenseAPI
 func (ct *ctrlerCtx) License() LicenseAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "License"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &licenseAPI{ct: ct}
@@ -9709,6 +9727,8 @@ func (api *dscprofileAPI) ClearCache(handler DSCProfileHandler) {
 
 // DSCProfile returns DSCProfileAPI
 func (ct *ctrlerCtx) DSCProfile() DSCProfileAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "DSCProfile"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &dscprofileAPI{ct: ct}
@@ -10662,6 +10682,8 @@ func (api *credentialsAPI) ClearCache(handler CredentialsHandler) {
 
 // Credentials returns CredentialsAPI
 func (ct *ctrlerCtx) Credentials() CredentialsAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Credentials"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &credentialsAPI{ct: ct}

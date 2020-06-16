@@ -45,8 +45,7 @@ func (dscMgr *DSCMgrRc) GetDistributedServiceCardWatchOptions() *api.ListWatchOp
 
 // OnDistributedServiceCardCreate handles smartNic creation
 func (dscMgr *DSCMgrRc) OnDistributedServiceCardCreate(smartNic *ctkit.DistributedServiceCard) error {
-	defer dscMgr.sm.sendDscUpdateNotification(&smartNic.DistributedServiceCard)
-	defer dscMgr.sm.ProcessDSCEvent(CreateEvent, &smartNic.DistributedServiceCard)
+	defer dscMgr.sm.sendDscUpdateNotification(CreateEvent, &smartNic.DistributedServiceCard, nil)
 	sns, err := dscMgr.sm.dscCreate(smartNic)
 	if err != nil {
 		return err
@@ -62,8 +61,7 @@ func (dscMgr *DSCMgrRc) OnDistributedServiceCardCreate(smartNic *ctkit.Distribut
 
 // OnDistributedServiceCardUpdate handles update event on smartnic
 func (dscMgr *DSCMgrRc) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedServiceCard, nsnic *cluster.DistributedServiceCard) error {
-	defer dscMgr.sm.sendDscUpdateNotification(nsnic)
-	defer dscMgr.sm.ProcessDSCEvent(UpdateEvent, &smartNic.DistributedServiceCard)
+	defer dscMgr.sm.sendDscUpdateNotification(UpdateEvent, &smartNic.DistributedServiceCard, nsnic)
 	log.Infof("DSC spec old: %+v | new: %+v", smartNic.Spec, nsnic.Spec)
 	oldRt := smartNic.Spec.RoutingConfig
 	newRt := nsnic.Spec.RoutingConfig
@@ -84,7 +82,7 @@ func (dscMgr *DSCMgrRc) OnDistributedServiceCardUpdate(smartNic *ctkit.Distribut
 
 // OnDistributedServiceCardDelete handles smartNic deletion
 func (dscMgr *DSCMgrRc) OnDistributedServiceCardDelete(smartNic *ctkit.DistributedServiceCard) error {
-	defer dscMgr.sm.ProcessDSCEvent(DeleteEvent, &smartNic.DistributedServiceCard)
+	defer dscMgr.sm.sendDscUpdateNotification(DeleteEvent, &smartNic.DistributedServiceCard, nil)
 	hs, err := dscMgr.sm.deleteDsc(smartNic)
 	if err != nil {
 		return err

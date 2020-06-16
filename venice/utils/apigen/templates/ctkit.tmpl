@@ -1052,6 +1052,8 @@ func (api *{{ToLower $obj}}API) RegisterLocalSync{{.Name}}Handler(fn func(*{{$pk
 {{end}}
 // {{.}} returns {{.}}API
 func (ct *ctrlerCtx) {{.}}() {{.}}API {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "{{.}}"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &{{ToLower .}}API{ct: ct}

@@ -489,11 +489,13 @@ func (ws *WorkloadState) createEndpoints() error {
 	}
 	if !createErr {
 		// Clear propagation error message
-		ws.Workload.Status.PropagationStatus.Status = ""
-		err = ws.Workload.Write()
-		if err != nil {
-			log.Errorf("failed to clear propagation status. Err : %v", err)
-		}
+		go func() {
+			ws.Workload.Status.PropagationStatus.Status = ""
+			err = ws.Workload.Write()
+			if err != nil {
+				log.Errorf("failed to clear propagation status. Err : %v", err)
+			}
+		}()
 
 	}
 

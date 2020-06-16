@@ -965,6 +965,8 @@ func (api *securitygroupAPI) ClearCache(handler SecurityGroupHandler) {
 
 // SecurityGroup returns SecurityGroupAPI
 func (ct *ctrlerCtx) SecurityGroup() SecurityGroupAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "SecurityGroup"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &securitygroupAPI{ct: ct}
@@ -1910,6 +1912,8 @@ func (api *networksecuritypolicyAPI) ClearCache(handler NetworkSecurityPolicyHan
 
 // NetworkSecurityPolicy returns NetworkSecurityPolicyAPI
 func (ct *ctrlerCtx) NetworkSecurityPolicy() NetworkSecurityPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "NetworkSecurityPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &networksecuritypolicyAPI{ct: ct}
@@ -2855,6 +2859,8 @@ func (api *appAPI) ClearCache(handler AppHandler) {
 
 // App returns AppAPI
 func (ct *ctrlerCtx) App() AppAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "App"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &appAPI{ct: ct}
@@ -3800,6 +3806,8 @@ func (api *firewallprofileAPI) ClearCache(handler FirewallProfileHandler) {
 
 // FirewallProfile returns FirewallProfileAPI
 func (ct *ctrlerCtx) FirewallProfile() FirewallProfileAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "FirewallProfile"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &firewallprofileAPI{ct: ct}
@@ -4745,6 +4753,8 @@ func (api *certificateAPI) ClearCache(handler CertificateHandler) {
 
 // Certificate returns CertificateAPI
 func (ct *ctrlerCtx) Certificate() CertificateAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Certificate"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &certificateAPI{ct: ct}
@@ -5690,6 +5700,8 @@ func (api *trafficencryptionpolicyAPI) ClearCache(handler TrafficEncryptionPolic
 
 // TrafficEncryptionPolicy returns TrafficEncryptionPolicyAPI
 func (ct *ctrlerCtx) TrafficEncryptionPolicy() TrafficEncryptionPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "TrafficEncryptionPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &trafficencryptionpolicyAPI{ct: ct}

@@ -965,6 +965,8 @@ func (api *networkAPI) ClearCache(handler NetworkHandler) {
 
 // Network returns NetworkAPI
 func (ct *ctrlerCtx) Network() NetworkAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Network"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &networkAPI{ct: ct}
@@ -1910,6 +1912,8 @@ func (api *serviceAPI) ClearCache(handler ServiceHandler) {
 
 // Service returns ServiceAPI
 func (ct *ctrlerCtx) Service() ServiceAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Service"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &serviceAPI{ct: ct}
@@ -2855,6 +2859,8 @@ func (api *lbpolicyAPI) ClearCache(handler LbPolicyHandler) {
 
 // LbPolicy returns LbPolicyAPI
 func (ct *ctrlerCtx) LbPolicy() LbPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "LbPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &lbpolicyAPI{ct: ct}
@@ -3800,6 +3806,8 @@ func (api *virtualrouterAPI) ClearCache(handler VirtualRouterHandler) {
 
 // VirtualRouter returns VirtualRouterAPI
 func (ct *ctrlerCtx) VirtualRouter() VirtualRouterAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "VirtualRouter"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &virtualrouterAPI{ct: ct}
@@ -4745,6 +4753,8 @@ func (api *networkinterfaceAPI) ClearCache(handler NetworkInterfaceHandler) {
 
 // NetworkInterface returns NetworkInterfaceAPI
 func (ct *ctrlerCtx) NetworkInterface() NetworkInterfaceAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "NetworkInterface"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &networkinterfaceAPI{ct: ct}
@@ -5690,6 +5700,8 @@ func (api *ipampolicyAPI) ClearCache(handler IPAMPolicyHandler) {
 
 // IPAMPolicy returns IPAMPolicyAPI
 func (ct *ctrlerCtx) IPAMPolicy() IPAMPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "IPAMPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &ipampolicyAPI{ct: ct}
@@ -6643,6 +6655,8 @@ func (api *routingconfigAPI) ClearCache(handler RoutingConfigHandler) {
 
 // RoutingConfig returns RoutingConfigAPI
 func (ct *ctrlerCtx) RoutingConfig() RoutingConfigAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "RoutingConfig"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &routingconfigAPI{ct: ct}
@@ -7588,6 +7602,8 @@ func (api *routetableAPI) ClearCache(handler RouteTableHandler) {
 
 // RouteTable returns RouteTableAPI
 func (ct *ctrlerCtx) RouteTable() RouteTableAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "RouteTable"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &routetableAPI{ct: ct}

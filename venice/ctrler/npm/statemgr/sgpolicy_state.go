@@ -245,10 +245,6 @@ func (sm *Statemgr) updateAttachedApps(sgp *security.NetworkSecurityPolicy) erro
 	return nil
 }
 
-func (sgp *SgpolicyState) isMarkedForDelete() bool {
-	return sgp.markedForDelete
-}
-
 //TrackedDSCs tracked DSCs
 func (sgp *SgpolicyState) TrackedDSCs() []string {
 
@@ -262,33 +258,6 @@ func (sgp *SgpolicyState) TrackedDSCs() []string {
 	}
 
 	return trackedDSCs
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (sgp *SgpolicyState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	sgp.NetworkSecurityPolicy.Lock()
-	defer sgp.NetworkSecurityPolicy.Unlock()
-
-	if sgp.stateMgr.isDscEnforcednMode(dsc) && sgp.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "NetworkSecurityPolicy", sgp.NetworkSecurityPolicy.ObjectMeta) {
-		sgp.smObjectTracker.startDSCTracking(dsc.Name)
-	} else {
-		sgp.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (sgp *SgpolicyState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	sgp.NetworkSecurityPolicy.Lock()
-	defer sgp.NetworkSecurityPolicy.Unlock()
-	if sgp.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "NetworkSecurityPolicy", sgp.NetworkSecurityPolicy.ObjectMeta) == true {
-		sgp.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-
-	return nil
 }
 
 //GetDBObject get db object
@@ -327,7 +296,7 @@ func NewSgpolicyState(sgp *ctkit.NetworkSecurityPolicy, stateMgr *Statemgr) (*Sg
 }
 
 //GetNetworkSecurityPolicyWatchOptions gets options
-func (sm *Statemgr) GetNetworkSecurityPolicyWatchOptions() *api.ListWatchOptions {
+func (sma *SmSecurityPolicy) GetNetworkSecurityPolicyWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{"Spec", "ObjectMeta.GenerationID"}
 	return &opts
@@ -388,8 +357,9 @@ func (sm *Statemgr) ListSgpolicies() ([]*SgpolicyState, error) {
 }
 
 // OnNetworkSecurityPolicyCreate creates a sg policy
-func (sm *Statemgr) OnNetworkSecurityPolicyCreate(sgp *ctkit.NetworkSecurityPolicy) error {
+func (sma *SmSecurityPolicy) OnNetworkSecurityPolicyCreate(sgp *ctkit.NetworkSecurityPolicy) error {
 	// create new sg state
+	sm := sma.sm
 	sgps, err := NewSgpolicyState(sgp, sm)
 	if err != nil {
 		log.Errorf("Error creating new sg policy state. Err: %v", err)
@@ -429,7 +399,8 @@ func (sm *Statemgr) OnNetworkSecurityPolicyCreate(sgp *ctkit.NetworkSecurityPoli
 }
 
 // OnNetworkSecurityPolicyUpdate updates a sg policy
-func (sm *Statemgr) OnNetworkSecurityPolicyUpdate(sgp *ctkit.NetworkSecurityPolicy, nsgp *security.NetworkSecurityPolicy) error {
+func (sma *SmSecurityPolicy) OnNetworkSecurityPolicyUpdate(sgp *ctkit.NetworkSecurityPolicy, nsgp *security.NetworkSecurityPolicy) error {
+	sm := sma.sm
 	log.Infof("Got sgpolicy update for %#v, %d rules. have %d rules",
 		nsgp.ObjectMeta, len(nsgp.Spec.Rules), len(sgp.Spec.Rules))
 
@@ -490,7 +461,8 @@ func (sm *Statemgr) OnNetworkSecurityPolicyUpdate(sgp *ctkit.NetworkSecurityPoli
 }
 
 // OnNetworkSecurityPolicyDelete deletes a sg policy
-func (sm *Statemgr) OnNetworkSecurityPolicyDelete(sgpo *ctkit.NetworkSecurityPolicy) error {
+func (sma *SmSecurityPolicy) OnNetworkSecurityPolicyDelete(sgpo *ctkit.NetworkSecurityPolicy) error {
+	sm := sma.sm
 	log.Infof("Got sgpolicy delete for %#v", sgpo.NetworkSecurityPolicy.ObjectMeta)
 
 	// see if we already have it
@@ -526,7 +498,7 @@ func (sm *Statemgr) OnNetworkSecurityPolicyDelete(sgpo *ctkit.NetworkSecurityPol
 }
 
 // OnNetworkSecurityPolicyReconnect is called when ctkit reconnects to apiserver
-func (sm *Statemgr) OnNetworkSecurityPolicyReconnect() {
+func (sma *SmSecurityPolicy) OnNetworkSecurityPolicyReconnect() {
 	return
 }
 
@@ -583,4 +555,85 @@ func (sm *Statemgr) handleSgPolicyPropTopoUpdate(update *memdb.PropagationStTopo
 			}
 		}
 	}
+}
+
+var smgrSecurityPolicy *SmSecurityPolicy
+
+// SmSecurityPolicy is statemanager struct for Fwprofile
+type SmSecurityPolicy struct {
+	featureMgrBase
+	sm *Statemgr
+}
+
+func initSmSecurityPolicy() {
+	mgr := MustGetStatemgr()
+	smgrSecurityPolicy = &SmSecurityPolicy{
+		sm: mgr,
+	}
+	mgr.Register("statemgrpolicy", smgrSecurityPolicy)
+}
+
+// CompleteRegistration is the callback function statemgr calls after init is done
+func (sma *SmSecurityPolicy) CompleteRegistration() {
+	// if featureflags.IsOVerlayRoutingEnabled() == false {
+	// 	return
+	// }
+
+	initSmSecurityPolicy()
+	log.Infof("Got CompleteRegistration for SmSecurityPolicy")
+	sma.sm.SetNetworkSecurityPolicyReactor(smgrSecurityPolicy)
+}
+
+func init() {
+	initSmSecurityPolicy()
+}
+
+//ProcessDSCCreate create
+func (sma *SmSecurityPolicy) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if sma.sm.isDscEnforcednMode(dsc) {
+		sma.dscTracking(dsc, true)
+	}
+}
+
+func (sma *SmSecurityPolicy) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	fwps, err := sma.sm.ListSgpolicies()
+	if err != nil {
+		log.Errorf("Error listing profiles %v", err)
+		return
+	}
+
+	for _, aps := range fwps {
+		if start {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+
+		} else {
+			log.Info("Stop tracking...")
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmSecurityPolicy) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if sma.sm.isDscEnforcednMode(ndsc) {
+			sma.dscTracking(ndsc, true)
+		} else {
+			sma.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmSecurityPolicy) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

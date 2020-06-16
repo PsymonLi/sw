@@ -265,10 +265,6 @@ func (ips *IPAMState) GetKey() string {
 	return ips.IPAMPolicy.GetKey()
 }
 
-func (ips *IPAMState) isMarkedForDelete() bool {
-	return ips.markedForDelete
-}
-
 //TrackedDSCs keeps a list of DSCs being tracked for propagation status
 func (ips *IPAMState) TrackedDSCs() []string {
 	dscs, _ := ips.stateMgr.ListDistributedServiceCards()
@@ -280,27 +276,6 @@ func (ips *IPAMState) TrackedDSCs() []string {
 		}
 	}
 	return trackedDSCs
-}
-
-func (ips *IPAMState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-	ips.IPAMPolicy.Lock()
-	defer ips.IPAMPolicy.Unlock()
-
-	if ips.stateMgr.isDscEnforcednMode(dsc) && ips.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) {
-		ips.smObjectTracker.startDSCTracking(dsc.Name)
-	} else {
-		ips.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-	return nil
-}
-
-func (ips *IPAMState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-	ips.IPAMPolicy.Lock()
-	defer ips.IPAMPolicy.Unlock()
-	if ips.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) == true {
-		ips.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-	return nil
 }
 
 // UpdateIPAMPolicyStatus updates the status of an sg policy
@@ -369,4 +344,64 @@ func (sm *Statemgr) handleIPAMPropTopoUpdate(update *memdb.PropagationStTopoUpda
 // GetAgentWatchFilter is called when filter get is happening based on netagent watchoptions
 func (sma *SmIPAM) GetAgentWatchFilter(ctx context.Context, kind string, opts *api.ListWatchOptions) []memdb.FilterFn {
 	return sma.sm.GetAgentWatchFilter(ctx, kind, opts)
+}
+
+//ProcessDSCCreate create
+func (sma *SmIPAM) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	sma.dscTracking(dsc, true)
+}
+
+// ListIPAMs lists all endpoints
+func (sm *Statemgr) ListIPAMs() ([]*IPAMState, error) {
+	objs := sm.ListObjects("IPAMPolicy")
+
+	var eps []*IPAMState
+	for _, obj := range objs {
+		ep, err := IPAMPolicyStateFromObj(obj)
+		if err != nil {
+			return eps, err
+		}
+
+		eps = append(eps, ep)
+	}
+
+	return eps, nil
+}
+
+func (sma *SmIPAM) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	eps, err := sma.sm.ListIPAMs()
+	if err != nil {
+		log.Errorf("Error listing profiles %v", err)
+		return
+	}
+
+	for _, ips := range eps {
+		if start && sma.sm.isDscEnforcednMode(dsc) && sma.sm.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "IPAMPolicy", ips.IPAMPolicy.ObjectMeta) {
+			ips.smObjectTracker.startDSCTracking(dsc.Name)
+		} else {
+			ips.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmIPAM) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+		return
+	}
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		sma.dscTracking(ndsc, true)
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmIPAM) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

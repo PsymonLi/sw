@@ -44,7 +44,7 @@ func FirewallProfileStateFromObj(obj runtime.Object) (*FirewallProfileState, err
 }
 
 //GetFirewallProfileWatchOptions gets options
-func (sm *Statemgr) GetFirewallProfileWatchOptions() *api.ListWatchOptions {
+func (sma *SmFwProfile) GetFirewallProfileWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{}
 	return &opts
@@ -145,34 +145,6 @@ func (fps *FirewallProfileState) TrackedDSCs() []string {
 	return trackedDSCs
 }
 
-func (fps *FirewallProfileState) isMarkedForDelete() bool {
-	return fps.markedForDelete
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (fps *FirewallProfileState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	fps.FirewallProfile.Lock()
-	defer fps.FirewallProfile.Unlock()
-
-	if fps.stateMgr.isDscEnforcednMode(dsc) {
-		fps.smObjectTracker.startDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (fps *FirewallProfileState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	fps.FirewallProfile.Lock()
-	defer fps.FirewallProfile.Unlock()
-
-	fps.smObjectTracker.stopDSCTracking(dsc.Name)
-
-	return nil
-}
-
 // Write writes the object to api server
 func (fps *FirewallProfileState) Write() error {
 	fps.FirewallProfile.Lock()
@@ -231,7 +203,8 @@ func (fps *FirewallProfileState) GetDBObject() memdb.Object {
 }
 
 // OnFirewallProfileCreate handles fwProfile creation
-func (sm *Statemgr) OnFirewallProfileCreate(fwProfile *ctkit.FirewallProfile) error {
+func (sma *SmFwProfile) OnFirewallProfileCreate(fwProfile *ctkit.FirewallProfile) error {
+	sm := sma.sm
 	log.Infof("Creating fwProfile: %+v", fwProfile)
 
 	// create new fwProfile object
@@ -254,8 +227,9 @@ func (sm *Statemgr) OnFirewallProfileCreate(fwProfile *ctkit.FirewallProfile) er
 }
 
 // OnFirewallProfileUpdate handles update event
-func (sm *Statemgr) OnFirewallProfileUpdate(fwProfile *ctkit.FirewallProfile, nfwp *security.FirewallProfile) error {
+func (sma *SmFwProfile) OnFirewallProfileUpdate(fwProfile *ctkit.FirewallProfile, nfwp *security.FirewallProfile) error {
 	// see if anything changed
+	sm := sma.sm
 	log.Infof("Received update %v\n", nfwp)
 	_, ok := ref.ObjDiff(fwProfile.Spec, nfwp.Spec)
 	if (nfwp.GenerationID == fwProfile.GenerationID) && !ok {
@@ -287,7 +261,8 @@ func (sm *Statemgr) OnFirewallProfileUpdate(fwProfile *ctkit.FirewallProfile, nf
 }
 
 // OnFirewallProfileDelete handles fwProfile deletion
-func (sm *Statemgr) OnFirewallProfileDelete(fwProfile *ctkit.FirewallProfile) error {
+func (sma *SmFwProfile) OnFirewallProfileDelete(fwProfile *ctkit.FirewallProfile) error {
+	sm := sma.sm
 	// see if we have the fwProfile
 	fps, err := sm.FindFirewallProfile(fwProfile.Tenant, fwProfile.Name)
 	if err != nil {
@@ -308,7 +283,7 @@ func (sm *Statemgr) OnFirewallProfileDelete(fwProfile *ctkit.FirewallProfile) er
 }
 
 // OnFirewallProfileReconnect is called when ctkit reconnects to apiserver
-func (sm *Statemgr) OnFirewallProfileReconnect() {
+func (sma *SmFwProfile) OnFirewallProfileReconnect() {
 	return
 }
 
@@ -354,4 +329,85 @@ func (sm *Statemgr) UpdateFirewallProfileStatus(nodeuuid, tenant, name, generati
 	}
 
 	fps.updateNodeVersion(nodeuuid, generationID)
+}
+
+var smgrFwProfile *SmFwProfile
+
+// SmFwProfile is statemanager struct for Fwprofile
+type SmFwProfile struct {
+	featureMgrBase
+	sm *Statemgr
+}
+
+func initSmFwProfile() {
+	mgr := MustGetStatemgr()
+	smgrFwProfile = &SmFwProfile{
+		sm: mgr,
+	}
+	mgr.Register("statemgrfwprofile", smgrFwProfile)
+}
+
+// CompleteRegistration is the callback function statemgr calls after init is done
+func (sma *SmFwProfile) CompleteRegistration() {
+	// if featureflags.IsOVerlayRoutingEnabled() == false {
+	// 	return
+	// }
+
+	//initSmFwProfile()
+	log.Infof("Got CompleteRegistration for SmFwProfile")
+	sma.sm.SetFirewallProfileReactor(smgrFwProfile)
+}
+
+func init() {
+	initSmFwProfile()
+}
+
+//ProcessDSCCreate create
+func (sma *SmFwProfile) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if sma.sm.isDscEnforcednMode(dsc) {
+		sma.dscTracking(dsc, true)
+	}
+}
+
+func (sma *SmFwProfile) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	fwps, err := sma.sm.ListFirewallProfiles()
+	if err != nil {
+		log.Errorf("Error listing profiles %v", err)
+		return
+	}
+
+	for _, aps := range fwps {
+		if start {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+
+		} else {
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmFwProfile) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+		return
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if sma.sm.isDscEnforcednMode(ndsc) {
+			sma.dscTracking(ndsc, true)
+		} else {
+			sma.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmFwProfile) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

@@ -1145,6 +1145,8 @@ func (api *userAPI) RegisterLocalSyncIsAuthorizedHandler(fn func(*auth.SubjectAc
 
 // User returns UserAPI
 func (ct *ctrlerCtx) User() UserAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "User"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &userAPI{ct: ct}
@@ -2270,6 +2272,8 @@ func (api *authenticationpolicyAPI) RegisterLocalSyncTokenSecretGenerateHandler(
 
 // AuthenticationPolicy returns AuthenticationPolicyAPI
 func (ct *ctrlerCtx) AuthenticationPolicy() AuthenticationPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "AuthenticationPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &authenticationpolicyAPI{ct: ct}
@@ -3215,6 +3219,8 @@ func (api *roleAPI) ClearCache(handler RoleHandler) {
 
 // Role returns RoleAPI
 func (ct *ctrlerCtx) Role() RoleAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Role"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &roleAPI{ct: ct}
@@ -4160,6 +4166,8 @@ func (api *rolebindingAPI) ClearCache(handler RoleBindingHandler) {
 
 // RoleBinding returns RoleBindingAPI
 func (ct *ctrlerCtx) RoleBinding() RoleBindingAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "RoleBinding"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &rolebindingAPI{ct: ct}
@@ -5105,6 +5113,8 @@ func (api *userpreferenceAPI) ClearCache(handler UserPreferenceHandler) {
 
 // UserPreference returns UserPreferenceAPI
 func (ct *ctrlerCtx) UserPreference() UserPreferenceAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "UserPreference"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &userpreferenceAPI{ct: ct}

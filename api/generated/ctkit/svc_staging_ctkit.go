@@ -1137,6 +1137,8 @@ func (api *bufferAPI) RegisterLocalSyncBulkeditHandler(fn func(*staging.BulkEdit
 
 // Buffer returns BufferAPI
 func (ct *ctrlerCtx) Buffer() BufferAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Buffer"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &bufferAPI{ct: ct}

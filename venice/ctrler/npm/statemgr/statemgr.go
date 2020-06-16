@@ -42,22 +42,14 @@ type updatable interface {
 
 // updatable is an interface all updatable objects have to implement
 type dscUpdateObj struct {
-	ev  EventType
-	dsc *cluster.DistributedServiceCard
-	obj dscUpdateIntf
+	ev   EventType
+	dsc  *cluster.DistributedServiceCard
+	ndsc *cluster.DistributedServiceCard
 }
 
 var (
 	useResolver = true
 )
-
-// dscUpdateIntf
-type dscUpdateIntf interface {
-	processDSCUpdate(dsc *cluster.DistributedServiceCard) error
-	processDSCDelete(dsc *cluster.DistributedServiceCard) error
-	isMarkedForDelete() bool
-	GetKey() string
-}
 
 // reconcileIntf
 type reconcileIntf interface {
@@ -96,7 +88,6 @@ type Statemgr struct {
 	garbageCollector      *GarbageCollector                   // nw object garbage collector
 	initialResyncDone     bool
 	resyncDone            chan bool
-	dscUpdateNotifObjects map[string]dscUpdateIntf // objects which are watching dsc update
 	reconcileObjects      map[string]reconcileIntf // objects which have to be reconciled
 	ctrler                ctkit.Controller         // controller instance
 	topics                Topics                   // message bus topics
@@ -195,7 +186,7 @@ func (sm *Statemgr) SetRoutingConfigStatusReactor(handler nimbus.RoutingConfigSt
 
 //For kinds with huge config expected on scale, increase number of workers
 var workerKindCountMap = map[string]uint32{
-	"Workload":               64,
+	"Workload":               100, // worklaods create endpoint, apiwrite takes time
 	"Endpoint":               64,
 	"DistributedServiceCard": 64,
 	"Host":                   64,
@@ -407,15 +398,21 @@ type featureMgrBase struct {
 	sync.Mutex
 }
 
-func (sm *featureMgrBase) ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard) {
+func (fm *featureMgrBase) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+}
+
+func (fm *featureMgrBase) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+}
+
+func (fm *featureMgrBase) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
 
 }
 
 func initStatemgr() {
 	singletonStatemgr = Statemgr{
-		dscUpdateNotifObjects: make(map[string]dscUpdateIntf),
-		reconcileObjects:      make(map[string]reconcileIntf),
-		WatchFilterFlags:      make(map[string]uint),
+		reconcileObjects: make(map[string]reconcileIntf),
+		WatchFilterFlags: make(map[string]uint),
 	}
 	featuremgrs = make(map[string]FeatureStateMgr)
 }
@@ -432,40 +429,9 @@ func (sm *Statemgr) Register(name string, svc FeatureStateMgr) {
 
 }
 
-func (sm *Statemgr) registerForDscUpdate(object dscUpdateIntf) {
-	sm.dscUpdateNotifObjects[object.GetKey()] = object
-}
+func (sm *Statemgr) sendDscUpdateNotification(ev EventType, dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
 
-func (sm *Statemgr) sendDscUpdateNotification(dsc *cluster.DistributedServiceCard) {
-	updateObjects := []dscUpdateObj{}
-	sm.Lock()
-	for _, obj := range sm.dscUpdateNotifObjects {
-		if obj.isMarkedForDelete() {
-			delete(sm.dscUpdateNotifObjects, obj.GetKey())
-		} else {
-			updateObjects = append(updateObjects, dscUpdateObj{ev: UpdateEvent, dsc: dsc, obj: obj})
-		}
-	}
-	sm.Unlock()
-	for _, obj := range updateObjects {
-		sm.dscObjUpdateQueue <- obj
-	}
-}
-
-func (sm *Statemgr) sendDscDeleteNotification(dsc *cluster.DistributedServiceCard) {
-	updateObjects := []dscUpdateObj{}
-	sm.Lock()
-	for _, obj := range sm.dscUpdateNotifObjects {
-		if obj.isMarkedForDelete() {
-			delete(sm.dscUpdateNotifObjects, obj.GetKey())
-		} else {
-			updateObjects = append(updateObjects, dscUpdateObj{ev: DeleteEvent, dsc: dsc, obj: obj})
-		}
-	}
-	sm.Unlock()
-	for _, obj := range updateObjects {
-		sm.dscObjUpdateQueue <- obj
-	}
+	sm.dscObjUpdateQueue <- dscUpdateObj{ev: ev, dsc: dsc, ndsc: ndsc}
 }
 
 // AddObject adds object to memDb
@@ -844,13 +810,23 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 				log.Infof("Exiting Dsc Update notification worker")
 				return
 			}
-			switch obj.ev {
-			case UpdateEvent:
-				obj.obj.processDSCUpdate(obj.dsc)
-			case DeleteEvent:
-				obj.obj.processDSCDelete(obj.dsc)
-			default:
-				log.Fatalf("Invalid event received. %v", obj.ev)
+
+			for feature, svc := range featuremgrs {
+				if feature != "statemgr" {
+					switch obj.ev {
+					case CreateEvent:
+						log.Infof("Sending DSC Created %v", feature)
+						svc.ProcessDSCCreate(obj.dsc)
+					case UpdateEvent:
+						log.Infof("Sending Update Created %v", feature)
+						svc.ProcessDSCUpdate(obj.dsc, obj.ndsc)
+					case DeleteEvent:
+						svc.ProcessDSCDelete(obj.dsc)
+					default:
+						log.Fatalf("Invalid event received. %v", obj.ev)
+
+					}
+				}
 
 			}
 		}
@@ -1141,9 +1117,9 @@ func SetNetworkGarbageCollectionOption(seconds int) Option {
 
 type mbusObject interface {
 	objectTrackerIntf
-	dscUpdateIntf
 	Write() error
 	GetDBObject() memdb.Object
+	GetKey() string
 }
 
 type mbusPushObject interface {
@@ -1155,10 +1131,7 @@ type mbusPushObject interface {
 func (sm *Statemgr) AddObjectToMbus(key string, obj mbusObject, refs map[string]apiintf.ReferenceObj) error {
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
-	sm.Lock()
-	sm.registerForDscUpdate(obj)
 	obj.reinitObjTracking(meta.GenerationID)
-	sm.Unlock()
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}
@@ -1199,10 +1172,7 @@ func (sm *Statemgr) AddPushObjectToMbus(key string, obj mbusObject,
 	dbObject := obj.GetDBObject()
 	meta := dbObject.GetObjectMeta()
 	meta.GenerationID = obj.incrementGenID()
-	sm.Lock()
-	sm.registerForDscUpdate(obj)
 	obj.reinitObjTracking(meta.GenerationID)
-	sm.Unlock()
 	if obj.updateNotificationEnabled() {
 		sm.PeriodicUpdaterPush(obj)
 	}

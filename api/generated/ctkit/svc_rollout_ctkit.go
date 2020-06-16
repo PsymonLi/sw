@@ -1194,6 +1194,8 @@ func (api *rolloutAPI) RegisterLocalSyncRemoveRolloutHandler(fn func(*rollout.Ro
 
 // Rollout returns RolloutAPI
 func (ct *ctrlerCtx) Rollout() RolloutAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Rollout"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &rolloutAPI{ct: ct}
@@ -2139,6 +2141,8 @@ func (api *rolloutactionAPI) ClearCache(handler RolloutActionHandler) {
 
 // RolloutAction returns RolloutActionAPI
 func (ct *ctrlerCtx) RolloutAction() RolloutActionAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "RolloutAction"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &rolloutactionAPI{ct: ct}

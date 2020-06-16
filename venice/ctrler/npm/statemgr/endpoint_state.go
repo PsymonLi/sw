@@ -247,36 +247,8 @@ func (eps *EndpointState) TrackedDSCs() []string {
 	return trackedDSCs
 }
 
-// processDSCUpdate sgpolicy update handles for DSC
-func (eps *EndpointState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	eps.Endpoint.Lock()
-	defer eps.Endpoint.Unlock()
-
-	if dsc.Status.PrimaryMAC == eps.Endpoint.Spec.NodeUUID {
-		eps.smObjectTracker.startDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (eps *EndpointState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	eps.Endpoint.Lock()
-	defer eps.Endpoint.Unlock()
-
-	eps.smObjectTracker.stopDSCTracking(dsc.Name)
-
-	return nil
-}
-
-func (eps *EndpointState) isMarkedForDelete() bool {
-	return eps.markedForDelete
-}
-
 //GetEndpointWatchOptions gets options
-func (sm *Statemgr) GetEndpointWatchOptions() *api.ListWatchOptions {
+func (sma *SmEndpoint) GetEndpointWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{"Spec", "Status.Migration", "Status.NodeUUID"}
 	return &opts
@@ -322,7 +294,7 @@ func (sm *Statemgr) OnEndpointOperDelete(nodeID string, objinfo *netproto.Endpoi
 }
 
 // OnEndpointReconnect is called when ctkit reconnects to apiserver
-func (sm *Statemgr) OnEndpointReconnect() {
+func (sma *SmEndpoint) OnEndpointReconnect() {
 	return
 }
 
@@ -369,7 +341,8 @@ func (eps *EndpointState) GetDBObject() memdb.Object {
 }
 
 // OnEndpointCreate creates an endpoint
-func (sm *Statemgr) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
+func (sma *SmEndpoint) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
+	sm := sma.sm
 	log.Infof("Creating endpoint: %#v", epinfo)
 
 	// find network
@@ -407,7 +380,8 @@ func (sm *Statemgr) OnEndpointCreate(epinfo *ctkit.Endpoint) error {
 }
 
 // OnEndpointUpdate handles update event
-func (sm *Statemgr) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.Endpoint) error {
+func (sma *SmEndpoint) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.Endpoint) error {
+	sm := sma.sm
 	log.Infof("Got EP update. %v", nep)
 	epinfo.ObjectMeta = nep.ObjectMeta
 
@@ -526,7 +500,8 @@ func (sm *Statemgr) handleMigration(epinfo *ctkit.Endpoint, nep *workload.Endpoi
 }
 
 // OnEndpointDelete deletes an endpoint
-func (sm *Statemgr) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
+func (sma *SmEndpoint) OnEndpointDelete(epinfo *ctkit.Endpoint) error {
+	sm := sma.sm
 	log.Infof("Deleting Endpoint: %#v", epinfo)
 	sm.networkKindLock.Lock()
 	defer sm.networkKindLock.Unlock()
@@ -832,4 +807,84 @@ func (sm *Statemgr) moveEndpoint(epinfo *ctkit.Endpoint, nep *workload.Endpoint,
 			}
 		}
 	}
+}
+
+var smgrEndpoint *SmEndpoint
+
+// SmEndpoint is statemanager struct for Fwprofile
+type SmEndpoint struct {
+	featureMgrBase
+	sm *Statemgr
+}
+
+func initSmEndpoint() {
+	mgr := MustGetStatemgr()
+	smgrEndpoint = &SmEndpoint{
+		sm: mgr,
+	}
+	mgr.Register("statemgrendpoint", smgrEndpoint)
+}
+
+// CompleteRegistration is the callback function statemgr calls after init is done
+func (sma *SmEndpoint) CompleteRegistration() {
+	// if featureflags.IsOVerlayRoutingEnabled() == false {
+	// 	return
+	// }
+
+	//	initSmEndpoint()
+	log.Infof("Got CompleteRegistration for SmEndpoint")
+	sma.sm.SetEndpointReactor(smgrEndpoint)
+}
+
+func init() {
+	initSmEndpoint()
+}
+
+//ProcessDSCCreate create
+func (sma *SmEndpoint) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if sma.sm.isDscEnforcednMode(dsc) {
+		sma.dscTracking(dsc, true)
+	}
+}
+
+func (sma *SmEndpoint) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	eps, err := sma.sm.ListEndpoints()
+	if err != nil {
+		log.Errorf("Error listing profiles %v", err)
+		return
+	}
+
+	for _, aps := range eps {
+		if start && dsc.Status.PrimaryMAC == aps.Endpoint.Spec.NodeUUID {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+		} else {
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmEndpoint) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+		return
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if sma.sm.isDscEnforcednMode(ndsc) {
+			sma.dscTracking(ndsc, true)
+		} else {
+			sma.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmEndpoint) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

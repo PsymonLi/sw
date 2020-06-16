@@ -965,6 +965,8 @@ func (api *bucketAPI) ClearCache(handler BucketHandler) {
 
 // Bucket returns BucketAPI
 func (ct *ctrlerCtx) Bucket() BucketAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Bucket"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &bucketAPI{ct: ct}
@@ -1910,6 +1912,8 @@ func (api *objectAPI) ClearCache(handler ObjectHandler) {
 
 // Object returns ObjectAPI
 func (ct *ctrlerCtx) Object() ObjectAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Object"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &objectAPI{ct: ct}

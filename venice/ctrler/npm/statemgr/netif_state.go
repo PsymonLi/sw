@@ -920,10 +920,6 @@ func (nw *NetworkInterfaceState) PushObject() memdb.PushObjectHandle {
 	return nw.pushObject
 }
 
-func (nw *NetworkInterfaceState) isMarkedForDelete() bool {
-	return nw.markedForDelete
-}
-
 // OnNetworkInterfaceCreate creates a NetworkInterface
 func (sma *SmNetworkInterface) OnNetworkInterfaceCreate(ctkitNetif *ctkit.NetworkInterface) error {
 	log.Info("received OnNetworkInterfaceCreate", ctkitNetif.Spec)
@@ -1038,18 +1034,12 @@ func (sm *Statemgr) ListNetworkInterfaces() ([]*NetworkInterfaceState, error) {
 	return nwIntfs, nil
 }
 
-// ProcessDSCEvent DSC removed or decomissioned.
-func (sma *SmNetworkInterface) ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard) {
+func (sma *SmNetworkInterface) deleteDSCInterfaces(dsc *cluster.DistributedServiceCard) {
 
 	// see if we already have it
 	nwIntfs, err := sma.sm.ListNetworkInterfaces()
 	if err != nil {
 		log.Errorf("Can not list network interfaces")
-	}
-
-	//Process only if it is deleted or decomissioned
-	if ev != DeleteEvent && !sma.sm.dscDecommissioned(dsc) {
-		return
 	}
 
 	log.Infof("Deleting interfaces as DSC %v is decommissioned/deleted", dsc.Name)
@@ -1069,17 +1059,26 @@ func (sma *SmNetworkInterface) ProcessDSCEvent(ev EventType, dsc *cluster.Distri
 			}
 		}
 	}
+}
+
+//ProcessDSCCreate create
+func (sma *SmNetworkInterface) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
 
 }
 
-// processDSCUpdate sgpolicy update handles for DSC
-func (nw *NetworkInterfaceState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
+//ProcessDSCUpdate update
+func (sma *SmNetworkInterface) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
 
-	return nil
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.deleteDSCInterfaces(ndsc)
+		return
+	}
+
 }
 
-// processDSCDelete sgpolicy update handles for DSC
-func (nw *NetworkInterfaceState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
+//ProcessDSCDelete delete
+func (sma *SmNetworkInterface) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.deleteDSCInterfaces(dsc)
 
-	return nil
 }

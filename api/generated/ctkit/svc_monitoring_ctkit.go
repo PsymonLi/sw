@@ -973,6 +973,8 @@ func (api *eventpolicyAPI) ClearCache(handler EventPolicyHandler) {
 
 // EventPolicy returns EventPolicyAPI
 func (ct *ctrlerCtx) EventPolicy() EventPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "EventPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &eventpolicyAPI{ct: ct}
@@ -1926,6 +1928,8 @@ func (api *fwlogpolicyAPI) ClearCache(handler FwlogPolicyHandler) {
 
 // FwlogPolicy returns FwlogPolicyAPI
 func (ct *ctrlerCtx) FwlogPolicy() FwlogPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "FwlogPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &fwlogpolicyAPI{ct: ct}
@@ -2879,6 +2883,8 @@ func (api *flowexportpolicyAPI) ClearCache(handler FlowExportPolicyHandler) {
 
 // FlowExportPolicy returns FlowExportPolicyAPI
 func (ct *ctrlerCtx) FlowExportPolicy() FlowExportPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "FlowExportPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &flowexportpolicyAPI{ct: ct}
@@ -3824,6 +3830,8 @@ func (api *alertAPI) ClearCache(handler AlertHandler) {
 
 // Alert returns AlertAPI
 func (ct *ctrlerCtx) Alert() AlertAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Alert"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &alertAPI{ct: ct}
@@ -4769,6 +4777,8 @@ func (api *alertpolicyAPI) ClearCache(handler AlertPolicyHandler) {
 
 // AlertPolicy returns AlertPolicyAPI
 func (ct *ctrlerCtx) AlertPolicy() AlertPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "AlertPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &alertpolicyAPI{ct: ct}
@@ -5714,6 +5724,8 @@ func (api *statsalertpolicyAPI) ClearCache(handler StatsAlertPolicyHandler) {
 
 // StatsAlertPolicy returns StatsAlertPolicyAPI
 func (ct *ctrlerCtx) StatsAlertPolicy() StatsAlertPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "StatsAlertPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &statsalertpolicyAPI{ct: ct}
@@ -6667,6 +6679,8 @@ func (api *alertdestinationAPI) ClearCache(handler AlertDestinationHandler) {
 
 // AlertDestination returns AlertDestinationAPI
 func (ct *ctrlerCtx) AlertDestination() AlertDestinationAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "AlertDestination"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &alertdestinationAPI{ct: ct}
@@ -7612,6 +7626,8 @@ func (api *mirrorsessionAPI) ClearCache(handler MirrorSessionHandler) {
 
 // MirrorSession returns MirrorSessionAPI
 func (ct *ctrlerCtx) MirrorSession() MirrorSessionAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "MirrorSession"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &mirrorsessionAPI{ct: ct}
@@ -8557,6 +8573,8 @@ func (api *troubleshootingsessionAPI) ClearCache(handler TroubleshootingSessionH
 
 // TroubleshootingSession returns TroubleshootingSessionAPI
 func (ct *ctrlerCtx) TroubleshootingSession() TroubleshootingSessionAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "TroubleshootingSession"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &troubleshootingsessionAPI{ct: ct}
@@ -9502,6 +9520,8 @@ func (api *techsupportrequestAPI) ClearCache(handler TechSupportRequestHandler) 
 
 // TechSupportRequest returns TechSupportRequestAPI
 func (ct *ctrlerCtx) TechSupportRequest() TechSupportRequestAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "TechSupportRequest"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &techsupportrequestAPI{ct: ct}
@@ -10505,6 +10525,8 @@ func (api *archiverequestAPI) RegisterLocalSyncCancelHandler(fn func(*monitoring
 
 // ArchiveRequest returns ArchiveRequestAPI
 func (ct *ctrlerCtx) ArchiveRequest() ArchiveRequestAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "ArchiveRequest"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &archiverequestAPI{ct: ct}
@@ -11458,6 +11480,8 @@ func (api *auditpolicyAPI) ClearCache(handler AuditPolicyHandler) {
 
 // AuditPolicy returns AuditPolicyAPI
 func (ct *ctrlerCtx) AuditPolicy() AuditPolicyAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "AuditPolicy"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &auditpolicyAPI{ct: ct}

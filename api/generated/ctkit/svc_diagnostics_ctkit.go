@@ -1023,6 +1023,8 @@ func (api *moduleAPI) RegisterLocalSyncDebugHandler(fn func(*diagnostics.Diagnos
 
 // Module returns ModuleAPI
 func (ct *ctrlerCtx) Module() ModuleAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Module"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &moduleAPI{ct: ct}

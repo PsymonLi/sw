@@ -3,6 +3,8 @@
 package statemgr
 
 import (
+	"log"
+
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/venice/utils/featureflags"
 )
@@ -12,12 +14,12 @@ func (sm *Statemgr) CompleteRegistration() {
 	sm.SetModuleReactor(sm)
 	sm.SetTenantReactor(sm)
 	sm.SetSecurityGroupReactor(sm)
-	sm.SetAppReactor(sm)
-	sm.SetNetworkReactor(sm)
-	sm.SetFirewallProfileReactor(sm)
+	//sm.SetAppReactor(sm)
+	//sm.SetNetworkReactor(sm)
+	//sm.SetFirewallProfileReactor(sm)
 	sm.SetHostReactor(sm)
-	sm.SetEndpointReactor(sm)
-	sm.SetNetworkSecurityPolicyReactor(sm)
+	//sm.SetEndpointReactor(sm)
+	//sm.SetNetworkSecurityPolicyReactor(sm)
 	sm.SetWorkloadReactor(sm)
 	sm.SetDSCProfileReactor(sm)
 
@@ -34,14 +36,21 @@ func (sm *Statemgr) CompleteRegistration() {
 	}
 }
 
-//ProcessDSCEvent to process a DSC event
-func (sm *Statemgr) ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard) {
+//ProcessDSCCreate create for base sm
+func (sm *Statemgr) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
 
-	for feature, svc := range featuremgrs {
-		if feature != "statemgr" {
-			svc.ProcessDSCEvent(ev, dsc)
-		}
-	}
+	log.Panic("Should not be called")
+
+}
+
+//ProcessDSCUpdate update for base sm
+func (sm *Statemgr) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+	log.Panic("Should not be called")
+}
+
+//ProcessDSCDelete delete for base sm
+func (sm *Statemgr) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	log.Panic("Should not be called")
 
 }
 

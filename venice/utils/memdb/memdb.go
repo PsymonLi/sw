@@ -1207,7 +1207,10 @@ func (md *Memdb) deleteObject(od objDBInterface, key string, obj objIntf, refs m
 	od.deleteObject(key)
 	od.Unlock()
 
-	md.topoHandler.handleDeleteEvent(obj.Object(), key)
+	propUpdate := md.topoHandler.handleDeleteEvent(obj.Object(), key)
+	if propUpdate != nil {
+		md.sendPropagationUpdate(propUpdate)
+	}
 	od.watchEvent(md, existingObj, DeleteEvent)
 
 	return nil

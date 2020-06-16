@@ -472,16 +472,16 @@ func (sm *Statemgr) listNetworksByTenant(tenant string) ([]*NetworkState, error)
 }
 
 //GetNetworkWatchOptions gets options
-func (sm *Statemgr) GetNetworkWatchOptions() *api.ListWatchOptions {
+func (sm *SmNetwork) GetNetworkWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{"Spec"}
 	return &opts
 }
 
 // OnNetworkCreate creates local network state based on watch event
-func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
+func (sm *SmNetwork) OnNetworkCreate(nw *ctkit.Network) error {
 	// create new network state
-	ns, err := NewNetworkState(nw, sm)
+	ns, err := NewNetworkState(nw, sm.sm)
 	if err != nil {
 		log.Errorf("Error creating new network state. Err: %v", err)
 		return err
@@ -500,7 +500,7 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 	// Check if there is another network with the same vlan id, it is not allowed but can slip-thru
 	// the hooks - raise an error
 	isOk := true
-	networks, _ := sm.ListNetworks()
+	networks, _ := sm.sm.ListNetworks()
 	for _, nso := range networks {
 		if strings.ToLower(nso.Network.Spec.Type) == strings.ToLower(network.NetworkType_Routed.String()) {
 			//Ignore if network is routed types
@@ -519,7 +519,7 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 	if isOk {
 		nw.Status.OperState = network.OperState_Active.String()
 		// store it in local DB
-		sm.AddObjectToMbus(nw.MakeKey("network"), ns, references(nw))
+		sm.sm.AddObjectToMbus(nw.MakeKey("network"), ns, references(nw))
 	} else {
 		nw.Status.OperState = network.OperState_Rejected.String()
 	}
@@ -531,7 +531,7 @@ func (sm *Statemgr) OnNetworkCreate(nw *ctkit.Network) error {
 }
 
 // OnNetworkUpdate handles network update
-func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) error {
+func (sm *SmNetwork) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) error {
 	// see if anything changed
 	_, ok := ref.ObjDiff(nw.Spec, nnw.Spec)
 	ok = ok || (nw.Network.Status.OperState != nnw.Status.OperState)
@@ -554,7 +554,7 @@ func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) err
 	nw.ObjectMeta = nnw.ObjectMeta
 	nw.Spec = nnw.Spec
 
-	err = sm.UpdateObjectToMbus(nnw.MakeKey(string(apiclient.GroupNetwork)), nwState, references(nnw))
+	err = sm.sm.UpdateObjectToMbus(nnw.MakeKey(string(apiclient.GroupNetwork)), nwState, references(nnw))
 	if err != nil {
 		log.Errorf("could not add Network to DB (%s)", err)
 	}
@@ -563,10 +563,10 @@ func (sm *Statemgr) OnNetworkUpdate(nw *ctkit.Network, nnw *network.Network) err
 }
 
 // OnNetworkDelete deletes a network
-func (sm *Statemgr) OnNetworkDelete(nto *ctkit.Network) error {
+func (sm *SmNetwork) OnNetworkDelete(nto *ctkit.Network) error {
 	log.Infof("Delete Network {Meta: %+v, Spec: %+v}", nto.Network.ObjectMeta, nto.Network.Spec)
 	// see if we already have it
-	nso, err := sm.FindObject("Network", nto.Tenant, "default", nto.Name)
+	nso, err := sm.sm.FindObject("Network", nto.Tenant, "default", nto.Name)
 	if err != nil {
 		log.Errorf("Can not find the network %s|%s", nto.Tenant, nto.Name)
 		return fmt.Errorf("Network not found")
@@ -585,11 +585,11 @@ func (sm *Statemgr) OnNetworkDelete(nto *ctkit.Network) error {
 		return err
 	}
 	// delete it from the DB
-	err = sm.DeleteObjectToMbus(nto.MakeKey("network"), ns, references(nto))
+	err = sm.sm.DeleteObjectToMbus(nto.MakeKey("network"), ns, references(nto))
 	if err == nil {
 		// If there was another network with same vlanid that was in rejected state, it can be
 		// accepted now
-		networks, err := sm.ListNetworks()
+		networks, err := sm.sm.ListNetworks()
 		if err != nil {
 			return err
 		}
@@ -608,7 +608,7 @@ func (sm *Statemgr) OnNetworkDelete(nto *ctkit.Network) error {
 }
 
 // OnNetworkReconnect is called when ctkit reconnects to apiserver
-func (sm *Statemgr) OnNetworkReconnect() {
+func (sm *SmNetwork) OnNetworkReconnect() {
 	return
 }
 
@@ -863,10 +863,6 @@ func (ns *NetworkState) GetKey() string {
 	return ns.Network.GetKey()
 }
 
-func (ns *NetworkState) isMarkedForDelete() bool {
-	return (ns.curState == networkMarkDelete)
-}
-
 //TrackedDSCs keeps a list of DSCs being tracked for propagation status
 func (ns *NetworkState) TrackedDSCs() []string {
 	dscs, _ := ns.stateMgr.ListDistributedServiceCards()
@@ -878,27 +874,6 @@ func (ns *NetworkState) TrackedDSCs() []string {
 		}
 	}
 	return trackedDSCs
-}
-
-func (ns *NetworkState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-	ns.Network.Lock()
-	defer ns.Network.Unlock()
-
-	if ns.stateMgr.isDscEnforcednMode(dsc) && ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) {
-		ns.smObjectTracker.startDSCTracking(dsc.Name)
-	} else {
-		ns.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-	return nil
-}
-
-func (ns *NetworkState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-	ns.Network.Lock()
-	defer ns.Network.Unlock()
-	if ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) == true {
-		ns.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-	return nil
 }
 
 // UpdateNetworkStatus updates the status of an sg policy
@@ -953,4 +928,54 @@ func (sm *Statemgr) handleNetworkPropTopoUpdate(update *memdb.PropagationStTopoU
 			}
 		}
 	}
+}
+
+var smgrNetwork *SmNetwork
+
+// SmNetwork is statemanager struct for NetworkInterface
+type SmNetwork struct {
+	featureMgrBase
+	sm *Statemgr
+}
+
+func initSmNetwork() {
+	mgr := MustGetStatemgr()
+	smgrNetwork = &SmNetwork{
+		sm: mgr,
+	}
+	mgr.Register("statemgrnetwork", smgrNetwork)
+}
+
+// CompleteRegistration is the callback function statemgr calls after init is done
+func (sm *SmNetwork) CompleteRegistration() {
+	// if featureflags.IsOVerlayRoutingEnabled() == false {
+	// 	return
+	// }
+
+	//	initSmNetwork()
+	log.Infof("Got CompleteRegistration for SmNetwork")
+	sm.sm.SetNetworkReactor(smgrNetwork)
+}
+
+func init() {
+	initSmNetwork()
+}
+
+// ProcessDSCEvent DSC removed or decomissioned or mode change
+func (sm *SmNetwork) ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard) {
+
+	if ev == DeleteEvent || sm.sm.dscDecommissioned(dsc) {
+
+		nws, err := sm.sm.ListNetworks()
+		if err != nil {
+			log.Errorf("Can not list networks")
+		}
+
+		for _, ns := range nws {
+			if ns.stateMgr.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "Network", ns.Network.ObjectMeta) == true {
+				ns.smObjectTracker.stopDSCTracking(dsc.Name)
+			}
+		}
+	}
+
 }

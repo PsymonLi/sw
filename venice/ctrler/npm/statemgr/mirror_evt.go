@@ -148,38 +148,6 @@ func (mss *MirrorSessionState) Write() error {
 	return nil
 }
 
-// processDSCUpdate sgpolicy update handles for DSC
-func (mss *MirrorSessionState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	mss.MirrorSession.Lock()
-	defer mss.MirrorSession.Unlock()
-
-	//Interface based mirroring is pushed to respective naples selectively.
-	// and are tracked when receiver is added
-	if !mss.isFlowBasedMirroring() {
-		return nil
-	}
-
-	if mss.stateMgr.sm.isDscEnforcednMode(dsc) || mss.stateMgr.sm.isDscFlowawareMode(dsc) {
-		mss.smObjectTracker.startDSCTracking(dsc.Name)
-	} else {
-		mss.smObjectTracker.stopDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (mss *MirrorSessionState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	mss.MirrorSession.Lock()
-	defer mss.MirrorSession.Unlock()
-
-	mss.smObjectTracker.stopDSCTracking(dsc.Name)
-
-	return nil
-}
-
 //TrackedDSCs tracked DSCs
 func (mss *MirrorSessionState) TrackedDSCs() []string {
 
@@ -398,7 +366,6 @@ func MirrorSessionStateFromObj(obj runtime.Object) (*MirrorSessionState, error) 
 
 type interfaceMirrorSession struct {
 	objectTrackerIntf
-	dscUpdateIntf
 	ms      *MirrorSessionState
 	obj     *netproto.InterfaceMirrorSession
 	pushObj memdb.PushObjectHandle
@@ -406,6 +373,10 @@ type interfaceMirrorSession struct {
 
 func (ms *interfaceMirrorSession) GetDBObject() memdb.Object {
 	return ms.obj
+}
+
+func (ms *interfaceMirrorSession) GetKey() string {
+	return ms.ms.GetKey()
 }
 
 func (ms *interfaceMirrorSession) Write() error {
@@ -550,10 +521,6 @@ func (mss *MirrorSessionState) GetDBObject() memdb.Object {
 	return buildDSCMirrorSession(mss)
 }
 
-func (mss *MirrorSessionState) isMarkedForDelete() bool {
-	return mss.markedForDelete
-}
-
 func (smm *SmMirrorSessionInterface) pushAddMirrorSession(mss *MirrorSessionState) error {
 	return smm.sm.AddObjectToMbus(mss.MirrorSession.MakeKey("monitoring"),
 		mss, references(mss.MirrorSession))
@@ -695,7 +662,6 @@ func (smm *SmMirrorSessionInterface) initInterfaceMirrorSession(ms *MirrorSessio
 		ms: ms,
 	}
 	ms.intfMirrorSession.objectTrackerIntf = ms
-	ms.intfMirrorSession.dscUpdateIntf = ms
 	ms.intfMirrorSession.obj.Spec.MirrorDirection = getNetProtoDirection(ms.MirrorSession.Spec.Interfaces.Direction)
 	refs := make(map[string]apiintf.ReferenceObj)
 
@@ -843,7 +809,7 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 		for _, cref := range newColMap {
 			if cref.cnt == 1 {
 				updateReqd = true
-				log.Infof("Deleting collector %v %v %v", cref.col.ExportCfg.Destination, cref.col.ExportCfg.Gateway, ms.intfMirrorSession.GetKey())
+				log.Infof("Deleting collector %v %v %v", cref.col.ExportCfg.Destination, cref.col.ExportCfg.Gateway, ms.GetKey())
 				for i, c := range ms.intfMirrorSession.obj.Spec.Collectors {
 					if c.ExportCfg.Destination == cref.col.ExportCfg.Destination {
 						ms.intfMirrorSession.obj.Spec.Collectors[i] = ms.intfMirrorSession.obj.Spec.Collectors[len(ms.intfMirrorSession.obj.Spec.Collectors)-1]
@@ -1296,4 +1262,64 @@ func (sm *Statemgr) OnInterfaceMirrorSessionOperUpdate(nodeID string, objinfo *n
 func (sm *Statemgr) OnInterfaceMirrorSessionOperDelete(nodeID string, objinfo *netproto.InterfaceMirrorSession) error {
 	return nil
 
+}
+
+//ProcessDSCCreate create
+func (smm *SmMirrorSessionInterface) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if smm.sm.isDscFlowawareMode(dsc) || smm.sm.isDscEnforcednMode(dsc) {
+		smm.dscTracking(dsc, true)
+	}
+}
+
+func (smm *SmMirrorSessionInterface) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	fwps, err := smm.sm.ListMirrorSesssions()
+	if err != nil {
+		log.Errorf("Error listing mirror sessions %v", err)
+		return
+	}
+
+	for _, aps := range fwps {
+
+		aps.MirrorSession.Lock()
+		//Interface based mirroring is pushed to respective naples selectively.
+		// and are tracked when receiver is added, whihc triggers interface add mirror update
+		if !aps.isFlowBasedMirroring() {
+			aps.MirrorSession.Unlock()
+			continue
+		}
+
+		if start {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+
+		} else {
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+		aps.MirrorSession.Unlock()
+	}
+}
+
+//ProcessDSCUpdate update
+func (smm *SmMirrorSessionInterface) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if smm.sm.dscDecommissioned(ndsc) {
+		smm.dscTracking(ndsc, false)
+		return
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if smm.sm.isDscFlowawareMode(ndsc) || smm.sm.isDscEnforcednMode(ndsc) {
+			smm.dscTracking(ndsc, true)
+		} else {
+			smm.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (smm *SmMirrorSessionInterface) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	smm.dscTracking(dsc, false)
 }

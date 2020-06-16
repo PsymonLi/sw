@@ -13,6 +13,7 @@ import (
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/memdb/objReceiver"
+	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
@@ -71,7 +72,7 @@ func (sns *DistributedServiceCardState) isOrchestratorCompatible() bool {
 //GetDistributedServiceCardWatchOptions gets options
 func (sm *Statemgr) GetDistributedServiceCardWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{}
+	opts.FieldChangeSelector = []string{"Spec", "Status"}
 	return &opts
 }
 
@@ -113,8 +114,7 @@ func NewDistributedServiceCardState(smartNic *ctkit.DistributedServiceCard, stat
 
 // OnDistributedServiceCardCreate handles smartNic creation
 func (sm *Statemgr) OnDistributedServiceCardCreate(smartNic *ctkit.DistributedServiceCard) error {
-	defer sm.ProcessDSCEvent(CreateEvent, &smartNic.DistributedServiceCard)
-	defer sm.sendDscUpdateNotification(&smartNic.DistributedServiceCard)
+	defer sm.sendDscUpdateNotification(CreateEvent, &smartNic.DistributedServiceCard, nil)
 	log.Infof("GOT DSC Create....")
 	sns, err := sm.dscCreate(smartNic)
 	if err != nil {
@@ -202,8 +202,10 @@ func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard,
 
 // OnDistributedServiceCardUpdate handles update event on smartnic
 func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedServiceCard, nsnic *cluster.DistributedServiceCard) error {
-	defer sm.sendDscUpdateNotification(nsnic)
-	defer sm.ProcessDSCEvent(UpdateEvent, &smartNic.DistributedServiceCard)
+	var copyDSC *cluster.DistributedServiceCard
+
+	copyDSC = ref.DeepCopy(&smartNic.DistributedServiceCard).(*cluster.DistributedServiceCard)
+	defer sm.sendDscUpdateNotification(UpdateEvent, copyDSC, nsnic)
 
 	sns, err := DistributedServiceCardStateFromObj(smartNic)
 	if err != nil {
@@ -250,7 +252,6 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *cluster.DistributedServiceCard) (*DistributedServiceCardState, error) {
 	// see if we already have the smartNic
 	log.Infof("Update of DistributedServiceCard")
-	defer sm.sendDscUpdateNotification(nsnic)
 	sns, err := DistributedServiceCardStateFromObj(smartNic)
 	if err != nil {
 		log.Errorf("Error finding smartnic. Err: %v", err)
@@ -317,8 +318,7 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 
 // OnDistributedServiceCardDelete handles smartNic deletion
 func (sm *Statemgr) OnDistributedServiceCardDelete(smartNic *ctkit.DistributedServiceCard) error {
-	defer sm.ProcessDSCEvent(DeleteEvent, &smartNic.DistributedServiceCard)
-	defer sm.sendDscDeleteNotification(&smartNic.DistributedServiceCard)
+	defer sm.sendDscUpdateNotification(DeleteEvent, &smartNic.DistributedServiceCard, nil)
 	hs, err := sm.deleteDsc(smartNic)
 	if err != nil {
 		return err

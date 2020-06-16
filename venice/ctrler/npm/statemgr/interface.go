@@ -19,7 +19,10 @@ const (
 // FeatureStateMgr interface is implemented by feature specific statemgrs to register feature specific handlers to watch
 type FeatureStateMgr interface {
 	CompleteRegistration()
-	ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard)
+	//ProcessDSCEvent(ev EventType, dsc *cluster.DistributedServiceCard)
+	ProcessDSCCreate(dsc *cluster.DistributedServiceCard)
+	ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard)
+	ProcessDSCDelete(dsc *cluster.DistributedServiceCard)
 }
 
 // Server interface is implemented by statemgr used by feature specific statemgrs to register their callbacks during init()

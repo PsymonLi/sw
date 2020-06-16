@@ -112,6 +112,7 @@ var smgrFlowExportPolicyInterface *SmFlowExportPolicyInterface
 // CompleteRegistration is the callback function statemgr calls after init is done
 func (smm *SmFlowExportPolicyInterface) CompleteRegistration() {
 	log.Infof("Got CompleteRegistration for smgrFlowExportPolicyInterface %v", smm)
+	///initSmFlowExportPolicyInterface()
 	smm.sm.SetFlowExportPolicyReactor(smgrFlowExportPolicyInterface)
 }
 
@@ -259,34 +260,6 @@ func (fes *FlowExportPolicyState) GetDBObject() memdb.Object {
 	return convertFlowExportPolicy(&fes.FlowExportPolicy.FlowExportPolicy)
 }
 
-func (fes *FlowExportPolicyState) isMarkedForDelete() bool {
-	return fes.markedForDelete
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (fes *FlowExportPolicyState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	fes.FlowExportPolicy.Lock()
-	defer fes.FlowExportPolicy.Unlock()
-
-	if fes.stateMgr.isDscEnforcednMode(dsc) || fes.stateMgr.isDscFlowawareMode(dsc) {
-		fes.smObjectTracker.startDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (fes *FlowExportPolicyState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	fes.FlowExportPolicy.Lock()
-	defer fes.FlowExportPolicy.Unlock()
-
-	fes.smObjectTracker.stopDSCTracking(dsc.Name)
-
-	return nil
-}
-
 //OnFlowExportPolicyCreate mirror session create handle
 func (smm *SmFlowExportPolicyInterface) OnFlowExportPolicyCreate(obj *ctkit.FlowExportPolicy) error {
 
@@ -390,4 +363,71 @@ func (sm *Statemgr) OnFlowExportPolicyOperDelete(nodeID string, objinfo *netprot
 
 func init() {
 	initSmFlowExportPolicyInterface()
+}
+
+//ProcessDSCCreate create
+func (smm *SmFlowExportPolicyInterface) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if smm.sm.isDscFlowawareMode(dsc) || smm.sm.isDscEnforcednMode(dsc) {
+		smm.dscTracking(dsc, true)
+	}
+}
+
+// ListFlowExportPolicies lists all flow export policies
+func (sm *Statemgr) ListFlowExportPolicies() ([]*FlowExportPolicyState, error) {
+	objs := sm.ListObjects("FlowExportPolicy")
+
+	var fwps []*FlowExportPolicyState
+	for _, obj := range objs {
+		fwp, err := FlowExportPolicyStateFromObj(obj)
+		if err != nil {
+			return fwps, err
+		}
+
+		fwps = append(fwps, fwp)
+	}
+
+	return fwps, nil
+}
+
+func (smm *SmFlowExportPolicyInterface) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	fwps, err := smm.sm.ListFlowExportPolicies()
+	if err != nil {
+		log.Errorf("Error listing profiles %v", err)
+		return
+	}
+
+	for _, aps := range fwps {
+		if start {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+
+		} else {
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (smm *SmFlowExportPolicyInterface) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if smm.sm.dscDecommissioned(ndsc) {
+		smm.dscTracking(ndsc, false)
+		return
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if smm.sm.isDscFlowawareMode(ndsc) || smm.sm.isDscEnforcednMode(ndsc) {
+			smm.dscTracking(ndsc, true)
+		} else {
+			smm.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (smm *SmFlowExportPolicyInterface) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	smm.dscTracking(dsc, false)
 }

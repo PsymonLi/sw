@@ -273,33 +273,6 @@ func (aps *AppState) attachPolicy(sgpName string) error {
 	return nil
 }
 
-func (aps *AppState) isMarkedForDelete() bool {
-	return aps.markedForDelete
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (aps *AppState) processDSCUpdate(dsc *cluster.DistributedServiceCard) error {
-
-	aps.App.Lock()
-	defer aps.App.Unlock()
-
-	if aps.stateMgr.isDscEnforcednMode(dsc) {
-		aps.smObjectTracker.startDSCTracking(dsc.Name)
-	}
-
-	return nil
-}
-
-// processDSCUpdate sgpolicy update handles for DSC
-func (aps *AppState) processDSCDelete(dsc *cluster.DistributedServiceCard) error {
-
-	aps.App.Lock()
-	defer aps.App.Unlock()
-	aps.smObjectTracker.stopDSCTracking(dsc.Name)
-
-	return nil
-}
-
 // detachPolicy removes a policy from
 func (aps *AppState) detachPolicy(sgpName string) error {
 	// see if the policy is already part of the list
@@ -316,7 +289,7 @@ func (aps *AppState) detachPolicy(sgpName string) error {
 }
 
 //GetAppWatchOptions gets options
-func (sm *Statemgr) GetAppWatchOptions() *api.ListWatchOptions {
+func (sma *SmApp) GetAppWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
 	opts.FieldChangeSelector = []string{"Spec"}
 	return &opts
@@ -357,7 +330,8 @@ func (sm *Statemgr) OnAppOperDelete(nodeID string, objinfo *netproto.App) error 
 }
 
 // OnAppCreate handles app creation
-func (sm *Statemgr) OnAppCreate(app *ctkit.App) error {
+func (sma *SmApp) OnAppCreate(app *ctkit.App) error {
+	sm := sma.sm
 	// see if we already have the app
 	hs, err := sm.FindApp(app.Tenant, app.Name)
 	if err == nil {
@@ -378,8 +352,9 @@ func (sm *Statemgr) OnAppCreate(app *ctkit.App) error {
 }
 
 // OnAppUpdate handles update app event
-func (sm *Statemgr) OnAppUpdate(app *ctkit.App, napp *security.App) error {
+func (sma *SmApp) OnAppUpdate(app *ctkit.App, napp *security.App) error {
 	// see if anything changed
+	sm := sma.sm
 	_, ok := ref.ObjDiff(app.Spec, napp.Spec)
 	if (napp.GenerationID == app.GenerationID) && !ok {
 		app.ObjectMeta = napp.ObjectMeta
@@ -400,8 +375,9 @@ func (sm *Statemgr) OnAppUpdate(app *ctkit.App, napp *security.App) error {
 }
 
 // OnAppDelete handles app deletion
-func (sm *Statemgr) OnAppDelete(app *ctkit.App) error {
+func (sma *SmApp) OnAppDelete(app *ctkit.App) error {
 	// see if we have the app
+	sm := sma.sm
 	fapp, err := AppStateFromObj(app)
 	if err != nil {
 		log.Errorf("Could not find the app %v. Err: %v", app, err)
@@ -427,7 +403,7 @@ func (sm *Statemgr) FindApp(tenant, name string) (*AppState, error) {
 }
 
 // OnAppReconnect is called when ctkit reconnects to apiserver
-func (sm *Statemgr) OnAppReconnect() {
+func (sma *SmApp) OnAppReconnect() {
 	return
 }
 
@@ -446,4 +422,85 @@ func (sm *Statemgr) ListApps() ([]*AppState, error) {
 	}
 
 	return apps, nil
+}
+
+var smgrApp *SmApp
+
+// SmApp is statemanager struct for App
+type SmApp struct {
+	featureMgrBase
+	sm *Statemgr
+}
+
+func initSmApp() {
+	mgr := MustGetStatemgr()
+	smgrApp = &SmApp{
+		sm: mgr,
+	}
+	mgr.Register("statemgrapp", smgrApp)
+}
+
+// CompleteRegistration is the callback function statemgr calls after init is done
+func (sma *SmApp) CompleteRegistration() {
+	// if featureflags.IsOVerlayRoutingEnabled() == false {
+	// 	return
+	// }
+
+	//initSmApp()
+	log.Infof("Got CompleteRegistration for SmApp")
+	sma.sm.SetAppReactor(smgrApp)
+}
+
+func init() {
+	initSmApp()
+}
+
+//ProcessDSCCreate create
+func (sma *SmApp) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	if sma.sm.isDscEnforcednMode(dsc) {
+		sma.dscTracking(dsc, true)
+	}
+}
+
+func (sma *SmApp) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	apps, err := sma.sm.ListApps()
+	if err != nil {
+		log.Errorf("Error listing apps %v", err)
+		return
+	}
+
+	for _, aps := range apps {
+		if start {
+			aps.smObjectTracker.startDSCTracking(dsc.Name)
+
+		} else {
+			aps.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmApp) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+		return
+	}
+
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		if sma.sm.isDscEnforcednMode(ndsc) {
+			sma.dscTracking(ndsc, true)
+		} else {
+			sma.dscTracking(ndsc, false)
+		}
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmApp) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

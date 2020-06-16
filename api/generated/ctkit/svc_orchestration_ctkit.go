@@ -973,6 +973,8 @@ func (api *orchestratorAPI) ClearCache(handler OrchestratorHandler) {
 
 // Orchestrator returns OrchestratorAPI
 func (ct *ctrlerCtx) Orchestrator() OrchestratorAPI {
+	ct.Lock()
+	defer ct.Unlock()
 	kind := "Orchestrator"
 	if _, ok := ct.apiInfMap[kind]; !ok {
 		s := &orchestratorAPI{ct: ct}
