@@ -118,14 +118,13 @@ message LldpIfSpec {
   string            IfName            = 1; // Interface name
   uint32            RouterId          = 2; // Router-id
   LldpProtoMode     Proto             = 3; // LLDP/CDP/EDP/FDP/..
-  uint32            Age               = 4; // Time (in seconds) since discovery
+  bytes             Age               = 4; // Uptime in string
   LldpIfChassisSpec LldpIfChassisSpec = 5; // Chassis info
   LldpIfPortSpec    LldpIfPortSpec    = 6; // Physical port info
 }
 
 message LldpSpec {
-  LldpIfSpec  LldpIfSpec  = 1; // Local interface info
-  LldpIfSpec  LldpNbrSpec = 2; // Neighbor info
+  LldpIfChassisSpec LldpIfChassisSpec = 1; // Chassis info
 }
 
 // Uplink configuration (if interface type is IF_TYPE_UPLINK)
@@ -216,10 +215,16 @@ message InterfaceSpec {
   repeated bytes RxMirrorSessionId = 11;
 }
 
+message LldpStatus {
+  LldpIfSpec  LldpIfStatus  = 1; // Local interface info
+  LldpIfSpec  LldpNbrStatus = 2; // Neighbor info
+}
+
 // operational status of uplink interface
 message UplinkIfStatus {
   // lif id associated with this uplink
-  uint32 LifId = 1;
+  uint32     LifId      = 1;
+  LldpStatus LldpStatus = 2; // LLDP status info
 }
 
 // operational status of loopback interface

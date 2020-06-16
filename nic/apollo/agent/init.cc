@@ -9,6 +9,7 @@
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/agent/trace.hpp"
 #include "nic/apollo/agent/core/core.hpp"
+#include "nic/apollo/agent/core/interface.hpp"
 #include "nic/apollo/agent/svc/svc_thread.hpp"
 #include "nic/apollo/agent/core/state.hpp"
 #include "nic/apollo/agent/core/event.hpp"
@@ -355,6 +356,9 @@ agent_init (std::string cfg_file, std::string memory_profile,
     if (std::getenv("PDS_MOCK_MODE")) {
         agent_state::state()->pds_mock_mode_set(true);
     }
+
+    // initialize LLDP config
+    core::lldp_config_init();
 
     // install signal handlers
     pds_sig_init(pds_sig_handler);

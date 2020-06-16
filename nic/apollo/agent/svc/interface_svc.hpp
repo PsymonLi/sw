@@ -165,6 +165,140 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
     }
 }
 
+static inline pds::LldpProtoMode
+pds_lldpmode_to_proto_lldpmode (pds_if_lldp_mode_t mode)
+{
+    switch (mode) {
+    case LLDP_MODE_LLDP:
+        return pds::LLDP_MODE_LLDP;
+    case LLDP_MODE_CDPV1:
+        return pds::LLDP_MODE_CDPV1;
+    case LLDP_MODE_CDPV2:
+        return pds::LLDP_MODE_CDPV2;
+    case LLDP_MODE_EDP:
+        return pds::LLDP_MODE_EDP;
+    case LLDP_MODE_FDP:
+        return pds::LLDP_MODE_FDP;
+    case LLDP_MODE_SONMP:
+        return pds::LLDP_MODE_SONMP;
+    default:
+        return pds::LLDP_MODE_NONE;
+    }
+}
+
+static inline pds::LldpIdType
+pds_lldpidtype_to_proto_lldpidtype (pds_if_lldp_idtype_t idtype)
+{
+    switch (idtype) {
+    case LLDPID_SUBTYPE_IFNAME:
+        return pds::LLDPID_SUBTYPE_IFNAME;
+    case LLDPID_SUBTYPE_IFALIAS:
+        return pds::LLDPID_SUBTYPE_IFALIAS;
+    case LLDPID_SUBTYPE_LOCAL:
+        return pds::LLDPID_SUBTYPE_LOCAL;
+    case LLDPID_SUBTYPE_MAC:
+        return pds::LLDPID_SUBTYPE_MAC;
+    case LLDPID_SUBTYPE_IP:
+        return pds::LLDPID_SUBTYPE_IP;
+    case LLDPID_SUBTYPE_PORT:
+        return pds::LLDPID_SUBTYPE_PORT;
+    case LLDPID_SUBTYPE_CHASSIS:
+        return pds::LLDPID_SUBTYPE_CHASSIS;
+    default:
+        return pds::LLDPID_SUBTYPE_NONE;
+    }
+}
+
+static inline pds::LldpCapType
+pds_lldpcaptype_to_proto_lldpcaptype (pds_if_lldp_captype_t captype)
+{
+    switch (captype) {
+    case LLDP_CAPTYPE_REPEATER:
+        return pds::LLDP_CAPTYPE_REPEATER;
+    case LLDP_CAPTYPE_BRIDGE:
+        return pds::LLDP_CAPTYPE_BRIDGE;
+    case LLDP_CAPTYPE_ROUTER:
+        return pds::LLDP_CAPTYPE_ROUTER;
+    case LLDP_CAPTYPE_WLAN:
+        return pds::LLDP_CAPTYPE_WLAN;
+    case LLDP_CAPTYPE_TELEPHONE:
+        return pds::LLDP_CAPTYPE_TELEPHONE;
+    case LLDP_CAPTYPE_DOCSIS:
+        return pds::LLDP_CAPTYPE_DOCSIS;
+    case LLDP_CAPTYPE_STATION:
+        return pds::LLDP_CAPTYPE_STATION;
+    default:
+        return pds::LLDP_CAPTYPE_OTHER;
+    }
+}
+
+static inline void
+pds_if_lldp_status_to_proto (pds::UplinkIfStatus *uplink_status, uint16_t lif_id)
+{
+    pds_if_lldp_status_t api_lldp_status = { 0 };
+
+    // get the latest LLDP status for the given uplink
+    core::interface_lldp_status_get(lif_id, &api_lldp_status);
+
+    auto lldp_status = uplink_status->mutable_lldpstatus();
+
+    // fill in the lldp local interface status
+    auto lldpifstatus = lldp_status->mutable_lldpifstatus();
+    lldpifstatus->set_ifname(api_lldp_status.local_if_status.if_name);
+    lldpifstatus->set_routerid(api_lldp_status.local_if_status.router_id);
+    lldpifstatus->set_proto(pds_lldpmode_to_proto_lldpmode(api_lldp_status.local_if_status.mode));
+    lldpifstatus->set_age(api_lldp_status.local_if_status.age.c_str());
+    auto lldpchstatus = lldpifstatus->mutable_lldpifchassisspec();
+    lldpchstatus->set_sysname(api_lldp_status.local_if_status.chassis_spec.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status.local_if_status.chassis_spec.sysdescr);
+    ipv4addr_api_spec_to_proto_spec(lldpchstatus->mutable_mgmtip(),
+                                    &api_lldp_status.local_if_status.chassis_spec.mgmt_ip);
+    auto lldpchidstatus = lldpchstatus->mutable_chassisid();
+    lldpchidstatus->set_type(
+        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.chassis_spec.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status.local_if_status.chassis_spec.chassis_id.value);
+    for (int i = 0; i < api_lldp_status.local_if_status.chassis_spec.num_caps; i++) {
+        auto lldpchcap = lldpchstatus->add_capability();
+        lldpchcap->set_captype(
+         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.local_if_status.chassis_spec.chassis_cap_spec[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status.local_if_status.chassis_spec.chassis_cap_spec[i].cap_enabled);
+    }
+    auto lldpportstatus = lldpifstatus->mutable_lldpifportspec();
+    auto lldppidstatus = lldpportstatus->mutable_portid();
+    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.port_spec.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status.local_if_status.port_spec.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status.local_if_status.port_spec.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status.local_if_status.port_spec.ttl);
+
+    // fill in the lldp neighbor status
+    auto lldpnbrstatus = lldp_status->mutable_lldpnbrstatus();
+    lldpnbrstatus->set_ifname(api_lldp_status.neighbor_status.if_name);
+    lldpnbrstatus->set_routerid(api_lldp_status.neighbor_status.router_id);
+    lldpnbrstatus->set_proto(pds_lldpmode_to_proto_lldpmode(api_lldp_status.neighbor_status.mode));
+    lldpnbrstatus->set_age(api_lldp_status.neighbor_status.age.c_str());
+    lldpchstatus = lldpnbrstatus->mutable_lldpifchassisspec();
+    lldpchstatus->set_sysname(api_lldp_status.neighbor_status.chassis_spec.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status.neighbor_status.chassis_spec.sysdescr);
+    ipv4addr_api_spec_to_proto_spec(lldpchstatus->mutable_mgmtip(),
+                                    &api_lldp_status.neighbor_status.chassis_spec.mgmt_ip);
+    lldpchidstatus = lldpchstatus->mutable_chassisid();
+    lldpchidstatus->set_type(
+        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.chassis_spec.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status.neighbor_status.chassis_spec.chassis_id.value);
+    for (int i = 0; i < api_lldp_status.neighbor_status.chassis_spec.num_caps; i++) {
+        auto lldpchcap = lldpchstatus->add_capability();
+        lldpchcap->set_captype(
+         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.neighbor_status.chassis_spec.chassis_cap_spec[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status.neighbor_status.chassis_spec.chassis_cap_spec[i].cap_enabled);
+    }
+    lldpportstatus = lldpnbrstatus->mutable_lldpifportspec();
+    lldppidstatus = lldpportstatus->mutable_portid();
+    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.port_spec.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status.neighbor_status.port_spec.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status.neighbor_status.port_spec.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status.neighbor_status.port_spec.ttl);
+}
+
 static inline void
 pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
                             const pds_if_status_t *api_status,
@@ -176,6 +310,9 @@ pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
         {
             auto uplink_status = proto_status->mutable_uplinkifstatus();
             uplink_status->set_lifid(api_status->uplink_status.lif_id);
+
+            // populate the uplink LLDP status
+            pds_if_lldp_status_to_proto(uplink_status, api_status->uplink_status.lif_id);
         }
         break;
     case IF_TYPE_HOST:
@@ -195,9 +332,31 @@ pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
 }
 
 static inline void
-pds_if_api_stats_to_proto (pds::InterfaceStats *proto_stats,
-                           const pds_if_stats_t *api_stats)
+pds_if_lldp_stats_to_proto (pds::UplinkIfStats *uplink_stats)
 {
+    pds_if_lldp_stats_t api_lldp_stats = { 0 };
+
+    // get the latest LLDP stats
+    core::interface_lldp_stats_get(&api_lldp_stats);
+}
+
+static inline void
+pds_if_api_stats_to_proto (pds::InterfaceStats *proto_stats,
+                           const pds_if_stats_t *api_stats,
+                           if_type_t type)
+{
+    switch (type) {
+    case IF_TYPE_UPLINK:
+        {
+            auto uplink_stats = proto_stats->mutable_uplinkifstats();
+
+            // populate the uplink LLDP stats
+            pds_if_lldp_stats_to_proto(uplink_stats);
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 static inline void
@@ -210,7 +369,7 @@ pds_if_api_info_to_proto (void *entry, void *ctxt)
     pds_if_api_spec_to_proto(intf->mutable_spec(), &info->spec);
     pds_if_api_status_to_proto(intf->mutable_status(),
                                &info->status, info->spec.type);
-    pds_if_api_stats_to_proto(intf->mutable_stats(), &info->stats);
+    pds_if_api_stats_to_proto(intf->mutable_stats(), &info->stats, info->spec.type);
 }
 
 static inline sdk_ret_t

@@ -67,6 +67,14 @@
         "dependencies": [],
         "flags": [],
         "timeout": 0.0,
-        "cpu-affinity": "0x2"
+        "cpu-affinity": "0x3"
+     },
+     {
+        "name": "lldpd",
+        "command": "/nic/tools/start-lldpd.sh start",
+        "dependencies": [],
+        "flags": ["save_stdout_on_crash"],
+        "timeout": 0.0,
+        "cpu-affinity": "0x3"
      }
 ]

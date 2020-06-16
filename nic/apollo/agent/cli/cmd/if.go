@@ -19,6 +19,12 @@ import (
 	"github.com/pensando/sw/nic/apollo/agent/gen/pds"
 )
 
+const (
+	lldpCmdTypeNbrs	    = 0
+	lldpCmdTypeLocalIfs = 1
+	lldpCmdTypeStats    = 2
+)
+
 var (
 	lifID       string
 	ifID        string
@@ -38,6 +44,34 @@ var ifShowCmd = &cobra.Command{
 	Short: "show interface information",
 	Long:  "show interface object information",
 	Run:   ifShowCmdHandler,
+}
+
+var lldpShowCmd = &cobra.Command{
+	Use:   "lldp",
+	Short: "show lldp information",
+	Long:  "show lldp object information",
+}
+
+var lldpShowNeighborsCmd = &cobra.Command{
+	Use:   "neighbors",
+	Short: "show lldp neighbor information",
+	Long:  "show lldp neighbor object information",
+	Run:   lldpShowNeighborsCmdHandler,
+}
+
+var lldpShowInterfacesCmd = &cobra.Command{
+	Use:   "interfaces",
+	Short: "show lldp local interface information",
+	Long:  "show lldp local interface object information",
+	Run:   lldpShowInterfacesCmdHandler,
+}
+
+var lldpShowStatisticsCmd = &cobra.Command{
+	Use:   "statistics",
+	Short: "show lldp statistics information",
+	Long:  "show lldp statistics object information",
+	Run:   lldpShowStatisticsCmdHandler,
+	Hidden: true,
 }
 
 var lifClearCmd = &cobra.Command{
@@ -63,6 +97,11 @@ var ifUpdateCmd = &cobra.Command{
 func init() {
 	showCmd.AddCommand(lifShowCmd)
 	showCmd.AddCommand(ifShowCmd)
+	showCmd.AddCommand(lldpShowCmd)
+	lldpShowCmd.AddCommand(lldpShowNeighborsCmd)
+	lldpShowCmd.AddCommand(lldpShowInterfacesCmd)
+	lldpShowCmd.AddCommand(lldpShowStatisticsCmd)
+
 	lifShowCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
 	lifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	lifShowCmd.Flags().Bool("summary", false, "Display number of objects")
@@ -70,6 +109,7 @@ func init() {
 	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 	ifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	ifShowCmd.Flags().Bool("summary", false, "Display number of objects")
+	lldpShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 
 	clearCmd.AddCommand(lifClearCmd)
 	lifClearCmd.AddCommand(lifClearStatsCmd)
@@ -435,6 +475,143 @@ func printIf(intf *pds.Interface) {
 			}
 		}
 	}
+}
+
+func printIfLldpInfo(intf *pds.Interface, cmdType int, numIntfs *int) {
+	spec := intf.GetSpec()
+	status := intf.GetStatus()
+	ifIndex := status.GetIfIndex()
+	ifStr := ifIndexToPortIdStr(ifIndex)
+	portNum := utils.IdToStr(spec.GetUplinkSpec().GetPortId())
+
+	var lldpStatus *pds.LldpIfSpec
+	if cmdType == lldpCmdTypeNbrs {
+		// show neighbors
+		lldpStatus = status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus()
+	} else if cmdType == lldpCmdTypeLocalIfs {
+		// lldp show interfaces
+		lldpStatus = status.GetUplinkIfStatus().GetLldpStatus().GetLldpIfStatus()
+	} else if cmdType == lldpCmdTypeStats {
+		// lldp show statistics
+		return
+	}
+
+	if len(lldpStatus.GetIfName()) == 0 {
+		return
+	}
+	*numIntfs += 1
+
+	nbrProto := strings.Replace(lldpStatus.GetProto().String(),"LLDP_MODE_", "", -1)
+	fmt.Printf("Interface : %s, Port : %s\n", ifStr, portNum)
+	rId := lldpStatus.GetRouterId()
+	if rId == 0 {
+	   rId = 1
+	}
+	fmt.Printf("  LLDP Interface : %s, via: %s, RID: %s, Time: %s\n",
+		   lldpStatus.GetIfName(), nbrProto, fmt.Sprint(rId), lldpStatus.GetAge())
+	fmt.Printf("    Chassis :\n")
+	cid := lldpStatus.GetLldpIfChassisSpec().GetChassisId()
+	cidType := strings.Replace(cid.GetType().String(),"LLDPID_SUBTYPE_", "", -1)
+	cidType = strings.ToLower(cidType)
+	cidValue := cid.GetValue()
+	fmt.Printf("      ChassisID  : %s %s\n", cidType, cidValue)
+	fmt.Printf("      SysName    : %s\n", lldpStatus.GetLldpIfChassisSpec().GetSysName())
+	fmt.Printf("      SysDescr   : %s\n", lldpStatus.GetLldpIfChassisSpec().GetSysDescr())
+	fmt.Printf("      MgmtIP     : %s\n",
+	    utils.IPAddrToStr(lldpStatus.GetLldpIfChassisSpec().GetMgmtIP()))
+
+	capabilities := lldpStatus.GetLldpIfChassisSpec().GetCapability()
+	for _, cap := range capabilities {
+	    capType := strings.Replace(cap.GetCapType().String(),"LLDP_CAPTYPE_", "", -1)
+	    capType = strings.Title(strings.ToLower(capType))
+	    capEnabledStr := "off"
+	    if cap.GetCapEnabled() {
+		capEnabledStr = "on"
+	    }
+	    fmt.Printf("      Capability : %s, %s\n", capType, capEnabledStr)
+	}
+	fmt.Printf("    Port :\n");
+	pid := lldpStatus.GetLldpIfPortSpec().GetPortId()
+	pidType := strings.Replace(pid.GetType().String(),"LLDPID_SUBTYPE_", "", -1)
+	pidType =strings.ToLower(pidType)
+	pidValue := pid.GetValue()
+	fmt.Printf("      PortID     : %s %s\n", pidType, pidValue)
+	fmt.Printf("      PortDescr  : %s\n", lldpStatus.GetLldpIfPortSpec().GetPortDescr())
+	ttl := fmt.Sprint(lldpStatus.GetLldpIfPortSpec().GetTtl())
+	if cmdType == lldpCmdTypeNbrs {
+	    fmt.Printf("      TTL        : %s\n\n", ttl)
+	} else {
+	    fmt.Printf("    TTL	         : 120\n\n")
+	}
+}
+
+func lldpShowCmdHandler(cmd *cobra.Command, args []string, cmdType int) {
+	// Connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	var req *pds.InterfaceGetRequest
+
+	if cmd == nil || cmd.Flags().Changed("id") == false {
+		req = &pds.InterfaceGetRequest{
+			Id: [][]byte{},
+		}
+	} else {
+		req = &pds.InterfaceGetRequest{
+			Id: [][]byte{uuid.FromStringOrNil(ifID).Bytes()},
+		}
+	}
+
+	client := pds.NewIfSvcClient(c)
+
+	respMsg, err := client.InterfaceGet(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Get Interface failed, err %v\n", err)
+		return
+	}
+
+	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
+		return
+	}
+
+	num_intfs := 0
+	if cmd != nil && cmd.Flags().Changed("yaml") {
+		for _, resp := range respMsg.Response {
+			respType := reflect.ValueOf(resp)
+			b, _ := yaml.Marshal(respType.Interface())
+			fmt.Println(string(b))
+			fmt.Println("---")
+		}
+	} else {
+		for _, resp := range respMsg.Response {
+			if resp.GetSpec().GetType() == pds.IfType_IF_TYPE_UPLINK {
+				printIfLldpInfo(resp, cmdType, &num_intfs)
+			}
+		}
+		fmt.Printf("%-24s: %d\n", "Total number of ifs ", num_intfs)
+	}
+}
+
+func lldpShowNeighborsCmdHandler(cmd *cobra.Command, args []string) {
+     lldpShowCmdHandler(cmd, args, lldpCmdTypeNbrs)
+}
+
+func lldpShowInterfacesCmdHandler(cmd *cobra.Command, args []string) {
+     lldpShowCmdHandler(cmd, args, lldpCmdTypeLocalIfs)
+}
+
+func lldpShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
+     lldpShowCmdHandler(cmd, args, lldpCmdTypeStats)
 }
 
 func lifGetNameFromKey(key []byte) string {

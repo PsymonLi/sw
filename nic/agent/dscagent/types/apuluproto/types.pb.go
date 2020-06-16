@@ -149,6 +149,7 @@
 		ControlIfSpec
 		HostIfSpec
 		InterfaceSpec
+		LldpStatus
 		UplinkIfStatus
 		LoopbackIfStatus
 		HostIfStatus

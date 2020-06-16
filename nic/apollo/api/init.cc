@@ -265,7 +265,7 @@ sysmon_init (void)
 static void
 system_mac_init (void)
 {
-    std::string       mac_str;
+    std::string       mac_str, pname;
     mac_addr_t        mac_addr;
 
     int ret = sdk::platform::readfrukey(BOARD_MACADDRESS_KEY, mac_str);
@@ -284,6 +284,12 @@ system_mac_init (void)
     api::g_pds_state.set_system_mac(mac_addr);
     PDS_TRACE_INFO("system mac 0x%06lx",
                            MAC_TO_UINT64(api::g_pds_state.system_mac()));
+
+    sdk::platform::readfrukey(BOARD_PRODUCTNAME_KEY, pname);
+    if (pname.empty() || pname == "") {
+        pname = std::string("-");
+    }
+    api::g_pds_state.set_product_name(pname);
 }
 
 static std::string

@@ -250,6 +250,10 @@ public:
     void set_system_mac(mac_addr_t mac) {
         memcpy(system_mac_, mac, sizeof(system_mac_));
     }
+    string product_name(void) const { return product_name_; }
+    void set_product_name(string pname) {
+        product_name_ = pname;
+    }
     learn_state *learn_db(void) {
         return (learn_state *)state_[PDS_STATE_LEARN];
     }
@@ -288,6 +292,7 @@ private:
     state_base              *state_[PDS_STATE_MAX];
     pds_event_cb_t          event_cb_;
     mac_addr_t              system_mac_;
+    string                  product_name_;
     sdk::lib::kvstore       *kvstore_;
     // handles for the metrics
     void                    *port_metrics_hndl_;

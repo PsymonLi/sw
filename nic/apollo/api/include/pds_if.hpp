@@ -22,7 +22,10 @@
 /// \defgroup PDS_INTF Interface API
 /// @{
 
-#define PDS_INTF_ID_INVALID 0     ///< invalid interface id
+#define PDS_INTF_ID_INVALID     0     ///< invalid interface id
+#define PDS_LLDP_MAX_NAME_LEN   64
+#define PDS_LLDP_MAX_DESCR_LEN  128
+#define PDS_LLDP_MAX_CAPS       8     ///< max. no of LLDP capabilities
 
 /// \brief interface admin/operational state
 typedef enum pds_if_state_e {
@@ -30,6 +33,96 @@ typedef enum pds_if_state_e {
     PDS_IF_STATE_DOWN = 1,
     PDS_IF_STATE_UP   = 2,
 } pds_if_state_t;
+
+/// \brief LLDP interface statistics
+typedef struct pds_if_lldp_stats_s {
+    uint32_t tx_count;        ///< transmitted pkts
+    uint32_t rx_Count;        ///< received pkts
+    uint32_t rx_discarded;    ///< rx discarded pkts
+    uint32_t rx_unrecognized; ///< rx unrecognized pkts
+    uint32_t ageout_count;    ///< count of entry aged out
+    uint32_t insert_count;    ///< count of inserts
+    uint32_t delete_count;    ///< count of deletes
+} pds_if_lldp_stats_t;
+
+/// \brief LLDP chassis/port identifier key type
+typedef enum pds_if_lldp_idtype_e {
+    LLDPID_SUBTYPE_NONE    = 0,  ///< "unknown"
+    LLDPID_SUBTYPE_IFNAME  = 1,  ///< "ifname"
+    LLDPID_SUBTYPE_IFALIAS = 2,  ///< "ifalias",
+    LLDPID_SUBTYPE_LOCAL   = 3,  ///< "local"
+    LLDPID_SUBTYPE_MAC     = 4,  ///< "mac"
+    LLDPID_SUBTYPE_IP      = 5,  ///< "ip"
+    LLDPID_SUBTYPE_PORT    = 6,  ///< "portnum"
+    LLDPID_SUBTYPE_CHASSIS = 7,  ///< "chasiss-str"
+} pds_if_lldp_idtype_t;
+
+/// \brief protocol mode used for LLDP
+typedef enum pds_if_lldp_mode_e {
+    LLDP_MODE_NONE  = 0,
+    LLDP_MODE_LLDP  = 1,
+    LLDP_MODE_CDPV1 = 2,
+    LLDP_MODE_CDPV2 = 3,
+    LLDP_MODE_EDP   = 4,
+    LLDP_MODE_FDP   = 5,
+    LLDP_MODE_SONMP = 6,
+} pds_if_lldp_mode_t;
+
+/// \brief key type and value for LLDP chassis/port identifier
+typedef struct pds_if_lldp_id_s {
+    pds_if_lldp_idtype_t type;
+    uint8_t              value[PDS_LLDP_MAX_NAME_LEN];
+} pds_if_lldp_id_t;
+
+/// \brief capabilities on the interface
+typedef enum pds_if_lldp_captype_e {
+    LLDP_CAPTYPE_OTHER     = 0,
+    LLDP_CAPTYPE_REPEATER  = 1,
+    LLDP_CAPTYPE_BRIDGE    = 2,
+    LLDP_CAPTYPE_ROUTER    = 3,
+    LLDP_CAPTYPE_WLAN      = 4,
+    LLDP_CAPTYPE_TELEPHONE = 5,
+    LLDP_CAPTYPE_DOCSIS    = 6,
+    LLDP_CAPTYPE_STATION   = 7,
+} pds_if_lldp_captype_t;
+
+typedef struct pds_if_lldp_chassis_capability_spec_s {
+    pds_if_lldp_captype_t  cap_type;    ///< capability type
+    bool                   cap_enabled; ///< enabled/disabled
+} pds_if_lldp_chassis_capability_spec_t;
+
+typedef struct pds_if_lldp_chassis_spec_s {
+    char                                  sysname[PDS_LLDP_MAX_NAME_LEN];   ///< system name
+    pds_if_lldp_id_t                      chassis_id;                       ///< system identifier
+    char                                  sysdescr[PDS_LLDP_MAX_DESCR_LEN]; ///< description string
+    ipv4_addr_t                           mgmt_ip;                          ///< management IP
+    pds_if_lldp_chassis_capability_spec_t chassis_cap_spec[PDS_LLDP_MAX_CAPS]; ///< list of capabilities
+    uint16_t                              num_caps;                         ///< number of capabilities
+} pds_if_lldp_chassis_spec_t;
+
+typedef struct pds_if_lldp_port_spec_s {
+    pds_if_lldp_id_t port_id;                            ///< port identifier
+    char             port_descr[PDS_LLDP_MAX_DESCR_LEN]; ///< description string
+    uint32_t         ttl;                                ///< TTL
+} pds_if_lldp_port_spec_t;
+
+typedef struct pds_if_lldp_info_s {
+    char                       if_name[PDS_LLDP_MAX_NAME_LEN]; ///< interface name
+    uint32_t                   router_id;                      ///< router-id
+    pds_if_lldp_mode_t         mode;                           ///< LLDP/CDP/EDP/FDP/..
+    string                     age;                            ///< uptime string
+    pds_if_lldp_chassis_spec_t chassis_spec;                   ///< chassis info
+    pds_if_lldp_port_spec_t    port_spec;                      ///< physical port info
+} pds_if_lldp_info_t;
+
+typedef struct pds_if_lldp_status_s {
+    pds_if_lldp_info_t local_if_status;   ///< local interface info
+    pds_if_lldp_info_t neighbor_status;   ///< neighbor info
+} pds_if_lldp_status_t;
+
+typedef struct pds_if_lldp_spec_s {
+    pds_if_lldp_chassis_spec_t lldp_chassic_spec; ///< chassis info
+} pds_if_lldp_spec_t;
 
 /// \brief uplink specific configuration
 typedef struct pds_uplink_info_s {
@@ -112,7 +205,7 @@ typedef struct pds_if_spec_s {
 
 /// \brief uplink interface status
 typedef struct pds_if_uplink_status_s {
-    uint16_t lif_id;
+    uint16_t             lif_id;
 } __PACK__ pds_if_uplink_status_t;
 
 /// \brief L3 interface status
