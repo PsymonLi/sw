@@ -117,7 +117,6 @@ func (c *IPClient) DoStaticConfig() (string, string, error) {
 
 // DoDHCPConfig performs dhcp on the management interface and obtains venice co-ordinates
 func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
-
 	dhcpCtx, cancel := context.WithCancel(ctx)
 	if c.dhcpState.DhcpCancel != nil {
 		log.Info("Clearing existing dhcp go routines")
@@ -127,20 +126,34 @@ func (c *IPClient) DoDHCPConfig(ctx context.Context) error {
 	c.dhcpState.DhcpCtx = dhcpCtx
 
 	// This is needed to enable 1st tick on a large ticker duration. TODO investigate leaks here
+	// we need to wait for doDHCP to return, as it can lead to missing of the
+	// StopDHCP requests, and goroutines which should not have been started - runAdmissionControlLoop - start.
+	c.dhcpState.DhcpWaitGroup.Add(1)
 	if err := c.doDHCP(); err == nil {
 		log.Info("DHCP successful")
 		return nil
 	}
 
+	if c.dhcpState.DhcpCtx.Err() != nil {
+		return c.dhcpState.DhcpCtx.Err()
+	}
+
 	ticker := time.NewTicker(AdmissionRetryDuration)
 	c.dhcpState.DhcpWaitGroup.Add(1)
 	go func(ctx context.Context) {
-		c.dhcpState.DhcpWaitGroup.Done()
+		defer c.dhcpState.DhcpWaitGroup.Done()
+
+		if ctx.Err() != nil {
+			return
+		}
+
 		c := c
 		for {
 			select {
 			case <-ticker.C:
 				log.Info("Retrying DHCP Config")
+				// Add doDHCP to the DHCP waitgroup
+				c.dhcpState.DhcpWaitGroup.Add(1)
 				if err := c.doDHCP(); err != nil {
 					log.Errorf("DHCP Config failed due to %v | Retrying...", err)
 					if (c.dhcpState.PrimaryIntfClient) != nil {
@@ -172,9 +185,11 @@ func (c *IPClient) StopDHCPConfig() {
 		c.dhcpState.DhcpCancel()
 		c.dhcpState.DhcpWaitGroup.Wait()
 	}
+	log.Info("DHCP Control loop cancelled")
 }
 
 func (c *IPClient) doDHCP() error {
+	defer c.dhcpState.DhcpWaitGroup.Done()
 	if (c.dhcpState.PrimaryIntfClient) != nil {
 		if err := c.dhcpState.PrimaryIntfClient.Close(); err != nil {
 			log.Errorf("Failed to close pktsock during doDHCP init for primary interface. Err: %v", err)
@@ -203,8 +218,8 @@ func (c *IPClient) doDHCP() error {
 			if err == nil {
 				return nil
 			}
+			log.Errorf("DHCP failed on secondary interface. Err : %v", err)
 		}
-		log.Infof("Trying DHCP on secondary interface")
 		return err
 	}
 
@@ -215,6 +230,11 @@ func (c *IPClient) startDHCP(client *dhcp.Client, intf netlink.Link) (err error)
 	if client == nil {
 		return errors.New("Failed to find dhcp client")
 	}
+
+	if c.dhcpState.DhcpCtx.Err() != nil {
+		return c.dhcpState.DhcpCtx.Err()
+	}
+
 	disc := client.DiscoverPacket()
 	disc.AddOption(PensandoDHCPRequestOption.Code, PensandoDHCPRequestOption.Value)
 
@@ -441,10 +461,33 @@ func (d *DHCPState) startRenewLoop(ackPacket dhcp4.Packet, mgmtLink netlink.Link
 	}
 }
 
+func doNTPSync(controllers []string) {
+	log.Info("Clearing any old NTP if its running")
+	cmd := "/sbin/start-stop-daemon -K -q -p /var/run/ntpd.pid"
+	runCmd(cmd)
+
+	log.Infof("Starting NTP Sync with servers %v", controllers)
+	cmd = "/sbin/start-stop-daemon -b -S  -m -p /var/run/ntpd.pid --exec /usr/sbin/ntpd -- -n "
+	for _, s := range controllers {
+		cmd = cmd + " -p " + s
+	}
+	runCmd(cmd)
+	// We need this sleep here to ensure that the NTP sync is successfully completed before starting dhclient.
+	// If not, when we power cycle dhclient will get the lease expiry based on the epoch which will cause it to
+	// remove the assigned IP Address
+	time.Sleep(time.Second * 5)
+}
+
 // DoNTPSync does ntp sync with the venice IPs
 func (c *IPClient) DoNTPSync() error {
+	controllers := c.nmd.GetParsedControllers()
+	if len(controllers) > 0 {
+		doNTPSync(controllers)
+		return nil
+	}
+
 	// Wait for controllers to be populated
-	ticker := time.NewTicker(time.Second * 30)
+	ticker := time.NewTicker(time.Second * 10)
 	for {
 		select {
 		case <-ticker.C:
@@ -453,20 +496,8 @@ func (c *IPClient) DoNTPSync() error {
 				log.Info("NTP Sync waiting for controllers to be available. Found none")
 				continue
 			}
-			log.Info("Clearing any old NTP if its running")
-			cmd := "/sbin/start-stop-daemon -K -q -p /var/run/ntpd.pid"
-			runCmd(cmd)
 
-			log.Infof("Starting NTP Sync with servers %v", controllers)
-			cmd = "/sbin/start-stop-daemon -b -S  -m -p /var/run/ntpd.pid --exec /usr/sbin/ntpd -- -n "
-			for _, s := range controllers {
-				cmd = cmd + " -p " + s
-			}
-			runCmd(cmd)
-			// We need this sleep here to ensure that the NTP sync is successfully completed before starting dhclient.
-			// If not, when we power cycle dhclient will get the lease expiry based on the epoch which will cause it to
-			// remove the assigned IP Address
-			time.Sleep(time.Second * 10)
+			doNTPSync(controllers)
 			return nil
 		}
 	}

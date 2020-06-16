@@ -420,23 +420,9 @@ func (n *NMD) PostStatusToAgent() (err error) {
 	return
 }
 
-func (n *NMD) handleNetworkModeTransition() error {
-	log.Info("Handling network mode transition")
-	err := n.StopManagedMode()
-	if err != nil {
-		log.Errorf("Failed to stop network mode control loop. Err: %v", err)
-		return err
-	}
-
-	// If we reach here, then either the user has triggered a mode transition using penctl
-	// with tokens, or the DSC has not yet been admitted.
-	// Stop all registration requests, if any, already in progress
-	log.Info("Stopping any registration requests in progress")
-
-	if err := n.StartDSCReg(); err != nil {
-		log.Errorf("Failed to setup context for new DSC registration. Err : %v", err)
-	}
-
+func (n *NMD) handleIPAssignment() error {
+	defer n.dscRegWaitGrp.Done()
+	log.Infof("Handling IP assignment")
 	spec := n.config.Spec
 	n.stateMachine = NewNMDStateMachine()
 	if err := n.reconcileIPClient(); err != nil {
@@ -473,6 +459,36 @@ func (n *NMD) handleNetworkModeTransition() error {
 		}
 	}
 
+	return nil
+}
+
+func (n *NMD) handleNetworkModeTransition() error {
+	log.Info("Handling network mode transition")
+	err := n.StopManagedMode()
+	if err != nil {
+		log.Errorf("Failed to stop network mode control loop. Err: %v", err)
+		return err
+	}
+
+	// If we reach here, then either the user has triggered a mode transition using penctl
+	// with tokens, or the DSC has not yet been admitted.
+	// Stop all registration requests, if any, already in progress
+	log.Info("Stopping any registration requests in progress")
+
+	if err := n.StartDSCReg(); err != nil {
+		log.Errorf("Failed to setup context for new DSC registration. Err : %v", err)
+	}
+
+	// We add synchronous code handleIPAssignment to waitgroup, because new network mode migration
+	// may be issued from other goroutines, when one is already underway
+	n.dscRegWaitGrp.Add(1)
+	err = n.handleIPAssignment()
+	if err != nil || n.dscRegCtx.Err() != nil {
+		log.Infof("IP assignment cancelled. Err : %v", err)
+		return nil
+	}
+
+	n.dscRegWaitGrp.Add(1)
 	go n.runAdmissionControlLoop()
 
 	return nil
@@ -521,6 +537,13 @@ func (n *NMD) handleHostModeTransition() error {
 // runAdmissionControlLoop is a wrapper to perform NAPLES admission and persist state
 func (n *NMD) runAdmissionControlLoop() {
 	log.Info("Started admission control loop and persisting config")
+	defer n.dscRegWaitGrp.Done()
+
+	if err := n.dscRegCtx.Err(); err != nil {
+		log.Errorf("Registration context cancelled. Exiting admission control loop.")
+		return
+	}
+
 	isEmulation := false
 	if _, err := os.Stat(globals.IotaEmulation); err == nil {
 		log.Infof("NMD running in Emulation mode as a real Venice controller is not available. Remove %v file if this was not desired.", globals.IotaEmulation)
@@ -568,6 +591,9 @@ func (n *NMD) runAdmissionControlLoop() {
 			} else {
 				log.Info("Waiting for atleast one controller")
 			}
+		case <-n.dscRegCtx.Done():
+			log.Infof("Exiting admission control loop")
+			return
 		}
 	}
 }
@@ -974,10 +1000,6 @@ func (n *NMD) StopManagedMode() error {
 	// stop ongoing NIC registration, if any
 	if err := n.StopDSCReg(); err != nil {
 		log.Errorf("Failed to stop DSC registration. Err : %v", err)
-	}
-
-	if n.IPClient != nil {
-		n.IPClient.StopDHCPConfig()
 	}
 
 	// stop ongoing NIC updates, if any

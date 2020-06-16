@@ -100,7 +100,7 @@ func NewNMDStateMachine() *NMDStateMachine {
 								mgmtIntf = nmd.config.Status.ManagementInterface
 								break
 							}
-							time.Sleep(time.Second * 30)
+							time.Sleep(time.Second * 3)
 						}
 						// Run dhclient on the mgmt interface in non static mode migrations
 						if !(nmd.config.Spec.IPConfig != nil && len(nmd.config.Spec.IPConfig.IPAddress) != 0) {
