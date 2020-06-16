@@ -112,7 +112,7 @@ func queryAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, stream o
 func HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, client operdapi.AlertsSvcClient) {
 	emptyStruct := &halapi.Empty{}
 	// create a stream for alerts
-	alertsStream, err := client.AlertsGet(context.Background(), emptyStruct)
+	alertsStream, err := client.AlertsGet(ctx, emptyStruct)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrAlertsGet,
 			"AlertsGet failure | Err %v", err))
