@@ -284,7 +284,10 @@ class NodeObject(base.ConfigObjectBase):
             obj.RollbackUpdate()
             self.ReconfigState.Updated.remove(obj)
         for obj in self.ReconfigState.Created[:]:
-            obj.Delete()
+            if not obj.Delete():
+                logger.error(f'Delete of object failed : {obj}')
+                assert(0)
+            obj.Cleanup()
             self.ReconfigState.Created.remove(obj)
         if len(self.ReconfigState.Created) or len(self.ReconfigState.Updated):
             assert(0)

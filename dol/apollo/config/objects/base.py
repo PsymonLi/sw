@@ -227,7 +227,6 @@ class ConfigObjectBase(base.ConfigObjectBase):
         return
 
     def Delete(self, spec=None):
-        self.Cleanup()
         return utils.DeleteObject(self)
 
     def Destroy(self):
