@@ -95,21 +95,19 @@ def CollectLogs():
     if GlobalOptions.dryrun or GlobalOptions.skip_logs: return
     nodes=[]
     try: 
-        topo_nodes = copy.deepcopy(store.GetTopology().GetNodes())
-        for node in topo_nodes:
-            node_os = getattr(node, '_Node__os', None)
-            if node_os == "esx":
-                node.username = getattr(node,"_Node__vmUser","vm")
-                node.password = getattr(node,"_Node__vmPassword","vm")
-                node.ip = node._Node__esx_ctrl_vm_ip
+        for node in store.GetTopology().GetNodes():
+            if node.GetNodeOs() == "esx":
+                node.username = node.__vmUser 
+                node.password = node.__vmPassword 
+                node.ip = node.__esx_ctrl_vm_ip
                 nodes.append(node)
             elif node_os in [ 'linux', 'freebsd', 'windows']:
-                node.username = getattr(node,"_Node__vmUser","vm")
-                node.password = getattr(node,"_Node__vmPassword","vm")
-                node.ip = node._Node__ip_address
+                node.username = node.__vmUser 
+                node.password = node.__vmPassword 
+                node.ip = node.__ip_address
                 nodes.append(node)
     except Exception as e:
-        Logger.debug('topo not setup yet, gathering node info from testbed json file: %s', str(e))
+        Logger.debug('topo not setup yet, gathering node info from testbed json file: %s' % str(e))
         nodes=buildNodesFromTestbedFile(GlobalOptions.testbed_json)
     pool = ThreadPool(len(nodes))
     results = pool.map(__collect_onenode, nodes)
