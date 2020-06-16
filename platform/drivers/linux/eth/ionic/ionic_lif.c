@@ -1538,14 +1538,14 @@ static void ionic_tx_timeout_work(struct work_struct *ws)
 	rtnl_unlock();
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0))
+#ifdef HAVE_TX_TIMEOUT_TXQUEUE
 static void ionic_tx_timeout(struct net_device *netdev, unsigned int txqueue)
 #else
 static void ionic_tx_timeout(struct net_device *netdev)
 #endif
 {
 	struct ionic_lif *lif = netdev_priv(netdev);
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0))
+#if ! defined(HAVE_TX_TIMEOUT_TXQUEUE)
 	unsigned int txqueue = -1;
 #endif
 

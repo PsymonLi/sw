@@ -6456,5 +6456,16 @@ __kc_eth_get_headlen(const struct net_device __always_unused *dev, void *data,
 #define DEVLINK_INFO_VERSION_GENERIC_ASIC_REV  "asic.rev"
 #endif /* 5.4.0 */
 
+/*****************************************************************************/
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5,6,0))
+
+#if (RHEL_RELEASE_CODE && (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8,3)))
+#define HAVE_TX_TIMEOUT_TXQUEUE
+#endif
+
+#else /* >= 5.6.0 */
+#define HAVE_TX_TIMEOUT_TXQUEUE
+#endif /* 5.6.0 */
+
 
 #endif /* _KCOMPAT_H_ */
