@@ -28,6 +28,7 @@ import (
 
 	"github.com/pensando/sw/events/generated/eventattrs"
 	"github.com/pensando/sw/events/generated/eventtypes"
+	cq "github.com/pensando/sw/venice/citadel/broker/continuous_query"
 	cgen "github.com/pensando/sw/venice/cli/gen"
 	"github.com/pensando/sw/venice/globals"
 	venice "github.com/pensando/sw/venice/utils/apigen/annotations"
@@ -614,15 +615,16 @@ type pdsaFieldOpt struct {
 }
 
 type fieldMetricOptions struct {
-	Name          string   `json:",omitempty"`
-	DisplayName   string   `json:",omitempty"`
-	Description   string   `json:",omitempty"`
-	Units         string   `json:",omitempty"`
-	ScaleMin      int32    `json:",omitempty"`
-	ScaleMax      int32    `json:",omitempty"`
-	BaseType      string   `json:",omitempty"`
-	AllowedValues []string `json:",omitempty"`
-	Tags          []string `json:",omitempty"`
+	Name            string   `json:",omitempty"`
+	DisplayName     string   `json:",omitempty"`
+	Description     string   `json:",omitempty"`
+	Units           string   `json:",omitempty"`
+	ScaleMin        int32    `json:",omitempty"`
+	ScaleMax        int32    `json:",omitempty"`
+	BaseType        string   `json:",omitempty"`
+	AggregationFunc string   `json:",omitempty"`
+	AllowedValues   []string `json:",omitempty"`
+	Tags            []string `json:",omitempty"`
 }
 
 type msgMetricOptions struct {
@@ -635,10 +637,11 @@ type msgMetricOptions struct {
 }
 
 type fileMsgFieldMapOpt struct {
-	FileName string              `json:",omitempty"`
-	Package  string              `json:",omitempty"`
-	Prefix   string              `json:",omitempty"`
-	Maps     map[string][]string `json:",omitempty"`
+	FileName               string                       `json:",omitempty"`
+	Package                string                       `json:",omitempty"`
+	Prefix                 string                       `json:",omitempty"`
+	MetricsFieldMap        map[string][]string          `json:",omitempty"`
+	MetricsFieldAggFuncMap map[string]map[string]string `json:",omitempty"`
 }
 
 func mapScalarTypes(in gogoproto.FieldDescriptorProto_Type) string {
@@ -937,6 +940,10 @@ func getFieldMetricOptions(f *descriptor.Field) (fieldMetricOptions, bool) {
 		ret.Units = o.Units.String()
 		ret.ScaleMax = o.ScaleMax
 		ret.ScaleMin = o.ScaleMin
+		aggFunc := cq.GetAggFuncString(strings.ToLower(o.AggregateFunc))
+		if aggFunc != "last" {
+			ret.AggregationFunc = aggFunc
+		}
 		for _, t := range o.Tags {
 			ret.Tags = append(ret.Tags, t.String())
 		}
@@ -1064,17 +1071,21 @@ func getFileMsgFieldMap(f *descriptor.File) (fileMsgFieldMapOpt, error) {
 	mapOpt := fileMsgFieldMapOpt{}
 	mapOpt.FileName = *f.Name
 	mapOpt.Package = f.GoPkg.Name
-	mapOpt.Maps = map[string][]string{}
+	mapOpt.MetricsFieldMap = map[string][]string{}
+	mapOpt.MetricsFieldAggFuncMap = map[string]map[string]string{}
 
 	for _, m := range f.Messages {
 		mopts, ok := getMsgMetricOptions(m)
 		if ok {
-			key := mopts.Name
-			values := []string{}
+			metricsName := mopts.Name
+			fieldsList := []string{}
+			fieldAggFuncMap := map[string]string{}
 			for _, field := range mopts.Fields {
-				values = append(values, field.Name)
+				fieldsList = append(fieldsList, field.Name)
+				fieldAggFuncMap[field.Name] = cq.GetAggFuncString(strings.ToLower(field.AggregationFunc))
 			}
-			mapOpt.Maps[key] = values
+			mapOpt.MetricsFieldMap[metricsName] = fieldsList
+			mapOpt.MetricsFieldAggFuncMap[metricsName] = fieldAggFuncMap
 		}
 	}
 	return mapOpt, nil

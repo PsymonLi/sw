@@ -10,4 +10,8 @@ func init() {
 	}
 	globalMetricsMap["nmdmetrics"]["NMDMetrics"] = kindToFieldNameMap["NMDMetrics"]
 
+	metricsFieldAggFuncMap["NMDMetrics"] = map[string]string{
+		"GetCalls": "last",
+	}
+
 }

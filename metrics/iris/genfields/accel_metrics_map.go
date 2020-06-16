@@ -54,4 +54,49 @@ func init() {
 	}
 	globalMetricsMap["accel_metrics"]["AccelSeqQueueMetrics"] = kindToFieldNameMap["AccelSeqQueueMetrics"]
 
+	metricsFieldAggFuncMap["AccelHwRingMetrics"] = map[string]string{
+		"CIndex":      "last",
+		"InputBytes":  "last",
+		"OutputBytes": "last",
+		"PIndex":      "last",
+		"SoftResets":  "last",
+	}
+
+	metricsFieldAggFuncMap["AccelPfInfo"] = map[string]string{
+		"CryptoKeyIdxBase": "last",
+		"HwLifId":          "last",
+		"IntrBase":         "last",
+		"IntrCount":        "last",
+		"NumCryptoKeysMax": "last",
+		"NumSeqQueues":     "last",
+	}
+
+	metricsFieldAggFuncMap["AccelSeqQueueInfoMetrics"] = map[string]string{
+		"CoreId":     "last",
+		"QGroup":     "last",
+		"QStateAddr": "last",
+	}
+
+	metricsFieldAggFuncMap["AccelSeqQueueMetrics"] = map[string]string{
+		"AltBufsTaken":      "last",
+		"AltDescsTaken":     "last",
+		"AolUpdateReqs":     "last",
+		"CpHeaderUpdates":   "last",
+		"HwBatchErrors":     "last",
+		"HwDescXfers":       "last",
+		"HwOpErrors":        "last",
+		"InterruptsRaised":  "last",
+		"LenUpdateReqs":     "last",
+		"NextDBsRung":       "last",
+		"SeqDescsAborted":   "last",
+		"SeqDescsProcessed": "last",
+		"SeqHwBytes":        "last",
+		"SglPadOnlyErrors":  "last",
+		"SglPadOnlyXfers":   "last",
+		"SglPdmaErrors":     "last",
+		"SglPdmaXfers":      "last",
+		"SglUpdateReqs":     "last",
+		"StatusPdmaXfers":   "last",
+	}
+
 }

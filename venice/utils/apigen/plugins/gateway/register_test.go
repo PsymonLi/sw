@@ -4126,7 +4126,7 @@ func TestGetMetricsJSON(t *testing.T) {
 					type: TYPE_MESSAGE
 					type_name: '.delphi.Gauge'
 					number: 2
-					options:<[venice.metricsField]: {DisplayName: "Field2Gauge" Description:"Field2 is a gauge" Units: Bytes ScaleMax: 1000}>
+					options:<[venice.metricsField]: {DisplayName: "Field2Gauge" Description:"Field2 is a gauge" AggregateFunc: "max" Units: Bytes ScaleMax: 1000}>
 				>
 				field <
 					name: 'field3'
@@ -4245,13 +4245,14 @@ func TestGetMetricsJSON(t *testing.T) {
 						BaseType:    "Counter",
 					},
 					{
-						Name:        "Field2",
-						DisplayName: "Field2Gauge",
-						Description: "Field2 is a gauge",
-						Units:       "Bytes",
-						ScaleMin:    0,
-						ScaleMax:    1000,
-						BaseType:    "Gauge",
+						Name:            "Field2",
+						DisplayName:     "Field2Gauge",
+						Description:     "Field2 is a gauge",
+						Units:           "Bytes",
+						ScaleMin:        0,
+						ScaleMax:        1000,
+						BaseType:        "Gauge",
+						AggregationFunc: "max",
 					},
 					{
 						Name:        "Field3",
@@ -4330,8 +4331,46 @@ func TestGetMetricsJSON(t *testing.T) {
 			},
 		},
 	}
-
 	if !reflect.DeepEqual(got, exp) {
+		t.Fatal("Response did not match")
+	}
+	retMap, err := getFileMsgFieldMap(file)
+	fmt.Printf("Return is \n %+v\n", retMap)
+	if err != nil {
+		t.Fatalf("failed to get field map from getFileMsgFieldMap")
+	}
+	fieldMapExp := fileMsgFieldMapOpt{
+		FileName: "example.proto",
+		Package:  "example",
+		Prefix:   "",
+		MetricsFieldMap: map[string][]string{
+			"Msg_1": {
+				"Field1",
+				"Field2",
+				"Field3",
+				"Field4",
+				"Field5",
+				"Field6",
+				"Field7",
+				"Field8",
+				"Field9",
+			},
+		},
+		MetricsFieldAggFuncMap: map[string]map[string]string{
+			"Msg_1": {
+				"Field1": "last",
+				"Field2": "max",
+				"Field3": "last",
+				"Field4": "last",
+				"Field5": "last",
+				"Field6": "last",
+				"Field7": "last",
+				"Field8": "last",
+				"Field9": "last",
+			},
+		},
+	}
+	if !reflect.DeepEqual(retMap, fieldMapExp) {
 		t.Fatal("Response did not match")
 	}
 }

@@ -156,119 +156,136 @@
           "DisplayName": "Total Active Sessions",
           "Description": "Total Number of active sessions",
           "Units": "Gauge",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumL2Sessions",
           "DisplayName": "L2 Sessions",
           "Description": "Total Number of L2 Sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumTcpSessions",
           "DisplayName": "TCP Sessions",
           "Description": "Total Number of TCP sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumUdpSessions",
           "DisplayName": "UDP Sessions",
           "Description": "Total Number of UDP sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumIcmpSessions",
           "DisplayName": "ICMP Sessions",
           "Description": "Total Number of ICMP sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumDropSessions",
           "DisplayName": "Drop Sessions",
           "Description": "Total Number of Drop sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumAgedSessions",
           "DisplayName": "Aged Sessions",
           "Description": "Total Number of Aged sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumTcpResets",
           "DisplayName": "TCP RST Sent",
           "Description": "Total Number of TCP Resets sent as a result of SFW Reject",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumIcmpErrors",
           "DisplayName": "ICMP Error Sent",
           "Description": "Total Number of ICMP Errors sent as a result of SFW Reject",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumTcpCxnsetupTimeouts",
           "DisplayName": "Connection-timeout Sessions",
           "Description": "Total Number of sessions that timed out at connection setup",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumSessionCreateErrors",
           "DisplayName": "Session Create Errors",
           "Description": "Total Number of sessions that errored out during creation",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumTcpHalfOpenSessions",
           "DisplayName": "Half Open TCP Sessions",
           "Description": "Total Number of Half Open TCP sessions",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumOtherActiveSessions",
           "DisplayName": "Other Active Sessions",
           "Description": "Total Number of sessions other than TCP/UDP/ICMP",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumTcpSessionLimitDrops",
           "DisplayName": "TCP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to TCP session limit",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumUdpSessionLimitDrops",
           "DisplayName": "UDP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to UDP session limit",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumIcmpSessionLimitDrops",
           "DisplayName": "ICMP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to ICMP session limit",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         },
         {
           "Name": "NumOtherSessionLimitDrops",
           "DisplayName": "Other Session limit exceed drops",
           "Description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
           "Units": "Count",
-          "BaseType": "Counter"
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
         }
       ],
       "Tags": [

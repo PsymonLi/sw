@@ -2202,6 +2202,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of active sessions",
       "units": "Gauge",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2213,6 +2214,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of L2 Sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2224,6 +2226,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of TCP sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2235,6 +2238,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of UDP sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2246,6 +2250,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of ICMP sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2257,6 +2262,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Drop sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2268,6 +2274,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Aged sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2279,6 +2286,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of TCP Resets sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2290,6 +2298,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of ICMP Errors sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2301,6 +2310,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that timed out at connection setup",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2312,6 +2322,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that errored out during creation",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2323,6 +2334,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Half Open TCP sessions",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2334,6 +2346,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions other than TCP/UDP/ICMP",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2345,6 +2358,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to TCP session limit",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2356,6 +2370,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to UDP session limit",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2367,6 +2382,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to ICMP session limit",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],
@@ -2378,6 +2394,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
       "units": "Count",
       "baseType": "Counter",
+      "aggregationFunc": "max",
       "tags": [
         "Level4"
       ],

@@ -37,4 +37,32 @@ func init() {
 	}
 	globalMetricsMap["sysmond"]["AsicTemperatureMetrics"] = kindToFieldNameMap["AsicTemperatureMetrics"]
 
+	metricsFieldAggFuncMap["AsicFrequencyMetrics"] = map[string]string{
+		"Frequency": "last",
+	}
+
+	metricsFieldAggFuncMap["AsicMemoryMetrics"] = map[string]string{
+		"Availablememory": "last",
+		"Freememory":      "last",
+		"Totalmemory":     "last",
+	}
+
+	metricsFieldAggFuncMap["AsicPowerMetrics"] = map[string]string{
+		"Pin":   "last",
+		"Pout1": "last",
+		"Pout2": "last",
+	}
+
+	metricsFieldAggFuncMap["AsicTemperatureMetrics"] = map[string]string{
+		"DieTemperature":              "last",
+		"HbmTemperature":              "last",
+		"LocalTemperature":            "last",
+		"QsfpPort1AlarmTemperature":   "last",
+		"QsfpPort1Temperature":        "last",
+		"QsfpPort1WarningTemperature": "last",
+		"QsfpPort2AlarmTemperature":   "last",
+		"QsfpPort2Temperature":        "last",
+		"QsfpPort2WarningTemperature": "last",
+	}
+
 }

@@ -100,3 +100,11 @@ func TestGlobalMetricsMap(t *testing.T) {
 	Assert(t, IsFieldNameValid("ftestats", "FteCPSMetrics", "ConnectionsPerSecond"), "expected: true, got: false")
 	Assert(t, !IsFieldNameValid("ftestats", "FteCPSMetrics", "CConnectionsPerSecond"), "expected: false, got: true")
 }
+
+func TestGetFieldAggFuncMap(t *testing.T) {
+	metricsFieldAggFuncMap["TestMetrics"] = map[string]string{
+		"TestFields": "Mean",
+	}
+	Assert(t, reflect.DeepEqual(GetFieldAggFuncMap("TestMetrics"), map[string]string{"TestFields": "Mean"}),
+		"Failed to get correct result from GetFieldAggFuncMap")
+}

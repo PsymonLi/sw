@@ -138,4 +138,124 @@ func init() {
 	}
 	globalMetricsMap["flowstats"]["L2FlowRawMetrics"] = kindToFieldNameMap["L2FlowRawMetrics"]
 
+	metricsFieldAggFuncMap["IPv4FlowBehavioralMetrics"] = map[string]string{
+		"BwThreshold":                           "last",
+		"BwThresholdExceedEventFirstTimestamp":  "last",
+		"BwThresholdExceedEventLastTimestamp":   "last",
+		"BwThresholdExceedEvents":               "last",
+		"Instances":                             "last",
+		"PpsThreshold":                          "last",
+		"PpsThresholdExceedEventFirstTimestamp": "last",
+		"PpsThresholdExceedEventLastTimestamp":  "last",
+		"PpsThresholdExceedEvents":              "last",
+	}
+
+	metricsFieldAggFuncMap["IPv4FlowLatencyMetrics"] = map[string]string{
+		"Instances":                "last",
+		"MaxRttLatency":            "last",
+		"MaxRttLatencyTimestamp":   "last",
+		"MaxSetupLatency":          "last",
+		"MaxSetupLatencyTimestamp": "last",
+		"MinRttLatency":            "last",
+		"MinRttLatencyTimestamp":   "last",
+		"MinSetupLatency":          "last",
+		"MinSetupLatencyTimestamp": "last",
+	}
+
+	metricsFieldAggFuncMap["IPv4FlowPerformanceMetrics"] = map[string]string{
+		"Instances":        "last",
+		"PeakBw":           "last",
+		"PeakBwTimestamp":  "last",
+		"PeakPps":          "last",
+		"PeakPpsTimestamp": "last",
+	}
+
+	metricsFieldAggFuncMap["IPv4FlowRawMetrics"] = map[string]string{
+		"Bytes":     "last",
+		"Instances": "last",
+		"Packets":   "last",
+	}
+
+	metricsFieldAggFuncMap["IPv6FlowBehavioralMetrics"] = map[string]string{
+		"BwThreshold":                           "last",
+		"BwThresholdExceedEventFirstTimestamp":  "last",
+		"BwThresholdExceedEventLastTimestamp":   "last",
+		"BwThresholdExceedEvents":               "last",
+		"Instances":                             "last",
+		"PpsThreshold":                          "last",
+		"PpsThresholdExceedEventFirstTimestamp": "last",
+		"PpsThresholdExceedEventLastTimestamp":  "last",
+		"PpsThresholdExceedEvents":              "last",
+	}
+
+	metricsFieldAggFuncMap["IPv6FlowDropMetrics"] = map[string]string{
+		"DropBytes":          "last",
+		"DropFirstTimestamp": "last",
+		"DropLastTimestamp":  "last",
+		"DropPackets":        "last",
+		"DropReason":         "last",
+		"Instances":          "last",
+	}
+
+	metricsFieldAggFuncMap["IPv6FlowLatencyMetrics"] = map[string]string{
+		"Instances":                "last",
+		"MaxRttLatency":            "last",
+		"MaxRttLatencyTimestamp":   "last",
+		"MaxSetupLatency":          "last",
+		"MaxSetupLatencyTimestamp": "last",
+		"MinRttLatency":            "last",
+		"MinRttLatencyTimestamp":   "last",
+		"MinSetupLatency":          "last",
+		"MinSetupLatencyTimestamp": "last",
+	}
+
+	metricsFieldAggFuncMap["IPv6FlowPerformanceMetrics"] = map[string]string{
+		"Instances":        "last",
+		"PeakBw":           "last",
+		"PeakBwTimestamp":  "last",
+		"PeakPps":          "last",
+		"PeakPpsTimestamp": "last",
+	}
+
+	metricsFieldAggFuncMap["IPv6FlowRawMetrics"] = map[string]string{
+		"Bytes":     "last",
+		"Instances": "last",
+		"Packets":   "last",
+	}
+
+	metricsFieldAggFuncMap["L2FlowBehavioralMetrics"] = map[string]string{
+		"BwThreshold":                           "last",
+		"BwThresholdExceedEventFirstTimestamp":  "last",
+		"BwThresholdExceedEventLastTimestamp":   "last",
+		"BwThresholdExceedEvents":               "last",
+		"Instances":                             "last",
+		"PpsThreshold":                          "last",
+		"PpsThresholdExceedEventFirstTimestamp": "last",
+		"PpsThresholdExceedEventLastTimestamp":  "last",
+		"PpsThresholdExceedEvents":              "last",
+	}
+
+	metricsFieldAggFuncMap["L2FlowDropMetrics"] = map[string]string{
+		"DropBytes":          "last",
+		"DropFirstTimestamp": "last",
+		"DropLastTimestamp":  "last",
+		"DropPackets":        "last",
+		"DropReason":         "last",
+		"Instances":          "last",
+	}
+
+	metricsFieldAggFuncMap["L2FlowPerformanceMetrics"] = map[string]string{
+		"Instances":        "last",
+		"PeakBw":           "last",
+		"PeakBwTimestamp":  "last",
+		"PeakPps":          "last",
+		"PeakPpsTimestamp": "last",
+	}
+
+	metricsFieldAggFuncMap["L2FlowRawMetrics"] = map[string]string{
+		"Bytes":     "last",
+		"Instances": "last",
+		"Packets":   "last",
+	}
+
 }

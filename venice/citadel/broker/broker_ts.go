@@ -1242,7 +1242,7 @@ func (br *Broker) continuousQueryRoutine(ctx context.Context, database string) {
 			}
 
 			// check each measurement
-			for measurement := range cq.CQMeasurementGroupByMap {
+			for measurement := range cq.MetricsGroupByFieldsMap {
 				// if this measurement's cq is created, skip
 				if _, ok := br.metricsWithCQCreated[measurement]; ok {
 					continue
@@ -1269,7 +1269,7 @@ func (br *Broker) continuousQueryRoutine(ctx context.Context, database string) {
 				}
 
 				// generate continuous query
-				cqMap := cq.GenerateContinuousQueryMap(database, measurement, "last", fields)
+				cqMap := cq.GenerateContinuousQueryMap(database, measurement, fields)
 
 				// run continuous query
 				for _, cqSpec := range cqMap {

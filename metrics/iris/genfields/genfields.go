@@ -6,6 +6,9 @@ var globalMetricsMap = map[string]map[string][]string{}
 // mapping of class to list of fields
 var kindToFieldNameMap = map[string][]string{}
 
+// mapping of metrics to list of fields with corresponded aggregation func string
+var metricsFieldAggFuncMap = map[string]map[string]string{}
+
 // GetFieldNamesFromKind returns a list of all fields belonging to the given class
 func GetFieldNamesFromKind(k string) []string {
 	return kindToFieldNameMap[k]
@@ -49,4 +52,9 @@ func IsFieldNameValid(group, class, property string) bool {
 	}
 
 	return false
+}
+
+// GetFieldAggFuncMap get map info from field name to aggregation function name in given metrics
+func GetFieldAggFuncMap(metrics string) map[string]string {
+	return metricsFieldAggFuncMap[metrics]
 }

@@ -5,11 +5,17 @@ package genfields
 
 func init() {
     globalMetricsMap["{{$msgMapObj.Package}}"] = make(map[string][]string)
-    {{range $key, $value := $msgMapObj.Maps}}
+    {{range $key, $value := $msgMapObj.MetricsFieldMap}}
         kindToFieldNameMap["{{$key}}"] = []string{
             {{range $v := $value}} "{{$v}}",
             {{end}}
         }
         globalMetricsMap["{{$msgMapObj.Package}}"]["{{$key}}"] = kindToFieldNameMap["{{$key}}"]
+	{{end}}
+    {{range $key, $value := $msgMapObj.MetricsFieldAggFuncMap}}
+        metricsFieldAggFuncMap["{{$key}}"] = map[string]string{
+            {{range $field, $aggFunc := $value}} "{{$field}}":"{{$aggFunc}}",
+            {{end}}
+        }
 	{{end}}
 }

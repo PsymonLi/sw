@@ -43,6 +43,12 @@ enum MetricTags {
   Level6    = 6 ;
   Level7    = 7 ;   // unimportant metrics - hide by default in UI
   FuncRate  = 8 ;   // UI will use the Rate function to display this metric
+  Mean      = 9 ;
+  Min       = 10 ;
+  Max       = 11 ;
+  Median    = 12 ;
+  Last      = 13 ;
+  Sum       = 14 ;
 }
 
 message MetricInfo {
@@ -52,6 +58,7 @@ message MetricInfo {
     string KeyFields            = 3;
     MetricScope Scope           = 4;
     repeated MetricTags Tags    = 5;
+    string AggregateFunc        = 6;
 }
 
 message MetricFieldInfo {
@@ -62,6 +69,7 @@ message MetricFieldInfo {
     int32 ScaleMax              = 5;
     string AllowedVal           = 6;
     repeated MetricTags Tags    = 7;
+    string AggregateFunc        = 8;
 }
 
 extend google.protobuf.MessageOptions {

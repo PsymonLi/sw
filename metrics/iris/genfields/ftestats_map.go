@@ -50,4 +50,46 @@ func init() {
 	}
 	globalMetricsMap["ftestats"]["SessionSummaryMetrics"] = kindToFieldNameMap["SessionSummaryMetrics"]
 
+	metricsFieldAggFuncMap["FteCPSMetrics"] = map[string]string{
+		"ConnectionsPerSecond":    "last",
+		"MaxConnectionsPerSecond": "last",
+		"MaxPacketsPerSecond":     "last",
+		"PacketsPerSecond":        "last",
+	}
+
+	metricsFieldAggFuncMap["FteLifQMetrics"] = map[string]string{
+		"AlgControlFlowPackets":    "last",
+		"FlowMissPackets":          "last",
+		"FlowRetransmitPackets":    "last",
+		"FreedTxPackets":           "last",
+		"FteSpanPackets":           "last",
+		"L4RedirectPackets":        "last",
+		"MaxSessionThresholdDrops": "last",
+		"QueuedTxPackets":          "last",
+		"SessionCreatesIgnored":    "last",
+		"SoftwareQueuePackets":     "last",
+		"TcpClosePackets":          "last",
+		"TlsProxyPackets":          "last",
+	}
+
+	metricsFieldAggFuncMap["SessionSummaryMetrics"] = map[string]string{
+		"NumAgedSessions":           "max",
+		"NumDropSessions":           "max",
+		"NumIcmpErrors":             "max",
+		"NumIcmpSessionLimitDrops":  "max",
+		"NumIcmpSessions":           "max",
+		"NumL2Sessions":             "max",
+		"NumOtherActiveSessions":    "max",
+		"NumOtherSessionLimitDrops": "max",
+		"NumSessionCreateErrors":    "max",
+		"NumTcpCxnsetupTimeouts":    "max",
+		"NumTcpHalfOpenSessions":    "max",
+		"NumTcpResets":              "max",
+		"NumTcpSessionLimitDrops":   "max",
+		"NumTcpSessions":            "max",
+		"NumUdpSessionLimitDrops":   "max",
+		"NumUdpSessions":            "max",
+		"TotalActiveSessions":       "max",
+	}
+
 }

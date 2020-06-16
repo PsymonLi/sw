@@ -11,6 +11,7 @@ export interface MetricField {
   tags?: string[],
   scope?: string,
   isTag?: boolean,
+  aggregationFunc?: string,
 }
 
 export interface MetricMeasurement {

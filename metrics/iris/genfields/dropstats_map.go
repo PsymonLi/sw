@@ -32,4 +32,30 @@ func init() {
 	}
 	globalMetricsMap["dropstats"]["DropMetrics"] = kindToFieldNameMap["DropMetrics"]
 
+	metricsFieldAggFuncMap["DropMetrics"] = map[string]string{
+		"DropFlowHit":                     "last",
+		"DropFlowMiss":                    "last",
+		"DropHardwareError":               "last",
+		"DropIcmpFragPkt":                 "last",
+		"DropIcmpNormalization":           "last",
+		"DropInputMapping":                "last",
+		"DropInputPropertiesMiss":         "last",
+		"DropIpNormalization":             "last",
+		"DropIpsg":                        "last",
+		"DropMultiDestNotPinnedUplink":    "last",
+		"DropNacl":                        "last",
+		"DropParseLenError":               "last",
+		"DropSrcLifMismatch":              "last",
+		"DropTcpDataAfterFin":             "last",
+		"DropTcpInvalidResponderFirstPkt": "last",
+		"DropTcpNonRstPktAfterRst":        "last",
+		"DropTcpNonSynFirstPkt":           "last",
+		"DropTcpNormalization":            "last",
+		"DropTcpOutOfWindow":              "last",
+		"DropTcpRstWithInvalidAckNum":     "last",
+		"DropTcpSplitHandshake":           "last",
+		"DropTcpUnexpectedPkt":            "last",
+		"DropTcpWinZeroDrop":              "last",
+	}
+
 }

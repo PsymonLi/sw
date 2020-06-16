@@ -15,4 +15,13 @@ func init() {
 	}
 	globalMetricsMap["rulestats"]["RuleMetrics"] = kindToFieldNameMap["RuleMetrics"]
 
+	metricsFieldAggFuncMap["RuleMetrics"] = map[string]string{
+		"EspHits":   "last",
+		"IcmpHits":  "last",
+		"OtherHits": "last",
+		"TcpHits":   "last",
+		"TotalHits": "last",
+		"UdpHits":   "last",
+	}
+
 }

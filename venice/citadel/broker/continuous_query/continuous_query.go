@@ -1,35 +1,44 @@
 package cq
 
-import "strings"
+import (
+	"strings"
 
-// groupbyFieldType define different groupby field
-var groupbyFieldType = map[int][]string{
-	1: {`"name"`, `"reporterID"`, `"tenant"`},
-	2: {`"Name"`, `"reporterID"`},
+	"github.com/pensando/sw/metrics/iris/genfields"
+)
+
+// AggregationFuncTagMap stores aggregation function for validation puepose
+var AggregationFuncTagMap = map[string]bool{
+	"mean":   true,
+	"min":    true,
+	"max":    true,
+	"median": true,
+	"last":   true,
+	"sum":    true,
 }
 
-// CQMeasurementGroupByMap list for measurement to be applied to CQ
+// MetricsGroupByFieldsMap list for measurement to be applied to CQ
+// Please keep this in lexicological order
 // key: measurement name
-// value: groupby field type
-var CQMeasurementGroupByMap = map[string]int{
-	"AsicPowerMetrics":       1,
-	"AsicTemperatureMetrics": 1,
-	"FteCPSMetrics":          1,
-	"LifMetrics":             1,
-	"SessionSummaryMetrics":  1,
-	"FteLifQMetrics":         1,
-	"MgmtMacMetrics":         1,
-	"MacMetrics":             1,
-	"MemoryMetrics":          1,
-	"PowerMetrics":           1,
-	"PortTemperatureMetrics": 1,
-	"FlowStatsSummary":       1,
-	"PcieMgrMetrics":         1,
-	"PciePortMetrics":        1,
-	"DropMetrics":            1,
-	"Cluster":                1,
-	"DistributedServiceCard": 1,
-	"Node":                   1,
+// value: group by field names
+var MetricsGroupByFieldsMap = map[string][]string{
+	"AsicPowerMetrics":       {`"name"`, `"reporterID"`, `"tenant"`},
+	"AsicTemperatureMetrics": {`"name"`, `"reporterID"`, `"tenant"`},
+	"Cluster":                {`"name"`, `"reporterID"`, `"tenant"`},
+	"DistributedServiceCard": {`"name"`, `"reporterID"`, `"tenant"`},
+	"DropMetrics":            {`"name"`, `"reporterID"`, `"tenant"`},
+	"FlowStatsSummary":       {`"name"`, `"reporterID"`, `"tenant"`},
+	"FteCPSMetrics":          {`"name"`, `"reporterID"`, `"tenant"`},
+	"FteLifQMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
+	"LifMetrics":             {`"name"`, `"reporterID"`, `"tenant"`},
+	"MacMetrics":             {`"name"`, `"reporterID"`, `"tenant"`},
+	"MemoryMetrics":          {`"name"`, `"reporterID"`, `"tenant"`},
+	"MgmtMacMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
+	"Node":                   {`"name"`, `"reporterID"`, `"tenant"`},
+	"PcieMgrMetrics":         {`"name"`, `"reporterID"`, `"tenant"`},
+	"PciePortMetrics":        {`"name"`, `"reporterID"`, `"tenant"`},
+	"PortTemperatureMetrics": {`"name"`, `"reporterID"`, `"tenant"`},
+	"PowerMetrics":           {`"name"`, `"reporterID"`, `"tenant"`},
+	"SessionSummaryMetrics":  {`"name"`, `"reporterID"`, `"tenant"`},
 }
 
 // tagMap all column name in this list will NOT be considered as CQ field
@@ -92,22 +101,36 @@ func IsTag(columnName string) bool {
 	return ok
 }
 
+// GetAggFuncString retrieve aggregation function from map
+func GetAggFuncString(aggFunc string) string {
+	if _, ok := AggregationFuncTagMap[aggFunc]; ok {
+		return aggFunc
+	}
+	return "last"
+}
+
 // getFieldString get field string
-func getFieldString(aggFunc string, fields []string) string {
+func getFieldString(measurement string, fields []string) string {
 	fieldStringList := []string{}
+	fieldAggFuncMap := genfields.GetFieldAggFuncMap(measurement)
 	for _, field := range fields {
-		fieldStringList = append(fieldStringList, aggFunc+`("`+field+`") AS "`+field+`"`)
+		if aggFunc, ok := fieldAggFuncMap[field]; ok {
+			fieldStringList = append(fieldStringList, aggFunc+`("`+field+`") AS "`+field+`"`)
+		} else {
+			// last() aggregation function is used by default
+			fieldStringList = append(fieldStringList, `last("`+field+`") AS "`+field+`"`)
+		}
 	}
 	return strings.Join(fieldStringList, ", ")
 }
 
-// groupbyFieldString get groupby field string
-func groupbyFieldString(measurement string) string {
-	return strings.Join(groupbyFieldType[CQMeasurementGroupByMap[measurement]], ", ")
+// getGroupbyFieldString get groupby field string
+func getGroupbyFieldString(measurement string) string {
+	return strings.Join(MetricsGroupByFieldsMap[measurement], ", ")
 }
 
 // GenerateContinuousQueryMap generate cq map for specific measurement
-func GenerateContinuousQueryMap(database string, measurement string, aggFunc string, fields []string) map[string]ContinuousQuerySpec {
+func GenerateContinuousQueryMap(database string, measurement string, fields []string) map[string]ContinuousQuerySpec {
 	cqMap := map[string]ContinuousQuerySpec{}
 	for suffix, rpSpec := range RetentionPolicyMap {
 		cqMap[measurement+"_"+suffix] = ContinuousQuerySpec{
@@ -117,10 +140,10 @@ func GenerateContinuousQueryMap(database string, measurement string, aggFunc str
 			RetentionPolicyInHours: rpSpec.Hours,
 			Query: `CREATE CONTINUOUS QUERY ` + measurement + `_` + suffix + ` ON "` + database + `"
 					BEGIN
-						SELECT ` + getFieldString(aggFunc, fields) + `
+						SELECT ` + getFieldString(measurement, fields) + `
 						INTO "` + database + `"."` + rpSpec.Name + `"."` + measurement + `_` + suffix + `"
 						FROM "` + measurement + `"
-						GROUP BY time(` + rpSpec.GroupBy + `), ` + groupbyFieldString(measurement) + `
+						GROUP BY time(` + rpSpec.GroupBy + `), ` + getGroupbyFieldString(measurement) + `
 					END`,
 		}
 	}
