@@ -558,3 +558,16 @@ func RaiseEvent(eventType eventtypes.EventType, message, dscName string) {
 	recorder.Event(eventType, message, nic)
 	log.Infof("Event raised %s", message)
 }
+
+// Uint64ToMac converts a MAC from uint64 to string
+func Uint64ToMac(in uint64) string {
+	b := make([]byte, 8)
+
+	binary.BigEndian.PutUint64(b, in)
+	mac := net.HardwareAddr(b[2:])
+	s := strings.Replace(mac.String(), ":", "", -1)
+	for i := 4; i < len(s); i += 5 {
+		s = s[:i] + "." + s[i:]
+	}
+	return s
+}

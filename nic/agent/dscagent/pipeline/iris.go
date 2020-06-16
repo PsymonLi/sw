@@ -2075,6 +2075,7 @@ func (i *IrisAPI) createHostInterface(uid string, spec *halapi.LifSpec, status *
 		Status: netproto.InterfaceStatus{
 			InterfaceID: uint64(lifIndex),
 			IFHostStatus: netproto.InterfaceHostStatus{
+				MacAddress: utils.Uint64ToMac(spec.MacAddress),
 				HostIfName: spec.GetName(),
 			},
 			OperStatus: ifStatus,

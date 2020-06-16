@@ -1722,7 +1722,7 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 			DSCID:       a.InfraAPI.GetConfig().DSCID,
 			InterfaceID: uint64(status.GetIfIndex()),
 			IFHostStatus: netproto.InterfaceHostStatus{
-				MacAddress: apuluutils.Uint64ToMac(spec.MacAddress),
+				MacAddress: utils.Uint64ToMac(spec.MacAddress),
 				HostIfName: status.GetName(),
 			},
 			OperStatus: status.GetStatus().String(),
