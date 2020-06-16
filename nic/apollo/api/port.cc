@@ -142,6 +142,10 @@ xvcr_event_walk_cb (void *entry, void *ctxt)
     if_entry *intf = (if_entry *)entry;
     xcvr_event_info_t *xcvr_event_info = (xcvr_event_info_t *)ctxt;
 
+    // if the interface is already added to db, but port_info is not yet set
+    if (intf->port_info() == NULL) {
+        return false;
+    }
     ifindex = intf->ifindex();
     logical_port = sdk::lib::catalog::ifindex_to_logical_port(ifindex);
     phy_port = sdk::lib::catalog::logical_port_to_phy_port(logical_port);
