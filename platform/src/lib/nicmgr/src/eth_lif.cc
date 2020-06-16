@@ -620,6 +620,8 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     }
 
     int ret;
+    asic_db_addr_t db_addr = { 0 };
+
     // Reset RSS configuration
     lif_pstate->rss_type = LIF_RSS_TYPE_NONE;
     memset(lif_pstate->rss_key, 0x00, RSS_HASH_KEY_SIZE);
@@ -642,8 +644,16 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(eth_rx_qstate_t, q.intr.pc_offset), 0);
+        MEM_SET(addr + offsetof(eth_rx_qstate_t, q.intr.pid) - 1, 0x10, 1, 0);
         PAL_barrier();
         sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(eth_rx_qstate_t), P4PLUS_CACHE_INVALIDATE_BOTH);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_RX;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     for (uint32_t qid = 0; qid < spec->txq_count; qid++) {
@@ -653,8 +663,16 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(eth_tx_qstate_t, q.intr.pc_offset), 0);
+        MEM_SET(addr + offsetof(eth_tx_qstate_t, q.intr.pid) - 1, 0x10, 1, 0);
         PAL_barrier();
         sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(eth_tx_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_TX;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     lif_pstate->active_q_ref_cnt = 0;
@@ -667,8 +685,16 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(admin_qstate_t, pc_offset), 0);
+        MEM_SET(addr + offsetof(admin_qstate_t, pid) - 1, 0x10, 1, 0);
         PAL_barrier();
         sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(admin_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_ADMIN;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     lif_pstate->mtu = MTU_DEFAULT;
@@ -802,8 +828,9 @@ EthLif::FreeUpMacVlanFilters()
 status_code_t
 EthLif::Reset()
 {
-    uint64_t addr;
     int ret;
+    uint64_t addr;
+    asic_db_addr_t db_addr = { 0 };
 
     NIC_LOG_DEBUG("{}: LIF_RESET", hal_lif_info_.name);
 
@@ -854,10 +881,16 @@ EthLif::Reset()
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(eth_rx_qstate_t, q.intr.pc_offset), 0);
+        MEM_SET(addr + offsetof(eth_rx_qstate_t, q.intr.pid) - 1, 0x10, 1, 0);
         PAL_barrier();
-        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr,
-                                                      sizeof(eth_rx_qstate_t),
-                                                      P4PLUS_CACHE_INVALIDATE_BOTH);
+        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(eth_rx_qstate_t), P4PLUS_CACHE_INVALIDATE_BOTH);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_RX;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     for (uint32_t qid = 0; qid < spec->txq_count; qid++) {
@@ -869,10 +902,16 @@ EthLif::Reset()
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(eth_tx_qstate_t, q.intr.pc_offset), 0);
+        MEM_SET(addr + offsetof(eth_tx_qstate_t, q.intr.pid) - 1, 0x10, 1, 0);
         PAL_barrier();
-        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr,
-                                                      sizeof(eth_tx_qstate_t),
-                                                      P4PLUS_CACHE_INVALIDATE_TXDMA);
+        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(eth_tx_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_TX;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     lif_pstate->active_q_ref_cnt = 0;
@@ -886,10 +925,16 @@ EthLif::Reset()
             return (IONIC_RC_ERROR);
         }
         MEM_SET(addr, 0, fldsiz(admin_qstate_t, pc_offset), 0);
+        MEM_SET(addr + offsetof(admin_qstate_t, pid) - 1, 0x10, 1, 0);
         PAL_barrier();
-        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr,
-                                                      sizeof(admin_qstate_t),
-                                                      P4PLUS_CACHE_INVALIDATE_TXDMA);
+        sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(admin_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
+        db_addr.lif_id = hal_lif_info_.lif_id;
+        db_addr.q_type = ETH_HW_QTYPE_ADMIN;
+        db_addr.upd = ASIC_DB_ADDR_UPD_FILL(ASIC_DB_UPD_SCHED_CLEAR,
+                                            ASIC_DB_UPD_INDEX_UPDATE_NONE,
+                                            false);
+        PAL_barrier();
+        sdk::asic::pd::asic_ring_db(&db_addr, (uint64_t)(qid << 24));
     }
 
     // Reset EDMA service
