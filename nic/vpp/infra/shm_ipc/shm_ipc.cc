@@ -274,6 +274,34 @@ shm_ipc_send_start (shm_ipcq *q, encode_cb enq_cb, void *opaq)
 }
 
 bool
+shm_ipc_try_send (shm_ipcq *q, encode_cb enq_cb, void *opaq)
+{
+    bool ret = false;
+    ptr_handle_t handle;
+    spsc_q *sq = q->sq;
+    spsc_q *aq = q->aq;
+    BufferObj *ptr;
+
+    if (sq->write_available() && q->freeq.size()) {
+        ptr = q->freeq.back();
+        q->freeq.pop_back();
+        enq_cb(ptr->data, &ptr->len, opaq);
+        handle = q->shm->get_handle_from_address(ptr);
+        // NOTE: ret can only be true below.
+        ret = sq->push(handle);
+    }
+    while (aq->pop(handle)) {
+        if (!q->old_entries) {
+            ptr = (BufferObj *)q->shm->get_address_from_handle(handle);
+            q->freeq.push_back(ptr);
+        } else {
+            q->old_entries--;
+        }
+    }
+    return ret;
+}
+
+bool
 shm_ipc_send_eor (shm_ipcq *q)
 {
     bool ret = false;
@@ -288,6 +316,7 @@ shm_ipc_send_eor (shm_ipcq *q)
         ptr->data[0] = '\0';
         ptr->len = 0;
         handle = q->shm->get_handle_from_address(ptr);
+        // NOTE: ret can only be true below.
         ret = sq->push(handle);
     }
     while (aq->pop(handle)) {

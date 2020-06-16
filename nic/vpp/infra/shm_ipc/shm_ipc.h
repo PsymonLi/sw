@@ -35,6 +35,11 @@ struct shm_ipcq * shm_ipc_create(const char *qname);
 //     false the transport cannot send any more data
 //     true if it can take send more data
 bool shm_ipc_send_start(struct shm_ipcq *q, encode_cb enq_cb, void *opaq);
+// If there is a free entry available, call encode_cb with 'opaq', 'data' and 'len'
+// and send the encoded object.
+//     true if object was sent
+//     false transport cannot send data. Caller has to re-try in this case.
+bool shm_ipc_try_send(struct shm_ipcq *q, encode_cb enq_cb, void *opaq);
 // Try send a end-of-record marker over the channel.
 //     true if eor was sent
 //     false transport cannot send data. Caller has to re-try in this case.
