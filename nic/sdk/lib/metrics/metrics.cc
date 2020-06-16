@@ -204,7 +204,11 @@ load_table_ (const char *name)
 
     srlzd = (serialized_spec_t *)get_meta_table()->Find(
         tbl->name.c_str(), tbl->name.size());
-    assert(srlzd != NULL);
+    if (srlzd == NULL) {
+        delete tbl;
+        return NULL;
+    }
+    
     tbl->type = srlzd->type;
 
     for (unsigned int i = 0; i < srlzd->counter_count; i++) {
@@ -243,6 +247,7 @@ create (schema_t *schema)
         save_schema_(tbl, schema);
     } else {
         tbl = load_table_(schema->name.c_str());
+        assert(tbl != NULL);
         tbl->tbl = std::move(tbmgr);
     }
 
@@ -275,6 +280,9 @@ metrics_open (const char *name)
 {
     metrics_table_t *tbl = load_table_(name);
 
+    if (tbl == NULL) {
+        return NULL;
+    }
     tbl->tbl = get_shm()->Kvstore()->Table(name);
     if (tbl->tbl == nullptr) {
         delete tbl;

@@ -25,6 +25,11 @@ metrics_read (std::string name, sdk::metrics::key_t key,
         handler = g_handlers[name];
     }
 
+    if (handler == NULL) {
+        rsp->set_apistatus(types::ApiStatus::API_STATUS_RETRY);
+        return;
+    }
+
     counters = sdk::metrics::metrics_read(handler, key);
     for (uint32_t i = 0; i < counters.size(); i++) {
         ::operd::CountersStatus *status = rsp->add_response();
