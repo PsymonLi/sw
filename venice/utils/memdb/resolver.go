@@ -15,7 +15,7 @@ type resolver interface {
 }
 
 type resolverBase struct {
-	md *DBWithResolver
+	md *Memdb
 	ev EventType
 }
 
@@ -27,7 +27,7 @@ type deleteResolver struct {
 	resolverBase
 }
 
-func newAddResolver(md *DBWithResolver) resolver {
+func newAddResolver(md *Memdb) resolver {
 	return &addResolver{resolverBase{md: md, ev: CreateEvent}}
 }
 
@@ -78,7 +78,7 @@ func (r *addResolver) getEvent() EventType {
 	return r.ev
 }
 
-func newDeleteResolver(md *DBWithResolver) resolver {
+func newDeleteResolver(md *Memdb) resolver {
 	return &deleteResolver{resolverBase{md: md, ev: DeleteEvent}}
 }
 
@@ -154,13 +154,13 @@ func (r *addResolver) trigger(key string) error {
 								if update != nil {
 									r.md.sendPropagationUpdate(update)
 								}
-								objDB.watchEvent(&r.md.Memdb, referrerObj, UpdateEvent)
+								objDB.watchEvent(r.md, referrerObj, UpdateEvent)
 							} else {
 								update := r.md.topoHandler.handleAddEvent(referrerObj.Object(), referrerObj.Key())
 								if update != nil {
 									r.md.sendPropagationUpdate(update)
 								}
-								objDB.watchEvent(&r.md.Memdb, referrerObj, CreateEvent)
+								objDB.watchEvent(r.md, referrerObj, CreateEvent)
 							}
 							referrerObj.resolved()
 							for _, pobj := range referrerObj.getAndClearPending() {
@@ -235,7 +235,7 @@ func (r *deleteResolver) trigger(key string) error {
 								r.md.sendPropagationUpdate(update)
 							}
 							objDB.deleteObject(getRefKey(reference))
-							objDB.watchEvent(&r.md.Memdb, referenceObj, DeleteEvent)
+							objDB.watchEvent(r.md, referenceObj, DeleteEvent)
 							for _, pobj := range referenceObj.getAndClearPending() {
 								pendingObjs = append(pendingObjs, pobj)
 							}
@@ -312,7 +312,7 @@ func (r *deleteResolver) revaluate(kind string, keys []string) error {
 						r.md.sendPropagationUpdate(update)
 					}
 					objDB.deleteObject(getRefKey(reference))
-					objDB.watchEvent(&r.md.Memdb, referenceObj, DeleteEvent)
+					objDB.watchEvent(r.md, referenceObj, DeleteEvent)
 					for _, pobj := range referenceObj.getAndClearPending() {
 						pendingObjects = append(pendingObjects, pobj)
 					}
