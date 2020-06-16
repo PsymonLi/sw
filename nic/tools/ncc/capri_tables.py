@@ -4527,6 +4527,8 @@ class capri_stage:
         for ct in self.ct_list:
             if not ct.is_wide_key:
                 self.max_table_num += 1
+                if (ct.num_threads != 1):
+                    self.max_table_num += ct.num_threads - 1
             else:
                 self.max_table_num += len(ct.flits_used)
         self.gtm.tm.logger.debug("%s:Stage %d: max_table_num %d" % \
