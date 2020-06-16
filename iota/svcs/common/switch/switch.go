@@ -119,6 +119,8 @@ type Switch interface {
 	DoDscpConfig(dscpConfig *DscpConfig) error
 	DoQueueConfig(queueConfig *QueueConfig) error
 	CheckSwitchConfiguration(port string, mode PortMode, status PortStatus, speed PortSpeed) (string, error)
+	CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error
+	DeletePortChannel(portChannelNumber string, ports []string) error
 }
 
 //NewSwitch Create a new switch handler

@@ -168,7 +168,10 @@ enum PersonalityType {
     PERSONALITY_NAPLES_DVS              = 16;
 
     PERSONALITY_THIRD_PARTY_NIC_DVS     = 17;
+
     PERSONALITY_K8S_MASTER              = 18;
+
+    PERSONALITY_NAPLES_BOND             = 19;
 }
 
 enum EntityType {
@@ -220,6 +223,25 @@ message VcenterConfig {
     repeated string workload_images      = 8;
 }
 
+message BondConfig {
+    string bond_interface_name          = 1;
+
+    // Teaming Mode
+    string teaming_mode                 = 2;
+
+    // Load Balancing Algorithm
+    string load_balancing_algorithm     = 3;
+
+    // vlan (subinterface)
+    repeated string vlans               = 4;
+
+    // hint, if there are more than 1 naples in system
+    repeated string nic_hints           = 5;
+}
+
+message BondConfigs {
+    repeated BondConfig configs = 1;
+}
 
 message NaplesSimInfo {
 
@@ -293,7 +315,10 @@ message Node {
 
     string              RestartMethod   = 19;
 
-}
+    oneof overlay_configs {
+        BondConfigs     bond_configs    = 20;
+    }
+ }
 
 message ApcInfo {
     string ip = 1;
@@ -464,6 +489,7 @@ enum InterfaceType {
     INTERFACE_TYPE_SRIOV      = 2;
     INTERFACE_TYPE_DVS        = 3;
     INTERFACE_TYPE_DVS_PVLAN  = 4;
+    INTERFACE_TYPE_BOND       = 5;
 }
 
 enum WorkloadType {
@@ -817,6 +843,24 @@ message NetworkQueuePolicy {
 
     repeated NetworkQueueClass queue_classes = 2;
 }
+
+message PortChannelConfig {
+
+    // switch ip
+    string switch_ip = 1;
+
+    // Name of the port-channel
+    string ch_number            = 2;
+
+    // member ports
+    repeated string ports       = 3;
+}
+
+message PortChannelConfigs {
+
+    repeated PortChannelConfig configs = 1;
+}
+
 message DataSwitch {
 
     enum Speed {
@@ -859,7 +903,6 @@ message DataSwitch {
 
     //Network queue to be used.
     NetworkQueuePolicy queue = 12;
-
 }
 
 message License {
@@ -958,6 +1001,8 @@ enum SwitchOp {
     PORT_QOS_CONFIG     = 8;
     PORT_QUEUING_CONFIG = 9;
     CREATE_QOS_CONFIG   = 10;
+    CREATE_PORT_CHANNEL = 11;
+    DELETE_PORT_CHANNEL = 12;
 }
 
 message VlanConfig {
@@ -1034,6 +1079,8 @@ message SwitchMsg {
 	oneof port_queuing_info {
 		PortQueuingConfig port_queuing	= 9;
 	}
+
+    PortChannelConfigs  port_channel_configs = 10;
 }
 
 enum TestBedNodeType {

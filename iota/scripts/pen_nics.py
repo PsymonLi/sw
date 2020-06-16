@@ -265,8 +265,7 @@ def __get_devices_windows(mac_hint):
     for intf in intfMap.values():
         if MacInRange(intf["MacAddress"], mac_hint):
             devs.append((intf["LinuxName"], int(intf["Bus"])))
-        intf["Bus"] = str(intf["Bus"])
-        intf["ifIndex"] = str(intf["ifIndex"])
+        intf = {k: str(v) for k, v in intf.items()}
         output[intf["LinuxName"]] = intf
 
     ojson = json.JSONEncoder().encode(output)

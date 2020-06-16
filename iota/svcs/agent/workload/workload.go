@@ -57,7 +57,7 @@ var (
 	//ContainerPrivileged run container in privileged mode
 	ContainerPrivileged    = true
 	macVlanIntfPrefixCnt   uint64
-	windowsPortNameMapping map[string]map[string]string
+	WindowsPortNameMapping map[string]map[string]string
 	once                   sync.Once
 )
 
@@ -620,7 +620,7 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 			return "", errors.Errorf("Could not bring up parent interface %s : %s", spec.Parent, stdout)
 		}
 	case "windows":
-		name, ok := windowsPortNameMapping[spec.Parent]["Name"]
+		name, ok := WindowsPortNameMapping[spec.Parent]["Name"]
 		if !ok {
 			break
 		}
@@ -691,7 +691,7 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 				return "", errors.Wrap(err, stdout)
 			}
 		case "windows":
-			name, ok := windowsPortNameMapping[spec.Parent]["Name"]
+			name, ok := WindowsPortNameMapping[spec.Parent]["Name"]
 			if !ok {
 				break
 			}
@@ -726,7 +726,7 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 			}
 		case "windows":
 			output := strings.Split(spec.IPV4Address, "/")
-			intfInfo, ok := windowsPortNameMapping[spec.Parent]
+			intfInfo, ok := WindowsPortNameMapping[spec.Parent]
 			if !ok {
 				break
 				// return "", errors.Errorf("Failed to find port")
@@ -769,7 +769,7 @@ func (app *bareMetalWorkload) AddInterface(spec InterfaceSpec) (string, error) {
 			}
 		case "windows":
 			output := strings.Split(spec.IPV6Address, "/")
-			intfInfo, ok := windowsPortNameMapping[spec.Parent]
+			intfInfo, ok := WindowsPortNameMapping[spec.Parent]
 			if !ok {
 				break
 				// return "", errors.Errorf("Failed to find port")
@@ -986,7 +986,7 @@ func (app *bareMetalWorkload) BringUp(args ...string) error {
 		app.osType = "windows"
 		var err error
 		getPortNameMapping := func() {
-			err = json.NewDecoder(f).Decode(&windowsPortNameMapping)
+			err = json.NewDecoder(f).Decode(&WindowsPortNameMapping)
 			f.Close()
 		}
 		once.Do(getPortNameMapping)

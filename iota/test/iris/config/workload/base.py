@@ -304,7 +304,7 @@ class NodeWorkloads(object):
         # Since its multi-Naples scenario, regenerate wl.interfaces
         for idx, dev_name in enumerate(self.__nic_devices):
             iflist = []
-            hostIfList = api.GetNaplesHostInterfaces(self.GetNodeName(), dev_name)
+            hostIfList = api.GetWorkloadNodeHostInterfaces(self.GetNodeName(), dev_name)
             for ifnum, hostIntf in enumerate(hostIfList):
                 obj = parser.Dict2Object({})
                 setattr(obj, 'HostInterface', hostIntf)

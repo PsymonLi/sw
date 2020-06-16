@@ -360,8 +360,8 @@ def GetNaplesHostInterfaces(node_name, device_name=None):
 def AllocateHostInterfaceForNode(name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().AllocateHostInterfaceForNode(name)
 
-def GetWorkloadNodeHostInterfaces(name):
-    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadNodeHostInterfaces(name)
+def GetWorkloadNodeHostInterfaces(name, device_name=None):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadNodeHostInterfaces(name, device_name)
 
 def GetWorkloadTypeForNode(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().GetWorkloadTypeForNode(node_name)

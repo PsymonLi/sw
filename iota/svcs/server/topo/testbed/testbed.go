@@ -715,7 +715,7 @@ func doVlanConfiguration(dataSwitch dataswitch.Switch, ports []string, vlanConfi
 }
 
 // DoSwitchOperation allocates vlans based on the switch port ID
-func DoSwitchOperation(ctx context.Context, req *iota.SwitchMsg) (err error) {
+func DoSwitchOperation(ctx context.Context, switchPortID uint32, nativeVlan uint32, req *iota.SwitchMsg) (err error) {
 
 	if req.GetOp() == iota.SwitchOp_FLAP_PORTS {
 		if err := portLinkFlap(ctx, req.DataSwitches, req.GetFlapInfo().GetCount(),
@@ -772,7 +772,36 @@ func DoSwitchOperation(ctx context.Context, req *iota.SwitchMsg) (err error) {
 				log.Errorf("TOPO SVC | InitTestBed | Set Switch QoS config failed to create classification policy: %s", err.Error())
 				return errors.Wrap(err, "Configuring DSCP on switch failed")
 			}
+		case iota.SwitchOp_CREATE_PORT_CHANNEL:
+			// re-evaluate for port-channel configuration
+			if nativeVlan == 0 {
+				inBandVlans := constants.InbandVlanEnd - constants.InbandVlanStart
+				nativeVlan = constants.InbandVlanStart + (switchPortID % (uint32)(inBandVlans))
+			}
+			startTrunkVlan := (switchPortID * constants.VlansPerTestBed) % constants.MaxDataVlanRange
+			if startTrunkVlan == 0 {
+				startTrunkVlan = 1
+			}
+			endTrunkVlan := startTrunkVlan + constants.VlansPerTestBed
+			trunkVlanRange := strconv.Itoa(int(startTrunkVlan)) + "-" + strconv.Itoa(int(endTrunkVlan))
 
+			for _, pcConfig := range req.PortChannelConfigs.GetConfigs() {
+				if pcConfig.GetSwitchIp() == ds.GetIp() {
+					if err := n3k.CreatePortChannel(pcConfig.GetChNumber(), ds.Mtu, nativeVlan, trunkVlanRange, pcConfig.GetPorts()); err != nil {
+						log.Errorf("TOPO SVC | InitTestBed | Failed to create port-channel")
+						return errors.Wrap(err, "PortChannel Creation Failed")
+					}
+				}
+			}
+		case iota.SwitchOp_DELETE_PORT_CHANNEL:
+			for _, pcConfig := range req.PortChannelConfigs.GetConfigs() {
+				if pcConfig.GetSwitchIp() == ds.GetIp() {
+					if err := n3k.DeletePortChannel(pcConfig.GetChNumber(), pcConfig.GetPorts()); err != nil {
+						// return errors.Wrap(err, "PortChannel deletion failed")
+						log.Errorf("TOPO SVC | InitTestBed | Failed to delete port-channel")
+					}
+				}
+			}
 		}
 	}
 

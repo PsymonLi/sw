@@ -35,6 +35,7 @@ type testBedInfo struct {
 	resp           *iota.TestBedMsg //server
 	allocatedVlans []uint32
 	id             uint32
+	nativeVlan     uint32
 	switches       []*iota.DataSwitch
 }
 
@@ -493,8 +494,9 @@ func (ts *TopologyService) DoSwitchOperation(ctx context.Context, req *iota.Swit
 	log.Infof("TOPO SVC | DEBUG | SwitchMsg. Received Request Msg: %v", req)
 	defer log.Infof("TOPO SVC | DEBUG | SwitchMsg Returned: %v", req)
 
-	if err := testbed.DoSwitchOperation(ctx, req); err != nil {
+	if err := testbed.DoSwitchOperation(ctx, ts.tbInfo.id, ts.tbInfo.nativeVlan, req); err != nil {
 		msg := fmt.Sprintf("TOPO SVC | SwitchMsg | Could not initialize switch Err: %v", err)
+		req.ApiResponse.ApiStatus = iota.APIResponseType_API_SERVER_ERROR
 		req.ApiResponse.ErrorMsg = msg
 		return req, nil
 	}
@@ -538,6 +540,7 @@ func (ts *TopologyService) CleanUpTestBed(ctx context.Context, req *iota.TestBed
 	}
 	ts.tbInfo.resp.AllocatedVlans = ts.tbInfo.allocatedVlans
 	ts.tbInfo.id = req.TestbedId
+	ts.tbInfo.nativeVlan = req.NativeVlan
 
 	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
 	return req, nil

@@ -87,6 +87,10 @@ type naplesHwNode struct {
 	windowsPortNameMapping map[string]map[string]string
 }
 
+type naplesBondHwNode struct {
+	naplesHwNode
+}
+
 type naplesMultiSimNode struct {
 	dataNode
 }
@@ -968,6 +972,12 @@ var hostIntfCmd = func(osType string, nicType, hint string) []string {
 	return fullCmd
 }
 
+var bondIntfCmd = func(osType string, nicType, hint string) []string {
+	fullCmd := []string{Common.DstIotaNicFinderCommand, "--mac-hint", hint, "--intf-type", "bond-intf", "--op", "intfs", "--os", osType}
+
+	return fullCmd
+}
+
 func (naples *naplesHwNode) getHostInterfaces(osType string, nicType, hint string) ([]string, error) {
 	var hostIntfs []string
 
@@ -1448,6 +1458,89 @@ func (thirdParty *thirdPartyDataNode) Init(in *iota.Node) (resp *iota.Node, err 
 	return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_STATUS_OK},
 		Name: in.GetName(), IpAddress: in.GetIpAddress(), Type: in.GetType(),
 		NodeInfo: &iota.Node_ThirdPartyNicConfig{ThirdPartyNicConfig: in.GetThirdPartyNicConfig()}}, nil
+}
+
+func (bondNaples *naplesBondHwNode) Init(in *iota.Node) (resp *iota.Node, err error) {
+
+	bondNaples.logger.Printf("Init naples in bond mode")
+	resp, err = bondNaples.naplesHwNode.Init(in)
+	if err != nil {
+		return resp, err
+	}
+
+	// Process bond_config to create bond-interface - and update the response.
+
+	bondConfigs := in.GetBondConfigs().GetConfigs()
+
+	if len(bondConfigs) == 0 {
+		msg := fmt.Sprintf("Bond config not specified")
+		bondNaples.logger.Errorf(msg)
+		return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, errors.New(msg)
+	}
+
+	for _, bondConfig := range bondConfigs {
+		nicHints := bondConfig.GetNicHints()
+		if len(nicHints) == 0 {
+			msg := fmt.Sprintf("Naples not specified in bond config")
+			bondNaples.logger.Errorf(msg)
+			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, errors.New(msg)
+		}
+
+		var allBondMembers []string
+		for _, nicHint := range nicHints {
+			hostIntfs, err := bondNaples.getHostInterfaces(nodOSMap[in.GetOs()], "", nicHint)
+			if err != nil {
+				bondNaples.logger.Error(err.Error())
+				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: err.Error()}}, err
+			}
+			allBondMembers = append(allBondMembers, hostIntfs...)
+		}
+
+		// Create bond interface
+		var createCmd []string
+		if in.GetOs() != iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
+			createCmd = []string{"echo"}
+		} else {
+			var winMembers []string
+			for _, bondMember := range allBondMembers {
+				if winIntf, ok := Workload.WindowsPortNameMapping[bondMember]["Name"]; ok {
+					winMembers = append(winMembers, winIntf)
+				}
+			}
+			allMembers := strings.Join(winMembers, "\",\"")
+			teamCmd := fmt.Sprintf("'New-NetLbfoTeam -Name \"%s\" -TeamMembers \"%s\" -TeamingMode \"%s\" -LoadBalancingAlgorithm \"%s\" -Confirm:$false'", bondConfig.GetBondInterfaceName(), allMembers, bondConfig.GetTeamingMode(), bondConfig.GetLoadBalancingAlgorithm())
+			createCmd = append(createCmd, Common.WindowsPowerShell)
+			createCmd = append(createCmd, teamCmd)
+			bondNaples.logger.Printf("Creating bond interface %v out of %v", bondConfig.GetBondInterfaceName(), allMembers)
+
+			// Update Windows Port-Name Mapping
+			Workload.WindowsPortNameMapping[bondConfig.GetBondInterfaceName()] = make(map[string]string)
+			Workload.WindowsPortNameMapping[bondConfig.GetBondInterfaceName()]["Name"] = bondConfig.GetBondInterfaceName()
+		}
+		if _, stdout, err := Utils.Run(createCmd, 0, false, true, nil); err != nil {
+			msg := fmt.Sprintf("Failed to bring bond interface %s up err : %s", bondConfig.GetBondInterfaceName(), stdout)
+			bondNaples.logger.Error(msg)
+			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+		}
+
+		// Disable Dhcp on bond interface
+		var dhcpCmd []string
+		if in.GetOs() != iota.TestBedNodeOs_TESTBED_NODE_OS_WINDOWS {
+			dhcpCmd = []string{"echo"}
+		} else {
+			// Set-NetIPInterface -InterfaceAlias inb_bond0 -Dhcp Disabled
+			dhcpDisableCmd := fmt.Sprintf("'Set-NetIPInterface -InterfaceAlias \"%s\" -Dhcp Disabled'", bondConfig.GetBondInterfaceName())
+			dhcpCmd = append(dhcpCmd, Common.WindowsPowerShell)
+			dhcpCmd = append(dhcpCmd, dhcpDisableCmd)
+			bondNaples.logger.Printf("Disabling DHCP on bond interface %v", bondConfig.GetBondInterfaceName())
+		}
+		if _, stdout, err := Utils.Run(dhcpCmd, 0, false, true, nil); err != nil {
+			msg := fmt.Sprintf("Failed to disable dhcp on bond interface %s up err : %s", bondConfig.GetBondInterfaceName(), stdout)
+			bondNaples.logger.Error(msg)
+			return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+		}
+	}
+	return resp, err
 }
 
 func (dnode *dataNode) GetWorkloadMsgs() []*iota.Workload {

@@ -17,7 +17,29 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-40
+     - image: build-41
+       count: 2
+       resources:
+         servers:
+           - type: compat-dell-r640
+           - type: compat-dell-r740
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+ e2e-windows-bm-dualnic-bonding:
+   commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_bond_windows --precheckin --skip-sanity --enable-multi-naples"]
+   owners: ["email:srivatsa@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-iris-arm
+     - build-iota
+   clusters:
+     - image: build-41
        count: 2
        resources:
          servers:

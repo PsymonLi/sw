@@ -26,6 +26,8 @@
 		Entity
 		VmwareESXConfig
 		VcenterConfig
+		BondConfig
+		BondConfigs
 		NaplesSimInfo
 		K8SMasterConfig
 		Node
@@ -59,6 +61,8 @@
 		NetworkDscpPolicy
 		NetworkQueueClass
 		NetworkQueuePolicy
+		PortChannelConfig
+		PortChannelConfigs
 		DataSwitch
 		License
 		TestBedMsg

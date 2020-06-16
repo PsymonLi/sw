@@ -49,11 +49,13 @@ func (sw *nexus3kRest) runConfigCommands(cmds []string) error {
 	log.Infof("Configuring commands: %v\n", cmds)
 	resp, err := sw.clt.Configure(cmds)
 	if err != nil {
+		log.Errorf("Switch return error %s", err.Error())
 		return err
 	}
 
 	for i, r := range resp {
 		if r.Error != nil {
+			log.Errorf("Switch return error for command %s: %v", cmds[i], r.Error.Message)
 			return fmt.Errorf("ERROR: switch returned failure for command %s: %v", cmds[i], r.Error.Message)
 		}
 	}
@@ -192,6 +194,7 @@ func (sw *nexus3kRest) SetTrunkVlanRange(port string, vlanRange string) error {
 func (sw *nexus3kRest) UnsetTrunkVlanRange(port string, vlanRange string) error {
 	cmds := []string{
 		"interface " + port,
+		"no channel-group",
 		"no switchport trunk allowed vlan " + vlanRange,
 	}
 	return sw.runConfigCommands(cmds)
@@ -208,6 +211,7 @@ func (sw *nexus3kRest) SetTrunkMode(port string) error {
 func (sw *nexus3kRest) UnsetTrunkMode(port string) error {
 	cmds := []string{
 		"interface " + port,
+		"no channel-group",
 		"no switchport mode trunk",
 	}
 	return sw.runConfigCommands(cmds)
@@ -305,7 +309,7 @@ func (sw *nexus3kRest) SetPortPfc(port string, enable bool) error {
 
 func (sw *nexus3kRest) DoDscpConfig(dscpConfig *DscpConfig) error {
 
-    var cmds []string
+	var cmds []string
 	if len(dscpConfig.Classes) != 0 {
 		for _, dscpQosClass := range dscpConfig.Classes {
 			cmds = append(cmds, "class-map type qos match-any "+dscpQosClass.Name)
@@ -315,7 +319,7 @@ func (sw *nexus3kRest) DoDscpConfig(dscpConfig *DscpConfig) error {
 		}
 	}
 
-	cmds = append(cmds, "policy-map type qos " + dscpConfig.Name)
+	cmds = append(cmds, "policy-map type qos "+dscpConfig.Name)
 
 	if len(dscpConfig.Classes) != 0 {
 		for _, dscpQosClass := range dscpConfig.Classes {
@@ -347,4 +351,55 @@ func (sw *nexus3kRest) DoQueueConfig(queueConfig *QueueConfig) error {
 	cmds = append(cmds, "system qos")
 	cmds = append(cmds, "service-policy type network-qos "+queueConfig.Name)
 	return sw.runConfigCommands(cmds)
+}
+
+func (sw *nexus3kRest) CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error {
+	pcCreateCmds := []string{
+		"interface port-channel " + portChannelNumber,
+	}
+	pcCreateCmds = append(pcCreateCmds, "switchport mode trunk")
+	pcCreateCmds = append(pcCreateCmds, fmt.Sprintf("mtu %v", mtu))
+	pcCreateCmds = append(pcCreateCmds, fmt.Sprintf("switchport trunk allowed vlan %v,%v", trunkVlanRange, nativeVlan))
+	pcCreateCmds = append(pcCreateCmds, fmt.Sprintf("switchport trunk native vlan %v", nativeVlan))
+	pcCreateCmds = append(pcCreateCmds, "exit")
+
+	err := sw.runConfigCommands(pcCreateCmds)
+	if err != nil {
+		log.Errorf("Failed to create port-channel %s", err.Error())
+		return err
+	}
+
+	for _, port := range ports {
+		memberCmds := []string{
+			"interface " + port,
+			"channel-group " + portChannelNumber,
+			"exit",
+		}
+		err := sw.runConfigCommands(memberCmds)
+		if err != nil {
+			log.Errorf("Failed to update port-channel member %s %s", port, err.Error())
+			return err
+		}
+	}
+	return nil
+}
+
+func (sw *nexus3kRest) DeletePortChannel(portChannelNumber string, ports []string) error {
+	for _, port := range ports {
+		memberCmds := []string{
+			"interface " + port,
+			"no channel-group",
+			"exit",
+		}
+		err := sw.runConfigCommands(memberCmds)
+		if err != nil {
+			// ignore and continue
+			// return err
+		}
+	}
+
+	pcDeleteCmds := []string{
+		"no interface port-channel " + portChannelNumber,
+	}
+	return sw.runConfigCommands(pcDeleteCmds)
 }

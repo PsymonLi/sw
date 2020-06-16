@@ -622,6 +622,7 @@ class TestSuite:
         self.writeTestResults()
         if store.GetTestbed().IsUsingProdVCenter():
             store.GetTestbed().CleanupTestbed()
+        store.GetTopology().CleanupTopology()
         return
 
     def Main(self):

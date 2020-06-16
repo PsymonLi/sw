@@ -27,6 +27,7 @@ import iota.protos.pygen.topo_svc_pb2 as topo_pb2
 import iota.protos.pygen.iota_types_pb2 as types_pb2
 
 node_log_file = GlobalOptions.logdir + "/nodes.log"
+INB_BOND_IF = 'inb_bond'
 
 def formatMac(mac: str) -> str:
     mac = re.sub('[.:-]', '', mac).lower()  # remove delimiters and convert to lower case
@@ -38,6 +39,8 @@ def GetNodePersonalityByNicType(nic_type, mode = None):
     if nic_type in ['pensando', 'naples']:
         if mode == "dvs":
             return topo_pb2.PERSONALITY_NAPLES_DVS
+        if mode == "bond":
+            return topo_pb2.PERSONALITY_NAPLES_BOND
         return topo_pb2.PERSONALITY_NAPLES
     elif nic_type == 'mellanox':
         if mode == "dvs":
@@ -114,6 +117,7 @@ class Node(object):
             self.__uuid = None
             self.__mac = ""
             self.__host_intfs = None
+            self.__bond_intfs = None
             self.__host_if_alloc_idx = 0
             self.__nic_mgmt_ip = None
             self.__nic_console_ip = None
@@ -130,6 +134,9 @@ class Node(object):
 
         def HostIntfs(self):
             return self.__host_intfs
+
+        def BondIntfs(self):
+            return self.__bond_intfs
         
         def Uuid(self):
             return self.__uuid
@@ -176,6 +183,9 @@ class Node(object):
         def SetHostIntfs(self, host_intfs):
             self.__host_intfs = host_intfs
 
+        def SetBondIntfs(self, bond_intfs):
+            self.__bond_intfs = bond_intfs
+
         def SetPorts(self, ports):
             self.__ports = ports
             for port in self.__ports:
@@ -192,9 +202,15 @@ class Node(object):
         def AllocateHostInterface(self, device = None):
            if GlobalOptions.dryrun:
                return None
-           host_if = self.__host_intfs[self.__host_if_alloc_idx]
-           self.__host_if_alloc_idx = (self.__host_if_alloc_idx + 1) % len(self.__host_intfs)
-           return host_if
+           if self.__bond_intfs:
+               alloc_if = self.__bond_intfs[self.__host_if_alloc_idx]
+               self.__host_if_alloc_idx = (self.__host_if_alloc_idx + 1) % len(self.__bond_intfs)
+           elif self.__host_intfs:
+               alloc_if = self.__host_intfs[self.__host_if_alloc_idx]
+               self.__host_if_alloc_idx = (self.__host_if_alloc_idx + 1) % len(self.__host_intfs)
+           else:
+               return None
+           return alloc_if
 
         def GetNicMgmtIP(self):
            return self.__nic_mgmt_ip
@@ -420,6 +436,7 @@ class Node(object):
         self.__cimc_password = getattr(self.__inst, "NodeCimcPassword", None)
         self.__data_intfs = []
         self.__host_intfs = []
+        self.__bond_intfs = []
         self.__host_if_alloc_idx = 0
         self.__tb_params = store.GetTestbed().GetProvisionParams()
         if self.__tb_params:
@@ -523,6 +540,24 @@ class Node(object):
                     return ports[portNum-1]
         raise Exception("failed to find port index in warmd.json for node ID {0}, nicNum {1}, portNum {2}".format(instId, nicNum, portNum))
 
+    def IsBondingEnabled(self): 
+        bond_spec = self.GetBondSpec()
+        if self.Role() == topo_pb2.PERSONALITY_NAPLES_BOND and bond_spec and bond_spec.pairing in ['auto', 'mapped']:
+            return True
+        return False
+
+    def IsHostSingleBondInterface(self):
+        if not self.IsBondingEnabled():
+            return False
+
+        bond_spec = self.GetBondSpec()
+        if bond_spec and bond_spec.pairing == 'auto':
+            return True
+        return False
+
+    def GetBondSpec(self):
+        return getattr(self.__spec, "bonding", None)
+
     def GetApcInfo(self):
         return self.__apcInfo
 
@@ -577,14 +612,15 @@ class Node(object):
         #Simenv does not have nic type
         return ""
 
-    def GetDataNetworks(self):
-        if hasattr(self.__inst, 'DataNetworks') and self.__inst.DataNetworks != None:
-            return self.__inst.DataNetworks
+    def GetDataNetworks(self, device=None):
+        network_list = list() 
+        if device:
+            dev = self.__get_device(device)
+            network_list.extend(dev.GetDataNetworks())
         else:
-            network_list = list() 
             for _, dev in self.__devices.items():
                 network_list.extend(dev.GetDataNetworks())
-            return network_list
+        return network_list
 
     def GetNicMgmtIP(self, device = None):
         dev = self.__get_device(device)
@@ -620,18 +656,28 @@ class Node(object):
 
     def Name(self):
         return self.__name
+
     def Role(self):
         return self.__role
+
     def GetOs(self):
         return self.__os
+
     def IsVenice(self):
         return self.__role == topo_pb2.PERSONALITY_VENICE
+
     def IsNaplesSim(self):
         return self.__role == topo_pb2.PERSONALITY_NAPLES_SIM
+
     def IsNaplesMultiSim(self):
         return self.__role == topo_pb2.PERSONALITY_NAPLES_MULTI_SIM
+
     def IsNaplesHw(self):
-        return self.__role in[ topo_pb2.PERSONALITY_NAPLES, topo_pb2.PERSONALITY_NAPLES_DVS]
+        return self.__role in[ topo_pb2.PERSONALITY_NAPLES, topo_pb2.PERSONALITY_NAPLES_DVS, topo_pb2.PERSONALITY_NAPLES_BOND]
+
+    def IsNaplesHwWithBonding(self):
+        return self.__role == topo_pb2.PERSONALITY_NAPLES_BOND
+
     def IsNaplesCloudPipeline(self):
         return GlobalOptions.pipeline in [ "apulu" ]
 
@@ -690,6 +736,19 @@ class Node(object):
             iflist = []
             for dev in self.GetDevices():
                 iflist.extend(self.__get_device(dev).HostIntfs())
+            return iflist
+
+    def BondInterfaces(self, device = None):
+        if self.IsHostSingleBondInterface():
+            return self.__bond_intfs
+
+        if device:
+            dev = self.__get_device(device)
+            return dev.BondIntfs()
+        else:
+            iflist = []
+            for dev in self.GetDevices():
+                iflist.extend(self.__get_device(dev).BondIntfs())
             return iflist
 
     def AllocateHostInterface(self, device = None):
@@ -818,6 +877,36 @@ class Node(object):
                     for data_intf in self.__data_intfs:
                         naples_config.data_intfs.append(data_intf)
 
+            if self.IsBondingEnabled(): 
+                bond_spec = self.GetBondSpec()
+                # Update the  BondConfigs
+                if bond_spec.pairing == 'auto':
+                    # creating single bond interface including all host interfaces of all naples
+                    bond_config = msg.bond_configs.configs.add()
+                    bond_config.bond_interface_name = INB_BOND_IF + str(0)
+                    bond_config.teaming_mode = bond_spec.teaming_mode
+                    bond_config.load_balancing_algorithm = bond_spec.lb_scheme
+                    for _, device in self.__devices.items():
+                        bond_config.nic_hints.append(device.GetMac())
+
+                    # Single bond-interface for the host
+                    self.__bond_intfs.append(bond_config.bond_interface_name)
+                elif bond_spec.pairing == 'mapped':
+                    # create a separate bond interface for each naples
+                    idx = 0
+                    for _, device in self.__devices.items():
+                        bond_config = msg.bond_configs.configs.add()
+                        bond_config.bond_interface_name = INB_BOND_IF + str(idx)
+                        idx += 1
+                        bond_config.teaming_mode = bond_spec.teaming_mode
+                        bond_config.load_balancing_algorithm = bond_spec.lb_scheme
+                        bond_config.append(device.GetMac())
+                        device.SetBondIntfs(bond_config.bond_interface_name)
+                        self.__bond_intfs.append(bond_config.bond_interface_name)
+                else:
+                    Logger.error("Invalid bonding-mode specified in topo-file - allowed modes: auto|mapped")
+                    assert(0)
+
             host_entity = msg.entities.add()
             host_entity.type = topo_pb2.ENTITY_TYPE_HOST
             host_entity.name = self.__name + "_host"
@@ -848,6 +937,7 @@ class Node(object):
                 device.SetNicIntMgmtIP(naples_config.naples_ip_address)
                 Logger.info("Nic: %s UUID: %s" % (naples_config.name, naples_config.node_uuid))
                 self.__host_intfs.extend(naples_config.host_intfs)
+
         elif self.IsThirdParty():
             if GlobalOptions.dryrun:
                 self.__host_intfs = []
@@ -939,6 +1029,7 @@ class Topology(object):
         self.__parse_nodes()
         self.vlan_start = 0
         self.vlan_end = 0
+        self.__setup_topology()
         return
 
     def GetDirectory(self):
@@ -955,6 +1046,25 @@ class Topology(object):
             node = Node(self, node_spec, node_prov_spec)
             self.__nodes[node.Name()] = node
         return
+
+    def __setup_topology(self):
+        # Check for bond configuration from topo-spec
+        pc_nodes = []
+        for node_name, node in self.__nodes.items():
+            if node.IsBondingEnabled(): 
+                pc_nodes.append((node_name, node.GetBondSpec().pairing))
+
+        if pc_nodes:
+            return self.ManagePortChannel(pc_nodes, create=True)
+
+    def CleanupTopology(self):
+        pc_nodes = []
+        for node_name, node in self.__nodes.items():
+            if node.IsBondingEnabled(): 
+                pc_nodes.append((node_name, node.GetBondSpec().pairing))
+
+        if pc_nodes:
+            return self.ManagePortChannel(pc_nodes, create=False)
 
     def Nodes(self):
         return self.__nodes.values()
@@ -1085,12 +1195,68 @@ class Topology(object):
                     switch_ips[nw.SwitchIP] = switch_ctx
                 switch_ctx.username = nw.SwitchUsername
                 switch_ctx.password = nw.SwitchPassword
+                switch_ctx.mtu = 9216
                 switch_ctx.ip = nw.SwitchIP
                 switch_ctx.ports.append(nw.Name)
         resp = api.DoSwitchOperation(req)
         if not api.IsApiResponseOk(resp):
             return types.status.FAILURE
         return types.status.SUCCESS
+
+    def ManagePortChannel(self, pc_nodes, create=True):
+        req = topo_pb2.SwitchMsg()
+        if create:
+            req.op = topo_pb2.CREATE_PORT_CHANNEL
+        else:
+            req.op = topo_pb2.DELETE_PORT_CHANNEL
+        pc_idx = int(store.GetTestbed().GetNativeVlan())
+        pc_switch_map = {}
+        pc_config_map = {}
+        node_names = []
+        for node_name, bond_pairing in pc_nodes:
+            node_names.append(node_name)
+            if bond_pairing == 'auto':
+                data_networks = self.__nodes[node_name].GetDataNetworks()
+
+                # Find if port-channel is already defined for this host+switch
+                for nw in data_networks:
+                    key = node_name + "-" + nw.SwitchIP
+                    pc_config = pc_config_map.get(key, None)
+                    if pc_config is None:
+                        # Check if port-channel already assigned on this switch
+                        new_pc_number = pc_switch_map.get(nw.SwitchIP, pc_idx)
+                        pc_config = req.port_channel_configs.configs.add()
+                        pc_config.ch_number = str(new_pc_number)
+                        pc_config.switch_ip = nw.SwitchIP
+                        # update the maps
+                        pc_config_map[key] = pc_config
+                        pc_switch_map[nw.SwitchIP] = new_pc_number + 1
+
+                    pc_config.ports.append(nw.Name)
+
+            elif bond_pairing == 'mapped':
+                # Create separate port-channel for each nic
+                for _, device in self.__nodes[node_name].GetDevices().items():
+                    data_networks = device.GetDataNetworks()
+                    for nw in data_networks:
+                        key = device.Name() + "-" + nw.SwitchIP
+                        pc_config = pc_config_map.get(key, None)
+                        if pc_config is None:
+                            # Check if port-channel already assigned on this switch
+                            new_pc_number = pc_switch_map.get(nw.SwitchIP, pc_idx)
+                            pc_config = req.port_channel_configs.configs.add()
+                            pc_config.ch_number = str(new_pc_number)
+                            pc_config.switch_ip = nw.SwitchIP
+                            # update the maps
+                            pc_config_map[key] = pc_config
+                            pc_switch_map[nw.SwitchIP] = new_pc_number + 1
+                        pc_config.ports.append(nw.Name)
+            else:
+                Logger.error("Invalid bonding-mode specified in topo-file - allowed modes: auto|mapped")
+                assert(0)
+
+        # Create port-channel first and update vlan configuration
+        return self.__doPortConfig(node_names, req)
 
     def DisablePfcPorts(self, node_names):
         req = topo_pb2.SwitchMsg()
@@ -1312,10 +1478,10 @@ class Topology(object):
         return roles
 
     def ValidateNics(self, nics):
-        roles = self.__convert_to_roles(nics, getattr(self.__spec.meta, "mode", None))
-        for n in self.__nodes.values():
-            if not n.IsVenice() and not n.IsOrchestratorNode() and n.Role() not in roles:
-                return False
+        #roles = self.__convert_to_roles(nics, getattr(self.__spec.meta, "mode", None))
+        #for n in self.__nodes.values():
+        #    if not n.IsVenice() and not n.IsOrchestratorNode() and n.Role() not in roles:
+        #        return False
         return True
 
     def GetVeniceMgmtIpAddresses(self):
@@ -1368,6 +1534,15 @@ class Topology(object):
     def GetNaplesHostInterfaces(self, name, device_name=None):
         return self.__nodes[name].HostInterfaces(device_name)
 
+    def GetNaplesBondInterfaces(self, node_name, device_name=None):
+        return self.__nodes[node_name].BondInterfaces(device_name)
+
+    def IsBondingEnabled(self, node_name):
+        return self.__nodes[node_name].IsBondingEnabled()
+
+    def IsHostSingleBondInterface(self, node_name):
+        return self.__nodes[node_name].IsHostSingleBondInterface()
+
     def GetWorkloadNodeHostnames(self):
         ips = []
         for n in self.__nodes.values():
@@ -1376,7 +1551,10 @@ class Topology(object):
         return ips
 
     def GetWorkloadNodeHostInterfaces(self, node_name, device_name=None):
-        return self.__nodes[node_name].HostInterfaces(device_name)
+        if self.IsBondingEnabled(node_name):
+            return self.GetNaplesBondInterfaces(node_name, device_name)
+        else:
+            return self.GetNaplesHostInterfaces(node_name, device_name)
 
     def GetWorkloadTypeForNode(self, node_name):
         return self.__nodes[node_name].WorkloadType()

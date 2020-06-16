@@ -214,7 +214,7 @@ func configureQos(n3k *connectCtx, qosCfg *QosConfig, timeout time.Duration) (st
 				}
 			}
 
-			exp.Send("exit\n") //exit configNwQosClass 
+			exp.Send("exit\n") //exit configNwQosClass
 			time.Sleep(exitTimeout)
 		}
 	}
@@ -856,6 +856,7 @@ func (sw *nexus3k) SetTrunkMode(port string) error {
 func (sw *nexus3k) UnsetTrunkMode(port string) error {
 	cmds := []string{
 		"no switchport mode trunk",
+		"no channel-group",
 	}
 
 	return sw.runConfigIFCommands(port, cmds)
@@ -927,6 +928,47 @@ func (sw *nexus3k) SetPortPfc(port string, enable bool) error {
 	}
 
 	return sw.runConfigIFCommands(port, cmds)
+}
+
+func (sw *nexus3k) CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error {
+	/*
+		portChannel := "port-channel " + portChannelNumber
+
+		portChannelCmds := []string{}
+
+		log.Println("-------------------port-channel-create-------------------")
+		err := sw.runConfigIFCommands(portChannel, portChannelCmds)
+		if err != nil {
+			return err
+		}
+	*/
+
+	cmds := []string{
+		"channel-group " + portChannelNumber,
+	}
+	for _, port := range ports {
+		err := sw.runConfigIFCommands(port, cmds)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (sw *nexus3k) DeletePortChannel(portChannelNumber string, ports []string) error {
+	log.Println("-------------------port-channel-delete-------------------")
+	cmds := []string{
+		"no channel-group",
+	}
+	for _, port := range ports {
+		out, _ := configInterface(sw.ctx, port, cmds, 30*time.Second)
+		log.Println(out)
+		//if err != nil {
+		//	return err
+		//}
+	}
+	return nil
 }
 
 func (sw *nexus3k) Disconnect() {
