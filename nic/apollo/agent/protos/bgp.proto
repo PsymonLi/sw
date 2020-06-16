@@ -216,8 +216,8 @@ message BGPPeerSpec {
   uint32           KeepAlive    = 11;
   // MD5 authentication
   bytes            Password     = 12;
-  // TTL
-  uint32           TTL          = 13;
+  // TTL, set 1 to enable fast-external-fallover for directly connected eBGP sessions
+  uint32           TTL          = 13 [(gogoproto.moretags) = "meta:range:0-255, meta:default=64"];
 }
 
 // BGP peer status
