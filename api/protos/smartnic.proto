@@ -181,6 +181,15 @@ message DistributedServiceCardStatus {
 
     // Set to true if venice and dsc versions are incompatible
     bool VersionMismatch             = 12 [(gogoproto.jsontag) = "version-mismatch,omitempty"];
+
+    // DSC Control Plane Status
+    DSCControlPlaneStatus ControlPlaneStatus    = 13 [(gogoproto.jsontag) = "control-plane-status,omitempty"];
+
+    // IsConnectedToVenice is set to true if connected to venice
+    bool IsConnectedToVenice        = 14 [(gogoproto.jsontag) = "is-connected-to-venice,omitempty"];
+
+    // Lists the unhealthy services of a distributed service card
+    repeated string UnhealthyServices = 15 [(gogoproto.jsontag) = "unhealthy-services,omitempty"];
 }
 
 // DSCCondition describes the state of a DistributedServiceCard at a certain point.
@@ -259,4 +268,20 @@ message BiosInfo {
 
     // Firmware minor release info
     string FwMinorVersion   = 4 [(gogoproto.jsontag) = "fw-minor-ver,omitempty"];
+}
+
+message DSCControlPlaneStatus {
+    // BGPStatus contains the list of BGP peers and their status
+    repeated PeerStatus BGPStatus   = 1 [(gogoproto.jsontag) = "bgp-status,omitempty"];
+}
+
+message PeerStatus {
+    // BGP peer IP address
+    string PeerAddress      = 1 [(gogoproto.jsontag) = "peer-address,omitempty"];
+    // BGP session status
+    string State            = 2 [(gogoproto.jsontag) = "state,omitempty"];
+    // Remote AS number
+    uint32 RemoteASN        = 3 [(gogoproto.jsontag) = "remote-asn,omitempty"];
+    // BGP Address families
+    repeated string AddressFamilies   = 4 [(gogoproto.jsontag) = "address-families,omitempty"];
 }

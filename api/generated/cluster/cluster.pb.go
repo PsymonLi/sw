@@ -61,12 +61,14 @@
 		LicenseStatus
 		BiosInfo
 		DSCCondition
+		DSCControlPlaneStatus
 		DSCInfo
 		DistributedServiceCard
 		DistributedServiceCardSpec
 		DistributedServiceCardStatus
 		IPConfig
 		MacRange
+		PeerStatus
 		ConfigurationSnapshot
 		ConfigurationSnapshotRequest
 		ConfigurationSnapshotSpec

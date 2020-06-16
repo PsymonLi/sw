@@ -153,6 +153,8 @@ const (
 	ErrMaxRulesPerSecurityPolicyExceeded                 = Error("ErrMaxRulesPerSecurityPolicyExceeded")
 	ErrICMPConfiguredWithPort                            = Error("ErrICMPConfiguredWithPort")
 	ErrEmptyResponse                                     = Error("ErrEmptyResponse")
+	ErrRPCServerClose                                    = Error("ErrRPCServerClose")
+	ErrRPCServerStart                                    = Error("ErrRPCServerStart")
 )
 
 // Const Info

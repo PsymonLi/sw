@@ -1721,6 +1721,24 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          },
+          {
+            "name": "status.is-connected-to-venice",
+            "description": "IsConnectedToVenice is set to true if connected to venice.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          },
+          {
+            "name": "status.unhealthy-services",
+            "description": "Lists the unhealthy services of a distributed service card.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "tags": [
@@ -7161,6 +7179,18 @@
       },
       "description": "DSCCondition describes the state of a DistributedServiceCard at a certain point."
     },
+    "clusterDSCControlPlaneStatus": {
+      "type": "object",
+      "properties": {
+        "bgp-status": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/clusterPeerStatus"
+          },
+          "description": "BGPStatus contains the list of BGP peers and their status."
+        }
+      }
+    },
     "clusterDSCInfo": {
       "type": "object",
       "properties": {
@@ -7485,6 +7515,22 @@
           "type": "boolean",
           "format": "boolean",
           "description": "Set to true if venice and dsc versions are incompatible."
+        },
+        "control-plane-status": {
+          "$ref": "#/definitions/clusterDSCControlPlaneStatus",
+          "description": "DSC Control Plane Status."
+        },
+        "is-connected-to-venice": {
+          "type": "boolean",
+          "format": "boolean",
+          "description": "IsConnectedToVenice is set to true if connected to venice."
+        },
+        "unhealthy-services": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lists the unhealthy services of a distributed service card."
         }
       },
       "description": "DistributedServiceCardStatus contains current status of a DistributedServiceCard."
@@ -7882,6 +7928,31 @@
         }
       },
       "description": "OS information."
+    },
+    "clusterPeerStatus": {
+      "type": "object",
+      "properties": {
+        "peer-address": {
+          "type": "string",
+          "description": "BGP peer IP address."
+        },
+        "state": {
+          "type": "string",
+          "description": "BGP session status."
+        },
+        "remote-asn": {
+          "type": "integer",
+          "format": "int64",
+          "description": "Remote AS number."
+        },
+        "address-families": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "BGP Address families."
+        }
+      }
     },
     "clusterPropagationStatus": {
       "type": "object",

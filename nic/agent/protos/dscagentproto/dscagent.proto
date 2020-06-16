@@ -1,0 +1,27 @@
+// {C} Copyright 2017 Pensando Systems Inc. All rights reserved.
+
+syntax = "proto3";
+
+package dscagentproto;
+
+// Mandatory imports
+import "google/api/annotations.proto";
+import "github.com/pensando/sw/api/common.proto";
+import public "github.com/pensando/sw/venice/utils/apigen/annotations/includes.proto";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/pensando/sw/api/protos/smartnic.proto";
+
+message DSCAgentStatus {
+    // control plane status
+    cluster.DSCControlPlaneStatus ControlPlaneStatus = 1 [(gogoproto.jsontag) = "control-plane-status,omitempty"];
+
+    bool IsConnectedToVenice = 2 [(gogoproto.jsontag) = "is-connected-to-venice,omitempty"];
+
+    repeated string UnhealthyServices = 3 [(gogoproto.jsontag) = "unhealthy-services,omitempty"];
+}
+
+// events gRPC API
+service DSCAgentAPI {
+    // Gets the status of the agent
+    rpc GetAgentStatus(api.Empty) returns (DSCAgentStatus) {};
+}

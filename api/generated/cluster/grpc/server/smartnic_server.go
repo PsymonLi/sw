@@ -48,9 +48,10 @@ func (s *sclusterSmartnicBackend) regMsgsFunc(l log.Logger, scheme *runtime.Sche
 	l.Infof("registering message for sclusterSmartnicBackend")
 	s.Messages = map[string]apiserver.Message{
 
-		"cluster.BiosInfo":     apisrvpkg.NewMessage("cluster.BiosInfo"),
-		"cluster.DSCCondition": apisrvpkg.NewMessage("cluster.DSCCondition"),
-		"cluster.DSCInfo":      apisrvpkg.NewMessage("cluster.DSCInfo"),
+		"cluster.BiosInfo":              apisrvpkg.NewMessage("cluster.BiosInfo"),
+		"cluster.DSCCondition":          apisrvpkg.NewMessage("cluster.DSCCondition"),
+		"cluster.DSCControlPlaneStatus": apisrvpkg.NewMessage("cluster.DSCControlPlaneStatus"),
+		"cluster.DSCInfo":               apisrvpkg.NewMessage("cluster.DSCInfo"),
 		"cluster.DistributedServiceCard": apisrvpkg.NewMessage("cluster.DistributedServiceCard").WithKeyGenerator(func(i interface{}, prefix string) string {
 			if i == nil {
 				r := cluster.DistributedServiceCard{}
@@ -342,6 +343,7 @@ func (s *sclusterSmartnicBackend) regMsgsFunc(l log.Logger, scheme *runtime.Sche
 		"cluster.DistributedServiceCardStatus": apisrvpkg.NewMessage("cluster.DistributedServiceCardStatus"),
 		"cluster.IPConfig":                     apisrvpkg.NewMessage("cluster.IPConfig"),
 		"cluster.MacRange":                     apisrvpkg.NewMessage("cluster.MacRange"),
+		"cluster.PeerStatus":                   apisrvpkg.NewMessage("cluster.PeerStatus"),
 		// Add a message handler for ListWatch options
 		"api.ListWatchOptions": apisrvpkg.NewMessage("api.ListWatchOptions"),
 		// Add a message handler for Label options

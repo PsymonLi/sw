@@ -149,6 +149,7 @@ const (
 
 	// Agent
 	AgentRESTPort = "9007"
+	AgentGRPCPort = "9050"
 
 	// Cluster Key Managements Services
 	CKMAPILocalPort = "9008"

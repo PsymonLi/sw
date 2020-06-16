@@ -17,6 +17,7 @@ import (
 	agentTypes "github.com/pensando/sw/nic/agent/dscagent/types"
 	nmdapi "github.com/pensando/sw/nic/agent/nmd/api"
 	"github.com/pensando/sw/nic/agent/nmd/state/ipif"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/nmd"
 	clientAPI "github.com/pensando/sw/nic/delphi/gosdk/client_api"
 	"github.com/pensando/sw/venice/utils/certsproxy"
@@ -55,6 +56,7 @@ type NMD struct {
 
 	config          nmd.DistributedServiceCard  // Naples config received via REST
 	nic             *cmd.DistributedServiceCard // DistributedServiceCard object
+	AgentStatus     *dscagentproto.DSCAgentStatus
 	DSCStaticRoutes []agentTypes.DSCStaticRoute
 	DSCInterfaceIPs []agentTypes.DSCInterfaceIP
 	DelphiClient    clientAPI.Client
@@ -75,6 +77,7 @@ type NMD struct {
 	listener         net.Listener // socket listener
 	httpServer       *http.Server // HTTP server
 	isRestSrvRunning bool         // status of the REST server
+	agentClient      dscagentproto.DSCAgentAPIClient
 
 	certsListenURL  string                            // URL where local processes can request certificates
 	remoteCertsURLs []string                          // URLs where local process cert request are forwarder

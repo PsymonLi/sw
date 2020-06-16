@@ -3,6 +3,7 @@
 package state
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -925,10 +926,19 @@ func (n *NMD) SendNICUpdates() error {
 				continue
 			}
 
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+
+			agentStatus, _ := n.agentClient.GetAgentStatus(ctx, &api.Empty{})
+			n.AgentStatus = agentStatus
+
 			// TODO : Get status from platform and fill nic Status
 			nicObj.Status = cmd.DistributedServiceCardStatus{
-				AdmissionPhase: cmd.DistributedServiceCardStatus_ADMITTED.String(),
-				Conditions:     n.UpdateNaplesHealth(),
+				AdmissionPhase:      cmd.DistributedServiceCardStatus_ADMITTED.String(),
+				Conditions:          n.UpdateNaplesHealth(),
+				ControlPlaneStatus:  agentStatus.ControlPlaneStatus,
+				IsConnectedToVenice: agentStatus.IsConnectedToVenice,
+				UnhealthyServices:   agentStatus.UnhealthyServices,
 			}
 
 			// Send nic status

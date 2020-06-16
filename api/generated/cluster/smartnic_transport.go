@@ -85,6 +85,40 @@ func DecodeGrpcRespDSCCondition(ctx context.Context, response interface{}) (inte
 	return response, nil
 }
 
+func encodeHTTPDSCControlPlaneStatus(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPDSCControlPlaneStatus(_ context.Context, r *http.Request) (interface{}, error) {
+	var req DSCControlPlaneStatus
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqDSCControlPlaneStatus encodes GRPC request
+func EncodeGrpcReqDSCControlPlaneStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*DSCControlPlaneStatus)
+	return req, nil
+}
+
+// DecodeGrpcReqDSCControlPlaneStatus decodes GRPC request
+func DecodeGrpcReqDSCControlPlaneStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*DSCControlPlaneStatus)
+	return req, nil
+}
+
+// EncodeGrpcRespDSCControlPlaneStatus encodes GRC response
+func EncodeGrpcRespDSCControlPlaneStatus(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespDSCControlPlaneStatus decodes GRPC response
+func DecodeGrpcRespDSCControlPlaneStatus(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
 func encodeHTTPDSCInfo(ctx context.Context, req *http.Request, request interface{}) error {
 	return encodeHTTPRequest(ctx, req, request)
 }
@@ -286,5 +320,39 @@ func EncodeGrpcRespMacRange(ctx context.Context, response interface{}) (interfac
 
 // DecodeGrpcRespMacRange decodes GRPC response
 func DecodeGrpcRespMacRange(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+func encodeHTTPPeerStatus(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPPeerStatus(_ context.Context, r *http.Request) (interface{}, error) {
+	var req PeerStatus
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqPeerStatus encodes GRPC request
+func EncodeGrpcReqPeerStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*PeerStatus)
+	return req, nil
+}
+
+// DecodeGrpcReqPeerStatus decodes GRPC request
+func DecodeGrpcReqPeerStatus(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*PeerStatus)
+	return req, nil
+}
+
+// EncodeGrpcRespPeerStatus encodes GRC response
+func EncodeGrpcRespPeerStatus(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespPeerStatus decodes GRPC response
+func DecodeGrpcRespPeerStatus(ctx context.Context, response interface{}) (interface{}, error) {
 	return response, nil
 }

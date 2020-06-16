@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 
 	"github.com/pensando/sw/venice/utils/emstore"
@@ -19,6 +20,7 @@ type ControllerAPI interface {
 	Stop() error
 	WatchTechSupport()
 	WatchAlertPolicies(ctx context.Context) error
+	GetAgentStatus(context.Context, *api.Empty) (*dscagentproto.DSCAgentStatus, error)
 }
 
 // InfraAPI implements all infra APIs that are common across pipelines
@@ -148,4 +150,7 @@ type PipelineAPI interface {
 
 	// StartAlertPoliciesWatch starts watcher for alert policies
 	StartAlertPoliciesWatch(ctx context.Context)
+
+	// GetDSCAgentStatus returns the current agent status
+	GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus)
 }

@@ -186,6 +186,27 @@ func (m *DSCCondition) Defaults(ver string) bool {
 }
 
 // Clone clones the object into into or creates one of into is nil
+func (m *DSCControlPlaneStatus) Clone(into interface{}) (interface{}, error) {
+	var out *DSCControlPlaneStatus
+	var ok bool
+	if into == nil {
+		out = &DSCControlPlaneStatus{}
+	} else {
+		out, ok = into.(*DSCControlPlaneStatus)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*DSCControlPlaneStatus))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *DSCControlPlaneStatus) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
 func (m *DSCInfo) Clone(into interface{}) (interface{}, error) {
 	var out *DSCInfo
 	var ok bool
@@ -344,6 +365,27 @@ func (m *MacRange) Defaults(ver string) bool {
 	return ret
 }
 
+// Clone clones the object into into or creates one of into is nil
+func (m *PeerStatus) Clone(into interface{}) (interface{}, error) {
+	var out *PeerStatus
+	var ok bool
+	if into == nil {
+		out = &PeerStatus{}
+	} else {
+		out, ok = into.(*PeerStatus)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*PeerStatus))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *PeerStatus) Defaults(ver string) bool {
+	return false
+}
+
 // Validators and Requirements
 
 func (m *BiosInfo) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
@@ -386,6 +428,19 @@ func (m *DSCCondition) Normalize() {
 	m.Status = ConditionStatus_normal[strings.ToLower(m.Status)]
 
 	m.Type = DSCCondition_ConditionType_normal[strings.ToLower(m.Type)]
+
+}
+
+func (m *DSCControlPlaneStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *DSCControlPlaneStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *DSCControlPlaneStatus) Normalize() {
 
 }
 
@@ -722,6 +777,19 @@ func (m *MacRange) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool
 }
 
 func (m *MacRange) Normalize() {
+
+}
+
+func (m *PeerStatus) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *PeerStatus) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *PeerStatus) Normalize() {
 
 }
 

@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 
 	delphi "github.com/pensando/sw/nic/delphi/gosdk"
@@ -2327,5 +2328,11 @@ func (i *IrisAPI) startDynamicWatch(kinds []string) {
 
 func (a *IrisAPI) StartAlertPoliciesWatch(ctx context.Context) {
 	log.Info("StartAlertPoliciesWatch not implemented by Iris Pipeline")
+	return
+}
+
+// GetDSCAgentStatus returns the current agent status
+func (i *IrisAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
+	log.Info("GetControlPlaneStatus not implemented by Iris Pipeline")
 	return
 }

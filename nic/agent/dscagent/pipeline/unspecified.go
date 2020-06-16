@@ -23,6 +23,7 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	"github.com/pensando/sw/venice/utils/events"
@@ -1793,5 +1794,11 @@ func (i *FakeAgentAPI) startDynamicWatch(kinds []string) {
 
 func (a *FakeAgentAPI) StartAlertPoliciesWatch(ctx context.Context) {
 	log.Info("StartAlertPoliciesWatch not implemented by unspecified Pipeline")
+	return
+}
+
+// GetDSCAgentStatus returns the current agent status
+func (i *FakeAgentAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
+	log.Info("GetControlPlaneStatus not implemented by unspecified Pipeline")
 	return
 }

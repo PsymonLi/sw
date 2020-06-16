@@ -3,6 +3,7 @@ package apollo
 import (
 
 	//delphiProto "github.com/pensando/sw/nic/agent/nmd/protos/delphi"
+	cmd "github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/nic/agent/nmd/state"
 	clientAPI "github.com/pensando/sw/nic/delphi/gosdk/client_api"
 	"github.com/pensando/sw/venice/globals"
@@ -56,7 +57,13 @@ func (p *Pipeline) RunDelphiClient(agent state.Agent) interface{} {
 
 // GetSysmgrSystemStatus ...
 func (p *Pipeline) GetSysmgrSystemStatus() (string, string) {
-	return "", ""
+	status := cmd.ConditionStatus_TRUE.String()
+	reason := ""
+	if p.Agent.Nmd.AgentStatus == nil || len(p.Agent.Nmd.AgentStatus.UnhealthyServices) != 0 {
+		status = cmd.ConditionStatus_FALSE.String()
+		reason = "Unhealthy Services"
+	}
+	return status, reason
 }
 
 // SetNmd ...

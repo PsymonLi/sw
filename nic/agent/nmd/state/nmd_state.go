@@ -24,6 +24,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pensando/netlink"
 	"github.com/pkg/errors"
+	"google.golang.org/grpc/connectivity"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
@@ -37,6 +38,7 @@ import (
 	"github.com/pensando/sw/nic/agent/nmd/state/ipif"
 	"github.com/pensando/sw/nic/agent/nmd/upg"
 	"github.com/pensando/sw/nic/agent/nmd/utils"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/nmd"
 	clientAPI "github.com/pensando/sw/nic/delphi/gosdk/client_api"
 	"github.com/pensando/sw/venice/cmd/grpc"
@@ -49,6 +51,7 @@ import (
 	"github.com/pensando/sw/venice/utils/netutils"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/revproxy"
+	"github.com/pensando/sw/venice/utils/rpckit"
 	"github.com/pensando/sw/venice/utils/rpckit/tlsproviders"
 	"github.com/pensando/sw/venice/utils/tsdb"
 )
@@ -376,6 +379,21 @@ func NewNMD(pipeline Pipeline,
 
 	// start reverse proxy for all NAPLES REST APIs
 	nm.StartReverseProxy()
+
+	log.Infof("Connecting to DSCAgent")
+	for {
+		var rpcClient *rpckit.RPCClient
+		rpcClient, err := rpckit.NewRPCClient(globals.Nmd, globals.Localhost+":"+globals.AgentGRPCPort, rpckit.WithTLSProvider(nil))
+		if err != nil || rpcClient == nil {
+			log.Errorf("Failed to connect to rpc server URL %s | Err %s", globals.Localhost+":"+globals.AgentGRPCPort, err)
+			time.Sleep(time.Second)
+		}
+		if rpcClient.ClientConn.GetState() == connectivity.Ready {
+			log.Infof("Created client connection to dscagent %v", rpcClient)
+			nm.agentClient = dscagentproto.NewDSCAgentAPIClient(rpcClient.ClientConn)
+			break
+		}
+	}
 
 	return &nm, nil
 }

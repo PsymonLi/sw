@@ -11,6 +11,7 @@ import { ClusterDistributedServiceCardStatus_admission_phase,  ClusterDistribute
 import { ClusterDSCCondition, IClusterDSCCondition } from './cluster-dsc-condition.model';
 import { ClusterIPConfig, IClusterIPConfig } from './cluster-ip-config.model';
 import { ClusterDSCInfo, IClusterDSCInfo } from './cluster-dsc-info.model';
+import { ClusterDSCControlPlaneStatus, IClusterDSCControlPlaneStatus } from './cluster-dsc-control-plane-status.model';
 
 export interface IClusterDistributedServiceCardStatus {
     'admission-phase': ClusterDistributedServiceCardStatus_admission_phase;
@@ -25,6 +26,9 @@ export interface IClusterDistributedServiceCardStatus {
     'host'?: string;
     'adm-phase-reason'?: string;
     'version-mismatch'?: boolean;
+    'control-plane-status'?: IClusterDSCControlPlaneStatus;
+    'is-connected-to-venice'?: boolean;
+    'unhealthy-services'?: Array<string>;
     '_ui'?: any;
 }
 
@@ -56,6 +60,12 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
     'adm-phase-reason': string = null;
     /** Set to true if venice and dsc versions are incompatible. */
     'version-mismatch': boolean = null;
+    /** DSC Control Plane Status. */
+    'control-plane-status': ClusterDSCControlPlaneStatus = null;
+    /** IsConnectedToVenice is set to true if connected to venice. */
+    'is-connected-to-venice': boolean = null;
+    /** Lists the unhealthy services of a distributed service card. */
+    'unhealthy-services': Array<string> = null;
     public static propInfo: { [prop in keyof IClusterDistributedServiceCardStatus]: PropInfoItem } = {
         'admission-phase': {
             enum: ClusterDistributedServiceCardStatus_admission_phase_uihint,
@@ -120,6 +130,21 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             required: false,
             type: 'boolean'
         },
+        'control-plane-status': {
+            description:  `DSC Control Plane Status.`,
+            required: false,
+            type: 'object'
+        },
+        'is-connected-to-venice': {
+            description:  `IsConnectedToVenice is set to true if connected to venice.`,
+            required: false,
+            type: 'boolean'
+        },
+        'unhealthy-services': {
+            description:  `Lists the unhealthy services of a distributed service card.`,
+            required: false,
+            type: 'Array<string>'
+        },
     }
 
     public getPropInfo(propName: string): PropInfoItem {
@@ -148,6 +173,8 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
         this['ip-config'] = new ClusterIPConfig();
         this['system-info'] = new ClusterDSCInfo();
         this['interfaces'] = new Array<string>();
+        this['control-plane-status'] = new ClusterDSCControlPlaneStatus();
+        this['unhealthy-services'] = new Array<string>();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -238,6 +265,25 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
         } else {
             this['version-mismatch'] = null
         }
+        if (values) {
+            this['control-plane-status'].setValues(values['control-plane-status'], fillDefaults);
+        } else {
+            this['control-plane-status'].setValues(null, fillDefaults);
+        }
+        if (values && values['is-connected-to-venice'] != null) {
+            this['is-connected-to-venice'] = values['is-connected-to-venice'];
+        } else if (fillDefaults && ClusterDistributedServiceCardStatus.hasDefaultValue('is-connected-to-venice')) {
+            this['is-connected-to-venice'] = ClusterDistributedServiceCardStatus.propInfo['is-connected-to-venice'].default;
+        } else {
+            this['is-connected-to-venice'] = null
+        }
+        if (values && values['unhealthy-services'] != null) {
+            this['unhealthy-services'] = values['unhealthy-services'];
+        } else if (fillDefaults && ClusterDistributedServiceCardStatus.hasDefaultValue('unhealthy-services')) {
+            this['unhealthy-services'] = [ ClusterDistributedServiceCardStatus.propInfo['unhealthy-services'].default];
+        } else {
+            this['unhealthy-services'] = [];
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -257,6 +303,9 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
                 'host': CustomFormControl(new FormControl(this['host']), ClusterDistributedServiceCardStatus.propInfo['host']),
                 'adm-phase-reason': CustomFormControl(new FormControl(this['adm-phase-reason']), ClusterDistributedServiceCardStatus.propInfo['adm-phase-reason']),
                 'version-mismatch': CustomFormControl(new FormControl(this['version-mismatch']), ClusterDistributedServiceCardStatus.propInfo['version-mismatch']),
+                'control-plane-status': CustomFormGroup(this['control-plane-status'].$formGroup, ClusterDistributedServiceCardStatus.propInfo['control-plane-status'].required),
+                'is-connected-to-venice': CustomFormControl(new FormControl(this['is-connected-to-venice']), ClusterDistributedServiceCardStatus.propInfo['is-connected-to-venice']),
+                'unhealthy-services': CustomFormControl(new FormControl(this['unhealthy-services']), ClusterDistributedServiceCardStatus.propInfo['unhealthy-services']),
             });
             // generate FormArray control elements
             this.fillFormArray<ClusterDSCCondition>('conditions', this['conditions'], ClusterDSCCondition);
@@ -273,6 +322,11 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('system-info') as FormGroup).controls).forEach(field => {
                 const control = this._formGroup.get('system-info').get(field);
+                control.updateValueAndValidity();
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('control-plane-status') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('control-plane-status').get(field);
                 control.updateValueAndValidity();
             });
         }
@@ -297,6 +351,9 @@ export class ClusterDistributedServiceCardStatus extends BaseModel implements IC
             this._formGroup.controls['host'].setValue(this['host']);
             this._formGroup.controls['adm-phase-reason'].setValue(this['adm-phase-reason']);
             this._formGroup.controls['version-mismatch'].setValue(this['version-mismatch']);
+            this['control-plane-status'].setFormGroupValuesToBeModelValues();
+            this._formGroup.controls['is-connected-to-venice'].setValue(this['is-connected-to-venice']);
+            this._formGroup.controls['unhealthy-services'].setValue(this['unhealthy-services']);
         }
     }
 }

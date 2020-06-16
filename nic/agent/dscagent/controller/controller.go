@@ -25,6 +25,7 @@ import (
 	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/httputils"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/generated/nimbus"
 	restapi "github.com/pensando/sw/nic/agent/protos/generated/restapi/netagent"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -63,6 +64,7 @@ type API struct {
 	policyMgr      *policy.Manager
 	policyWatcher  *policy.Watcher
 	evtsRPCServer  *rpcserver.RPCServer
+	agentRPCServer *rpckit.RPCServer
 }
 
 // RestServer implements REST APIs
@@ -80,6 +82,14 @@ func NewControllerAPI(p types.PipelineAPI, i types.InfraAPI, npmURL, restURL str
 		kinds:       types.BaseNetKinds,
 	}
 	c.RestServer = c.newRestServer(restURL, c.PipelineAPI)
+
+	grpcSvc, err := rpckit.NewRPCServer(globals.Netagent, globals.Localhost+":"+globals.AgentGRPCPort, rpckit.WithTLSProvider(nil))
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrRESTServerStart, "Controller API: %s", err))
+	}
+	c.agentRPCServer = grpcSvc
+	dscagentproto.RegisterDSCAgentAPIServer(grpcSvc.GrpcServer, c)
+	grpcSvc.Start()
 
 	var obj types.DistributedServiceCardStatus
 	// Replay config stored in DB after agent restart
@@ -772,4 +782,11 @@ func (c *API) getMappingHandler(r *http.Request) (interface{}, error) {
 	resp.StatusCode = http.StatusNotFound
 	resp.Error = fmt.Sprintf("Interface: %d not found", intfID)
 	return resp, err
+}
+
+// GetAgentStatus returns the current status of the agent
+func (c *API) GetAgentStatus(context.Context, *api.Empty) (*dscagentproto.DSCAgentStatus, error) {
+	status := dscagentproto.DSCAgentStatus{}
+	c.PipelineAPI.GetDSCAgentStatus(&status)
+	return &status, nil
 }

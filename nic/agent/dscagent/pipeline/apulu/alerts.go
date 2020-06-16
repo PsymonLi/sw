@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	gogoproto "github.com/gogo/protobuf/types"
@@ -25,6 +26,8 @@ import (
 	"github.com/pensando/sw/venice/utils/events"
 	"github.com/pensando/sw/venice/utils/log"
 )
+
+var UnhealthyServices []string
 
 // helper function to convert HAL alert to venice alert
 func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
@@ -90,6 +93,7 @@ func queryAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, stream o
 		}
 		// process the alerts
 		alert := resp.GetResponse()
+		processAlert(alert)
 		// convert to venice alert format
 		vAlert := convertToVeniceAlert(alert)
 		// send to dispatcher
@@ -136,4 +140,12 @@ func HandleAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, client 
 		}
 	}(alertsStream)
 	return
+}
+
+func processAlert(nEvt *operdapi.Alert) {
+	// TODO: May need further handling if processes are restartable
+	if nEvt.GetName() == "NAPLES_SERVICE_STOPPED" {
+		svcName := strings.Split(nEvt.GetMessage(), ":")
+		UnhealthyServices = append(UnhealthyServices, svcName[1])
+	}
 }

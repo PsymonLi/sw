@@ -21,6 +21,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/nic/agent/dscagent/common"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu"
 	apuluutils "github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu/utils"
@@ -28,6 +29,7 @@ import (
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
+	"github.com/pensando/sw/nic/agent/protos/dscagentproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
 	msapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
@@ -2105,4 +2107,37 @@ func (a *ApuluAPI) StartAlertPoliciesWatch(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// GetDSCAgentStatus returns the current agent status
+func (a *ApuluAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
+	req := &halapi.BGPPeerGetRequest{}
+	respMsg, err := a.RoutingClient.BGPPeerGet(context.Background(), req)
+	peerTracker := make(map[string]*cluster.PeerStatus)
+	peers := make([]*cluster.PeerStatus, 0)
+	if err == nil && respMsg.ApiStatus == halapi.ApiStatus_API_STATUS_OK {
+		for _, peer := range respMsg.Response {
+			peerStatus := &cluster.PeerStatus{
+				PeerAddress: apuluutils.HalIPToString(peer.Spec.PeerAddr),
+				State:       peer.Status.Status.String(),
+				RemoteASN:   peer.Spec.RemoteASN,
+			}
+			peers = append(peers, peerStatus)
+			peerTracker[apuluutils.HalIPToString(peer.Spec.PeerAddr)] = peerStatus
+		}
+	}
+
+	peerAfRequest := &halapi.BGPPeerAfGetRequest{}
+	resp, err := a.RoutingClient.BGPPeerAfGet(context.Background(), peerAfRequest)
+	if err == nil && resp.ApiStatus == halapi.ApiStatus_API_STATUS_OK {
+		for _, peerAf := range resp.Response {
+			if peer, ok := peerTracker[apuluutils.HalIPToString(peerAf.Spec.PeerAddr)]; ok {
+				peer.AddressFamilies = append(peer.AddressFamilies, peerAf.Spec.Afi.String())
+			}
+		}
+	}
+
+	status.ControlPlaneStatus = &cluster.DSCControlPlaneStatus{BGPStatus: peers}
+	status.IsConnectedToVenice = a.InfraAPI.GetConfig().IsConnectedToVenice
+	status.UnhealthyServices = apulu.UnhealthyServices
 }
