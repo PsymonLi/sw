@@ -6,6 +6,7 @@ export FWD_MODE="$1"
 export PLATFORM="$2"
 export IMAGE_TYPE="$3"
 export GOTRACEBACK='crash'
+export GODEBUG=madvdontneed=1
 
 export PERSISTENT_LOG_DIR='/obfl/'
 export NON_PERSISTENT_LOG_DIR='/var/log/pensando/'

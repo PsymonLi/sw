@@ -4,6 +4,7 @@ CUR_DIR=$( readlink -f $( dirname $0 ) )
 source $CUR_DIR/setup_env_hw.sh
 
 export GOTRACEBACK='crash'
+export GODEBUG=madvdontneed=1
 export GOGC=50
 export PERSISTENT_LOG_DIR='/obfl/'
 

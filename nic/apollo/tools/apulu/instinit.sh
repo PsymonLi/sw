@@ -5,6 +5,7 @@ source $CUR_DIR/setup_env_hw.sh
 source $CUR_DIR/upgmgr_base.sh
 
 export GOTRACEBACK='crash'
+export GODEBUG=madvdontneed=1
 export GOGC=50
 export PERSISTENT_LOG_DIR='/obfl/'
 UPGRADE_INIT_INSTANCE_FILE='/share/upgrade_init_instance.txt'
