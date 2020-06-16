@@ -8,6 +8,7 @@ MODULE_INCS     := ${MODULE_SRC_DIR}/../include \
                    ${BLD_PROTOGEN_DIR}/
 MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
                    ! -name 'ftl*' \
+		   ! -name '*athena*' \
                    ! -name '*apollo*')
 ifeq ($(ASIC),elba)
 MODULE_FLAGS     := -DELBA

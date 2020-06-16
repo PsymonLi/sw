@@ -8,5 +8,6 @@ MODULE_INCS     := ${MODULE_SRC_DIR}/../include
 MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
                    ! -name 'ftl*' \
                    ! -name 'accel*' \
+		   ! -name '*athena*' \
                    ! -name '*iris*')
 include ${MKDEFS}/post.mk

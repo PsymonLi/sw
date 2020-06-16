@@ -7,6 +7,7 @@ MODULE_PIPELINE := athena
 MODULE_INCS     := ${MODULE_SRC_DIR}/../include \
                    ${TOPDIR}/nic/sdk/platform/devapi
 MODULE_SRCS     := $(shell find ${MODULE_SRC_DIR} -type f -name '*.cc' \
-                   ! -name 'accel*' \
+		   ! -name 'accel*' \
+		   ! -name 'nicmgr_init_apollo.cc' \
                    ! -name '*iris*')
 include ${MKDEFS}/post.mk

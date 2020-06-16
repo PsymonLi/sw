@@ -140,6 +140,7 @@ private:
 
     static uint16_t lif_get_cos_bmp_(lif_info_t *info);
     static uint32_t lif_get_qcount_(lif_info_t *info);
+    friend class athena_devapi_impl;
 };
 
 /// \@}
