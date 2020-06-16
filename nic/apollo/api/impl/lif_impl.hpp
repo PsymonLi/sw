@@ -67,11 +67,19 @@ public:
     sdk_ret_t create(pds_lif_spec_t *spec);
 
     ///< \brief    program lif tx policer for given lif
-    ///< param[in] lif_id     h/w lif id
     ///< param[in] policer    policer parameters
     /// \return    SDK_RET_OK on success, failure status code on error
-    static sdk_ret_t program_tx_policer(uint32_t lif_id,
-                                        sdk::qos::policer_t *policer);
+    sdk_ret_t program_tx_policer(sdk::qos::policer_t *policer);
+
+    ///< \brief    program lif tx scheduler for given lif
+    ///< param[in] spec   lif information
+    /// \return    SDK_RET_OK on success, failure status code on error
+    static sdk_ret_t program_tx_scheduler(pds_lif_spec_t *spec);
+
+    ///< \brief    reserve lif tx scheduler for given lif
+    ///< param[in] spec   lif information
+    /// \return    SDK_RET_OK on success, failure status code on error
+    static sdk_ret_t reserve_tx_scheduler(pds_lif_spec_t *spec);
 
     /// \brief     ifindex this lif is pinned to
     /// \return    pinned interface index
@@ -130,6 +138,26 @@ public:
     void set_mac(mac_addr_t mac) {
         memcpy(mac_, mac, ETH_ADDR_LEN);
     }
+
+    /// \brief     set total queue count
+    /// \param[in] total_qcount    total queue count
+    void set_total_qcount(uint32_t total_qcount) {
+        total_qcount_ = total_qcount;
+    }
+
+    /// \brief     set cos bitmap
+    /// \param[in] cos_bmp    cos bitmap
+    void set_cos_bmp(uint16_t cos_bmp) {
+        cos_bmp_ = cos_bmp;
+    }
+
+    /// \brief     return total queue count
+    /// \return    total queue count
+    uint32_t total_qcount(void) const { return total_qcount_; }
+
+    /// \brief     return cos bitmap
+    /// \return    cos bmp
+    uint16_t cos_bmp(void) const { return cos_bmp_; }
 
     /// \brief     return the MAC address corresponding to this lif
     /// \return    ethernet MAC address of this lif
@@ -218,6 +246,8 @@ private:
     uint32_t         tx_sched_offset_;///< tx scheduler entry offset
     /// number of tx scheduler entries used
     uint32_t         tx_sched_num_entries_;
+    uint32_t         total_qcount_;   ///< total queue count
+    uint16_t         cos_bmp_;        ///< cos bmp
 
     /// operational state
     // TODO: we can have state per pipeline in this class

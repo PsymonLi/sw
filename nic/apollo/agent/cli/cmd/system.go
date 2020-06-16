@@ -28,8 +28,8 @@ var (
 
 var systemDebugCmd = &cobra.Command{
 	Use:   "system",
-	Short: "set sytem debug information",
-	Long:  "set system debug information",
+	Short: "update sytem information",
+	Long:  "update system information",
 	Run:   systemDebugCmdHandler,
 }
 
@@ -62,8 +62,8 @@ var systemQueueCreditsShowCmd = &cobra.Command{
 
 var traceDebugCmd = &cobra.Command{
 	Use:   "trace",
-	Short: "set debug trace level",
-	Long:  "set debug trace level",
+	Short: "update debug trace level",
+	Long:  "update debug trace level",
 	Run:   traceDebugCmdHandler,
 }
 
@@ -76,8 +76,8 @@ var memoryDebugCmd = &cobra.Command{
 
 var llcDebugCmd = &cobra.Command{
 	Use:   "llc-cache",
-	Short: "debug system llc-cache",
-	Long:  "debug system llc-cache",
+	Short: "update system llc-cache",
+	Long:  "update system llc-cache",
 	Run:   llcSetupCmdHandler,
 }
 

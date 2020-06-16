@@ -42,7 +42,7 @@ func init() {
 	deviceShowCmd.Flags().Bool("yaml", false, "Output in yaml")
 	deviceShowCmd.Flags().Bool("detail", false, "Display detailed output")
 
-	debugCmd.AddCommand(deviceUpdateCmd)
+	debugUpdateCmd.AddCommand(deviceUpdateCmd)
 	deviceUpdateCmd.Flags().StringVar(&memoryProfile, "memory-profile", "default", "Specify memory profile (Ex: default)")
 	deviceUpdateCmd.Flags().StringVar(&deviceProfile, "device-profile", "default", "Specify device profile (Ex: default, 2pf, 3pf, 4pf, 5pf, 6pf, 7pf and 8pf)")
 	deviceUpdateCmd.Flags().Uint32Var(&deviceTimeout, "learn-age-timeout", 300, "Specify device aging timeout for learned MAC/IP in secs (Valid: 30-86400)")

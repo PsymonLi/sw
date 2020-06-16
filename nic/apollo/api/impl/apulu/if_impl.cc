@@ -19,6 +19,7 @@
 #include "nic/apollo/api/if.hpp"
 #include "nic/apollo/api/impl/apulu/if_impl.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
+#include "nic/apollo/api/include/pds_policer.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"
 
@@ -218,6 +219,37 @@ get_default_route_add_cmd (std::string ns, ip_addr_t gateway)
                  ns.c_str(), ipaddr2str(&gateway));
     }
     return std::string(cmd);
+}
+
+sdk_ret_t
+if_impl::activate_host_if_(if_entry *intf, pds_if_spec_t *spec) {
+    sdk_ret_t ret;
+    sdk::qos::policer_t policer;
+    pds_policer_info_t policer_info;
+    lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
+
+    if (!lif) {
+        PDS_TRACE_ERR("activate host if %s failed, lif %s not found",
+                      intf->key2str().c_str(), spec->key.str());
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+
+    ret = pds_policer_read(&spec->host_if_info.tx_policer, &policer_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("activate host if %s failed, policer %s not found",
+                      intf->key2str().c_str(),
+                      spec->host_if_info.tx_policer.str());
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+    policer.type = policer_info.spec.type;
+    if (policer.type == sdk::qos::POLICER_TYPE_PPS) {
+        policer.rate = policer_info.spec.pps;
+        policer.burst = policer_info.spec.pps_burst;
+    } else {
+        policer.rate = policer_info.spec.bps;
+        policer.burst = policer_info.spec.bps_burst;
+    }
+    return lif->program_tx_policer(&policer);
 }
 
 sdk_ret_t
@@ -435,6 +467,9 @@ if_impl::activate_update_(pds_epoch_t epoch, if_entry *intf,
     case IF_TYPE_ETH:
         return SDK_RET_OK;
 
+    case IF_TYPE_HOST:
+        return activate_host_if_(intf, spec);
+
     default:
         break;
     }
@@ -500,6 +535,14 @@ if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
         }
     } else if (spec->type == IF_TYPE_UPLINK) {
         if_info->status.uplink_status.lif_id = hw_id_;
+    } else if (spec->type == IF_TYPE_HOST) {
+        uint8_t num_lifs = 0;
+        lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
+        if_info->status.host_if_status.lifs[num_lifs++] = lif->key();
+        if_info->status.host_if_status.num_lifs = num_lifs;
+        strncpy(if_info->status.host_if_status.name,
+                intf->name().c_str(), SDK_MAX_NAME_LEN);
+        MAC_ADDR_COPY(if_info->status.host_if_status.mac_addr, intf->host_if_mac());
     }
     return SDK_RET_OK;
 }

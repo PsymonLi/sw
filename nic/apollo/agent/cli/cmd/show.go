@@ -14,8 +14,8 @@ import (
 // showCmd represents the show command
 var showCmd = &cobra.Command{
 	Use:   "show",
-	Short: "Show commands",
-	Long:  "Show commands",
+	Short: "show commands",
+	Long:  "show commands",
 }
 
 func init() {

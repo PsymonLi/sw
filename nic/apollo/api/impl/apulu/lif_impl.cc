@@ -15,6 +15,7 @@
 #include "nic/sdk/include/sdk/qos.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
+#include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/internal/lif.hpp"
@@ -88,12 +89,64 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
     id_ht_ctxt_.reset();
 }
 
+sdk_ret_t
+lif_impl::reserve_tx_scheduler(pds_lif_spec_t *spec) {
+    sdk_ret_t ret;
+    asicpd_scheduler_lif_params_t lif_sched_params;
+
+    // reserve scheduler units
+    lif_sched_params.lif_id = spec->id;
+    lif_sched_params.hw_lif_id = spec->id;
+    lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
+    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_reserve(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to reserve tx sched. lif %s, err %u",
+                      spec->key.str(), ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+lif_impl::program_tx_scheduler(pds_lif_spec_t *spec) {
+    sdk_ret_t ret;
+    asicpd_scheduler_lif_params_t lif_sched_params;
+
+    lif_sched_params.lif_id = spec->id;
+    lif_sched_params.hw_lif_id = spec->id;
+    lif_sched_params.total_qcount = spec->total_qcount;
+    lif_sched_params.cos_bmp = spec->cos_bmp;
+
+    // allocate tx-scheduler resource, or use existing allocation
+    lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
+    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_alloc(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to alloc tx sched. lif %s, err %u",
+                      spec->key.str(), ret);
+        return ret;
+    }
+    // save allocation in spec
+    spec->tx_sched_table_offset = lif_sched_params.tx_sched_table_offset;
+    spec->tx_sched_num_table_entries = lif_sched_params.tx_sched_num_table_entries;
+
+    // program tx scheduler and policer
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_program(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program tx sched. lif %u, err %u",
+                      spec->id, ret);
+        return ret;
+    }
+    return ret;
+}
+
 // TODO: usage of SDK_DEFAULT_POLICER_REFRESH_INTERVAL is broken ??
 #define lif_egress_rl_params       action_u.tx_table_s5_t4_lif_rate_limiter_table_tx_stage5_lif_egress_rl_params
 sdk_ret_t
-lif_impl::program_tx_policer(uint32_t lif_id, sdk::qos::policer_t *policer) {
+lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
     sdk_ret_t ret;
     uint64_t rate_tokens = 0, burst_tokens = 0, rate;
+    asicpd_scheduler_lif_params_t lif_scheduler_params;
     uint64_t refresh_interval_us = SDK_DEFAULT_POLICER_REFRESH_INTERVAL;
     tx_table_s5_t4_lif_rate_limiter_table_actiondata_t rlimit_data = { 0 };
 
@@ -121,12 +174,26 @@ lif_impl::program_tx_policer(uint32_t lif_id, sdk::qos::policer_t *policer) {
                sizeof(rlimit_data.lif_egress_rl_params.rate));
     }
     ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_withid(&rlimit_data,
-                                                              lif_id, NULL);
+                                                              id_, NULL);
     if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("LIF_TX_POLICER table write failure, lif %u, err %u",
-                      lif_id, ret);
+        PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
+                      key_.str(), ret);
         return ret;
     }
+
+    lif_scheduler_params.lif_id = id_;
+    lif_scheduler_params.hw_lif_id = id_;
+    lif_scheduler_params.tx_sched_table_offset = tx_sched_offset_;
+    lif_scheduler_params.tx_sched_num_table_entries = tx_sched_num_entries_;
+    lif_scheduler_params.total_qcount = total_qcount_;
+    lif_scheduler_params.cos_bmp = cos_bmp_;
+    // Program mapping from rate-limiter-table to scheduler-table rate-limiter-group (RLG) for pausing.
+    ret = sdk::asic::pd::asicpd_tx_policer_program(&lif_scheduler_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("lif %s unable to program hw for tx policer", key_.str());
+        return ret;
+    }
+
     return SDK_RET_OK;
 }
 

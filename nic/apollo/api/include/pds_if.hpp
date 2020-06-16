@@ -13,7 +13,6 @@
 
 #include "nic/sdk/include/sdk/types.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
-#include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
 #include "nic/apollo/api/include/pds.hpp"
@@ -57,11 +56,11 @@ typedef struct pds_loopback_info_s {
 } __PACK__ pds_loopback_info_t;
 
 /// \brief inband control interface specific configuration
-typedef struct pds_control_if_s {
+typedef struct pds_control_info_s {
     ip_prefix_t    ip_prefix;     ///< IP address and subnet host on this intf
     mac_addr_t     mac_addr;      ///< MAC address of this interface
     ip_addr_t      gateway;
-} __PACK__ pds_control_if_t;
+} __PACK__ pds_control_info_t;
 
 /// \brief eth port specific configuration
 typedef struct pds_port_info_s {
@@ -79,6 +78,16 @@ typedef struct pds_port_info_s {
     uint32_t             num_lanes;         ///< number of lanes for the port
 } __PACK__ pds_port_info_t;
 
+/// \brief host interface specific configuration
+typedef struct pds_host_if_info_s {
+    ///< tx policer bound to the host interface
+    pds_obj_key_t tx_policer;
+    ///< tx/egress mirror session id list, if any
+    pds_obj_key_t tx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
+    ///< rx/ingress mirror session id list, if any
+    pds_obj_key_t rx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
+} __PACK__ pds_host_if_info_t;
+
 /// \brief interface specification
 typedef struct pds_if_spec_s {
     pds_obj_key_t            key;           ///< interface key
@@ -89,8 +98,9 @@ typedef struct pds_if_spec_s {
         pds_uplink_pc_info_t uplink_pc_info;
         pds_l3_if_info_t     l3_if_info;
         pds_loopback_info_t  loopback_if_info;
-        pds_control_if_t     control_if_info;
+        pds_control_info_t   control_if_info;
         pds_port_info_t      port_info;
+        pds_host_if_info_t   host_if_info;
     };
     // Tx/egress mirror session id list, if any
     uint8_t num_tx_mirror_sessions;
@@ -142,6 +152,18 @@ typedef struct pds_if_port_status_s {
     in_mem_fsm_logger *sm_logger;       ///< port state machine logger
 } __PACK__ pds_if_port_status_t;
 
+#define PDS_MAX_HOST_IF_LIFS (8)
+typedef struct pds_host_if_status_s {
+    ///< number of lifs
+    uint8_t num_lifs;
+    ///< lifs behind host interface
+    pds_obj_key_t lifs[PDS_MAX_HOST_IF_LIFS];
+    ///< name of host interface
+    char name[SDK_MAX_NAME_LEN];
+    ///< mac address of host interface
+    mac_addr_t mac_addr;
+} __PACK__ pds_host_if_status_t;
+
 /// \brief interface status
 typedef struct pds_if_status_s {
     if_index_t     ifindex;  ///< encoded interface index
@@ -155,6 +177,8 @@ typedef struct pds_if_status_s {
         pds_if_loopback_status_t loopback_status;
         /// eth port operational status
         pds_if_port_status_t port_status;
+        /// host interface operational status
+        pds_host_if_status_t host_if_status;
     };
 } __PACK__ pds_if_status_t;
 

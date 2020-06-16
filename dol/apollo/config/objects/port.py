@@ -59,12 +59,12 @@ class PortObject(base.ConfigObjectBase):
 
     def LinkDown(self, spec=None):
         self.AdminState = 'DOWN'
-        cmd = f" port -p {self.UUID.String()} -a down "
+        cmd = f" update port -p {self.UUID.String()} -a down "
         return pdsctl.UpdatePort(cmd)
 
     def LinkUp(self, spec=None):
         self.AdminState = 'UP'
-        cmd = f" port -p {self.UUID.String()} -a up "
+        cmd = f" update port -p {self.UUID.String()} -a up "
         return pdsctl.UpdatePort(cmd)
 
     def __validate_link_alert(self, alert):

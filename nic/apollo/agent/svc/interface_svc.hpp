@@ -85,6 +85,8 @@ if_type_to_proto_if_type (if_type_t type)
         return pds::IF_TYPE_LOOPBACK;
     case IF_TYPE_CONTROL:
         return pds::IF_TYPE_CONTROL;
+    case IF_TYPE_HOST:
+        return pds::IF_TYPE_HOST;
     default:
         return pds::IF_TYPE_NONE;
     }
@@ -151,6 +153,13 @@ pds_if_api_spec_to_proto (pds::InterfaceSpec *proto_spec,
             }
         }
         break;
+    case IF_TYPE_HOST:
+        {
+            auto proto_host_if = proto_spec->mutable_hostifspec();
+            proto_host_if->set_txpolicer(api_spec->host_if_info.tx_policer.id,
+                                         PDS_MAX_KEY_LEN);
+        }
+        break;
     default:
         break;
     }
@@ -167,6 +176,17 @@ pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
         {
             auto uplink_status = proto_status->mutable_uplinkifstatus();
             uplink_status->set_lifid(api_status->uplink_status.lif_id);
+        }
+        break;
+    case IF_TYPE_HOST:
+        {
+            auto host_status = proto_status->mutable_hostifstatus();
+            host_status->set_name(api_status->host_if_status.name);
+            host_status->set_macaddress(MAC_TO_UINT64(api_status->host_if_status.mac_addr));
+            for (uint8_t i = 0; i < api_status->host_if_status.num_lifs; i ++) {
+                host_status->add_lifid(&api_status->host_if_status.lifs[i],
+                                       PDS_MAX_KEY_LEN);
+            }
         }
         break;
     default:
@@ -264,6 +284,12 @@ pds_if_proto_to_api_spec (pds_if_spec_t *api_spec,
                            proto_spec.controlifspec().macaddress());
         ipaddr_proto_spec_to_api_spec(&api_spec->control_if_info.gateway,
                                       proto_spec.controlifspec().gateway());
+        break;
+
+    case pds::IF_TYPE_HOST:
+        api_spec->type = IF_TYPE_HOST;
+        pds_obj_key_proto_to_api_spec(&api_spec->host_if_info.tx_policer,
+                                      proto_spec.hostifspec().txpolicer());
         break;
 
     default:

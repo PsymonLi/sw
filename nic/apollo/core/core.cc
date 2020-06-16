@@ -215,7 +215,7 @@ spawn_nicmgr_thread (pds_state *state)
                 nicmgr::nicmgrapi::nicmgr_event_handler,
                 sdk::lib::thread::priority_by_role(sdk::lib::THREAD_ROLE_CONTROL),
                 sdk::lib::thread::sched_policy_by_role(sdk::lib::THREAD_ROLE_CONTROL),
-                true);
+                true, true);
         SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                                 "nicmgr thread create failure");
         new_thread->set_data(state);

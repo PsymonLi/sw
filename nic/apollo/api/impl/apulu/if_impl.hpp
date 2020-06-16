@@ -192,6 +192,12 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_control_if_(if_entry *intf, pds_if_spec_t *spec);
 
+    /// \brief     activate host interface
+    /// \param[in] intf  host interface obj being programmed
+    /// \param[in] spec  interface configuration
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t activate_host_if_(if_entry *intf, pds_if_spec_t *spec);
+
     /// \brief     remove ip address on control interface (ctrl0)
     /// \param[in] intf  interface obj being programmed
     /// \param[in] spec  interface configuration

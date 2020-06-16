@@ -19,19 +19,23 @@ typedef struct pds_lif_spec_s {
     ///< internal lif id
     pds_lif_id_t     id;
     ///< name of the lif, if any
-    char name[SDK_MAX_NAME_LEN];
+    char             name[SDK_MAX_NAME_LEN];
     ///< if index of the pinned port/lif
     if_index_t       pinned_ifidx;
     ///< type of lif
     lif_type_t       type;
     ///< vlan_strip_en is set to true if vlan needs to be stripped in datapath
-    bool vlan_strip_en;
+    bool             vlan_strip_en;
     ///< mac address of the device
-    mac_addr_t mac;
-    // tx/egress mirror session id list, if any
-    pds_obj_key_t tx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
-    // rx/ingress mirror session id list, if any
-    pds_obj_key_t rx_mirror_sessions[PDS_MAX_MIRROR_SESSION];
+    mac_addr_t       mac;
+    ///< tx scheduler queue count
+    uint32_t         total_qcount;
+    ///< tx scheduler active cos
+    uint16_t         cos_bmp;
+    ///< tx scheduler table offset
+    uint32_t         tx_sched_table_offset;
+    ///< tx scheduler num table entries
+    uint32_t         tx_sched_num_table_entries;
 } pds_lif_spec_t;
 
 /// \brief lif status

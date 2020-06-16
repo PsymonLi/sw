@@ -239,6 +239,25 @@ public:
         type_ = if_type;
     }
 
+    /// \brief    set the host interface name
+    /// \param[in] name     interface name
+    void set_host_if_name(const char *name) {
+        strncpy(if_info_.host_.name_, name, SDK_MAX_NAME_LEN);
+        if_info_.host_.name_[SDK_MAX_NAME_LEN - 1] = '\0';
+    }
+
+    /// \brief    set the host interface mac address
+    /// \param[in] mac     interface mac address
+    void set_host_if_mac(mac_addr_t mac) {
+        MAC_ADDR_COPY(if_info_.host_.mac_, mac);
+    }
+
+    /// \brief    return host interface mac address
+    /// \return returns pointer to mac address
+    uint8_t *host_if_mac(void) {
+        return if_info_.host_.mac_;
+    }
+
     /// \brief    return port specific information
     /// \return return pointer to the port specific information
     void *port_info(void) { return if_info_.port_.port_info_; }
@@ -352,6 +371,12 @@ private:
                 ip_addr_t gateway_;
             } control_;
         };
+        ///< host interface specific information
+        struct {
+            pds_obj_key_t tx_policer_;    ///< tx policer of this host interface
+            char name_[SDK_MAX_NAME_LEN]; ///< host interface name
+            mac_addr_t mac_;              ///< host interface mac address
+        } host_;
     } if_info_;
 
     ht_ctxt_t ht_ctxt_;            ///< hash table context

@@ -20,8 +20,10 @@ import (
 )
 
 var (
-	lifID string
-	ifID  string
+	lifID       string
+	ifID        string
+	ifType      string
+	txPolicerID string
 )
 
 var lifShowCmd = &cobra.Command{
@@ -51,19 +53,90 @@ var lifClearStatsCmd = &cobra.Command{
 	Run:   lifClearStatsCmdHandler,
 }
 
+var ifUpdateCmd = &cobra.Command{
+	Use:   "interface",
+	Short: "update interface information",
+	Long:  "update interface information",
+	Run:   ifUpdateCmdHandler,
+}
+
 func init() {
 	showCmd.AddCommand(lifShowCmd)
 	showCmd.AddCommand(ifShowCmd)
 	lifShowCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
 	lifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	lifShowCmd.Flags().Bool("summary", false, "Display number of objects")
-	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify Lif ID")
+	ifShowCmd.Flags().StringVar(&ifType, "type", "", "Specify interface type (uplink, control, host, l3)")
+	ifShowCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
 	ifShowCmd.Flags().Bool("yaml", true, "Output in yaml")
 	ifShowCmd.Flags().Bool("summary", false, "Display number of objects")
 
 	clearCmd.AddCommand(lifClearCmd)
 	lifClearCmd.AddCommand(lifClearStatsCmd)
 	lifClearStatsCmd.Flags().StringVar(&lifID, "id", "", "Specify Lif ID")
+
+	debugUpdateCmd.AddCommand(ifUpdateCmd)
+	ifUpdateCmd.Flags().StringVar(&ifID, "id", "", "Specify interface ID")
+	ifUpdateCmd.Flags().StringVar(&txPolicerID, "tx-policer", "", "Specify tx policer ID")
+	ifUpdateCmd.MarkFlagRequired("id")
+	ifUpdateCmd.MarkFlagRequired("tx-policer")
+}
+
+func ifUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// connect to PDS
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the PDS, is PDS running?\n")
+		return
+	}
+	defer c.Close()
+
+	if len(args) > 0 {
+		fmt.Printf("Invalid argument\n")
+		return
+	}
+
+	client := pds.NewIfSvcClient(c)
+	ifReq := &pds.InterfaceGetRequest{
+		Id: [][]byte{uuid.FromStringOrNil(ifID).Bytes()},
+	}
+	ifRespMsg, err := client.InterfaceGet(context.Background(), ifReq)
+	if err != nil {
+		fmt.Printf("Get interface failed, err %v\n", err)
+		return
+	}
+	if ifRespMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
+		fmt.Printf("Operation failed with %v error\n", ifRespMsg.ApiStatus)
+		return
+	}
+	ifResp := ifRespMsg.GetResponse()
+	if ifResp[0].GetSpec().GetType() != pds.IfType_IF_TYPE_HOST {
+		fmt.Printf("Only update of  host interface supported\n")
+		return
+	}
+
+	spec := &pds.InterfaceSpec{
+		Id:          uuid.FromStringOrNil(ifID).Bytes(),
+		Type:        pds.IfType_IF_TYPE_HOST,
+		AdminStatus: ifResp[0].GetSpec().GetAdminStatus(),
+		Ifinfo: &pds.InterfaceSpec_HostIfSpec{
+			HostIfSpec: &pds.HostIfSpec{
+				TxPolicer: uuid.FromStringOrNil(txPolicerID).Bytes(),
+			},
+		},
+	}
+	req := &pds.InterfaceRequest{
+		Request: []*pds.InterfaceSpec{
+			spec,
+		},
+	}
+	// PDS call
+	_, err = client.InterfaceUpdate(context.Background(), req)
+	if err != nil {
+		fmt.Printf("Updating interface failed, err %v\n", err)
+		return
+	}
+	fmt.Printf("Interface updated successfully\n")
 }
 
 func lifClearStatsCmdHandler(cmd *cobra.Command, args []string) {
@@ -117,31 +190,47 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	var req *pds.InterfaceGetRequest
-
-	if cmd == nil || cmd.Flags().Changed("id") == false {
+	if cmd != nil && cmd.Flags().Changed("id") == true {
+		req = &pds.InterfaceGetRequest{
+			Id: [][]byte{uuid.FromStringOrNil(ifID).Bytes()},
+		}
+	} else if cmd != nil && cmd.Flags().Changed("type") == true {
+		if validateIfTypeStr(ifType) != true {
+			fmt.Printf("Invalid interface type specified. Must be one of host, l3, uplink, control\n")
+			return
+		}
 		req = &pds.InterfaceGetRequest{
 			Id: [][]byte{},
 		}
+	} else if cmd != nil && cmd.Flags().Changed("summary") == true {
+		req = &pds.InterfaceGetRequest{
+			Id: [][]byte{},
+		}
+	} else if cmd != nil && cmd.Flags().Changed("yaml") == true {
+		req = &pds.InterfaceGetRequest{
+			Id: [][]byte{},
+		}
+	} else if cmd != nil {
+		fmt.Printf("Command requires a flag. Refer to help string\n")
+		return
 	} else {
 		req = &pds.InterfaceGetRequest{
-			Id: [][]byte{uuid.FromStringOrNil(ifID).Bytes()},
+			Id: [][]byte{},
 		}
 	}
 
 	client := pds.NewIfSvcClient(c)
-
 	respMsg, err := client.InterfaceGet(context.Background(), req)
 	if err != nil {
-		fmt.Printf("Get Lif failed, err %v\n", err)
+		fmt.Printf("Get Interface failed, err %v\n", err)
 		return
 	}
-
 	if respMsg.ApiStatus != pds.ApiStatus_API_STATUS_OK {
 		fmt.Printf("Operation failed with %v error\n", respMsg.ApiStatus)
 		return
 	}
 
-	num_intfs := 0
+	fmt.Printf("\n")
 	if cmd != nil && cmd.Flags().Changed("yaml") {
 		for _, resp := range respMsg.Response {
 			respType := reflect.ValueOf(resp)
@@ -149,43 +238,138 @@ func ifShowCmdHandler(cmd *cobra.Command, args []string) {
 			fmt.Println(string(b))
 			fmt.Println("---")
 		}
-	} else if cmd != nil && cmd.Flags().Changed("id") {
-		for _, resp := range respMsg.Response {
-			if resp.GetSpec().GetType() == pds.IfType_IF_TYPE_NONE {
-				fmt.Printf("For ETH type interface, use 'pdsctl show port status --port <id>'\n")
-				return
-			}
-		}
-    } else if cmd != nil && cmd.Flags().Changed("summary") {
+	} else if cmd != nil && cmd.Flags().Changed("summary") {
+		var num_intfs [pds.IfType_IF_TYPE_HOST + 1]int
 		for _, resp := range respMsg.Response {
 			if resp.GetSpec().GetType() != pds.IfType_IF_TYPE_NONE {
-				num_intfs += 1
+				num_intfs[resp.GetSpec().GetType()] += 1
 			}
 		}
 		printIfSummary(num_intfs)
-	} else {
-		printIfHeader()
+	} else if cmd != nil && cmd.Flags().Changed("id") {
 		for _, resp := range respMsg.Response {
-			if resp.GetSpec().GetType() != pds.IfType_IF_TYPE_NONE {
-				num_intfs += 1
+			respType := resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			printIfHeader(respType)
+			printIf(resp)
+			fmt.Printf("\nNumber of ifs : 1\n")
+		}
+	} else if cmd != nil && cmd.Flags().Changed("type") {
+		printIfHeader(ifType)
+		respType := ""
+		count := 0
+		for _, resp := range respMsg.Response {
+			respType = resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			if strings.ToLower(respType) == ifType {
+				printIf(resp)
+				count += 1
+			}
+		}
+		fmt.Printf("\nNumber of %s ifs : %d\n", ifType, count)
+	} else {
+		// print all if types
+		var num_intfs [pds.IfType_IF_TYPE_HOST + 1]int
+		printIfHeader("uplink")
+		for _, resp := range respMsg.Response {
+			respType := resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			if strings.ToLower(respType) == "uplink" {
 				printIf(resp)
 			}
 		}
+		fmt.Printf("\n")
+		printIfHeader("l3")
+		for _, resp := range respMsg.Response {
+			respType := resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			if strings.ToLower(respType) == "l3" {
+				printIf(resp)
+			}
+		}
+		fmt.Printf("\n")
+		printIfHeader("control")
+		for _, resp := range respMsg.Response {
+			respType := resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			if strings.ToLower(respType) == "control" {
+				printIf(resp)
+			}
+		}
+		fmt.Printf("\n")
+		printIfHeader("host")
+		for _, resp := range respMsg.Response {
+			respType := resp.GetSpec().GetType().String()
+			respType = strings.Replace(respType, "IF_TYPE_", "", -1)
+			num_intfs[resp.GetSpec().GetType()] += 1
+			if strings.ToLower(respType) == "host" {
+				printIf(resp)
+			}
+		}
+		fmt.Printf("\n")
 		printIfSummary(num_intfs)
 	}
+	fmt.Printf("\n")
 }
 
-func printIfSummary(count int) {
-	fmt.Printf("\nNo. of ifs : %d\n\n", count)
+func validateIfTypeStr(str string) bool {
+	switch str {
+	case "uplink":
+		return true
+	case "l3":
+		return true
+	case "control":
+		return true
+	case "host":
+		return true
+	default:
+		return false
+	}
+
 }
 
-func printIfHeader() {
-	hdrLine := strings.Repeat("-", 188)
-	fmt.Println(hdrLine)
-	fmt.Printf("%-14s%-14s%-11s%-11s%-40s%-6s%-40s%-18s%-14s%-20s\n",
-		"IfIndex", "Interface", "AdminState", "OperState", "Port", "LifID",
-		"VPC", "IPPrefix", "Encap", "MACAddress")
-	fmt.Println(hdrLine)
+func printIfSummary(count [pds.IfType_IF_TYPE_HOST + 1]int) {
+	var i int32
+	total := 0
+	for i = 1; i <= int32(pds.IfType_IF_TYPE_HOST); i++ {
+		x := pds.IfType(i)
+		ifStr := strings.ToLower(strings.Replace(strings.Replace(x.String(), "IF_TYPE_", "", -1), "_", "-", -1))
+		keyStr := fmt.Sprintf("Number of %s ifs ", ifStr)
+		fmt.Printf("%-24s: %d\n", keyStr, count[i])
+		total += count[i]
+	}
+	fmt.Printf("%-24s: %d\n", "Total number of ifs ", total)
+}
+
+func printIfHeader(str string) {
+	switch str {
+	case "uplink":
+		hdrLine := strings.Repeat("-", 136)
+		fmt.Println(hdrLine)
+		fmt.Printf("%-40s%-14s%-14s%-11s%-11s%-40s%-6s\n",
+			"ID", "IfIndex", "Interface", "AdminState", "OperState", "Port", "LifID")
+		fmt.Println(hdrLine)
+	case "control":
+		hdrLine := strings.Repeat("-", 128)
+		fmt.Println(hdrLine)
+		fmt.Printf("%-40s%-14s%-14s%-11s%-11s%-18s%-20s\n",
+			"ID", "IfIndex", "Interface", "AdminState", "OperState",
+			"IPPrefix", "MACAddress")
+		fmt.Println(hdrLine)
+	case "l3":
+		hdrLine := strings.Repeat("-", 222)
+		fmt.Println(hdrLine)
+		fmt.Printf("%-40s%-14s%-14s%-11s%-11s%-40s%-40s%-18s%-14s%-20s\n",
+			"ID", "IfIndex", "Interface", "AdminState", "OperState", "Port",
+			"VPC", "IPPrefix", "Encap", "MACAddress")
+		fmt.Println(hdrLine)
+	case "host":
+		hdrLine := strings.Repeat("-", 168)
+		fmt.Println(hdrLine)
+		fmt.Printf("%-40s%-14s%-14s%-20s%-40s%-40s\n",
+			"ID", "IfIndex", "Interface", "MACAddress", "Lif", "Policer")
+		fmt.Println(hdrLine)
+	}
 }
 
 func printIf(intf *pds.Interface) {
@@ -193,35 +377,64 @@ func printIf(intf *pds.Interface) {
 	status := intf.GetStatus()
 	ifIndex := status.GetIfIndex()
 	ifStr := ifIndexToPortIdStr(ifIndex)
-	adminState := strings.Replace(spec.GetAdminStatus().String(),
-		"IF_STATUS_", "", -1)
-	adminState = strings.Replace(adminState, "_", "-", -1)
-	operState := strings.Replace(status.GetOperStatus().String(),
-		"IF_STATUS_", "", -1)
-	operState = strings.Replace(operState, "_", "-", -1)
-	portNum := ""
-	vpc := "-"
-	ipPrefix := "-"
-	encap := "-"
-	mac := "-"
-	lifId := "-"
 	switch spec.GetType() {
 	case pds.IfType_IF_TYPE_UPLINK:
-		lifId = fmt.Sprint(status.GetUplinkIfStatus().GetLifId())
-		portNum = utils.IdToStr(spec.GetUplinkSpec().GetPortId())
+		adminState := strings.Replace(spec.GetAdminStatus().String(),
+			"IF_STATUS_", "", -1)
+		adminState = strings.Replace(adminState, "_", "-", -1)
+		operState := strings.Replace(status.GetOperStatus().String(),
+			"IF_STATUS_", "", -1)
+		operState = strings.Replace(operState, "_", "-", -1)
+		lifId := fmt.Sprint(status.GetUplinkIfStatus().GetLifId())
+		portNum := utils.IdToStr(spec.GetUplinkSpec().GetPortId())
+		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-40s%-6s\n",
+			utils.IdToStr(spec.GetId()), ifIndex, ifStr,
+			adminState, operState, portNum, lifId)
 	case pds.IfType_IF_TYPE_L3:
-		portNum = utils.IdToStr(spec.GetL3IfSpec().GetPortId())
-		vpc = utils.IdToStr(spec.GetL3IfSpec().GetVpcId())
-		ipPrefix = utils.IPPrefixToStr(spec.GetL3IfSpec().GetPrefix())
-		mac = utils.MactoStr(spec.GetL3IfSpec().GetMACAddress())
-		encap = utils.EncapToString(spec.GetL3IfSpec().GetEncap())
+		adminState := strings.Replace(spec.GetAdminStatus().String(),
+			"IF_STATUS_", "", -1)
+		adminState = strings.Replace(adminState, "_", "-", -1)
+		operState := strings.Replace(status.GetOperStatus().String(),
+			"IF_STATUS_", "", -1)
+		operState = strings.Replace(operState, "_", "-", -1)
+		portNum := utils.IdToStr(spec.GetL3IfSpec().GetPortId())
+		vpc := utils.IdToStr(spec.GetL3IfSpec().GetVpcId())
+		ipPrefix := utils.IPPrefixToStr(spec.GetL3IfSpec().GetPrefix())
+		mac := utils.MactoStr(spec.GetL3IfSpec().GetMACAddress())
+		encap := utils.EncapToString(spec.GetL3IfSpec().GetEncap())
+		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-40s%-40s%-18s%-14s%-20s\n",
+			utils.IdToStr(spec.GetId()), ifIndex, ifStr, adminState, operState,
+			portNum, vpc, ipPrefix, encap, mac)
 	case pds.IfType_IF_TYPE_CONTROL:
-		ipPrefix = utils.IPPrefixToStr(spec.GetControlIfSpec().GetPrefix())
-		mac = utils.MactoStr(spec.GetControlIfSpec().GetMACAddress())
+		adminState := strings.Replace(spec.GetAdminStatus().String(),
+			"IF_STATUS_", "", -1)
+		adminState = strings.Replace(adminState, "_", "-", -1)
+		operState := strings.Replace(status.GetOperStatus().String(),
+			"IF_STATUS_", "", -1)
+		operState = strings.Replace(operState, "_", "-", -1)
+		ipPrefix := utils.IPPrefixToStr(spec.GetControlIfSpec().GetPrefix())
+		mac := utils.MactoStr(spec.GetControlIfSpec().GetMACAddress())
+		fmt.Printf("%-40s0x%-12x%-14s%-11s%-11s%-18s%-20s\n",
+			utils.IdToStr(spec.GetId()), ifIndex, ifStr,
+			adminState, operState, ipPrefix, mac)
+	case pds.IfType_IF_TYPE_HOST:
+		policer := utils.IdToStr(spec.GetHostIfSpec().GetTxPolicer())
+		lifs := status.GetHostIfStatus().GetLifId()
+		first := true
+		for _, lif := range lifs {
+			if first {
+				fmt.Printf("%-40s0x%-12x%-14s%-20s%-40s%-40s\n",
+					utils.IdToStr(spec.GetId()), ifIndex,
+					status.GetHostIfStatus().GetName(),
+					utils.MactoStr(status.GetHostIfStatus().GetMacAddress()),
+					utils.IdToStr(lif), policer)
+				first = false
+			} else {
+				fmt.Printf("%-88s%-40s%-40s\n",
+					"", utils.IdToStr(lif), "")
+			}
+		}
 	}
-	fmt.Printf("0x%-12x%-14s%-11s%-11s%-40s%-6s%-40s%-18s%-14s%-20s\n",
-		ifIndex, ifStr, adminState, operState, portNum, lifId,
-		vpc, ipPrefix, encap, mac)
 }
 
 func lifGetNameFromKey(key []byte) string {

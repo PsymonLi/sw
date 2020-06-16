@@ -133,23 +133,23 @@ class InterfaceObject(base.ConfigObjectBase):
             return
         for ifinst in resp:
             if self.Type == topo.InterfaceTypes.L3:
-                if (not ifinst['spec']['type'] == 'L3'):	
-                    continue	
-                riid = ifinst['meta']['name']	
-                if (self.InterfaceId != int(riid[len(riid)-1])):	
-                    continue	
-            elif self.Type == topo.InterfaceTypes.LOOPBACK:	
-                if (not ifinst['spec']['type'] == 'LOOPBACK'):	
-                    continue	
-            elif self.Type == topo.InterfaceTypes.ETH:	
-                if (not ifinst['spec']['type'] == 'HOST_PF'):	
-                    continue	
-                if (ifinst['meta']['uuid'] != self.UUID.UuidStr):	
-                    continue	
-            else:	
+                if (not ifinst['spec']['type'] == 'L3'):
+                    continue
+                riid = ifinst['meta']['name']
+                if (self.InterfaceId != int(riid[len(riid)-1])):
+                    continue
+            elif self.Type == topo.InterfaceTypes.LOOPBACK:
+                if (not ifinst['spec']['type'] == 'LOOPBACK'):
+                    continue
+            elif self.Type == topo.InterfaceTypes.ETH:
+                if (not ifinst['spec']['type'] == 'HOST_PF'):
+                    continue
+                if (ifinst['meta']['uuid'] != self.UUID.UuidStr):
+                    continue
+            else:
                 continue
-            # Found matching interface, get basic info	
-            uuid_str = ifinst['meta']['uuid']	  
+            # Found matching interface, get basic info
+            uuid_str = ifinst['meta']['uuid']
             self.UUID = utils.PdsUuid(bytes.fromhex(uuid_str.replace('-','')),\
                     self.ObjType)
 
@@ -407,14 +407,14 @@ class L3InterfaceObject(InterfaceObject):
 
     # TODO: Move this to port object and link interface obj to port obj
     def LinkDown(self, port):
-        cmd = " debug port -p "
+        cmd = " debug update port -p "
         cmd += utils.PdsUuid.GetUuidString(self.Port.GetUuid())
         cmd += " -a down"
         pdsctl.ExecutePdsctlCommand(cmd, None, False)
         return
 
     def LinkUp(self, port):
-        cmd = " debug port -p "
+        cmd = " debug update port -p "
         cmd += utils.PdsUuid.GetUuidString(self.Port.GetUuid())
         cmd += " -a up"
         pdsctl.ExecutePdsctlCommand(cmd, None, False)

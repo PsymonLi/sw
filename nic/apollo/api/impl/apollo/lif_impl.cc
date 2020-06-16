@@ -53,9 +53,19 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
     id_ht_ctxt_.reset();
 }
 
+sdk_ret_t
+lif_impl::reserve_tx_scheduler(pds_lif_spec_t *spec) {
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+lif_impl::program_tx_scheduler(pds_lif_spec_t *spec) {
+    return SDK_RET_OK;
+}
+
 #define lif_egress_rl_params       action_u.tx_table_s5_t4_lif_rate_limiter_table_tx_stage5_lif_egress_rl_params
 sdk_ret_t
-lif_impl::program_tx_policer(uint32_t lif_id, sdk::qos::policer_t *policer) {
+lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
     sdk_ret_t ret;
     tx_table_s5_t4_lif_rate_limiter_table_actiondata_t rlimit_data = { 0 };
     uint64_t refresh_interval_us = SDK_DEFAULT_POLICER_REFRESH_INTERVAL;
@@ -85,10 +95,10 @@ lif_impl::program_tx_policer(uint32_t lif_id, sdk::qos::policer_t *policer) {
                sizeof(rlimit_data.lif_egress_rl_params.rate));
     }
     ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_withid(&rlimit_data,
-                                                              lif_id, NULL);
+                                                              id_, NULL);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("LIF_TX_POLICER table write failure, lif %u, err %u",
-                      lif_id, ret);
+                      id_, ret);
         return ret;
     }
     return SDK_RET_OK;

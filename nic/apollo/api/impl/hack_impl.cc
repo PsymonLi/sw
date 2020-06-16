@@ -20,6 +20,8 @@
 #include "nic/apollo/p4/include/defines.h"
 #include "nic/sdk/platform/devapi/devapi_types.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
+#include "nic/apollo/api/impl/lif_impl.hpp"
+#include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
 
 using sdk::platform::utils::program_info;
@@ -106,6 +108,7 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
 
     //Program the TxDMA scheduler for this LIF.
     sdk::platform::lif_info_t lif_info;
+    api::pds_host_if_spec_t if_spec;
 
     memset(&lif_info, 0, sizeof(lif_info));
     strncpy(lif_info.name, "Apollo Service LIF", sizeof(lif_info.name));
@@ -116,8 +119,8 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     lif_info.queue_info[0].type_num = 0;
     lif_info.queue_info[0].size = 1; // 64B
     lif_info.queue_info[0].entries = 1; // 2 Queues
-    api::impl::devapi_impl::lif_program_tx_scheduler(&lif_info);
-
+    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
+    api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
     return SDK_RET_OK;
 }
 

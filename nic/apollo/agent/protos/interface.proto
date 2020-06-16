@@ -186,6 +186,8 @@ message ControlIfSpec {
 //       policy) can be applied on such interfaces and they can't be brought
 //       down or up as they are host devices and DSC has no control over them
 message HostIfSpec {
+  // Tx policer uuid
+  bytes TxPolicer = 1;
 }
 
 // InterfaceSpec is used to add or update of an interface
@@ -234,6 +236,8 @@ message HostIfStatus {
   uint64   MacAddress  = 2;
   // operational status of this interface
   IfStatus Status      = 3;
+  // host interface name
+  string   Name        = 4;
 }
 
 // operational status of an interface, if any

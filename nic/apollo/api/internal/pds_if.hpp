@@ -13,9 +13,40 @@
 
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
+#include "nic/apollo/api/include/pds_lif.hpp"
 #include "nic/apollo/api/port.hpp"
 
 namespace api {
+
+typedef struct pds_host_if_spec_s {
+    ///< host if key
+    pds_obj_key_t  key;
+    ///< host if name
+    char name[SDK_MAX_NAME_LEN];
+    ///< host if mac address
+    mac_addr_t mac;
+    ///< lif spec
+    pds_lif_spec_t lif;
+} pds_host_if_spec_t;
+
+/// \brief      create host interface
+/// \param[in]  spec  host interface spec
+/// \return     #SDK_RET_OK on success, failure status code on error
+/// \remark     valid host interface spec should be passed
+sdk_ret_t pds_host_if_create(_In_ pds_host_if_spec_t *spec);
+
+/// \brief      initialize host interface
+/// \param[in]  spec  host interface spec
+/// \return     #SDK_RET_OK on success, failure status code on error
+/// \remark     valid host interface spec should be passed
+sdk_ret_t pds_host_if_init(_In_ pds_host_if_spec_t *spec);
+
+/// \brief      update host interface name
+/// \param[in]  key  host interface key
+/// \param[in]  name host interface name
+/// \return     #SDK_RET_OK on success, failure status code on error
+/// \remark     valid host interface spec should be passed
+sdk_ret_t pds_host_if_update_name(_In_ pds_obj_key_t *key, _In_ std::string name);
 
 /// \brief      read interface
 /// \param[in]  key  pointer to the interface key

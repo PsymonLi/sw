@@ -30,6 +30,7 @@ const (
 	ifTypeLif         = 8
 	ifTypeLoopback    = 9
 	ifTypeControl     = 10
+	ifTypeHost        = 11
 	ifTypeShift       = 28
 	ifSlotShift       = 24
 	ifParentPortShift = 16
@@ -79,8 +80,8 @@ var portFsmShowCmd = &cobra.Command{
 
 var portUpdateCmd = &cobra.Command{
 	Use:   "port",
-	Short: "set port debug information",
-	Long:  "set port debug information",
+	Short: "update port information",
+	Long:  "update port information",
 	Run:   portUpdateCmdHandler,
 }
 
@@ -146,7 +147,7 @@ func init() {
 	portShowCmd.AddCommand(portFsmShowCmd)
 	portFsmShowCmd.Flags().StringVarP(&portID, "port", "p", "", "Specify port uuid")
 
-	debugCmd.AddCommand(portUpdateCmd)
+	debugUpdateCmd.AddCommand(portUpdateCmd)
 	portUpdateCmd.Flags().StringVarP(&portID, "port", "p", "", "Specify port uuid")
 	portUpdateCmd.Flags().StringVarP(&portAdminState, "admin-state", "a", "up", "Set port admin state - up, down")
 	portUpdateCmd.Flags().StringVar(&portFecType, "fec-type", "none", "Specify fec-type - rs, fc, none")
@@ -712,6 +713,8 @@ func ifIndexToIfType(ifindex uint32) string {
 		return "L3"
 	case ifTypeLif:
 		return "Lif"
+	case ifTypeHost:
+		return "Host"
 	case ifTypeControl:
 		return "Control"
 	}
@@ -733,7 +736,7 @@ func ifIndexToPortIdStr(ifIndex uint32) string {
 		slotStr := strconv.FormatUint(uint64(ifIndexToSlot(ifIndex)), 10)
 		parentPortStr := strconv.FormatUint(uint64(ifIndexToParentPort(ifIndex)), 10)
 		return ifTypeStr + slotStr + ifNameDelimiter + parentPortStr
-	case ifTypeEthPC, ifTypeTunnel, ifTypeL3, ifTypeLif, ifTypeLoopback, ifTypeControl:
+	case ifTypeHost, ifTypeEthPC, ifTypeTunnel, ifTypeL3, ifTypeLif, ifTypeLoopback, ifTypeControl:
 		return ifTypeStr + strconv.FormatUint(uint64(ifIndexToID(ifIndex)), 10)
 	}
 	return "-"

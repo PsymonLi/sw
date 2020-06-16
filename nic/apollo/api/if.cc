@@ -19,6 +19,7 @@
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/if.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/utils.hpp"
@@ -85,6 +86,12 @@ if_entry::clone(api_ctxt_t *api_ctxt) {
         new (cloned_if) if_entry();
         if (cloned_if->init_config(api_ctxt) != SDK_RET_OK) {
             goto error;
+        }
+        if (cloned_if->type() == IF_TYPE_HOST) {
+            // host interface name and mac address cannot
+            // be modified by external apis so copy them
+            cloned_if->set_host_if_name(if_info_.host_.name_);
+            cloned_if->set_host_if_mac(if_info_.host_.mac_);
         }
         cloned_if->impl_ = impl_->clone();
         if (unlikely(cloned_if->impl_ == NULL)) {
@@ -161,27 +168,32 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         break;
 
     case IF_TYPE_L3:
-         ifindex_ = L3_IFINDEX(l3_if_idxr_++);
-         PDS_TRACE_DEBUG("Initializing L3 interface %s, ifindex 0x%x, "
-                         "port %s", spec->key.str(), ifindex_,
-                         spec->l3_if_info.port.str());
-         if_info_.l3_.vpc_ = spec->l3_if_info.vpc;
-         if_info_.l3_.ip_pfx_ = spec->l3_if_info.ip_prefix;
-         if_info_.l3_.port_ = spec->l3_if_info.port;
-         if_info_.l3_.encap_ = spec->l3_if_info.encap;
-         memcpy(if_info_.l3_.mac_, spec->l3_if_info.mac_addr,
-                ETH_ADDR_LEN);
-         break;
+        ifindex_ = L3_IFINDEX(l3_if_idxr_++);
+        PDS_TRACE_DEBUG("Initializing L3 interface %s, ifindex 0x%x, "
+                        "port %s", spec->key.str(), ifindex_,
+                        spec->l3_if_info.port.str());
+        if_info_.l3_.vpc_ = spec->l3_if_info.vpc;
+        if_info_.l3_.ip_pfx_ = spec->l3_if_info.ip_prefix;
+        if_info_.l3_.port_ = spec->l3_if_info.port;
+        if_info_.l3_.encap_ = spec->l3_if_info.encap;
+        memcpy(if_info_.l3_.mac_, spec->l3_if_info.mac_addr,
+               ETH_ADDR_LEN);
+        break;
 
     case IF_TYPE_CONTROL:
-         ifindex_ = CONTROL_IFINDEX(0);
-         PDS_TRACE_DEBUG("Initializing inband control interface %s, ifindex 0x%x",
-                         spec->key.str(), ifindex_);
-         if_info_.control_.ip_pfx_ = spec->control_if_info.ip_prefix;
-         memcpy(if_info_.control_.mac_, spec->control_if_info.mac_addr,
-                ETH_ADDR_LEN);
-         if_info_.control_.gateway_ = spec->control_if_info.gateway;
-         break;
+        ifindex_ = CONTROL_IFINDEX(0);
+        PDS_TRACE_DEBUG("Initializing inband control interface %s, ifindex 0x%x",
+                        spec->key.str(), ifindex_);
+        if_info_.control_.ip_pfx_ = spec->control_if_info.ip_prefix;
+        memcpy(if_info_.control_.mac_, spec->control_if_info.mac_addr,
+               ETH_ADDR_LEN);
+        if_info_.control_.gateway_ = spec->control_if_info.gateway;
+        break;
+
+    case IF_TYPE_HOST:
+        ifindex_ = HOST_IFINDEX(IFINDEX_TO_IFID(api::objid_from_uuid(spec->key)));
+        if_info_.host_.tx_policer_ = spec->host_if_info.tx_policer;
+        break;
 
     case IF_TYPE_ETH:
          ifindex_ = api::objid_from_uuid(key_);
@@ -191,10 +203,10 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         break;
 
     default:
-         return sdk::SDK_RET_INVALID_ARG;
-         break;
+        return sdk::SDK_RET_INVALID_ARG;
+        break;
     }
-     return SDK_RET_OK;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -420,6 +432,9 @@ if_entry::fill_spec_(pds_if_spec_t *spec, port_args_t *port_args) {
                ETH_ADDR_LEN);
         spec->control_if_info.gateway = if_info_.control_.gateway_;
         break;
+    case IF_TYPE_HOST:
+        spec->host_if_info.tx_policer = if_info_.host_.tx_policer_;
+        break;
     case IF_TYPE_ETH:
         fill_port_if_spec_(spec, port_args);
         break;
@@ -598,6 +613,8 @@ if_entry::name(void) {
     case IF_TYPE_LOOPBACK:
         intf_id = std::to_string(IFINDEX_TO_IFID(ifindex_));
         break;
+    case IF_TYPE_HOST:
+        return std::string(if_info_.host_.name_);
     default:
         intf_id = "none";
         break;

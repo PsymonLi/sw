@@ -81,7 +81,7 @@ func init() {
 	securityRuleShowCmd.Flags().StringVarP(&policyID, "policy-id", "p", "", "Specify policy ID")
 	securityRuleShowCmd.Flags().StringVarP(&ruleID, "rule-id", "r", "", "Specify rule ID")
 
-	debugCmd.AddCommand(securityProfileUpdateCmd)
+	debugUpdateCmd.AddCommand(securityProfileUpdateCmd)
 	securityProfileUpdateCmd.Flags().StringVarP(&profileID, "profile-id", "p", "", "Specify profile ID")
 	securityProfileUpdateCmd.Flags().Uint32Var(&tcpIdleTimeout, "tcp-idle-timeout", 600, "Specify TCP idle timeout (Valid: 5-86400)")
 	securityProfileUpdateCmd.Flags().Uint32Var(&udpIdleTimeout, "udp-idle-timeout", 120, "Specify UDP idle timeout (Valid: 5-86400)")

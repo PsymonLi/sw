@@ -13,6 +13,7 @@
 
 #include "nic/sdk/platform/devapi/devapi.hpp"
 #include "nic/apollo/framework/impl_base.hpp"
+#include "nic/apollo/api/internal/pds_if.hpp"
 #include "nic/sdk/linkmgr/linkmgr.hpp"
 
 namespace api {
@@ -29,10 +30,15 @@ using sdk::platform::devapi;
 /// \ingroup PDS_DEVAPI
 /// @{
 
+void host_if_spec_from_lif_info(pds_host_if_spec_t &spec, lif_info_t *info);
+
 class devapi_impl : public impl_base, public devapi {
 public:
     static devapi *factory(void);
     static void destroy(devapi *impl);
+
+    static uint16_t lif_get_cos_bmp(lif_info_t *info);
+    static uint32_t lif_get_qcount(lif_info_t *info);
 
     // lif APIs
     virtual sdk_ret_t lif_create(lif_info_t *info) override;
@@ -64,8 +70,6 @@ public:
     virtual sdk_ret_t lif_upd_mcast_filter(uint32_t lif_id,
                                            lif_mcast_filter_t mcast_filter) override;
     virtual sdk_ret_t lif_upd_rx_en(uint32_t lif_id, bool rx_en) override;
-    static sdk_ret_t lif_program_tx_scheduler(lif_info_t *info);
-    static sdk_ret_t lif_reserve_tx_scheduler(lif_info_t *info);
     virtual sdk_ret_t lif_upd_max_tx_rate(uint32_t lif_id, uint64_t rate_in_Bps) override;
     virtual sdk_ret_t lif_get_max_tx_rate(uint32_t lif_id, uint64_t *rate_in_Bps) override;
 
@@ -137,9 +141,6 @@ private:
                                  _Out_ port_status_t *status);
     static sdk_ret_t populate_port_args_(_Out_ sdk::linkmgr::port_args_t *port_args,
                                          _In_ port_config_t *config);
-
-    static uint16_t lif_get_cos_bmp_(lif_info_t *info);
-    static uint32_t lif_get_qcount_(lif_info_t *info);
     friend class athena_devapi_impl;
 };
 

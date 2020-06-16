@@ -54,6 +54,9 @@ pds_if_entry_find (pds_obj_key_t *key)
 sdk_ret_t
 pds_if_create (_In_ pds_if_spec_t *spec, _In_ pds_batch_ctxt_t bctxt)
 {
+    if (spec->type == IF_TYPE_HOST) {
+        return SDK_RET_ERR;
+    }
     return pds_if_api_handle(bctxt, API_OP_CREATE, NULL, spec);
 }
 

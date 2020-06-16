@@ -14,14 +14,20 @@ import (
 // debugCmd represents the show command
 var debugCmd = &cobra.Command{
 	Use:   "debug",
-	Short: "Debug commands",
-	Long:  "Debug commands",
+	Short: "debug commands",
+	Long:  "debug commands",
 }
 
 var debugCreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Debug create commands",
-	Long:  "Debug create commands",
+	Short: "debug create commands",
+	Long:  "debug create commands",
+}
+
+var debugUpdateCmd = &cobra.Command{
+	Use:   "update",
+	Short: "debug update commands",
+	Long:  "debug update commands",
 }
 
 func init() {
@@ -29,4 +35,5 @@ func init() {
 	impl.RegisterDebugNodes(&impl.CLIParams{GRPCPort: types.PDSGRPCDefaultPort}, debugCmd)
 
 	debugCmd.AddCommand(debugCreateCmd)
+	debugCmd.AddCommand(debugUpdateCmd)
 }

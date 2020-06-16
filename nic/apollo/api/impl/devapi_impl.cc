@@ -22,13 +22,10 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/utils.hpp"
-#include "nic/apollo/api/upgrade_state.hpp"
-#include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/impl/devapi_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
-#include "gen/platform/mem_regions.hpp"
 
 namespace api {
 namespace impl {
@@ -56,88 +53,50 @@ devapi_impl::destroy(devapi *impl) {
     SDK_FREE(SDK_MEM_ALLOC_DEVAPI_IMPL, impl);
 }
 
-static void
-lif_spec_from_info (pds_lif_spec_t &spec, lif_info_t *info)
+void
+host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
 {
+    pds_lif_spec_t *lif_spec = &spec.lif;
+
+    memset(&spec, 0, sizeof(pds_host_if_spec_t));
     spec.key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
-    spec.id = info->lif_id;
-    strncpy(spec.name, info->name, sizeof(spec.name));
-    spec.pinned_ifidx = info->pinned_uplink_port_num;
-    spec.type = info->type;
-    spec.vlan_strip_en = info->vlan_strip_en;
-    MAC_ADDR_COPY(spec.mac, info->mac);
+    lif_spec->key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
+    lif_spec->id = info->lif_id;
+    strncpy(lif_spec->name, info->name, sizeof(lif_spec->name));
+    lif_spec->name[SDK_MAX_NAME_LEN - 1] = '\0';
+    lif_spec->pinned_ifidx = info->pinned_uplink_port_num;
+    lif_spec->type = info->type;
+    lif_spec->vlan_strip_en = info->vlan_strip_en;
+    lif_spec->tx_sched_table_offset = info->tx_sched_table_offset;
+    lif_spec->tx_sched_num_table_entries = info->tx_sched_num_table_entries;
+    lif_spec->total_qcount = devapi_impl::lif_get_qcount(info);
+    lif_spec->cos_bmp = devapi_impl::lif_get_cos_bmp(info);
+    MAC_ADDR_COPY(lif_spec->mac, info->mac);
+    strncpy(spec.name, lif_spec->name, sizeof(lif_spec->name));
+    spec.name[SDK_MAX_NAME_LEN - 1] = '\0';
+    MAC_ADDR_COPY(spec.mac, lif_spec->mac);
 }
 
 sdk_ret_t
 devapi_impl::lif_create(lif_info_t *info) {
-    lif_impl *lif;
-    pds_lif_spec_t spec = { 0 };
-    static mem_addr_t lif_stats_base_addr =
-        g_pds_state.mempartition()->start_addr(MEM_REGION_LIF_STATS_NAME);
-    static uint64_t block_size =
-        g_pds_state.mempartition()->block_size(MEM_REGION_LIF_STATS_NAME);
+    pds_host_if_spec_t spec;
 
-    lif_spec_from_info(spec, info);
-    lif = lif_impl::factory(&spec);
-    if (unlikely(lif == NULL)) {
-        return sdk::SDK_RET_OOM;
-    }
-    lif_impl_db()->insert(lif);
-    PDS_TRACE_DEBUG("Inserted lif %lu %s %u %s",
-                    info->lif_id, info->name, info->type,
-                    macaddr2str(info->mac));
-    // register for lif metrics
-    sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
-                      *(sdk::metrics::key_t *)spec.key.id,
-                      (void *)(lif_stats_base_addr +
-                                   (info->lif_id * block_size)));
-    return SDK_RET_OK;
+    host_if_spec_from_lif_info(spec, info);
+    return pds_host_if_create(&spec);
+}
+
+sdk_ret_t
+devapi_impl::lif_init(lif_info_t *info) {
+    pds_host_if_spec_t spec;
+
+    host_if_spec_from_lif_info(spec, info);
+    return pds_host_if_init(&spec);
 }
 
 sdk_ret_t
 devapi_impl::lif_destroy(uint32_t lif_id) {
     PDS_TRACE_VERBOSE("Not implemented");
     return SDK_RET_OK;
-}
-
-sdk_ret_t
-devapi_impl::lif_init(lif_info_t *info) {
-    pds_lif_spec_t spec = { 0 };
-    lif_impl *lif;
-    sdk_ret_t ret;
-
-    lif = lif_impl_db()->find((pds_lif_id_t *)&info->lif_id);
-    if (unlikely(lif == NULL)) {
-        PDS_TRACE_ERR("Lif %lu not found", info->lif_id);
-        return sdk::SDK_RET_ENTRY_NOT_FOUND;
-    }
-    lif_spec_from_info(spec, info);
-
-    if (sdk::platform::upgrade_mode_hitless(api::g_upg_state->upg_init_mode()) &&
-        (info->tx_sched_table_offset != INVALID_INDEXER_INDEX)) {
-        // reserve the bits, configuration has been done already by A
-        // during A to B hitless upgrade
-        ret = lif_reserve_tx_scheduler(info);
-        SDK_ASSERT(ret == SDK_RET_OK);
-    } else {
-        // program tx scheduler
-        lif_program_tx_scheduler(info);
-    }
-    ret = lif->create(&spec);
-    if (ret == SDK_RET_OK) {
-        PDS_TRACE_DEBUG("Created lif %s, id %lu %s %u %s",
-                        spec.key.str(), info->lif_id, info->name, info->type,
-                        macaddr2str(info->mac));
-        lif->set_tx_sched_info(info->tx_sched_table_offset,
-                               info->tx_sched_num_table_entries);
-    } else {
-        PDS_TRACE_ERR("lif %s create failed!, id %lu %s %u %s ret %u",
-                        spec.key.str(), info->lif_id, info->name, info->type,
-                        macaddr2str(info->mac),
-                        ret);
-    }
-
-    return ret;
 }
 
 sdk_ret_t
@@ -217,14 +176,21 @@ devapi_impl::lif_upd_rx_pmode(uint32_t lif_id, bool promiscuous) {
 
 sdk_ret_t
 devapi_impl::lif_upd_name(uint32_t lif_id, string name) {
+    sdk_ret_t ret;
     lif_impl *lif;
+    pds_obj_key_t key;
 
     lif = lif_impl_db()->find((pds_lif_id_t *)&lif_id);
     if (unlikely(lif == NULL)) {
         PDS_TRACE_ERR("Lif %u not found", lif_id);
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
-
+    key = uuid_from_objid(LIF_IFINDEX(lif_id));
+    ret = pds_host_if_update_name(&key, name);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Lif %u update name failed", lif_id);
+        return ret;
+    }
     lif->set_name(name.c_str());
     return SDK_RET_OK;
 }
@@ -657,60 +623,8 @@ devapi_impl::swm_upd_vlan_mode(bool enable, uint32_t mode, uint32_t channel)
     return SDK_RET_OK;
 }
 
-sdk_ret_t
-devapi_impl::lif_program_tx_scheduler(lif_info_t *info) {
-    sdk_ret_t ret;
-    asicpd_scheduler_lif_params_t   apd_lif;
-
-    apd_lif.lif_id = info->lif_id;
-    apd_lif.hw_lif_id = info->lif_id;
-    apd_lif.total_qcount = lif_get_qcount_(info);
-    apd_lif.cos_bmp = lif_get_cos_bmp_(info);
-
-
-    // allocate tx-scheduler resource, or use existing allocation
-    apd_lif.tx_sched_table_offset = info->tx_sched_table_offset;
-    apd_lif.tx_sched_num_table_entries = info->tx_sched_num_table_entries;
-    ret = sdk::asic::pd::asicpd_tx_scheduler_map_alloc(&apd_lif);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to alloc tx sched. lif %lu, err %u",
-                      info->lif_id, ret);
-        return ret;
-    }
-    // save allocation in lif info
-    info->tx_sched_table_offset = apd_lif.tx_sched_table_offset;
-    info->tx_sched_num_table_entries = apd_lif.tx_sched_num_table_entries;
-
-    // program tx scheduler and policer
-    ret = sdk::asic::pd::asicpd_tx_scheduler_map_program(&apd_lif);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to program tx sched. lif %lu, err %u",
-                      info->lif_id, ret);
-        return ret;
-    }
-    return ret;
-}
-
-sdk_ret_t
-devapi_impl::lif_reserve_tx_scheduler(lif_info_t *info) {
-    sdk_ret_t ret;
-    asicpd_scheduler_lif_params_t   apd_lif;
-
-    // reserve scheduler units
-    apd_lif.lif_id = info->lif_id;
-    apd_lif.hw_lif_id = info->lif_id;
-    apd_lif.tx_sched_table_offset = info->tx_sched_table_offset;
-    apd_lif.tx_sched_num_table_entries = info->tx_sched_num_table_entries;
-    ret = sdk::asic::pd::asicpd_tx_scheduler_map_reserve(&apd_lif);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Failed to reserve tx sched. lif %lu, err %u",
-                      info->lif_id, ret);
-    }
-    return ret;
-}
-
 uint32_t
-devapi_impl::lif_get_qcount_(lif_info_t *info) {
+devapi_impl::lif_get_qcount(lif_info_t *info) {
     uint32_t qcount = 0;
 
      for (uint32_t i = 0; i < NUM_QUEUE_TYPES; i++) {
@@ -727,7 +641,7 @@ devapi_impl::lif_get_qcount_(lif_info_t *info) {
 }
 
 uint16_t
-devapi_impl::lif_get_cos_bmp_(lif_info_t *info) {
+devapi_impl::lif_get_cos_bmp(lif_info_t *info) {
     uint16_t cos_bmp = 0;
     uint16_t cosA = DEVAPI_IMPL_ADMIN_COS;
     uint16_t cosB = 0;
