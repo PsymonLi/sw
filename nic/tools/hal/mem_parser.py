@@ -303,14 +303,8 @@ def parse_region(e, start_offset):
     # Derive the basename for the macros
     nbase = name + (re.sub("[ -]", "_", n)).upper() + "_"
 
-    # Update name and size
+    # Update name
     print >> fd, "#define %-60s \"%s\"" %(nbase + "NAME", n)
-    print >> fd, "#define %-60s %ld" %(nbase + "SIZE", s)
-    print >> fd, "#define %-60s %ld" %(nbase + "BLOCK_SIZE", bs)
-    print >> fd, "#define %-60s %ld" %(nbase + "BLOCK_COUNT", bc)
-
-    # Update start offset
-    print >> fd, "#define %-60s 0x%lxUL" %(nbase + "START_OFFSET", start_offset);
 
     # Update cache pipe
     cv = "MEM_REGION_CACHE_PIPE_NONE"
@@ -319,7 +313,7 @@ def parse_region(e, start_offset):
         if v in cache_pipes:
             cv = str(cache_pipes[v])
         else:
-            print "Invalid cache pipe speciciation : " + v
+            print "Invalid cache pipe specification : " + v
             return -1
     print >> fd, "#define %-60s %s" %(nbase + "CACHE_PIPE", cv)
 
