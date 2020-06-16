@@ -427,14 +427,14 @@ func (sm *SysModel) PortFlap(npc *objects.NaplesCollection) error {
 
 		// flap port
 		log.Infof("flapping port {%s} on naples {%v}", port, naplesName)
-		portDownCmd := fmt.Sprintf("/nic/bin/pdsctl debug port --port %s --admin-state down", port)
+		portDownCmd := fmt.Sprintf("/nic/bin/pdsctl debug update port --port %s --admin-state down", port)
 		_, err = sm.runCommandOnGivenNaples(naples, portDownCmd)
 		if err != nil {
 			log.Errorf("command(%v) failed on naples: %v, Err: %v", portDownCmd, naplesName, err)
 			return err
 		}
 
-		portUpCmd := fmt.Sprintf("/nic/bin/pdsctl debug port --port %s --admin-state up", port)
+		portUpCmd := fmt.Sprintf("/nic/bin/pdsctl debug update port --port %s --admin-state up", port)
 		_, err = sm.runCommandOnGivenNaples(naples, portUpCmd)
 		if err != nil {
 			log.Errorf("command(%v) failed on naples: %v, Err: %v", portUpCmd, naplesName, err)
@@ -452,14 +452,14 @@ func (sm *SysModel) PortFlap(npc *objects.NaplesCollection) error {
 
 		// flap port
 		log.Infof("flapping port {%s} on naples {%v}", port, naplesName)
-		portDownCmd := fmt.Sprintf("/naples/nic/bin/pdsctl debug port --port %s --admin-state down", port)
+		portDownCmd := fmt.Sprintf("/naples/nic/bin/pdsctl debug update port --port %s --admin-state down", port)
 		_, err = sm.runCommandOnGivenNaples(naples, portDownCmd)
 		if err != nil {
 			log.Errorf("command(%v) failed on naples: %v, Err: %v", portDownCmd, naplesName, err)
 			return err
 		}
 
-		portUpCmd := fmt.Sprintf("/naples/nic/bin/pdsctl debug port --port %s --admin-state up", port)
+		portUpCmd := fmt.Sprintf("/naples/nic/bin/pdsctl debug update port --port %s --admin-state up", port)
 		_, err = sm.runCommandOnGivenNaples(naples, portUpCmd)
 		if err != nil {
 			log.Errorf("command(%v) failed on naples: %v, Err: %v", portUpCmd, naplesName, err)
