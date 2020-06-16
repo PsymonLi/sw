@@ -90,10 +90,14 @@ typedef struct pds_mirror_session_spec_s {
 
 /// \brief    mirror session operational status
 typedef struct pds_mirror_session_status_s {
+    ///< h/w id of the mirror session
+    uint16_t hw_id;
 } __PACK__ pds_mirror_session_status_t;
 
 /// \brief    mirror session statistics, if any
 typedef struct pds_mirror_session_stats_s {
+    uint64_t packet_count;     ///< number of packets mirrored
+    uint64_t byte_count;       ///< number of bytes mirrored
 } __PACK__ pds_mirror_session_stats_t;
 
 /// \brief mirror session info

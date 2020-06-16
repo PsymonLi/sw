@@ -86,11 +86,18 @@ message MirrorSessionSpec {
 
 // operational status of Mirror policy, if any
 message MirrorSessionStatus {
+  // hardware id allocated for the mirror session
+  uint32 HwId = 1;
 }
 
 // stats of Mirror policy, if any
 message MirrorSessionStats {
+  // number of packets mirrored by this mirror session
+  uint64 PacketCount  = 1;
+  // number of bytes mirrored by this mirror session
+  uint64 ByteCount    = 2;
 }
+
 // Mirror policy object
 message MirrorSession {
   meta.TypeMeta       TypeMeta = 1 [(gogoproto.embed) = true, (gogoproto.jsontag) = ",inline"];

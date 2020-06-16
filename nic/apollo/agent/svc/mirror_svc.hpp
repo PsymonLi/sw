@@ -101,6 +101,7 @@ static inline void
 pds_mirror_session_api_status_to_proto (pds::MirrorSessionStatus *proto_status,
                                         const pds_mirror_session_status_t *api_status)
 {
+    proto_status->set_hwid(api_status->hw_id);
 }
 
 // populate proto buf stats from mirror session API stats
@@ -108,6 +109,8 @@ static inline void
 pds_mirror_session_api_stats_to_proto (pds::MirrorSessionStats *proto_stats,
                                        const pds_mirror_session_stats_t *api_stats)
 {
+    proto_stats->set_packetcount(api_stats->packet_count);
+    proto_stats->set_bytecount(api_stats->byte_count);
 }
 
 // populate proto buf from mirror session API info
