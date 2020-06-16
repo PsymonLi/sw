@@ -149,7 +149,7 @@ func bgpShowCmdHandler(cmd *cobra.Command, args []string) error {
 const (
 	bgpPeerFmt    = `%-10s %-16v %-5v %-10v %-16v %-40v %-40v`
 	bgpPeerLegend = `Legend
-FSM Established Time : This timer indicates how long in seconds this peer has
+FSM Established Time : This timer indicates how long this peer has
                        been in the Established state or how long since this peer
                        was last in the Established state.`
 	bgpPeerHdr = "AdminState,Remote Address,ASN,Auth,Status,FSM Established Time,FSM Established Transitions"
