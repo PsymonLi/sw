@@ -409,17 +409,25 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		return
 	}
 
-	if v.isWorkloadMigrating(workloadObj) {
-		// TODO: need to work thru' cases on when this happens and how to handle it, corner case
-		v.Log.Errorf("Back to Back vMotion for %s is not supported - must wait for first migration to complete",
-			m.VMKey)
-		return
-	}
-
 	// Both src and destination hosts are pensando, Trigger vMotion
 	v.Log.Infof("Trigger vMotion for %s from %s to %s host", wlName, curHostName, hostName)
 
 	wlCopy := *workloadObj
+
+	var vmName string
+	if n, ok := workloadObj.Labels[NameKey]; ok {
+		vmName = n
+	}
+
+	if v.isWorkloadMigrating(workloadObj) {
+		// TODO: need to work thru' cases on when this happens and how to handle it, corner case
+		v.Log.Errorf("Back to Back vMotion for %s is not supported - must wait for first migration to complete",
+			m.VMKey)
+		evtMsg := fmt.Sprintf("%v : Could not start migration of VM %s (%s) from host %v to %v. Previous migration has not completed.", v.OrchConfig.Name, vmName, wlName, curHostName, hostName)
+		recorder.Event(eventtypes.MIGRATION_FAILED, evtMsg, &wlCopy)
+		return
+	}
+
 	// change the host to new host and allocate useg vlans from the new host's pool
 	// TODO: Try to keep the same useg vlan values if free
 	wlCopy.Spec.HostName = hostName
@@ -440,10 +448,6 @@ func (v *VCHub) handleVMotionStart(m defs.VMotionStartMsg) {
 		}
 	}
 	if err != nil {
-		var vmName string
-		if n, ok := workloadObj.Labels[NameKey]; ok {
-			vmName = n
-		}
 
 		evtMsg := fmt.Sprintf("%v : Could not start migration of VM %s (%s) from host %v to %v. %v", v.OrchConfig.Name, vmName, wlName, curHostName, hostName, err)
 		recorder.Event(eventtypes.MIGRATION_FAILED, evtMsg, &wlCopy)

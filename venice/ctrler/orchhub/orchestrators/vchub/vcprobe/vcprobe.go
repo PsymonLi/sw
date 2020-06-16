@@ -709,7 +709,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 		// TODO handle roll-over or becoming -ve
 		if ev.GetEvent().Key <= lastEvent {
 			// old event - already processed
-			v.Log.Infof("Old Event %d, last %d", ev.GetEvent().Key, v.LastEvent)
+			// v.Log.Infof("Old Event %d, last %d", ev.GetEvent().Key, v.LastEvent)
 			continue
 		}
 		if skipped := ev.GetEvent().Key - lastEvent; skipped > 1 {
