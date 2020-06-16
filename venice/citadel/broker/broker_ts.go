@@ -1411,7 +1411,7 @@ func (br *Broker) MetricsCleanerRoutine(ctx context.Context, database string, le
 		}
 
 		OneHourAgoTimeString := time.Now().Add(-1 * ruleMetricsRetention).Format(time.RFC3339)
-		resp, err := br.DeleteOldData(ctx, "default", "RuleMetrics", `"`+OneHourAgoTimeString+`"`)
+		resp, err := br.DeleteOldData(ctx, "default", "RuleMetrics", `'`+OneHourAgoTimeString+`'`)
 		if len(resp) > 0 {
 			br.logger.Infof("Metrics cleaner received response: %+v", *resp[0])
 		}

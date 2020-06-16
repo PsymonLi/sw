@@ -436,23 +436,23 @@ func (hsrv *HTTPServer) queryReqHandler(w http.ResponseWriter, r *http.Request) 
 // measurementHander handles a query request
 func (hsrv *HTTPServer) measurementHander(w http.ResponseWriter, r *http.Request) {
 	// Attempt to read the form value from the "q" form value.
-	database := r.FormValue("db")
+	database := strings.TrimSpace(r.FormValue("db"))
 	if database == "" {
 		database = globals.DefaultTenant
 	}
-	measurement := r.FormValue("measurement")
+	measurement := strings.TrimSpace(r.FormValue("measurement"))
 	if measurement == "" {
 		http.Error(w, `missing required parameter "measurement"`, http.StatusBadRequest)
 		return
 	}
-	endime := r.FormValue("endime")
-	if endime == "" {
-		http.Error(w, `missing required parameter "endime"`, http.StatusBadRequest)
+	endTime := strings.TrimSpace(r.FormValue("endTime"))
+	if endTime == "" {
+		http.Error(w, `missing required parameter "endTime"`, http.StatusBadRequest)
 		return
 	}
 
 	// execute the query
-	result, err := hsrv.broker.DeleteOldData(context.Background(), database, measurement, endime)
+	result, err := hsrv.broker.DeleteOldData(context.Background(), database, measurement, endTime)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error executing the query: %v", err), http.StatusInternalServerError)
 		return
