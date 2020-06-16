@@ -1164,6 +1164,36 @@ vnic_impl::activate_delete_(pds_epoch_t epoch, vnic_entry *vnic) {
 }
 
 sdk_ret_t
+vnic_impl::upd_dhcp_binding_(vnic_entry *vnic, vnic_entry *orig_vnic,
+                             subnet_entry *subnet, pds_vnic_spec_t *spec) {
+    if (orig_vnic->primary() && !vnic->primary()) {
+        // vnic was marked as primary and but it is marked as non-primary
+        // now, if we had hostname attribute set on this vnic earlier, we
+        // must reset it in the DHCP bindings
+        if (orig_vnic->hostname()[0] != '\0') {
+            // reset the hostname in the DHCP bindings
+            // TODO:
+        }
+    } else if (!orig_vnic->primary() && vnic->primary()) {
+        // vnic was marked as non-primary and but it is marked as primary
+        // now, if we have hostname attribute set on this vnic now, we must
+        // update the DHCP binding
+        if (spec->hostname[0] != '\0') {
+            // update DHCP binding with the hostname
+            // TODO:
+        }
+    } else if (vnic->primary() && (spec->hostname[0] != '\0')) {
+        // primary attribute has not changed, but hostname could have changed
+        if (memcmp(spec->hostname, orig_vnic->hostname(),
+                   PDS_MAX_HOST_NAME_LEN)) {
+            // update DHCP binding with the hostname
+            // TODO:
+        }
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
 vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
                             vnic_entry *orig_vnic, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
@@ -1175,6 +1205,7 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
     vlan_actiondata_t vlan_data;
 
     spec = &obj_ctxt->api_params->vnic_spec;
+    subnet = subnet_find(&spec->subnet);
     if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_VNIC_ENCAP) {
         if (orig_vnic->vnic_encap().type != PDS_ENCAP_TYPE_NONE) {
             // we need to cleanup old vlan table entry
@@ -1192,7 +1223,6 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
 
         if (spec->vnic_encap.type != PDS_ENCAP_TYPE_NONE) {
             // fetch the subnet of this vnic
-            subnet = subnet_find(&spec->subnet);
             if (unlikely(subnet == NULL)) {
                 return SDK_RET_INVALID_ARG;
             }
@@ -1209,6 +1239,10 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
             }
         }
     }
+
+    // update DHCP binding, if needed
+    ret = upd_dhcp_binding_(vnic, orig_vnic, subnet, spec);
+    SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
 
     // delete old impl and insert cloned impl into ht
     vnic_impl_db()->remove(hw_id_);

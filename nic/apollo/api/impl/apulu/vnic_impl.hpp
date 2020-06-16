@@ -304,6 +304,15 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_delete_(pds_epoch_t epoch, vnic_entry *vnic);
 
+    /// \brief      update DHCP binding(s) corresponding to this vnic
+    /// \param[in] vnic  vnic obj being programmed
+    /// \param[in] orig_vnic  original vnic obj that is being modified
+    /// \param[in] subnet subnet of this vnic
+    /// \param[in] spec vnic configuration
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t upd_dhcp_binding_(vnic_entry *vnic, vnic_entry *orig_vnic,
+                                subnet_entry *subnet, pds_vnic_spec_t *spec);
+
     /// \brief      program vnic related tables during vnic update by
     ///             enabling stage0 tables corresponding to the new epoch
     /// \param[in] epoch epoch being activated
