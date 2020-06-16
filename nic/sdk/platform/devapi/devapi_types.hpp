@@ -49,6 +49,7 @@ typedef enum lif_type_e {
     LIF_TYPE_LEARN,
     LIF_TYPE_SERVICE,
     LIF_TYPE_CONTROL,
+    LIF_TYPE_P2P
 } lif_type_t;
 
 typedef struct lif_queue_info_s {
@@ -97,6 +98,7 @@ typedef struct channel_info_s {
 
 typedef struct lif_info_s {
     uint64_t lif_id;
+    uint64_t peer_lif_id;
     char name[256];
     lif_type_t type;
     uint32_t pinned_uplink_port_num;

@@ -83,6 +83,10 @@ Eth::eth_type_to_str(EthDevType type)
         return "learn";
     } else if (type == ETH_MNIC_CONTROL) {
         return "control";
+    } else if (type == ETH_MNIC_CPU_P2P) {
+        return "cpu_p2p";
+    } else if (type == ETH_MNIC_P2P) {
+        return "mnic_p2p";
     } else {
         NIC_LOG_ERR("Unknown ETH dev type: {}", type);
         return "Unknown";
@@ -108,6 +112,10 @@ Eth::str_to_eth_type(std::string const &s)
         return ETH_MNIC_LEARN;
     } else if (s == "control") {
         return ETH_MNIC_CONTROL;
+    } else if (s == "cpu_p2p") {
+        return ETH_MNIC_CPU_P2P;
+    } else if (s == "mnic_p2p") {
+        return ETH_MNIC_P2P;
     } else {
         NIC_LOG_ERR("Unknown ETH dev type: {}", s);
         return ETH_UNKNOWN;
@@ -824,9 +832,8 @@ Eth::ParseConfig(boost::property_tree::ptree::value_type node)
         eth_spec->ah_count = val.get<uint64_t>("rdma.ah_count");
     }
 
-    if (val.get_optional<string>("network")) {
-        eth_spec->uplink_port_num = val.get<uint64_t>("network.uplink");
-    }
+    eth_spec->uplink_port_num = val.get<uint64_t>("network.uplink", 0);
+    eth_spec->peer_name = val.get<string>("network.peer_name", "NONE");
 
     eth_spec->pcie_port = val.get<uint8_t>("pcie.port", 0);
     eth_spec->pcie_total_vfs = val.get<uint8_t>("pcie.total_vfs", 0);
@@ -874,6 +881,7 @@ Eth::GetDeviceCreateReq()
     mnet_req->msixcfg_pa = intr_msixcfg_addr(dev_resources.intr_base);
     mnet_req->doorbell_pa = DOORBELL_ADDR(dev_resources.lif_base);
     strcpy(mnet_req->iface_name, spec->name.c_str());
+    mnet_req->is_uio_dev = IsPlatformIonicDev() ? 0 : 1;
 
     NIC_LOG_DEBUG("{}: regs_pa: {:#x}, "
                   "drvcfg_pa: {:#x}, msixcfg_pa: {:#x}, doorbell_pa: {:#x}",
@@ -2787,6 +2795,24 @@ Eth::IsPlatformDev()
         case ETH_MNIC_CPU:
         case ETH_MNIC_LEARN:
         case ETH_MNIC_CONTROL:
+        case ETH_MNIC_P2P:
+        case ETH_MNIC_CPU_P2P:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool
+Eth::IsPlatformIonicDev()
+{
+    switch(spec->eth_type) {
+        case ETH_MNIC_OOB_MGMT:
+        case ETH_MNIC_INTERNAL_MGMT:
+        case ETH_MNIC_INBAND_MGMT:
+        case ETH_MNIC_LEARN:
+        case ETH_MNIC_CONTROL:
+        case ETH_MNIC_P2P:
             return true;
         default:
             return false;
@@ -2875,6 +2901,9 @@ Eth::ConvertDevTypeToLifType(EthDevType dev_type)
         return sdk::platform::LIF_TYPE_LEARN;
     case ETH_MNIC_CONTROL:
         return sdk::platform::LIF_TYPE_CONTROL;
+    case ETH_MNIC_CPU_P2P:
+    case ETH_MNIC_P2P:
+        return sdk::platform::LIF_TYPE_P2P;
     default:
         return sdk::platform::LIF_TYPE_NONE;
     }
@@ -2964,4 +2993,24 @@ Eth::vf_attr_to_str(uint8_t attr)
     CASE(IONIC_VF_ATTR_STATSADDR);
     default: return "IONIC_VF_ATTR_UNKNOWN";
     }
+}
+
+bool
+Eth::IsP2PDev()
+{
+    return (spec->eth_type == ETH_MNIC_CPU_P2P) || (spec->eth_type == ETH_MNIC_P2P);
+}
+
+int
+Eth::GetPeerLifId()
+{   Eth *peer_dev = NULL;
+    DeviceManager *devmgr = DeviceManager::GetInstance();
+
+    peer_dev = (Eth *)devmgr->GetDevice(spec->peer_name);
+    if (peer_dev) {
+        EthLif *peer_lif;
+        peer_lif = (EthLif *)peer_dev->GetLifByIndex(0);
+        return peer_lif ? peer_lif->GetLifId() : (-1);
+    }
+    return (-1);
 }

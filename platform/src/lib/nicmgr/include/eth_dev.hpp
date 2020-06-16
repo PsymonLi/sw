@@ -69,6 +69,8 @@ typedef enum EthDevType_s {
     ETH_MNIC_CPU,
     ETH_MNIC_LEARN,
     ETH_MNIC_CONTROL,
+    ETH_MNIC_CPU_P2P,
+    ETH_MNIC_P2P
 } EthDevType;
 
 struct eth_dev_res {
@@ -103,6 +105,10 @@ struct eth_devspec {
     bool vf_dev;
     // Network
     uint32_t uplink_port_num;
+
+    // P2P
+    std::string peer_name;
+
     std::string qos_group;
     // RES
     uint32_t lif_count;
@@ -182,6 +188,7 @@ public:
     bool IsDevReset();
     bool IsDevLif(uint32_t lif_id);
     bool IsPlatformDev();
+    bool IsPlatformIonicDev();
     EthLif* GetLif(uint16_t lif_id);
 
     int SendDeviceReset(void);
@@ -191,6 +198,9 @@ public:
 
     void AddVFDev(Eth *vf_eth_dev);
     EthLif* GetLifByIndex(uint32_t idx);
+    // P2P
+    bool IsP2PDev();
+    int GetPeerLifId();
 
 private:
     // Device Spec

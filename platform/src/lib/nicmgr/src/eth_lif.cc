@@ -587,6 +587,16 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
         lif_pstate->qstate_mem_address = hal_lif_info_.qstate_mem_address;
         lif_pstate->qstate_mem_size = hal_lif_info_.qstate_mem_size;
 #endif
+        if (dev->IsP2PDev()) {
+            int peer_lif_id = dev->GetPeerLifId();
+            if (peer_lif_id >= 0) {
+                hal_lif_info_.peer_lif_id = peer_lif_id;
+                NIC_LOG_INFO("{}: peer lif: {} ", hal_lif_info_.name, peer_lif_id);
+            } else {
+                NIC_LOG_ERR("{}: peer lif not found", hal_lif_info_.name, peer_lif_id);
+                return (IONIC_RC_ERROR);
+            }
+        }
         hal_lif_info_.lif_state = ConvertEthLifStateToLifState(lif_pstate->state);
         rs = dev_api->lif_init(&hal_lif_info_);
         if (rs != SDK_RET_OK) {
