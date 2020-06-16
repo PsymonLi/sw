@@ -6365,8 +6365,8 @@ hal_cpu_if_update (uint32_t lif_id, bool allow_rx)
         HAL_TRACE_DEBUG("CPU interface {} update success, handle {}",
                         IF_ID_CPU, response.status().if_handle());
     } else {
-        HAL_TRACE_ERR("CPU interface {} update failed, err : {}",
-                      IF_ID_CPU, ret);
+        HAL_TRACE_DEBUG("CPU interface {} update failed, err : {}",
+                        IF_ID_CPU, ret);
     }
     hal::hal_cfg_db_close();
 

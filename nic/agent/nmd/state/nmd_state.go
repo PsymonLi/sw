@@ -1031,6 +1031,11 @@ func initAllowedCommands() {
 	allowedCommands["halctlshowqosclassqueues"] = 44
 	allowedCommands["showinterfacemanagement"] = 45
 	allowedCommands["systemctlshow"] = 46
+	allowedCommands["halctlshowncsichannel"] = 47
+	allowedCommands["halctlshowncsivlan"] = 48
+	allowedCommands["halctlshowncsimac"] = 49
+	allowedCommands["halctlshowncsimcast"] = 50
+	allowedCommands["halctlshowncsibcast"] = 51
 }
 
 func isCmdAllowed(cmd string) bool {
@@ -1221,6 +1226,21 @@ func naplesExecCmd(req *nmd.DistributedServiceCardCmdExecute) (string, error) {
 	} else if req.Executable == "systemctlshow" {
 		req.Executable = "cpldapp"
 		req.Opts = "-alompresent"
+	} else if req.Executable == "halctlshowncsichannel" {
+		req.Executable = "halctl"
+		req.Opts = "show ncsi channel"
+	} else if req.Executable == "halctlshowncsivlan" {
+		req.Executable = "halctl"
+		req.Opts = "show ncsi vlan"
+	} else if req.Executable == "halctlshowncsimac" {
+		req.Executable = "halctl"
+		req.Opts = "show ncsi mac"
+	} else if req.Executable == "halctlshowncsimcast" {
+		req.Executable = "halctl"
+		req.Opts = "show ncsi mcast"
+	} else if req.Executable == "halctlshowncsibcast" {
+		req.Executable = "halctl"
+		req.Opts = "show ncsi bcast"
 	}
 	return executeCmd(req, strings.Fields(req.Opts))
 }

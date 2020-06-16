@@ -1184,7 +1184,7 @@ securityprofile_update (nwsec::SecurityProfileSpec& spec,
     }
 
     if (!app_ctxt.nwsec_changed) {
-        HAL_TRACE_ERR("no change in nwsec update: noop");
+        HAL_TRACE_DEBUG("no change in nwsec update: noop");
         goto end;
     }
 

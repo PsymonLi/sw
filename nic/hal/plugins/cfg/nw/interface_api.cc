@@ -398,7 +398,7 @@ if_enicif_get_pinned_if (if_t *pi_if, if_t **uplink_if)
 
     if_type = intf_get_if_type(pi_if);
     if (if_type != intf::IF_TYPE_ENIC) {
-        HAL_TRACE_ERR("Pinned if is only for ENIC, if_type : {}", if_type);
+        HAL_TRACE_VERBOSE("Pinned if is only for ENIC, if_type : {}", if_type);
         ret = HAL_RET_INVALID_ARG;
         goto end;
     }
