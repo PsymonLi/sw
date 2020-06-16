@@ -44,7 +44,25 @@
       "/nic/bin/vppctl show pds subnet status",
       "/nic/bin/vppctl show pds vnic status",
       "/nic/bin/vppctl show pds vpc status",
-      "/nic/bin/vppctl show pds device status"
+      "/nic/bin/vppctl show pds device status",
+      "curl localhost:9007/api/interfaces/ | jq .",
+      "curl localhost:9007/api/security/profiles/ | jq .",
+      "curl localhost:9007/api/vrfs/ | jq .",
+      "curl localhost:9007/api/networks/ | jq .",
+      "curl localhost:9007/api/security/policies/ | jq .",
+      "curl localhost:9007/api/apps/ | jq .",
+      "curl localhost:9007/api/tunnels/ | jq .",
+      "curl localhost:9007/api/mirror/sessions/ | jq .",
+      "curl localhost:9007/api/profiles/ | jq .",
+      "curl localhost:9007/api/routingconfigs/ | jq .",
+      "curl localhost:9007/api/route-tables/ | jq .",
+      "curl localhost:9007/api/mapping/ | jq .",
+      "curl localhost:9007/api/ipam-policies/ | jq .",
+      "curl localhost:9007/api/mirror/interface-sessions/ | jq .",
+      "curl localhost:9007/api/debug/goroutine?debug=2",
+      "curl localhost:9007/api/mode/ | jq .",
+      "curl localhost:9008/api/v1/naples/ | jq .",
+      "curl localhost:9008/api/v1/naples/info/ | jq ."
     ],
   "cores": [
       "/data/core/"
