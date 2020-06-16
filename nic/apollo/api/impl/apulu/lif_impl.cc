@@ -34,6 +34,7 @@
 #define COPP_LEARN_MISS_ARP_REQ_FROM_HOST_PPS   250
 #define COPP_FLOW_MISS_DHCP_REQ_FROM_HOST_PPS   250
 #define COPP_LEARN_MISS_DHCP_REQ_FROM_HOST_PPS  250
+#define COPP_LEARN_MISS_IP4_FROM_HOST_PPS       250
 #define COPP_ARP_FROM_ARM_PPS                   250
 #define COPP_BURST(pps)                         ((uint64_t)((pps)/10))
 #define COPP_FLOW_MISS_TO_DATAPATH_LIF_PPS      300000
@@ -1478,6 +1479,51 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
         PDS_TRACE_DEBUG("Programmed NACL entry idx %u, ktype %u, lif %u",
                         nacl_idx - 1, key.key_metadata_ktype, id_);
     }
+
+    // allocate and program copp table entry for mapping miss
+    ret = apulu_impl_db()->copp_idxr()->alloc(&idx);
+    SDK_ASSERT_RETURN((ret == SDK_RET_OK), ret);
+    policer = { sdk::qos::POLICER_TYPE_PPS,
+                COPP_LEARN_MISS_IP4_FROM_HOST_PPS,
+                COPP_LEARN_MISS_IP4_FROM_HOST_PPS
+    };
+    program_copp_entry_(&policer, idx, false);
+
+    // redirect mapping miss IPv4 packets from Host to learn lif
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    key.key_metadata_entry_valid = 1;
+    key.control_metadata_rx_packet = 0;
+    key.key_metadata_ktype = KEY_TYPE_IPV4;
+    key.control_metadata_learn_enabled = 1;
+    key.control_metadata_lif_type = P4_LIF_TYPE_HOST;
+    key.control_metadata_local_mapping_miss = 1;
+    key.control_metadata_tunneled_packet = 0;
+    mask.key_metadata_entry_valid_mask = ~0;
+    mask.control_metadata_rx_packet_mask = ~0;
+    mask.key_metadata_ktype_mask = ~0;
+    mask.control_metadata_learn_enabled_mask = ~0;
+    mask.control_metadata_lif_type_mask = ~0;
+    mask.control_metadata_local_mapping_miss_mask = ~0;
+    mask.control_metadata_tunneled_packet_mask = ~0;
+    data.action_id = NACL_NACL_REDIRECT_TO_ARM_ID;
+    data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+    data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
+    data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L3_MISS_IP4;
+    p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
+                                  &key, &mask, &data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program NACL redirect entry for "
+                      "(host lif, TCP) -> lif %s", name_);
+        ret = sdk::SDK_RET_HW_PROGRAM_ERR;
+        goto error;
+    } else {
+        PDS_TRACE_DEBUG("Programmed NACL entry idx %u, ktype %u, lif %u",
+                        nacl_idx - 1, key.key_metadata_ktype, id_);
+    }
+
     SDK_ASSERT(nacl_idx <= PDS_IMPL_NACL_BLOCK_GENERIC_MIN);
 
     // program the LIF table
