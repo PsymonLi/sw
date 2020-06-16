@@ -15,9 +15,12 @@
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/internal/pds_route.hpp"
 #include "nic/apollo/api/impl/apulu/tep_impl.hpp"
 #include "nic/apollo/api/impl/apulu/mapping_impl.hpp"
 #include "nic/apollo/api/impl/apulu/mirror_impl.hpp"
+#include "nic/apollo/api/impl/apulu/nexthop_impl.hpp"
+#include "nic/apollo/api/impl/apulu/nexthop_group_impl.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/if_impl.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
@@ -245,39 +248,75 @@ mirror_impl::program_overlay_erspan_(pds_epoch_t epoch,
 sdk_ret_t
 mirror_impl::program_underlay_erspan_(pds_epoch_t epoch,
                                       pds_mirror_session_spec_t *spec) {
+    nexthop *nh;
     sdk_ret_t ret;
     tep_entry *tep;
     ip_addr_t mytep_ip;
+    pds_obj_key_t nh_key;
+    pds_nh_type_t nh_type;
     p4pd_error_t p4pd_ret;
+    nexthop_group *nhgroup;
     mirror_actiondata_t mirror_data = { 0 };
 
     mirror_data.action_id = MIRROR_ERSPAN_ID;
-    mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_TUNNEL;
     mytep_ip = device_db()->find()->ip_addr();
     mirror_data.erspan_action.sip = mytep_ip.addr.v4_addr;
     if (spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
         tep = tep_find(&spec->erspan_spec.tep);
+        mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_TUNNEL;
         mirror_data.erspan_action.nexthop_id =
             ((tep_impl *)(tep->impl()))->hw_id();
         mirror_data.erspan_action.dip = tep->ip().addr.v4_addr;
         // DMAC and SMAC both are picked from the NH this TEP resolves to
         mirror_data.erspan_action.rewrite_flags = P4_REWRITE_DMAC_FROM_NEXTHOP;
     } else {
-        SDK_ASSERT(spec->erspan_spec.dst_type ==
-                       PDS_ERSPAN_DST_TYPE_IP);
+        SDK_ASSERT(spec->erspan_spec.dst_type == PDS_ERSPAN_DST_TYPE_IP);
         // TODO: should we lookup for a TEP in this case first before
         //       assuming it is a non-TEP IP ?
         // destination is IP in the underlay, set the nexthop to point
         // to system drop nexthop until we hear about its reachability
         // from the routing stack
-        mirror_data.erspan_action.nexthop_id =
-            PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
-        mirror_data.erspan_action.dip =
-            spec->erspan_spec.ip_addr.addr.v4_addr;
-        // TODO: set these based on the nexthop information in the
-        //       update from the routing stack
-        //mirror_data.erspan_action.dmac;
-        //mirror_data.erspan_action.smac;
+        mirror_data.erspan_action.dip = spec->erspan_spec.ip_addr.addr.v4_addr;
+        // consult the underlay route db to figure out the nexthop for this
+        if (pds_underlay_nexthop(spec->erspan_spec.ip_addr.addr.v4_addr,
+                                 &nh_type, &nh_key) == SDK_RET_OK) {
+            if (nh_type == PDS_NH_TYPE_UNDERLAY) {
+                nh = nexthop_db()->find(&nh_key);
+                if (unlikely(nh == NULL)) {
+                    PDS_TRACE_ERR("Nexthop %s for ERSPAN collector IP %s in "
+                                  "mirror session %s not found", nh_key.str(),
+                                  ipaddr2str(&spec->erspan_spec.ip_addr),
+                                  spec->key.str());
+                    return SDK_RET_INVALID_ARG;
+                }
+                mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+                mirror_data.erspan_action.nexthop_id =
+                    ((nexthop_impl *)nh->impl())->hw_id();
+            } else if (nh_type == PDS_NH_TYPE_UNDERLAY_ECMP) {
+                nhgroup = nexthop_group_db()->find(&nh_key);
+                if (unlikely(nhgroup == NULL)) {
+                    PDS_TRACE_ERR("nhgroup %s for ERSPAN collector IP %s in "
+                                  "mirror session %s not found",
+                                  nh_key.str(),
+                                  ipaddr2str(&spec->erspan_spec.ip_addr),
+                                  spec->key.str());
+                    return SDK_RET_INVALID_ARG;
+                }
+                mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_ECMP;
+                mirror_data.erspan_action.nexthop_id =
+                    ((nexthop_group_impl *)nhgroup->impl())->hw_id();
+            }
+        } else {
+            // ERSPAN collector IP reachability is unknown, use system drop
+            // nexthop
+            PDS_TRACE_INFO("ERSPAN collector IP %s in mirror session %s "
+                           "reachability unknown, using black hole nexthop",
+                           ipaddr2str(&spec->erspan_spec.ip_addr),
+                           spec->key.str());
+            mirror_data.erspan_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
+            mirror_data.erspan_action.nexthop_id =
+                PDS_IMPL_SYSTEM_DROP_NEXTHOP_HW_ID;
+        }
     }
     mirror_data.erspan_action.erspan_type = spec->erspan_spec.type;
     mirror_data.erspan_action.gre_seq_en = TRUE;
