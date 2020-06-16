@@ -19,7 +19,8 @@ new_meta = sys.argv[3]
 mode = sys.argv[4]
 
 fields_build = ["build_date", "base_version", "software_version"]
-fields_cc = ["nicmgr", "kernel", "pcie", "pdsagent", "p4", "p4plus", "linkmgr"]
+fields_cc = ["nicmgr", "kernel", "pcie", "pdsagent", "p4", "p4plus",
+             "linkmgr", "devconf", "ionicmnic"]
 
 upgrade_to_same_check_file = '/data/upgrade_to_same_firmware_allowed'
 upgrade_cc_data_file = '/nic/upgrade/etc/upgrade_cc_' + mode + '_version.json'
@@ -35,9 +36,13 @@ def is_upgrade_image_same(rdata, udata, ndata):
         if rdata[running_img]['system_image'][e] == ndata[e]:
             match = match + 1
 
+    firmware_ver_str = 'firmware_' + mode + '_compat_version'
+    if udata['firmware']['major'] != ndata['upgrade'][mode][firmware_ver_str]['major']:
+        return False
+
     for e in fields_cc:
         cc_attr = e + '_' + mode + '_compat_version'
-        if udata['versions'][e] == ndata['upgrade'][mode][cc_attr]:
+        if udata['modules'][e]['major'] == ndata['upgrade'][mode][cc_attr]['major']:
             match = match + 1
 
     if match == len(fields_build) + len(fields_cc):
@@ -56,9 +61,13 @@ def is_upgrade_ok(udata, ndata):
     match = 0
     cc_attr = None
 
+    firmware_ver_str = 'firmware_' + mode + '_compat_version'
+    if udata['firmware']['major'] != ndata['upgrade'][mode][firmware_ver_str]['major']:
+        return False
+
     for e in fields_cc:
         cc_attr = e + '_' + mode + '_compat_version'
-        if udata['versions'][e] == ndata['upgrade'][mode][cc_attr]:
+        if udata['modules'][e]['major'] == ndata['upgrade'][mode][cc_attr]['major']:
             match = match + 1
         else:
             break

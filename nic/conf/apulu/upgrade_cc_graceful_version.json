@@ -1,23 +1,55 @@
 {
-    "//" : "This file defines the component versions for graceful upgrade",
-    "versions": {
-        "//": "compat checks on nicmgr - impl,  memory layout, sw state etc",
-        "nicmgr": "1",
-        "//": "compat checks on pciemgr - impl, memory layout, sw state etc",
-        "pcie": "1",
-        "//": "compat checks on drivers, kernel version etc",
-        "kernel": "1",
-        "//": "compat checks on pds-agent - impl, memory layout, sw state etc",
-        "pdsagent": "1",
-        "//": "compat checks on p4 - tables, table engine configs etc",
-        "p4": "1",
-        "//": "compat checks on p4plus - tables, table engine configs etc",
-        "p4plus": "1",
-        "//": "compat checks on linkmgr",
-        "linkmgr": "1",
-        "//": "compat checks on dev-conf",
-        "dev-conf": "1",
-        "//": "compat checks on ionic-mnic",
-        "ionic-mnic": "1"
+    "description": "version numbers for graceful upgrade compatibility check",
+    "firmware": {
+        "description": "compatibility checks for the module versions below",
+        "major": "1",
+        "minor":"1"
+    },
+    "modules": {
+        "nicmgr": {
+            "description": "compatibility checks on nicmgr",
+            "major": "1",
+            "minor":"1"
+        },
+        "pcie": {
+            "description": "compatibility checks on pciemgr",
+            "major": "1",
+            "minor":"1"
+        },
+        "kernel": {
+            "description": "compatibility checks on drivers and kernel version",
+            "major": "1",
+            "minor":"1"
+        },
+        "pdsagent": {
+            "description": "compatibility checks on pds-agent",
+            "major": "1",
+            "minor":"1"
+        },
+        "p4": {
+            "description": "compatibility checks on p4 tables and table engine configs",
+            "major": "1",
+            "minor":"1"
+        },
+        "p4plus": {
+            "description": "compatibility checks on p4plus tables and table engine configs",
+            "major": "1",
+            "minor":"1"
+        },
+        "linkmgr": {
+            "description": "compatibility checks on linkmgr",
+            "major": "1",
+            "minor":"1"
+        },
+        "devconf": {
+            "description": "compatibility checks on dev-conf",
+            "major": "1",
+            "minor":"1"
+        },
+        "ionicmnic": {
+            "description": "compatibility checks on ionic-mnic",
+            "major": "1",
+            "minor":"1"
+        }
     }
 }
