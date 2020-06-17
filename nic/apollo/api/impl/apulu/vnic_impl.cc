@@ -1331,24 +1331,6 @@ vnic_impl::fill_status_(pds_vnic_status_t *status) {
     status->nh_hw_id = nh_idx_;
 }
 
-/// \brief retrieve vnic statistics summary from VPP
-sdk_ret_t
-vnic_impl::fill_vpp_stats_(pds_vnic_stats_t *stats) {
-    pds_cmd_msg_t request;
-    pds_cmd_rsp_t response;
-
-    // send a msg to VPP to retrieve VNIC stats
-    request.id = PDS_CMD_MSG_VNIC_STATS_GET;
-    request.vnic_stats_get.vnic_hw_id = hw_id_;
-    sdk::ipc::request(PDS_IPC_ID_VPP, PDS_MSG_TYPE_CMD, &request,
-                      sizeof(request), pds_cmd_response_handler_cb,
-                      &response, PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT);
-    if (response.status == sdk::SDK_RET_OK) {
-        stats->active_sessions = response.vnic_stats.active_sessions;
-    }
-    return (sdk::sdk_ret_t)response.status;
-}
-
 sdk_ret_t
 vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
     sdk_ret_t ret;
@@ -1397,15 +1379,6 @@ vnic_impl::fill_stats_(pds_vnic_stats_t *stats) {
     }
     stats->meter_rx_pkts = *(uint64_t *)meter_stats.meter_stats_action.in_packets;
     stats->meter_rx_bytes = *(uint64_t *)meter_stats.meter_stats_action.in_bytes;
-
-    if (g_pds_state.ipc_mock() == false) {
-        ret = fill_vpp_stats_(stats);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Failed to read active sessions from VPP, "
-                          "err %u", ret);
-            return ret;
-        }
-    }
     return SDK_RET_OK;
 }
 

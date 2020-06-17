@@ -117,6 +117,7 @@ node:
                   tagged  : false         # true or false (default true)
                   rxpolicer: 1
                   txpolicer: 2
+                  maxsessions: 1000
               rmap:                       # Remote IP mappings per subnet
                 - count : 4
             - count     : 1

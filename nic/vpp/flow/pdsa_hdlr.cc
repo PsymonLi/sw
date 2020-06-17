@@ -59,20 +59,6 @@ clear_flow_entry (pds_flow_key_t *key)
 }
 
 static sdk::sdk_ret_t
-pdsa_flow_vnic_stats_get(const pds_cmd_msg_t *msg, pds_cmd_rsp_t *response) {
-    uint32_t active_sessions;
-    bool ret;
-
-    ret = pds_session_active_on_vnic_get(msg->vnic_stats_get.vnic_hw_id,
-                                         &active_sessions);
-    if (!ret) {
-        return sdk::SDK_RET_ENTRY_NOT_FOUND;
-    }
-    response->vnic_stats.active_sessions = active_sessions;
-    return sdk::SDK_RET_OK;
-}
-
-static sdk::sdk_ret_t
 pdsa_flow_cfg_set (const pds_cfg_msg_t *msg)
 {
     uint32_t new_flow_idle_timeouts[PDS_FLOW_PROTO_END];
@@ -91,7 +77,7 @@ pdsa_flow_cfg_set (const pds_cfg_msg_t *msg)
                                         sp_msg->spec.tcp_drop_timeout;
     new_flow_drop_timeouts[PDS_FLOW_PROTO_UDP] =
                                         sp_msg->spec.udp_drop_timeout;
-    new_flow_drop_timeouts[PDS_FLOW_PROTO_ICMP] = 
+    new_flow_drop_timeouts[PDS_FLOW_PROTO_ICMP] =
                                         sp_msg->spec.icmp_drop_timeout;
     new_flow_drop_timeouts[PDS_FLOW_PROTO_OTHER] =
                                         sp_msg->spec.other_drop_timeout;
@@ -150,6 +136,4 @@ pdsa_flow_hdlr_init (void)
     }
     pds_ipc_register_cmd_callbacks(PDS_CMD_MSG_FLOW_CLEAR,
                                    pdsa_flow_clear_cmd);
-    pds_ipc_register_cmd_callbacks(PDS_CMD_MSG_VNIC_STATS_GET,
-                                   pdsa_flow_vnic_stats_get);
 }

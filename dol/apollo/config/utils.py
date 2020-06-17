@@ -55,6 +55,7 @@ IPV6_DEFAULT_ROUTE = ipaddress.ip_network("0::/0")
 NAT_ADDR_TYPE_PUBLIC = 0
 NAT_ADDR_TYPE_SERVICE = 1
 
+ZERO_BYTES = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 IPPROTO_TO_NAME_TBL = {num:name[8:] for name,num in vars(socket).items() if name.startswith("IPPROTO")}
 
 IF_TYPE_SHIFT = 28
@@ -1147,36 +1148,45 @@ def CopySpec(spec, ifspec):
         setattr(spec, attr, getattr(ifspec, attr))
     return spec
 
-def ValidatePolicyAttr(obj, spec):
-    if len(obj) != len(spec):
+def ValidatePolicyAttr(cfgAttr, specAttr):
+    if cfgAttr == None and specAttr == None:
+        return True
+    if (cfgAttr == None and specAttr) or (cfgAttr and specAttr == None):
         return False
-    spolicies = []
-    cpolicies = []
-    for i in range(len(obj)):
-        spolicies.append(spec[i])
-        cpolicies.append(PdsUuid.GetUUIDfromId(obj[i], ObjectTypes.POLICY))
-    spolicies.sort()
-    cpolicies.sort()
-    if spolicies != cpolicies:
+    if len(cfgAttr) != len(specAttr):
+        return False
+    specAttr.sort()
+    cfgAttrUUID = list(map(lambda policyId: \
+                           PdsUuid.GetUUIDfromId(policyId, ObjectTypes.POLICY),\
+                           cfgAttr))
+    cfgAttrUUID.sort()
+    if specAttr != cfgAttrUUID:
         return False
     return True
 
-    if len(obj.IngV4SecurityPolicyIds) != 0:
-        for i in  range(len(obj.IngV4SecurityPolicyIds)):
-            if spec.IngV4SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.IngV4SecurityPolicyIds[i], ObjectTypes.POLICY):
-                return False
-    if len(obj.IngV6SecurityPolicyIds) != 0:
-        for i in  range(len(obj.IngV6SecurityPolicyIds)):
-            if spec.IngV6SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.IngV6SecurityPolicyIds[i], ObjectTypes.POLICY):
-                return False
-    if len(obj.EgV4SecurityPolicyIds) != 0:
-        for i in  range(len(obj.EgV4SecurityPolicyIds)):
-            if spec.EgV4SecurityPolicyId[i] != PdsUuid.GetUUIDfromId(obj.EgV4SecurityPolicyIds[i], ObjectTypes.POLICY):
-                return False
-    if len(obj.EgV6SecurityPolicyIds) != 0:
-        for i in  range(len(obj.EgV6SecurityPolicyIds)):
-            if spec.EgV6SecurityPolicyId[0] != PdsUuid.GetUUIDfromId(obj.EgV6SecurityPolicyIds[0], ObjectTypes.POLICY):
-                return False
+def ValidateMirrorAttr(cfgAttr, specAttr):
+    if cfgAttr == None and specAttr == None:
+        return True
+    if (cfgAttr == None and specAttr) or (cfgAttr and specAttr == None):
+        return False
+    if len(cfgAttr) != len(specAttr):
+        return False
+    specAttr.sort()
+    cfgAttrUUID = list(map(lambda mirrorId: \
+                           PdsUuid.GetUUIDfromId(mirrorId, ObjectTypes.MIRROR),\
+                           cfgAttr))
+    cfgAttrUUID.sort()
+    if specAttr != cfgAttrUUID:
+        return False
+    return True
+
+def ValidatePolicerAttr(cfgAttr, specAttr):
+    if cfgAttr == None and specAttr == ZERO_BYTES:
+        return True
+    if cfgAttr == None and specAttr != ZERO_BYTES:
+        return False
+    if specAttr != cfgAttr.UUID.GetUuid():
+        return False
     return True
 
 def GetPolicies(subnet, spec, node, parent, af, direction, is_subnet=True, generate=True):

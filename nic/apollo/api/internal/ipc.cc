@@ -80,6 +80,10 @@ pds_ipc_cfg_get (pds_ipc_id_t ipc_id, obj_id_t obj_id,
                sizeof(pds_security_profile_info_t));
         break;
 
+    case OBJ_ID_VNIC:
+        memcpy(info, &reply.vnic, sizeof(pds_vnic_info_t));
+        break;
+
     default:
         return sdk::SDK_RET_INVALID_OP;
     }

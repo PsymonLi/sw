@@ -57,7 +57,6 @@ protected:
 //----------------------------------------------------------------------------
 // VNIC test cases implementation
 //----------------------------------------------------------------------------
-
 /// \defgroup VNIC Vnic Tests
 /// @{
 
@@ -1113,7 +1112,7 @@ TEST_F(vnic_test, vnic_update_primary) {
 
     // trigger
     spec.primary = true;
-    vnic_update(feeder, &spec, VNIC_ATTR_PRIMARY, SDK_RET_OK);
+    vnic_update(feeder, &spec, VNIC_ATTR_PRIMARY, SDK_RET_ERR);
 
     // validate
     // as the update fails, rollback the feeder to original values
@@ -1124,7 +1123,6 @@ TEST_F(vnic_test, vnic_update_primary) {
     vnic_delete(feeder);
     vnic_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
 }
-
 /// \brief update max sessions
 TEST_F(vnic_test, vnic_update_max_sessions) {
     if (!apulu()) return;

@@ -135,23 +135,27 @@ vpp_config_data::get (pds_obj_key_t const& key,
     _(DHCP_POLICY, dhcp_policy)
     _(NAT_PORT_BLOCK, nat_port_block)
     _(SECURITY_PROFILE, security_profile)
+    _(VNIC, vnic)
 #undef _
 
     switch(reply.obj_id) {
-#define _(obj, data)                                    \
-    case OBJ_ID_##obj:                                  \
-        data##_it = data.find(key);                     \
-        if (data##_it == data.end()) {                  \
-            return false;                               \
-        }                                               \
-        data##_cfg_msg = &data##_it->second;            \
-        memcpy(&reply.data.spec, &data##_cfg_msg->spec, \
-               sizeof(pds_##data##_spec_t));            \
+#define _(obj, data)                                        \
+    case OBJ_ID_##obj:                                      \
+        data##_it = data.find(key);                         \
+        if (data##_it == data.end()) {                      \
+            return false;                                   \
+        }                                                   \
+        data##_cfg_msg = &data##_it->second;                \
+        memcpy(&reply.data.spec, &data##_cfg_msg->spec,     \
+               sizeof(pds_##data##_spec_t));                \
+        memcpy(&reply.data.status, &data##_cfg_msg->status, \
+               sizeof(pds_##data##_status_t));              \
         break;
 
     _(DHCP_POLICY, dhcp_policy)
     _(NAT_PORT_BLOCK, nat_port_block)
     _(SECURITY_PROFILE, security_profile)
+    _(VNIC, vnic)
 #undef _
 
     default:
@@ -587,6 +591,7 @@ vpp_config_cb_registry::read (pds_cfg_get_rsp_t &msg) const {
     _(DHCP_POLICY, dhcp_policy)
     _(NAT_PORT_BLOCK, nat_port_block)
     _(SECURITY_PROFILE, security_profile)
+    _(VNIC, vnic)
 
 #undef _
     default:

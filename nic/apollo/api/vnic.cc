@@ -19,6 +19,7 @@
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/api/vnic.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/internal/ipc.hpp"
 
 namespace api {
 
@@ -242,6 +243,12 @@ vnic_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
                       macaddr2str(spec->mac_addr), key_.str());
         return SDK_RET_INVALID_ARG;
     }
+    if (primary_ != spec->primary) {
+        PDS_TRACE_ERR("Attempt to modify immutable attr \"primary\" "
+                      "from %u to %u on vnic %s", primary_, spec->primary,
+                      key_.str());
+        return SDK_RET_INVALID_ARG;
+    }
     if ((vnic_encap_.type != spec->vnic_encap.type) ||
         (vnic_encap_.val.value != spec->vnic_encap.val.value)) {
         obj_ctxt->upd_bmap |= PDS_VNIC_UPD_VNIC_ENCAP;
@@ -357,6 +364,9 @@ vnic_entry::fill_spec_(pds_vnic_spec_t *spec) {
     for (i = 0; i < num_egr_v6_policy_; i++) {
         spec->egr_v6_policy[i] = egr_v6_policy_[i];
     }
+    spec->rx_policer = rx_policer_;
+    spec->tx_policer = tx_policer_;
+    spec->meter_en = meter_en_;
     return SDK_RET_OK;
 }
 
@@ -364,6 +374,10 @@ sdk_ret_t
 vnic_entry::read(pds_vnic_info_t *info) {
     sdk_ret_t ret;
 
+    ret = pds_ipc_cfg_get(PDS_IPC_ID_VPP, OBJ_ID_VNIC, &key_, info);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     ret = fill_spec_(&info->spec);
     if (ret != SDK_RET_OK) {
         return ret;

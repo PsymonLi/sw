@@ -74,8 +74,6 @@ void pds_session_get_info(uint32_t session_id, session_info_t *info);
 
 bool pds_session_state_established(uint8_t state);
 
-bool pds_session_active_on_vnic_get(uint16_t vnic_id, uint32_t *sess_count);
-
 int session_track_program(uint32_t ses_id, void *action);
 
 void pds_session_track_get_info(uint32_t session_id, session_track_info_t *info);

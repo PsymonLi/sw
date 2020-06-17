@@ -118,6 +118,22 @@ pds_cfg_db_vnic_del_cb (const pds_cfg_msg_t *msg)
 }
 
 static sdk::sdk_ret_t
+pdsa_cfg_db_vnic_get_cb (void *info)
+{
+    uint32_t active_sessions;
+    bool ret;
+
+    pds_vnic_info_t *vnic_info = (pds_vnic_info_t *)info;
+    ret = pds_session_active_on_vnic_get(vnic_info->status.hw_id, 
+                                         &active_sessions);
+    if (!ret) {
+        return sdk::SDK_RET_ENTRY_NOT_FOUND;
+    }
+    vnic_info->stats.active_sessions = active_sessions;
+    return sdk::SDK_RET_OK;
+}
+
+static sdk::sdk_ret_t
 pds_cfg_db_vpc_set_cb (const pds_cfg_msg_t *msg)
 {
     int rc;
@@ -212,7 +228,7 @@ pds_impl_db_cb_register (void)
     _(VPC, vpc)
     _(DEVICE, device)
 #undef _
-
+    pds_cfg_register_get_callback(OBJ_ID_VNIC, pdsa_cfg_db_vnic_get_cb);
     return;
 }
 

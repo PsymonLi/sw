@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+bool pds_session_active_on_vnic_get(uint16_t vnic_id, uint32_t *sess_count);
+
 int pds_impl_db_vnic_set(uint8_t *key,
                          uint8_t *mac,
                          uint32_t max_sessions,

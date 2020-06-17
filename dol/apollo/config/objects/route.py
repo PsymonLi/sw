@@ -29,12 +29,15 @@ from apollo.config.agent.api import ObjectTypes as ObjectTypes
 
 class RouteObject():
     def __init__(self, node, ipaddr, priority=0, nh_type="", nhid=0, nhgid=0, vpcid=0, \
-            tunnelid=0, nat_type=None, service_nat_prefix=None, dnat_ip=None):
+            tunnelid=0, nat_type=None, service_nat_prefix=None, dnat_ip=None, \
+            classpriority=0, meteren=False):
         super().__init__()
         self.Id = next(ResmgrClient[node].RouteIdAllocator)
         self.UUID = utils.PdsUuid(self.Id, api.ObjectTypes.ROUTE)
         self.ipaddr = ipaddr
         self.Priority = priority
+        self.MeterEn = meteren
+        self.ClassPriority = classpriority
         self.NextHopType = nh_type
         if self.NextHopType == "vpcpeer":
             self.PeerVPCId = vpcid
@@ -79,12 +82,81 @@ class RouteObject():
         logger.info("     NH info: %s" % (nh))
         logger.info("     SNAT action %s" % (self.SNatAction.name))
 
-    def ValidateSpec(self, spec):
+    def PopulateNh(self, spec, route):
+        if self.NextHopType == "vpcpeer":
+            spec.Attrs.VPCId = \
+                    utils.PdsUuid.GetUUIDfromId(route.PeerVPCId, \
+                                                ObjectTypes.VPC)
+        elif self.NextHopType == "tep":
+            spec.Attrs.TunnelId = \
+                    utils.PdsUuid.GetUUIDfromId(route.TunnelId, \
+                                                ObjectTypes.TUNNEL)
+        elif self.NextHopType == "nh":
+            spec.Attrs.NexthopId = \
+                    utils.PdsUuid.GetUUIDfromId(route.NexthopId, \
+                                                ObjectTypes.NEXTHOP)
+        elif self.NextHopType == "nhg":
+            spec.Attrs.NexthopGroupId = \
+                    utils.PdsUuid.GetUUIDfromId(route.NexthopGroupId, \
+                                                ObjectTypes.NEXTHOPGROUP)
+
+    def PopulateSpec(self, spec, parent):
+        spec.Id = self.UUID.GetUuid()
+        utils.GetRpcIPPrefix(self.ipaddr, spec.Attrs.Prefix)
+        spec.Attrs.NatAction.SrcNatAction = self.SNatAction
+        spec.Attrs.MeterEn = self.MeterEn
+        spec.Attrs.ClassPriority = self.ClassPriority
+        if self.DstNatIp:
+            spec.Attrs.NatAction.DstNatIP.Af = types_pb2.IP_AF_INET
+            spec.Attrs.NatAction.DstNatIP.V4Addr = \
+                    int(ipaddress.ip_address(self.DstNatIp))
+        if parent.PriorityType:
+            spec.Attrs.Priority = self.Priority
+            self.PopulateNh(spec, self)
+        else:
+            self.PopulateNh(spec, parent)
+
+    def ValidateNh(self, spec, route):
+        if route.NextHopType == "vpcpeer" and \
+           spec.Attrs.VPCId != utils.PdsUuid.GetUUIDfromId(route.PeerVPCId, \
+                                                           ObjectTypes.VPC):
+            return False
+        if route.NextHopType == "tep" and \
+           spec.Attrs.TunnelId != utils.PdsUuid.GetUUIDfromId(route.TunnelId, \
+                                                              ObjectTypes.TUNNEL):
+            return False
+        if route.NextHopType == "nh" and \
+           spec.Attrs.NexthopId != utils.PdsUuid.GetUUIDfromId(route.NexthopId,\
+                                                               ObjectTypes.NEXTHOP):
+            return False
+        if route.NextHopType == "nhg" and \
+           spec.Attrs.NexthopGroupId != \
+           utils.PdsUuid.GetUUIDfromId(route.NexthopGroupId, ObjectTypes.NEXTHOPGROUP):
+            return False
+        return True
+
+    def ValidateSpec(self, spec, parent):
         if spec.Id != self.UUID.GetUuid():
+            return False
+        if spec.Attrs.Priority != self.Priority:
             return False
         if not utils.ValidateRpcIPPrefix(self.ipaddr, spec.Attrs.Prefix):
             return False
         if spec.Attrs.NatAction.SrcNatAction != self.SNatAction:
+            return False
+        if parent.PriorityType:
+            if not self.ValidateNh(spec, self):
+                return False
+        else:
+            if not self.ValidateNh(spec, parent):
+                return False
+        if self.DstNatIp != None:
+           if int(ipaddress.ip_address(self.DstNatIp)) != \
+              spec.Attrs.NatAction.DstNatIP.V4Addr:
+               return False
+        if spec.Attrs.MeterEn != self.MeterEn:
+            return False
+        if spec.Attrs.ClassPriority != self.ClassPriority:
             return False
         return True
 
@@ -195,16 +267,6 @@ class RouteTableObject(base.ConfigObjectBase):
         grpcmsg.Id.append(self.GetKey())
         return
 
-    def PopulateNh(self, rtspec, route):
-        if route.NextHopType == "vpcpeer":
-            rtspec.Attrs.VPCId = utils.PdsUuid.GetUUIDfromId(route.PeerVPCId, ObjectTypes.VPC)
-        elif route.NextHopType == "tep":
-            rtspec.Attrs.TunnelId = utils.PdsUuid.GetUUIDfromId(route.TunnelId, ObjectTypes.TUNNEL)
-        elif route.NextHopType == "nh":
-            rtspec.Attrs.NexthopId = utils.PdsUuid.GetUUIDfromId(route.NexthopId, ObjectTypes.NEXTHOP)
-        elif route.NextHopType == "nhg":
-            rtspec.Attrs.NexthopGroupId = utils.PdsUuid.GetUUIDfromId(route.NexthopGroupId, ObjectTypes.NEXTHOPGROUP)
-
     def PopulateSpec(self, grpcmsg):
         spec = grpcmsg.Request.add()
         spec.Id = self.GetKey()
@@ -212,19 +274,7 @@ class RouteTableObject(base.ConfigObjectBase):
         spec.PriorityEn = (self.PriorityType != None)
         for route in self.routes.values():
             rtspec = spec.Routes.add()
-            rtspec.Id = route.UUID.GetUuid()
-            rtspec.Attrs.NatAction.SrcNatAction = route.SNatAction
-            if route.DstNatIp:
-                rtspec.Attrs.NatAction.DstNatIP.Af = types_pb2.IP_AF_INET
-                rtspec.Attrs.NatAction.DstNatIP.V4Addr = int(ipaddress.ip_address(route.DstNatIp))
-            utils.GetRpcIPPrefix(route.ipaddr, rtspec.Attrs.Prefix)
-            if self.PriorityType:
-                rtspec.Attrs.Priority = route.Priority
-                self.PopulateNh(rtspec, route)
-            else:
-                #TODO move to per route populate nh eventually
-                # @sai, once we move, we can add validations per route
-                self.PopulateNh(rtspec, self)
+            route.PopulateSpec(rtspec, self)
         return
 
     def PopulateAgentJson(self):
@@ -269,7 +319,7 @@ class RouteTableObject(base.ConfigObjectBase):
             route = self.routes.get(key, None)
             if not route:
                 return False
-            if not route.ValidateSpec(specRoute):
+            if not route.ValidateSpec(specRoute, self):
                 return False
         return True
 
@@ -538,9 +588,10 @@ class RouteObjectClient(base.ConfigClientBase):
             if priorityType:
                 priority = __get_priority(priorityType, True)
             nh_type, nh_id, nhgid, vpcid, tunnelid, nat_type, service_nat_prefix, \
-                    dnat_ip = __get_route_attribs(spec, af)
-            obj = RouteObject(node, ipaddr, priority, nh_type, nh_id, nhgid, vpcid, \
-                    tunnelid, nat_type, service_nat_prefix, dnat_ip)
+                    dnat_ip, classpriority, meteren = __get_route_attribs(spec, af)
+            obj = RouteObject(node, ipaddr, priority, nh_type, nh_id, nhgid, \
+                              vpcid, tunnelid, nat_type, service_nat_prefix, \
+                              dnat_ip, classpriority, meteren)
             routes.update({obj.Id: obj})
             c = 1
             while c < count:
@@ -548,9 +599,11 @@ class RouteObjectClient(base.ConfigClientBase):
                 if priorityType:
                     priority = __get_priority(priorityType, False, priority)
                 nh_type, nh_id, nhgid, vpcid, tunnelid, nat_type, service_nat_prefix, \
-                        dnat_ip = __get_route_attribs(spec, af)
-                obj = RouteObject(node, ipaddr, priority, nh_type, nh_id, nhgid, vpcid, tunnelid, \
-                        nat_type, service_nat_prefix, dnat_ip)
+                        dnat_ip, classpriority, meteren = __get_route_attribs(spec, af)
+                obj = RouteObject(node, ipaddr, priority, nh_type, nh_id, \
+                                  nhgid, vpcid, tunnelid, nat_type, \
+                                  service_nat_prefix, dnat_ip, classpriority, \
+                                  meteren)
                 routes.update({obj.Id: obj})
                 c += 1
             return routes
@@ -632,6 +685,8 @@ class RouteObjectClient(base.ConfigClientBase):
             tunnelid = 0
             nat_type = None
             service_nat_prefix = getattr(spec, 'servicenatprefix', None)
+            classpriority = getattr(spec, 'classpriority', 0)
+            meteren = getattr(spec, 'meteren', False)
             dnat_ip = getattr(spec, 'dnatip', None)
             natspec = getattr(spec, 'nat', None)
             if natspec:
@@ -655,7 +710,8 @@ class RouteObjectClient(base.ConfigClientBase):
                     nhid = nexthop.NexthopId
             elif nh_type == "nhg":
                 nhgid = 1 # fill later
-            return nh_type, nhid, nhgid, vpcid, tunnelid, nat_type, service_nat_prefix, dnat_ip
+            return nh_type, nhid, nhgid, vpcid, tunnelid, nat_type, \
+                    service_nat_prefix, dnat_ip, classpriority, meteren
 
         def __get_priority(priotype, firstVal=False, priority=0):
             if priotype ==  "increasing":
@@ -682,10 +738,12 @@ class RouteObjectClient(base.ConfigClientBase):
                     if priorityType:
                         priority = __get_priority(spec.priority, False, priority)
                     nh_type, nh_id, nhgid, vpcid, tunnelid, nat_type, \
-                            service_nat_prefix, dnat_ip = __get_route_attribs(spec)
+                            service_nat_prefix, dnat_ip, classpriority, \
+                            meteren = __get_route_attribs(spec)
                     obj = RouteObject(node, ipaddress.ip_network(route.replace('\\', '/')),\
                                           priority, nh_type, nh_id, nhgid, vpcid, tunnelid,\
-                                          nat_type, service_nat_prefix, dnat_ip)
+                                          nat_type, service_nat_prefix, dnat_ip,\
+                                          classpriority, meteren)
                     routes.update({obj.Id: obj})
             return routes
 

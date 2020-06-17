@@ -159,6 +159,21 @@ pds_impl_db_vnic_del (uint16_t hw_id)
 IMPL_DB_ENTRY_GET(uint16_t, vnic);
 IMPL_DB_INIT(vnic, PDS_VPP_MAX_VNIC, 0xffff);
 
+bool
+pds_session_active_on_vnic_get (uint16_t vnic_id, uint32_t *sess_count)
+{
+    pds_impl_db_vnic_entry_t *vnic_info = NULL;
+
+    vnic_info = pds_impl_db_vnic_get(vnic_id);
+    if (vnic_info == NULL) {
+        return false;
+    }
+
+    *sess_count = vnic_info->active_ses_count;
+
+    return true;
+}
+
 int
 pds_impl_db_subnet_set (uint8_t pfx_len,
                         uint32_t vr_ip,

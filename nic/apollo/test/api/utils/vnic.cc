@@ -271,7 +271,40 @@ vnic_feeder::spec_compare(const pds_vnic_spec_t *spec) const {
     } else {
         return false;
     }
-
+    if (strcmp(spec->hostname, this->spec.hostname) != 0)
+        return false;
+    if (spec->num_tx_mirror_session != this->spec.num_tx_mirror_session)
+        return false;
+    for (uint8_t i = 0; i < spec->num_tx_mirror_session; i++) {
+        if (spec->tx_mirror_session[i] != this->spec.tx_mirror_session[i])
+            return false;
+    }
+    if (spec->num_rx_mirror_session != this->spec.num_rx_mirror_session)
+        return false;
+    for (uint8_t i = 0; i < spec->num_rx_mirror_session; i++) {
+        if (spec->rx_mirror_session[i] != this->spec.rx_mirror_session[i])
+            return false;
+    }
+    if (spec->v4_meter != this->spec.v4_meter)
+        return false;
+    if (spec->v6_meter != this->spec.v6_meter)
+        return false;
+    if (spec->tx_policer != this->spec.tx_policer)
+        return false;
+    if (spec->rx_policer != this->spec.rx_policer)
+        return false;
+    if (spec->primary != this->spec.primary)
+        return false;
+    // commenting checks for max_sessions and flow_learn_en as during g-tests
+    // vpp runs in mock-mode.
+    /*
+    if (spec->max_sessions != this->spec.max_sessions)
+        return false;
+    if (spec->flow_learn_en != this->spec.flow_learn_en)
+        return false;
+    */
+    if (spec->meter_en != this->spec.meter_en)
+        return false;
     return true;
 }
 

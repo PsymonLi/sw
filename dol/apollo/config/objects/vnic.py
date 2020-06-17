@@ -121,6 +121,12 @@ class VnicObject(base.ConfigObjectBase):
         else:
             self.Vnid = parent.Vnid
         self.SourceGuard = getattr(spec, 'srcguard', False)
+        self.Primary = getattr(spec, 'primary', False)
+        self.HostName = self.Node
+        self.MaxSessions = getattr(spec, 'maxsessions', 0)
+        self.MeterEn = getattr(spec, 'meteren', True)
+        self.FlowLearnEn = getattr(spec, 'flowlearnen', True)
+        self.SwitchVnic = getattr(spec, 'switchvnic', False)
         # TODO: clean this host if logic
         self.UseHostIf = getattr(spec, 'usehostif', True)
         self.RxMirror = rxmirror
@@ -260,6 +266,11 @@ class VnicObject(base.ConfigObjectBase):
             spec.VnicEncap.type = types_pb2.ENCAP_TYPE_NONE
         spec.MACAddress = self.MACAddr.getnum()
         spec.SourceGuardEnable = self.SourceGuard
+        spec.Primary = self.Primary
+        spec.HostName = self.HostName
+        spec.MaxSessions = self.MaxSessions
+        spec.MeterEn = self.MeterEn
+        spec.SwitchVnic = self.SwitchVnic
         utils.GetRpcEncap(self.Node, self.MplsSlot, self.Vnid, spec.FabricEncap)
         for rxmirror in self.RxMirror:
             spec.RxMirrorSessionId.append(int(rxmirror))
@@ -280,7 +291,7 @@ class VnicObject(base.ConfigObjectBase):
                 spec.HostIf = self.HostIfUuid.GetUuid()
             elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
                 spec.HostIf = self.SUBNET.HostIfUuid[0].GetUuid()
-            spec.FlowLearnEn = True
+            spec.FlowLearnEn = self.FlowLearnEn
         if self.RxPolicer:
             spec.RxPolicerId = self.RxPolicer.UUID.GetUuid()
         if self.TxPolicer:
@@ -292,21 +303,24 @@ class VnicObject(base.ConfigObjectBase):
     def ValidateSpec(self, spec):
         if spec.Id != self.GetKey():
             return False
-        # if int(spec.SubnetId) != self.SUBNET.SubnetId:
-        #     return False
+        if spec.SubnetId != self.SUBNET.UUID.GetUuid():
+            return False
+        if utils.ValidateRpcEncap(types_pb2.ENCAP_TYPE_DOT1Q \
+                                  if self.Dot1Qenabled else types_pb2.ENCAP_TYPE_NONE, \
+                                  self.VlanId, spec.VnicEncap) is False:
+            return False
         if EzAccessStoreClient[self.Node].IsDeviceEncapTypeMPLS():
             if utils.ValidateTunnelEncap(self.Node, self.MplsSlot, spec.FabricEncap) is False:
                 return False
         else:
             if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
                 return False
-        if utils.IsPipelineApulu():
-            if self.UseHostIf and self.HostIfUuid:
-                if spec.HostIf != self.HostIfUuid.GetUuid():
-                    return False
-            elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
-                if spec.HostIf != self.SUBNET.HostIfUuid[0].GetUuid():
-                    return False
+        if self.UseHostIf and self.HostIfUuid:
+            if spec.HostIf != self.HostIfUuid.GetUuid():
+                return False
+        elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
+            if spec.HostIf != self.SUBNET.HostIfUuid[0].GetUuid():
+                return False
         if spec.MACAddress != self.MACAddr.getnum():
             return False
         if spec.SourceGuardEnable != self.SourceGuard:
@@ -315,7 +329,36 @@ class VnicObject(base.ConfigObjectBase):
             return False
         if spec.V6MeterId != utils.PdsUuid.GetUUIDfromId(self.V6MeterId, api.ObjectTypes.METER):
             return False
-        # TODO: validate policyid, policer
+        if not utils.ValidatePolicerAttr(self.RxPolicer, spec.RxPolicerId):
+            return False
+        if not utils.ValidatePolicerAttr(self.TxPolicer, spec.TxPolicerId):
+            return False
+        specAttrs = ['IngV4SecurityPolicyId', 'IngV6SecurityPolicyId',\
+                     'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
+        cfgAttrs = ['IngV4SecurityPolicyIds', 'IngV6SecurityPolicyIds',\
+                    'EgV4SecurityPolicyIds', 'EgV6SecurityPolicyIds']
+        for cfgAttr, specAttr in zip(cfgAttrs, specAttrs):
+            if not utils.ValidatePolicyAttr(getattr(self, cfgAttr, None), \
+                                            getattr(spec, specAttr, None)):
+                return False
+        specAttrs = ['RxMirrorSessionId', 'TxMirrorSessionId']
+        cfgAttrs = ['RxMirror', 'TxMirror']
+        for cfgAttr, specAttr in zip(specAttrs, cfgAttrs):
+            if not utils.ValidateMirrorAttr(getattr(self, cfgAttr, None), \
+                                            getattr(spec, specAttr, None)):
+                return False
+        if self.SwitchVnic != spec.SwitchVnic:
+            return False
+        if self.FlowLearnEn != spec.FlowLearnEn:
+            return False
+        if self.Primary != spec.Primary:
+            return False
+        if self.HostName != spec.HostName:
+            return False
+        if self.MaxSessions != spec.MaxSessions:
+            return False
+        if self.MeterEn != spec.MeterEn:
+            return False
         return True
 
     def ValidateYamlSpec(self, spec):

@@ -165,6 +165,7 @@ typedef struct pds_cfg_get_rsp_s {
         pds_dhcp_policy_info_t dhcp_policy;
         pds_nat_port_block_info_t nat_port_block;
         pds_security_profile_info_t security_profile;
+        pds_vnic_info_t vnic;
     };
 } pds_cfg_get_rsp_t;
 
@@ -182,6 +183,7 @@ typedef struct pds_cfg_get_all_rsp_s {
         pds_dhcp_policy_info_t dhcp_policy[0];
         pds_nat_port_block_info_t nat_port_block[0];
         pds_security_profile_info_t security_profile[0];
+        pds_vnic_info_t vnic[0];
     };
 } pds_cfg_get_all_rsp_t;
 
