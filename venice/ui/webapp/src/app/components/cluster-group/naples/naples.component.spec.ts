@@ -308,7 +308,7 @@ describe('NaplesComponent', () => {
     fixture.detectChanges();
       // metrics should be hidden
       const cards = fixture.debugElement.queryAll(By.css('app-herocard'));
-      expect(cards.length).toBe(3);
+      expect(cards.length).toBe(0);
     });
 
   });

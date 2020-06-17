@@ -41,16 +41,18 @@ $table-headerheight: 55px;
     @include primary-font(12px, $mediumGray, 300);
   }
 
+  .cluster-stats-container {
+    app-cpu-memory-storage-stats {
+      height: 100%;
+    }
+  }
+
   .cluster-node-table-container {
     background-image: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 250, 239, 0.5) 2%) !important;
     border-left: solid 1px #c4bfa4;
     padding-left: 10px;
     width: 400px;
     min-height: 345px;
-
-    .margin-top-auto {
-      margin-top: auto;
-    }
 
     .cluster-details-title {
       @include primary-font(20px);

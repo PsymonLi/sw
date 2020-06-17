@@ -12,6 +12,26 @@ $vertical-gutter: 5px;
   margin-right: 10px;
 }
 
+.naples-stats-charts-container {
+  margin: 10px 10px 0px 10px;
+
+  .lastupdateTime {
+    @include primary-font(12px, $mediumGray, 300);
+  }
+
+  .naples-chart-container {
+    width: 100%;
+    min-width: 500px;
+    max-width: 750px;
+    margin: 0px 0px 10px 0px;
+
+    app-cpu-memory-storage-stats,
+    p-chart {
+      height: 100%;
+    }
+  }
+}
+
 .naples-chart-container {
   margin: 10px 20px;
   width: 680px;
@@ -111,4 +131,23 @@ $vertical-gutter: 5px;
 
 .dsc-actionbuttons {
   width: 100%;
+}
+
+#new-chartjs-tooltip {
+  opacity: 1;
+  z-index: 100000;
+  position: absolute;
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-style: normal;
+  padding: 3px;
+  border-radius: 3px;
+  border: 1px solid rgb(107, 160, 229);
+  -webkit-transition: all .1s ease;
+  transition: all .1s ease;
+  pointer-events: none;
+  -webkit-transform: translate(-50%, 0);
+  transform: translate(-50%, 0);
 }

@@ -13,7 +13,7 @@
         <app-cpu-memory-storage-stats *ngIf="clusterLoaded"
                                       [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
         </app-cpu-memory-storage-stats>
-        <div class="detail-card-border margin-top-auto"></div>
+        <div class="detail-card-border"></div>
       </div>
       <div class="detail-card detail-card-wrapper cluster-chart-container" fxFlex=""
            fxLayout="column">
@@ -24,7 +24,7 @@
                                 [selectedTimeRange]="selectedTimeRange"
                                 [chartConfig]="graphConfig">
         </app-telemetrychartview>
-        <div class="detail-card-border margin-top-auto"></div>
+        <div class="detail-card-border"></div>
       </div>
     </div>
   </div>

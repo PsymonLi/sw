@@ -1,63 +1,38 @@
 <app-pagebody [icon]="bodyicon" header="Distributed Services Cards Overview">
   <div fxFlex="none" fxLayout="column">
-    <div fxFlex="nogrow" fxLayout="row wrap" class="naples-card-container" *ngIf="hasAdmittedDSC ">
-      <ng-container *ngFor="let cardData of heroCards">
-        <app-herocard fxFlex="nogrow"
-                      [title]="cardData.title"
-                      [firstStat]="cardData.firstStat"
-                      [secondStat]="cardData.secondStat"
-                      [thirdStat]="cardData.thirdStat"
-                      [backgroundIcon]="cardData.backgroundIcon"
-                      [themeColor]="cardData.themeColor"
-                      [icon]="cardData.icon"
-                      [lineData]="cardData.lineData"
-                      [arrowDirection]="cardData.arrowDirection"
-                      [lastUpdateTime]="lastUpdateTime"
-                      [cardState]="cardData.cardState">
-        </app-herocard>
-      </ng-container>
-    </div>
-    <div fxLayout="row wrap" fxLayoutAlign="start stretch" *roleGuard="'metrics_read'">
-      <div fxFlex="nogrow" fxLayout="column" class="naples-chart-container"
-           *ngIf="hasAdmittedDSC && top10CardChartData && top10CardChartData.length > 0">
+    <div fxFlex="none" *roleGuard="'metrics_read'" fxLayout="row wrap"
+         fxLayoutGap="10px" class="naples-stats-charts-container">
+      <div fxFlex="0 0 600px" *ngIf="hasAdmittedDSC" fxLayout="column"
+           class="detail-card detail-card-wrapper naples-chart-container">
+        <div class="detail-card-border"></div>
+        <app-cpu-memory-storage-stats
+                                      [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
+        </app-cpu-memory-storage-stats>
+        <div class="detail-card-border margin-top-auto"></div>
+      </div>
+      <div fxFlex="1 0 500px"
+           *ngIf="hasAdmittedDSC && top10CardChartData && top10CardChartData.length > 0"
+           class="detail-card detail-card-wrapper naples-chart-container" fxLayout="column">
+        <div class="detail-card-border"></div>
+        <div class="detail-card-header">
+          <span class="lastupdateTime">Last Updated: {{ chartLastUpdateTime | PrettyDate}}</span>
+        </div>
         <p-chart type="bar" [data]="top10CardChartData[0]" [options]="top10CardChartOptions[0]"
                  *ngIf="top10CardChartData[0]">
         </p-chart>
+        <div class="detail-card-border"></div>
+      </div>
+      <div fxFlex="1 0 500px"
+           *ngIf="hasAdmittedDSC && top10CardChartData && top10CardChartData.length > 0"
+           class="detail-card detail-card-wrapper naples-chart-container" fxLayout="column">
+        <div class="detail-card-border"></div>
+        <div class="detail-card-header">
+          <span class="lastupdateTime">Last Updated: {{ chartLastUpdateTime | PrettyDate}}</span>
+        </div>
         <p-chart type="bar" [data]="top10CardChartData[1]" [options]="top10CardChartOptions[1]"
                  *ngIf="top10CardChartData[1]">
         </p-chart>
-      </div>
-      <div fxFlex class="naples-card-workloads-container" *ngIf="chosenCard">
-        <div *roleGuard="'workloadworkload_read'" class="naples-card-workloads-title">
-          <a routerLink="./{{ chosenCard.meta.name }}">{{ chosenCard.spec.id }}</a>
-        </div>
-        <p-table styleClass="naples-card-workloads-table"
-                 [value]="chosenCard._ui.associatedWorkloads"
-                 *roleGuard="'workloadworkload_read'">
-          <ng-template pTemplate="header">
-            <tr>
-              <th>Workload Name</th>
-              <th>Host Name</th>
-              <th>Interface</th>
-            </tr>
-          </ng-template>
-          <ng-template pTemplate="body" let-workload>
-            <tr>
-              <td>
-                <div class="naples-workloads-cell ellipsisText">{{workload.meta.name}}</div>
-              </td>
-              <td>
-                <div class="naples-workloads-cell ellipsisText">{{workload.spec['host-name']}}</div>
-              </td>
-              <td>
-                <div *ngFor="let interface of workload.spec.interfaces"
-                     class="naples-workloads-cell ellipsisText">
-                  {{ interface['mac-address'] }}
-                </div>
-              </td>
-            </tr>
-          </ng-template>
-        </p-table>
+        <div class="detail-card-border"></div>
       </div>
     </div>
   </div>

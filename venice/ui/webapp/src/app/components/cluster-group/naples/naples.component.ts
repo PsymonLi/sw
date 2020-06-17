@@ -34,6 +34,7 @@ import { NaplesCondition, NaplesConditionValues } from '.';
 import { WorkloadUtility, WorkloadNameInterface } from '@app/common/WorkloadUtility';
 import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
 import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { Router } from '@angular/router';
 
 interface ChartData {
   // macs or ids of the dsc
@@ -202,6 +203,7 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   top10CardChartOptions: { [key: string]: any }[];
   chosenCardMac: string;
   chosenCard: ClusterDistributedServiceCard;
+  chartLastUpdateTime: string = '';
 
 
   dscprofileOptions: SelectItem[] = [];
@@ -216,6 +218,7 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
     protected metricsqueryService: MetricsqueryService,
     protected searchService: SearchService,
     protected workloadService: WorkloadService,
+    protected router: Router,
     protected uiconfigsService: UIConfigsService
   ) {
     super(controllerService, uiconfigsService);
@@ -265,7 +268,8 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
     this.getDSCTotalCount();  // start retrieving data.
   }
 
-  generateChartOptions(title: string, addSmallestUnit: boolean = false) {
+  generateChartOptions(addSmallestUnit: boolean = false) {
+    const dataObjects = this.dataObjects;
     const scales = {
       yAxes: [{
         ticks: {
@@ -277,11 +281,6 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
       scales.yAxes[0].ticks['stepSize'] = 1;
     }
     return {
-      title: {
-        display: true,
-        text: title,
-        fontSize: 16
-      },
       responsive: true,
       scales,
       legend: {
@@ -300,10 +299,38 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
       tooltips: {
         intersect: false,
         callbacks: {
-          label: function (tooltipItem, data) {
-            return data['datasets'][0]['data'][tooltipItem['index']];
+          title: function() {
+            return null;
+          },
+          label: function (tooltipItem) {
+            const lines = [tooltipItem.xLabel + ':   ' + tooltipItem.yLabel];
+            if (dataObjects && dataObjects.length > 0) {
+              const card: ClusterDistributedServiceCard =
+                dataObjects.find(item => item.spec.id === tooltipItem.xLabel ||
+                  item.meta.name === tooltipItem.xLabel);
+              if (card && card._ui.associatedWorkloads &&
+                  card._ui.associatedWorkloads.length > 0) {
+                const workloadNames = WorkloadUtility.getWorkloadNames(
+                    card._ui.associatedWorkloads);
+                lines.push('Workloads:');
+                for (let i = 0; i < workloadNames.length && i < 8; i++) {
+                  lines.push(workloadNames[i].fullname);
+                }
+                if (workloadNames.length > 8) {
+                  lines .push('... ' + (workloadNames.length - 8) + ' more');
+                }
+              }
+            }
+            return lines;
           }
-        }
+        },
+        backgroundColor: '#FFF',
+        titleFontSize: 12,
+        bodyFontColor: '#000',
+        bodyFontSize: 12,
+        displayColors: false,
+        borderColor: '#6ba0e5',
+        borderWidth: 1
       },
       onClick: (e, data) => {
         // only display workloads when cards and workloads are loaded
@@ -319,10 +346,7 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
               const card: ClusterDistributedServiceCard =
                 this.dataObjects.find((item: ClusterDistributedServiceCard) => (item.spec.id === this.chosenCardMac) || (item.meta.name === this.chosenCardMac));
               if (card) {
-                this.chosenCard = card;
-                if (this.top10CardTelemetryData) {
-                  this.processTop10CardTelemetryData(this.top10CardTelemetryData);
-                }
+                this.router.navigate(['/', 'cluster', 'dscs', card.meta.name]);
               }
             }
           }
@@ -331,7 +355,7 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
     };
   }
 
-  generateChartData(labels: string[], values: number[]) {
+  generateChartData(labels: string[], values: number[], title: string) {
     const numOfColors = Utility.allColors.length;
     const bgColors: string[] = labels.map((label: string, idx: number) => {
       // selected card has 1 as opacity
@@ -345,11 +369,10 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
       return Utility.convertHexColorToRGBAColor(color, opacity);
     });
     return {
-      labels: labels.map((mac, idx) => this.matchCardMacToCardId(mac)),
+      labels: labels.map(mac => this.matchCardMacToCardId(mac)),
       datasets: [
         {
-          label: (this.dataObjects && this.dataObjects.length >= this.searchDSCsCount) ?
-            '(Click the bar to see the workloads running on this DSC)' : '',
+          label: title,
           backgroundColor: bgColors,
           data: values
         }
@@ -386,7 +409,9 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
         (data: ITelemetry_queryMetricsQueryResponse) => {
           if (data && data.results && data.results.length === queryList.queries.length) {
             this.top10CardTelemetryData = data;
-            this.processTop10CardTelemetryData(data);
+            if (this.dataObjects && this.dataObjects.length > 0) {
+              this.processTop10CardTelemetryData(data);
+            }
           }
         },
         (err) => {
@@ -396,38 +421,31 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   }
 
   processTop10CardTelemetryData(data: ITelemetry_queryMetricsQueryResponse) {
-    this.top10CardChartData = [];
-    this.top10CardChartOptions = [];
-    const clock: any = new Date();
-    const prettyDate = new PrettyDatePipe('en-US');
-    const now: string = prettyDate.transform(clock);
-    let hourDifference: any = (clock.getTimezoneOffset()) / 60;
-    if (hourDifference > 0) {
-      hourDifference = -(hourDifference);
-    } else {
-      hourDifference = '+' + -(hourDifference);
-    }
-    data.results.forEach((result, idx) => {
-      if (MetricsUtility.resultHasData(result)) {
-        const chartS = result.series[0];
-        chartS.values.sort((a, b) => a[1] - b[1]);
-        const cardMacs: string[] = [];
-        const cardValues: number[] = [];
-        chartS.values.forEach(metric => {
-          if (metric[1] && metric[1] > 0) {
-            cardMacs.push(metric[2]);
-            cardValues.push(metric[1]);
+    if (data && data.results) {
+      this.top10CardChartData = [];
+      this.top10CardChartOptions = [];
+      data.results.forEach((result, idx) => {
+        if (MetricsUtility.resultHasData(result)) {
+          const chartS = result.series[0];
+          chartS.values.sort((a, b) => b[1] - a[1]);
+          const cardMacs: string[] = [];
+          const cardValues: number[] = [];
+          chartS.values.forEach(metric => {
+            if (metric[1] && metric[1] > 0) {
+              cardMacs.push(metric[2]);
+              cardValues.push(metric[1]);
+            }
+          });
+          if (cardValues.length > 0) {
+            this.chartLastUpdateTime = new Date().toISOString();
+            const title = idx === 0 ? 'Active Sessions' : 'Connection Per Second';
+            const graphTitle = `${title} - Top ${cardValues.length} DSCs`;
+            this.top10CardChartData.push(this.generateChartData(cardMacs, cardValues, graphTitle));
+            this.top10CardChartOptions.push(this.generateChartOptions(cardValues[0] <= 5));
           }
-        });
-        if (cardValues.length > 0) {
-          const title = idx === 0 ? 'Active Sessions' : 'Connection Per Second';
-          const graphTitle = `${title} - Top ${cardValues.length} DSCs at ${now} ${hourDifference}h`;
-          this.top10CardChartData.push(this.generateChartData(cardMacs, cardValues));
-          this.top10CardChartOptions.push(this.generateChartOptions(graphTitle,
-            cardValues[cardValues.length - 1] <= 5));
         }
-      }
-    });
+      });
+    }
   }
 
   /**
@@ -599,6 +617,9 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
         }
         this.dataObjects = response.data;
         this.processDSCrecords();
+        if (!this.top10CardChartData || this.top10CardChartData.length === 0) {
+          this.processTop10CardTelemetryData(this.top10CardTelemetryData);
+        }
       }
     );
     this.subscriptions.push(dscSubscription);
