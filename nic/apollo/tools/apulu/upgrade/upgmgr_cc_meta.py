@@ -42,7 +42,14 @@ def is_upgrade_image_same(rdata, udata, ndata):
 
     for e in fields_cc:
         cc_attr = e + '_' + mode + '_compat_version'
-        if udata['modules'][e]['major'] == ndata['upgrade'][mode][cc_attr]['major']:
+        uver = udata['modules'].get(e)
+        nver = ndata['upgrade'][mode].get(cc_attr)
+
+        if not nver:
+            match = match + 1
+            continue
+
+        if uver['major'] == nver['major']:
             match = match + 1
 
     if match == len(fields_build) + len(fields_cc):
@@ -67,7 +74,14 @@ def is_upgrade_ok(udata, ndata):
 
     for e in fields_cc:
         cc_attr = e + '_' + mode + '_compat_version'
-        if udata['modules'][e]['major'] == ndata['upgrade'][mode][cc_attr]['major']:
+        uver = udata['modules'].get(e)
+        nver = ndata['upgrade'][mode].get(cc_attr)
+
+        if not nver:
+            match = match + 1
+            continue
+
+        if uver['major'] == nver['major']:
             match = match + 1
         else:
             break

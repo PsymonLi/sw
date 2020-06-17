@@ -3,53 +3,53 @@
     "firmware": {
         "description": "compatibility checks for the module versions below",
         "major": "1",
-        "minor":"1"
+        "minor": "1"
     },
     "modules": {
         "nicmgr": {
             "description": "compatibility checks on nicmgr",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "pcie": {
             "description": "compatibility checks on pciemgr",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "kernel": {
             "description": "compatibility checks on drivers and kernel version",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "pdsagent": {
             "description": "compatibility checks on pds-agent",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "p4": {
             "description": "compatibility checks on p4 tables and table engine configs",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "p4plus": {
             "description": "compatibility checks on p4plus tables and table engine configs",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "linkmgr": {
             "description": "compatibility checks on linkmgr",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "devconf": {
             "description": "compatibility checks on dev-conf",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         },
         "ionicmnic": {
             "description": "compatibility checks on ionic-mnic",
             "major": "1",
-            "minor":"1"
+            "minor": "1"
         }
     }
 }
