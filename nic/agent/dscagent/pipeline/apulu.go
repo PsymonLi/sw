@@ -1410,8 +1410,6 @@ func (a *ApuluAPI) HandleRouteTable(oper types.Operation, routetableObj netproto
 
 // HandleTechSupport requests techsupport to operd
 func (a *ApuluAPI) HandleTechSupport(obj tsproto.TechSupportRequest) (string, error) {
-	a.Lock()
-	defer a.Unlock()
 	return apulu.HandleTechSupport(a.OperSvcClient, obj.Spec.SkipCores, obj.Spec.InstanceID)
 }
 
