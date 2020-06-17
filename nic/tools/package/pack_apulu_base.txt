@@ -358,3 +358,4 @@ nic/build/$ARCH/$PIPELINE/bin/pdsupgmgr                           /nic/bin/
 nic/build/$ARCH/$PIPELINE/bin/pdsupgclient                        /nic/bin/
 nic/conf/$PIPELINE/upgrade_cc_hitless_version.json                /nic/upgrade/etc/
 nic/conf/$PIPELINE/upgrade_cc_graceful_version.json               /nic/upgrade/etc/
+nic/build/$ARCH/$PIPELINE/lib/libpdsupgapi.so                     /nic/lib/
