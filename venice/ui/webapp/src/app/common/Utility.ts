@@ -2253,7 +2253,7 @@ export class Utility {
     }
     return false;
   }
-  public static formatPropagationColumn (data) {
+  public static formatPropagationColumn (data, dscMacNameMap: {[key: string]: string } = null) {
     const retArr = [];
     if (data == null) {
       return retArr;
@@ -2267,7 +2267,9 @@ export class Utility {
           if (data[k].includes('on:')) {
             targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ': </span> <span class="propagation-status-pending"> ' + data[k].split('on:')[0] + 'on ' + '</span>';
             data[k].split('on:')[1].split(', ').forEach((macName) => {
-              targetStr += '<span class="propagation-status-pending"> ' + macName + ' </span>';
+              let  myMac = macName.trim();
+              myMac = (dscMacNameMap && dscMacNameMap[myMac]) ? dscMacNameMap[myMac] : myMac;
+              targetStr += '<span class="propagation-status-pending"> ' + myMac + ' </span>';
             });
           } else {
             targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + '</span>';

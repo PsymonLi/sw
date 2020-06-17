@@ -1,5 +1,5 @@
 // const URL = "10.7.100.108:10001"  // Rohan's
-const URL = "10.7.100.21:10001"  // Jeff's dev
+ const URL = "10.7.100.21:10001"  // Jeff's dev
 // const URL = "10.7.100.63:10001"  // Reno
 // const URL = "10.7.100.76:10001"; // Titus
 // const URL = "10.7.100.75:10001"  // For CalSoftInc
@@ -13,6 +13,7 @@ const URL = "10.7.100.21:10001"  // Jeff's dev
 
 // Since 2019-12-20, all above 192.xxx servers are not avaible. 
 // const URL =  "10.8.100.11"  // QA admin/Pensando0$
+// const URL =  "10.30.1.173"
 // const URL =  "10.30.2.173"  // QA Ambish's large scale setup  admin/Systest-1$
 // const URL = "10.30.6.148"   // Ambish's new scal server address admin/Systest-1$
 // const URL =  "10.30.2.174"  

@@ -1,23 +1,27 @@
-import { ChangeDetectorRef, Component, ViewEncapsulation, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
+import { DSCsNameMacMap, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
 import { Utility } from '@app/common/Utility';
+import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
 import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
-import { SecurityService } from '@app/services/generated/security.service';
+import { ClusterService } from '@app/services/generated/cluster.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
-import {
-  IApiStatus, IMonitoringMirrorSession, MonitoringMirrorSession, MonitoringMatchRule,
-  MonitoringMirrorCollector, MonitoringMatchSelector, MonitoringAppProtoSelector
-} from '@sdk/v1/models/generated/monitoring';
+import { SecurityService } from '@app/services/generated/security.service';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
+import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
+import { IApiStatus, IMonitoringMirrorSession, MonitoringAppProtoSelector, MonitoringMatchRule, MonitoringMatchSelector, MonitoringMirrorCollector, MonitoringMirrorSession } from '@sdk/v1/models/generated/monitoring';
 import { ILabelsSelector } from '@sdk/v1/models/generated/monitoring/labels-selector.model';
 import { SecurityApp } from '@sdk/v1/models/generated/security';
-import { Observable } from 'rxjs';
-import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
-import { TableCol, CustomExportMap } from '@app/components/shared/tableviewedit';
 import { SelectItem } from 'primeng/api';
+import { Observable } from 'rxjs';
+
+interface MirrorsessionsUIModel {
+  pendingDSCmacnameMap?: {[key: string]: string };
+ }
 
 @Component({
   selector: 'app-mirrorsessions',
@@ -29,8 +33,6 @@ import { SelectItem } from 'primeng/api';
 export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit {
   exportMap: CustomExportMap = {};
   dataObjects: ReadonlyArray<MonitoringMirrorSession> = [];
-
-  mirrorsessonsEventUtility: HttpEventUtility<MonitoringMirrorSession>;
 
   bodyicon: any = {
     margin: {
@@ -69,11 +71,13 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   securityAppsEventUtility: HttpEventUtility<SecurityApp>;
   securityApps: ReadonlyArray<SecurityApp> = [];
   securityAppOptions: SelectItem[] = [];
+  naplesList: ClusterDistributedServiceCard[] = [];
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
     protected cdr: ChangeDetectorRef,
     protected securityService: SecurityService,
+    protected clusterService: ClusterService,
     protected monitoringService: MonitoringService) {
     super(controllerService, cdr, uiconfigsService);
   }
@@ -89,18 +93,61 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   postNgInit() {
     this.getMirrorSessions();
     this.getSecurityApps();
+    this.getDSCs();
   }
 
-  getMirrorSessions() {
-    this.mirrorsessonsEventUtility = new HttpEventUtility<MonitoringMirrorSession>(MonitoringMirrorSession);
-    this.dataObjects = this.mirrorsessonsEventUtility.array;
-    const sub = this.monitoringService.WatchMirrorSession().subscribe(
-      response => {
-        this.mirrorsessonsEventUtility.processEvents(response);
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
+  getDSCs() {
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naplesList = response.data as ClusterDistributedServiceCard[];
+        this.handleDataReady();
+      }
     );
-    this.subscriptions.push(sub);
+    this.subscriptions.push(dscSubscription);
+
+ }
+
+ getMirrorSessions() {
+    const sub = this.monitoringService.ListMirrorSessionCache().subscribe(
+    response => {
+      if (response.connIsErrorState) {
+        return;
+      }
+      this.dataObjects = response.data as MonitoringMirrorSession[];
+      this.handleDataReady();
+    },
+    this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
+  );
+  this.subscriptions.push(sub);
+}
+
+
+  /**
+   * This API is used in getXXX().
+   * Once mirrorsession (dataObjects[i]) has status['propagation-status']['pending-dscs'] = [aaaa.bbbb.cccc, xxxx.yyyy.zzz]
+   * We build map { mac : dsc-name}
+   */
+  handleDataReady() {
+    // When naplesList is ready, build DSC-maps
+    if (this.naplesList && this.naplesList.length > 0 && this.dataObjects && this.dataObjects.length > 0) {
+      const _myDSCnameToMacMap: DSCsNameMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
+      const macToNameMap = _myDSCnameToMacMap.macToNameMap;
+      console.log (this.getClassName() + 'handleDataReady()');
+      this.dataObjects.forEach ( (flowExportPoliy) => {
+        if (flowExportPoliy.status['propagation-status'] && flowExportPoliy.status['propagation-status']['pending-dscs']) {
+          const propagationStatusDSCName = {};
+          flowExportPoliy.status['propagation-status']['pending-dscs'].forEach( (mac: string)  => {
+            propagationStatusDSCName[mac] = macToNameMap[mac];
+          });
+          const uiModel: MirrorsessionsUIModel = { pendingDSCmacnameMap : propagationStatusDSCName};
+          flowExportPoliy._ui = uiModel;
+        }
+      });
+      this.dataObjects = [...this.dataObjects];
+    }
   }
 
   getSecurityApps() {
@@ -153,13 +200,13 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
       case 'spec.match-rules':
         return this.displayColumn_matchRules(value);
       case 'status.propagation-status':
-        return this.displayColumn_propagation(value);
+        return this.displayColumn_propagation(value, data._ui.pendingDSCmacnameMap );
       default:
          return Array.isArray(value) ? value.join(', ') : value;
     }
   }
-  displayColumn_propagation(data) {
-    return this.displayListInColumn(Utility.formatPropagationColumn(data));
+  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string } ) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap));
   }
   displayMatchRules(rule: MonitoringMatchRule): string {
     const arr: string[] = [];

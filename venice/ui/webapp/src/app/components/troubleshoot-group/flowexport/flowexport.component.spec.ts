@@ -17,6 +17,8 @@ import { ConfirmationService } from 'primeng/primeng';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { LogPublishersService } from '@app/services/logging/log-publishers.service';
 import { LogService } from '@app/services/logging/log.service';
+import { ClusterService } from '@app/services/generated/cluster.service';
+
 import { MaterialdesignModule } from '@lib/materialdesign.module';
 import { PrimengModule } from '@lib/primeng.module';
 import { WidgetsModule } from 'web-app-framework';
@@ -63,7 +65,8 @@ describe('FlowexportComponent', () => {
         LogPublishersService,
         MonitoringService,
         MatIconRegistry,
-        MessageService
+        MessageService,
+        ClusterService
       ]
     });
       });

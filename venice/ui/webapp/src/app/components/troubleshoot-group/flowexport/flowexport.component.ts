@@ -5,6 +5,13 @@ import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { IMonitoringFlowExportPolicy, MonitoringFlowExportPolicy } from '@sdk/v1/models/generated/monitoring';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Subscription } from 'rxjs';
+import { ClusterService } from '@app/services/generated/cluster.service';
+import { ClusterDistributedServiceCard } from '@sdk/v1/models/generated/cluster';
+import { DSCsNameMacMap, ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
+
+interface FlowExportPolicyUIModel {
+     pendingDSCmacnameMap?: {[key: string]: string };
+}
 
 @Component({
   selector: 'app-flowexport',
@@ -16,13 +23,14 @@ export class FlowexportComponent extends BaseComponent implements OnInit {
   constructor(
     protected controllerService: ControllerService,
     protected monitoringService: MonitoringService,
+    protected clusterService: ClusterService
   ) {
     super(controllerService);
   }
   flowExportPolicies: ReadonlyArray<IMonitoringFlowExportPolicy> = [];
-  flowExportPoliciesEventUtility: HttpEventUtility<MonitoringFlowExportPolicy>;
 
   subscriptions: Subscription[] = [];
+  naplesList: ClusterDistributedServiceCard[] = [];
 
   bodyIcon: any = {
     margin: {
@@ -32,6 +40,10 @@ export class FlowexportComponent extends BaseComponent implements OnInit {
     url: '/assets/images/icons/monitoring/ico-export-policy-black.svg'
   };
 
+  getClassName(): string {
+    return this.constructor.name;
+  }
+
   ngOnInit() {
     // Setting the toolbar of the app
     this.controllerService.setToolbarData({
@@ -39,17 +51,58 @@ export class FlowexportComponent extends BaseComponent implements OnInit {
       breadcrumb: []
     });
     this.getFlowExportPolicies();
+    this.getDSCs();
   }
 
-  getFlowExportPolicies() {
-    this.flowExportPoliciesEventUtility = new HttpEventUtility<MonitoringFlowExportPolicy>(MonitoringFlowExportPolicy);
-    this.flowExportPolicies = this.flowExportPoliciesEventUtility.array;
-    const subscription = this.monitoringService.WatchFlowExportPolicy().subscribe(
-      (response) => {
-        this.flowExportPoliciesEventUtility.processEvents(response);
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get Policies')
-    );
-    this.subscriptions.push(subscription);
+  /**
+   * This API is used in getXXX().
+   * Once flowExportPolicies has status['propagation-status']['pending-dscs'] = [aaaa.bbbb.cccc, xxxx.yyyy.zzz]
+   * We build map { mac : dsc-name}
+   */
+  handleDataReady() {
+    // When naplesList is ready, build DSC-maps
+    if (this.naplesList && this.naplesList.length > 0 && this.flowExportPolicies && this.flowExportPolicies.length > 0) {
+      const _myDSCnameToMacMap: DSCsNameMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
+      const macToNameMap = _myDSCnameToMacMap.macToNameMap;
+      this.flowExportPolicies.forEach ( (flowExportPoliy) => {
+        if (flowExportPoliy.status['propagation-status'] && flowExportPoliy.status['propagation-status']['pending-dscs']) {
+          const propagationStatusDSCName = {};
+          flowExportPoliy.status['propagation-status']['pending-dscs'].forEach( (mac: string)  => {
+            propagationStatusDSCName[mac] = macToNameMap[mac];
+          });
+          const uiModel: FlowExportPolicyUIModel = { pendingDSCmacnameMap : propagationStatusDSCName};
+          flowExportPoliy._ui = uiModel;
+        }
+      });
+      this.flowExportPolicies = [...this.flowExportPolicies]; // tell angular to refreh refreence
+    }
   }
+
+  getDSCs() {
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naplesList = response.data as ClusterDistributedServiceCard[];
+        this.handleDataReady();
+      }
+    );
+    this.subscriptions.push(dscSubscription);
+
+ }
+
+  getFlowExportPolicies() {
+    const dscSubscription = this.monitoringService.ListFlowExportPolicyCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.flowExportPolicies = response.data as MonitoringFlowExportPolicy[];
+        this.handleDataReady();
+      }
+    );
+    this.subscriptions.push(dscSubscription);
+  }
+
 }

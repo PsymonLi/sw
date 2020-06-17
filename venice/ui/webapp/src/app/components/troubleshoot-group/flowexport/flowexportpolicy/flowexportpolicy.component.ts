@@ -109,7 +109,7 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
     }
   }
 
-  displayColumn(exportData, col): any {
+  displayColumn(exportData: MonitoringFlowExportPolicy, col: TableCol): any {
     const fields = col.field.split('.');
     const value = Utility.getObjectValueByPropertyPath(exportData, fields);
     const column = col.field;
@@ -117,13 +117,13 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       case 'spec.exports':
         return this.formatTargets(value);
       case 'status.propagation-status':
-        return this.displayColumn_propagation(value);
+        return this.displayColumn_propagation(value, exportData._ui.pendingDSCmacnameMap);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
   }
-  displayColumn_propagation(data) {
-    return this.displayListInColumn(Utility.formatPropagationColumn(data));
+  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string } ) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap));
   }
   displayListInColumn(list: string[]): string {
     return (list && list.length > 0) ?

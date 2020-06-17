@@ -20,6 +20,7 @@ import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { LicenseService } from '@app/services/license.service';
 import { WorkloadService } from '@app/services/generated/workload.service';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
+import { ClusterService } from '@app/services/generated/cluster.service';
 
 import { NewmirrorsessionComponent } from './newmirrorsession/newmirrorsession.component';
 import { MirrorsessionsComponent } from './mirrorsessions.component';
@@ -54,7 +55,8 @@ describe('MirrorsessionsComponent', () => {
         SecurityService,
         MessageService,
         WorkloadService,
-        MonitoringService
+        MonitoringService,
+        ClusterService
       ]
     })
     .compileComponents();
