@@ -412,6 +412,20 @@ func init() {
 		Desc:       "System has detected a pcie link health error",
 		SuppressMM: false}
 
+	eventTypes[DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD.String(),
+		Severity:   "warn",
+		Category:   "system",
+		Desc:       "Memory usage of the partition is above threshold percentage",
+		SuppressMM: false}
+
+	eventTypes[DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD] = &EventTypeAttributes{
+		EType:      DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD.String(),
+		Severity:   "info",
+		Category:   "system",
+		Desc:       "Memory usage of the partition is below threshold percentage",
+		SuppressMM: false}
+
 	eventTypes[DISK_THRESHOLD_EXCEEDED] = &EventTypeAttributes{
 		EType:      DISK_THRESHOLD_EXCEEDED.String(),
 		Severity:   "critical",

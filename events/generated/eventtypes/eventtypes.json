@@ -356,6 +356,16 @@
  ],
  "system": [
   {
+   "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
+   "Severity": "warn",
+   "Desc": "Memory usage of the partition is above threshold percentage"
+  },
+  {
+   "Name": "DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD",
+   "Severity": "info",
+   "Desc": "Memory usage of the partition is below threshold percentage"
+  },
+  {
    "Name": "FLOWLOGS_DROPPED",
    "Severity": "critical",
    "Desc": "Flowlogs dropped"

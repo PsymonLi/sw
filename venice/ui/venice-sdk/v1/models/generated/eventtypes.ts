@@ -87,6 +87,8 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'ROLLOUT_SUSPENDED',
   ],
   system: [
+    'DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD',
+    'DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD',
     'FLOWLOGS_DROPPED',
     'FLOWLOGS_RATE_LIMITED',
     'FLOWLOGS_REPORTING_ERROR',
@@ -455,6 +457,16 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "ROLLOUT_SUSPENDED",
       "Severity": EventsEvent_severity.info,
       "Desc": "Rollout suspended",
+  },
+  'DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD' : {
+      "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
+      "Severity": EventsEvent_severity.warn,
+      "Desc": "Memory usage of the partition is above threshold percentage",
+  },
+  'DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD' : {
+      "Name": "DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD",
+      "Severity": EventsEvent_severity.info,
+      "Desc": "Memory usage of the partition is below threshold percentage",
   },
   'FLOWLOGS_DROPPED' : {
       "Name": "FLOWLOGS_DROPPED",
