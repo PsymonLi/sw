@@ -387,6 +387,7 @@ func NewNMD(pipeline Pipeline,
 		if err != nil || rpcClient == nil {
 			log.Errorf("Failed to connect to rpc server URL %s | Err %s", globals.Localhost+":"+globals.AgentGRPCPort, err)
 			time.Sleep(time.Second)
+			continue
 		}
 		if rpcClient.ClientConn.GetState() == connectivity.Ready {
 			log.Infof("Created client connection to dscagent %v", rpcClient)
