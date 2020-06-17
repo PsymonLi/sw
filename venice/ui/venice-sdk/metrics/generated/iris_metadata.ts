@@ -773,7 +773,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2591,7 +2592,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to DSC session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
