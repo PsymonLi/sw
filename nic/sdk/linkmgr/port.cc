@@ -753,7 +753,7 @@ port::port_serdes_an_hcd_cfg (void)
     }
 
     // configure divider, width, start link training
-    return serdes_fns()->serdes_an_hcd_cfg(port_sbus_addr(0), this->sbus_addr_, an_hcd, rx_term);
+    return port_an_hcd_cfg(port_sbus_addr(0), this->sbus_addr_, an_hcd, rx_term);
 }
 
 int

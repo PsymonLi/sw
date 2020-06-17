@@ -1776,7 +1776,7 @@ linkmgr_generic_debug_opn (GenericOpnRequest& req, GenericOpnResponse *resp)
             HAL_TRACE_DEBUG("serdes_spico_upload sbus_addr: {}",
                             sbus_addr);
             sdk::linkmgr::serdes_fns.serdes_spico_upload(
-                                        sbus_addr, filename.c_str(), filename.c_str());
+                                        sbus_addr, filename.c_str());
             break;
 
         case 18:

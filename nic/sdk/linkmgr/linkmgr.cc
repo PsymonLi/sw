@@ -415,6 +415,7 @@ xcvr_poll_init (linkmgr_cfg_t *cfg)
 static void
 linkmgr_event_thread_init (void *ctxt)
 {
+    /*
     int         exp_build_id = serdes_build_id();
     int         exp_rev_id   = serdes_rev_id();
     std::string cfg_file     = "fw/" + serdes_fw_file();
@@ -424,6 +425,7 @@ linkmgr_event_thread_init (void *ctxt)
 
     cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file;
     cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/" + cfg_file2;
+    */
 
     pal_wr_lock(SBUSLOCK);
 
@@ -432,6 +434,9 @@ linkmgr_event_thread_init (void *ctxt)
 
     serdes_sbm_set_sbus_clock_divider(sbm_clk_div());
 
+    SDK_TRACE_DEBUG("serdes_firmware_upload starting");
+    sdk::linkmgr::serdes_fns.serdes_firmware_upload();
+    /*
     for (uint32_t asic_port = 0; asic_port < num_asic_ports(0); ++asic_port) {
         uint32_t sbus_addr = sbus_addr_asic_port(0, asic_port);
 
@@ -462,6 +467,7 @@ linkmgr_event_thread_init (void *ctxt)
                         sbus_addr,
                         sdk::linkmgr::serdes_fns.serdes_spico_crc(sbus_addr));
     }
+    */
 
     pal_wr_unlock(SBUSLOCK);
 
