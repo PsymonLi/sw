@@ -101,6 +101,25 @@ class UpgradeObject(base.ConfigObjectBase):
         resp = api.upgradeClient[self.Node].Request(self.ObjType, 'UpgRequest', [msg])
         return self.ValidateResponse(resp)
 
+    def ConfigReplayReadyCheck(self):
+        if utils.IsDryRun():
+            return True
+        msg = upgrade_pb2.EmptyMsg()
+        resp = api.upgradeClient[self.Node].Request(self.ObjType, 'ConfigReplayReadyCheck', [msg])
+        return resp.IsReady
+
+    def ConfigReplayStarted(self):
+        if utils.IsDryRun():
+            return True
+        msg = upgrade_pb2.EmptyMsg()
+        api.upgradeClient[self.Node].Request(self.ObjType, 'ConfigReplayStarted', [msg])
+
+    def ConfigReplayDone(self):
+        if utils.IsDryRun():
+            return
+        msg = upgrade_pb2.EmptyMsg()
+        api.upgradeClient[self.Node].Request(self.ObjType, 'ConfigReplayDone', [msg])
+
     def TriggerUpgradeReq(self, spec=None):
         if self.UpgradeReq() != upgrade_pb2.UPGRADE_STATUS_OK:
             logger.error("TriggerUpgradeReq: Failed")
@@ -115,19 +134,27 @@ class UpgradeObject(base.ConfigObjectBase):
         logger.info("VerifyUpgradeStatus: Success")
         return True
 
-    def WaitForConfigReplayNotif(self, spec=None):
-        logger.info("Wait for Config Replay Notif...")
+    def PollConfigReplayReady(self, spec=None):
+        retry = getattr(spec, "retry", 10)
+        sleep_interval = getattr(spec, "sleep_interval", 0.5)
+        while retry:
+            logger.info(f"retry{retry}: Polling upgrade manager for ConfigReplay state")
+            retry -= 1
+            if self.ConfigReplayReadyCheck():
+                logger.info("PollConfigReplayReady: Success")
+                return True
+            if not retry:
+                logger.info("PollConfigReplayReady: Failed")
+                return False
+            utils.Sleep(sleep_interval)
+        return False
 
-        utils.Sleep(3)
-        # TODO. Add to connect to grpc channel to get notified of config replay stage,
-        # once connected we can move to push config by calling TriggerCfgPushPostUpgrade
-        logger.info("WaitForConfigReplayNotif: Success")
-        return True
-
-    def TriggerCfgPushPostUpgrade(self, spec=None):
+    def TriggerCfgReplay(self, spec=None):
         from apollo.config.node import client as NodeClient
-        logger.info("TriggerCfgPushPostUpgrade: Pushing Config Post Upgrade")
+        logger.info("TriggerCfgReplay: Replaying Config ")
+        self.ConfigReplayStarted()
         NodeClient.Create(self.Node)
+        self.ConfigReplayDone()
         return True
 
     def ValidateCfgPostUpgrade(self, spec=None):

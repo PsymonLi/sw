@@ -15,7 +15,14 @@ package pds;
 import "gogo.proto";
 
 service UpgSvc {
+  // start or abort the upgrade
   rpc UpgRequest (UpgradeRequest) returns (UpgradeResponse) {}
+  // check if configuration replay can be started
+  rpc ConfigReplayReadyCheck (EmptyMsg) returns (ConfigReplayReadyRsp) {}
+  // notify configuration replay started
+  rpc ConfigReplayStarted (EmptyMsg) returns (EmptyMsg) {}
+  // notify configuration replay done
+  rpc ConfigReplayDone (EmptyMsg) returns (EmptyMsg) {}
 }
 
 // upgrade request type
@@ -24,8 +31,8 @@ enum UpgradeRequestType {
   UPGRADE_REQUEST_NONE         = 0;
   // start an upgrade
   UPGRADE_REQUEST_START        = 1;
-  // compat check before an upgrade start
-  UPGRADE_REQUEST_COMPAT_CHECK = 2;
+  // abort an upgrade
+  UPGRADE_REQUEST_ABORT        = 2;
 }
 
 // upgrade mode
@@ -66,3 +73,11 @@ message UpgradeResponse {
   UpgradeStatus Status    = 1;
   string        StatusMsg = 2;
 }
+
+// configuration replay ready check response
+message ConfigReplayReadyRsp {
+  bool IsReady = 1;
+}
+
+// empty msg
+message EmptyMsg {}

@@ -26,13 +26,13 @@ session:
                 - object       : ref://testcase/config/root
                   method       : VerifyUpgradeStatus
                 - object       : ref://testcase/config/root
-                  method       : WaitForConfigReplayNotif
+                  method       : PollConfigReplayReady
 
     - step                     :
         trigger                :
             configs            :
                 - object       : ref://testcase/config/root
-                  method       : TriggerCfgPushPostUpgrade
+                  method       : TriggerCfgReplay
             delay              : 3
         expect                 :
             configs            :

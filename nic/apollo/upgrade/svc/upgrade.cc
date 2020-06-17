@@ -8,6 +8,7 @@
 #include "nic/sdk/lib/ipc/ipc.hpp"
 #include "nic/sdk/upgrade/core/logger.hpp"
 #include "nic/apollo/upgrade/svc/upgrade.hpp"
+#include "nic/apollo/upgrade/api/upgrade_api.hpp"
 
 // callbacks from upgrade processing thread
 static void
@@ -43,36 +44,67 @@ UpgSvcImpl::UpgRequest(ServerContext *context,
         return Status::CANCELLED;
     }
     auto request = proto_req->request();
-    // get request type
-    if (request.requesttype() == pds::UpgradeRequestType::UPGRADE_REQUEST_START) {
-        msg.id = UPG_REQ_MSG_ID_START;
-    } else {
-        UPG_TRACE_ERR("Invalid request type");
-        goto err_exit;
-    }
-    // get upgrade mode
-    if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_GRACEFUL) {
-        msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_GRACEFUL;
-    } else if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_HITLESS) {
-        msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_HITLESS;
-    } else {
+    switch (request.requesttype()) {
+    case pds::UpgradeRequestType::UPGRADE_REQUEST_START:
+        msg.id = upg_ev_req_msg_id_t::UPG_REQ_MSG_ID_START;
+        // get upgrade mode
+        if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_GRACEFUL) {
+            msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_GRACEFUL;
+        } else if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_HITLESS) {
+            msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_HITLESS;
+        } else {
+            UPG_TRACE_ERR("Invalid upgrade mode");
+            goto err_exit;
+        }
+        if (request.packagename().empty()) {
+            UPG_TRACE_ERR("Invalid upgrade package name");
+            goto err_exit;
+        }
+        UPG_TRACE_INFO("Upgrade mode %s, package name %s",
+                       sdk::platform::UPGRADE_MODE_str(msg.upg_mode),
+                       request.packagename().c_str());
+
+        strncpy(msg.fw_pkgname, request.packagename().c_str(), sizeof(msg.fw_pkgname));
+        sdk::ipc::request(SDK_IPC_ID_UPGMGR, upg_ev_req_msg_id_t::UPG_REQ_MSG_ID_START,
+                          &msg, sizeof(msg), upg_sync_response_hdlr, &status);
+        proto_rsp->set_status(proto_status(status));
+        break;
+    case pds::UpgradeRequestType::UPGRADE_REQUEST_ABORT:
+        upg_abort();
+        proto_rsp->set_status(proto_status(UPG_STATUS_OK));
+        break;
+    default:
         UPG_TRACE_ERR("Invalid upgrade mode");
         goto err_exit;
-    }
-    if (request.packagename().empty()) {
-        UPG_TRACE_ERR("Invalid upgrade package name");
-        goto err_exit;
-    } else {
-        UPG_TRACE_INFO("Upgrade package name %s",
-                       request.packagename().c_str());
-    }
 
-    strncpy(msg.fw_pkgname, request.packagename().c_str(), sizeof(msg.fw_pkgname));
-    sdk::ipc::request(SDK_IPC_ID_UPGMGR, UPG_REQ_MSG_ID_START, &msg,
-                      sizeof(msg), upg_sync_response_hdlr, &status);
-    proto_rsp->set_status(proto_status(status));
+    }
     return Status::OK;
 err_exit:
     proto_rsp->set_status(UpgradeStatus::UPGRADE_STATUS_INVALID_ARG);
     return Status::CANCELLED;
+}
+
+Status
+UpgSvcImpl::ConfigReplayReadyCheck(ServerContext *context,
+                                   const pds::EmptyMsg *req,
+                                   pds::ConfigReplayReadyRsp *rsp) {
+    sdk_ret_t ret = upg_config_replay_ready_check();
+
+    rsp->set_isready(ret ==  SDK_RET_OK ? true : false);
+    return Status::OK;
+}
+
+Status
+UpgSvcImpl::ConfigReplayStarted(ServerContext *context, const pds::EmptyMsg *req,
+                                pds::EmptyMsg *rsp) {
+    UPG_TRACE_INFO("Configuration replay started");
+    return Status::OK;
+}
+
+Status
+UpgSvcImpl::ConfigReplayDone(ServerContext *context, const pds::EmptyMsg *req,
+                             pds::EmptyMsg *rsp) {
+    UPG_TRACE_INFO("Configuration replay done");
+    upg_config_replay_done();
+    return Status::OK;
 }
