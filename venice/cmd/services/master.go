@@ -2,7 +2,6 @@ package services
 
 import (
 	"fmt"
-	"reflect"
 	"sync"
 	"time"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
-	"github.com/pensando/sw/venice/utils/runtime"
 )
 
 const (
@@ -697,26 +695,7 @@ func (m *masterService) handleSmartNICEvent(et kvstore.WatchEventType, evtNIC *c
 
 	switch et {
 	case kvstore.Created:
-
-		// if the DSC watcher gets disconnected, once it reconnects it will get "create" updates
-		// for existing DSC object. However, DSCs objects in ApiServer are not timestamped with
-		// the latest health updates. So if we are the leader and we get a notification for a DSC
-		//that is identical to what we have except for "LastTransitionTime", we ignore it.
-		nicState, err := env.StateMgr.FindSmartNIC(evtNIC.Name)
-		if err == nil {
-			nicState.Lock()
-			refNIC := nicState.DistributedServiceCard
-			// Spec must be identical, Status must match except for timestamp
-			if reflect.DeepEqual(refNIC.Spec, evtNIC.Spec) &&
-				runtime.FilterUpdate(refNIC.Status, evtNIC.Status, []string{"LastTransitionTime"}, nil) {
-				log.Infof("Ignoring DSC update from ApiServer, ref: %v, upd: %v", refNIC, evtNIC)
-				nicState.Unlock()
-				return
-			}
-			nicState.Unlock()
-		}
-
-		nicState, err = env.StateMgr.CreateSmartNIC(evtNIC, false)
+		nicState, err := env.StateMgr.CreateSmartNIC(evtNIC, false)
 		if err != nil {
 			log.Errorf("Error creating smartnic {%+v}. Err: %v", evtNIC, err)
 		}
