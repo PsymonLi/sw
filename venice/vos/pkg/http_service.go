@@ -58,6 +58,8 @@ func (h *httpHandler) start(ctx context.Context, port, minioKey, minioSecret str
 	h.handler.Get("/debug/vars", expvar.Handler())
 	log.InfoLog("msg", "adding path", "path", "/debug/minio/metrics")
 	h.handler.Get("/debug/minio/metrics", h.minioMetricsHandler(minioKey, minioSecret))
+	log.InfoLog("msg", "adding path", "path", "/debug/minio/credentials")
+	h.handler.Get("/debug/minio/credentials", h.minioCredentialsHandler(minioKey, minioSecret))
 	log.InfoLog("msg", "adding path", "path", "/debug/config")
 	h.handler.Get("/debug/config", h.debugConfigHandler())
 	h.handler.Post("/debug/config", h.debugConfigHandler())
@@ -290,6 +292,21 @@ func (h *httpHandler) minioMetricsHandler(minioKey, minioSecret string) func(w h
 		b, err := json.Marshal(metrics)
 		if err != nil {
 			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in marshalling metrics (%s)", err))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(b)
+	}
+}
+
+func (h *httpHandler) minioCredentialsHandler(minioKey, minioSecret string) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		minioCredentials := map[string]interface{}{globals.MinioAccessKeyName: minioKey, globals.MinioSecretKeyName: minioSecret}
+		b, err := json.Marshal(minioCredentials)
+		if err != nil {
+			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in marshalling credentials (%s)", err))
 			return
 		}
 

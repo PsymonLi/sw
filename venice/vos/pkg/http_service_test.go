@@ -247,6 +247,32 @@ func TestMetricsHandler(t *testing.T) {
 	Assert(t, wr.Code == http.StatusInternalServerError, "expecting failure due to metrics path not implemented in mock backend")
 }
 
+func TestCredentialsHandler(t *testing.T) {
+	fb := &mockBackend{}
+	inst := &instance{}
+	inst.Init(fb)
+	srv := httpHandler{client: fb, instance: inst}
+	req, err := http.NewRequest("GET", "/debug/minio/credentials", nil)
+	AssertOk(t, err, "failed to create request")
+
+	wr := httptest.NewRecorder()
+	testAccessKey := "minioTestAccessKey"
+	testSecretKey := "minioTestSecretKey"
+	handler := srv.minioCredentialsHandler(testAccessKey, testSecretKey)
+	handler(wr, req)
+	bodyBytes, err := ioutil.ReadAll(wr.Body)
+	AssertOk(t, err, "Body should have been read successfully")
+	minioCreds := map[string]string{}
+	err = json.Unmarshal(bodyBytes, &minioCreds)
+	AssertOk(t, err, "Credentials should have been unmarshalled successfully")
+	accessKey, ok := minioCreds[globals.MinioAccessKeyName]
+	Assert(t, ok, "Minio access key should be present")
+	AssertEquals(t, testAccessKey, accessKey, "actual key different from expected")
+	secretKey, ok := minioCreds[globals.MinioSecretKeyName]
+	Assert(t, ok, "Minio secret key should be present")
+	AssertEquals(t, testSecretKey, secretKey, "actual key different from expected")
+}
+
 func TestDebugConfigHandler(t *testing.T) {
 	paths := new(sync.Map)
 	paths.Store("/root/dummy_path1", 40.00)
