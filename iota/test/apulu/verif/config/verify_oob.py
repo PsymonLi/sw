@@ -33,7 +33,7 @@ def trigger_copy(tc):
 
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
     for node in tc.nodes:
-        api.CopyToNaples(node, [SRC_FILE], "", True)
+        api.CopyToNaples(node, [SRC_FILE], "", via_oob=True)
         api.Trigger_AddNaplesCommand(req, node, tc.move_cmd)
     resp = api.Trigger(req)
     for cmd in resp.commands:

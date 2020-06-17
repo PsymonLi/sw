@@ -9,10 +9,6 @@ import iota.harness.infra.utils.parser as parser
 import iota.test.utils.compat as compat
 import iota.test.iris.config.workload.api as wl_api
 
-OS_TYPE_LINUX = "linux"
-OS_TYPE_BSD   = "freebsd"
-OS_TYPE_ESX   = "esx"
-
 def Setup(tc):
     api.Logger.info ("Fw compat test")
     if api.IsDryrun(): return api.types.status.SUCCESS
@@ -21,33 +17,23 @@ def Setup(tc):
     tc.os = api.GetNodeOs(tc.nodes[0])
 
     tc.skip = False
-    if tc.os == OS_TYPE_BSD: # Not supportig BSD & ESXi right now
+    if tc.os == compat.OS_TYPE_BSD: # Not supportig BSD & ESXi right now
         tc.skip = True
         return api.types.status.SUCCESS
 
     # Intention to test locally built FW with target-version driver
     tc.target_version = getattr(tc.iterators, 'release', 'latest')
 
-    if tc.target_version == 'latest':
-        api.Logger.info('Target version is latest - nothing to change')
-        return
-
-    tc.resp = api.DownloadAssets(release_version = tc.target_version)
-    if not api.IsApiResponseOk(tc.resp):
-        api.Logger.error("Failed to download assets for %s" % tc.target_version)
-        return tc.resp
-
-    manifest_file = os.path.join(api.GetTopDir(), 'images', tc.target_version + '.json')
-
     # this is required to bring the testbed into operation state
     # after driver unload interfaces need to be initialized
-    for node in tc.nodes:
-        if compat.LoadFirmware(tc, node, manifest_file) == api.types.status.SUCCESS:
-            api.Logger.info("Loaded %s Fw on %s" % (tc.target_version, node))
-        else:
-            return api.types.status.FAILURE
+    tc.fw_changed = False
+    if compat.LoadFirmware(tc.nodes, tc.os, tc.target_version) == api.types.status.SUCCESS:
+        api.Logger.info("Loaded %s Fw on %s" % (tc.target_version, node))
+    else:
+        return api.types.status.FAILURE
 
-    if tc.os == OS_TYPE_LINUX:
+    tc.fw_changed = True
+    if tc.os == compat.OS_TYPE_LINUX:
         for node in tc.nodes:
             # this is required to bring the testbed into operation state
             # after driver unload interfaces need to be initialized
@@ -78,7 +64,7 @@ def Trigger(tc):
         interval = "3"
     tc.cmd_cookies = []
 
-    if tc.os == OS_TYPE_LINUX:
+    if tc.os == compat.OS_TYPE_LINUX:
         for node in tc.nodes:
             cmd_cookie = "Driver-FW-Version"
             cmd = "/naples/nodeinit.sh --version"
@@ -137,14 +123,13 @@ def Teardown(tc):
 
     # this is required to bring the testbed into operation state
     # after driver unload interfaces need to be initialized
-    for node in tc.nodes:
-        if compat.LoadFirmware(tc, node, manifest_file) == api.types.status.SUCCESS:
-            api.Logger.info("Loaded latest Fw on %s" % node)
-        else:
-            api.Logger.error("Failed to load latest Fw on %s" % node)
-            return api.types.status.FAILURE
+    if compat.LoadFirmware(tc.nodes, tc.os, 'latest') == api.types.status.SUCCESS:
+        api.Logger.info("Loaded latest Fw on %s" % node)
+    else:
+        api.Logger.error("Failed to load latest Fw on %s" % node)
+        return api.types.status.FAILURE
 
-    if tc.os == OS_TYPE_LINUX:
+    if tc.os == compat.OS_TYPE_LINUX:
         for node in tc.nodes:
             # this is required to bring the testbed into operation state
             # after driver unload interfaces need to be initialized

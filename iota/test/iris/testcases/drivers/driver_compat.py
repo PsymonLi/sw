@@ -10,10 +10,6 @@ import iota.test.utils.compat as compat
 import iota.test.iris.config.workload.api as wl_api
 import iota.harness.infra.utils.parser as parser
 
-OS_TYPE_LINUX = "linux"
-OS_TYPE_BSD   = "freebsd"
-OS_TYPE_ESX   = "esx"
-
 def Setup(tc):
     api.Logger.info ("Driver compat test")
     if api.IsDryrun(): return api.types.status.SUCCESS
@@ -23,42 +19,15 @@ def Setup(tc):
 
     tc.skip = False
     tc.driver_changed = False
-    if tc.os == OS_TYPE_BSD: # Not supportig BSD right now
+    if tc.os == compat.OS_TYPE_BSD: # Not supportig BSD right now
         tc.skip = True
         return api.types.status.SUCCESS
 
     # Intention to test locally built FW with target-version driver
     tc.target_version = getattr(tc.iterators, 'release', 'latest')
 
-    if tc.target_version == 'latest':
-        api.Logger.info('Target version is latest - nothing to change')
-        return api.types.status.IGNORED
-
-    tc.resp = api.DownloadAssets(release_version = tc.target_version)
-    if not api.IsApiResponseOk(tc.resp):
-        api.Logger.error("Failed to download assets for %s" % tc.target_version)
-        return api.types.status.FAILURE
-
-    manifest_file = os.path.join(api.GetTopDir(), 'images', tc.target_version + '.json')
-    for node in tc.nodes:
-        if tc.os == OS_TYPE_LINUX:
-            if compat.LoadLinuxReleaseDriver(tc, node, manifest_file) == api.types.status.SUCCESS:
-                api.Logger.info("Release Driver %s reload on %s" % (tc.target_version, node))
-            else:
-                api.Logger.error("Failed to load release driver %s reload on %s" % (tc.target_version, node))
-                return api.types.status.FAILURE
-            # this is required to bring the testbed into operation state
-            # after driver unload interfaces need to be initialized
-            wl_api.ReAddWorkloads(node)
-        elif tc.os == OS_TYPE_ESX:
-            host.UnloadDriver(tc.os, node)
-            tc.driver_changed = True
-            if compat.LoadESXReleaseDriver(tc, node, manifest_file) == api.types.status.SUCCESS:
-                api.Logger.info("Release Driver %s reload on %s" % (tc.target_version, node))
-            else:
-                api.Logger.error("Failed to load release driver %s reload on %s" % (tc.target_version, node))
-                return api.types.status.FAILURE
-            api.RestartNodes([node])
+    if compat.LoadDriver(tc.nodes, node_os, tc.target_version):
+        tc.driver_changed = True
 
     if getattr(tc.args, 'type', 'local_only') == 'local_only': 
         tc.workload_pairs = api.GetLocalWorkloadPairs()
@@ -85,7 +54,7 @@ def Trigger(tc):
         interval = "3"
     tc.cmd_cookies = []
 
-    if tc.os == OS_TYPE_LINUX:
+    if tc.os == compat.OS_TYPE_LINUX:
         for node in tc.nodes:
             cmd_cookie = "Driver-FW-Version"
             cmd = "/naples/nodeinit.sh --version"
@@ -140,23 +109,7 @@ def Teardown(tc):
         return api.types.status.SUCCESS
 
     # Restore the workspace and testbed to continue
-    if tc.os == OS_TYPE_LINUX:
-        # api.RestartNodes(tc.nodes)
-
-        # Restore original driver and restore testbed
-        for node in tc.nodes:
-            host.UnloadDriver(tc.os, node, whichdriver="eth")
-            host.LoadDriver(tc.os, node)
-            wl_api.ReAddWorkloads(node)
-    elif tc.os == OS_TYPE_ESX:
-        manifest_file = os.path.join(api.GetTopDir(), 'images', 'latest.json')
-        for node in tc.nodes:
-            host.UnloadDriver(tc.os, node)
-            if compat.LoadESXReleaseDriver(tc, node, manifest_file) == api.types.status.SUCCESS:
-                api.Logger.info("Latest Driver reload on %s" % node)
-            else:
-                api.Logger.error("Failed to load latest driver reload on %s" % node)
-                return api.types.status.FAILURE
-            api.RestartNodes([node])
+    if not compat.LoadDriver(tc.nodes, node_os, 'latest'):
+        return api.types.status.FAILURE
 
     return api.types.status.SUCCESS

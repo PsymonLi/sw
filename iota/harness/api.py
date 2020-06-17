@@ -1018,29 +1018,30 @@ def CopyToHostTools(node_name, files):
         req.files.append(f)
     return EntityCopy(req)
 
-def CopyToNaples(node_name, files, host_dir, via_oob=False, naples_dir="", nic_mgmt_ip=None):
+def CopyToNaples(node_name, files, host_dir, naples=None, via_oob=False, naples_dir="", nic_mgmt_ip=None):
     # Assumption is that destination directory is always / and then user should move the file by executing a command.
     # Will change this function to perform that operation as consumer test case is only 1
     copy_resp = __CopyCommon(topo_svc.DIR_IN, node_name,
                              "%s_host" % node_name, files, host_dir)
     if not copy_resp:
         return None
-    if via_oob:
-        mgmtip = GetNicMgmtIP(node_name)
-    else:
-        mgmtip = GetNicIntMgmtIP(node_name) if nic_mgmt_ip is None else nic_mgmt_ip
+    for device in GetDeviceNames(node_name):
+        if naples and naples != device:
+            continue
+        if via_oob:
+            mgmtip = GetNicMgmtIP(node_name, device)
+        else:
+            mgmtip = GetNicIntMgmtIP(node_name, device) if nic_mgmt_ip is None else nic_mgmt_ip
 
-    if copy_resp.api_response.api_status == types_pb2.API_STATUS_OK:
-        req = Trigger_CreateExecuteCommandsRequest()
-        for f in files:
-            copy_cmd = "sshpass -p %s scp -o  UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no  %s %s@%s:/%s" % (
-                       "pen123", os.path.join(host_dir, os.path.basename(f)), 'root', mgmtip, naples_dir)
-            Trigger_AddHostCommand(req, node_name, copy_cmd)
-        tresp = Trigger(req)
-        for cmd in tresp.commands:
-            if cmd.exit_code != 0:
-                Logger.error("Copy to failed %s" % cmd.command)
-        return tresp
+        if copy_resp.api_response.api_status == types_pb2.API_STATUS_OK:
+            req = Trigger_CreateExecuteCommandsRequest()
+            for f in files:
+                copy_cmd = "sshpass -p %s scp -o  UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no  %s %s@%s:/%s" % (
+                           "pen123", os.path.join(host_dir, os.path.basename(f)), 'root', mgmtip, naples_dir)
+                Trigger_AddHostCommand(req, node_name, copy_cmd)
+            tresp = Trigger(req)
+            if not IsApiResponseOk(tresp):
+                return tresp
 
     return copy_resp
 
@@ -1069,22 +1070,29 @@ def CopyToEsx(node_name, files, host_dir, esx_dir="/tmp"):
 def CopyFromHost(node_name, files, dest_dir):
     return __CopyCommon(topo_svc.DIR_OUT, node_name, "%s_host" % node_name, files, dest_dir)
 
-def CopyFromNaples(node_name, files, dest_dir, via_oob=False):
-    if via_oob:
-        mgmtip = GetNicMgmtIP(node_name)
-    else:
-        mgmtip = GetNicIntMgmtIP(node_name)
-    req = Trigger_CreateExecuteCommandsRequest()
-    for f in files:
-        copy_cmd = f"sshpass -p {'pen123'} scp -p -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {'root'}@{mgmtip}:{f} ."
-        Trigger_AddHostCommand(req, node_name, copy_cmd)
-    tresp = Trigger(req)
-    for cmd in tresp.commands:
-        if cmd.exit_code != 0:
-            Logger.error("Copy from failed %s" % cmd.command)
+def CopyFromNaples(node_name, files, dest_dir, naples=None, via_oob=False):
+    ret_resp = None
+    for device in GetDeviceNames(node_name):
+        if naples and naples != device:
+            break
+        if via_oob:
+            mgmtip = GetNicMgmtIP(node_name, device)
+        else:
+            mgmtip = GetNicIntMgmtIP(node_name, device)
+        req = Trigger_CreateExecuteCommandsRequest()
+        for f in files:
+            copy_cmd = f"sshpass -p {'pen123'} scp -p -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {'root'}@{mgmtip}:{f} ."
+            Trigger_AddHostCommand(req, node_name, copy_cmd)
+        tresp = Trigger(req)
+        for cmd in tresp.commands:
+            if cmd.exit_code != 0:
+                Logger.error("Copy from failed %s" % cmd.command)
 
-    files = [os.path.basename(f) for f in files]
-    return __CopyCommon(topo_svc.DIR_OUT, node_name, "%s_host" % node_name, files, dest_dir)
+        files = [os.path.basename(f) for f in files]
+        ret_resp = __CopyCommon(topo_svc.DIR_OUT, node_name, "%s_host" % node_name, files, dest_dir)
+        if not IsApiResponseOk(ret_resp):
+            break
+    return ret_resp
 
 def CopyFromWorkload(node_name, workload_name, files, dest_dir):
     return __CopyCommon(topo_svc.DIR_OUT, node_name, workload_name, files, dest_dir)
