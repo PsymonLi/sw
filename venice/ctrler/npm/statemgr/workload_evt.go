@@ -124,7 +124,7 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 	}
 
 	hsts.addWorkload(w)
-	err = ws.createEndpoints()
+	err = ws.createEndpoints(nil)
 	if err != nil {
 		log.Warnf("Gracefully return success for provisioning")
 		return nil
@@ -135,7 +135,7 @@ func (sm *Statemgr) OnWorkloadCreate(w *ctkit.Workload) error {
 	// Upon restart, if a migration is in progress and not timed out
 	if ws.isMigrating() && len(snic) > 0 {
 		if len(snic) == 0 {
-			ws.deleteEndpoints()
+			ws.deleteEndpoints(nil)
 		} else {
 			err = sm.reconcileWorkload(w, hsts)
 			// For Workloads moving from non_pensando to pensando host, ensure the appropriate state is slected
@@ -185,23 +185,24 @@ func (sm *Statemgr) OnWorkloadUpdate(w *ctkit.Workload, nwrk *workload.Workload)
 	}
 
 	// if we dont need to recreate endpoints, we are done
-	if !ws.isInterfaceChanged(nwrk) && !recreate {
-		return nil
+	if recreate {
+		// delete old endpoints
+		err = ws.deleteEndpoints(nil)
+		if err != nil {
+			log.Errorf("Error deleting old endpoint. Err: %v", err)
+			return err
+		}
+
+		// update the spec
+		w.Spec = nwrk.Spec
+		ws.Workload.Spec = nwrk.Spec
+
+		// trigger creation of new endpoints
+		return ws.createEndpoints(nil)
+
 	}
 
-	// delete old endpoints
-	err = ws.deleteEndpoints()
-	if err != nil {
-		log.Errorf("Error deleting old endpoint. Err: %v", err)
-		return err
-	}
-
-	// update the spec
-	w.Spec = nwrk.Spec
-	ws.Workload.Spec = nwrk.Spec
-
-	// trigger creation of new endpoints
-	return ws.createEndpoints()
+	return ws.processUpdate(nwrk)
 }
 
 // reconcileWorkload checks if the endpoints are create for the workload and tries to create them
@@ -222,7 +223,7 @@ func (sm *Statemgr) reconcileWorkload(w *ctkit.Workload, hst *HostState) error {
 		pending, _ := sm.EndpointIsPending(w.Tenant, epName)
 		if err != nil && !pending {
 			log.Infof("Crating endpoint as part of reconcile %v", w.Name)
-			err = ws.createEndpoints()
+			err = ws.createEndpoints(nil)
 			if err != nil {
 				log.Errorf("Error creating endpoints for workload. Err: %v", err)
 			}
@@ -250,7 +251,7 @@ func (sm *Statemgr) OnWorkloadDelete(w *ctkit.Workload) error {
 		return err
 	}
 
-	return ws.deleteEndpoints()
+	return ws.deleteEndpoints(nil)
 }
 
 // OnWorkloadReconnect is called when ctkit reconnects to apiserver
@@ -333,7 +334,7 @@ func (ws *WorkloadState) waitForEndpoints() error {
 }
 
 // createEndpoints tries to create all endpoints for a workload
-func (ws *WorkloadState) createEndpoints() error {
+func (ws *WorkloadState) createEndpoints(indexes []int) error {
 	var ns *NetworkState
 	// find the host for the workload
 	host, err := ws.stateMgr.FindHost("", ws.Workload.Spec.HostName)
@@ -348,6 +349,19 @@ func (ws *WorkloadState) createEndpoints() error {
 	var eps []*workload.Endpoint
 	createErr := false
 	for ii := range ws.Workload.Spec.Interfaces {
+
+		if len(indexes) != 0 {
+			found := false
+			for _, index := range indexes {
+				if index == ii {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
 		var netName string
 		if len(ws.Workload.Spec.Interfaces[ii].Network) == 0 {
 			ns, err = ws.stateMgr.FindNetworkByVlanID(ws.Workload.Tenant, ws.Workload.Spec.Interfaces[ii].ExternalVlan)
@@ -503,9 +517,22 @@ func (ws *WorkloadState) createEndpoints() error {
 }
 
 // deleteEndpoints deletes all endpoints for a workload
-func (ws *WorkloadState) deleteEndpoints() error {
+func (ws *WorkloadState) deleteEndpoints(indexes []int) error {
 	// loop over each interface of the workload
 	for ii := range ws.Workload.Spec.Interfaces {
+
+		if len(indexes) != 0 {
+			found := false
+			for _, index := range indexes {
+				if index == ii {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
 		var nw *NetworkState
 		var err error
 		// find the network for the interface
@@ -528,7 +555,7 @@ func (ws *WorkloadState) deleteEndpoints() error {
 			epName := ws.Workload.Name + "-" + name
 			_, ok := nw.FindEndpoint(epName)
 			if !ok {
-				log.Errorf("Could not find endpoint %v", epName)
+				log.Errorf("Could not find endpoint %v for nw %v", epName, nw.Network.Name)
 			} else {
 
 				epInfo := workload.Endpoint{
@@ -1011,7 +1038,9 @@ func (ws *WorkloadState) getOrchestrationLabels() (vmName, dcName, orchName stri
 	return
 }
 
-func (ws *WorkloadState) isInterfaceChanged(nwrk *workload.Workload) bool {
+func (ws *WorkloadState) processUpdate(nwrk *workload.Workload) error {
+
+	curMarkedIntfs := make(map[string]bool)
 
 	sliceEqual := func(X, Y []string) bool {
 		m := make(map[string]int)
@@ -1035,44 +1064,83 @@ func (ws *WorkloadState) isInterfaceChanged(nwrk *workload.Workload) bool {
 		return len(m) == 0
 	}
 
-	if len(nwrk.Spec.Interfaces) != len(ws.Workload.Spec.Interfaces) {
-		// number of interfaces changed, delete old ones
-		return true
+	for _, curIntf := range ws.Workload.Spec.Interfaces {
+		curMarkedIntfs[curIntf.MACAddress] = true
 	}
 
-	for _, curIntf := range ws.Workload.Spec.Interfaces {
+	createIndexes := []int{}
+	deleteIndexes := []int{}
+	for index, newIntf := range nwrk.Spec.Interfaces {
+		changed := true
 		found := false
-		for _, newIntf := range nwrk.Spec.Interfaces {
-			if curIntf.MACAddress != newIntf.MACAddress {
-				continue
-			}
+		delIndex := 0
+	L:
+		for curIndex, curIntf := range ws.Workload.Spec.Interfaces {
+			if newIntf.MACAddress == curIntf.MACAddress {
+				curMarkedIntfs[curIntf.MACAddress] = false
+				delete(curMarkedIntfs, curIntf.MACAddress)
+				found = true
 
-			found = true
-			// check what changed
-			if curIntf.Network != newIntf.Network {
-				// network changed delete old endpoints
-				return true
-			}
-			if curIntf.ExternalVlan != newIntf.ExternalVlan {
-				// external VLAN changed delete old endpoints
-				return true
-			}
-			if curIntf.MicroSegVlan != newIntf.MicroSegVlan {
-				// useg vlan changed, delete old endpoint
-				return true
-			}
+				delIndex = curIndex
+				//Matched
+				if curIntf.Network != newIntf.Network {
+					// network changed delete old endpoints
+					break L
+				}
+				if curIntf.ExternalVlan != newIntf.ExternalVlan {
+					// external VLAN changed delete old endpoints
+					break L
+				}
+				if curIntf.MicroSegVlan != newIntf.MicroSegVlan {
+					// useg vlan changed, delete old endpoint
+					break L
+				}
 
-			if !sliceEqual(curIntf.IpAddresses, newIntf.IpAddresses) {
-				return true
+				if !sliceEqual(curIntf.IpAddresses, newIntf.IpAddresses) {
+					break L
+				}
+				changed = false
 			}
 		}
 
 		if !found {
-			return true
+			//create this endpoint as it is not found
+			//Creates are with respect to new index
+			log.Infof("New Endpoint with mac %v found, marking for create", nwrk.Spec.Interfaces[index].MACAddress)
+			createIndexes = append(createIndexes, index)
+		} else if found && changed {
+			log.Infof("Endpoint with mac %v changed, recreating.", ws.Workload.Spec.Interfaces[delIndex].MACAddress)
+			//Deletes are with respect to old index
+			deleteIndexes = append(deleteIndexes, delIndex)
+			//Creates are with respect to new index
+			createIndexes = append(createIndexes, index)
 		}
 	}
 
-	return false
+	for index, curIntf := range ws.Workload.Spec.Interfaces {
+		//Delete endpoints which are not found in new one
+		if _, ok := curMarkedIntfs[curIntf.MACAddress]; ok {
+			log.Infof("Endpoint with mac %v not found, deleting.", ws.Workload.Spec.Interfaces[index].MACAddress)
+			deleteIndexes = append(deleteIndexes, index)
+		}
+	}
+
+	if len(deleteIndexes) != 0 {
+		if err := ws.deleteEndpoints(deleteIndexes); err != nil {
+			return err
+		}
+	}
+
+	if len(createIndexes) != 0 {
+		//Change the spec
+		ws.Workload.Spec = nwrk.Spec
+		ws.Workload.Status = nwrk.Status
+		if err := ws.createEndpoints(createIndexes); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (ws *WorkloadState) stopMigration() error {

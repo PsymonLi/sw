@@ -1037,7 +1037,7 @@ func TestMemdbDepDelTest_5(t *testing.T) {
 
 	//Make sure we receive no objects
 	kindMap = make(map[EventType]map[string]int)
-	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(50*time.Millisecond))
+	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(500*time.Millisecond))
 	AssertOk(t, err, "Error verifying objects")
 
 	err = sendObjects(md.DeleteObjectWithReferences, "a", 0, 100)
@@ -1490,7 +1490,7 @@ func TestMemdbDepDelAddTest_5(t *testing.T) {
 	kindMap[CreateEvent] = make(map[string]int)
 	kindMap[CreateEvent]["a"] = 100
 	kindMap[CreateEvent]["b"] = 100
-	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(50*time.Millisecond))
+	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(500*time.Millisecond))
 	AssertOk(t, err, "Error verifying objects")
 
 	err = sendObjects(md.DeleteObjectWithReferences, "b", 0, 100)
@@ -1556,7 +1556,7 @@ func TestMemdbDepDelAddTest_6(t *testing.T) {
 	kindMap[CreateEvent]["a"] = 100
 	kindMap[CreateEvent]["b"] = 100
 	kindMap[CreateEvent]["c"] = 50
-	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(50*time.Millisecond))
+	err = verifyObjects(t, md, &watcher, kindMap, time.Duration(500*time.Millisecond))
 	AssertOk(t, err, "Error verifying objects")
 
 	err = sendObjects(md.DeleteObjectWithReferences, "c", 0, 50)

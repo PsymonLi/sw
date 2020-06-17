@@ -1027,7 +1027,7 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorS
 func (sm *Statemgr) ListErrMirrorSessions() ([]*MirrorSessionState, error) {
 	emss := []*MirrorSessionState{}
 	mss, err := sm.ListMirrorSesssions()
-	if err != nil {
+	if err == nil {
 		for _, ms := range mss {
 			if ms.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
 				emss = append(emss, ms)

@@ -404,7 +404,7 @@ func (sm *Statemgr) deleteDscRelatedObjects(smartNic *ctkit.DistributedServiceCa
 					wmeta := value.(api.ObjectMeta)
 					wrk, err := sm.FindWorkload(wmeta.Tenant, wmeta.Name)
 					if err == nil {
-						wrk.deleteEndpoints()
+						wrk.deleteEndpoints(nil)
 					} else {
 						log.Errorf("Error finding workload. Err: %v", err)
 					}

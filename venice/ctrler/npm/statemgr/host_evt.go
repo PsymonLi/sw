@@ -130,7 +130,7 @@ func (sm *Statemgr) OnHostUpdate(host *ctkit.Host, nhst *cluster.Host) error {
 			wrk, err := sm.FindWorkload(wmeta.Tenant, wmeta.Name)
 			if err == nil {
 				if snic == nil {
-					wrk.deleteEndpoints()
+					wrk.deleteEndpoints(nil)
 				} else {
 					sm.reconcileWorkload(wrk.Workload, hs)
 				}
