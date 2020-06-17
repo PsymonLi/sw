@@ -67,13 +67,30 @@ void li_intf_t::parse_ips_info_(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ips) {
         (port_add_upd_ips->port_settings.no_switch_port_updated == ATG_YES);
 }
 
-void li_intf_t::fetch_store_info_(pds_ms::state_t* state) {
+bool li_intf_t::fetch_store_info_(pds_ms::state_t* state) {
     store_info_.phy_port_if_obj = state->if_store().get(ips_info_.ifindex);
 
     // If Store entry should have already been created in the Mgmt Stub 
     if (unlikely(store_info_.phy_port_if_obj == nullptr)) {
+
+        if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+            auto new_if_obj = new pds_ms::if_obj_t(ips_info_.ifindex);
+            state->if_store().add_upd(ips_info_.ifindex, new_if_obj);
+            PDS_TRACE_DEBUG("Graceful restart snapshot replayed LI Port Add"
+                            "MS 0x%x for unknown L3 interface",
+                            ips_info_.ifindex);
+            init_fault_status_(new_if_obj->phy_port_properties(), true);
+            return false;
+        }
         throw Error(std::string("LI Port AddUpdate for unknown MS IfIndex ")
                     .append(std::to_string(ips_info_.ifindex)));
+    }
+
+    if (!store_info_.phy_port_if_obj->phy_port_properties().spec_init) {
+        PDS_TRACE_DEBUG("Graceful restart snapshot replayed LI Port Add"
+                        "MS 0x%x for unknown L3 interface",
+                        ips_info_.ifindex);
+        return false;
     }
 
     if (!store_info_.phy_port_if_obj->phy_port_properties().hal_created) {
@@ -81,12 +98,45 @@ void li_intf_t::fetch_store_info_(pds_ms::state_t* state) {
         // but not yet created in HAL - HAL PDS create now
         op_create_ = true;
     }
+    return true;
 }
 
-bool li_intf_t::cache_new_obj_in_cookie_(void) {
-    void *fw = nullptr;
-    std::unique_ptr<if_obj_t> new_if_obj;
+void li_intf_t::init_fault_status_(if_obj_t::phy_port_properties_t& phy_port_prop,
+                                   bool force_fault) {
+    // Create the FRI worker
+    ntl::Frl &frl = li::Fte::get().get_frl();
+    auto& fw = phy_port_prop.fri_worker;
+    if (fw == nullptr) {
+        fw = frl.create_fri_worker(ips_info_.ifindex);
+        PDS_TRACE_DEBUG("MS If 0x%x: Created FRI worker", ips_info_.ifindex);
+    }
+    // Set the initial interface state. The port event subscribe is already
+    // done by this point. Any events after creating worker and setting
+    // initial state is handled by the port event callback
     FRL_FAULT_STATE fault_state;
+    frl.init_fault_state(&fault_state);
+    if (force_fault) {
+        fault_state.hw_link_faults = ATG_FRI_FAULT_PRESENT;
+    } else {
+        fault_state.hw_link_faults = fetch_port_fault_status(ips_info_.ifindex);
+    }
+    frl.send_fault_ind(fw, &fault_state);
+}
+
+void li_intf_t::enter_ms_ctxt_and_init_fault_status_(if_obj_t::phy_port_properties_t& phy_port_prop) {
+    NBB_CREATE_THREAD_CONTEXT
+    NBS_ENTER_SHARED_CONTEXT(li_proc_id);
+    NBS_GET_SHARED_DATA();
+
+    init_fault_status_(phy_port_prop);
+
+    NBS_RELEASE_SHARED_DATA();
+    NBS_EXIT_SHARED_CONTEXT();
+    NBB_DESTROY_THREAD_CONTEXT
+}
+
+bool li_intf_t::cache_new_obj_in_cookie_(bool async) {
+    std::unique_ptr<if_obj_t> new_if_obj;
 
     // Create a new object in order to store the updated fields
     // but do not save it in the Global State yet
@@ -100,17 +150,11 @@ bool li_intf_t::cache_new_obj_in_cookie_(void) {
                          ips_info_.ifindex, ips_info_.admin_state,
                          ips_info_.switchport);
 
-        // Create the FRI worker
-        ntl::Frl &frl = li::Fte::get().get_frl();
-        fw = frl.create_fri_worker(ips_info_.ifindex);
-        phy_port_prop.fri_worker = fw;
-        PDS_TRACE_DEBUG("MS If 0x%x: Created FRI worker", ips_info_.ifindex);
-        // Set the initial interface state. The port event subscribe is already
-        // done by this point. Any events after creating worker and setting
-        // initial state is handled by the port event callback
-        frl.init_fault_state(&fault_state);
-        fault_state.hw_link_faults = fetch_port_fault_status(ips_info_.ifindex);
-        frl.send_fault_ind(fw, &fault_state);
+        if (async) {
+            init_fault_status_(phy_port_prop);
+        } else {
+            enter_ms_ctxt_and_init_fault_status_(phy_port_prop);
+        }
 
     } else if (ips_info_.admin_state_updated || ips_info_.switchport_updated) {
         if (ips_info_.admin_state_updated) {
@@ -212,43 +256,7 @@ pds_batch_ctxt_guard_t li_intf_t::prepare_pds(state_t::context_t& state_ctxt,
     return pds_bctxt_guard;
 }
 
-NBB_BYTE li_intf_t::handle_add_upd_ips(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ips) {
-    pds_batch_ctxt_guard_t  pds_bctxt_guard;
-    NBB_BYTE rc = ATG_OK;
-
-    parse_ips_info_(port_add_upd_ips);
-
-    if (ms_ifindex_to_pds_type (ips_info_.ifindex) != IF_TYPE_L3) {
-        // Nothing to do for non-L3 interfaces
-        return rc;
-    }
-    if (port_add_upd_ips->port_settings.no_switch_port == ATG_NO) {
-        // Only processing L3 port creates
-        return rc;
-    }
-
-    // Alloc new cookie and cache IPS
-    cookie_uptr_.reset (new cookie_t);
-
-    { // Enter thread-safe context to access/modify global state
-        auto state_ctxt = pds_ms::state_t::thread_context();
-        fetch_store_info_(state_ctxt.state());
-
-        if (op_create_) {
-            PDS_TRACE_INFO ("MS If 0x%x: Create IPS", ips_info_.ifindex);
-        } else {
-            PDS_TRACE_INFO ("MS If 0x%x: Update IPS", ips_info_.ifindex);
-        }
-        if (unlikely(!cache_new_obj_in_cookie_())) {
-            // No change
-            PDS_TRACE_DEBUG ("MS If 0x%x: No-op IPS", ips_info_.ifindex);
-            return rc;
-        }
-
-        pds_bctxt_guard = prepare_pds(state_ctxt);
-    } // End of state thread_context
-      // Do Not access/modify global state after this
-
+void li_intf_t::populate_clbk_(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ips) {
     cookie_uptr_->send_ips_reply =
         [port_add_upd_ips] (bool pds_status, bool ips_mock) -> void {
             // ----------------------------------------------------------------
@@ -288,6 +296,41 @@ NBB_BYTE li_intf_t::handle_add_upd_ips(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ip
             NBS_EXIT_SHARED_CONTEXT();
             NBB_DESTROY_THREAD_CONTEXT
         };
+}
+
+NBB_BYTE li_intf_t::handle_intf_add_upd_(bool async,
+                                         ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ips) {
+    pds_batch_ctxt_guard_t  pds_bctxt_guard;
+    NBB_BYTE rc = ATG_OK;
+
+    // Alloc new cookie and cache IPS
+    cookie_uptr_.reset (new cookie_t);
+
+    { // Enter thread-safe context to access/modify global state
+        auto state_ctxt = pds_ms::state_t::thread_context();
+        if (!fetch_store_info_(state_ctxt.state())) {
+            return rc;
+        }
+
+        if (op_create_) {
+            PDS_TRACE_INFO ("MS If 0x%x: Create IPS", ips_info_.ifindex);
+        } else {
+            PDS_TRACE_INFO ("MS If 0x%x: Update IPS", ips_info_.ifindex);
+        }
+        if (unlikely(!cache_new_obj_in_cookie_(async))) {
+            // No change
+            PDS_TRACE_DEBUG ("MS If 0x%x: No-op IPS", ips_info_.ifindex);
+            return rc;
+        }
+
+        pds_bctxt_guard = prepare_pds(state_ctxt, async);
+    } // End of state thread_context
+      // Do Not access/modify global state after this
+
+    if (async) {
+        populate_clbk_(port_add_upd_ips);
+    }
+
     // All processing complete, only batch commit remains -
     // safe to release the cookie_uptr_ unique_ptr
     rc = ATG_ASYNC_COMPLETION;
@@ -301,12 +344,36 @@ NBB_BYTE li_intf_t::handle_add_upd_ips(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ip
     }
     PDS_TRACE_DEBUG ("MS If 0x%x: Add/Upd PDS Batch commit successful",
                      ips_info_.ifindex);
-    if (PDS_MOCK_MODE()) {
+    if (!async) {
+        PDS_TRACE_DEBUG("++++ Phy port 0x%x: Created in HAL ++++", ips_info_.ifindex);
+    }
+
+    if (PDS_MOCK_MODE() && async) {
         // Call the HAL callback in PDS mock mode
         std::thread cb(pds_ms::hal_callback, SDK_RET_OK, cookie);
         cb.detach();
     }
     return rc;
+}
+
+NBB_BYTE li_intf_t::handle_add_upd_ips(ATG_LIPI_PORT_ADD_UPDATE* port_add_upd_ips) {
+    parse_ips_info_(port_add_upd_ips);
+
+    if (ms_ifindex_to_pds_type (ips_info_.ifindex) != IF_TYPE_L3) {
+        // Nothing to do for non-L3 interfaces
+        return ATG_OK;
+    }
+    if (port_add_upd_ips->port_settings.no_switch_port == ATG_NO) {
+        // Only processing L3 port creates
+        return ATG_OK;
+    }
+
+    return handle_intf_add_upd_(true, port_add_upd_ips);
+}
+
+NBB_BYTE li_intf_t::l3_intf_create(ms_ifindex_t ms_ifindex) {
+    ips_info_.ifindex = ms_ifindex;
+    return handle_intf_add_upd_(false, nullptr);
 }
 
 void li_intf_t::handle_delete(NBB_ULONG ifindex) {

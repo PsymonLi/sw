@@ -229,7 +229,7 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
     auto state_ctxt = pds_ms::state_t::thread_context();
     auto if_obj = state_ctxt.state()->if_store().get(ms_ifindex);
 
-    if (if_obj != nullptr) {
+    if (if_obj != nullptr && if_obj->phy_port_properties().spec_init) {
         // L3 Intf created for same Eth IfIndex for which
         // the prev L3 intf delete has not yet been seen by MS LI Stub
         throw Error(std::string("Duplicate Create for existing MS Intf ")
@@ -238,7 +238,13 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
         return;
     }
 
-    auto new_if_obj = new pds_ms::if_obj_t(ms_ifindex, *if_spec);
+    if_obj_t* new_if_obj = nullptr;
+    if (if_obj == nullptr) {
+        new_if_obj = new pds_ms::if_obj_t(ms_ifindex, *if_spec);
+    } else {
+        new_if_obj = if_obj;
+        new_if_obj->phy_port_properties().set_spec(*if_spec);
+    }
     auto& phy_port_prop = new_if_obj->phy_port_properties();
 
     auto if_name = if_index_to_ifname(eth_ifindex);
@@ -262,7 +268,12 @@ l3_intf_create (const pds_if_spec_t* if_spec, ms_ifindex_t ms_ifindex,
     }
 #endif
 
-    state_ctxt.state()->if_store().add_upd(ms_ifindex, new_if_obj);
+    if (if_obj == nullptr) {
+        state_ctxt.state()->if_store().add_upd(ms_ifindex, new_if_obj);
+    } else {
+        li_intf_t intf;
+        intf.l3_intf_create(ms_ifindex);
+    }
 }
 
 sdk_ret_t

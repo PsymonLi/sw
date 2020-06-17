@@ -15,6 +15,16 @@ pds_ms_li_stub_create (pds_ms_config_t& conf);
 
 void pds_ms_stubs_create ()
 {
+    if (pds_ms::mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+        PDS_TRACE_INFO ("Skip Metaswitch components init - Graceful Restart mode");
+        // Stubs initialization transaction is successful
+        // We can now signal that the nbase thread is ready
+        PDS_TRACE_INFO("Nbase thread is ready");
+        cout << "N-Base thread is ready\n";
+        auto ctx = pds_ms::mgmt_state_t::thread_context();
+        ctx.state()->nbase_thread()->set_ready(true);
+        return;
+    }
     // Local variables
     pds_ms_config_t   conf = {0};
     
@@ -68,6 +78,10 @@ void pds_ms_stubs_create ()
 
 void pds_ms_hals_stub_init()
 {
+    if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+        PDS_TRACE_INFO ("Skip Metaswitch HAL stub init - Graceful Restart mode");
+        return;
+    }
     // Local variables
     pds_ms_config_t   conf = {0};
     PDS_TRACE_DEBUG("Start HALS Stub");

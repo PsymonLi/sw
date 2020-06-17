@@ -17,6 +17,11 @@ void hal_callback (sdk_ret_t status, const void *cookie);
 sdk_ret_t pds_ms_upg_hitless_init (void);
 
 // Is hitless upgrade supported
-bool hal_hitless_upg_supp(void);
+bool
+hal_hitless_upg_supp(void);
+// Did we bootup in hitless upgrade mode
+bool
+hal_is_upg_mode_hitless(void);
+
 }
 #endif

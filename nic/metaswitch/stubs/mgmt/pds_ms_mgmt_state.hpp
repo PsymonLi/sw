@@ -211,6 +211,9 @@ public:
 
     // Should we advertise BGP Graceful restart capaility
     static bool bgp_gr_supported();
+    bool is_graceful_restart();
+    void set_upg_ht_start();
+    void set_upg_ht_repeal();
 
 private:
     static mgmt_state_t* g_state_;
@@ -239,6 +242,9 @@ private:
     std::unordered_map<pds_vnid_id_t, mgmt_obj_t> vni_store_; 
     bool route_map_created_ = false;
     bool amx_open_ = false;
+    bool upg_ht_start_ = false;
+    // gRPC lock for hitless upgrade
+    std::unique_lock<std::mutex> upg_ht_grpc_lock_;
 
 private:
     mgmt_state_t(void);

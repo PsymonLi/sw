@@ -8,6 +8,7 @@ SUBNET2=11.1.1.0/24
 SUBNET3=20.1.1.0/24
 CONTAINER=CTR
 DOL_CFG=/sw/nic/metaswitch/config/dol_ctr
+DOL_CFG_UPG=/sw/nic/metaswitch/config/dol_ctr1/ht-upg
 MIB_PY=/sw/nic/third-party/metaswitch/code/comn/tools/mibapi/metaswitch/cam/mib.py
 PDSAGENT=/sw/nic/apollo/tools/apulu/start-agent-mock.sh
 
@@ -40,6 +41,10 @@ for (( j=0; j<argc; j++ )); do
         DOL_TEST=1
     elif [ ${argv[j]} == '--underlay' ];then
         UNDERLAY=1
+    elif [ ${argv[j]} == '--grupg' ];then
+        GRACEFUL_UPG=1
+    elif [ ${argv[j]} == '--hiupg' ];then
+        HITLESS_UPG=1
     else
         CMDARGS+="${argv[j]} "
     fi
@@ -78,6 +83,23 @@ function amx-close {
    docker exec -it -e CONFIG_PATH="$DOL_CFG"$1 "$CONTAINER"$1 sh -c "$CLIENTAPP amx-close"
 }
 
+function start-pdsagent-dut {
+    echo "start pdsagent in "$CONTAINER"1"
+    ret=0
+    docker exec -dit -w $1 "$CONTAINER"1 sh -c "IPC_MOCK_MODE=1 CSS_SNAPSHOT_DIR=${DOL_CFG}1 $PDSAGENT --log-dir $1" || ret=$?
+
+    if [ $ret -ne 0 ]; then
+        echo "failed to start pdsagent in "$CONTAINER"1: $ret"
+    fi
+    echo "sleep 10 seconds to let n-base to start in containers"
+    t_s=10
+    while [ $t_s -gt 0 ]; do
+       echo -ne "$t_s\033[0K\r"
+       sleep 1
+       : $((t_s--))
+    done
+}
+
 # Function to configure nodes using gRPC Client App
 function client-app-cfg {
     if [ $UNDERLAY == 1 ] && [ "$1" = "3" ]; then
@@ -85,7 +107,6 @@ function client-app-cfg {
         return
     fi
     ret=0
-
     echo "push "$DOL_CFG"$1/evpn.json config to "$CONTAINER"$1"
     docker exec -it -e CONFIG_PATH="$DOL_CFG"$1  "$CONTAINER"$1 sh -c "$CLIENTAPP $CLIENTARG" || ret=$?
 
@@ -93,6 +114,32 @@ function client-app-cfg {
         echo "failed to push config to "$CONTAINER"$1: $ret"
     fi
 }
+
+if [ $HITLESS_UPG == 1 ]; then
+    echo "Simulate Hitless upgrade Start event"
+    docker exec -it -e CONFIG_PATH="$DOL_CFG"1 "$CONTAINER"1 sh -c "$CLIENTAPP htupg-start"
+    echo "Check Domain A datapath not disturbed"
+    sleep 5
+    echo "Kill Domain A pdsagent"
+    docker exec -it "$CONTAINER"1 sh -c "pkill pdsagent"
+    sleep 2
+    #echo "Starting pegasus in "$CONTAINER"$i"
+    #docker exec -dit -w "$DOL_CFG_UPG" -e LD_LIBRARY_PATH=/sw/nic/third-party/metaswitch/output/x86_64/ "$CONTAINER"1 sh -c '/sw/nic/build/x86_64/apulu/capri/bin/pegasus' || ret=$?
+    echo "Starting Domain B pdsagent in "$CONTAINER"$i"
+    start-pdsagent-dut $DOL_CFG_UPG
+    echo "Simulate Hitless upgrade Domain B Sync config replay in 5 seconds"
+    sleep 5
+    client-app-cfg 1
+    exit
+fi
+
+if [ $GRACEFUL_UPG == 1 ]; then
+    docker exec -it "$CONTAINER"1 sh -c "pkill pdsagent"
+    sleep 2
+    start-pdsagent-dut "${DOL_CFG}1"
+    client-app-cfg 1
+    exit
+fi
 
 if [ $DOL_TEST == 1 ]; then
     # Setup already made - just run DOL
@@ -214,20 +261,7 @@ done
 # Finally start Pds-Agent on the DUT of this is not the DOL run
 # and configure underlay and overlay using gRPC Client App
 if [ $DOL_RUN == 0 ]; then
-    echo "start pdsagent in "$CONTAINER"1"
-    ret=0
-    docker exec -dit -w "$DOL_CFG"1 "$CONTAINER"1 sh -c "IPC_MOCK_MODE=1 $PDSAGENT --log-dir ${DOL_CFG}1" || ret=$?
-
-    if [ $ret -ne 0 ]; then
-        echo "failed to start pdsagent in "$CONTAINER"1: $ret"
-    fi
-    echo "sleep 10 seconds to let n-base to start in containers"
-    t_s=10
-    while [ $t_s -gt 0 ]; do
-       echo -ne "$t_s\033[0K\r"
-       sleep 1
-       : $((t_s--))
-    done
+    start-pdsagent-dut "${DOL_CFG}1"
     client-app-cfg 1
 fi
 

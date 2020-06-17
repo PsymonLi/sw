@@ -13,6 +13,7 @@
 
 #include "include/sdk/types.hpp"
 #include "include/sdk/platform.hpp"
+#include "nic/apollo/api/include/pds_init.hpp"
 
 namespace api {
 

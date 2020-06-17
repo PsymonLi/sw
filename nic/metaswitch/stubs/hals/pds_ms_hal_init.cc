@@ -9,6 +9,7 @@
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_ifindex.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_l2f_mai.hpp"
 #include "nic/metaswitch/stubs/hals/pds_ms_hals_route.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
@@ -16,27 +17,18 @@
 #include "nic/sdk/lib/ipc/ipc_ms.hpp"
 #include "nic/apollo/include/globals.hpp"
 #include "nic/apollo/core/event.hpp"
-#include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "nic/apollo/api/core/msg.h"
 #include "nic/apollo/core/msg.h"
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/upgrade_state.hpp"
 #include <li_fte.hpp>
 
 extern NBB_ULONG li_proc_id;
 
 namespace pds_ms {
-
-bool hal_hitless_upg_supp()
-{
-    if (api::g_pds_state.catalogue()->memory_capacity() == 8) {
-        // Hitless upgrade supported on 8G HBM
-        return true;
-    }
-    return false;
-}
 
 void
 hal_callback (sdk_ret_t status, const void *cookie)
@@ -72,7 +64,7 @@ handle_port_event (core::port_event_info_t &portev)
 {
     FRL_FAULT_STATE fault_state;
     std::string ifname;
-    void *worker = NULL;
+    void *worker = nullptr;
 
     {
         auto ctx = pds_ms::mgmt_state_t::thread_context();
@@ -84,6 +76,25 @@ handle_port_event (core::port_event_info_t &portev)
         }
     }
 
+    uint32_t ifidx = pds_ms::pds_to_ms_ifindex(portev.ifindex, IF_TYPE_ETH);
+    {
+        auto state_ctxt = pds_ms::state_t::thread_context();
+        auto obj = state_ctxt.state()->if_store().get(ifidx);
+
+        // In case of hitless upgrade, IF store obj is created by LI stub
+        // before the L3 inteface spec is replayed by gRPC. Ignore
+        // link events during this window. The link state will be
+        // read when the L3 interface spec is received
+        if (obj != nullptr && obj->phy_port_properties().spec_init) {
+            worker = obj->phy_port_properties().fri_worker;
+        }
+    }
+    if (worker == nullptr) {
+        PDS_TRACE_DEBUG("No intf FRL worker, event %u",
+                         static_cast<uint32_t>(portev.event));
+        return;
+    }
+
     NBB_CREATE_THREAD_CONTEXT
     NBS_ENTER_SHARED_CONTEXT(li_proc_id);
     NBS_GET_SHARED_DATA();
@@ -91,7 +102,6 @@ handle_port_event (core::port_event_info_t &portev)
     // Get the FRL pointer
     ntl::Frl &frl = li::Fte::get().get_frl();
     frl.init_fault_state(&fault_state);
-    uint32_t ifidx = pds_ms::pds_to_ms_ifindex(portev.ifindex, IF_TYPE_ETH);
 
     // Init the fault state
     // Set the fault state based on current link state
@@ -100,21 +110,9 @@ handle_port_event (core::port_event_info_t &portev)
     } else if (portev.event == port_event_t::PORT_EVENT_LINK_DOWN) {
         fault_state.hw_link_faults = ATG_FRI_FAULT_PRESENT;
     }
-    {
-        auto state_ctxt = pds_ms::state_t::thread_context();
-        auto obj = state_ctxt.state()->if_store().get(ifidx);
-        if (obj != nullptr) {
-            worker = obj->phy_port_properties().fri_worker;
-        }
-    }
-    if (worker != nullptr) {
-        PDS_TRACE_DEBUG("Sending intf fault indication, event %u",
-                         static_cast<uint32_t>(portev.event));
-        frl.send_fault_ind(worker, &fault_state);
-    } else {
-        PDS_TRACE_DEBUG("No intf FRL worker, event %u",
-                         static_cast<uint32_t>(portev.event));
-    }
+    PDS_TRACE_INFO("Sending intf fault indication, event %u",
+                    static_cast<uint32_t>(portev.event));
+    frl.send_fault_ind(worker, &fault_state);
 
     NBS_RELEASE_SHARED_DATA();
     NBS_EXIT_SHARED_CONTEXT();
@@ -218,100 +216,6 @@ ipc_init_cb (int fd, sdk::ipc::handler_ms_cb cb, void *ctx)
     return;
 }
 
-static sdk_ret_t
-pds_ms_upg_cb_ev_compat_check (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade compat check callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_backup (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade backup callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_start (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade start callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_ready (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade ready callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_config_replay (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade replay callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_sync (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade sync callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_quiesce (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade quiesce callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_switchover (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade switchover callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_pre_switchover (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade pre switchover callback...");
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-pds_ms_upg_cb_ev_repeal (api::upg_ev_params_t *params)
-{
-    PDS_TRACE_DEBUG("In PDS MS upgrade repeal callback...");
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-pds_ms_upg_hitless_init (void)
-{
-    api::upg_ev_hitless_t ev_hdlr;
-
-    memset(&ev_hdlr, 0, sizeof(ev_hdlr));
-    strncpy(ev_hdlr.thread_name, "routing", sizeof(ev_hdlr.thread_name));
-    ev_hdlr.compat_check_hdlr = pds_ms_upg_cb_ev_compat_check;
-    ev_hdlr.start_hdlr = pds_ms_upg_cb_ev_start;
-    ev_hdlr.backup_hdlr = pds_ms_upg_cb_ev_backup;
-    ev_hdlr.ready_hdlr = pds_ms_upg_cb_ev_ready;
-    ev_hdlr.config_replay_hdlr = pds_ms_upg_cb_ev_config_replay;
-    ev_hdlr.sync_hdlr = pds_ms_upg_cb_ev_sync;
-    ev_hdlr.quiesce_hdlr = pds_ms_upg_cb_ev_quiesce;
-    ev_hdlr.pre_switchover_hdlr = pds_ms_upg_cb_ev_pre_switchover;
-    ev_hdlr.switchover_hdlr = pds_ms_upg_cb_ev_switchover;
-    ev_hdlr.repeal_hdlr = pds_ms_upg_cb_ev_repeal;
-
-    // register for upgrade events
-    api::upg_ev_thread_hdlr_register(ev_hdlr);
-    PDS_TRACE_DEBUG("Registered hitless upgrade handlers..");
-    return SDK_RET_OK;
-}
-
 bool
 hal_init (void)
 {
@@ -336,6 +240,32 @@ void
 hal_deinit (void)
 {
     return;
+}
+
+bool
+hal_hitless_upg_supp(void)
+{
+#define HITLESS_UPG_MIN_MEMORY 8 // 8G
+
+    // TODO: revisit to call some higher level PDS API
+    if (api::g_pds_state.catalogue()->memory_capacity() >= HITLESS_UPG_MIN_MEMORY) {
+        // Hitless upgrade supported on 8G HBM
+        return true;
+    }
+    return false;
+}
+
+bool
+hal_is_upg_mode_hitless(void)
+{
+    if (unlikely(api::g_upg_state == nullptr)) {
+        return false;
+    }
+    if (api::g_upg_state->upg_init_mode() == upg_mode_t::UPGRADE_MODE_HITLESS) {
+        // Or coming up gracefully
+        return true;
+    }
+    return false;
 }
 
 } // End namespace

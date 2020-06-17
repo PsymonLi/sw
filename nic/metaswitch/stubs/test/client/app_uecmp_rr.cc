@@ -247,6 +247,27 @@ static void set_amx_control (bool open) {
     }
 }
 
+static void htls_upg_test (bool start) {
+    pds_ms::HitlessUpgTestEventSpec      request;
+    pds_ms::HitlessUpgTestResponse     response;
+    ClientContext   context;
+    Status          ret_status;
+
+    auto proto_spec = &request;
+    if (start) {
+       proto_spec->set_start (true);
+    }
+
+    printf ("Simulating Hitless upgrade test event...\n");
+    ret_status = g_cp_test_stub_->HitlessUpgTestEvent(&context, request, &response);
+    if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
+        printf("%s failed! ret_status=%d (%s) response.status=%d\n",
+                __FUNCTION__, ret_status.error_code(), ret_status.error_message().c_str(),
+                response.apistatus());
+        exit(1);
+    }
+}
+
 static void create_evpn_evi_proto_grpc () {
     EvpnEviRequest  request;
     EvpnEviResponse response;
@@ -1105,7 +1126,7 @@ int main(int argc, char** argv)
             create_intf_proto_grpc();
             create_intf_proto_grpc(false, true /* second interface */);
         }
-        if (g_node_id == 1) {
+        if (g_node_id == 1 && !underlay_only) {
             // Simulate the static route installed by NMD
             // with higher Admin Distance
             create_route_proto_grpc();
@@ -1118,7 +1139,7 @@ int main(int argc, char** argv)
             create_bgp_peer_af_proto_grpc();
             create_bgp_peer_proto_grpc(false, true /* second peer */);
             create_bgp_peer_af_proto_grpc(false, true);
-            sleep (5);
+            sleep (2);
         }
         if (underlay_only)  {
             printf ("Testapp Config Init is successful!\n");
@@ -1325,6 +1346,11 @@ int main(int argc, char** argv)
             return 0;
         } else if (!strcmp(argv[1], "amx-close")) {
             set_amx_control(false);
+        } else if (!strcmp(argv[1], "htupg-start")) {
+            htls_upg_test(true);
+            return 0;
+        } else if (!strcmp(argv[1], "htupg-rollbk")) {
+            htls_upg_test(false);
             return 0;
         }
         return 0;

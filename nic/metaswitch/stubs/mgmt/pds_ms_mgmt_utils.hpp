@@ -170,6 +170,9 @@ NBB_VOID bgp_rm_ent_pre_set (BGPSpec &req, NBB_LONG row_status,
 NBB_VOID bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
                           NBB_ULONG correlator, NBB_VOID* kh, bool op_update=false);
 
+types::ApiStatus
+bgp_rm_ent_state_set(types::AdminState state);
+
 NBB_VOID
 bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
                           NBB_ULONG correlator, NBB_VOID* kh, bool op_update=false);
@@ -307,6 +310,8 @@ types::ApiStatus ip_track_del (const CPIPTrackTestDeleteSpec   *req,
 types::ApiStatus amx_control (const AMXPortSpec   *req,
                               AMXControlResponse     *resp);
 
+types::ApiStatus htls_upg_test_event (const HitlessUpgTestEventSpec *req,
+                                      HitlessUpgTestResponse *resp);
 NBB_VOID lim_l3_if_addr_pre_set(LimInterfaceAddrSpec &req,
                                 NBB_LONG row_status,
                                 NBB_ULONG correlator,

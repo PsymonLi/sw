@@ -219,6 +219,33 @@ bool mgmt_state_t::bgp_gr_supported() {
     return stat(bgp_gr_test.c_str(), &buf) == 0;
 }
 
+void mgmt_state_t::set_upg_ht_start() {
+    upg_ht_start_ = true;
+    // Lock gRPC to block any pending configurations present
+    // in internal gRPC buffers
+    upg_ht_grpc_lock_ = std::unique_lock<std::mutex>(g_grpc_lock_);
+}
+void mgmt_state_t::set_upg_ht_repeal() {
+    upg_ht_start_ = false;
+    // Unlock gRPC to unblock configurations
+    upg_ht_grpc_lock_.unlock();
+    upg_ht_grpc_lock_.release();
+}
+
+bool mgmt_state_t::is_graceful_restart(void) {
+    if (upg_ht_start_) {
+        // Going down for hitless upgrade
+        return true;
+    }
+    if (hal_is_upg_mode_hitless()) {
+        // Or coming up gracefully
+        return true;
+    }
+    // Simulate graceful restart
+    ifstream f("graceful_restart");
+    return f.good();
+}
+
 static std::string mgmt_obj_str(mgmt_obj_type_e obj_type) {
     switch (obj_type) {
     case mgmt_obj_type_e::VPC:

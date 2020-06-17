@@ -2,10 +2,11 @@
 // Purpose: Common helper APIs for metaswitch stub programming 
 
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
-#include "include/sdk/base.hpp"
-#include "nic/apollo/core/trace.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_upgrade.hpp"
+#include "include/sdk/base.hpp"
+#include "nic/apollo/core/trace.hpp"
 #include "gen/proto/epoch.pb.h"
 
 #define SHARED_DATA_TYPE CSS_LOCAL
@@ -292,6 +293,19 @@ ApiStatus fill_epoch_get_response(const EpochGetRequest *req,
     resp->set_apistatus(API_STATUS_OK);
     resp->set_epoch(mgmt_ctxt.state()->epoch());
     return API_STATUS_OK;
+}
+
+types::ApiStatus
+htls_upg_test_event (const HitlessUpgTestEventSpec *req,
+					 HitlessUpgTestResponse *resp)
+{
+    if (req->start()) {
+         auto ret = pds_ms_upg_hitless_start_test();
+         if (ret == SDK_RET_OK) {
+             return types::API_STATUS_OK;
+         }
+    }
+    return types::API_STATUS_INVALID_ARG;
 }
 
 } // namespace pds_ms

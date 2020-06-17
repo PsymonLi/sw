@@ -1,11 +1,11 @@
 {
-    "manufacturing-date": "820483200",
-    "manufacturer": "",
-    "product-name": "",
-    "serial-number": "",
-    "part-number": "",
-    "engineering-change-level": "0",
-    "board-id": "0",
+    "manufacturing-date": "1539734400",
+    "manufacturer": "PENSANDO SYSTEMS INC.",
+    "product-name": "NAPLES 100",
+    "serial-number": "SIM18440000",
+    "part-number": "68-0003-02 01",
+    "engineering-change-level": "00",
+    "board-id": "1000",
     "num-mac-address": "25",
     "mac-address": "00:00:01:00:00:25"
 }

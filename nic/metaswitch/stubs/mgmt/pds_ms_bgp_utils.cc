@@ -4,17 +4,19 @@
 #include "nic/metaswitch/stubs/mgmt/pds_ms_uuid_obj.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include "nic/metaswitch/stubs/pds_ms_stubs_init.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_util.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "qb0mib.h"
+
 using namespace pds_ms;
 using namespace types;
 
 namespace pds_ms {
 
-ApiStatus
-bgp_global_hard_reset ()
+static ApiStatus
+set_bgp_rm_ent_state_(types::AdminState state)
 {
     BGPGlobalResetSpec proto_req;
 
@@ -25,7 +27,7 @@ bgp_global_hard_reset ()
     PDS_MS_START_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
 
     // disable
-    proto_req.set_state(ADMIN_STATE_DISABLE);
+    proto_req.set_state(state);
     pds_ms_set_bgpglobalresetspec_amb_bgp_rm_ent (proto_req, AMB_ROW_ACTIVE,
                                                   PDS_MS_CTM_GRPC_CORRELATOR,
                                                   false, false);
@@ -36,29 +38,38 @@ bgp_global_hard_reset ()
     // blocking on response from MS
     auto ret = pds_ms::mgmt_state_t::ms_response_wait();
     if (ret != API_STATUS_OK) {
-        PDS_TRACE_ERR ("Global reset: Failed to disable RM instance");
+        PDS_TRACE_ERR ("Global reset: Failed to %s RM instance",
+                       (state == types::ADMIN_STATE_ENABLE) ? "enable" : "disable");
         // disabling the peer failed
         return ret;
     }
-
-    // start CTM transaction to enable peer
-    PDS_MS_START_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
-
-    // enable
-    proto_req.set_state(ADMIN_STATE_ENABLE);
-    pds_ms_set_bgpglobalresetspec_amb_bgp_rm_ent (proto_req, AMB_ROW_ACTIVE,
-                                                  PDS_MS_CTM_GRPC_CORRELATOR,
-                                                  false, false);
-
-    // end CTM transaction
-    PDS_MS_END_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
-
-    // blocking on response from MS
-    return pds_ms::mgmt_state_t::ms_response_wait();
+    return ret;
 }
 
-ApiStatus
-bgp_global_route_refresh(BGPClearRouteOptions options)
+static ApiStatus
+bgp_global_hard_reset_ ()
+{
+    auto ret = set_bgp_rm_ent_state_(ADMIN_STATE_DISABLE);
+    if (ret != API_STATUS_OK) {
+        return ret;
+    }
+    ret = set_bgp_rm_ent_state_(ADMIN_STATE_ENABLE);
+    return ret;
+}
+
+sdk_ret_t
+mgmt_stub_api_set_bgp_state (bool enable) {
+
+    auto ret = set_bgp_rm_ent_state_(enable ?
+                                     ADMIN_STATE_ENABLE : ADMIN_STATE_DISABLE);
+    if (ret != API_STATUS_OK) {
+        return pds_ms_api_to_sdk_ret(ret);
+    }
+    return SDK_RET_OK;
+}
+
+static ApiStatus
+bgp_global_route_refresh_ (BGPClearRouteOptions options)
 {
     BGPGlobalRtRefreshSpec proto_req;
 
@@ -253,9 +264,9 @@ bgp_clear_route_action_func (const pds::BGPClearRouteRequest *req,
         ret = bgp_peeraf_route_refresh(peeraf, option);
     } else {
         if (option == BGP_CLEAR_ROUTE_HARD) {
-            ret = bgp_global_hard_reset();
+            ret = bgp_global_hard_reset_();
         } else if (option == BGP_CLEAR_ROUTE_REFRESH_IN) {
-            ret = bgp_global_route_refresh(option);
+            ret = bgp_global_route_refresh_(option);
         } else {
             throw Error (std::string("Route refresh out/both connot be done on "
                          "all Peers"), SDK_RET_INVALID_ARG);
@@ -495,7 +506,8 @@ bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
                      "invalid UUID ").append(uuid.str()));
     }
 
-    if (row_status == AMB_ROW_ACTIVE && !op_update) {
+    if (row_status == AMB_ROW_ACTIVE && !op_update &&
+        !mgmt_state_t::thread_context().state()->is_graceful_restart()) {
         // Disable AFs for newly created Peer. User has to enable (create) address
         // families as per the peer connectivity
         BGPPeerAfSpec peer_af_spec;
@@ -1006,6 +1018,12 @@ pds_ms_fill_amb_bgp_rm (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
             PDS_TRACE_INFO("BGP GR full support detected");
         }
 #endif
+
+        if (mgmt_state_t::thread_context().state()->is_graceful_restart()) {
+            PDS_TRACE_DEBUG("Hitless restart");
+            data->do_graceful_restart = AMB_TRUE;
+            AMB_SET_FIELD_PRESENT (mib_msg, AMB_OID_BGP_RM_DO_GR_RESTART);
+        }
     }
 
     NBB_TRC_EXIT();
@@ -1108,7 +1126,7 @@ pds_ms_fill_amb_bgp_rm_afi_safi (AMB_GEN_IPS *mib_msg, pds_ms_config_t *conf)
 
     } else if (conf->afi == AMB_BGP_AFI_IPV4 && conf->safi == AMB_BGP_UNICAST) {
         if (mgmt_state_t::bgp_gr_supported()) {
-            // Set state_kept by default for IPv4 in restart supported platform.
+            // Set state_kept by default for IPv4 in restart supported platforms
             // It is only used when coming up in hitless upgrade mode
             //  - i.e. do_graceful_restart is set
             PDS_TRACE_DEBUG("Set state_kept for IPv4 unicast");
@@ -1398,6 +1416,7 @@ NBB_VOID
 pds_ms_bgp_create (pds_ms_config_t *conf)
 {
     NBB_TRC_ENTRY ("pds_ms_bgp_create");
+	PDS_TRACE_DEBUG("BGP create");
 
    // bgpRmEntTable
    conf->entity_index        = PDS_MS_BGP_RM_ENT_INDEX;

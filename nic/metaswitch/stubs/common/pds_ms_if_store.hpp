@@ -44,11 +44,22 @@ public:
         void         *fri_worker = nullptr; // FRI worker context
         bool         hal_created = false; // Intf created in HAL ?
         bool         switchport = false;  // Switchport ?
+        bool         spec_init  = false; // ht upgrade - store obj created
+                                         // before L3 spec is received
         pds_if_spec_t l3_if_spec;
 
+        phy_port_properties_t(ms_ifindex_t ifi) {
+            memset (this->mac_addr, 0, ETH_ADDR_LEN);
+            ifindex = ifi;
+        }
         phy_port_properties_t(ms_ifindex_t ifi, const pds_if_spec_t& if_spec) {
             memset (this->mac_addr, 0, ETH_ADDR_LEN);
             ifindex = ifi; l3_if_spec = if_spec;
+            spec_init = true;
+        }
+        void set_spec(const pds_if_spec_t& if_spec) {
+            l3_if_spec = if_spec;
+            spec_init = true;
         }
     };
     struct vxlan_tunnel_properties_t { // All TEPs
@@ -72,6 +83,8 @@ public:
         ms_bd_id_t bd_id;
     };
 
+    if_obj_t(ms_ifindex_t ms_ifindex)
+        : prop_(ms_ifindex) {};
     if_obj_t(ms_ifindex_t ms_ifindex, const pds_if_spec_t& l3_if_spec)
         : prop_(ms_ifindex, l3_if_spec) {};
     if_obj_t(const vxlan_tunnel_properties_t& vxt)
@@ -113,6 +126,9 @@ private:
             vxlan_port_properties_t    vxp_;
             irb_properties_t           irb_;
         };
+        properties_t(ms_ifindex_t ms_ifindex)
+            : iftype_(ms_iftype_t::PHYSICAL_PORT),
+              phy_port_(ms_ifindex) {};
         properties_t(ms_ifindex_t ms_ifindex, const pds_if_spec_t& l3_if_spec)
             : iftype_(ms_iftype_t::PHYSICAL_PORT),
               phy_port_(ms_ifindex, l3_if_spec) {};

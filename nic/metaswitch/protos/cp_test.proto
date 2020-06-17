@@ -18,6 +18,7 @@ service CPTestSvc
   rpc CPL2fTestDelete (CPL2fTestDeleteSpec) returns (CPL2fTestResponse) {}
   rpc CPIPTrackTestCreate (CPIPTrackTestCreateSpec) returns (CPIPTrackTestResponse) {}
   rpc CPIPTrackTestDelete (CPIPTrackTestDeleteSpec) returns (CPIPTrackTestResponse) {}
+  rpc HitlessUpgTestEvent (HitlessUpgTestEventSpec) returns (HitlessUpgTestResponse) {}
 }
 
 message CPL2fTestCreateSpec {
@@ -60,5 +61,17 @@ message CPIPTrackTestDeleteSpec {
 }
 
 message CPIPTrackTestResponse {
+    types.ApiStatus ApiStatus = 1;
+}
+
+message HitlessUpgTestEventSpec {
+  option (venice.pdsaSetGlobOpts) = {
+    ActionFn: "htls_upg_test_event"
+  };
+    bool  Start = 1;
+    bool  Rollback = 2;
+}
+
+message HitlessUpgTestResponse {
     types.ApiStatus ApiStatus = 1;
 }

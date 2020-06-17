@@ -337,7 +337,9 @@ hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips)
         // the GW IP address would have been advertised as Type 2 from remote DSC
         // and installed as a /32 route. Delete this route when it is identified
         // as a connected IP.
-        overlay_route_del_();
+        if (ips_info_.vrf_id != PDS_MS_DEFAULT_VRF_ID) {
+            overlay_route_del_();
+        }
         return rc;
     }
 

@@ -4,6 +4,7 @@
 //---------------------------------------------------------------
  
 #include "nic/metaswitch/stubs/hals/pds_ms_li.hpp"
+#include "nic/metaswitch/stubs/hals/pds_ms_li_intf.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 
@@ -93,6 +94,9 @@ NBB_BYTE li_integ_subcomp_t::if_addr_set(NBB_ULONG ms_ifindex,
 }
 NBB_BYTE li_integ_subcomp_t::if_addr_del(NBB_ULONG ms_ifindex,
                                          ATG_LIPI_L3_IP_ADDR *ip_addr) {
+    return ATG_OK;
+}
+NBB_BYTE li_intf_t::l3_intf_create(ms_ifindex_t ms_ifindex) {
     return ATG_OK;
 }
 
