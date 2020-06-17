@@ -3,11 +3,8 @@
 
 #include "include/sdk/base.hpp"
 #include "linkmgr.hpp"
-#ifdef ELBA
 #include "port_mac.hpp"
-#else
 #include "port_serdes.hpp"
-#endif
 
 namespace sdk {
 namespace linkmgr {
@@ -18,6 +15,7 @@ bool port_an_wait_hcd(uint32_t lane, uint32_t sbus_addr);
 int port_an_hcd_read (uint32_t lane, uint32_t sbus_addr);
 int port_an_fec_enable_read (uint32_t lane, uint32_t sbus_addr);
 int port_an_rsfec_enable_read (uint32_t lane, uint32_t sbus_addr);
+int port_an_hcd_cfg(uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term);
 
 }    // namespace linkmgr
 }    // namespace sdk

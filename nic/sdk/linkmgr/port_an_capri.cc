@@ -34,5 +34,9 @@ port_an_rsfec_enable_read (uint32_t lane, uint32_t sbus_addr)
    return (&serdes_fns)->serdes_an_rsfec_enable_read(sbus_addr);
 }
 
+int port_an_hcd_cfg(uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term) 
+{
+  return (&serdes_fns)->serdes_an_hcd_cfg(sbus_addr, sbus_addr_arr);
+}
 }    // namespace linkmgr
 }    // namespace sdk
