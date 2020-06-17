@@ -231,7 +231,7 @@ func (client *NimbusClient) process{{$crudObject}}Event(evt netproto.{{$crudObje
 	evt.{{$crudObject}}.ObjectMeta.Labels = make(map[string]string)
 	evt.{{$crudObject}}.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("{{$crudObject}}: process{{$crudObject}}Event | Evt: %+v", evt)
+	log.Infof("{{$crudObject}}: process{{$crudObject}}Event | Evt: %s | {{$crudObject}}: %s", evt.EventType, evt.{{$crudObject}}.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.{{$crudObject}}.GetObjectKind(), evt.{{$crudObject}}.ObjectMeta)
 

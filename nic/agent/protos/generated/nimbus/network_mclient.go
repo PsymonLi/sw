@@ -213,7 +213,7 @@ func (client *NimbusClient) processNetworkEvent(evt netproto.NetworkEvent, react
 	evt.Network.ObjectMeta.Labels = make(map[string]string)
 	evt.Network.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("Network: processNetworkEvent | Evt: %+v", evt)
+	log.Infof("Network: processNetworkEvent | Evt: %s | Network: %s", evt.EventType, evt.Network.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.Network.GetObjectKind(), evt.Network.ObjectMeta)
 

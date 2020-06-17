@@ -213,7 +213,7 @@ func (client *NimbusClient) processIPAMPolicyEvent(evt netproto.IPAMPolicyEvent,
 	evt.IPAMPolicy.ObjectMeta.Labels = make(map[string]string)
 	evt.IPAMPolicy.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("IPAMPolicy: processIPAMPolicyEvent | Evt: %+v", evt)
+	log.Infof("IPAMPolicy: processIPAMPolicyEvent | Evt: %s | IPAMPolicy: %s", evt.EventType, evt.IPAMPolicy.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.IPAMPolicy.GetObjectKind(), evt.IPAMPolicy.ObjectMeta)
 

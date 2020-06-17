@@ -213,7 +213,7 @@ func (client *NimbusClient) processRouteTableEvent(evt netproto.RouteTableEvent,
 	evt.RouteTable.ObjectMeta.Labels = make(map[string]string)
 	evt.RouteTable.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("RouteTable: processRouteTableEvent | Evt: %+v", evt)
+	log.Infof("RouteTable: processRouteTableEvent | Evt: %s | RouteTable: %s", evt.EventType, evt.RouteTable.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.RouteTable.GetObjectKind(), evt.RouteTable.ObjectMeta)
 
@@ -516,7 +516,7 @@ func (client *NimbusClient) processRoutingConfigEvent(evt netproto.RoutingConfig
 	evt.RoutingConfig.ObjectMeta.Labels = make(map[string]string)
 	evt.RoutingConfig.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("RoutingConfig: processRoutingConfigEvent | Evt: %+v", evt)
+	log.Infof("RoutingConfig: processRoutingConfigEvent | Evt: %s | RoutingConfig: %s", evt.EventType, evt.RoutingConfig.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.RoutingConfig.GetObjectKind(), evt.RoutingConfig.ObjectMeta)
 

@@ -213,7 +213,7 @@ func (client *NimbusClient) processInterfaceEvent(evt netproto.InterfaceEvent, r
 	evt.Interface.ObjectMeta.Labels = make(map[string]string)
 	evt.Interface.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("Interface: processInterfaceEvent | Evt: %+v", evt)
+	log.Infof("Interface: processInterfaceEvent | Evt: %s | Interface: %s", evt.EventType, evt.Interface.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.Interface.GetObjectKind(), evt.Interface.ObjectMeta)
 

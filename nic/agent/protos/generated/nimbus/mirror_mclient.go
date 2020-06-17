@@ -213,7 +213,7 @@ func (client *NimbusClient) processInterfaceMirrorSessionEvent(evt netproto.Inte
 	evt.InterfaceMirrorSession.ObjectMeta.Labels = make(map[string]string)
 	evt.InterfaceMirrorSession.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("InterfaceMirrorSession: processInterfaceMirrorSessionEvent | Evt: %+v", evt)
+	log.Infof("InterfaceMirrorSession: processInterfaceMirrorSessionEvent | Evt: %s | InterfaceMirrorSession: %s", evt.EventType, evt.InterfaceMirrorSession.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.InterfaceMirrorSession.GetObjectKind(), evt.InterfaceMirrorSession.ObjectMeta)
 
@@ -516,7 +516,7 @@ func (client *NimbusClient) processMirrorSessionEvent(evt netproto.MirrorSession
 	evt.MirrorSession.ObjectMeta.Labels = make(map[string]string)
 	evt.MirrorSession.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("MirrorSession: processMirrorSessionEvent | Evt: %+v", evt)
+	log.Infof("MirrorSession: processMirrorSessionEvent | Evt: %s | MirrorSession: %s", evt.EventType, evt.MirrorSession.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.MirrorSession.GetObjectKind(), evt.MirrorSession.ObjectMeta)
 

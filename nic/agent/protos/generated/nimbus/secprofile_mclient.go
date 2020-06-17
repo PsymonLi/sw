@@ -213,7 +213,7 @@ func (client *NimbusClient) processSecurityProfileEvent(evt netproto.SecurityPro
 	evt.SecurityProfile.ObjectMeta.Labels = make(map[string]string)
 	evt.SecurityProfile.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("SecurityProfile: processSecurityProfileEvent | Evt: %+v", evt)
+	log.Infof("SecurityProfile: processSecurityProfileEvent | Evt: %s | SecurityProfile: %s", evt.EventType, evt.SecurityProfile.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.SecurityProfile.GetObjectKind(), evt.SecurityProfile.ObjectMeta)
 

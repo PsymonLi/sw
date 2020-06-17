@@ -213,7 +213,7 @@ func (client *NimbusClient) processFlowExportPolicyEvent(evt netproto.FlowExport
 	evt.FlowExportPolicy.ObjectMeta.Labels = make(map[string]string)
 	evt.FlowExportPolicy.ObjectMeta.Labels["CreatedBy"] = "Venice"
 
-	log.Infof("FlowExportPolicy: processFlowExportPolicyEvent | Evt: %+v", evt)
+	log.Infof("FlowExportPolicy: processFlowExportPolicyEvent | Evt: %s | FlowExportPolicy: %s", evt.EventType, evt.FlowExportPolicy.GetKey())
 	// unlock the object once we are done
 	defer client.unlockObject(evt.FlowExportPolicy.GetObjectKind(), evt.FlowExportPolicy.ObjectMeta)
 
