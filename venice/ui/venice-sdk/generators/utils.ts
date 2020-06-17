@@ -153,7 +153,6 @@ export function writeTemplate(templateFile, input, outputFile) {
   const template = readAndCompileTemplateFile(templateFile);
   const result = template(input);
   ensureFile(outputFile, result);
-
 }
 
 export function ensureFile(outputFileName, content) {

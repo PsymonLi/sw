@@ -1,4 +1,5 @@
 import { MetricMeasurement } from './metadata';
+import { Telemetry_queryMetricsQuerySpec_function } from "@sdk/v1/models/generated/telemetry_query";
 
 export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
   FlowStatsSummary: {
@@ -19,7 +20,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "UDPSessionsOverIPv4",
@@ -30,7 +32,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "ICMPSessionsOverIPv4",
@@ -41,7 +44,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OtherSessionsOverIPv4",
@@ -52,7 +56,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TCPSessionsOverIPv6",
@@ -63,7 +68,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "UDPSessionsOverIPv6",
@@ -74,7 +80,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "ICMPSessionsOverIPv6",
@@ -85,7 +92,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OtherSessionsOverIPv6",
@@ -96,7 +104,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "L2Sessions",
@@ -107,7 +116,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SessionCreateErrors",
@@ -118,7 +128,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -129,7 +140,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -152,7 +164,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxUnicastPackets",
@@ -163,7 +176,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxMulticastBytes",
@@ -174,7 +188,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxMulticastPackets",
@@ -185,7 +200,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBroadcastBytes",
@@ -196,7 +212,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBroadcastPackets",
@@ -207,7 +224,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropUnicastBytes",
@@ -218,7 +236,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropUnicastPackets",
@@ -229,7 +248,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropMulticastBytes",
@@ -240,7 +260,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropMulticastPackets",
@@ -251,7 +272,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropBroadcastBytes",
@@ -262,7 +284,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropBroadcastPackets",
@@ -273,7 +296,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxUnicastBytes",
@@ -284,7 +308,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxUnicastPackets",
@@ -295,7 +320,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxMulticastBytes",
@@ -306,7 +332,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxMulticastPackets",
@@ -317,7 +344,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBroadcastBytes",
@@ -328,7 +356,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBroadcastPackets",
@@ -339,7 +368,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropUnicastBytes",
@@ -350,7 +380,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropUnicastPackets",
@@ -361,7 +392,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropMulticastBytes",
@@ -372,7 +404,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropMulticastPackets",
@@ -383,7 +416,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropBroadcastBytes",
@@ -394,7 +428,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropBroadcastPackets",
@@ -405,7 +440,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPkts",
@@ -416,7 +452,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBytes",
@@ -427,7 +464,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPkts",
@@ -438,7 +476,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBytes",
@@ -449,7 +488,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -460,7 +500,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "NetworkInterface",
@@ -484,7 +525,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxAll",
@@ -495,7 +537,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadFcs",
@@ -506,7 +549,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadAll",
@@ -517,7 +561,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxOk",
@@ -528,7 +573,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxAll",
@@ -539,7 +585,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUnicast",
@@ -550,7 +597,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxMulticast",
@@ -561,7 +609,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBroadcast",
@@ -572,7 +621,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPause",
@@ -583,7 +633,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadLength",
@@ -594,7 +645,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUndersized",
@@ -605,7 +657,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOversized",
@@ -616,7 +669,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFragments",
@@ -627,7 +681,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxJabber",
@@ -638,7 +693,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPripause",
@@ -649,7 +705,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxStompedCrc",
@@ -660,7 +717,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxTooLong",
@@ -671,7 +729,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxVlanGood",
@@ -682,7 +741,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxDropped",
@@ -693,7 +753,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxLessThan_64B",
@@ -704,7 +765,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_64B",
@@ -715,7 +777,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_65B_127B",
@@ -726,7 +789,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_128B_255B",
@@ -737,7 +801,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_256B_511B",
@@ -748,7 +813,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_512B_1023B",
@@ -759,7 +825,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1024B_1518B",
@@ -770,7 +837,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1519B_2047B",
@@ -781,7 +849,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_2048B_4095B",
@@ -792,7 +861,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_4096B_8191B",
@@ -803,7 +873,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_8192B_9215B",
@@ -814,7 +885,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOther",
@@ -825,7 +897,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOk",
@@ -836,7 +909,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxAll",
@@ -847,7 +921,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBad",
@@ -858,7 +933,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxOk",
@@ -869,7 +945,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxTotal",
@@ -880,7 +957,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxUnicast",
@@ -891,7 +969,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxMulticast",
@@ -902,7 +981,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBroadcast",
@@ -913,7 +993,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPause",
@@ -924,7 +1005,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPripause",
@@ -935,7 +1017,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxVlan",
@@ -946,7 +1029,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxLessThan_64B",
@@ -957,7 +1041,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_64B",
@@ -968,7 +1053,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_65B_127B",
@@ -979,7 +1065,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_128B_255B",
@@ -990,7 +1077,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_256B_511B",
@@ -1001,7 +1089,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_512B_1023B",
@@ -1012,7 +1101,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_1024B_1518B",
@@ -1023,7 +1113,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_1519B_2047B",
@@ -1034,7 +1125,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_2048B_4095B",
@@ -1045,7 +1137,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_4096B_8191B",
@@ -1056,7 +1149,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_8192B_9215B",
@@ -1067,7 +1161,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOther",
@@ -1078,7 +1173,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_0",
@@ -1089,7 +1185,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_1",
@@ -1100,7 +1197,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_2",
@@ -1111,7 +1209,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_3",
@@ -1122,7 +1221,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_4",
@@ -1133,7 +1233,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_5",
@@ -1144,7 +1245,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_6",
@@ -1155,7 +1257,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_7",
@@ -1166,7 +1269,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_0",
@@ -1177,7 +1281,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_1",
@@ -1188,7 +1293,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_2",
@@ -1199,7 +1305,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_3",
@@ -1210,7 +1317,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_4",
@@ -1221,7 +1329,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_5",
@@ -1232,7 +1341,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_6",
@@ -1243,7 +1353,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_7",
@@ -1254,7 +1365,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_0_1UsCount",
@@ -1265,7 +1377,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_1_1UsCount",
@@ -1276,7 +1389,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_2_1UsCount",
@@ -1287,7 +1401,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_3_1UsCount",
@@ -1298,7 +1413,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_4_1UsCount",
@@ -1309,7 +1425,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_5_1UsCount",
@@ -1320,7 +1437,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_6_1UsCount",
@@ -1331,7 +1449,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPripause_7_1UsCount",
@@ -1342,7 +1461,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_0_1UsCount",
@@ -1353,7 +1473,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_1_1UsCount",
@@ -1364,7 +1485,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_2_1UsCount",
@@ -1375,7 +1497,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_3_1UsCount",
@@ -1386,7 +1509,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_4_1UsCount",
@@ -1397,7 +1521,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_5_1UsCount",
@@ -1408,7 +1533,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_6_1UsCount",
@@ -1419,7 +1545,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPripause_7_1UsCount",
@@ -1430,7 +1557,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPause_1UsCount",
@@ -1441,7 +1569,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxTruncated",
@@ -1452,7 +1581,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1463,7 +1593,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "NetworkInterface",
@@ -1487,7 +1618,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxAll",
@@ -1498,7 +1630,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadFcs",
@@ -1509,7 +1642,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadAll",
@@ -1520,7 +1654,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxOk",
@@ -1531,7 +1666,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxAll",
@@ -1542,7 +1678,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUnicast",
@@ -1553,7 +1690,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxMulticast",
@@ -1564,7 +1702,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBroadcast",
@@ -1575,7 +1714,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPause",
@@ -1586,7 +1726,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadLength",
@@ -1597,7 +1738,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUndersized",
@@ -1608,7 +1750,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOversized",
@@ -1619,7 +1762,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFragments",
@@ -1630,7 +1774,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxJabber",
@@ -1641,7 +1786,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_64B",
@@ -1652,7 +1798,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_65B_127B",
@@ -1663,7 +1810,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_128B_255B",
@@ -1674,7 +1822,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_256B_511B",
@@ -1685,7 +1834,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_512B_1023B",
@@ -1696,7 +1846,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1024B_1518B",
@@ -1707,7 +1858,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxGt_1518B",
@@ -1718,7 +1870,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFifoFull",
@@ -1729,7 +1882,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOk",
@@ -1740,7 +1894,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxAll",
@@ -1751,7 +1906,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBad",
@@ -1762,7 +1918,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxOk",
@@ -1773,7 +1930,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxTotal",
@@ -1784,7 +1942,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxUnicast",
@@ -1795,7 +1954,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxMulticast",
@@ -1806,7 +1966,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBroadcast",
@@ -1817,7 +1978,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPause",
@@ -1828,7 +1990,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1839,7 +2002,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "NetworkInterface",
@@ -1863,7 +2027,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotSpurious",
@@ -1874,7 +2039,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCnt",
@@ -1885,7 +2051,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMax",
@@ -1896,7 +2063,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCfgrd",
@@ -1907,7 +2075,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCfgwr",
@@ -1918,7 +2087,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMemrd",
@@ -1929,7 +2099,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMemwr",
@@ -1940,7 +2111,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotIord",
@@ -1951,7 +2123,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotIowr",
@@ -1962,7 +2135,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotUnknown",
@@ -1973,7 +2147,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotRsrv0",
@@ -1984,7 +2159,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotRsrv1",
@@ -1995,7 +2171,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMsg",
@@ -2006,7 +2183,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotUnsupported",
@@ -2017,7 +2195,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmv",
@@ -2028,7 +2207,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotDbpmv",
@@ -2039,7 +2219,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotAtomic",
@@ -2050,7 +2231,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmtmiss",
@@ -2061,7 +2243,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrmiss",
@@ -2072,7 +2255,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtmiss",
@@ -2083,7 +2267,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotBdf2Vfidmiss",
@@ -2094,7 +2279,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtoor",
@@ -2105,7 +2291,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotVfidoor",
@@ -2116,7 +2303,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotBdfoor",
@@ -2127,7 +2315,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrind",
@@ -2138,7 +2327,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtind",
@@ -2149,7 +2339,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrecc",
@@ -2160,7 +2351,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtecc",
@@ -2171,7 +2363,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIntr",
@@ -2182,7 +2375,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndSpurious",
@@ -2193,7 +2387,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndCfgrd",
@@ -2204,7 +2399,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndCfgwr",
@@ -2215,7 +2411,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndMemrd",
@@ -2226,7 +2423,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndMemwr",
@@ -2237,7 +2435,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIord",
@@ -2248,7 +2447,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIowr",
@@ -2259,7 +2459,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndUnknown",
@@ -2270,7 +2471,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Healthlog",
@@ -2281,7 +2483,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2292,7 +2495,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -2315,7 +2519,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrPolled",
@@ -2326,7 +2531,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrPerstn",
@@ -2337,7 +2543,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLtssmstEarly",
@@ -2348,7 +2555,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLtssmst",
@@ -2359,7 +2567,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLinkup2Dn",
@@ -2370,7 +2579,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLinkdn2Up",
@@ -2381,7 +2591,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrRstup2Dn",
@@ -2392,7 +2603,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrRstdn2Up",
@@ -2403,7 +2615,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrSecbus",
@@ -2414,7 +2627,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Linkup",
@@ -2425,7 +2639,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Hostup",
@@ -2436,7 +2651,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypolllast",
@@ -2447,7 +2663,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollmax",
@@ -2458,7 +2675,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollperstn",
@@ -2469,7 +2687,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollfail",
@@ -2480,7 +2699,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Gatepolllast",
@@ -2491,7 +2711,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Gatepollmax",
@@ -2502,7 +2723,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Markerpolllast",
@@ -2513,7 +2735,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Markerpollmax",
@@ -2524,7 +2747,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Axipendpolllast",
@@ -2535,7 +2759,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Axipendpollmax",
@@ -2546,7 +2771,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Faults",
@@ -2557,7 +2783,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Powerdown",
@@ -2568,7 +2795,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LinkDn2UpInt",
@@ -2579,7 +2807,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LinkUp2DnInt",
@@ -2590,7 +2819,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SecBusRstInt",
@@ -2601,7 +2831,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RstUp2DnInt",
@@ -2612,7 +2843,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RstDn2UpInt",
@@ -2623,7 +2855,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PortgateOpen2CloseInt",
@@ -2634,7 +2867,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LtssmStChangedInt",
@@ -2645,7 +2879,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SecBusnumChangedInt",
@@ -2656,7 +2891,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcPmeInt",
@@ -2667,7 +2903,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcAerrInt",
@@ -2678,7 +2915,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcSerrInt",
@@ -2689,7 +2927,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcHpeInt",
@@ -2700,7 +2939,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcEqReqInt",
@@ -2711,7 +2951,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcDpcInt",
@@ -2722,7 +2963,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PmTurnoffInt",
@@ -2733,7 +2975,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxbfrOverflowInt",
@@ -2744,7 +2987,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxtlpErrInt",
@@ -2755,7 +2999,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TlFlrReqInt",
@@ -2766,7 +3011,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcLegacyIntpinChangedInt",
@@ -2777,7 +3023,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsdSbeInterrupt",
@@ -2788,7 +3035,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsdDbeInterrupt",
@@ -2799,7 +3047,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SbusErrInterrupt",
@@ -2810,7 +3059,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PoweronRetries",
@@ -2821,7 +3071,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2832,7 +3083,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -2855,7 +3107,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Availablememory",
@@ -2866,7 +3119,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Freememory",
@@ -2877,7 +3131,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2888,7 +3143,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -2911,7 +3167,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Pout1",
@@ -2922,7 +3179,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Pout2",
@@ -2933,7 +3191,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2944,7 +3203,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -2967,7 +3227,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DieTemperature",
@@ -2978,7 +3239,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "HbmTemperature",
@@ -2989,7 +3251,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -3000,7 +3263,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"
@@ -3023,7 +3287,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "WarningTemperature",
@@ -3034,7 +3299,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "AlarmTemperature",
@@ -3045,7 +3311,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -3056,7 +3323,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "objectKind": "DistributedServiceCard"

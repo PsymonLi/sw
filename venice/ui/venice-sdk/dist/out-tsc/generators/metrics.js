@@ -7,6 +7,7 @@ var custom_metrics_1 = require("../custom-metrics");
 var _ = require("lodash");
 var rmdir = require("rimraf");
 var enums_1 = require("../v1/models/generated/network/enums");
+var telemetry_query_1 = require("../v1/models/generated/telemetry_query");
 function generatePipelineMetricMetadata(pipeline, inputBaseFolder, outputFolder) {
     var basetypeToJSType = {
         int8: 'number',
@@ -88,6 +89,10 @@ function generatePipelineMetricMetadata(pipeline, inputBaseFolder, outputFolder)
                     // Set as debug metric for now
                     field.tags = ["Level7"];
                 }
+                if (field.AggregationFunc == null) {
+                    // Set default as last
+                    field.AggregationFunc = telemetry_query_1.Telemetry_queryMetricsQuerySpec_function.last;
+                }
                 return _.transform(field, function (result, val, key) {
                     result[_.camelCase(key)] = val;
                 });
@@ -102,9 +107,21 @@ function generatePipelineMetricMetadata(pipeline, inputBaseFolder, outputFolder)
         pipeline: pipeline,
         messages: messages,
     };
-    var template = 'generate-pipeline-metrics-ts.hbs';
+    var templateFile = 'generate-pipeline-metrics-ts.hbs';
     var outputFile = outputFolder + pipeline.toLowerCase() + '_metadata.ts';
-    utils.writeTemplate(template, data, outputFile);
+    // utils.writeTemplate(template, data, outputFile);
+    var template = utils.readAndCompileTemplateFile(templateFile);
+    var result = template(data);
+    // Add in typing for aggFunc
+    result = result.split('\n').map(function (line) {
+        if (line.includes("aggregationFunc")) {
+            // "aggregationFunc": "last"
+            var parts = line.split(': ');
+            return parts[0] + ': Telemetry_queryMetricsQuerySpec_function.' + parts[1].replace(/"/g, '');
+        }
+        return line;
+    }).join('\n');
+    utils.ensureFile(outputFile, result);
 }
 exports.generatePipelineMetricMetadata = generatePipelineMetricMetadata;
 function generateMetricMetadata(pipelines, outputFolder) {

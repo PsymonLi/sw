@@ -1,4 +1,5 @@
 import { MetricMeasurement } from './metadata';
+import { Telemetry_queryMetricsQuerySpec_function } from "@sdk/v1/models/generated/telemetry_query";
 
 export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   AccelHwRingMetrics: {
@@ -15,7 +16,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "CIndex",
@@ -26,7 +28,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "InputBytes",
@@ -37,7 +40,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OutputBytes",
@@ -48,7 +52,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SoftResets",
@@ -59,7 +64,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -70,7 +76,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "scope": "PerRingPerSubRing",
@@ -90,7 +97,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumSeqQueues",
@@ -101,7 +109,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "CryptoKeyIdxBase",
@@ -112,7 +121,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumCryptoKeysMax",
@@ -123,7 +133,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrBase",
@@ -134,7 +145,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrCount",
@@ -145,7 +157,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -156,7 +169,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "scope": "PerLIF",
@@ -177,7 +191,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QGroup",
@@ -188,7 +203,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "CoreId",
@@ -199,7 +215,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -210,7 +227,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "scope": "PerLIFPerQ",
@@ -230,7 +248,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NextDBsRung",
@@ -241,7 +260,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SeqDescsProcessed",
@@ -252,7 +272,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SeqDescsAborted",
@@ -263,7 +284,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "StatusPdmaXfers",
@@ -274,7 +296,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "HwDescXfers",
@@ -285,7 +308,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "HwBatchErrors",
@@ -296,7 +320,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "HwOpErrors",
@@ -307,7 +332,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "AolUpdateReqs",
@@ -318,7 +344,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SglUpdateReqs",
@@ -329,7 +356,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SglPdmaXfers",
@@ -340,7 +368,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SglPdmaErrors",
@@ -351,7 +380,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SglPadOnlyXfers",
@@ -362,7 +392,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SglPadOnlyErrors",
@@ -373,7 +404,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "AltDescsTaken",
@@ -384,7 +416,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "AltBufsTaken",
@@ -395,7 +428,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LenUpdateReqs",
@@ -406,7 +440,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "CpHeaderUpdates",
@@ -417,7 +452,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SeqHwBytes",
@@ -428,7 +464,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -439,7 +476,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "scope": "PerLIFPerQ",
@@ -459,7 +497,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropHardwareError",
@@ -470,7 +509,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropInputMapping",
@@ -481,7 +521,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropMultiDestNotPinnedUplink",
@@ -492,7 +533,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropFlowHit",
@@ -503,7 +545,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropFlowMiss",
@@ -514,7 +557,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropNacl",
@@ -525,7 +569,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropIpsg",
@@ -536,7 +581,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropIpNormalization",
@@ -547,7 +593,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpNormalization",
@@ -558,7 +605,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpRstWithInvalidAckNum",
@@ -569,7 +617,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpNonSynFirstPkt",
@@ -580,7 +629,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropIcmpNormalization",
@@ -591,7 +641,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropInputPropertiesMiss",
@@ -602,7 +653,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpOutOfWindow",
@@ -613,7 +665,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpSplitHandshake",
@@ -624,7 +677,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpWinZeroDrop",
@@ -635,7 +689,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpDataAfterFin",
@@ -646,7 +701,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpNonRstPktAfterRst",
@@ -657,7 +713,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpInvalidResponderFirstPkt",
@@ -668,7 +725,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropTcpUnexpectedPkt",
@@ -679,7 +737,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropSrcLifMismatch",
@@ -690,7 +749,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropIcmpFragPkt",
@@ -701,7 +761,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropIpFragPkt",
@@ -723,7 +784,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -746,7 +808,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThreshold",
@@ -757,7 +820,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEvents",
@@ -768,7 +832,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventFirstTimestamp",
@@ -779,7 +844,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventLastTimestamp",
@@ -790,7 +856,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThreshold",
@@ -801,7 +868,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEvents",
@@ -812,7 +880,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventFirstTimestamp",
@@ -823,7 +892,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventLastTimestamp",
@@ -834,7 +904,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -845,7 +916,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -868,7 +940,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinSetupLatency",
@@ -879,7 +952,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinSetupLatencyTimestamp",
@@ -890,7 +964,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxSetupLatency",
@@ -901,7 +976,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxSetupLatencyTimestamp",
@@ -912,7 +988,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinRttLatency",
@@ -923,7 +1000,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinRttLatencyTimestamp",
@@ -934,7 +1012,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxRttLatency",
@@ -945,7 +1024,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxRttLatencyTimestamp",
@@ -956,7 +1036,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -967,7 +1048,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -990,7 +1072,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPps",
@@ -1001,7 +1084,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPpsTimestamp",
@@ -1012,7 +1096,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBw",
@@ -1023,7 +1108,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBwTimestamp",
@@ -1034,7 +1120,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1045,7 +1132,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1068,7 +1156,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Packets",
@@ -1079,7 +1168,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Bytes",
@@ -1090,7 +1180,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1101,7 +1192,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1124,7 +1216,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThreshold",
@@ -1135,7 +1228,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEvents",
@@ -1146,7 +1240,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventFirstTimestamp",
@@ -1157,7 +1252,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventLastTimestamp",
@@ -1168,7 +1264,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThreshold",
@@ -1179,7 +1276,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEvents",
@@ -1190,7 +1288,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventFirstTimestamp",
@@ -1201,7 +1300,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventLastTimestamp",
@@ -1212,7 +1312,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1223,7 +1324,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1246,7 +1348,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropPackets",
@@ -1257,7 +1360,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropBytes",
@@ -1268,7 +1372,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropFirstTimestamp",
@@ -1279,7 +1384,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropLastTimestamp",
@@ -1290,7 +1396,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropReason",
@@ -1330,7 +1437,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level7"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1341,7 +1449,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1364,7 +1473,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinSetupLatency",
@@ -1375,7 +1485,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinSetupLatencyTimestamp",
@@ -1386,7 +1497,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxSetupLatency",
@@ -1397,7 +1509,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxSetupLatencyTimestamp",
@@ -1408,7 +1521,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinRttLatency",
@@ -1419,7 +1533,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MinRttLatencyTimestamp",
@@ -1430,7 +1545,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxRttLatency",
@@ -1441,7 +1557,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxRttLatencyTimestamp",
@@ -1452,7 +1569,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1463,7 +1581,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1486,7 +1605,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPps",
@@ -1497,7 +1617,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPpsTimestamp",
@@ -1508,7 +1629,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBw",
@@ -1519,7 +1641,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBwTimestamp",
@@ -1530,7 +1653,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1541,7 +1665,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1564,7 +1689,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Packets",
@@ -1575,7 +1701,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Bytes",
@@ -1586,7 +1713,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1597,7 +1725,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1620,7 +1749,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThreshold",
@@ -1631,7 +1761,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEvents",
@@ -1642,7 +1773,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventFirstTimestamp",
@@ -1653,7 +1785,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsThresholdExceedEventLastTimestamp",
@@ -1664,7 +1797,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThreshold",
@@ -1675,7 +1809,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEvents",
@@ -1686,7 +1821,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventFirstTimestamp",
@@ -1697,7 +1833,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "BwThresholdExceedEventLastTimestamp",
@@ -1708,7 +1845,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1719,7 +1857,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1742,7 +1881,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropPackets",
@@ -1753,7 +1893,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropBytes",
@@ -1764,7 +1905,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropFirstTimestamp",
@@ -1775,7 +1917,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropLastTimestamp",
@@ -1786,7 +1929,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DropReason",
@@ -1826,7 +1970,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level7"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1837,7 +1982,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1860,7 +2006,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPps",
@@ -1871,7 +2018,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakPpsTimestamp",
@@ -1882,7 +2030,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBw",
@@ -1893,7 +2042,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PeakBwTimestamp",
@@ -1904,7 +2054,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1915,7 +2066,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1938,7 +2090,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Packets",
@@ -1949,7 +2102,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Bytes",
@@ -1960,7 +2114,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -1971,7 +2126,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -1994,7 +2150,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxConnectionsPerSecond",
@@ -2005,7 +2162,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level7"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PacketsPerSecond",
@@ -2016,7 +2174,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level7"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxPacketsPerSecond",
@@ -2027,7 +2186,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level7"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2038,7 +2198,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -2061,7 +2222,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FlowRetransmitPackets",
@@ -2072,7 +2234,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "L4RedirectPackets",
@@ -2083,7 +2246,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "AlgControlFlowPackets",
@@ -2094,7 +2258,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TcpClosePackets",
@@ -2105,7 +2270,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TlsProxyPackets",
@@ -2116,7 +2282,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FteSpanPackets",
@@ -2127,7 +2294,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SoftwareQueuePackets",
@@ -2138,7 +2306,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QueuedTxPackets",
@@ -2149,7 +2318,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FreedTxPackets",
@@ -2160,7 +2330,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "MaxSessionThresholdDrops",
@@ -2171,7 +2342,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SessionCreatesIgnored",
@@ -2182,7 +2354,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -2193,7 +2366,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -2213,7 +2387,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of active sessions",
       "units": "Gauge",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2225,7 +2399,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of L2 Sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2237,7 +2411,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of TCP sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2249,7 +2423,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of UDP sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2261,7 +2435,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of ICMP sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2273,7 +2447,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped by Security Policy",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2285,7 +2459,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Aged sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2297,7 +2471,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of TCP Resets sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2309,7 +2483,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of ICMP Errors sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2321,7 +2495,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that timed out at connection setup",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2333,7 +2507,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that errored out during creation",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2345,7 +2519,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Half Open TCP sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2357,7 +2531,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions other than TCP/UDP/ICMP",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2369,7 +2543,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to TCP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2381,7 +2555,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to UDP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2393,7 +2567,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to ICMP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2405,7 +2579,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": "max",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
@@ -2432,7 +2606,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -2455,7 +2630,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxAll",
@@ -2466,7 +2642,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadFcs",
@@ -2477,7 +2654,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadAll",
@@ -2488,7 +2666,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxOk",
@@ -2499,7 +2678,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxAll",
@@ -2510,7 +2690,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUnicast",
@@ -2521,7 +2702,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxMulticast",
@@ -2532,7 +2714,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBroadcast",
@@ -2543,7 +2726,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPause",
@@ -2554,7 +2738,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadLength",
@@ -2565,7 +2750,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUndersized",
@@ -2576,7 +2762,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOversized",
@@ -2587,7 +2774,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFragments",
@@ -2598,7 +2786,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxJabber",
@@ -2609,7 +2798,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxTooLong",
@@ -2620,7 +2810,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxDropped",
@@ -2631,7 +2822,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxLessThan_64B",
@@ -2642,7 +2834,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_64B",
@@ -2653,7 +2846,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_65B_127B",
@@ -2664,7 +2858,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_128B_255B",
@@ -2675,7 +2870,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_256B_511B",
@@ -2686,7 +2882,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_512B_1023B",
@@ -2697,7 +2894,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1024B_1518B",
@@ -2708,7 +2906,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1519B_2047B",
@@ -2719,7 +2918,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_2048B_4095B",
@@ -2730,7 +2930,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_4096B_8191B",
@@ -2741,7 +2942,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_8192B_9215B",
@@ -2752,7 +2954,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOther",
@@ -2763,7 +2966,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOk",
@@ -2774,7 +2978,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxAll",
@@ -2785,7 +2990,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBad",
@@ -2796,7 +3002,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxOk",
@@ -2807,7 +3014,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxTotal",
@@ -2818,7 +3026,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxUnicast",
@@ -2829,7 +3038,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxMulticast",
@@ -2840,7 +3050,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBroadcast",
@@ -2851,7 +3062,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPause",
@@ -2862,7 +3074,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxVlan",
@@ -2873,7 +3086,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxLessThan_64B",
@@ -2884,7 +3098,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_64B",
@@ -2895,7 +3110,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_65B_127B",
@@ -2906,7 +3122,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_128B_255B",
@@ -2917,7 +3134,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_256B_511B",
@@ -2928,7 +3146,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_512B_1023B",
@@ -2939,7 +3158,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_1024B_1518B",
@@ -2950,7 +3170,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_1519B_2047B",
@@ -2961,7 +3182,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_2048B_4095B",
@@ -2972,7 +3194,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_4096B_8191B",
@@ -2983,7 +3206,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTx_8192B_9215B",
@@ -2994,7 +3218,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOther",
@@ -3005,7 +3230,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_0",
@@ -3016,7 +3242,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_1",
@@ -3027,7 +3254,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_2",
@@ -3038,7 +3266,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_3",
@@ -3049,7 +3278,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_4",
@@ -3060,7 +3290,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_5",
@@ -3071,7 +3302,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_6",
@@ -3082,7 +3314,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPri_7",
@@ -3093,7 +3326,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_0",
@@ -3104,7 +3338,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_1",
@@ -3115,7 +3350,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_2",
@@ -3126,7 +3362,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_3",
@@ -3137,7 +3374,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_4",
@@ -3148,7 +3386,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_5",
@@ -3159,7 +3398,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_6",
@@ -3170,7 +3410,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPri_7",
@@ -3181,7 +3422,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxTruncated",
@@ -3192,7 +3434,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPps",
@@ -3203,7 +3446,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBytesps",
@@ -3214,7 +3458,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPps",
@@ -3225,7 +3470,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBytesps",
@@ -3236,7 +3482,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -3247,7 +3494,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -3271,7 +3519,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxAll",
@@ -3282,7 +3531,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadFcs",
@@ -3293,7 +3543,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadAll",
@@ -3304,7 +3555,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxOk",
@@ -3315,7 +3567,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsRxAll",
@@ -3326,7 +3579,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUnicast",
@@ -3337,7 +3591,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxMulticast",
@@ -3348,7 +3603,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBroadcast",
@@ -3359,7 +3615,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxPause",
@@ -3370,7 +3627,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxBadLength",
@@ -3381,7 +3639,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxUndersized",
@@ -3392,7 +3651,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxOversized",
@@ -3403,7 +3663,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFragments",
@@ -3414,7 +3675,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxJabber",
@@ -3425,7 +3687,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_64B",
@@ -3436,7 +3699,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_65B_127B",
@@ -3447,7 +3711,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_128B_255B",
@@ -3458,7 +3723,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_256B_511B",
@@ -3469,7 +3735,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_512B_1023B",
@@ -3480,7 +3747,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRx_1024B_1518B",
@@ -3491,7 +3759,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxGt_1518B",
@@ -3502,7 +3771,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesRxFifoFull",
@@ -3513,7 +3783,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxOk",
@@ -3524,7 +3795,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxAll",
@@ -3535,7 +3807,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBad",
@@ -3546,7 +3819,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxOk",
@@ -3557,7 +3831,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OctetsTxTotal",
@@ -3568,7 +3843,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxUnicast",
@@ -3579,7 +3855,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxMulticast",
@@ -3590,7 +3867,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxBroadcast",
@@ -3601,7 +3879,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "FramesTxPause",
@@ -3612,7 +3891,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPps",
@@ -3623,7 +3903,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBytesps",
@@ -3634,7 +3915,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPps",
@@ -3645,7 +3927,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBytesps",
@@ -3656,7 +3939,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -3667,7 +3951,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -3691,7 +3976,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxUnicastPackets",
@@ -3702,7 +3988,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxMulticastBytes",
@@ -3713,7 +4000,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxMulticastPackets",
@@ -3724,7 +4012,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBroadcastBytes",
@@ -3735,7 +4024,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBroadcastPackets",
@@ -3746,7 +4036,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropUnicastBytes",
@@ -3757,7 +4048,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropUnicastPackets",
@@ -3768,7 +4060,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropMulticastBytes",
@@ -3779,7 +4072,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropMulticastPackets",
@@ -3790,7 +4084,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropBroadcastBytes",
@@ -3801,7 +4096,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxDropBroadcastPackets",
@@ -3812,7 +4108,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxUnicastBytes",
@@ -3823,7 +4120,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxUnicastPackets",
@@ -3834,7 +4132,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxMulticastBytes",
@@ -3845,7 +4144,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxMulticastPackets",
@@ -3856,7 +4156,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBroadcastBytes",
@@ -3867,7 +4168,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBroadcastPackets",
@@ -3878,7 +4180,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropUnicastBytes",
@@ -3889,7 +4192,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropUnicastPackets",
@@ -3900,7 +4204,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropMulticastBytes",
@@ -3911,7 +4216,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropMulticastPackets",
@@ -3922,7 +4228,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropBroadcastBytes",
@@ -3933,7 +4240,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxDropBroadcastPackets",
@@ -3944,7 +4252,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPkts",
@@ -3955,7 +4264,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBytes",
@@ -3966,7 +4276,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPkts",
@@ -3977,7 +4288,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBytes",
@@ -3988,7 +4300,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxPps",
@@ -3999,7 +4312,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxBytesps",
@@ -4010,7 +4324,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxPps",
@@ -4021,7 +4336,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxBytesps",
@@ -4032,7 +4348,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -4043,7 +4360,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -4067,7 +4385,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -4078,7 +4397,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "scope": "PerNode",
@@ -4098,7 +4418,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotSpurious",
@@ -4109,7 +4430,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCnt",
@@ -4120,7 +4442,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMax",
@@ -4131,7 +4454,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCfgrd",
@@ -4142,7 +4466,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotCfgwr",
@@ -4153,7 +4478,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMemrd",
@@ -4164,7 +4490,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMemwr",
@@ -4175,7 +4502,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotIord",
@@ -4186,7 +4514,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotIowr",
@@ -4197,7 +4526,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotUnknown",
@@ -4208,7 +4538,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotRsrv0",
@@ -4219,7 +4550,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotRsrv1",
@@ -4230,7 +4562,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotMsg",
@@ -4241,7 +4574,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotUnsupported",
@@ -4252,7 +4586,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmv",
@@ -4263,7 +4598,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotDbpmv",
@@ -4274,7 +4610,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotAtomic",
@@ -4285,7 +4622,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmtmiss",
@@ -4296,7 +4634,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrmiss",
@@ -4307,7 +4646,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtmiss",
@@ -4318,7 +4658,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotBdf2Vfidmiss",
@@ -4329,7 +4670,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtoor",
@@ -4340,7 +4682,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotVfidoor",
@@ -4351,7 +4694,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotBdfoor",
@@ -4362,7 +4706,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrind",
@@ -4373,7 +4718,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtind",
@@ -4384,7 +4730,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPmrecc",
@@ -4395,7 +4742,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NotPrtecc",
@@ -4406,7 +4754,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIntr",
@@ -4417,7 +4766,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndSpurious",
@@ -4428,7 +4778,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndCfgrd",
@@ -4439,7 +4790,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndCfgwr",
@@ -4450,7 +4802,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndMemrd",
@@ -4461,7 +4814,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndMemwr",
@@ -4472,7 +4826,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIord",
@@ -4483,7 +4838,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndIowr",
@@ -4494,7 +4850,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IndUnknown",
@@ -4505,7 +4862,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Healthlog",
@@ -4516,7 +4874,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -4527,7 +4886,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -4550,7 +4910,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrPolled",
@@ -4561,7 +4922,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrPerstn",
@@ -4572,7 +4934,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLtssmstEarly",
@@ -4583,7 +4946,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLtssmst",
@@ -4594,7 +4958,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLinkup2Dn",
@@ -4605,7 +4970,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrLinkdn2Up",
@@ -4616,7 +4982,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrRstup2Dn",
@@ -4627,7 +4994,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrRstdn2Up",
@@ -4638,7 +5006,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IntrSecbus",
@@ -4649,7 +5018,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Linkup",
@@ -4660,7 +5030,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Hostup",
@@ -4671,7 +5042,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypolllast",
@@ -4682,7 +5054,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollmax",
@@ -4693,7 +5066,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollperstn",
@@ -4704,7 +5078,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Phypollfail",
@@ -4715,7 +5090,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Gatepolllast",
@@ -4726,7 +5102,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Gatepollmax",
@@ -4737,7 +5114,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Markerpolllast",
@@ -4748,7 +5126,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Markerpollmax",
@@ -4759,7 +5138,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Axipendpolllast",
@@ -4770,7 +5150,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Axipendpollmax",
@@ -4781,7 +5162,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Faults",
@@ -4792,7 +5174,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Powerdown",
@@ -4803,7 +5186,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LinkDn2UpInt",
@@ -4814,7 +5198,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LinkUp2DnInt",
@@ -4825,7 +5210,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SecBusRstInt",
@@ -4836,7 +5222,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RstUp2DnInt",
@@ -4847,7 +5234,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RstDn2UpInt",
@@ -4858,7 +5246,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PortgateOpen2CloseInt",
@@ -4869,7 +5258,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "LtssmStChangedInt",
@@ -4880,7 +5270,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SecBusnumChangedInt",
@@ -4891,7 +5282,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcPmeInt",
@@ -4902,7 +5294,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcAerrInt",
@@ -4913,7 +5306,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcSerrInt",
@@ -4924,7 +5318,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcHpeInt",
@@ -4935,7 +5330,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcEqReqInt",
@@ -4946,7 +5342,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcDpcInt",
@@ -4957,7 +5354,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PmTurnoffInt",
@@ -4968,7 +5366,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TxbfrOverflowInt",
@@ -4979,7 +5378,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RxtlpErrInt",
@@ -4990,7 +5390,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TlFlrReqInt",
@@ -5001,7 +5402,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "RcLegacyIntpinChangedInt",
@@ -5012,7 +5414,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsdSbeInterrupt",
@@ -5023,7 +5426,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PpsdDbeInterrupt",
@@ -5034,7 +5438,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "SbusErrInterrupt",
@@ -5045,7 +5450,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "PoweronRetries",
@@ -5056,7 +5462,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5067,7 +5474,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -5090,7 +5498,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "UdpHits",
@@ -5101,7 +5510,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "IcmpHits",
@@ -5112,7 +5522,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "EspHits",
@@ -5123,7 +5534,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "OtherHits",
@@ -5134,7 +5546,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "TotalHits",
@@ -5145,7 +5558,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5156,7 +5570,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -5179,7 +5594,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5190,7 +5606,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -5213,7 +5630,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Availablememory",
@@ -5224,7 +5642,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Freememory",
@@ -5235,7 +5654,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5246,7 +5666,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -5269,7 +5690,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Pout1",
@@ -5280,7 +5702,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "Pout2",
@@ -5291,7 +5714,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5302,7 +5726,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [
@@ -5325,7 +5750,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "DieTemperature",
@@ -5336,7 +5762,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "HbmTemperature",
@@ -5347,7 +5774,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort1Temperature",
@@ -5358,7 +5786,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort2Temperature",
@@ -5369,7 +5798,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort1WarningTemperature",
@@ -5380,7 +5810,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort2WarningTemperature",
@@ -5391,7 +5822,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort1AlarmTemperature",
@@ -5402,7 +5834,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "QsfpPort2AlarmTemperature",
@@ -5413,7 +5846,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
@@ -5424,7 +5858,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "displayName": "reporterID",
       "tags": [
         "Level4"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
   "tags": [

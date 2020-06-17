@@ -5,6 +5,7 @@ import { customMetrics } from '../custom-metrics'
 import * as _ from 'lodash';
 import * as rmdir from 'rimraf';
 import { NetworkNetworkInterfaceSpec_type } from "../v1/models/generated/network/enums"
+import { Telemetry_queryMetricsQuerySpec_function } from "../v1/models/generated/telemetry_query";
 
 export interface Pipeline {
   basePath: string;
@@ -97,6 +98,10 @@ export function generatePipelineMetricMetadata(pipeline, inputBaseFolder, output
           // Set as debug metric for now
           field.tags = ["Level7"]
         }
+        if (field.AggregationFunc == null) {
+          // Set default as last
+           field.AggregationFunc = Telemetry_queryMetricsQuerySpec_function.last
+        }
         return _.transform(field, function (result, val, key) {
           result[_.camelCase(key)] = val;
         });
@@ -111,9 +116,21 @@ export function generatePipelineMetricMetadata(pipeline, inputBaseFolder, output
     pipeline: pipeline,
     messages: messages,
   }
-  const template = 'generate-pipeline-metrics-ts.hbs';
+  const templateFile = 'generate-pipeline-metrics-ts.hbs';
   const outputFile = outputFolder + pipeline.toLowerCase() + '_metadata.ts';
-  utils.writeTemplate(template, data, outputFile);
+  // utils.writeTemplate(template, data, outputFile);
+  const template = utils.readAndCompileTemplateFile(templateFile);
+  let result = template(data);
+  // Add in typing for aggFunc
+  result = result.split('\n').map(line => {
+    if (line.includes("aggregationFunc")) {
+      // "aggregationFunc": "last"
+      const parts = line.split(': ')
+      return parts[0] + ': Telemetry_queryMetricsQuerySpec_function.' + parts[1].replace(/"/g, '')
+    }
+    return line
+  }).join('\n')
+  utils.ensureFile(outputFile, result);
 }
 
 export function generateMetricMetadata(pipelines: Pipeline[], outputFolder) {

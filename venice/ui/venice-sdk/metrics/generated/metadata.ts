@@ -1,3 +1,5 @@
+import { Telemetry_queryMetricsQuerySpec_function } from "@sdk/v1/models/generated/telemetry_query";
+
 export interface MetricField {
   name: string,
   description?: string,
@@ -11,7 +13,7 @@ export interface MetricField {
   tags?: string[],
   scope?: string,
   isTag?: boolean,
-  aggregationFunc?: string,
+  aggregationFunc?: Telemetry_queryMetricsQuerySpec_function,
 }
 
 export interface MetricMeasurement {
