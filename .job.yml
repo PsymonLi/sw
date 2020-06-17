@@ -294,6 +294,16 @@ jobs:
     labels: ["compat-server-reboot"]
   iota/test/standalone/compat/compat-server/ubuntu18043-reboot:
     labels: ["compat-server-reboot"]
+  iota/test/standalone/compat/compat-server/esx6.7-reboot-uefi: 
+    labels: ["compat-server-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel7u5-reboot-uefi: 
+    labels: ["compat-server-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/rhel7u8-reboot-uefi:
+    labels: ["compat-server-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/sles12sp5-reboot-uefi: 
+    labels: ["compat-server-reboot-uefi"]
+  iota/test/standalone/compat/compat-server/sles15sp1-reboot-uefi/:
+    labels: ["compat-server-reboot-uefi"]
   iota/test/standalone/os_coverage/linux:
     label: ["weekly"]
   iota/test/standalone/cnic_swm:
