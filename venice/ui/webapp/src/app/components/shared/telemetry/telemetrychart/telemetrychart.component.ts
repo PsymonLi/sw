@@ -59,7 +59,7 @@ import { NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
 })
 export class TelemetrychartComponent extends BaseComponent implements OnInit, OnChanges, OnDestroy {
   public static MAX_LEGEND_EDIT_MODE: number = 20;
-  public static MAX_LEGEND_VIEW_MODE: number = 7;
+  public static MAX_LEGEND_VIEW_MODE: number = 8;
 
 
   @ViewChild('pChart') chartContainer: UIChartComponent;
@@ -695,13 +695,17 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
       if (niName) {
         // Find network-interface object -> get dsc-name -> see if DSC object exists and is in admitted stage
         const networkInterface: NetworkNetworkInterface = this.networkInterfaces.find((ni: NetworkNetworkInterface) => ni.meta.name === niName);
-        const dscname = networkInterface.status['dsc-id'];
-        const isDSCbad = !this.isDSCExist( dscname) || !this.isDSCAdmittedByDSCName(dscname); // return true if non-exist or is not-admitted
-        const fieldNI = 'name';
-        const dsc = this.naples.find( (nic: ClusterDistributedServiceCard) => nic.spec.id === dscname);
-        // Update tags: { "name": "aaaa.bbbb.ccc-uplink-1-2 ( DSC-dsc_status"}
-        sourceMeta[fieldNI] = (!isDSCbad) ? niName : niName +  ' (DSC-' + dsc.status['admission-phase'] + ')';
-        return isDSCbad;
+        if (networkInterface) {
+          const dscname = networkInterface.status['dsc-id'];
+          const isDSCbad = !this.isDSCExist( dscname) || !this.isDSCAdmittedByDSCName(dscname); // return true if non-exist or is not-admitted
+          const fieldNI = 'name';
+          const dsc = this.naples.find( (nic: ClusterDistributedServiceCard) => nic.spec.id === dscname);
+          // Update tags: { "name": "aaaa.bbbb.ccc-uplink-1-2 ( DSC-dsc_status"}
+          sourceMeta[fieldNI] = (!isDSCbad) ? niName : niName +  ' (DSC-' + dsc.status['admission-phase'] + ')';
+          return isDSCbad;
+        } else {
+          return true;
+        }
       }
     }
     return false;

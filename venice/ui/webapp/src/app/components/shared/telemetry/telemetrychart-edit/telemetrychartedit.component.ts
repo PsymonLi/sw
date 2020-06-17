@@ -10,7 +10,7 @@ import { ClusterService } from '@app/services/generated/cluster.service';
 import { UIConfigsService, Features } from '@app/services/uiconfigs.service';
 import { MetricsqueryService } from '@app/services/metricsquery.service';
 import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase } from '@sdk/v1/models/generated/cluster';
-import { MetricMeasurement, MetricsMetadata } from '@sdk/metrics/generated/metadata';
+import { MetricMeasurement, MetricsMetadata, MetricField } from '@sdk/metrics/generated/metadata';
 import { Subject, Subscription } from 'rxjs';
 import { TelemetrychartComponent } from '../telemetrychart/telemetrychart.component';
 import { DataSource, MetricTransform, GroupByTransform, TransformNames } from '../transforms';
@@ -111,13 +111,33 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     this.measurements = [];
     Object.keys(this.metricsMetadata).forEach( (m) => {
       const mObj: MetricMeasurement = this.metricsMetadata[m];
-      mObj.fields.sort(this.sortByDisplayName);
+      mObj.fields.sort(this.sortField);
       this.measurements.push(mObj);
     });
-    this.measurements.sort(this.sortByDisplayName);
+    this.measurements.sort(this.sortMeasurement);
   }
 
-  sortByDisplayName(a, b) {
+  sortField(a: MetricField, b: MetricField) {
+    if ((!a.tags || a.tags.length === 0) && b.tags && b.tags.length > 0) {
+      return 1;
+    }
+    if ((!b.tags || b.tags.length === 0) && a.tags && a.tags.length > 0) {
+      return -1;
+    }
+    if ((!a.tags || a.tags.length === 0) && (!b.tags || b.tags.length === 0)) {
+      return a.displayName > b.displayName ? 1 : -1;
+    }
+    if (a.tags && a.tags.length > 0 && b.tags && b.tags.length) {
+      const tagA = a.tags[0];
+      const tagB = b.tags[0];
+      if (tagA === tagB) {
+        return a.displayName > b.displayName ? 1 : -1;
+      }
+      return tagA > tagB ? 1 : -1;
+    }
+  }
+
+  sortMeasurement(a: MetricMeasurement, b: MetricMeasurement) {
     return a.displayName > b.displayName ? 1 : -1;
   }
 
@@ -167,9 +187,9 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
         res[0].operators = res[0].operators.filter(op => op.label === 'contains');
         const metaData = this.getMeasurementMetadata(transform.measurement);
         if (metaData && metaData.objectKind === 'NetworkInterface') {
-          res = this.getCardFieldDataForNetworkInterfaces(res, metaData.interfaceType);
+          res = this.getCardFieldDataForNetworkInterfaces(res, metaData.interfaceType, transform);
         } else {
-          res = this.getCardFieldDataForDSC(res);
+          res = this.getCardFieldDataForDSC(res, transform);
         }
         res = [...res];
       }
@@ -179,26 +199,56 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
   }
 
 
-  getCardFieldDataForDSC(res: RepeaterData[]) {
+  getCardFieldDataForDSC(res: RepeaterData[], transform) {
     res[0].values = this.chart.naples.map((naple: ClusterDistributedServiceCard) => {
-    // VS-1600.  DSCs are in various status, we want to inform user about DSC status.  User can choose decommissioned DSCs in metrics pages, but not encouraged
-    let dscLabel =  (naple.spec.id) ? naple.spec.id : naple.meta.name ;
-    dscLabel +=  (naple.status['admission-phase'] === ClusterDistributedServiceCardStatus_admission_phase.admitted) ? '' : ' (' + naple.status['admission-phase'] +  ')';
-    return {
+      // VS-1600.  DSCs are in various status, we want to inform user about DSC status.  User can choose decommissioned DSCs in metrics pages, but not encouraged
+      let dscLabel =  (naple.spec.id) ? naple.spec.id : naple.meta.name ;
+      dscLabel +=  (naple.status['admission-phase'] === ClusterDistributedServiceCardStatus_admission_phase.admitted) ? '' : ' (' + naple.status['admission-phase'] +  ')';
+      return {
         label: dscLabel,
         value: naple.status['primary-mac']
       };
     });
+    // if the current chart has some dscs which have been deleted,
+    // they need to be added into the dropdown menu to avoid exceptions
+    if (transform && transform.currValue && transform.currValue.length > 0 &&
+      transform.currValue[0] && transform.currValue[0].valueFormControl &&
+      transform.currValue[0].valueFormControl.length > 0) {
+    transform.currValue[0].valueFormControl.forEach((dsc: string) => {
+      const option = res[0].values.find(item => item.value === dsc);
+      if (!option) {
+        res[0].values.push({
+          label: dsc + '(Removed from PSM)',
+          value: dsc
+        });
+      }
+    });
+  }
     return res;
   }
 
-  getCardFieldDataForNetworkInterfaces(res: RepeaterData[], type: string) {
+  getCardFieldDataForNetworkInterfaces(res: RepeaterData[], type: string, transform) {
     res[0].values = this.chart.networkInterfacesTypeMap[type].map((ni: NetworkNetworkInterface) => {
       return {
         label: ObjectsRelationsUtility.getNetworkinterfaceUIName(ni, this.chart.naples as ClusterDistributedServiceCard[]),
         value: ni.meta.name
       };
     });
+    // if the current chart has some interfaces which have been deleted,
+    // they need to be added into the dropdown menu to avoid exceptions
+    if (transform && transform.currValue && transform.currValue.length > 0 &&
+        transform.currValue[0] && transform.currValue[0].valueFormControl &&
+        transform.currValue[0].valueFormControl.length > 0) {
+      transform.currValue[0].valueFormControl.forEach((inf: string) => {
+        const option = res[0].values.find(item => item.value === inf);
+        if (!option) {
+          res[0].values.push({
+            label: inf + '(Removed from PSM)',
+            value: inf
+          });
+        }
+      });
+    }
     return res;
   }
 
