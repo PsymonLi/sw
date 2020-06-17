@@ -235,6 +235,11 @@ private:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t create_control_lif_(pds_lif_spec_t *spec);
 
+    ///< \brief    program necessary entries for P2P MNIC lif(s)
+    ///< \param[in] spec    lif configuration parameters
+    /// \return    SDK_RET_OK on success, failure status code on error
+    sdk_ret_t create_p2p_mnic_(pds_lif_spec_t *spec);
+
 private:
     pds_obj_key_t    key_;            ///< lif key
     pds_lif_id_t     id_;             ///< (s/w & h/w) internal lif id

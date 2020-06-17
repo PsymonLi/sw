@@ -62,6 +62,7 @@ host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
     spec.key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
     lif_spec->key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
     lif_spec->id = info->lif_id;
+    lif_spec->peer_lif_id = info->peer_lif_id;
     strncpy(lif_spec->name, info->name, sizeof(lif_spec->name));
     lif_spec->name[SDK_MAX_NAME_LEN - 1] = '\0';
     lif_spec->pinned_ifidx = info->pinned_uplink_port_num;

@@ -324,6 +324,87 @@ lif_impl::create_internal_mgmt_mnic_(pds_lif_spec_t *spec) {
     return ret;
 }
 
+typedef struct lif_p2p_ctx_s {
+    lif_impl        **lif;
+    lif_type_t      type;
+    pds_lif_id_t    id;
+} __PACK__ lif_p2p_ctx_t;
+
+static bool
+lif_p2p_cb_(void *api_obj, void *ctxt) {
+    lif_impl *lif = (lif_impl *)api_obj;
+    lif_p2p_ctx_t *cb_ctx = (lif_p2p_ctx_t *)ctxt;
+
+    if ((lif->type() == cb_ctx->type) &&
+            (lif->id() == cb_ctx->id)) {
+        *cb_ctx->lif = lif;
+        return true;
+    }
+    return false;
+}
+
+sdk_ret_t
+lif_impl::create_p2p_mnic_(pds_lif_spec_t *spec) {
+    uint32_t idx;
+    sdk_ret_t ret;
+    nacl_swkey_t key = { 0 };
+    nacl_swkey_mask_t mask = { 0 };
+    nacl_actiondata_t data =  { 0 };
+    lif_impl *this_p2p_lif = NULL, *peer_p2p_lif = NULL;
+    lif_p2p_ctx_t   cb_ctx = {0};
+    sdk_table_api_params_t  tparams;
+
+    this_p2p_lif = this;
+    cb_ctx.type = sdk::platform::LIF_TYPE_P2P;
+    cb_ctx.id = spec->peer_lif_id;
+    cb_ctx.lif = &peer_p2p_lif;
+    lif_impl_db()->walk(lif_p2p_cb_, &cb_ctx);
+
+    if (!(this_p2p_lif && peer_p2p_lif &&
+          this_p2p_lif->init_done_ && peer_p2p_lif->init_done_)) {
+        // we will program when both lifs are available and initialized properly
+        // to avoid inserting same entry twice
+        return SDK_RET_OK;
+    }
+
+    PDS_TRACE_DEBUG("programming nacls for P2P Pair:");
+    key.capri_intrinsic_lif = this_p2p_lif->id();
+    mask.capri_intrinsic_lif_mask = 0xFFFF;
+    data.action_id = NACL_NACL_REDIRECT_ID;
+    data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    data.nacl_redirect_action.oport = TM_PORT_DMA;
+    data.nacl_redirect_action.lif = peer_p2p_lif->id();
+    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &key, &mask, &data,
+                                   NACL_NACL_REDIRECT_ID,
+                                   sdk::table::handle_t::null());
+    ret = athena_impl_db()->nacl_tbl()->insert(&tparams);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed NACL entry for P2P intf"
+                      "err %u lif-1:%u lif-2:%u ", ret, key.capri_intrinsic_lif, peer_p2p_lif->id());
+    }
+
+    memset(&key, 0, sizeof(key));
+    memset(&mask, 0, sizeof(mask));
+    memset(&data, 0, sizeof(data));
+    memset(&tparams, 0, sizeof(tparams));
+
+    key.capri_intrinsic_lif = peer_p2p_lif->id();
+    mask.capri_intrinsic_lif_mask = 0xFFFF;
+    data.action_id = NACL_NACL_REDIRECT_ID;
+    data.nacl_redirect_action.app_id = P4PLUS_APPTYPE_CLASSIC_NIC;
+    data.nacl_redirect_action.oport = TM_PORT_DMA;
+    data.nacl_redirect_action.lif = this_p2p_lif->id();
+    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &key, &mask, &data,
+                                   NACL_NACL_REDIRECT_ID,
+                                   sdk::table::handle_t::null());
+    ret = athena_impl_db()->nacl_tbl()->insert(&tparams);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed NACL entry for P2P intf"
+                      "err %u lif-1:%u lif-2:%u ", ret, key.capri_intrinsic_lif, this_p2p_lif->id());
+    }
+    return ret;
+}
+
 sdk_ret_t
 lif_impl::create(pds_lif_spec_t *spec) {
     sdk_ret_t ret = SDK_RET_OK;
@@ -351,6 +432,13 @@ lif_impl::create(pds_lif_spec_t *spec) {
         }
         break;
     case sdk::platform::LIF_TYPE_SERVICE:
+        break;
+    case sdk::platform::LIF_TYPE_P2P:
+        init_done_ = true;
+        ret = create_p2p_mnic_(spec);
+        if (ret != SDK_RET_OK) {
+            init_done_ = false;
+        }
         break;
     default:
         return SDK_RET_INVALID_ARG;
