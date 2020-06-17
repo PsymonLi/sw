@@ -55,7 +55,7 @@ pds_mirror_session_create (_In_ pds_mirror_session_spec_t *spec,
 
 sdk_ret_t
 pds_mirror_session_read (pds_obj_key_t *key,
-                        pds_mirror_session_info_t *info)
+                         pds_mirror_session_info_t *info)
 {
     mirror_session *entry = NULL;
 

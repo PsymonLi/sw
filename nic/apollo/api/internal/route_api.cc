@@ -15,7 +15,8 @@
 #include "nic/apollo/api/internal/pds_route.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 
-void pds_route_table_spec_s::deepcopy_(const pds_route_table_spec_t& route_table) {
+void
+pds_route_table_spec_s::deepcopy_(const pds_route_table_spec_t& route_table) {
     // self-assignment guard
     if (this == &route_table) {
         return;
@@ -48,7 +49,8 @@ void pds_route_table_spec_s::deepcopy_(const pds_route_table_spec_t& route_table
            ROUTE_INFO_SIZE(route_table.route_info->num_routes));
 }
 
-void pds_route_table_spec_s::move_(pds_route_table_spec_t&& route_table) {
+void
+pds_route_table_spec_s::move_(pds_route_table_spec_t&& route_table) {
     // self-assignment guard
     if (this == &route_table) {
         return;
@@ -85,7 +87,8 @@ typedef struct route_entry_s {
 static route_entry_t g_route_db[PDS_MAX_UNDERLAY_ROUTES];
 
 static bool
-tep_upd_walk_cb_ (void *obj, void *ctxt) {
+tep_upd_walk_cb_ (void *obj, void *ctxt)
+{
     sdk_ret_t ret;
     pds_tep_spec_t spec;
     tep_entry *tep = (tep_entry *)obj;
@@ -136,6 +139,74 @@ pds_update_teps (void)
     return pds_batch_commit(bctxt);
 }
 
+static bool
+mirror_session_upd_walk_cb_ (void *obj, void *ctxt)
+{
+    sdk_ret_t ret;
+    vpc_entry *vpc;
+    pds_obj_key_t vpc_key;
+    pds_mirror_session_spec_t spec;
+    pds_mirror_session_info_t info = { 0 };
+    mirror_session *ms = (mirror_session *)obj;
+    pds_batch_ctxt_t bctxt = (pds_batch_ctxt_t)ctxt;
+
+    // check if this is ERSPAN mirror session or not
+    if (unlikely(ms->type() != PDS_MIRROR_SESSION_TYPE_ERSPAN)) {
+        // this mirror session is of no interest
+        return false;
+    }
+
+    // check if ERSPAN destination is in the underlay
+    vpc_key = ms->erspan_vpc();
+    vpc = vpc_db()->find(&vpc_key);
+    if (vpc->type() != PDS_VPC_TYPE_UNDERLAY) {
+        // this mirror session is of no interest
+        return false;
+    }
+
+    // read the spec of this mirror session
+    ret = ms->read(&info);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Failed to read mirror session %s to update "
+                      "reachability, err %u", ms->key2str().c_str(), ret);
+        // continue the walk and update other mirror sessions still !!
+        return false;
+    }
+
+    ret = pds_mirror_session_update(&spec, bctxt);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to update mirror session %s, err %u",
+                      spec.key.str(), ret);
+        // continue the walk and update other mirror sessions still !!
+    }
+    return false;
+}
+
+static sdk_ret_t
+pds_update_mirror_sessions (void)
+{
+    pds_batch_ctxt_t bctxt;
+    pds_batch_params_t batch_params = { 0 };
+
+    batch_params.epoch = PDS_INTERNAL_API_EPOCH_START;
+    batch_params.async = true;
+    // no need to pass callback as there is no action we can take there
+    bctxt = pds_batch_start(&batch_params);
+    mirror_session_db()->walk(mirror_session_upd_walk_cb_, (void *)bctxt);
+    return pds_batch_commit(bctxt);
+}
+
+static sdk_ret_t
+update_objects (void)
+{
+    // first update the TEPs
+    pds_update_teps();
+    // and then update the mirror sessions as ERSPAN collector IP's reachability
+    // might have changed
+    pds_update_mirror_sessions();
+    return SDK_RET_OK;
+}
+
 sdk_ret_t
 pds_underlay_route_update (_In_ pds_route_spec_t *spec)
 {
@@ -164,7 +235,9 @@ pds_underlay_route_update (_In_ pds_route_spec_t *spec)
         g_route_db[g_num_routes].spec = *spec;
         g_num_routes++;
     }
-    return pds_update_teps();
+    // update all the affected objects
+    update_objects();
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -177,7 +250,9 @@ pds_underlay_route_delete (_In_ ip_prefix_t *prefix)
             g_route_db[i] = g_route_db[g_num_routes - 1];
             g_route_db[g_num_routes - 1].valid = FALSE;
             g_num_routes--;
-            return pds_update_teps();
+            // update all the affected objects
+            update_objects();
+            return SDK_RET_OK;
         }
     }
     PDS_TRACE_ERR("Failed to delete route %s, route not found",
