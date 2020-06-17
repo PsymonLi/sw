@@ -9,6 +9,7 @@ selectors:
     maxlimits: 1
     flow: filter://any
     route: filter://any
+    vnic: filter://any
 
 trigger:
     configs:

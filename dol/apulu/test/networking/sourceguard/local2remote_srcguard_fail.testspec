@@ -2,7 +2,8 @@
 selectors:
     root: ref://store/templates/id=FLOW
     maxlimits: 1
-    flow: filter://SourceGuard=False
+    flow: filter://any
+    vnic: filter://SourceGuard=True
 
 packets:
     - packet:
@@ -12,16 +13,16 @@ packets:
         encaps      : callback://networking/packets/GetHostPacketEncapFromVnic
         headers     :
             eth:
-                src     : ref://testcase/config/localmapping/VNIC/MACAddr
+                src     : 0a:4a:8f:17:e5:6f
                 dst     : callback://networking/packets/GetDstMac/direction=TX
             qtag:
                 vlan    : ref://testcase/config/localmapping/VNIC/VlanId
             ipv4:
-                src     : 1.0.0.1
+                src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP
                 ttl     : 64
             ipv6:
-                src     : aaaa:0010:0010:0010::0010
+                src     : ref://testcase/config/localmapping/IP
                 dst     : ref://testcase/config/remotemapping/IP
                 hlim    : 64
             tcp:
@@ -30,27 +31,6 @@ packets:
                 flags   : syn
             payload:
                 data    : ref://factory/payloads/id=PAYLOAD_ZERO64/data
-
-    - packet:
-        id          : TO_SWITCH_PKT # Expected packet
-        clone       : ref://testcase/packets/id=FROM_HOST_PKT
-        encaps      : callback://networking/packets/GetPacketEncapFromMapping
-        headers     :
-            outereth:
-                src     : callback://networking/packets/GetUplinkPortMac
-                dst     : callback://networking/packets/GetUnderlayRemoteMac
-            outeripv4:
-                src     : ref://testcase/config/devicecfg/IP
-                dst     : callback://networking/packets/GetTunnelIPFromMapping
-                ttl     : 64
-                tos     : 0
-                id      : 0
-            vxlan:
-                vni     : ref://testcase/config/remotemapping/SUBNET/Vnid
-            eth:
-                src     : callback://networking/packets/GetPacketSrcMacFromMapping/Fwdmode=L2R
-            ipv4:
-                ttl     : callback://networking/packets/GetPacketTtl/Fwdmode=L2R,ipkt=FROM_HOST_PKT
 
 buffers:
     - buffer:
@@ -88,8 +68,7 @@ session:
             delay    :    1
             packets:
                 - packet:
-                    object  : callback://networking/packets/GetExpectedPacket/ipkt=FROM_HOST_PKT,epkt_pass=TO_SWITCH_PKT,direction=TX
-                    port    : callback://networking/packets/GetExpectedEgressUplinkPort
+                    object  : None
             descriptors:
                 - descriptor:
                     object  : ref://testcase/descriptors/id=DESC2

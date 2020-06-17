@@ -2,7 +2,7 @@
 selectors:
     root: ref://store/templates/id=ROUTE
     maxlimits: 1
-    flow: filter://SourceGuard=False
+    flow: filter://any
     route: filter://HasDefaultRoute=False
 
 packets:

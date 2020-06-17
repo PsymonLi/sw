@@ -2,7 +2,7 @@
 selectors:
     root: ref://store/templates/id=FLOW
     maxlimits: 1
-    flow: filter://SourceGuard=False
+    flow: filter://any
     route: filter://VPCPeeringEnabled=False,HasBlackHoleRoute=False
 
 packets:

@@ -14,7 +14,22 @@ modules:
         spec    : crud_workflow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+
 
     - module:
         name    : DEL_VNIC
@@ -24,7 +39,21 @@ modules:
               operation : Delete
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
 
     # mlists to run post vnic deletion
     - module:
@@ -39,7 +68,21 @@ modules:
               operation : Create
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
 
     # mlists to run post vnic restore
     - module:
@@ -51,8 +94,27 @@ modules:
         mlist   : local2remote.mlist
 
     - module:
+        name    : SourceGuard_PostVnicRestore
+        mlist   : sourceguard.mlist
+
+    - module:
         name    : VNIC_WORKFLOW_END
         spec    : crud_workflow.testspec
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True,SourceGuard=True
+

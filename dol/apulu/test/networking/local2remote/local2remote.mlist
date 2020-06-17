@@ -40,20 +40,6 @@ modules:
               vnic : filter://Dot1Qenabled=True
 
     - module:
-        name    : L2_IPV4_TCP_QTAG_SRCGUARD_TRUE
-        spec    : local2remote_srcguard_fail.testspec
-        enable  : False
-        iterate :
-            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-
-    - module:
-        name    : L2_IPV4_TCP_QTAG_SRCGUARD_FALSE
-        spec    : local2remote_srcguard_pass.testspec
-        enable  : False
-        iterate :
-            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-
-    - module:
         name    : L2_IPV4_ICMP_ECHO_QTAG
         spec    : local2remote_icmp_echo_request.testspec
         ignore  : True
@@ -82,22 +68,26 @@ modules:
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
 
     - module:
-        name    : L2_IPV4_VRIP_ICMP_ECHO_QTAG
+        name    : L2_L3_IPV4_VRIP_ICMP
         spec    : local2vrip.testspec
         args    :
             - proto: ICMP
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
-            - vnic : filter://Dot1Qenabled=False
+              vnic : filter://Dot1Qenabled=False
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=False
 
     - module:
-        name    : L3_IPV4_VRIP_ICMP_ECHO_QTAG
+        name    : L2_L3_IPV4_VRIP_ICMP_QTAG
         spec    : local2vrip.testspec
         args    :
             - proto: ICMP
         iterate :
+            - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L2,Label=NETWORKING
+              vnic : filter://Dot1Qenabled=True
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
-            - vnic : filter://Dot1Qenabled=True
+              vnic : filter://Dot1Qenabled=True
 
     - module:
         name    : L2_IPV4_VRIP_TCP_QTAG
@@ -144,4 +134,4 @@ modules:
         iterate :
             - flow : filter://FlType=MAPPING,AddrFamily=IPV4,FwdMode=L3,Label=NETWORKING
 
-    
+

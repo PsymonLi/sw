@@ -94,7 +94,7 @@ node:
               vnic:
                 - count   : 1             # 1 untagged VNIC
                   ipcount : 4             # Local IP mapping per vnic
-                  srcguard: false         # true or false (default false)
+                  srcguard: true          # true or false (default false)
                   public  : false
                   tagged  : false         # true or false (default true)
                   rxpolicer: 1
@@ -112,7 +112,7 @@ node:
               vnic:
                 - count   : 1             # 1 tagged VNIC
                   ipcount : 4
-                  srcguard: false
+                  srcguard: true
                   public  : true
                   tagged  : true
                   rxpolicer: 3

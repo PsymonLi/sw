@@ -113,9 +113,13 @@ class ChosenFlowObjs:
 
     def GetMatchingFlowObjects(self, selectors):
         matching_objs = []
+
         for obj in self.objs:
             if obj.IsFilterMatch(selectors):
-                matching_objs.append(obj)
+                vnic = obj.localmapping.VNIC
+                matched_vnic = vnic.IsFilterMatch(selectors)
+                if matched_vnic:
+                    matching_objs.append(obj)
         return matching_objs
 
 ChosenFlowObjs = ChosenFlowObjs()

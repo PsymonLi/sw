@@ -746,7 +746,8 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     }
 
     // program the IP_MAC_BINDING table and keep it ready
-    ip_mac_binding_data.set_addr(spec->mac_addr);
+    memset(&ip_mac_binding_data, 0, sizeof(ip_mac_binding_data));
+    sdk::lib::memrev(ip_mac_binding_data.addr, spec->mac_addr, ETH_ADDR_LEN);
     ret = ip_mac_binding_data.write(binding_hw_id_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program IP_MAC_BINDING table entry %u for "

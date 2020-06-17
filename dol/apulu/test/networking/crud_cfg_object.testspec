@@ -6,6 +6,7 @@ selectors:
     # local mapping lookup fails
     flow: filter://any
     route: filter://any
+    vnic: filter://any
 
 trigger:
     configs:

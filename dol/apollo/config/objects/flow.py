@@ -34,6 +34,7 @@ class FlowMapObject(base.ConfigObjectBase):
         self.__tunobj = tunobj
         self.__policyobj = policyobj
         self.__dev = EzAccessStoreClient[self.Node].GetDevice()
+        self.localmapping = lobj
         #self.Show()
         return
 

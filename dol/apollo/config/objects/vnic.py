@@ -1,5 +1,4 @@
 #! /usr/bin/python3
-import pdb
 from collections import defaultdict
 from infra.common.logging import logger
 import infra.common.objects as objects
@@ -20,11 +19,7 @@ from apollo.config.objects.policer import client as PolicerClient
 from apollo.config.objects.rmapping import client as rmapClient
 
 import apollo.config.utils as utils
-import apollo.config.topo as topo
-
-import vnic_pb2 as vnic_pb2
 import types_pb2 as types_pb2
-import learn_pb2 as learn_pb2
 
 class VnicStatus(base.StatusObjectBase):
     def __init__(self):
@@ -243,6 +238,7 @@ class VnicObject(base.ConfigObjectBase):
         if self.Dot1Qenabled:
             self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
         self.UseHostIf = not(self.UseHostIf)
+        self.SourceGuard = not(self.SourceGuard)
         return
 
     def RollbackAttributes(self):

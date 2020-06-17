@@ -2,7 +2,7 @@
 import ipaddress
 import random
 from scapy.all import *
-import pdb 
+import pdb
 
 from infra.common.logging import logger
 import infra.api.api as infra_api
@@ -670,6 +670,15 @@ def __get_packet_srcmac(fwdmode, robj, lobj):
         return lobj.VNIC.SUBNET.VirtualRouterMACAddr
 
 def GetPacketSrcMacFromMapping(tc, packet, args=None):
+    if (getattr(tc.config.root, 'FwdMode', None) != None):
+        if (tc.config.root.FwdMode == "L2" or tc.config.root.FwdMode == "L2L") \
+                and (args and getattr(args, 'IsSrcGuardTC', 'False') == 'True'):
+                    vnic = tc.config.localmapping.VNIC
+                    if vnic.SourceGuard == False:
+                        # In case of L2 or L2L packets, we do not rewrite source mac
+                        # so if this is a tc with sourceguard = False and L2 or L2L flows
+                        # then return same source mac in rx packet derived from tx packet
+                        return packet.pktspec.headers.eth.fields.src
     return __get_packet_srcmac(args.Fwdmode,
             tc.config.remotemapping,
             tc.config.localmapping)
