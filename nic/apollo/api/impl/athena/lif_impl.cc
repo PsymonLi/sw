@@ -9,6 +9,7 @@
 //----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/catalog/catalog.hpp"
+#include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/impl/athena/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
@@ -53,12 +54,53 @@ lif_impl::lif_impl(pds_lif_spec_t *spec) {
 
 sdk_ret_t
 lif_impl::reserve_tx_scheduler(pds_lif_spec_t *spec) {
-    return SDK_RET_OK;
+    sdk_ret_t ret;
+    asicpd_scheduler_lif_params_t lif_sched_params;
+
+    // reserve scheduler units
+    lif_sched_params.lif_id = spec->id;
+    lif_sched_params.hw_lif_id = spec->id;
+    lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
+    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_reserve(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to reserve tx sched. lif %s, err %u",
+                      spec->key.str(), ret);
+    }
+    return ret;
 }
 
 sdk_ret_t
 lif_impl::program_tx_scheduler(pds_lif_spec_t *spec) {
-    return SDK_RET_OK;
+    sdk_ret_t ret;
+    asicpd_scheduler_lif_params_t lif_sched_params;
+
+    lif_sched_params.lif_id = spec->id;
+    lif_sched_params.hw_lif_id = spec->id;
+    lif_sched_params.total_qcount = spec->total_qcount;
+    lif_sched_params.cos_bmp = spec->cos_bmp;
+
+    // allocate tx-scheduler resource, or use existing allocation
+    lif_sched_params.tx_sched_table_offset = spec->tx_sched_table_offset;
+    lif_sched_params.tx_sched_num_table_entries = spec->tx_sched_num_table_entries;
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_alloc(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to alloc tx sched. lif %s, err %u",
+                      spec->key.str(), ret);
+        return ret;
+    }
+    // save allocation in spec
+    spec->tx_sched_table_offset = lif_sched_params.tx_sched_table_offset;
+    spec->tx_sched_num_table_entries = lif_sched_params.tx_sched_num_table_entries;
+
+    // program tx scheduler and policer
+    ret = sdk::asic::pd::asicpd_tx_scheduler_map_program(&lif_sched_params);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program tx sched. lif %u, err %u",
+                      spec->id, ret);
+        return ret;
+    }
+    return ret;
 }
 
 #define  lif_egress_rl_params \

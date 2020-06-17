@@ -179,12 +179,9 @@ pds_host_if_update_name (pds_obj_key_t *key, std::string name)
     api::if_entry *intf;
 
     intf = if_db()->find(key);
-    if (!intf) {
-        PDS_TRACE_ERR("Host interface %s not found", key->str());
-        return SDK_RET_ENTRY_NOT_FOUND;
+    if (intf) {
+        intf->set_host_if_name(name.c_str());
     }
-
-    intf->set_host_if_name(name.c_str());
     return SDK_RET_OK;
 }
 

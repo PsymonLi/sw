@@ -212,15 +212,26 @@ if_impl::activate_hw(api_base *api_obj, api_base *orig_obj, pds_epoch_t epoch,
 
 sdk_ret_t
 if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
+    if_entry *intf;
     pds_if_spec_t *spec;
     p4pd_error_t p4pd_ret;
     pds_if_info_t *if_info = (pds_if_info_t *)info;
 
+    intf = if_db()->find((pds_obj_key_t *)key);
     spec = &if_info->spec;
     uint32_t port_num;
 
+    if_info->status.ifindex = intf->ifindex();
     if (spec->type == IF_TYPE_UPLINK) {
         if_info->status.uplink_status.lif_id = hw_id_;
+    } else if (spec->type == IF_TYPE_HOST) {
+        uint8_t num_lifs = 0;
+        lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
+        if_info->status.host_if_status.lifs[num_lifs++] = lif->key();
+        if_info->status.host_if_status.num_lifs = num_lifs;
+        strncpy(if_info->status.host_if_status.name,
+                intf->name().c_str(), SDK_MAX_NAME_LEN);
+        MAC_ADDR_COPY(if_info->status.host_if_status.mac_addr, intf->host_if_mac());
     }
     return SDK_RET_OK;
 }
