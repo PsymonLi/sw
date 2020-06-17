@@ -18,6 +18,8 @@
 #include "nic/apollo/api/device.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/apulu/device_impl.hpp"
+#include "nic/apollo/api/impl/apulu/svc/device_svc.hpp"
+#include "nic/apollo/api/impl/apulu/svc/svc_utils.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
@@ -66,10 +68,96 @@ device_impl::free(device_impl *impl) {
 #define p4i_device_info    action_u.p4i_device_info_p4i_device_info
 #define p4e_device_info    action_u.p4e_device_info_p4e_device_info
 
+static inline sdk_ret_t
+program_device (pds_device_spec_t *spec)
+{
+    p4pd_error_t p4pd_ret;
+    p4i_device_info_actiondata_t p4i_device_info_data = { 0 };
+    p4e_device_info_actiondata_t p4e_device_info_data = { 0 };
+
+    PDS_TRACE_DEBUG("Activating device IP %s, MAC %s",
+                    ipaddr2str(&spec->device_ip_addr),
+                    macaddr2str(spec->device_mac_addr));
+
+    // read the P4I_DEVICE_INFO table entry first as MACs are mostly
+    // programmed by now during (inband) lif create
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4I_DEVICE_INFO, 0,
+                                      NULL, NULL, &p4i_device_info_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to read P4I_DEVICE_INFO table");
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_DEVICE_INFO, 0,
+                                      NULL, NULL, &p4e_device_info_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to read P4E_DEVICE_INFO table");
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    p4i_device_info_data.action_id = P4I_DEVICE_INFO_P4I_DEVICE_INFO_ID;
+    p4e_device_info_data.action_id = P4E_DEVICE_INFO_P4E_DEVICE_INFO_ID;
+    // populate/update the MyTEP IP
+    if (spec->device_ip_addr.af == IP_AF_IPV4) {
+        p4i_device_info_data.p4i_device_info.device_ipv4_addr =
+            spec->device_ip_addr.addr.v4_addr;
+        p4e_device_info_data.p4e_device_info.device_ipv4_addr =
+            spec->device_ip_addr.addr.v4_addr;
+    } else {
+        sdk::lib::memrev(
+                      p4i_device_info_data.p4i_device_info.device_ipv6_addr,
+                      spec->device_ip_addr.addr.v6_addr.addr8,
+                      IP6_ADDR8_LEN);
+        sdk::lib::memrev(
+                      p4e_device_info_data.p4e_device_info.device_ipv6_addr,
+                      spec->device_ip_addr.addr.v6_addr.addr8,
+                      IP6_ADDR8_LEN);
+    }
+    if (spec->bridging_en) {
+        p4i_device_info_data.p4i_device_info.l2_enabled = TRUE;
+    }
+    // program the P4I_DEVICE_INFO table
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_DEVICE_INFO, 0,
+                                       NULL, NULL, &p4i_device_info_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program P4I_DEVICE_INFO table");
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    // program the P4E_DEVICE_INFO table
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_DEVICE_INFO, 0,
+                                       NULL, NULL, &p4e_device_info_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program P4E_DEVICE_INFO table");
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
+    // program priority of the mapping lookup results as table constant
+    sdk::asic::pd::asicpd_program_table_constant(P4TBL_ID_MAPPING,
+                                                 spec->ip_mapping_priority);
+    // program the policy transposition scheme
+    if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_GLOBAL_PRIORITY) {
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
+                           FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
+                           FW_ACTION_XPOSN_GLOBAL_PRIORTY);
+    } else if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_ANY_DENY) {
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
+                           FW_ACTION_XPOSN_ANY_DENY);
+        sdk::asic::pd::asicpd_program_table_constant(
+                           P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
+                           FW_ACTION_XPOSN_ANY_DENY);
+    }
+    return sdk::SDK_RET_OK;
+}
+
 sdk_ret_t
 device_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
                          pds_epoch_t epoch, api_op_t api_op,
                          api_obj_ctxt_t *obj_ctxt) {
+    sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
     pds_device_spec_t *spec;
     p4i_device_info_actiondata_t p4i_device_info_data = { 0 };
@@ -78,82 +166,17 @@ device_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
     switch (api_op) {
     case API_OP_CREATE:
     case API_OP_UPDATE:
+        // if this object is restored from persistent storage
+        // hw table is already programmed
+        if (api_obj->in_restore_list()) {
+            return SDK_RET_OK;
+        }
         spec = &obj_ctxt->api_params->device_spec;
-        PDS_TRACE_DEBUG("Activating device IP %s, MAC %s",
-                        ipaddr2str(&spec->device_ip_addr),
-                        macaddr2str(spec->device_mac_addr));
 
-        // read the P4I_DEVICE_INFO table entry first as MACs are mostly
-        // programmed by now during (inband) lif create
-        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4I_DEVICE_INFO, 0,
-                                           NULL, NULL, &p4i_device_info_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
-            PDS_TRACE_ERR("Failed to read P4I_DEVICE_INFO table");
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
-
-        p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_DEVICE_INFO, 0,
-                                           NULL, NULL, &p4e_device_info_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
-            PDS_TRACE_ERR("Failed to read P4E_DEVICE_INFO table");
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
-
-        // set up the data for ingress and egress device info table entries
-        p4i_device_info_data.action_id = P4I_DEVICE_INFO_P4I_DEVICE_INFO_ID;
-        p4e_device_info_data.action_id = P4E_DEVICE_INFO_P4E_DEVICE_INFO_ID;
-        // populate/update the MyTEP IP
-        if (spec->device_ip_addr.af == IP_AF_IPV4) {
-            p4i_device_info_data.p4i_device_info.device_ipv4_addr =
-                spec->device_ip_addr.addr.v4_addr;
-            p4e_device_info_data.p4e_device_info.device_ipv4_addr =
-                spec->device_ip_addr.addr.v4_addr;
-        } else {
-            sdk::lib::memrev(
-                          p4i_device_info_data.p4i_device_info.device_ipv6_addr,
-                          spec->device_ip_addr.addr.v6_addr.addr8,
-                          IP6_ADDR8_LEN);
-            sdk::lib::memrev(
-                          p4e_device_info_data.p4e_device_info.device_ipv6_addr,
-                          spec->device_ip_addr.addr.v6_addr.addr8,
-                          IP6_ADDR8_LEN);
-        }
-        if (spec->bridging_en) {
-            p4i_device_info_data.p4i_device_info.l2_enabled = TRUE;
-        }
-        // program the P4I_DEVICE_INFO table
-        p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_DEVICE_INFO, 0,
-                                           NULL, NULL, &p4i_device_info_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
-            PDS_TRACE_ERR("Failed to program P4I_DEVICE_INFO table");
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
-        // program the P4E_DEVICE_INFO table
-        p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_DEVICE_INFO, 0,
-                                           NULL, NULL, &p4e_device_info_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
+        ret = program_device(spec);
+        if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to program P4E_DEVICE_INFO table");
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
-        }
-
-        // program priority of the mapping lookup results as table constant
-        sdk::asic::pd::asicpd_program_table_constant(P4TBL_ID_MAPPING,
-                                                     spec->ip_mapping_priority);
-        // program the policy transposition scheme
-        if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_GLOBAL_PRIORITY) {
-            sdk::asic::pd::asicpd_program_table_constant(
-                               P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
-                               FW_ACTION_XPOSN_GLOBAL_PRIORTY);
-            sdk::asic::pd::asicpd_program_table_constant(
-                               P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
-                               FW_ACTION_XPOSN_GLOBAL_PRIORTY);
-        } else if (spec->fw_action_xposn_scheme == FW_POLICY_XPOSN_ANY_DENY) {
-            sdk::asic::pd::asicpd_program_table_constant(
-                               P4_P4PLUS_TXDMA_TBL_ID_RFC_P3,
-                               FW_ACTION_XPOSN_ANY_DENY);
-            sdk::asic::pd::asicpd_program_table_constant(
-                               P4_P4PLUS_TXDMA_TBL_ID_RFC_P3_1,
-                               FW_ACTION_XPOSN_ANY_DENY);
+            return ret;
         }
         break;
 
@@ -361,6 +384,79 @@ device_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     dinfo->stats.egr_drop_stats_count =
         fill_egr_drop_stats_(&dinfo->stats.egr_drop_stats[0]);
     return SDK_RET_OK;
+}
+
+sdk_ret_t
+device_impl::backup(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::DeviceGetResponse proto_msg;
+    pds_device_info_t *device_info;
+    upg_obj_tlv_t *tlv;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    device_info = (pds_device_info_t *)info;
+
+    ret = fill_spec_(&device_info->spec);
+    if (unlikely(ret != SDK_RET_OK)) {
+        return ret;
+    }
+    // convert api info to proto
+    pds_device_api_info_to_proto(device_info, (void *)&proto_msg);
+    ret = pds_svc_serialize_proto_msg(upg_info, tlv, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to serialize device, err %u", ret);
+    }
+    return ret;
+}
+
+sdk_ret_t
+device_impl::activate_restore_(obj_info_t *info) {
+    sdk_ret_t ret;
+    pds_device_info_t *device_info;
+    pds_device_spec_t *spec;
+
+    device_info = (pds_device_info_t *)info;
+    spec = &device_info->spec;
+
+    ret = program_device(spec);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to restore P4E_DEVICE_INFO table");
+        return ret;
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+device_impl::restore(obj_info_t *info, upg_obj_info_t *upg_info) {
+    sdk_ret_t ret;
+    pds::DeviceGetResponse proto_msg;
+    pds_device_info_t *device_info;
+    upg_obj_tlv_t *tlv;
+    uint32_t obj_size, meta_size;
+
+    tlv = (upg_obj_tlv_t *)upg_info->mem;
+    device_info = (pds_device_info_t *)info;
+    obj_size = tlv->len;
+    meta_size = sizeof(upg_obj_tlv_t);
+    // fill up the size, even if it fails later. to try and restore next obj
+    upg_info->size = obj_size + meta_size;
+    // de-serialize proto msg
+    if (proto_msg.ParseFromArray(tlv->obj, tlv->len) == false) {
+        PDS_TRACE_ERR("Failed to de-serialize device");
+        return SDK_RET_OOM;
+    }
+    // convert proto msg to device info
+    ret = pds_device_proto_to_api_info(device_info, &proto_msg);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to convert device proto msg to info, err %u", ret);
+        return ret;
+    }
+    // reactivate hw
+    ret = activate_restore_((obj_info_t *)device_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to reactivate hw for device, err %u", ret);
+    }
+    return ret;
 }
 
 /// \@}
