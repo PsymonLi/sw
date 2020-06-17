@@ -2,6 +2,7 @@
 
 DRYRUN=0
 NO_STOP=0
+DEBUGMODE=0
 DSCAGENTMODE=0
 # max wait time for system to come up
 SETUP_WAIT_TIME=600
@@ -11,10 +12,9 @@ TS_NAME=nic_sanity_logs.tar.gz
 
 NAPLES_INTERFACES=("dsc0" "dsc1" "eth1" "oob_mnic0")
 
-# set file size limit to LOG_SIZE if set or 50 GB, so that model logs will not
-# exceed that.
+# set file size limit to user configured value or 10GB
 if [[ -z "${LOG_SIZE}" ]]; then
-    LOG_SIZE=$((50*1024*1024))
+    LOG_SIZE=$((10*1024*1024))
 fi
 ulimit -f $LOG_SIZE
 
@@ -29,6 +29,8 @@ for (( j=0; j<argc; j++ )); do
         DSCAGENTMODE=1
     elif [[ ${argv[j]} =~ .*'--dry'.* ]];then
         DRYRUN=1
+    elif [[ ${argv[j]} =~ .*'--debug'.* ]];then
+        DEBUGMODE=1
     elif [[ ${argv[j]} == '--nostop' ]];then
         NO_STOP=1
     fi
@@ -82,7 +84,12 @@ function start_sysmgr () {
 }
 
 function start_model () {
-    $PDSPKG_TOPDIR/apollo/test/tools/$PIPELINE/start-model.sh &
+    if [[ $DEBUGMODE == 0 ]]; then
+        MODEL_LOG=/dev/null
+    else
+        MODEL_LOG=$PDSPKG_TOPDIR/model.log
+    fi
+    $PDSPKG_TOPDIR/apollo/test/tools/$PIPELINE/start-model.sh $MODEL_LOG &
 }
 
 function start_processes () {
