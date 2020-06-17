@@ -18,6 +18,10 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     info.Clear();
     info.ParseFromArray(data, len);
 
+    if (info.type() != ::sess_sync::FLOW_TYPE_IPV4) {
+        // Skip non ipv4 sessions
+        return false;
+    }
     if (info.ismisshit()) {
         // This session is in transient state. Skip programing it.
         return false;
@@ -26,7 +30,7 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     // Fill the Initiator flow from the protobuf
     ftlv4_cache_set_key(info.initiatorflowsrcipv4(),
                         info.initiatorflowdstipv4(),
-                        info.proto(), info.initiatorflowsrcport(),
+                        info.ipprotocol(), info.initiatorflowsrcport(),
                         info.initiatorflowdstport(), info.ingressbd(),
                         thread_index);
     ftlv4_cache_set_session_index(info.id(), thread_index);
@@ -49,7 +53,7 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     // Fill the Responder flow from the protobuf
     ftlv4_cache_set_key(info.responderflowsrcipv4(),
                         info.responderflowdstipv4(),
-                        info.proto(), info.responderflowsrcport(),
+                        info.ipprotocol(), info.responderflowsrcport(),
                         info.responderflowdstport(), info.egressbd(),
                         thread_index);
     ftlv4_cache_set_session_index(info.id(), thread_index);
@@ -72,10 +76,10 @@ pds_decode_one_v4_session (const uint8_t *data, const uint8_t len,
     // FIXME: fill NAT related fields
 
     sess->id = info.id();
-    sess->proto = info.proto();
+    sess->proto = info.ipprotocol();
     sess->v4 = true;
     sess->flow_state = info.state();
-    sess->packet_type = info.subtype();
+    sess->packet_type = info.pkttype();
     sess->ingress_bd = info.ingressbd();
     sess->iflow_rx = info.isinitiatorflowrx();
     sess->drop = info.isflowdrop();
@@ -103,7 +107,8 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
 
     info.set_id(iflow.session_index);
     info.set_state(::sess_sync::FlowState(sess->flow_state));
-    info.set_subtype(::sess_sync::FlowSubType(sess->packet_type));
+    info.set_type(::sess_sync::FLOW_TYPE_IPV4);
+    info.set_pkttype(::sess_sync::FlowPacketType(sess->packet_type));
     info.set_isinitiatorflowrx(sess->iflow_rx);
     info.set_isflowdrop(sess->drop);
     info.set_srcvnicid(sess->src_vnic_id);
@@ -116,7 +121,7 @@ pds_encode_one_v4_session (uint8_t *data, uint8_t *len, sess_info_t *sess,
     info.set_initiatorflowdstipv4(iflow.key_metadata_ipv4_dst);
     info.set_initiatorflowsrcport(iflow.key_metadata_sport);
     info.set_initiatorflowdstport(iflow.key_metadata_dport);
-    info.set_proto(iflow.key_metadata_proto);
+    info.set_ipprotocol(iflow.key_metadata_proto);
     info.set_initiatorflownhid(iflow.nexthop_id);
     info.set_initiatorflownhtype(iflow.nexthop_type);
     info.set_initiatorflownhvalid(iflow.nexthop_valid);

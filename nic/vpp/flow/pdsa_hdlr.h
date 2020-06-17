@@ -90,10 +90,12 @@ int clear_all_flow_entries();
 uint16_t get_vlib_thread_index();
 void flow_stats_summary_get (void *ctxt_v4, void *ctxt_v6);
 int flow_vnic_active_ses_count_get(uint16_t vnic_id, uint32_t *active_sessions);
-uint32_t pds_encode_flowstate(pds_flow_state flowstate);
-pds_flow_state pds_decode_flowstate(uint32_t flowstate);
-uint32_t pds_encode_flow_pkt_type(pds_flow_pkt_type flowtype);
-pds_flow_pkt_type pds_decode_flow_pkt_type(uint32_t flowtype);
+uint32_t pds_encode_flow_state(pds_flow_state flow_state);
+bool pds_decode_flow_state(uint32_t encoded_flow_state,
+                           pds_flow_state *flow_state);
+uint32_t pds_encode_flow_pkt_type(pds_flow_pkt_type encoded_flow_type);
+bool pds_decode_flow_pkt_type(uint32_t encoded_flow_type,
+                              pds_flow_pkt_type *flow_type);
 
 #ifdef __cplusplus
 }

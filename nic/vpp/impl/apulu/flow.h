@@ -23,6 +23,7 @@
 #include <netinet/ether.h>
 #include "gen/p4gen/p4/include/ftl.h"
 #include "sess_helper.h"
+#include <vppinfra/atomics.h>
 
 #define PDS_FLOW_UPLINK0_LIF_ID     0x0
 #define PDS_FLOW_UPLINK1_LIF_ID     0x1
@@ -1455,8 +1456,25 @@ pds_program_cached_sessions(void)
                                                                   thread_index);
         u32 session_index = sess->id;
         pds_flow_hw_ctx_t *ctx;
+        pds_flow_state flow_state;
+        pds_flow_pkt_type flow_pkt_type;
         int ret;
 
+        if (PREDICT_FALSE(!pds_decode_flow_state(sess->flow_state,
+                                                 &flow_state))) {
+            // Skip if we can't decode the state
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_unknown_flow_state, 1);
+            continue;
+        }
+
+        if (PREDICT_FALSE(!pds_decode_flow_pkt_type(sess->packet_type,
+                                                    &flow_pkt_type))) {
+            // Skip if we can't decode the type
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_unknown_flow_type, 1);
+            continue;
+        }
         ret = ftlv4_cache_program_index(table, i, &i_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
@@ -1478,11 +1496,11 @@ pds_program_cached_sessions(void)
         ctx->is_in_use = 1;
         ctx->proto = pds_flow_trans_proto(sess->proto);
         ctx->v4 = sess->v4;
-        ctx->flow_state = pds_decode_flowstate(sess->flow_state);
+        ctx->flow_state = flow_state;
         ctx->ingress_bd = sess->ingress_bd;
         ctx->iflow.handle = sess->iflow_handle;
         ctx->rflow.handle = sess->rflow_handle;
-        ctx->packet_type = pds_decode_flow_pkt_type(sess->packet_type);
+        ctx->packet_type = flow_pkt_type;
         ctx->iflow_rx = sess->iflow_rx;
         ctx->monitor_seen = 0;
         ctx->nat = sess->nat;
@@ -1504,6 +1522,7 @@ pds_program_cached_sessions(void)
         actiondata.qid = session_index % (fm->no_threads - 1);
         sess->thread_id = actiondata.qid + 1;
         pds_session_program(session_index, (void *)&actiondata);
+        clib_atomic_fetch_add(&fm->repl_stats.restore_success, 1);
     }
 }
 

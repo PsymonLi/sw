@@ -10,95 +10,103 @@ package sess_sync;
 
 // Corresponds to pds_flow_state
 enum FlowState {
-  FLOW_STATE_NONE            = 0;
-  FLOW_STATE_INIT            = 1;
-  FLOW_STATE_SETUP           = 2;
-  FLOW_STATE_ESTABLISHED     = 3;
-  FLOW_STATE_KEEPALIVE       = 4;
-  FLOW_STATE_HALFCLOSE_IFLOW = 5;
-  FLOW_STATE_HALFCLOSE_RFLOW = 6;
-  FLOW_STATE_CLOSE           = 7;
+    FLOW_STATE_NONE            = 0;
+    FLOW_STATE_INIT            = 1;
+    FLOW_STATE_SETUP           = 2;
+    FLOW_STATE_ESTABLISHED     = 3;
+    FLOW_STATE_KEEPALIVE       = 4;
+    FLOW_STATE_HALFCLOSE_IFLOW = 5;
+    FLOW_STATE_HALFCLOSE_RFLOW = 6;
+    FLOW_STATE_CLOSE           = 7;
+}
+
+enum FlowType {
+    FLOW_TYPE_NONE  = 0;
+    FLOW_TYPE_IPV4  = 1;
+    FLOW_TYPE_IPV6  = 2;
+    FLOW_TYPE_L2    = 3;
 }
 
 // Corresponds to pds_flow_pkt_sub_type
-enum FlowSubType {
-  FLOW_TYPE_NONE                            = 0;
-  FLOW_TYPE_L2L_INTRA_SUBNET                = 1;
-  FLOW_TYPE_L2L_INTER_SUBNET                = 2;
-  FLOW_TYPE_L2R_INTRA_SUBNET                = 3;
-  FLOW_TYPE_L2R_INTER_SUBNET                = 4;
-  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE            = 5;
-  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE_NAPT       = 6;
-  FLOW_TYPE_L2N_ASYMMETRIC_ROUTE_NAT        = 7;
-  FLOW_TYPE_L2N_SYMMETRIC_ROUTE             = 8;
-  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_NAPT        = 9;
-  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_NAT         = 10;
-  FLOW_TYPE_L2N_SYMMETRIC_ROUTE_TWICE_NAT   = 11;
-  FLOW_TYPE_L2N_INTRA_VCN_ROUTE             = 12;
-  FLOW_TYPE_R2L_INTRA_SUBNET                = 13;
-  FLOW_TYPE_R2L_INTER_SUBNET                = 14;
-  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE            = 15;
-  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE_NAT        = 16;
-  FLOW_TYPE_N2L_SYMMETRIC_ROUTE             = 17;
-  FLOW_TYPE_N2L_SYMMETRIC_ROUTE_NAT         = 18;
-  FLOW_TYPE_N2L_ASYMMETRIC_ROUTE_SVC_NAT    = 19;
-  FLOW_TYPE_N2L_SYMMETRIC_ROUTE_SVC_NAT     = 20;
-  FLOW_TYPE_N2L_INTRA_VCN_ROUTE             = 21;
+enum FlowPacketType {
+    FLOW_PKT_TYPE_NONE                            = 0;
+    FLOW_PKT_TYPE_L2L_INTRA_SUBNET                = 1;
+    FLOW_PKT_TYPE_L2L_INTER_SUBNET                = 2;
+    FLOW_PKT_TYPE_L2R_INTRA_SUBNET                = 3;
+    FLOW_PKT_TYPE_L2R_INTER_SUBNET                = 4;
+    FLOW_PKT_TYPE_L2N_ASYMMETRIC_ROUTE            = 5;
+    FLOW_PKT_TYPE_L2N_ASYMMETRIC_ROUTE_NAPT       = 6;
+    FLOW_PKT_TYPE_L2N_ASYMMETRIC_ROUTE_NAT        = 7;
+    FLOW_PKT_TYPE_L2N_SYMMETRIC_ROUTE             = 8;
+    FLOW_PKT_TYPE_L2N_SYMMETRIC_ROUTE_NAPT        = 9;
+    FLOW_PKT_TYPE_L2N_SYMMETRIC_ROUTE_NAT         = 10;
+    FLOW_PKT_TYPE_L2N_SYMMETRIC_ROUTE_TWICE_NAT   = 11;
+    FLOW_PKT_TYPE_L2N_INTRA_VCN_ROUTE             = 12;
+    FLOW_PKT_TYPE_R2L_INTRA_SUBNET                = 13;
+    FLOW_PKT_TYPE_R2L_INTER_SUBNET                = 14;
+    FLOW_PKT_TYPE_N2L_ASYMMETRIC_ROUTE            = 15;
+    FLOW_PKT_TYPE_N2L_ASYMMETRIC_ROUTE_NAT        = 16;
+    FLOW_PKT_TYPE_N2L_SYMMETRIC_ROUTE             = 17;
+    FLOW_PKT_TYPE_N2L_SYMMETRIC_ROUTE_NAT         = 18;
+    FLOW_PKT_TYPE_N2L_ASYMMETRIC_ROUTE_SVC_NAT    = 19;
+    FLOW_PKT_TYPE_N2L_SYMMETRIC_ROUTE_SVC_NAT     = 20;
+    FLOW_PKT_TYPE_N2L_INTRA_VCN_ROUTE             = 21;
 }
 
 // NAT or other Services
 // TBD: How do we create tx_xlate_id, tx_xlate_id2,
 //      rx_xlate_id and rx_xlate_id2 in Domain 'B'
 enum FlowSvc {
-  FLOW_SVC_NONE        = 0;
-  FLOW_SVC_NAPT        = 1;
-  FLOW_SVC_STATIC_NAT  = 2;
-  FLOW_SVC_NAT44       = 3;
-  FLOW_SVC_NAT_SVC_MAP = 4;
+    FLOW_SVC_NONE        = 0;
+    FLOW_SVC_NAPT        = 1;
+    FLOW_SVC_STATIC_NAT  = 2;
+    FLOW_SVC_NAT44       = 3;
+    FLOW_SVC_NAT_SVC_MAP = 4;
 }
 
 message SessInfo {
-  uint32      Id                         = 1;
-  uint32      Proto                      = 2;
-  FlowState   State                      = 3;
-  FlowSubType Subtype                    = 4;
-  FlowSvc     SvcType                    = 5;
-  uint32      SrcVnicId                  = 6;
-  uint32      DstVnicId                  = 7;
-  bool        TwiceNAT                   = 8;
-  bool        IsLocalToLocal             = 9;
-  bool        IsMissHit                  = 10;
-  bool        IsFlowDrop                 = 11;
-  uint32      IngressBD                  = 12;
-  uint32      InitiatorFlowSrcIpV4       = 13;
-  uint32      InitiatorFlowDstIpV4       = 14;
-  uint32      InitiatorFlowSrcPort       = 15;
-  uint32      InitiatorFlowDstPort       = 16;
-  uint32      InitiatorFlowNhId          = 17;
-  uint32      InitiatorFlowNhType        = 18;
-  uint32      InitiatorFlowNhValid       = 19;
-  uint32      InitiatorFlowPriority      = 20;
-  uint32      InitiatorFlowEpoch         = 21;
-  uint32      EgressBD                   = 22;
-  uint32      ResponderFlowSrcIpV4       = 23;
-  uint32      ResponderFlowDstIpV4       = 24;
-  uint32      ResponderFlowSrcPort       = 25;
-  uint32      ResponderFlowDstPort       = 26;
-  uint32      ResponderFlowNhId          = 27;
-  uint32      ResponderFlowNhType        = 28;
-  uint32      ResponderFlowNhValid       = 29;
-  uint32      ResponderFlowPriority      = 30;
-  uint32      ResponderFlowEpoch         = 31;
-  bool        IsInitiatorFlowRx          = 32;
-  bytes       InitiatorFlowSrcIpV6       = 33;
-  bytes       InitiatorFlowDstIpV6       = 34;
-  bytes       ResponderFlowSrcIpV6       = 35;
-  bytes       ResponderFlowDstIpV6       = 36;
-  uint64      InitiatorFlowSrcMac        = 37;
-  uint64      InitiatorFlowDstMac        = 38;
-  uint32      InitiatorFlowEtherType     = 39;
-  uint64      ResponderFlowSrcMac        = 40;
-  uint64      ResponderFlowDstMac        = 41;
-  uint32      ResponderFlowEtherType     = 42;
+    uint32         Id                         = 1;
+    FlowState      State                      = 2;
+    FlowType       type                       = 3;
+    FlowPacketType PktType                    = 4;
+    FlowSvc        SvcType                    = 5;
+    uint32         IpProtocol                 = 6;
+    uint32         SrcVnicId                  = 7;
+    uint32         DstVnicId                  = 8;
+    bool           TwiceNAT                   = 9;
+    bool           IsLocalToLocal             = 10;
+    bool           IsMissHit                  = 11;
+    bool           IsFlowDrop                 = 12;
+    uint32         IngressBD                  = 13;
+    uint32         InitiatorFlowSrcIpV4       = 14;
+    uint32         InitiatorFlowDstIpV4       = 15;
+    uint32         InitiatorFlowSrcPort       = 16;
+    uint32         InitiatorFlowDstPort       = 17;
+    uint32         InitiatorFlowNhId          = 18;
+    uint32         InitiatorFlowNhType        = 19;
+    uint32         InitiatorFlowNhValid       = 20;
+    uint32         InitiatorFlowPriority      = 21;
+    uint32         InitiatorFlowEpoch         = 22;
+    uint32         EgressBD                   = 23;
+    uint32         ResponderFlowSrcIpV4       = 24;
+    uint32         ResponderFlowDstIpV4       = 25;
+    uint32         ResponderFlowSrcPort       = 26;
+    uint32         ResponderFlowDstPort       = 27;
+    uint32         ResponderFlowNhId          = 28;
+    uint32         ResponderFlowNhType        = 29;
+    uint32         ResponderFlowNhValid       = 30;
+    uint32         ResponderFlowPriority      = 31;
+    uint32         ResponderFlowEpoch         = 32;
+    bool           IsInitiatorFlowRx          = 33;
+    bytes          InitiatorFlowSrcIpV6       = 34;
+    bytes          InitiatorFlowDstIpV6       = 35;
+    bytes          ResponderFlowSrcIpV6       = 36;
+    bytes          ResponderFlowDstIpV6       = 37;
+    uint64         InitiatorFlowSrcMac        = 38;
+    uint64         InitiatorFlowDstMac        = 39;
+    uint32         InitiatorFlowEtherType     = 40;
+    uint64         ResponderFlowSrcMac        = 41;
+    uint64         ResponderFlowDstMac        = 42;
+    uint32         ResponderFlowEtherType     = 43;
 }
 

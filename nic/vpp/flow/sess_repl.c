@@ -63,10 +63,11 @@ pds_sess_v4_sync_cb (uint8_t *data, uint8_t *len, void *opaq)
     sess_iter_t *iter = (sess_iter_t *)(opaq);
     pds_flow_hw_ctx_t *hw_ctx = iter->ctx;
     sess_info_t sess;
+    pds_flow_main_t *fm = &pds_flow_main;
 
     sess.id = iter->read_index + 1;
     sess.v4 = hw_ctx->v4;
-    sess.flow_state = pds_encode_flowstate(hw_ctx->flow_state);
+    sess.flow_state = pds_encode_flow_state(hw_ctx->flow_state);
     sess.iflow_handle = hw_ctx->iflow.handle;
     sess.rflow_handle = hw_ctx->rflow.handle;
     sess.packet_type = pds_encode_flow_pkt_type(hw_ctx->packet_type);
@@ -79,6 +80,7 @@ pds_sess_v4_sync_cb (uint8_t *data, uint8_t *len, void *opaq)
     sess.flow_table = iter->flow_table;
     // encode
     pds_encode_one_v4_session(data, len, &sess, vlib_get_thread_index());
+    clib_atomic_fetch_add(&fm->repl_stats.sync_success, 1);
     // advance to the next index
     sess_iter_advance(iter);
 
@@ -195,9 +197,11 @@ pds_sess_recv_end (void)
 bool
 pds_sess_v4_recv_cb (const uint8_t *data, const uint8_t len)
 {
+    pds_flow_main_t *fm = &pds_flow_main;
     uint16_t thread_id = vlib_get_thread_index();
     if (PREDICT_FALSE(!pds_decode_one_v4_session(data, len,
             sess_info_cache_batch_get_entry(thread_id), thread_id))) {
+        clib_atomic_fetch_add(&fm->repl_stats.restore_failure_decode, 1);
         return true;
     }
     sess_info_cache_advance_count(1, thread_id);

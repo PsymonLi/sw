@@ -348,6 +348,72 @@ VLIB_CLI_COMMAND (show_flow_stats_command, static) =
 };
 
 static clib_error_t *
+show_pds_flow_replication_stats_command_fn (vlib_main_t * vm,
+                                            unformat_input_t * input,
+                                            vlib_cli_command_t * cmd)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+    bool sync_set = true, restore_set = true;
+
+    while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT) {
+        if (unformat(input, "sync")) {
+            restore_set = false;
+        } else if (unformat (input, "restore")) {
+            sync_set = false;
+        } else {
+            vlib_cli_output(vm, "ERROR: Invalid command.\n");
+            return 0;
+        }
+    }
+    vlib_cli_output(vm, "\nIPv4 flow replication statistics:\n");
+    vlib_cli_output(vm, "  Total number of IPv4 flow entries in hardware %u",
+                    ftlv4_get_flow_count(fm->table4, vm->thread_index));
+    if (sync_set) {
+        vlib_cli_output(vm, "  Session sync statistics:");
+        vlib_cli_output(vm, "%-30s: %d", "    Synced",
+                        fm->repl_stats.sync_success);
+    }
+
+    if (restore_set) {
+        vlib_cli_output(vm, "  Session restore statistics:");
+        vlib_cli_output(vm, "%-30s: %d", "    Restored",
+                        fm->repl_stats.restore_success);
+        vlib_cli_output(vm, "%-30s: %d", "    Decode failure",
+                        fm->repl_stats.restore_failure_decode);
+        vlib_cli_output(vm, "%-30s: %d", "    Unknown flow_state",
+                        fm->repl_stats.restore_failure_unknown_flow_state);
+        vlib_cli_output(vm, "%-30s: %d", "    Unknown flow_pkt_type",
+                        fm->repl_stats.restore_failure_unknown_flow_type);
+    }
+    return 0;
+}
+
+VLIB_CLI_COMMAND (show_pds_flow_replication_stats_command, static) =
+{
+    .path = "show pds flow replication statistics",
+    .short_help = "show pds flow replication statistics [sync|restore]",
+    .function = show_pds_flow_replication_stats_command_fn,
+};
+
+static clib_error_t *
+clear_pds_flow_replication_stats_command_fn (vlib_main_t * vm,
+                                             unformat_input_t * input,
+                                             vlib_cli_command_t * cmd)
+{
+    pds_flow_main_t *fm = &pds_flow_main;
+
+    clib_memset(&fm->repl_stats, 0, sizeof(pds_flow_repl_stats_t));
+    return 0;
+}
+
+VLIB_CLI_COMMAND (clear_pds_flow_replication_stats_command, static) =
+{
+    .path = "clear pds flow replication statistics",
+    .short_help = "clear pds flow replication statistics",
+    .function = clear_pds_flow_replication_stats_command_fn,
+};
+
+static clib_error_t *
 dump_flow_entry_command_fn (vlib_main_t * vm,
                             unformat_input_t * input,
                             vlib_cli_command_t * cmd)
@@ -807,6 +873,11 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
                     pds_flow_pkt_type_str[session->packet_type]);
     vlib_cli_output(vm, "  %-21s: %s\n", "Flags",
                     session->iflow_rx ? "IFLOW_RX_PACKET" : "None" );
+    vlib_cli_output(vm, "  %-21s: %d\n", "Src Vnic ID", session->src_vnic_id);
+    if (pds_flow_packet_l2l(session->packet_type)) {
+        vlib_cli_output(vm, "  %-21s: %d\n", "Dst Vnic ID",
+                        session->dst_vnic_id);
+    }
 
     for (int i = 0; i < 130; i++) {
         strcat(delimiter, "-");

@@ -293,6 +293,14 @@ typedef struct pds_flow_stats_s {
     volatile u64 counter[FLOW_TYPE_COUNTER_LAST];
 } pds_flow_stats_t;
 
+typedef struct pds_flow_repl_stats_s {
+    volatile u64 sync_success;
+    volatile u64 restore_success;
+    volatile u64 restore_failure_decode;
+    volatile u64 restore_failure_unknown_flow_state;
+    volatile u64 restore_failure_unknown_flow_type;
+} pds_flow_repl_stats_t;
+
 typedef CLIB_PACKED (struct
                      {
                         ip4_header_t ip4_hdr;
@@ -338,6 +346,7 @@ typedef struct pds_flow_main_s {
     u32 ses_id_to_del;
     pds_flow_fixup_data_t fixup_data;
     u64 **ses_time;
+    pds_flow_repl_stats_t repl_stats;
 } pds_flow_main_t;
 
 extern pds_flow_main_t pds_flow_main;
