@@ -63,6 +63,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   creatingMode: boolean = false;
   expandedRowData: any;
   filter: string;
+  filterSub: Subscription;
   first: number = 0;
   hoveredRowID: string;
   rowsPerPageOptions: number[] = [10, 25, 50, 100];
@@ -99,17 +100,6 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       'component': this.getClassName(), 'state':
         Eventtypes.COMPONENT_INIT
     });
-
-    if (this.searchable) {
-      const sub = this._route.queryParams.subscribe(params => {
-        if (params.hasOwnProperty('filter')) {
-          this.filter = params['filter'];
-        } else {
-          this.filter = null;
-        }
-      });
-      this.subscriptions.push(sub);
-    }
   }
 
   ngAfterViewInit() {
@@ -117,6 +107,17 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   }
 
   ngOnChanges(change: SimpleChanges) {
+    if (this.searchable && !this.filterSub) {
+      this.filterSub = this._route.queryParams.subscribe(params => {
+        if (params.hasOwnProperty('filter')) {
+          this.filter = params['filter'];
+        } else {
+          this.filter = null;
+        }
+      });
+      this.subscriptions.push(this.filterSub);
+    }
+
     if (this.searchable && this.filter) {
       // if there is a "filter" query param:
       // - wait until data finishes loading (component init)

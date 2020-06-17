@@ -150,7 +150,10 @@
                 <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
                      class="naplesdetail-node-value">
                   <div class="naplesdetail-panel-version">
-                    <a routerLink="/cluster/hosts"> {{ selectedObj?.status.host }}</a>
+                    <a routerLink="/cluster/hosts"
+                       [queryParams]="{ filter: selectedObj?.status.host }">
+                      {{ selectedObj?.status.host }}
+                    </a>
                   </div>
                 </div>
                 <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
