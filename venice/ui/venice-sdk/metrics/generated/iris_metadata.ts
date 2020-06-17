@@ -704,6 +704,17 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
+      "name": "DropIpFragPkt",
+      "displayName": "IP Fragment Drops",
+      "description": "IP fragmented packet drops",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
       "name": "reporterID",
       "description": "Name of reporting object",
       "baseType": "string",

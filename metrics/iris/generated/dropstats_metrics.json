@@ -168,6 +168,13 @@
           "Description": "ICMP/ICMPv6 fragmented packet drops",
           "Units": "Count",
           "BaseType": "Counter"
+        },
+        {
+          "Name": "DropIpFragPkt",
+          "DisplayName": "IP Fragment Drops",
+          "Description": "IP fragmented packet drops",
+          "Units": "Count",
+          "BaseType": "Counter"
         }
       ],
       "Tags": [

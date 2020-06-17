@@ -29,6 +29,7 @@ func init() {
 		"DropTcpUnexpectedPkt",
 		"DropSrcLifMismatch",
 		"DropIcmpFragPkt",
+		"DropIpFragPkt",
 	}
 	globalMetricsMap["dropstats"]["DropMetrics"] = kindToFieldNameMap["DropMetrics"]
 
@@ -40,6 +41,7 @@ func init() {
 		"DropIcmpNormalization":           "last",
 		"DropInputMapping":                "last",
 		"DropInputPropertiesMiss":         "last",
+		"DropIpFragPkt":                   "last",
 		"DropIpNormalization":             "last",
 		"DropIpsg":                        "last",
 		"DropMultiDestNotPinnedUplink":    "last",
