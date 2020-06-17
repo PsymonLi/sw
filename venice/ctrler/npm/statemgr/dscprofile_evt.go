@@ -430,13 +430,17 @@ func (sm *Statemgr) UpdateDSCProfileStatusOnOperUpdate(nodeuuid, tenant, name, g
 
 	update := false
 	if ok && expVersion.profileName == name && expVersion.agentGenID == generationID {
-		log.Infof("OnOperUpdate:Enqueue profile for status %s tenant %s nodeuud %s", name, tenant, nodeuuid)
 		// update node version
-		dscProfile.NodeVersions[nodeuuid] = generationID
-		// ToDo: Writing status from NPM conflicts with CMD in integ tests.
-		//  We have to fix this eventually
-		//snic.NodeVersion = cluster.DSCProfileVersion{ProfileName: name, GenerationID: generationID}
-		update = true
+		if dscProfile.NodeVersions[nodeuuid] != generationID {
+			log.Infof("OnOperUpdate:Enqueue profile for status %s tenant %s nodeuud %s", name, tenant, nodeuuid)
+			dscProfile.NodeVersions[nodeuuid] = generationID
+
+			// ToDo: Writing status from NPM conflicts with CMD in integ tests.
+			//  We have to fix this eventually
+			//snic.NodeVersion = cluster.DSCProfileVersion{ProfileName: name, GenerationID: generationID}
+			update = true
+
+		}
 	}
 	dscProfile.DSCProfile.Unlock()
 	if update {

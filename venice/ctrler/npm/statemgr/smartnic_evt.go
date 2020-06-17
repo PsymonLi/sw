@@ -194,8 +194,8 @@ func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard,
 			hs, err := sm.FindHost(host.Tenant, host.Name)
 			if err == nil {
 				sm.addForReconcile(hs)
-				host.Unlock()
 			}
+			host.Unlock()
 		}
 	}
 }

@@ -92,6 +92,9 @@ func convertEndpoint(eps *workload.Endpoint) *netproto.Endpoint {
 			NodeUUID:      eps.Spec.NodeUUID,
 		},
 	}
+	if eps.Spec.NodeUUID == "" {
+		nep.Spec.NodeUUID = eps.Status.NodeUUID
+	}
 	nep.CreationTime = api.Timestamp{Timestamp: *creationTime}
 
 	if eps.Status.Migration != nil && eps.Status.Migration.Status == workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String() {
