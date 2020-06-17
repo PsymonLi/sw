@@ -370,7 +370,9 @@ action nexthop_info(lif, qtype, qid, vlan_strip_en, port, vlan, dmaco, smaco,
     if (port == TM_PORT_DMA) {
         modify_field(capri_intrinsic.lif, lif);
         modify_field(capri_rxdma_intrinsic.qtype, qtype);
-        modify_field(capri_rxdma_intrinsic.qid, qid);
+        if (p4e_to_p4plus_classic_nic.rss_override == FALSE) {
+            modify_field(capri_rxdma_intrinsic.qid, qid);
+        }
         modify_field(rewrite_metadata.vlan_strip_en, vlan_strip_en);
     }
     modify_field(scratch_metadata.mac, smaco);
