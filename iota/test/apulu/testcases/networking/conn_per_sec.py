@@ -17,6 +17,7 @@ import traceback
 import sys
 from iota.test.iris.utils.trex_wrapper import *
 
+configChangeThreadFailure = False
 
 def __getOperations(tc_operation):
     opers = list()
@@ -143,7 +144,9 @@ def showFlows(tc):
     for node in nodes:
         # Disabled printing of 'show flow' output as it could be huge.
         # objective is to trigger the backend to get a dump of the flows.
-        ret, resp = pdsctl.ExecutePdsctlShowCommand(node, "flow", yaml=False, print_op=False)
+        # TODO. 'show flow' with 2M flows were causing timeout or crash at times in pds-agent.
+        # so commenting 'show flow' to revisit the use case of this and tune agents accordingly.
+        #ret, resp = pdsctl.ExecutePdsctlShowCommand(node, "flow", yaml=False, print_op=False)
         # Get only the number of flows.
         ret, resp = pdsctl.ExecutePdsctlShowCommand(node, "flow", "--summary | grep \"No. of flows :\"", yaml=False, print_op=True)
 
@@ -187,6 +190,7 @@ def dumpPdsAgentInfo(tc, log_string=""):
 
 
 def configurationChangeEvent(tc):
+    global configChangeThreadFailure
     if tc.cancel:
         api.Logger.info("Canceling configurationChangeEvent...")
         sys.exit(0)
@@ -204,10 +208,14 @@ def configurationChangeEvent(tc):
 
     if configDeleteTrigger(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in configDeleteTrigger...")
+        configChangeThreadFailure = True
+        return api.types.status.FAILURE
     dumpPdsAgentInfo(tc, "PDS Agent info after configDeleteTrigger...")
 
     if configRestoreTrigger(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in configRestoreTrigger...")
+        configChangeThreadFailure = True
+        return api.types.status.FAILURE
     dumpPdsAgentInfo(tc, "PDS Agent info after configRestoreTrigger...")
 
     api.Logger.debug("Completed Running configurationChangeEvent...")
@@ -362,6 +370,11 @@ def Trigger(tc):
                           tc.clientHandle.workload.workload_name))
 
         tc.cancel = True
+
+        if configChangeThreadFailure:
+            api.Logger.error("Failed in configurationChangeEvent thread")
+            return api.types.status.FAILURE
+
         return api.types.status.SUCCESS
     except Exception as e:
         

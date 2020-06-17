@@ -38,8 +38,8 @@ testcases:
             triggers : True
             security_profile:
                 conntrack      : True
-                tcpidletimeout : 100
-                udpidletimeout : 100
+                tcpidletimeout : 90
+                udpidletimeout : 90
         iterators:
             type      : simple
             proto     : [ udp ]
@@ -54,20 +54,20 @@ testcases:
             switchPortFlap   :
                 trigger         : auto
                 run             : repeat
-                sleep_interval  : 20
+                sleep_interval  : 30
                 terminate       : verify
             clearFlows       :
                 trigger         : auto
                 run             : repeat
-                sleep_interval  : 15
+                sleep_interval  : 90
                 terminate       : verify
             showFlows        :
                 trigger         : auto
                 run             : repeat
-                sleep_interval  : 10
+                sleep_interval  : 30
                 terminate       : verify
             configurationChangeEvent :
                 trigger         : auto
                 run             : repeat
-                sleep_interval  : 10
+                sleep_interval  : 20
                 terminate       : verify
