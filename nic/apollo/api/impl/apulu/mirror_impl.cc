@@ -364,7 +364,9 @@ mirror_impl::activate_create_(pds_epoch_t epoch, mirror_session *ms,
 sdk_ret_t
 mirror_impl::activate_update_(pds_epoch_t epoch, mirror_session *ms,
                               api_obj_ctxt_t *obj_ctxt) {
-    return SDK_RET_INVALID_OP;
+    // update reprograms the whole mirror session, so it is identical to create
+    return activate_create_(epoch, ms,
+                            &obj_ctxt->api_params->mirror_session_spec);
 }
 
 sdk_ret_t
@@ -414,6 +416,7 @@ mirror_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
 
 void
 mirror_impl::fill_status_(pds_mirror_session_status_t *status) {
+    status->hw_id = hw_id_;
 }
 
 sdk_ret_t
