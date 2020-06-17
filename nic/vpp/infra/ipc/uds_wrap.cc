@@ -15,21 +15,24 @@ vpp_uds_register_cb(vpp_uds_op_t op, vpp_uds_cb cb)
 }
 
 void
-handle_pds_cmd (cmd_ctxt_t *ctxt, int fd)
+handle_pds_cmd (cmd_ctxt_t *ctxt)
 {
     vpp_uds_cb flow_cb = NULL;
+    types::ServiceResponseMessage proto_rsp;
     switch (ctxt->cmd)
     {
     case CMD_MSG_FLOW_DUMP:
         flow_cb = vpp_uds_callbacks[VPP_UDS_FLOW_DUMP];
         if (flow_cb) {
-            flow_cb(fd, ctxt->args.flow_dump.summary);
+            flow_cb(ctxt->sock_fd, ctxt->io_fd, ctxt->args.flow_dump.summary);
         }
         break;
     default:
         // Nothing to do
         break;
     }
+    proto_rsp.set_apistatus(types::ApiStatus::API_STATUS_OK);
+    proto_rsp.SerializeToFileDescriptor(ctxt->sock_fd);
 }
 
 #ifdef __cplusplus
@@ -37,7 +40,7 @@ extern "C" {
 #endif
 
 void
-udswrap_process_input(int fd, char *buf, int n)
+udswrap_process_input(int sock_fd, int io_fd, char *buf, int n)
 {
     types::ServiceRequestMessage proto_ctxt;
     svc_req_ctxt_t ctxt;
@@ -45,9 +48,9 @@ udswrap_process_input(int fd, char *buf, int n)
     // convert to proto msg
     proto_ctxt.ParseFromArray(buf, n);
     // parse cmd ctxt
-    pds_svc_req_proto_to_svc_req_ctxt(&ctxt, &proto_ctxt, fd);
+    pds_svc_req_proto_to_svc_req_ctxt(&ctxt, &proto_ctxt, sock_fd, io_fd);
     // handle command
-    handle_pds_cmd(&ctxt.cmd_ctxt, fd);
+    handle_pds_cmd(&ctxt.cmd_ctxt);
 }
 
 #ifdef __cplusplus

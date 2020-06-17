@@ -34,7 +34,6 @@ static sdk_ret_t
 pds_handle_cfg (int fd, cfg_ctxt_t *ctxt)
 {
     sdk_ret_t ret = SDK_RET_OK;
-    char *iov_data;
     types::ServiceResponseMessage proto_rsp;
     google::protobuf::Any *any_resp = proto_rsp.mutable_response();
 
@@ -166,46 +165,25 @@ pds_handle_cfg (int fd, cfg_ctxt_t *ctxt)
     }
 
     proto_rsp.set_apistatus(sdk_ret_to_api_status(ret));
-    iov_data = (char *)SDK_CALLOC(PDS_MEM_ALLOC_CMD_READ_IO, proto_rsp.ByteSizeLong());
-    if (iov_data == NULL) {
-        PDS_TRACE_ERR("Failed to allocate memory for UDS config message {} response", ctxt->cfg);
-        return SDK_RET_OOM;
+    if (!proto_rsp.SerializeToFileDescriptor(fd)) {
+        PDS_TRACE_ERR("Serializing config message {} response to socket failed", ctxt->cfg);
     }
-    if (proto_rsp.SerializeToArray(iov_data, proto_rsp.ByteSizeLong())) {
-        if (send(fd, iov_data, proto_rsp.ByteSizeLong(), 0) < 0) {
-            PDS_TRACE_ERR("Send on socket failed. Error {}", errno);
-        }
-    } else {
-        PDS_TRACE_ERR("Serializing config message {} response failed", ctxt->cfg);
-    }
-    SDK_FREE(PDS_MEM_ALLOC_CMD_READ_IO, iov_data);
 
     return SDK_RET_OK;
 }
 
 static sdk_ret_t
-pds_handle_cmd (int fd, cmd_ctxt_t *ctxt)
+pds_handle_cmd (cmd_ctxt_t *ctxt)
 {
     sdk_ret_t ret;
-    char *iov_data;
     types::ServiceResponseMessage proto_rsp;
 
     ret = debug::pds_handle_cmd(ctxt);
 
     proto_rsp.set_apistatus(sdk_ret_to_api_status(ret));
-    iov_data = (char *)SDK_CALLOC(PDS_MEM_ALLOC_CMD_READ_IO, proto_rsp.ByteSizeLong());
-    if (iov_data == NULL) {
-        PDS_TRACE_ERR("Failed to allocate memory for UDS command message {} response", ctxt->cmd);
-        return SDK_RET_OOM;
+    if (!proto_rsp.SerializeToFileDescriptor(ctxt->sock_fd)) {
+        PDS_TRACE_ERR("Serializing command message {} response to socket failed", ctxt->cmd);
     }
-    if (proto_rsp.SerializeToArray(iov_data, proto_rsp.ByteSizeLong())) {
-        if (send(fd, iov_data, proto_rsp.ByteSizeLong(), 0) < 0) {
-            PDS_TRACE_ERR("Send on socket failed. Error {}", errno);
-        }
-    } else {
-        PDS_TRACE_ERR("Serializing command message {} response failed", ctxt->cmd);
-    }
-    SDK_FREE(PDS_MEM_ALLOC_CMD_READ_IO, iov_data);
 
     return ret;
 }
@@ -217,14 +195,14 @@ handle_svc_req (int fd, types::ServiceRequestMessage *proto_req, int cmd_fd)
     svc_req_ctxt_t svc_req;
 
     // convert proto svc request to svc req ctxt
-    pds_svc_req_proto_to_svc_req_ctxt(&svc_req, proto_req, cmd_fd);
+    pds_svc_req_proto_to_svc_req_ctxt(&svc_req, proto_req, fd, cmd_fd);
 
     switch (svc_req.type) {
     case SVC_REQ_TYPE_CFG:
         ret = pds_handle_cfg(fd, &svc_req.cfg_ctxt);
         break;
     case SVC_REQ_TYPE_CMD:
-        ret = pds_handle_cmd(fd, &svc_req.cmd_ctxt);
+        ret = pds_handle_cmd(&svc_req.cmd_ctxt);
         break;
     default:
         ret = SDK_RET_INVALID_ARG;

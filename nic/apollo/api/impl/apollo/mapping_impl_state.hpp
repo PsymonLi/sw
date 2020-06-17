@@ -65,10 +65,9 @@ public:
     sdk_ret_t table_stats(debug::table_stats_get_cb_t cb, void *ctxt);
 
     /// \brief     API to dump mapping entries
-    /// \param[in] fd   file descriptor where entries are dumped
-    /// \param[in] args command arguments
+    /// \param[in] ctxt   command context
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t mapping_dump(int fd, cmd_args_t *args);
+    sdk_ret_t mapping_dump(cmd_ctxt_t *ctxt);
 
 private:
     mem_hash *local_ip_mapping_tbl(void) { return local_ip_mapping_tbl_; }

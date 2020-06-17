@@ -130,9 +130,16 @@ mapping_dump_cb (sdk_table_api_params_t *params)
 }
 
 sdk_ret_t
-mapping_impl_state::mapping_dump(int fd, cmd_args_t *args) {
+mapping_impl_state::mapping_dump(cmd_ctxt_t *ctxt) {
+    int fd = ctxt->io_fd;
+    cmd_args_t *args;
     sdk_table_api_params_t api_params = { 0 };
 
+    if (ctxt->args.valid) {
+        args = &ctxt->args;
+    } else {
+        args = NULL;
+    }
     dprintf(fd, "%s\n", std::string(44, '-').c_str());
     dprintf(fd, "%-7s%-16s%-7s%-8s%-6s\n",
             "VnicID", "PrivateIP", "VpcID", "XlateID", "IPType");

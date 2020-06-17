@@ -200,25 +200,25 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
         ret = impl_base::pipeline_impl()->handle_cmd(ctxt);
         break;
     case CMD_MSG_INTR_DUMP:
-        ret = dump_interrupts(ctxt->fd);
+        ret = dump_interrupts(ctxt->io_fd);
         break;
     case CMD_MSG_INTR_CLEAR:
-        ret = clear_interrupts(ctxt->fd);
+        ret = clear_interrupts(ctxt->io_fd);
         break;
     case CMD_MSG_API_ENGINE_STATS_DUMP:
-        ret = api::api_engine_get()->dump_api_counters(ctxt->fd);
+        ret = api::api_engine_get()->dump_api_counters(ctxt->io_fd);
         break;
     case CMD_MSG_STORE_STATS_DUMP:
-        ret = dump_state_base_stats(ctxt->fd);
+        ret = dump_state_base_stats(ctxt->io_fd);
         break;
     case CMD_MSG_PORT_FSM_DUMP:
         if (ctxt->args.valid == true) {
             ret = api::port_get(&ctxt->args.port_id, &info);
             if (ret == SDK_RET_OK) {
-                dump_port_fsm(&info, ctxt->fd);
+                dump_port_fsm(&info, ctxt->io_fd);
             }
         } else {
-            ret = api::port_get_all(dump_port_fsm_cb, (void *)&ctxt->fd);
+            ret = api::port_get_all(dump_port_fsm_cb, (void *)&ctxt->io_fd);
         }
         break;
     default:

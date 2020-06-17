@@ -31,7 +31,7 @@ vpp_uds_read_ready (clib_file_t * uf)
         return clib_error_return_unix(0, "read-close");
     }
 
-    udswrap_process_input(cmd_fd, (char *)input_buf, n);
+    udswrap_process_input(uf->file_descriptor, cmd_fd, (char *)input_buf, n);
     clib_file_del(&file_main, uf);
     vec_free(input_buf);
     return 0;

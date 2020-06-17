@@ -4,6 +4,7 @@
 
 #include "pdsa_uds_hdlr.h"
 #include "nic/vpp/infra/ipc/uds_internal.h"
+#include "nic/sdk/include/sdk/uds.hpp"
 #include <gen/proto/types.pb.h>
 #include <gen/proto/debug.pb.h>
 #include <gen/proto/session.pb.h>
@@ -12,25 +13,28 @@
 #include <lib/table/ftl/ftl_base.hpp>
 #include <ftl_utils.hpp>
 #include <nic/p4/common/defines.h>
+#include <sys/types.h>
 
 typedef struct ftl_cb_data_s {
-    int fd;
+    int io_fd;
+    int sock_fd;
     bool summary;
 } ftl_cb_data_t;
 
 uint32_t ftlv4_entry_count;
+bool g_ftl_skip_walk = false;
 
 static void
-ftlv4_entry_iter_cb(sdk::table::sdk_table_api_params_t *params)
+ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
 {
     ipv4_flow_hash_entry_t *hwentry = (ipv4_flow_hash_entry_t *) params->entry;
     ftl_cb_data_t *cbdata = (ftl_cb_data_t *)(params->cbdata);
-    int fd = cbdata->fd;
+    int fd = cbdata->io_fd;
     bool summary = cbdata->summary;
     struct in_addr src, dst;
     char srcstr[INET_ADDRSTRLEN + 1], dststr[INET_ADDRSTRLEN + 1];
 
-    if (hwentry->get_entry_valid()) {
+    if (!g_ftl_skip_walk && hwentry->get_entry_valid()) {
         ftlv4_entry_count++;
         if (summary) {
             return;
@@ -54,6 +58,10 @@ ftlv4_entry_iter_cb(sdk::table::sdk_table_api_params_t *params)
                 hwentry->get_key_metadata_dport(),
                 pds_ip_protocol_to_str(hwentry->get_key_metadata_proto()),
                 drop ? "D" : "A");
+        if ((0 == (ftlv4_entry_count % UDS_SOCK_ALIVE_CHECK_COUNT)) &&
+            !is_uds_socket_alive(cbdata->sock_fd)) {
+            g_ftl_skip_walk = true;
+        }
     }
 }
 
@@ -95,7 +103,7 @@ ftlv6_entry_iter_cb(sdk::table::sdk_table_api_params_t *params)
 
 // Callback to dump flow entries via UDS
 static void
-vpp_uds_flow_dump(int fd, bool summary)
+vpp_uds_flow_dump(int sock_fd, int io_fd, bool summary)
 {
     ftl_cb_data_t cbdata;
     types::ServiceResponseMessage proto_rsp;
@@ -105,23 +113,25 @@ vpp_uds_flow_dump(int fd, bool summary)
     //sdk::table::ftl_base *table6 =
         //(sdk::table::ftl_base *)pds_flow_get_table6_or_l2();
 
-    cbdata.fd = fd;
+    cbdata.io_fd = io_fd;
+    cbdata.sock_fd = sock_fd;
     cbdata.summary = summary;
 
     ftlv4_entry_count = 0;
+    g_ftl_skip_walk = false;
     params.itercb = ftlv4_entry_iter_cb;
     params.cbdata = &cbdata;
     params.force_hwread = false;
     table4->iterate(&params);
 
-    dprintf(fd, "No. of flows: %d\n", ftlv4_entry_count);
+    dprintf(io_fd, "No. of flows: %d\n", ftlv4_entry_count);
     // disable this until v6/l2 packet corruption is solved
     //params.itercb = ftlv6_entry_iter_cb;
     //params.cbdata = &fd;
     //params.force_hwread = false;
     //table6->iterate(&params);
 
-    close(fd);
+    close(io_fd);
 }
 
 // initializes callbacks for flow dump

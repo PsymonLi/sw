@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-void udswrap_process_input(int fd, char *buf, int n);
+void udswrap_process_input(int sock_fd, int io_fd, char *buf, int n);
 
 #ifdef __cplusplus
 }
@@ -23,7 +23,7 @@ typedef enum vpp_uds_op_s {
 } vpp_uds_op_t;
 
 // callback function prototype
-typedef void (*vpp_uds_cb)(int fd, bool summary);
+typedef void (*vpp_uds_cb)(int sock_fd, int io_fd, bool summary);
 
 void vpp_uds_register_cb(vpp_uds_op_t op, vpp_uds_cb cb);
 

@@ -765,8 +765,7 @@ sdk_ret_t
 apollo_impl::handle_cmd(cmd_ctxt_t *ctxt) {
     switch (ctxt->cmd) {
     case CMD_MSG_MAPPING_DUMP:
-        g_pds_impl_state.mapping_impl_db()->mapping_dump(ctxt->fd,
-                    (ctxt->args.valid == true) ? &ctxt->args : NULL);
+        g_pds_impl_state.mapping_impl_db()->mapping_dump(ctxt);
         break;
     default:
         return SDK_RET_INVALID_ARG;

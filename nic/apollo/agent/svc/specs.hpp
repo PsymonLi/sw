@@ -567,7 +567,7 @@ pds_proto_cfg_to_api_cfg (std::string cfg_msg,
 static inline void
 pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
                            const pds::CommandMessage *proto_msg,
-                           int fd)
+                           int sock_fd, int io_fd)
 {
     google::protobuf::Any *any_msg;
     pds::MappingDumpFilter filter;
@@ -576,7 +576,8 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
     std::string cmd_msg;
     std::size_t delim_pos;
 
-    cmd_ctxt->fd = fd;
+    cmd_ctxt->sock_fd = sock_fd;
+    cmd_ctxt->io_fd = io_fd;
     cmd_ctxt->cmd = pds_proto_cmd_to_api_cmd(proto_msg->command());
 
     if (proto_msg->has_commandmsg()) {
@@ -631,7 +632,7 @@ pds_cmd_proto_to_cmd_ctxt (cmd_ctxt_t *cmd_ctxt,
 static inline void
 pds_svc_req_proto_to_svc_req_ctxt (svc_req_ctxt_t *svc_req,
                                    types::ServiceRequestMessage *proto_req,
-                                   int fd)
+                                   int sock_fd, int io_fd)
 {
     cfg_msg_t cfg_msg;
     cfg_ctxt_t *cfg_ctxt;
@@ -657,7 +658,7 @@ pds_svc_req_proto_to_svc_req_ctxt (svc_req_ctxt_t *svc_req,
             any_msg->UnpackTo(&cmd_msg_proto);
             pds_cmd_proto_to_cmd_ctxt(cmd_ctxt,
                                       &cmd_msg_proto,
-                                      fd);
+                                      sock_fd, io_fd);
         } else {
             // decrypt config message
             svc_req->type = SVC_REQ_TYPE_CFG;

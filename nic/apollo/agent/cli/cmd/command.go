@@ -43,21 +43,23 @@ func HandleCommand(cmdReq *pds.ServiceRequestMessage,
 	}
 
 	// send over UDS
-	resp, err := utils.CmdSend(socket, iovec, int(os.Stdout.Fd()))
+	resp, err := utils.CmdSendRecv(socket, iovec, int(os.Stdout.Fd()))
 	if err != nil {
 		fmt.Printf("Command send operation failed with error %v\n", err)
 		return nil, err
 	}
 
 	// unmarshal response
-	cmdResp := &pds.ServiceResponseMessage{}
-	err = proto.Unmarshal(resp, cmdResp)
-	if err != nil {
-		fmt.Printf("Command failed with %v error\n", err)
-		return nil, err
+	if resp != nil {
+		cmdResp := &pds.ServiceResponseMessage{}
+		err = proto.Unmarshal(resp, cmdResp)
+		if err != nil {
+			fmt.Printf("Command failed with %v error\n", err)
+			return nil, err
+		}
+		return cmdResp, nil
 	}
-
-	return cmdResp, nil
+	return nil, nil
 }
 
 // function to handle configs over unix domain sockets
@@ -73,21 +75,23 @@ func HandleConfig(cfgReq *pds.ServiceRequestMessage) (*pds.ServiceResponseMessag
 	}
 
 	// send over UDS
-	resp, err := utils.CmdSend(CmdSocket, iovec, -1)
+	resp, err := utils.CmdSendRecv(CmdSocket, iovec, -1)
 	if err != nil {
 		fmt.Printf("Command send operation failed with error %v\n", err)
 		return nil, err
 	}
 
 	// unmarshal response
-	cmdResp := &pds.ServiceResponseMessage{}
-	err = proto.Unmarshal(resp, cmdResp)
-	if err != nil {
-		fmt.Printf("Command failed with %v error\n", err)
-		return nil, err
+	if resp != nil {
+		cmdResp := &pds.ServiceResponseMessage{}
+		err = proto.Unmarshal(resp, cmdResp)
+		if err != nil {
+			fmt.Printf("Command failed with %v error\n", err)
+			return nil, err
+		}
+		return cmdResp, nil
 	}
-
-	return cmdResp, nil
+	return nil, nil
 }
 
 // function to handle command service request message

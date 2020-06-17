@@ -125,7 +125,8 @@ typedef enum cmd_msg_e {
 } cmd_msg_t;
 
 typedef struct cmd_ctxt_s {
-    int fd;           // file descriptor
+    int sock_fd;      // socket fd
+    int io_fd;        // io fd
     cmd_msg_t cmd;    // CLI command
     cmd_args_t args;  // command arguments
 } cmd_ctxt_t;

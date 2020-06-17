@@ -7,6 +7,11 @@
 #define __SDK_UDS_HPP__
 
 #include <sys/socket.h>
+#include <poll.h>
+#include <stdio.h>
+
+#define UDS_SOCK_ALIVE_CHECK_COUNT      1000
+#define UDS_SOCK_ALIVE_CHECK_TIMEOUT    1       // 1 ms
 
 int
 uds_send (int sock, int fd, char *iov_data, int iov_len)
@@ -73,6 +78,25 @@ uds_recv (int sock, int *fd, void *iov_data, int iov_len)
         *fd = *((int *)CMSG_DATA(cmsg));
     }
     return bytes_read;
+}
+
+bool
+is_uds_socket_alive (int sock_fd)
+{
+    struct pollfd pfds = { 0 };
+    int ret;
+
+    pfds.fd = sock_fd;
+    pfds.events = 0; // interested in POLLERR, POLLHUP, or POLLNVAL only
+
+    ret = poll(&pfds, 1, UDS_SOCK_ALIVE_CHECK_TIMEOUT);
+    if (ret == -1) {
+        return false;
+    }
+    if (pfds.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+        return false;
+    }
+    return true;
 }
 
 #endif    // __SDK_UDS_HPP__
