@@ -15,6 +15,8 @@ import (
 )
 
 const (
+	type1MinLen = 8 + 10 + 4 + 3
+	type1MaxLen = 8 + 10 + 4 + 3
 	type2MinLen = 8 + 10 + 4 + 1 + 6 + 1 + 3
 	type2MaxLen = 8 + 10 + 4 + 1 + 6 + 1 + 16 + 3 + 3
 	type3MinLen = 8 + 4 + 1 + 4
@@ -106,6 +108,10 @@ func NewNLRIPrefix(afi int, safi int, in []byte) *NLRIPrefix {
 			Length: int(in[1]),
 		}
 		switch ret.Type {
+		case 1:
+			p := &EVPNType1Route{}
+			p.parseBytes(in[2:])
+			ret.Prefix = newEVPNType1Route(p)
 		case 2:
 			p := &EVPNType2Route{}
 			p.parseBytes(in[2:])
@@ -124,6 +130,62 @@ func NewNLRIPrefix(afi int, safi int, in []byte) *NLRIPrefix {
 		return ret
 	} else {
 		return nil
+	}
+}
+
+type EVPNType1Route struct {
+	RD        []byte
+	ESI       []byte
+	EthTagID  []byte
+	MPLSLabel []byte
+}
+
+type ShadowEVPNType1Route struct {
+	RD        string
+	ESI       string
+	EthTagID  uint32
+	MPLSLabel uint32
+	*EVPNType1Route
+}
+
+const Type1Fmt = `[%d][%v][%v][%d][%d]`
+
+// String returns a user friendly string
+func (s *ShadowEVPNType1Route) String() string {
+	var Type1 int = 1
+	return fmt.Sprintf(Type1Fmt, Type1, s.RD, s.ESI, s.EthTagID, s.MPLSLabel)
+}
+
+// String returns a user friendly string
+func (s *ShadowEVPNType1Route) attrString() string {
+	return fmt.Sprintf("")
+}
+
+func (a *EVPNType1Route) parseBytes(in []byte) {
+	if len(in) < type1MinLen {
+		log.Errorf("invalid length [%d] for evpn Type1", len(in))
+	}
+	cur := 0
+	a.RD = make([]byte, 8)
+	copy(a.RD, in[cur:cur+8])
+	cur += 8
+	a.ESI = make([]byte, 10)
+	copy(a.ESI, in[cur:cur+10])
+	cur += 10
+	a.EthTagID = make([]byte, 4)
+	copy(a.EthTagID, in[cur:cur+4])
+	cur += 4
+	a.MPLSLabel = make([]byte, 3)
+	copy(a.MPLSLabel, in[cur:cur+3])
+}
+
+func newEVPNType1Route(in *EVPNType1Route) *ShadowEVPNType1Route {
+	return &ShadowEVPNType1Route{
+		EVPNType1Route: in,
+		RD:             printRD(in.RD),
+		ESI:            dumpBytes(in.ESI),
+		EthTagID:       binary.BigEndian.Uint32(in.EthTagID),
+		MPLSLabel:      label2int(in.MPLSLabel),
 	}
 }
 
