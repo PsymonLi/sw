@@ -56,7 +56,7 @@ class DelphiInterruptField(InterruptField):
 
 
 intr_reg_list = [
-    ('pr_prd_int_grp2_int_test_set', 'Prprprdintgrp2Metrics', ['rdrsp_axi_interrupt', 'wrrsp_axi_interrupt', 'wr_seq_id_interrupt']),
+    ('pr_prd_int_grp2_int_test_set', 'Prprprdintgrp2Metrics', ['rdrsp_axi_interrupt', 'wrrsp_axi_interrupt']),
     ('pt_ptd_int_grp2_int_test_set', 'Ptptptdintgrp2Metrics', ['rdrsp_axi_interrupt', 'wrrsp_axi_interrupt', 'pkt_cmd_eop_no_data_interrupt'])
 ]
 
