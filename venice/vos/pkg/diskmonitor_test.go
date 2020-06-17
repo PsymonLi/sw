@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
 	minioclient "github.com/minio/minio-go/v6"
 	"google.golang.org/grpc/metadata"
@@ -74,9 +75,10 @@ func TestDiskUpdateOps(t *testing.T) {
 	fw := &fakeDiskUpdateWatchServer{ctx: cctx}
 	go srv.WatchDiskThresholdUpdates(&api.ListWatchOptions{}, fw)
 
+	// Test static threshold
 	paths := new(sync.Map)
 	paths.Store("./", 0.00001)
-	err := inst.createDiskUpdateWatcher(paths)
+	cancelFunc, err := inst.createDiskUpdateWatcher(paths, time.Second*2)
 	Assert(t, err == nil, "failed to create disk update watcher")
 
 	// Start monitor disks
@@ -90,6 +92,16 @@ func TestDiskUpdateOps(t *testing.T) {
 	Assert(t, diskUpdate.Status.Path == "./", "diskupdate path is not correct")
 	Assert(t, diskUpdate.Status.Size_ != 0, "diskupdate size is 0")
 	Assert(t, diskUpdate.Status.UsedByNamespace != 0, "diskupdate used is 0")
+	cancelFunc()
+
+	// Cover dynamic threshold.
+	// We cant test events for dynamic threshold becuase its dependent on disk capacity.
+	// Calling this function for getting code coverage
+	paths = new(sync.Map)
+	paths.Store("./", float64(-1))
+	cancelFunc, err = inst.createDiskUpdateWatcher(paths, time.Second*2)
+	Assert(t, err == nil, "failed to create disk update watcher")
+	time.Sleep(time.Second * 3)
 
 	opts := api.ListWatchOptions{}
 	opts.ObjectMeta = api.ObjectMeta{

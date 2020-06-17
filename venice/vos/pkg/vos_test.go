@@ -219,10 +219,10 @@ func TestOptions(t *testing.T) {
 	})
 	Assert(t, len(config) == 2, "incorrect disk threshold arguments, expected /disk1/default.fwlogs, /disk2/default.fwlogs")
 	th, ok := config["/disk1/default.fwlogs"]
-	Assert(t, th == 50.00, "incorrect threshold")
+	Assert(t, th == -1, "incorrect threshold")
 	Assert(t, ok, "fwlogs bucket threshold missing")
 	th, ok = config["/disk2/default.fwlogs"]
-	Assert(t, th == 50.00, "incorrect threshold")
+	Assert(t, th == -1, "incorrect threshold")
 	Assert(t, ok, "fwlogs bucket threshold missing")
 }
 

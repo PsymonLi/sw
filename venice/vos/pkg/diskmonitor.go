@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"syscall"
 	"time"
+
+	syscall "golang.org/x/sys/unix"
 
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
@@ -14,12 +15,24 @@ import (
 	"github.com/pensando/sw/venice/vos/protos"
 )
 
+const (
+	bytesToGBConversionFactor = 1024 * 1024 * 1024
+
+	// Out of the base disk of 250GB, 230GB is given to data partition and 20GB to config partition
+	// Other contributors of /data partition are Citadel, Techsupport, Images, Docker, Archieved logs and events etc.
+	baseInGBReservedForOtherContributors = 230
+
+	// This threshold is not for entire partition but only for the space that is used between minio and elastic for fwlogs
+	// The remaining 10% we are leaving for Elastic, which may be much more then what Elastic needs, but lets not set a very
+	// high threshold for objstore, 90% is already very high.
+	objstoreThreshold = 90
+)
+
 func isThresholdReached(currPath string, size uint64, thresholdPercent float64) (bool, uint64) {
 	var used uint64
 
 	dir, err := os.Open(currPath)
 	if err != nil {
-		// fmt.Println(err)
 		return false, used
 	}
 	defer dir.Close()
@@ -60,7 +73,26 @@ func diskUsage(path string, thresholdPercent float64) (bool, uint64, uint64, err
 		return false, 0, 0, fmt.Errorf("monitor disk usage err:  %+v", err)
 	}
 	all := fs.Blocks * uint64(fs.Bsize)
-	reached, used := isThresholdReached(path, all, thresholdPercent)
+	allInGB := all / bytesToGBConversionFactor
+	th := thresholdPercent
+	if th == -1 {
+		// calculate threshold percent dynamically based on the current disk size.
+		// This calculation assumes that disk is expanded in chunks of 500GB.
+		switch {
+		case allInGB <= 250:
+			// Ideally fwlogs should not run when /data partition size is less then 250GB.
+			// But still putting a very low threshold becuase we don't stop user from enabling
+			// fwlogs when partition size is less then 250GB.
+			// If we set threhold lower then 25% then it may affect systest.
+			th = 25
+		default:
+			left := allInGB - baseInGBReservedForOtherContributors
+			leftForObjstore := (left * objstoreThreshold) / 100
+			th = (float64(leftForObjstore) / float64(allInGB)) * 100
+		}
+	}
+
+	reached, used := isThresholdReached(path, all, th)
 	return reached, all, used, nil
 }
 
