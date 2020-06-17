@@ -1232,7 +1232,7 @@ api_engine::promote_container_objs_ (void) {
         if (api_base::container(octxt->obj_id) && octxt->clist.size()) {
             // we need to move to this dirty obj list and map
             del_from_deps_list_(it, api_obj);
-            // clone the object so we can do regular objet update and promote
+            // clone the object so we can do regular object update and promote
             // this object to dirty object list
             SDK_ASSERT(octxt->cloned_obj == NULL);
             octxt->cloned_obj = api_obj->clone();
@@ -1251,6 +1251,7 @@ api_engine::promote_container_objs_ (void) {
                 PDS_API_OBJ_DEP_UPDATE_COUNTER_INC(obj_clone_err, 1);
                 return SDK_RET_OBJ_CLONE_ERR;
             }
+            octxt->promoted = TRUE;
             add_to_dirty_list_(api_obj, octxt);
             PDS_TRACE_VERBOSE("Promoted %s from aol to dol",
                               api_obj->key2str().c_str());

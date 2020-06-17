@@ -40,7 +40,7 @@ typedef struct batch_info_s {
     ///< the callback to call once this batch finishes processing
     pds_async_rsp_cb_t    response_cb;
     ///< list of api calls to process in this batch
-    vector<api_ctxt_t *> apis;
+    vector<api_ctxt_t *>  apis;
 } batch_info_t;
 
 /// \brief    IPC message sent to config thread for API processing

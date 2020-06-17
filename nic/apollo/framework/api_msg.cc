@@ -112,8 +112,8 @@ api_batch_destroy (pds_batch_ctxt_t bctxt)
 sdk_ret_t
 process_api (pds_batch_ctxt_t bctxt, api_ctxt_t *api_ctxt)
 {
-    sdk_ret_t ret = SDK_RET_OK;
     api_msg_t *api_msg;
+    sdk_ret_t ret = SDK_RET_OK;
 
     if (bctxt == 0) {
         pds_batch_params_t batch_params = { 0 };
@@ -129,7 +129,6 @@ process_api (pds_batch_ctxt_t bctxt, api_ctxt_t *api_ctxt)
         // send API msg to API thread and receive the response synchronously
         sdk::ipc::request(core::PDS_THREAD_ID_API, API_MSG_ID_BATCH, api_msg,
                           sizeof(*api_msg), api_process_sync_result_, &ret);
-
         api_batch_destroy((pds_batch_ctxt_t)api_msg);
         return ret;
     }

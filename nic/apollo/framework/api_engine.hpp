@@ -76,6 +76,8 @@ struct api_obj_ctxt_s {
     uint8_t rsvd_rscs:1;          ///< true after resource reservation stage
     uint8_t hw_dirty:1;           ///< true if hw entries are updated,
                                   ///< but not yet activated
+    uint8_t promoted:1;           ///< object context is due to promotion
+                                  ///< affected object list to dirty object list
 
     api_obj_ctxt_s() {
         api_op = API_OP_INVALID;
@@ -84,8 +86,9 @@ struct api_obj_ctxt_s {
         cloned_obj = NULL;
         cb_ctxt = NULL;
         upd_bmap = 0;
-        rsvd_rscs = 0;
-        hw_dirty = 0;
+        rsvd_rscs = FALSE;
+        hw_dirty = FALSE;
+        promoted = FALSE;
     }
 
     bool operator==(const api_obj_ctxt_s& rhs) const {
@@ -513,6 +516,10 @@ private:
     /// \param[in]    API object context pointer to be freed
     void api_obj_ctxt_free_(api_obj_ctxt_t *octxt) {
         if (octxt) {
+            if (octxt->promoted) {
+                api_params_free(octxt->api_params,
+                                octxt->obj_id, octxt->api_op);
+            }
             octxt->~api_obj_ctxt_t();
             api_obj_ctxt_slab_->free(octxt);
         }
