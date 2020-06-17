@@ -604,7 +604,7 @@ TEST_F(route_test, route_workflow_neg_6) {
     feeder1A.init(k_base_v4_pfx_5, 50, 100, k_route_table_id,
                   PDS_NH_TYPE_OVERLAY, PDS_NAT_TYPE_NONE,
                   true);
-    workflow_neg_5<route_feeder>(feeder1, feeder1A);
+    workflow_neg_6<route_feeder>(feeder1, feeder1A);
     bctxt = batch_start();
     sample_route_table_teardown(bctxt, k_route_table_id, k_num_route_tables);
     batch_commit(bctxt);

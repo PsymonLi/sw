@@ -45,6 +45,7 @@ public:
     // Test params
     pds_policy_spec_t spec;
     std::string cidr_str;
+    uint32_t num_rules;
     uint16_t stateful_rules;
     // constructor
     policy_feeder() { };
@@ -81,7 +82,22 @@ inline std::ostream&
 operator<<(std::ostream& os, const pds_policy_spec_t *spec) {
     os << &spec->key
        << " af: " << +(spec->rule_info ? (uint32_t)spec->rule_info->af : 0)
+       << " default action: " << (spec->rule_info ?
+                                  spec->rule_info->default_action.
+                                  fw_action.action : SECURITY_RULE_ACTION_NONE)
        << " num rules: " << (spec->rule_info ? spec->rule_info->num_rules : 0);
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_status_t *status) {
+    os << "  ";
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_stats_t *stats) {
+    os << "  ";
     return os;
 }
 
@@ -94,7 +110,8 @@ operator<<(std::ostream& os, const pds_policy_info_t *obj) {
 inline std::ostream&
 operator<<(std::ostream& os, const policy_feeder& obj) {
     os << "Policy feeder =>" << &obj.spec
-       << " cidr_str: " << obj.cidr_str;
+       << " cidr_str: " << obj.cidr_str
+       << std::endl;
     return os;
 }
 
@@ -115,16 +132,164 @@ void policy_rule_info_update(policy_feeder& feeder, pds_policy_spec_t *spec,
 void policy_update(policy_feeder& feeder);
 void policy_delete(policy_feeder& feeder);
 
-void create_rules(std::string cidr_str, uint8_t af=IP_AF_IPV4,
-                  uint16_t stateful_rules=0, rule_info_t **rule_info=NULL,
-                  uint16_t num_rules=1, layer_t layer=LAYER_ALL,
-                  action_t action=ALLOW, uint32_t priority=0,
-                  bool wildcard=false);
+void create_policy_spec(std::string cidr_str, uint8_t af=IP_AF_IPV4,
+                        uint16_t num_rules=1, rule_info_t **rule_info=NULL,
+                        layer_t layer=LAYER_ALL, action_t action=ALLOW,
+                        uint32_t priority=0);
 
 // Function prototypes
 void sample_policy_setup(pds_batch_ctxt_t bctxt);
 void sample_policy_teardown(pds_batch_ctxt_t bctxt);
 
+// Policy rule test feeder class
+class policy_rule_feeder : public feeder {
+public:
+    // Test params
+    pds_policy_rule_spec_t spec;
+    std::string cidr_str;
+    ip_prefix_t base_ip_pfx;
+    uint32_t base_rule_id;
+    // constructor
+    policy_rule_feeder() { };
+    policy_rule_feeder(policy_rule_feeder& feeder) {
+        pds_obj_key_t rule_id = feeder.spec.key.rule_id;
+        pds_obj_key_t policy_id = feeder.spec.key.policy_id;
+        init(pdsobjkey2int(rule_id), pdsobjkey2int(policy_id),
+             feeder.cidr_str, feeder.num_obj);
+    }
+
+    // Initialize feeder with the base set of values
+    void init(uint32_t rule_id, uint32_t policy_id,
+              std::string cidr_str, uint32_t num_rules);
+
+    // Iterate helper routines
+    void iter_next(int width = 1);
+
+    // Build routines
+    void key_build(pds_policy_rule_key_t *key) const;
+    void spec_build(pds_policy_rule_spec_t *spec) const;
+
+    // Compare routines
+    bool key_compare(const pds_policy_rule_key_t *key) const;
+    bool spec_compare(const pds_policy_rule_spec_t *spec) const;
+    bool status_compare(const pds_policy_rule_status_t *status1,
+                        const pds_policy_rule_status_t *status2) const;
+};
+
+// Dump prototypes
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_rule_spec_t *spec) {
+    os << " rule id: " << spec->key.rule_id.str()
+    << " policy id: " << spec->key.policy_id.str()
+    << " stateful: " << (spec->attrs.stateful ? "true" : "false")
+    << " priority: " << spec->attrs.priority;
+    os << std::endl;
+    os << " l3 match => "
+    << " protocol match type: " << spec->attrs.match.l3_match.proto_match_type
+    << " ip protocol: " << (int)spec->attrs.match.l3_match.ip_proto
+    << " source match type: " << spec->attrs.match.l3_match.src_match_type
+    << " destination match type: " << spec->attrs.match.l3_match.dst_match_type;
+    switch (spec->attrs.match.l3_match.src_match_type) {
+    case IP_MATCH_PREFIX:
+        os << " source ip prefix: "
+            << ippfx2str(&spec->attrs.match.l3_match.src_ip_pfx);
+        break;
+    case IP_MATCH_RANGE:
+        os << " source ip range: "
+            << " af: " << (uint32_t)spec->attrs.match.l3_match.src_ip_range.af
+            << " ip lower-upper: "
+            << ipvxrange2str((ipvx_range_t*)
+                             &spec->attrs.match.l3_match.src_ip_range);
+        break;
+    case IP_MATCH_TAG:
+        os << " source ip tag: " << spec->attrs.match.l3_match.src_tag;
+        break;
+    default:
+        break;
+    }
+    switch (spec->attrs.match.l3_match.dst_match_type) {
+    case IP_MATCH_PREFIX:
+        os << " destination ip prefix: "
+            << ippfx2str(&spec->attrs.match.l3_match.dst_ip_pfx);
+        break;
+    case IP_MATCH_RANGE:
+        os << " destination ip range: "
+            << " af: " << (uint32_t)spec->attrs.match.l3_match.dst_ip_range.af
+            << " ip lower-upper: "
+            << ipvxrange2str((ipvx_range_t*)
+                             &spec->attrs.match.l3_match.dst_ip_range);
+        break;
+    case IP_MATCH_TAG:
+        os << " destination ip tag: " << spec->attrs.match.l3_match.src_tag;
+        break;
+    default:
+        break;
+    }
+    os << std::endl;
+    os << " l4 match => ";
+    if (spec->attrs.match.l3_match.ip_proto == IP_PROTO_TCP ||
+        spec->attrs.match.l3_match.ip_proto == IP_PROTO_UDP) {
+        os << " source port range: ip lower: "
+            << spec->attrs.match.l4_match.sport_range.port_lo
+            << " ip upper: "
+            << spec->attrs.match.l4_match.sport_range.port_hi
+            << " destination port range: ip lower: "
+            << spec->attrs.match.l4_match.dport_range.port_lo
+            << " ip upper: "
+            << spec->attrs.match.l4_match.dport_range.port_hi;
+    }
+    if (spec->attrs.match.l3_match.ip_proto == IP_PROTO_ICMP) {
+        os << " type match type: "
+            << spec->attrs.match.l4_match.type_match_type
+            << " icmp type: "
+            << (int)spec->attrs.match.l4_match.icmp_type
+            << " code match type: "
+            << spec->attrs.match.l4_match.code_match_type
+            << " icmp code: "
+            << (int)spec->attrs.match.l4_match.icmp_code;
+    }
+    os << std::endl;
+    os << " action data:" << spec->attrs.action_data.fw_action.action;
+    os << std::endl;
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_rule_status_t *status) {
+    os << "  ";
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_rule_stats_t *stats) {
+    os << "  ";
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const pds_policy_rule_info_t *obj) {
+    os << " Policy rule info =>"
+    << &obj->spec
+    << &obj->status
+    << &obj->stats
+    << std::endl;
+    return os;
+}
+
+inline std::ostream&
+operator<<(std::ostream& os, const policy_rule_feeder& obj) {
+    os << "Policy rule feeder =>"
+    << &obj.spec
+    << " cidr_str: " << obj.cidr_str
+    << std::endl;
+    return os;
+}
+
+// CRUD prototypes
+API_CREATE(policy_rule);
+API_READ_1(policy_rule);
+API_UPDATE(policy_rule);
+API_DELETE_1(policy_rule);
 }    // namespace api
 }    // namespace test
 

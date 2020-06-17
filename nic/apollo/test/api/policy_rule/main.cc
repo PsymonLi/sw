@@ -17,6 +17,10 @@ namespace api {
 
 // globals
 static constexpr uint16_t g_num_stateful_rules = 64;
+static const std::string k_base_v4_pfx = "30.0.0.1/16";
+static const std::string k_base_v4_pfx_2 = "30.50.0.1/16";
+static const std::string k_base_v4_pfx_3 = "30.100.0.1/16";
+static const std::string k_base_v4_pfx_4 = "30.150.0.1/16";
 
 //----------------------------------------------------------------------------
 // Policy test class
@@ -77,282 +81,486 @@ policy_teardown (pds_batch_ctxt_t bctxt) {
     many_delete(bctxt, pol_feeder);
 }
 
-static void
-policy_add_rules (pds_batch_ctxt_t bctxt, std::string cidr_str)
-{
-    uint32_t add_rule_count = k_num_rule_add;
-    pds_policy_rule_spec_t spec;
-    uint32_t rule_id = 513; // default rules 1-512
-    ip_prefix_t ip_pfx;
-    sdk_ret_t ret;
+/// \defgroup POLICY_RULE_TESTS Policy rule tests
+/// \brief Policy rule WF_B1
+/// \ref WF_B1
+TEST_F(policy_rule_test, policy_rule_workflow_b1) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
 
-    test::extract_ip_pfx((char *)cidr_str.c_str(), &ip_pfx);
-    for (uint32_t i = 0; i < add_rule_count; i ++) {
-        spec.key.rule_id = int2pdsobjkey(rule_id + i);
-        spec.key.policy_id = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-        spec.attrs.match.l4_match.sport_range.port_lo = 0;
-        spec.attrs.match.l4_match.sport_range.port_hi = 65535;
-        spec.attrs.match.l4_match.dport_range.port_lo = 0;
-        spec.attrs.match.l4_match.dport_range.port_hi = 65535;
-        spec.attrs.match.l3_match.proto_match_type = MATCH_SPECIFIC;
-        spec.attrs.match.l3_match.ip_proto = IP_PROTO_TCP;
-        spec.attrs.match.l3_match.src_match_type = IP_MATCH_RANGE;
-        spec.attrs.match.l3_match.dst_match_type = IP_MATCH_RANGE;
-        spec.attrs.match.l3_match.src_ip_range.af = ip_pfx.addr.af;
-        memcpy(&spec.attrs.match.l3_match.src_ip_range.ip_lo,
-               &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-        memcpy(&spec.attrs.match.l3_match.dst_ip_range.ip_lo,
-               &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-        test::increment_ip_addr(&ip_pfx.addr, 2);
-        memcpy(&spec.attrs.match.l3_match.src_ip_range.ip_hi,
-               &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-        memcpy(&spec.attrs.match.l3_match.dst_ip_range.ip_hi,
-               &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-        increment_ip_addr(&ip_pfx.addr);
-        spec.attrs.action_data.fw_action.action = SECURITY_RULE_ACTION_DENY;
-        ret = pds_policy_rule_create(&spec, bctxt);
-        ASSERT_TRUE(ret == SDK_RET_OK);
-    }
+    // setup a policy
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    // create multiple policy_rules
+    feeder.init(100, policy_id,  k_base_v4_pfx, 50);
+    workflow_b1<policy_rule_feeder>(feeder);
+    // tear down the policy
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
 }
 
-static void
-policy_rule_read_verify (void)
-{
-    sdk_ret_t ret;
-    pds_policy_rule_key_t key;
-    pds_policy_rule_info_t info;
-    uint32_t rule_id = 513;
+/// \brief policy_rule WF_b2
+///// \ref WF_b2
+TEST_F(policy_rule_test, policy_rule_workflow_b2) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder_1;
+    policy_rule_feeder feeder_2;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
 
-    for (uint32_t i = 0; i < k_num_rule_add; i++) {
-        key.rule_id = int2pdsobjkey(rule_id + i);
-        key.policy_id = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-        memset(&info, 0, sizeof(info));
-        ret = pds_policy_rule_read(&key, &info);
-        ASSERT_TRUE(ret == SDK_RET_OK);
-    }
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+    // create multiple rules and update them
+    feeder_1.init(100, policy_id, k_base_v4_pfx, 50);
+    feeder_2.init(100, policy_id, k_base_v4_pfx_2, 50);
+    workflow_b2<policy_rule_feeder>(feeder_1, feeder_2);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
 }
 
-static void
-policy_add_rules_verify (void)
-{
-    pds_policy_info_t info;
-    pds_obj_key_t key;
-    sdk_ret_t ret;
+/// \brief policy_rule WF_1
+///// \ref WF_1
+TEST_F(policy_rule_test, policy_rule_workflow_1) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
 
-    memset(&info, 0, sizeof(pds_policy_info_t));
-    info.spec.rule_info =
-        (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
-                                  POLICY_RULE_INFO_SIZE(0));
-    key = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-    ret = pds_policy_read(&key, &info);
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(100, policy_id,  k_base_v4_pfx, 50);
+    workflow_1<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_2
+/// \ref WF_2
+TEST_F(policy_rule_test, policy_rule_workflow_2) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(100, policy_id,  k_base_v4_pfx, 50);
+    workflow_2<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_3
+/// \ref WF_3
+TEST_F(policy_rule_test, policy_rule_workflow_3) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder2, feeder3;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder2.init(200, policy_id, k_base_v4_pfx_2, 100);
+    feeder3.init(300, policy_id, k_base_v4_pfx_3, 100);
+    workflow_3<policy_rule_feeder>(feeder1, feeder2, feeder3);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_4
+/// \ref WF_4
+TEST_F(policy_rule_test, policy_rule_workflow_4) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(100, policy_id, k_base_v4_pfx, 50);
+    workflow_4<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_5
+/// \ref WF_5
+TEST_F(policy_rule_test, policy_rule_workflow_5) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder2, feeder3;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder2.init(200, policy_id, k_base_v4_pfx_2, 100);
+    feeder3.init(300, policy_id, k_base_v4_pfx_3, 100);
+    workflow_5<policy_rule_feeder>(feeder1, feeder2, feeder3);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_6
+/// \ref WF_6
+TEST_F(policy_rule_test, policy_rule_workflow_6) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A, feeder1B;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 100);
+    feeder1B.init(100, policy_id, k_base_v4_pfx_3, 100);
+    workflow_6<policy_rule_feeder>(feeder1, feeder1A, feeder1B);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_7
+/// \ref WF_7
+TEST_F(policy_rule_test, policy_rule_workflow_7) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A, feeder1B;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 100);
+    feeder1B.init(100, policy_id, k_base_v4_pfx_3, 100);
+    workflow_7<policy_rule_feeder>(feeder1, feeder1A, feeder1B);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_8
+/// \ref WF_8
+TEST_F(policy_rule_test, policy_rule_workflow_8) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A, feeder1B;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 100);
+    feeder1B.init(100, policy_id, k_base_v4_pfx_3, 100);
+    workflow_8<policy_rule_feeder>(feeder1, feeder1A, feeder1B);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_9
+/// \ref WF_9
+TEST_F(policy_rule_test, policy_rule_workflow_9) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 100);
+    workflow_9<policy_rule_feeder>(feeder1, feeder1A);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy_rule WF_10
+///// \ref WF_10
+TEST_F(policy_rule_test, policy_rule_workflow_10) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder2, feeder2A, feeder3, feeder3A, feeder4;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder2.init(200, policy_id, k_base_v4_pfx_2, 100);
+    feeder2A.init(200, policy_id, k_base_v4_pfx, 100);
+    feeder3.init(300, policy_id, k_base_v4_pfx_3, 100);
+    feeder3A.init(300, policy_id, k_base_v4_pfx_4, 100);
+    feeder4.init(400, policy_id , k_base_v4_pfx, 100);
+    workflow_10<policy_rule_feeder>(
+        feeder1, feeder2, feeder2A, feeder3, feeder3A, feeder4);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_1
+/// \ref WF_N_1
+/// Currently this case is failing because even though we create
+/// a policy-rule which is already present int the policy instead
+/// of rejecting the create we are updating the rule in the policy
+TEST_F(policy_rule_test, DISABLED_policy_rule_workflow_neg_1) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(200, policy_id, k_base_v4_pfx_2, 50);
+    workflow_neg_1<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_2
+/// \ref WF_N_2
+TEST_F(policy_rule_test, policy_rule_workflow_neg_2) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(200, policy_id, k_base_v4_pfx_2,
+                PDS_MAX_RULES_PER_IPV4_SECURITY_POLICY+2);
+    workflow_neg_2<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_3
+/// \ref WF_N_3
+TEST_F(policy_rule_test, policy_rule_workflow_neg_3) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder.init(100, policy_id, k_base_v4_pfx_2, 50);
+    workflow_neg_3<policy_rule_feeder>(feeder);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_4
+/// \ref WF_N_4
+TEST_F(policy_rule_test, policy_rule_workflow_neg_4) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder2;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder2.init(200, policy_id, k_base_v4_pfx_2, 100);
+    workflow_neg_4<policy_rule_feeder>(feeder1, feeder2);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_5
+/// \ref WF_N_5
+TEST_F(policy_rule_test, policy_rule_workflow_neg_5) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 100);
+    workflow_neg_5<policy_rule_feeder>(feeder1, feeder1A);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_6
+/// \ref WF_N_6
+TEST_F(policy_rule_test, policy_rule_workflow_neg_6) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 1);
+    feeder1A.init(100, policy_id, k_base_v4_pfx_2, 10);
+    workflow_neg_6<policy_rule_feeder>(feeder1, feeder1A);
+
+    feeder1.init(200, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(200, policy_id, k_base_v4_pfx_2, 200);
+    workflow_neg_6<policy_rule_feeder>(feeder1, feeder1A);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_7
+/// \ref WF_N_7
+TEST_F(policy_rule_test, policy_rule_workflow_neg_7) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1, feeder1A, feeder2;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(200, policy_id, k_base_v4_pfx, 100);
+    feeder1A.init(200, policy_id, k_base_v4_pfx_2, 100);
+    feeder2.init(300, policy_id, k_base_v4_pfx_3, 200);
+    workflow_neg_7<policy_rule_feeder>(feeder1, feeder1A, feeder2);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+/// \brief policy-rule WF_N_8
+/// \ref WF_N_8
+TEST_F(policy_rule_test, policy_rule_workflow_neg_8) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder1,feeder2;
+    uint32_t policy_id = TEST_POLICY_ID_BASE + 1;
+
+    bctxt = batch_start();
+    policy_setup(bctxt);
+    batch_commit(bctxt);
+
+    feeder1.init(100, policy_id, k_base_v4_pfx, 1);
+    feeder2.init(200, policy_id, k_base_v4_pfx_2, 10);
+    workflow_neg_8<policy_rule_feeder>(feeder1, feeder2);
+
+    feeder1.init(200, policy_id, k_base_v4_pfx, 100);
+    feeder2.init(300, policy_id, k_base_v4_pfx_2, 200);
+    workflow_neg_8<policy_rule_feeder>(feeder1, feeder2);
+    bctxt = batch_start();
+    policy_teardown(bctxt);
+    batch_commit(bctxt);
+}
+
+//---------------------------------------------------------------------
+//// Non templatized test cases
+////---------------------------------------------------------------------
+/// \brief change policy  and policy-rule in the same batch
+TEST_F(policy_rule_test, DISABLED_policy_rule_update_rule_policy) {
+    pds_batch_ctxt_t bctxt;
+    policy_rule_feeder feeder;
+    policy_feeder pol_feeder;
+    sdk_ret_t ret;
+    uint32_t policy_id;
+    pds_obj_key_t pol_key;
+
+    policy_id = TEST_POLICY_ID_BASE + 1;
+    pol_key = int2pdsobjkey(policy_id);
+
+    // create policy and add policy_rules in same batch
+    pol_feeder.init(pol_key, 512, IP_AF_IPV4, k_base_v4_pfx,
+                    1, 100);
+    feeder.init(101, policy_id, "30.0.0.140/16", 100);
+    bctxt = batch_start();
+    ret = many_create<policy_feeder>(bctxt, pol_feeder);
     ASSERT_TRUE(ret == SDK_RET_OK);
-    ASSERT_TRUE(info.spec.rule_info->num_rules ==
-                k_num_init_rules + k_num_rule_add);
-    SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
-    info.spec.rule_info = NULL;
-    // do a GET on all additional rules
-    policy_rule_read_verify();
-}
-
-static void
-policy_delete_rules (pds_batch_ctxt_t bctxt)
-{
-    sdk_ret_t ret;
-    pds_policy_rule_key_t key;
-    uint32_t del_rule_count = k_num_rule_del;
-
-    for (uint32_t i = 0; i < del_rule_count; i ++) {
-        key.rule_id = int2pdsobjkey(i + 1);
-        key.policy_id = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-        ret = pds_policy_rule_delete(&key, bctxt);
-        ASSERT_TRUE(ret == SDK_RET_OK);
-    }
-}
-
-static void
-policy_delete_rules_verify (void)
-{
-}
-
-static void
-policy_update_rule (pds_batch_ctxt_t bctxt, std::string cidr_str)
-{
-    pds_policy_rule_spec_t spec;
-    ip_prefix_t ip_pfx;
-    sdk_ret_t ret;
-
-    test::extract_ip_pfx((char *)cidr_str.c_str(), &ip_pfx);
-    spec.key.rule_id = int2pdsobjkey(1);
-    spec.key.policy_id = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-    spec.attrs.match.l4_match.sport_range.port_lo = 0;
-    spec.attrs.match.l4_match.sport_range.port_hi = 65535;
-    spec.attrs.match.l4_match.dport_range.port_lo = 0;
-    spec.attrs.match.l4_match.dport_range.port_hi = 65535;
-    spec.attrs.match.l3_match.proto_match_type = MATCH_SPECIFIC;
-    spec.attrs.match.l3_match.ip_proto = IP_PROTO_TCP;
-    spec.attrs.match.l3_match.src_match_type = IP_MATCH_RANGE;
-    spec.attrs.match.l3_match.dst_match_type = IP_MATCH_RANGE;
-    spec.attrs.match.l3_match.src_ip_range.af = ip_pfx.addr.af;
-    memcpy(&spec.attrs.match.l3_match.src_ip_range.ip_lo,
-           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-    memcpy(&spec.attrs.match.l3_match.dst_ip_range.ip_lo,
-           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-    test::increment_ip_addr(&ip_pfx.addr, 2);
-    memcpy(&spec.attrs.match.l3_match.src_ip_range.ip_hi,
-           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-    memcpy(&spec.attrs.match.l3_match.dst_ip_range.ip_hi,
-           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-    increment_ip_addr(&ip_pfx.addr);
-    spec.attrs.action_data.fw_action.action = SECURITY_RULE_ACTION_DENY;
-    ret = pds_policy_rule_update(&spec, bctxt);
+    ret = many_create<policy_rule_feeder>(bctxt, feeder);
     ASSERT_TRUE(ret == SDK_RET_OK);
-}
-
-static void
-policy_update_rule_verify (std::string cidr_str)
-{
-    sdk_ret_t ret;
-    pds_obj_key_t key;
-    ip_prefix_t ip_pfx;
-    pds_policy_info_t info;
-
-    memset(&info, 0, sizeof(pds_policy_info_t));
-    info.spec.rule_info =
-        (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
-                                  POLICY_RULE_INFO_SIZE(0));
-    key = int2pdsobjkey(TEST_POLICY_ID_BASE + 1);
-    ret = pds_policy_read(&key, &info);
+    batch_commit(bctxt);
+    // verify
+    ret = many_read<policy_rule_feeder>(feeder);
     ASSERT_TRUE(ret == SDK_RET_OK);
-    ASSERT_TRUE(info.spec.rule_info->num_rules == k_num_init_rules);
-    SDK_FREE(PDS_MEM_ALLOC_SECURITY_POLICY, info.spec.rule_info);
-
-    info.spec.rule_info =
-            (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
-                                      POLICY_RULE_INFO_SIZE(k_num_init_rules));
-    info.spec.rule_info->num_rules = k_num_init_rules;
-    ret = pds_policy_read(&key, &info);
+    ret = many_read<policy_feeder>(pol_feeder);
     ASSERT_TRUE(ret == SDK_RET_OK);
-    test::extract_ip_pfx((char *)cidr_str.c_str(), &ip_pfx);
-    ASSERT_TRUE(memcmp(&info.spec.rule_info->rules[0].attrs.match.l3_match.src_ip_range.ip_lo,
-                       &ip_pfx.addr.addr, sizeof(ipvx_addr_t)) == 0);
-    SDK_FREE(PDS_MEM_ALLOC_ID_ROUTE_TABLE, info.spec.rule_info);
+    // tear-down policy
+    bctxt = batch_start();
+    ret = many_delete(bctxt, pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
 
-    info.spec.rule_info = NULL;
+    // create policy and delete policy_rules in same batch
+    pol_feeder.init(pol_key, 512, IP_AF_IPV4, k_base_v4_pfx,
+                    1, 100);
+    feeder.init(20, policy_id, "30.0.0.140/16", 80);
+    bctxt = batch_start();
+    ret = many_create<policy_feeder>(bctxt, pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    ret = many_delete<policy_rule_feeder>(bctxt, feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+    // verify
+    ret = many_read<policy_rule_feeder>(feeder, sdk::SDK_RET_ENTRY_NOT_FOUND);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    pol_feeder.init(pol_key, 512, IP_AF_IPV4, k_base_v4_pfx,
+                    1, 20);
+    ret = many_read<policy_feeder>(pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    // tear-down policy
+    bctxt = batch_start();
+    ret = many_delete(bctxt, pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
+    // create policy and update policy_rules in same batch
+    pol_feeder.init(pol_key, 512, IP_AF_IPV4, k_base_v4_pfx,
+                    1, 100);
+    feeder.init(20, policy_id, "30.0.0.140/16", 80);
+    bctxt = batch_start();
+    ret = many_create<policy_feeder>(bctxt, pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    ret = many_update<policy_rule_feeder>(bctxt, feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+    // verify
+    ret = many_read<policy_rule_feeder>(feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    // tear-down policy
+    bctxt = batch_start();
+    ret = many_delete(bctxt, pol_feeder);
+    ASSERT_TRUE(ret == SDK_RET_OK);
+    batch_commit(bctxt);
+
 }
-
-/// \defgroup POLICY_TEST Policy rule tests
-/// @{
-
-/// do policy and individual rule(s) add in separate batches
-TEST_F(policy_rule_test, rule_add_1) {
-    pds_batch_ctxt_t bctxt;
-
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    batch_commit(bctxt);
-
-    bctxt = batch_start();
-    policy_add_rules(bctxt, "30.0.0.1/16");
-    batch_commit(bctxt);
-
-    policy_add_rules_verify();
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// do policy and individual rule(s) add in same batch
-TEST_F(policy_rule_test, rule_add_2) {
-    pds_batch_ctxt_t bctxt;
-
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    policy_add_rules(bctxt, "30.0.0.1/16");
-    batch_commit(bctxt);
-
-    policy_add_rules_verify();
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// do policy add and then individual rule(s) del in same batch
-TEST_F(policy_rule_test, rule_del_1) {
-    pds_batch_ctxt_t bctxt;
-
-    // create route table
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    batch_commit(bctxt);
-
-    bctxt = batch_start();
-    policy_delete_rules(bctxt);
-    batch_commit(bctxt);
-
-    // verify delete
-    policy_delete_rules_verify();
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// add policy and update individual rule(s) in same batch
-TEST_F(policy_rule_test, rule_del_2) {
-    pds_batch_ctxt_t bctxt;
-
-    // create and update route table in one batch
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    policy_delete_rules(bctxt);
-    batch_commit(bctxt);
-
-    // verify delete
-    policy_delete_rules_verify();
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// add policy and update individual rule(s) in separate batches
-TEST_F(policy_rule_test, rule_upd_1) {
-    pds_batch_ctxt_t bctxt;
-
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    batch_commit(bctxt);
-
-    bctxt = batch_start();
-    policy_update_rule(bctxt, "30.0.0.1/16");
-    batch_commit(bctxt);
-
-    policy_update_rule_verify("30.0.0.1/16");
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// add policy and update individual rule(s) in same batch
-TEST_F(policy_rule_test, rule_upd_2) {
-    pds_batch_ctxt_t bctxt;
-
-    bctxt = batch_start();
-    policy_setup(bctxt);
-    policy_update_rule(bctxt, "30.0.0.1/16");
-    batch_commit(bctxt);
-
-    policy_update_rule_verify("30.0.0.1/16");
-
-    bctxt = batch_start();
-    policy_teardown(bctxt);
-    batch_commit(bctxt);
-}
-
-/// @}
 
 }    // namespace api
 }    // namespace test

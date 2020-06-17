@@ -12,7 +12,7 @@ namespace api {
 
 #define MAX_RANGE_RULES_V6 5
 #define MAX_RANGE_RULES_V4 20
-
+static const uint8_t k_base_rule_id = 1;
 //----------------------------------------------------------------------------
 // Policy feeder class routines
 //----------------------------------------------------------------------------
@@ -37,10 +37,10 @@ policy_feeder::init(pds_obj_key_t key,
     this->spec.key = key;
     this->spec.rule_info = NULL;
     this->cidr_str = cidr_str;
-    this->stateful_rules = stateful_rules;
+    this->num_rules = max_rules;
     num_obj = num_policy;
-    create_rules(this->cidr_str, af, this->stateful_rules,
-                 (rule_info_t **)&(this->spec.rule_info), max_rules);
+    create_policy_spec(this->cidr_str, af, this->num_rules,
+                       (rule_info_t **)&(this->spec.rule_info));
 }
 
 void
@@ -88,14 +88,84 @@ policy_feeder::key_build(pds_obj_key_t *key) const {
 }
 
 void
-create_rules(std::string cidr_str, uint8_t af, uint16_t stateful_rules,
-             rule_info_t **rule_info, uint16_t num_rules,
-             layer_t layer, action_t action, uint32_t priority,
-             bool wildcard)
+fill_rule_attrs (pds_policy_rule_attrs_t *attrs, ip_prefix_t ip_pfx,
+                 uint32_t rule_id,  uint16_t num_rules, layer_t layer,
+                 action_t action, uint32_t priority, uint32_t base_rule_id)
+{
+    uint16_t max_range_rules = (ip_pfx.addr.af == IP_AF_IPV6)?
+        MAX_RANGE_RULES_V6 : MAX_RANGE_RULES_V4;
+    // create first half rules as stateful-rules
+    // and rest of rules as stateful
+    if (rule_id <= (base_rule_id+(num_rules/2))) {
+        attrs->stateful = true;
+    } else {
+        attrs->stateful = false;
+    }
+    // setting priority to rule_id
+    attrs->priority = (rule_id % PDS_MAX_RULE_PRIORITY);
+    if (is_l3(layer)) {
+        attrs->match.l3_match.proto_match_type = MATCH_SPECIFIC;
+        // create half of stateful and non-stateful rules as icmp rules
+        // and other halves as tcp rules
+        if ((rule_id <= (base_rule_id+num_rules/4)) ||
+            ((rule_id > base_rule_id+ num_rules/2)
+             && (rule_id <= (base_rule_id + (3 * num_rules)/4)))) {
+            attrs->match.l3_match.ip_proto = IP_PROTO_ICMP;
+        } else {
+            attrs->match.l3_match.ip_proto = IP_PROTO_TCP;
+        }
+        // create range match rules based on platform and it's limits,
+        // and rest as prefix match rules
+        if (apulu() && rule_id <= base_rule_id+max_range_rules) {
+            attrs->match.l3_match.src_match_type = IP_MATCH_RANGE;
+            attrs->match.l3_match.dst_match_type = IP_MATCH_RANGE;
+            attrs->match.l3_match.src_ip_range.af = ip_pfx.addr.af;
+            attrs->match.l3_match.dst_ip_range.af = ip_pfx.addr.af;
+            memcpy(&attrs->match.l3_match.src_ip_range.ip_lo,
+                   &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
+            memcpy(&attrs->match.l3_match.dst_ip_range.ip_lo,
+                   &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
+            test::increment_ip_addr(&ip_pfx.addr, 2);
+            memcpy(&attrs->match.l3_match.src_ip_range.ip_hi,
+                   &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
+            memcpy(&attrs->match.l3_match.dst_ip_range.ip_hi,
+                   &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
+        } else {
+            attrs->match.l3_match.src_match_type = IP_MATCH_PREFIX;
+            attrs->match.l3_match.dst_match_type = IP_MATCH_PREFIX;
+            memcpy(&attrs->match.l3_match.src_ip_pfx,
+                   &ip_pfx, sizeof(ip_prefix_t));
+            // using same ip as dst ip just for testing
+            memcpy(&attrs->match.l3_match.dst_ip_pfx,
+                   &ip_pfx, sizeof(ip_prefix_t));
+        }
+    }
+    if (is_l4(layer)) {
+        if (attrs->match.l3_match.ip_proto == IP_PROTO_TCP ||
+            attrs->match.l3_match.ip_proto == IP_PROTO_UDP) {
+            attrs->match.l4_match.sport_range.port_lo = 0;
+            attrs->match.l4_match.sport_range.port_hi = 65535;
+            attrs->match.l4_match.dport_range.port_lo = 0;
+            attrs->match.l4_match.dport_range.port_hi = 65535;
+        }
+        if (attrs->match.l3_match.ip_proto == IP_PROTO_ICMP) {
+            attrs->match.l4_match.type_match_type = MATCH_SPECIFIC;
+            attrs->match.l4_match.icmp_type = 1;
+            attrs->match.l4_match.code_match_type = MATCH_SPECIFIC;
+            attrs->match.l4_match.icmp_code = 1;
+        }
+    }
+    attrs->action_data.fw_action.action = action_get(action);
+}
+
+void
+create_policy_spec(std::string cidr_str, uint8_t af, uint16_t num_rules,
+                   rule_info_t **rule_info,layer_t layer, action_t action,
+                   uint32_t priority)
 {
     ip_prefix_t ip_pfx;
-    uint16_t num_range_rules;
     rule_t *rule;
+    uint16_t max_range_rules = 0;
 
     *rule_info =
         (rule_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_SECURITY_POLICY,
@@ -104,93 +174,17 @@ create_rules(std::string cidr_str, uint8_t af, uint16_t stateful_rules,
     (*rule_info)->num_rules = num_rules;
     if (num_rules == 0) return;
     test::extract_ip_pfx((char *)cidr_str.c_str(), &ip_pfx);
-
-    if (apulu()) {
-        num_range_rules = (ip_pfx.addr.af == IP_AF_IPV6)?
-                           MAX_RANGE_RULES_V6 : MAX_RANGE_RULES_V4;
-        for (uint32_t i = 0; i < num_rules; i++) {
-            rule = &(*rule_info)->rules[i];
-            rule->key = int2pdsobjkey(i+1);
-            rule->attrs.priority = priority;
-            if (is_l4(layer)) {
-                rule->attrs.match.l4_match.sport_range.port_lo = 0;
-                rule->attrs.match.l4_match.sport_range.port_hi = 65535;
-                rule->attrs.match.l4_match.dport_range.port_lo = 0;
-                rule->attrs.match.l4_match.dport_range.port_hi = 65535;
-            }
-            if (is_l3(layer)) {
-                rule->attrs.match.l3_match.proto_match_type = MATCH_SPECIFIC;
-                rule->attrs.match.l3_match.ip_proto = IP_PROTO_TCP;
-
-                // create few as range match rules and rest as prefix
-                if (num_range_rules) {
-                    rule->attrs.match.l3_match.src_match_type = IP_MATCH_RANGE;
-                    rule->attrs.match.l3_match.dst_match_type = IP_MATCH_RANGE;
-                    rule->attrs.match.l3_match.src_ip_range.af = ip_pfx.addr.af;
-                    memcpy(&rule->attrs.match.l3_match.src_ip_range.ip_lo,
-                           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-                    memcpy(&rule->attrs.match.l3_match.dst_ip_range.ip_lo,
-                           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-                    test::increment_ip_addr(&ip_pfx.addr, 2);
-                    memcpy(&rule->attrs.match.l3_match.src_ip_range.ip_hi,
-                           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-                    memcpy(&rule->attrs.match.l3_match.dst_ip_range.ip_hi,
-                           &ip_pfx.addr.addr, sizeof(ipvx_addr_t));
-                    increment_ip_addr(&ip_pfx.addr);
-                    num_range_rules--;
-                } else {
-                    rule->attrs.match.l3_match.src_match_type = IP_MATCH_PREFIX;
-                    rule->attrs.match.l3_match.dst_match_type = IP_MATCH_PREFIX;
-                    memcpy(&rule->attrs.match.l3_match.src_ip_pfx,
-                           &ip_pfx, sizeof(ip_prefix_t));
-                    // using same ip as dst ip just for testing
-                    memcpy(&rule->attrs.match.l3_match.dst_ip_pfx,
-                           &ip_pfx, sizeof(ip_prefix_t));
-                    test::increment_ip_addr(&ip_pfx.addr);
-                }
-                cidr_str = ippfx2str(&ip_pfx);
-            }
-            rule->attrs.action_data.fw_action.action = action_get(action);
-        }
-    } else {
-        for (uint32_t i = 0; i < num_rules; i++) {
-            rule = &(*rule_info)->rules[i];
-            rule->key = int2pdsobjkey(i+1);
-            rule->attrs.priority = priority;
-            if (stateful_rules) {
-                rule->attrs.stateful = true;
-                if (is_l4(layer)) {
-                    rule->attrs.match.l4_match.sport_range.port_lo = 0;
-                    rule->attrs.match.l4_match.sport_range.port_hi = 65535;
-                    rule->attrs.match.l4_match.dport_range.port_lo = 0;
-                    rule->attrs.match.l4_match.dport_range.port_hi = 65535;
-                }
-                if (is_l3(layer)) {
-                    rule->attrs.match.l3_match.proto_match_type = MATCH_SPECIFIC;
-                    rule->attrs.match.l3_match.ip_proto = IP_PROTO_TCP;
-                }
-                stateful_rules--;
-            } else {
-                rule->attrs.stateful = false;
-                if (is_l3(layer)) {
-                    rule->attrs.match.l3_match.proto_match_type = MATCH_SPECIFIC;
-                    rule->attrs.match.l3_match.ip_proto = IP_PROTO_ICMP;
-                }
-                if (is_l4(layer)) {
-                    rule->attrs.match.l4_match.type_match_type = MATCH_SPECIFIC;
-                    rule->attrs.match.l4_match.icmp_type = 1;
-                    rule->attrs.match.l4_match.code_match_type = MATCH_SPECIFIC;
-                    rule->attrs.match.l4_match.icmp_code = 1;
-                }
-            }
-            if (is_l3(layer)) {
-                memcpy(&rule->attrs.match.l3_match.src_ip_pfx,
-                       &ip_pfx, sizeof(ip_prefix_t));
-                test::increment_ip_addr(&ip_pfx.addr);
-                cidr_str = ippfx2str(&ip_pfx);
-            }
-            rule->attrs.action_data.fw_action.action =
-                                                action_get(action);
+    max_range_rules = (ip_pfx.addr.af == IP_AF_IPV6)?
+        MAX_RANGE_RULES_V6 : MAX_RANGE_RULES_V4;
+    for (uint32_t i = 0; i < num_rules; i++) {
+        rule = &(*rule_info)->rules[i];
+        rule->key = int2pdsobjkey(i+1);
+        fill_rule_attrs(&rule->attrs, ip_pfx, i+1, num_rules,
+                        layer, action, priority, k_base_rule_id);
+        if (apulu() && (i+1 <= max_range_rules)) {
+            test::increment_ip_addr(&ip_pfx.addr, 3);
+        } else {
+            test::increment_ip_addr(&ip_pfx.addr);
         }
     }
 }
@@ -205,9 +199,8 @@ policy_feeder::spec_alloc(pds_policy_spec_t *spec) {
 void
 policy_feeder::spec_build(pds_policy_spec_t *spec) const {
     memcpy(spec, &this->spec, sizeof(pds_policy_spec_t));
-    create_rules(this->cidr_str, this->spec.rule_info->af,
-                 this->stateful_rules, (rule_info_t **)&(spec->rule_info),
-                 this->spec.rule_info->num_rules);
+    create_policy_spec(this->cidr_str, this->spec.rule_info->af, this->num_rules,
+                       (rule_info_t **)&(spec->rule_info));
 }
 
 bool
@@ -388,5 +381,200 @@ void sample_policy_teardown(pds_batch_ctxt_t bctxt) {
     many_delete(bctxt, k_pol_feeder);
 }
 
+//----------------------------------------------------------------------------
+// Policy route feeder class routines
+//----------------------------------------------------------------------------
+
+void
+policy_rule_feeder::init(uint32_t rule_id, uint32_t policy_id,
+                         std::string cidr_str, uint32_t num_rules) {
+    ip_prefix_t ip_pfx;
+
+    memset(&this->spec, 0, sizeof(pds_policy_rule_spec_t));
+    spec.key.rule_id = int2pdsobjkey(rule_id);
+    spec.key.policy_id = int2pdsobjkey(policy_id);
+    this->cidr_str = cidr_str;
+    this->base_rule_id = rule_id;
+    num_obj = num_rules;
+    test::extract_ip_pfx((char *)cidr_str.c_str(), &ip_pfx);
+    fill_rule_attrs(&this->spec.attrs, ip_pfx, rule_id, num_obj,
+                    LAYER_ALL, ALLOW, 0, this->base_rule_id);
+}
+
+void
+policy_rule_feeder::iter_next(int width) {
+    uint32_t rule_id = 0;
+    ip_prefix_t ip_pfx;
+    uint16_t max_range_rules = 0 ;
+    rule_id = pdsobjkey2int(spec.key.rule_id) + width;
+    spec.key.rule_id = int2pdsobjkey(rule_id);
+    cur_iter_pos++;
+    test::extract_ip_pfx((char *)this->cidr_str.c_str(), &ip_pfx);
+    max_range_rules = (ip_pfx.addr.af == IP_AF_IPV6)?
+        MAX_RANGE_RULES_V6 : MAX_RANGE_RULES_V4;
+    if (apulu() && (rule_id-width <= this->base_rule_id+max_range_rules)) {
+        memcpy(&ip_pfx.addr.addr,
+               &spec.attrs.match.l3_match.src_ip_range.ip_hi,
+               sizeof(ipvx_addr_t));
+        test::increment_ip_addr(&ip_pfx.addr);
+    } else {
+        memcpy(&ip_pfx, &spec.attrs.match.l3_match.src_ip_pfx,
+               sizeof(ip_prefix_t));
+        test::increment_ip_addr(&ip_pfx.addr);
+    }
+    memcpy(&this->base_ip_pfx, &ip_pfx, sizeof(ip_prefix_t));
+    fill_rule_attrs(&spec.attrs, ip_pfx, rule_id, num_obj,
+                    LAYER_ALL, ALLOW, 0, this->base_rule_id);
+}
+
+void
+policy_rule_feeder::key_build(pds_policy_rule_key_t *key) const {
+    memset(key, 0, sizeof(pds_policy_rule_key_t));
+    key->rule_id = spec.key.rule_id;
+    key->policy_id = spec.key.policy_id;
+}
+
+void
+policy_rule_feeder::spec_build(pds_policy_rule_spec_t *spec) const {
+    ip_prefix_t ip_pfx;
+    uint32_t rule_id = 0;
+    memcpy(spec, &this->spec, sizeof(pds_policy_rule_spec_t));
+    rule_id =  pdsobjkey2int(spec->key.rule_id);
+    if (rule_id == this->base_rule_id) {
+        test::extract_ip_pfx((char *)this->cidr_str.c_str(), &ip_pfx);
+    } else {
+        memcpy(&ip_pfx, &this->base_ip_pfx, sizeof(ip_prefix_t));
+    }
+    fill_rule_attrs(&spec->attrs, ip_pfx, rule_id, num_obj,
+                    LAYER_ALL, ALLOW, 0, this->base_rule_id);
+}
+
+bool
+policy_rule_feeder::key_compare(const pds_policy_rule_key_t *key) const {
+    if (key->rule_id != spec.key.rule_id)
+        return false;
+    if (key->policy_id != spec.key.policy_id)
+        return false;
+    return true;
+}
+
+bool
+policy_rule_feeder::spec_compare(const pds_policy_rule_spec_t *spec) const {
+    if (spec->attrs.stateful != this->spec.attrs.stateful)
+        return false;
+    if (spec->attrs.priority != this->spec.attrs.priority)
+        return false;
+    if (spec->attrs.match.l3_match.proto_match_type
+        != this->spec.attrs.match.l3_match.proto_match_type)
+        return false;
+    if (spec->attrs.match.l3_match.ip_proto
+        != this->spec.attrs.match.l3_match.ip_proto)
+        return false;
+    if (spec->attrs.match.l3_match.src_match_type
+        != this->spec.attrs.match.l3_match.src_match_type)
+        return false;
+    if (spec->attrs.match.l3_match.dst_match_type
+        != this->spec.attrs.match.l3_match.dst_match_type)
+        return false;
+    switch (spec->attrs.match.l3_match.src_match_type) {
+    case IP_MATCH_PREFIX:
+        if (ip_prefix_is_equal(
+                (ip_prefix_t*)&spec->attrs.match.l3_match.src_ip_pfx,
+                (ip_prefix_t*)&this->spec.attrs.match.l3_match.src_ip_pfx)
+            == false)
+            return false;
+        break;
+    case IP_MATCH_RANGE:
+        if (spec->attrs.match.l3_match.src_ip_range.af !=
+            this->spec.attrs.match.l3_match.src_ip_range.af)
+            return false;
+        if (ip_addr_is_equal(
+                (ip_addr_t*)
+                &spec->attrs.match.l3_match.src_ip_range.ip_lo.v4_addr,
+                (ip_addr_t*)
+                &this->spec.attrs.match.l3_match.src_ip_range.ip_lo.v4_addr)
+            == false)
+            return false;
+        if (ip_addr_is_equal(
+                (ip_addr_t*)
+                &spec->attrs.match.l3_match.src_ip_range.ip_lo.v4_addr,
+                (ip_addr_t*)
+                &this->spec.attrs.match.l3_match.src_ip_range.ip_lo.v4_addr)
+            == false)
+            return false;
+        break;
+    case IP_MATCH_TAG:
+        if (spec->attrs.match.l3_match.src_tag !=
+            this->spec.attrs.match.l3_match.src_tag)
+            return false;
+        break;
+    default:
+        return false;
+    }
+    switch (spec->attrs.match.l3_match.dst_match_type) {
+    case IP_MATCH_PREFIX:
+        if (ip_prefix_is_equal(
+                (ip_prefix_t*)&spec->attrs.match.l3_match.dst_ip_pfx,
+                (ip_prefix_t*)&this->spec.attrs.match.l3_match.dst_ip_pfx)
+            == false)
+            return false;
+        break;
+    case IP_MATCH_RANGE:
+        if (spec->attrs.match.l3_match.dst_ip_range.af !=
+            this->spec.attrs.match.l3_match.dst_ip_range.af)
+            return false;
+        if (ip_addr_is_equal(
+                (ip_addr_t*)
+                &spec->attrs.match.l3_match.dst_ip_range.ip_lo.v4_addr,
+                (ip_addr_t*)
+                &this->spec.attrs.match.l3_match.dst_ip_range.ip_lo.v4_addr)
+            == false)
+            return false;
+        if (ip_addr_is_equal(
+                (ip_addr_t*)
+                &spec->attrs.match.l3_match.dst_ip_range.ip_lo.v4_addr,
+                (ip_addr_t*)
+                &this->spec.attrs.match.l3_match.dst_ip_range.ip_lo.v4_addr)
+            == false)
+            return false;
+        break;
+    case IP_MATCH_TAG:
+        if (spec->attrs.match.l3_match.dst_tag !=
+            this->spec.attrs.match.l3_match.dst_tag)
+            return false;
+        break;
+    default:
+        return false;
+    }
+    if (spec->attrs.match.l4_match.sport_range.port_lo !=
+        this->spec.attrs.match.l4_match.sport_range.port_lo)
+        return false;
+    if (spec->attrs.match.l4_match.dport_range.port_hi !=
+        this->spec.attrs.match.l4_match.dport_range.port_hi)
+        return false;
+    if (spec->attrs.match.l4_match.type_match_type !=
+        this->spec.attrs.match.l4_match.type_match_type)
+        return false;
+    if (spec->attrs.match.l4_match.icmp_type !=
+        this->spec.attrs.match.l4_match.icmp_type)
+        return false;
+    if (spec->attrs.match.l4_match.code_match_type !=
+        this->spec.attrs.match.l4_match.code_match_type)
+        return false;
+    if (spec->attrs.match.l4_match.icmp_code !=
+        this->spec.attrs.match.l4_match.icmp_code)
+        return false;
+    if (spec->attrs.action_data.fw_action.action !=
+        this->spec.attrs.action_data.fw_action.action)
+        return false;
+    return true;
+}
+
+bool
+policy_rule_feeder::status_compare(
+    const pds_policy_rule_status_t *status1,
+    const pds_policy_rule_status_t *status2) const {
+    return true;
+}
 }    // namespace api
 }    // namespace test

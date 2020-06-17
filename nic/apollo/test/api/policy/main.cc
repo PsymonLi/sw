@@ -570,7 +570,7 @@ TEST_F(policy, rule_info_update_rules_del) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", num_policy, 10);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 2, &spec.rule_info, 10);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_RULE);
     feeder.init(key, 2, IP_AF_IPV4, "10.1.0.0/16", num_policy, 5);
     policy_read(feeder);
@@ -582,7 +582,7 @@ TEST_F(policy, rule_info_update_rules_del) {
     policy_create(feeder);
     policy_read(feeder);
     memset(&spec, 0, sizeof(spec));
-    create_rules("", IP_AF_IPV4, 0, &spec.rule_info, 0);
+    create_policy_spec("", IP_AF_IPV4, 0, &spec.rule_info);
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_RULE);
     feeder.init(key, 0, IP_AF_IPV4, "10.0.0.0/16", num_policy, 0);
     policy_read(feeder);
@@ -604,7 +604,7 @@ TEST_F(policy, rule_info_update_rules_add) {
     feeder.init(key, 0, IP_AF_IPV4, "10.0.0.0/16", num_policy);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_RULE);
     policy_read(feeder);
     policy_delete(feeder);
@@ -614,7 +614,7 @@ TEST_F(policy, rule_info_update_rules_add) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", num_policy, 10);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_RULE);
     policy_read(feeder);
     policy_delete(feeder);
@@ -635,7 +635,7 @@ TEST_F(policy, rule_info_update_default_action) {
     feeder.init(key, 0, IP_AF_IPV4, "10.0.0.0/16", num_policy);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     spec.rule_info->default_action.fw_action.action =
                                     SECURITY_RULE_ACTION_DENY;
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_DEFAULT_ACTION);
@@ -658,7 +658,8 @@ TEST_F(policy, rule_info_update_af) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", 2);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10::1/64", IP_AF_IPV6, 5, &spec.rule_info, 10);
+    create_policy_spec("10::1/64", IP_AF_IPV6, 10, &spec.rule_info);
+    spec.rule_info->af = IP_AF_IPV6;
     policy_rule_info_update(feeder, &spec, RULE_INFO_ATTR_AF, SDK_RET_ERR);
     // As update fails, rollback feeder's spec to old spec
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", 2);
@@ -682,7 +683,7 @@ TEST_F(policy, rule_update_stateful) {
     policy_create(feeder);
     policy_read(feeder);
     // update stateful
-    create_rules("10.0.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, 10);
+    create_policy_spec("10.0.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     policy_rule_update(feeder, &spec, RULE_ATTR_STATEFUL);
     policy_read(feeder);
     policy_delete(feeder);
@@ -694,7 +695,7 @@ TEST_F(policy, rule_update_stateful) {
     policy_create(feeder);
     policy_read(feeder);
     // update stateful
-    create_rules("10.0.0.0/16", IP_AF_IPV4, 0, &spec.rule_info, 10);
+    create_policy_spec("10.0.0.0/16", IP_AF_IPV4, 10, &spec.rule_info);
     policy_rule_update(feeder, &spec, RULE_ATTR_STATEFUL);
     policy_read(feeder);
     policy_delete(feeder);
@@ -717,7 +718,7 @@ TEST_F(policy, rule_update_priority) {
     policy_create(feeder);
     policy_read(feeder);
     // update priority
-    create_rules("10.0.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, LAYER_ALL,
+    create_policy_spec("10.0.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, LAYER_ALL,
                  RANDOM, priority);
     policy_rule_update(feeder, &spec, RULE_ATTR_PRIORITY);
     policy_read(feeder);
@@ -740,7 +741,7 @@ TEST_F(policy, rule_update_action) {
     policy_create(feeder);
     policy_read(feeder);
     // update action to deny for all rules
-    create_rules("10.0.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, LAYER_ALL,
+    create_policy_spec("10.0.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, LAYER_ALL,
                  DENY);
     policy_rule_update(feeder, &spec, RULE_ATTR_ACTION);
     policy_read(feeder);
@@ -762,7 +763,7 @@ TEST_F(policy, rule_update_l3_match) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", num_policy, 10);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, L3);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, L3);
     policy_rule_update(feeder, &spec, RULE_ATTR_L3_MATCH);
     policy_read(feeder);
     policy_delete(feeder);
@@ -773,7 +774,7 @@ TEST_F(policy, rule_update_l3_match) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", num_policy, 10);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, L3,
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, L3,
                  RANDOM, true);
     policy_rule_update(feeder, &spec, RULE_ATTR_L3_MATCH);
     policy_read(feeder);
@@ -796,7 +797,7 @@ TEST_F(policy, rule_update_l4_match) {
     policy_create(feeder);
     policy_read(feeder);
     // update priority
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, L4);
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, L4);
     policy_rule_update(feeder, &spec, RULE_ATTR_L3_MATCH);
     policy_read(feeder);
     policy_delete(feeder);
@@ -807,7 +808,7 @@ TEST_F(policy, rule_update_l4_match) {
     feeder.init(key, 5, IP_AF_IPV4, "10.0.0.0/16", num_policy, 10);
     policy_create(feeder);
     policy_read(feeder);
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10, L4,
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info, L4,
                  RANDOM, true);
     policy_rule_update(feeder, &spec, RULE_ATTR_L3_MATCH);
     policy_read(feeder);
@@ -830,7 +831,7 @@ TEST_F(policy, rule_update_wildcard) {
     policy_create(feeder);
     policy_read(feeder);
     // update priority
-    create_rules("10.1.0.0/16", IP_AF_IPV4, 5, &spec.rule_info, 10,
+    create_policy_spec("10.1.0.0/16", IP_AF_IPV4, 10, &spec.rule_info,
                  LAYER_ALL, RANDOM, true);
     policy_update(feeder);
     policy_read(feeder);

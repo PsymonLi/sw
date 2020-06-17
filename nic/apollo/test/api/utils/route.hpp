@@ -224,7 +224,7 @@ operator<<(std::ostream& os, const pds_route_spec_t *spec) {
     os << " route id: " << spec->key.route_id.str()
     << " route table id: " << spec->key.route_table_id.str()
     << " pfx: " << ippfx2str(&spec->attrs.prefix)
-    << " class priority: " << spec->attrs.class_priority
+    << " class priority: " << (int)spec->attrs.class_priority
     << " priority: " << spec->attrs.priority
     << " nh type: " << spec->attrs.nh_type;
     switch (spec->attrs.nh_type) {
@@ -286,9 +286,9 @@ operator<<(std::ostream& os, const route_feeder& obj) {
 
 // CRUD prototypes
 API_CREATE(route);
-API_ROUTE_READ(route);
+API_READ_1(route);
 API_UPDATE(route);
-API_ROUTE_DELETE(route);
+API_DELETE_1(route);
 
 }    // namespace api
 }    // namespace test

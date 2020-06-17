@@ -127,16 +127,16 @@ read(_api_str##_feeder& feeder) {                                            \
 }
 
 
-/// \brief Invokes the PDS read api for route test object
+/// \brief Invokes the PDS read api for route/policy_rule test object
 /// Also it compares the config values with values read from hardware
 /// only if current method is read
-/// We need to special handle for route object as route spec has a key
-/// which is not generic
-#define API_ROUTE_READ(_api_str)                                             \
+/// We need to special handle for route/policy_rule object as
+/// route/policy_rule spec has a key which is not generic
+#define API_READ_1(_api_str)                                                 \
 inline sdk_ret_t                                                             \
 read(_api_str##_feeder& feeder) {                                            \
     sdk_ret_t rv;                                                            \
-    pds_route_key_t key;                                                     \
+    pds_##_api_str##_key_t key;                                              \
     pds_##_api_str##_info_t *info;                                           \
     memset(&key, 0, sizeof(key));                                            \
     feeder.key_build(&key);                                                  \
@@ -294,10 +294,10 @@ del(pds_batch_ctxt_t bctxt, _api_str##_feeder& feeder) {                     \
 /// \brief Invokes the PDS delete apis for route test object
 /// We need to special handle for route object as route spec has a key
 /// which is not generic
-#define API_ROUTE_DELETE(_api_str)                                           \
+#define API_DELETE_1(_api_str)                                               \
 inline sdk_ret_t                                                             \
 del(pds_batch_ctxt_t bctxt, _api_str##_feeder& feeder) {                     \
-    pds_route_key_t key;                                                     \
+    pds_##_api_str##_key_t key;                                              \
                                                                              \
     memset(&key, 0, sizeof(key));                                            \
     feeder.key_build(&key);                                                  \
