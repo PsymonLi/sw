@@ -198,6 +198,10 @@ func TestListAndWatch(t *testing.T) {
 	AssertOk(t, err, "failed to get vm")
 	AssertEquals(t, vm1, vms[0], "VMs were not equal")
 
+	// Vm with random ID
+	vm1, err = vcp.GetVM("vm-bad-id", 1)
+	Assert(t, err != nil, "expected failure when getting vm")
+
 	// Test host list
 	hosts, err := vcp.ListHosts(nil)
 	AssertOk(t, err, "list host failed")
@@ -542,6 +546,9 @@ func TestEventReceiver(t *testing.T) {
 			VmEvent: types.VmEvent{Event: types.Event{Key: 4, Vm: &vmEventArg}},
 		},
 		&types.EventEx{
+			Event: types.Event{
+				Vm: &vmEventArg,
+			},
 			EventTypeId: "com.vmware.vc.vm.VmHotMigratingWithEncryptionEvent",
 			Arguments: []types.KeyAnyValue{
 				{
@@ -583,6 +590,8 @@ func TestEventReceiver(t *testing.T) {
 		},
 	}
 	vcp.initEventTracker(dc.Obj.Reference())
+	// Extra call to initialize tracker
+	vcp.receiveEvents(dc.Obj.Reference(), events1)
 	vcp.receiveEvents(dc.Obj.Reference(), events1)
 	vcp.receiveEvents(dc.Obj.Reference(), events2)
 	vcp.receiveEvents(dc.Obj.Reference(), events3)

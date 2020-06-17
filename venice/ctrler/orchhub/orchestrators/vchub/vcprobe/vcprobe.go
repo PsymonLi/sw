@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -44,7 +43,9 @@ type VCProbe struct {
 	vcProbeLock  sync.Mutex
 	dcCtxMapLock sync.Mutex
 	// Map from ID to ctx to use
-	dcCtxMap map[string]dcCtxEntry
+	dcCtxMap         map[string]dcCtxEntry
+	eventInitialized map[string]bool // whether event processing is initialized for a given vc object (datacenter)
+	eventTrackerLock sync.Mutex
 }
 
 // KindTagMapEntry needed as explicit type for gomock to compile successfully
@@ -132,14 +133,15 @@ type ProbeInf interface {
 func NewVCProbe(hOutbox, hEventCh chan<- defs.Probe2StoreMsg, state *defs.State) *VCProbe {
 	probeCtx, probeCancel := context.WithCancel(state.Ctx)
 	probe := &VCProbe{
-		State:       state,
-		Started:     false,
-		probeCtx:    probeCtx,
-		probeCancel: probeCancel,
-		outbox:      hOutbox,
-		eventCh:     hEventCh,
-		Session:     session.NewSession(probeCtx, hOutbox, state.VcURL, state.Log, state.OrchConfig),
-		dcCtxMap:    map[string]dcCtxEntry{},
+		State:            state,
+		Started:          false,
+		probeCtx:         probeCtx,
+		probeCancel:      probeCancel,
+		outbox:           hOutbox,
+		eventCh:          hEventCh,
+		Session:          session.NewSession(probeCtx, hOutbox, state.VcURL, state.Log, state.OrchConfig),
+		dcCtxMap:         map[string]dcCtxEntry{},
+		eventInitialized: make(map[string]bool),
 	}
 	probe.newTagsProbe()
 	return probe
@@ -636,27 +638,24 @@ func (v *VCProbe) withRetry(fn func() (interface{}, error), count int) (interfac
 }
 
 func (v *VCProbe) initEventTracker(ref types.ManagedObjectReference) {
-	v.EventTrackerLock.Lock()
-	defer v.EventTrackerLock.Unlock()
+	v.eventTrackerLock.Lock()
+	defer v.eventTrackerLock.Unlock()
 	v.Log.Infof("Start Event Receiver for %s", ref.Value)
-	v.LastEvent[ref.Value] = 0
+	v.eventInitialized[ref.Value] = false
 }
 
 func (v *VCProbe) deleteEventTracker(ref types.ManagedObjectReference) {
-	v.EventTrackerLock.Lock()
-	defer v.EventTrackerLock.Unlock()
-	if _, ok := v.LastEvent[ref.Value]; ok {
+	v.eventTrackerLock.Lock()
+	defer v.eventTrackerLock.Unlock()
+	if _, ok := v.eventInitialized[ref.Value]; ok {
 		v.Log.Infof("Stop event receiver for %s", ref.Value)
-		delete(v.LastEvent, ref.Value)
+		delete(v.eventInitialized, ref.Value)
 	}
 }
 
 func (v *VCProbe) runEventReceiver(ref types.ManagedObjectReference) {
-	v.initEventTracker(ref)
-	defer v.deleteEventTracker(ref)
 
 	v.dcCtxMapLock.Lock()
-	// XXX
 	dcID := ref.Value
 	ctxEntry, ok := v.dcCtxMap[dcID]
 	v.dcCtxMapLock.Unlock()
@@ -678,45 +677,40 @@ releaseEventTracker:
 		if eventMgr == nil {
 			break releaseEventTracker
 		}
-		// Events() return after delivering last N events, restart it
+		// Events() will deliver the last N events, and then will block and call receiveEvents on new events.
 		// TODO there should be a way to request events newer than a eventId, not clear if that is
 		// supported
-		eventMgr.Events(ctx, []types.ManagedObjectReference{ref}, 10, false, false, v.receiveEvents)
+		v.initEventTracker(ref)
+		eventMgr.Events(ctx, []types.ManagedObjectReference{ref}, 10, true, false, v.receiveEvents)
+		v.deleteEventTracker(ref)
+		if ctx.Err() != nil {
+			break releaseEventTracker
+		}
 		time.Sleep(500 * time.Millisecond)
+		v.Log.Infof("Event Receiver for DC %s restarting", dcID)
 	}
 	v.Log.Infof("Event Receiver for DC %s Exited", dcID)
 }
 
 func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types.BaseEvent) error {
+	v.eventTrackerLock.Lock()
+	if init, ok := v.eventInitialized[ref.Value]; !ok || !init {
+		v.eventInitialized[ref.Value] = true
+		v.eventTrackerLock.Unlock()
+		// Skip these events
+		v.Log.Infof("Initialized event receiver for %s", ref.Value)
+		return nil
+	}
+	v.eventTrackerLock.Unlock()
+
 	// This executes in the context of go routine
 	// I think events are ordered as latest event first.. we should process them from back to front
 	// and process only new ones
 	if len(events) == 0 {
 		return nil
 	}
-	v.EventTrackerLock.Lock()
-	defer v.EventTrackerLock.Unlock()
-	lastEvent, ok := v.LastEvent[ref.Value]
-	if !ok {
-		v.Log.Errorf("Incorrect object key for received event")
-		return nil
-	}
-	// sort events based on key - oldest to latest
-	sort.Slice(events, func(i, j int) bool {
-		return events[i].GetEvent().Key < events[j].GetEvent().Key
-	})
-	for _, ev := range events {
-		// TODO handle roll-over or becoming -ve
-		if ev.GetEvent().Key <= lastEvent {
-			// old event - already processed
-			// v.Log.Infof("Old Event %d, last %d", ev.GetEvent().Key, v.LastEvent)
-			continue
-		}
-		if skipped := ev.GetEvent().Key - lastEvent; skipped > 1 {
-			v.Log.Errorf("Skipped %d events on %s, lastEvent %v currentEvent %v", skipped, ref.Value, lastEvent, ev.GetEvent().Key)
-		}
-		lastEvent = ev.GetEvent().Key
-
+	for i := len(events) - 1; i >= 0; i-- {
+		ev := events[i]
 		// Capture Vmotion events -
 		// VmBeingMitrages/Relocated are received at the start of vMotion (about 2sec delay obsered
 		// 	on lightly loaded VC/Venice).
@@ -833,7 +827,6 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			// v.Log.Debugf("Ignored Event %d - %s - %T received ...", ev.GetEvent().Key, ref.Value, ev)
 		}
 	}
-	v.LastEvent[ref.Value] = lastEvent
 	return nil
 }
 

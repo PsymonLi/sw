@@ -317,7 +317,8 @@ func (v *VCHub) UpdateConfig(config *orchestration.Orchestrator) {
 		v.ForceDCNamesLock.Lock()
 		v.ForceDCNames = forceDCMap
 		v.ForceDCNamesLock.Unlock()
-		v.OrchConfig = ref.DeepCopy(config).(*orchestration.Orchestrator)
+		// Don't copy over status
+		v.OrchConfig.Spec = ref.DeepCopy(config.Spec).(orchestration.OrchestratorSpec)
 	}
 }
 

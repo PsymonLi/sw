@@ -78,10 +78,8 @@ type Session struct {
 	// SessionReady indicates whether watchers should join the wg or not.
 	// When we cancel the watcherWg, we don't want watchers adding themselves back on before
 	// all of them have finished cancelling.
-	sessionLock      sync.Mutex
-	SessionReady     bool
-	LastEvent        map[string]int32 // last event processed for a given vc object (datacenter)
-	EventTrackerLock sync.Mutex
+	sessionLock  sync.Mutex
+	SessionReady bool
 }
 
 // NewSession returns a new session object
@@ -93,7 +91,6 @@ func NewSession(ctx context.Context, outbox chan<- defs.Probe2StoreMsg, VcURL *u
 		OrchConfig: orchConfig,
 		WatcherWg:  &sync.WaitGroup{},
 		ConnUpdate: outbox,
-		LastEvent:  make(map[string]int32),
 	}
 }
 

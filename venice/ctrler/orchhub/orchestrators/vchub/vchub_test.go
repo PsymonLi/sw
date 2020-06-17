@@ -2379,6 +2379,38 @@ func TestDiscoveredDCs(t *testing.T) {
 		return true, nil
 	}, "Orch status never updated to success", "100ms", "5s")
 
+	// Update status only, should not overwrite connected config
+	orchConfig.Status.Status = orchestration.OrchestratorStatus_Unknown.String()
+	err = sm.Controller().Orchestrator().Update(orchConfig)
+
+	// Trigger vchub to write status
+	addDC(dcName2)
+
+	AssertEventually(t, func() (bool, interface{}) {
+		o, err := sm.Controller().Orchestrator().Find(&vchub.OrchConfig.ObjectMeta)
+		if err != nil {
+			return false, fmt.Errorf("Failed to find orchestrator object. Err : %v", err)
+		}
+		if o.Orchestrator.Status.Status == orchestration.OrchestratorStatus_Unknown.String() {
+			return false, fmt.Errorf("Status was rewritten")
+		}
+		act := o.Orchestrator.Status.DiscoveredNamespaces
+		exp := []string{dcName1, dcName4, dcName2, dcName5}
+		if len(act) != len(exp) {
+			return false, fmt.Errorf("discovered namespaces were %v, expected %v", o.Orchestrator.Status.DiscoveredNamespaces, exp)
+		}
+
+		for i := range act {
+			if act[i] != exp[i] {
+				return false, fmt.Errorf("discovered namespaces were %v, expected %v", o.Orchestrator.Status.DiscoveredNamespaces, exp)
+			}
+		}
+		if len(vchub.DcID2NameMap) != 4 {
+			return false, fmt.Errorf("Number of entries in DcID2NameMap was incorrect %v", vchub.DcID2NameMap)
+		}
+		return true, nil
+	}, "Orch status never updated to success", "100ms", "5s")
+
 	orchConfig.Spec.Credentials.Password = "badPassword"
 	err = sm.Controller().Orchestrator().Update(orchConfig)
 	AssertOk(t, err, "Failed to update orchestrator")
