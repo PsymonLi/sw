@@ -178,7 +178,7 @@ func (n *NMD) issueNextPendingOp() {
 				case utils.PdsUpgStatusFail:
 					go n.UpgFailed(&[]string{fmt.Sprintf("Upgrade failed")})
 				default:
-					go n.UpdUpgStatus("progressing")
+					go n.UpgFailed(&[]string{fmt.Sprintf("Upgrade failed. No status found")})
 				}
 			}
 		}
@@ -253,8 +253,8 @@ func (n *NMD) issueNextPendingOp() {
 		ctx, cancel = context.WithTimeout(context.Background(), 4*time.Minute)
 		err = imagestore.DownloadNaplesImage(ctx, n.resolverClient, naplesVersion, "/update/naples_fw.tar")
 		if err != nil {
-			log.Errorf("Failed to download naples image from objectstore %+v", err)
-			go n.UpgNotPossible(&[]string{fmt.Sprintf("Failed to download naples image from objectstore %+v", err)})
+			log.Errorf("Failed to download DSC image from objectstore %+v", err)
+			go n.UpgNotPossible(&[]string{fmt.Sprintf("Failed to download DSC image from objectstore %+v", err)})
 			cancel()
 			return
 		}
@@ -294,8 +294,8 @@ func (n *NMD) issueNextPendingOp() {
 		ctx, cancel = context.WithTimeout(context.Background(), 10*time.Minute)
 		err = imagestore.DownloadNaplesImage(ctx, n.resolverClient, naplesVersion, "/update/naples_fw.tar")
 		if err != nil {
-			log.Errorf("Failed to download naples image from objectstore %+v", err)
-			go n.UpgNotPossible(&[]string{fmt.Sprintf("Failed to download naples image from objectstore %+v", err)})
+			log.Errorf("Failed to download DSC image from objectstore %+v", err)
+			go n.UpgNotPossible(&[]string{fmt.Sprintf("Failed to download DSC image from objectstore %+v", err)})
 			cancel()
 			return
 		}
@@ -333,7 +333,7 @@ func (n *NMD) issueNextPendingOp() {
 		ctx, cancel = context.WithTimeout(context.Background(), 4*time.Minute)
 		err = imagestore.DownloadNaplesImage(ctx, n.resolverClient, naplesVersion, "/update/naples_fw.tar")
 		if err != nil {
-			log.Errorf("Failed to download naples image from objectstore %+v", err)
+			log.Errorf("Failed to download DSC image from objectstore %+v", err)
 			cancel()
 			return
 		}
