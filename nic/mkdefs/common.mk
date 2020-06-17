@@ -32,7 +32,7 @@ export NIC_COMMON_FLAGS := -pthread -rdynamic
 export NIC_SDK_SOLIBS   := utils list slab shmmgr mmgr sdkpal sdkfru \
     ht indexer logger thread event_thread periodic twheel directmap sldirectmap \
     hash hbmhash tcam timerfd catalog runenv device sdkplatformutils sdk${ASIC} \
-    sdkp4loader sdkasicrw sdkasiccmn sdkasicpd lif_mgr sdkring sysmon sensor \
+    sdkp4loader sdkasicrw sdkasiccommon sdkasicpd lif_mgr sdkring sysmon sensor \
     sdkxcvrdriver pcieport pciemgrutils pciemgr pcietlp intrutils cfgspace \
     evutils misc
 
@@ -101,7 +101,7 @@ export NIC_HAL_UTILS_SOLIBS := utils bitmap block_list nat eventmgr \
 export NIC_HAL_PD_SOLIBS_x86_64 := model_client
 export NIC_HAL_PD_SOLIBS_aarch64 :=
 export NIC_HAL_PD_SOLIBS := sdk_asicrw_if pdcommon sdkp4 \
-       pd_${PIPELINE} sdkasicpd sdkasiccmn asicpd pd_acl_tcam pd_met \
+       pd_${PIPELINE} sdkasicpd sdkasiccommon asicpd pd_acl_tcam pd_met \
        ${NIC_HAL_PD_SOLIBS_${ARCH}}
 
 ifeq ($(ASIC),elba)

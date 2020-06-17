@@ -19,7 +19,7 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
-#include "nic/sdk/asic/cmn/asic_qstate.hpp"
+#include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "platform/utils/lif_manager_base.hpp"
 #include "platform/capri/capri_qstate.hpp"

@@ -2,7 +2,7 @@
 #include "EGRESS_p.h"
 #include "EGRESS_tx_stats_k.h"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 struct tx_stats_k_ k;
 struct phv_        p;

@@ -8,7 +8,7 @@
 #include "platform/elba/elba_common.hpp"
 #include "platform/elba/elba_hbm_rw.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 
 namespace sdk {
 namespace platform {

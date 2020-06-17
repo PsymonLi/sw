@@ -1,7 +1,7 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_qstate.hpp"
+#include "asic/common/asic_qstate.hpp"
 
 using namespace sdk::platform::utils;
 

@@ -8,7 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "asic/cmn/asic_init.hpp"
+#include "asic/common/asic_init.hpp"
 #include "platform/elba/elba_cfg.hpp"
 #include "platform/elba/elba_tm_rw.hpp"
 #include "platform/elba/elba_tbl_rw.hpp"

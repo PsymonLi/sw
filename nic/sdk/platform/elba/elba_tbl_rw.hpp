@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include "include/sdk/base.hpp"
 #include "asic/asic.hpp"
-#include "asic/cmn/asic_cfg.hpp"
+#include "asic/common/asic_cfg.hpp"
 #include "asic/pd/pd.hpp"
 
 using namespace sdk::asic;

@@ -3,7 +3,7 @@
 #include "nic/sdk/include/sdk/lock.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/internal/ipseccb_pd.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/hal/pd/libs/wring/wring_pd.hpp"
 #include "nic/hal/pd/iris/nw/vrf_pd.hpp"
 #include "nic/hal/plugins/cfg/nw/vrf.hpp"

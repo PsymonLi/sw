@@ -5,7 +5,7 @@
 #include "nic/include/pd_api.hpp"
 #include "nic/sdk/asic/port.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/platform/capri/capri_tm_rw.hpp"
 #include "nic/sdk/platform/capri/capri_tm_utils.hpp"
 #include "nic/hal/pd/iris/hal_state_pd.hpp"

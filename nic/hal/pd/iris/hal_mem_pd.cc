@@ -53,7 +53,7 @@
 #include "nic/hal/pd/iris/internal/proxyrcb_pd.hpp"
 #include "nic/hal/pd/iris/internal/proxyccb_pd.hpp"
 //#include "nic/hal/pd/iris/dos/dos_pd.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/hal/pd/asicpd/asic_pd_common.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/hal/iris/datapath/p4/include/defines.h"

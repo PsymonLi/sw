@@ -4,7 +4,7 @@
 #define __ASIC_STATE_HPP__
 
 #include "platform/utils/mpartition.hpp"
-#include "asic/cmn/asic_cfg.hpp"
+#include "asic/common/asic_cfg.hpp"
 
 namespace sdk {
 namespace asic {

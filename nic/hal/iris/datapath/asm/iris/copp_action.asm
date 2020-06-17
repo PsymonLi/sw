@@ -1,7 +1,7 @@
 #include "egress.h"
 #include "EGRESS_p.h"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 struct copp_action_k k;
 struct copp_action_d d;

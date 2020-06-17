@@ -1,7 +1,7 @@
 #ifndef __CAPRI_H
 #define __CAPRI_H
 
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 #define CAPRI_NUM_STAGES    8
 #define CAPRI_STAGE_FIRST   0

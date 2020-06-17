@@ -11,7 +11,7 @@
 #include "gen/p4gen/common_rxdma_actions/include/common_rxdma_actions_p4pd_table.h"
 #include "gen/p4gen/common_txdma_actions/include/common_txdma_actions_p4pd_table.h"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/hal/pd/asicpd/asic_pd_common.hpp"
 #include "nic/sdk/platform/drivers/xcvr.hpp"
 

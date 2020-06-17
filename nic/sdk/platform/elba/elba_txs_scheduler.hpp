@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "asic/cmn/asic_cfg.hpp"
+#include "asic/common/asic_cfg.hpp"
 
 namespace sdk {
 namespace platform {

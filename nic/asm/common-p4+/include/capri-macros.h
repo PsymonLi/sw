@@ -1,7 +1,7 @@
 #ifndef __CAPRI_MACROS_H__
 #define __CAPRI_MACROS_H__
 
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "nic/sdk/platform/capri/capri_barco.h"
 
 #define DMA_CMD_WR_FENCE 1

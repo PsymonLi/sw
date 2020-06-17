@@ -1,7 +1,7 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 #include "include/sdk/base.hpp"
-#include "asic/cmn/asic_state.hpp"
+#include "asic/common/asic_state.hpp"
 
 
 namespace sdk {

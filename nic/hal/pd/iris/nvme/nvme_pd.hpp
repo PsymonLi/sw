@@ -5,7 +5,7 @@
 #ifndef _NVME_PD_H
 #define _NVME_PD_H
 
-#include "nic/sdk/asic/cmn/asic_common.hpp"
+#include "nic/sdk/asic/common/asic_common.hpp"
 #include "p4pd_nvme_api.h"
 
 

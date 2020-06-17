@@ -3,7 +3,7 @@
 /*****************************************************************************/
 
 #include "../common-p4+/common_txdma_dummy.p4"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 /******************************************************************************
  * Table names

@@ -1,8 +1,8 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 #include <boost/algorithm/string/predicate.hpp>
 #include "asic/asic.hpp"
-#include "asic/cmn/asic_init.hpp"
-#include "asic/cmn/asic_cfg.hpp"
+#include "asic/common/asic_init.hpp"
+#include "asic/common/asic_cfg.hpp"
 #include "platform/elba/elba_tm_rw.hpp"
 #include "platform/elba/elba_txs_scheduler.hpp"
 #include "platform/elba/elba_quiesce.hpp"

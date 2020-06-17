@@ -1,5 +1,5 @@
 #include "nic/hal/pd/iris/hal_state_pd.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
 //#ifdef BARCO    /* TBD-ELBA-REBASE: */

@@ -1,9 +1,9 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 #include "lib/pal/pal.hpp"
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_state.hpp"
+#include "asic/common/asic_state.hpp"
 
 namespace sdk {
 namespace asic {

@@ -1,7 +1,7 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 #include <map>
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/elba/elba_common.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "lib/pal/pal.hpp"

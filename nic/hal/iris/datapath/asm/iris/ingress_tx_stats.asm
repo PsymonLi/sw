@@ -1,7 +1,7 @@
 #include "ingress.h"
 #include "INGRESS_p.h"
 #include "INGRESS_ingress_tx_stats_k.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
 
 struct ingress_tx_stats_k_  k;

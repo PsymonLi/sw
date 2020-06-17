@@ -6,7 +6,7 @@
 #include "logger.hpp"
 
 #include "nic/sdk/asic/pd/pd.hpp"
-#include "nic/sdk/asic/cmn/asic_common.hpp"
+#include "nic/sdk/asic/common/asic_common.hpp"
 
 EdmaQ::EdmaQ(
     const char *name,

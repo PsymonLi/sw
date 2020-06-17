@@ -16,7 +16,7 @@
 #include "nic/hal/plugins/proxy/proxy_plugin.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
 #include "lib/thread/thread.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "gen/proto/delphi.pb.h"

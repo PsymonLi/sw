@@ -100,7 +100,7 @@ MODULE_ARLIBS	= \
 	rdmamgr_iris \
 	rte_indexer \
 	rulestatsproto \
-	sdkasiccmn \
+	sdkasiccommon \
 	sdkasicpd \
 	sdkasicrw \
 	sdk${ASIC} \

@@ -4,7 +4,7 @@
 #include <iostream>
 #include "include/sdk/base.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_hbm_rw.hpp"
 #include "platform/capri/capri_state.hpp"
 #include "third-party/asic/capri/model/utils/cap_blk_reg_model.h"

@@ -5,7 +5,7 @@
  * Mahesh Shirshyad (Pensando Systems)
  */
 #include <map>
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "lib/pal/pal.hpp"
 #include "platform/pal/include/pal.h"
@@ -19,7 +19,7 @@
 #include "third-party/asic/capri/model/utils/cap_csr_py_if.h"
 #include "asic/asic.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 #include "asic/pd/pd.hpp"
 #include "third-party/asic/capri/model/utils/cap_blk_reg_model.h"
 #include "third-party/asic/capri/model/cap_top/cap_top_csr.h"

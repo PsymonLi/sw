@@ -2,7 +2,7 @@
 #include "INGRESS_p.h"
 #include "apollo.h"
 #include "INGRESS_session_k.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 struct session_k_    k;
 struct session_d    d;

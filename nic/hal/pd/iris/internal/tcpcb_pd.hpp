@@ -5,7 +5,7 @@
 #include "lib/ht/ht.hpp"
 #include "nic/hal/pd/iris/hal_state_pd.hpp"
 #include "nic/include/tcp_common.h"
-#include "nic/sdk/asic/cmn/asic_common.hpp"
+#include "nic/sdk/asic/common/asic_common.hpp"
 
 using sdk::lib::ht_ctxt_t;
 using namespace sdk::platform::capri;

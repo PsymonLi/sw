@@ -15,7 +15,7 @@
 #include "platform/capri/capri_cfg.hpp"
 #include "asic/asic.hpp"
 #include "asic/pd/pd.hpp"
-#include "asic/cmn/asic_state.hpp"
+#include "asic/common/asic_state.hpp"
 #include "asic/pd/pd_internal.hpp"
 #include "lib/utils/time_profile.hpp"
 #include "platform/utils/mpartition.hpp"

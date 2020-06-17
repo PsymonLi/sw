@@ -3,7 +3,7 @@
 #include <arpa/inet.h>
 #include "lib/pal/pal.hpp"
 #include "include/sdk/base.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "asic/rw/asicrw.hpp"
 #include "ring.hpp"
 #include <boost/multiprecision/detail/integer_ops.hpp>

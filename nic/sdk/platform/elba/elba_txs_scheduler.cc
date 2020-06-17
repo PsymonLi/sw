@@ -1,7 +1,7 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
 #include "platform/elba/elba_txs_scheduler.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/elba/elba_common.hpp"
 #include "platform/elba/elba_state.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"

@@ -11,7 +11,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "gen/p4gen/p4/include/p4pd.h"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/hal/pd/iris/p4pd_cfg.hpp"
 #include "nic/debug_cli/include/cli.hpp"
 #include "nic/hal/core/core.hpp"

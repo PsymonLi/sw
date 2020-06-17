@@ -6,7 +6,7 @@
  */
 
 #include "platform/capri/capri_txs_scheduler.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_state.hpp"
 #include "lib/utils/utils.hpp"
 #include "platform/utils/mpartition.hpp"

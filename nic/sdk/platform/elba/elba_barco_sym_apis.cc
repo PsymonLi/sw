@@ -3,8 +3,8 @@
 #include <arpa/inet.h>
 #include "include/sdk/crypto_apis.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_hbm.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/elba/elba_barco_crypto.hpp"
 #include "platform/elba/elba_barco_res.hpp"
 #include "platform/elba/elba_barco_rings.hpp"

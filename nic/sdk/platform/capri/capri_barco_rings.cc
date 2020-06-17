@@ -1,12 +1,12 @@
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_barco_rings.hpp"
 #include "third-party/asic/capri/model/cap_top/cap_top_csr.h"
 #include "platform/capri/capri_barco_res.hpp"
 #include "platform/capri/capri_barco_crypto.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_hbm_rw.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 
 namespace sdk {
 namespace platform {

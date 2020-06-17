@@ -2,7 +2,7 @@
 
 #include "platform/elba/elba_state.hpp"
 #include "platform/elba/elba_qstate.hpp"
-#include "asic/cmn/asic_qstate.hpp"
+#include "asic/common/asic_qstate.hpp"
 #include "asic/rw/asicrw.hpp"
 #include "third-party/asic/elba/model/elb_top/elb_top_csr.h"
 

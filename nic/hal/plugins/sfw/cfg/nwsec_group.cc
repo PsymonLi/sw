@@ -18,7 +18,7 @@
 #include <malloc.h>
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "gen/proto/rulestats/rulestats.delphi.hpp"
 
 #define NWSEC_RULE_STATS_SHIFT         6

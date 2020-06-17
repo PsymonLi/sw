@@ -8,7 +8,7 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "asic/cmn/asic_init.hpp"
+#include "asic/common/asic_init.hpp"
 #include "platform/capri/capri_cfg.hpp"
 #include "platform/capri/capri_tm_rw.hpp"
 #include "platform/capri/capri_tbl_rw.hpp"

@@ -1,6 +1,6 @@
 // {C} Copyright 2018 Pensando Systems Inc. All rights reserved
 
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 #include "platform/capri/capri_tbl_rw.hpp"
 #include "platform/capri/capri_hbm_rw.hpp"
 #include "platform/capri/capri_state.hpp"

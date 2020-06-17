@@ -1,15 +1,15 @@
 #include <arpa/inet.h>
 #include "include/sdk/crypto_apis.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/cmn/asic_hbm.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_barco_crypto.hpp"
 #include "platform/capri/capri_barco_res.hpp"
 #include "platform/capri/capri_barco_rings.hpp"
 #include "platform/capri/capri_barco_sym_apis.hpp"
 #include "platform/capri/capri_barco_asym_apis.hpp"
 #include "third-party/asic/capri/model/cap_top/cap_top_csr.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_barco.h"
 #include "platform/capri/capri_hbm_rw.hpp"
 

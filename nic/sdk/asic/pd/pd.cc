@@ -3,7 +3,7 @@
 #include "asic/pd/pd.hpp"
 #include "asic/asic.hpp"
 #include "lib/pal/pal.hpp"
-#include "asic/cmn/asic_hbm.hpp"
+#include "asic/common/asic_hbm.hpp"
 #include "asic/pd/pd_internal.hpp"
 #include "lib/utils/time_profile.hpp"
 #include "platform/utils/mpartition.hpp"

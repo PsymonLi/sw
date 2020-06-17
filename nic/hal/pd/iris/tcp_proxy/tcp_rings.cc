@@ -3,7 +3,7 @@
 #include "nic/hal/pd/iris/tcp_proxy/tcp_rings.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/hal_state_pd.hpp"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 
 namespace hal {
 namespace pd {

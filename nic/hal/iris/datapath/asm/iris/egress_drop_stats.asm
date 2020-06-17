@@ -1,7 +1,7 @@
 #include "egress.h"
 #include "EGRESS_p.h"
 #include "EGRESS_egress_drop_stats_k.h"
-#include "asic/cmn/asic_common.hpp"
+#include "asic/common/asic_common.hpp"
 #include "nw.h"
 
 struct egress_drop_stats_k_ k;

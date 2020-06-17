@@ -7,7 +7,7 @@
 #include "nic/sdk/include/sdk/platform.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/asic/asic.hpp"
-#include "nic/sdk/asic/cmn/asic_state.hpp"
+#include "nic/sdk/asic/common/asic_state.hpp"
 #include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/lib/p4/p4_utils.hpp"

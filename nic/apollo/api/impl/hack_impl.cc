@@ -11,7 +11,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/platform/utils/lif_manager_base.hpp"
 #include "nic/sdk/platform/utils/qstate_mgr.hpp"
-#include "nic/sdk/asic/cmn/asic_qstate.hpp"
+#include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/sdk/p4/loader/loader.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/apollo/core/trace.hpp"

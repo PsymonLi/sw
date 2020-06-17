@@ -10,7 +10,7 @@
 #include "gen/proto/nicmgr/metrics.delphi.hpp"
 #include "nic/linkmgr/linkmgr.hpp"
 #include "nic/sdk/asic/rw/asicrw.hpp"
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/linkmgr/linkmgr_src.hpp"
 
 using namespace sdk::asic::pd;

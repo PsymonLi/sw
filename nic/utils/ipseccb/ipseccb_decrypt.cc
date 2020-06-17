@@ -1,7 +1,7 @@
 
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 
-#include "nic/sdk/asic/cmn/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "ipseccb.hpp"
 #include "ipseccb_internal.hpp"
