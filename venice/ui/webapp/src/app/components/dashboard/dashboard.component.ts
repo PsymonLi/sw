@@ -6,10 +6,21 @@ import { BaseComponent } from '@components/base/base.component';
 
 import { ControllerService } from '../../services/controller.service';
 import { MetricsqueryService, TelemetryPollingMetricQueries, MetricsPollingQuery, MetricsPollingOptions } from '@app/services/metricsquery.service';
-import { Telemetry_queryMetricsQuerySpec } from '@sdk/v1/models/generated/telemetry_query';
+import { Telemetry_queryMetricsQuerySpec, ITelemetry_queryMetricsQuerySpec, Telemetry_queryMetricsQuerySpec_function, Telemetry_queryMetricsQuerySpec_sort_order } from '@sdk/v1/models/generated/telemetry_query';
 import { MetricsUtility } from '@app/common/MetricsUtility';
 import { ITelemetry_queryMetricsQueryResponse, ITelemetry_queryMetricsQueryResult } from '@sdk/v1/models/telemetry_query';
 import { CardStates } from '../shared/basecard/basecard.component';
+import { ClusterService } from '@app/services/generated/cluster.service';
+import { ClusterDistributedServiceCard, ClusterHost } from '@sdk/v1/models/generated/cluster';
+import { WorkloadWorkload } from '@sdk/v1/models/generated/workload';
+import { WorkloadService } from '@app/services/generated/workload.service';
+import { MonitoringAlert, MonitoringAlertStatus_severity } from '@sdk/v1/models/generated/monitoring';
+import { MonitoringService } from '@app/services/generated/monitoring.service';
+import { UIConfigsService } from '@app/services/uiconfigs.service';
+import { FwlogFwLogQuery, FwlogFwLogQuery_sort_order, FwlogFwLogList } from '@sdk/v1/models/generated/fwlog';
+import { FwlogService } from '@app/services/generated/fwlog.service';
+import { interval } from 'rxjs';
+
 
 /**
  * This is Dashboard Component for VeniceUI
@@ -31,6 +42,7 @@ import { CardStates } from '../shared/basecard/basecard.component';
  *
  */
 
+const MS_PER_MINUTE: number = 60000;
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -39,6 +51,10 @@ import { CardStates } from '../shared/basecard/basecard.component';
 })
 export class DashboardComponent extends BaseComponent implements OnInit, OnDestroy {
   subscriptions = [];
+  alerts: ReadonlyArray<MonitoringAlert> = [];
+  naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
+  workloads: ReadonlyArray<WorkloadWorkload> = [];
+  hosts: ReadonlyArray<ClusterHost> = [];
   gridsterOptions: any = {
     gridType: 'fixed',
     fixedRowHeight: 275,
@@ -68,10 +84,48 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     cardState: CardStates.LOADING
   };
 
+  naplesDisplayData = {
+    title: 'Naples',
+    alerts: [0, 0, 0],
+    rows: [
+      {title: '', value: '', unit: 'TOTAL NAPLES'},
+      {title: 'BANDWIDTH', value: '', unit: 'TX & RX'},
+      {title: 'TOTAL PACKETS', value: '', unit: 'TX & RX'},
+      {title: 'DROP PACKETS', value: '', unit: 'TX & RX'},
+    ]
+  };
+
+  workloadsDisplayData = {
+    title: 'Workloads',
+    alerts: [0, 0, 0],
+    rows: [
+      {title: '', value: '', unit: 'TOTAL WORKLOADS'},
+      {title: 'VCENTER WORKLOADS', value: '', unit: 'WORKLOADS'},
+      {title: 'TOTAL HOSTS', value: '', unit: 'HOSTS'},
+      {title: 'VCENTER HOSTS', value: '', unit: 'HOSTS'},
+    ]
+  };
+
+  hideOldWidgets: boolean = false;
+  servicesDisplayData = {
+    title: 'Services',
+    rows: [
+      {title: '', value: '', unit: 'TOTAL SERVICES'},
+      {title: 'SESSIONS', value: '', unit: 'ACTIVE & DENIED'},
+      {title: 'RULES', value: '', unit: 'ALLOW & DENY'},
+      {title: 'SESSION PROTOCOL', value: '', unit: ''},
+    ]
+  };
+
   @ViewChildren('pinnedGridster') pinnedGridster: QueryList<any>;
 
   constructor(protected _controllerService: ControllerService,
+    protected uiconfigsService: UIConfigsService,
     protected metricsqueryService: MetricsqueryService,
+    protected monitoringService: MonitoringService,
+    private workloadService: WorkloadService,
+    protected clusterService: ClusterService,
+    protected fwlogService: FwlogService,
   ) {
     super(_controllerService);
   }
@@ -80,6 +134,8 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
    * Component enters init stage. It is about to show up
    */
   ngOnInit() {
+    this.hideOldWidgets = this.uiconfigsService.isFeatureEnabled('showDashboardFlowdrops');
+
     this._controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'DashboardComponent', 'state': Eventtypes.COMPONENT_INIT });
     this._controllerService.setToolbarData({
       buttons: [
@@ -124,6 +180,283 @@ export class DashboardComponent extends BaseComponent implements OnInit, OnDestr
     this.getPinnedData();
 
     this.getSystemCapacityMetrics();
+
+    if (this.hideOldWidgets) {
+      this.getAlertsWatch();
+      this.getRecords();
+      this.startInterfaceStatsPoll();
+
+      const source = interval(1000 * 1 * 60);
+      const sub = source.subscribe( (val) => {this.getFWLogs(); });
+      this.subscriptions.push(sub);
+      this.getFWLogs();
+    }
+  }
+
+  getFWLogs() {
+    const query = new FwlogFwLogQuery(null, false);
+    query['max-results'] = 8192;
+    const endTime = new Date(Date.now());
+    const startTime = new Date(Date.now() - MS_PER_MINUTE * 60 * 24);
+
+    query['start-time'] = startTime.toISOString() as any;
+    query['end-time'] = endTime.toISOString() as any;
+    query['sort-order'] = FwlogFwLogQuery_sort_order.descending;
+    this.fwlogQueryListener(query);
+  }
+
+  fwlogQueryListener(query) {
+    const searchSubscription = this.fwlogService.PostGetLogs(query).subscribe(  //  use POST
+      (resp) => {
+        const body = resp.body as FwlogFwLogList;
+        let logs = null;
+        if (body.items !== undefined && body.items !== null) {
+          logs = body.items;
+        }
+        if (logs != null) {
+          this.processLogs(logs);
+        }
+      },
+      (error) => {
+      }
+    );
+    this.subscriptions.push(searchSubscription);
+  }
+
+  processLogs(logs) {
+    const sessions = {'allow': {}, 'deny': {}};
+    const destinations = {};
+    const rules = {'allow': {}, 'deny': {}};
+    const protocol = {};
+    for (const l of logs) {
+
+      if (!sessions['allow'][l['session-id']] && !sessions['deny'][l['session-id']]) {
+        if (!protocol[l.protocol]) {
+          protocol[l.protocol] = 1;
+        } else {
+          protocol[l.protocol] += 1;
+        }
+      }
+
+      if (l.action === 'allow') {
+        sessions['allow'][l['session-id']] = true;
+      } else {
+        sessions['deny'][l['session-id']] = true;
+      }
+
+      if (l['destination-ip'] && l['destination-port']) {
+        destinations[l['destination-ip'] + ':' + l['destination-port'].toString()] = true;
+      } else {
+        destinations[l['app-id']] = true;
+      }
+
+      if (l.action === 'allow') {
+        rules['allow'][l['rule-id']] = true;
+      } else {
+        rules['deny'][l['rule-id']] = true;
+      }
+    }
+    this.servicesDisplayData.rows[0].value = '' + Object.keys(destinations).length;
+    this.servicesDisplayData.rows[1].value = '' + Object.keys(sessions['allow']).length + ' & ' + Object.keys(sessions['deny']).length;
+    this.servicesDisplayData.rows[2].value = '' + Object.keys(rules['allow']).length + ' & ' + Object.keys(rules['deny']).length;
+    this.generateProtocolText(protocol);
+  }
+
+  generateProtocolText(protocolMap: {[key: string]: number} ) {
+    if (Object.keys(protocolMap).length === 1) {
+      const k = Object.keys(protocolMap)[0];
+      const protocolStr = protocolMap[k] + ' ' + k;
+      this.servicesDisplayData.rows[3].value = protocolStr;
+    } else if (Object.keys(protocolMap).length >= 2) {
+      const protocolArr = [];
+      for (const k of Object.keys(protocolMap)) {
+        protocolArr.push(protocolMap[k] + ' ' + k);
+      }
+      const last = protocolArr.pop();
+      const protocolStr = protocolArr.join(', ') + ' & ' + last;
+      this.servicesDisplayData.rows[3].value = protocolStr;
+    }
+  }
+
+  getAlertsWatch() {
+    const alertWatchSubscription = this.monitoringService.ListAlertCache().subscribe(
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        const myAlerts = response.data as MonitoringAlert[];
+        this.alerts = myAlerts.filter((alert: MonitoringAlert) => {
+          return (this.isAlertInOpenState(alert));
+        });
+
+        let dscCritical: number = 0;
+        let dscWarning: number = 0;
+        let dscInfo: number = 0;
+        let workloadCritical: number = 0;
+        let workloadWarning: number = 0;
+        let workloadInfo: number = 0;
+
+        if (this.alerts) {
+          this.alerts.forEach(alert => {
+            if (alert && alert.status && alert.status['object-ref']) {
+              if (alert.status['object-ref'].kind === 'DistributedServiceCard') {
+                if (alert.status.severity === MonitoringAlertStatus_severity.critical) {
+                  dscCritical += 1;
+                } else if (alert.status.severity === MonitoringAlertStatus_severity.warn) {
+                  dscWarning += 1;
+                } else if (alert.status.severity === MonitoringAlertStatus_severity.info) {
+                  dscInfo += 1;
+                }
+              } else if (alert.status['object-ref'].kind === 'Workload') {
+                if (alert.status.severity === MonitoringAlertStatus_severity.critical) {
+                  workloadCritical += 1;
+                } else if (alert.status.severity === MonitoringAlertStatus_severity.warn) {
+                  workloadWarning += 1;
+                } else if (alert.status.severity === MonitoringAlertStatus_severity.info) {
+                  workloadInfo += 1;
+                }
+              }
+            }
+          });
+        }
+        this.naplesDisplayData.alerts = [dscCritical, dscWarning, dscInfo];
+        this.naplesDisplayData = { ...this.naplesDisplayData };
+        this.workloadsDisplayData.alerts = [workloadCritical, workloadWarning, workloadInfo];
+        this.workloadsDisplayData = { ...this.workloadsDisplayData };
+      },
+      this._controllerService.webSocketErrorHandler('Failed to get Alerts'),
+    );
+    this.subscriptions.push(alertWatchSubscription);
+  }
+
+  isAlertInOpenState(alert: MonitoringAlert): boolean {
+    return (alert.spec.state === 'open');
+  }
+
+  getRecords() {
+    const subscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naples = response.data;
+        this.naplesDisplayData.rows[0].value = '' + this.naples.length;
+        this.naplesDisplayData = { ...this.naplesDisplayData };
+      },
+    );
+    this.subscriptions.push(subscription);
+    const workloadSubscription = this.workloadService.ListWorkloadCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.workloads = response.data as WorkloadWorkload[];
+        let vcenterWorkloads: number = 0;
+        if (this.workloads) {
+          this.workloads.forEach(workload => {
+            if (Utility.isWorkloadSystemGenerated(workload)) {
+              vcenterWorkloads += 1;
+            }
+          });
+        }
+        this.workloadsDisplayData.rows[0].value = '' + this.workloads.length;
+        this.workloadsDisplayData.rows[1].value = '' + vcenterWorkloads;
+        this.workloadsDisplayData = { ...this.workloadsDisplayData };
+      }
+    );
+    this.subscriptions.push(workloadSubscription);
+    const hostSubscription = this.clusterService.ListHostCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.hosts = response.data;
+        let vcenterHosts: number = 0;
+        if (this.hosts) {
+          this.hosts.forEach(host => {
+            if (host && host.meta.labels &&
+                host.meta.labels['io.pensando.vcenter.display-name']) {
+              vcenterHosts += 1;
+            }
+          });
+        }
+        this.workloadsDisplayData.rows[2].value = '' + this.hosts.length;
+        this.workloadsDisplayData.rows[3].value = '' + vcenterHosts;
+        this.workloadsDisplayData = { ...this.workloadsDisplayData };
+      }
+    );
+    this.subscriptions.push(hostSubscription);
+  }
+
+  updateInterfacesStats(data) {
+    let totalRxBandWidth: number = 0;
+    let totalTxBandWidth: number = 0;
+    let totalRx: number = 0;
+    let totalTx: number = 0;
+    let totalRxDrop: number = 0;
+    let totalTxDrop: number = 0;
+    data.series.forEach(item => {
+      totalRxBandWidth += item.values[0][17];
+      totalTxBandWidth += item.values[0][18];
+      totalRx += item.values[0][7];
+      totalTx += item.values[0][8];
+      const newRxDrop = item.values[0][1] + item.values[0][2] + item.values[0][3];
+      totalRxDrop += newRxDrop;
+      const newTxDrop = item.values[0][4] + item.values[0][5] + item.values[0][6];
+      totalTxDrop += newTxDrop;
+    });
+    this.naplesDisplayData.rows[1].value = Utility.formatBytes(totalTxBandWidth, 2)
+        + '/s & ' + Utility.formatBytes(totalRxBandWidth) + '/s';
+    this.naplesDisplayData.rows[2].value = Utility.formatBytes(totalTx, 2)
+        + ' & ' + Utility.formatBytes(totalRx);
+    this.naplesDisplayData.rows[3].value = Utility.formatBytes(totalTxDrop, 2)
+        + ' & ' + Utility.formatBytes(totalRxDrop);
+    this.naplesDisplayData = { ...this.naplesDisplayData };
+  }
+
+  startInterfaceStatsPoll() {
+    const queryList: TelemetryPollingMetricQueries = {
+        queries: [],
+        tenant: Utility.getInstance().getTenant()
+      };
+
+      const query: MetricsPollingQuery = this.topologyInterfaceQuery(
+        'LifMetrics', ['RxDropBroadcastBytes', 'RxDropMulticastBytes', 'RxDropUnicastBytes',
+        'TxDropBroadcastBytes', 'TxDropMulticastBytes', 'TxDropUnicastBytes', 'RxBytes',
+        'TxBytes', 'RxDropBroadcastPackets', 'RxDropMulticastPackets', 'RxDropUnicastPackets',
+        'TxDropBroadcastPackets', 'TxDropMulticastPackets', 'TxDropUnicastPackets',
+        'RxPkts', 'TxPkts', 'RxBytesps', 'TxBytesps', 'RxPps', 'TxPps']);
+      queryList.queries.push(query);
+
+      // refresh every 35 seconds
+      const sub = this.metricsqueryService.pollMetrics('topologyInterfaces', queryList, MetricsUtility.FIVE_MINUTES).subscribe(
+        (data: ITelemetry_queryMetricsQueryResponse) => {
+          if (data && data.results && data.results.length === queryList.queries.length) {
+            console.log();
+            this.updateInterfacesStats(data.results[0]);
+          }
+        },
+        (err) => {
+          this._controllerService.invokeErrorToaster('Error', 'Failed to load interface metrics.');
+        }
+      );
+      this.subscriptions.push(sub);
+  }
+
+  topologyInterfaceQuery(kind: string, fields: string[]): MetricsPollingQuery {
+    const query: ITelemetry_queryMetricsQuerySpec = {
+      'kind': kind,
+      'name': null,
+      'selector': null,
+      'function': Telemetry_queryMetricsQuerySpec_function.last,
+      'group-by-field': 'name',
+      'group-by-time': null,
+      'fields': fields != null ? fields : [],
+      'sort-order': Telemetry_queryMetricsQuerySpec_sort_order.descending,
+      'start-time': 'now() - 1m' as any,
+      'end-time': 'now()' as any,
+    };
+    return { query: new Telemetry_queryMetricsQuerySpec(query), pollingOptions: {} };
   }
 
   /**

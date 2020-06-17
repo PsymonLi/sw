@@ -39,7 +39,8 @@ import { By } from '@angular/platform-browser';
 import { TestingUtility } from '@app/common/TestingUtility';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { DsbdcardComponent } from './widgets/dsbdcard/dsbdcard.component';
-
+import { MonitoringService } from '@app/services/generated/monitoring.service';
+import { FwlogService } from '@app/services/generated/fwlog.service';
 @Component({
   template: ''
 })
@@ -48,6 +49,7 @@ class DummyComponent { }
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
+  let uiconfigService: UIConfigsService;
 
   configureTestSuite(() => {
      TestBed.configureTestingModule({
@@ -83,13 +85,15 @@ describe('DashboardComponent', () => {
         AuthService,
         AuthServiceGen,
         ConfirmationService,
+        MonitoringService,
         MatIconRegistry,
         LogService,
         LogPublishersService,
         MessageService,
         MetricsqueryService,
         ClusterService,
-        WorkloadService
+        WorkloadService,
+        FwlogService,
       ]
     });
       });
@@ -98,12 +102,14 @@ describe('DashboardComponent', () => {
     fixture = TestBed.createComponent(DashboardComponent);
     component = fixture.componentInstance;
     component.gridsterOptions = [];
+    uiconfigService = TestBed.get(UIConfigsService);
   });
 
   describe('RBAC', () => {
 
     beforeEach(() => {
       TestingUtility.removeAllPermissions();
+      spyOn(uiconfigService, 'isFeatureEnabled').and.returnValue(false);
     });
 
     it('no permission', () => {

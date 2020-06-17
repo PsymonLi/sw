@@ -401,9 +401,20 @@ $sidenavPartialWidth: #{$sidenavPartialWidthNum}px;
 
 $mediumGray: #676763;
 $backgroundGradient: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(255, 250, 239, 0.5) 58%);
+$backgroundGradientBlue: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(238, 247, 255, 0.5) 58%);
+$backgroundGradientRed: linear-gradient(to left, rgba(255, 255, 255, 0), rgba(247, 239, 243, 0.5) 58%);
+
 
 .detail-card-wrapper {
   margin-bottom: 10px;
+}
+
+.dashboard-workload .detail-card {
+  background-image: $backgroundGradientBlue !important;
+}
+
+.dashboard-services .detail-card {
+  background-image: $backgroundGradientRed !important;
 }
 
 .detail-card {

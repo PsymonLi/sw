@@ -1,6 +1,5 @@
-<div fxLayout="column" fxLayoutGap="10px">
-  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px"
-       *featureGuard="'enterprise'">
+<div fxLayout="column" fxLayoutGap="10px" *ngIf="!hideOldWidgets">
+  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
     <app-dsbdworkloads *roleGuard="{ req: ['workloadworkload_read', 'clusterhost_read']}"
                        fxFlex="none"></app-dsbdworkloads>
     <app-dsbdpolicyhealth *roleGuard="'metrics_read'" fxFlex="none"></app-dsbdpolicyhealth>
@@ -8,18 +7,21 @@
   <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
     <app-dsbdsystemcapacitywidget *roleGuard="{ req: ['clustercluster_read', 'clusternode_read']}"
                                   fxFlex="none"
-                                  [cardState]="systemCapacity.cardState" [currentData]="currentData"
+                                  [cardState]="systemCapacity.cardState"
+                                  [currentData]="currentData"
                                   [prevData]="prevData" [timeSeriesData]="timeSeriesData"
                                   [avgDayData]="avgDayData" [lastUpdateTime]="lastUpdateTime">
     </app-dsbdsystemcapacitywidget>
     <app-dsbdnapleswidget *roleGuard="'clusterdistributedservicecard_read'" fxFlex="none">
     </app-dsbdnapleswidget>
   </div>
-  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
-    <ng-container *featureGuard="'showDashboardFlowdrops'">
-      <app-dsbdcard></app-dsbdcard>
-    </ng-container>
-  </div>
+</div>
+<div fxLayout="row" *ngIf="hideOldWidgets" style="flex-wrap: wrap">
+  <app-dsbdcard fxFlex="1 1 auto" [displayData]="naplesDisplayData"></app-dsbdcard>
+  <app-dsbdcard fxFlex="1 1 auto" class="dashboard-workload" [displayData]="workloadsDisplayData">
+  </app-dsbdcard>
+  <app-dsbdcard fxFlex="1 1 auto" class="dashboard-services " [displayData]="servicesDisplayData">
+  </app-dsbdcard>
 </div>
 
 <!-- Previous dashboard -->
