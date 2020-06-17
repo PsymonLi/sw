@@ -28,6 +28,8 @@ typedef struct serdes_fn_s_ {
     int (*serdes_an_hcd_read)      (uint32_t sbus_addr);
     int (*serdes_an_core_status)   (uint32_t sbus_addr);
     int (*serdes_an_hcd_cfg)       (uint32_t sbus_addr,
+                                    uint32_t *sbus_addr_arr);
+    int (*serdes_an_hcd_cfg2)      (uint32_t sbus_addr,
                                     uint32_t *sbus_addr_arr,
                                     uint32_t an_hcd,
                                     uint32_t rx_term);
@@ -42,7 +44,7 @@ typedef struct serdes_fn_s_ {
     int (*serdes_rx_lpbk)          (uint32_t sbus_addr, bool enable);
     int (*serdes_spico_reset)      (uint32_t sbus_addr);
     int (*serdes_sbus_reset)       (uint32_t sbus_addr, int hard);
-    int (*serdes_spico_upload)     (uint32_t sbus_addr, const char* file_name, const char* bh_file_name);
+    int (*serdes_spico_upload)     (uint32_t sbus_addr, const char* file_name);
     int (*serdes_spico_status)     (uint32_t sbus_addr);
     int (*serdes_get_rev)          (uint32_t sbus_addr);
     int (*serdes_get_build_id)     (uint32_t sbus_addr);
@@ -61,9 +63,7 @@ typedef struct serdes_fn_s_ {
     int (*serdes_an_fec_enable_read)   (uint32_t sbus_addr);
     int (*serdes_an_rsfec_enable_read) (uint32_t sbus_addr);
     int (*serdes_eye_check)        (uint32_t sbus_addr, uint32_t *values);
-#ifdef ELBA
-     int (*serdes_bh_upload)        (uint32_t sbus_addr, const char*);
-#endif
+    int (*serdes_firmware_upload)  (void);
 
 } serdes_fn_t;
 

@@ -178,13 +178,13 @@ serdes_spico_crc_default(uint32_t sbus_addr)
 }
 
 int
-serdes_spico_upload_default (uint32_t sbus_addr, const char* file_name, const char* bh_file_name)
+serdes_spico_upload_default (uint32_t sbus_addr, const char* file_name)
 {
     return 0;
 }
 
 int
-serdes_bh_upload_default (uint32_t sbus_addr, const char* file_name)
+serdes_firmware_upload_default (void)
 {
     return 0;
 }
@@ -251,7 +251,7 @@ serdes_an_hcd_read_default (uint32_t sbus_addr)
 }
 
 int
-serdes_an_hcd_cfg_default (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term)
+serdes_an_hcd_cfg2_default (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term)
 {
     return 0;
 }
@@ -910,44 +910,46 @@ serdes_spico_reset_hw (uint32_t sbus_addr)
     return rc;
 }
 
+
 int
-serdes_spico_upload_hw (uint32_t sbus_addr, const char* filename, const char* bh_file_name)
+serdes_spico_upload_hw (uint32_t sbus_addr, const char* filename)
 {
-  int bh_lane = serdes_get_bh_lane(sbus_addr);
-  int rc;
-  if(bh_lane == -1) {
+    int rc;
     int run_ram_bist = 1;
-    SDK_LINKMGR_TRACE_DEBUG ("serdes_spico_upload_hw sbus_addr:%x filename:%s", sbus_addr, filename); 
-    SDK_TRACE_DEBUG ("serdes_spico_upload_hw sbus_addr:%x filename:%s", sbus_addr, filename); 
+    SDK_LINKMGR_TRACE_DEBUG ("serdes_spico_upload_hw sbus_addr 0x%x filename:%s", sbus_addr, filename); 
     rc = avago_spico_upload_file(aapl, sbus_addr, run_ram_bist, filename);
 
     if (rc < 0) {
-        SDK_LINKMGR_TRACE_ERR("spico upload failed for sbus: %u", sbus_addr);
+        SDK_LINKMGR_TRACE_ERR("spico upload failed for sbus: %x", sbus_addr);
     }
 
-  } else {
-    //this function is alled for each of the 8 bh lanes.
-    //we can upload the bh-fw code for lane==0
-    if(bh_lane==0) {
+    return rc;
+}
 
-      uint32_t bh_sbus_addr = sbus_addr & 0xffff;
-      SDK_TRACE_DEBUG ("serdes_bh_upload_hw sbus_addr:%x filename:%s", bh_sbus_addr, bh_file_name); 
-      rc = serdes_bh_upload_hw(bh_sbus_addr, bh_file_name);
+int
+serdes_bh_fw_upload_init (uint32_t sbus_addr, const char* filename)
+{
+    int rc;
+    SDK_LINKMGR_TRACE_DEBUG ("serdes_bh_fw_upload_init sbus_addr 0x%x filename:%s", sbus_addr, filename); 
+    uint32_t bh_sbus_addr = sbus_addr & 0xffff;
+    rc = serdes_bh_upload_hw(bh_sbus_addr, filename);
 
-      //default pll0:170, pll1:165, all lanes maped to pll1.
-      int rr = serdes_bh_core_init_hw (bh_sbus_addr, 170, 165, 0xffff);
-      if(rr!=0) rc = -1;
+    //default pll0:170, pll1:165, all lanes maped to pll1.
+    int rr = serdes_bh_core_init_hw (bh_sbus_addr, 170, 165, 0xffff);
+    if(rr!=0) {
+        rc = -1;
+        SDK_LINKMGR_TRACE_ERR("serdes_bh_core_init_hw upload failed for sbus_addr 0x%x", bh_sbus_addr);
+    }
       
-      //No tx/rx_slip for bh, instead do this:
-      //PRS Doc: For MX interface timing (as timed in STA), the following needs to be set: 
-      //sbus address 0x46 bit 16 to 1. BH is on 
-      bh_sbus_addr = bh_sbus_addr & 0xff;
-      uint32_t dd = elb_aod_sbus_read(0, bh_sbus_addr, 0x46);
-      dd = (dd | 0x10000);
-      elb_aod_sbus_write(0, bh_sbus_addr, 0x46, dd);
-    }
-  }
-  return rc;
+    //No tx/rx_slip for bh, instead do this:
+    //PRS Doc: For MX interface timing (as timed in STA), the following needs to be set: 
+    //sbus address 0x46 bit 16 to 1. BH is on 
+    bh_sbus_addr = bh_sbus_addr & 0xff;
+    uint32_t dd = elb_aod_sbus_read(0, bh_sbus_addr, 0x46);
+    dd = (dd | 0x10000);
+    elb_aod_sbus_write(0, bh_sbus_addr, 0x46, dd);
+
+    return rc;
 }
 
 #if 0
@@ -1246,7 +1248,7 @@ serdes_an_init_hw (uint32_t sbus_addr, serdes_info_t *serdes_info)
     uint32_t divider  = serdes_info->sbus_divider;
     uint32_t width    = serdes_info->width;
 
-    SDK_LINKMGR_TRACE_DEBUG("sbus_addr: %u, divider: %u, width: %u",
+    SDK_LINKMGR_TRACE_DEBUG("sbus_addr: 0x%x, divider: %u, width: %u",
                             sbus_addr, divider, width);
 
     Avago_serdes_init_config_t *cfg = avago_serdes_init_config_construct(aapl);
@@ -1376,7 +1378,7 @@ int serdes_an_core_status_hw (uint32_t sbus_addr)
 }
 
 int
-serdes_an_hcd_cfg_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term)
+serdes_an_hcd_cfg2_hw (uint32_t sbus_addr, uint32_t *sbus_addr_arr, uint32_t an_hcd, uint32_t rx_term)
 {
   uint8_t  num_lanes = 0;
   serdes_info_t  *xx = new serdes_info_t;
@@ -1630,6 +1632,68 @@ serdes_aacs_start_hw(int port)
     avago_aacs_server(aapl, port);
 }
 
+int
+serdes_firmware_upload_hw (void)
+{
+    uint32_t sbus_addr, err=0;
+    int exp_build_id  = g_linkmgr_cfg.catalog->serdes_build_id();
+    int exp_rev_id    = g_linkmgr_cfg.catalog->serdes_rev_id();
+    int exp_build_id2 = g_linkmgr_cfg.catalog->serdes_build_id2();
+    int exp_rev_id2   = g_linkmgr_cfg.catalog->serdes_rev_id2();
+    int asic_num      = 0;
+    uint32_t prt_cnt  = g_linkmgr_cfg.catalog->num_asic_ports(asic_num);
+    std::string cfg_file = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" + g_linkmgr_cfg.catalog->serdes_fw_file();
+    std::string cfg_file2 = std::string(g_linkmgr_cfg.cfg_path) + "/fw/" + g_linkmgr_cfg.catalog->serdes_fw2_file();
+    int bh_lane, ret;
+
+    for (uint32_t asic_port = 0; asic_port < prt_cnt; ++asic_port) {
+        sbus_addr = g_linkmgr_cfg.catalog->sbus_addr_asic_port(asic_num, asic_port);
+        SDK_TRACE_DEBUG("serdes_firmware_upload_hw asic_port:%0d sbus_addr:0x%x", asic_port, sbus_addr);
+        if (sbus_addr == 0) {
+          continue;
+        }
+        bh_lane = serdes_get_bh_lane(sbus_addr);
+        if(bh_lane == -1) {
+          ret = serdes_spico_upload_hw(sbus_addr, cfg_file.c_str());
+          if(ret!=0) err = 1;
+        } else if (bh_lane == 0 ) {
+          ret = serdes_bh_fw_upload_init(sbus_addr, cfg_file2.c_str());
+          if(ret!=0) err = 1;
+        }
+
+        int build_id = serdes_get_build_id_hw(sbus_addr);
+        int rev_id   = serdes_get_rev_hw(sbus_addr);
+
+        if(bh_lane == -1) {
+            if( (build_id != exp_build_id || rev_id != exp_rev_id) ) {
+                SDK_TRACE_DEBUG("Incorrect build_id/rev_id. sbus_addr 0x%x,"
+                            " build_id 0x%x , exp_build_id 0x%x,"
+                            " rev_id 0x%x, exp_rev_id 0x%x",
+                            sbus_addr, build_id, exp_build_id,
+                            rev_id, exp_rev_id);
+                err = 1;
+            }
+        } else {
+            if( (build_id != exp_build_id2 || rev_id != exp_rev_id2) ) {
+                SDK_TRACE_DEBUG("Incorrect build_id/rev_id. sbus_addr 0x%x,"
+                            " build_id 0x%x , exp_build_id 0x%x,"
+                            " rev_id 0x%x, exp_rev_id 0x%x",
+                            sbus_addr, build_id, exp_build_id2,
+                            rev_id, exp_rev_id2);
+                err = 1;
+            }
+        }
+
+        serdes_spico_status_hw(sbus_addr);
+
+        SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
+            sbus_addr,
+            serdes_spico_crc_hw(sbus_addr));
+    }
+
+    return ( (err)? -1 : 0 ) ;
+}
+
 sdk_ret_t
 port_serdes_fn_init(platform_type_t platform_type,
                     uint32_t        jtag_id,
@@ -1673,11 +1737,12 @@ port_serdes_fn_init(platform_type_t platform_type,
     serdes_fn->serdes_an_start      = &serdes_an_start_default;
     serdes_fn->serdes_an_wait_hcd   = &serdes_an_wait_hcd_default;
     serdes_fn->serdes_an_hcd_read   = &serdes_an_hcd_read_default;
-    serdes_fn->serdes_an_hcd_cfg    = &serdes_an_hcd_cfg_default;
+    serdes_fn->serdes_an_hcd_cfg2    = &serdes_an_hcd_cfg2_default;
     serdes_fn->serdes_invert_cfg    = &serdes_invert_cfg_default;
     serdes_fn->serdes_eye_check     = &serdes_eye_check_default;
 
     serdes_fn->serdes_an_core_status = &serdes_an_core_status_default;
+    serdes_fn->serdes_firmware_upload = &serdes_firmware_upload_default;
 
     serdes_fn->serdes_an_fec_enable_read   =
                                       &serdes_an_fec_enable_read_default;
@@ -1725,9 +1790,10 @@ port_serdes_fn_init(platform_type_t platform_type,
         serdes_fn->serdes_an_start      = &serdes_an_start_hw;
         serdes_fn->serdes_an_wait_hcd   = &serdes_an_wait_hcd_hw;
         serdes_fn->serdes_an_hcd_read   = &serdes_an_hcd_read_hw;
-        serdes_fn->serdes_an_hcd_cfg    = &serdes_an_hcd_cfg_hw;
+        serdes_fn->serdes_an_hcd_cfg2   = &serdes_an_hcd_cfg2_hw;
         serdes_fn->serdes_invert_cfg    = &serdes_invert_cfg_hw;
         serdes_fn->serdes_an_core_status = &serdes_an_core_status_hw;
+        serdes_fn->serdes_firmware_upload = &serdes_firmware_upload_hw;
 
         serdes_fn->serdes_an_fec_enable_read   =
                                           &serdes_an_fec_enable_read_hw;
