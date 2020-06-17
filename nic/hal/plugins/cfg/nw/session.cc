@@ -2454,7 +2454,7 @@ check_and_generate_sys_max_sess_limit_event (session_t *session)
     }
 
     tot_active_session =
-        HAL_SESSION_STATS_PTR(session->fte_id)->total_active_sessions;
+        HAL_SESSION_STATS_PTR(session->fte_id)->total_active;
     low_threshold_reset =
         g_session_limit_stats_trckr->sys_max_sess_limit_low_thresh_reset;
     high_threshold_reset =
@@ -2532,7 +2532,7 @@ check_and_generate_session_limit_event (session_t *session)
     switch (ip_proto) {
     case types::IPPROTO_TCP:
         session_limit = ((nwsec_prof != NULL) ? nwsec_prof->tcp_half_open_session_limit : 0);
-        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions;
+        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open;
         low_threshold_reset = g_session_limit_stats_trckr->tcp_half_open_sess_limit_low_thresh_reset;
         high_threshold_reset = g_session_limit_stats_trckr->tcp_half_open_sess_limit_high_thresh_reset;
         session_limit_event_reach = eventtypes::TCP_HALF_OPEN_SESSION_LIMIT_REACHED;
@@ -2540,7 +2540,7 @@ check_and_generate_session_limit_event (session_t *session)
         break;
     case types::IPPROTO_UDP:
         session_limit = ((nwsec_prof != NULL) ? nwsec_prof->udp_active_session_limit: 0);
-        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->udp_sessions;
+        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->num_udp;
         low_threshold_reset = g_session_limit_stats_trckr->udp_sess_limit_low_thresh_reset;
         high_threshold_reset = g_session_limit_stats_trckr->udp_sess_limit_high_thresh_reset;
         session_limit_event_reach = eventtypes::UDP_ACTIVE_SESSION_LIMIT_REACHED;
@@ -2548,7 +2548,7 @@ check_and_generate_session_limit_event (session_t *session)
         break;
     case types::IPPROTO_ICMP:
         session_limit = ((nwsec_prof != NULL) ? nwsec_prof->icmp_active_session_limit: 0);
-        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->icmp_sessions;
+        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->num_icmp;
         low_threshold_reset = g_session_limit_stats_trckr->icmp_sess_limit_low_thresh_reset;
         high_threshold_reset = g_session_limit_stats_trckr->icmp_sess_limit_high_thresh_reset;
         session_limit_event_reach = eventtypes::ICMP_ACTIVE_SESSION_LIMIT_REACHED;
@@ -2556,7 +2556,7 @@ check_and_generate_session_limit_event (session_t *session)
         break;
     default: //L2 or other sessions
         session_limit = ((nwsec_prof != NULL) ? nwsec_prof->other_active_session_limit: 0);
-        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->other_active_sessions;
+        num_active_session = HAL_SESSION_STATS_PTR(session->fte_id)->num_other_active;
         low_threshold_reset = g_session_limit_stats_trckr->other_sess_limit_low_thresh_reset;
         high_threshold_reset = g_session_limit_stats_trckr->other_sess_limit_high_thresh_reset;
         session_limit_event_reach = eventtypes::OTHER_ACTIVE_SESSION_LIMIT_REACHED;
@@ -2608,33 +2608,33 @@ update_global_session_stats (session_t *session, bool decr=false)
     bool       is_tcp_session = false;
 
     if (session->iflow->pgm_attrs.drop) {
-        HAL_SESSION_STATS_PTR(session->fte_id)->drop_sessions += 1;
+        HAL_SESSION_STATS_PTR(session->fte_id)->num_sec_policy_drops += 1;
     }
 
     if (key.flow_type == FLOW_TYPE_L2) {
-        HAL_SESSION_STATS_PTR(session->fte_id)->l2_sessions += (decr)?(-1):1;
-        HAL_SESSION_STATS_PTR(session->fte_id)->other_active_sessions += (decr)?(-1):1;
+        HAL_SESSION_STATS_PTR(session->fte_id)->num_l2 += (decr)?(-1):1;
+        HAL_SESSION_STATS_PTR(session->fte_id)->num_other_active += (decr)?(-1):1;
     } else if (key.flow_type == FLOW_TYPE_V4 ||
                key.flow_type == FLOW_TYPE_V6) {
         if (key.proto == types::IPPROTO_TCP) {
             is_tcp_session = true;
-            HAL_SESSION_STATS_PTR(session->fte_id)->tcp_sessions += (decr)?(-1):1;
+            HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp += (decr)?(-1):1;
             // update half open session count on delete
             if ((session->is_in_half_open_state) && (decr)) {
                 session->is_in_half_open_state = 0;
                 update_session_stats_thr_safe(
-                        &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                        &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
             }
         } else if (key.proto == types::IPPROTO_UDP) {
-            HAL_SESSION_STATS_PTR(session->fte_id)->udp_sessions += (decr)?(-1):1;
+            HAL_SESSION_STATS_PTR(session->fte_id)->num_udp += (decr)?(-1):1;
         } else if (key.proto == types::IPPROTO_ICMP) {
-            HAL_SESSION_STATS_PTR(session->fte_id)->icmp_sessions += (decr)?(-1):1;
+            HAL_SESSION_STATS_PTR(session->fte_id)->num_icmp += (decr)?(-1):1;
         }
     } else {
-        HAL_SESSION_STATS_PTR(session->fte_id)->other_active_sessions += (decr)?(-1):1;
+        HAL_SESSION_STATS_PTR(session->fte_id)->num_other_active += (decr)?(-1):1;
     }
 
-    HAL_SESSION_STATS_PTR(session->fte_id)->total_active_sessions += (decr)?(-1):1;
+    HAL_SESSION_STATS_PTR(session->fte_id)->total_active += (decr)?(-1):1;
 
     // Check & generate limit events for various flow types as follows:
     // for flow types other than TCP, done on both session create & delete.
@@ -2770,7 +2770,7 @@ session_create (const session_args_t *args, hal_handle_t *session_handle,
     if (session && ret != HAL_RET_OK) {
         HAL_TRACE_ERR("session create failure, err={}", ret);
         session_cleanup(session);
-        HAL_SESSION_STATS_PTR(session->fte_id)->num_session_create_err += 1;
+        HAL_SESSION_STATS_PTR(session->fte_id)->num_create_err += 1;
     } else {
         update_global_session_stats(session);
     }
@@ -3222,7 +3222,7 @@ hal_has_session_aged (session_t *session, uint64_t ctime_ns,
         (session_state_p->iflow_state.state >= session::FLOW_TCP_STATE_SYN_ACK_RCVD)) {
         session->is_in_half_open_state = 0;
         update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -3480,7 +3480,7 @@ build_and_send_tcp_pkt (void *data)
     }
 
 triggerdelete:
-    HAL_SESSION_STATS_PTR(session->fte_id)->aged_sessions += 1;
+    HAL_SESSION_STATS_PTR(session->fte_id)->num_aged += 1;
     // time to clean up the session
     ret = fte::session_delete_in_fte(session->hal_handle);
     if (ret != HAL_RET_OK) {
@@ -3615,7 +3615,7 @@ session_age_cb (void *entry, void *ctxt)
             if (session->is_in_half_open_state) {
                 session->is_in_half_open_state = 0;
                 update_session_stats_thr_safe(
-                        &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                        &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
                 // Check and raise session limit approach/reached event
                 check_and_generate_session_limit_event(session);
             }
@@ -3624,7 +3624,7 @@ session_age_cb (void *entry, void *ctxt)
             if (args->num_del_sess[session->fte_id] == HAL_SESSIONS_TO_SCAN_PER_INTVL)
                 return true;
 
-            HAL_SESSION_STATS_PTR(session->fte_id)->aged_sessions += 1;
+            HAL_SESSION_STATS_PTR(session->fte_id)->num_aged += 1;
         }
     }
 
@@ -3994,7 +3994,7 @@ schedule_tcp_close_timer (session_t *session, nwsec_profile_t *nwsec_prof)
     if (session->is_in_half_open_state) {
         session->is_in_half_open_state = 0;
         update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4093,7 +4093,7 @@ schedule_tcp_half_closed_timer (session_t *session, nwsec_profile_t *nwsec_prof)
     if (session->is_in_half_open_state) {
         session->is_in_half_open_state = 0;
         update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4143,7 +4143,7 @@ tcp_cxnsetup_cb (void *timer, uint32_t timer_id, void *ctxt)
     if (session->is_in_half_open_state) {
         session->is_in_half_open_state = 0;
         update_session_stats_thr_safe(
-                &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
         // Check and raise session limit approach/reached event
         check_and_generate_session_limit_event(session);
     }
@@ -4207,7 +4207,7 @@ schedule_tcp_cxnsetup_timer (session_t *session, nwsec_profile_t *nwsec_prof)
     session->is_in_half_open_state = 1;
     // Keep track of number of TCP half open sessions
     update_session_stats_thr_safe(
-            &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, false);
+            &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, false);
     // Check and raise session limit approach/reached event
     check_and_generate_session_limit_event(session);
 
@@ -4234,7 +4234,7 @@ session_set_tcp_state (session_t *session, hal::flow_role_t role,
             (tcp_state >= session::FLOW_TCP_STATE_SYN_ACK_RCVD)) {
             session->is_in_half_open_state = 0;
             update_session_stats_thr_safe(
-                    &HAL_SESSION_STATS_PTR(session->fte_id)->tcp_half_open_sessions, true);
+                    &HAL_SESSION_STATS_PTR(session->fte_id)->num_tcp_half_open, true);
             // Check and raise session limit approach/reached event
             check_and_generate_session_limit_event(session);
         }
@@ -4467,43 +4467,45 @@ system_session_summary_get(SystemResponse *rsp)
     SessionSummaryStats *session_stats = NULL;
 
     for (uint32_t fte = 0; fte < hal::g_hal_cfg.num_data_cores; fte++) {
-        session_summary.total_active_sessions += HAL_SESSION_STATS_PTR(fte)->total_active_sessions;
-        session_summary.l2_sessions += HAL_SESSION_STATS_PTR(fte)->l2_sessions;
-        session_summary.tcp_sessions += HAL_SESSION_STATS_PTR(fte)->tcp_sessions;
-        session_summary.udp_sessions += HAL_SESSION_STATS_PTR(fte)->udp_sessions;
-        session_summary.icmp_sessions += HAL_SESSION_STATS_PTR(fte)->icmp_sessions;
-        session_summary.drop_sessions += HAL_SESSION_STATS_PTR(fte)->drop_sessions;
-        session_summary.aged_sessions += HAL_SESSION_STATS_PTR(fte)->aged_sessions;
+        session_summary.total_active += HAL_SESSION_STATS_PTR(fte)->total_active;
+        session_summary.num_l2 += HAL_SESSION_STATS_PTR(fte)->num_l2;
+        session_summary.num_tcp += HAL_SESSION_STATS_PTR(fte)->num_tcp;
+        session_summary.num_udp += HAL_SESSION_STATS_PTR(fte)->num_udp;
+        session_summary.num_icmp += HAL_SESSION_STATS_PTR(fte)->num_icmp;
+        session_summary.num_sec_policy_drops += HAL_SESSION_STATS_PTR(fte)->num_sec_policy_drops;
+        session_summary.num_aged += HAL_SESSION_STATS_PTR(fte)->num_aged;
         session_summary.num_tcp_rst_sent += HAL_SESSION_STATS_PTR(fte)->num_tcp_rst_sent;
         session_summary.num_icmp_error_sent += HAL_SESSION_STATS_PTR(fte)->num_icmp_error_sent;
         session_summary.num_cxnsetup_timeout += HAL_SESSION_STATS_PTR(fte)->num_cxnsetup_timeout;
-        session_summary.num_session_create_err += HAL_SESSION_STATS_PTR(fte)->num_session_create_err;
-        session_summary.tcp_half_open_sessions += HAL_SESSION_STATS_PTR(fte)->tcp_half_open_sessions;
-        session_summary.other_active_sessions += HAL_SESSION_STATS_PTR(fte)->other_active_sessions;
-        session_summary.tcp_session_drop_count += HAL_SESSION_STATS_PTR(fte)->tcp_session_drop_count;
-        session_summary.udp_session_drop_count += HAL_SESSION_STATS_PTR(fte)->udp_session_drop_count;
-        session_summary.icmp_session_drop_count += HAL_SESSION_STATS_PTR(fte)->icmp_session_drop_count;
-        session_summary.other_session_drop_count += HAL_SESSION_STATS_PTR(fte)->other_session_drop_count;
+        session_summary.num_create_err += HAL_SESSION_STATS_PTR(fte)->num_create_err;
+        session_summary.num_tcp_half_open += HAL_SESSION_STATS_PTR(fte)->num_tcp_half_open;
+        session_summary.num_other_active += HAL_SESSION_STATS_PTR(fte)->num_other_active;
+        session_summary.num_tcp_limit_drops += HAL_SESSION_STATS_PTR(fte)->num_tcp_limit_drops;
+        session_summary.num_udp_limit_drops += HAL_SESSION_STATS_PTR(fte)->num_udp_limit_drops;
+        session_summary.num_icmp_limit_drops += HAL_SESSION_STATS_PTR(fte)->num_icmp_limit_drops;
+        session_summary.num_other_limit_drops += HAL_SESSION_STATS_PTR(fte)->num_other_limit_drops;
+        session_summary.num_dsc_limit_drops += HAL_SESSION_STATS_PTR(fte)->num_dsc_limit_drops;
     }
 
     session_stats = rsp->mutable_stats()->mutable_session_stats();
-    session_stats->set_total_active_sessions(session_summary.total_active_sessions);
-    session_stats->set_l2_sessions(session_summary.l2_sessions);
-    session_stats->set_tcp_sessions(session_summary.tcp_sessions);
-    session_stats->set_udp_sessions(session_summary.udp_sessions);
-    session_stats->set_icmp_sessions(session_summary.icmp_sessions);
-    session_stats->set_drop_sessions(session_summary.drop_sessions);
-    session_stats->set_aged_sessions(session_summary.aged_sessions);
+    session_stats->set_total_active(session_summary.total_active);
+    session_stats->set_num_l2(session_summary.num_l2);
+    session_stats->set_num_tcp(session_summary.num_tcp);
+    session_stats->set_num_udp(session_summary.num_udp);
+    session_stats->set_num_icmp(session_summary.num_icmp);
+    session_stats->set_num_security_policy_drops(session_summary.num_sec_policy_drops);
+    session_stats->set_num_aged(session_summary.num_aged);
     session_stats->set_num_tcp_reset_sent(session_summary.num_tcp_rst_sent);
     session_stats->set_num_icmp_error_sent(session_summary.num_icmp_error_sent);
-    session_stats->set_num_connection_timeout_sessions(session_summary.num_cxnsetup_timeout);
-    session_stats->set_num_session_create_errors(session_summary.num_session_create_err);
-    session_stats->set_tcp_half_open_sessions(session_summary.tcp_half_open_sessions);
-    session_stats->set_other_active_sessions(session_summary.other_active_sessions);
-    session_stats->set_tcp_session_drop_count(session_summary.tcp_session_drop_count);
-    session_stats->set_udp_session_drop_count(session_summary.udp_session_drop_count);
-    session_stats->set_icmp_session_drop_count(session_summary.icmp_session_drop_count);
-    session_stats->set_other_session_drop_count(session_summary.other_session_drop_count);
+    session_stats->set_num_connection_timeout(session_summary.num_cxnsetup_timeout);
+    session_stats->set_num_create_errors(session_summary.num_create_err);
+    session_stats->set_num_tcp_half_open(session_summary.num_tcp_half_open);
+    session_stats->set_num_other_active(session_summary.num_other_active);
+    session_stats->set_num_tcp_limit_drops(session_summary.num_tcp_limit_drops);
+    session_stats->set_num_udp_limit_drops(session_summary.num_udp_limit_drops);
+    session_stats->set_num_icmp_limit_drops(session_summary.num_icmp_limit_drops);
+    session_stats->set_num_other_limit_drops(session_summary.num_other_limit_drops);
+    session_stats->set_num_dsc_limit_drops(session_summary.num_dsc_limit_drops);
 
     return HAL_RET_OK;
 }

@@ -1232,43 +1232,39 @@ ctx_t::apply_session_limit(void)
             tcp_flags = cpurxhdr->tcp_flags;
             if (!(tcp_flags & TCP_FLAG_SYN)) {
                 // if not a SYN packet then skip half-open session limit validation
-                goto end;
+                return HAL_RET_OK;
             }
             if ((nwsec_prof_->tcp_half_open_session_limit) &&
-                    (hal::g_session_stats[id].tcp_half_open_sessions >=
+                    (hal::g_session_stats[id].num_tcp_half_open >=
                      nwsec_prof_->tcp_half_open_session_limit)) {
                 ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].tcp_session_drop_count++;
+                hal::g_session_stats[id].num_tcp_limit_drops++;
             }
         } else if (key_.proto == types::IPPROTO_UDP) {
             if ((nwsec_prof_->udp_active_session_limit) &&
-                    (hal::g_session_stats[id].udp_sessions >=
+                    (hal::g_session_stats[id].num_udp >=
                      nwsec_prof_->udp_active_session_limit)) {
                 ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].udp_session_drop_count++;
+                hal::g_session_stats[id].num_udp_limit_drops++;
             }
         } else if (key_.proto == types::IPPROTO_ICMP) {
             if ((nwsec_prof_->icmp_active_session_limit) &&
-                    (hal::g_session_stats[id].icmp_sessions >=
+                    (hal::g_session_stats[id].num_icmp >=
                      nwsec_prof_->icmp_active_session_limit)) {
                 ret = HAL_RET_FLOW_LIMT_REACHED;
-                hal::g_session_stats[id].icmp_session_drop_count++;
+                hal::g_session_stats[id].num_icmp_limit_drops++;
             }
         }
         break;
     case hal::FLOW_TYPE_L2: //intentional fall-through
     default:
         if ((nwsec_prof_->other_active_session_limit) &&
-                (hal::g_session_stats[id].other_active_sessions >=
+                (hal::g_session_stats[id].num_other_active >=
                  nwsec_prof_->other_active_session_limit)) {
             ret = HAL_RET_FLOW_LIMT_REACHED;
-            hal::g_session_stats[id].other_session_drop_count++;
+            hal::g_session_stats[id].num_other_limit_drops++;
         }
         break;
-    }
-end:
-    if (ret != HAL_RET_OK) {
-        hal::g_session_stats[id].drop_sessions++;
     }
     return ret;
 }

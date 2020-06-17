@@ -119,17 +119,24 @@ def GetDelphiSessionSummaryMetrics(node_name):
     {
     "SessionSummaryMetrics": {
     "Key": 0,
-    "total_active_sessions": 61641,
-    "num_l2_sessions": 0,
-    "num_tcp_sessions": 23651,
-    "num_udp_sessions": 37990,
-    "num_icmp_sessions": 0,
-    "num_drop_sessions": 0,
-    "num_aged_sessions": 1981415,
+    "total_active": 61641,
+    "num_l2": 0,
+    "num_tcp": 23651,
+    "num_udp": 37990,
+    "num_icmp": 0,
+    "num_security_policy_drops": 0,
+    "num_aged": 1981415,
     "num_tcp_resets": 0,
     "num_icmp_errors": 0,
     "num_tcp_cxnsetup_timeouts": 0,
-    "num_session_create_errors": 0
+    "num_create_errors": 0,
+    "num_tcp_half_open": 0,
+    "num_other_active": 0,
+    "num_tcp_limit_drops": 0,
+    "num_udp_limit_drops": 0,
+    "num_icmp_limit_drops": 0,
+    "num_other_limit_drops": 0,
+    "num_dsc_limit_drops": 0
     }
     }
     '''
@@ -150,7 +157,7 @@ def GetDelphiSessionSummaryMetrics(node_name):
     try:
         return json.loads(cmd.stdout)['SessionSummaryMetrics']
     except:
-        api.Logger.error("Failed to parse rule yaml => '%s'"%ruleOut)
+        api.Logger.error("Failed to parse SessionSummaryMetrics yaml => '%s'"%cmd.stdout)
 
     return sessionMetrics
 

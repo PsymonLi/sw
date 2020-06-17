@@ -249,8 +249,8 @@ def verifySessions(tc):
         for n in api.GetNaplesHostnames():
             metrics = utils.GetDelphiSessionSummaryMetrics(n)
             api.Logger.info("Session summary metrics for %s => %s"%(n, metrics))
-            if metrics['num_tcp_sessions'] != 0 or \
-               metrics['num_tcp_sessions'] != 0:
+            if metrics['num_tcp'] != 0 or \
+               metrics['num_tcp'] != 0:
                 api.Logger.error("Found active udp or tcp session!")
                 return api.types.status.FAILURE
     except Exception as e:

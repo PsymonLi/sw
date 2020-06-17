@@ -2197,7 +2197,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   "displayName": "Session Summary Statistics",
   "fields": [
     {
-      "name": "TotalActiveSessions",
+      "name": "TotalActive",
       "displayName": "Total Active Sessions",
       "description": "Total Number of active sessions",
       "units": "Gauge",
@@ -2209,7 +2209,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumL2Sessions",
+      "name": "NumL2",
       "displayName": "L2 Sessions",
       "description": "Total Number of L2 Sessions",
       "units": "Count",
@@ -2221,7 +2221,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumTcpSessions",
+      "name": "NumTcp",
       "displayName": "TCP Sessions",
       "description": "Total Number of TCP sessions",
       "units": "Count",
@@ -2233,7 +2233,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumUdpSessions",
+      "name": "NumUdp",
       "displayName": "UDP Sessions",
       "description": "Total Number of UDP sessions",
       "units": "Count",
@@ -2245,7 +2245,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumIcmpSessions",
+      "name": "NumIcmp",
       "displayName": "ICMP Sessions",
       "description": "Total Number of ICMP sessions",
       "units": "Count",
@@ -2257,9 +2257,9 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumDropSessions",
-      "displayName": "Drop Sessions",
-      "description": "Total Number of Drop sessions",
+      "name": "NumSecurityPolicyDrops",
+      "displayName": "Security Policy Drops",
+      "description": "Total Number of sessions dropped by Security Policy",
       "units": "Count",
       "baseType": "Counter",
       "aggregationFunc": "max",
@@ -2269,7 +2269,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumAgedSessions",
+      "name": "NumAged",
       "displayName": "Aged Sessions",
       "description": "Total Number of Aged sessions",
       "units": "Count",
@@ -2317,7 +2317,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumSessionCreateErrors",
+      "name": "NumCreateErrors",
       "displayName": "Session Create Errors",
       "description": "Total Number of sessions that errored out during creation",
       "units": "Count",
@@ -2329,7 +2329,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumTcpHalfOpenSessions",
+      "name": "NumTcpHalfOpen",
       "displayName": "Half Open TCP Sessions",
       "description": "Total Number of Half Open TCP sessions",
       "units": "Count",
@@ -2341,7 +2341,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumOtherActiveSessions",
+      "name": "NumOtherActive",
       "displayName": "Other Active Sessions",
       "description": "Total Number of sessions other than TCP/UDP/ICMP",
       "units": "Count",
@@ -2353,7 +2353,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumTcpSessionLimitDrops",
+      "name": "NumTcpLimitDrops",
       "displayName": "TCP Session limit exceed drops",
       "description": "Total Number of sessions dropped due to TCP session limit",
       "units": "Count",
@@ -2365,7 +2365,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumUdpSessionLimitDrops",
+      "name": "NumUdpLimitDrops",
       "displayName": "UDP Session limit exceed drops",
       "description": "Total Number of sessions dropped due to UDP session limit",
       "units": "Count",
@@ -2377,7 +2377,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumIcmpSessionLimitDrops",
+      "name": "NumIcmpLimitDrops",
       "displayName": "ICMP Session limit exceed drops",
       "description": "Total Number of sessions dropped due to ICMP session limit",
       "units": "Count",
@@ -2389,9 +2389,21 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "number"
     },
     {
-      "name": "NumOtherSessionLimitDrops",
+      "name": "NumOtherLimitDrops",
       "displayName": "Other Session limit exceed drops",
       "description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
+      "units": "Count",
+      "baseType": "Counter",
+      "aggregationFunc": "max",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number"
+    },
+    {
+      "name": "NumDscLimitDrops",
+      "displayName": "DSC Session limit exceed drops",
+      "description": "Total Number of sessions dropped due to DSC session limit",
       "units": "Count",
       "baseType": "Counter",
       "aggregationFunc": "max",

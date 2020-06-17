@@ -152,7 +152,7 @@
       "DisplayName": "Session Summary Statistics",
       "Fields": [
         {
-          "Name": "TotalActiveSessions",
+          "Name": "TotalActive",
           "DisplayName": "Total Active Sessions",
           "Description": "Total Number of active sessions",
           "Units": "Gauge",
@@ -160,7 +160,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumL2Sessions",
+          "Name": "NumL2",
           "DisplayName": "L2 Sessions",
           "Description": "Total Number of L2 Sessions",
           "Units": "Count",
@@ -168,7 +168,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumTcpSessions",
+          "Name": "NumTcp",
           "DisplayName": "TCP Sessions",
           "Description": "Total Number of TCP sessions",
           "Units": "Count",
@@ -176,7 +176,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumUdpSessions",
+          "Name": "NumUdp",
           "DisplayName": "UDP Sessions",
           "Description": "Total Number of UDP sessions",
           "Units": "Count",
@@ -184,7 +184,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumIcmpSessions",
+          "Name": "NumIcmp",
           "DisplayName": "ICMP Sessions",
           "Description": "Total Number of ICMP sessions",
           "Units": "Count",
@@ -192,15 +192,15 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumDropSessions",
-          "DisplayName": "Drop Sessions",
-          "Description": "Total Number of Drop sessions",
+          "Name": "NumSecurityPolicyDrops",
+          "DisplayName": "Security Policy Drops",
+          "Description": "Total Number of sessions dropped by Security Policy",
           "Units": "Count",
           "BaseType": "Counter",
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumAgedSessions",
+          "Name": "NumAged",
           "DisplayName": "Aged Sessions",
           "Description": "Total Number of Aged sessions",
           "Units": "Count",
@@ -232,7 +232,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumSessionCreateErrors",
+          "Name": "NumCreateErrors",
           "DisplayName": "Session Create Errors",
           "Description": "Total Number of sessions that errored out during creation",
           "Units": "Count",
@@ -240,7 +240,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumTcpHalfOpenSessions",
+          "Name": "NumTcpHalfOpen",
           "DisplayName": "Half Open TCP Sessions",
           "Description": "Total Number of Half Open TCP sessions",
           "Units": "Count",
@@ -248,7 +248,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumOtherActiveSessions",
+          "Name": "NumOtherActive",
           "DisplayName": "Other Active Sessions",
           "Description": "Total Number of sessions other than TCP/UDP/ICMP",
           "Units": "Count",
@@ -256,7 +256,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumTcpSessionLimitDrops",
+          "Name": "NumTcpLimitDrops",
           "DisplayName": "TCP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to TCP session limit",
           "Units": "Count",
@@ -264,7 +264,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumUdpSessionLimitDrops",
+          "Name": "NumUdpLimitDrops",
           "DisplayName": "UDP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to UDP session limit",
           "Units": "Count",
@@ -272,7 +272,7 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumIcmpSessionLimitDrops",
+          "Name": "NumIcmpLimitDrops",
           "DisplayName": "ICMP Session limit exceed drops",
           "Description": "Total Number of sessions dropped due to ICMP session limit",
           "Units": "Count",
@@ -280,9 +280,17 @@
           "AggregationFunc": "max"
         },
         {
-          "Name": "NumOtherSessionLimitDrops",
+          "Name": "NumOtherLimitDrops",
           "DisplayName": "Other Session limit exceed drops",
           "Description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
+          "Units": "Count",
+          "BaseType": "Counter",
+          "AggregationFunc": "max"
+        },
+        {
+          "Name": "NumDscLimitDrops",
+          "DisplayName": "DSC Session limit exceed drops",
+          "Description": "Total Number of sessions dropped due to DSC session limit",
           "Units": "Count",
           "BaseType": "Counter",
           "AggregationFunc": "max"
