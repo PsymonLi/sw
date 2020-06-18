@@ -224,14 +224,15 @@ fte::pipeline_action_t ep_learn_exec(fte::ctx_t &ctx) {
         }
         ctx.set_ignore_session_create(true);
         ctx.set_valid_rflow(false);
-    } else if (is_neighbor_discovery_flow(&ctx.key()) &&
-            is_arp_ep_learning_enabled(ctx)) {
-        HAL_TRACE_DEBUG("EP_LEARN : NDP packet processing...");
-        ret = neighbor_disc_process_packet(ctx);
-        if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("Error in processing NDP packet.");
-            ctx.set_feature_status(ret);
-            ctx.update_flow(flowupd, FLOW_ROLE_INITIATOR);
+    } else if (is_neighbor_discovery_flow(&ctx.key())) {
+        if (is_arp_ep_learning_enabled(ctx)) {
+            HAL_TRACE_DEBUG("EP_LEARN : NDP packet processing...");
+            ret = neighbor_disc_process_packet(ctx);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Error in processing NDP packet.");
+                ctx.set_feature_status(ret);
+                ctx.update_flow(flowupd, FLOW_ROLE_INITIATOR);
+            }
         }
         ctx.set_ignore_session_create(true);
         ctx.set_valid_rflow(false);

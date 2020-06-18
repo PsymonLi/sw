@@ -132,5 +132,4 @@ void fte_set_quiesce(uint8_t fte_id, bool quiesce);
 
 hal_ret_t fte_inject_eth_pkt(const lifqid_t &lifq, hal_handle_t src_ifh, hal_handle_t src_l2segh,
                               std::vector<Tins::EthernetII> &pkts, bool add_padding=false);
-
 } // namespace fte

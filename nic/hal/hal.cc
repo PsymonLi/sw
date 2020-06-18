@@ -76,11 +76,6 @@ hal_sig_handler (int sig, siginfo_t *info, void *ptr)
     case SIGINT:
     case SIGTERM:
     case SIGQUIT:
-        if (!getenv("DISABLE_FTE") &&
-            (is_platform_type_hw() &&
-            !getenv("DISABLE_FWLOG"))) {
-            ipc_logger::deinit();
-        }
         nicmgr::nicmgr_exit();
         HAL_GCOV_FLUSH();
         hal_destroy();
@@ -322,6 +317,13 @@ hal_destroy (void)
     HAL_ABORT(hal_thread_destroy() == HAL_RET_OK);
     HAL_TRACE_DEBUG("Waiting for  all HAL threads to stop");
     HAL_ABORT(hal_wait() == HAL_RET_OK);
+
+    // Deinit the logger now that FTE thread is gone
+    if (!getenv("DISABLE_FTE") &&
+        (is_platform_type_hw() &&
+         !getenv("DISABLE_FWLOG"))) {
+        ipc_logger::deinit();
+    }
     HAL_TRACE_DEBUG("HAL exiting ...");
     hal::utils::hal_logger()->flush();
     hal::utils::trace_deinit();

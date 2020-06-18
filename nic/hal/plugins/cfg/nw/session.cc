@@ -64,6 +64,7 @@ using namespace sdk::lib;
 #define TCP_IPV4_PKT_SZ (sizeof(ether_header_t)+\
                          sizeof(ipv4_header_t)+sizeof(tcp_header_t))
 #define TIME_DIFF(val1, val2) ((val1 > val2) ? (val1 - val2) : 0)
+#define HAL_MAX_SESSION_WALK_COUNT             80
 
 sdk::lib::indexer      *g_flow_proto_state_indexer;
 sdk::types::mem_addr_t  g_flow_telemetry_hbm_start;
@@ -4588,8 +4589,9 @@ session_send_fin_list(dllist_ctxt_t *tcp_fin_list, bool async)
 {
     hal_ret_t ret = HAL_RET_OK;
     dllist_ctxt_t *curr = NULL, *next = NULL;
-    uint32_t count = 0;
+    uint32_t count = 0, hb_count = 0;
     tcpfin_list_args_t *fin_list = NULL;
+    sdk::lib::thread *curr_thread = hal::hal_get_current_thread();
 
     fin_list =  (tcpfin_list_args_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_UPGRADE_TCP_FIN_LIST,
                                    sizeof(tcpfin_list_args_t));
@@ -4599,6 +4601,13 @@ session_send_fin_list(dllist_ctxt_t *tcp_fin_list, bool async)
         tcpfin_args_t *finargs = dllist_entry(curr, tcpfin_args_t, dllist_ctxt);
         fin_list->sess_list[count++] = finargs;
         if (count == HAL_MAX_SESSION_PER_ENQ) {
+            hb_count = hb_count + 1;
+            //Punch a heartbeat for every ~10k sessions
+            if (hb_count == HAL_MAX_SESSION_WALK_COUNT) {
+                hb_count = 0;
+                curr_thread->punch_heartbeat();
+            }
+ 
             fin_list->count = count;
             ret = fte::fte_softq_enqueue(0, // Assume one FTE
                                      session_send_tcp_fin,
@@ -4632,8 +4641,9 @@ session_send_delete_list(dllist_ctxt_t *del_list)
 {
     hal_ret_t ret = HAL_RET_OK;
     dllist_ctxt_t *curr = NULL, *next = NULL;
-    uint32_t count = 0;
+    uint32_t count = 0, hb_count = 0;
     hal_handle_t *sess_list = NULL;
+    sdk::lib::thread *curr_thread = hal::hal_get_current_thread();
 
     sess_list = (hal_handle_t *)HAL_CALLOC(HAL_MEM_ALLOC_SESS_HANDLE_LIST_PER_FTE,
                                    sizeof(hal_handle_t)*HAL_MAX_SESSION_PER_ENQ);
@@ -4644,6 +4654,13 @@ session_send_delete_list(dllist_ctxt_t *del_list)
                      dllist_entry(curr, hal_handle_id_list_entry_t, dllist_ctxt);
         sess_list[count++] = entry->handle_id;
         if (count == HAL_MAX_SESSION_PER_ENQ) {
+            hb_count = hb_count + 1;
+            //Punch a heartbeat for every ~10k sessions
+            if (hb_count == HAL_MAX_SESSION_WALK_COUNT) {
+                hb_count = 0;
+                curr_thread->punch_heartbeat(); 
+            }
+
             ret = fte::fte_softq_enqueue(0, // Assume one FTE
                                      process_hal_periodic_sess_delete,
                                      (void *)sess_list);
@@ -4655,6 +4672,7 @@ session_send_delete_list(dllist_ctxt_t *del_list)
                                    sizeof(hal_handle_t)*HAL_MAX_SESSION_PER_ENQ);
             SDK_ASSERT(sess_list != NULL);
         }
+        
     }
     if (count) {
         ret = fte::fte_softq_enqueue(0, // Assume one FTE
