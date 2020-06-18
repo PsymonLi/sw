@@ -18,6 +18,9 @@ export class NaplesdetailIftableComponent {
   @Output() stopCount: EventEmitter<string> = new EventEmitter();
 
   showStatsNumber (num: number): string {
+    if (num === null || num === undefined) {
+      return '';
+    }
     if (num === -1) {
       return '';
     }

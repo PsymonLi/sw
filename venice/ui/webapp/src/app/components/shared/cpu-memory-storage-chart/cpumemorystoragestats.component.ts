@@ -145,6 +145,7 @@ export class CpuMemoryStorageStatsComponent implements OnInit, OnChanges {
         val.lastIndexOf('(') > -1) {
       return val.substring(val.lastIndexOf('(') + 1, val.length - 1);
     }
+    return val;
   }
 
 }

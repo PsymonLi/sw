@@ -68,8 +68,8 @@ describe('NaplesdetailComponent', () => {
   let naples1;
   let naples2;
   let naples3;
-  const colLengthCloud = 15;
-  const colLengthEnterprise = 16;
+  const colLengthCloud = 14;
+  const colLengthEnterprise = 15;
   function verifyMeta(naples: IClusterDistributedServiceCard, columnLen) {
     const fields = fixture.debugElement.queryAll(By.css('.naplesdetail-node-value'));
     const uiConfigsService = TestBed.get(UIConfigsService);

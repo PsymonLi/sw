@@ -191,10 +191,12 @@
                      fxLayoutAlign="start center">
                   <div>Processor:</div>
                 </div>
+                <!--
                 <div class="naplesdetail-node-fieldtitle" fxFlex="30px" fxLayout="row"
                      fxLayoutAlign="start center">
                   <div>ASIC Frequency:</div>
                 </div>
+                -->
                 <div class="naplesdetail-node-fieldtitle" fxFlex="30px" fxLayout="row"
                      *featureGuard="'enterprise'"
                      fxLayoutAlign="start center">
@@ -243,12 +245,14 @@
                     {{ selectedObj?.status['system-info']['os-info']['processor'] }}
                   </div>
                 </div>
+                <!--
                 <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
                      class="naplesdetail-node-value">
                   <div class="naplesdetail-panel-asic-frequency">
                     {{ asicFrequency }}
                   </div>
                 </div>
+                -->
                 <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center"
                      *featureGuard="'enterprise'"
                      class="naplesdetail-node-value">

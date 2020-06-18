@@ -44,6 +44,10 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
   };
 
   cardColor = '#61b3a0';
+  cpuColor: string = '#b592e3';
+  memoryColor: string = '#e57553';
+  storageColor: string = '#70bab4';
+
   cardIcon: Icon = {
     margin: {
       top: '10px',
@@ -68,11 +72,11 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
 
   lastUpdateTime: string = '';
 
-  cpuChartData: HeroCardOptions = MetricsUtility.detailLevelCPUHeroCard(this.cardColor, this.cardIcon);
+  cpuChartData: HeroCardOptions = MetricsUtility.clusterLevelCPUHeroCard(this.cpuColor, this.cardIcon);
 
-  memChartData: HeroCardOptions = MetricsUtility.detailLevelMemHeroCard(this.cardColor, this.cardIcon);
+  memChartData: HeroCardOptions = MetricsUtility.clusterLevelMemHeroCard(this.memoryColor, this.cardIcon);
 
-  diskChartData: HeroCardOptions = MetricsUtility.detailLevelDiskHeroCard(this.cardColor, this.cardIcon);
+  diskChartData: HeroCardOptions = MetricsUtility.clusterLevelDiskHeroCard(this.storageColor, this.cardIcon);
 
   heroCards = [
     this.cpuChartData,

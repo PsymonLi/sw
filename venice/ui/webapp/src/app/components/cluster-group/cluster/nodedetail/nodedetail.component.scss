@@ -4,6 +4,20 @@
   margin-right: 10px;
 }
 
+.nodedetail-stats-charts-container {
+  margin: 10px 0px 10px 10px;
+
+  .lastupdateTime {
+    @include primary-font(12px, $mediumGray, 300);
+  }
+
+  .nodedetail-stats-container {
+    app-cpu-memory-storage-stats {
+      height: 100%;
+    }
+  }
+}
+
 .nodedetail-alertsevents-container {
   min-height: 600px;
 }

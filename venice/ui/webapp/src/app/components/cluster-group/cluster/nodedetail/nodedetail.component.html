@@ -1,22 +1,15 @@
 <app-pagebody [icon]="bodyicon" [header]="selectedId">
-  <div fxFlex="none" fxLayout="row">
-    <div fxFlex fxLayout="row wrap" class="nodedetail-card-container">
-      <ng-container *ngFor="let cardData of heroCards">
-        <app-herocard fxFlex="nogrow"
-                      [title]="cardData.title"
-                      [firstStat]="cardData.firstStat"
-                      [secondStat]="cardData.secondStat"
-                      [thirdStat]="cardData.thirdStat"
-                      [backgroundIcon]="cardData.backgroundIcon"
-                      [themeColor]="cardData.themeColor"
-                      [icon]="cardData.icon"
-                      [lineData]="cardData.lineData"
-                      [arrowDirection]="cardData.arrowDirection"
-                      [lastUpdateTime]="lastUpdateTime"
-                      [cardState]="cardData.cardState">
-        </app-herocard>
-      </ng-container>
+  <div fxFlex="none" fxLayout="row wrap" fxLayoutGap="10px"
+       class="nodedetail-stats-charts-container">
+    <div fxFlex="1 0 500px" class="detail-card detail-card-wrapper nodedetail-stats-container"
+         fxLayout="column">
+      <div class="detail-card-border"></div>
+      <app-cpu-memory-storage-stats
+                                    [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
+      </app-cpu-memory-storage-stats>
+      <div class="detail-card-border"></div>
     </div>
+    <div fxFlex="1 0 500px"></div>
   </div>
   <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}" fxFlex
        class="nodedetail-alertsevents-container">

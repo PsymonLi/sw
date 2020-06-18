@@ -44,6 +44,9 @@ export class NaplesdetailIfstatsComponent implements OnInit {
   }
 
   displayStatsCount (count: number): string {
+    if (count === null || count === undefined) {
+      return '';
+    }
     if (count === -1) {
       return '';
     }

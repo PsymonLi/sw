@@ -146,6 +146,9 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   };
 
   cardColor = '#b592e3';
+  cpuColor: string = '#b592e3';
+  memoryColor: string = '#e57553';
+  storageColor: string = '#70bab4';
 
   cardIcon: Icon = {
     margin: {
@@ -165,11 +168,11 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
 
   lastUpdateTime: string = '';
 
-  cpuChartData: HeroCardOptions = MetricsUtility.clusterLevelCPUHeroCard(this.cardColor, this.cardIcon);
+  cpuChartData: HeroCardOptions = MetricsUtility.clusterLevelCPUHeroCard(this.cpuColor, this.cardIcon);
 
-  memChartData: HeroCardOptions = MetricsUtility.clusterLevelMemHeroCard(this.cardColor, this.cardIcon);
+  memChartData: HeroCardOptions = MetricsUtility.clusterLevelMemHeroCard(this.memoryColor, this.cardIcon);
 
-  diskChartData: HeroCardOptions = MetricsUtility.clusterLevelDiskHeroCard(this.cardColor, this.cardIcon);
+  diskChartData: HeroCardOptions = MetricsUtility.clusterLevelDiskHeroCard(this.storageColor, this.cardIcon);
 
   heroCards = [
     this.cpuChartData,

@@ -796,10 +796,13 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
         MetricsUtility.createReporterIDSelector(this.selectedId));
       queryList.queries.push(query2);
 
+      // AsicFrequencyMetrics is removed. hide next sections
+      /*
       const query3: MetricsPollingQuery = this.topologyInterfaceQuery(
         'AsicFrequencyMetrics', ['Frequency'],
         MetricsUtility.createReporterIDSelector(this.selectedId));
       queryList.queries.push(query3);
+      */
 
       // this is the example of inetrface stats resutl
       /*
@@ -822,13 +825,6 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
             this.lifInterfacePollingStats = data.results[0];
             this.pifInterfacePollingStats = data.results[1];
             this.updateInterfacesStats();
-            const asiqFreqStats: ITelemetry_queryMetricsQueryResult = data.results[2];
-            if (asiqFreqStats && asiqFreqStats.series &&  asiqFreqStats.series.length > 0) {
-              const series = asiqFreqStats.series;
-              if (series[0].values && series[0].values.length > 0) {
-                this.asicFrequency = series[0].values[0][1] + ' MHz';
-              }
-            }
           }
         },
         (err) => {
