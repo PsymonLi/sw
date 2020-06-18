@@ -180,7 +180,7 @@ func (fdr *Finder) GetEvents(ctx context.Context, r *api.ListWatchOptions) (*evt
 		}
 		evts = append(evts, &evt)
 	}
-	fdr.logger.Infof("GetEvents response: {%+v}", evts)
+	fdr.logger.Debugf("GetEvents response: {%+v}", evts)
 
 	return &evtsapi.EventList{TypeMeta: api.TypeMeta{Kind: "Event"}, Items: evts}, nil
 }
