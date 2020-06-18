@@ -454,7 +454,7 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
           this.tableLoading = false;
         }
 
-        this.mapData();
+        this.mapData(true);
 
         // once we have get more workload objects than searchWorkloadCount, we reset this.searchWorkloadCount. It is need in DestroyHook()
         if (this.dataObjects.length >= this.searchWorkloadCount) {
@@ -470,9 +470,11 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
     this.subscriptions.push(subscription);
   }
 
-  mapData() {
+  mapData(updateBackUp?: boolean) {
     this.buildObjectsMap();
-    this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects); // make a copy of server provided data
+    if (updateBackUp) {
+      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects); // make a copy of server provided data
+    }
     this.searchWorkloadCount = this.dataObjectsBackUp.length;
     this.uiModelLoading = this.tableLoading;
   }
@@ -641,6 +643,8 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   onCancelSearch() {
     this._controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.dataObjects = this.dataObjectsBackUp;
+    // update with any new data that maybe have come in on dsc, host, sg, etc
+    this.buildObjectsMap();
   }
 
   /**
