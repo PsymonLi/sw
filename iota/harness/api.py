@@ -1221,3 +1221,23 @@ def UpdateNaplesPipeline(node, nicNumber, version, pipeline, mode):
 def GetMultiVlanAllocators():
     return store.GetTestbed().GetMultiVlanAllocators()
 
+def UnsetBreakoutInterfaces():
+    if store.GetTestbed().GetCurrentTestsuite().GetPortSpeed() != topo_svc.DataSwitch.Speed_50G:
+        return
+    try:
+        req = topo_svc.UnsetBreakoutMsg()
+        for instance in store.GetTestbed().GetInstances():
+            for nic in instance.Nics:
+                for port in nic.Ports:
+                    if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
+                        switch_ctx = req.data_switches.add()
+                        switch_ctx.username = port.SwitchUsername
+                        switch_ctx.password = port.SwitchPassword
+                        switch_ctx.ip = port.SwitchIP
+                        switch_ctx.igmp_disabled = True
+                        switch_ctx.speed = store.GetTestbed().GetCurrentTestsuite().GetPortSpeed()
+                        switch_ctx.ports.append("e1/" + str(port.SwitchPort))
+        return __rpc(req, gl_topo_svc_stub.UnsetBreakoutInterfaces)
+    except:
+        Logger.warn("failed to clear breakout interfaces")
+

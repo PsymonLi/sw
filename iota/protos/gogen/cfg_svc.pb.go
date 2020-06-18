@@ -78,6 +78,7 @@
 		EntityCopyMsg
 		DownloadAssetsMsg
 		PrepareWorkspaceMsg
+		UnsetBreakoutMsg
 */
 package iotamodel
 

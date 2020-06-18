@@ -125,6 +125,12 @@ func (ms *mockIotaServer) RemoveNetworks(ctx context.Context, req *iota.Networks
 	return req, nil
 }
 
+func (ms *mockIotaServer) UnsetBreakoutInterfaces(ctx context.Context, req *iota.UnsetBreakoutMsg) (*iota.UnsetBreakoutMsg, error) {
+	log.Debugf("UnsetBreakoutInterfaces(): Received Request Msg: %v", req)
+	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+	return req, nil
+}
+
 // InitNodes initializes test nodes
 func (ms *mockIotaServer) InitNodes(ctx context.Context, req *iota.TestNodesMsg) (*iota.TestNodesMsg, error) {
 	return nil, nil

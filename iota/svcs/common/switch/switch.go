@@ -37,6 +37,7 @@ type PortSpeed int
 // enums
 const (
 	Speed100g PortSpeed = iota
+	Speed50g
 	Speed10g
 	SpeedAuto
 )
@@ -50,11 +51,11 @@ const (
 )
 
 func (s PortSpeed) String() string {
-	return [...]string{"100G", "10G", "auto"}[s]
+	return [...]string{"100G", "50G", "10G", "auto"}[s]
 }
 
 func (s portSpeedValue) String() string {
-	return [...]string{"100000", "10000", "auto"}[s]
+	return [...]string{"100000", "50000", "10000", "auto"}[s]
 }
 
 //QosClass qos classes
@@ -119,6 +120,10 @@ type Switch interface {
 	DoDscpConfig(dscpConfig *DscpConfig) error
 	DoQueueConfig(queueConfig *QueueConfig) error
 	CheckSwitchConfiguration(port string, mode PortMode, status PortStatus, speed PortSpeed) (string, error)
+	SetBreakout(bool)
+	GetBreakout() bool
+	SetBreakoutMode(string) error
+	UnsetBreakoutMode(string) error
 	CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error
 	DeletePortChannel(portChannelNumber string, ports []string) error
 }
@@ -132,6 +137,7 @@ func NewSwitch(swType, ip, username, password string) Switch {
 			log.Info("Switch Rest API mode enabled\n")
 			return sw
 		}
+		log.Info("USING SSH SWITCH CLIENT")
 		return newNexus3kSsh(ip+":22", username, password)
 	}
 	return nil

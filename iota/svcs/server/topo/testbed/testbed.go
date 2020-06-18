@@ -447,7 +447,11 @@ func (n *TestNode) StartAgent(command string, cfg *ssh.ClientConfig) error {
 
 func clearSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string) error {
 	for _, port := range ports {
-		err := dataSwitch.UnsetTrunkMode(port)
+		err := dataSwitch.UnsetBreakoutMode(port)
+		if err != nil {
+			return err
+		}
+		err = dataSwitch.UnsetTrunkMode(port)
 		if err != nil {
 			return err
 		}
@@ -460,6 +464,23 @@ func setSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string,
 	mtu uint32, receiveFlowControl, sendFlowControl bool) error {
 
 	for _, port := range ports {
+
+		if dataSwitch.GetBreakout() == true {
+			err := dataSwitch.SetBreakoutMode(port)
+			if err != nil {
+				return errors.Wrapf(err, "Setting breakout mode failed %v", port)
+			}
+		} else {
+			err := dataSwitch.UnsetBreakoutMode(port)
+			if err != nil {
+				return errors.Wrapf(err, "Clearing breakout mode failed %v", port)
+			}
+		}
+
+		if dataSwitch.GetBreakout() == true {
+			port = port + "/1"
+		}
+
 		if err := dataSwitch.SetTrunkMode(port); err != nil {
 			return errors.Wrapf(err, "Setting switch trunk mode failed %v", port)
 		}
@@ -475,8 +496,10 @@ func setSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string,
 			}
 		}
 
-		if err := dataSwitch.SetSpeed(port, speed); err != nil {
-			return errors.Wrap(err, "Setting Port speed failed")
+		if speed != dataswitch.Speed50g {
+			if err := dataSwitch.SetSpeed(port, speed); err != nil {
+				return errors.Wrap(err, "Setting Port speed failed")
+			}
 		}
 
 		if err := dataSwitch.SetNativeVlan(port, nativeVlan); err != nil {
@@ -815,6 +838,8 @@ func SetUpTestbedSwitch(dsSwitches []*iota.DataSwitch, switchPortID uint32, nati
 		switch speed {
 		case iota.DataSwitch_Speed_10G:
 			return dataswitch.Speed10g
+		case iota.DataSwitch_Speed_50G:
+			return dataswitch.Speed50g
 		case iota.DataSwitch_Speed_100G:
 			return dataswitch.Speed100g
 		case iota.DataSwitch_Speed_auto:
@@ -849,6 +874,10 @@ func SetUpTestbedSwitch(dsSwitches []*iota.DataSwitch, switchPortID uint32, nati
 			log.Errorf("TOPO SVC | InitTestBed | Switch not found %s", dataswitch.N3KSwitchType)
 			return nil, errors.New("Switch not found")
 		}
+		speed := getSpeed(ds.GetSpeed())
+		if speed == dataswitch.Speed50g {
+			n3k.SetBreakout(true)
+		}
 
 		err := clearSwitchPortConfig(n3k, ds.GetPorts())
 		if err != nil {
@@ -856,7 +885,6 @@ func SetUpTestbedSwitch(dsSwitches []*iota.DataSwitch, switchPortID uint32, nati
 			return nil, errors.New("Clear switch port config failed")
 		}
 
-		speed := getSpeed(ds.GetSpeed())
 		trunkVlanRange := strconv.Itoa(int(startTrunkVlan)) + "-" + strconv.Itoa(int(endTrunkVlan))
 		log.Infof("Reserving vlans: native vlan (%v) trunk vlans (%v)", nativeVlan, trunkVlanRange)
 

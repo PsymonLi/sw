@@ -200,3 +200,10 @@ func (ts *StubTopologyService) DownloadAssets(ctx context.Context, req *iota.Dow
 	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
 	return req, nil
 }
+
+func (ts *StubTopologyService) UnsetBreakoutInterfaces(ctx context.Context, req *iota.UnsetBreakoutMsg) (*iota.UnsetBreakoutMsg, error) {
+	log.Infof("TOPO SVC | DEBUG | UnsetBreakoutInterfaces. Received Request Msg: %v", req)
+
+	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+	return req, nil
+}

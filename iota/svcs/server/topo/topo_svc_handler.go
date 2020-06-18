@@ -19,6 +19,7 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 
 	iota "github.com/pensando/sw/iota/protos/gogen"
+	dataswitch "github.com/pensando/sw/iota/svcs/common/switch"
 	"github.com/pensando/sw/iota/svcs/server/topo/testbed"
 )
 
@@ -1454,4 +1455,27 @@ func (ts *TopologyService) RemoveNetworks(ctx context.Context, req *iota.Network
 	}
 
 	return node.RemoveNetworks(ctx, req)
+}
+
+func (ts *TopologyService) UnsetBreakoutInterfaces(ctx context.Context, req *iota.UnsetBreakoutMsg) (*iota.UnsetBreakoutMsg, error) {
+	log.Infof("TOPO SVC | DEBUG | UnsetBreakoutInterfaces Received Request Msg: %v", req)
+
+	for _, ds := range req.DataSwitches {
+		n3k := dataswitch.NewSwitch(dataswitch.N3KSwitchType, ds.GetIp(), ds.GetUsername(), ds.GetPassword())
+		if n3k == nil {
+			req.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: "failed to connect to n3k"}
+			return req, nil
+		}
+
+		for _, port := range ds.Ports {
+			err := n3k.UnsetBreakoutMode(port)
+			if err != nil {
+				req.ApiResponse = &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: "failed to call UnsetBreakoutInterfaces"}
+				return req, nil
+			}
+		}
+	}
+
+	req.ApiResponse.ApiStatus = iota.APIResponseType_API_STATUS_OK
+	return req, nil
 }

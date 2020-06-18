@@ -97,6 +97,9 @@ class _Testbed:
                     Logger.warn("failed to ping host {0}. output was: {1}".format(ip,e.output))
                     #raise exception to offline testbed
 
+    def GetInstances(self):
+        return self.__tbspec.Instances
+
     def GetTestbedType(self):
         return self.__type
 
@@ -211,13 +214,11 @@ class _Testbed:
                     switch_ctx.username = nw.SwitchUsername
                     switch_ctx.password = nw.SwitchPassword
                     switch_ctx.ip = nw.SwitchIP
-                    # This should from testsuite eventually or each testcase should be able to set
-                    switch_ctx.speed = topo_pb2.DataSwitch.Speed_auto
                     # igmp disabled for now
                     switch_ctx.igmp_disabled = True
                     if setup_qos:
                         setUpSwitchQos(switch_ctx)
-
+                switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
                 switch_ctx.ports.append(nw.Name)
         else:
             for nic in instance.Nics:
@@ -231,13 +232,11 @@ class _Testbed:
                             switch_ctx.username = port.SwitchUsername
                             switch_ctx.password = port.SwitchPassword
                             switch_ctx.ip = port.SwitchIP
-                            # This should from testsuite eventually or each testcase should be able to set
-                            switch_ctx.speed = topo_pb2.DataSwitch.Speed_auto
                             # igmp disabled for now
                             switch_ctx.igmp_disabled = True
                             if setup_qos:
                                 setUpSwitchQos(switch_ctx)
-
+                        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
                         switch_ctx.ports.append("e1/" + str(port.SwitchPort))
                 if not GlobalOptions.enable_multi_naples:
                     break
@@ -806,15 +805,19 @@ class _Testbed:
         return alloc
 
     def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset):
+        if self.GetCurrentTestsuite().GetPortSpeed() == topo_pb2.DataSwitch.Speed_50G:
+            portStr = "e1/" + str(port) + "/1"
+        else:
+            portStr = "e1/" + str(port)
         setMsg = topo_pb2.SwitchMsg()
         setMsg.op = topo_pb2.VLAN_CONFIG
         switch_ctx = setMsg.data_switches.add()
         switch_ctx.username = username
         switch_ctx.password = password
         switch_ctx.ip = switchIp
-        switch_ctx.speed = topo_pb2.DataSwitch.Speed_auto
+        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
         switch_ctx.igmp_disabled = True
-        switch_ctx.ports.append("e1/" + str(port))
+        switch_ctx.ports.append(portStr)
         setMsg.vlan_config.unset = unset
         setMsg.vlan_config.vlan_range = vlans
         setMsg.vlan_config.native_vlan = self.GetNativeVlan()

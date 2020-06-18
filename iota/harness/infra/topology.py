@@ -1176,6 +1176,7 @@ class Topology(object):
                     switch_ips[nw.SwitchIP] = switch_ctx
                 switch_ctx.username = nw.SwitchUsername
                 switch_ctx.password = nw.SwitchPassword
+                switch_ctx.speed = nw.Speed
                 switch_ctx.ip = nw.SwitchIP
                 switch_ctx.ports.append(nw.Name)
         #Just return the switch IPs for now
@@ -1195,6 +1196,7 @@ class Topology(object):
                     switch_ips[nw.SwitchIP] = switch_ctx
                 switch_ctx.username = nw.SwitchUsername
                 switch_ctx.password = nw.SwitchPassword
+                switch_ctx.speed = nw.Speed
                 switch_ctx.mtu = 9216
                 switch_ctx.ip = nw.SwitchIP
                 switch_ctx.ports.append(nw.Name)

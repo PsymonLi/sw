@@ -645,6 +645,7 @@ type nexus3k struct {
 	password string
 	ip       string
 	ctx      *connectCtx
+	breakout bool
 }
 
 func newNexus3kSsh(ip, username, password string) Switch {
@@ -714,7 +715,9 @@ func (sw *nexus3k) ConfigureVlans(vlans string, igmpEnabled bool) error {
 }
 
 func (sw *nexus3k) SetSpeed(port string, speed PortSpeed) error {
-
+	if speed == Speed50g {
+		return nil
+	}
 	cmds := []string{
 		"speed " + (portSpeedValue(speed)).String(),
 	}
@@ -870,6 +873,10 @@ func (sw *nexus3k) CheckSwitchConfiguration(port string, mode PortMode, status P
 	} else {
 		speedStr = speed.String()
 	}
+	if sw.GetBreakout() == true {
+		//port = port + "/1"
+		return "", nil
+	}
 	buf, err := checkInterfaceConfigured(sw.ctx, port, mode.String(), status.String(),
 		speedStr, 5*time.Second)
 
@@ -973,4 +980,56 @@ func (sw *nexus3k) DeletePortChannel(portChannelNumber string, ports []string) e
 
 func (sw *nexus3k) Disconnect() {
 	sw.ctx.sshClt.Close()
+}
+
+func (sw *nexus3k) SetBreakout(breakout bool) {
+	sw.breakout = breakout
+}
+
+func (sw *nexus3k) GetBreakout() bool {
+	return sw.breakout
+}
+
+func (sw *nexus3k) SetBreakoutMode(port string) error {
+	parts := strings.Split(port, "/")
+	cmds := []string{
+		"interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	}
+	err := sw.runConfigCommands(cmds)
+	if err != nil {
+		return err
+	}
+	cmds = []string{
+		"interface " + port,
+		"fec off",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port + "/1",
+		"fec off",
+	}
+	sw.runConfigCommands(cmds)
+	return nil
+}
+
+func (sw *nexus3k) UnsetBreakoutMode(port string) error {
+	parts := strings.Split(port, "/")
+	cmds := []string{
+		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	}
+	err := sw.runConfigCommands(cmds)
+	if err != nil {
+		return err
+	}
+	cmds = []string{
+		"interface " + port,
+		"no fec off",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port + "/1",
+		"no fec off",
+	}
+	sw.runConfigCommands(cmds)
+	return nil
 }

@@ -86,6 +86,9 @@ service TopologyApi {
 
     //Remove Networks
     rpc RemoveNetworks(NetworksMsg) returns  (NetworksMsg) {};
+
+    //remove breakout interfaces from switch
+    rpc UnsetBreakoutInterfaces(UnsetBreakoutMsg) returns  (UnsetBreakoutMsg) {};
 }
 
 // Op defines topology operation
@@ -865,8 +868,9 @@ message DataSwitch {
 
     enum Speed {
         Speed_100G           = 0;
-        Speed_10G            = 1;
-        Speed_auto           = 2;
+        Speed_50G            = 1;
+        Speed_10G            = 2;
+        Speed_auto           = 3;
     }
     // IP address of the switch
     string ip = 1;
@@ -1242,3 +1246,12 @@ message PrepareWorkspaceMsg {
     // parent folder to retrieve
     string parent_dir               = 5;
 }
+
+message UnsetBreakoutMsg {
+    // API Response
+    IotaAPIResponse api_response        = 1;
+
+    // DataSwitch
+    repeated DataSwitch data_switches   = 2;
+}
+

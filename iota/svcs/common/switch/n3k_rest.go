@@ -15,6 +15,7 @@ type nexus3kRest struct {
 	password string
 	ip       string
 	clt      *client.Client
+	breakout bool
 }
 
 func newNexus3kRest(ip, username, password string) Switch {
@@ -117,12 +118,14 @@ func (sw *nexus3kRest) ConfigureVlans(vlans string, igmpEnabled bool) error {
 }
 
 func (sw *nexus3kRest) SetSpeed(port string, speed PortSpeed) error {
+	if speed == Speed50g {
+		return nil
+	}
 
 	cmds := []string{
 		"interface " + port,
 		"speed " + (portSpeedValue(speed)).String(),
 	}
-
 	if speed == SpeedAuto {
 		cmds = append(cmds, "negotiate auto")
 	} else {
@@ -176,7 +179,6 @@ func (sw *nexus3kRest) DisableIGMP(vlanRange string) error {
 }
 
 func (sw *nexus3kRest) SetTrunkVlanRange(port string, vlanRange string) error {
-
 	//first create vlans
 	err := sw.ConfigureVlans(vlanRange, true)
 	if err != nil {
@@ -351,6 +353,52 @@ func (sw *nexus3kRest) DoQueueConfig(queueConfig *QueueConfig) error {
 	cmds = append(cmds, "system qos")
 	cmds = append(cmds, "service-policy type network-qos "+queueConfig.Name)
 	return sw.runConfigCommands(cmds)
+}
+
+func (sw *nexus3kRest) SetBreakout(breakout bool) {
+	sw.breakout = breakout
+}
+
+func (sw *nexus3kRest) GetBreakout() bool {
+	return sw.breakout
+}
+
+func (sw *nexus3kRest) SetBreakoutMode(port string) error {
+	parts := strings.Split(port, "/")
+	cmds := []string{
+		"interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port,
+		"fec off",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port + "/1",
+		"fec off",
+	}
+	sw.runConfigCommands(cmds)
+	return nil
+}
+
+func (sw *nexus3kRest) UnsetBreakoutMode(port string) error {
+	parts := strings.Split(port, "/")
+	cmds := []string{
+		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port,
+		"no fec off",
+	}
+	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"interface " + port + "/1",
+		"no fec off",
+	}
+	sw.runConfigCommands(cmds)
+	return nil
 }
 
 func (sw *nexus3kRest) CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error {

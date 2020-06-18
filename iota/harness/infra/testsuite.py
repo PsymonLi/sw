@@ -24,6 +24,7 @@ from iota.harness.infra.utils.logger import Logger as Logger
 from iota.harness.infra.glopts import GlobalOptions as GlobalOptions
 import iota.test.iris.testcases.server.verify_pci as verify_pci
 from iota.harness.infra.exceptions import *
+import iota.protos.pygen.topo_svc_pb2 as topo_pb2
 
 
 class TestSuiteResults(object):
@@ -93,12 +94,27 @@ class TestSuite:
         self.__process_provision_spec()
         self.__defaultNicMode = getattr(spec.meta, "nicmode", types.nicModes.CLASSIC)
         self.__defaultNicPipeline = GlobalOptions.pipeline
+        self.__portspeed = self.__getPortSpeedFromTestsuite(spec.meta)
         return
 
     def Abort(self):
         self.__aborted = True
         self.__curr_tbun.Abort()
         return
+
+    def __getPortSpeedFromTestsuite(self, meta):
+        speed = getattr(meta, "portspeed", "auto").lower()
+        if speed == "auto":
+            return topo_pb2.DataSwitch.Speed_auto
+        elif speed == "100g":
+            return topo_pb2.DataSwitch.Speed_100G
+        elif speed == "50g":
+            return topo_pb2.DataSwitch.Speed_50G
+        else:
+            raise ValueError("speed value must be auto, 100g, or 50g. user entered {0}".format(speed))
+
+    def GetPortSpeed(self):
+        return self.__portspeed
 
     def GetTestbedType(self):
         if self.__spec.meta.mode.lower() == 'hardware':
@@ -421,7 +437,8 @@ class TestSuite:
             ret = self.__topology.Setup(self)
             if ret != types.status.SUCCESS:
                 return ret
-        store.GetTestbed().SetupVlanGroups()
+        if not GlobalOptions.skip_switch_init:
+            store.GetTestbed().SetupVlanGroups()
         ret = self.__setup_config()
         if ret != types.status.SUCCESS:
             return ret
@@ -616,6 +633,7 @@ class TestSuite:
     def ExitHandler(self):
         if GlobalOptions.dryrun:
             return
+        api.UnsetBreakoutInterfaces()
         logcollector.CollectLogs()
         logcollector.CollectTechSupport(self.Name())
         self.CollectCores()
