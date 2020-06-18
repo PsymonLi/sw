@@ -3,7 +3,6 @@
 //-----------------------------------------------------------------------------
 
 #include <google/protobuf/util/json_util.h>
-#include "nic/include/base.hpp"
 #include "nic/hal/hal.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/src/utils/utils.hpp"
@@ -394,14 +393,19 @@ hal_prepare_rsp (hal_ret_t ret)
 // use this at the begin and end of a svc api
 //-----------------------------------------------------------------------------
 void
-hal_api_trace (const char *trace)
+hal_api_trace (const char *trace, trace_level_e trace_level)
 {
     // To add as prefix and suffix to the actual trace statement
     static const std::string prefix_str("--------------------");
 
     if (!trace) return;
 
-    HAL_TRACE_DEBUG("{}{}{}", prefix_str, trace, prefix_str);
+    if (trace_level == ::utils::trace_debug) {
+        HAL_TRACE_DEBUG("{}{}{}", prefix_str, trace, prefix_str);
+    }else if (trace_level == ::utils::trace_info) {
+        HAL_TRACE_INFO("{}{}{}", prefix_str, trace, prefix_str);
+    }
+
 }
 
 //-----------------------------------------------------------------------------
@@ -806,15 +810,19 @@ end:
 // Proto Message dump
 //------------------------------------------------------------------------------
 void
-proto_msg_dump (Message& msg)
+proto_msg_dump (Message& msg, trace_level_e trace_level)
 {
     std::string    msg_str;
 
-    if (utils::hal_trace_level() < ::utils::trace_debug) {
+    if (utils::hal_trace_level() < trace_level) {
         return;
     }
     google::protobuf::util::MessageToJsonString(msg, &msg_str);
-    HAL_TRACE_DEBUG("{}", msg_str.c_str());
+    if (trace_level == ::utils::trace_debug) {
+        HAL_TRACE_DEBUG("{}", msg_str.c_str());
+    }else if (trace_level == ::utils::trace_info) {
+        HAL_TRACE_INFO("{}", msg_str.c_str());
+    }
 }
 
 }    // namespace hal

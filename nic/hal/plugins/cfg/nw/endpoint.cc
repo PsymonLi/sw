@@ -1290,10 +1290,10 @@ endpoint_create (EndpointSpec& spec, EndpointResponse *rsp)
     cfg_op_ctxt_t                   cfg_ctxt = { 0 };
     L2SegmentKeyHandle              l2seg_key_handle;
 
-    hal_api_trace(" API Begin: Endpoint create ");
+    hal_api_trace(" API Begin: Endpoint create ", ::utils::trace_info);
 
     // dump incoming request
-    proto_msg_dump(spec);
+    proto_msg_dump(spec, ::utils::trace_info);
 
     ret = validate_endpoint_create(spec, rsp);
     if (ret != HAL_RET_OK) {
@@ -2325,10 +2325,10 @@ endpoint_update (EndpointUpdateRequest& req, EndpointResponse *rsp)
     dhl_entry_t             dhl_entry     = { 0 };
     ep_update_app_ctxt_t    app_ctxt      = { 0 };
 
-    hal_api_trace(" API Begin: Endpoint update ");
+    hal_api_trace(" API Begin: Endpoint update ", ::utils::trace_info);
 
     // dump incoming request
-    proto_msg_dump(req);
+    proto_msg_dump(req, ::utils::trace_info);
 
     ret = validate_endpoint_update_spec(req, rsp);
     if (ret != HAL_RET_OK) {
@@ -2782,10 +2782,10 @@ endpoint_delete (EndpointDeleteRequest& req,
     cfg_op_ctxt_t    cfg_ctxt = { 0 };
     dhl_entry_t      dhl_entry = { 0 };
 
-    hal_api_trace(" API Begin: Endpoint delete ");
+    hal_api_trace(" API Begin: Endpoint delete ", ::utils::trace_info);
 
     // dump proto message
-    proto_msg_dump(req);
+    proto_msg_dump(req, ::utils::trace_info);
 
     // validate the request message
     ret = validate_endpoint_delete_req(req, rsp);

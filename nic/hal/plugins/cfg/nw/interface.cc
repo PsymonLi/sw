@@ -1584,8 +1584,8 @@ interface_create (InterfaceSpec& spec, InterfaceResponse *rsp)
     if_mirror_info_t            mirror_spec;
     hal_handle_t                pinned_uplink_handle = HAL_HANDLE_INVALID;
 
-    hal_api_trace(" API Begin: Interface create ");
-    proto_msg_dump(spec);
+    hal_api_trace(" API Begin: Interface create ", ::utils::trace_info);
+    proto_msg_dump(spec, ::utils::trace_info);
 
     // do basic validations on interface
     ret = validate_interface_create(spec, rsp);
@@ -2894,7 +2894,7 @@ enic_update_lif (if_t *hal_if,
         goto end;
     }
 
-    HAL_TRACE_DEBUG("Enic update of lif. if_id: {}, new_lif_id: {}",
+    HAL_TRACE_INFO("Enic update of lif. if_id: {}, new_lif_id: {}",
                     hal_if->if_id, new_lif ? new_lif->lif_id : 0);
 
     if (hal_if->if_type != intf::IF_TYPE_ENIC) {
@@ -2976,8 +2976,8 @@ interface_update (InterfaceSpec& spec, InterfaceResponse *rsp)
     if_mirror_info_t            mirror_spec;
     bool                        has_changed = false;
 
-    hal_api_trace(" API Begin: Interface update ");
-    proto_msg_dump(spec);
+    hal_api_trace(" API Begin: Interface update ", ::utils::trace_info);
+    proto_msg_dump(spec, ::utils::trace_info);
 
     // validate the request message
     ret = validate_if_update(spec, rsp);
@@ -4817,8 +4817,8 @@ interface_delete (InterfaceDeleteRequest& req, InterfaceDeleteResponse *rsp)
     dhl_entry_t                 dhl_entry = { 0 };
     const InterfaceKeyHandle    &kh = req.key_or_handle();
 
-    hal_api_trace(" API Begin: Interface delete ");
-    proto_msg_dump(req);
+    hal_api_trace(" API Begin: Interface delete ", ::utils::trace_info);
+    proto_msg_dump(req, ::utils::trace_info);
 
     // validate the request message
     ret = validate_if_delete_req(req, rsp);

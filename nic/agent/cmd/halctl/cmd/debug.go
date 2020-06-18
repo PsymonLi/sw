@@ -977,6 +977,10 @@ func isTraceLevelValid(level string) bool {
 		return true
 	case "error":
 		return true
+	case "warning":
+		return true
+	case "info":
+		return true
 	case "debug":
 		return true
 	case "verbose":
@@ -992,6 +996,10 @@ func inputToTraceLevel(level string) halproto.TraceLevel {
 		return halproto.TraceLevel_TRACE_LEVEL_NONE
 	case "error":
 		return halproto.TraceLevel_TRACE_LEVEL_ERROR
+	case "warning":
+		return halproto.TraceLevel_TRACE_LEVEL_WARNING
+	case "info":
+		return halproto.TraceLevel_TRACE_LEVEL_INFO
 	case "debug":
 		return halproto.TraceLevel_TRACE_LEVEL_DEBUG
 	case "verbose":
@@ -1007,6 +1015,10 @@ func traceLevelToStr(level halproto.TraceLevel) string {
 		return "None"
 	case halproto.TraceLevel_TRACE_LEVEL_ERROR:
 		return "Error"
+	case halproto.TraceLevel_TRACE_LEVEL_WARNING:
+		return "Warning"
+	case halproto.TraceLevel_TRACE_LEVEL_INFO:
+		return "Info"
 	case halproto.TraceLevel_TRACE_LEVEL_DEBUG:
 		return "Debug"
 	case halproto.TraceLevel_TRACE_LEVEL_VERBOSE:

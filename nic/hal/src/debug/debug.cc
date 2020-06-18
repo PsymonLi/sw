@@ -294,6 +294,12 @@ trace_update (TraceSpec& spec, TraceResponse *rsp)
     if (spec.trace_level() == debug::TRACE_LEVEL_ERROR) {
         utils::trace_update(::utils::trace_err);
         rsp->set_trace_level(debug::TRACE_LEVEL_ERROR);
+    } else if (spec.trace_level() == debug::TRACE_LEVEL_WARNING) {
+        utils::trace_update(::utils::trace_warn);
+        rsp->set_trace_level(debug::TRACE_LEVEL_WARNING);
+    } else if (spec.trace_level() == debug::TRACE_LEVEL_INFO) {
+        utils::trace_update(::utils::trace_info);
+        rsp->set_trace_level(debug::TRACE_LEVEL_INFO);
     } else if (spec.trace_level() == debug::TRACE_LEVEL_DEBUG) {
         utils::trace_update(::utils::trace_debug);
         rsp->set_trace_level(debug::TRACE_LEVEL_DEBUG);
@@ -323,6 +329,10 @@ trace_get (TraceResponseMsg *rsp)
         response->set_api_status(types::API_STATUS_OK);
         if (utils::g_trace_logger->trace_level() == ::utils::trace_err) {
             response->set_trace_level(debug::TRACE_LEVEL_ERROR);
+        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_warn) {
+            response->set_trace_level(debug::TRACE_LEVEL_WARNING);
+        } else if (utils::g_trace_logger->trace_level() == ::utils::trace_info) {
+            response->set_trace_level(debug::TRACE_LEVEL_INFO);
         } else if (utils::g_trace_logger->trace_level() == ::utils::trace_debug) {
             response->set_trace_level(debug::TRACE_LEVEL_DEBUG);
         } else if (utils::g_trace_logger->trace_level() == ::utils::trace_verbose) {

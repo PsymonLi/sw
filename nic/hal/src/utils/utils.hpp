@@ -6,6 +6,7 @@
 #define __UTILS_HPP__
 
 #include "lib/list/list.hpp"
+#include "nic/include/base.hpp"
 #include "nic/utils/block_list/block_list.hpp"
 #include "nic/sdk/include/sdk/ip.hpp"
 #include "nic/hal/lib/hal_handle.hpp"
@@ -13,6 +14,7 @@
 #include "gen/proto/types.pb.h"
 
 using types::ApiStatus;
+using utils::trace_level_e;
 using hal::utils::block_list;
 using google::protobuf::Message;
 
@@ -42,7 +44,9 @@ hal_ret_t ip_subnet_spec_to_ip_range(ip_range_t *range,
 bool ip_addr_check_equal(ip_addr_t *ipaddr1, ip_addr_t *ipaddr2);
 bool ip_addr_in_ip_pfx(ip_addr_t *ipaddr, ip_prefix_t *ip_pfx);
 ApiStatus hal_prepare_rsp(hal_ret_t ret);
-void hal_api_trace(const char *trace);
+void hal_api_trace(const char *trace,
+                   trace_level_e trace_level = ::utils::trace_debug);
+
 
 // handle list specific APIs
 void hal_print_handles_list(dllist_ctxt_t  *list);
@@ -80,7 +84,8 @@ hal_find_changed_lists (block_list *exist_list,                         // _IN
                         block_list **new_list,                          // _OUT
                         bool *has_changed);                              // _OUT
 
-void proto_msg_dump(Message& msg);
+void proto_msg_dump (Message& msg,
+                     trace_level_e trace_level = ::utils::trace_debug);
 
 }    // namespace hal
 
