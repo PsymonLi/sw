@@ -16,6 +16,10 @@ import (
 	"github.com/pensando/sw/venice/utils/netutils"
 )
 
+const (
+	maxPointsInQueryResponse = 50000
+)
+
 var measurementCmd = &cobra.Command{
 	Use:   "measurement [name]",
 	Short: "list  measurements in citadel",
@@ -80,7 +84,7 @@ func measurementCmdHandler(cmd *cobra.Command, args []string) {
 			m = `"default"."` + rp + `"."` + m + `"`
 		}
 
-		resp, err := cmd2.QueryPoints(addr, fmt.Sprintf("SELECT * FROM %s ORDER BY time DESC", m))
+		resp, err := cmd2.QueryPoints(addr, fmt.Sprintf("SELECT * FROM %s ORDER BY time DESC LIMIT %d", m, maxPointsInQueryResponse))
 		if err != nil {
 			fmt.Println(err)
 			return
