@@ -25,11 +25,27 @@ import (
 // - the function does not track visited fields. If there are circular dependencies, it will not terminate.
 
 func filterEqual(refVal, updVal reflect.Value, ignoreFields, forceFields map[string]bool, fieldName string, depth int) bool {
+	if !refVal.IsValid() && !updVal.IsValid() {
+		return true
+	}
+
+	force := forceFields[fieldName]
+
+	if !refVal.IsValid() || !updVal.IsValid() {
+		if force {
+			return false
+		}
+		return true
+	}
+
+	if refVal.Type() != updVal.Type() {
+		return false
+	}
+
 	if ignoreFields[fieldName] {
 		// field is ignored, skip
 		return true
 	}
-	force := forceFields[fieldName]
 
 	switch updVal.Kind() {
 
