@@ -296,7 +296,7 @@ pds_svc_policer_get (const pds::PolicerGetRequest *proto_req,
 {
     sdk_ret_t ret;
     pds_obj_key_t key;
-    pds_policer_info_t info = { 0 };
+    pds_policer_info_t info;
 
     if (proto_req == NULL) {
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
@@ -309,6 +309,7 @@ pds_svc_policer_get (const pds::PolicerGetRequest *proto_req,
     }
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+        memset(&info, 0, sizeof(info));
         ret = pds_policer_read(&key, &info);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
         if (ret != SDK_RET_OK) {

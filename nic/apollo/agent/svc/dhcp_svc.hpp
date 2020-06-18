@@ -372,6 +372,7 @@ pds_svc_dhcp_policy_get (const pds::DHCPPolicyGetRequest *proto_req,
 
     for (int i = 0; i < proto_req->id_size(); i ++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+        memset(&info, 0, sizeof(info));
         ret = pds_dhcp_policy_read(&key, &info);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
         if (ret != SDK_RET_OK) {

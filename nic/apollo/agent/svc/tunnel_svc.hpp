@@ -363,6 +363,7 @@ pds_svc_tunnel_get (const pds::TunnelGetRequest *proto_req,
     }
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+        memset(&info, 0, sizeof(pds_tep_info_t));
         ret = pds_tep_read(&key, &info);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
         if (ret != SDK_RET_OK) {

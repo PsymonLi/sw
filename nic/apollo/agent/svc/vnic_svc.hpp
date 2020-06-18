@@ -381,7 +381,7 @@ pds_svc_vnic_get (const pds::VnicGetRequest *proto_req,
 {
     sdk_ret_t ret;
     pds_obj_key_t key = { 0 };
-    pds_vnic_info_t info = { 0 };
+    pds_vnic_info_t info;
 
     if (proto_req == NULL) {
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
@@ -390,6 +390,7 @@ pds_svc_vnic_get (const pds::VnicGetRequest *proto_req,
 
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+        memset(&info, 0, sizeof(info));
         ret = pds_vnic_read(&key, &info);
         if (ret != SDK_RET_OK) {
             proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));

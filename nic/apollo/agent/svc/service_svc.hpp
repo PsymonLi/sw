@@ -284,6 +284,7 @@ pds_svc_service_mapping_get (const pds::SvcMappingGetRequest *proto_req,
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         if (!core::agent_state::state()->pds_mock_mode()) {
+            memset(&info, 0, sizeof(info));
             ret = pds_svc_mapping_read(&key, &info);
             if (ret == SDK_RET_OK) {
                 pds_service_api_info_to_proto(&info, proto_rsp);
