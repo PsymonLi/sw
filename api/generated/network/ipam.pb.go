@@ -28,6 +28,7 @@
 		NetworkSpec
 		NetworkStatus
 		OrchestratorInfo
+		LLDPNeighbor
 		NetworkInterface
 		NetworkInterfaceHostStatus
 		NetworkInterfaceSpec

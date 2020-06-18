@@ -319,6 +319,27 @@ func (m *NetworkInterface) MakeURI(cat, ver, prefix string) string {
 }
 
 // Clone clones the object into into or creates one of into is nil
+func (m *LLDPNeighbor) Clone(into interface{}) (interface{}, error) {
+	var out *LLDPNeighbor
+	var ok bool
+	if into == nil {
+		out = &LLDPNeighbor{}
+	} else {
+		out, ok = into.(*LLDPNeighbor)
+		if !ok {
+			return nil, fmt.Errorf("mismatched object types")
+		}
+	}
+	*out = *(ref.DeepCopy(m).(*LLDPNeighbor))
+	return out, nil
+}
+
+// Default sets up the defaults for the object
+func (m *LLDPNeighbor) Defaults(ver string) bool {
+	return false
+}
+
+// Clone clones the object into into or creates one of into is nil
 func (m *NetworkInterface) Clone(into interface{}) (interface{}, error) {
 	var out *NetworkInterface
 	var ok bool
@@ -513,6 +534,19 @@ func (m *TransceiverStatus) Defaults(ver string) bool {
 }
 
 // Validators and Requirements
+
+func (m *LLDPNeighbor) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
+
+}
+
+func (m *LLDPNeighbor) Validate(ver, path string, ignoreStatus bool, ignoreSpec bool) []error {
+	var ret []error
+	return ret
+}
+
+func (m *LLDPNeighbor) Normalize() {
+
+}
 
 func (m *NetworkInterface) References(tenant string, path string, resp map[string]apiintf.ReferenceObj) {
 

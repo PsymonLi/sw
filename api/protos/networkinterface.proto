@@ -239,8 +239,32 @@ message NetworkInterfaceUplinkStatus {
 
     TransceiverStatus TransceiverStatus = 2 [(gogoproto.jsontag) = "transceiver-status,omitempty"];
 
-    // Future: BFD, CDP, LLDP, LACP, Breakout status appears here
+    // Future: BFD, CDP, LACP, Breakout status appears here
 
     // Interface IP Configuration if any.
     cluster.IPConfig IPConfig           = 3 [(gogoproto.jsontag) = "ip-config,omitempty"];
+
+    // LLDP neighbor
+    LLDPNeighbor LLDPNeighbor           = 4 [(gogoproto.jsontag) = "lldp-neighbor,omitempty"];
+}
+
+message LLDPNeighbor {
+
+    // Chassis  ID
+    string ChassisID       = 1 [(gogoproto.jsontag) = "chassis-id,omitempty"];
+
+    // System Name
+    string SysName         = 2 [(gogoproto.jsontag) = "sys-name,omitempty"];
+
+    // System Description
+    string SysDescription  = 3 [(gogoproto.jsontag) = "sys-description,omitempty"];
+
+    // Port Name
+    string PortID          = 4 [(gogoproto.jsontag) = "port-id,omitempty"];
+
+    // Port Description
+    string PortDescription = 5 [(gogoproto.jsontag) = "port-description,omitempty"];
+
+    // Mgmt IP
+    string MgmtAddress     = 6 [(gogoproto.jsontag) = "mgmt-address,omitempty"];
 }

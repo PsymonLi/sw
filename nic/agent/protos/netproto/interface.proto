@@ -125,13 +125,16 @@ message InterfaceUplinkStatus {
     TransceiverStatus TransceiverStatus = 2 [(gogoproto.jsontag) = "transceiver-status,omitempty"];
 
     uint32 PortID                       = 3 [(gogoproto.jsontag) = "uplink-port-id,omitempty"];
-    // Future: BFD, CDP, LLDP, LACP, Breakout status appears here
+    // Future: BFD, CDP, LACP, Breakout status appears here
     
     // IPConfig has the IP address for the interface.
     string IPAddress                    = 4   [(gogoproto.jsontag) = "ip-address,omitempty"];
 
     // GatewayIP associated to the interface.
     string GatewayIP                    = 5  [(gogoproto.jsontag) = "gateway-ip,omitemtpy"];
+
+    // LLDP neighbor
+    LLDPNeighbor LLDPNeighbor           = 6 [(gogoproto.jsontag) = "lldp-neighbor,omitempty"];
 }
 
 message TransceiverStatus {
@@ -235,4 +238,26 @@ message InterfaceEvent {
 // interface watch events batched
 message InterfaceEventList {
     repeated InterfaceEvent InterfaceEvents  = 1;
+}
+
+// LLDP neighbor info
+message LLDPNeighbor {
+
+    // Chassis  ID
+    string ChassisID       = 1 [(gogoproto.jsontag) = "chassis-id,omitempty"];
+
+    // System Name
+    string SysName         = 2 [(gogoproto.jsontag) = "sys-name,omitempty"];
+
+    // System Description
+    string SysDescription  = 3 [(gogoproto.jsontag) = "sys-description,omitempty"];
+
+    // Port Name
+    string PortID          = 4 [(gogoproto.jsontag) = "port-id,omitempty"];
+
+    // Port Description
+    string PortDescription = 5 [(gogoproto.jsontag) = "port-description,omitempty"];
+
+    // Management Address
+    string MgmtAddress     = 6 [(gogoproto.jsontag) = "mgmt-address,omitempty"];
 }

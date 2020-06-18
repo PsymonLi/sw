@@ -1758,6 +1758,8 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 	return nil
 }
 
+var num int = 0
+
 func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.PortStatus) error {
 	var ifType string
 
@@ -1801,7 +1803,8 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 			InterfaceID: uint64(status.GetIfIndex()),
 			IPAllocType: "DHCP",
 			IFUplinkStatus: netproto.InterfaceUplinkStatus{
-				PortID: spec.GetPortNumber(),
+				PortID:       spec.GetPortNumber(),
+				LLDPNeighbor: &netproto.LLDPNeighbor{},
 			},
 		},
 	}
@@ -1821,9 +1824,55 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 		err = curIntf.Unmarshal(o)
 		if err != nil {
 			log.Errorf("Could not parse existing Interface object")
+			return err
 		} else {
 			i.Status.IFUplinkStatus.IPAddress = curIntf.Status.IFUplinkStatus.IPAddress
 			i.Status.IFUplinkStatus.GatewayIP = curIntf.Status.IFUplinkStatus.GatewayIP
+		}
+	}
+
+	// get interface spec to update LLDP neighbor info
+	intfReqMsg := &halapi.InterfaceGetRequest{
+		Id: [][]byte{},
+	}
+	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), intfReqMsg)
+	if err != nil {
+		log.Error("Could not get Interface for port %v", ifName)
+	} else {
+		for _, u := range intfs.Response {
+			if u.Spec.GetType().String() == "IF_TYPE_UPLINK" {
+				pid, err := uuid.FromBytes(u.Spec.GetUplinkSpec().GetPortId())
+				if err != nil {
+					log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse intf's port uuid %v, err %v", u.Spec.GetUplinkSpec().GetPortId(), err))
+					return err
+				}
+				if pid.String() != uid.String() {
+					continue
+				}
+				var pStr, chsStr, ipStr string
+				lldpNbrChs := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
+				lldpNbrPort := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+				if "LLDPID_SUBTYPE_NONE" != lldpNbrChs.GetChassisId().GetType().String() {
+					cidType := strings.Replace(lldpNbrChs.GetChassisId().GetType().String(), "LLDPID_SUBTYPE_", "", -1)
+					chsStr = fmt.Sprintf("%s %s", strings.ToLower(cidType), lldpNbrChs.GetChassisId().GetValue())
+				}
+				if "LLDPID_SUBTYPE_NONE" != lldpNbrPort.GetPortId().GetType().String() {
+					pidType := strings.Replace(lldpNbrPort.GetPortId().GetType().String(), "LLDPID_SUBTYPE_", "", -1)
+					i.Status.IFUplinkStatus.LLDPNeighbor.PortID = fmt.Sprintf("%s %s", strings.ToLower(pidType), lldpNbrPort.GetPortId().GetValue())
+				}
+				ipStr = apuluutils.HalIPToString(lldpNbrChs.GetMgmtIP())
+				if ipStr == "0.0.0.0" {
+					ipStr = "" // v6 anyways return ""
+				}
+
+				i.Status.IFUplinkStatus.LLDPNeighbor.ChassisID = chsStr
+				i.Status.IFUplinkStatus.LLDPNeighbor.SysName = lldpNbrChs.GetSysName()
+				i.Status.IFUplinkStatus.LLDPNeighbor.SysDescription = lldpNbrChs.GetSysDescr()
+				i.Status.IFUplinkStatus.LLDPNeighbor.PortID = pStr
+				i.Status.IFUplinkStatus.LLDPNeighbor.PortDescription = lldpNbrPort.GetPortDescr()
+				i.Status.IFUplinkStatus.LLDPNeighbor.MgmtAddress = ipStr
+				break
+			}
 		}
 	}
 
@@ -1840,6 +1889,33 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 		Intf: i,
 	}
 	a.InfraAPI.UpdateIfChannel(ifEvnt)
+	return nil
+}
+
+func (a *ApuluAPI) handleUplinkLldpUpdate(portID []byte) error {
+
+	uid, err := uuid.FromBytes(portID)
+	if err != nil {
+		log.Errorf("handleUplinkLldpUpdate: Failed to parse port uuid %v, err %v", uid.String(), err)
+		return err
+	}
+	log.Infof("handleUplinkLldpUpdate: portID [%+v]", uid.String())
+
+	// get physical port
+	portReqMsg := &halapi.PortGetRequest{
+		Id: [][]byte{portID},
+	}
+
+	ports, err := a.PortClient.PortGet(context.Background(), portReqMsg)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrPipelinePortGet, "handleUplinkLldpUpdate: %v", err))
+		return err
+	}
+
+	// handle the ports
+	for _, port := range ports.Response {
+		a.handleUplinkInterface(port.Spec, port.Status)
+	}
 	return nil
 }
 
@@ -1946,6 +2022,98 @@ func (a *ApuluAPI) initEventStream() {
 	for _, port := range ports.Response {
 		a.handleUplinkInterface(port.Spec, port.Status)
 	}
+
+	// list of uplink interfaces and store the key/lldp neighbor info
+	m := make(map[string]*netproto.LLDPNeighbor)
+	intReqMsg := &halapi.InterfaceGetRequest{
+		Id: [][]byte{},
+	}
+	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: could not get interfaces %v", err))
+	} else {
+		for _, i := range intfs.Response {
+			uid, err := uuid.FromBytes(i.Spec.GetId())
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetId(), err))
+				continue
+			}
+
+			// move this check to top
+			if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+				continue
+			}
+			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
+			lldpNbrPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+			m[uid.String()] = &netproto.LLDPNeighbor{
+				ChassisID:       lldpNbrChs.GetChassisId().String(),
+				SysName:         lldpNbrChs.GetSysName(),
+				SysDescription:  lldpNbrChs.GetSysDescr(),
+				MgmtAddress:     apuluutils.HalIPToString(lldpNbrChs.GetMgmtIP()),
+				PortID:          lldpNbrPort.GetPortId().String(),
+				PortDescription: lldpNbrPort.GetPortDescr(),
+			}
+		}
+	}
+
+	go func() {
+		// miute loop to check lldp updates on uplink interfaces
+		ticker := time.Tick(time.Minute)
+		for {
+			select {
+			case <-ticker:
+				//get all uplink interfaces
+				uplinkReqMsg := &halapi.InterfaceGetRequest{
+					Id: [][]byte{},
+				}
+				intf, err := a.InterfaceClient.InterfaceGet(context.Background(), uplinkReqMsg)
+				if err != nil {
+					log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "LLDPPeriodicTimer: could not get interfaces %v", err))
+					continue
+				}
+
+				// loop through the response and check for LLDP neighbor update
+				for _, i := range intf.Response {
+					if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+						continue
+					}
+					uid, err := uuid.FromBytes(i.Spec.GetId())
+					if err != nil {
+						log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse port uuid %v, err %v", i.Spec.GetId(), err))
+						continue
+					}
+
+					val, ok := m[uid.String()]
+					if ok == false {
+						log.Errorf("LLDPPeriodicTimer: [%+v] doesnt have value", uid.String())
+						continue
+					}
+					lChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
+					lPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+
+					if lChs.GetChassisId().String() != val.ChassisID ||
+						lChs.GetSysName() != val.SysName ||
+						lChs.GetSysDescr() != val.SysDescription ||
+						apuluutils.HalIPToString(lChs.GetMgmtIP()) != val.MgmtAddress ||
+						lPort.GetPortId().String() != val.PortID ||
+						lPort.GetPortDescr() != val.PortDescription {
+
+						// update lldp neighbor in the key -> value
+						val.ChassisID = lChs.GetChassisId().String()
+						val.SysName = lChs.GetSysName()
+						val.SysDescription = lChs.GetSysDescr()
+						val.PortID = lPort.GetPortId().String()
+						val.PortDescription = lPort.GetPortDescr()
+						val.MgmtAddress = apuluutils.HalIPToString(lChs.GetMgmtIP())
+
+						log.Infof("LLDPPeriodicTimer: Update LLDP Neighbor of Uplink Intf [%+v]", uid.String())
+						// update uplink interface's lldp neighbor info
+						a.handleUplinkLldpUpdate(i.Spec.GetUplinkSpec().GetPortId())
+					}
+				}
+			}
+		}
+	}()
 }
 
 // HandleCPRoutingConfig handles creation of control plane route objects
@@ -1983,7 +2151,7 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 		log.Infof("Pipeline API: handleDSCInterfaceInfo | Obj: %v", obj)
 		if len(obj.DSCInterfaceIPs) != 0 {
 			for _, intf := range obj.DSCInterfaceIPs {
-				if err := handleDSCL3Interface(a, intf); err != nil {
+				if err := handleDSCL3Interface(a, intf, obj); err != nil {
 					log.Error(err)
 				}
 			}
@@ -1992,8 +2160,81 @@ func (a *ApuluAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus
 	return
 }
 
+func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.DistributedServiceCardStatus) {
+	log.Infof("Pipeline API: updateUplinkIntfHostname %v (key=%v) | DSCID: %v", intf, intf.UUID, obj.DSCID)
+	intfId, err := uuid.FromString(intf.UUID)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse netproto port uuid %v, err %v", intf.UUID, err))
+		return
+	}
+	intReqMsg := &halapi.InterfaceGetRequest{
+		Id: [][]byte{},
+	}
+
+	u, err := a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "updateUplinkIntfHostname: could not get interface %v | err %v", intf.UUID, err))
+		return
+	}
+
+	for _, i := range u.Response {
+		if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
+			continue
+		}
+		pid, err := uuid.FromBytes(i.Spec.GetUplinkSpec().GetPortId())
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse pds port uuid %v, err %v", i.Spec.GetUplinkSpec().GetPortId(), err))
+			return
+		}
+		if intfId.String() != pid.String() {
+			continue
+		}
+
+		// Found uplink interface
+		uid, err := uuid.FromBytes(i.Spec.Id)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse pds intf uuid %v, err %v", i.Spec.Id, err))
+			return
+		}
+
+		intUpdateReq := &halapi.InterfaceRequest{
+			BatchCtxt: nil,
+			Request: []*halapi.InterfaceSpec{
+				{
+					Id:          i.Spec.Id,
+					Type:        i.Spec.Type,
+					AdminStatus: i.Spec.AdminStatus,
+					Ifinfo: &halapi.InterfaceSpec_UplinkSpec{
+						UplinkSpec: &halapi.UplinkSpec{
+							PortId: i.Spec.GetUplinkSpec().GetPortId(),
+							LldpSpec: &halapi.LldpSpec{
+								LldpIfChassisSpec: &halapi.LldpIfChassisSpec{
+									SysName: obj.DSCID,
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// TODO: uplink Interface updates fail for now intentionally.
+		resp, err := a.InterfaceClient.InterfaceUpdate(context.Background(), intUpdateReq)
+		if err != nil {
+			log.Errorf("Uplink interface: %v update failed | Err: %v", uid.String(), err)
+			return
+		}
+		if resp.ApiStatus != halapi.ApiStatus_API_STATUS_OK {
+			log.Errorf("Uplink interface: %s update failed  | Status: %s", uid.String(), resp.ApiStatus)
+			return
+		}
+		log.Infof("Uplink interface: %s update | Status: %s | Resp: %v", uid.String(), resp.ApiStatus, resp.Response)
+		break
+	}
+}
+
 // handleDSCL3Interface handles configuring L3 interface on DSC interfaces
-func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
+func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP, dscStatus types.DistributedServiceCardStatus) error {
 	iDat, err := a.InfraAPI.List("Interface")
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrBadRequest, "Err: %v", types.ErrObjNotFound))
@@ -2016,6 +2257,9 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP) error {
 	}
 
 	log.Infof("Found uplink interface %v", uplinkInterface)
+	// push DSC ID (hostname) to pds-agent as Uplink interface SysName
+	//a.updateUplinkIntfHostname(uplinkInterface, dscStatus)
+
 	if uplinkInterface != nil {
 		l3uuid := uuid.NewV4().String()
 		i := netproto.Interface{

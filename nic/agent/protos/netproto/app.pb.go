@@ -67,6 +67,7 @@
 		InterfaceList
 		InterfaceEvent
 		InterfaceEventList
+		LLDPNeighbor
 		DHCPServer
 		DHCPRelayPolicy
 		IPAMPolicySpec

@@ -1123,6 +1123,48 @@
             }
           },
           {
+            "name": "lldp-neighbor.chassis-id",
+            "description": "Chassis  ID.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lldp-neighbor.sys-name",
+            "description": "System Name.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lldp-neighbor.sys-description",
+            "description": "System Description.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lldp-neighbor.port-id",
+            "description": "Port Name.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lldp-neighbor.port-description",
+            "description": "Port Description.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "lldp-neighbor.mgmt-address",
+            "description": "Mgmt IP.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "status.mirror-sessions",
             "in": "query",
             "required": false,
@@ -8704,6 +8746,35 @@
         }
       }
     },
+    "networkLLDPNeighbor": {
+      "type": "object",
+      "properties": {
+        "chassis-id": {
+          "type": "string",
+          "description": "Chassis  ID."
+        },
+        "sys-name": {
+          "type": "string",
+          "description": "System Name."
+        },
+        "sys-description": {
+          "type": "string",
+          "description": "System Description."
+        },
+        "port-id": {
+          "type": "string",
+          "description": "Port Name."
+        },
+        "port-description": {
+          "type": "string",
+          "description": "Port Description."
+        },
+        "mgmt-address": {
+          "type": "string",
+          "description": "Mgmt IP."
+        }
+      }
+    },
     "networkLbPolicy": {
       "type": "object",
       "properties": {
@@ -9010,6 +9081,10 @@
         "ip-config": {
           "$ref": "#/definitions/clusterIPConfig",
           "description": "Interface IP Configuration if any."
+        },
+        "lldp-neighbor": {
+          "$ref": "#/definitions/networkLLDPNeighbor",
+          "description": "LLDP neighbor."
         }
       }
     },

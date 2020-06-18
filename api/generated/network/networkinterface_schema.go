@@ -15,6 +15,22 @@ import (
 
 var typesMapNetworkinterface = map[string]*api.Struct{
 
+	"network.LLDPNeighbor": &api.Struct{
+		Kind: "", APIGroup: "", Scopes: []string{}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(LLDPNeighbor{}) },
+		Fields: map[string]api.Field{
+			"ChassisID": api.Field{Name: "ChassisID", CLITag: api.CLIInfo{ID: "chassis-id", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "chassis-id", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"SysName": api.Field{Name: "SysName", CLITag: api.CLIInfo{ID: "sys-name", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "sys-name", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"SysDescription": api.Field{Name: "SysDescription", CLITag: api.CLIInfo{ID: "sys-description", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "sys-description", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"PortID": api.Field{Name: "PortID", CLITag: api.CLIInfo{ID: "port-id", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "port-id", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"PortDescription": api.Field{Name: "PortDescription", CLITag: api.CLIInfo{ID: "port-description", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "port-description", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+
+			"MgmtAddress": api.Field{Name: "MgmtAddress", CLITag: api.CLIInfo{ID: "mgmt-address", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "mgmt-address", Pointer: false, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "TYPE_STRING"},
+		},
+	},
 	"network.NetworkInterface": &api.Struct{
 		Kind: "NetworkInterface", APIGroup: "network", Scopes: []string{"Cluster"}, GetTypeFn: func() reflect.Type { return reflect.TypeOf(NetworkInterface{}) },
 		Fields: map[string]api.Field{
@@ -57,6 +73,7 @@ var typesMapNetworkinterface = map[string]*api.Struct{
 			"attach-network":   api.CLIInfo{Path: "Spec.AttachNetwork", Skip: false, Insert: "", Help: ""},
 			"attach-tenant":    api.CLIInfo{Path: "Spec.AttachTenant", Skip: false, Insert: "", Help: ""},
 			"cable-type":       api.CLIInfo{Path: "Status.IFUplinkStatus.TransceiverStatus.TranceiverCableType", Skip: false, Insert: "", Help: ""},
+			"chassis-id":       api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.ChassisID", Skip: false, Insert: "", Help: ""},
 			"cluster-node":     api.CLIInfo{Path: "Status.ClusterNode", Skip: false, Insert: "", Help: ""},
 			"device-id":        api.CLIInfo{Path: "Status.IFHostStatus.DeviceID", Skip: false, Insert: "", Help: ""},
 			"dsc":              api.CLIInfo{Path: "Status.DSC", Skip: false, Insert: "", Help: ""},
@@ -68,18 +85,23 @@ var typesMapNetworkinterface = map[string]*api.Struct{
 			"labels":           api.CLIInfo{Path: "Labels", Skip: false, Insert: "", Help: ""},
 			"link-speed":       api.CLIInfo{Path: "Status.IFUplinkStatus.LinkSpeed", Skip: false, Insert: "", Help: ""},
 			"mac-address":      api.CLIInfo{Path: "Spec.MACAddress", Skip: false, Insert: "", Help: ""},
+			"mgmt-address":     api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.MgmtAddress", Skip: false, Insert: "", Help: ""},
 			"mirror-sessions":  api.CLIInfo{Path: "Status.MirroSessions", Skip: false, Insert: "", Help: ""},
 			"mtu":              api.CLIInfo{Path: "Spec.MTU", Skip: false, Insert: "", Help: ""},
 			"name":             api.CLIInfo{Path: "Status.Name", Skip: false, Insert: "", Help: ""},
 			"namespace":        api.CLIInfo{Path: "Namespace", Skip: false, Insert: "", Help: ""},
 			"oper-status":      api.CLIInfo{Path: "Status.OperStatus", Skip: false, Insert: "", Help: ""},
 			"pid":              api.CLIInfo{Path: "Status.IFUplinkStatus.TransceiverStatus.TranceiverPid", Skip: false, Insert: "", Help: ""},
+			"port-description": api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.PortDescription", Skip: false, Insert: "", Help: ""},
+			"port-id":          api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.PortID", Skip: false, Insert: "", Help: ""},
 			"primary-mac":      api.CLIInfo{Path: "Status.PrimaryMac", Skip: false, Insert: "", Help: ""},
 			"resource-version": api.CLIInfo{Path: "ResourceVersion", Skip: false, Insert: "", Help: ""},
 			"rx-pause-enabled": api.CLIInfo{Path: "Spec.Pause.RxPauseEnabled", Skip: false, Insert: "", Help: ""},
 			"self-link":        api.CLIInfo{Path: "SelfLink", Skip: false, Insert: "", Help: ""},
 			"speed":            api.CLIInfo{Path: "Spec.Speed", Skip: false, Insert: "", Help: ""},
 			"state":            api.CLIInfo{Path: "Status.IFUplinkStatus.TransceiverStatus.TransceiverState", Skip: false, Insert: "", Help: ""},
+			"sys-description":  api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.SysDescription", Skip: false, Insert: "", Help: ""},
+			"sys-name":         api.CLIInfo{Path: "Status.IFUplinkStatus.LLDPNeighbor.SysName", Skip: false, Insert: "", Help: ""},
 			"tenant":           api.CLIInfo{Path: "Tenant", Skip: false, Insert: "", Help: ""},
 			"tx-pause-enabled": api.CLIInfo{Path: "Spec.Pause.TxPauseEnabled", Skip: false, Insert: "", Help: ""},
 			"type":             api.CLIInfo{Path: "Spec.Pause.Type", Skip: false, Insert: "", Help: ""},
@@ -152,6 +174,8 @@ var typesMapNetworkinterface = map[string]*api.Struct{
 			"TransceiverStatus": api.Field{Name: "TransceiverStatus", CLITag: api.CLIInfo{ID: "transceiver-status", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "transceiver-status", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "network.TransceiverStatus"},
 
 			"IPConfig": api.Field{Name: "IPConfig", CLITag: api.CLIInfo{ID: "ip-config", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "ip-config", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "cluster.IPConfig"},
+
+			"LLDPNeighbor": api.Field{Name: "LLDPNeighbor", CLITag: api.CLIInfo{ID: "lldp-neighbor", Path: "", Skip: false, Insert: "", Help: ""}, JSONTag: "lldp-neighbor", Pointer: true, Slice: false, Mutable: true, Map: false, Inline: false, FromInline: false, KeyType: "", Type: "network.LLDPNeighbor"},
 		},
 	},
 	"network.PauseSpec": &api.Struct{

@@ -106,6 +106,16 @@ func convertNetifObj(nodeID string, agentNetif *netproto.Interface) *network.Net
 			DefaultGW: agentNetif.Status.IFUplinkStatus.GatewayIP,
 		},
 	}
+	if agentNetif.Spec.Type == "UPLINK_ETH" && agentNetif.Status.IFUplinkStatus.LLDPNeighbor != nil {
+		netif.Status.IFUplinkStatus.LLDPNeighbor = &network.LLDPNeighbor{
+			ChassisID:       agentNetif.Status.IFUplinkStatus.LLDPNeighbor.ChassisID,
+			SysName:         agentNetif.Status.IFUplinkStatus.LLDPNeighbor.SysName,
+			SysDescription:  agentNetif.Status.IFUplinkStatus.LLDPNeighbor.SysDescription,
+			PortID:          agentNetif.Status.IFUplinkStatus.LLDPNeighbor.PortID,
+			PortDescription: agentNetif.Status.IFUplinkStatus.LLDPNeighbor.PortDescription,
+			MgmtAddress:     agentNetif.Status.IFUplinkStatus.LLDPNeighbor.MgmtAddress,
+		}
+	}
 
 	netif.Status.DSCID = agentNetif.Status.DSCID
 
@@ -121,6 +131,7 @@ func (sm *Statemgr) GetInterfaceWatchOptions() *api.ListWatchOptions {
 // OnInterfaceCreateReq gets called when agent sends create request
 func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Interface) error {
 
+	log.Infof("interface create for %v DSC ID", agentNetif.Name)
 	//Make sure we don't create inteface if DSC ID is not set
 	//This is useful for upgrade from lower to higher release.
 	if agentNetif.Status.DSCID == "" {
@@ -168,8 +179,33 @@ func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Int
 	return nil
 }
 
+// compares interface's LLDP neighbor info from netagent and statemgr
+// and update statemgr LLDP neighbor
+func checkLLDPNeighborUpdate(netif *network.LLDPNeighbor, agentNetif *netproto.LLDPNeighbor) bool {
+
+	if netif.ChassisID != agentNetif.ChassisID ||
+		netif.SysName != agentNetif.SysName ||
+		netif.SysDescription != agentNetif.SysDescription ||
+		netif.PortID != agentNetif.PortID ||
+		netif.PortDescription != agentNetif.PortDescription ||
+		netif.MgmtAddress != agentNetif.MgmtAddress {
+
+		// change in LLDP neighbor info
+		netif.ChassisID = agentNetif.ChassisID
+		netif.SysName = agentNetif.SysName
+		netif.SysDescription = agentNetif.SysDescription
+		netif.PortID = agentNetif.PortID
+		netif.PortDescription = agentNetif.PortDescription
+		netif.MgmtAddress = agentNetif.MgmtAddress
+		return true
+	}
+	return false
+}
+
 // OnInterfaceUpdateReq gets called when agent sends update request
 func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Interface) error {
+
+	log.Infof("interface update for %v DSC ID", agentNetif.Name)
 	obj, err := smgrNetworkInterface.FindNetworkInterface(agentNetif.Name)
 	if err != nil {
 		log.Errorf("Error finding interface %v for update", agentNetif.Name)
@@ -177,15 +213,27 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 	}
 
 	obj.NetworkInterfaceState.Lock()
-	//For now Update only operation status
+	//For now Update only operation status or LLDP update
+	update := false
 	opStatus := strings.ToUpper(agentNetif.Status.OperStatus)
-	if obj.NetworkInterfaceState.Status.OperStatus == opStatus {
-		obj.NetworkInterfaceState.Unlock()
+	if obj.NetworkInterfaceState.Status.OperStatus != opStatus {
+		log.Infof("Updating network interface state %v : %v", agentNetif.Name, opStatus)
+		obj.NetworkInterfaceState.Status.OperStatus = opStatus
+		update = true
+	}
+
+	if agentNetif.Spec.Type == netproto.InterfaceSpec_UPLINK_ETH.String() {
+		if checkLLDPNeighborUpdate(obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor, agentNetif.Status.IFUplinkStatus.LLDPNeighbor) == true {
+			log.Infof("Updating network interface LLDPNeighbor %v : %v", agentNetif.Name, obj.NetworkInterfaceState.Status.IFUplinkStatus.LLDPNeighbor)
+			update = true
+		}
+	}
+	obj.NetworkInterfaceState.Unlock()
+
+	if update == false {
 		return nil
 	}
-	log.Infof("Updating network interface state %v : %v", agentNetif.Name, opStatus)
-	obj.NetworkInterfaceState.Status.OperStatus = opStatus
-	obj.NetworkInterfaceState.Unlock()
+
 	// retry till it succeeds
 	now := time.Now()
 	retries := 0

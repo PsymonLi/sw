@@ -49,6 +49,7 @@ export * from './network-ipam-policy.model';
 export * from './network-ipam-policy-list.model';
 export * from './network-ipam-policy-spec.model';
 export * from './network-ipam-policy-status.model';
+export * from './network-lldp-neighbor.model';
 export * from './network-lb-policy.model';
 export * from './network-lb-policy-list.model';
 export * from './network-lb-policy-spec.model';

@@ -48,6 +48,7 @@ func (s *snetworkNetworkinterfaceBackend) regMsgsFunc(l log.Logger, scheme *runt
 	l.Infof("registering message for snetworkNetworkinterfaceBackend")
 	s.Messages = map[string]apiserver.Message{
 
+		"network.LLDPNeighbor": apisrvpkg.NewMessage("network.LLDPNeighbor"),
 		"network.NetworkInterface": apisrvpkg.NewMessage("network.NetworkInterface").WithKeyGenerator(func(i interface{}, prefix string) string {
 			if i == nil {
 				r := network.NetworkInterface{}

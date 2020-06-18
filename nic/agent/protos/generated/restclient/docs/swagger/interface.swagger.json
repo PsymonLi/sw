@@ -711,8 +711,42 @@
         "gateway-ip": {
           "type": "string",
           "description": "GatewayIP associated to the interface."
+        },
+        "lldp-neighbor": {
+          "$ref": "#/definitions/netprotoLLDPNeighbor",
+          "description": "LLDP neighbor."
         }
       }
+    },
+    "netprotoLLDPNeighbor": {
+      "type": "object",
+      "properties": {
+        "chassis-id": {
+          "type": "string",
+          "description": "Chassis  ID."
+        },
+        "sys-name": {
+          "type": "string",
+          "description": "System Name."
+        },
+        "sys-description": {
+          "type": "string",
+          "description": "System Description."
+        },
+        "port-id": {
+          "type": "string",
+          "description": "Port Name."
+        },
+        "port-description": {
+          "type": "string",
+          "description": "Port Description."
+        },
+        "mgmt-address": {
+          "type": "string",
+          "description": "Management Address."
+        }
+      },
+      "description": "LLDP neighbor info."
     },
     "netprotoPauseSpec": {
       "type": "object",

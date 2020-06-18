@@ -17,6 +17,40 @@ import (
 // Dummy definitions to suppress nonused warnings
 var _ api.ObjectMeta
 
+func encodeHTTPLLDPNeighbor(ctx context.Context, req *http.Request, request interface{}) error {
+	return encodeHTTPRequest(ctx, req, request)
+}
+
+func decodeHTTPLLDPNeighbor(_ context.Context, r *http.Request) (interface{}, error) {
+	var req LLDPNeighbor
+	if e := json.NewDecoder(r.Body).Decode(&req); e != nil {
+		return nil, e
+	}
+	return req, nil
+}
+
+// EncodeGrpcReqLLDPNeighbor encodes GRPC request
+func EncodeGrpcReqLLDPNeighbor(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*LLDPNeighbor)
+	return req, nil
+}
+
+// DecodeGrpcReqLLDPNeighbor decodes GRPC request
+func DecodeGrpcReqLLDPNeighbor(ctx context.Context, request interface{}) (interface{}, error) {
+	req := request.(*LLDPNeighbor)
+	return req, nil
+}
+
+// EncodeGrpcRespLLDPNeighbor encodes GRC response
+func EncodeGrpcRespLLDPNeighbor(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
+// DecodeGrpcRespLLDPNeighbor decodes GRPC response
+func DecodeGrpcRespLLDPNeighbor(ctx context.Context, response interface{}) (interface{}, error) {
+	return response, nil
+}
+
 func encodeHTTPNetworkInterface(ctx context.Context, req *http.Request, request interface{}) error {
 	return encodeHTTPRequest(ctx, req, request)
 }
