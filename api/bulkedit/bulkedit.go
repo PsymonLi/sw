@@ -58,11 +58,6 @@ func (p *BulkEditItem) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	err = json.Unmarshal(objBytes, obj1)
-	if err != nil {
-		return err
-	}
-
 	// TODO: We might have to come up with a different way of deriving this version string in the future.
 	// For example, have the client supply it as part of the bulkeditItem
 	versionStr := "v1"
@@ -70,6 +65,11 @@ func (p *BulkEditItem) UnmarshalJSON(b []byte) error {
 	defaultFn := reflect.ValueOf(obj1).MethodByName("Defaults")
 	if defaultFn.IsValid() {
 		defaultFn.Call([]reflect.Value{reflect.ValueOf(versionStr)})
+	}
+
+	err = json.Unmarshal(objBytes, obj1)
+	if err != nil {
+		return err
 	}
 
 	makeKeyFn := reflect.ValueOf(obj1).MethodByName("MakeKey")
