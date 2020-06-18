@@ -288,6 +288,18 @@ func naplesCmdValidator(cmd *cobra.Command, args []string) (err error) {
 		}
 
 		if len(bondIP) != 0 {
+			if len(mgmtIP) == 0 {
+				err = fmt.Errorf("management ip should be specified when inband ip is specified")
+				return
+			}
+			if len(controllers) == 0 {
+				err = fmt.Errorf("controllers should be specified when inband ip is specified")
+				return
+			}
+			if len(id) == 0 {
+				err = fmt.Errorf("dsc id should be specified when inband ip is specified")
+				return
+			}
 			if managementNetwork == "inband" {
 				err = fmt.Errorf("cannot configure ip on inb when it is also mgmt network")
 				return
@@ -347,7 +359,6 @@ func naplesCmdValidator(cmd *cobra.Command, args []string) (err error) {
 		return
 
 	default:
-		err = fmt.Errorf("invalid --managed-by  %v flag specified. Must be either host or network", managedBy)
 		err = fmt.Errorf("invalid --managed-by  %v flag specified. Must be either host or network", managedBy)
 		return
 	}
