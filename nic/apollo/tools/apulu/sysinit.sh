@@ -10,16 +10,6 @@ export PERSISTENT_LOG_DIR='/obfl/'
 
 ulimit -c unlimited
 
-# Temporary hack. Very temporary, I promise!
-if [ -f /sysconfig/config0/system_boot_config ]; then
-    cp /sysconfig/config0/system_boot_config /nic/conf
-    /etc/init.d/S49mode restart
-    rm -f /var/lock/sshd
-    rm -f /var/lock/system_boot_config
-    rm -rf /sysconfig/config0/ssh
-    /etc/init.d/S50sshd restart
-fi  
-
 #Clean up any stale files from /update dir when we are doing fresh boot
 #Also clean up /data/upgrade_init_mode.txt to bring up processes in fresh boot
 
