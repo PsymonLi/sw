@@ -192,6 +192,11 @@ private:
     /// \param[out] status mirror session h/w status
     void fill_status_(pds_mirror_session_status_t *status);
 
+    /// \brief      fill the mirror session stats
+    /// \param[out] spec mirror session stats to be filled
+    /// \return     #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t fill_stats_(pds_mirror_session_stats_t *stats, 
+                          pds_obj_key_t *key);
 private:
     // P4 datapath specific state
     uint16_t hw_id_;    ///< hardware id

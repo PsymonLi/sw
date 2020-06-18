@@ -170,8 +170,8 @@ public:
         return "mrror-" + std::string(key_.str());
     }
 
-    /// \brief     return the key/id of this vnic
-    /// \return    key/id of the vnic object
+    /// \brief     return the key/id of this mirror session 
+    /// \return    key/id of the mirror session object
     const pds_obj_key_t key(void) const { return key_; }
 
     /// \brief     return the type of the mirror session
@@ -194,8 +194,8 @@ public:
     /// \return    ERSPAN destination TEP
     const pds_obj_key_t& erspan_dest_tep(void) const { return erspan_.tep_; }
 
-    /// \brief     return impl instance of this vnic object
-    /// \return    impl instance of the vnic object
+    /// \brief     return impl instance of this mirror session object
+    /// \return    impl instance of the mirror session object
     impl_base *impl(void) { return impl_; }
 
 private:
@@ -205,7 +205,7 @@ private:
     /// \brief destructor
     ~mirror_session();
 
-    /// \brief      fill the vnic sw spec
+    /// \brief      fill the mirror session sw spec
     /// \param[out] spec specification
     /// \return     SDK_RET_OK on success, failure status code on error
     sdk_ret_t fill_spec_(pds_mirror_session_spec_t *spec);

@@ -32,6 +32,7 @@ mirror_session_feeder::init(pds_obj_key_t key, uint8_t mirror_sess,
     // init with erspan dst type as tep, then alernate b/w tep and ip
     this->dst_type = PDS_ERSPAN_DST_TYPE_TEP;
     this->tep = tep;
+    this->dst_ip = dst_ip;
     memset(&this->dst_ip_addr, 0x0, sizeof(ip_addr_t));
     test::extract_ip_addr((char *)dst_ip.c_str(), &this->dst_ip_addr);
     this->dscp = dscp;
@@ -56,10 +57,11 @@ mirror_session_feeder::iter_next(int width) {
             erspan_type = PDS_ERSPAN_TYPE_1;
         if (dst_type == PDS_ERSPAN_DST_TYPE_TEP) {
             dst_type = PDS_ERSPAN_DST_TYPE_IP;
-            dst_ip_addr.addr.v4_addr += 1;
+            // dst_ip_addr.addr.v4_addr += 1;
+            test::increment_ip_addr(&dst_ip_addr, width);
         } else {
             dst_type = PDS_ERSPAN_DST_TYPE_TEP;
-            tep++;
+            // tep++;
         }
     } else if (type == PDS_MIRROR_SESSION_TYPE_ERSPAN) {
         type = PDS_MIRROR_SESSION_TYPE_RSPAN;
@@ -75,7 +77,7 @@ mirror_session_feeder::iter_next(int width) {
 
 void
 mirror_session_feeder::key_build(pds_obj_key_t *key) const {
-    memcpy(key, &this->key, sizeof(pds_obj_key_t));
+    *key = this->key;
 }
 
 void
@@ -83,6 +85,7 @@ mirror_session_feeder::spec_build(pds_mirror_session_spec_t *spec) const {
     memset(spec, 0, sizeof(pds_mirror_session_spec_t));
 
     spec->snap_len = snap_len;
+    spec->key = this->key;
     spec->type = type;
     if (type  == PDS_MIRROR_SESSION_TYPE_RSPAN) {
         spec->rspan_spec.interface = interface;
@@ -96,6 +99,7 @@ mirror_session_feeder::spec_build(pds_mirror_session_spec_t *spec) const {
         } else {
             memcpy(&spec->erspan_spec.ip_addr, &dst_ip_addr,
                    sizeof(ip_addr_t));
+            spec->erspan_spec.ip_addr.af = IP_AF_IPV4;
         }
         spec->erspan_spec.dscp = dscp;
         spec->erspan_spec.span_id = span_id;

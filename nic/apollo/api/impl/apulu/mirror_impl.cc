@@ -414,23 +414,76 @@ mirror_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
     return ret;
 }
 
+sdk_ret_t
+mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
+    p4pd_error_t p4pd_ret;
+    mirror_actiondata_t mirror_data;
+
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id_, NULL, NULL, 
+                                      &mirror_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to read mirror session %s at idx %u", 
+                      spec->key.str(), hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    switch (mirror_data.action_id) {
+    case MIRROR_RSPAN_ID:
+        spec->snap_len = mirror_data.rspan_action.truncate_len;
+        break;
+    case MIRROR_ERSPAN_ID:
+        spec->snap_len = mirror_data.erspan_action.truncate_len;
+        spec->erspan_spec.dscp = mirror_data.erspan_action.dscp;
+        spec->erspan_spec.span_id = mirror_data.erspan_action.span_id; 
+        spec->erspan_spec.vlan_strip_en = 
+            mirror_data.erspan_action.vlan_strip_en;
+        break;
+    default:
+        PDS_TRACE_ERR("Unsupported mirror action id %u for session %s",
+                      mirror_data.action_id, spec->key.str());
+        return sdk::SDK_RET_INVALID_ARG;
+    }
+    return SDK_RET_OK;
+}
+
 void
 mirror_impl::fill_status_(pds_mirror_session_status_t *status) {
     status->hw_id = hw_id_;
 }
 
 sdk_ret_t
-mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
-    return SDK_RET_INVALID_OP;
+mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats, 
+                         pds_obj_key_t *key) {
+    p4pd_error_t p4pd_ret;
+    mirror_actiondata_t mirror_data;
+
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
+                                      &mirror_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to read mirror session %s stats at idx %u",
+                      key->str(), hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+    switch (mirror_data.action_id) {
+    case MIRROR_RSPAN_ID:
+        // we support stats only for ERSPAN 
+        break;
+    case MIRROR_ERSPAN_ID:
+        stats->packet_count = *(uint64_t *)mirror_data.erspan_action.npkts;
+        stats->byte_count = *(uint64_t *)mirror_data.erspan_action.nbytes;
+        break;
+    default:
+        PDS_TRACE_ERR("Unsupported mirror action id %u for session %s",
+                      mirror_data.action_id, key->str());
+        return sdk::SDK_RET_INVALID_ARG;
+    }
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
 mirror_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
-    //uint16_t hw_id;
-    //p4pd_error_t p4pd_ret;
-    //mirror_actiondata_t mirror_data;
     sdk_ret_t ret;
-    pds_mirror_session_info_t *mirror_session_info = (pds_mirror_session_info_t *)info;
+    pds_mirror_session_info_t *mirror_session_info = 
+        (pds_mirror_session_info_t *)info;
 
     ret = fill_spec_(&mirror_session_info->spec);
     if (unlikely(ret != SDK_RET_OK)) {
@@ -439,48 +492,14 @@ mirror_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
         return ret;
     }
     fill_status_(&mirror_session_info->status);
-    return SDK_RET_OK;
-
-#if 0
-    hw_id = mkey->id - 1;
-    if ((mirror_impl_db()->session_bmap_ & (1 << hw_id)) == 0) {
-        return sdk::SDK_RET_ENTRY_NOT_FOUND;
-    }
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id, NULL, NULL,
-                                      &mirror_data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to read mirror session %u at idx %u", mkey->id);
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
-    }
-    minfo->spec.key.id = mkey->id;
-    switch (mirror_data.action_id) {
-    case MIRROR_RSPAN_ID:
-        minfo->spec.type = PDS_MIRROR_SESSION_TYPE_RSPAN;
-        minfo->spec.snap_len = mirror_data.rspan_action.truncate_len;
-#if 0
-        minfo->spec.rspan_spec.interface =
-            g_pds_state.catalogue()->tm_port_to_ifindex(mirror_data.rspan_action.tm_oport);
-#endif
-        minfo->spec.rspan_spec.encap.type = PDS_ENCAP_TYPE_DOT1Q;
-        minfo->spec.rspan_spec.encap.val.vlan_tag =
-            mirror_data.rspan_action.ctag;
-        break;
-
-    case MIRROR_ERSPAN_ID:
-        minfo->spec.type = PDS_MIRROR_SESSION_TYPE_ERSPAN;
-        minfo->spec.snap_len = mirror_data.erspan_action.truncate_len;
-        minfo->spec.erspan_spec.src_ip.addr.v4_addr =
-            mirror_data.erspan_action.sip;
-        // minfo->spec.erspan_spec.dst_ip.addr.v4_addr =
-           //  mirror_data.erspan_action.dip;
-        break;
-
-    default:
-        PDS_TRACE_ERR("mirror read operation not supported");
-        return sdk::SDK_RET_INVALID_OP;
+    ret = fill_stats_(&mirror_session_info->stats, (pds_obj_key_t *)key);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Failed to read hardware stats tables for mirror session %s",
+                      api_obj->key2str().c_str());
+        return ret;
     }
     return SDK_RET_OK;
-#endif
+
 }
 
 /// \@}

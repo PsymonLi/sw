@@ -21,6 +21,7 @@ public:
     pds_mirror_session_type_t type;
     uint32_t snap_len;
     uint32_t tep;
+    std::string dst_ip;
     ip_addr_t dst_ip_addr;
     uint32_t span_id;
     uint32_t dscp;
@@ -30,9 +31,14 @@ public:
     pds_erspan_type_t erspan_type;
     bool vlan_strip_en;
 
-    //Constructor
+    // Constructor
     mirror_session_feeder() { };
-
+    // Copy constructor
+    mirror_session_feeder(mirror_session_feeder& feeder) {
+        init(feeder.key, feeder.num_obj, feeder.interface,
+             feeder.encap.val.vlan_tag, feeder.dst_ip, feeder.tep,
+             feeder.span_id, feeder.dscp, feeder.vlan_strip_en);
+    }
     // initalize feeder with base set of values
     void init(pds_obj_key_t key, uint8_t mirror_sess,
               pds_obj_key_t interface, uint16_t vlan_tag,
@@ -52,11 +58,6 @@ public:
     bool spec_compare(const pds_mirror_session_spec_t *spec) const;
     bool status_compare(const pds_mirror_session_status_t *status1,
                         const pds_mirror_session_status_t *status2) const;
-
-    bool read_unsupported(void) const {
-        return (::asic_mock_mode() ? true : false);
-    }
-
 };
 
 // Dump prototypes

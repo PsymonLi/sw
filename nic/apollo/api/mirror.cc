@@ -119,10 +119,6 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
     spec = &api_ctxt->api_params->mirror_session_spec;
     switch (spec->type) {
     case PDS_MIRROR_SESSION_TYPE_ERSPAN:
-        if (spec->erspan_spec.ip_addr.af != IP_AF_IPV4) {
-            PDS_TRACE_ERR("Only IPv4 ERSPAN collector is supported");
-            return SDK_RET_INVALID_ARG;
-        }
         vpc = vpc_find(&spec->erspan_spec.vpc);
         if (unlikely(vpc == NULL)) {
             PDS_TRACE_ERR("Failed to initialize mirror session %s, vpc %s "
@@ -149,6 +145,12 @@ mirror_session::init_config(api_ctxt_t *api_ctxt) {
             }
             erspan_.tep_ = spec->erspan_spec.tep;
         } else if (erspan_.dst_type_ == PDS_ERSPAN_DST_TYPE_IP) {
+            if (spec->erspan_spec.ip_addr.af != IP_AF_IPV4) {
+                PDS_TRACE_ERR("Only IPv4 ERSPAN collector is supported, "
+                              "af %u is provided for session %s",
+                              spec->erspan_spec.ip_addr.af, spec->key.str());
+                return SDK_RET_INVALID_ARG;
+            }
             if (vpc->type() == PDS_VPC_TYPE_UNDERLAY) {
                 // make sure the underlay IP is not our own TEP IP
                 auto mytep_ip = device_db()->find()->ip_addr();
@@ -240,11 +242,47 @@ mirror_session::activate_config(pds_epoch_t epoch, api_op_t api_op,
 
 sdk_ret_t
 mirror_session::fill_spec_(pds_mirror_session_spec_t *spec) {
-    return SDK_RET_INVALID_OP;
+    memcpy(&spec->key, &key_, sizeof(key_));
+    spec->type = type_;
+    switch (type_) {
+    case PDS_MIRROR_SESSION_TYPE_RSPAN:
+        spec->rspan_spec.interface = rspan_.interface_;
+        spec->rspan_spec.encap = rspan_.encap_;
+        break;
+    case PDS_MIRROR_SESSION_TYPE_ERSPAN:
+        spec->erspan_spec.type = erspan_.type_;
+        spec->erspan_spec.vpc = erspan_.vpc_;
+        spec->erspan_spec.dst_type = erspan_.dst_type_;
+        switch (erspan_.dst_type_) {
+        case PDS_ERSPAN_DST_TYPE_TEP:
+            spec->erspan_spec.tep = erspan_.tep_;
+            break;
+        case PDS_ERSPAN_DST_TYPE_IP:
+            spec->erspan_spec.ip_addr = erspan_.ip_;
+            break;
+        default:
+            PDS_TRACE_ERR("Unsupported ERSPAN mirror session type %u for "
+                          "session %s", type_, key_.str());
+            return sdk::SDK_RET_INVALID_ARG;
+            break;
+        }
+        break;
+    default:
+        PDS_TRACE_ERR("Unsupported mirror session type %u for session %s",
+                      type_, key_.str());
+        return sdk::SDK_RET_INVALID_ARG;
+    }
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
 mirror_session::read(pds_mirror_session_info_t *info) {
+    sdk_ret_t ret;
+
+    ret = fill_spec_(&info->spec);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     return impl_->read_hw(this, (impl::obj_key_t *)(&info->spec.key),
                           (impl::obj_info_t *)info);
 }
