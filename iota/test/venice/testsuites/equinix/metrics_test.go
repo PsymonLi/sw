@@ -158,6 +158,10 @@ func validateResp(resp *telemetryclient.MetricsQueryResponse, fields []string, t
 		}
 
 		for _, f := range fields {
+			if f == "RESERVED" {
+				fmt.Printf("\tskip checking %v\n", f)
+				continue
+			}
 			if _, ok := cIndex[f]; !ok {
 				fmt.Printf("failed to find %v \n", f)
 				return fmt.Errorf("failed to find %v", f)

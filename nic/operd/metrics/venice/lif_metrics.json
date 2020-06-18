@@ -53,6 +53,24 @@
           "BaseType": "Counter"
         },
         {
+          "Name": "RESERVED",
+          "DisplayName": "-",
+          "Description": "-",
+          "BaseType": "Counter",
+          "Tags": [
+            "Level7"
+          ]
+        },
+        {
+          "Name": "RESERVED",
+          "DisplayName": "-",
+          "Description": "-",
+          "BaseType": "Counter",
+          "Tags": [
+            "Level7"
+          ]
+        },
+        {
           "Name": "RxDropUnicastBytes",
           "DisplayName": "Rx Drop Unicast Bytes",
           "Description": "Rx Drop Unicast Bytes",
@@ -93,6 +111,22 @@
           "Description": "Rx Drop Broadcast Packets",
           "Units": "Count",
           "BaseType": "Counter"
+        },
+        {
+          "Name": "RxDMAError",
+          "DisplayName": "Rx DMA error",
+          "Description": "Rx DMA error",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
+          "Name": "RESERVED",
+          "DisplayName": "-",
+          "Description": "-",
+          "BaseType": "Counter",
+          "Tags": [
+            "Level7"
+          ]
         },
         {
           "Name": "TxUnicastBytes",
@@ -137,6 +171,24 @@
           "BaseType": "Counter"
         },
         {
+          "Name": "RESERVED",
+          "DisplayName": "-",
+          "Description": "-",
+          "BaseType": "Counter",
+          "Tags": [
+            "Level7"
+          ]
+        },
+        {
+          "Name": "RESERVED",
+          "DisplayName": "-",
+          "Description": "-",
+          "BaseType": "Counter",
+          "Tags": [
+            "Level7"
+          ]
+        },
+        {
           "Name": "TxDropUnicastBytes",
           "DisplayName": "Tx Drop Unicast Bytes",
           "Description": "Tx Drop Unicast Bytes",
@@ -175,34 +227,6 @@
           "Name": "TxDropBroadcastPackets",
           "DisplayName": "Tx Drop Broadcast Packets",
           "Description": "Tx Drop Broadcast Packets",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxPkts",
-          "DisplayName": "Tx Pkts",
-          "Description": "Total Transmit Packets",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "TxBytes",
-          "DisplayName": "Tx Bytes",
-          "Description": "Total Transmit Bytes",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxPkts",
-          "DisplayName": "Rx Pkts",
-          "Description": "Total Receive Packets",
-          "Units": "Count",
-          "BaseType": "Counter"
-        },
-        {
-          "Name": "RxBytes",
-          "DisplayName": "Rx Bytes",
-          "Description": "Total Receive Bytes",
           "Units": "Count",
           "BaseType": "Counter"
         }

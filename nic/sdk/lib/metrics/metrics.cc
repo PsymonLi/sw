@@ -23,6 +23,8 @@ namespace pt = boost::property_tree;
 namespace sdk {
 namespace metrics {
 
+#define METRICS_RESERVED_COUNTER "RESERVED"
+
 static const int SDK_METRICS_DEFAULT_TBL_SIZE = 1000;
 
 typedef enum metrics_counter_type_ {
@@ -152,7 +154,7 @@ save_schema_ (metrics_table_t *tbl, schema_t *schema)
             if (tbl->type == SW) {
                 type = METRICS_COUNTER_VALUE64;
             } else {
-                if (cntr_name.at(0) == '_') {
+                if (cntr_name.compare(METRICS_RESERVED_COUNTER) == 0) {
                     type = METRICS_COUNTER_RSVD64;
                 } else {
                     type = METRICS_COUNTER_POINTER64;

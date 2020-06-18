@@ -228,6 +228,28 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
+      "name": "RESERVED",
+      "displayName": "-",
+      "description": "-",
+      "baseType": "Counter",
+      "tags": [
+        "Level7"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "RESERVED",
+      "displayName": "-",
+      "description": "-",
+      "baseType": "Counter",
+      "tags": [
+        "Level7"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
       "name": "RxDropUnicastBytes",
       "displayName": "Rx Drop Unicast Bytes",
       "description": "Rx Drop Unicast Bytes",
@@ -295,6 +317,29 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "baseType": "Counter",
       "tags": [
         "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "RxDMAError",
+      "displayName": "Rx DMA error",
+      "description": "Rx DMA error",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "RESERVED",
+      "displayName": "-",
+      "description": "-",
+      "baseType": "Counter",
+      "tags": [
+        "Level7"
       ],
       "jsType": "number",
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
@@ -372,6 +417,28 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
+      "name": "RESERVED",
+      "displayName": "-",
+      "description": "-",
+      "baseType": "Counter",
+      "tags": [
+        "Level7"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
+      "name": "RESERVED",
+      "displayName": "-",
+      "description": "-",
+      "baseType": "Counter",
+      "tags": [
+        "Level7"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
       "name": "TxDropUnicastBytes",
       "displayName": "Tx Drop Unicast Bytes",
       "description": "Tx Drop Unicast Bytes",
@@ -435,54 +502,6 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "name": "TxDropBroadcastPackets",
       "displayName": "Tx Drop Broadcast Packets",
       "description": "Tx Drop Broadcast Packets",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "TxPkts",
-      "displayName": "Tx Pkts",
-      "description": "Total Transmit Packets",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "TxBytes",
-      "displayName": "Tx Bytes",
-      "description": "Total Transmit Bytes",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "RxPkts",
-      "displayName": "Rx Pkts",
-      "description": "Total Receive Packets",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
-      "name": "RxBytes",
-      "displayName": "Rx Bytes",
-      "description": "Total Receive Bytes",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
