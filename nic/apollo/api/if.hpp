@@ -23,6 +23,7 @@
 
 // attribute update bits for interface object
 #define PDS_IF_UPD_ADMIN_STATE         0x1
+#define PDS_IF_UPD_TX_POLICER          0x2
 
 namespace api {
 
@@ -256,6 +257,12 @@ public:
     /// \return returns pointer to mac address
     uint8_t *host_if_mac(void) {
         return if_info_.host_.mac_;
+    }
+
+    /// \brief    return host interface Tx policer key
+    /// \return returns Tx policer key
+    pds_obj_key_t& host_if_tx_policer(void) {
+        return if_info_.host_.tx_policer_;
     }
 
     /// \brief    return port specific information

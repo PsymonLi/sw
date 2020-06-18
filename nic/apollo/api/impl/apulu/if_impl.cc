@@ -8,12 +8,14 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/include/sdk/globals.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/core/event.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/if.hpp"
@@ -222,8 +224,10 @@ get_default_route_add_cmd (std::string ns, ip_addr_t gateway)
 }
 
 sdk_ret_t
-if_impl::activate_host_if_(if_entry *intf, pds_if_spec_t *spec) {
+if_impl::activate_host_if_(if_entry *intf, if_entry *orig_intf,
+                           pds_if_spec_t *spec, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
+    ::core::event_t event;
     sdk::qos::policer_t policer;
     pds_policer_info_t policer_info;
     lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
@@ -234,22 +238,47 @@ if_impl::activate_host_if_(if_entry *intf, pds_if_spec_t *spec) {
         return SDK_RET_ENTRY_NOT_FOUND;
     }
 
-    ret = pds_policer_read(&spec->host_if_info.tx_policer, &policer_info);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("activate host if %s failed, policer %s not found",
-                      intf->key2str().c_str(),
-                      spec->host_if_info.tx_policer.str());
-        return SDK_RET_ENTRY_NOT_FOUND;
+    // handle Tx policer update
+    if (obj_ctxt->upd_bmap & PDS_IF_UPD_TX_POLICER) {
+        if (spec->host_if_info.tx_policer != k_pds_obj_key_invalid) {
+            ret = pds_policer_read(&spec->host_if_info.tx_policer,
+                                   &policer_info);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Activate host if %s failed, policer %s not "
+                              "found", intf->key2str().c_str(),
+                              spec->host_if_info.tx_policer.str());
+                return SDK_RET_ENTRY_NOT_FOUND;
+            }
+            policer.type = policer_info.spec.type;
+            if (policer.type == sdk::qos::POLICER_TYPE_PPS) {
+                policer.rate = policer_info.spec.pps;
+                policer.burst = policer_info.spec.pps_burst;
+            } else {
+                policer.rate = policer_info.spec.bps;
+                policer.burst = policer_info.spec.bps_burst;
+            }
+            ret = lif->program_tx_policer(&policer);
+            SDK_ASSERT(ret == SDK_RET_OK);
+        } else if (orig_intf->host_if_tx_policer() != k_pds_obj_key_invalid) {
+            // we have to clean up the previous policer programming
+            // TODO: @rsrikanth please handle this case
+        }
     }
-    policer.type = policer_info.spec.type;
-    if (policer.type == sdk::qos::POLICER_TYPE_PPS) {
-        policer.rate = policer_info.spec.pps;
-        policer.burst = policer_info.spec.pps_burst;
-    } else {
-        policer.rate = policer_info.spec.bps;
-        policer.burst = policer_info.spec.bps_burst;
+
+    // handle admin state update
+    if (obj_ctxt->upd_bmap & PDS_IF_UPD_ADMIN_STATE) {
+        if (spec->admin_state == PDS_IF_STATE_DOWN) {
+            // we need to bring the lif down
+            memset(&event, 0, sizeof(event));
+            event.event_id = (event_id_t)SDK_IPC_EVENT_ID_HOST_DEV_DOWN;
+            event.host_dev.id = lif->id();
+            sdk::ipc::broadcast(SDK_IPC_EVENT_ID_HOST_DEV_DOWN, &event,
+                                sizeof(event));
+        } else {
+            // check if the admin status on lif and act accordingly
+        }
     }
-    return lif->program_tx_policer(&policer);
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
@@ -447,6 +476,7 @@ if_impl::activate_delete_(pds_epoch_t epoch, if_entry *intf) {
 
 sdk_ret_t
 if_impl::activate_update_(pds_epoch_t epoch, if_entry *intf,
+                          if_entry *orig_intf,
                           api_obj_ctxt_t *obj_ctxt) {
     pds_if_spec_t *spec = &obj_ctxt->api_params->if_spec;
 
@@ -468,7 +498,7 @@ if_impl::activate_update_(pds_epoch_t epoch, if_entry *intf,
         return SDK_RET_OK;
 
     case IF_TYPE_HOST:
-        return activate_host_if_(intf, spec);
+        return activate_host_if_(intf, orig_intf, spec, obj_ctxt);
 
     default:
         break;
@@ -494,7 +524,8 @@ if_impl::activate_hw(api_base *api_obj, api_base *orig_obj, pds_epoch_t epoch,
         break;
 
     case API_OP_UPDATE:
-        ret = activate_update_(epoch, (if_entry *)api_obj, obj_ctxt);
+        ret = activate_update_(epoch, (if_entry *)api_obj,
+                               (if_entry *)orig_obj, obj_ctxt);
         break;
 
     default:

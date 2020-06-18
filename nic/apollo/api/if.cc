@@ -285,6 +285,10 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
     if (type_ == IF_TYPE_UPLINK) {
         // no other changes are relevant to uplink
         return SDK_RET_OK;
+    } else if (type_ == IF_TYPE_HOST) {
+        if (if_info_.host_.tx_policer_ != spec->host_if_info.tx_policer) {
+            obj_ctxt->upd_bmap |= PDS_IF_UPD_TX_POLICER;
+        }
     }
     return SDK_RET_OK;
 }

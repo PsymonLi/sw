@@ -194,9 +194,12 @@ private:
 
     /// \brief     activate host interface
     /// \param[in] intf  host interface obj being programmed
+    /// \param[in] orig_intf original interface obj being updated
+    /// \param[in] obj_ctxt transient state associated with this API
     /// \param[in] spec  interface configuration
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t activate_host_if_(if_entry *intf, pds_if_spec_t *spec);
+    sdk_ret_t activate_host_if_(if_entry *intf, if_entry *orig_intf,
+                                pds_if_spec_t *spec, api_obj_ctxt_t *obj_ctxt);
 
     /// \brief     remove ip address on control interface (ctrl0)
     /// \param[in] intf  interface obj being programmed
@@ -217,10 +220,11 @@ private:
     ///             enabling stage0 tables corresponding to the new epoch
     /// \param[in]  epoch epoch being activated
     /// \param[in]  intf cloned interface obj being programmed
+    /// \param[in]  orig_intf original interface obj being updated
     /// \param[in]  obj_ctxt transient state associated with this API
     /// \return     #SDK_RET_OK on success, failure status code on error
     sdk_ret_t activate_update_(pds_epoch_t epoch, if_entry *intf,
-                               api_obj_ctxt_t *obj_ctxt);
+                               if_entry *orig_intf, api_obj_ctxt_t *obj_ctxt);
 
     /// \brief     program interface related tables during interface delete by
     ///            disabling stage0 tables corresponding to the new epoch

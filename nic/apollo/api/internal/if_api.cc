@@ -39,6 +39,7 @@ if_spec_from_host_if_spec (pds_if_spec_t *if_spec,
 {
     memset(if_spec, 0, sizeof(pds_if_spec_t));
     memcpy(&if_spec->key, &spec->key, sizeof(pds_obj_key_t));
+    if_spec->admin_state = PDS_IF_STATE_UP;
     if_spec->type = IF_TYPE_HOST;
     PDS_TRACE_DEBUG("Host interface spec; Key %s Type: %u",
                     if_spec->key.str(), if_spec->type);
