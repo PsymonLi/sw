@@ -759,6 +759,13 @@ export class Utility {
     return val.trim().length === 0;
   }
 
+  static isValueOrArrayEmpty(val, checkTrim: boolean = false) {
+    if (Utility.isEmpty(val, checkTrim)) {
+      return true;
+    }
+    return Array.isArray(val) && val.length === 0;
+  }
+
   public static isEmptyObject(obj: any): boolean {
     return this.getLodash().isEmpty(obj);
   }

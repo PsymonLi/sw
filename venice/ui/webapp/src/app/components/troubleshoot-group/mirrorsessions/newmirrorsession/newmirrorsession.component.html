@@ -69,8 +69,8 @@
       <input formControlName="packet-size" appFloatLabel="Packet Size"
              appErrorTooltip spellcheck="false" type="number" min="0" pInputText>
     </span>
-    <div fxFlex="89px"></div>
-    <app-psmcalendar fxFlex="250px" id="newmirrorsession-schedule-calendar"
+    <div fxFlex="79px"></div>
+    <app-psmcalendar fxFlex="260px" id="newmirrorsession-schedule-calendar"
                      label="Schedule (UTC)" [minDate]="minDate" [defaultDate]="defaultDate"
                      [formControl]="newObject.$formGroup.get(['spec', 'start-condition', 'schedule-time'])">
     </app-psmcalendar>
@@ -92,6 +92,7 @@
                       fieldTitle="Collectors" subtitle="(specify one or more)">
     <app-listcontainer
                        [formGroup]="newObject.$formGroup.get(['spec', 'collectors'])"
+                       [isInline]="isInline"
                        [itemTemplate]="collectRowTemplate" addText="COLLECTOR" [maxiumCount]="2"
                        (addItem)="addCollector()" (deleteItem)="removeCollector($event)">
     </app-listcontainer>
@@ -146,7 +147,7 @@
                            [formGroup]="newObject.$formGroup.get(['spec', 'interfaces', 'selectors', 0, 'requirements'])"
                            [itemTemplate]="interfaceRowTemplate" (addItem)="addInterfaceSelector()"
                            addText="AND" [addButtonTooltip]="AND_BUTTON_TOOLTIP"
-                           (deleteItem)="removeInterfaceSelector($event)">
+                           [isInline]="isInline" (deleteItem)="removeInterfaceSelector($event)">
         </app-listcontainer>
       </div>
       <div fxFlex="auto" class="newmirrorsession-label-match-count"

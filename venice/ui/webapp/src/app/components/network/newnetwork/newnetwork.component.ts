@@ -147,7 +147,7 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
 
   removeOrchestrator(index: number) {
     const orchestrators = this.newObject.$formGroup.get(['spec', 'orchestrators']) as FormArray;
-    if (orchestrators.length > 1) {
+    if (orchestrators.length > 1 || this.isInline) {
       orchestrators.removeAt(index);
       this.newObject.$formGroup.markAsDirty();
     }

@@ -1,9 +1,10 @@
-import {Input, OnInit, Injector, ViewChild, ElementRef, Type, ChangeDetectorRef, AfterViewInit, OnDestroy } from '@angular/core';
+import {Input, OnInit, Injector, ViewChild, ElementRef, Type, ChangeDetectorRef, AfterViewInit, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { ControlValueAccessor, NgControl, AbstractControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { Utility } from '@app/common/Utility';
 
 export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, ControlValueAccessor {
+  protected defaultIconSpanClass: string = 'psm-form-input-iconSpan';
   protected defaultSpanClass: string = 'psm-form-input-container';
   protected defaultComponentClass: string = 'psm-form-input-box';
 
@@ -15,6 +16,11 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
 
   ngControl: NgControl;
   innerValue: any;
+
+  @Output() change: EventEmitter<any> = new EventEmitter<any>();
+  @Output() focus: EventEmitter<any> = new EventEmitter<any>();
+  @Output() blur: EventEmitter<any> = new EventEmitter<any>();
+  @Output() click: EventEmitter<any> = new EventEmitter<any>();
 
   @Input() label: string;
   @Input() id: string;
@@ -29,6 +35,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   @Input() tooltipClass: string = 'global-info-tooltip';
   @Input() errorTooltipClass: string = 'global-error-tooltip';
 
+
   // this input function let each component instance to change value before
   // put the value into input box
   @Input() processInput: (val: any) => any = (val) => val;
@@ -36,8 +43,8 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   // put the value into data model
   @Input() processOutput: (val: any) => any = (val) => val;
 
-  // Function to call when the rating changes.
-  onChange = (val: any) => {};
+  // Function to call when the value changes.
+  onValueChange = (val: any) => {};
   // Function to call when the input is touched (when a star is clicked).
   onTouched = () => {};
 
@@ -71,6 +78,14 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     }
   }
 
+  getIconSpanClasses(): string {
+    let clsList = this.defaultIconSpanClass;
+    if (this.showRequiredIcon()) {
+      clsList += ' psm-required-box';
+    }
+    return clsList;
+  }
+
   getSpanClasses(): string {
     let clsList = this.defaultSpanClass;
     if (this.spanClass) {
@@ -78,9 +93,6 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     }
     if (this.label)  {
       clsList += ' ui-float-label';
-    }
-    if (this.showRequiredIcon()) {
-      clsList += ' psm-required-box';
     }
     if (this.ngControl && this.ngControl.control &&
         this.ngControl.touched && this.ngControl.invalid &&
@@ -99,7 +111,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   }
 
   showRequiredIcon(): boolean {
-    if (this.ngControl.value) {
+    if (!Utility.isValueOrArrayEmpty(this.ngControl.value)) {
       return false;
     }
     if (this.showRequired === true || this.showRequired === false) {
@@ -145,14 +157,25 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
     }
   }
 
-  onBoxTouched() {
-    this.onTouched();
+  onBoxClick(event) {
+    this.click.emit(event);
   }
 
-  // when the innerValue changes, use this.onChange to update data model.
+  onBoxFocus(event) {
+    this.focus.emit(event);
+  }
+
+  onBoxBlur(event) {
+    this.onTouched();
+    this.blur.emit(event);
+  }
+
+  // when the innerValue changes, use this.onValueChange to update data model.
   // processOutput is for instance and setOutputValue is for class
   onInnerCtrlChange() {
-    this.onChange(this.processOutput(this.setOutputValue(this.innerValue)));
+    const newVal = this.processOutput(this.setOutputValue(this.innerValue));
+    this.onValueChange(newVal);
+    this.change.emit(newVal);
     this.onTouched();
   }
 
@@ -188,7 +211,7 @@ export class FormInputComponent implements OnInit, AfterViewInit, OnDestroy, Con
   // Allows Angular to register a function to call when the model changes.
   // Save the function as a property to call later here.
   registerOnChange(fn: (rating: number) => void): void {
-    this.onChange = fn;
+    this.onValueChange = fn;
   }
 
   // Allows Angular to register a function to call when the input has been touched.

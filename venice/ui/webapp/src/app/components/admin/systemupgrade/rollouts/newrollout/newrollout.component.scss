@@ -30,6 +30,11 @@ $vertical-gutter: 5px;
     background: white;
   }
 
+  app-psmcalendar {
+    position: relative;
+    left: -10px;
+  }
+
   .newrollout-flex-container {
     display: flex;
     justify-content: center;

@@ -34,6 +34,7 @@
       <app-listcontainer
                          [formGroup]="newObject.$formGroup.get(['spec', 'orchestrators'])"
                          [itemTemplate]="vcenterRowTemplate" addText="ORCHESTRATOR"
+                         [isInline]="isInline" [showDeleteButtonOnInline]="true"
                          (addItem)="addOrchestrator()" (deleteItem)="removeOrchestrator($event)">
       </app-listcontainer>
     </app-fieldcontainer>
@@ -54,8 +55,9 @@
         </ng-template>
       </p-dropdown>
     </span>
-    <div fxFlex="25px"></div>
+    <div fxFlex="15px"></div>
     <app-psmmultiselectbox fxFlex="285px" label="Datacenter Names" formControlName="namespace"
+                           [showRequired]="!isFieldEmpty(orchestrator.get(['orchestrator-name']))"
                            [hintTooltip]="'Datacenter in the orchestrator in which this network should be created in. Type \'ALL\' for all datacenters.'"
                            [options]="orchestrator.datacenterOptions || []"
                            [allOption]="orchestrator.allOption">

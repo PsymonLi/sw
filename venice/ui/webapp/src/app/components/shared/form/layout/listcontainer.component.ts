@@ -17,6 +17,8 @@ export class ListContainerComponent {
   @Input() maxiumCount: number = -1;
   @Input() rowGap: string = '15px';
   @Input() itemTemplate: TemplateRef<any>;
+  @Input() isInline: boolean = false;
+  @Input() showDeleteButtonOnInline: boolean = false;
   @Input() showAddButton: () => boolean = null;
   @Input() showDeleteButton: (index: number) => boolean = null;
 
@@ -37,6 +39,9 @@ export class ListContainerComponent {
   showDelete(index): boolean {
     if (this.showDeleteButton) {
       return this.showDeleteButton(index);
+    }
+    if (this.isInline && this.showDeleteButtonOnInline) {
+      return true;
     }
     const controls = this.formGroup.controls as any;
     return controls.length > 1;

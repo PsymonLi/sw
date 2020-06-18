@@ -458,6 +458,9 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
   }
 
   isValidIP(ip: string) {
+    if (ip && ip.trim().toLowerCase() === 'any') {
+      return true;
+    }
     return IPUtility.isValidIPWithOptionalMask(ip);
   }
 

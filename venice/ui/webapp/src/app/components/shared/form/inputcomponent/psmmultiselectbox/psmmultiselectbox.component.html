@@ -1,13 +1,17 @@
-<span [class]="getSpanClasses()">
-  <p-multiSelect appendTo="body" [class]="getComponentClass()"
-                 [options]="allOptions" [filter]="filter"
-                 [showHeader]="showHeader"
-                 [showToggleAll]="showToggleAll"
-                 [styleClass]="componentStyleClass"
-                 [disabled]="disabled" [matTooltip]="getTooltip()"
-                 [matTooltipClass]="currentTooltipClass"
-                 [(ngModel)]="innerValue" (onBlur)="onBoxTouched()"
-                 (ngModelChange)="onInnerCtrlChange()">
-  </p-multiSelect>
-  <label *ngIf="label" [for]="boxId">{{ label }}</label>
-</span>
+<div fxLayout="row" fxLayoutAlign="start end">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div fxFlex="grow" [class]="getSpanClasses()">
+    <p-multiSelect [id]="boxId" appendTo="body" [class]="getComponentClass()"
+                   [options]="allOptions" [filter]="filter"
+                   [showHeader]="showHeader"
+                   [showToggleAll]="showToggleAll"
+                   [styleClass]="componentStyleClass"
+                   [disabled]="disabled" [matTooltip]="getTooltip()"
+                   [matTooltipClass]="currentTooltipClass"
+                   [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                   (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                   (ngModelChange)="onInnerCtrlChange()">
+    </p-multiSelect>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

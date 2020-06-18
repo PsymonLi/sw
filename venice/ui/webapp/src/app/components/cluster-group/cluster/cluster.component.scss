@@ -21,7 +21,15 @@
 $table-headerheight: 55px;
 
 .cluster-alertsevents-container {
-  min-height: 600px;
+  margin: 0 10px;
+
+  app-shared-alertsevents {
+    min-height: 600px;
+
+    .alertdetail-tableheader {
+      border: none;
+    }
+  }
 }
 
 .cluster-toolbar-button {

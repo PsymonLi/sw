@@ -1,4 +1,4 @@
-<app-pagebody [icon]="bodyicon" header="Cluster Overview">
+<app-pagebody header="Cluster Overview" [icon]="bodyicon" [transparent]="true">
   <div fxFlex="none" fxLayout="column">
     <div fxFlex="none" fxLayout="row wrap" fxLayoutGap="10px"
          class="cluster-stats-charts-container">
@@ -28,9 +28,15 @@
       </div>
     </div>
   </div>
-  <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}" fxFlex
+  <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}"
        class="cluster-alertsevents-container">
-    <app-shared-alertsevents></app-shared-alertsevents>
+    <div class="detail-card-wrapper">
+      <div class="detail-card" fxLayout="column">
+        <div class="detail-card-border"></div>
+        <app-shared-alertsevents></app-shared-alertsevents>
+        <div class="detail-card-border"></div>
+      </div>
+    </div>
   </div>
 </app-pagebody>
 

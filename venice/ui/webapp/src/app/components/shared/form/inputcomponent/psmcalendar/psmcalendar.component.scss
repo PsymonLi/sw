@@ -29,15 +29,6 @@
       }
     }
 
-    &.psm-required-box {
-      width: calc(100% + 10px) !important;
-
-      p-calendar {
-        width: calc(100% - 10px) !important;
-        display: inline-block !important;
-      }
-    }
-
     &.psm-invalid-box {
       input {
         border: 1px solid #e57553 !important;
@@ -52,9 +43,11 @@
         color: #e57553 !important;
       }
     }
+  }
+}
 
-    &.ui-float-label>label {
-      left: .75em;
-    }
+.pensando-ui {
+  .ng-trigger.ui-datepicker {
+    margin-top: 5px;
   }
 }
