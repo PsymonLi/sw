@@ -302,7 +302,7 @@ static int parseboardarea(uint8_t *board_fru_data, uint32_t startoffset, uint32_
 
     // New part number starts with "DSC"
     if (part_num.find("DSC") == 0) {
-        SDK_TRACE_ERR("DSC board type");
+        SDK_TRACE_INFO("DSC board type");
         // parse custom board info ver2
         for (counter = 0;
             counter < ARRAY_SIZE(PENSANDO_VER2_CUSTOM_BOARD_INFO_AREA);
@@ -317,7 +317,7 @@ static int parseboardarea(uint8_t *board_fru_data, uint32_t startoffset, uint32_
             i += vlen;
         }
     } else {
-        SDK_TRACE_ERR("Old board");
+        SDK_TRACE_INFO("Old board");
         // parse custom board info
         for (counter = 0;
             counter < ARRAY_SIZE(PENSANDO_CUSTOM_BOARD_INFO_AREA);
@@ -384,9 +384,6 @@ static int parsefru(uint8_t *fru_data, uint32_t size)
             }
         }
     }
-
-    SDK_TRACE_ERR("returning success from parsing fru");
-
     return 0;
 
 err:
