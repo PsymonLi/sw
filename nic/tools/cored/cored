@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #set -e
 
@@ -63,7 +63,7 @@ get_build_meta() {
     if [ "$build_host" = "null" ]  || [ "$build_host_workspace" = "null" ]; then
         echo "Figuring build work space from build 'version' tag of ${build_version}."
 #       echo "Version:$build_version"
-        build_host=`hostname -s`
+        build_host=`hostname`
 
         pushd . > /dev/null
         build_host_workspace="$HOURLY_BUILD/${build_version}"
@@ -214,7 +214,7 @@ fi
 
 BIN_DIR="build/aarch64/${build_pipeline}/capri/bin/"
 
-if [ "`hostname -s`" != ${build_host} ]; then
+if [ "`hostname`" != ${build_host} ]; then
     echo "Can't access work space. Please run from the machine:${build_host}. Exiting."
     exit 1
 fi
@@ -225,7 +225,7 @@ if [ "`pwd`" != "${build_host_workspace}" ]; then
     exit 1
 fi
 
-echo "Decoding on host `hostname -s`, in work space:`pwd`"
+echo "Decoding on host `hostname`, in work space:`pwd`"
 
 # Figure if the state of the work space is mathing the tag value from
 # build of the core being debugged.
