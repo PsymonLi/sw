@@ -32,6 +32,7 @@ extern unsigned int max_slaves;
 extern unsigned int rx_copybreak;
 extern unsigned int tx_budget;
 extern unsigned int devcmd_timeout;
+extern unsigned long affinity_mask_override;
 
 struct ionic_vf {
 	u16	 index;

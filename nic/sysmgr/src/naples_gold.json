@@ -60,7 +60,7 @@
     },
     {
         "name": "network",
-        "command": "/bin/bash /nic/tools/bringup_mgmt_ifs.sh",
+        "command": "/bin/sh /nic/tools/bringup_mgmt_ifs.sh",
         "kind": "oneshot",
         "dependencies": [
             {

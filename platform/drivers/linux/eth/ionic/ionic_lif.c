@@ -448,6 +448,7 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 	dma_addr_t sg_base_pa = 0;
 	dma_addr_t q_base_pa = 0;
 	struct ionic_qcq *new;
+	unsigned int cpu;
 	int err;
 
 	*qcq = NULL;
@@ -519,13 +520,30 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 			goto err_out_free_intr;
 		}
 
-		/* try to get the irq on the local numa node first */
-		new->intr.cpu = cpumask_local_spread(new->intr.index,
-						     dev_to_node(dev));
-		if (new->intr.cpu != -1)
-			cpumask_set_cpu(new->intr.cpu,
-					&new->intr.affinity_mask);
+		if (affinity_mask_override) {
+			cpumask_copy(&new->intr.affinity_mask, cpu_none_mask);
+
+			netdev_dbg(lif->netdev, "%s: setting irq affinity_mask 0x%lx\n",
+					name, affinity_mask_override);
+			for (cpu = 0; cpu < num_present_cpus(); cpu++) {
+				if (BIT(cpu) & affinity_mask_override)
+					cpumask_set_cpu(cpu, &new->intr.affinity_mask);
+			}
+
+			/* set the affinity */
+			irq_set_affinity_hint(new->intr.vector, &new->intr.affinity_mask);
+
+		} else {
+			netdev_dbg(lif->netdev, "%s: using default irq affinity", name);
+			/* try to get the irq on the local numa node first */
+			new->intr.cpu = cpumask_local_spread(new->intr.index,
+					dev_to_node(dev));
+			if (new->intr.cpu != -1)
+				cpumask_set_cpu(new->intr.cpu,
+						&new->intr.affinity_mask);
+		}
 	} else {
+		netdev_dbg(lif->netdev, "%s: Interrupt index not assigned\n", name);
 		new->intr.index = IONIC_INTR_INDEX_NOT_ASSIGNED;
 	}
 
@@ -3003,7 +3021,6 @@ static int ionic_lif_adminq_init(struct ionic_lif *lif)
 	if (qcq->flags & IONIC_QCQ_F_INTR)
 		ionic_intr_mask(idev->intr_ctrl, qcq->intr.index,
 				IONIC_INTR_MASK_CLEAR);
-
 	qcq->flags |= IONIC_QCQ_F_INITED;
 
 	return 0;

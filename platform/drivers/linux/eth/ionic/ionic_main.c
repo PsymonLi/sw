@@ -18,7 +18,7 @@ MODULE_LICENSE("GPL");
 MODULE_VERSION(IONIC_DRV_VERSION);
 MODULE_INFO(supported, "external");
 
-unsigned int max_slaves = 0;
+unsigned int max_slaves;
 module_param(max_slaves, uint, 0400);
 MODULE_PARM_DESC(max_slaves, "Maximum number of slave lifs");
 
@@ -33,6 +33,10 @@ MODULE_PARM_DESC(tx_budget, "Number of tx completions to process per NAPI poll")
 unsigned int devcmd_timeout = DEVCMD_TIMEOUT;
 module_param(devcmd_timeout, uint, 0600);
 MODULE_PARM_DESC(devcmd_timeout, "Devcmd timeout in seconds (default 30 secs)");
+
+unsigned long affinity_mask_override;
+module_param(affinity_mask_override, ulong, 0600);
+MODULE_PARM_DESC(affinity_mask_override, "IRQ affinity mask to override (max 64 bits)");
 
 static const char *ionic_error_to_str(enum ionic_status_code code)
 {
@@ -627,9 +631,26 @@ int ionic_port_reset(struct ionic *ionic)
 
 static int __init ionic_init_module(void)
 {
+	unsigned long max_affinity = GENMASK_ULL((min(num_present_cpus(),
+					(unsigned int)(sizeof(unsigned long)*BITS_PER_BYTE))-1), 0);
+
 	pr_info("%s %s, ver %s\n",
 		IONIC_DRV_NAME, IONIC_DRV_DESCRIPTION, IONIC_DRV_VERSION);
+
 	ionic_debugfs_create();
+
+	if (affinity_mask_override) {
+		/* limit affinity mask override to the available CPUs */
+		if (affinity_mask_override > max_affinity) {
+			affinity_mask_override = (affinity_mask_override & max_affinity);
+			pr_info("limiting affinity mask to: 0x%lx\n",
+					affinity_mask_override);
+		} else {
+			pr_info("affinity_mask_override: %lx\n",
+					affinity_mask_override);
+		}
+	}
+
 	return ionic_bus_register_driver();
 }
 

@@ -39,23 +39,6 @@ get_inb_mnic0_mac_addr() {
 
 trap debug 0 1 2 3 6
 
-if [ ! -z $1 ]; then
-    affinity_val=$1
-    affinity_mask=`printf "%x" $affinity_val`
-else
-
-    #spray across all CPUs if affinity_mask is not specified by user
-    affinity_val=$(((1<<`grep "processor" /proc/cpuinfo | wc -l`)-1))
-    echo "affinity_val: $affinity_val"
-    affinity_mask=`printf "%x" $affinity_val`
-fi
-
-log "affinity_mask: $affinity_mask"
-interfaces=(int_mnic0, oob_mnic0 inb_mnic0 inb_mnic1)
-
-#two interrupts per interface (one for adminq and one for rxq)
-if_intr_cnt=$(( 2*${#interfaces[@]} ))
-
 log "Waiting for mgmt interfaces to show up"
 
 #Wait for mnic interfaces to show up
@@ -102,27 +85,13 @@ do
     sleep 1
 
     if [ $int_mnic0_up -eq 1 ] && [ $oob_mnic0_up -eq 1 ] && [ $inb_mnic0_up -eq 1 ] && [ $inb_mnic1_up -eq 1 ]; then
-        # Create an array for to store irq handlers numbers
-        irq_numbers=(`find /proc/irq  -name "*ionic*" | awk -F/ '{ print $4 }'`)
-        log "Waiting until $if_intr_cnt irq handlers to show up"
-        log "Number of irq handlers: ${#irq_numbers[@]}"
+        get_inb_mnic0_mac_addr
+        log "setting inb_mnic0 mac address as bond0 mac address"
+        ifconfig bond0 hw ether $inb_mnic0_mac_addr
+        ifconfig bond0
 
-        # Wait until all irq handlers are available before setting affinity
-        if [ ${#irq_numbers[@]} -eq "$if_intr_cnt" ]; then
-            for irq_num in ${irq_numbers[@]}
-            do
-                log "Setting irq affinity for ionic irq: $irq_num"
-                echo $affinity_mask > /proc/irq/$irq_num/smp_affinity
-            done
-
-            get_inb_mnic0_mac_addr
-            log "setting inb_mnic0 mac address as bond0 mac address"
-            ifconfig bond0 hw ether $inb_mnic0_mac_addr
-            ifconfig bond0
-
-            echo "done" > /tmp/bond0_fifo
-            break
-        fi
+        echo "done" > /tmp/bond0_fifo
+        break
     fi
 
 done

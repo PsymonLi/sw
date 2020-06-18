@@ -100,7 +100,7 @@ if [[ ! -f $PLATFORM_DIR/drivers/mnet_uio_pdrv_genirq.ko ]]; then
     exit 1
 fi
 
-insmod $PLATFORM_DIR/drivers/ionic_mnic.ko &> /var/log/pensando/ionic_mnic_load.log
+insmod $PLATFORM_DIR/drivers/ionic_mnic.ko affinity_mask_override=0xD &> /var/log/pensando/ionic_mnic_load.log
 [[ $? -ne 0 ]] && echo "Aborting Sysinit - Unable to load mnic driver!" && exit 1
 
 insmod $PLATFORM_DIR/drivers/mnet_uio_pdrv_genirq.ko &> /var/log/pensando/mnet_uio_pdrv_genirq_load.log
