@@ -148,7 +148,7 @@ func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Int
 	if err == nil {
 		return sm.OnInterfaceUpdateReq(nodeID, agentNetif)
 	}
-	// convert agent's netif struct to the api object
+	log.Infof("Creating network interface %v", agentNetif.Name)
 	netif := convertNetifObj(nodeID, agentNetif)
 
 	agentNetif.Status.DSC = nodeID
@@ -993,9 +993,13 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceCreate(ctkitNetif *ctkit.Networ
 	}
 	ifcfg.pushObject = pushObj
 
-	err = sma.updateMirror(ifcfg)
-	if err != nil {
-		log.Errorf("Error updating interface mirror %v", err)
+	if interfaceMirroringAllowed(ctkitNetif.NetworkInterface.Spec.Type) {
+		smgrMirrorInterface.Lock()
+		err = sma.updateMirror(ifcfg)
+		if err != nil {
+			log.Errorf("Error updating interface mirror %v", err)
+		}
+		smgrMirrorInterface.Unlock()
 	}
 
 	return nil
@@ -1019,7 +1023,9 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceUpdate(ctkitNetif *ctkit.Networ
 		ctkitNetif.ObjectMeta = nctkitNetif.ObjectMeta
 		sma.updateLabelMap(currIntf)
 		currIntf.NetworkInterfaceState.Labels = nctkitNetif.Labels
+		smgrMirrorInterface.Lock()
 		sma.updateMirror(currIntf)
+		smgrMirrorInterface.Unlock()
 	}
 	ctkitNetif.ObjectMeta = nctkitNetif.ObjectMeta
 	ctkitNetif.Spec = nctkitNetif.Spec
