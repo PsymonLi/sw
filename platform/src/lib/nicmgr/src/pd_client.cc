@@ -727,7 +727,7 @@ PdClient::program_qstate(struct queue_info* queue_info,
         return SDK_RET_ERR;
     }
 
-    // Penable the lif - programs lif qstate map in hw
+    // enable the lif - programs lif qstate map in hw
     lm_->enable(lif_info->lif_id);
 
     NIC_LOG_DEBUG("lif-{}: Programming qstate completed", lif_info->lif_id);

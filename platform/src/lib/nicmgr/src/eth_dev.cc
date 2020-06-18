@@ -377,7 +377,8 @@ Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
 }
 
 void
-Eth::UpgradeHitlessInit(struct eth_devspec *spec) {
+Eth::UpgradeHitlessInit(struct eth_devspec *spec)
+{
     uint64_t        lif_id;
     eth_lif_res_t   *lif_res;
     EthLif          *eth_lif;
@@ -423,9 +424,24 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec) {
     // config stats and start services
     PortConfigMem(false);
     PortStatusMem(false);
-    DevcmdInit();
-    // DevcmdStart(); TODO @karthi - commented out for SIM working
-    StatsInit();
+
+}
+
+void
+Eth::ServiceControl(bool start)
+{
+    if (start) {
+        DevcmdInit();
+        DevcmdStart();
+        StatsInit();
+    } else {
+        DevcmdStop();
+    }
+
+    for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        EthLif *eth_lif = it->second;
+        eth_lif->ServiceControl(start);
+    }
 }
 
 void
@@ -1165,7 +1181,7 @@ devcmd_done:
     ts_diff = sdk::timestamp_diff(&end_ts, &start_ts);
     NIC_LOG_DEBUG("DevCmd Time taken: {}s.{}ns", ts_diff.tv_sec, ts_diff.tv_nsec);
     if (ts_diff.tv_sec >= DEVCMD_TIMEOUT) {
-        NIC_LOG_ERR("Fatal Error: Devmd took more than 2 secs");
+        NIC_LOG_ERR("Fatal Error: Devmd took more than {}secs", DEVCMD_TIMEOUT);
     }
     NIC_HEADER_TRACE("Devcmd End");
 }
@@ -2652,6 +2668,16 @@ Eth::UpdateQStatus(bool enable)
     for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
         EthLif *eth_lif = it->second;
         eth_lif->UpdateQStatus(enable);
+    }
+}
+
+void
+Eth::UpgradeSyncHandler(void)
+{
+    NIC_LOG_DEBUG("Eth Device upgrade sync Handler");
+    for (auto it = lif_map.cbegin(); it != lif_map.cend(); it++) {
+        EthLif *eth_lif = it->second;
+        eth_lif->UpgradeSyncHandler();
     }
 }
 

@@ -121,7 +121,9 @@ class EthLif
 
     void SetHalClient(devapi *dev_api);
 
+    void UpgradeSyncHandler(void);
     void UpdateQStatus(bool enable);
+    void ServiceControl(bool start);
 
     bool IsLifQuiesced();
 
@@ -175,6 +177,7 @@ private:
     Eth *dev;
     std::unordered_map<uint64_t, EthLif *> subscribers_map;
     static sdk::lib::indexer *fltr_allocator;
+    bool device_inited;
     // PD Info
     PdClient *pd;
     // HAL Info

@@ -168,7 +168,9 @@ public:
     void LinkEventHandler(port_status_t *evd);
     void XcvrEventHandler(port_status_t *evd);
     void QuiesceEventHandler(bool quiesce);
+    void UpgradeSyncHandler(void);
     void UpdateQStatus (bool enable);
+    void ServiceControl(bool start);
     void HalEventHandler(bool status);
     void DelphiMountEventHandler(bool mounted);
     status_code_t Reset();

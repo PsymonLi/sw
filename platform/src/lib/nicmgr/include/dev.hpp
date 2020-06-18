@@ -46,6 +46,9 @@ enum UpgradeEvent {
     UPG_EVENT_QUIESCE,
     UPG_EVENT_DISABLEQ,
     UPG_EVENT_ENABLEQ,
+    UPG_EVENT_SERVICE_START,
+    UPG_EVENT_SERVICE_STOP,
+    UPG_EVENT_SYNC,
     UPG_EVENT_DEVICE_RESET
 };
 
@@ -167,6 +170,7 @@ public:
     UpgradeState GetUpgradeState();
     bool UpgradeCompatCheck();
     void SetFwStatus(uint8_t fw_status);
+    void ServiceControl(bool start);
 
     // device list
     std::vector<struct EthDevInfo *> GetEthDevStateInfo();
