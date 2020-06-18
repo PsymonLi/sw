@@ -219,6 +219,7 @@ lif_impl::set_admin_state(lif_state_t state) {
 
     // update the admin state
     admin_state_ = state;
+#if 0
     // and notify lif update
     if ((type_ == sdk::platform::LIF_TYPE_HOST_MGMT) ||
         (type_ == sdk::platform::LIF_TYPE_HOST)) {
@@ -227,6 +228,7 @@ lif_impl::set_admin_state(lif_state_t state) {
         pds_lif_to_lif_status(&event.lif_info.status, this);
         g_pds_state.event_notify(&event);
     }
+#endif
 }
 
 #define nacl_redirect_action    action_u.nacl_nacl_redirect
