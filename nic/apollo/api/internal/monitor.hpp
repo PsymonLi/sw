@@ -173,7 +173,7 @@ memory_event_cb (system_memory_t *system_memory)
 void
 panic_event_cb (void)
 {
-    operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_PANIC,
+    operd::alerts::alert_recorder::get()->alert(operd::alerts::NAPLES_PANIC_EVENT,
                                                 "Panic occurred on DSC "
                                                 "on the previous boot");
 }

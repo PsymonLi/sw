@@ -426,6 +426,20 @@ func init() {
 		Desc:       "Memory usage of the partition is below threshold percentage",
 		SuppressMM: false}
 
+	eventTypes[MEM_TEMP_ABOVE_THRESHOLD] = &EventTypeAttributes{
+		EType:      MEM_TEMP_ABOVE_THRESHOLD.String(),
+		Severity:   "critical",
+		Category:   "system",
+		Desc:       "DSC memory temperature is above the critical threshold. System performance may be degraded",
+		SuppressMM: false}
+
+	eventTypes[MEM_TEMP_BELOW_THRESHOLD] = &EventTypeAttributes{
+		EType:      MEM_TEMP_BELOW_THRESHOLD.String(),
+		Severity:   "info",
+		Category:   "system",
+		Desc:       "DSC memory temperature has fallen below the critical threshold",
+		SuppressMM: false}
+
 	eventTypes[DISK_THRESHOLD_EXCEEDED] = &EventTypeAttributes{
 		EType:      DISK_THRESHOLD_EXCEEDED.String(),
 		Severity:   "critical",
@@ -536,6 +550,27 @@ func init() {
 		Severity:   "critical",
 		Category:   "cluster",
 		Desc:       "DSC Max Session Limit reached",
+		SuppressMM: false}
+
+	eventTypes[VNIC_SESSION_LIMIT_EXCEEDED] = &EventTypeAttributes{
+		EType:      VNIC_SESSION_LIMIT_EXCEEDED.String(),
+		Severity:   "critical",
+		Category:   "",
+		Desc:       "Session count for vnic reached limit, new sessions will be dropped",
+		SuppressMM: false}
+
+	eventTypes[VNIC_SESSION_THRESHOLD_EXCEEDED] = &EventTypeAttributes{
+		EType:      VNIC_SESSION_THRESHOLD_EXCEEDED.String(),
+		Severity:   "warn",
+		Category:   "",
+		Desc:       "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached",
+		SuppressMM: false}
+
+	eventTypes[VNIC_SESSION_WITHIN_THRESHOLD] = &EventTypeAttributes{
+		EType:      VNIC_SESSION_WITHIN_THRESHOLD.String(),
+		Severity:   "info",
+		Category:   "",
+		Desc:       "Session count for vnic falls within the threshold",
 		SuppressMM: false}
 
 	eventTypes[ORCH_CONNECTION_ERROR] = &EventTypeAttributes{

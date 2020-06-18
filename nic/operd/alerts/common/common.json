@@ -48,7 +48,7 @@
         "description": "DSC temperature crossed the fatal threshold and cattrip is triggered, resetting the system"
     },
     {
-        "name": "NAPLES_PANIC",
+        "name": "NAPLES_PANIC_EVENT",
         "category": "System",
         "severity": "CRITICAL",
         "description": "DSC panic occurred on previous boot"

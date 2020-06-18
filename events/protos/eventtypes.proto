@@ -298,6 +298,13 @@ enum EventTypes {
                                                     (severity) = INFO,
                                                     (desc) = "Memory usage of the partition is below threshold percentage"];
 
+    MEM_TEMP_ABOVE_THRESHOLD        = 519 [(category)    = System,
+                                           (severity)    = CRITICAL,
+                                           (desc)        = "DSC memory temperature is above the critical threshold. System performance may be degraded"];
+    MEM_TEMP_BELOW_THRESHOLD        = 520 [(category)    = System,
+                                           (severity)    = INFO,
+                                           (desc)        = "DSC memory temperature has fallen below the critical threshold"];
+
      // ------------------------------ Resource events -------------------------- //
      DISK_THRESHOLD_EXCEEDED         = 601 [(category) = Resource,
                                             (severity) = CRITICAL,
@@ -364,6 +371,16 @@ enum EventTypes {
     DSC_MAX_SESSION_LIMIT_REACHED             = 910 [(category) = Cluster,
                                                      (severity) = CRITICAL,
                                                      (desc)     = "DSC Max Session Limit reached"];
+
+    VNIC_SESSION_LIMIT_EXCEEDED               = 911 [(category) = Resource,
+                                                     (severity) = CRITICAL,
+                                                     (desc)     = "Session count for vnic reached limit, new sessions will be dropped"];
+    VNIC_SESSION_THRESHOLD_EXCEEDED           = 912 [(category) = Resource,
+                                                     (severity) = WARN,
+                                                     (desc)     = "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached"];
+    VNIC_SESSION_WITHIN_THRESHOLD             = 913 [(category) = Resource,
+                                                     (severity) = INFO,
+                                                     (desc)     = "Session count for vnic falls within the threshold"];
 
     // ------------------------- Orchestration events ------------------------- //
     ORCH_CONNECTION_ERROR                  = 1001 [(category) = Orchestration,

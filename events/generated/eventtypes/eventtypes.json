@@ -59,6 +59,21 @@
    "Name": "ORCH_UNSUPPORTED_VERSION",
    "Severity": "warn",
    "Desc": "Unsupported orchestrator version"
+  },
+  {
+   "Name": "VNIC_SESSION_LIMIT_EXCEEDED",
+   "Severity": "critical",
+   "Desc": "Session count for vnic reached limit, new sessions will be dropped"
+  },
+  {
+   "Name": "VNIC_SESSION_THRESHOLD_EXCEEDED",
+   "Severity": "warn",
+   "Desc": "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached"
+  },
+  {
+   "Name": "VNIC_SESSION_WITHIN_THRESHOLD",
+   "Severity": "info",
+   "Desc": "Session count for vnic falls within the threshold"
   }
  ],
  "cluster": [
@@ -379,6 +394,16 @@
    "Name": "FLOWLOGS_REPORTING_ERROR",
    "Severity": "warn",
    "Desc": "Flowlogs could not be reported"
+  },
+  {
+   "Name": "MEM_TEMP_ABOVE_THRESHOLD",
+   "Severity": "critical",
+   "Desc": "DSC memory temperature is above the critical threshold. System performance may be degraded"
+  },
+  {
+   "Name": "MEM_TEMP_BELOW_THRESHOLD",
+   "Severity": "info",
+   "Desc": "DSC memory temperature has fallen below the critical threshold"
   },
   {
    "Name": "NAPLES_CATTRIP_INTERRUPT",

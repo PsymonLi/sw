@@ -36,7 +36,11 @@ func convertToVeniceAlert(nEvt *operdapi.Alert) *evtsapi.Event {
 	// until then use current time instead of nEvt.GetTimestamp()
 	ts := gogoproto.TimestampNow()
 
-	evtType := eventtypes.EventType_value[nEvt.GetName()]
+	evtType, found := eventtypes.EventType_value[nEvt.GetName()]
+	if !found {
+		log.Errorf("Failed to find event type for alert %s", nEvt.GetName())
+		return nil
+	}
 	eTypeAttrs := eventtypes.GetEventTypeAttrs(eventtypes.EventType(evtType))
 	vAlert := &evtsapi.Event{
 		TypeMeta: api.TypeMeta{Kind: "Event"},
@@ -96,6 +100,10 @@ func queryAlerts(ctx context.Context, evtsDispatcher events.Dispatcher, stream o
 		processAlert(alert)
 		// convert to venice alert format
 		vAlert := convertToVeniceAlert(alert)
+		if vAlert == nil {
+			log.Errorf("Failed to convert alert %+v", alert)
+			continue
+		}
 		// send to dispatcher
 		if err := evtsDispatcher.Action(*vAlert); err != nil {
 			log.Error(errors.Wrapf(types.ErrAlertsFwd,

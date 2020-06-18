@@ -20,6 +20,9 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'ORCH_INVALID_ACTION',
     'ORCH_LOGIN_FAILURE',
     'ORCH_UNSUPPORTED_VERSION',
+    'VNIC_SESSION_LIMIT_EXCEEDED',
+    'VNIC_SESSION_THRESHOLD_EXCEEDED',
+    'VNIC_SESSION_WITHIN_THRESHOLD',
   ],
   cluster: [
     'AUDITING_FAILED',
@@ -92,6 +95,8 @@ export const categoryToEventType: { [cat: string]: string[] } = {
     'FLOWLOGS_DROPPED',
     'FLOWLOGS_RATE_LIMITED',
     'FLOWLOGS_REPORTING_ERROR',
+    'MEM_TEMP_ABOVE_THRESHOLD',
+    'MEM_TEMP_BELOW_THRESHOLD',
     'NAPLES_CATTRIP_INTERRUPT',
     'NAPLES_ERR_PCIEHEALTH_EVENT',
     'NAPLES_FATAL_INTERRUPT',
@@ -172,6 +177,21 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "ORCH_UNSUPPORTED_VERSION",
       "Severity": EventsEvent_severity.warn,
       "Desc": "Unsupported orchestrator version",
+  },
+  'VNIC_SESSION_LIMIT_EXCEEDED' : {
+      "Name": "VNIC_SESSION_LIMIT_EXCEEDED",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "Session count for vnic reached limit, new sessions will be dropped",
+  },
+  'VNIC_SESSION_THRESHOLD_EXCEEDED' : {
+      "Name": "VNIC_SESSION_THRESHOLD_EXCEEDED",
+      "Severity": EventsEvent_severity.warn,
+      "Desc": "Session count for vnic exceeds threshold, new sessions will be dropped once limit is reached",
+  },
+  'VNIC_SESSION_WITHIN_THRESHOLD' : {
+      "Name": "VNIC_SESSION_WITHIN_THRESHOLD",
+      "Severity": EventsEvent_severity.info,
+      "Desc": "Session count for vnic falls within the threshold",
   },
   'AUDITING_FAILED' : {
       "Name": "AUDITING_FAILED",
@@ -482,6 +502,16 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "FLOWLOGS_REPORTING_ERROR",
       "Severity": EventsEvent_severity.warn,
       "Desc": "Flowlogs could not be reported",
+  },
+  'MEM_TEMP_ABOVE_THRESHOLD' : {
+      "Name": "MEM_TEMP_ABOVE_THRESHOLD",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC memory temperature is above the critical threshold. System performance may be degraded",
+  },
+  'MEM_TEMP_BELOW_THRESHOLD' : {
+      "Name": "MEM_TEMP_BELOW_THRESHOLD",
+      "Severity": EventsEvent_severity.info,
+      "Desc": "DSC memory temperature has fallen below the critical threshold",
   },
   'NAPLES_CATTRIP_INTERRUPT' : {
       "Name": "NAPLES_CATTRIP_INTERRUPT",
