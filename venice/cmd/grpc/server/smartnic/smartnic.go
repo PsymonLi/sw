@@ -526,7 +526,7 @@ func (s *RPCServer) RegisterNIC(stream grpc.SmartNICRegistration_RegisterNICServ
 				nicObj.Spec.RoutingConfig = rtCfg
 			} else {
 				nicObj.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_PENDING.String()
-				nicObj.Status.AdmissionPhaseReason = "SmartNIC waiting for manual admission"
+				nicObj.Status.AdmissionPhaseReason = "DSC waiting for manual admission"
 			}
 		}
 
