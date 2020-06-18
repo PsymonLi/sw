@@ -31,5 +31,6 @@ void pcieportpd_intr_enable(const int port);
 void pcieportpd_intr_disable(const int port);
 int pcieportpd_intr_init(const int port);
 int pcieportpd_poll_init(const int port);
+void pcieportpd_intr_clear_sbus_ecc(void);
 
 #endif /* __PCIEPORTPD_H__ */

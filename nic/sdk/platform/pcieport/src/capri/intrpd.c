@@ -495,6 +495,15 @@ pcieportpd_intr_inherit(pcieport_t *p)
     pcieport_fsm_init(p, initst);
 }
 
+void
+pcieportpd_intr_clear_sbus_ecc(void)
+{
+    const int pcsd_ecc_ints = (PP_INTREGF_(PPSD_SBE) |
+                               PP_INTREGF_(PPSD_DBE));
+
+    pal_reg_wr32(PP_(INT_PP_INTREG, 0), pcsd_ecc_ints);
+}
+
 #define MAC_INTRS       (MAC_INTREGF_(RST_UP2DN) | \
                          MAC_INTREGF_(LINK_DN2UP) | \
                          MAC_INTREGF_(SEC_BUSNUM_CHANGED) | \

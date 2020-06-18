@@ -274,6 +274,9 @@ pcieport_onetime_init(pcieport_info_t *pi, pciemgr_initmode_t initmode)
         return 0;
     }
 
+    /* serdesfw download can generate sbus ecc error interrupts */
+    pcieportpd_intr_clear_sbus_ecc();
+
     pi->version = PCIEPORT_VERSION;
     pi->serdes_init_always = pcieport_param_ull("PCIE_SERDES_INIT_ALWAYS", 0);
 

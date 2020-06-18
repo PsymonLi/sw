@@ -254,6 +254,9 @@ pcieportpd_serdes_init(void)
     r = cap_pcie_serdes_setup(0, 0, gen == 1, &ctx);
     pciesys_sbus_unlock();
 
+    /* serdesfw download can generate sbus ecc error interrupts */
+    pcieportpd_intr_clear_sbus_ecc();
+
     /* verify crc */
     if (r >= 0) {
         const uint16_t lanemask = 0xffff;

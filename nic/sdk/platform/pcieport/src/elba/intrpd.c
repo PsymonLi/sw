@@ -416,6 +416,12 @@ pcieportpd_intr_inherit(pcieport_t *p)
     pcieport_fsm_init(p, initst);
 }
 
+void
+pcieportpd_intr_clear_sbus_ecc(void)
+{
+    /* XXX ELBA-TODO */
+}
+
 #define MAC_INTRS       (MAC_INTREGF_(RST_UP2DN) | \
                          MAC_INTREGF_(LINK_DN2UP) | \
                          MAC_INTREGF_(SEC_BUSNUM_CHANGED) | \
