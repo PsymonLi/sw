@@ -173,12 +173,7 @@ populate_port_info (uint32_t phy_port, pds_port_info_t *port_info)
     } else {
         port_info->speed = g_pds_state.catalogue()->port_speed_fp(phy_port);
         port_info->fec_type = g_pds_state.catalogue()->port_fec_type_fp(phy_port);
-        if (port_info->speed == port_speed_t::PORT_SPEED_50G) {
-            // Disable AN for 50G
-            port_info->autoneg_en = false;
-        } else {
-            port_info->autoneg_en = true;
-        }
+        port_info->autoneg_en = g_pds_state.catalogue()->port_autoneg_cfg_fp(phy_port);
     }
     port_info->debounce_timeout = 0;    /**< 0 implies debounce disabled */
     port_info->mtu = 0;    /**< default will be set to max mtu */

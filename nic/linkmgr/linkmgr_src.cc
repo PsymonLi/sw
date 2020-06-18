@@ -268,6 +268,7 @@ linkmgr_create_ports (sdk::linkmgr::linkmgr_cfg_t *sdk_cfg)
 
         port_args.port_type = catalog->port_type_fp(fp_port);
         port_args.port_speed = catalog->port_speed_fp(fp_port);
+        port_args.auto_neg_cfg = catalog->port_autoneg_cfg_fp(fp_port);
         port_args.fec_type = catalog->port_fec_type_fp(fp_port);
         port_args.num_lanes = catalog->num_lanes_fp(fp_port);
         port_args.mac_id = catalog->mac_id(logical_port, 0);

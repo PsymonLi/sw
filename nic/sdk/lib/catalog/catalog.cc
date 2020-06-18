@@ -143,6 +143,16 @@ catalog::catalog_admin_st_to_port_admin_st(std::string admin_state)
     return port_admin_state_t::PORT_ADMIN_STATE_UP;
 }
 
+bool
+catalog::catalog_autoneg_st_to_port_autoneg_st(std::string autoneg_cfg)
+{
+    if (autoneg_cfg == "disable") {
+        return false;
+    }
+    // default is autoneg enable
+    return true;
+}
+
 port_fec_type_t
 catalog::catalog_fec_type_to_port_fec_type (std::string type)
 {
@@ -189,6 +199,9 @@ catalog::populate_fp_port(ptree::value_type &fp_port,
     } else {
         fp_port_p->speed = catalog_speed_to_port_speed(speed);
     }
+
+    std::string autoneg_state = fp_port.second.get<std::string>("autoneg", "");
+    fp_port_p->autoneg_cfg = catalog_autoneg_st_to_port_autoneg_st(autoneg_state);
 
     std::string fec = fp_port.second.get<std::string>("fec", "");
 
@@ -907,6 +920,12 @@ port_speed_t
 catalog::port_speed_fp (uint32_t fp_port)
 {
     return catalog_db_.fp_ports[fp_port-1].speed;
+}
+
+bool
+catalog::port_autoneg_cfg_fp (uint32_t fp_port)
+{
+    return catalog_db_.fp_ports[fp_port-1].autoneg_cfg;
 }
 
 port_fec_type_t

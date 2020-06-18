@@ -95,6 +95,7 @@ typedef struct catalog_fp_port_s {
     port_admin_state_t admin_state;
     port_speed_t speed;
     port_fec_type_t fec_type;
+    bool autoneg_cfg;
 } catalog_fp_port_t;
 
 typedef struct catalog_asic_port_s {
@@ -204,6 +205,7 @@ public:
     static port_type_t catalog_type_to_port_type(std::string type);
     static port_fec_type_t catalog_fec_type_to_port_fec_type(std::string type);
     static port_admin_state_t catalog_admin_st_to_port_admin_st(std::string admin_state);
+    static bool catalog_autoneg_st_to_port_autoneg_st(std::string autoneg_cfg);
 
     static platform_type_t catalog_platform_type_to_platform_type(
                                             std::string platform_type);
@@ -285,6 +287,7 @@ public:
     port_admin_state_t  admin_state_fp(uint32_t fp_port);
     port_speed_t port_speed_fp(uint32_t fp_port);
     port_fec_type_t port_fec_type_fp(uint32_t fp_port);
+    bool port_autoneg_cfg_fp(uint32_t fp_port);
     uint32_t     num_lanes_fp(uint32_t fp_port);
     uint32_t     breakout_modes(uint32_t fp_port);
 

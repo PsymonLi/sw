@@ -38,33 +38,35 @@ def Main(step):
             return api.types.status.FAILURE
         
         # set port speeds/config for uplink ports
+        # For Vomero card alone, the default speed is 50G, fec none, autoneg disable
+        # For all other cards, default is 100G. For athena IOTA, we configure 50G speed explicitly here to test 50g
         req = api.Trigger_CreateExecuteCommandsRequest()
 
         cmd = "pdsctl debug update port"
         debug_cmd_substr = "debug update port"
         
-        up0_speed_args = '--port ' + up0_uuid + ' --speed 100g --fec-type rs' 
+        up0_speed_args = '--port ' + up0_uuid + ' --speed 50g --fec-type none'
         ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
                                             up0_speed_args, yaml=False)
         if ret != True:
             api.Logger.error("%s %s command failed" % (cmd, up0_speed_args))
             return api.types.status.FAILURE
 
-        up0_autoneg_args = ' --port ' + up0_uuid + ' --auto-neg enable'
+        up0_autoneg_args = ' --port ' + up0_uuid + ' --auto-neg disable'
         ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
                                             up0_autoneg_args, yaml=False)
         if ret != True:
             api.Logger.error("%s %s command failed" % (cmd, up0_autoneg_args))
             return api.types.status.FAILURE
 
-        up1_speed_args = '--port ' + up1_uuid + ' --speed 100g --fec-type rs' 
+        up1_speed_args = '--port ' + up1_uuid + ' --speed 50g --fec-type none'
         ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
                                             up1_speed_args, yaml=False)
         if ret != True:
             api.Logger.error("%s %s command failed" % (cmd, up1_speed_args))
             return api.types.status.FAILURE
 
-        up1_autoneg_args = ' --port ' + up1_uuid + ' --auto-neg enable'
+        up1_autoneg_args = ' --port ' + up1_uuid + ' --auto-neg disable'
         ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
                                             up1_autoneg_args, yaml=False)
         if ret != True:
