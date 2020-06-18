@@ -1015,9 +1015,9 @@ void inst_t::process_arq_new ()
             }
 
             if ((drop_pkt == false) && hal::g_session_stats &&
-                unlikely(hal::g_session_stats[id_].total_active >= max_sessions_)) {
+                unlikely(hal::g_session_stats[id_].total_active_sessions >= max_sessions_)) {
                 drop_pkt = true;
-                hal::g_session_stats[id_].num_dsc_limit_drops++;
+                hal::g_session_stats[id_].dsc_session_limit_drop_count++;
                 stats_.fte_hbm_stats->qstats.max_session_drop_pkts++;
                 ctx_->set_drop();
             }

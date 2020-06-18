@@ -18,18 +18,18 @@ def SetTestSettings(tc):
     if tc.proto == 'udp':
         tc.flood_proto = 'tcp'
         tc.timeout_field = 'tcp-connection-setup'
-        tc.metric_field = 'num_tcp_half_open'
+        tc.metric_field = 'num_tcp_half_open_sessions'
         test_timeout = '60s'
     elif tc.proto == 'icmp':
         tc.flood_proto = 'udp'
         tc.timeout_field = 'udp-timeout'
         test_timeout = '200s'
-        tc.metric_field = 'num_udp'
+        tc.metric_field = 'num_udp_sessions'
     elif tc.proto == 'tcp':
         tc.flood_proto = 'icmp'
         tc.timeout_field = 'icmp-timeout'
         test_timeout = '200s'
-        tc.metric_field = 'num_icmp'
+        tc.metric_field = 'num_icmp_sessions'
     else:
         return api.types.status.FAILURE
     tc.timeout = timeout_utils.get_timeout_val(tc.timeout_field)

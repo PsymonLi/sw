@@ -523,19 +523,19 @@ type SessionSummaryMetrics struct {
 
 	key uint64
 
-	TotalActive metrics.Counter
+	TotalActiveSessions metrics.Counter
 
-	NumL2 metrics.Counter
+	NumL2Sessions metrics.Counter
 
-	NumTcp metrics.Counter
+	NumTcpSessions metrics.Counter
 
-	NumUdp metrics.Counter
+	NumUdpSessions metrics.Counter
 
-	NumIcmp metrics.Counter
+	NumIcmpSessions metrics.Counter
 
-	NumSecurityPolicyDrops metrics.Counter
+	NumDropSessions metrics.Counter
 
-	NumAged metrics.Counter
+	NumAgedSessions metrics.Counter
 
 	NumTcpResets metrics.Counter
 
@@ -543,21 +543,21 @@ type SessionSummaryMetrics struct {
 
 	NumTcpCxnsetupTimeouts metrics.Counter
 
-	NumCreateErrors metrics.Counter
+	NumSessionCreateErrors metrics.Counter
 
-	NumTcpHalfOpen metrics.Counter
+	NumTcpHalfOpenSessions metrics.Counter
 
-	NumOtherActive metrics.Counter
+	NumOtherActiveSessions metrics.Counter
 
-	NumTcpLimitDrops metrics.Counter
+	NumTcpSessionLimitDrops metrics.Counter
 
-	NumUdpLimitDrops metrics.Counter
+	NumUdpSessionLimitDrops metrics.Counter
 
-	NumIcmpLimitDrops metrics.Counter
+	NumIcmpSessionLimitDrops metrics.Counter
 
-	NumOtherLimitDrops metrics.Counter
+	NumOtherSessionLimitDrops metrics.Counter
 
-	NumDscLimitDrops metrics.Counter
+	NumDscSessionLimitDrops metrics.Counter
 
 	// private state
 	metrics gometrics.Metrics
@@ -571,19 +571,19 @@ func (mtr *SessionSummaryMetrics) GetKey() uint64 {
 func (mtr *SessionSummaryMetrics) Size() int {
 	sz := 0
 
-	sz += mtr.TotalActive.Size()
+	sz += mtr.TotalActiveSessions.Size()
 
-	sz += mtr.NumL2.Size()
+	sz += mtr.NumL2Sessions.Size()
 
-	sz += mtr.NumTcp.Size()
+	sz += mtr.NumTcpSessions.Size()
 
-	sz += mtr.NumUdp.Size()
+	sz += mtr.NumUdpSessions.Size()
 
-	sz += mtr.NumIcmp.Size()
+	sz += mtr.NumIcmpSessions.Size()
 
-	sz += mtr.NumSecurityPolicyDrops.Size()
+	sz += mtr.NumDropSessions.Size()
 
-	sz += mtr.NumAged.Size()
+	sz += mtr.NumAgedSessions.Size()
 
 	sz += mtr.NumTcpResets.Size()
 
@@ -591,21 +591,21 @@ func (mtr *SessionSummaryMetrics) Size() int {
 
 	sz += mtr.NumTcpCxnsetupTimeouts.Size()
 
-	sz += mtr.NumCreateErrors.Size()
+	sz += mtr.NumSessionCreateErrors.Size()
 
-	sz += mtr.NumTcpHalfOpen.Size()
+	sz += mtr.NumTcpHalfOpenSessions.Size()
 
-	sz += mtr.NumOtherActive.Size()
+	sz += mtr.NumOtherActiveSessions.Size()
 
-	sz += mtr.NumTcpLimitDrops.Size()
+	sz += mtr.NumTcpSessionLimitDrops.Size()
 
-	sz += mtr.NumUdpLimitDrops.Size()
+	sz += mtr.NumUdpSessionLimitDrops.Size()
 
-	sz += mtr.NumIcmpLimitDrops.Size()
+	sz += mtr.NumIcmpSessionLimitDrops.Size()
 
-	sz += mtr.NumOtherLimitDrops.Size()
+	sz += mtr.NumOtherSessionLimitDrops.Size()
 
-	sz += mtr.NumDscLimitDrops.Size()
+	sz += mtr.NumDscSessionLimitDrops.Size()
 
 	return sz
 }
@@ -616,26 +616,26 @@ func (mtr *SessionSummaryMetrics) Unmarshal() error {
 
 	gometrics.DecodeScalarKey(&mtr.key, mtr.metrics.GetKey())
 
-	mtr.TotalActive = mtr.metrics.GetCounter(offset)
-	offset += mtr.TotalActive.Size()
+	mtr.TotalActiveSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.TotalActiveSessions.Size()
 
-	mtr.NumL2 = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumL2.Size()
+	mtr.NumL2Sessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumL2Sessions.Size()
 
-	mtr.NumTcp = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumTcp.Size()
+	mtr.NumTcpSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumTcpSessions.Size()
 
-	mtr.NumUdp = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumUdp.Size()
+	mtr.NumUdpSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumUdpSessions.Size()
 
-	mtr.NumIcmp = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumIcmp.Size()
+	mtr.NumIcmpSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumIcmpSessions.Size()
 
-	mtr.NumSecurityPolicyDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumSecurityPolicyDrops.Size()
+	mtr.NumDropSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumDropSessions.Size()
 
-	mtr.NumAged = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumAged.Size()
+	mtr.NumAgedSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumAgedSessions.Size()
 
 	mtr.NumTcpResets = mtr.metrics.GetCounter(offset)
 	offset += mtr.NumTcpResets.Size()
@@ -646,29 +646,29 @@ func (mtr *SessionSummaryMetrics) Unmarshal() error {
 	mtr.NumTcpCxnsetupTimeouts = mtr.metrics.GetCounter(offset)
 	offset += mtr.NumTcpCxnsetupTimeouts.Size()
 
-	mtr.NumCreateErrors = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumCreateErrors.Size()
+	mtr.NumSessionCreateErrors = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumSessionCreateErrors.Size()
 
-	mtr.NumTcpHalfOpen = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumTcpHalfOpen.Size()
+	mtr.NumTcpHalfOpenSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumTcpHalfOpenSessions.Size()
 
-	mtr.NumOtherActive = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumOtherActive.Size()
+	mtr.NumOtherActiveSessions = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumOtherActiveSessions.Size()
 
-	mtr.NumTcpLimitDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumTcpLimitDrops.Size()
+	mtr.NumTcpSessionLimitDrops = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumTcpSessionLimitDrops.Size()
 
-	mtr.NumUdpLimitDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumUdpLimitDrops.Size()
+	mtr.NumUdpSessionLimitDrops = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumUdpSessionLimitDrops.Size()
 
-	mtr.NumIcmpLimitDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumIcmpLimitDrops.Size()
+	mtr.NumIcmpSessionLimitDrops = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumIcmpSessionLimitDrops.Size()
 
-	mtr.NumOtherLimitDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumOtherLimitDrops.Size()
+	mtr.NumOtherSessionLimitDrops = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumOtherSessionLimitDrops.Size()
 
-	mtr.NumDscLimitDrops = mtr.metrics.GetCounter(offset)
-	offset += mtr.NumDscLimitDrops.Size()
+	mtr.NumDscSessionLimitDrops = mtr.metrics.GetCounter(offset)
+	offset += mtr.NumDscSessionLimitDrops.Size()
 
 	return nil
 }
@@ -677,40 +677,40 @@ func (mtr *SessionSummaryMetrics) Unmarshal() error {
 func (mtr *SessionSummaryMetrics) getOffset(fldName string) int {
 	var offset int
 
-	if fldName == "TotalActive" {
+	if fldName == "TotalActiveSessions" {
 		return offset
 	}
-	offset += mtr.TotalActive.Size()
+	offset += mtr.TotalActiveSessions.Size()
 
-	if fldName == "NumL2" {
+	if fldName == "NumL2Sessions" {
 		return offset
 	}
-	offset += mtr.NumL2.Size()
+	offset += mtr.NumL2Sessions.Size()
 
-	if fldName == "NumTcp" {
+	if fldName == "NumTcpSessions" {
 		return offset
 	}
-	offset += mtr.NumTcp.Size()
+	offset += mtr.NumTcpSessions.Size()
 
-	if fldName == "NumUdp" {
+	if fldName == "NumUdpSessions" {
 		return offset
 	}
-	offset += mtr.NumUdp.Size()
+	offset += mtr.NumUdpSessions.Size()
 
-	if fldName == "NumIcmp" {
+	if fldName == "NumIcmpSessions" {
 		return offset
 	}
-	offset += mtr.NumIcmp.Size()
+	offset += mtr.NumIcmpSessions.Size()
 
-	if fldName == "NumSecurityPolicyDrops" {
+	if fldName == "NumDropSessions" {
 		return offset
 	}
-	offset += mtr.NumSecurityPolicyDrops.Size()
+	offset += mtr.NumDropSessions.Size()
 
-	if fldName == "NumAged" {
+	if fldName == "NumAgedSessions" {
 		return offset
 	}
-	offset += mtr.NumAged.Size()
+	offset += mtr.NumAgedSessions.Size()
 
 	if fldName == "NumTcpResets" {
 		return offset
@@ -727,88 +727,88 @@ func (mtr *SessionSummaryMetrics) getOffset(fldName string) int {
 	}
 	offset += mtr.NumTcpCxnsetupTimeouts.Size()
 
-	if fldName == "NumCreateErrors" {
+	if fldName == "NumSessionCreateErrors" {
 		return offset
 	}
-	offset += mtr.NumCreateErrors.Size()
+	offset += mtr.NumSessionCreateErrors.Size()
 
-	if fldName == "NumTcpHalfOpen" {
+	if fldName == "NumTcpHalfOpenSessions" {
 		return offset
 	}
-	offset += mtr.NumTcpHalfOpen.Size()
+	offset += mtr.NumTcpHalfOpenSessions.Size()
 
-	if fldName == "NumOtherActive" {
+	if fldName == "NumOtherActiveSessions" {
 		return offset
 	}
-	offset += mtr.NumOtherActive.Size()
+	offset += mtr.NumOtherActiveSessions.Size()
 
-	if fldName == "NumTcpLimitDrops" {
+	if fldName == "NumTcpSessionLimitDrops" {
 		return offset
 	}
-	offset += mtr.NumTcpLimitDrops.Size()
+	offset += mtr.NumTcpSessionLimitDrops.Size()
 
-	if fldName == "NumUdpLimitDrops" {
+	if fldName == "NumUdpSessionLimitDrops" {
 		return offset
 	}
-	offset += mtr.NumUdpLimitDrops.Size()
+	offset += mtr.NumUdpSessionLimitDrops.Size()
 
-	if fldName == "NumIcmpLimitDrops" {
+	if fldName == "NumIcmpSessionLimitDrops" {
 		return offset
 	}
-	offset += mtr.NumIcmpLimitDrops.Size()
+	offset += mtr.NumIcmpSessionLimitDrops.Size()
 
-	if fldName == "NumOtherLimitDrops" {
+	if fldName == "NumOtherSessionLimitDrops" {
 		return offset
 	}
-	offset += mtr.NumOtherLimitDrops.Size()
+	offset += mtr.NumOtherSessionLimitDrops.Size()
 
-	if fldName == "NumDscLimitDrops" {
+	if fldName == "NumDscSessionLimitDrops" {
 		return offset
 	}
-	offset += mtr.NumDscLimitDrops.Size()
+	offset += mtr.NumDscSessionLimitDrops.Size()
 
 	return offset
 }
 
-// SetTotalActive sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetTotalActive(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("TotalActive"))
+// SetTotalActiveSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetTotalActiveSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("TotalActiveSessions"))
 	return nil
 }
 
-// SetNumL2 sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumL2(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumL2"))
+// SetNumL2Sessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumL2Sessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumL2Sessions"))
 	return nil
 }
 
-// SetNumTcp sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumTcp(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcp"))
+// SetNumTcpSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumTcpSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcpSessions"))
 	return nil
 }
 
-// SetNumUdp sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumUdp(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumUdp"))
+// SetNumUdpSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumUdpSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumUdpSessions"))
 	return nil
 }
 
-// SetNumIcmp sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumIcmp(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumIcmp"))
+// SetNumIcmpSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumIcmpSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumIcmpSessions"))
 	return nil
 }
 
-// SetNumSecurityPolicyDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumSecurityPolicyDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumSecurityPolicyDrops"))
+// SetNumDropSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumDropSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumDropSessions"))
 	return nil
 }
 
-// SetNumAged sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumAged(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumAged"))
+// SetNumAgedSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumAgedSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumAgedSessions"))
 	return nil
 }
 
@@ -830,51 +830,51 @@ func (mtr *SessionSummaryMetrics) SetNumTcpCxnsetupTimeouts(val metrics.Counter)
 	return nil
 }
 
-// SetNumCreateErrors sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumCreateErrors(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumCreateErrors"))
+// SetNumSessionCreateErrors sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumSessionCreateErrors(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumSessionCreateErrors"))
 	return nil
 }
 
-// SetNumTcpHalfOpen sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumTcpHalfOpen(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcpHalfOpen"))
+// SetNumTcpHalfOpenSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumTcpHalfOpenSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcpHalfOpenSessions"))
 	return nil
 }
 
-// SetNumOtherActive sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumOtherActive(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumOtherActive"))
+// SetNumOtherActiveSessions sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumOtherActiveSessions(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumOtherActiveSessions"))
 	return nil
 }
 
-// SetNumTcpLimitDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumTcpLimitDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcpLimitDrops"))
+// SetNumTcpSessionLimitDrops sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumTcpSessionLimitDrops(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumTcpSessionLimitDrops"))
 	return nil
 }
 
-// SetNumUdpLimitDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumUdpLimitDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumUdpLimitDrops"))
+// SetNumUdpSessionLimitDrops sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumUdpSessionLimitDrops(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumUdpSessionLimitDrops"))
 	return nil
 }
 
-// SetNumIcmpLimitDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumIcmpLimitDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumIcmpLimitDrops"))
+// SetNumIcmpSessionLimitDrops sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumIcmpSessionLimitDrops(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumIcmpSessionLimitDrops"))
 	return nil
 }
 
-// SetNumOtherLimitDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumOtherLimitDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumOtherLimitDrops"))
+// SetNumOtherSessionLimitDrops sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumOtherSessionLimitDrops(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumOtherSessionLimitDrops"))
 	return nil
 }
 
-// SetNumDscLimitDrops sets cunter in shared memory
-func (mtr *SessionSummaryMetrics) SetNumDscLimitDrops(val metrics.Counter) error {
-	mtr.metrics.SetCounter(val, mtr.getOffset("NumDscLimitDrops"))
+// SetNumDscSessionLimitDrops sets cunter in shared memory
+func (mtr *SessionSummaryMetrics) SetNumDscSessionLimitDrops(val metrics.Counter) error {
+	mtr.metrics.SetCounter(val, mtr.getOffset("NumDscSessionLimitDrops"))
 	return nil
 }
 

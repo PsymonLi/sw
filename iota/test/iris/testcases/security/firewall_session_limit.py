@@ -12,18 +12,18 @@ def SetTestSettings(tc):
     tc.proto = tc.iterators.proto
     if tc.proto == 'tcp':
         tc.timeout_field = 'tcp-connection-setup'
-        tc.metric_field = 'num_tcp_half_open'
+        tc.metric_field = 'num_tcp_half_open_sessions'
         test_timeout = '60s'
         tc.grep_str = 'TCP_HALF_OPEN_SESSION_LIMIT'
     elif tc.proto == 'icmp':
         tc.timeout_field = 'icmp-timeout'
         test_timeout = '200s'
-        tc.metric_field = 'num_icmp'
+        tc.metric_field = 'num_icmp_sessions'
         tc.grep_str = 'ICMP_ACTIVE_SESSION_LIMIT'
     elif tc.proto == 'udp':
         tc.timeout_field = 'udp-timeout'
         test_timeout = '200s'
-        tc.metric_field = 'num_udp'
+        tc.metric_field = 'num_udp_sessions'
         tc.grep_str = 'UDP_ACTIVE_SESSION_LIMIT'
     else:
         return api.types.status.FAILURE

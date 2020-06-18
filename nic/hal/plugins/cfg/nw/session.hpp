@@ -532,24 +532,24 @@ struct session_s {
 } __PACK__;
 
 typedef struct session_stats_ {
-    uint64_t    total_active;
-    uint64_t    num_l2;
-    uint64_t    num_tcp;
-    uint64_t    num_udp;
-    uint64_t    num_icmp;
-    uint64_t    num_sec_policy_drops;     // no. of sessions dropped due to security policy
-    uint64_t    num_aged;
+    uint64_t    total_active_sessions;
+    uint64_t    l2_sessions;
+    uint64_t    tcp_sessions;
+    uint64_t    udp_sessions;
+    uint64_t    icmp_sessions;
+    uint64_t    drop_sessions;            // no. of sessions dropped due to security policy
+    uint64_t    aged_sessions;
     uint64_t    num_tcp_rst_sent;         // no. of TCP resets found as a result of SFW Reject
     uint64_t    num_icmp_error_sent;      // no. of ICMP errors sent as a result of SFW Reject
     uint64_t    num_cxnsetup_timeout;     // no. of sessions that timed out at connection setup
-    uint64_t    num_create_err;           // no. of session create errors
-    uint64_t    num_tcp_half_open;        // no. of Half Open TCP sessions
-    uint64_t    num_other_active;         // no. of active sessions other than TCP/UDP/ICMP
-    uint64_t    num_tcp_limit_drops;      // no. of dropped TCP sessions exceeding the TCP half open session limit
-    uint64_t    num_udp_limit_drops;      // no. of dropped UDP sessions exceeding the UDP session limit
-    uint64_t    num_icmp_limit_drops;     // no. of dropped ICMP sessions exceeding the ICMP session limit
-    uint64_t    num_other_limit_drops;    // no. of dropped sessions exceeding the other session limit
-    uint64_t    num_dsc_limit_drops;      // no. of dropped sessions exceeding the DSC session limit
+    uint64_t    num_session_create_err;   // no. of session create errors
+    uint64_t    tcp_half_open_sessions;   // no. of Half Open TCP sessions
+    uint64_t    other_active_sessions;    // no. of active sessions other than TCP/UDP/ICMP
+    uint64_t    tcp_session_drop_count;   // no. of dropped TCP sessions exceeding the TCP half open session limit
+    uint64_t    udp_session_drop_count;   // no. of dropped UDP sessions exceeding the UDP session limit
+    uint64_t    icmp_session_drop_count;  // no. of dropped ICMP sessions exceeding the ICMP session limit
+    uint64_t    other_session_drop_count; // no. of dropped sessions exceeding the other active session limit
+    uint64_t    dsc_session_limit_drop_count; // no. of dropped sessions exceeding the DSC session limit
 } __PACK__ session_stats_t;
 
 #define SESS_LIMIT_LOWER_THRESHOLD 65
