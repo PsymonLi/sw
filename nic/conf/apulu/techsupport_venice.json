@@ -11,6 +11,7 @@
       "/nic/tools/fwupdate -S",
       "/nic/bin/pcieutil techsupport",
       "/nic/bin/pdsctl show techsupport",
+      "/nic/bin/pdsctl show bgp techsupport",
       "/nic/bin/vppctl show version",
       "/nic/bin/vppctl show plugins",
       "/nic/bin/vppctl show threads",

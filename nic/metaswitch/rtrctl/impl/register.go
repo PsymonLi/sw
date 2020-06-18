@@ -46,6 +46,7 @@ func RegisterShowNodes(params *CLIParams, base *cobra.Command) {
 	bgpShowCmd.AddCommand(peerShowCmd)
 	bgpShowCmd.AddCommand(peerAfShowCmd)
 	bgpShowCmd.AddCommand(bgpRouteMapShowCmd)
+	bgpShowCmd.AddCommand(tsShowCmd)
 
 	bgpShowCmd.AddCommand(bgpPrefixShowCmd)
 	bgpPrefixShowCmd.AddCommand(bgpPfxCountersShowCmd)
