@@ -203,7 +203,7 @@ var _ = Describe("audit tests", func() {
 				return nil
 			}, 30, 1).Should(BeNil())
 			for _, event := range events {
-				Expect(event.Object.Action == auth.Permission_Create.String() &&
+				Expect(strings.ToLower(event.Object.Action) == auth.Permission_Create.String() &&
 					event.Object.Resource.Kind == string(network.KindNetwork) &&
 					event.Object.Outcome == audit.Outcome_Success.String() &&
 					event.Object.Stage == audit.Stage_RequestProcessing.String()).Should(BeTrue())
