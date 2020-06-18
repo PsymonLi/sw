@@ -73,6 +73,5 @@ control egress {
     output_properties();
     nexthops();
     update_checksums();
-    egress_stats();
     egress_inter_pipe();
 }

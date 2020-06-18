@@ -142,6 +142,7 @@ table p4e_drop_stats {
 
 control egress_stats {
     apply(vnic_rx_stats);
+    apply(lif_tx_stats);
 }
 
 /*****************************************************************************/
