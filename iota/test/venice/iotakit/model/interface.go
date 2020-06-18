@@ -101,7 +101,7 @@ type ClusterActionIntf interface {
 		protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error
 	FindFwlogForWorkloadPairsFromElastic(tenantName,
 		protocol string, port uint32, fwaction string, wpc *objects.WorkloadPairCollection) error
-	GetFwLogObjectCount(tenantName string, bucketName string, objectKeyPrefix string) (int, error)
+	GetFwLogObjectCount(tenantName string, bucketName string, objectKeyPrefix string, nodeIpsToSkipFromQuery ...string) (int, error)
 	VerifyRuleStats(timestr string, spc *objects.NetworkSecurityPolicyCollection, minCounts []map[string]float64) error
 
 	ResetNaplesNodes(*objects.HostCollection) error

@@ -97,6 +97,5 @@ loop:
 			temp = rounded
 		}
 	}
-
 	return ret, nil
 }

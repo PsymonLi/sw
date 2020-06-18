@@ -429,7 +429,14 @@ func putObjectHelper(ctx context.Context,
 	nic *cluster.DistributedServiceCard, dolog bool, tenantName string,
 	shouldRaiseEvent func(string, eventattrs.Severity) bool) {
 	tries := 0
-	waitIntvl := time.Second * 20
+	// Wait time is changed to 120 seconds because when a node is isolated using an iptables rule, minio does not remove
+	// the isolated node from the cluster. As a result, all the read and write requests wait for an additional time of
+	// rest.DefaultRESTTimeout which is set to 1 minute in minio's code.
+	// On the other hand, if the node has complete failure then minio fails over instantly and no read/write delays are seen
+	// in that case.
+	// According to the minio team, the behavior is like this becuase isolation through firewall rule is a very unlikely case
+	// and the code keeps retrying in that case.
+	waitIntvl := time.Second * 120
 	maxRetries := 15
 	rateLimitedEventRaised := false
 

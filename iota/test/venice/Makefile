@@ -105,8 +105,8 @@ venice-e2e-regression:
 	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all.tgz -C .
 	ln -s /sw/bin/venice.tgz /go/src/github.com/pensando/sw/bin/venice.tgz
 	cd ../../ && make
-	../../bin/iota_cmd run --suite cluster --topo default --regression
-	../../bin/iota_cmd run --suite firewall  --regression --skip-setup
+	../../bin/iota_cmd run --suite firewall --topo default --regression
+	../../bin/iota_cmd run --suite cluster --regression --skip-setup
 
 vcenter-e2e:
 	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all.tgz -C .

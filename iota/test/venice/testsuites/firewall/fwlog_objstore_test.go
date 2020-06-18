@@ -47,14 +47,6 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 	// For now, just checking that number of objects in the bucket are increasing when logs are getting uploaded
 	// to the bucket.
 	Context("verify fwlog on traffic in objectstore and elastic", func() {
-		It("tags:regression=true should push fwlog to objectstore", func() {
-			if !ts.tb.HasNaplesHW() {
-				Skip("runs only on hardware naples")
-			}
-			ts.model.WorkloadPairs().WithinNetwork().Permit(ts.model.DefaultNetworkSecurityPolicy(), "icmp")
-			pushLogsAndVerify()
-		})
-
 		It("tags:regression=true venice isolate APIServer node, should not affect reporting of fwlogs", func() {
 			if !ts.tb.HasNaplesHW() {
 				Skip("runs only on hardware naples")
@@ -64,6 +56,10 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 			naples := ts.model.Naples()
 			apiServerNode, err := ts.model.VeniceNodes().GetVeniceNodeWithService("pen-apiserver")
 			Expect(err).ShouldNot(HaveOccurred())
+
+			// Get the Venice node ip
+			isolatedNodeIP := apiServerNode.Nodes[0].IP()
+			fmt.Println("Isolating node", isolatedNodeIP)
 			err = ts.model.DisconnectVeniceNodesFromCluster(apiServerNode, naples)
 			Expect(err).ShouldNot(HaveOccurred())
 
@@ -74,9 +70,10 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 			}).Should(Succeed())
 
 			// Push logs and verify
-			pushLogsAndVerify()
+			pushLogsAndVerify(time.Second*800, isolatedNodeIP)
 
 			//Connect Back and make sure cluster is good
+			fmt.Println("Bringing back node", isolatedNodeIP)
 			ts.model.ConnectVeniceNodesToCluster(apiServerNode, naples)
 			time.Sleep(60 * time.Second)
 			Eventually(func() error {
@@ -84,11 +81,16 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 			}).Should(Succeed())
 
 			// Again verify
-			pushLogsAndVerify()
+			pushLogsAndVerify(time.Second * 400)
 		})
 
+		// Skpping this test case due to issues in Minio when a node is isolated using a firewall rule.
+		// In such a case, Minio still tries to contact to the isolated disk and timesout after 1min. As
+		// a result all the get/upload request time increases by 1 min. If there are many fwlogs, then listing
+		// of objects will take huge amount of time. The correct solution is to move listing of objects
+		// from minio to Elastic. In Elastic we maintain an index of all minio objects.
 		It("tags:regression=true venice isolate nodes in a loop, should not affect reporting of fwlogs", func() {
-			Skip("reenable this test after testing")
+			Skip("reenable this test after moving the backed implementation to Elastic")
 			if !ts.tb.HasNaplesHW() {
 				Skip("runs only on hardware naples")
 			}
@@ -106,7 +108,7 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 				}).Should(Succeed())
 
 				// Push logs and verify
-				pushLogsAndVerify()
+				pushLogsAndVerify(time.Second * 800)
 
 				//Connect Back and make sure cluster is good
 				ts.model.ConnectVeniceNodesToCluster(vnc, naples)
@@ -116,10 +118,18 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 				}).Should(Succeed())
 
 				// Again verify
-				pushLogsAndVerify()
+				pushLogsAndVerify(time.Second * 400)
 
 				return nil
 			})
+		})
+
+		It("tags:regression=true should push fwlog to objectstore", func() {
+			if !ts.tb.HasNaplesHW() {
+				Skip("runs only on hardware naples")
+			}
+			ts.model.WorkloadPairs().WithinNetwork().Permit(ts.model.DefaultNetworkSecurityPolicy(), "icmp")
+			pushLogsAndVerify(time.Second * 800)
 		})
 
 		It("tags:regression=true reloading venice nodes should not affect fwlogs", func() {
@@ -130,10 +140,12 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 
 			// reload each host
 			ts.model.ForEachVeniceNode(func(vnc *objects.VeniceNodeCollection) error {
+				reloadingNodeIP := vnc.Nodes[0].IP()
+				fmt.Println("Reloading node", reloadingNodeIP)
 				Expect(ts.model.ReloadVeniceNodes(vnc)).Should(Succeed())
 
 				// Again verify
-				pushLogsAndVerify()
+				pushLogsAndVerify(time.Second*800, reloadingNodeIP)
 
 				// wait for cluster to be back in good state
 				Eventually(func() error {
@@ -146,7 +158,9 @@ var _ = Describe("tests for storing firewall logs in object store and elastic", 
 	})
 })
 
-func pushLogsAndVerify() {
+func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) {
+	fmt.Println("IPstoSkip", nodeIpsToSkipFromQuery)
+
 	workloadPairs := ts.model.WorkloadPairs().WithinNetwork()
 
 	// Get the naples id from the workload
@@ -158,15 +172,17 @@ func pushLogsAndVerify() {
 	var err error
 	Eventually(func() error {
 		currentObjectCountNaplesA, err =
-			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac)
+			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, nodeIpsToSkipFromQuery...)
 		return err
 	}).Should(Succeed())
 
-	Eventually(func() error {
-		currentObjectCountNaplesB, err =
-			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac)
-		return err
-	}).Should(Succeed())
+	if naplesAMac != naplesBMac {
+		Eventually(func() error {
+			currentObjectCountNaplesB, err =
+				ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, nodeIpsToSkipFromQuery...)
+			return err
+		}).Should(Succeed())
+	}
 
 	By(fmt.Sprintf("currentObjectCountNaplesA %d, currentObjectCountNaplesB %d",
 		currentObjectCountNaplesA, currentObjectCountNaplesB))
@@ -178,6 +194,7 @@ func pushLogsAndVerify() {
 		}).Should(Succeed())
 
 		By(fmt.Sprintf("workload ip address %+v", workloadPairs.ListIPAddr()))
+		By(fmt.Sprintf("naplesAMac %+v, naplesBMac %+v", naplesAMac, naplesBMac))
 
 		// check object count
 		Eventually(func() bool {
@@ -186,24 +203,37 @@ func pushLogsAndVerify() {
 
 			Eventually(func() error {
 				newObjectCountNaplesA, err =
-					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac)
+					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, nodeIpsToSkipFromQuery...)
 				return err
 			}).Should(Succeed())
 
-			Eventually(func() error {
-				newObjectCountNaplesB, err =
-					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac)
-				return err
-			}).Should(Succeed())
-
-			By(fmt.Sprintf("newObjectCountNaplesA %d, newObjectCountNaplesB %d",
-				newObjectCountNaplesA, newObjectCountNaplesB))
-			if newObjectCountNaplesA > currentObjectCountNaplesA && newObjectCountNaplesB > currentObjectCountNaplesB {
-				currentObjectCountNaplesA = newObjectCountNaplesA
-				currentObjectCountNaplesB = newObjectCountNaplesB
-				return true
+			if naplesAMac != naplesBMac {
+				Eventually(func() error {
+					newObjectCountNaplesB, err =
+						ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, nodeIpsToSkipFromQuery...)
+					return err
+				}).Should(Succeed())
 			}
-			return false
-		}, time.Second*100).Should(BeTrue())
+
+			if naplesAMac != naplesBMac {
+				By(fmt.Sprintf("newObjectCountNaplesA %d, newObjectCountNaplesB %d",
+					newObjectCountNaplesA, newObjectCountNaplesB))
+				if newObjectCountNaplesA > currentObjectCountNaplesA && newObjectCountNaplesB > currentObjectCountNaplesB {
+					currentObjectCountNaplesA = newObjectCountNaplesA
+					currentObjectCountNaplesB = newObjectCountNaplesB
+					return true
+				}
+				return false
+			} else {
+				By(fmt.Sprintf("newObjectCountNaplesA %d", newObjectCountNaplesA))
+				if newObjectCountNaplesA > currentObjectCountNaplesA {
+					currentObjectCountNaplesA = newObjectCountNaplesA
+					currentObjectCountNaplesB = newObjectCountNaplesA
+					return true
+				}
+				return false
+			}
+
+		}, timeout).Should(BeTrue())
 	}
 }

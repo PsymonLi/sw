@@ -26,43 +26,55 @@ import (
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
 func (sm *SysModel) GetFwLogObjectCount(
-	tenantName string, bucketName string, objectKeyPrefix string) (int, error) {
+	tenantName string, bucketName string, objectKeyPrefix string, nodeIpsToSkipFromQuery ...string) (int, error) {
+	timeFormat := "2006-01-02T15:04:05Z"
+	// Look for 20 minute time span
+	startTs := time.Now().UTC().Add(-40 * time.Minute).Format(timeFormat)
+	endTs := time.Now().UTC().Add(40 * time.Minute).Format(timeFormat)
+	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + objectKeyPrefix
 	opts := api.ListWatchOptions{
 		ObjectMeta: api.ObjectMeta{
 			Tenant:    tenantName,
 			Namespace: bucketName,
 		},
+		FieldSelector: fs,
 	}
+
+	fmt.Println("Field Selector", fs)
 
 	ctx, err := sm.VeniceLoggedInCtx(context.Background())
 	if err != nil {
 		return 0, err
 	}
 
-	restClients, err := sm.VeniceRestClient()
-	if err != nil {
-		return 0, err
-	}
-
-	count := 0
-	for _, restClient := range restClients {
-		list, err := restClient.ObjstoreV1().Object().List(ctx, &opts)
+	veniceUrls := sm.GetVeniceURL()
+	fmt.Println("Venice urls", veniceUrls)
+outer:
+	for _, url := range veniceUrls {
+		fmt.Println("Using venice url", url)
+		for _, nodeIPToSkip := range nodeIpsToSkipFromQuery {
+			if strings.Contains(url, nodeIPToSkip) {
+				fmt.Println("Skiping IP", url, nodeIPToSkip)
+				continue outer
+			}
+		}
+		restClient, err := sm.VeniceNodeRestClient(url)
 		if err != nil {
+			fmt.Println("error in getting rest client", err)
 			return 0, err
 		}
 
+		fmt.Println("Started list")
+		list, err := restClient.ObjstoreV1().Object().List(ctx, &opts)
+		if err != nil {
+			fmt.Println("Error in list", err)
+			return 0, err
+		}
+		fmt.Println("Ended list")
+
 		if len(list) != 0 {
-			if objectKeyPrefix == "" {
-				return len(list), nil
-			}
-
-			for _, o := range list {
-				if strings.Contains(o.Name, objectKeyPrefix) {
-					count++
-				}
-			}
-
-			return count, nil
+			fmt.Println("objectKeyPrefix, lenList", objectKeyPrefix, len(list))
+			return len(list), nil
 		}
 	}
 
