@@ -1052,12 +1052,19 @@ func portShowFsmCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	var filter *pds.CommandUUID
-	filter = &pds.CommandUUID{
-		Id: uuid.FromStringOrNil(portID).Bytes(),
+	if cmd != nil && cmd.Flags().Changed("port") {
+		filter = &pds.CommandUUID{
+			Id: uuid.FromStringOrNil(portID).Bytes(),
+		}
 	}
+	var cmdResp *pds.ServiceResponseMessage
 
 	// handle command
-	cmdResp, err := HandleSvcReqCommandMsg(pds.Command_CMD_PORT_FSM_DUMP, filter)
+	if filter == nil {
+		cmdResp, err = HandleSvcReqCommandMsg(pds.Command_CMD_PORT_FSM_DUMP, nil)
+	} else {
+		cmdResp, err = HandleSvcReqCommandMsg(pds.Command_CMD_PORT_FSM_DUMP, filter)
+	}
 	if err != nil {
 		fmt.Printf("Command failed with %v error\n", err)
 		return

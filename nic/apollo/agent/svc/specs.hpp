@@ -667,6 +667,7 @@ pds_svc_req_proto_to_svc_req_ctxt (svc_req_ctxt_t *svc_req,
             cfg_ctxt->req = any_msg;
         }
     } else {
+        svc_req->type = SVC_REQ_TYPE_NONE;
         cfg_ctxt = &svc_req->cfg_ctxt;
         cfg_ctxt->cfg = CFG_MSG_NONE;
     }

@@ -194,6 +194,7 @@ handle_svc_req (int fd, types::ServiceRequestMessage *proto_req, int cmd_fd)
     sdk_ret_t ret;
     svc_req_ctxt_t svc_req;
 
+    memset(&svc_req, 0, sizeof(svc_req_ctxt_t));
     // convert proto svc request to svc req ctxt
     pds_svc_req_proto_to_svc_req_ctxt(&svc_req, proto_req, fd, cmd_fd);
 
