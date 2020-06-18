@@ -21,7 +21,7 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/upgrade_ev.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
-#include "platform/src/lib/nicmgr/include/eth_if.h"
+#include "platform/src/lib/nicmgr/include/eth_utils.hpp"
 
 /// \defgroup PDS_NICMGR
 /// @{
@@ -167,8 +167,7 @@ nicmgrapi::port_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
     core::event_t *event = (core::event_t *)msg->data();
 
     st.id = event->port.ifindex;
-    st.status =
-        (event->port.event == port_event_t::PORT_EVENT_LINK_UP) ? 1 : 0;
+    st.status = port_event_to_oper_status(event->port.event);
     st.speed = sdk::lib::port_speed_enum_to_mbps(event->port.speed);
     st.fec_type = (uint8_t)event->port.fec_type;
     PDS_TRACE_DEBUG("Rcvd port event for ifidx 0x%x, speed %u, status %u "

@@ -17,6 +17,7 @@
 #include "nic/hal/core/core.hpp"
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/logger.hpp"
+#include "platform/src/lib/nicmgr/include/eth_utils.hpp"
 #include "platform/src/lib/devapi_iris/devapi_iris.hpp"
 #include "nic/hal/core/event_ipc.hpp"
 #include "upgrade.hpp"
@@ -88,8 +89,7 @@ port_event_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     hal::core::event_t *event = (hal::core::event_t *)msg->data();
 
     st.id = event->port.id;
-    st.status =
-        (event->port.event == port_event_t::PORT_EVENT_LINK_UP) ? 1 : 0;
+    st.status = port_event_to_oper_status(event->port.event);
     st.speed = sdk::lib::port_speed_enum_to_mbps(event->port.speed);
     st.fec_type = (uint8_t)event->port.fec_type;
     NIC_LOG_DEBUG("IPC, Rcvd port event for id {}, speed {}, status {} "

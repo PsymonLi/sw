@@ -208,9 +208,9 @@ save_files() {
     platform_inc+='nicmgr/include/dev.hpp nicmgr/include/pd_client.hpp nicmgr/include/device.hpp nicmgr/include/pal_compat.hpp nicmgr/include/upgrade.hpp '
     platform_inc+='nicmgr/include/eth_dev.hpp nicmgr/include/eth_lif.hpp nicmgr/include/logger.hpp nicmgr/include/nicmgr_utils.hpp nicmgr/include/ftl_dev.hpp '
     platform_inc+='nicmgr/include/ftl_lif.hpp eth_p4plus/eth_p4pd.hpp nicmgr/include/nicmgr_shm.hpp nicmgr/include/nicmgr_shm_cpp.hpp '
-    platform_inc+='nicmgr/include/eth_pstate.hpp nicmgr/include/eth_if.h '
+    platform_inc+='nicmgr/include/eth_pstate.hpp nicmgr/include/eth_if.h nicmgr/include/eth_utils.hpp '
     platform_drivers_inc+='common/ionic_if.h '
-    
+
     mkdir -p $LIBDIR
     cd $DST/nic/build
     for f in $files ; do
