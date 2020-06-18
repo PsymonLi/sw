@@ -283,6 +283,7 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 				}
 
 				profileState.DSCProfile.Unlock()
+				sm.PeriodicUpdaterPush(profileState)
 			} else {
 				//Retry as this might be timing
 				log.Errorf("Profile %v not found", newProfile)
@@ -296,6 +297,10 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 			oldProfileState.DSCProfile.Lock()
 			if _, ok := oldProfileState.DscList[nsnic.ObjectMeta.Name]; ok {
 				delete(oldProfileState.DscList, nsnic.ObjectMeta.Name)
+				//Ideally OnOperDelete from agent should confirm this.
+				// However the way agent is cleaning up the watche Channels, delete response may not reach
+				// npm. Propagation status is whether new change is posted to hardware or not.
+				delete(oldProfileState.NodeVersions, nsnic.ObjectMeta.Name)
 				ret := oldProfileState.PushObj.RemoveObjReceivers([]objReceiver.Receiver{sns.recvHandle})
 				if ret != nil {
 					log.Infof("Remove receiver failed %v", ret)
@@ -305,6 +310,7 @@ func (sm *Statemgr) updateDSC(smartNic *ctkit.DistributedServiceCard, nsnic *clu
 
 			}
 			oldProfileState.DSCProfile.Unlock()
+			sm.PeriodicUpdaterPush(oldProfileState)
 
 		}
 	} else {
