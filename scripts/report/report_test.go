@@ -19,7 +19,7 @@ import (
 
 // test vectors
 const (
-	test             = "github.com/pensando/sw/nic/agent/netagent/state"
+	test             = "github.com/pensando/sw/psmctl"
 	failedTestStdOut = `{"Time":"2020-05-04T10:46:12.908788-07:00","Action":"run","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts"}
 {"Time":"2020-05-04T10:46:12.909013-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"=== RUN   TestAudienceExtractor_ForHostManagedDSCCerts\n"}
 {"Time":"2020-05-04T10:46:12.942813-07:00","Action":"output","Package":"github.com/pensando/sw/nic/agent/nmd/state","Test":"TestAudienceExtractor_ForHostManagedDSCCerts","Output":"    TestAudienceExtractor_ForHostManagedDSCCerts: testutils.go:48: \u001b[31mauthorizers_test.go:53: Expected to find an empty Audience slice\u001b[39m\n"}
@@ -322,7 +322,7 @@ func TestTestDataDump(t *testing.T) {
 	tr := TestReport{
 		Results: []*Target{
 			{
-				Name: "github.com/pensando/sw/nic/agent/nmd/state/",
+				Name: "github.com/pensando/sw/venice/cmd/validation",
 			},
 		},
 	}
