@@ -567,6 +567,12 @@ dependencies:
     - reference: iota/test/venice
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
+      exclude_dirs: ["metaswitch"]
+  nic/third-party/metaswitch:
+    - reference: iota/test/standalone/precheckin/apulu-sdn-pds
+    - reference: nic/apollo/tools/apulu/sanity/base
+    - reference: test/ci_targets/cloud-e2e
+    - reference: test/ci_targets/controlplane-dol
   nic/tools:
     - reference: iota/test/standalone/precheckin/esx
     - reference: iota/test/standalone/precheckin/linux
