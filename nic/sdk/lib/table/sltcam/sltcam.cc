@@ -399,7 +399,7 @@ __label__ done;
     if (ctx->tcam_index_valid == false) {
         ret = find_(ctx);
         if (ret != sdk::SDK_RET_OK) {
-            SLTCAM_TRACE_ERR_GOTO(done, "find, r:%d", ret);
+            goto done;
         }
     }
 

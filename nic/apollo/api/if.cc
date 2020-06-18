@@ -191,7 +191,8 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         break;
 
     case IF_TYPE_HOST:
-        ifindex_ = HOST_IFINDEX(IFINDEX_TO_IFID(api::objid_from_uuid(spec->key)));
+        ifindex_ =
+            HOST_IFINDEX(IFINDEX_TO_IFID(api::objid_from_uuid(spec->key)));
         if_info_.host_.tx_policer_ = spec->host_if_info.tx_policer;
         break;
 
@@ -585,6 +586,10 @@ if_entry::eth_if(if_entry *intf) {
 
     case IF_TYPE_ETH:
         return intf;
+
+    case IF_TYPE_HOST:
+        return NULL;
+
     default:
         PDS_TRACE_ERR("Unknown interface type %u", intf->type());
     }
