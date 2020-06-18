@@ -444,7 +444,7 @@ static_assert(sizeof(dmatrace_trace_hdr_t) == 64,
   uint64_t qtype:3;
   uint64_t rx_splitter_offset:10;
   uint64_t rxdma_rsv:3;
-  uint64_t stage_skip;
+  uint64_t stage_skip:8;
   uint64_t phv_id:10;
   uint64_t app_type:4;
   uint64_t elb_rxdma_rsv:2;
