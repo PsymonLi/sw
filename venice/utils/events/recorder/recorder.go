@@ -57,7 +57,8 @@ func Event(eventType eventtypes.EventType, message string, objRef interface{}) {
 	defer m.RUnlock()
 
 	if singletonRecorder == nil {
-		log.Fatal("initialize events recorder")
+		log.Errorf("initialize events recorder")
+		return
 	}
 
 	singletonRecorder.Event(eventType, message, objRef)

@@ -12,6 +12,10 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+const (
+	maxFileName = 248
+)
+
 // RunShellCmd runs shell command
 func RunShellCmd(cmdStr, cmdsDir string) error {
 	reg, err := regexp.Compile("[^a-zA-Z0-9_]+")
@@ -20,6 +24,11 @@ func RunShellCmd(cmdStr, cmdsDir string) error {
 	}
 	cmdFileName := strings.ReplaceAll(cmdStr, " ", "_")
 	cmdFileName = reg.ReplaceAllString(cmdFileName, "")
+
+	if len(cmdFileName) > maxFileName {
+		cmdFileName = cmdFileName[:maxFileName]
+	}
+
 	cmdStr = fmt.Sprintf("%s >> %s/%s.txt", cmdStr, cmdsDir, cmdFileName)
 	log.Infof("Running : %s", cmdStr)
 

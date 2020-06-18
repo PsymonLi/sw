@@ -400,7 +400,9 @@ func (n *NMD) UpdateNaplesHealth() []cmd.DSCCondition {
 	status := cmd.ConditionStatus_TRUE.String()
 	reason := ""
 
-	status, reason = n.Pipeline.GetSysmgrSystemStatus()
+	if n.Pipeline != nil {
+		status, reason = n.Pipeline.GetSysmgrSystemStatus()
+	}
 	Conditions := []cmd.DSCCondition{
 		{
 			Type:               health,

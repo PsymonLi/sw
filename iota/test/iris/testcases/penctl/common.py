@@ -445,13 +445,13 @@ def SetNaplesModeOOB_Static(n, controllerip, mgmtip, device=None):
     return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeOOB_Dynamic(n, device):
+def SetNaplesModeOOB_Dynamic(n, device=None):
     api.Logger.info("Setting Naples network mode to OOB Dynamic.")
     cmd = "update dsc --id IOTATEST_OOB --managed-by network --management-network inband --controllers 4.4.4.4"
     return RunPenctlOnHost(n, cmd, device)
 
 
-def SetNaplesModeHost(n, device):
+def SetNaplesModeHost(n, device=None):
     api.Logger.info("Setting Naples network mode to Host Managed.")
     cmd = "update dsc --id IOTATEST_OOB --managed-by host"
     return RunPenctlOnHost(n, cmd, device)

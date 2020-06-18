@@ -531,6 +531,10 @@ func (sm *Statemgr) CreateSnapshot(ms *monitoring.TechSupportRequest) error {
 			return err
 		}
 
+		if sm.objstoreClient == nil {
+			return fmt.Errorf("object store is not initialized")
+		}
+
 		_, err = sm.objstoreClient.PutObjectOfSize(context.Background(), vosTarget, f, stat.Size(), meta)
 		if err != nil {
 			return err

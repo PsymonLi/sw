@@ -4,6 +4,8 @@ package writer
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/monitoring"
@@ -12,6 +14,10 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/resolver"
 	"github.com/pensando/sw/venice/utils/rpckit"
+)
+
+const (
+	maxRetryCount = 10
 )
 
 // Writer is the api provided by writer object
@@ -105,8 +111,17 @@ func (wr *APISrvWriter) WriteTechSupportRequest(tsr *monitoring.TechSupportReque
 
 	tsr.ObjectMeta.ResourceVersion = "" // no need to worry about CAS because object Spec is immutable
 
-	_, err = apicl.MonitoringV1().TechSupportRequest().Update(context.Background(), tsr)
-	return err
+	for retryCount := 0; retryCount < maxRetryCount; retryCount++ {
+		_, err = apicl.MonitoringV1().TechSupportRequest().Update(context.Background(), tsr)
+		if err == nil {
+			return nil
+		}
+
+		log.Errorf("Failed to write status to API server. Err : %v", err)
+		time.Sleep(time.Second)
+	}
+
+	return fmt.Errorf("Failed to write status to API server after %v retries", maxRetryCount)
 }
 
 // Close stops the client and releases resources

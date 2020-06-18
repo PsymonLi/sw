@@ -897,6 +897,11 @@ func (n *NMD) AdmitNaples() {
 					n.config.Status.TransitionPhase = nmd.DistributedServiceCardStatus_VENICE_REGISTRATION_DONE.String()
 
 					nic, _ := n.GetSmartNIC()
+					if nic != nil {
+						n.SetSmartNIC(nicObj)
+					}
+
+					nic, _ = n.GetSmartNIC()
 					recorder.Event(eventtypes.DSC_ADMITTED, fmt.Sprintf("DSC %s(%s) admitted to the cluster", nic.Spec.ID, nic.Name), nic)
 					//// Transition to reboot pending only on successful admission only if reboot has not been done.
 					//if n.rebootNeeded {

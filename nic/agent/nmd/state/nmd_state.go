@@ -304,6 +304,7 @@ func NewNMD(pipeline Pipeline,
 		metrics:             nil,
 		RunningFirmware:     GetRunningFirmware(),
 		RunningFirmwareName: GetRunningFirmwareName(),
+		Pipeline:            pipeline,
 	}
 
 	nm.RunningFirmwareVersion = GetRunningFirmwareVersion(nm.RunningFirmwareName, nm.RunningFirmware)
