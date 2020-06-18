@@ -399,7 +399,7 @@ func (sma *SmEndpoint) OnEndpointUpdate(epinfo *ctkit.Endpoint, nep *workload.En
 		log.Errorf("Failed to get workload for EP [%v]. Err : %v", nep.Name, err)
 	}
 
-	if (ws != nil && ws.isMigrating()) || nep.Status.Migration.Status == workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String() {
+	if (ws != nil && ws.isMigrating()) || (nep.Status.Migration != nil && nep.Status.Migration.Status == workload.EndpointMigrationStatus_FROM_NON_PEN_HOST.String()) {
 		return sm.handleMigration(epinfo, nep)
 	}
 

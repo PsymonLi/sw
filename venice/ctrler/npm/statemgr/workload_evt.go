@@ -911,6 +911,7 @@ func (ws *WorkloadState) incrMigrationSuccess() {
 	defer ws.migrationState.Unlock()
 
 	ws.migrationSuccessCount = ws.migrationSuccessCount + 1
+	log.Infof("%v/%v endpoints of workload %v successfully migrated.", ws.migrationSuccessCount, ws.migrationEPCount, ws.Workload.Name)
 }
 
 func (ws *WorkloadState) incrMigrationFailure() {
@@ -997,6 +998,7 @@ func (ws *WorkloadState) trackMigration(sourceDSCs, destDSCs []*DistributedServi
 		case <-checkDataplaneMigration.C:
 			if ws.isMigrationSuccess() {
 				log.Infof("All EPs of %v successfully moved.", ws.Workload.Name)
+				ws.epMoveWg.Wait()
 				ws.Workload.Status.MigrationStatus.Status = workload.WorkloadMigrationStatus_DONE.String()
 				ws.Workload.Status.MigrationStatus.CompletedAt = &api.Timestamp{}
 				ws.Workload.Status.MigrationStatus.CompletedAt.SetTime(time.Now())
