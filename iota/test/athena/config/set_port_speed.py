@@ -40,8 +40,8 @@ def Main(step):
         # set port speeds/config for uplink ports
         req = api.Trigger_CreateExecuteCommandsRequest()
 
-        cmd = "pdsctl debug port"
-        debug_cmd_substr = "debug port"
+        cmd = "pdsctl debug update port"
+        debug_cmd_substr = "debug update port"
         
         up0_speed_args = '--port ' + up0_uuid + ' --speed 100g --fec-type rs' 
         ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 

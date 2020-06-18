@@ -174,7 +174,7 @@ def Verify(tc):
                               tc.bitw_node_name)
             return api.types.status.FAILURE
 
-    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name) 
+    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name, 80)
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to restart athena sec app on node %s" % \
                         tc.bitw_node_name)

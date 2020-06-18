@@ -464,6 +464,8 @@ dependencies:
   nic/apollo/tools/dev-docker:
     - reference: nic/apollo/tools/apulu/sanity/customer-docker
     # - reference: nic/apollo/tools/athena/sanity/customer-docker
+  nic/apollo/agent:
+    - reference: iota/test/standalone/precheckin/athena
   nic/apollo/p4/athena_p4-16:
     - reference: iota/test/standalone/precheckin/athena
   nic/apollo/test/athena_app:

@@ -9,7 +9,6 @@ import iota.harness.api as api
 import iota.test.athena.utils.misc as misc_utils
 import iota.harness.infra.store as store
 
-ATHENA_SEC_APP_INIT_WAIT_TIME = 200 # secs
 ATHENA_SEC_APP_KILL_WAIT_TIME = 5 # secs
 
 
@@ -69,7 +68,7 @@ def athena_sec_app_kill(node_name = None):
     return api.types.status.SUCCESS
 
 
-def athena_sec_app_start(node_name = None):
+def athena_sec_app_start(node_name = None, init_wait_time = 200):
     node_names = []
 
     if node_name is None:
@@ -94,7 +93,7 @@ def athena_sec_app_start(node_name = None):
         
 
     # sleep for init to complete
-    misc_utils.Sleep(ATHENA_SEC_APP_INIT_WAIT_TIME)
+    misc_utils.Sleep(init_wait_time)
             
     for nname in node_names:
         req = api.Trigger_CreateExecuteCommandsRequest()
@@ -118,7 +117,7 @@ def athena_sec_app_start(node_name = None):
     return api.types.status.SUCCESS
 
 
-def athena_sec_app_might_start(node_name = None):
+def athena_sec_app_might_start(node_name = None, init_wait_time = 200):
     node_names = []
 
     if node_name is None:
@@ -142,13 +141,13 @@ def athena_sec_app_might_start(node_name = None):
             api.Logger.info("athena sec app already running on node %s "
                             "with pid %s." % (nname, athena_sec_app_pid))
         else:
-            ret = athena_sec_app_start(nname)
+            ret = athena_sec_app_start(nname, init_wait_time)
             if ret != api.types.status.SUCCESS:
                 return ret
 
     return api.types.status.SUCCESS
 
-def athena_sec_app_restart(node_name = None):
+def athena_sec_app_restart(node_name = None, init_wait_time = 200):
     node_names = []
 
     if node_name is None:
@@ -161,7 +160,7 @@ def athena_sec_app_restart(node_name = None):
         if ret != api.types.status.SUCCESS:
             return ret
 
-        ret = athena_sec_app_start(nname)
+        ret = athena_sec_app_start(nname, init_wait_time)
         if ret != api.types.status.SUCCESS:
             return ret
 

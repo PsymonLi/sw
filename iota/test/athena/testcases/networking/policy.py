@@ -50,7 +50,7 @@ def Setup(tc):
 
 def Trigger(tc):
     for node in tc.nodes:
-        ret = athena_app_utils.athena_sec_app_restart(node) 
+        ret = athena_app_utils.athena_sec_app_restart(node, 180)
         if ret != api.types.status.SUCCESS:
             api.Logger.error("Failed to restart athena sec app on node %s" % node)
             return (ret)

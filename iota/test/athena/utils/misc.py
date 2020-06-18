@@ -96,7 +96,6 @@ def match_dynamic_flows(tc, vnic_id, flow):
     # Dump all flow entries from flow cache
     req = api.Trigger_CreateExecuteCommandsRequest()
     api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "export PATH=$PATH:/nic/lib && export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/nic/lib && /nic/bin/athena_client --flow_cache_dump /data/flow_dump_iota.log")
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "cat /data/flow_dump_iota.log")
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
