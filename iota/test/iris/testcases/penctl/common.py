@@ -53,7 +53,7 @@ PENCTL_TOKEN_FILE_NAME = "penctl.token"
 PENCTL_TOKEN_FILE = "iota/scripts/" + PENCTL_TOKEN_FILE_NAME
 PENCTL_NAPLES_PKG = "nic/naples_fw.tar"
 
-DEF_TECH_SUPPORT_FILE = "naples-tech-support.tar.gz"
+DEF_TECH_SUPPORT_FILE = "dsc-tech-support.tar.gz"
 
 core_file_names = [
     "core.delphi_hub.695",
