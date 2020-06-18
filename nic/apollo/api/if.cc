@@ -168,7 +168,9 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         break;
 
     case IF_TYPE_L3:
-        ifindex_ = L3_IFINDEX(l3_if_idxr_++);
+        if (ifindex_ == IFINDEX_INVALID) {
+            ifindex_ = L3_IFINDEX(l3_if_idxr_++);
+        }
         PDS_TRACE_DEBUG("Initializing L3 interface %s, ifindex 0x%x, "
                         "port %s", spec->key.str(), ifindex_,
                         spec->l3_if_info.port.str());
