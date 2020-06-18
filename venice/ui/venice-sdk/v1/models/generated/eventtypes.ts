@@ -480,7 +480,7 @@ export const eventTypes: { [name: string]: EventType } = {
   },
   'DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD' : {
       "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
-      "Severity": EventsEvent_severity.warn,
+      "Severity": EventsEvent_severity.critical,
       "Desc": "Memory usage of the partition is above threshold percentage",
   },
   'DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD' : {

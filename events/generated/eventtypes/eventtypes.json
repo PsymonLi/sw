@@ -372,7 +372,7 @@
  "system": [
   {
    "Name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
-   "Severity": "warn",
+   "Severity": "critical",
    "Desc": "Memory usage of the partition is above threshold percentage"
   },
   {

@@ -414,7 +414,7 @@ func init() {
 
 	eventTypes[DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD] = &EventTypeAttributes{
 		EType:      DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD.String(),
-		Severity:   "warn",
+		Severity:   "critical",
 		Category:   "system",
 		Desc:       "Memory usage of the partition is above threshold percentage",
 		SuppressMM: false}

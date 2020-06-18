@@ -80,7 +80,7 @@
     {
         "name": "DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD",
         "category": "System",
-        "severity": "WARN",
+        "severity": "CRITICAL",
         "description": "Memory usage of the partition is above threshold percentage"
     },
     {

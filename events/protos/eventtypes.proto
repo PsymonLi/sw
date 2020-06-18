@@ -291,7 +291,7 @@ enum EventTypes {
                                            (desc)        = "System has detected a pcie link health error"];
 
      DSC_MEM_PARTITION_USAGE_ABOVE_THRESHOLD = 517 [(category) = System,
-                                                    (severity) = WARN,
+                                                    (severity) = CRITICAL,
                                                     (desc) = "Memory usage of the partition is above threshold percentage"];
 
      DSC_MEM_PARTITION_USAGE_BELOW_THRESHOLD = 518 [(category) = System,
