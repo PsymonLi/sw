@@ -29,7 +29,7 @@ def trigger_techsupport_request(tc):
             continue
         api.Logger.debug(f"Copying out {ts_file} from {node} to {tc_dir}")
         # copy out the generated techsupport tarball from naples
-        api.CopyFromNaples(node, [ts_file], tc_dir, True)
+        api.CopyFromNaples(node, [ts_file], tc_dir, naples=None, via_oob=True)
         tc.techsupportTarBalls.append(tc_dir+ts_utils.GetTechsupportFilename(ts_file))
     api.Logger.verbose(f"TS: collected techsupports {tc.techsupportTarBalls}")
     return result

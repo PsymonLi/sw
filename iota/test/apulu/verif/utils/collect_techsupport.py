@@ -59,7 +59,7 @@ def collect_techsupports(tc):
             api.Logger.debug(f"Copying out {ts_file} from {node} to {tc.dir}")
             cur_dir = api.GetCurrentDirectory()
             api.ChangeDirectory("/")
-            api.CopyFromNaples(node, [ts_file], tc.dir, True)
+            api.CopyFromNaples(node, [ts_file], tc.dir, naples=None, via_oob=True)
             tc.techsupportTarBalls.append(tc.dir+ts_utils.GetTechsupportFilename(ts_file))
             api.ChangeDirectory(cur_dir)
     return result
