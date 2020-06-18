@@ -773,6 +773,14 @@ class NaplesManagement(EntityManagement):
         self.SendlineExpect("rm -rf /data/*.dat && sync", "#")
         self.SendlineExpect("rm -rf /obfl/asicerrord_err*", "#")
 
+        for l in [ "SSHD_BOOT_BEHAVIOR=on",
+                   "SSHD_PERSIST=on",
+                   "SSHD_PASSWORD_AUTHENTICATION=yes",
+                   "ROOT_PASSWORD=on", 
+                   "SSH_KEYS_PERSIST=on" ]:
+            self.SendlineExpect("echo %s >> /sysconfig/config0/system_boot_config" % (l), "#")
+
+
     def SetUpInitFiles(self):
         CreateConfigConsoleNoAuth()
         self.SendlineExpect("mount -t ext4 /dev/mmcblk0p6 /sysconfig/config0", "#")
@@ -1005,6 +1013,13 @@ class HostManagement(EntityManagement):
             self.RunNaplesCmd(naples_inst, "rm -rf /data/core/* && sync")
             self.RunNaplesCmd(naples_inst, "rm -rf /data/*.dat && sync")
             self.RunNaplesCmd(naples_inst, "rm -rf /data/pen-netagent* && sync")
+
+            for l in [ "SSHD_BOOT_BEHAVIOR=on",
+                       "SSHD_PERSIST=on",
+                       "SSHD_PASSWORD_AUTHENTICATION=yes",
+                       "ROOT_PASSWORD=on", 
+                       "SSH_KEYS_PERSIST=on" ]:
+                self.RunNaplesCmd(naples_inst, "echo %s >> /sysconfig/config0/system_boot_config" % (l))
 
     def SetUpInitFiles(self):
         CreateConfigConsoleNoAuth()
