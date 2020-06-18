@@ -300,6 +300,12 @@ def parse_region(e, start_offset):
         print('Invalid kind specified for region %s', n)
         return -1
 
+    if 'align' in e:
+        mask = size_str_to_bytes(e['align']) - 1
+        if start_offset & mask:
+            print("region %s not aligned at %s" % (n, e['align']))
+            return -1
+
     # Derive the basename for the macros
     nbase = name + (re.sub("[ -]", "_", n)).upper() + "_"
 

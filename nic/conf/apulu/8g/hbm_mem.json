@@ -101,6 +101,12 @@
             "size" : "32M"
         },
         {
+            "name": "qos-hbm-fifo",
+            "kind": "static",
+            "size": "256M",
+            "align": "256B"
+        },
+        {
             "name": "fwupdate",
             "kind": "static",
             "size": "128K"
@@ -634,11 +640,6 @@
             "size": "131072K",
             "cache": "p4eg",
             "_comment": "TBD"
-        },
-        {
-            "name": "qos-hbm-fifo",
-            "kind": "cfgtbl",
-            "size": "0K"
         },
         {
             "name": "tx-scheduler",
