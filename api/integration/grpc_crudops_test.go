@@ -1335,6 +1335,7 @@ func TestSystemLabels(t *testing.T) {
 
 	// Create some objects for use
 	systemLabel := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, ".test")
+	systemLabel2 := fmt.Sprintf("%s%s", globals.SystemLabelPrefix, ".test2")
 	var customer1, customer2 bookstore.Customer
 	{
 		customer1 = bookstore.Customer{
@@ -1399,6 +1400,7 @@ func TestSystemLabels(t *testing.T) {
 
 	// Create over rest should not have system label
 	// Update over rest should not have system label
+	// Label over rest should not have system label
 
 	{ // ---  POST of the object via REST --- //
 		ret, err := restcl.BookstoreV1().Customer().Create(ctx, &customer2)
@@ -1414,6 +1416,8 @@ func TestSystemLabels(t *testing.T) {
 	// Updating object over grpc so that it has a system label
 	{ // --- update resource via grpc --- //
 		customer2.Labels[systemLabel] = "v1"
+		customer2.Labels[systemLabel2] = "v2"
+		customer2.Labels["k1"] = "v1"
 		if ret, err := apicl.BookstoreV1().Customer().Update(ctx, &customer2); err != nil {
 			t.Fatalf("failed to create Customer(%s)", err)
 		} else {
@@ -1425,13 +1429,38 @@ func TestSystemLabels(t *testing.T) {
 	}
 	{ // ---  Update of the object via REST --- //
 		delete(customer2.Labels, systemLabel)
+		customer2.Labels[systemLabel2] = "v3"
+		customer2.Labels["k2"] = "v2"
 		ret, err := restcl.BookstoreV1().Customer().Update(ctx, &customer2)
 		if err != nil {
 			t.Fatalf("Create of Customer failed (%s)", err)
 		}
 
-		// Returned object should have the system label
+		// Returned object should have the system label unmodified
 		customer2.Labels[systemLabel] = "v1"
+		customer2.Labels[systemLabel2] = "v2"
+		if !(labels.Equals(customer2.Labels, ret.Labels)) {
+			t.Fatalf("updated object labels [add] does not match \n\t[%+v]\n\t[%+v]", customer2, ret)
+		}
+	}
+	{ // ---  Label the object via REST --- //
+		delete(customer2.Labels, systemLabel)
+		customer2.Labels[systemLabel2] = "v3"
+		customer2.Labels["k2"] = "v2"
+		labelObj := api.Label{
+			ObjectMeta: api.ObjectMeta{
+				Name:   customer2.Name,
+				Labels: customer2.Labels,
+			},
+		}
+		ret, err := restcl.BookstoreV1().Customer().Label(ctx, &labelObj)
+		if err != nil {
+			t.Fatalf("Create of Customer failed (%s)", err)
+		}
+
+		// Returned object should have the system label unmodified
+		customer2.Labels[systemLabel] = "v1"
+		customer2.Labels[systemLabel2] = "v2"
 		if !(labels.Equals(customer2.Labels, ret.Labels)) {
 			t.Fatalf("updated object labels [add] does not match \n\t[%+v]\n\t[%+v]", customer2, ret)
 		}

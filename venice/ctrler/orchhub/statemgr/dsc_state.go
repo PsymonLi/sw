@@ -26,7 +26,7 @@ type DistributedServiceCardState struct {
 //GetDistributedServiceCardWatchOptions gets options
 func (sm *Statemgr) GetDistributedServiceCardWatchOptions() *api.ListWatchOptions {
 	opts := api.ListWatchOptions{}
-	opts.FieldChangeSelector = []string{"Spec.DSCProfile", "Status.AdmissionPhase"}
+	opts.FieldChangeSelector = []string{"Spec.DSCProfile", "Status.AdmissionPhase", "Meta.Labels"}
 	return &opts
 }
 

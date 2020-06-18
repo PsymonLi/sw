@@ -728,6 +728,17 @@ func (m *MethodHdlr) HandleInvocation(ctx context.Context, i interface{}) (retRe
 
 		err = kv.ConsistentUpdate(ctx, key, cur, func(oldObj runtime.Object) (runtime.Object, error) {
 			meta := oldObj.(runtime.ObjectMetaAccessor).GetObjectMeta()
+			if updateSpec {
+				// Add system labels that are on the existing object
+				for k, v := range meta.Labels {
+					if strings.HasPrefix(k, globals.SystemLabelPrefix) {
+						if labelInput.Labels == nil {
+							labelInput.Labels = make(map[string]string)
+						}
+						labelInput.Labels[k] = v
+					}
+				}
+			}
 			meta.Labels = labelInput.Labels
 
 			genID, err := strconv.ParseInt(meta.GenerationID, 10, 64)
