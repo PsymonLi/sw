@@ -2810,7 +2810,6 @@ Eth::IsPlatformIonicDev()
         case ETH_MNIC_OOB_MGMT:
         case ETH_MNIC_INTERNAL_MGMT:
         case ETH_MNIC_INBAND_MGMT:
-        case ETH_MNIC_LEARN:
         case ETH_MNIC_CONTROL:
         case ETH_MNIC_P2P:
             return true;
