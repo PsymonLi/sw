@@ -31,6 +31,7 @@ func isNaplesReachable() error {
 	_, err := net.DialTimeout("tcp", naplesIP+":"+revProxyPort, timeOut)
 
 	if err != nil {
+		fmt.Println("Reverse proxy not responding")
 		return err
 	}
 	return nil
