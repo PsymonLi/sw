@@ -612,7 +612,6 @@ func (t *tagsProbe) fetchTags() {
 	vms := []mo.Reference{}
 	for _, workload := range workloads {
 		if utils.IsObjForOrch(workload.Labels, t.VcID, "") {
-			// TODO: FIX ME - should use the utility function
 			vmKey := fmt.Sprintf("%s", utils.ParseGlobalKey(t.OrchID, "", workload.Name))
 			vm := mo.ExtensibleManagedObject{
 				Self: types.ManagedObjectReference{

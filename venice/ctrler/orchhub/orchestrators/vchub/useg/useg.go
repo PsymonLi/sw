@@ -21,9 +21,8 @@ import (
  Each host gets a usegmanager
  given a workload we pick a vlan for it by getting what host its on and picking useg
 
- TODO: implement the following
- when a migration happens, we check if there is a conlflict
- 1. no conflict, - nothing happens
+ when a migration happens, we check if there is a conflict
+ 1. no conflict, - allocate same useg on new host
  2. We switch the useg for that workload and set the new override
 
 
@@ -55,8 +54,6 @@ type Inf interface {
 	GetVlanForVnic(vnicKey string, host string) (int, error)
 	SetVlanForVnic(vnicKey string, host string, vlan int) error
 	GetRemainingVnicCount(host string) (int, error)
-	// TODO: support workload migration
-	// MigrationEvent(key string, oldHost string, newHost string)
 	AssignVlansForPG(pg string) (int, int, error)
 	GetVlansForPG(pg string) (int, int, error)
 	SetVlansForPG(pg string, vlan int) error

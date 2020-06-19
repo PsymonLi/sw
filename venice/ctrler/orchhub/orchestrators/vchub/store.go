@@ -266,7 +266,6 @@ func (v *VCHub) handleRetryEvent(m defs.RetryMsg) {
 
 func (v *VCHub) handleVCNotification(m defs.VCNotificationMsg) {
 	v.Log.Debugf("Received VC Notification %s %v", m.Type, m.Msg)
-	// XXX Do we need m.Type or just use type switching
 	switch m.Msg.(type) {
 	case defs.VMotionStartMsg:
 		v.handleVMotionStart(m.Msg.(defs.VMotionStartMsg))

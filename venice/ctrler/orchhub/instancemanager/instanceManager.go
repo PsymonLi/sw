@@ -80,7 +80,6 @@ type InstanceManager struct {
 func (w *InstanceManager) Stop() {
 	w.stop()
 	w.watchCancel()
-	// TODO: stop orchestrators.
 	for _, orchEntry := range w.orchestratorMap {
 		orchEntry.orch.Destroy(false)
 	}

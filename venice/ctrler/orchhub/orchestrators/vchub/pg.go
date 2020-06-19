@@ -253,7 +253,7 @@ func (v *VCHub) handlePG(m defs.VCEventMsg) {
 		// Object was deleted
 		penPG := penDC.GetPGByID(m.Key)
 		if penPG == nil {
-			// TODO: Check if we have any vlans stored for it if it is non-pensando.
+			// vcenter user created PG vlans may conflict with useg vlan allocation. It is not checked
 			return
 		}
 

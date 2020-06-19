@@ -204,7 +204,7 @@ func (v *VCProbe) RemovePenPG(dcName string, pgName string, retry int) error {
 		if err != nil {
 			// Failed to delete PG
 			v.Log.Errorf("Failed to delete PG, err", err)
-			// TODO: Generate Event and mark object?
+			// No need to generate an event
 			return nil, err
 		}
 
@@ -212,7 +212,7 @@ func (v *VCProbe) RemovePenPG(dcName string, pgName string, retry int) error {
 		if err != nil {
 			// Failed to delete PG
 			v.Log.Errorf("Failed to wait for delete PG, err %s", err)
-			// TODO: Generate Event and mark object?
+			// No need to generate an event
 			return nil, err
 		}
 

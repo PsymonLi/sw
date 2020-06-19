@@ -145,7 +145,6 @@ func NewVCProbe(hOutbox, hEventCh chan<- defs.Probe2StoreMsg, state *defs.State)
 	}
 	probe.newTagsProbe()
 	return probe
-	// TODO: Check we have correct permissions when we connect.
 }
 
 // Start creates a client and view manager
@@ -454,30 +453,6 @@ func (v *VCProbe) vcEventHandlerForDC(dcID string, dcName string) func(update ty
 	}
 }
 
-// func (v *VCProbe) processDVSEvent(key string, obj defs.VCObject, pc []types.PropertyChange) {
-// for _, prop := range pc {
-// 	val := prop.Val.(types.VMwareDVSConfigInfo)
-// 	for _, hostConfig := range val.Host {
-// 		// TODO: handle host removal
-// 		v.Log.Infof("DVS EVENT %s %s %v", key, obj, hostConfig)
-// 		ref := hostConfig.Config.Host.Reference()
-// 		var hostMO mo.HostSystem
-// 		host := object.NewHostSystem(v.client.Client, ref)
-// 		err := host.Properties(v.Ctx, ref, []string{"config"}, hostMO)
-// 		if err == nil {
-// 			v.Log.Errorf("Failed to get host ")
-// 		}
-// 		hostPc := []types.PropertyChange{
-// 			{
-// 				Op:  types.PropertyChangeOpAssign,
-// 				Val: hostMO.Config,
-// 			},
-// 		}
-// 		v.sendVCEvent(ref.Value, defs.HostSystem, hostPc)
-// 	}
-// }
-// }
-
 // ListObj performs a list operation in vCenter
 func (v *VCProbe) ListObj(vcKind defs.VCObject, props []string, dst interface{}, container *types.ManagedObjectReference) error {
 	err := v.ReserveClient()
@@ -723,9 +698,9 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 		// Ignore all events that do not point to Pen-DVS, e.Dvs.Dvs is not populated
 		switch e := ev.(type) {
 		case *types.VmEmigratingEvent:
-			// TODO: this event does not contain useful information, but it is generated
+			// This event does not contain useful information, but it is generated
 			// after migration start event.. it may be a good time assume that traffic on
-			// host1 has stopped at this time and change the vlan-overrides ??
+			// host1 has stopped at this time and change the vlan-overrides ?? Not used rightnow
 			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value)
 		case *types.VmBeingHotMigratedEvent:
 			v.Log.Infof("Event %d - %s - %T for VM %s", e.GetEvent().Key, e, e.Vm.Vm.Value)
@@ -787,8 +762,7 @@ func (v *VCProbe) receiveEvents(ref types.ManagedObjectReference, events []types
 			}
 			v.generateMigrationEvent(defs.VMotionFailed, msg)
 		case *types.MigrationEvent:
-			// TODO: This may be a generic vMotion failure.. but it does not have DestHost Info
-			// Do we need to handle it?
+			// This may be a generic vMotion failure.. but it does not have DestHost Info
 			v.Log.Infof("Event %d - %s - %T for VM %s reason %s", e.GetEvent().Key, ref.Value, e, e.Vm.Vm.Value, e.Fault.LocalizedMessage)
 			msg := defs.VMotionFailedMsg{
 				VMKey:  e.Vm.Vm.Value,
