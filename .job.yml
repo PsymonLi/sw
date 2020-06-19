@@ -175,67 +175,67 @@ image:
 queue_name: builder
 jobs:
   api:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   asset-build:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build"]
   docs:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build"]
   dol:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   iota:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   iota/test/venice:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   iota/test/venice/vcenter:
-    labels: ["precommit", "daily"]
+    labels: ["CI-Regression"]
   iota/test/standalone/precheckin/esx:
-    labels: ["precommit"]
+    labels: ["CI-Precheckin-ESX"]
   iota/test/standalone/precheckin/linux:
-    labels: ["precommit"]
+    labels: ["CI-Precheckin-Linux"]
   iota/test/standalone/precheckin/windows:
-    labels: ["daily"]
+    labels: ["CI-Precheckin-Windows"]
   iota/test/standalone/precheckin/freebsd:
-    labels: ["daily"]
+    labels: ["CI-Precheckin-Freebsd"]
   iota/test/standalone/precheckin/linux-rdma:
-    labels: ["daily"]
+    labels: ["CI-Precheckin-LinuxRDMA"]
   iota/test/standalone/precheckin/freebsd-rdma:
-    labels: ["daily"]
+    labels: ["CI-Precheckin-FreebsdRDMA"]
   iota/test/standalone/sanity/freebsd:
-    labels: ["daily", "2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Santity-Freebsd"]
   iota/test/standalone/sanity/esx:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-ESX"]
   iota/test/standalone/sanity/linux:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-Linux"]
   iota/test/standalone/sanity/windows:
-    labels: ["2xhourly"]
-  nic/apollo/tools/apulu/sanity/base:
-    labels: ["2xhourly"]
-  nic/apollo/tools/apulu/sanity/customer-docker:
-    labels: ["2xhourly"]
-  iota/test/standalone/precheckin/apulu-core:
-    labels: ["precommit"]
-  iota/test/standalone/precheckin/apulu-sdn-pds:
-    labels: ["precommit"]
-  iota/test/standalone/precheckin/athena:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-Windows"]
   iota/test/standalone/sanity/apulu:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-Apulu"]
+  nic/apollo/tools/apulu/sanity/base:
+    labels: ["CI-Sanity-Build", "CI-Sanity-ApuluBase"]
+  nic/apollo/tools/apulu/sanity/customer-docker:
+    labels: ["CI-Sanity-Build", "CI-Sanity-ApuluCustDocker"]
+  iota/test/standalone/precheckin/apulu-core:
+    labels: ["CI-Precheckin-ApuluCore"]
+  iota/test/standalone/precheckin/apulu-sdn-pds:
+    labels: ["CI-Precheckin-ApuluSdnPds"]
+  iota/test/standalone/precheckin/athena:
+    labels: ["CI-Sanity-Build", "CI-Precheckin-Athena"]
   iota/test/standalone/regression/esx:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-ESX"]
   iota/test/standalone/regression/freebsd:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-Freebsd"]
   iota/test/standalone/regression/freebsd-rdma:
-    labels: ["weekly"]
+    labels: ["CI-Weekly", "CI-Regression-FreebsdRDMA"]
   iota/test/standalone/regression/linux:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-Linux"]
   iota/test/standalone/regression/linux-rdma:
-    labels: ["weekly"]
+    labels: ["CI-Weekly", "CI-Regression-LinuxRDMA"]
   iota/test/standalone/compat/tot:
-    labels: ["daily"]
+    labels: ["CI-Regression"]
   iota/test/standalone/regression/windows:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-Windows"]
   iota/test/standalone/regression/linkmgr:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-Linkmgr"]
   iota/test/standalone/compat/compat-server/esx6.7:
     labels: ["compat-server"]
   iota/test/standalone/compat/compat-server/windows2019:
@@ -305,57 +305,58 @@ jobs:
   iota/test/standalone/compat/compat-server/sles15sp1-reboot-uefi/:
     labels: ["compat-server-reboot-uefi"]
   iota/test/standalone/os_coverage/linux:
-    label: ["weekly"]
+    label: ["CI-Weekly"]
   iota/test/standalone/cnic_swm:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-CnicSWM"]
   iota/test/standalone/sanity/swm:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-SWM"]
   iota/test/standalone/regression/swm:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-SWM"]
   iota/test/venice/regression:
-    labels: ["daily"]
+    labels: ["CI-Regression", "CI-Regression-Venice"]
   iota/test/venice/rollout/rolloutbrelm:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-VeniceRollout"]
   iota/test/venice/rollout/apulu2apulu:
-    labels: ["2xhourly"]
+    labels: ["CI-Sanity-Build", "CI-Sanity-VeniceRolloutApulu"]
   iota/test/venice/sim:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent"]
   nic:
-    labels: ["precommit", "hourly", "2xhourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud", "CI-Sanity-Build"]
   nic/agent:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   nic/apollo/tools/athena/sanity/base:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Cloud"]
   # nic/apollo/tools/athena/sanity/customer-docker:
-    # labels: ["precommit", "hourly"]
+    # labels: [ "CI-Sim-UnitTest-Cloud"]
   nic/sdk:
-    labels: ["precommit", "hourly", "2xhourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   penctl:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   platform:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   platform/drivers/linux:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   platform/src/app/pciemgrd:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   storage/offload:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   storage/offload/linux-build-test:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent", "CI-Sim-UnitTest-Cloud"]
   test/ci_targets/e2e:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   test/ci_targets/e2erollout:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
   test/ci_targets/cloud-e2e:
-    labels: ["precommit", "2xhourly"]
+    labels: ["CI-Sanity-Build"]
+  # this is one dummy job only for verify some folder change not impact iris build
+  # no label is required
   test/verify-build:
-    labels: ["precommit"]
   venice:
-    labels: ["precommit", "hourly"]
+    labels: ["CI-Sim-UnitTest-Ent"]
   venice/ui:
-    labels: ["hourly"]
+    labels: ["CI-Sim-UnitTest-Ent"]
   test/ci_targets/controlplane-dol:
-    labels: ["2xhourly"]
+    labels: ["CI-Sim-UnitTest-Cloud"]
 
 dependencies:
   api:
