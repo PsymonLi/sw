@@ -187,7 +187,6 @@ sdptrace_util_reg_program (elb_sdp_csr_cfg_sdp_axi_t &sdp_axi,
     } else {
       trigger_data_val = hlp0.set_slc(trigger_data_val,cfg_inst->capture.trigger_data_p4, 0, 511);
     }
-    //        cout << " justina " << hex << trigger_data_val << dec << endl;
     sdp_trace_trigger.data(trigger_data_val);
 
     cpp_int trigger_mask_val = sdp_trace_trigger.mask();
@@ -222,9 +221,10 @@ dmatrace_util_reg_program (elb_top_csr_t &elb0,
 {
   elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
   elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
+  elb_ptd_csr_cfg_trace_t xd_trace  = elb0.xd.pt.ptd.cfg_trace;
 
   if (mod_name == "prd") {
-    cout << "writing PRD config" << endl;
+    //cout << "writing PRD config" << endl;
 
     //printf("enable %d\n", enable);
     //printf("base_addr %lx\n",  base_addr);
@@ -240,25 +240,42 @@ dmatrace_util_reg_program (elb_top_csr_t &elb0,
     prd_trace.pkt_phv_sync_err_enable(cfg_inst->ctrl.pkt_phv_sync_err_enable);
     prd_trace.write();
 
-    cout << "done writing PRD config " << enable << endl;
+    //cout << "done writing PRD config " << enable << endl;
 
   } 
-  else {
-    cout << "writing PTD config" << endl;
+  else if (mod_name == "ptd") {
+    //cout << "writing PTD config" << endl;
 
-    printf("enable %d\n",  enable);
-    printf("base_addr %lx\n",  base_addr);
-    printf("buf_size %d\n",  cfg_inst->settings.buf_size);
-    printf("wrap %d\n",             cfg_inst->settings.wrap	 );
-    printf("reset %d\n",            cfg_inst->settings.reset	 );
-    printf("phv_enable %d\n",       cfg_inst->ctrl.phv_enable	 );
-    printf("capture_all %d\n",      cfg_inst->ctrl.capture_all	 );
-    printf("axi_err_enable %d\n",   cfg_inst->ctrl.axi_err_enable  );
+    //printf("enable %d\n",  enable);
+    //printf("base_addr %lx\n",  base_addr);
+    //printf("buf_size %d\n",  cfg_inst->settings.buf_size);
+    //printf("wrap %d\n",             cfg_inst->settings.wrap	 );
+    //printf("reset %d\n",            cfg_inst->settings.reset	 );
+    //printf("phv_enable %d\n",       cfg_inst->ctrl.phv_enable	 );
+    //printf("capture_all %d\n",      cfg_inst->ctrl.capture_all	 );
+    //printf("axi_err_enable %d\n",   cfg_inst->ctrl.axi_err_enable  );
 
     ptd_trace.read();
     DMATRACE_CFG_WRITE(ptd_trace, cfg_inst, base_addr, enable);
     ptd_trace.write();
-    cout << "done writing PTD config " << enable << endl;
+    //cout << "done writing PTD config " << enable << endl;
+  }
+  else {
+    //cout << "writing XD config" << endl;
+
+    //printf("enable %d\n",  enable);
+    //printf("base_addr %lx\n",  base_addr);
+    //printf("buf_size %d\n",  cfg_inst->settings.buf_size);
+    //printf("wrap %d\n",             cfg_inst->settings.wrap	 );
+    //printf("reset %d\n",            cfg_inst->settings.reset	 );
+    //printf("phv_enable %d\n",       cfg_inst->ctrl.phv_enable	 );
+    //printf("capture_all %d\n",      cfg_inst->ctrl.capture_all	 );
+    //printf("axi_err_enable %d\n",   cfg_inst->ctrl.axi_err_enable  );
+
+    xd_trace.read();
+    DMATRACE_CFG_WRITE(xd_trace, cfg_inst, base_addr, enable);
+    xd_trace.write();
+    //cout << "done writing XD config " << enable << endl;
   }
 
     return 0;
@@ -268,9 +285,6 @@ dmatrace_util_reg_program (elb_top_csr_t &elb0,
 //
 // mputrace cfg routines
 //
-
-//todo: justina: My assumption is that watch_pc/watch_data should set trace.enable as well.
-//         Check with Neel/Mike
 static inline bool
 mputrace_cfg_enable_all_get (mputrace_cfg_inst_t *cfg_inst)
 {
@@ -348,7 +362,6 @@ sdptrace_cfg_elba_sdp_trace_enable (int pipeline, int stage_id,
 
     bool enable = cfg_inst->ctrl.enable; 
 
-    printf ("Enable jk 0x%x\n", cfg_inst->ctrl.enable);
 
     sdp_axi.read();
 
@@ -434,7 +447,6 @@ dmatrace_cfg_elba_dma_trace_enable (int pipeline,
     static mem_addr_t base_addr = g_state.dmatrace_base;
     bool enable_all = cfg_inst->ctrl.enable; 
 
-    cout << "inside dma_trace_enable" << endl;
 
     if (mod_name == "prd") {
       elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
@@ -448,11 +460,23 @@ dmatrace_cfg_elba_dma_trace_enable (int pipeline,
         return;
       }
     }
-    else {
+    else if (mod_name == "ptd") {
       elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
       ptd_trace.read();
 
       if ( (int)ptd_trace.int_var__enable ) {
+        cout << "Warning: DMA trace for pipeline : "
+	     << dmatrace_pipeline_str_get(pipeline).c_str()
+	     << " is already enabled. " "Ignoring the current config instance."
+	     << endl;
+        return;
+      }
+    }
+    else {
+      elb_ptd_csr_cfg_trace_t xd_trace = elb0.xd.pt.ptd.cfg_trace;
+      xd_trace.read();
+
+      if ( (int)xd_trace.int_var__enable ) {
         cout << "Warning: DMA trace for pipeline : "
 	     << dmatrace_pipeline_str_get(pipeline).c_str()
 	     << " is already enabled. " "Ignoring the current config instance."
@@ -480,7 +504,6 @@ dmatrace_cfg_elba_dma_trace_enable (int pipeline,
 
     dmatrace_util_reg_program(elb0, cfg_inst, base_addr, enable_all, mod_name);
     ///initialize trace buffer
-    //justina
 
     uint8_t buf[64]; 
     for (uint32_t i = 0; i < 64; i++) {
@@ -521,6 +544,13 @@ mputrace_cfg_program (int pipeline, int stage_id, int mpu,
                                            elb0.pcr.stg[stage_id].mpu[mpu].trace,
                                            elb0.pcr.stg[stage_id].mpu[mpu].watch_pc,
                                            elb0.pcr.stg[stage_id].mpu[mpu].watch_data,
+                                           cfg_inst);
+        break;
+    case SXDMA:
+        mputrace_cfg_elba_mpu_trace_enable(pipeline, stage_id, mpu,
+                                           elb0.xg.stg[stage_id].mpu[mpu].trace,
+                                           elb0.xg.stg[stage_id].mpu[mpu].watch_pc,
+                                           elb0.xg.stg[stage_id].mpu[mpu].watch_data,
                                            cfg_inst);
         break;
     case P4IG:
@@ -565,6 +595,13 @@ sdptrace_cfg_program (int pipeline, int stage_id,
                                            elb0.pcr.stg[stage_id].sdp.cfg_sdp_trace_trigger,
                                            cfg_inst);
         break;
+    case SXDMA:
+        sdptrace_cfg_elba_sdp_trace_enable(pipeline, stage_id, 
+                                           elb0.xg.stg[stage_id].sdp.cfg_sdp_axi,	    
+                                           elb0.xg.stg[stage_id].sdp.cfg_sdp_axi_sw_reset, 
+                                           elb0.xg.stg[stage_id].sdp.cfg_sdp_trace_trigger,
+                                           cfg_inst);
+        break;
     case P4IG:
         sdptrace_cfg_elba_sdp_trace_enable(pipeline, stage_id, 
                                            elb0.sgi.stg[stage_id].sdp.cfg_sdp_axi,	    
@@ -596,12 +633,17 @@ dmatrace_cfg_program (int pipeline,
     case TXPDMA:
         dmatrace_cfg_elba_dma_trace_enable(pipeline, elb0, 
 					   cfg_inst, "ptd");
-	cout << "cfg program TX" << endl;
+	//cout << "cfg program TX" << endl;
         break;
     case RXPDMA:
         dmatrace_cfg_elba_dma_trace_enable(pipeline, elb0, 
 					   cfg_inst, "prd");
-	cout << "cfg program RX" << endl;
+	//cout << "cfg program RX" << endl;
+        break;
+    case SXPDMA:
+        dmatrace_cfg_elba_dma_trace_enable(pipeline, elb0, 
+					   cfg_inst, "xd");
+	//cout << "cfg program XD" << endl;
         break;
     default:
         cout << "Unknown pipeline type " << pipeline << endl;
@@ -653,14 +695,12 @@ dmatrace_cfg_reset (void)
 {
     static bool dmatrace_reset_cfg = true;
 
-    cout << "dmatrace_cfg_trace 1" << endl;
 
     if (dmatrace_reset_cfg) {
         dmatrace_reset();
         dmatrace_reset_cfg = false;
     }
 
-    cout << "dmatrace_cfg_trace 2" << endl;
 }
 
 void
@@ -668,7 +708,6 @@ dmatrace_cfg_trace (int pipeline,
                     dmatrace_cfg_inst_t *cfg_inst)
 {
     dmatrace_cfg_reset();
-    cout << "cfg trace" << endl;
     dmatrace_cfg_program(pipeline, cfg_inst);
 }
 
@@ -772,8 +811,10 @@ dmatrace_dump_trace_hdr_fill (dmatrace_trace_hdr_t *trace_hdr,
 
   elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
   elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
+  elb_ptd_csr_cfg_trace_t xd_trace  = elb0.xd.pt.ptd.cfg_trace;
   elb_prd_csr_sta_trace_t prd_sta_trace = elb0.pr.pr.prd.sta_trace;
   elb_ptd_csr_sta_trace_t ptd_sta_trace = elb0.pt.pt.ptd.sta_trace;
+  elb_ptd_csr_sta_trace_t xd_sta_trace  = elb0.xd.pt.ptd.sta_trace;
 
     if (mod_name == "prd") {
       prd_trace.read();
@@ -782,10 +823,15 @@ dmatrace_dump_trace_hdr_fill (dmatrace_trace_hdr_t *trace_hdr,
 	trace_hdr->pkt_phv_sync_err_enable =			      
 	(uint32_t)prd_trace.pkt_phv_sync_err_enable();		    
     }
-    else {
+    else if (mod_name == "ptd") {
       ptd_trace.read();
       ptd_sta_trace.read();
       DMATRACE_TRACE_HDR_WRITE(ptd_sta_trace, ptd_trace, pipeline);
+    }
+    else {
+      xd_trace.read();
+      xd_sta_trace.read();
+      DMATRACE_TRACE_HDR_WRITE(xd_sta_trace, xd_trace, pipeline);
     }
 }
 
@@ -889,15 +935,20 @@ dmatrace_dump_trace_info_write (elb_top_csr_t &elb0,
 
   elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
   elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
+  elb_ptd_csr_cfg_trace_t xd_trace  = elb0.xd.pt.ptd.cfg_trace;
 
   prd_trace.read();
   ptd_trace.read();
+  xd_trace.read();
 
   uint32_t prd_trace_size = (ELBTRACE_ONE << (uint32_t)prd_trace.buf_size());
   mem_addr_t prd_trace_addr = (mem_addr_t)(prd_trace.base_addr() << 6);
 
   uint32_t ptd_trace_size = (ELBTRACE_ONE << (uint32_t)ptd_trace.buf_size());
   mem_addr_t ptd_trace_addr = (mem_addr_t)(ptd_trace.base_addr() << 6);
+
+  uint32_t xd_trace_size = (ELBTRACE_ONE << (uint32_t)xd_trace.buf_size());
+  mem_addr_t xd_trace_addr = (mem_addr_t)(xd_trace.base_addr() << 6);
 
   if (mod_name == "prd") {
     for (uint32_t i = 0; i < prd_trace_size; i++) {
@@ -906,11 +957,18 @@ dmatrace_dump_trace_info_write (elb_top_csr_t &elb0,
       prd_trace_addr += sizeof(buf);
     }
   }
-  else {
+  else if (mod_name == "ptd") {
     for (uint32_t i = 0; i < ptd_trace_size; i++) {
       sdk::lib::pal_mem_read(ptd_trace_addr, buf, sizeof(buf));
       fwrite(buf, sizeof(buf[0]), sizeof(buf), fp);
       ptd_trace_addr += sizeof(buf);
+    }
+  }
+  else  {
+    for (uint32_t i = 0; i < xd_trace_size; i++) {
+      sdk::lib::pal_mem_read(xd_trace_addr, buf, sizeof(buf));
+      fwrite(buf, sizeof(buf[0]), sizeof(buf), fp);
+      xd_trace_addr += sizeof(buf);
     }
   }
 
@@ -1027,6 +1085,7 @@ mputrace_dump_all_pipelines (void)
     int stage_count = 0;
     elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
 
+    ELBTRACE_FOR_EACH_PIPELINE(elb0.xg,  mputrace_dump_pipeline_info_fetch, 4);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pct, mputrace_dump_pipeline_info_fetch, 3);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pcr, mputrace_dump_pipeline_info_fetch, 2);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.sge, mputrace_dump_pipeline_info_fetch, 1);
@@ -1039,6 +1098,7 @@ sdptrace_dump_all_pipelines (void)
     int stage_count = 0;
     elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
 
+    ELBTRACE_FOR_EACH_PIPELINE(elb0.xg,  sdptrace_dump_pipeline_info_fetch, 4);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pct, sdptrace_dump_pipeline_info_fetch, 3);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pcr, sdptrace_dump_pipeline_info_fetch, 2);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.sge, sdptrace_dump_pipeline_info_fetch, 1);
@@ -1053,6 +1113,7 @@ dmatrace_dump_all_pipelines (void)
 
     dmatrace_dump_trace_file_write(elb0, 0, "prd"); 
     dmatrace_dump_trace_file_write(elb0, 1, "ptd"); 
+    dmatrace_dump_trace_file_write(elb0, 2, "xd"); //todo: check values
 }
 
 void
@@ -1142,6 +1203,8 @@ mputrace_reset_all_pipelines (elb_top_csr_t &elb0)
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pct, mputrace_reset_pipeline, &cfg_inst);
     //    cout << "PCR" << endl;
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pcr, mputrace_reset_pipeline, &cfg_inst);
+    //    cout << "XG" << endl;
+    ELBTRACE_FOR_EACH_PIPELINE(elb0.xg,  mputrace_reset_pipeline, &cfg_inst);
 }
 
 //
@@ -1201,6 +1264,8 @@ sdptrace_reset_all_pipelines (elb_top_csr_t &elb0)
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pct, sdptrace_reset_pipeline, &cfg_inst);
     //    cout << "PCR SDP" << endl;
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pcr, sdptrace_reset_pipeline, &cfg_inst);
+    //    cout << "XG SDP" << endl;
+    ELBTRACE_FOR_EACH_PIPELINE(elb0.xg,  sdptrace_reset_pipeline, &cfg_inst);
 }
 
 //
@@ -1216,6 +1281,7 @@ dmatrace_reset_buffer_erase (elb_top_csr_t &elb0,
     
     elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
     elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
+    elb_ptd_csr_cfg_trace_t xd_trace = elb0.xd.pt.ptd.cfg_trace;
 
     if (mod_name == "prd") {
       prd_trace.read();
@@ -1235,6 +1301,15 @@ dmatrace_reset_buffer_erase (elb_top_csr_t &elb0,
         sdk::lib::pal_mem_set(base_addr, 0, buf_size * DMATRACE_ENTRY_SIZE);
       }
     }
+    else if (mod_name == "xd") {
+      xd_trace.read();
+      
+      if ( (int)xd_trace.int_var__enable) {
+        base_addr = (mem_addr_t)(xd_trace.base_addr() << 6);
+        buf_size = (ELBTRACE_ONE << (uint32_t)xd_trace.buf_size());
+        sdk::lib::pal_mem_set(base_addr, 0, buf_size * DMATRACE_ENTRY_SIZE);
+      }
+    }
 }
 
 static inline void
@@ -1242,11 +1317,8 @@ dmatrace_reset_pipeline (elb_top_csr_t &elb0,
                          dmatrace_cfg_inst_t *cfg_inst,
 			 std::string mod_name)
 {
-  cout << "entering dmatrace_trace_buffer_erase" << endl;
   dmatrace_reset_buffer_erase(elb0, mod_name);
-  cout << "leaving dmatrace_trace_buffer_erase" << endl;
   dmatrace_util_reg_program(elb0, cfg_inst, 0, false, mod_name);
-  cout << "leaving dmatrace_util_reg_program" << endl;
 }
 
 static inline void
@@ -1257,10 +1329,12 @@ dmatrace_reset_all_pipelines (elb_top_csr_t &elb0)
 
     memset(&cfg_inst, 0, sizeof(cfg_inst));
     cfg_inst.settings.reset = true;
-    cout << "PTD" << endl;
+    //cout << "PTD" << endl;
     dmatrace_reset_pipeline(elb0, &cfg_inst, "ptd");
-    cout << "PRD" << endl;
+    //cout << "PRD" << endl;
     dmatrace_reset_pipeline(elb0, &cfg_inst, "prd");
+    //cout << "XD" << endl;
+    dmatrace_reset_pipeline(elb0, &cfg_inst, "xd");
 }
 
 void
@@ -1501,6 +1575,7 @@ mputrace_show_all_pipelines (void)
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.sge, mputrace_show_pipeline_0, &cfg_inst, 1);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pcr, mputrace_show_pipeline_0, &cfg_inst, 2);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pct, mputrace_show_pipeline_0, &cfg_inst, 3);
+    ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.xg, mputrace_show_pipeline_0, &cfg_inst, 4);
 
     printf("\n%10s %10s %10s %10s %10s %10s %10s %10s %11s %11s\n",
 	   "pipeline", "stage", "mpu", "wpc_trace", "wpc_count", "wpc_intr", "wpc_stop", 
@@ -1510,6 +1585,7 @@ mputrace_show_all_pipelines (void)
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.sge, mputrace_show_pipeline_1, &cfg_inst, 1);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pcr, mputrace_show_pipeline_1, &cfg_inst, 2);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pct, mputrace_show_pipeline_1, &cfg_inst, 3);
+    ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.xg,  mputrace_show_pipeline_1, &cfg_inst, 4);
 
     printf("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s\n",
 	   "pipeline", "stage", "mpu", "wd_rtrace",  "wd_wtrace", "wd_rintr", "wd_wintr",
@@ -1520,6 +1596,7 @@ mputrace_show_all_pipelines (void)
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.sge, mputrace_show_pipeline_2, &cfg_inst, 1);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pcr, mputrace_show_pipeline_2, &cfg_inst, 2);
     ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.pct, mputrace_show_pipeline_2, &cfg_inst, 3);
+    ELBTRACE_FOR_EACH_PIPELINE_SHOW(elb0.xg,  mputrace_show_pipeline_2, &cfg_inst, 4);
 }
 
 void
@@ -1603,6 +1680,7 @@ sdptrace_show_all_pipelines (void)
     ELBTRACE_FOR_EACH_PIPELINE(elb0.sge, sdptrace_show_pipeline, &cfg_inst);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pcr, sdptrace_show_pipeline, &cfg_inst);
     ELBTRACE_FOR_EACH_PIPELINE(elb0.pct, sdptrace_show_pipeline, &cfg_inst);
+    ELBTRACE_FOR_EACH_PIPELINE(elb0.xg,  sdptrace_show_pipeline, &cfg_inst);
 }
 
 void
@@ -1633,9 +1711,11 @@ dmatrace_show_pipeline_internal (elb_top_csr_t &elb0,
 {
   elb_prd_csr_cfg_trace_t prd_trace = elb0.pr.pr.prd.cfg_trace;
   elb_ptd_csr_cfg_trace_t ptd_trace = elb0.pt.pt.ptd.cfg_trace;
+  elb_ptd_csr_cfg_trace_t xd_trace  = elb0.xd.pt.ptd.cfg_trace;
 
     prd_trace.read();
     ptd_trace.read();
+    xd_trace.read();
     //    cout << "elbtrace show_pipeline_internal" << endl;
 
     if (mod_name == "prd") {
@@ -1665,7 +1745,7 @@ dmatrace_show_pipeline_internal (elb_top_csr_t &elb0,
       }
 
     }
-    else {
+    else if (mod_name == "ptd") {
       if ( (int)prd_trace.int_var__enable ) {
         printf("%10s"
                "%10" PRIu32
@@ -1692,6 +1772,34 @@ dmatrace_show_pipeline_internal (elb_top_csr_t &elb0,
       }
       
     }
+    else if (mod_name == "xd") {
+      if ( (int)xd_trace.int_var__enable ) {
+        printf("%10s"
+               "%10" PRIu32
+           " %10" PRIu8
+           " %10" PRIu8
+           " %10" PRIu8
+           " %15s"
+           " %23" PRIu8
+           " %10" PRIu8
+	   "  "    
+           " 0x%08" PRIx64
+           " %7" PRIu32 "\n",
+               "xd",
+	       (uint32_t)xd_trace.enable(),
+	       (uint32_t)xd_trace.phv_enable(),
+	       (uint32_t)xd_trace.capture_all(),
+	       (uint32_t)xd_trace.axi_err_enable(),
+	       "NA",
+	       (uint32_t)xd_trace.wrap(),
+	       (uint32_t)xd_trace.rst(),
+	       (long unsigned int)(xd_trace.base_addr() << 6),
+               (uint32_t)(xd_trace.buf_size()));
+	//               (uint32_t)(ELBTRACE_ONE << (uint32_t)xd_trace.buf_size()));
+      }
+      
+    }
+
 }
 
 
@@ -1708,6 +1816,7 @@ dmatrace_show (void)
   
   dmatrace_show_pipeline_internal(elb0, "prd");
   dmatrace_show_pipeline_internal(elb0, "ptd");
+  dmatrace_show_pipeline_internal(elb0, "xd");
   
     cout << "elbtrace show success" << endl;
 }

@@ -1,0 +1,49 @@
+DMA trace setup instructions
+============================
+1. Configuration
+
+    >> elbtrace conf_dma conf/elbtrace/<cfg_filename>.json
+
+2. Check configuration
+
+    >> elbtrace show_dma
+
+3. Reset configuration
+
+    >> elbtrace reset_dma
+
+4. Dump trace
+
+    >> elbtrace dmp_dma <dump_filename>.bin
+
+
+DMA trace postprocessing instructions
+======================================
+
+    >> sdk/platform/elbtrace/elbtrace.py decode_dma <dump_filename>.bin 
+
+    optional arguments:
+     --print=short
+     --print=all
+     --print=def
+     --sort=<fieldname>
+     --sort=timestamp
+    
+    >> sdk/platform/elbtrace/elbtrace.py decode_dma dma.bin --print=short --sort=timestamp
+
+
+    some of the useful fieldname options to sort by:
+        trace_code
+        txs_lif
+        timestamp
+        qtype
+        u_qid
+        phv_id
+        tm_iq
+        tm_oq
+        lif_id
+        cmdtype
+
+
+
+

@@ -285,9 +285,9 @@ Following is a sample config.json file for reference -
     2 Run elbtrace.py script on the binary with mpu_prog_info.conf and
       elbtrace.syms files
         To decode the trace dump file
-            sdk/platform/elbtrace/elbtrace.py decode mpu.bin --load=mpu_prog_info.json --sym=elbtrace.syms
+            sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --load=mpu_prog_info.json --sym=elbtrace.syms
         To track packet with PHV timestamp “0x1c07a80c” across stages
-            sdk/platform/mputrace/elbtrace.py decode mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
+            sdk/platform/mputrace/elbtrace.py decode_mpu mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
         To dump info about the packet
             grep -e pipeline -e stage -e PROGRAM -e BRANCH -e table_hit pkt1c07.log
 

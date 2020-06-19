@@ -173,7 +173,9 @@ class CMDTYPE(Enum):
     mem2mem = 6
     cmdptr  = 7 
 
+#todo: check the values
 class DMAPIPE(Enum):
+    SxPDMA = 2
     RxPDMA = 1
     TxPDMA = 0
 

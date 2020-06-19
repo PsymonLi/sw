@@ -62,7 +62,7 @@ class SdpCtlHeader(BigEndianStructure):
 
         ("__pad2", c_uint16, 12),
         ("phv_len", c_uint8, 4),
-        ("timestamp", c_uint64, 48),
+        ("local_timestamp", c_uint64, 48),
     ]
 
 
@@ -75,7 +75,7 @@ class IntGlobalHeader(BigEndianStructure):
         
         ("tm_iq", c_uint8, 5),
         ("lif", c_uint16, 11),
-        ("timestamp_upr", c_uint64, 48),
+        ("timestamp", c_uint64, 48),
 
         ("tm_span_session", c_uint8, 8),
         ("tm_replicate_ptr", c_uint16, 16),
@@ -197,14 +197,15 @@ class IntRxHeader(BigEndianStructure):
         ("__padding", c_int8 * 29),
     ]
 
-
+#todo: check the values
 class PIPELINE(Enum):
+    SXDMA_XG  = 4
     TXDMA_PCT = 3
     RXDMA_PCR = 2
-    PGEG_SGE  = 1
-    PGIG_SGI  = 0
+    P4EG_SGE  = 1
+    P4IG_SGI  = 0
 
-def decode_sdp_trace_file(bytez):
+def decode_sdp_trace_file(bytez, sort_type):
     #print ("test_def\n")
     #print("\n>>> justina SDP Trace : numbytes in file : {}\n".format(len(bytez)))
     assert (isinstance(bytez, bytes))
@@ -265,7 +266,7 @@ def decode_sdp_trace_file(bytez):
         #print(Clist)
         #print(Plist)
         b_ctl, b_phv = list_to_bytes(Clist, Plist)
-        decode_rings(b_ctl, b_phv, fhdr.pipeline_num)
+        decode_rings(b_ctl, b_phv, fhdr.pipeline_num, sort_type)
 
     return
     
@@ -294,7 +295,7 @@ def decode_ctlRing(bytez):
 
     return
     
-def decode_rings(ctl, phv, pipeline):
+def decode_rings(ctl, phv, pipeline, sort_type):
     #assert (isinstance(ctl, bytes))
     s = 0
     k = 0
@@ -358,21 +359,25 @@ def decode_rings(ctl, phv, pipeline):
            #print(fld_name)
            entryDict[fld_name] = int.from_bytes(Pdata, byteorder='big')
            
+        if not sort_type:
+            sortedList = entryDict
+        else:
+            sortedList = sorted(entryDict, key=lambda x: x[sort_type])
 
         #print(entryDict)
-        for key in (entryDict):
+        for key in (sortedList):
             if key.startswith('phv_line'):
                 if key.startswith('phv_line1'):
                     print(" ")
                     print("PHV (64B in each flit excluding SOP intrinsic):")
                     print("===============================================")
-                print("0x{:0128x}".format(entryDict[key]))
+                print("0x{:0128x}".format(sortedList[key]))
             else:
                 if key.startswith('tm_iport'):
                     print(" ")
                     print("PHV intrinsic fields (SOP flit):")
                     print("===============================")
-                print("{:50} {:#x}".format(key, entryDict[key]))
+                print("{:50} {:#x}".format(key, sortedList[key]))
 
         k += (Cinfo.phv_len-1) * 64
         #print ("jumping k to {}".format(k))

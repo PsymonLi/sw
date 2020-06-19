@@ -888,12 +888,9 @@ sdptrace_pack_global (cpp_int glb_data, elb_phv_intr_global_c_t *cfg_inst)
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_oport, 128, 128+4-1);
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_iq, 123, 123+5-1);
     glb_data = hlp.set_slc(glb_data, cfg_inst->lif, 112, 112+11-1);
-    cout << "timestamp " << hex << cfg_inst->timestamp << endl;
-    //    glb_data = hlp.set_slc(glb_data, (cfg_inst->timestamp >> 32), 64+32, 64+48-1);
-    //glb_data = hlp.set_slc(glb_data, cfg_inst->timestamp, 64, 64+32-1);
+
     cpp_int set_val_cpp_int(cfg_inst->timestamp);
     glb_data = hlp.set_slc(glb_data, set_val_cpp_int, 64, 64+48-1);
-    cout << "glb_data " << hex << glb_data << endl;
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_span_session, 56, 56+8-1);
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_replicate_ptr, 40, 40+16-1);
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_replicate_en, 39, 39+1-1);
@@ -908,7 +905,6 @@ sdptrace_pack_global (cpp_int glb_data, elb_phv_intr_global_c_t *cfg_inst)
     glb_data = hlp.set_slc(glb_data, cfg_inst->error_bits, 4, 4+6-1);
     glb_data = hlp.set_slc(glb_data, cfg_inst->tm_instance_type, 0, 0+4-1);
 
-    cout << "justina glb_pack " << hex << glb_data << endl;
 
     return (glb_data);
 }
@@ -1003,7 +999,6 @@ sdptrace_pack_tx (cpp_int tx_data, cpp_int glb_data, elb_phv_intr_txdma_c_t *cfg
     tx_data = hlp.set_slc(tx_data, set_val_cpp_int2, 64, 64+64-1);
     tx_data = hlp.set_slc(tx_data, set_val_cpp_int3, 0, 0+64-1);
 
-    cout << "justina txdma_pack " << hex << tx_data << endl;
 
     return (tx_data);
 }

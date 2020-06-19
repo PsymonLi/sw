@@ -54,6 +54,7 @@ m_file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header fil
 
 s_file_parser = subparsers.add_parser('decode_sdp', help='Parse SDP Trace file')
 s_file_parser.add_argument('sdp_file', help='SDP Trace file path')
+s_file_parser.add_argument('--sort', default="", help='Sort by fieldname')
 
 d_file_parser = subparsers.add_parser('decode_dma', help='Parse DMA Trace file')
 d_file_parser.add_argument('dma_file', help='DMA Trace file path')
@@ -296,7 +297,8 @@ elif args.command == "decode_sdp":
     with open(args.sdp_file, "rb") as f:
 
         trace = defaultdict(list)
+        sort_type = args.sort
 
-        decode_sdp_trace_file(f.read())
+        decode_sdp_trace_file(f.read(), sort_type)
 
         print("decode_sdp done")

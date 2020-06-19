@@ -121,6 +121,7 @@ class MpuTraceInstructionEntry(BigEndianStructure):
     ]
 
 class PIPELINE(Enum):
+    SXDMA_XG  = 4
     TXDMA_PCT = 3
     RXDMA_PCR = 2
     PGEG_SGE  = 1

@@ -161,27 +161,25 @@ mputrace_handle_options (int argc, char *argv[])
         break;
     case MPUTRACE_SHOW:
 
-      cout << "MREGION_MPU_TRACE_ADDR  " << hex << MREGION_MPU_TRACE_ADDR << endl;
-      cout << "MREGION_BASE_ADDR 	        "   << hex << MREGION_BASE_ADDR 	     << endl;
-      cout << "MREGION_MPU_TRACE_START_OFFSET  " << hex << MREGION_MPU_TRACE_START_OFFSET << endl;
-      cout << "MREGION_MPU_TRACE_SIZE  " << hex << MREGION_MPU_TRACE_SIZE << endl;
+      //      cout << "MREGION_MPU_TRACE_ADDR  " << hex << MREGION_MPU_TRACE_ADDR << endl;
+      // cout << "MREGION_BASE_ADDR 	        "   << hex << MREGION_BASE_ADDR 	     << endl;
+      //cout << "MREGION_MPU_TRACE_START_OFFSET  " << hex << MREGION_MPU_TRACE_START_OFFSET << endl;
+      //cout << "MREGION_MPU_TRACE_SIZE  " << hex << MREGION_MPU_TRACE_SIZE << endl;
 
-      cout << "REGION_SPLIT     " << hex << REGION_SPLIT   << endl;
-      cout << "MPU_TRACE_SIZE   " << hex << MPU_TRACE_SIZE  << endl;
-      cout << "SDP_PHV_TRACE_SIZE   " << hex << SDP_PHV_TRACE_SIZE  << endl;
-      cout << "SDP_CTL_TRACE_SIZE   " << hex << SDP_CTL_TRACE_SIZE  << endl;
-      cout << "DMA_TRACE_SIZE   " << hex << DMA_TRACE_SIZE  << "\n" <<  endl;
+      // cout << "REGION_SPLIT     " << hex << REGION_SPLIT   << endl;
+      //cout << "MPU_TRACE_SIZE   " << hex << MPU_TRACE_SIZE  << endl;
+      //cout << "SDP_PHV_TRACE_SIZE   " << hex << SDP_PHV_TRACE_SIZE  << endl;
+      //cout << "SDP_CTL_TRACE_SIZE   " << hex << SDP_CTL_TRACE_SIZE  << endl;
+      //cout << "DMA_TRACE_SIZE   " << hex << DMA_TRACE_SIZE  << "\n" <<  endl;
 
-      cout << " MPUTRACE_BASE	   " << hex << TRACE_BASE		     << endl;
-      cout << " MPUTRACE_END       " << hex << TRACE_END                      << endl;
-      cout << " SDPTRACE_PHV_BASE  " << hex << SDPTRACE_PHV_BASE  << endl;
-      cout << " SDPTRACE_PHV_END   " << hex << SDPTRACE_PHV_END   << endl;
-      cout << " SDPTRACE_CTL_BASE  " << hex << SDPTRACE_CTL_BASE  << endl;
-      cout << " SDPTRACE_CTL_END   " << hex << SDPTRACE_CTL_END   << endl;
-      cout << " DMATRACE_BASE      " << hex << DMATRACE_BASE      << endl;
-      cout << " DMATRACE_END       " << hex << DMATRACE_END       << endl;
-
-
+      //cout << " MPUTRACE_BASE	   " << hex << TRACE_BASE		     << endl;
+      //cout << " MPUTRACE_END       " << hex << TRACE_END                      << endl;
+      //cout << " SDPTRACE_PHV_BASE  " << hex << SDPTRACE_PHV_BASE  << endl;
+      //cout << " SDPTRACE_PHV_END   " << hex << SDPTRACE_PHV_END   << endl;
+      //cout << " SDPTRACE_CTL_BASE  " << hex << SDPTRACE_CTL_BASE  << endl;
+      //cout << " SDPTRACE_CTL_END   " << hex << SDPTRACE_CTL_END   << endl;
+      //cout << " DMATRACE_BASE      " << hex << DMATRACE_BASE      << endl;
+      //cout << " DMATRACE_END       " << hex << DMATRACE_END       << endl;
 
         elbtrace_init();
         mputrace_show();

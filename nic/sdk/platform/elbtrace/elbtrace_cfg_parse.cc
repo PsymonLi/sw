@@ -27,12 +27,13 @@ namespace platform {
 #define MPUTRACE_MATCH_ALL ".*"
 
 std::map<std::string, int> pipeline_str_to_id = {
+    {"sxdma", SXDMA},
     {"txdma", TXDMA},
     {"rxdma", RXDMA},
     {"p4ig", P4IG},
     {"p4eg", P4EG},
 };
-std::map<int, int> max_stages = {{TXDMA, 7}, {RXDMA, 7}, {P4IG, 7}, {P4EG, 7}};
+std::map<int, int> max_stages = {{SXDMA, 3}, {TXDMA, 7}, {RXDMA, 7}, {P4IG, 7}, {P4EG, 7}};
 std::map<std::string, int> trace_options = {
     {"trace_enable", MPUTRACE_TRACE_ENABLE},
     {"phv_debug", MPUTRACE_PHV_DEBUG},
@@ -50,6 +51,8 @@ std::map<std::string, int> trace_options = {
 std::string
 mputrace_pipeline_str_get (int pipeline_num) {
     switch (pipeline_num) {
+    case SXDMA:
+        return std::string("sxdma");
     case TXDMA:
         return std::string("txdma");
     case RXDMA:
@@ -66,6 +69,8 @@ mputrace_pipeline_str_get (int pipeline_num) {
 std::string
 dmatrace_pipeline_str_get (int pipeline_num) {
     switch (pipeline_num) {
+    case SXPDMA:
+        return std::string("sxdma");
     case TXPDMA:
         return std::string("txdma");
     case RXPDMA:
@@ -322,13 +327,6 @@ mputrace_json_ctrl_parse (ptree &pt, mputrace_cfg_inst_t *cfg_inst)
     boost::optional<bool> val;
     boost::optional<std::string> str;
 
-    //    for (ptree::iterator pos = pt.begin(); pos != pt.end();) {
-    //  cout << "justina test " << pos->first.data() << endl;
-    //  val = pt.get_optional<bool>(pos->first.data());
-    //  //call a macro
-    //  JUSTINA_MACRO(pos->first.data(), val);
-    //  pos++;
-    // }
 
     val = pt.get_optional<bool>("trace");
     if (val) {
@@ -446,7 +444,7 @@ dmatrace_json_ctrl_parse (ptree &pt, dmatrace_cfg_inst_t *cfg_inst)
     val = pt.get_optional<bool>("trace");
     if (val) {
         cfg_inst->ctrl.enable = val.get();
-	cout << "ctrl parse enable " << val.get() << endl;
+	//cout << "ctrl parse enable " << val.get() << endl;
     }
     val = pt.get_optional<bool>("phv_enable");
     if (val) {
@@ -554,14 +552,14 @@ dmatrace_json_cfg_inst_parse (ptree &pt, dmatrace_cfg_inst_t *cfg_inst)
         pos++;
     }
 
-    cout << "\n dma_cfg_inst_parse begin" << endl;
-    cout << "buf_size " << dec << cfg_inst->settings.buf_size  << endl;
-    cout << "wrap "           <<  cfg_inst->settings.wrap	  << endl;
-    cout << "reset "          <<  cfg_inst->settings.reset	  << endl;
-    cout << "phv_enable "     <<  cfg_inst->ctrl.phv_enable	  << endl;
-    cout << "capture_all "    <<  cfg_inst->ctrl.capture_all	  << endl;
-    cout << "axi_err_enable " <<  cfg_inst->ctrl.axi_err_enable   << endl;
-    cout << "dma_cfg_inst_parse end \n" << endl;
+    //cout << "\n dma_cfg_inst_parse begin" << endl;
+    //cout << "buf_size " << dec << cfg_inst->settings.buf_size  << endl;
+    //cout << "wrap "           <<  cfg_inst->settings.wrap	  << endl;
+    //cout << "reset "          <<  cfg_inst->settings.reset	  << endl;
+    //cout << "phv_enable "     <<  cfg_inst->ctrl.phv_enable	  << endl;
+    //cout << "capture_all "    <<  cfg_inst->ctrl.capture_all	  << endl;
+    //cout << "axi_err_enable " <<  cfg_inst->ctrl.axi_err_enable   << endl;
+    //cout << "dma_cfg_inst_parse end \n" << endl;
     
 
 
@@ -615,18 +613,18 @@ elbtrace_json_cfg_inst_program (ptree &pt, std::string mod_name)
     }
     else if (mod_name == "dma") {
       dmatrace_json_cfg_inst_parse(pt, &cfg_inst_dma);
-      cout << "json_cfg_inst_program" << endl;
+      //cout << "json_cfg_inst_program" << endl;
       
       for (int p = 0; p < DMA_PIPE_CNT; p++) {
-	cout << "json_cfg_inst_program pipe " << p << endl;
+	//cout << "json_cfg_inst_program pipe " << p << endl;
 	
-	cout << "pipeline str is " << cfg_inst_dma.pipeline_str << endl;
-	cout << "pipeline str get is " << dmatrace_pipeline_str_get(p) << endl;
+	//cout << "pipeline str is " << cfg_inst_dma.pipeline_str << endl;
+	//cout << "pipeline str get is " << dmatrace_pipeline_str_get(p) << endl;
         if (elbtrace_is_match(dmatrace_pipeline_str_get(p),
                               cfg_inst_dma.pipeline_str)) {
-	  cout << "json_cfg_inst_program inside if " << endl;
+	  //cout << "json_cfg_inst_program inside if " << endl;
 	  dmatrace_cfg_trace(p, &cfg_inst_dma);
-	  cout << "json_cfg_inst_program end if " << endl;
+	  //cout << "json_cfg_inst_program end if " << endl;
         }
       }
     }
@@ -651,8 +649,6 @@ elbtrace_json_parse_and_program (const char *cfg_file, std::string mod_name)
     iter = pos->second;
     for (pos = iter.begin(); pos != iter.end();) {
         if (strcmp(pos->first.data(), "") == 0) {
-	  //	  cout << "justina" << pos->first.data() << endl;
-	  //cout << "inside elbtrace_json_parse_and_program" << endl;
 	  elbtrace_json_cfg_inst_program(pos->second, mod_name);
         }
         ++pos;

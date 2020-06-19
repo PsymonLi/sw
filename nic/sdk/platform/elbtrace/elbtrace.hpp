@@ -9,8 +9,8 @@
 ///
 //===----------------------------------------------------------------------===//
 
-#ifndef __MPU_TRACE_HPP__
-#define __MPU_TRACE_HPP__
+#ifndef __ELB_TRACE_HPP__
+#define __ELB_TRACE_HPP__
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -33,9 +33,9 @@ namespace platform {
 
 #define ELBTRACE_STR_NAME_LEN 256
 #define TRACE_ENTRY_SIZE 64
-#define SDPTRACE_PHV_ENTRY_SIZE 1024  //todo - justina
-#define SDPTRACE_CTL_ENTRY_SIZE 64  //todo - justina
-#define DMATRACE_ENTRY_SIZE 64  //todo - justina
+#define SDPTRACE_PHV_ENTRY_SIZE 1024  
+#define SDPTRACE_CTL_ENTRY_SIZE 64  
+#define DMATRACE_ENTRY_SIZE 64  
 #define MPUTRACE_FREE(ptr)                                                     \
     if (ptr) {                                                                 \
         free(ptr);                                                             \
@@ -63,12 +63,14 @@ typedef enum pipeline_type_s {
     P4EG,
     RXDMA,
     TXDMA,
+    SXDMA,
     PIPE_CNT
 } pipeline_type_t;
 
 typedef enum dma_pipeline_type_s {
     RXPDMA,
     TXPDMA,
+    SXPDMA,
     DMA_PIPE_CNT
 } dma_pipeline_type_t;
 
@@ -307,21 +309,8 @@ typedef struct sdptrace_trace_hdr_s {
 
 } sdptrace_trace_hdr_t;
 
-  //todo: it's 158, but somehow reads as 190. Check why
   static_assert(sizeof(sdptrace_trace_hdr_t) == 160,
 		"sdp trace instance struct should be 160B");
-
-
-
-typedef struct test_s {
-  uint64_t trigger_data[8]; //todo: shd this map to PHV?    
-  uint64_t trigger_mask[8];    //todo: shd this map to PHV?
-} test_t;
-
-  static_assert(sizeof(test_t) == 128,
-		"test instance struct should be 128B");
-
-
 
 typedef struct  dmatrace_trace_hdr_s {
   uint8_t pipeline_num;

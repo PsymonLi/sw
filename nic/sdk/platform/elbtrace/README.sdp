@@ -1,0 +1,41 @@
+SDP trace setup instructions
+============================
+1. Configuration
+
+    >> elbtrace conf_sdp conf/elbtrace/<cfg_filename>.json
+
+2. Check configuration
+
+    >> elbtrace show_sdp
+
+3. Reset configuration
+
+    >> elbtrace reset_sdp
+
+4. Dump trace
+
+    >> elbtrace dmp_sdp <dump_filename>.bin
+
+
+SDP trace postprocessing instructions
+======================================
+
+    >> sdk/platform/elbtrace/elbtrace.py decode_sdp <dump_filename>.bin 
+
+    optional arguments:
+     --sort=<fieldname>
+     --sort=timestamp
+    
+    >> sdk/platform/elbtrace/elbtrace.py decode_sdp sdp.bin --sort=timestamp
+
+
+ Sort can be by any fieldname from PHV intrinsic header (both global and pipe specific headers).
+ Refer to $ASIC_SRC/elba/design/common/gen/elb_phv_intr_decoders.svh for fieldnames.
+ The fields are listed in sdptrace.py as well:
+   - IntGlobalHeader
+   - IntP4Header
+   - IntRxHeader
+   - IntTxHeader
+
+
+
