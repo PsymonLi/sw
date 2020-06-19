@@ -361,7 +361,10 @@ func verifySmartNICObj(t *testing.T, name string, exists bool, phase, host strin
 			}
 			nicObj, err = getSmartNIC(ometa)
 			AssertOk(t, err, "Error reading ApiServer object")
-			eq := reflect.DeepEqual(nicObj, nicState.DistributedServiceCard)
+			// Spec and Status should be identical, meta can be different due to the fact that we
+			// filter ApiServer notifications that don't have Spec or Status changes
+			eq := reflect.DeepEqual(nicObj.Spec, nicState.DistributedServiceCard.Spec) &&
+				reflect.DeepEqual(nicObj.Status, nicState.DistributedServiceCard.Status)
 			if !eq {
 				log.Infof("ApiServer object does not match local cached object. ApiServer: %+v, Cache: %+v", nicObj, nicState.DistributedServiceCard)
 				return false, nil
@@ -463,6 +466,16 @@ func setSmartNICAdmit(t *testing.T, meta *api.ObjectMeta, admit bool) {
 		return true, nil
 	}
 	AssertEventually(t, f, fmt.Sprintf("Failed to set Admit for smartNIC %s", meta.Name))
+	// Make sure CMD got the update
+	f2 := func() (bool, interface{}) {
+		nicState, err := cmdenv.StateMgr.FindSmartNIC(meta.Name)
+		if err != nil {
+			log.Errorf("Error getting smartnic %v from stateMgr: %v", meta.Name, err)
+			return false, nil
+		}
+		return nicState.Spec.Admit == admit, nil
+	}
+	AssertEventually(t, f2, fmt.Sprintf("Inconsistent Admit state for smartNIC %s, admit: %v", meta.Name, admit))
 }
 
 // setSmartNICID sets the "ID" attribute on an existing SmartNIC object
@@ -1928,30 +1941,27 @@ func testSetup() {
 	tInfo.apiServer.WaitRunning()
 	addr, err := tInfo.apiServer.GetAddr()
 	if err != nil {
-		os.Exit(-1)
+		log.Errorf("Cannot get address for ApiServer")
 	}
 
 	// Create api client
 	tInfo.apiServerAddr = addr
 	apiCl, err := apicache.NewGrpcUpstream("smartnic_test", tInfo.apiServerAddr, tInfo.l)
 	if err != nil {
-		fmt.Printf("Cannot create gRPC client - %v", err)
-		os.Exit(-1)
+		log.Fatalf("Cannot create gRPC client - %v", err)
 	}
 	tInfo.apiClient = apiCl
 
 	// create gRPC server for smartNIC service and gRPC client
 	tInfo.rpcServer, tInfo.rpcClient = createRPCServerClient()
 	if tInfo.rpcServer == nil || tInfo.rpcClient == nil {
-		fmt.Printf("Err creating rpc server & client")
-		os.Exit(-1)
+		log.Fatalf("Err creating rpc server & client")
 	}
 
 	// Check if no cluster exists to start with - negative test
 	_, err = tInfo.stateMgr.GetCluster()
 	if err == nil {
-		fmt.Printf("Unexpected cluster object found, err: %s", err)
-		os.Exit(-1)
+		log.Fatalf("Unexpected cluster object found, err: %s", err)
 	}
 
 	// Create test cluster object
@@ -1965,8 +1975,7 @@ func testSetup() {
 	}
 	_, err = tInfo.apiClient.ClusterV1().Cluster().Create(context.Background(), clRef)
 	if err != nil {
-		fmt.Printf("Error creating Cluster object, %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error creating Cluster object, %v", err)
 	}
 
 	defaultProfile := &cmd.DSCProfile{
@@ -1981,8 +1990,7 @@ func testSetup() {
 
 	_, err = tInfo.apiClient.ClusterV1().DSCProfile().Create(context.Background(), defaultProfile)
 	if err != nil {
-		fmt.Printf("Error creating default DSCProfile object, %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error creating default DSCProfile object, %v", err)
 	}
 
 }
@@ -2010,8 +2018,7 @@ func testTeardown() {
 
 	_, err = tInfo.apiClient.ClusterV1().DSCProfile().Delete(context.Background(), &defaultProfile.ObjectMeta)
 	if err != nil {
-		fmt.Printf("Error creating default DSCProfile object, %v", err)
-		os.Exit(-1)
+		log.Fatalf("Error creating default DSCProfile object, %v", err)
 	}
 
 	// stop the rpc client and server
