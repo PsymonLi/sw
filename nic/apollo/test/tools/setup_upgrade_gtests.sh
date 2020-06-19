@@ -167,6 +167,21 @@ function upg_wait_for_pdsagent() {
     done
 }
 
+function upg_wait_for_process_exit() {
+    pname=$1
+    counter=$2
+    while [ $counter -gt 0 ]
+    do
+        exist=`pgrep $pname`
+        if [ -z "$exist" ]; then
+            break
+        fi
+        sleep 1
+        counter=$(( $counter - 1 ))
+    done
+    echo "$counter"
+}
+
 function kill_process() {
     pid=`pgrep -f "$1"`
     if [ -z "$pid" ];then

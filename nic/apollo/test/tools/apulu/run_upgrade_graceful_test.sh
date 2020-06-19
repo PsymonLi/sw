@@ -29,6 +29,7 @@ upg_wait_for_pdsagent
 # override trap
 function trap_finish () {
     rm -rf /update/*     # upgrade init mode
+    rm -rf /.upgrade*
     upg_finish upgmgr
     stop_processes
     stop_model
@@ -74,11 +75,18 @@ upg_operd_init
 start_processes
 upg_wait_for_pdsagent
 start_upgrade_manager
-sleep 30  # TODO check status
+# wait for the upgmgr to exit
+sleep 30
+counter=upg_wait_for_process_exit pdsupgmgr 300
+if [ $counter -eq 0 ];then
+    echo "Pdsupgmgr not exited"
+    exit 1
+fi
 
 # dol always tries to connect to upgmgr. so  just spawn once
 rm /update/*
 start_upgrade_manager
+sleep 5
 $DOLDIR/main.py $CMDARGS 2>&1 | tee dol.log
 status=${PIPESTATUS[0]}
 
