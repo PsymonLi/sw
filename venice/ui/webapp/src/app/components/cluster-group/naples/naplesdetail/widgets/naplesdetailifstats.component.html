@@ -13,36 +13,38 @@
       <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
         {{ ifs.stats.status }}</div>
     </div>
-    <div fxFlex="5px"></div>
-    <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
-      <div class="naplesdetail-interface-detail-statsrow-shortLabel">RX</div>
-      <div class="naplesdetail-interface-detail-statsrow-longLabel">bytes/s</div>
-      <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
-        {{ displayStatsNumber(ifs.stats.rxBandwidth) }}
+    <ng-container *featureGuard="'enterprise'">
+      <div fxFlex="5px"></div>
+      <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
+        <div class="naplesdetail-interface-detail-statsrow-shortLabel">RX</div>
+        <div class="naplesdetail-interface-detail-statsrow-longLabel">bytes/s</div>
+        <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
+          {{ displayStatsNumber(ifs.stats.rxBandwidth) }}
+        </div>
       </div>
-    </div>
-    <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
-      <div class="naplesdetail-interface-detail-statsrow-shortLabel">BW</div>
-      <div class="naplesdetail-interface-detail-statsrow-longLabel">packets/s</div>
-      <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
-        {{ displayStatsCount(ifs.stats.rxBandwidth2) }}
+      <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
+        <div class="naplesdetail-interface-detail-statsrow-shortLabel">BW</div>
+        <div class="naplesdetail-interface-detail-statsrow-longLabel">packets/s</div>
+        <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
+          {{ displayStatsCount(ifs.stats.rxBandwidth2) }}
+        </div>
       </div>
-    </div>
-    <div fxFlex="5px"></div>
-    <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
-      <div class="naplesdetail-interface-detail-statsrow-shortLabel">TX</div>
-      <div class="naplesdetail-interface-detail-statsrow-longLabel">bytes/s</div>
-      <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
-        {{ displayStatsNumber(ifs.stats.txBandwidth) }}
+      <div fxFlex="5px"></div>
+      <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
+        <div class="naplesdetail-interface-detail-statsrow-shortLabel">TX</div>
+        <div class="naplesdetail-interface-detail-statsrow-longLabel">bytes/s</div>
+        <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
+          {{ displayStatsNumber(ifs.stats.txBandwidth) }}
+        </div>
       </div>
-    </div>
-    <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
-      <div class="naplesdetail-interface-detail-statsrow-shortLabel">BW</div>
-      <div class="naplesdetail-interface-detail-statsrow-longLabel">packets/s</div>
-      <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
-        {{ displayStatsCount(ifs.stats.txBandwidth2) }}
+      <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
+        <div class="naplesdetail-interface-detail-statsrow-shortLabel">BW</div>
+        <div class="naplesdetail-interface-detail-statsrow-longLabel">packets/s</div>
+        <div fxFlex="1 1 auto" class="naplesdetail-interface-detail-statsrow-value">
+          {{ displayStatsCount(ifs.stats.txBandwidth2) }}
+        </div>
       </div>
-    </div>
+    </ng-container>
     <div fxFlex="5px"></div>
     <div fxLayout="row" class="naplesdetail-interface-detail-statsrow">
       <div class="naplesdetail-interface-detail-statsrow-shortLabel">RX</div>

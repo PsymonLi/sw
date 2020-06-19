@@ -6,6 +6,7 @@ $storage-color: #70bab4;
 
 .cpumemorystorage-stats-container {
   min-width: 590px;
+  max-width: 750px !important;
   height: 345px;
 
   .lastupdateTime {
