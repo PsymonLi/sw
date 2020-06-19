@@ -156,7 +156,7 @@ int
 ftlv4_update_cached_entry (ftlv4 *obj, uint16_t thread_id)
 {
     uint64_t handle;
-    return ftlv4_insert(obj, &g_ip4_flow_cache[thread_id].ip4_last_read_flow, 
+    return ftlv4_insert(obj, &g_ip4_flow_cache[thread_id].ip4_last_read_flow,
                         0, &handle, 1, thread_id);
 }
 
@@ -364,7 +364,7 @@ ftlv4_export_with_entry (ipv4_flow_hash_entry_t *iv4entry,
     flow->action = drop ? OPERD_FLOW_ACTION_DENY : OPERD_FLOW_ACTION_ALLOW;
 
     pds_operd_commit_flow_ip4(flow);
-    
+
     return 0;
 }
 
@@ -443,7 +443,7 @@ ftlv4_set_key (ipv4_flow_hash_entry_t *entry,
 
 uint32_t ftlv4_entry_count;
 
-static void
+static bool
 ftlv4_dump_hw_entry_iter_cb (sdk_table_api_params_t *params)
 {
     ipv4_flow_hash_entry_t *hwentry =  (ipv4_flow_hash_entry_t *) params->entry;
@@ -456,9 +456,10 @@ ftlv4_dump_hw_entry_iter_cb (sdk_table_api_params_t *params)
         hwentry->key2str(buf, FTL_ENTRY_STR_MAX - 1);
         fprintf(fp, "%s\n", buf);
     }
+    return false;
 }
 
-static void
+static bool
 ftlv4_dump_hw_entry_detail_iter_cb (sdk_table_api_params_t *params)
 {
     ipv4_flow_hash_entry_t *hwentry =  (ipv4_flow_hash_entry_t *) params->entry;
@@ -484,6 +485,7 @@ ftlv4_dump_hw_entry_detail_iter_cb (sdk_table_api_params_t *params)
                 (uint64_t)((uint64_t *) (entry + 36)), entry, ses);
         fprintf(fp, "\n");
     }
+    return false;
 }
 
 int
@@ -614,7 +616,7 @@ ftlv4_dump_stats_cache (char *buf, int max_len)
     ftl_dump_stats_cache(buf, max_len);
 }
 
-static void
+static bool
 ftlv4_hw_entry_count_cb (sdk_table_api_params_t *params)
 {
     ipv4_flow_hash_entry_t *hwentry =  (ipv4_flow_hash_entry_t *) params->entry;
@@ -623,6 +625,7 @@ ftlv4_hw_entry_count_cb (sdk_table_api_params_t *params)
         uint64_t *count = (uint64_t *)params->cbdata;
         (*count)++;
     }
+    return false;
 }
 
 uint64_t
@@ -783,12 +786,12 @@ ftlv4_cache_advance_count (int val, uint16_t thread_id)
 }
 
 int
-ftlv4_cache_program_index (ftlv4 *obj, uint16_t id, uint64_t *handle, 
+ftlv4_cache_program_index (ftlv4 *obj, uint16_t id, uint64_t *handle,
                            uint16_t thread_id)
 {
     return ftlv4_insert(obj, g_ip4_flow_cache[thread_id].ip4_flow + id,
-                        g_ip4_flow_cache[thread_id].ip4_hash[id], 
-                        handle, 
+                        g_ip4_flow_cache[thread_id].ip4_hash[id],
+                        handle,
                         g_ip4_flow_cache[thread_id].flags[id].update,
                         thread_id);
 }

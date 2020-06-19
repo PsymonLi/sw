@@ -505,10 +505,7 @@ mem_hash::iterate(sdk_table_api_params_t *params) {
         goto iterate_return;
     }
 
-    ret = static_cast<mem_hash_main_table*>(main_table_)->iterate_(&apictx_);
-    if (ret != SDK_RET_OK) {
-        MEMHASH_TRACE_ERR("main table iteration failed. ret:%d", ret);
-    }
+    static_cast<mem_hash_main_table *>(main_table_)->iterate_(&apictx_);
 
 iterate_return:
     MEM_HASH_API_END_(ret);

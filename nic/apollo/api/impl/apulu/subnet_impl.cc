@@ -784,7 +784,7 @@ subnet_impl::activate_hw(api_base *api_obj, api_base *orig_obj,
     return ret;
 }
 
-static void
+static bool
 local_mapping_dhcp_binding_upd_cb_ (sdk_table_api_params_t *params)
 {
     sdk_ret_t ret;
@@ -815,16 +815,16 @@ local_mapping_dhcp_binding_upd_cb_ (sdk_table_api_params_t *params)
 
     if (key->key_metadata_local_mapping_lkp_type != KEY_TYPE_IPV4) {
         // not interested in non-IPv4 entries
-        return;
+        return false;
     }
     if (key->key_metadata_local_mapping_lkp_id != vpc_hw_id) {
         // this mapping doesn't belong to this vpc
-        return;
+        return false;
     }
     data = (local_mapping_appdata_t *)(params->appdata);
     if (data->ip_type != MAPPING_TYPE_OVERLAY) {
         // not interested in public IPs
-        return;
+        return false;
     }
 
     // get the subnet of this local overlay mapping entry
@@ -841,7 +841,7 @@ local_mapping_dhcp_binding_upd_cb_ (sdk_table_api_params_t *params)
 
     // and check if this is subnet of interest
     if (mapping_data.egress_bd_id != bd_id) {
-        return;
+        return false;
     }
 
     spec.skey.type = PDS_MAPPING_TYPE_L3;
@@ -855,7 +855,7 @@ local_mapping_dhcp_binding_upd_cb_ (sdk_table_api_params_t *params)
     mapping_impl_db()->remove_dhcp_binding(&spec.skey);
     mapping_impl_db()->insert_dhcp_binding(&spec);
 
-    return;
+    return false;
 }
 
 sdk_ret_t

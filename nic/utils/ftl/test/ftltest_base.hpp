@@ -247,7 +247,7 @@ public:
         return sdk::SDK_RET_OK;
     }
 
-    static void
+    static bool
     iterate_callback(sdk_table_api_params_t *params) {
 #ifdef IRIS
         vector<flow_hash_info_entry_t> *entry_vec;
@@ -267,7 +267,7 @@ public:
         SDK_TRACE_INFO("Handle[%s] Entry[%s]",
                        params->handle.tostr(), buff);
 
-        return;
+        return false;
     }
 
     sdk_ret_t iterate(uint32_t count, sdk_ret_t expret,

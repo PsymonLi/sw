@@ -48,7 +48,7 @@ public:
     ~mem_hash_base_table() {
     }
 
-    sdk_ret_t iterate_(mem_hash_api_context *ctx);
+    bool iterate_(mem_hash_api_context *ctx);
 };
 
 class mem_hash_hint_table: public mem_hash_base_table {
@@ -120,7 +120,7 @@ private:
     sdk_ret_t get_with_handle_(mem_hash_api_context *ctx);
     sdk_ret_t find_(mem_hash_api_context *ctx,
                     mem_hash_api_context **retctx);
-    sdk_ret_t iterate_(mem_hash_api_context *ctx);
+    bool iterate_(mem_hash_api_context *ctx);
     sdk_ret_t validate_(mem_hash_api_context *ctx);
 public:
     static mem_hash_main_table* factory(sdk::table::properties_t *props);

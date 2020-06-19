@@ -427,6 +427,8 @@ sdk_ret_t
 sltcam::iterate(sdk::table::sdk_table_api_params_t *params) {
     sdk_table_api_params_t iterparams = { 0 };
     sdk_ret_t ret = sdk::SDK_RET_OK;
+    bool iterate_stop = false;
+
     SLTCAM_API_BEGIN_();
     auto ctx = create_sltctx(sdk::table::SDK_TABLE_API_GET, params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
@@ -444,7 +446,10 @@ sltcam::iterate(sdk::table::sdk_table_api_params_t *params) {
         iterparams.mask = ctx->swkeymask;
         iterparams.appdata = ctx->swdata;
         iterparams.cbdata = params->cbdata;
-        params->itercb(&iterparams);
+        iterate_stop = params->itercb(&iterparams);
+        if (iterate_stop) {
+            break;
+        }
     }
 
 done:

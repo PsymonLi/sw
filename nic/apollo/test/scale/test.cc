@@ -1934,9 +1934,10 @@ create_underlay_nexthops (uint32_t num_underlay_nh)
 }
 
 static uint32_t flow_counter = 0;
-static void
+static bool
 table_entry_iterate (sdk::table::sdk_table_api_params_t *params) {
     flow_counter++;
+    return false;
 }
 
 sdk_ret_t

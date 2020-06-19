@@ -24,7 +24,7 @@ typedef struct ftl_cb_data_s {
 uint32_t ftlv4_entry_count;
 bool g_ftl_skip_walk = false;
 
-static void
+static bool
 ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
 {
     ipv4_flow_hash_entry_t *hwentry = (ipv4_flow_hash_entry_t *) params->entry;
@@ -37,7 +37,7 @@ ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
     if (!g_ftl_skip_walk && hwentry->get_entry_valid()) {
         ftlv4_entry_count++;
         if (summary) {
-            return;
+            return false;
         }
         uint32_t ses_id = hwentry->get_session_index();
         bool drop = pds_flow_get_session_drop(ses_id);
@@ -63,9 +63,11 @@ ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
             g_ftl_skip_walk = true;
         }
     }
+    return false;
 }
 
-void
+#if 0
+static bool
 ftlv6_entry_iter_cb(sdk::table::sdk_table_api_params_t *params)
 {
     flow_hash_entry_t *hwentry = (flow_hash_entry_t *) params->entry;
@@ -99,7 +101,9 @@ ftlv6_entry_iter_cb(sdk::table::sdk_table_api_params_t *params)
         proto_rsp.set_apistatus(types::ApiStatus::API_STATUS_OK);
         proto_rsp.SerializeToFileDescriptor(*fd);
     }
+    return false;
 }
+#endif
 
 // Callback to dump flow entries via UDS
 static void

@@ -86,8 +86,8 @@ mem_hash_table_bucket::write_(mem_hash_api_context *ctx) {
 
     if (ctx->props->entry_trace_en) {
         MEMHASH_API_CONTEXT_PRINT_SW_FIELDS(ctx);
-    } 
-    
+    }
+
     p4pdret = mem_hash_p4pd_entry_install(ctx->table_id, ctx->table_index,
                                           ctx->sw_key, NULL, ctx->sw_data);
     if (p4pdret != P4PD_SUCCESS) {
@@ -194,10 +194,10 @@ mem_hash_table_bucket::create_(mem_hash_api_context *ctx) {
         // Fill common data
         ret = set_sw_data_appdata_(ctx, ctx->params->appdata);
         SDK_ASSERT(ret == SDK_RET_OK);
-        
+
         if (!reserved_) {
-            // update stats only If we are inserting a new entry 
-            // reserved entries are counted already during 
+            // update stats only If we are inserting a new entry
+            // reserved entries are counted already during
             // reserve api
             ctx->table_stats->insert(!MEMHASH_API_CONTEXT_IS_MAIN(ctx));
         } else {
@@ -208,7 +208,7 @@ mem_hash_table_bucket::create_(mem_hash_api_context *ctx) {
         ctx->table_stats->insert(!MEMHASH_API_CONTEXT_IS_MAIN(ctx));
         reserved_ = true;
     }
-    
+
     // Set the Handle
     if (MEMHASH_API_CONTEXT_IS_MAIN(ctx)) {
         ctx->handle->pindex(ctx->table_index);
@@ -424,7 +424,7 @@ mem_hash_table_bucket::find_last_hint_(mem_hash_api_context *ctx) {
         MEMHASH_TRACE_VERBOSE("- No Valid Hint Found");
         return SDK_RET_ENTRY_NOT_FOUND;
     }
-    
+
     MEMHASH_TRACE_VERBOSE("Result = [ LastHint: Slot:%d Hint:%d ]", ctx->hint_slot, ctx->hint);
 
     return SDK_RET_OK;
@@ -661,7 +661,7 @@ mem_hash_table_bucket::defragment_(mem_hash_api_context *ectx,
                                    mem_hash_api_context *tctx) {
     sdk_ret_t ret = SDK_RET_OK;
     mem_hash_api_context *pctx; // Parent context
-    
+
     // NOTE NOTE NOTE:
     // This function will be called for 'ectx' bucket.
     SDK_ASSERT(this == ectx->bucket);
@@ -711,8 +711,10 @@ mem_hash_table_bucket::defragment_(mem_hash_api_context *ectx,
     return SDK_RET_OK;
 }
 
-sdk_ret_t
+bool
 mem_hash_table_bucket::iterate_(mem_hash_api_context *ctx) {
+    bool iterate_stop = false;
+
     if (valid_) {
         sdk_table_api_params_t params = { 0 };
         ctx->sw_valid = false;
@@ -725,8 +727,8 @@ mem_hash_table_bucket::iterate_(mem_hash_api_context *ctx) {
             params.handle.pindex(ctx->table_index);
         } else {
             params.handle.sindex(ctx->table_index);
-        } 
-        ctx->params->itercb(&params);
+        }
+        iterate_stop = ctx->params->itercb(&params);
     }
-    return SDK_RET_OK;
+    return iterate_stop;
 }

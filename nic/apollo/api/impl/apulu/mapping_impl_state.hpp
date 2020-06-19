@@ -103,7 +103,7 @@ private:
     friend class mapping_impl;    ///< friend of mapping_impl_state
     friend class subnet_impl;     ///< friend of mapping_impl_state
     friend class vnic_impl;       ///< friend of mapping_impl_state
-    friend void local_mapping_dump_cb(sdk_table_api_params_t *params);
+    friend bool local_mapping_dump_cb(sdk_table_api_params_t *params);
 
 private:
     mem_hash *mapping_tbl_;

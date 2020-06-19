@@ -40,8 +40,6 @@ const int k_dhcp_ctl_port = 7911;
 const uint32_t dhcpctl_statements_attr_len = 1600;
 const char *lease_file = "/var/lib/dhcp/dhcpd.leases";
 static sdk_ret_t dump_dhcp_reservation (mapping_hw_key_t *key, int out_fd);
-static uint32_t mapping_dump_count;
-static bool mapping_dump_skip;
 
 /// \defgroup PDS_MAPPING_IMPL_STATE - mapping database functionality
 /// \ingroup PDS_MAPPING
@@ -191,7 +189,6 @@ typedef struct pds_mapping_dump_cb_data_s {
     int io_fd;
     int sock_fd;
     int mapping_count;
-    bool mapping_skip;
 } pds_mapping_dump_cb_data_t;
 
 /// \brief     function to print local mapping header
@@ -208,7 +205,7 @@ local_mapping_print_header (int fd)
 
 /// \brief     callback function to dump local mapping entries
 /// \param[in] params   sdk_table_api_params_t structure
-void
+bool
 local_mapping_dump_cb (sdk_table_api_params_t *params)
 {
     mapping_swkey_t             mapping_key;
@@ -230,11 +227,6 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
     char                        *vnic_uuid = NULL;
 
     cb_data = (pds_mapping_dump_cb_data_t *)(params->cbdata);
-    // skip if uds socket is closed
-    if (cb_data->mapping_skip) {
-        return;
-    }
-    cb_data->mapping_count++;
     sock_fd = cb_data->sock_fd;
     io_fd = cb_data->io_fd;
 
@@ -245,7 +237,7 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
     // skip L2 mappings as they are provided as vnic entries
     if ((key->key_metadata_local_mapping_lkp_type == KEY_TYPE_MAC) ||
         (data->ip_type != MAPPING_TYPE_OVERLAY)) {
-        return;
+        return false;
     }
 
     // read MAPPING table
@@ -260,7 +252,7 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
                                    sdk::table::handle_t::null());
     ret = mapping_impl_db()->mapping_tbl()->get(&api_params);
     if (ret != SDK_RET_OK) {
-        return;
+        return false;
     }
 
     // TODO: read NAT table for public ip address
@@ -282,7 +274,7 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, mapping_data.egress_bd_id,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        return;
+        return false;
     }
     encap.val.vnid = bd_data.bd_info.vni;
     if (encap.val.vnid) {
@@ -308,11 +300,13 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
             vnic_uuid ? vnic_uuid : "-", nexthop_type.c_str(),
             mapping_data.nexthop_id, pds_encap2str(&encap));
 
+    cb_data->mapping_count++;
     // poll to check if uds socket is still alive
     if (((cb_data->mapping_count % UDS_SOCK_ALIVE_CHECK_COUNT) == 0) &&
         !is_uds_socket_alive(sock_fd)) {
-        cb_data->mapping_skip = true;
+        return true;
     }
+    return false;
 }
 
 /// \brief     function to print l3 mapping header
@@ -329,7 +323,7 @@ remote_mapping_print_l3_header (int fd)
 
 /// \brief     callback function to dump remote l3 mapping entries
 /// \param[in] params   sdk_table_api_params_t structure
-static void
+static bool
 remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
 {
     mapping_swkey_t             *mapping_key;
@@ -351,19 +345,14 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
 
     // skip l2 mappings
     if (mapping_key->p4e_i2e_mapping_lkp_type == KEY_TYPE_MAC) {
-        return;
+        return false;
     }
     // skip local mappings
     if (mapping_data->nexthop_type == NEXTHOP_TYPE_NEXTHOP) {
-        return;
+        return false;
     }
 
     cb_data = (pds_mapping_dump_cb_data_t *)(params->cbdata);
-    // skip if uds socket is closed
-    if (cb_data->mapping_skip) {
-        return;
-    }
-    cb_data->mapping_count++;
     sock_fd = cb_data->sock_fd;
     io_fd = cb_data->io_fd;
 
@@ -384,7 +373,7 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
     p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, mapping_data->egress_bd_id,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        return;
+        return false;
     }
     encap.val.vnid = bd_data.bd_info.vni;
     if (encap.val.vnid) {
@@ -406,11 +395,13 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
             nexthop_type.c_str(),
             mapping_data->nexthop_id);
 
+    cb_data->mapping_count++;
     // poll to check if uds socket is still alive
     if (((cb_data->mapping_count % UDS_SOCK_ALIVE_CHECK_COUNT) == 0) &&
         !is_uds_socket_alive(sock_fd)) {
-        cb_data->mapping_skip = true;
+        return true;
     }
+    return false;
 }
 
 /// \brief     function to print l2 mapping header
@@ -426,7 +417,7 @@ remote_mapping_print_l2_header (int fd)
 
 /// \brief     callback function to dump remote l2 mapping entries
 /// \param[in] params   sdk_table_api_params_t structure
-static void
+static bool
 remote_l2_mapping_dump_cb (sdk_table_api_params_t *params)
 {
     mapping_swkey_t             *mapping_key;
@@ -446,19 +437,14 @@ remote_l2_mapping_dump_cb (sdk_table_api_params_t *params)
 
     // skip l3 mappings
     if (mapping_key->p4e_i2e_mapping_lkp_type != KEY_TYPE_MAC) {
-        return;
+        return false;
     }
     // skip local mappings
     if (mapping_data->nexthop_type == NEXTHOP_TYPE_NEXTHOP) {
-        return;
+        return false;
     }
 
     cb_data = (pds_mapping_dump_cb_data_t *)(params->cbdata);
-    // skip if uds socket is closed
-    if (cb_data->mapping_skip) {
-        return;
-    }
-    cb_data->mapping_count++;
     sock_fd = cb_data->sock_fd;
     io_fd = cb_data->io_fd;
 
@@ -478,11 +464,13 @@ remote_l2_mapping_dump_cb (sdk_table_api_params_t *params)
             nexthop_type.c_str(),
             mapping_data->nexthop_id);
 
+    cb_data->mapping_count++;
     // poll to check if uds socket is still alive
     if (((cb_data->mapping_count % UDS_SOCK_ALIVE_CHECK_COUNT) == 0) &&
         !is_uds_socket_alive(sock_fd)) {
-        cb_data->mapping_skip = true;
+        return true;
     }
+    return false;
 }
 
 sdk_ret_t
@@ -504,7 +492,6 @@ mapping_impl_state::mapping_dump(cmd_ctxt_t *ctxt) {
     cb_data.io_fd = io_fd;
     cb_data.sock_fd = sock_fd;
     cb_data.mapping_count = 0;
-    cb_data.mapping_skip = false;
 
     if (!args->mapping_dump.key_valid) {
         type = args->mapping_dump.type;

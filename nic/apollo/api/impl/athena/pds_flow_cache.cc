@@ -423,7 +423,7 @@ pds_flow_cache_delete ()
     return;
 }
 
-static void
+static bool
 flow_cache_entry_iterate_cb (sdk_table_api_params_t *params)
 {
     flow_hash_entry_t *hwentry = (flow_hash_entry_t *)params->entry;
@@ -462,7 +462,7 @@ flow_cache_entry_iterate_cb (sdk_table_api_params_t *params)
         cbdata->iter_cb_arg->handle64 = params->handle.tou64();
         cbdata->iter_cb(cbdata->iter_cb_arg);
     }
-    return;
+    return false;
 }
 
 pds_ret_t

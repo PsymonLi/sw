@@ -398,10 +398,11 @@ TEST_F(sldm_test, test5) {
  * - Iterate test
  *
  * ---------------------------------------------------------------------------*/
-static void
+static bool
 print_fn(sdk_table_api_params_t *ap)
 {
     SDK_TRACE_VERBOSE("Callback , index %u\n", ap->handle.pindex());
+    return false;
 }
 
 TEST_F(sldm_test, test6) {

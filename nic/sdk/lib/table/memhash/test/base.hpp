@@ -379,11 +379,11 @@ protected:
         return sdk::SDK_RET_OK;
     }
 
-    static void
+    static bool
     IterateCallback(sdk_table_api_params_t *params) {
         SDK_TRACE_VERBOSE("Entry[%p] Key=[%s] Data=[%s]", &params->handle,
                h5_key2str(params->key), h5_appdata2str(params->appdata));
-        return;
+        return false;
     }
 
     sdk_ret_t Iterate() {

@@ -43,12 +43,17 @@ mem_hash_base_table::destroy_(mem_hash_base_table *table) {
     table->buckets_ = NULL;
 }
 
-sdk_ret_t
+bool
 mem_hash_base_table::iterate_(mem_hash_api_context *ctx) {
+    bool iterate_stop = false;
+
     ctx->table_id = table_id_;
     for (uint32_t i = 0; i < table_size_; i++) {
         ctx->table_index = i;
-        buckets_[i].iterate_(ctx);
+        iterate_stop = buckets_[i].iterate_(ctx);
+        if (iterate_stop) {
+            break;
+        }
     }
-    return SDK_RET_OK;
+    return iterate_stop;
 }

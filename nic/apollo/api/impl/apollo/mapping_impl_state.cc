@@ -113,7 +113,7 @@ mapping_impl_state::table_transaction_end(void) {
     return SDK_RET_OK;
 }
 
-void
+bool
 mapping_dump_cb (sdk_table_api_params_t *params)
 {
     int fd = *(int *)(params->cbdata);

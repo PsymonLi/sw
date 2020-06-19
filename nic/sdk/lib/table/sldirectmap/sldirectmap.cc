@@ -411,7 +411,9 @@ sldirectmap::iterate(sdk_table_api_params_t *params)
             p.actiondata = tmp_data;
             p.handle.pindex(i);
             p.cbdata = params->cbdata;
-            params->itercb(&p);
+            if (params->itercb(&p) == true) {
+                break;
+            }
         }
     }
 end:

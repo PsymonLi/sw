@@ -328,12 +328,12 @@ protected:
         return sdk::SDK_RET_OK;
     }
 
-    static void
+    static bool
     IterateCallback(sdk_table_api_params_t *params) {
         SDK_TRACE_DEBUG("Entry[%p] Key=[%s] Mask=[%s] Data=[%s]", &params->handle,
                         sltcam_key2str(params->key), sltcam_key2str(params->mask),
                         sltcam_data2str(params->appdata));
-        return;
+        return false;
     }
 
     sdk_ret_t Iterate() {

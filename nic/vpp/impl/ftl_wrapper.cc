@@ -365,7 +365,7 @@ ftl_delete (ftl *obj)
 uint32_t ftlv6_entry_count;
 uint32_t ftll2_entry_count;
 
-static void
+static bool
 ftl_dump_hw_entry_iter_cb (sdk_table_api_params_t *params)
 {
     flow_hash_entry_t *hwentry =  (flow_hash_entry_t *) params->entry;
@@ -383,9 +383,10 @@ ftl_dump_hw_entry_iter_cb (sdk_table_api_params_t *params)
         hwentry->key2str(buf, FTL_ENTRY_STR_MAX - 1);
         fprintf(fp, "%s\n", buf);
     }
+    return false;
 }
 
-static void
+static bool
 ftl_dump_hw_entry_detail_iter_cb (sdk_table_api_params_t *params)
 {
     flow_hash_entry_t *hwentry =  (flow_hash_entry_t *) params->entry;
@@ -416,6 +417,7 @@ ftl_dump_hw_entry_detail_iter_cb (sdk_table_api_params_t *params)
                 (uint64_t)((uint64_t *) (entry + 36)), entry, ses);
         fprintf(fp, "\n");
     }
+    return false;
 }
 
 int
@@ -467,7 +469,7 @@ end:
     return retcode;
 }
 
-static void
+static bool
 ftl_hw_entry_count_cb (sdk_table_api_params_t *params)
 {
     flow_hash_entry_t *hwentry =  (flow_hash_entry_t *) params->entry;
@@ -477,6 +479,7 @@ ftl_hw_entry_count_cb (sdk_table_api_params_t *params)
         uint64_t *count = (uint64_t *)params->cbdata;
         (*count)++;
     }
+    return false;
 }
 
 uint64_t

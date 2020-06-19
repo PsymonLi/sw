@@ -146,7 +146,7 @@ flow_table_pd::stats_get(sys::TableStatsEntry *stats_entry) {
 // -----------------------------------------------------------------------
 // TableResponseEntryFill: fills proto
 // -----------------------------------------------------------------------
-static void
+static bool
 table_entry_fill(sdk_table_api_params_t *params) {
     char *str = NULL;
     flow_hash_info_entry_t *hwentry = (flow_hash_info_entry_t *) params->entry;
@@ -172,7 +172,7 @@ table_entry_fill(sdk_table_api_params_t *params) {
                           params->handle.svalid(), params->handle.sindex());
     }
 
-    return;
+    return false;
 }
 
 // -----------------------------------------------------------------------

@@ -227,7 +227,8 @@ pd_table_kind_get_from_id (uint32_t table_id, table::TableKind *kind)
 }
 
 
-bool pd_table_directmap_entry(uint32_t index, void *data, const void *cb_data)
+bool
+pd_table_directmap_entry(uint32_t index, void *data, const void *cb_data)
 {
     char buff[4096] = {0};
     directmap_entry_cb_t *cb = (directmap_entry_cb_t *)cb_data;
@@ -245,7 +246,8 @@ bool pd_table_directmap_entry(uint32_t index, void *data, const void *cb_data)
     return TRUE;
 }
 
-void pd_table_sldirectmap_entry(sdk::table::sdk_table_api_params_t *params)
+bool
+pd_table_sldirectmap_entry(sdk::table::sdk_table_api_params_t *params)
 {
     char buff[4096] = {0};
     sldirectmap_entry_cb_t *cb = (sldirectmap_entry_cb_t *)params->cbdata;
@@ -259,6 +261,8 @@ void pd_table_sldirectmap_entry(sdk::table::sdk_table_api_params_t *params)
 
     entry->set_index(params->handle.pindex());
     entry->set_entry(buff);
+
+    return FALSE;
 }
 
 hal_ret_t

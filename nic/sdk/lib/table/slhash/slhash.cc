@@ -304,6 +304,8 @@ slhash::iterate(sdk::table::sdk_table_api_params_t *params) {
     sdk_ret_t ret = sdk::SDK_RET_OK;
 #if 0
     sdk_table_api_params_t iterparams = { 0 };
+    bool iterate_stop = false;
+
     SLHASH_API_BEGIN_();
     auto ctx = ctx_.init(sdk::table::SDK_TABLE_API_GET, params, &props_);
     SDK_ASSERT_RETURN(ctx, sdk::SDK_RET_OOM);
@@ -321,7 +323,10 @@ slhash::iterate(sdk::table::sdk_table_api_params_t *params) {
         iterparams.mask = ctx.swkeymask;
         iterparams.appdata = ctx.swdata;
         iterparams.cbdata = params->cbdata;
-        params->itercb(&iterparams);
+        iterate_stop = params->itercb(&iterparams);
+        if (iterate_stop) {
+            break;
+        }
     }
 
 done:

@@ -322,23 +322,16 @@ done:
 //---------------------------------------------------------------------------
 // mem_hash_main_table iterate_: Iterate entries from main table
 //---------------------------------------------------------------------------
-sdk_ret_t
+bool
 mem_hash_main_table::iterate_(mem_hash_api_context *ctx) {
-    sdk_ret_t ret = SDK_RET_OK;
+    bool iterate_stop;
 
-    ret = mem_hash_base_table::iterate_(ctx);
-    if (ret != SDK_RET_OK) {
-        MEMHASH_TRACE_ERR("main table iteration failed. ret:%d", ret);
-        return ret;
+    iterate_stop = mem_hash_base_table::iterate_(ctx);
+    if (!iterate_stop) {
+        iterate_stop = hint_table_->iterate_(ctx);
     }
 
-    ret = hint_table_->iterate_(ctx);
-    if (ret != SDK_RET_OK) {
-        MEMHASH_TRACE_ERR("hint table iteration failed. ret:%d", ret);
-        return ret;
-    }
-
-    return SDK_RET_OK;
+    return iterate_stop;
 }
 
 sdk_ret_t

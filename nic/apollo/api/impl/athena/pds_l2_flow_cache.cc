@@ -311,7 +311,7 @@ pds_l2_flow_cache_delete ()
     return;
 }
 
-static void
+static bool
 l2_flow_cache_entry_iterate_cb (sdk_table_api_params_t *params)
 {
     l2_flow_hash_entry_t *hwentry = (l2_flow_hash_entry_t *)params->entry;
@@ -332,7 +332,7 @@ l2_flow_cache_entry_iterate_cb (sdk_table_api_params_t *params)
         data->index = l2flow_get_index(hwentry);
         cbdata->iter_cb(cbdata->iter_cb_arg);
     }
-    return;
+    return false;
 }
 
 pds_ret_t
