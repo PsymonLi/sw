@@ -242,6 +242,7 @@ func (s *storeImpl) handleListFwLogsDuringGrpcInit(bucket string, opts api.ListW
 		wg.Add(1)
 		go func(output chan<- []runtime.Object, wg *sync.WaitGroup, dscID, lastProcessedKey string) {
 			defer wg.Done()
+			dscID = strings.TrimSuffix(dscID, "/")
 			result := []runtime.Object{}
 			tokens := strings.Split(lastProcessedKey, "/")
 			y, _ := strconv.Atoi(tokens[1])
