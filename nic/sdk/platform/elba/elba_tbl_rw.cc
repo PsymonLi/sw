@@ -325,6 +325,10 @@ elba_get_p4plus_table_mpu_pc (int tableid)
     return 0;
 }
 
+#define ELBA_P4PLUS_STAGE0_QSTATE_OFFSET_0               0
+#define ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_0            0
+#define ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64           64
+
 static void
 elba_program_p4plus_table_mpu_pc_args (int tbl_id, elb_te_csr_t *te_csr,
                                        uint64_t pc, uint32_t offset)
@@ -376,6 +380,57 @@ elba_program_p4plus_sram_table_mpu_pc (int tableid, int stage_tbl_id,
     te_csr->cfg_table_property[stage_tbl_id].mpu_pc_dyn(0);
     te_csr->cfg_table_property[stage_tbl_id].addr_base(0);
     te_csr->cfg_table_property[stage_tbl_id].write();
+}
+
+int
+elba_p4plus_table_init (p4plus_prog_t *prog, platform_type_t platform_type)
+{
+    elb_top_csr_t &elb0 = ELB_BLK_REG_MODEL_ACCESS(elb_top_csr_t, 0, 0);
+    elb_te_csr_t *te_csr = NULL;
+    uint64_t elba_action_p4plus_asm_base;
+
+    if (!prog || (prog->pipe != P4_PIPELINE_RXDMA &&
+                  prog->pipe != P4_PIPELINE_TXDMA)) {
+        return ELBA_FAIL;
+    }
+
+    if (sdk::p4::p4_program_to_base_addr(prog->control,
+                                         (char *)prog->prog_name,
+                                         &elba_action_p4plus_asm_base) != 0) {
+        SDK_TRACE_DEBUG("Could not resolve handle %s program %s",
+                        prog->control, prog->prog_name);
+        return ELBA_FAIL;
+    }
+    SDK_TRACE_DEBUG("Resolved handle %s program %s to PC 0x%lx",
+                    prog->control, prog->prog_name,
+                    elba_action_p4plus_asm_base);
+
+    if (prog->pipe == P4_PIPELINE_RXDMA) {
+        // Program app-header table config @(stage, stage_tableid) with the PC
+        te_csr = &elb0.pcr.te[prog->stageid];
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid, te_csr,
+                                               elba_action_p4plus_asm_base,
+                                               ELBA_P4PLUS_STAGE0_QSTATE_OFFSET_0);
+#ifdef IRIS
+        // Program app-header offset 64 table config @(stage, stage_tableid) with the same PC as above
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid_off, te_csr,
+                                               elba_action_p4plus_asm_base,
+                                               ELBA_P4PLUS_RX_STAGE0_QSTATE_OFFSET_64);
+#endif
+    } else {
+        // Program table config @(stage, stage_tableid) with the PC
+        te_csr = &elb0.pct.te[prog->stageid];
+        elba_program_p4plus_table_mpu_pc_args(prog->stage_tableid, te_csr,
+                                               elba_action_p4plus_asm_base, 0);
+        if ((prog->stageid == 0) &&
+            (platform_type != platform_type_t::PLATFORM_TYPE_SIM)) {
+            // TODO: This should 16 as we can process 16 packets per doorbell.
+            te_csr->cfg_table_property[prog->stage_tableid].max_bypass_cnt(0x10);
+            te_csr->cfg_table_property[prog->stage_tableid].write();
+        }
+    }
+
+    return ELBA_OK ;
 }
 
 sdk_ret_t

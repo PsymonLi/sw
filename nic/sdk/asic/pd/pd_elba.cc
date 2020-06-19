@@ -656,6 +656,13 @@ asicpd_p4plus_table_init (platform_type_t platform_type,
                                   stage_sxdma_act, stage_tableid_sxdma_act);
 }
 
+int
+asicpd_p4plus_table_init (p4plus_prog_t *prog,
+                          platform_type_t platform_type)
+{
+    return elba_p4plus_table_init(prog, platform_type);
+}
+
 sdk_ret_t
 asicpd_tm_get_clock_tick (uint64_t *tick)
 {
