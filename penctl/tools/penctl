@@ -10,6 +10,9 @@ PROG=`basename $0`
 PENCTL_PATH=`dirname $0`
 PENCTL_LINUX_STD=/usr/local/bin/penctl.linux
 
+self_bind=0
+
+# find the penctl.linux binary file
 PENCTL_LINUX=`which penctl.linux 2> /dev/null`
 if [ $? -ne 0 ] ; then
 	if [ -e $PENCTL_LINUX_STD ] ; then
@@ -22,7 +25,7 @@ if [ $? -ne 0 ] ; then
 	fi
 fi
 
-
+# save the help flag if given
 help_requested=""
 if [ "$1" == "-h" -o "$1" == "--help" ] ; then
 	echo "Usage: $PROG [-i ethX | -s pci ] args ..."
@@ -31,9 +34,18 @@ if [ "$1" == "-h" -o "$1" == "--help" ] ; then
 	shift
 fi
 
+# check that the driver is loaded
+if [ ! -e /sys/module/ionic ] ; then
+	echo "$PROG: please load the ionic driver"
+	exit 1
+fi
+
+# check for interface or pci arguments
 if [ "$1" == "-i" ] ; then
 	shift
 
+	# The user can supply a net device name, this implies that
+	# the driver is already running the 0x1004 mgmt device
 	ifname=$1
 	shift
 
@@ -62,6 +74,7 @@ elif [ "$1" == "-s" ] ; then
 	shift
 fi
 
+# if no interface or pci hints were given, try to discover it
 if [ -z "$pci" -a -z "$DSC_URL" ] ; then
 
 	dbdf=`lspci -Dnd 1dd8:1004 | awk '{ print $1; }'`
@@ -80,13 +93,37 @@ if [ -z "$pci" -a -z "$DSC_URL" ] ; then
 	pci=$dbdf
 fi
 
+# if we've found a pci device,
+#    check that it is running and
+#    build the IP address
 if [ -n "$pci" ] ; then
+
+	# check to see if the device is associated with ionic
+	lspci -s $pci -v | grep -q -e "Kernel .*: ionic"
+	id_known=$?
+	if [ $id_known -ne 0 ] ; then
+
+		# if running upstream driver this is needed to register and probe the device
+		# if running out-of-tree this will print an error "File exists"
+		echo -n "1dd8 1004" > /sys/module/ionic/drivers/pci:ionic/new_id 2>/dev/null
+
+		# if running upstream driver this is redundant and will print "No such device"
+		# if running out-of-tree this will probe the device
+		echo -n "$pci" > /sys/module/ionic/drivers/pci:ionic/bind 2>/dev/null
+
+		# wait a moment for udev to name the device
+		sleep 1
+
+		self_bind=1
+	fi
+
 	ifname=`ls /sys/bus/pci/devices/$pci/net`
 	if [ -z "$ifname" ]; then
-		echo "No management interface (load ionic driver)"
+		echo "No management interface found for PCI $pci"
 		exit 1
 	fi
 
+	# build up the DSC service's ip address
 	busx=`echo $pci | awk -F : '{ print $2; }'`
 	bus=`printf "%d" 0x$busx`
 
@@ -97,8 +134,39 @@ if [ -n "$pci" ] ; then
 	ifconfig $ifname $ipaddr netmask $netmask
 
 	DSC_URL=http://169.254.$bus.1
+
+	# make sure link is up
+	cnt=4
+	while [ $cnt -ne 0 ] ; do
+		ip link show $ifname | grep -q "state UP"
+		up=$?
+		if [ $up -eq 0 ] ; then
+			break;
+		fi
+
+		echo "Waiting a moment for Link Up..."
+		sleep 3
+		cnt=`expr $cnt - 1`
+	done
+
+	if [ $cnt -eq 0 ] ; then
+		echo "$PROG: Error: timed out waiting for Link Up on $ifname"
+		exit 1
+	fi
+
 fi
+
 
 echo DSC_URL=$DSC_URL $PENCTL_LINUX $help_requested $@
 DSC_URL=$DSC_URL $PENCTL_LINUX $help_requested $@
+
+# clean up after ourself if needed
+if [ $self_bind -eq 1 ] ; then
+	# for both drivers this will unload the device
+	echo -n "$pci" > /sys/module/ionic/drivers/pci:ionic/unbind
+
+	# if running upstream driver this is needed to unregister the device
+	# if running out-of-tree this will print an error "No such device"
+	echo -n "1dd8 1004" > /sys/module/ionic/drivers/pci:ionic/remove_id 2>/dev/null
+fi
 
