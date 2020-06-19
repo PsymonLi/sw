@@ -10,18 +10,18 @@ nodes:
     - node: 
         name: node1
         nics: 
-            - nic : 
-                name            : naples1
-                pipeline        : athena
-                naples_type     : capri
-                image           : /sw/images/latest.json
-                mode            : bitw
             - nic :
-                name            : naples2
+                name            : naples1
                 pipeline        : iris
                 naples_type     : capri
                 image           : /sw/images/1.5.0-E-14.json
                 mode            : classic
+            - nic : 
+                name            : naples2
+                pipeline        : athena
+                naples_type     : capri
+                image           : /sw/images/latest.json
+                mode            : bitw
 
     - node: 
         name: node2

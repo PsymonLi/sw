@@ -310,7 +310,8 @@ class NodeWorkloads(object):
                 setattr(obj, 'HostInterface', hostIntf)
                 setattr(obj, 'LogicalInterface', 'host_if{0}'.format(ifnum + 1))
                 iflist.append(obj)
-            self.__interfaces[dev_name] = iflist
+            if iflist:
+                self.__interfaces[dev_name] = iflist
 
         if self.__wlSpec.count == 'auto':
             # Review following with bug PS-724 is fixed
@@ -387,7 +388,7 @@ class NodeWorkloads(object):
             for subif_indx in range(self.__num_subifs):
                 wl_msg = req.workloads.add()
                 intf = wl_msg.interfaces.add()
-                intfObj = interfaces[subif_indx % 2] # TODO enhance for unequal distribution of workloads
+                intfObj = interfaces[subif_indx % len(interfaces)] # TODO enhance for unequal distribution of workloads
                 nw_spec = self.GetSubInterfaceNetworkSpec(device_name, subif_indx, self.__wlSpec.spec)
                 ipv4_allocator = nw_spec.GetPrimaryIPv4Allocator() # ipv4_allocators[i]
                 ipv6_allocator = nw_spec.GetPrimaryIPv6Allocator() # ipv6_allocators[i]

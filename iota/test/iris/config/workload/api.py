@@ -62,12 +62,24 @@ def __setup_vmotion_on_hosts():
 
 def __add_workloads(target_node = None):
     req = topo_svc.WorkloadMsg()
-    if api.GetTestbedNicMode(target_node) in ['hostpin', 'hostpin_dvs', 'unified']:
-        wl_orch.AddConfigWorkloads(req, target_node)
-    elif api.GetTestbedNicMode(target_node) == 'classic':
-        wl_orch.AddConfigClassicWorkloads(req, target_node)
+    if target_node:
+        # Iterate over all devices
+        for dev_name in api.GetDeviceNames(target_node):
+            if api.GetTestbedNicMode(target_node, dev_name) in ['hostpin', 'hostpin_dvs', 'unified']:
+                wl_orch.AddConfigWorkloads(req, target_node)
+                break
+            elif api.GetTestbedNicMode(target_node, dev_name) == 'classic':
+                wl_orch.AddConfigClassicWorkloads(req, target_node)
+                break
+            else:
+                api.Logger.error("Unknown NicMode for device - skipping")
     else:
-        assert(0)
+        if api.GetTestbedNicMode(target_node) in ['hostpin', 'hostpin_dvs', 'unified']:
+            wl_orch.AddConfigWorkloads(req, target_node)
+        elif api.GetTestbedNicMode(target_node) == 'classic':
+            wl_orch.AddConfigClassicWorkloads(req, target_node)
+        else:
+            assert(0)
 
     if len(req.workloads):
         resp = api.AddWorkloads(req, skip_bringup=api.IsConfigOnly())
