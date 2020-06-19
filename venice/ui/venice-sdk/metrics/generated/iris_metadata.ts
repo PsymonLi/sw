@@ -2448,11 +2448,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped by Security Policy",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumAgedSessions",
@@ -2460,11 +2460,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of Aged sessions",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumTcpResets",
@@ -2472,11 +2472,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of TCP Resets sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumIcmpErrors",
@@ -2484,11 +2484,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of ICMP Errors sent as a result of SFW Reject",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumTcpCxnsetupTimeouts",
@@ -2496,11 +2496,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that timed out at connection setup",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumSessionCreateErrors",
@@ -2544,11 +2544,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to TCP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumUdpSessionLimitDrops",
@@ -2556,11 +2556,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to UDP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumIcmpSessionLimitDrops",
@@ -2568,11 +2568,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to ICMP session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumOtherSessionLimitDrops",
@@ -2580,11 +2580,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumDscSessionLimitDrops",
@@ -2592,11 +2592,11 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions dropped due to DSC session limit",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "reporterID",
