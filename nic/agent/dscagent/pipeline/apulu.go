@@ -59,7 +59,7 @@ type ApuluAPI struct {
 	OperSvcClient           operdapi.OperSvcClient
 	AlertsSvcClient         operdapi.AlertsSvcClient
 	MetricsSvcClient        operdapi.MetricsSvcClient
-	LocalInterfaces         map[string]string
+	LocalInterfaces         sync.Map
 }
 
 // NewPipelineAPI returns the implemetor of PipelineAPI
@@ -100,7 +100,6 @@ func NewPipelineAPI(infraAPI types.InfraAPI) (*ApuluAPI, error) {
 		OperSvcClient:           operdapi.NewOperSvcClient(operdconn),
 		AlertsSvcClient:         operdapi.NewAlertsSvcClient(penoperconn),
 		MetricsSvcClient:        operdapi.NewMetricsSvcClient(penoperconn),
-		LocalInterfaces:         make(map[string]string),
 	}
 
 	if err := a.PipelineInit(); err != nil {
@@ -253,11 +252,11 @@ func (a *ApuluAPI) HandleVeniceCoordinates(dsc types.DistributedServiceCardStatu
 		}
 	}
 
-	if _, ok := a.LocalInterfaces[lb.Name]; ok {
+	if _, ok := a.LocalInterfaces.Load(lb.Name); ok {
 		log.Infof("loopback interface already created [%v]", lb.Name)
 		return
 	}
-	a.LocalInterfaces[lb.Name] = lb.UUID
+	a.LocalInterfaces.Store(lb.Name, lb.UUID)
 	if _, err := a.HandleInterface(types.Create, lb); err != nil {
 		log.Errorf("Init: Failed to create loopback interface: Err: %s", err)
 	}
@@ -617,14 +616,14 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 		intf = existingIntf
 	}
 
-	uidStr, ok := a.LocalInterfaces[intf.Name]
+	uidStr, ok := a.LocalInterfaces.Load(intf.Name)
 	if !ok {
 		log.Infof("Inteface: %s not local, ignoring", intf.GetKey())
 		return nil, nil
 	}
 
 	// Use the UUID from the cache when interacting with PDS Agent
-	intf.UUID = uidStr
+	intf.UUID = uidStr.(string)
 	log.Infof("Interface: %s | Op: %s | %s", intf.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("Interface: %s | Op: %s | Err: %v | %s", intf.GetKey(), oper, err, types.InfoHandleObjEnd)
 
@@ -1744,7 +1743,7 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 	}
 
 	log.Infof("Processing host interface [%+v]", i)
-	a.LocalInterfaces[i.Name] = i.UUID
+	a.LocalInterfaces.Store(i.Name, i.UUID)
 	dat, _ := i.Marshal()
 	if err := a.InfraAPI.Store(i.Kind, i.GetKey(), dat); err != nil {
 		log.Error(errors.Wrapf(types.ErrBoltDBStoreCreate, "Lif: %s | Lif: %v", i.GetKey(), err))
@@ -1877,7 +1876,7 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 	}
 
 	log.Infof("Processing uplink interface [%+v]", i)
-	a.LocalInterfaces[i.Name] = i.UUID
+	a.LocalInterfaces.Store(i.Name, i.UUID)
 
 	dat, _ := i.Marshal()
 	if err := a.InfraAPI.Store(i.Kind, i.GetKey(), dat); err != nil {
@@ -2283,7 +2282,7 @@ func handleDSCL3Interface(a *ApuluAPI, obj types.DSCInterfaceIP, dscStatus types
 			},
 		}
 
-		a.LocalInterfaces[i.Name] = i.UUID
+		a.LocalInterfaces.Store(i.Name, i.UUID)
 
 		if _, err := a.HandleInterface(types.Create, i); err != nil {
 			log.Error(err)
