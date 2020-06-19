@@ -428,6 +428,8 @@ catalog::populate_clock_info (ptree &prop_tree)
              num_freq += 1;
           }
     }
+    catalog_db_.p4_clock_freq = prop_tree.get<uint32_t>("p4_clock_freq", 1137);
+    catalog_db_.eth_clock_freq = prop_tree.get<uint32_t>("eth_clock_freq", 800);
 
     return SDK_RET_OK;
 }

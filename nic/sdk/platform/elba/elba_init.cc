@@ -32,6 +32,7 @@
 #include "third-party/asic/elba/model/elb_prd/elb_prd_csr.h"
 #include "third-party/asic/elba/model/utils/elb_csr_py_if.h"
 #include "third-party/asic/elba/verif/apis/elb_txs_sw_api.h"
+#include "third-party/asic/elba/verif/apis/elb_ms_sw_api.h"
 
 using namespace sdk::asic;
 
@@ -398,6 +399,43 @@ elba_block_init (asic_cfg_t *cfg)
     return ret;
 }
 
+static sdk_ret_t
+elba_stg_eth_pll_init (asic_cfg_t *cfg)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+    int pll_ret = ELB_PLL_SUCCESS;
+    SDK_TRACE_DEBUG("Initializing STG PLL, frequency: %d", cfg->catalog->p4_clock_freq());
+    SDK_TRACE_DEBUG("Initializing ETH PLL, frequency: %d", cfg->catalog->eth_clock_freq());
+    if(getenv("ELBA_SKIP_PLL_INIT") == NULL){
+	pll_ret = elb_soc_stg_pll_init(0,0,cfg->catalog->p4_clock_freq());
+	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {	
+            SDK_TRACE_ERR("Unsupported P4/STG frequency %d", cfg->catalog->p4_clock_freq());
+	    ret = SDK_RET_ERR;
+	}
+	if(pll_ret == ELB_PLL_LOCK_FAILED) {	
+            SDK_TRACE_ERR("PLL P4/STG @ frequency %d did not lock", cfg->catalog->p4_clock_freq());
+	    ret = SDK_RET_ERR;
+	}
+	if(pll_ret == ELB_PLL_SUCCESS) {
+           SDK_TRACE_DEBUG("STG PLL, frequency: %d locked", cfg->catalog->p4_clock_freq());
+	}
+
+	pll_ret = elb_mm_eth_pll_init(0,0,cfg->catalog->eth_clock_freq());
+	if(pll_ret == ELB_PLL_INCORRECT_FREQ) {	
+            SDK_TRACE_ERR("Unsupported ethernet PLL frequency %d", cfg->catalog->eth_clock_freq());
+	    ret = SDK_RET_ERR;
+	}
+	if(pll_ret == ELB_PLL_LOCK_FAILED) {	
+            SDK_TRACE_ERR("PLL ethernet PLL @ frequency %d did not lock", cfg->catalog->eth_clock_freq());
+	    ret = SDK_RET_ERR;
+	}
+	if(pll_ret == ELB_PLL_SUCCESS) {
+           SDK_TRACE_DEBUG("ethernet PLL, frequency: %d locked", cfg->catalog->eth_clock_freq());
+	}
+    }
+    return ret;
+}
+
 //------------------------------------------------------------------------------
 // perform all the ELBA specific initialization
 // - link all the P4 programs, by resolving symbols, labels etc.
@@ -468,6 +506,11 @@ elba_init (asic_cfg_t *cfg)
         SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
                                 "PXB/PCIE init failure, err : %d", ret);
     }
+
+    ret = elba_stg_eth_pll_init(cfg);
+    SDK_ASSERT_TRACE_RETURN((ret == SDK_RET_OK), ret,
+                            "elba_stg_eth_pll_init failure, err : %d", ret);
+    
 
     if(tm_binary_init) {
       SDK_TRACE_DEBUG("Elba TM Binary Init ");

@@ -181,6 +181,8 @@ typedef struct catalog_s {
                                      [sdk::types::CABLE_TYPE_MAX];
     uint8_t                    num_clock_info;                        // number of clock multipliers
     catalog_clock_info_t       clock_info[MAX_CLOCK_FREQ];            // Clock info for P4 adjustments
+    uint32_t                   p4_clock_freq;                         // p4/STG clock frequency
+    uint32_t                   eth_clock_freq;                        // eth_clock_frequency
 } catalog_t;
 
 class catalog {
@@ -331,6 +333,8 @@ public:
 
     uint32_t num_clock_info(void) const { return catalog_db_.num_clock_info; }
     uint64_t clock_get_multiplier(uint16_t freq);
+    uint32_t p4_clock_freq(void) const { return catalog_db_.p4_clock_freq; }
+    uint32_t eth_clock_freq(void) const { return catalog_db_.eth_clock_freq; }
 
 private:
     catalog_t    catalog_db_;   // whole catalog database
