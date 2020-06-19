@@ -60,9 +60,6 @@ var _ = Describe("metrics test", func() {
 })
 
 func checkMetricsFields() {
-	if !ts.tb.HasNaplesHW() {
-		Skip("No naples hw detected, skip checking metrics")
-	}
 	tms := time.Now().UTC().Add(time.Second * -60).Format(time.RFC3339)
 
 	// get node collection and init telemetry client
@@ -76,7 +73,7 @@ func checkMetricsFields() {
 		}
 
 		Eventually(func() error {
-			return ts.model.ForEachNaples(func(n *objects.NaplesCollection) error {
+			naplesMetricsErr := ts.model.ForEachNaples(func(n *objects.NaplesCollection) error {
 				fields := genfields.GetFieldNamesFromKind(k)
 				for _, name := range n.Names() {
 					By(fmt.Sprintf("checking %v in naples %v", k, name))
@@ -94,14 +91,38 @@ func checkMetricsFields() {
 				}
 				return nil
 			})
+			if naplesMetricsErr != nil {
+				return naplesMetricsErr
+			}
+
+			fakeNaplesMetricsErr := ts.model.ForEachFakeNaples(func(n *objects.NaplesCollection) error {
+				fields := genfields.GetFieldNamesFromKind(k)
+				for _, name := range n.Names() {
+					By(fmt.Sprintf("checking %v in naples %v", k, name))
+
+					resp, err := vnc.QueryMetricsByReporter(k, name, tms)
+					if err != nil {
+						fmt.Printf("query failed %v \n", err)
+						return err
+					}
+
+					err = validateResp(resp, fields, tms)
+					if err != nil {
+						return err
+					}
+				}
+				return nil
+			})
+			if fakeNaplesMetricsErr != nil {
+				return fakeNaplesMetricsErr
+			}
+
+			return nil
 		}).Should(Succeed())
 	}
 }
 
 func checkCQMetricsFields() {
-	if !ts.tb.HasNaplesHW() {
-		Skip("No naples hw detected, skip checking metrics")
-	}
 	tms := time.Now().Add(time.Minute * -10).Format(time.RFC3339)
 
 	// get node collection and init telemetry client
@@ -120,7 +141,7 @@ func checkCQMetricsFields() {
 			}
 			cq := m + "_" + s
 			Eventually(func() error {
-				return ts.model.ForEachNaples(func(n *objects.NaplesCollection) error {
+				naplesMetricsErr := ts.model.ForEachNaples(func(n *objects.NaplesCollection) error {
 					fields := genfields.GetFieldNamesFromKind(m)
 					for _, name := range n.Names() {
 						By(fmt.Sprintf("checking %v in naples %v", cq, name))
@@ -137,6 +158,32 @@ func checkCQMetricsFields() {
 					}
 					return nil
 				})
+				if naplesMetricsErr != nil {
+					return naplesMetricsErr
+				}
+
+				fakeNaplesMetricsErr := ts.model.ForEachFakeNaples(func(n *objects.NaplesCollection) error {
+					fields := genfields.GetFieldNamesFromKind(m)
+					for _, name := range n.Names() {
+						By(fmt.Sprintf("checking %v in naples %v", cq, name))
+
+						resp, err := vnc.QueryMetricsByReporter(cq, name, tms)
+						if err != nil {
+							fmt.Printf("query failed %v \n", err)
+							return err
+						}
+						err = validateResp(resp, fields, tms)
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
+				if fakeNaplesMetricsErr != nil {
+					return fakeNaplesMetricsErr
+				}
+
+				return nil
 			}, time.Duration(10)*time.Minute, time.Duration(30)*time.Second).Should(Succeed())
 		}
 	}
