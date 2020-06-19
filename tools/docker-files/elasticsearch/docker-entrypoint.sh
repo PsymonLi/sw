@@ -24,7 +24,7 @@ then
     # Since there are other processes running on the venice nodes(citadel, etcd, etc), we are using this formula to
     # arrive at a reasonable heap size.
     #
-    heap_size=$((mem_total_in_gb/4))
+    heap_size=$((mem_total_in_gb/6))
     if (( heap_size > 31 )); then
         # try to avoid crossing the 32 GB heap boundary. It wastes memory, reduces CPU performance,
         # and makes the GC struggle with large heaps.
