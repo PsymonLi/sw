@@ -200,14 +200,14 @@ event_thread::factory(const char *name, uint32_t thread_id,
         SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, new_thread);
         return NULL;
     }
-    g_thread_store_[thread_id] = new_thread;
+    g_thread_store_.add(thread_id, new_thread);
     return new_thread;
 }
 
 void
 event_thread::destroy(event_thread *thread)
 {
-    g_thread_store_.erase(thread->thread_id());
+    g_thread_store_.remove(thread->thread_id());
     thread->~event_thread();
     SDK_FREE(SDK_MEM_ALLOC_LIB_EVENT_THREAD, thread);
 }
@@ -433,7 +433,7 @@ event_thread::create_ipc_timer_watcher(sdk::ipc::timer_callback cb,
 void
 event_thread::delete_ipc_timer_watcher_(void *watcher) {
     ipc_timer_watcher_t *ipc_watcher = (ipc_timer_watcher_t *)watcher;
-        
+
     ev_timer_stop(this->loop_, (ev_timer *)ipc_watcher);
 
     delete ipc_watcher;
@@ -459,7 +459,7 @@ event_thread::run_(void) {
     infra_fns->timer_add_ctx = this;
     infra_fns->timer_del = delete_ipc_timer_watcher;
     infra_fns->timer_del_ctx = this;
-    
+
     if (this->sync_ipc_) {
         sdk::ipc::ipc_init_sync(this->thread_id(), std::move(infra_fns));
     } else {

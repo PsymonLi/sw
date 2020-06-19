@@ -127,7 +127,7 @@ thread::factory(const char *name, uint32_t thread_id,
         SDK_FREE(SDK_MEM_ALLOC_LIB_THREAD, new_thread);
         return NULL;
     }
-    g_thread_store_[thread_id] = new_thread;
+    g_thread_store_.add(thread_id, new_thread);
     return new_thread;
 }
 
@@ -148,7 +148,7 @@ thread::destroy(thread *th)
         return;
     }
     lfq::destroy(th->lfq_);
-    g_thread_store_.erase(th->thread_id_);
+    g_thread_store_.remove(th->thread_id_);
     th->~thread();
     SDK_FREE(SDK_MEM_ALLOC_LIB_THREAD, th);
 }
@@ -156,11 +156,7 @@ thread::destroy(thread *th)
 thread *
 thread::find(uint32_t thread_id)
 {
-    auto it = g_thread_store_.find(thread_id);
-    if (it != g_thread_store_.end()) {
-        return it->second;
-    }
-    return NULL;
+    return g_thread_store_.find(thread_id);
 }
 
 uint64_t
@@ -367,21 +363,7 @@ thread::punch_heartbeat(void)
 sdk_ret_t
 thread::walk(thread_walk_cb_t walk_cb, void *ctxt)
 {
-    sdk::lib::thread *thr;
-
-    for (auto it = g_thread_store_.begin();
-         it != g_thread_store_.end(); ) {
-        thr = it->second;
-        it++;
-        if (walk_cb(thr, ctxt)) {
-            // break the walk
-            goto end;
-        }
-    }
-
-end:
-
-    return SDK_RET_OK;
+    return g_thread_store_.walk(walk_cb, ctxt);
 }
 
 void

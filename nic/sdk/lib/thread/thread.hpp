@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <pthread.h>
 #include "include/sdk/base.hpp"
+#include "include/sdk/lock.hpp"
 #include "include/sdk/timestamp.hpp"
 #include "lib/lfq/lfq.hpp"
 
@@ -43,11 +44,71 @@ typedef sdk_ret_t (*thread_resume_cb_t)(void *arg);
 // forward declaration
 class thread;
 
-// thread strore
-typedef unordered_map<uint32_t, thread *> thread_store_t;
-
 // walk callback function type
 typedef bool (thread_walk_cb_t)(sdk::lib::thread *thr, void *ctxt);
+
+// thread strore
+typedef struct thread_store_s {
+    thread_store_s() {
+        SDK_SPINLOCK_INIT(&slock_, PTHREAD_PROCESS_PRIVATE);
+    }
+
+    ~thread_store_s() {
+        SDK_SPINLOCK_DESTROY(&slock_);
+    }
+
+    void add(uint32_t thread_id, thread *thr) {
+        SDK_SPINLOCK_LOCK(&slock_);
+        thread_db_[thread_id] = thr;
+        SDK_SPINLOCK_UNLOCK(&slock_);
+    }
+
+    void remove(uint32_t thread_id) {
+        SDK_SPINLOCK_LOCK(&slock_);
+        thread_db_.erase(thread_id);
+        SDK_SPINLOCK_UNLOCK(&slock_);
+    }
+
+    thread *find(uint32_t thread_id) {
+        thread *thr;
+
+        SDK_SPINLOCK_LOCK(&slock_);
+        auto it = thread_db_.find(thread_id);
+        if (it != thread_db_.end()) {
+            thr = it->second;
+        } else {
+            thr = NULL;
+        }
+        SDK_SPINLOCK_UNLOCK(&slock_);
+        return thr;
+    }
+
+    sdk_ret_t walk(thread_walk_cb_t walk_cb, void *ctxt) {
+        sdk::lib::thread *thr;
+        bool end_walk = false;
+
+        SDK_SPINLOCK_LOCK(&slock_);
+        for (auto it = thread_db_.begin(); it != thread_db_.end(); ) {
+            thr = it->second;
+            it++;
+            SDK_SPINLOCK_UNLOCK(&slock_);
+            end_walk = walk_cb(thr, ctxt);
+            SDK_SPINLOCK_LOCK(&slock_);
+            if (end_walk) {
+                // break the walk
+                goto end;
+            }
+        }
+    end:
+        SDK_SPINLOCK_UNLOCK(&slock_);
+        return SDK_RET_OK;
+    }
+
+private:
+    sdk_spinlock_t slock_;
+    unordered_map<uint32_t, thread *> thread_db_;
+
+} thread_store_t;
 
 class thread {
 public:
