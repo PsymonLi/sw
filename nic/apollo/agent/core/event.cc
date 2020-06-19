@@ -38,23 +38,23 @@ update_event_listener (void *ctxt)
     return SDK_RET_OK;
 }
 
-static sdk_ret_t
-grpc_svc_suspend_resume (bool suspend)
+static inline sdk_ret_t
+svc_suspend_resume (uint32_t thread_id, bool suspend)
 {
     bool status;
     sdk_ret_t ret;
     sdk::lib::thread *thr;
     uint32_t wait_in_ms = 10 * 1000;    // 10 seconds
 
-    thr = sdk::lib::thread::find(PDS_AGENT_THREAD_ID_GRPC_SVC);
+    thr = sdk::lib::thread::find(thread_id);
     if (thr) {
         ret = suspend ? thr->suspend() : thr->resume();
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Agent gRPC service suspend/resume request failed, "
-                          "err %u", ret);
+            PDS_TRACE_ERR("service %u suspend/resume request failed, "
+                          "err %u", thread_id, ret);
             return ret;
         }
-        // wait for it to be suspended
+        // wait for it to be suspended/resumed
         while (wait_in_ms > 0) {
             status = suspend ? thr->suspended() : !thr->suspended();
             if (status) {
@@ -64,10 +64,28 @@ grpc_svc_suspend_resume (bool suspend)
             wait_in_ms--;
         }
         if (wait_in_ms == 0) {
-            PDS_TRACE_ERR("Agent gRPC service suspend/resume failed due "
-                          "to timeout");
+            PDS_TRACE_ERR("service %u suspend/resume failed due "
+                          "to timeout", thread_id);
             return SDK_RET_ERR;
         }
+    }
+    return SDK_RET_OK;
+}
+
+static inline sdk_ret_t
+svc_suspend_resume (bool suspend)
+{
+    sdk_ret_t ret;
+
+    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_GRPC_SVC, suspend);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Failed to suspend gprc svc thread, err %u", ret);
+        return ret;
+    }
+    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_SVC_SERVER, suspend);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Failed to suspend USD server thread, err %u", ret);
+        return ret;
     }
     return SDK_RET_OK;
 }
@@ -80,10 +98,10 @@ handle_event_ntfn (const pds_event_t *event)
     PDS_TRACE_DEBUG("Rcvd event {} ntfn", event->event_id);
     switch (event->event_id) {
     case PDS_EVENT_ID_UPGRADE_START:
-        ret = grpc_svc_suspend_resume(true);
+        ret = svc_suspend_resume(true);
         break;
     case PDS_EVENT_ID_UPGRADE_ABORT:
-        ret = grpc_svc_suspend_resume(false);
+        ret = svc_suspend_resume(false);
         break;
     default:
         publish_event(event);

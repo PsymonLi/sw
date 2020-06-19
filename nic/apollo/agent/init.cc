@@ -315,6 +315,9 @@ spawn_svc_server_thread (void)
             true, true);
     SDK_ASSERT_TRACE_RETURN((g_svc_server_thread != NULL), SDK_RET_ERR,
                             "Service server thread create failure");
+    g_svc_server_thread->register_suspend_cb(svc_server_thread_suspend_cb,
+                                             svc_server_thread_resume_cb,
+                                             NULL);
     g_svc_server_thread->start(g_svc_server_thread);
 
     return SDK_RET_OK;

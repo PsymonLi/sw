@@ -90,19 +90,16 @@ svc_server_accept_cb (sdk::event_thread::io_t *io, int fd, int events)
     sdk::event_thread::io_start(cmd_read_io);
 }
 
-void
-svc_server_thread_init (void *ctxt)
+static inline sdk_ret_t
+svc_server_thread_uds_init (void)
 {
     struct sockaddr_un sock_addr;
-
-    // register for initial upgrade discovery events
-    pds_upgrade_init();
 
     // initialize unix socket
     if ((g_uds_sock_fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
         PDS_TRACE_ERR("Failed to open UDS for cmd server thread, err {} {}",
                       errno, strerror(errno));
-        return;
+        return SDK_RET_ERR;
     }
 
     memset(&sock_addr, 0, sizeof (sock_addr));
@@ -113,19 +110,30 @@ svc_server_thread_init (void *ctxt)
              sizeof(struct sockaddr_un)) == -1) {
         PDS_TRACE_ERR ("Failed to bind UDS for service thread, err {} {}",
                        errno, strerror(errno));
-        return;
+        return SDK_RET_ERR;
     }
 
     if (listen(g_uds_sock_fd, 1) == -1) {
         PDS_TRACE_ERR ("Failed to listen on UDS fd, err {} {}",
                        errno, strerror(errno));
-        return;
+        return SDK_RET_ERR;
     }
-
-    PDS_TRACE_INFO ("Listening to UDS {}", SVC_SERVER_SOCKET_PATH);
+    PDS_TRACE_INFO("Listening to UDS {}", SVC_SERVER_SOCKET_PATH);
     sdk::event_thread::io_init(&cmd_accept_io, svc_server_accept_cb,
                                g_uds_sock_fd, EVENT_READ);
     sdk::event_thread::io_start(&cmd_accept_io);
+    return SDK_RET_OK;
+}
+
+void
+svc_server_thread_init (void *ctxt)
+{
+    // register for initial upgrade discovery events
+    pds_upgrade_init();
+
+    // bind to UDS socket
+    svc_server_thread_uds_init();
+
 }
 
 void
@@ -135,6 +143,19 @@ svc_server_thread_exit (void *ctxt)
     if (g_uds_sock_fd >= 0) {
         close(g_uds_sock_fd);
     }
+}
+
+sdk_ret_t
+svc_server_thread_suspend_cb (void *ctxt)
+{
+    svc_server_thread_exit(NULL);
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+svc_server_thread_resume_cb (void *ctxt)
+{
+    return svc_server_thread_uds_init();
 }
 
 }    // namespace core

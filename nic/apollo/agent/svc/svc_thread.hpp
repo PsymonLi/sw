@@ -16,6 +16,8 @@ namespace core {
 
 void svc_server_thread_init(void *ctxt);
 void svc_server_thread_exit(void *ctxt);
+sdk_ret_t svc_server_thread_suspend_cb(void *ctxt);
+sdk_ret_t svc_server_thread_resume_cb(void *ctxt);
 
 }    // namespace core
 

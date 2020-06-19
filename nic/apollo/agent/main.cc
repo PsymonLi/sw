@@ -55,7 +55,7 @@ hooks_func_t hooks_func = NULL;
 
 // called from other thread context to suspend the grpc service
 static sdk_ret_t
-grpc_svc_suspend_cb (void *arg)
+grpc_svc_suspend_cb (void *ctxt)
 {
     // as the caller thread is the svc(upgrade) event thread (single)
     // we don't need protection here for accessing server_ready
@@ -68,7 +68,7 @@ grpc_svc_suspend_cb (void *arg)
 
 // called from other thread context to resume the grpc service
 static sdk_ret_t
-grpc_svc_resume_cb (void *arg)
+grpc_svc_resume_cb (void *ctxt)
 {
     return SDK_RET_OK;
 }
@@ -155,10 +155,10 @@ int
 main (int argc, char **argv)
 {
     int          oc;
-    string       cfg_path, cfg_file, memory_profile, device_profile, pipeline, file;
-    boost::property_tree::ptree pt;
     sdk_ret_t    ret;
     sdk::lib::thread *thr;
+    boost::property_tree::ptree pt;
+    string       cfg_path, cfg_file, memory_profile, device_profile, pipeline, file;
 
     struct option longopts[] = {
        { "config",          required_argument, NULL, 'c' },
