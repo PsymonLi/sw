@@ -57,8 +57,9 @@ func init() {
 	showCmd.AddCommand(vnicShowCmd)
 	vnicShowCmd.Flags().Bool("yaml", false, "Output in yaml")
 	vnicShowCmd.Flags().Bool("summary", false, "Display number of objects")
-	vnicShowCmd.Flags().Bool("detail", false, "Display detailed output")
+	vnicShowCmd.Flags().Bool("brief", false, "Display brief output")
 	vnicShowCmd.Flags().StringVarP(&vnicID, "id", "i", "", "Specify vnic ID")
+	vnicShowCmd.Flags().MarkHidden("brief")
 
 	vnicShowCmd.AddCommand(vnicShowStatisticsCmd)
 	vnicShowStatisticsCmd.Flags().Bool("yaml", false, "Output in yaml")
@@ -172,15 +173,15 @@ func vnicShowCmdHandler(cmd *cobra.Command, args []string) {
 		}
 	} else if cmd != nil && cmd.Flags().Changed("summary") {
 		printVnicSummary(len(respMsg.Response))
-	} else if cmd != nil && cmd.Flags().Changed("detail") {
-		for _, resp := range respMsg.Response {
-			printVnicDetail(resp)
-		}
-		printVnicSummary(len(respMsg.Response))
-	} else {
+	} else if cmd != nil && cmd.Flags().Changed("brief") {
 		printVnicHeader()
 		for _, resp := range respMsg.Response {
 			printVnic(resp)
+		}
+		printVnicSummary(len(respMsg.Response))
+	} else {
+		for _, resp := range respMsg.Response {
+			printVnicDetail(resp)
 		}
 		printVnicSummary(len(respMsg.Response))
 	}
@@ -222,6 +223,11 @@ func printVnicDetail(vnic *pds.Vnic) {
 		return
 	}
 
+	ingressV4Policy := spec.GetIngV4SecurityPolicyId()
+	egressV4Policy := spec.GetEgV4SecurityPolicyId()
+	ingressV6Policy := spec.GetIngV6SecurityPolicyId()
+	egressV6Policy := spec.GetEgV6SecurityPolicyId()
+
 	fabricEncapStr := utils.EncapToString(spec.GetFabricEncap())
 	vnicEncapStr := utils.EncapToString(spec.GetVnicEncap())
 
@@ -260,6 +266,42 @@ func printVnicDetail(vnic *pds.Vnic) {
 	fmt.Printf("%-30s : %s\n", "Tx Mirror Session", txMirrorSessionStr)
 	fmt.Printf("%-30s : %t\n", "Switch Vnic", spec.GetSwitchVnic())
 	fmt.Printf("%-30s : %s\n", "Host Interface", lifName)
+	if len(ingressV4Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv4 Security Group ID")
+		for i := 0; i < len(ingressV4Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV4Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Ingress IPv4 Security Group ID", "-")
+	}
+	if len(ingressV6Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv6 Security Group ID")
+		for i := 0; i < len(ingressV6Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV6Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Ingress IPv6 Security Group ID", "-")
+	}
+	if len(egressV4Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv4 Security Group ID")
+		for i := 0; i < len(egressV4Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV4Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Egress IPv4 Security Group ID", "-")
+	}
+	if len(egressV6Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv6 Security Group ID")
+		for i := 0; i < len(egressV6Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV6Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Egress IPv6 Security Group ID", "-")
+	}
 
 	lineStr := strings.Repeat("-", 60)
 	fmt.Println(lineStr)

@@ -118,8 +118,10 @@ func printSubnetHeader() {
 
 func printSubnetDetail(subnet *pds.Subnet) {
 	spec := subnet.GetSpec()
-	ingressPolicy := spec.GetIngV4SecurityPolicyId()
-	egressPolicy := spec.GetEgV4SecurityPolicyId()
+	ingressV4Policy := spec.GetIngV4SecurityPolicyId()
+	egressV4Policy := spec.GetEgV4SecurityPolicyId()
+	ingressV6Policy := spec.GetIngV6SecurityPolicyId()
+	egressV6Policy := spec.GetEgV6SecurityPolicyId()
 	dhcpPolicy := spec.GetDHCPPolicyId()
 	hostIf := spec.GetHostIf()
 	lifName := "-"
@@ -140,23 +142,41 @@ func printSubnetDetail(subnet *pds.Subnet) {
 	fmt.Printf("%-30s : %s\n", "Virtual Router IPv4 Address", utils.Uint32IPAddrtoStr(spec.GetIPv4VirtualRouterIP()))
 	fmt.Printf("%-30s : %s\n", "Virtual Router MAC Address", utils.MactoStr(spec.GetVirtualRouterMac()))
 	fmt.Printf("%-30s : %s\n", "Route Table Id", utils.IdToStr(spec.GetV4RouteTableId()))
-	if len(ingressPolicy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Ingress Security Group Id")
-		for i := 0; i < len(ingressPolicy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressPolicy[i]))
+	if len(ingressV4Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv4 Security Group ID")
+		for i := 0; i < len(ingressV4Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV4Policy[i]))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Ingress Security Group Id", "-")
+		fmt.Printf("%-30s : %s\n", "Ingress IPv4 Security Group ID", "-")
 	}
-	if len(egressPolicy) != 0 {
-		keyStr := fmt.Sprintf("%-30s : ", "Egress Security Group Id")
-		for i := 0; i < len(egressPolicy); i++ {
-			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressPolicy[i]))
+	if len(ingressV6Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv6 Security Group ID")
+		for i := 0; i < len(ingressV6Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(ingressV6Policy[i]))
 			keyStr = ""
 		}
 	} else {
-		fmt.Printf("%-30s : %s\n", "Egress Security Group ID", "-")
+		fmt.Printf("%-30s : %s\n", "Ingress IPv6 Security Group ID", "-")
+	}
+	if len(egressV4Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv4 Security Group ID")
+		for i := 0; i < len(egressV4Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV4Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Egress IPv4 Security Group ID", "-")
+	}
+	if len(egressV6Policy) != 0 {
+		keyStr := fmt.Sprintf("%-30s : ", "Egress IPv6 Security Group ID")
+		for i := 0; i < len(egressV6Policy); i++ {
+			fmt.Printf("%-33s%s\n", keyStr, utils.IdToStr(egressV6Policy[i]))
+			keyStr = ""
+		}
+	} else {
+		fmt.Printf("%-30s : %s\n", "Egress IPv6 Security Group ID", "-")
 	}
 	if len(dhcpPolicy) != 0 {
 		keyStr := fmt.Sprintf("%-30s : ", "DHCP Policy Id")

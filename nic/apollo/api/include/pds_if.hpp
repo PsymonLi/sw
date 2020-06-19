@@ -24,7 +24,7 @@
 
 #define PDS_INTF_ID_INVALID     0     ///< invalid interface id
 #define PDS_LLDP_MAX_NAME_LEN   64
-#define PDS_LLDP_MAX_DESCR_LEN  128
+#define PDS_LLDP_MAX_DESCR_LEN  256
 #define PDS_LLDP_MAX_CAPS       8     ///< max. no of LLDP capabilities
 
 /// \brief interface admin/operational state
