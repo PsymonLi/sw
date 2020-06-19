@@ -134,6 +134,7 @@
             "svc": {
                 "names": [ "pdsagent" ],
                 "event_sequence": "serial",
+                "rsp_timeout": "2000ms",
                 "domain": "B"
             },
             "events": [
@@ -148,6 +149,7 @@
             "svc": {
                 "names": [ "pdsagent" ],
                 "event_sequence": "serial",
+                "rsp_timeout": "2000ms",
                 "domain": "B"
             },
             "events": [

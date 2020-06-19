@@ -115,7 +115,6 @@ EthLif::EthLif(Eth *dev, devapi *dev_api, const void *dev_spec,
     EthLif::pf_lif_stats_addr = 0;
     EthLif::notify_enabled = 0;
     EthLif::notify_ring_head = 0;
-    EthLif::device_inited = false;
 
     // Init stats timer
     ev_timer_init(&stats_timer, &EthLif::StatsUpdate, 0.0, 0.1);
@@ -234,7 +233,6 @@ EthLif::UpgradeGracefulInit(void)
     MAC_UINT64_TO_ADDR(hal_lif_info_.mac, spec->mac_addr);
 
     // For debugging: by default enables rdma sniffer on all host ifs
-    // For debugging: by default enables rdma sniffer on all host ifs
 #if 0
     if (hal_lif_info_.type == sdk::platform::LIF_TYPE_HOST) {
         hal_lif_info_.rdma_sniff = true;
@@ -324,43 +322,6 @@ EthLif::UpgradeHitlessInit(void)
 
     if (dev_api != NULL) {
         Create();
-    }
-
-}
-
-void
-EthLif::ServiceControl(bool start)
-{
-    bool lif_inited = (lif_pstate->state >= LIF_STATE_INIT);
-
-    if (start) {
-        if (lif_inited) {
-            admin_cosA = 1;
-            admin_cosB = 1;
-
-            // Start stats timer
-            ev_timer_start(EV_A_ & stats_timer);
-
-            // Initialize EDMA service
-            if (!edmaq->Init(0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize EdmaQ service",
-                            hal_lif_info_.name);
-            }
-
-            if (!edmaq_async->Init(0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service",
-                            hal_lif_info_.name);
-            }
-
-            // Initialize ADMINQ service
-            if (!adminq->Init(0, admin_cosA, admin_cosB)) {
-                NIC_LOG_ERR("{}: Failed to initialize AdminQ service",
-                            hal_lif_info_.name);
-            }
-        }
-    } else {
-        adminq->PollStop();
-        ev_timer_stop(EV_A_ & stats_timer);
     }
 }
 
@@ -571,7 +532,7 @@ EthLif::Create()
 {
     sdk_ret_t rs;
 
-    if (lif_pstate->state < LIF_STATE_CREATING) {
+    if (lif_pstate->state != LIF_STATE_CREATING) {
         return;
     }
 
@@ -582,11 +543,9 @@ EthLif::Create()
         return;
     }
 
-    if (lif_pstate->state < LIF_STATE_INIT)  {
-        lif_pstate->state = LIF_STATE_CREATED;
-    }
-
     NIC_LOG_INFO("{}: Created", hal_lif_info_.name);
+
+    lif_pstate->state = LIF_STATE_CREATED;
 }
 
 status_code_t
@@ -814,7 +773,6 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     // Init the stats region
     LifStatsClear();
 
-    device_inited = true;
     lif_pstate->state = LIF_STATE_INIT;
 
     /* Add deferred filters */
@@ -1009,7 +967,6 @@ EthLif::Reset()
 
     lif_pstate->state = LIF_STATE_RESET;
     lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
-    lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_DOWN;
 
     return (IONIC_RC_SUCCESS);
 }
@@ -2486,8 +2443,7 @@ EthLif::AdminQControl(uint32_t qid, bool enable)
     int64_t addr;
     struct admin_cfg_qstate admin_cfg = {0};
 
-    NIC_FUNC_DEBUG("{}: lif id: {} qid: {} enable: {}",
-                   hal_lif_info_.name, hal_lif_info_.lif_id, qid, enable);
+    NIC_FUNC_DEBUG("{}: qid: {} enable: {}" , hal_lif_info_.name, qid, enable);
 
     if (qid >= spec->adminq_count) {
         NIC_LOG_ERR("{}: bad qid {}", hal_lif_info_.name, qid);
@@ -3418,40 +3374,9 @@ EthLif::DelphiMountEventHandler(bool mounted)
 }
 
 void
-EthLif::UpgradeSyncHandler(void)
-{
-    int ret;
-
-    if (device_inited)
-        return;
-
-    NIC_LOG_DEBUG("{}: syncing config during upgrade", lif_pstate->name);
-
-    if (lif_pstate->state >= LIF_STATE_INIT) {
-        dev_api->lif_init(&hal_lif_info_);
-
-        // Program RSS table
-        ret = pd->eth_program_rss(hal_lif_info_.lif_id,
-                                  lif_pstate->rss_type,
-                                  lif_pstate->rss_key,
-                                  lif_pstate->rss_indir,
-                                  spec->rxq_count);
-        if (ret != 0) {
-            NIC_LOG_DEBUG("{}: Unable to program hw for RSS HASH", ret);
-            return;
-        }
-    }
-
-    return;
-}
-
-void
 EthLif::UpdateQStatus(bool enable)
 {
     status_code_t st;
-
-    if (lif_pstate->state < LIF_STATE_INIT)
-        return;
 
     // queue control for adminq
     for (uint32_t i = 0; i < spec->adminq_count; i++) {

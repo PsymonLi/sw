@@ -15,7 +15,6 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
-#include "nic/sdk/upgrade/include/ev.hpp"
 #include "nic/sdk/platform/fru/fru.hpp"
 #include "nic/sdk/platform/misc/include/maclib.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
@@ -176,13 +175,13 @@ DeviceManager::UpgradeHitlessInit(devicemgr_cfg_t *cfg) {
     HalLifIDReserve();
     if (sdk::asic::asic_is_hard_init()) {
         PciemgrInit(cfg);
+        HeartbeatStart();
     }
     this->shm_mem = nicmgr_shm::factory(false);
     NIC_HEADER_TRACE("DeviceManager Hitless Init Done");
 }
 
-void
-DeviceManager::PlatformInit(devicemgr_cfg_t *cfg) {
+void DeviceManager::PlatformInit(devicemgr_cfg_t *cfg) {
     sdk::platform::platform_type_t platform = cfg->platform_type;
 
     NIC_LOG_DEBUG("Platform {}", platform);
@@ -194,8 +193,7 @@ DeviceManager::PlatformInit(devicemgr_cfg_t *cfg) {
     }
 }
 
-void
-DeviceManager::HalLifIDReserve(void) {
+void DeviceManager::HalLifIDReserve(void) {
     sdk_ret_t ret;
 
     // Reserve all the LIF ids used by HAL
@@ -206,8 +204,7 @@ DeviceManager::HalLifIDReserve(void) {
     }
 }
 
-void
-DeviceManager::LifsReset(void) {
+void DeviceManager::LifsReset(void) {
     sdk_ret_t ret;
 
     ret = sdk::platform::utils::lif_mgr::lifs_reset(NICMGR_LIF_ID_MIN,
@@ -748,8 +745,7 @@ DeviceManager::RestoreDeviceGraceful(DeviceType type, void *dev_state)
         eth_dev->SetType(ETH);
         eth_dev->UpgradeGracefulInit(dev_info->eth_spec);
         devices[eth_dev->GetName()] = eth_dev;
-        NIC_LOG_DEBUG("Restored ETH device {} after graceful upgrade",
-                      eth_dev->GetName());
+        NIC_LOG_DEBUG("Restored ETH device {} after upgrade", eth_dev->GetName());
         break;
     }
     default:
@@ -769,8 +765,7 @@ DeviceManager::RestoreDeviceHitless(DeviceType type, void *dev_state)
         eth_dev->SetType(ETH);
         eth_dev->UpgradeHitlessInit(dev_info->eth_spec);
         devices[eth_dev->GetName()] = eth_dev;
-        NIC_LOG_DEBUG("Restored ETH device {} after hitless upgrade",
-                      eth_dev->GetName());
+        NIC_LOG_DEBUG("Restored ETH device {} after upgrade", eth_dev->GetName());
         break;
     }
     default:
@@ -983,17 +978,12 @@ DeviceManager::DeviceCreate(bool status) {
     DeviceType type;
     EthDevType eth_type;
     vector<struct mnet_dev_create_req_t *> *mnet_list;
-    upg_mode_t mode = sdk::upg::upg_init_mode();
     struct mnet_dev_create_req_t * mnet_req;
     bool skip_hwinit = false;
 
 #ifndef __aarch64__
     skip_hwinit = true;
 #endif
-    if (sdk::platform::upgrade_mode_hitless(mode)) {
-        NIC_LOG_INFO("Skipping mnet creation for hitless upgrade");
-        skip_hwinit = true;
-    }
 
     if (status && sdk::asic::asic_is_hard_init()) {
         /* Create local devices creation thread */
@@ -1225,17 +1215,6 @@ DeviceManager::HeartbeatCheck()
 }
 
 void
-DeviceManager::ServiceControl(bool start)
-{
-    if (start) {
-        HeartbeatStart();
-    } else {
-        HeartbeatStop();
-    }
-}
-
-
-void
 DeviceManager::DelphiMountEventHandler(bool mounted)
 {
     NIC_HEADER_TRACE("Mount Event");
@@ -1310,9 +1289,6 @@ upgrade_event_to_str(UpgradeEvent event)
         CASE(UPG_EVENT_QUIESCE);
         CASE(UPG_EVENT_ENABLEQ);
         CASE(UPG_EVENT_DISABLEQ);
-        CASE(UPG_EVENT_SERVICE_START);
-        CASE(UPG_EVENT_SERVICE_STOP);
-        CASE(UPG_EVENT_SYNC);
         CASE(UPG_EVENT_DEVICE_RESET);
         default: return "invalid";
     }
@@ -1333,15 +1309,6 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 }
             }
             break;
-        case UPG_EVENT_ENABLEQ:
-            for (auto it = devices.begin(); it != devices.end(); it++) {
-                Device *dev = it->second;
-                if (dev->GetType() == ETH) {
-                    Eth *eth_dev = (Eth *) dev;
-                    eth_dev->UpdateQStatus(true);
-                }
-            }
-            break;
         case UPG_EVENT_DISABLEQ:
             for (auto it = devices.begin(); it != devices.end(); it++) {
                 Device *dev = it->second;
@@ -1351,32 +1318,12 @@ DeviceManager::HandleUpgradeEvent(UpgradeEvent event)
                 }
             }
             break;
-        case UPG_EVENT_SERVICE_START:
-            ServiceControl(true);
+        case UPG_EVENT_ENABLEQ:
             for (auto it = devices.begin(); it != devices.end(); it++) {
                 Device *dev = it->second;
                 if (dev->GetType() == ETH) {
                     Eth *eth_dev = (Eth *) dev;
-                    eth_dev->ServiceControl(true);
-                }
-            }
-            break;
-        case UPG_EVENT_SERVICE_STOP:
-            ServiceControl(false);
-            for (auto it = devices.begin(); it != devices.end(); it++) {
-                Device *dev = it->second;
-                if (dev->GetType() == ETH) {
-                    Eth *eth_dev = (Eth *) dev;
-                    eth_dev->ServiceControl(false);
-                }
-            }
-            break;
-        case UPG_EVENT_SYNC:
-            for (auto it = devices.begin(); it != devices.end(); it++) {
-                Device *dev = it->second;
-                if (dev->GetType() == ETH) {
-                    Eth *eth_dev = (Eth *) dev;
-                    eth_dev->UpgradeSyncHandler();
+                    eth_dev->UpdateQStatus(true);
                 }
             }
             break;

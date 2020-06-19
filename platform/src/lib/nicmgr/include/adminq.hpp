@@ -41,8 +41,6 @@ public:
     bool PostResponse(struct nicmgr_resp_desc *resp);
     void Flush(void);
     static void Poll(void *obj);
-    void PollStart(void);
-    void PollStop(void);
 
 private:
     const char *name;
@@ -53,7 +51,6 @@ private:
     uint32_t req_qid, resp_qid;
     uint16_t req_ring_size, resp_ring_size;
     bool req_init, resp_init;
-    bool adminq_running;
 
     adminq_cb_t handler;
     void *handler_obj;
