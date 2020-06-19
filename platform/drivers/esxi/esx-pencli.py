@@ -868,13 +868,22 @@ def ValidateArgsForDscModeChange(args):
         if args.controllers is None:
             print('Please provide information of controller(s)')
             return 1
-        if args.inband_ip is not None:
+        else:
+            if len(args.controllers.split(',')) % 2 == 0:
+                print('Number of controllers must be an odd number, current number: ' + str(len(args.controllers.split(','))))
+                return 1
+
+        if args.management_network == 'inband':
+            if args.inband_ip is not None:
+                print('Cannot configure ip on inb when it is also mgmt network')
+                return 1
+        else:
+            if args.inband_ip is None:
+                print('Inband IP address cannot be empty when mgmt network is oob')
+                return 1
             if '/' not in args.inband_ip:
                 print('Please provide inband IP address in CIDR format(For example: 10.10.10.19/24')
                 return 1
-        if len(args.controllers.split(',')) % 2 == 0:
-            print('Number of controllers must be an odd number, current number: ' + str(len(args.controllers.split(','))))
-            return 1
     else:
         if args.mgmt_ip is not None:
             print('You do not need to provide management IP address for dhcp based configurations.')
