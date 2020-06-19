@@ -140,19 +140,12 @@ session_ctx_t::init(void)
         return PDS_RET_ERR;
     }
 
-    /*
-     * Mock mode has no support for P4TBL_ID_SESSION_INFO
-     */
-    if (std::getenv("ASIC_MOCK_MODE")) {
-        session_prop.tabledepth = cache_prop.tabledepth;
-    } else {
-        p4pd_error = p4pd_table_properties_get(P4TBL_ID_SESSION_INFO,
-                                               &session_prop);
-        if ((p4pd_error != P4PD_SUCCESS) || !session_prop.tabledepth) {
-            PDS_TRACE_ERR("failed session info properties: count %u "
-                          "error %d", session_prop.tabledepth, p4pd_error);
-            return PDS_RET_ERR;
-        }
+    p4pd_error = p4pd_table_properties_get(P4TBL_ID_SESSION_INFO,
+                                           &session_prop);
+    if ((p4pd_error != P4PD_SUCCESS) || !session_prop.tabledepth) {
+        PDS_TRACE_ERR("failed session info properties: count %u "
+                      "error %d", session_prop.tabledepth, p4pd_error);
+        return PDS_RET_ERR;
     }
     PDS_TRACE_DEBUG("Session context init session depth %u cache depth %u",
                     session_prop.tabledepth, cache_prop.tabledepth);

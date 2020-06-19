@@ -679,6 +679,12 @@ def run_athena_app(args):
     os.environ["HAL_CONFIG_PATH"] = nic_dir + "/conf"
     os.environ["PDSPKG_TOPDIR"] = nic_dir
 
+    if args.athena_app_mock_mode is True:
+        #Set mock mode environment variables
+        os.environ["ASIC_MOCK_MODE"] = "1"
+        os.environ["ASIC_MOCK_MEMORY_MODE"] = "1"
+        os.environ["IPC_MOCK_MODE"] = "1"
+
     if args.disable_hugepages is False:
         #Huge-pages for DPDK
         os.system("echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages")
@@ -1499,6 +1505,8 @@ def main():
                         help='any extra options that should be passed to offload as run_args.')
     parser.add_argument('--disable_hugepages', dest='disable_hugepages', action='store_true',
                         help='Disable hugepages setup')
+    parser.add_argument('--athena_app_mock_mode', dest='athena_app_mock_mode', action='store_true',
+                        help='athena app in mock mode')
     parser.add_argument('--athena_app_runargs', dest='athena_app_runargs', default='',
                         help='any extra options that should be passed to athena_app as run_args.')
     parser.add_argument('--no_error_check', dest='no_error_check', default=None,

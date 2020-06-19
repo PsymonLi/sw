@@ -49,7 +49,7 @@ protected:
 
     void SetUp() {
         ftl_scale_base::SetUp();
-        ftl_mock_init();
+        l2_flow_mock_init();
         pds_l2_flow_cache_create();
         pds_l2_flow_cache_set_core_id(2);
         t_info.start();
@@ -65,7 +65,7 @@ protected:
                        t_info.print_diff().c_str());
         validate_stats();
         pds_l2_flow_cache_delete();
-        ftl_mock_cleanup();
+        l2_flow_mock_cleanup();
         ftl_scale_base::TearDown();
     }
 public:

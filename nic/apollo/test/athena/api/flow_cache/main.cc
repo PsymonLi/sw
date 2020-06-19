@@ -43,13 +43,13 @@ protected:
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());
         
-        ftl_mock_init();
+        flow_mock_init();
         pds_flow_cache_create();
         pds_flow_cache_set_core_id(2);
     }
     virtual void TearDown() {
         pds_flow_cache_delete();
-        ftl_mock_cleanup();
+        flow_mock_cleanup();
         SDK_TRACE_INFO("============== TEARDOWN : %s.%s ===============",
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());

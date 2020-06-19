@@ -49,7 +49,7 @@ protected:
 
     void SetUp() {
         ftl_scale_base::SetUp();
-        ftl_mock_init();
+        dnat_mock_init();
         pds_dnat_map_create();
         pds_dnat_map_set_core_id(2);
         t_info.start();
@@ -65,7 +65,7 @@ protected:
                        t_info.print_diff().c_str());
         display_gtest_stats();
         pds_dnat_map_delete();
-        ftl_mock_cleanup();
+        dnat_mock_cleanup();
         ftl_scale_base::TearDown();
     }
 public:

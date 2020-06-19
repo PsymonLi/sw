@@ -18,5 +18,8 @@ MODULE_LDLIBS   = ${NIC_COMMON_LDLIBS} ${NIC_CAPSIM_LDLIBS} \
                   AAPL edit ncurses lmdb
 MODULE_FLAGS    = ${NIC_CSR_FLAGS}
 MODULE_DEFS     = -DCAPRI_SW ${NIC_CSR_DEFINES}
+MODULE_INCS     = ${MODULE_SRC_DIR}/../ftl_p4pd_mock
+MODULE_SRCS     = $(wildcard ${MODULE_SRC_DIR}/*.cc) \
+                  ${MODULE_SRC_DIR}/../ftl_p4pd_mock/ftl_p4pd_mock.cc)
 include ${MKDEFS}/post.mk
 endif

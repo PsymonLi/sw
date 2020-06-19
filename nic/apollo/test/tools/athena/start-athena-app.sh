@@ -3,7 +3,13 @@
 export PIPELINE=athena
 
 CUR_DIR=$( readlink -f $( dirname $0 ) )
+if [ "$1" == "mock_mode" ]
+then
+source $CUR_DIR/../../../tools/setup_env_mock.sh $PIPELINE
+shift
+else
 source $CUR_DIR/../../../tools/setup_env_sim.sh $PIPELINE
+fi
 
 function stop_model() {
     pkill cap_model
@@ -70,6 +76,7 @@ echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
 mkdir -p /dev/hugepages
 mount -t hugetlbfs nodev /dev/hugepages
 
-echo "Starting Agent: `date +%x_%H:%M:%S:%N`"
+echo "Timestamp : `date +%x_%H:%M:%S:%N`"
+echo "Calling athena app with args \"$*\""
 $GDB $BUILD_DIR/bin/athena_app -c hal.json $* 2>&1
 

@@ -47,7 +47,7 @@ protected:
         SDK_TRACE_INFO("============== SETUP : %s.%s ===============",
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());
-        ftl_mock_init();
+        dnat_mock_init();
         pds_dnat_map_create();
         pds_dnat_map_set_core_id(2);
     }
@@ -56,7 +56,7 @@ protected:
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());
         pds_dnat_map_delete();
-        ftl_mock_cleanup();
+        dnat_mock_cleanup();
     }
     static void SetUpTestCase() {}
     static void TearDownTestCase() {}
