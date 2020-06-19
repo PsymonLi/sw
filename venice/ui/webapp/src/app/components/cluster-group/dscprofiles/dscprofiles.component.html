@@ -1,20 +1,15 @@
 <app-pagebody [icon]="bodyicon" header="DSC Profiles Overview" class="dscprofiles">
   <div class="dscprofiles-table-container ui-flex">
-    <ng-container *ngTemplateOutlet="DataTable"></ng-container>
+    <app-pentable #dscProfilesTable
+                  [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate" [columns]="cols"
+                  [createTemplate]="createTemplate"
+                  [data]="dataObjects" [enableCheckbox]="true" [expandTemplate]="expandTemplate"
+                  [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
+                  [numRows]="25"
+                  (rowClickEmitter)="selectDSCProfile($event)" [rowHeight]="50"></app-pentable>
   </div>
 </app-pagebody>
-<ng-template #DataTable>
-  <app-tableviewedit fxLayout="column" style="height: 100%;" [creatingMode]="creatingMode"
-                     [showRowExpand]="showRowExpand" [data]="dataObjects" [cols]="cols"
-                     [expandedRowData]="expandedRowData"
-                     [captionTemplate]="captionTemplate" [bodyTemplate]="bodyTemplate"
-                     [actionTemplate]="actionTemplate"
-                     [expandTemplate]="expandTemplate" [createTemplate]="createTemplate"
-                     [enableCheckbox]="true"
-                     [tableLoading]="tableLoading" (rowClick)="selectDSCProfile($event)"
-                     (rowExpandAnimationComplete)="rowExpandAnimationComplete($event)">
-  </app-tableviewedit>
-</ng-template>
 
 <ng-template #actionButtonsTemplate>
   <div fxFlex="none" fxLayoutAlign="start center">
@@ -28,13 +23,14 @@
 
 <!-- TABLE HEADER -->
 <ng-template #captionTemplate let-count="count">
-  <div fxLayout="column" class="ui-flex">
-    <div *ngIf="selectedDSCProfile && !isRowExpanded()" fxFlex="auto" fxLayout="row"
+  <div class="dscprofiles-caption" fxLayout="column">
+    <div *ngIf="selectedDSCProfile && !dscProfilesTable.showRowExpand" fxFlex="auto"
          class="dscprofiles-detail-container">
       <ng-container *ngTemplateOutlet="selectedDSCProfileDetail;"></ng-container>
     </div>
-    <div fxLayout="row">
-      <app-tableheader fxFlex="auto" fxLayout="row" [tableMenuItems]="tableMenuItems"
+    <div class="dscprofiles-tableheader">
+      <app-tableheader fxFlex="auto" fxLayout="row"
+                       [tableMenuItems]="dscProfilesTable.tableMenuItems"
                        title="DSC Profiles"
                        [total]="dataObjects.length" [icon]="headerIcon" [enableColumnSelect]="true"
                        [cols]="cols"
@@ -153,7 +149,7 @@
 
 <ng-template #expandTemplate let-rowData let-columns="columns">
   <app-newdscprofile [style.width]="'100%'" [objectData]="rowData" [isInline]="true"
-                     (formClose)="closeRowExpand()"
+                     (formClose)="editFormClose(rowData)"
                      fxFlex="none"></app-newdscprofile>
 </ng-template>
 

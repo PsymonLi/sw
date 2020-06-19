@@ -1,10 +1,9 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewEncapsulation, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Animations } from '@app/animations';
 import { HttpEventUtility } from '@app/common/HttpEventUtility';
 import { Utility } from '@app/common/Utility';
 import { CustomExportMap, TableCol } from '@app/components/shared/tableviewedit';
-import { TablevieweditAbstract } from '@app/components/shared/tableviewedit/tableviewedit.component';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { ControllerService } from '@app/services/controller.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
@@ -13,6 +12,9 @@ import { ClusterDistributedServiceCard, ClusterDSCProfile, IApiStatus, IClusterD
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import { Observable } from 'rxjs';
 import { PercentPipe } from '@angular/common';
+import { PentableComponent } from '@app/components/shared/pentable/pentable.component';
+import { DataComponent } from '@app/components/shared/datacomponent/datacomponent.component';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
 
 
 interface DSCMacName {
@@ -47,7 +49,9 @@ interface DSCProfileUiModel {
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfile, ClusterDSCProfile> implements OnInit, OnDestroy {
+export class DscprofilesComponent extends DataComponent implements OnInit {
+  @ViewChild('dscProfilesTable') dscProfilesTable: PentableComponent;
+
   dataObjects: ReadonlyArray<ClusterDSCProfile> = [];
   selectedDSCProfile: ClusterDSCProfile = null;
 
@@ -131,7 +135,15 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
     private clusterService: ClusterService,
     private _route: ActivatedRoute
   ) {
-    super(_controllerService, cdr, uiconfigsService);
+    super(_controllerService, uiconfigsService);
+  }
+
+  clearSelectedDataObjects() {
+    this.dscProfilesTable.selectedDataObjects = [];
+  }
+
+  getSelectedDataObjects() {
+    return this.dscProfilesTable.selectedDataObjects;
   }
 
   setDefaultToolbar() {
@@ -141,8 +153,8 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
         {
           cssClass: 'global-button-primary  dscprofiles-button ',
           text: 'ADD DSC PROFILE',
-          computeClass: () => this.shouldEnableButtons ? '' : 'global-button-disabled',
-          callback: () => { this.createNewObject(); }
+          computeClass: () => !this.dscProfilesTable.showRowExpand ? '' : 'global-button-disabled',
+          callback: () => { this.dscProfilesTable.createNewObject(); }
         }
       ];
     }
@@ -151,13 +163,18 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
       breadcrumb: [{ label: 'DSC Profiles', url: Utility.getBaseUIUrl() + 'cluster/dscprofiles' }]
     });
   }
-  postNgInit(): void {
+
+  ngOnInit() {
+    this._controllerService.publish(Eventtypes.COMPONENT_INIT, {
+      'component': this.getClassName(), 'state': Eventtypes.COMPONENT_INIT
+    });
     this._route.queryParams.subscribe(params => {
       if (params.hasOwnProperty('dscprofile')) {
         // alerttab selected
         this.getSearchedNetworkInterface(params['dscprofile']);
       }
     });
+    this.setDefaultToolbar();
     this.watchDSCProfiles();
     this.watchNaples();
   }
@@ -309,6 +326,16 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
     return 'Deleted DSC Profile ' + object.meta.name;
   }
 
+  onDeleteRecord(event, object) {
+    this.dscProfilesTable.onDeleteRecord(
+      event,
+      object,
+      this.generateDeleteConfirmMsg(object),
+      this.generateDeleteSuccessMsg(object),
+      this.deleteRecord.bind(this)
+    );
+  }
+
   areSelectedRowsDeletable(): boolean {
     if (!this.uiconfigsService.isAuthorized(UIRolePermissions.networknetworkinterface_delete)) {
       return false;
@@ -375,7 +402,9 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
     if (this.selectedDSCProfile && event.rowData === this.selectedDSCProfile) {
       this.selectedDSCProfile = null;
     } else {
-      this.selectedDSCProfile = event.rowData;
+      if (!this.dscProfilesTable.showRowExpand) {
+        this.selectedDSCProfile = event.rowData;
+      }
     }
   }
 
@@ -387,4 +416,23 @@ export class DscprofilesComponent extends TablevieweditAbstract<IClusterDSCProfi
     this.viewPendingNaples = !this.viewPendingNaples;
   }
 
+  expandRowRequest(event, rowData) {
+    if (!this.dscProfilesTable.showRowExpand) {
+      this.dscProfilesTable.toggleRow(rowData, event);
+    }
+  }
+
+  editFormClose(rowData) {
+    if (this.dscProfilesTable.showRowExpand) {
+      this.dscProfilesTable.toggleRow(rowData);
+    }
+  }
+
+  creationFormClose() {
+    this.dscProfilesTable.creationFormClose();
+  }
+
+  onColumnSelectChange(event) {
+    this.dscProfilesTable.onColumnSelectChange(event);
+  }
 }

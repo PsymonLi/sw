@@ -73,6 +73,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   searchInitialized: boolean = false;
   selectedColumns: TableCol[] = [];
   selectedDataObjects: any[] = [];
+  selectedDataObjectsKeySet: Set<any> = new Set<any>();
   showRowExpand: boolean = false;
   subscriptions: Subscription[] = [];
   tableMenuItems: TableMenuItem[] = [
@@ -146,11 +147,45 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       }
     }
 
-    // if a new set of data comes in (new alerts, new search, etc), clear out selection
     if (change.data) {
-      this.selectedDataObjects = [];
-      this.pageSelected = false;
+      setTimeout(() => {
+        this.isPageSelected();
+      }, 0);
     }
+  }
+
+  genDataObjectsSetByKey(objects: any[]) {
+    const selKey = new Set<any>();
+    objects.forEach(obj => {
+      selKey.add(Utility.getObjectValueByPropertyPath(obj, this.dataKey, false));
+    });
+    return selKey;
+  }
+
+  isSuperset(set: any, subset: any) {
+    const subsetArr = Array.from(subset.values());
+    for (const ele of subsetArr) {
+        if (!set.has(ele)) {
+            return false;
+        }
+    }
+    return true;
+  }
+
+  setUnion(setA: any, setB: any) {
+    const union = new Set(setA);
+    setB.forEach(ele => {
+      union.add(ele);
+    });
+    return union;
+  }
+
+  setDifference(setA: any, setB: any) {
+    const diff = new Set(setA);
+    setB.forEach(ele => {
+      diff.delete(ele);
+    });
+    return diff;
   }
 
   ngOnDestroy() {
@@ -295,20 +330,47 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     });
   }
 
+  /**
+   * Current page data objects would be pushed into selected data objects when table header checkbox is checked, otherwise would be removed from selected data objects
+   * @param checked Tells if table header checkbox is checked or not
+   */
   onHeaderCheckboxToggle(checked) {
-    this.selectedDataObjects = checked ? this.data.slice(this.first, this.first + this.numRows) : [];
+    const pageDataObjects = this.data.slice(this.first, this.first + this.numRows);
+    const pageDataObjectsKeySet = this.genDataObjectsSetByKey(pageDataObjects);
+    const newDataObjectsSet = checked ? this.setUnion(this.selectedDataObjectsKeySet, pageDataObjectsKeySet) : this.setDifference(this.selectedDataObjectsKeySet, pageDataObjectsKeySet);
+    const newDataObjects: any[] = [];
+    const tempObj = pageDataObjects.concat(this.selectedDataObjects);
+    newDataObjectsSet.forEach(ele => {
+      for (let i = 0; i < tempObj.length; i++) {
+        if (ele === Utility.getObjectValueByPropertyPath(tempObj[i], this.dataKey, false)) {
+          newDataObjects.push(tempObj[i]);
+          break;
+        }
+      }
+    });
+    this.selectedDataObjects = newDataObjects;
     setTimeout(() => {
-      this.pageSelected = this.selectedDataObjects.length > 0;
+      this.isPageSelected();
     }, 0);
   }
 
   onPage(event) {
-    if (event.rows !== this.numRows) {
-      this.selectedDataObjects = [];
-    }
     this.first = event.first;
     this.numRows = event.rows;
-    this.pageSelected = Utility.getLodash().isEqual(this.selectedDataObjects, this.data.slice(this.first, this.first + this.numRows));
+    this.isPageSelected();
+  }
+
+  /**
+   * Table Header checkbox would be checked if all data objects in current page are selected
+   */
+  isPageSelected() {
+    this.selectedDataObjectsKeySet = this.genDataObjectsSetByKey(this.selectedDataObjects);
+    const pageDataObjects = this.data.slice(this.first, this.first + this.numRows);
+    // When page is loading its length can be 0
+    if (pageDataObjects.length > 0) {
+      const objKeySet = this.genDataObjectsSetByKey(pageDataObjects);
+      this.pageSelected = this.isSuperset(this.selectedDataObjectsKeySet, objKeySet);
+    }
   }
 
   onSearch() {
@@ -388,10 +450,12 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   }
 
   rowSelected(event) {
+    this.isPageSelected();
     this.rowSelectedEmitter.emit(event);
   }
 
   rowUnselected(event) {
+    this.isPageSelected();
     this.rowUnselectedEmitter.emit(event);
   }
 

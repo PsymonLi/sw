@@ -65,6 +65,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   dataObjects: ReadonlyArray<NetworkNetworkInterface> = [];
   dataObjectsBackUp: ReadonlyArray<NetworkNetworkInterface> = [];
+  naplesInit: boolean = false;
   naplesList: ClusterDistributedServiceCard[] = [];
 
   techsupportrequestsEventUtility: HttpEventUtility<NetworkNetworkInterface>;
@@ -201,7 +202,8 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
         this._myDSCnameToMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
-        this.handleDataReady();
+        this.handleDataReady(!this.naplesInit);
+        this.naplesInit = true;
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -214,7 +216,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
           return;
         }
         this.dataObjects = response.data;
-        this.handleDataReady();
+        this.handleDataReady(true);
         this.tableLoading = false;
       },
       (error) => {
@@ -225,16 +227,16 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     this.subscriptions.push(dscSubscription);
   }
 
-  handleDataReady() {
+  handleDataReady(updateBackUp?: boolean) {
     // When naplesList and networkinterfaces list are ready, build networkinterface-dsc map.
-    if (this.naplesList && this.naplesList.length > 0 && this.dataObjects.length > 0) {
       this.dataObjects.forEach((networkNetworkInterface: NetworkNetworkInterface) => {
         this.updateOneNetworkInterface(networkNetworkInterface);
       });
       this.updateSelectedNetworkInterface();
       this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjects);
-      this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
-    }
+      if (updateBackUp) {
+        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
+      }
   }
 
   updateSelectedNetworkInterface() {
@@ -244,12 +246,14 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   }
 
   updateOneNetworkInterface(selectedNetworkInterface: NetworkNetworkInterface) {
-    const dscname = this._myDSCnameToMacMap.macToNameMap[selectedNetworkInterface.status.dsc];
-    const uiModel: NetworkInterfaceUiModel = {
-      associatedDSC: (dscname) ? dscname : selectedNetworkInterface.status.dsc,
-      networkinterfaceUIName: this.geNetworkinterfaceUIName(selectedNetworkInterface)
-    };
-    selectedNetworkInterface._ui = uiModel;
+    if (this._myDSCnameToMacMap) {
+      const dscname = this._myDSCnameToMacMap.macToNameMap[selectedNetworkInterface.status.dsc];
+      const uiModel: NetworkInterfaceUiModel = {
+        associatedDSC: (dscname) ? dscname : selectedNetworkInterface.status.dsc,
+        networkinterfaceUIName: this.geNetworkinterfaceUIName(selectedNetworkInterface)
+      };
+      selectedNetworkInterface._ui = uiModel;
+    }
   }
 
   geNetworkinterfaceUIName(selectedNetworkInterface: NetworkNetworkInterface, delimiter: string = '-'): string {
@@ -422,6 +426,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   onCancelSearch() {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.dataObjects = this.dataObjectsBackUp;
+    this.handleDataReady();
   }
 
   /**
