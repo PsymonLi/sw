@@ -182,15 +182,15 @@ e2e-targets:
           EsxUsername: root
           EsxPassword: Pen0trl!
 
- # single instance of RHEL 8.0
- rhel80:
+ # single instance of RHEL 8.2
+ rhel82:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
    sub-area:
    feature:
    clusters:
-     - image: build-13
+     - image: build-34
        count: 1
        resources:
          servers:
@@ -204,15 +204,15 @@ e2e-targets:
        vars:
           BmOs: linux
 
- # two bare-metal instances of RHEL 8.0
- 2rhel80:
+ # two bare-metal instances of RHEL 8.2
+ 2rhel82:
    commands: [ "cat /warmd.json && sleep 30000000"]
    owners: ["email:ci-status@pensando.io"]
    area:
    sub-area:
    feature:
    clusters:
-     - image: build-13
+     - image: build-34
        count: 2
        resources:
          servers:
