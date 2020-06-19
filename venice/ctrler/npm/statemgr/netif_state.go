@@ -183,6 +183,9 @@ func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Int
 // and update statemgr LLDP neighbor
 func checkLLDPNeighborUpdate(netif *network.LLDPNeighbor, agentNetif *netproto.LLDPNeighbor) bool {
 
+	if netif == nil || agentNetif == nil {
+		return false
+	}
 	if netif.ChassisID != agentNetif.ChassisID ||
 		netif.SysName != agentNetif.SysName ||
 		netif.SysDescription != agentNetif.SysDescription ||
