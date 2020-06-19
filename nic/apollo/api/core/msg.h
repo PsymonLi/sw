@@ -24,6 +24,7 @@
 #include "nic/apollo/api/include/pds_mirror.hpp"
 #include "nic/apollo/api/include/pds_policy.hpp"
 #include "nic/apollo/api/include/pds_flow.hpp"
+#include "nic/apollo/api/include/pds_ipsec.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,6 +126,24 @@ typedef struct pds_tep_cfg_msg_s {
     pds_tep_status_t status;
 } pds_tep_cfg_msg_t;
 
+/// ipsec encrypt sa configurtation
+typedef struct pds_ipsec_sa_encrypt_cfg_msg_s {
+    union {
+        pds_obj_key_t key;
+        pds_ipsec_sa_encrypt_spec_t spec;
+    };
+    pds_ipsec_sa_encrypt_status_t status;
+} pds_ipsec_sa_encrypt_cfg_msg_t;
+
+/// ipsec decrypt sa configurtation
+typedef struct pds_ipsec_sa_decrypt_cfg_msg_s {
+    union {
+        pds_obj_key_t key;
+        pds_ipsec_sa_decrypt_spec_t spec;
+    };
+    pds_ipsec_sa_decrypt_status_t status;
+} pds_ipsec_sa_decrypt_cfg_msg_t;
+
 /// configuration message structure for create/update/delete operations
 typedef struct pds_cfg_msg_s {
     /// API operation
@@ -143,6 +162,8 @@ typedef struct pds_cfg_msg_s {
         pds_dhcp_policy_cfg_msg_t dhcp_policy;
         pds_nat_port_block_cfg_msg_t nat_port_block;
         pds_security_profile_cfg_msg_t security_profile;
+        pds_ipsec_sa_encrypt_cfg_msg_t ipsec_sa_encrypt;
+        pds_ipsec_sa_decrypt_cfg_msg_t ipsec_sa_decrypt;
     };
 } pds_cfg_msg_t;
 

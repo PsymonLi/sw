@@ -25,6 +25,7 @@
 #include "nic/apollo/agent/svc/policer_svc.hpp"
 #include "nic/apollo/agent/svc/service_svc.hpp"
 #include "nic/apollo/agent/svc/interface_svc.hpp"
+#include "nic/apollo/agent/svc/ipsec_svc.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/trace.hpp"
@@ -158,6 +159,14 @@ pds_handle_cfg (int fd, cfg_ctxt_t *ctxt)
     case CFG_MSG_TUNNEL_DELETE:
     case CFG_MSG_TUNNEL_GET:
         ret = pds_svc_tunnel_handle_cfg(ctxt, any_resp);
+        break;
+    case CFG_MSG_IPSEC_SA_ENCRYPT_CREATE:
+    case CFG_MSG_IPSEC_SA_ENCRYPT_DELETE:
+    case CFG_MSG_IPSEC_SA_ENCRYPT_GET:
+    case CFG_MSG_IPSEC_SA_DECRYPT_CREATE:
+    case CFG_MSG_IPSEC_SA_DECRYPT_DELETE:
+    case CFG_MSG_IPSEC_SA_DECRYPT_GET:
+        ret = pds_svc_ipsec_sa_handle_cfg(ctxt, any_resp);
         break;
     default:
         PDS_TRACE_ERR("Unsupport config message {}", ctxt->cfg);

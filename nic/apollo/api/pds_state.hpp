@@ -38,6 +38,7 @@
 #include "nic/apollo/api/dhcp_state.hpp"
 #include "nic/apollo/api/vport_state.hpp"
 #include "nic/apollo/api/security_profile.hpp"
+#include "nic/apollo/api/ipsec_state.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
 #include "nic/apollo/learn/learn_state.hpp"
 
@@ -73,7 +74,8 @@ namespace api {
     ENTRY(PDS_STATE_ROUTE,          22,            "route")         \
     ENTRY(PDS_STATE_POLICY_RULE,    23,            "policy-rule")   \
     ENTRY(PDS_STATE_VPORT,          24,            "vport")         \
-    ENTRY(PDS_STATE_MAX,            25,            "max")
+    ENTRY(PDS_STATE_IPSEC,          25,            "ipsec-sa")   \
+    ENTRY(PDS_STATE_MAX,            26,            "max")
 
 SDK_DEFINE_ENUM(pds_state_t, PDS_STATE)
 SDK_DEFINE_ENUM_TO_STR(pds_state_t, PDS_STATE)
@@ -237,6 +239,9 @@ public:
     }
     vport_state *vport_db(void) {
         return (vport_state *)state_[PDS_STATE_VPORT];
+    }
+    ipsec_sa_state *ipsec_sa_db(void) {
+        return (ipsec_sa_state *)state_[PDS_STATE_IPSEC];
     }
     pds_event_cb_t event_cb(void) const { return event_cb_; }
     void set_event_cb(pds_event_cb_t event_cb) { event_cb_ = event_cb; }
@@ -453,6 +458,12 @@ static inline vport_state *
 vport_db (void)
 {
     return api::g_pds_state.vport_db();
+}
+
+static inline ipsec_sa_state *
+ipsec_sa_db (void)
+{
+    return api::g_pds_state.ipsec_sa_db();
 }
 
 #endif    // __PDS_STATE_HPP__

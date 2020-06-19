@@ -52,6 +52,8 @@ typedef enum obj_id_e {
     OBJ_ID_ROUTE              = 23,    ///< route inside route table
     OBJ_ID_POLICY_RULE        = 24,    ///< rule inside a policy
     OBJ_ID_VPORT              = 25,    ///< vport
+    OBJ_ID_IPSEC_SA_ENCRYPT   = 26,    ///< IPSec encrypt SA
+    OBJ_ID_IPSEC_SA_DECRYPT   = 27,    ///< IPSec decrypt SA
     OBJ_ID_MAX
 } obj_id_t;
 

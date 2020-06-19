@@ -164,6 +164,7 @@ pds_state::init(string pipeline, string cfg_file) {
     state_[PDS_STATE_ROUTE] = new route_state();
     state_[PDS_STATE_POLICY_RULE] = new policy_rule_state();
     state_[PDS_STATE_VPORT] = new vport_state();
+    state_[PDS_STATE_IPSEC] = new ipsec_sa_state();
 
     // parse VERSION.json
     parse_firmware_version_file_();

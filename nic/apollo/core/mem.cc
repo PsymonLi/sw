@@ -14,6 +14,7 @@
 #include "nic/apollo/api/subnet.hpp"
 #include "nic/apollo/api/vnic.hpp"
 #include "nic/apollo/api/pds_state.hpp"
+#include "nic/apollo/api/ipsec.hpp"
 #include "nic/apollo/learn/ep_ip_entry.hpp"
 #include "nic/apollo/learn/ep_mac_entry.hpp"
 
@@ -132,6 +133,10 @@ slab_delay_delete_cb (void *timer, uint32_t slab_id, void *elem)
 
     case PDS_SLAB_ID_IP_ENTRY:
         ep_ip_entry::destroy((ep_ip_entry *)elem);
+        break;
+
+    case PDS_SLAB_ID_IPSEC:
+        ipsec_sa_entry::destroy((ipsec_sa_entry *)elem);
         break;
 
     default:

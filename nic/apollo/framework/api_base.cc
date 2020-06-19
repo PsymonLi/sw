@@ -84,6 +84,12 @@ api_base::factory(api_ctxt_t *api_ctxt) {
     case OBJ_ID_SECURITY_PROFILE:
         return security_profile::factory(&api_ctxt->api_params->security_profile_spec);
 
+    case OBJ_ID_IPSEC_SA_ENCRYPT:
+        return ipsec_sa_entry::factory(&api_ctxt->api_params->ipsec_sa_encrypt_spec, true);
+
+    case OBJ_ID_IPSEC_SA_DECRYPT:
+        return ipsec_sa_entry::factory(&api_ctxt->api_params->ipsec_sa_decrypt_spec, false);
+
     default:
         PDS_TRACE_ERR("Method not implemented for obj id %u\n",
                       api_ctxt->obj_id);

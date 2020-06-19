@@ -551,6 +551,12 @@ const static std::map<std::pair<std::string, types::ServiceRequestOp>, cfg_msg_t
     {std::make_pair("pds.DeviceDeleteRequest", types::SERVICE_OP_DELETE),          CFG_MSG_DEVICE_DELETE},
     {std::make_pair("pds.DeviceGetRequest", types::SERVICE_OP_READ),               CFG_MSG_DEVICE_GET},
     {std::make_pair("pds.CommandMessage", types::SERVICE_OP_NONE),                 CFG_MSG_COMMAND},
+    {std::make_pair("pds.IpsecSAEncryptRequest", types::SERVICE_OP_CREATE),        CFG_MSG_IPSEC_SA_ENCRYPT_CREATE},
+    {std::make_pair("pds.IpsecSAEncryptDeleteRequest", types::SERVICE_OP_DELETE),  CFG_MSG_IPSEC_SA_ENCRYPT_DELETE},
+    {std::make_pair("pds.IpsecSAEncryptGetRequest", types::SERVICE_OP_READ),       CFG_MSG_IPSEC_SA_ENCRYPT_GET},
+    {std::make_pair("pds.IpsecSADecryptRequest", types::SERVICE_OP_CREATE),        CFG_MSG_IPSEC_SA_DECRYPT_CREATE},
+    {std::make_pair("pds.IpsecSADecryptDeleteRequest", types::SERVICE_OP_DELETE),  CFG_MSG_IPSEC_SA_DECRYPT_DELETE},
+    {std::make_pair("pds.IpsecSADecryptGetRequest", types::SERVICE_OP_READ),       CFG_MSG_IPSEC_SA_DECRYPT_GET},
 };
 
 static inline cfg_msg_t
