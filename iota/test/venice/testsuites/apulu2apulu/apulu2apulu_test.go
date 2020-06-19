@@ -2,6 +2,7 @@ package apulu2apulu_test
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
@@ -36,7 +37,12 @@ var _ = Describe("rollout apulu2apulu tests", func() {
 
 		It("Perform Apulu to Apulu' Rollout", func() {
 
-			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{BundleType: "apulu-bundle", TargetBranch: "master"}, ts.scaleData)
+			targetBranch := "master"
+			if branch := os.Getenv("TARGET_BRANCH"); branch != "" {
+				targetBranch = branch
+			}
+
+			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{BundleType: "apulu-bundle", TargetBranch: targetBranch}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			workloadPairs := ts.model.WorkloadPairs().WithinNetwork().Any(40)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/common"
@@ -43,9 +44,13 @@ var _ = Describe("rollout tests", func() {
 
 		It("Perform Rollout", func() {
 			var workloadPairs *objects.WorkloadPairCollection
+			targetBranch := "master"
+			if branch := os.Getenv("TARGET_BRANCH"); branch != "" {
+				targetBranch = branch
+			}
 			rollout, err := ts.model.GetRolloutObject(common.RolloutSpec{
 				BundleType:   "upgrade-bundle",
-				TargetBranch: "master"}, ts.scaleData)
+				TargetBranch: targetBranch}, ts.scaleData)
 			Expect(err).ShouldNot(HaveOccurred())
 
 			if *simOnlyFlag == false {
