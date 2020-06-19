@@ -13,7 +13,6 @@
     m[x:x] = v;
 
 //#include "poseidon16_table_size.h"
-#include "common/capri.h"
 //#include "common/defines.h"
 #include "athena_defines.h"
 #include "athena_16_defines.h"
