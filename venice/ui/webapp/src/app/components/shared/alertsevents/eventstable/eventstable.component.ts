@@ -202,10 +202,9 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       if (!this.eventsSubscription) {
         this.getEvents();
       }
-
-      if (this.searchedEvent) {
-        this.getSearchedEvent();
-      }
+    }
+    if (this.searchedEvent) {
+      this.getSearchedEvent();
     }
   }
 
@@ -655,9 +654,9 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
         this.genQueryBodies();
         this.getEvents();
       }
-      if (change.searchedEvent && this.searchedEvent) {
-          this.getSearchedEvent();
-      }
+    }
+    if (change.searchedEvent && this.searchedEvent) {
+      this.getSearchedEvent();
     }
   }
 
