@@ -299,6 +299,10 @@ typedef struct pds_flow_repl_stats_s {
     volatile u64 restore_failure_decode;
     volatile u64 restore_failure_unknown_flow_state;
     volatile u64 restore_failure_unknown_flow_type;
+    volatile u64 restore_failure_unknown_src_vnic;
+    volatile u64 restore_failure_unknown_dst_vnic;
+    volatile u64 restore_failure_vnic_limit_exceeded;
+    volatile u64 restore_failure_flow_insert;
 } pds_flow_repl_stats_t;
 
 typedef CLIB_PACKED (struct

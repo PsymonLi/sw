@@ -370,20 +370,28 @@ show_pds_flow_replication_stats_command_fn (vlib_main_t * vm,
                     ftlv4_get_flow_count(fm->table4, vm->thread_index));
     if (sync_set) {
         vlib_cli_output(vm, "  Session sync statistics:");
-        vlib_cli_output(vm, "%-30s: %d", "    Synced",
+        vlib_cli_output(vm, "%-40s: %d", "    Synced",
                         fm->repl_stats.sync_success);
     }
 
     if (restore_set) {
         vlib_cli_output(vm, "  Session restore statistics:");
-        vlib_cli_output(vm, "%-30s: %d", "    Restored",
+        vlib_cli_output(vm, "%-40s: %d", "    Restored",
                         fm->repl_stats.restore_success);
-        vlib_cli_output(vm, "%-30s: %d", "    Decode failure",
+        vlib_cli_output(vm, "%-40s: %d", "    Decode failure",
                         fm->repl_stats.restore_failure_decode);
-        vlib_cli_output(vm, "%-30s: %d", "    Unknown flow_state",
+        vlib_cli_output(vm, "%-40s: %d", "    Unknown flow_state",
                         fm->repl_stats.restore_failure_unknown_flow_state);
-        vlib_cli_output(vm, "%-30s: %d", "    Unknown flow_pkt_type",
+        vlib_cli_output(vm, "%-40s: %d", "    Unknown flow_pkt_type",
                         fm->repl_stats.restore_failure_unknown_flow_type);
+        vlib_cli_output(vm, "%-40s: %d", "    Unknown src vnic",
+                        fm->repl_stats.restore_failure_unknown_src_vnic);
+        vlib_cli_output(vm, "%-40s: %d", "    Unknown dst vnic",
+                        fm->repl_stats.restore_failure_unknown_dst_vnic);
+        vlib_cli_output(vm, "%-40s: %d", "    Vnic session limit exceeded",
+                        fm->repl_stats.restore_failure_vnic_limit_exceeded);
+        vlib_cli_output(vm, "%-40s: %d", "    Flow insert failed",
+                        fm->repl_stats.restore_failure_flow_insert);
     }
     return 0;
 }

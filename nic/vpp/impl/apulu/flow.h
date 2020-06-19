@@ -955,6 +955,23 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
 }
 
 always_inline bool
+pds_vnic_active_sessions_check (pds_impl_db_vnic_entry_t *vnic)
+{
+    if (PREDICT_FALSE(vnic->max_sessions &&
+                      vnic->active_ses_count >= vnic->max_sessions)) {
+        if (vnic->ses_alert_limit_exceeded == 0) {
+            // hit max limit, raise limit reached event
+            operd_alert_vnic_session_limit_exhaustion(vnic->obj_key,
+                                                      vnic->active_ses_count,
+                                                      vnic->max_sessions);
+            vnic->ses_alert_limit_exceeded = 1;
+        }
+        return false;
+    }
+    return true;
+}
+
+always_inline bool
 pds_vnic_active_sessions_increment (pds_impl_db_vnic_entry_t *vnic)
 {
     if (PREDICT_FALSE(vnic->max_sessions &&
@@ -1447,6 +1464,7 @@ pds_program_cached_sessions(void)
     int i,j, size = ftlv4_cache_get_count(thread_index);
     u64 i_handle, r_handle;
     ftlv4 *table = pds_flow_prog_get_table4();
+    pds_impl_db_vnic_entry_t *src_vnic, *dst_vnic;
 
     // Program the flows
     for (i = 0, j = 0; i < size; i+=2, j++) {
@@ -1467,7 +1485,6 @@ pds_program_cached_sessions(void)
                         &fm->repl_stats.restore_failure_unknown_flow_state, 1);
             continue;
         }
-
         if (PREDICT_FALSE(!pds_decode_flow_pkt_type(sess->packet_type,
                                                     &flow_pkt_type))) {
             // Skip if we can't decode the type
@@ -1475,17 +1492,44 @@ pds_program_cached_sessions(void)
                         &fm->repl_stats.restore_failure_unknown_flow_type, 1);
             continue;
         }
+        src_vnic = pds_impl_db_vnic_get(sess->src_vnic_id);
+        if (PREDICT_FALSE(!src_vnic)) {
+            // Skip if we can't find the src vnic
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_unknown_src_vnic, 1);
+            continue;
+        }
+        if (PREDICT_FALSE(pds_flow_packet_l2l(flow_pkt_type))) {
+            dst_vnic = pds_impl_db_vnic_get(sess->dst_vnic_id);
+            if (PREDICT_FALSE(!dst_vnic)) {
+                // Skip if we can't find the dst vnic
+                clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_unknown_dst_vnic, 1);
+                continue;
+            }
+        }
+        if (PREDICT_FALSE(!pds_vnic_active_sessions_check(src_vnic))) {
+            // Skip if we have exceeded vnic active session limit
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_vnic_limit_exceeded, 1);
+            continue;
+        }
         ret = ftlv4_cache_program_index(table, i, &i_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_flow_insert, 1);
             continue;
         }
         ret = ftlv4_cache_program_index(table, i+1, &r_handle,
                                         thread_index);
         if (PREDICT_FALSE(ret != 0)) {
             ftlv4_cache_delete_index(table, i, thread_index);
+            clib_atomic_fetch_add(
+                        &fm->repl_stats.restore_failure_flow_insert, 1);
             continue;
         }
+        pds_vnic_active_sessions_increment(src_vnic);
         sess->iflow_handle = i_handle;
         sess->rflow_handle = r_handle;
 

@@ -46,7 +46,8 @@
       "/nic/bin/vppctl show pds subnet status",
       "/nic/bin/vppctl show pds vnic status",
       "/nic/bin/vppctl show pds vpc status",
-      "/nic/bin/vppctl show pds device status"
+      "/nic/bin/vppctl show pds device status",
+      "/nic/bin/vppctl show pds flow replication statistics"
     ],
   "cores": [
       "/data/core/"
