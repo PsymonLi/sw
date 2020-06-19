@@ -65,4 +65,6 @@ extern nat_node_main_t nat_node_main;
 
 void pds_nat_cfg_init(void);
 
+void nat_sync_init (void);
+
 #endif    // __VPP_NAT_NODE_H__

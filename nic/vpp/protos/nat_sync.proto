@@ -1,0 +1,32 @@
+//--------------------------------------------------------------------
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+// protobuf specification for session information that's synched from 
+// one version of vpp to another
+//--------------------------------------------------------------------
+
+syntax = "proto3";
+package sess_sync;
+
+// Corresponds to nat_addr_type_t
+enum NatAddrType {
+  NAT_ADDR_TYPE_NONE     = 0;
+  NAT_ADDR_TYPE_INTERNET = 1;
+  NAT_ADDR_TYPE_INFRA    = 2;
+}
+
+message Nat44Info {
+  uint32      Id             = 1;
+  uint32      VpcId          = 2;
+  uint32      PublicSrcIp    = 3;
+  uint32      DstIp          = 4;
+  uint32      PublicSrcPort  = 5;
+  uint32      DstPort        = 6;
+  uint32      Proto          = 7;
+  uint32      PrivateSrcIp   = 8;
+  uint32      PrivateSrcPort = 9;
+  uint32      RxXlateId      = 10;
+  uint32      TxXlateId      = 11;
+  NatAddrType AddrType       = 12;
+}
+

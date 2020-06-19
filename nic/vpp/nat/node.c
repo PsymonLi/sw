@@ -508,6 +508,7 @@ vpp_nat_init (vlib_main_t * vm)
 {
     pds_nat_cfg_init();
     nat_init();
+    nat_sync_init();
     return 0;
 }
 

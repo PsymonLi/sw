@@ -8,14 +8,15 @@
 #ifndef __cplusplus
 #include <vlib/vlib.h>
 #include <vnet/ip/ip4.h>
-#include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 #endif
+#include "nic/vpp/infra/ipc/pdsa_vpp_hdlr.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Datastructures
+typedef uint32_t nat_hw_index_t;
 
 // NAT Port Block returned in get
 typedef struct pds_nat_port_block_export_s {
@@ -59,11 +60,58 @@ typedef enum {
     NAT_PROTO_NUM = 3
 } nat_proto_t;
 
+typedef struct nat_flow_key_s {
+    uint32_t dip;
+    uint32_t sip;
+    uint16_t sport;
+    uint16_t dport;
+    uint8_t protocol;
+    uint8_t pad[3];
+} nat_flow_key_t;
+
+// sync datastructure used in upgrade
+typedef struct nat44_sync_info_ {
+    uint32_t vpc_id;
+    uint32_t public_sip;
+    uint32_t dip;
+    uint32_t pvt_sip;
+    uint32_t rx_xlate_id;
+    uint32_t tx_xlate_id;
+    uint16_t public_sport;
+    uint16_t dport;
+    uint16_t pvt_sport;
+    uint8_t proto;
+    nat_addr_type_t nat_addr_type;
+} nat44_sync_info_t;
+
+
+typedef void *(*nat_flow_iter_cb_t)(void *ctxt, uint32_t vpc_id,
+                                    nat_flow_key_t *key, uint64_t val);
+
+
 // API
 nat_err_t nat_port_block_get_stats(const uint8_t id[PDS_MAX_KEY_LEN],
                                    uint32_t vpc_hw_id, uint8_t protocol,
                                    nat_addr_type_t nat_addr_type,
                                    pds_nat_port_block_export_t *export_pb);
+
+void *nat_flow_iterate(void *ctxt, nat_flow_iter_cb_t iter_cb);
+
+void nat_flow_ht_get_fields(uint64_t data, nat_hw_index_t *hw_index,
+                            nat_addr_type_t *nat_addr_type,
+                            nat_proto_t *nat_proto);
+
+nat_proto_t get_proto_from_nat_proto(nat_proto_t nat_proto);
+
+nat_hw_index_t nat_get_tx_hw_index_pub_ip_port(uint32_t vpc_id,
+                                               nat_addr_type_t nat_addr_type,
+                                               nat_proto_t nat_proto,
+                                               uint32_t addr, uint16_t port);
+
+void nat_sync_start(void);
+void nat_sync_stop(void);
+nat_err_t nat_sync_restore(nat44_sync_info_t *sync);
+
 #ifdef __cplusplus
 nat_err_t nat_port_block_add(const uint8_t key[PDS_MAX_KEY_LEN],
                              uint32_t vpc_hw_id,
@@ -88,7 +136,6 @@ nat_err_t nat_port_block_del(const uint8_t key[PDS_MAX_KEY_LEN],
                              nat_addr_type_t nat_addr_type);
 #else
 
-typedef u32 nat_hw_index_t;
 typedef int (*nat_vendor_invalidate_cb)(vlib_buffer_t *b, u16 *next);
 
 void nat_init(void);
