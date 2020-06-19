@@ -14,6 +14,18 @@ service DebugPdsMsSvc
 {
   rpc AMXControl (AMXPortSpec) returns (AMXControlResponse) {}
   rpc CPActiveRouteGet (CPActiveRouteGetRequest) returns (CPActiveRouteGetResponse) {}
+  rpc CPBatchSize (CPBatchSizeSpec) returns (CPBatchSizeResponse) {}
+}
+
+message CPBatchSizeSpec {
+  option (venice.pdsaSetGlobOpts) = {
+    ActionFn: "hals_test_set_batchsize"
+  };
+    uint32          RouteBatchSize = 1;
+}
+
+message CPBatchSizeResponse {
+    types.ApiStatus ApiStatus = 1;
 }
 
 message AMXPortSpec {

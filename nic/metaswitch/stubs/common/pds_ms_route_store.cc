@@ -62,6 +62,7 @@ void route_table_obj_t::realloc_() {
 
 bool route_table_obj_t::add_upd_route(pds_route_t &route)
 {
+    int batch_sz = state_t::thread_context().state()->route_commit_batch_sz();
     const auto it = route_index_.find(route.attrs.prefix);
     if (it == route_index_.end()) {
         // Route not found. Add the route to the vector
@@ -83,7 +84,10 @@ bool route_table_obj_t::add_upd_route(pds_route_t &route)
     }
     // Increment the batch size
     pending_batch_sz_++;
-    if (pending_batch_sz_ == PDS_MS_COMMIT_BATCH_SIZE) {
+    if (pending_batch_sz_ >= batch_sz) {
+        PDS_TRACE_DEBUG ("Batch ready to be committed. "
+                         "pending: %d batch_sz: %d", pending_batch_sz_,
+                          batch_sz);
         // Return true when the batch size has reached commit size
         return true;
     }
@@ -93,6 +97,7 @@ bool route_table_obj_t::add_upd_route(pds_route_t &route)
 
 bool route_table_obj_t::del_route(ip_prefix_t &pfx)
 {
+    int batch_sz = state_t::thread_context().state()->route_commit_batch_sz();
     const auto it = route_index_.find(pfx);
     if (it != route_index_.end()) {
         // Get the position of the route in the vector
@@ -109,7 +114,10 @@ bool route_table_obj_t::del_route(ip_prefix_t &pfx)
         route_index_.erase(pfx);
         // Increment the batch size
         pending_batch_sz_++;
-        if (pending_batch_sz_ == PDS_MS_COMMIT_BATCH_SIZE) {
+        if (pending_batch_sz_ >= batch_sz) {
+            PDS_TRACE_DEBUG ("Batch ready to be committed. "
+                             "pending: %d batch_sz: %d", pending_batch_sz_,
+                              batch_sz);
             // Return true when the batch size has reached commit size
             return true;
         }

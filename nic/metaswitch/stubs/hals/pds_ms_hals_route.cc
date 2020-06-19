@@ -97,11 +97,14 @@ hals_route_t::update_route_store_(state_t* state,
         // Delete the route from the store
         ret = rttbl_store->del_route(route_.attrs.prefix);
     }
-    // Start the batch commit timer for this route-table
-    timer_start(state->get_route_timer_list(),
-                rttbl_store->batch_commit_timer(),
-                PDS_MS_COMMIT_BATCH_TIMER_MS,
-                ips_info_.vrf_id);
+    if (!ret) {
+        // Start the batch commit timer for this route-table
+        // only if the batch is not yet ready to be committed
+        timer_start(state->get_route_timer_list(),
+                    rttbl_store->batch_commit_timer(),
+                    PDS_MS_COMMIT_BATCH_TIMER_MS,
+                    ips_info_.vrf_id);
+    }
     
     return ret;
 }

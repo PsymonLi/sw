@@ -31,8 +31,6 @@ namespace pds_ms {
 // Minimum number of routes for initial vector size. This is to avoid
 // multiple re-allocs while adding routes
 #define PDS_MS_MIN_NUM_ROUTES           1024
-// Commit batch size to push routes to HAL
-#define PDS_MS_COMMIT_BATCH_SIZE        1024
 // Commit batch timer in milliseconds
 #define PDS_MS_COMMIT_BATCH_TIMER_MS    200
 // Max hardware route table capacity (16K routes)

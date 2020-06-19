@@ -44,20 +44,19 @@ message CPL2fTestResponse {
     types.ApiStatus ApiStatus = 1;
 }
 
-
 message CPIPTrackTestCreateSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "ip_track_add"
   };
     types.IPAddress DestIP   = 1;
-    uint32          PDSObjId    = 2;
+    uint32          PDSObjId = 2;
 }
 
 message CPIPTrackTestDeleteSpec {
   option (venice.pdsaSetGlobOpts) = {
     ActionFn: "ip_track_del"
   };
-    types.IPAddress DestIP   = 1;
+    types.IPAddress DestIP = 1;
 }
 
 message CPIPTrackTestResponse {

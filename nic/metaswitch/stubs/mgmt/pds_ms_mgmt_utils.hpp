@@ -309,6 +309,8 @@ types::ApiStatus ip_track_del (const CPIPTrackTestDeleteSpec   *req,
                                CPIPTrackTestResponse *resp);
 types::ApiStatus amx_control (const AMXPortSpec   *req,
                               AMXControlResponse     *resp);
+types::ApiStatus hals_test_set_batchsize (const CPBatchSizeSpec *req,
+                                          CPBatchSizeResponse *resp);
 
 types::ApiStatus htls_upg_test_event (const HitlessUpgTestEventSpec *req,
                                       HitlessUpgTestResponse *resp);

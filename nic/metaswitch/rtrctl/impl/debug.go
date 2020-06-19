@@ -13,9 +13,9 @@ import (
 
 var routingDebugCmd = &cobra.Command{
 	Use:    "routing",
-	Short:  "show bgp prefix information",
-	Long:   "show bgp prefix information",
-	Args:   cobra.NoArgs,
+	Short:  "routing stack internal debug commands",
+	Long:   "routing stack internal debug commands",
+	RunE:   routingBatchSizeCmdHandler,
 	Hidden: true,
 }
 
@@ -33,6 +33,32 @@ var routingCloseDebugCmd = &cobra.Command{
 	Long:  "close debug port to routing stack",
 	Args:  cobra.NoArgs,
 	RunE:  routingCloseDebugCmdHandler,
+}
+
+var (
+	routingBatchSize uint32
+)
+
+func routingBatchSizeCmdHandler(cmd *cobra.Command, args []string) error {
+	c, err := utils.CreateNewGRPCClient(cliParams.GRPCPort)
+	if err != nil {
+		return errors.New("Could not connect to the PDS. Is PDS Running?")
+	}
+	defer c.Close()
+	client := msTypes.NewDebugPdsMsSvcClient(c)
+
+	req := &msTypes.CPBatchSizeSpec{
+		RouteBatchSize: routingBatchSize,
+	}
+	respMsg, err := client.CPBatchSize(context.Background(), req)
+	if err != nil {
+		return errors.New("Debug Routing Batch Commit size change failed")
+	}
+
+	if respMsg.ApiStatus != types.ApiStatus_API_STATUS_OK {
+		return errors.New("Debug Routing Batch Commit size change API failed")
+	}
+	return nil
 }
 
 func routingOpenDebugCmdHandler(cmd *cobra.Command, args []string) error {

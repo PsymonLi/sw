@@ -37,6 +37,8 @@ extern "C"
 
 #define PDS_BATCH_PARAMS_EPOCH  1
 #define PDS_BATCH_PARAMS_ASYNC  true
+// Default commit batch size to push routes to HAL
+#define PDS_MS_DEFAULT_COMMIT_BATCH_SIZE    1024
 
 namespace pds_ms {
 
@@ -165,6 +167,12 @@ public:
     sdk_ret_t ip_track_internal_idx_free(uint32_t index) {
         return ip_track_internal_idx_gen_->free(index);
     }
+
+    void set_route_commit_batch_sz(int sz) {
+        PDS_TRACE_DEBUG("Setting Route batch commit size to %d", sz);
+        route_commit_batch_sz_ = sz;
+    }
+    int route_commit_batch_sz() { return route_commit_batch_sz_; }
     
     // Get method for route timer list
     NTL_TIMER_LIST_CB *get_route_timer_list() { return &route_timer_list_; }
@@ -204,6 +212,9 @@ private:
     // This timer list should only be used for route table batch commit
     // One timer is used per route table
     NTL_TIMER_LIST_CB route_timer_list_;
+
+    // Commit batch size to push routes to HAL
+    int route_commit_batch_sz_ = PDS_MS_DEFAULT_COMMIT_BATCH_SIZE;
 
 private:
     state_t(void);

@@ -33,6 +33,7 @@ func RegisterDebugNodes(params *CLIParams, base *cobra.Command) {
 	base.AddCommand(routingDebugCmd)
 	routingDebugCmd.AddCommand(routingOpenDebugCmd)
 	routingDebugCmd.AddCommand(routingCloseDebugCmd)
+	routingDebugCmd.Flags().Uint32Var(&routingBatchSize, "batch-size", 1024, "modify routing batch commit size")
 }
 
 // RegisterShowNodes registers all the CLI nodes

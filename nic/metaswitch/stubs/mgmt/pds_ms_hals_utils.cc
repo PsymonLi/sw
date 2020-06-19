@@ -2,6 +2,9 @@
 // Purpose: Helper APIs for metaswitch HALS stub programming 
 
 #include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_utils.hpp"
+#include "nic/metaswitch/stubs/common/pds_ms_state.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_state.hpp"
+#include "gen/proto/cp_test.pb.h"
 #include "hals_mib.h"
 
 namespace pds_ms {
@@ -75,4 +78,18 @@ pds_ms_hals_stub_create (pds_ms_config_t *conf)
     NBB_TRC_EXIT();
     return;
 }
+
+types::ApiStatus
+hals_test_set_batchsize (const CPBatchSizeSpec *req, CPBatchSizeResponse *resp)
+{
+    int sz = req->routebatchsize();
+
+    if (mgmt_state_t::thread_context().state()->rr_mode()) {
+        // Nothing to be done for Pegasus
+        return types::ApiStatus::API_STATUS_OK;
+    }
+    state_t::thread_context().state()->set_route_commit_batch_sz(sz);
+    return types::ApiStatus::API_STATUS_OK;
+}
+
 }
