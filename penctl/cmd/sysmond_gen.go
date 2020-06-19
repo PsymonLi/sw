@@ -14,14 +14,14 @@ import (
 
 //cmd - frequency
 //rootCmd = system
-//longHelpStr = System frequency information:\n\n\nValue Description:\n\nfrequency: Frequency of the system.\nThe frequency is MHz\n\nFrequency	: Frequency of the system in MHz\n
+//longHelpStr = System frequency information:\n\n\nValue Description:\n\nfrequency: Frequency of the system.\nThe frequency is MHz\n
 //shortHelpStr = System frequency information
 var frequencysystemShowCmd = &cobra.Command{
 	Use:   "frequency",
 	Short: "System frequency information",
-	Long: "\n---------------------------------\n System frequency information:\n\n\nValue Description:\n\nfrequency: Frequency of the system.\nThe frequency is MHz\n\nFrequency	: Frequency of the system in MHz\n\n---------------------------------\n",
-	Args: cobra.NoArgs,
-	RunE: frequencysystemShowCmdHandler,
+	Long:  "\n---------------------------------\n System frequency information:\n\n\nValue Description:\n\nfrequency: Frequency of the system.\nThe frequency is MHz\n\n---------------------------------\n",
+	Args:  cobra.NoArgs,
+	RunE:  frequencysystemShowCmdHandler,
 }
 
 func frequencysystemShowCmdHandler(cmd *cobra.Command, args []string) error {

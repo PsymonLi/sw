@@ -71,12 +71,6 @@ message IPv6FlowKey {
 message L2FlowRawMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "L2-Flow Raw-Metrics",
-        Description: "Key index - L2-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     L2FlowKey      Key       = 1;
     delphi.Counter instances = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -87,12 +81,6 @@ message L2FlowRawMetrics {
 message IPv4FlowRawMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv4-Flow Raw-Metrics",
-        Description: "Key index - IPv4-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv4FlowKey    Key       = 1;
     delphi.Counter instances = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -103,12 +91,6 @@ message IPv4FlowRawMetrics {
 message IPv6FlowRawMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv6-Flow Raw-Metrics",
-        Description: "Key index - IPv6-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv6FlowKey    Key       = 1;
     delphi.Counter instances = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -119,12 +101,6 @@ message IPv6FlowRawMetrics {
 message L2FlowDropMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "L2-Flow Drop-Metrics",
-        Description: "Key index - L2-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     L2FlowKey      Key                  = 1;
     delphi.Counter instances            = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -151,12 +127,6 @@ message IPv4FlowDropMetrics {
 message IPv6FlowDropMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv6-Flow Drop-Metrics",
-        Description: "Key index - IPv6-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv6FlowKey    Key                  = 1;
     delphi.Counter instances            = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -170,12 +140,6 @@ message IPv6FlowDropMetrics {
 message L2FlowPerformanceMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "L2-Flow Performance-Metrics",
-        Description: "Key index - L2-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     L2FlowKey      Key                = 1;
     delphi.Counter instances          = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -188,12 +152,6 @@ message L2FlowPerformanceMetrics {
 message IPv4FlowPerformanceMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv4-Flow Performance-Metrics",
-        Description: "Key index - IPv4-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv4FlowKey    Key                = 1;
     delphi.Counter instances          = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -206,12 +164,6 @@ message IPv4FlowPerformanceMetrics {
 message IPv6FlowPerformanceMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv6-Flow Performance-Metrics",
-        Description: "Key index - IPv6-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv6FlowKey    Key                = 1;
     delphi.Counter instances          = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -224,12 +176,6 @@ message IPv6FlowPerformanceMetrics {
 message IPv4FlowLatencyMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv4-Flow Latency-Metrics",
-        Description: "Key index - IPv4-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv4FlowKey    Key                         = 1;
     delphi.Counter instances                   = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -246,12 +192,6 @@ message IPv4FlowLatencyMetrics {
 message IPv6FlowLatencyMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv6-Flow Latency-Metrics",
-        Description: "Key index - IPv6-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv6FlowKey    Key                         = 1;
     delphi.Counter instances                   = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -268,12 +208,6 @@ message IPv6FlowLatencyMetrics {
 message L2FlowBehavioralMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "L2-Flow Behavioral-Metrics",
-        Description: "Key index - L2-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     L2FlowKey    Key                                          = 1;
     delphi.Counter instances                                  = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -290,12 +224,6 @@ message L2FlowBehavioralMetrics {
 message IPv4FlowBehavioralMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv4-Flow Behavioral-Metrics",
-        Description: "Key index - IPv4-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv4FlowKey    Key                                        = 1;
     delphi.Counter instances                                  = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];
@@ -312,12 +240,6 @@ message IPv4FlowBehavioralMetrics {
 message IPv6FlowBehavioralMetrics {
     // External
     option (delphi.datapath_metrics) = true;
-    option (venice.metricInfo) = {
-        DisplayName: "IPv6-Flow Behavioral-Metrics",
-        Description: "Key index - IPv6-Flow Key",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
 
     IPv6FlowKey    Key                                        = 1;
     delphi.Counter instances                                  = 2 [(venice.metricsField) = {DisplayName: "Total Instances" Description: "Total Instances seen in this Flow-Context"}];

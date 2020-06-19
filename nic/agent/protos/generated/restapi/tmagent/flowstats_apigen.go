@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/fatih/structs"
 	"github.com/gorilla/mux"
 
 	"github.com/pensando/sw/nic/agent/httputils"
@@ -62,41 +61,7 @@ func (s *RestServer) listIPv4FlowBehavioralMetricsHandler(r *http.Request) (inte
 // getIPv4FlowBehavioralMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv4FlowBehavioralMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv4FlowBehavioralMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv4FlowBehavioralMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv4FlowBehavioralMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -200,41 +165,7 @@ func (s *RestServer) listIPv4FlowLatencyMetricsHandler(r *http.Request) (interfa
 // getIPv4FlowLatencyMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv4FlowLatencyMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv4FlowLatencyMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv4FlowLatencyMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv4FlowLatencyMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -286,41 +217,7 @@ func (s *RestServer) listIPv4FlowPerformanceMetricsHandler(r *http.Request) (int
 // getIPv4FlowPerformanceMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv4FlowPerformanceMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv4FlowPerformanceMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv4FlowPerformanceMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv4FlowPerformanceMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -372,41 +269,7 @@ func (s *RestServer) listIPv4FlowRawMetricsHandler(r *http.Request) (interface{}
 // getIPv4FlowRawMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv4FlowRawMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv4FlowRawMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv4FlowRawMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv4FlowRawMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -458,41 +321,7 @@ func (s *RestServer) listIPv6FlowBehavioralMetricsHandler(r *http.Request) (inte
 // getIPv6FlowBehavioralMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv6FlowBehavioralMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv6FlowBehavioralMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv6FlowBehavioralMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv6FlowBehavioralMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -544,41 +373,7 @@ func (s *RestServer) listIPv6FlowDropMetricsHandler(r *http.Request) (interface{
 // getIPv6FlowDropMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv6FlowDropMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv6FlowDropMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv6FlowDropMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv6FlowDropMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -630,41 +425,7 @@ func (s *RestServer) listIPv6FlowLatencyMetricsHandler(r *http.Request) (interfa
 // getIPv6FlowLatencyMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv6FlowLatencyMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv6FlowLatencyMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv6FlowLatencyMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv6FlowLatencyMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -716,41 +477,7 @@ func (s *RestServer) listIPv6FlowPerformanceMetricsHandler(r *http.Request) (int
 // getIPv6FlowPerformanceMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv6FlowPerformanceMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv6FlowPerformanceMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv6FlowPerformanceMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv6FlowPerformanceMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -802,41 +529,7 @@ func (s *RestServer) listIPv6FlowRawMetricsHandler(r *http.Request) (interface{}
 // getIPv6FlowRawMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getIPv6FlowRawMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewIPv6FlowRawMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("IPv6FlowRawMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for IPv6FlowRawMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -888,41 +581,7 @@ func (s *RestServer) listL2FlowBehavioralMetricsHandler(r *http.Request) (interf
 // getL2FlowBehavioralMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getL2FlowBehavioralMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewL2FlowBehavioralMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("L2FlowBehavioralMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for L2FlowBehavioralMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -974,41 +633,7 @@ func (s *RestServer) listL2FlowDropMetricsHandler(r *http.Request) (interface{},
 // getL2FlowDropMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getL2FlowDropMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewL2FlowDropMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("L2FlowDropMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for L2FlowDropMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -1060,41 +685,7 @@ func (s *RestServer) listL2FlowPerformanceMetricsHandler(r *http.Request) (inter
 // getL2FlowPerformanceMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getL2FlowPerformanceMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewL2FlowPerformanceMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("L2FlowPerformanceMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for L2FlowPerformanceMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 
@@ -1146,41 +737,7 @@ func (s *RestServer) listL2FlowRawMetricsHandler(r *http.Request) (interface{}, 
 // getL2FlowRawMetricsPoints returns tags and fields to save in Venice TSDB
 func (s *RestServer) getL2FlowRawMetricsPoints() ([]*tsdb.Point, error) {
 
-	iter, err := goproto.NewL2FlowRawMetricsIterator()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get metrics, error: %s", err)
-	}
-
-	// for OSX tests
-	if iter == nil {
-		return nil, nil
-	}
-
-	points := []*tsdb.Point{}
-
-	for iter.HasNext() {
-		m := iter.Next()
-		if m == nil {
-			continue
-		}
-
-		// translate key to meta
-		objMeta := s.GetObjectMeta("L2FlowRawMetricsKey", m.GetKey())
-		if objMeta == nil {
-			log.Errorf("failed to get objMeta for L2FlowRawMetrics key %+v", m.GetKey())
-			continue
-		}
-		tags := s.getTagsFromMeta(objMeta)
-		fields := structs.Map(m)
-
-		if len(fields) > 0 {
-			delete(fields, "ObjectMeta")
-			points = append(points, &tsdb.Point{Tags: tags, Fields: fields})
-		}
-	}
-
-	iter.Free()
-	return points, nil
+	return nil, nil
 
 }
 

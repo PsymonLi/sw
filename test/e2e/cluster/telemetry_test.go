@@ -13,6 +13,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/telemetry_query"
+	"github.com/pensando/sw/metrics/iris/genfields"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/telemetryclient"
 )
@@ -154,6 +155,45 @@ var _ = Describe("telemetry tests", func() {
 				return true
 			}, 90, 10).Should(BeTrue(), "%s should have reported stats and been queryable", kind)
 		}
+	})
+
+	It("validate genfields with metrics checkpoint", func() {
+		var err error
+		newMetrics := []string{}
+		newFields := []string{}
+		for metrics := range brelMetricsToFieldMap {
+			allGenfields := genfields.GetFieldNamesFromKind(metrics)
+			_, ok := brelMetricsToFieldMap[metrics]
+			if ok {
+				for _, field := range allGenfields {
+					if _, ok := brelMetricsToFieldMap[metrics][field]; !ok {
+						newFields = append(newFields, fmt.Sprintf("%v / %v", metrics, field))
+					}
+					brelMetricsToFieldMap[metrics][field] = true
+				}
+			} else {
+				newMetrics = append(newMetrics, metrics)
+			}
+		}
+		// validate checkpoint fields
+		errList := []string{}
+		for metrics, fieldMap := range brelMetricsToFieldMap {
+			for field, existing := range fieldMap {
+				if !existing {
+					errList = append(errList, fmt.Sprintf("%v / %v", metrics, field))
+				}
+			}
+		}
+		if len(newMetrics) > 0 {
+			By(fmt.Sprintf("Detect new metrics added in genfields map: %v", strings.Join(newMetrics, ", ")))
+		}
+		if len(newFields) > 0 {
+			By(fmt.Sprintf("Detect new fields added on existing metrics in genfields map: %v", strings.Join(newFields, ", ")))
+		}
+		if len(errList) > 0 {
+			err = fmt.Errorf("Cannot find these checkpoint fields exist in current metrics/iris/genfields map: \n %v", strings.Join(errList, "\n"))
+		}
+		Expect(err).Should(BeNil())
 	})
 })
 

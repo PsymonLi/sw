@@ -4,24 +4,6 @@
   "Prefix": "sysmond",
   "Messages": [
     {
-      "Name": "AsicFrequencyMetrics",
-      "Description": "Asic Frequency",
-      "DisplayName": "Asic Frequency",
-      "Fields": [
-        {
-          "Name": "Frequency",
-          "DisplayName": "Frequency of the system",
-          "Description": "Frequency of the system in MHz",
-          "Units": "MHz",
-          "BaseType": "Counter"
-        }
-      ],
-      "Tags": [
-        "Level7"
-      ],
-      "Scope": "PerASIC"
-    },
-    {
       "Name": "AsicMemoryMetrics",
       "Description": "System Memory",
       "DisplayName": "System Memory",

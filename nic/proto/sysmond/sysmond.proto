@@ -89,13 +89,6 @@ message AsicFrequencyMetrics {
                       "The frequency is MHz\\n",
         RootCmd:      "system"
     };
-    option (venice.metricInfo) = {
-        DisplayName: "Asic Frequency",
-        Description: "Asic Frequency",
-        Scope: PerASIC,
-        Tags: [ Level7 ]
-    };
-
 
     fixed64 Key = 1;
 
