@@ -4111,7 +4111,7 @@ func TestGetMetricsJSON(t *testing.T) {
 			syntax: 'proto3'
 			message_type <
 				name: 'msg_1'
-				options:<[venice.metricInfo]: {DisplayName: "TestMetricsJSON" Description:"Msg1Metrics is a test metric" Scope: PerASIC}>
+				options:<[venice.metricInfo]: {DisplayName: "TestMetricsJSON" Description:"Msg1Metrics is a test metric" Scope: PerASIC Features:[FLOWAWARE,FLOWAWARE_FIREWALL]}>
 				field <
 					name: 'field1'
 					label: LABEL_OPTIONAL
@@ -4234,6 +4234,7 @@ func TestGetMetricsJSON(t *testing.T) {
 				Description: "Msg1Metrics is a test metric",
 				DisplayName: "TestMetricsJSON",
 				Scope:       "PerASIC",
+				Features:    []string{"FLOWAWARE", "FLOWAWARE_FIREWALL"},
 				Fields: []fieldMetricOptions{
 					{
 						Name:        "Field1",

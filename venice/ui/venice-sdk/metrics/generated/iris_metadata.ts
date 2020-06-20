@@ -865,6 +865,10 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level4"
   ],
   "scope": "PerFTE",
+  "features": [
+    "FLOWAWARE",
+    "FLOWAWARE_FIREWALL"
+  ],
   "objectKind": "DistributedServiceCard"
 },
   FteLifQMetrics: {
@@ -1033,6 +1037,10 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerFTE",
+  "features": [
+    "FLOWAWARE",
+    "FLOWAWARE_FIREWALL"
+  ],
   "objectKind": "DistributedServiceCard"
 },
   SessionSummaryMetrics: {
@@ -1273,6 +1281,10 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level4"
   ],
   "scope": "PerFTE",
+  "features": [
+    "FLOWAWARE",
+    "FLOWAWARE_FIREWALL"
+  ],
   "objectKind": "DistributedServiceCard"
 },
   MacMetrics: {

@@ -51,6 +51,16 @@ enum MetricTags {
   Sum       = 14 ;
 }
 
+// Feature_Set feature set from dscprofile.proto
+enum Feature_Set {
+       // ui-hint: SmartNIC
+       SMARTNIC            = 0; // Basic networking mode.
+       // ui-hint: FlowAware
+       FLOWAWARE           = 1; // Flows are learnt in this mode
+       // ui-hint: FlowAware with Firewall
+       FLOWAWARE_FIREWALL  = 2; // Flows are learnt and policy enforced
+}
+
 message MetricInfo {
     string DisplayName          = 1;
     string Description          = 2;
@@ -59,6 +69,7 @@ message MetricInfo {
     MetricScope Scope           = 4;
     repeated MetricTags Tags    = 5;
     string AggregateFunc        = 6;
+    repeated Feature_Set Features = 7; // features/mode where this metrics is valid
 }
 
 message MetricFieldInfo {

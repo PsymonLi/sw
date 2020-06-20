@@ -12,6 +12,7 @@ message FteCPSMetrics {
         Description: "Key index - FTE ID",
         Scope: PerFTE,
         Tags: [ Level4 ]
+        Features: [FLOWAWARE,FLOWAWARE_FIREWALL]
     };
     fixed64        Key                        = 1;     // FTE ID
 
@@ -29,6 +30,7 @@ message FteLifQMetrics {
         Description: "Key index - FTE ID",
         Scope: PerFTE,
         Tags: [ Level7 ]
+        Features: [FLOWAWARE,FLOWAWARE_FIREWALL]
     };
     fixed64        Key                        = 1;     // FTE ID
 
@@ -53,6 +55,7 @@ message SessionSummaryMetrics {
         Description: "Key index - FTE ID",
         Scope: PerFTE,
         Tags: [ Level4 ]
+        Features: [FLOWAWARE,FLOWAWARE_FIREWALL]
     };
     fixed64        Key                           = 1;
 

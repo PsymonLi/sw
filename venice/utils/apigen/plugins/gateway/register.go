@@ -634,6 +634,7 @@ type msgMetricOptions struct {
 	Fields      []fieldMetricOptions `json:",omitempty"`
 	Tags        []string             `json:",omitempty"`
 	Scope       string               `json:",omitempty"`
+	Features    []string             `json:",omitempty"`
 }
 
 type fileMsgFieldMapOpt struct {
@@ -1018,6 +1019,10 @@ func getMsgMetricOptions(m *descriptor.Message) (msgMetricOptions, bool) {
 		ret.Description = om.Description
 		ret.DisplayName = om.DisplayName
 		ret.Scope = om.Scope.String()
+		for _, p := range om.Features {
+			ret.Features = append(ret.Features, p.String())
+		}
+
 		for _, t := range om.Tags {
 			ret.Tags = append(ret.Tags, t.String())
 		}

@@ -26,6 +26,7 @@ export interface MetricMeasurement {
   scope?: string,
   fields: MetricField[],
   tags?: string[],
+  features?: string[],
 }
 
 export let MetricsMetadata: { [key: string]: MetricMeasurement } = {}
