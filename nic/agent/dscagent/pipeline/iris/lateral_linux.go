@@ -344,9 +344,9 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 				log.Errorf("Failed to create or update lateral endpoint IP: %s mac:%s. Err: %v", IP, mac, err)
 			}
 			oldMAC = mac
-			utils.RaiseEvent(eventtypes.COLLECTOR_REACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is reachable from DSC %s", IP, infraAPI.GetDscName()), infraAPI.GetDscName())
+			utils.RaiseEvent(eventtypes.COLLECTOR_REACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is reachable from DSC %s", IP, infraAPI.GetConfig().DSCID), infraAPI.GetDscName())
 		} else {
-			utils.RaiseEvent(eventtypes.COLLECTOR_UNREACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is not reachable from DSC %s", IP, infraAPI.GetDscName()), infraAPI.GetDscName())
+			utils.RaiseEvent(eventtypes.COLLECTOR_UNREACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is not reachable from DSC %s", IP, infraAPI.GetConfig().DSCID), infraAPI.GetDscName())
 		}
 		// Populate the ARPCache.
 		log.Infof("Populate ARP %s -> %s", arpResolverKey, mac)
@@ -365,9 +365,9 @@ func startRefreshLoop(infraAPI types.InfraAPI, intfClient halapi.InterfaceClient
 						}
 					}
 					if mac == "" {
-						utils.RaiseEvent(eventtypes.COLLECTOR_UNREACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is not reachable from DSC %s", IP, infraAPI.GetDscName()), infraAPI.GetDscName())
+						utils.RaiseEvent(eventtypes.COLLECTOR_UNREACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is not reachable from DSC %s", IP, infraAPI.GetConfig().DSCID), infraAPI.GetDscName())
 					} else if oldMAC == "" {
-						utils.RaiseEvent(eventtypes.COLLECTOR_REACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is reachable from DSC %s", IP, infraAPI.GetDscName()), infraAPI.GetDscName())
+						utils.RaiseEvent(eventtypes.COLLECTOR_REACHABLE, fmt.Sprintf("Netflow/ERspan collector %s is reachable from DSC %s", IP, infraAPI.GetConfig().DSCID), infraAPI.GetDscName())
 					}
 				}
 				oldMAC = mac
