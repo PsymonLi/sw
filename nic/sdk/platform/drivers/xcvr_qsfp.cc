@@ -211,6 +211,24 @@ qsfp_sprom_parse (int port, uint8_t *data)
         xcvr_set_fec_type(port, port_fec_type_t::PORT_FEC_TYPE_RS);
         break;
 
+    // SFF 8024 Rev 4.7 Table 4-4 Extended Specification Compliance Codes
+    // 0Bh 100GBASE-CR4, 25GBASE-CR CA-25G-L or 50GBASE-CR2 with RS (Clause91) FEC
+    // 0Ch 25GBASE-CR CA-25G-S or 50GBASE-CR2 with BASE-R (Clause 74 Fire code) FEC
+    // 0Dh 25GBASE-CR CA-25G-N or 50GBASE-CR2 with no FEC
+    case 0xc:
+        // 50GBASE-CR2 with FC FEC
+        xcvr_set_pid(port, xcvr_pid_t::XCVR_PID_QSFP_50G_CR2_FC);
+        xcvr_set_cable_speed(port, port_speed_t::PORT_SPEED_50G);
+        xcvr_set_fec_type(port, port_fec_type_t::PORT_FEC_TYPE_FC);
+        break;
+
+    case 0xd:
+        // 50GBASE-CR2 with no FEC
+        xcvr_set_pid(port, xcvr_pid_t::XCVR_PID_QSFP_50G_CR2);
+        xcvr_set_cable_speed(port, port_speed_t::PORT_SPEED_50G);
+        xcvr_set_fec_type(port, port_fec_type_t::PORT_FEC_TYPE_NONE);
+        break;
+
     case 0x10:
         // 40GBASE-ER4
         xcvr_set_pid(port, xcvr_pid_t::XCVR_PID_QSFP_40GBASE_ER4);
@@ -244,7 +262,7 @@ qsfp_sprom_parse (int port, uint8_t *data)
 
     default:
         SDK_TRACE_DEBUG("Xcvr port %u QSFP ext spec code %u not supported yet",
-                         port, data[QSFP_OFFSET_ETH_COMPLIANCE_CODES]);
+                         port, data[QSFP_OFFSET_EXT_SPEC_COMPLIANCE_CODES]);
         break;
     }
 
