@@ -499,6 +499,7 @@ func updateArpClient(mgmtIntf *net.Interface, mgmtLink netlink.Link) {
 	if mgmtIntf == nil {
 		return
 	}
+	log.Infof("new bond0 mgmtIntf %v", mgmtIntf)
 	// Check for idempotency and close older ARP clients
 	if ArpClient != nil {
 		ArpClient.Close()
