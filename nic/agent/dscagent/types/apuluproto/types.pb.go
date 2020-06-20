@@ -137,10 +137,8 @@
 		DHCPPolicyDeleteResponse
 		LldpIfStats
 		LldpId
-		LldpChassisCapabilitySpec
-		LldpIfChassisSpec
-		LldpIfPortSpec
-		LldpIfSpec
+		LldpChassisCapabilityInfo
+		LldpIfChassisInfo
 		LldpSpec
 		UplinkSpec
 		UplinkPCSpec
@@ -149,6 +147,9 @@
 		ControlIfSpec
 		HostIfSpec
 		InterfaceSpec
+		LldpIfPortStatus
+		LldpUnknownTlvStatus
+		LldpIfStatus
 		LldpStatus
 		UplinkIfStatus
 		LoopbackIfStatus

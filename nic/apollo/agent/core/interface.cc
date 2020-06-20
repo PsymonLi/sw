@@ -142,7 +142,7 @@ get_lldpcli_show_cmd (std::string intf, bool nbrs, std::string status_file)
 }
 
 static sdk_ret_t
-interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
+interface_lldp_parse_json (bool nbrs, pds_lldp_status_t *lldp_status,
                            std::string lldp_status_file)
 {
     pt::ptree json_pt;
@@ -189,7 +189,12 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
                 }
 
                 if (nbrs) {
-                    lldp_status->router_id = iface.second.get<uint32_t>("rid");
+
+                    // router id is present only in neighbor tlvs
+                    boost::optional<std::string> rid_opt = iface.second.get_optional<std::string>("rid");
+                    if (rid_opt) {
+                        lldp_status->router_id = iface.second.get<uint32_t>("rid");
+                    }
                 }
 
                 str = iface.second.get<std::string>("age", "");
@@ -204,47 +209,51 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
                         str = cid.second.get<std::string>("type", "");
                         if (!str.empty()) {
                             if (!str.compare("ifname")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_IFNAME;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_IFNAME;
                             } else if (!str.compare("ifalias")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_IFALIAS;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_IFALIAS;
                             } else if (!str.compare("local")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_LOCAL;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_LOCAL;
                             } else if (!str.compare("mac")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_MAC;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_MAC;
                             } else if (!str.compare("ip")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_IP;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_IP;
                             } else if (!str.compare("port")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_PORT;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_PORT;
                             } else if (!str.compare("chassis")) {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_CHASSIS;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_CHASSIS;
                             } else {
-                                lldp_status->chassis_spec.chassis_id.type = LLDPID_SUBTYPE_NONE;
+                                lldp_status->chassis_status.chassis_id.type = LLDPID_SUBTYPE_NONE;
                             }
                         }
             
                         str = cid.second.get<std::string>("value", "");
-                        memcpy(lldp_status->chassis_spec.chassis_id.value, str.c_str(),
+                        memcpy(lldp_status->chassis_status.chassis_id.value, str.c_str(),
                                PDS_LLDP_MAX_NAME_LEN);
                     }
             
                     BOOST_FOREACH (pt::ptree::value_type &cname,
                                    chassis.second.get_child("name")) {
                         str = cname.second.get<std::string>("value", "");
-                        strncpy(lldp_status->chassis_spec.sysname, str.c_str(),
+                        strncpy(lldp_status->chassis_status.sysname, str.c_str(),
                                 PDS_LLDP_MAX_NAME_LEN);
                     }
 
                     BOOST_FOREACH (pt::ptree::value_type &cdescr,
                                    chassis.second.get_child("descr")) {
                         str = cdescr.second.get<std::string>("value", "");
-                        strncpy(lldp_status->chassis_spec.sysdescr, str.c_str(),
+                        strncpy(lldp_status->chassis_status.sysdescr, str.c_str(),
                                 PDS_LLDP_MAX_DESCR_LEN);
                     }
 
-                    BOOST_FOREACH (pt::ptree::value_type &cmgmtip,
-                                   chassis.second.get_child("mgmt-ip")) {
-                        str2ipv4addr(cmgmtip.second.get<std::string>("value").c_str(),
-                                     &lldp_status->chassis_spec.mgmt_ip);
+                    // mgmt ip tlv may not be present in certain chassis tlvs
+                    boost::optional<pt::ptree&> mgmtip_opt = chassis.second.get_child_optional("mgmt-ip");
+                    if (mgmtip_opt) {
+                        BOOST_FOREACH (pt::ptree::value_type &cmgmtip,
+                                       chassis.second.get_child("mgmt-ip")) {
+                            str2ipv4addr(cmgmtip.second.get<std::string>("value").c_str(),
+                                         &lldp_status->chassis_status.mgmt_ip);
+                        }
                     }
 
                     i = 0;
@@ -255,32 +264,32 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
 
                         if (!str.empty()) {
                             if (!str.compare("Repeater")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_REPEATER;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_REPEATER;
                             } else if (!str.compare("Bridge")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_BRIDGE;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_BRIDGE;
                             } else if (!str.compare("Router")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_ROUTER;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_ROUTER;
                             } else if (!str.compare("Wlan")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_WLAN;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_WLAN;
                             } else if (!str.compare("Telephone")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_TELEPHONE;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_TELEPHONE;
                             } else if (!str.compare("Docsis")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_DOCSIS;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_DOCSIS;
                             } else if (!str.compare("Station")) {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_STATION;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_STATION;
                             } else {
-                                lldp_status->chassis_spec.chassis_cap_spec[i].cap_type = LLDP_CAPTYPE_OTHER;
+                                lldp_status->chassis_status.chassis_cap_info[i].cap_type = LLDP_CAPTYPE_OTHER;
                             }
                         }
                   
-                        lldp_status->chassis_spec.chassis_cap_spec[i].cap_enabled = capability.second.get<bool>("enabled");
+                        lldp_status->chassis_status.chassis_cap_info[i].cap_enabled = capability.second.get<bool>("enabled");
                         i++;
                         if (i >= PDS_LLDP_MAX_CAPS) break;
                     }
                 }
 
                 // record the number of capabilities seen.
-                lldp_status->chassis_spec.num_caps = i;
+                lldp_status->chassis_status.num_caps = i;
 
                 BOOST_FOREACH (pt::ptree::value_type &port,
                                iface.second.get_child("port")) {        
@@ -291,27 +300,27 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
                         str = pid.second.get<std::string>("type", "");
                         if (!str.empty()) {
                             if (!str.compare("ifname")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_IFNAME;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_IFNAME;
                             } else if (!str.compare("ifalias")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_IFALIAS;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_IFALIAS;
                             } else if (!str.compare("local")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_LOCAL;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_LOCAL;
                             } else if (!str.compare("mac")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_MAC;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_MAC;
                             } else if (!str.compare("ip")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_IP;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_IP;
                             } else if (!str.compare("port")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_PORT;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_PORT;
                             } else if (!str.compare("chassis")) {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_CHASSIS;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_CHASSIS;
                             } else {
-                                lldp_status->port_spec.port_id.type = LLDPID_SUBTYPE_NONE;
+                                lldp_status->port_status.port_id.type = LLDPID_SUBTYPE_NONE;
                             }
                         }
             
                         str = pid.second.get<std::string>("value", "");
                         if (!str.empty()) {
-                            memcpy(lldp_status->port_spec.port_id.value, str.c_str(),
+                            memcpy(lldp_status->port_status.port_id.value, str.c_str(),
                                    PDS_LLDP_MAX_NAME_LEN);
                         }
                     }
@@ -320,16 +329,58 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
                                    port.second.get_child("descr")) {
                         str = pdescr.second.get<std::string>("value", "");
                         if (!str.empty()) {
-                            strncpy(lldp_status->port_spec.port_descr, str.c_str(),
+                            strncpy(lldp_status->port_status.port_descr, str.c_str(),
                                     PDS_LLDP_MAX_DESCR_LEN);
                         }
                     }
 
-                    if (nbrs) {
+                    // ttl tlv is present inside the port block only in neighbor tlvs
+                    boost::optional<pt::ptree&> ttl_block = port.second.get_child_optional("ttl");
+                    if (ttl_block) {
                         BOOST_FOREACH (pt::ptree::value_type &pttl,
                                        port.second.get_child("ttl")) {
-                            lldp_status->port_spec.ttl = pttl.second.get<uint32_t>("value");
+                            lldp_status->port_status.ttl = pttl.second.get<uint32_t>("value");
                         }
+                    }
+                }
+
+                lldp_status->unknown_tlv_status.num_tlvs = 0;
+                boost::optional<pt::ptree&> unknown_tlv_opt = iface.second.get_child_optional("unknown-tlvs");
+                if (unknown_tlv_opt) {
+                    BOOST_FOREACH (pt::ptree::value_type &unknown_tlvs,
+                                   iface.second.get_child("unknown-tlvs")) {
+
+                        i = 0;
+                        BOOST_FOREACH (pt::ptree::value_type &tlv,
+                                       unknown_tlvs.second.get_child("unknown-tlv")) {
+                            str = tlv.second.get<std::string>("oui", "");
+                            if (!str.empty()) {
+                                strncpy(lldp_status->unknown_tlv_status.tlvs[i].oui, str.c_str(),
+                                        PDS_LLDP_MAX_OUI_LEN);
+                            }
+
+                            lldp_status->unknown_tlv_status.tlvs[i].subtype = tlv.second.get<uint32_t>("subtype");
+                            lldp_status->unknown_tlv_status.tlvs[i].len = tlv.second.get<uint32_t>("len");
+                            str = tlv.second.get<std::string>("value", "");
+                            if (!str.empty()) {
+                                strncpy(lldp_status->unknown_tlv_status.tlvs[i].value, str.c_str(),
+                                        PDS_LLDP_MAX_NAME_LEN);
+                            }
+                            i++;
+                            if (i >= PDS_LLDP_MAX_UNK_TLVS) break;
+                        }
+                    }
+
+                    // record the number of unknown tlvs seen
+                    lldp_status->unknown_tlv_status.num_tlvs = i;
+                }
+
+                // in the interface output, the ttl block is present under interface block
+                boost::optional<pt::ptree&> ttl_block = iface.second.get_child_optional("ttl");
+                if (ttl_block) {
+                    BOOST_FOREACH (pt::ptree::value_type &ttl_list,
+                                   iface.second.get_child("ttl")) {
+                        lldp_status->port_status.ttl = ttl_list.second.get<uint32_t>("ttl");
                     }
                 }
             }
@@ -337,10 +388,8 @@ interface_lldp_parse_json (bool nbrs, pds_if_lldp_info_t *lldp_status,
     } catch (std::exception const& e) {
         std::cerr << e.what() << std::endl;
         PDS_TRACE_ERR("Error reading lldp status json");
-        remove(lldp_status_file.c_str());
         return SDK_RET_ERR;
     }
-    remove(lldp_status_file.c_str());
     return SDK_RET_OK;
 }
 
@@ -391,6 +440,9 @@ interface_lldp_status_get (uint16_t lif_id, pds_if_lldp_status_t *lldp_status)
 
     // parse the LLDP local if status output json file and populate lldp status
     interface_lldp_parse_json(0, &lldp_status->local_if_status, lldp_status_file);
+
+    // remove the json output file
+    remove(lldp_status_file.c_str());
 
     return(SDK_RET_OK);
 }

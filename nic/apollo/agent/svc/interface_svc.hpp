@@ -248,27 +248,35 @@ pds_if_lldp_status_to_proto (pds::UplinkIfStatus *uplink_status, uint16_t lif_id
     lldpifstatus->set_routerid(api_lldp_status.local_if_status.router_id);
     lldpifstatus->set_proto(pds_lldpmode_to_proto_lldpmode(api_lldp_status.local_if_status.mode));
     lldpifstatus->set_age(api_lldp_status.local_if_status.age.c_str());
-    auto lldpchstatus = lldpifstatus->mutable_lldpifchassisspec();
-    lldpchstatus->set_sysname(api_lldp_status.local_if_status.chassis_spec.sysname);
-    lldpchstatus->set_sysdescr(api_lldp_status.local_if_status.chassis_spec.sysdescr);
+    auto lldpchstatus = lldpifstatus->mutable_lldpifchassisstatus();
+    lldpchstatus->set_sysname(api_lldp_status.local_if_status.chassis_status.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status.local_if_status.chassis_status.sysdescr);
     ipv4addr_api_spec_to_proto_spec(lldpchstatus->mutable_mgmtip(),
-                                    &api_lldp_status.local_if_status.chassis_spec.mgmt_ip);
+                                    &api_lldp_status.local_if_status.chassis_status.mgmt_ip);
     auto lldpchidstatus = lldpchstatus->mutable_chassisid();
     lldpchidstatus->set_type(
-        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.chassis_spec.chassis_id.type));
-    lldpchidstatus->set_value((char *)api_lldp_status.local_if_status.chassis_spec.chassis_id.value);
-    for (int i = 0; i < api_lldp_status.local_if_status.chassis_spec.num_caps; i++) {
+        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.chassis_status.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status.local_if_status.chassis_status.chassis_id.value);
+    for (int i = 0; i < api_lldp_status.local_if_status.chassis_status.num_caps; i++) {
         auto lldpchcap = lldpchstatus->add_capability();
         lldpchcap->set_captype(
-         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.local_if_status.chassis_spec.chassis_cap_spec[i].cap_type));
-        lldpchcap->set_capenabled(api_lldp_status.local_if_status.chassis_spec.chassis_cap_spec[i].cap_enabled);
+         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.local_if_status.chassis_status.chassis_cap_info[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status.local_if_status.chassis_status.chassis_cap_info[i].cap_enabled);
     }
-    auto lldpportstatus = lldpifstatus->mutable_lldpifportspec();
+    auto lldpportstatus = lldpifstatus->mutable_lldpifportstatus();
     auto lldppidstatus = lldpportstatus->mutable_portid();
-    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.port_spec.port_id.type));
-    lldppidstatus->set_value((char *)api_lldp_status.local_if_status.port_spec.port_id.value);
-    lldpportstatus->set_portdescr(api_lldp_status.local_if_status.port_spec.port_descr);
-    lldpportstatus->set_ttl(api_lldp_status.local_if_status.port_spec.ttl);
+    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.local_if_status.port_status.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status.local_if_status.port_status.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status.local_if_status.port_status.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status.local_if_status.port_status.ttl);
+
+    for (int i = 0; i < api_lldp_status.local_if_status.unknown_tlv_status.num_tlvs; i++) {
+        auto lldp_unknown_tlv = lldpifstatus->add_lldpunknowntlvstatus();
+        lldp_unknown_tlv->set_oui((char *)api_lldp_status.local_if_status.unknown_tlv_status.tlvs[i].oui);
+        lldp_unknown_tlv->set_subtype(api_lldp_status.local_if_status.unknown_tlv_status.tlvs[i].subtype);
+        lldp_unknown_tlv->set_len(api_lldp_status.local_if_status.unknown_tlv_status.tlvs[i].len);
+        lldp_unknown_tlv->set_value((char *)api_lldp_status.local_if_status.unknown_tlv_status.tlvs[i].value);
+    }
 
     // fill in the lldp neighbor status
     auto lldpnbrstatus = lldp_status->mutable_lldpnbrstatus();
@@ -276,27 +284,35 @@ pds_if_lldp_status_to_proto (pds::UplinkIfStatus *uplink_status, uint16_t lif_id
     lldpnbrstatus->set_routerid(api_lldp_status.neighbor_status.router_id);
     lldpnbrstatus->set_proto(pds_lldpmode_to_proto_lldpmode(api_lldp_status.neighbor_status.mode));
     lldpnbrstatus->set_age(api_lldp_status.neighbor_status.age.c_str());
-    lldpchstatus = lldpnbrstatus->mutable_lldpifchassisspec();
-    lldpchstatus->set_sysname(api_lldp_status.neighbor_status.chassis_spec.sysname);
-    lldpchstatus->set_sysdescr(api_lldp_status.neighbor_status.chassis_spec.sysdescr);
+    lldpchstatus = lldpnbrstatus->mutable_lldpifchassisstatus();
+    lldpchstatus->set_sysname(api_lldp_status.neighbor_status.chassis_status.sysname);
+    lldpchstatus->set_sysdescr(api_lldp_status.neighbor_status.chassis_status.sysdescr);
     ipv4addr_api_spec_to_proto_spec(lldpchstatus->mutable_mgmtip(),
-                                    &api_lldp_status.neighbor_status.chassis_spec.mgmt_ip);
+                                    &api_lldp_status.neighbor_status.chassis_status.mgmt_ip);
     lldpchidstatus = lldpchstatus->mutable_chassisid();
     lldpchidstatus->set_type(
-        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.chassis_spec.chassis_id.type));
-    lldpchidstatus->set_value((char *)api_lldp_status.neighbor_status.chassis_spec.chassis_id.value);
-    for (int i = 0; i < api_lldp_status.neighbor_status.chassis_spec.num_caps; i++) {
+        pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.chassis_status.chassis_id.type));
+    lldpchidstatus->set_value((char *)api_lldp_status.neighbor_status.chassis_status.chassis_id.value);
+    for (int i = 0; i < api_lldp_status.neighbor_status.chassis_status.num_caps; i++) {
         auto lldpchcap = lldpchstatus->add_capability();
         lldpchcap->set_captype(
-         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.neighbor_status.chassis_spec.chassis_cap_spec[i].cap_type));
-        lldpchcap->set_capenabled(api_lldp_status.neighbor_status.chassis_spec.chassis_cap_spec[i].cap_enabled);
+         pds_lldpcaptype_to_proto_lldpcaptype(api_lldp_status.neighbor_status.chassis_status.chassis_cap_info[i].cap_type));
+        lldpchcap->set_capenabled(api_lldp_status.neighbor_status.chassis_status.chassis_cap_info[i].cap_enabled);
     }
-    lldpportstatus = lldpnbrstatus->mutable_lldpifportspec();
+    lldpportstatus = lldpnbrstatus->mutable_lldpifportstatus();
     lldppidstatus = lldpportstatus->mutable_portid();
-    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.port_spec.port_id.type));
-    lldppidstatus->set_value((char *)api_lldp_status.neighbor_status.port_spec.port_id.value);
-    lldpportstatus->set_portdescr(api_lldp_status.neighbor_status.port_spec.port_descr);
-    lldpportstatus->set_ttl(api_lldp_status.neighbor_status.port_spec.ttl);
+    lldppidstatus->set_type(pds_lldpidtype_to_proto_lldpidtype(api_lldp_status.neighbor_status.port_status.port_id.type));
+    lldppidstatus->set_value((char *)api_lldp_status.neighbor_status.port_status.port_id.value);
+    lldpportstatus->set_portdescr(api_lldp_status.neighbor_status.port_status.port_descr);
+    lldpportstatus->set_ttl(api_lldp_status.neighbor_status.port_status.ttl);
+
+    for (int i = 0; i < api_lldp_status.neighbor_status.unknown_tlv_status.num_tlvs; i++) {
+        auto lldp_unknown_tlv = lldpnbrstatus->add_lldpunknowntlvstatus();
+        lldp_unknown_tlv->set_oui((char *)api_lldp_status.neighbor_status.unknown_tlv_status.tlvs[i].oui);
+        lldp_unknown_tlv->set_subtype(api_lldp_status.neighbor_status.unknown_tlv_status.tlvs[i].subtype);
+        lldp_unknown_tlv->set_len(api_lldp_status.neighbor_status.unknown_tlv_status.tlvs[i].len);
+        lldp_unknown_tlv->set_value((char *)api_lldp_status.neighbor_status.unknown_tlv_status.tlvs[i].value);
+    }
 }
 
 static inline void

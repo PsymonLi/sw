@@ -95,36 +95,21 @@ enum LldpCapType {
   LLDP_CAPTYPE_STATION   = 7;
 }
 
-message LldpChassisCapabilitySpec {
-  LldpCapType CapType    = 1; // Capability type
-  bool        CapEnabled = 2; // Enabled/disabled
+message LldpChassisCapabilityInfo {
+  LldpCapType CapType    = 1; // capability type
+  bool        CapEnabled = 2; // enabled/disabled
 }
 
-message LldpIfChassisSpec {
-  string                             SysName    = 1; // System name
-  LldpId                             ChassisId  = 2; // System identifier
-  string                             SysDescr   = 3; // Description string
-  types.IPAddress                    MgmtIP     = 4; // Management IP
-  repeated LldpChassisCapabilitySpec Capability = 5; // List of capabilities
-}
-
-message LldpIfPortSpec {
-  LldpId PortId    = 1; // Port identifier
-  string PortDescr = 2; // Description string
-  uint32 Ttl       = 3; // TTL
-}
-
-message LldpIfSpec {
-  string            IfName            = 1; // Interface name
-  uint32            RouterId          = 2; // Router-id
-  LldpProtoMode     Proto             = 3; // LLDP/CDP/EDP/FDP/..
-  bytes             Age               = 4; // Uptime in string
-  LldpIfChassisSpec LldpIfChassisSpec = 5; // Chassis info
-  LldpIfPortSpec    LldpIfPortSpec    = 6; // Physical port info
+message LldpIfChassisInfo {
+  string                             SysName    = 1; // system name
+  LldpId                             ChassisId  = 2; // system identifier
+  string                             SysDescr   = 3; // description string
+  types.IPAddress                    MgmtIP     = 4; // management IP
+  repeated LldpChassisCapabilityInfo Capability = 5; // list of capabilities
 }
 
 message LldpSpec {
-  LldpIfChassisSpec LldpIfChassisSpec = 1; // Chassis info
+  LldpIfChassisInfo LldpIfChassisSpec = 1; // Chassis info
 }
 
 // Uplink configuration (if interface type is IF_TYPE_UPLINK)
@@ -223,9 +208,32 @@ message InterfaceSpec {
   repeated bytes   RxMirrorSessionId = 11;
 }
 
+message LldpIfPortStatus {
+  LldpId PortId    = 1; // port identifier
+  string PortDescr = 2; // description string
+  uint32 Ttl       = 3; // TTL
+}
+
+message LldpUnknownTlvStatus {
+  string  Oui     = 1; // OUI string
+  uint32  Subtype = 2; // subtype identifier
+  uint32  Len     = 3; // length of option
+  string  Value   = 4; // option value string
+}
+
+message LldpIfStatus {
+  string                        IfName               = 1; // interface name
+  uint32                        RouterId             = 2; // router-id
+  LldpProtoMode                 Proto                = 3; // LLDP/CDP/EDP/FDP/..
+  bytes                         Age                  = 4; // uptime in string
+  LldpIfChassisInfo             LldpIfChassisStatus  = 5; // chassis info
+  LldpIfPortStatus              LldpIfPortStatus     = 6; // physical port info
+  repeated LldpUnknownTlvStatus LldpUnknownTlvStatus = 7; // unknown TLVs
+}
+
 message LldpStatus {
-  LldpIfSpec  LldpIfStatus  = 1; // Local interface info
-  LldpIfSpec  LldpNbrStatus = 2; // Neighbor info
+  LldpIfStatus  LldpIfStatus  = 1; // Local interface info
+  LldpIfStatus  LldpNbrStatus = 2; // Neighbor info
 }
 
 // operational status of uplink interface

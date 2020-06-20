@@ -1849,8 +1849,8 @@ func (a *ApuluAPI) handleUplinkInterface(spec *halapi.PortSpec, status *halapi.P
 					continue
 				}
 				var pStr, chsStr, ipStr string
-				lldpNbrChs := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
-				lldpNbrPort := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+				lldpNbrChs := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
+				lldpNbrPort := u.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
 				if "LLDPID_SUBTYPE_NONE" != lldpNbrChs.GetChassisId().GetType().String() {
 					cidType := strings.Replace(lldpNbrChs.GetChassisId().GetType().String(), "LLDPID_SUBTYPE_", "", -1)
 					chsStr = fmt.Sprintf("%s %s", strings.ToLower(cidType), lldpNbrChs.GetChassisId().GetValue())
@@ -2042,8 +2042,8 @@ func (a *ApuluAPI) initEventStream() {
 			if i.Spec.GetType().String() != "IF_TYPE_UPLINK" {
 				continue
 			}
-			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
-			lldpNbrPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+			lldpNbrChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
+			lldpNbrPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
 			m[uid.String()] = &netproto.LLDPNeighbor{
 				ChassisID:       lldpNbrChs.GetChassisId().String(),
 				SysName:         lldpNbrChs.GetSysName(),
@@ -2087,8 +2087,8 @@ func (a *ApuluAPI) initEventStream() {
 						log.Errorf("LLDPPeriodicTimer: [%+v] doesnt have value", uid.String())
 						continue
 					}
-					lChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisSpec()
-					lPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortSpec()
+					lChs := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfChassisStatus()
+					lPort := i.Status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus().GetLldpIfPortStatus()
 
 					if lChs.GetChassisId().String() != val.ChassisID ||
 						lChs.GetSysName() != val.SysName ||
@@ -2207,7 +2207,7 @@ func (a *ApuluAPI) updateUplinkIntfHostname(intf *netproto.Interface, obj types.
 						UplinkSpec: &halapi.UplinkSpec{
 							PortId: i.Spec.GetUplinkSpec().GetPortId(),
 							LldpSpec: &halapi.LldpSpec{
-								LldpIfChassisSpec: &halapi.LldpIfChassisSpec{
+								LldpIfChassisSpec: &halapi.LldpIfChassisInfo{
 									SysName: obj.DSCID,
 								},
 							},
