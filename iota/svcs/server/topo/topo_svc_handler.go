@@ -148,6 +148,10 @@ func (ts *TopologyService) InstallImage(ctx context.Context, req *iota.TestBedMs
 				if node.AutoDiscoverOnInstall {
 					cmd += fmt.Sprintf(" --auto-discover-on-install")
 				}
+				if req.OnlyReset {
+					cmd += fmt.Sprintf(" --reset")
+				}
+
 				nodeName := node.NodeName
 
 				// add the command to pool to be executed in parallel

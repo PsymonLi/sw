@@ -28,6 +28,9 @@ const maxRetryCount = 40
 //WorkFunc Prototype of work function.
 type WorkFunc func(ctx context.Context, workObj WorkObj) error
 
+//WorkIDFunc Prototype of work function with worker ID.
+type WorkIDFunc func(ctx context.Context, id int, workObj WorkObj) error
+
 //WorkObj interface
 type WorkObj interface {
 	GetKey() string
@@ -36,17 +39,19 @@ type WorkObj interface {
 
 type worker struct {
 	sync.Mutex
-	id         int
-	pool       string
-	queue      chan workCtx
-	state      workerState
-	workMaster *WorkerPool
-	doneCnt    uint32
+	id            int
+	pool          string
+	queue         chan workCtx
+	state         workerState
+	workMaster    *WorkerPool
+	doneCnt       uint32
+	lastQueueTime int64
 }
 
 type workCtx struct {
-	workFunc WorkFunc
-	workObj  WorkObj
+	workFunc   WorkFunc
+	workIDFunc WorkIDFunc
+	workObj    WorkObj
 }
 
 func (w *worker) doneCount() uint32 {
@@ -68,6 +73,10 @@ func (w *worker) retryError(err error) bool {
 	return kvstore.IsKeyNotFoundError(err) || kvstore.IsTxnFailedError(err)
 }
 
+func makeTimestamp() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
+
 func (w *worker) Run(ctx context.Context) {
 	w.workMaster.StartWg.Done()
 	defer w.workMaster.DoneWg.Done()
@@ -86,6 +95,8 @@ func (w *worker) Run(ctx context.Context) {
 			for i := 0; i < maxRetryCount; i++ {
 				if workContext.workFunc != nil {
 					err = workContext.workFunc(ctx, workContext.workObj)
+				} else if workContext.workIDFunc != nil {
+					err = workContext.workIDFunc(ctx, w.id, workContext.workObj)
 				} else {
 					err = workContext.workObj.WorkFunc(ctx)
 				}
@@ -105,8 +116,11 @@ func (w *worker) Run(ctx context.Context) {
 		case <-ticker.C:
 			if len(w.queue) == 0 {
 				w.Lock()
-				w.state = idle
+				if makeTimestamp()-atomic.LoadInt64(&w.lastQueueTime) > (100 * time.Millisecond.Milliseconds()) {
+					w.state = idle
+				}
 				w.Unlock()
+
 			}
 		case <-ctx.Done():
 			return
@@ -230,10 +244,26 @@ func (wp *WorkerPool) RunJob(workObj WorkObj) error {
 	}
 
 	workerID := wp.getWorkerID(workObj)
-
+	wp.workers[workerID].Lock()
+	wp.workers[workerID].state = running
+	atomic.StoreInt64(&wp.workers[workerID].lastQueueTime, makeTimestamp())
+	wp.workers[workerID].Unlock()
 	wp.workers[workerID].queue <- workCtx{workFunc: nil, workObj: workObj}
 
 	return nil
+}
+
+//WaitForIdle wait for worker idle
+func (wp *WorkerPool) WaitForIdle() {
+
+	for true {
+		if idle, _ := wp.IsIdle(); !idle {
+			log.Infof("Waiting for worker pools to be idle.")
+			time.Sleep(1 * time.Second)
+		}
+		log.Infof("worker pools to be idle")
+		return
+	}
 }
 
 //RunFunction runs jobs with specified function
@@ -245,7 +275,30 @@ func (wp *WorkerPool) RunFunction(workObj WorkObj, workerFunc WorkFunc) error {
 
 	workerID := wp.getWorkerID(workObj)
 
+	wp.workers[workerID].Lock()
+	wp.workers[workerID].state = running
+	atomic.StoreInt64(&wp.workers[workerID].lastQueueTime, time.Now().Unix())
+	wp.workers[workerID].Unlock()
 	wp.workers[workerID].queue <- workCtx{workFunc: workerFunc, workObj: workObj}
+
+	return nil
+}
+
+//RunFunctionWithID runs jobs with specified function and also passed worker ID to pull some context
+func (wp *WorkerPool) RunFunctionWithID(workObj WorkObj, workIDFunc WorkIDFunc) error {
+
+	if !wp.Running() {
+		return errors.New("workers are not started")
+	}
+
+	workerID := wp.getWorkerID(workObj)
+
+	wp.workers[workerID].Lock()
+	wp.workers[workerID].state = running
+	atomic.StoreInt64(&wp.workers[workerID].lastQueueTime, time.Now().Unix())
+	wp.workers[workerID].Unlock()
+
+	wp.workers[workerID].queue <- workCtx{workIDFunc: workIDFunc, workObj: workObj}
 
 	return nil
 }
@@ -258,7 +311,7 @@ func (wp *WorkerPool) IsIdle() (bool, error) {
 	}
 
 	for _, w := range wp.workers {
-		if w.running() {
+		if len(w.queue) != 0 || w.running() {
 			return false, nil
 		}
 	}

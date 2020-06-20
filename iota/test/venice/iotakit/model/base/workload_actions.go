@@ -517,6 +517,7 @@ func (sm *SysModel) WorkloadsGoGetIPs() error {
 	for _, wr := range sm.Workloads().Workloads {
 		err := objects.WorkloadUpdateDynamicIPs(wr, sm.Testbed())
 		if err != nil {
+			log.Errorf("Failed to update dynamic IP on workload %v | Err:", wr.Name(), err)
 			return fmt.Errorf("Failed to update dynamic IP on workload %v | Err:", wr.Name(), err)
 		}
 	}

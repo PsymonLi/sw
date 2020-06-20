@@ -970,6 +970,9 @@ message TestBedMsg {
    
     // Testbed Jobc/testbed json file
     string testbed_json_file            = 15;
+
+    //reset nodes, don't install new image
+    bool only_reset                     = 16;
 }
 
 message TestNodesMsg {

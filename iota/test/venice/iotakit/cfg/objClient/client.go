@@ -24,6 +24,7 @@ import (
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/netutils"
+	"github.com/pensando/sw/venice/utils/shardworkers"
 	"github.com/pensando/sw/venice/utils/workfarm"
 )
 
@@ -228,15 +229,28 @@ type VeniceRawData struct {
 
 // Client rest client handler
 type Client struct {
-	ctx     context.Context
-	restcls []apiclient.Services
-	urls    []string
+	*shardworkers.WorkerPool
+	ctx            context.Context
+	restcls        []apiclient.Services
+	urls           []string
+	restClientPool (map[int]*Client)
 }
+
+const (
+	numWorkers = 25
+)
 
 // NewClient rest client
 func NewClient(ctx context.Context, urls []string) ObjClient {
 	client := &Client{ctx: ctx, urls: urls}
-	client.init()
+	err := client.init(numWorkers)
+	if err != nil {
+		log.Errorf("Error in client init %v", err)
+		return nil
+	}
+
+	client.WorkerPool = shardworkers.NewWorkerPool("ClientWorkers", numWorkers)
+	client.WorkerPool.Start()
 	return client
 }
 
@@ -248,6 +262,11 @@ func (r *Client) Context() context.Context {
 // Urls get client URLs
 func (r *Client) Urls() []string {
 	return r.urls
+}
+
+//GetRestClientByID get rest client by ID
+func (r *Client) GetRestClientByID(id int) *Client {
+	return r.restClientPool[id]
 }
 
 //Clients clients for operations
@@ -270,9 +289,20 @@ func (r *Client) newRestClient() ([]apiclient.Services, error) {
 	return restcls, nil
 }
 
-func (r *Client) init() error {
+func (r *Client) init(numWorkers int) error {
 	var err error
 	r.restcls, err = r.newRestClient()
+
+	r.restClientPool = make(map[int]*Client)
+	for i := 0; i < numWorkers; i++ {
+
+		restcls, err := r.newRestClient()
+		if err != nil {
+			return err
+		}
+		client := Client{restcls: restcls, urls: r.urls, ctx: r.ctx}
+		r.restClientPool[i] = &client
+	}
 
 	return err
 }
@@ -477,6 +507,27 @@ func workloadWork(ctx context.Context, id, iter int, userCtx interface{}) error 
 	return err
 }
 
+func updateInterfaceWork(ctx context.Context, id, iter int, userCtx interface{}) error {
+
+	var err error
+	wctx := userCtx.(*workCtx)
+
+	workloads := wctx.objs.([]*network.NetworkInterface)
+	if restcls, ok := wctx.restCls[id]; ok {
+		for _, restcl := range restcls {
+			_, err = restcl.NetworkV1().NetworkInterface().Update(wctx.ctx, workloads[iter])
+			if err == nil {
+				break
+			}
+		}
+	}
+
+	if err != nil {
+		log.Errorf("Interface create %v failed  with error %v", workloads[iter], err.Error())
+	}
+	return err
+}
+
 func workloadDeleteWork(ctx context.Context, id, iter int, userCtx interface{}) error {
 
 	var err error
@@ -519,6 +570,16 @@ func (r *Client) CreateWorkloads(wrklds []*workload.Workload) error {
 		ctx:  r.ctx,
 	}
 	return r.parallelPush(wCtx, workloadWork)
+}
+
+// UpdateInterfaces update interfaces in parallel
+func (r *Client) UpdateInterfaces(wrklds []*network.NetworkInterface) error {
+	wCtx := &workCtx{
+		objs: wrklds,
+		len:  len(wrklds),
+		ctx:  r.ctx,
+	}
+	return r.parallelPush(wCtx, updateInterfaceWork)
 }
 
 // GetNetworkSecurityPolicy gets NetworkSecurityPolicy from venice cluster

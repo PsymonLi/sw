@@ -3,9 +3,11 @@ nodes:
     naples-sim-scale:
         image: ../nic/obj/images/naples-release-v1.tgz
         instances: 5
+        min-instances: 1
         per-node-instances: 200
     venice:
         image: ../bin/venice.apulu.tgz
+        min-instances: 3
         instances: 3
 
 workload: 

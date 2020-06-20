@@ -20,6 +20,7 @@ type TopoNode struct {
 	HostOS       string               // OS on the host
 	NumInstances int                  // Number of instances (used for sim for now)
 	MangedNodes  []string             //nodes managed by this node
+	Optional     bool                 //optional node
 }
 
 //ModelType type
@@ -57,20 +58,23 @@ type TopoMeta struct {
 	Model string `yaml:"model"`
 	Nodes struct {
 		Naples struct {
-			Image     string `yaml:"image"`
-			Instances int    `yaml:"instances"`
+			Image        string `yaml:"image"`
+			MinInstances int    `yaml:"min-instances"`
+			Instances    int    `yaml:"instances"`
 		} `yaml:"naples"`
 		ThirdParty struct {
 			Instances int `yaml:"instances"`
 		} `yaml:"third-party"`
 		Venice struct {
-			Image     string `yaml:"image"`
-			Instances int    `yaml:"instances"`
+			Image        string `yaml:"image"`
+			Instances    int    `yaml:"instances"`
+			MinInstances int    `yaml:"min-instances"`
 		} `yaml:"venice"`
 		NaplesSimScale struct {
 			Image            string `yaml:"image"`
 			Instances        int    `yaml:"instances"`
 			PerNodeInstances int    `yaml:"per-node-instances"`
+			MinInstances     int    `yaml:"min-instances"`
 		} `yaml:"naples-sim-scale"`
 		NaplesSim struct {
 			Image     string `yaml:"image"`
@@ -180,6 +184,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 				NodeName:    "naples-" + fmt.Sprintf("%v", i+1),
 				Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_HW,
 				Personality: naplesHwPersonality,
+				Optional:    (i + 1) > topoMeta.Nodes.Naples.MinInstances,
 			})
 		}
 		topo.NaplesImage = topoMeta.Nodes.Naples.Image
@@ -191,6 +196,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 				NodeName:    "venice-" + fmt.Sprintf("%v", i+1),
 				Type:        iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM,
 				Personality: iota.PersonalityType_PERSONALITY_VENICE,
+				Optional:    (i + 1) > topoMeta.Nodes.Venice.MinInstances,
 			})
 		}
 		topo.VeniceImage = topoMeta.Nodes.Venice.Image
@@ -203,6 +209,7 @@ func ParseTopology(fileName string) (*Topology, error) {
 				NumInstances: topoMeta.Nodes.NaplesSimScale.PerNodeInstances,
 				Type:         iota.TestBedNodeType_TESTBED_NODE_TYPE_MULTI_SIM,
 				Personality:  iota.PersonalityType_PERSONALITY_NAPLES_MULTI_SIM,
+				Optional:     (i + 1) > topoMeta.Nodes.NaplesSimScale.MinInstances,
 			})
 		}
 		topo.NaplesSimImage = topoMeta.Nodes.NaplesSimScale.Image

@@ -73,6 +73,8 @@ parser.add_argument('--naples-mem-size', dest='mem_size',
                     default=None, help='Naples memory size')
 parser.add_argument('--skip-driver-install', dest='skip_driver_install',
                     action='store_true', help='Skips host driver install')
+parser.add_argument('--reset', dest='reset_naples',
+                    action='store_true', help='Reset naples')
 parser.add_argument('--naples-only-setup', dest="naples_only_setup",
                     action='store_true', help='Setup only naples')
 parser.add_argument('--esx-script', dest='esx_script',
@@ -462,9 +464,9 @@ class NaplesManagement(EntityManagement):
             self.SendlineExpect(self.nic_spec.ConsolePassword, "#", hdl = hdl)
 
             for i in range(6):
-                time.sleep(5)
                 self.SendlineExpect("clear line %d" % (self.nic_spec.ConsolePort - 2000), "[confirm]", hdl = hdl)
                 self.SendlineExpect("", " [OK]", hdl = hdl)
+                time.sleep(1)
             hdl.close()
         except:
             raise Exception("Clear line failed ")
@@ -516,7 +518,12 @@ class NaplesManagement(EntityManagement):
         self.WaitForSsh()
 
     def StartSSH(self):
-        self.SendlineExpect("/etc/init.d/S50sshd start", "#")
+        for l in [ "sed -i 's/SSHD_PASSWORD_AUTHENTICATION=no/SSHD_PASSWORD_AUTHENTICATION=yes/' /nic/conf/system_boot_config",
+                "rm /var/lock/system_boot_config",
+                "/etc/init.d/S50sshd start",
+                "/etc/init.d/S50sshd enable", 
+                "/etc/init.d/S50sshd restart" ]:
+            self.SendlineExpect(l, "#")
 
     def Reboot(self):
         if not self.host.PciSensitive():
@@ -629,23 +636,33 @@ class NaplesManagement(EntityManagement):
         #        print("Not able to read oob link state")
         #return False
 
-    def ReadExternalIP(self):
-        if not self.IsOOBAvailable():
-            return False
-        if not self.__run_dhclient():
-            return False
+
+    def __read_ip(self, intf):
         for _ in range(5):
-            output = self.RunCommandOnConsoleWithOutput("ifconfig " + GlobalOptions.mgmt_intf)
+            output = self.RunCommandOnConsoleWithOutput("ifconfig " + intf)
             ifconfig_regexp = "addr:(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"
             x = re.findall(ifconfig_regexp, output)
             if len(x) > 0:
                 self.ipaddr = x[0]
                 print("Read OOB IP {0}".format(self.ipaddr))
-                self.SSHPassInit()
                 return True
             else:
                 print("Did not Read OOB IP  {0}".format(self.ipaddr))
         print("Not able read OOB IP after 5 retries")
+        return False
+
+    def ReadExternalIP(self):
+        if not self.IsOOBAvailable():
+            return False
+        #Read IP if already set
+        if self.__read_ip(GlobalOptions.mgmt_intf):
+            self.SSHPassInit()
+            return True
+        if not self.__run_dhclient():
+            return False
+        if self.__read_ip(GlobalOptions.mgmt_intf):
+            self.SSHPassInit()
+            return True
         return False
 
     #if oob is not available read internal IP
@@ -1523,6 +1540,19 @@ class PenOrchestrator:
             self.__naples.append(naples_inst)
         self.__host.SetNaples(self.__naples)
 
+        if GlobalOptions.reset_naples:
+            naplesInst = None
+            self.__ipmi_reboot_allowed = True
+            for naples_inst in self.__naples:
+                naples_inst.Connect(force_connect=False)
+                naples_inst.InstallPrep()
+                naplesInst = naples_inst
+            naplesInst.IpmiResetAndWait()
+            for naples_inst in self.__naples:
+                naples_inst.Close()
+            return
+
+
         if GlobalOptions.only_mode_change:
             # Case 2: Only change mode, reboot and install drivers
             #naples.InitForUpgrade(goldfw = False)
@@ -1540,14 +1570,54 @@ class PenOrchestrator:
         # If the previous run left it in bad state, we may not get ssh or console.
         #First do a reset as naples may be in screwed up state.
 
+        def __fast_update():
+
+            for naples_inst in self.__naples:
+                # Case 1: Main firmware upgrade.
+                #naples.InitForUpgrade(goldfw = True)
+                if naples_inst.IsOOBAvailable() and naples_inst.IsSSHUP():
+                    #OOb is present and up install right away,
+                    print("installing and running tests with firmware without checking goldfw")
+                    naples_inst.InstallMainFirmware()
+                    if not naples_inst.IsNaplesGoldFWLatest():
+                        naples_inst.InstallGoldFirmware()
+                else:
+                    print ("Naples OOB ssh is not available or up, fast udpate failed")
+                    raise
+
+            #Script that might have to run just before reboot
+            # ESX would require drivers to be installed here to avoid
+            # onr more reboot
+            self.__host.InitForReboot()
+            #Do and IP reset to make sure naples and Host are in sync
+
+            self.__ipmi_reboot_allowed=True
+            self.IpmiReset() # Do IpmiReset once
+            for naples_inst in self.__naples:
+                naples_inst.WaitAfterReset()
+                naples_inst.Close()
+
+            #Naples would have rebooted to, login again.
+            for naples_inst in self.__naples:
+                naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover))
+                naples_inst.Close()
+
+            # Common to Case 2 and Case 1.
+            # Initialize the Node, this is needed in all cases.
+            self.__host.Init(driver_pkg = self.__driver_images.drivers_pkg, cleanup = False)
+
+
+
+
         if GlobalOptions.only_mode_change == False and GlobalOptions.only_init == False:
             try:
                 for naples_inst in self.__naples:
                     naples_inst.Connect(force_connect=False)
-  
                   #Read Naples Gold FW version if system in good state.
                     #If not able to read then we will reset
                     naples_inst.ReadGoldFwVersion()
+                    naples_inst.StartSSH()
+
 
                     #Check whether we can run ssh command
                     naples_inst.RunSshCmd("date")
@@ -1559,6 +1629,11 @@ class PenOrchestrator:
                 #unloading of driver should not fail, else reset to goldfw
                 self.__host.UnloadDriver()
 
+                #Try optimistic Fast update
+                print ("Attempting fast update")
+                __fast_update()
+                print ("Fast update successfull")
+                return
             except:
                 # Because ForceSwitchToGoldFW is time-sensetive operation (sending Ctrl-c), allowing both IpmiReset
                 self.__ipmi_reboot_allowed = True

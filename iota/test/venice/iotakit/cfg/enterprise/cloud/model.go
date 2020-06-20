@@ -17,6 +17,7 @@ import (
 	"github.com/pensando/sw/iota/test/venice/iotakit/cfg/objClient"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/shardworkers"
 )
 
 const configFile = "/tmp/scale-cfg.json"
@@ -140,6 +141,21 @@ func (cl *CloudCfg) IsConfigPushComplete() (bool, error) {
 	return true, nil
 }
 
+type workObjInterface interface {
+	GetKey() string
+}
+type cfgWorkCtx struct {
+	cfgObj workObjInterface
+}
+
+func (w cfgWorkCtx) GetKey() string {
+	return w.cfgObj.GetKey()
+}
+
+func (w *cfgWorkCtx) WorkFunc(ctx context.Context) error {
+	return nil
+}
+
 //CleanupAllConfig clean up all config
 func (cl *CloudCfg) CleanupAllConfig() error {
 
@@ -172,13 +188,29 @@ func (cl *CloudCfg) CleanupAllConfig() error {
 		log.Errorf("err: %s", err)
 		return err
 	}
+
+	var runErr error
 	for _, dsc := range dscs {
-		dsc.Spec.RoutingConfig = ""
-		err := rClient.UpdateSmartNIC(dsc)
-		if err != nil {
-			log.Errorf("err: %s", err)
-			return err
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			dsc := workCtx.cfgObj.(*cluster.DistributedServiceCard)
+
+			dsc.Spec.RoutingConfig = ""
+			idClient := rClient.GetRestClientByID(id)
+			err := idClient.UpdateSmartNIC(dsc)
+			if err != nil {
+				log.Errorf("err: %s", err)
+				runErr = err
+				return err
+			}
+			return nil
 		}
+		dsc := dsc
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: dsc}, updateWork)
+	}
+	rClient.WaitForIdle()
+	if runErr != nil {
+		return runErr
 	}
 
 	// List routing config
@@ -204,23 +236,39 @@ func (cl *CloudCfg) CleanupAllConfig() error {
 	}
 
 	for _, dsc := range dscs {
-		filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", dsc.Status.PrimaryMAC)
-		hostNwIntfs, err := rClient.ListNetowrkInterfacesByFilter(filter)
-		if err != nil {
-			return err
-		}
-
-		for _, nwIntf := range hostNwIntfs {
-			nwIntf.Spec.AttachNetwork = ""
-			nwIntf.Spec.AttachTenant = ""
-
-			err = rClient.UpdateNetworkInterface(nwIntf)
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			dsc := workCtx.cfgObj.(*cluster.DistributedServiceCard)
+			filter := fmt.Sprintf("spec.type=host-pf,status.dsc=%v", dsc.Status.PrimaryMAC)
+			hostNwIntfs, err := rClient.ListNetowrkInterfacesByFilter(filter)
 			if err != nil {
-				log.Errorf("updating interface failed %v", err.Error())
+				runErr = err
 				return err
 			}
+
+			for _, nwIntf := range hostNwIntfs {
+				nwIntf.Spec.AttachNetwork = ""
+				nwIntf.Spec.AttachTenant = ""
+
+				idClient := rClient.GetRestClientByID(id)
+				err = idClient.UpdateNetworkInterface(nwIntf)
+				if err != nil {
+					log.Errorf("updating interface failed %v", err.Error())
+					runErr = err
+					return err
+				}
+			}
+
+			return nil
 		}
 
+		dsc := dsc
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: dsc}, updateWork)
+
+	}
+	rClient.WaitForIdle()
+	if runErr != nil {
+		return runErr
 	}
 
 	for _, ten := range tenants {
@@ -278,14 +326,26 @@ func (cl *CloudCfg) CleanupAllConfig() error {
 	}
 
 	for _, obj := range veniceHosts {
-		if err := rClient.DeleteHost(obj); err != nil {
-			err = fmt.Errorf("Error deleting obj %+v. Err: %s", obj, err)
-			log.Errorf("%s", err)
-			return err
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			obj := workCtx.cfgObj.(*cluster.Host)
+			idClient := rClient.GetRestClientByID(id)
+			if err := idClient.DeleteHost(obj); err != nil {
+				err = fmt.Errorf("Error deleting obj %+v. Err: %s", obj, err)
+				log.Errorf("%s", err)
+				runErr = err
+				return err
+			}
+			return nil
 		}
+
+		obj := obj
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: obj}, updateWork)
+
 	}
 
-	return nil
+	rClient.WaitForIdle()
+	return runErr
 
 }
 
@@ -348,26 +408,45 @@ L:
 		}
 	}
 
+	var runErr error
 	for _, intf := range loppbackIntfs {
 
-		uuid := intf.Status.DSC
+		updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+			workCtx := userCtx.(*cfgWorkCtx)
+			intf := workCtx.cfgObj.(*network.NetworkInterface)
+			uuid := intf.Status.DSC
 
-		loopbackIP, ok := cl.params.NaplesLoopBackIPs[uuid]
-		if !ok {
-			log.Errorf("Error finding loopback IP for %v %v Err: %v", intf.Name, uuid, err)
-			return err
+			loopbackIP, ok := cl.params.NaplesLoopBackIPs[uuid]
+			if !ok {
+				log.Errorf("Error finding loopback IP for %v %v Err: %v", intf.Name, uuid, err)
+				runErr = err
+				return err
+			}
+
+			ipAddr := strings.Split(loopbackIP, "/")[0] + "/32"
+			if intf.Spec.IPConfig != nil && intf.Spec.IPConfig.IPAddress == ipAddr {
+				return nil
+			}
+			intf.Spec.IPAllocType = "static"
+			intf.Spec.IPConfig = &cluster.IPConfig{
+				IPAddress: ipAddr,
+			}
+			idClient := rClient.GetRestClientByID(id)
+			err = idClient.UpdateNetworkInterface(intf)
+			if err != nil {
+				log.Errorf("Error updating loopback interface: %v , Err: %v", intf, err)
+				runErr = err
+				return err
+			}
+
+			return nil
 		}
-		intf.Spec.IPAllocType = "static"
-		intf.Spec.IPConfig = &cluster.IPConfig{
-			IPAddress: strings.Split(loopbackIP, "/")[0] + "/32",
-		}
-		err = rClient.UpdateNetworkInterface(intf)
-		if err != nil {
-			log.Errorf("Error updating loopback interface: %v , Err: %v", intf, err)
-			return err
-		}
+
+		intf := intf
+		rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: intf}, updateWork)
 	}
-	return err
+	rClient.WaitForIdle()
+	return runErr
 }
 
 func (cl *CloudCfg) pushConfigViaRest() error {
@@ -408,13 +487,30 @@ func (cl *CloudCfg) pushConfigViaRest() error {
 			return err
 		}
 
+		var runErr error
 		for _, dsc := range dscs {
-			dsc.Spec.RoutingConfig = r.Name
-			err := rClient.UpdateSmartNIC(dsc)
-			if err != nil {
-				log.Errorf("err: %s", err)
-				return err
+
+			updateWork := func(ctx context.Context, id int, userCtx shardworkers.WorkObj) error {
+				workCtx := userCtx.(*cfgWorkCtx)
+				dsc := workCtx.cfgObj.(*cluster.DistributedServiceCard)
+
+				dsc.Spec.RoutingConfig = r.Name
+				idClient := rClient.GetRestClientByID(id)
+				err := idClient.UpdateSmartNIC(dsc)
+				if err != nil {
+					log.Errorf("err: %s", err)
+					runErr = err
+					return err
+				}
+				return nil
 			}
+			dsc := dsc
+			rClient.RunFunctionWithID(&cfgWorkCtx{cfgObj: dsc}, updateWork)
+
+		}
+		rClient.WaitForIdle()
+		if runErr != nil {
+			return runErr
 		}
 	}
 

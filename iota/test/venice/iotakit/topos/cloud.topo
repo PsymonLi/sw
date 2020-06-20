@@ -2,9 +2,11 @@ model: Cloud
 nodes:
     naples:
         image: ../nic/naples_fw_venice.tar
-        instances: 2
+        min-instances: 2
+        instances: 8
     venice:
         image: ../bin/venice.apulu.tgz
+        min-instances: 1
         instances: 3
 
 

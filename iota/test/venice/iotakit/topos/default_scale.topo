@@ -2,10 +2,12 @@ model: Default
 nodes:
     naples:
         image: ../nic/naples_fw.tar
+        min-instances: 2
         instances: 8
     naples-sim-scale:
         image: ../nic/obj/images/naples-release-v1.tgz
-        instances: 5
+        instances: 1
+        min-instances: 3
         per-node-instances: 200
     venice:
         image: ../bin/venice.tgz

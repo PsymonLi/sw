@@ -370,10 +370,10 @@ func newTestBed(topoName string, paramsFile string, skipSetup bool) (*TestBed, e
 		return nil, fmt.Errorf("Not sufficient params in JSON")
 	}
 
-	if len(params.Instances) < len(topo.Nodes) {
+	/*if len(params.Instances) < len(topo.Nodes) {
 		log.Errorf("Topology requires atleast %d nodes. Testbed has only %d nodes", len(topo.Nodes), len(params.Instances))
 		return nil, fmt.Errorf("Not enough nodes in testbed")
-	}
+	}*/
 
 	// create a testbed instance
 	tb := TestBed{
@@ -489,44 +489,44 @@ func (tb *TestBed) IsMockMode() bool {
 }
 
 // getAvailableInstance returns next instance of a given type
-func (tb *TestBed) getAvailableInstance(instType iota.TestBedNodeType) *InstanceParams {
+func (tb *TestBed) getAvailableInstance(instType iota.TestBedNodeType) (*InstanceParams, error) {
 
 	for idx, inst := range tb.unallocatedInstances {
 		switch instType {
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM:
 			if inst.Type == "vm" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_THIRD_PARTY:
 			if inst.Type == "bm" && inst.Resource.NICType != "pensando" && inst.Resource.NICType != "naples" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_HW:
 			if inst.Type == "bm" && inst.Resource.Network.Address == "" && inst.Tag != "venice" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_MULTI_SIM:
 			if inst.Type == "bm" && inst.Resource.Network.Address != "" && inst.Tag != "venice" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_VENICE_BM:
 			if inst.Type == "bm" && inst.Resource.Network.Address != "" && inst.Tag == "venice" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_VCENTER:
 			if inst.Type == "vm" && inst.Tag == "vcenter" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		case iota.TestBedNodeType_TESTBED_NODE_TYPE_K8S_MASTER:
 			if inst.Type == "vm" {
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		}
 	}
@@ -537,22 +537,21 @@ func (tb *TestBed) getAvailableInstance(instType iota.TestBedNodeType) *Instance
 		inst := &InstanceParams{Type: "vm", Tag: "vcenter",
 			NodeMgmtIP: tb.Params.Provision.Vars["VcenterIP"],
 			Name:       tb.Params.Provision.Vars["VcenterIP"]}
-		return inst
+		return inst, nil
 	}
 
-	log.Fatalf("Could not find any instances of type: %v", instType)
-	return nil
+	return nil, fmt.Errorf("Could not find any instances of type: %v", instType)
 }
 
 // getNaplesInstanceByName which was allocated before
-func (tb *TestBed) getNaplesInstanceByName(name string) *InstanceParams {
+func (tb *TestBed) getNaplesInstanceByName(name string) (*InstanceParams, error) {
 
 	for _, naples := range tb.naplesDataMap {
 		for idx, inst := range tb.unallocatedInstances {
 			if inst.Type == "bm" && naples.Naples == name && inst.ID == naples.ID {
 				log.Infof("Choosing  %v %v %v %v", inst.ID, name, naples.ID, naples.Naples)
 				tb.unallocatedInstances = append(tb.unallocatedInstances[:idx], tb.unallocatedInstances[idx+1:]...)
-				return inst
+				return inst, nil
 			}
 		}
 	}
@@ -1186,16 +1185,23 @@ func (tb *TestBed) AddNodes(personality iota.PersonalityType, names []string) ([
 
 	newNodes := []*TestNode{}
 	var pinst *InstanceParams
+	var err error
 	for _, name := range names {
 
 		nodeType := iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM
 		if IsNaplesHW(personality) {
 			nodeType = iota.TestBedNodeType_TESTBED_NODE_TYPE_HW
-			pinst = tb.getNaplesInstanceByName(name)
+			pinst, err = tb.getNaplesInstanceByName(name)
+			if err != nil {
+				return nil, err
+			}
 		} else if personality == iota.PersonalityType_PERSONALITY_VENICE ||
 			personality == iota.PersonalityType_PERSONALITY_VENICE_BM {
 			nodeType = iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM
-			pinst = tb.getAvailableInstance(iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM)
+			pinst, err = tb.getAvailableInstance(iota.TestBedNodeType_TESTBED_NODE_TYPE_SIM)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// setup node state
@@ -1295,7 +1301,16 @@ func (tb *TestBed) initNodeState() error {
 			bringUpNaples = bringUpNaples - 1
 		}
 
-		pinst := tb.getAvailableInstance(tnode.Type)
+		if tnode.Optional {
+
+		}
+		pinst, err := tb.getAvailableInstance(tnode.Type)
+		if err != nil {
+			if tnode.Optional {
+				continue
+			}
+			return err
+		}
 
 		// setup node state
 		node := TestNode{
@@ -1709,10 +1724,15 @@ func (tb *TestBed) setupTestBed() error {
 		client.CleanUpTestBed(context.Background(), testBedMsg)
 
 		// install image if required
-		if !skipInstall && tb.hasNaplesHW {
+		if tb.hasNaplesHW {
+			if skipInstall {
+				testBedMsg.OnlyReset = true
+				log.Infof("Resetting images on testbed. This may take 10s of minutes...")
+			} else {
+				log.Infof("Installing images on testbed. This may take 10s of minutes...")
+			}
 			//we are reinstalling, reset current mapping
 			tb.resetNaplesCache()
-			log.Infof("Installing images on testbed. This may take 10s of minutes...")
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Hour))
 			defer cancel()
 			instResp, err := client.InstallImage(ctx, testBedMsg)
@@ -1725,6 +1745,7 @@ func (tb *TestBed) setupTestBed() error {
 				log.Errorf("Error during InitTestBed(). ApiResponse: %+v Err: %v", instResp.ApiResponse, err)
 				return fmt.Errorf("Error during install image: %v", instResp.ApiResponse)
 			}
+
 			//Image installed, no need to reinstall on retry
 			os.Setenv("SKIP_INSTALL", "1")
 		}
