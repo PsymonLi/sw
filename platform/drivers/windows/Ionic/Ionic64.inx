@@ -186,7 +186,7 @@ HKR, Ndi\params\*TransmitBuffers,               type,                   0, "dwor
 
 ; *ReceiveBuffers
 HKR, Ndi\params\*ReceiveBuffers,                ParamDesc,              0, %ReceiveBuffers%
-HKR, Ndi\params\*ReceiveBuffers,                default,                0, "4096"
+HKR, Ndi\params\*ReceiveBuffers,                default,                0, "512"
 HKR, Ndi\params\*ReceiveBuffers,                min,                    0, "16"
 HKR, Ndi\params\*ReceiveBuffers,                max,                    0, "16384"
 HKR, Ndi\params\*ReceiveBuffers,                step,                   0, "2"

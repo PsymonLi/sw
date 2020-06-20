@@ -552,7 +552,7 @@ ionic_msi_dpc_handler(NDIS_HANDLE miniport_interrupt_context,
 			}
 			throttle_params->MaxNblsToIndicate = budget;
 
-			ionic_rx_napi( lif, rx_qcq, throttle_params);
+			ionic_rx_napi( lif, rx_qcq, throttle_params, ndis_budget);
 
 			credits = budget - throttle_params->MaxNblsToIndicate;
 		}

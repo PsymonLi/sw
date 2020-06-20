@@ -1066,7 +1066,8 @@ void ionic_rx_filters_deinit(struct lif *lif);
 void
 ionic_rx_napi( struct lif *lif,
 			   struct qcq *qcq,
-			   NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params);
+			   NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params,
+			   unsigned int mini_budget);
 
 void ionic_rq_indicate_bufs(struct lif *lif,
     struct qcqst *qcqst,

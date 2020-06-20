@@ -1382,7 +1382,8 @@ ionic_rx_filters_deinit(struct lif *lif)
 void
 ionic_rx_napi(struct lif *lif,
 			  struct qcq *qcq,
-              NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params)
+			  NDIS_RECEIVE_THROTTLE_PARAMETERS *receive_throttle_params,
+			  unsigned int mini_budget)
 {
     struct cq *rxcq = &qcq->cq;
     u32 rx_work_done = 0;
@@ -1390,10 +1391,12 @@ ionic_rx_napi(struct lif *lif,
     u32 rx_indicate_count = 0;
     PNET_BUFFER_LIST packets_to_indicate = NULL;
 	unsigned int tot_budget = receive_throttle_params->MaxNblsToIndicate;
-	unsigned int mini_budget = lif->ionic->RxMiniBudget;
 	unsigned int budget = 0;
 
-	if (mini_budget != 0) {
+	if (lif->ionic->RxMiniBudget != 0) {
+		budget = lif->ionic->RxMiniBudget;
+	}
+	else if (mini_budget != 0) {
 		budget = mini_budget;
 	}
 	else {
