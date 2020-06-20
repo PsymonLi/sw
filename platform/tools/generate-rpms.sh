@@ -53,6 +53,7 @@ fi
 
 TEMP=$(mktemp -d rpms.XXXXXX)
 tar xf $TARBALL -C $TEMP
+cp $TOPDIR/platfrom/tools/build.sh $TEMP/drivers-linux-eth
 
 count=0
 retcode=0

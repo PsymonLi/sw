@@ -888,6 +888,8 @@ class HostManagement(EntityManagement):
 
         if self.GetNodeOs() == "linux":
             setup_rhel_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', self.__host_os, 'setup_rhel.sh')
+            setup_libs_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', self.__host_os, 'setup_libs.sh')
+            print_cores_script = os.path.join(GlobalOptions.wsdir, 'nic', 'tools', 'print-cores.sh')
         node_init_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', self.__host_os, 'nodeinit.sh')
         pre_node_init_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', self.__host_os, 'pre-nodeinit.sh')
         post_node_init_script = os.path.join(GlobalOptions.wsdir, 'iota', 'scripts', self.__host_os, 'post-nodeinit.sh')
@@ -918,6 +920,8 @@ class HostManagement(EntityManagement):
             self.CopyIN(os.path.join(GlobalOptions.wsdir, driver_pkg), HOST_NAPLES_DIR)
             if self.GetNodeOs() == "linux":
                 self.CopyIN(setup_rhel_script, HOST_NAPLES_DIR)
+                self.CopyIN(setup_libs_script, HOST_NAPLES_DIR)
+                self.CopyIN(print_cores_script, HOST_NAPLES_DIR)
             nodeinit_args = ""
             #Run with not mgmt first
             if gold_fw or not GlobalOptions.no_mgmt:

@@ -126,7 +126,7 @@ function setup_legacy_mgmt_ip() {
     fi 
     echo "Attempting to ping target: $trg_ip"
     if ! (ping -c 5 $trg_ip); then 
-        ./print-cores.sh 
+        ../print-cores.sh 
         exit 12
     fi
 }
@@ -170,7 +170,7 @@ function setup_pci_mgmt_ip() {
             fi
             echo "Attempting to ping target: $mnic_ip"
             if ! (ping -c 5 $mnic_ip); then
-                ./print-cores.sh
+                ../print-cores.sh
                 exit 14
             fi
         done
@@ -225,11 +225,11 @@ else
             rmmod ionic 2> /dev/null || rc=$?
 
             cd /naples/
+            ./setup_libs.sh
             tar xf ${driver_img}
             tmp="${driver_img##*/}"
             dir_name="${tmp%.tar.xz}"
             cd ${dir_name}
-            ./setup_libs.sh
             ./build.sh
     	    
             if [[ $os_str == *"Red Hat"* ]]; 
