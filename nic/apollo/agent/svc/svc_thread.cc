@@ -106,6 +106,7 @@ svc_server_thread_uds_init (void)
     sock_addr.sun_family = AF_UNIX;
     strncpy(sock_addr.sun_path, SVC_SERVER_SOCKET_PATH,
             sizeof(SVC_SERVER_SOCKET_PATH));
+    unlink(sock_addr.sun_path);
     if (bind(g_uds_sock_fd, (struct sockaddr *)&sock_addr,
              sizeof(struct sockaddr_un)) == -1) {
         PDS_TRACE_ERR ("Failed to bind UDS for service thread, err {} {}",
