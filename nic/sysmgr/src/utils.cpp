@@ -233,6 +233,10 @@ void launch(const std::string &name, const std::string &command,
         if (cpuset.length() != 0) {
             cg_add(CG_CPUSET, name.c_str(), pid);
         }
+
+        // Reset signal
+        signal(SIGQUIT, SIG_DFL);
+        
         exec_command(command);
     }
 

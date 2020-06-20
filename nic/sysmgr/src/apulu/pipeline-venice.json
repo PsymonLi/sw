@@ -4,7 +4,7 @@
         "command": "/nic/tools/start-upgmgr.sh",
         "dependencies": [],
         "flags": [],
-        "timeout": 30.0,
+        "timeout": 0.0,
         "cpu-affinity": "0x1"
     },
     {
@@ -12,7 +12,7 @@
         "command": "/nic/bin/pciemgrd -d",
         "dependencies": [],
         "flags": ["critical"],
-        "timeout": 30.0,
+        "timeout": 0.0,
         "cpu-affinity": "0x3"
     },
     {
