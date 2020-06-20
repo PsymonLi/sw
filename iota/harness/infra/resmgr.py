@@ -176,13 +176,14 @@ class TestbedVlanManager(object):
 
 
 class TestbedMultiVlanAllocator(object):
-    def __init__(self, groupId, vlan_base, count, mode):
+    def __init__(self, groupId, vlan_base, count, mode, skipAllocation=False):
         self.__start = vlan_base
         self.__count = count
         self.__groupId = groupId
         self.__vlans = []
         self.__members = {}
         self.__pool = None
+        self.skipAllocation = skipAllocation
         self.Reset()
 
         if mode == 'hostpin':
@@ -192,7 +193,10 @@ class TestbedMultiVlanAllocator(object):
         self.__pool = iter(range(self.__start, self.__start + self.__count))
         return
 
+
     def Alloc(self):
+        if self.skipAllocation:
+            raise Exception("user attempting to allocate with skip allocation set to true")
         try:
             return next(self.__pool) 
         except:

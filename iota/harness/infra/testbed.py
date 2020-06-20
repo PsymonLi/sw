@@ -798,11 +798,19 @@ class _Testbed:
                 return alloc
 
     def __getNextVlanAllocator(self):
-        alloc = self.__multi_vlan_allocators[self.__nextVlanAllocator]
-        self.__nextVlanAllocator += 1
-        if self.__nextVlanAllocator >= len(self.__multi_vlan_allocators):
-            self.__nextVlanAllocator = 0
-        return alloc
+        start = self.__nextVlanAllocator
+        alloc = None
+        while True:
+            if not self.__multi_vlan_allocators[self.__nextVlanAllocator].skipAllocation:
+                alloc = self.__multi_vlan_allocators[self.__nextVlanAllocator]
+            self.__nextVlanAllocator += 1
+            if self.__nextVlanAllocator == start and not alloc:
+                break
+            if self.__nextVlanAllocator >= len(self.__multi_vlan_allocators):
+                self.__nextVlanAllocator = 0
+            if alloc:
+                return alloc
+        raise Exception("could not find any allocators with skipAllocation == False")
 
     def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset):
         if self.GetCurrentTestsuite().GetPortSpeed() == topo_pb2.DataSwitch.Speed_50G:
@@ -836,6 +844,7 @@ class _Testbed:
     def GetMultiVlanAllocators(self):
         return self.__multi_vlan_allocators
 
+
     def SetupVlanGroups(self):
         topo = store.GetTopology()
         vmps = topo.GetVlanMappings()
@@ -845,12 +854,13 @@ class _Testbed:
             vmo = int(len(origVlans)/len(vmps.items()))
             vlans = self.__splitVlans(origVlans, vmo)
             for x, (vgId, vmp) in enumerate(vmps.items()):
+                skipAllocation = getattr(vmp,"skip_allocation", False)
                 vlanRange = vlans[x]
                 vlanRangeString = self.__buildVlanRangeString(vlanRange)
-                for entry in vmp:
+                for entry in vmp.groups:
                     allocator = self.__getVlanAllocatorByGroupId(vgId)
                     if not allocator:
-                        allocator = resmgr.TestbedMultiVlanAllocator(vgId, vlanRange[0], len(vlanRange), "classic")
+                        allocator = resmgr.TestbedMultiVlanAllocator(vgId, vlanRange[0], len(vlanRange), "classic", skipAllocation)
                         allocator.addMember(entry.node, entry.nic, entry.port)
                         self.__addMultiVlanAllocator(allocator)
                     if not allocator.isMember(entry.node, entry.nic, entry.port):

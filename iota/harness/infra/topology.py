@@ -1196,7 +1196,7 @@ class Topology(object):
                     switch_ips[nw.SwitchIP] = switch_ctx
                 switch_ctx.username = nw.SwitchUsername
                 switch_ctx.password = nw.SwitchPassword
-                switch_ctx.speed = nw.Speed
+                switch_ctx.speed = getattr(nw,"Speed",topo_pb2.DataSwitch.Speed_auto)
                 switch_ctx.mtu = 9216
                 switch_ctx.ip = nw.SwitchIP
                 switch_ctx.ports.append(nw.Name)
