@@ -957,7 +957,6 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorS
 
 	ms.programMirrorSession(nmirror)
 
-	defer ms.MirrorSession.Write()
 	if curState == monitoring.MirrorSessionState_SCHEDULED && ms.State == monitoring.MirrorSessionState_SCHEDULED {
 		//nothing has changed w.r.t to scheduling, return
 		return nil
