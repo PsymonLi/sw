@@ -52,6 +52,7 @@ export class BasecardComponent implements OnInit, OnChanges {
   @Input() themeColor: string;
   @Input() statColor: string = '#77a746';
   @Input() backgroundIcon: Icon;
+  @Input() backgroundIconCentered: boolean = false;
   @Input() icon: Icon;
   @Input() lastUpdateTime: string;
   @Input() timeRange: string;

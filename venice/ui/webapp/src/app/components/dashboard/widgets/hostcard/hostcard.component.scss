@@ -1,0 +1,28 @@
+@import 'src/global-mixins';
+
+.dsbdhosts-stat-value {
+  font-size: 60px;
+}
+
+.dsbdhosts-stat-description {
+  white-space: nowrap;
+  @include primary-font(18px);
+  color: #676763;
+}
+
+.dsbdhosts-update-text {
+  @include primary-font(12px, #cccccc);
+  margin-left: 25px;
+  margin-bottom: 6px;
+}
+
+.dsbdhosts-card {
+  position: relative;
+  margin: 10px;
+  width: 240px;
+  height: 240px;
+}
+
+.dsbdhosts-stat {
+  cursor: pointer !important;
+}

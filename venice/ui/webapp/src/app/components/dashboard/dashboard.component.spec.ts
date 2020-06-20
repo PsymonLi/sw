@@ -22,6 +22,7 @@ import { SystemcapacitywidgetComponent } from './widgets/systemcapacity/systemca
 import { NaplesComponent } from './widgets/naples/naples.component';
 import { PolicyhealthComponent } from './widgets/policyhealth/policyhealth.component';
 import { DsbdworkloadComponent } from './widgets/dsbdworkload/dsbdworkload.component';
+import { HostCardComponent } from './widgets/hostcard/hostcard.component';
 
 import { MatIconRegistry } from '@angular/material';
 import { ConfirmationService } from 'primeng/primeng';
@@ -63,6 +64,7 @@ describe('DashboardComponent', () => {
         DummyComponent,
         WorkloadsComponent,
         DsbdcardComponent,
+        HostCardComponent
       ],
       imports: [
 
@@ -93,7 +95,7 @@ describe('DashboardComponent', () => {
         MetricsqueryService,
         ClusterService,
         WorkloadService,
-        FwlogService,
+        FwlogService
       ]
     });
       });
@@ -109,7 +111,6 @@ describe('DashboardComponent', () => {
 
     beforeEach(() => {
       TestingUtility.removeAllPermissions();
-      spyOn(uiconfigService, 'isFeatureEnabled').and.returnValue(false);
     });
 
     it('no permission', () => {
@@ -120,6 +121,7 @@ describe('DashboardComponent', () => {
     });
 
     it('cluster card', () => {
+      spyOn(uiconfigService, 'isFeatureEnabled').and.returnValue(false);
       TestingUtility.addPermissions([UIRolePermissions.clustercluster_read]);
       fixture.detectChanges();
       // metrics should be hidden
@@ -134,6 +136,7 @@ describe('DashboardComponent', () => {
     });
 
     it('naples card', () => {
+      spyOn(uiconfigService, 'isFeatureEnabled').and.returnValue(false);
       TestingUtility.addPermissions([UIRolePermissions.clusterdistributedservicecard_read]);
       fixture.detectChanges();
       // metrics should be hidden
@@ -142,6 +145,7 @@ describe('DashboardComponent', () => {
     });
 
     it('workload card', () => {
+      TestingUtility.setEnterpriseMode();
       TestingUtility.addPermissions([UIRolePermissions.workloadworkload_read, UIRolePermissions.clusterhost_read]);
       fixture.detectChanges();
       // metrics should be hidden
@@ -150,7 +154,17 @@ describe('DashboardComponent', () => {
     });
 
     it('policy health card', () => {
+      TestingUtility.setEnterpriseMode();
       TestingUtility.addPermissions([UIRolePermissions.metrics_read]);
+      fixture.detectChanges();
+      // metrics should be hidden
+      const cards = fixture.debugElement.queryAll(By.css('app-flip'));
+      expect(cards.length).toBe(1);
+    });
+
+    it('host card', () => {
+      TestingUtility.setCloudMode();
+      TestingUtility.addPermissions([UIRolePermissions.clusterhost_read]);
       fixture.detectChanges();
       // metrics should be hidden
       const cards = fixture.debugElement.queryAll(By.css('app-flip'));

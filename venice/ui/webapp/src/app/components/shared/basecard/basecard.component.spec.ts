@@ -6,6 +6,7 @@ import { WidgetsModule } from 'web-app-framework';
 import { MaterialdesignModule } from '@app/lib/materialdesign.module';
 import { DsbdwidgetheaderComponent } from '@app/components/shared/dsbdwidgetheader/dsbdwidgetheader.component';
 import { PrettyDatePipe } from '@app/components/shared/Pipes/PrettyDate.pipe';
+import { FlexLayoutModule } from '@angular/flex-layout';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SpinnerComponent } from '../spinner/spinner.component';
 import { Router } from '@angular/router';
@@ -31,6 +32,7 @@ describe('HerocardComponent', () => {
         WidgetsModule,
         MaterialdesignModule,
         NoopAnimationsModule,
+        FlexLayoutModule
       ],
       providers: [
         { provide: Router, useValue: mockRouter },

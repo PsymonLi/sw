@@ -1,5 +1,5 @@
 <div fxLayout="column" fxLayoutGap="10px" *ngIf="!hideOldWidgets">
-  <div fxFlex="none" fxLayout="row" fxLayoutGap="10px">
+  <div *featureGuard="'enterprise'" fxFlex="none" fxLayout="row" fxLayoutGap="10px">
     <app-dsbdworkloads *roleGuard="{ req: ['workloadworkload_read', 'clusterhost_read']}"
                        fxFlex="none"></app-dsbdworkloads>
     <app-dsbdpolicyhealth *roleGuard="'metrics_read'" fxFlex="none"></app-dsbdpolicyhealth>
@@ -14,6 +14,10 @@
     </app-dsbdsystemcapacitywidget>
     <app-dsbdnapleswidget *roleGuard="'clusterdistributedservicecard_read'" fxFlex="none">
     </app-dsbdnapleswidget>
+  </div>
+  <div *featureGuard="'cloud'" fxFlex="none" fxLayout="row" fxLayoutGap="10px">
+    <app-dsbdhosts *roleGuard="'clusterhost_read'" [lastUpdateTime]="lastUpdateTime" fxFlex="none">
+    </app-dsbdhosts>
   </div>
 </div>
 <div fxLayout="row" *ngIf="hideOldWidgets" style="flex-wrap: wrap">

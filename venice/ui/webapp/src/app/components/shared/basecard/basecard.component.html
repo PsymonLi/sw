@@ -3,8 +3,8 @@
      (mouseenter)="hasHover = true"
      (mouseleave)="hasHover = false"
      class="basecard-container">
-  <div [@fade] *ngIf="backgroundIcon" class="basecard-background" fxLayout="row"
-       fxLayoutAlign="start center">
+  <div [@fade] *ngIf="backgroundIcon" class="basecard-background"
+       fxLayout="row" [fxLayoutAlign]="backgroundIconCentered ? 'center center' : 'start center'">
     <mat-icon fxFlex="none" *ngIf="backgroundIcon.svgIcon" [style.color]="themeColor"
               [svgIcon]="backgroundIcon.svgIcon" class="basecard-background-icon">
     </mat-icon>
