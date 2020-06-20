@@ -29,7 +29,7 @@ source /nic/tools/copy_ssh_pub_keys.sh
 # POST
 if [[ -f $SYSCONFIG/post_disable ]]; then
     echo "Skipping Power On Self Test (POST)"
-else
+elif [[ -f $PDSPKG_TOPDIR/bin/diag_test ]]; then
     echo "Running Power On Self Test (POST) ..."
     ($PDSPKG_TOPDIR/bin/diag_test post 2>&1 > $NON_PERSISTENT_LOG_DIR/post_report_`date +"%Y%m%d-%T"`.txt; echo > /tmp/.post_done) &
 fi
