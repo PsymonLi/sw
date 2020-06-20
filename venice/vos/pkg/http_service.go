@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/ratelimit"
 
 	"github.com/go-martini/martini"
@@ -266,7 +267,7 @@ func (h *httpHandler) minioMetricsHandler(minioKey, minioSecret string) func(w h
 		}
 
 		metricsReq, err := http.NewRequest("GET",
-			fmt.Sprintf("http://%s:%s/minio/prometheus/metrics", "localhost", globals.VosMinioPort), nil)
+			fmt.Sprintf("https://%s:%s/minio/prometheus/metrics", k8s.GetPodIP(), globals.VosMinioPort), nil)
 		if err != nil {
 			h.writeError(w, http.StatusInternalServerError, fmt.Sprintf("error in creating metrics request (%s)", err))
 			return
