@@ -118,26 +118,26 @@ expiry_submap_process(uint32_t submap_id,
                       uint8_t submap,
                       void *user_ctx);
 pds_ret_t
-init(void)
+init(pds_cinit_params_t *params)
 {
     client_queue_t  *queue;
     pds_ret_t       ret = PDS_RET_OK;
 
     if (rte_atomic16_test_and_set(&module_inited)) {
-        ret = ftl_dev_impl::init();
+        ret = ftl_dev_impl::init(params);
         if (ret != PDS_RET_OK) {
             PDS_TRACE_ERR("init failed: error %d", ret);
             return ret;
         }
 
-        ret = ftl_dev_impl::pollers_qcount_get(&pollers_qcount);
-        if (ret != PDS_RET_OK) {
-            PDS_TRACE_ERR("pollers_qcount_get failed: error %d", ret);
-            return ret;
-        }
-        PDS_TRACE_DEBUG("pollers_qcount %u", pollers_qcount);
+        if (params->flow_age_pid == getpid()) {
+            ret = ftl_dev_impl::pollers_qcount_get(&pollers_qcount);
+            if (ret != PDS_RET_OK) {
+                PDS_TRACE_ERR("pollers_qcount_get failed: error %d", ret);
+                return ret;
+            }
+            PDS_TRACE_DEBUG("pollers_qcount %u", pollers_qcount);
 
-        if (nicmgr_shm_is_cpp_pid(FTL)) {
             queue = &client_queue[0];
             for (uint32_t qid = 0; qid < FTL_POLLERS_MAX_QUEUES; qid++, queue++) {
                 queue->qid = qid;

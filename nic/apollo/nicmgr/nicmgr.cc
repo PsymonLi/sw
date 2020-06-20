@@ -106,8 +106,12 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     g_devmgr = new DeviceManager(&cfg);
     SDK_ASSERT(g_devmgr);
     if (upg_init_mode == upg_mode_t::UPGRADE_MODE_NONE) {
-        g_devmgr->Init(&cfg);
-        g_devmgr->LoadProfile(device_cfg_file, init_pci);
+        if (sdk::asic::asic_is_hard_init()) {
+            g_devmgr->Init(&cfg);
+            g_devmgr->LoadProfile(device_cfg_file, init_pci);
+        } else {
+            g_devmgr->SoftInit(&cfg);
+        }
     } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
         g_devmgr->UpgradeGracefulInit(&cfg);
         // upg_init below does the state loading

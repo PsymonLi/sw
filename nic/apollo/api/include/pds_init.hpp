@@ -46,8 +46,6 @@ typedef struct pds_init_params_s {
                                                 ///< files under \<cfg_path\>/pipeline/
                                                 ///< are picked by the software
     pds_event_cb_t            event_cb;         ///< callback registered for events
-    // TODO: @ksmurty please have this cleaned up
-    pid_t                     flow_age_pid;     ///< designated process to do flow aging
 } pds_init_params_t;
 
 

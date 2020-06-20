@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 //------------------------------------------------------------------------------
+#include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,6 +9,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/test/api/utils/base.hpp"
 #include "nic/sdk/lib/utils/time_profile.hpp"
+#include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/test/athena/api/include/ftl_scale.hpp"
@@ -16,7 +18,7 @@
 
 extern "C" {
 // Function prototypes
-pds_ret_t pds_flow_cache_create(void);
+pds_ret_t pds_flow_cache_create(pds_cinit_params_t *params);
 void pds_flow_cache_delete(void);
 void pds_flow_cache_set_core_id(uint32_t core_id);
 }
@@ -48,9 +50,12 @@ protected:
     }
 
     void SetUp() {
+        pds_cinit_params_t init_params;
         ftl_scale_base::SetUp();
         flow_mock_init();
-        pds_flow_cache_create();
+        memset(&init_params, 0, sizeof(init_params));
+        init_params.flow_age_pid = getpid();
+        pds_flow_cache_create(&init_params);
         pds_flow_cache_set_core_id(2);
         t_info.start();
     }

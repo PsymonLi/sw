@@ -11,6 +11,7 @@
 #include "ftl_dev_impl.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/athena/include/p4pd.h"
+#include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/event.hpp"
 
 namespace ftl_dev_impl {
@@ -86,7 +87,7 @@ qtype_queue_ctl(enum ftl_qtype qtype)
 
 
 static pds_ret_t dev_identify(void);
-static pds_ret_t lif_init(void);
+static pds_ret_t lif_init(pds_cinit_params_t *params);
 static pds_ret_t attr_age_tmo_set(enum lif_attr attr,
                                   const pds_flow_age_timeouts_t *attr_age_tmo);
 static pds_ret_t attr_age_tmo_get(enum lif_attr attr,
@@ -126,8 +127,22 @@ static void age_tmo_cfg_unlock(void *user_arg,
 static pds_ret_t ftl_status_2_pds_ret(ftl_status_code_t ftl_status);
 
 
+void
+ftl_dev_create_thread_spawn(void)
+{
+    core::spawn_nicmgr_thread(&api::g_pds_state);
+}
+
+void
+ftl_dev_create_thread_wait_ready(void)
+{
+    while (!core::is_nicmgr_ready()) {
+        pthread_yield();
+    }
+}
+
 pds_ret_t
-init(void)
+init(pds_cinit_params_t *params)
 {
     DeviceManager       *devmgr_if;
     pds_ret_t           ret = PDS_RET_OK;
@@ -141,11 +156,16 @@ init(void)
                                 "failed to locate devmgr_if");
 
         ftl_dev = (FtlDev *)devmgr_if->GetDevice("ftl");
-        SDK_ASSERT_TRACE_RETURN(ftl_dev, PDS_RET_ENTRY_NOT_FOUND,
-                                "failed to locate ftl device");
+        if (!ftl_dev) {
+            SDK_ASSERT_TRACE_RETURN(params->flow_age_pid != getpid(),
+                                    PDS_RET_ENTRY_NOT_FOUND,
+                                    "failed to locate ftl device");
+            return PDS_RET_OK;
+        }
+
         ret = dev_identify();
         if (ret == PDS_RET_OK) {
-            ret = lif_init();
+            ret = lif_init(params);
         }
     }
     return ret;
@@ -154,7 +174,7 @@ init(void)
 void
 fini(void)
 {
-    if (lif_init_done() && nicmgr_shm_is_cpp_pid(FTL)) {
+    if (lif_init_done()) {
         scanners_stop(true);
         if (mpu_timestamp_ctl()) {
             mpu_timestamp_ctl()->stop(true);
@@ -391,15 +411,13 @@ dev_identify(void)
     SDK_ASSERT_TRACE_RETURN(ftl_lif, PDS_RET_ERR,
                             "LIF at index 0 not found");
     if (sdk::asic::asic_is_hard_init()) {
-        ret = (pds_ret_t)nicmgr_shm_base_lif_id_set(FTL, ftl_lif->LifIdGet());
-        SDK_ASSERT_TRACE_RETURN(ret == PDS_RET_OK, ret,
-                                "failed nicmgr_shm lif ID set");
+        ftl_dev->shm_base_lif_id_set(ftl_lif->LifIdGet());
     }
     return ret;
 }
 
 static pds_ret_t
-lif_init(void)
+lif_init(pds_cinit_params_t *params)
 {
     devcmd_t        devcmd(ftl_lif);
     pds_ret_t       ret = PDS_RET_OK;
@@ -462,9 +480,7 @@ lif_init(void)
             }
 
             if (sdk::asic::asic_is_hard_init() && (ret == PDS_RET_OK)) {
-                ret = (pds_ret_t)nicmgr_shm_lif_fully_created_set(FTL);
-                SDK_ASSERT_TRACE_RETURN(ret == PDS_RET_OK, ret,
-                                        "failed nicmgr_shm set");
+                ftl_dev->shm_lif_fully_inited_set(true);
             }
 
             /*
@@ -473,7 +489,7 @@ lif_init(void)
              * program will start them.
              */
             if (platform_is_hw(platform_type) &&
-                nicmgr_shm_is_cpp_pid(FTL)) {
+                (params->flow_age_pid == getpid())) {
 
                 if (mpu_timestamp_ctl() && (ret == PDS_RET_OK)) {
                     ret = mpu_timestamp_ctl()->start(&devcmd_qinit);

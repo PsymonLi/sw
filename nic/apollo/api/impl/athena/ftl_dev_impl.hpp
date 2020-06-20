@@ -26,6 +26,7 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/include/athena/pds_base.h"
+#include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/sdk/lib/ipc/ipc.hpp"
 
@@ -33,7 +34,6 @@
 #include "platform/src/lib/nicmgr/include/dev.hpp"
 #include "platform/src/lib/nicmgr/include/ftl_dev.hpp"
 #include "platform/src/lib/nicmgr/include/ftl_lif.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
 
 /*
  * Max devcmd retry timeout
@@ -42,7 +42,9 @@
 
 namespace ftl_dev_impl {
 
-pds_ret_t init(void);
+void ftl_dev_create_thread_spawn(void);
+void ftl_dev_create_thread_wait_ready(void);
+pds_ret_t init(pds_cinit_params_t *params);
 void fini(void);
 pds_ret_t pollers_qcount_get(uint32_t *ret_qcount);
 pds_ret_t scanners_start(void);

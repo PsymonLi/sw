@@ -1771,6 +1771,7 @@ main (int argc, char **argv)
     memset(&init_params, 0, sizeof(init_params));
     init_params.init_mode = PDS_CINIT_MODE_COLD_START;
     init_params.trace_cb  = (void*) core::sdk_logger;
+    init_params.flow_age_pid  = getpid();
 /*
     init_params.pipeline  = pipeline;
     init_params.cfg_file  = cfg_file;

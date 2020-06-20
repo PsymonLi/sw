@@ -21,6 +21,7 @@
 #include <inttypes.h>
 #include <sys/time.h>
 
+#include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/include/ftl_dev_if.hpp"
 
@@ -32,7 +33,7 @@ namespace ftl_pollers_client {
 
 extern volatile uint8_t user_will_poll_;
 
-pds_ret_t init(void);
+pds_ret_t init(pds_cinit_params_t *params);
 void fini(void);
 uint32_t qcount_get(void);
 pds_ret_t expiry_fn_dflt(pds_flow_expiry_fn_t *ret_fn_dflt);

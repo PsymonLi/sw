@@ -15,9 +15,9 @@
 extern "C" {
 
 pds_ret_t
-pds_flow_age_init(void)
+pds_flow_age_init(pds_cinit_params_t *params)
 {
-    return ftl_pollers_client::init();
+    return ftl_pollers_client::init(params);
 }
 
 void

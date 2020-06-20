@@ -13,6 +13,7 @@
 #define __PDS_FLOW_AGE_H__
 
 #include "pds_base.h"
+#include "pds_init.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,11 +48,12 @@ typedef pds_ret_t (*pds_flow_expiry_fn_t)(uint32_t expiry_id,
                                           void *user_ctx);
 
 /// \brief     Initialize flow aging module
+/// \param[in] params pds init parameters
 /// \return    #PDS_RET_OK on success, failure status code on error
 /// \remark    This function implements one-time initialization of the flow aging
 /// \remark    module. Calling the same function multiple times will have no
 /// \remark    adverse effects and simply be treated as no-op.
-pds_ret_t pds_flow_age_init(void);
+pds_ret_t pds_flow_age_init(pds_cinit_params_t *params);
 
 /// \brief     Finalize flow aging module
 /// \return    #PDS_RET_OK on success, failure status code on error

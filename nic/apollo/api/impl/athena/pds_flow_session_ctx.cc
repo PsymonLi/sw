@@ -84,17 +84,17 @@ public:
         fini();
     }
 
-    pds_ret_t init(void);
+    pds_ret_t init(pds_cinit_params_t *params);
     void fini(void);
 
     inline ctx_entry_t *ctx_entry_get(uint32_t session_id)
     {
-        return session_id < session_prop.tabledepth ?
+        return ctx_table && (session_id < session_prop.tabledepth) ?
                &ctx_table[session_id] : nullptr;
     }
     inline ctx_lock_t *ctx_lock_get(uint32_t session_id)
     {
-        return session_id < session_prop.tabledepth ?
+        return ctx_lock && (session_id < session_prop.tabledepth) ?
                &ctx_lock[session_id] : nullptr;
     }
 
@@ -126,7 +126,7 @@ private:
 static session_ctx_t            session_ctx;
 
 pds_ret_t
-session_ctx_t::init(void)
+session_ctx_t::init(pds_cinit_params_t *params)
 {
     p4pd_error_t    p4pd_error;
 
@@ -149,44 +149,55 @@ session_ctx_t::init(void)
     }
     PDS_TRACE_DEBUG("Session context init session depth %u cache depth %u",
                     session_prop.tabledepth, cache_prop.tabledepth);
+    /*
+     * Session contexts assumed not needed when flow aging is not enabled
+     * for the current process (memory saving).
+     */
+#ifdef __aarch64__
+    if (params->flow_age_pid == getpid()) {
+#endif
+
 #ifdef FLOW_SESSION_CTX_MODE_HBM
-    uint64_t hbm_paddr = api::g_pds_state.mempartition()->start_addr(
-                                          FLOW_SESSION_CTX_HBM_HANDLE);
-    uint32_t hbm_bytes = api::g_pds_state.mempartition()->size(
-                                          FLOW_SESSION_CTX_HBM_HANDLE);
-    uint32_t table_bytes = sizeof(ctx_entry_t) * session_prop.tabledepth;
-    if ((hbm_paddr == INVALID_MEM_ADDRESS) || (hbm_bytes < table_bytes)) {
-        PDS_TRACE_ERR("failed to obtain enough HBM for %s",
-                      FLOW_SESSION_CTX_HBM_HANDLE);
-        return PDS_RET_NO_RESOURCE;
-    }
-    if (!platform_is_hw(platform_type)) {
-        PDS_TRACE_ERR("Platform must be HW to use HBM");
-        return PDS_RET_ERR;
-    }
-    ctx_table = (ctx_entry_t *)sdk::lib::pal_mem_map(hbm_paddr, table_bytes);
-    if (!ctx_table) {
-        PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " size %u",
-                      hbm_paddr, table_bytes);
-        return PDS_RET_ERR;
-    }
-    memset((void *)ctx_table, 0, table_bytes);
+        uint64_t hbm_paddr = api::g_pds_state.mempartition()->start_addr(
+                                              FLOW_SESSION_CTX_HBM_HANDLE);
+        uint32_t hbm_bytes = api::g_pds_state.mempartition()->size(
+                                              FLOW_SESSION_CTX_HBM_HANDLE);
+        uint32_t table_bytes = sizeof(ctx_entry_t) * session_prop.tabledepth;
+        if ((hbm_paddr == INVALID_MEM_ADDRESS) || (hbm_bytes < table_bytes)) {
+            PDS_TRACE_ERR("failed to obtain enough HBM for %s",
+                          FLOW_SESSION_CTX_HBM_HANDLE);
+            return PDS_RET_NO_RESOURCE;
+        }
+        if (!platform_is_hw(platform_type)) {
+            PDS_TRACE_ERR("Platform must be HW to use HBM");
+            return PDS_RET_ERR;
+        }
+        ctx_table = (ctx_entry_t *)sdk::lib::pal_mem_map(hbm_paddr, table_bytes);
+        if (!ctx_table) {
+            PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " size %u",
+                          hbm_paddr, table_bytes);
+            return PDS_RET_ERR;
+        }
+        memset((void *)ctx_table, 0, table_bytes);
 #else
-    ctx_table = (ctx_entry_t *)SDK_CALLOC(SDK_MEM_ALLOC_FLOW_SESSION_CTX,
-                                          session_prop.tabledepth *
-                                          sizeof(ctx_entry_t));
-    if (!ctx_table) {
-        PDS_TRACE_ERR("fail to allocate ctx_table");
-        return PDS_RET_OOM;
+        ctx_table = (ctx_entry_t *)SDK_CALLOC(SDK_MEM_ALLOC_FLOW_SESSION_CTX,
+                                              session_prop.tabledepth *
+                                              sizeof(ctx_entry_t));
+        if (!ctx_table) {
+            PDS_TRACE_ERR("fail to allocate ctx_table");
+            return PDS_RET_OOM;
+        }
+#endif
+        ctx_lock = (ctx_lock_t *)SDK_CALLOC(SDK_MEM_ALLOC_FLOW_SESSION_CTX,
+                                            session_prop.tabledepth *
+                                            sizeof(ctx_lock_t));
+        if (!ctx_lock) {
+            PDS_TRACE_ERR("fail to allocate ctx_lock");
+            return PDS_RET_OOM;
+        }
+#ifdef __aarch64__
     }
 #endif
-    ctx_lock = (ctx_lock_t *)SDK_CALLOC(SDK_MEM_ALLOC_FLOW_SESSION_CTX,
-                                        session_prop.tabledepth *
-                                        sizeof(ctx_lock_t));
-    if (!ctx_lock) {
-        PDS_TRACE_ERR("fail to allocate ctx_lock");
-        return PDS_RET_OOM;
-    }
     return PDS_RET_OK;
 }
 
@@ -215,9 +226,9 @@ extern "C" {
 #endif
 
 pds_ret_t
-pds_flow_session_ctx_init(void)
+pds_flow_session_ctx_init(pds_cinit_params_t *params)
 {
-    return session_ctx.init();
+    return session_ctx.init(params);
 }
 
 void

@@ -5,6 +5,7 @@
  *
  */
 
+#include <unistd.h>
 #include <pds_init.h>
 #include <sched.h>
 #include <getopt.h>
@@ -32,6 +33,7 @@ int setup ( )
     init_params.init_mode = PDS_CINIT_MODE_COLD_START;
     init_params.trace_cb  = myprintf;
     init_params.flags = PDS_FLAG_INIT_TYPE_SOFT;
+    init_params.flow_age_pid  = getpid();
 
     ret = pds_global_init(&init_params);
     if (ret != PDS_RET_OK) {

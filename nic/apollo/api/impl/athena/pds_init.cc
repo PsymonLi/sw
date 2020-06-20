@@ -16,14 +16,14 @@
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 #include "nic/sdk/asic/asic.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
+#include "ftl_dev_impl.hpp"
 
 using namespace sdk;
 using namespace sdk::asic;
 
 extern "C" {
 // Function prototypes
-sdk_ret_t pds_flow_cache_create(void);
+sdk_ret_t pds_flow_cache_create(pds_cinit_params_t *params);
 void pds_flow_cache_delete(void);
 void pds_flow_cache_set_core_id(uint32_t core_id);
 #ifndef P4_14
@@ -41,7 +41,7 @@ pds_global_init (pds_cinit_params_t *params)
     sdk_ret_t           ret;
     pds_init_params_t   params_cpp;
     asic_init_type_t    asic_init_type = ASIC_INIT_TYPE_HARD;
-
+    bool                is_flow_age_pid;
 
     if (params == NULL) {
         PDS_TRACE_ERR("params arg is null");
@@ -59,7 +59,6 @@ pds_global_init (pds_cinit_params_t *params)
 #else
      params_cpp.cfg_file = "hal.json";
 #endif
-    params_cpp.flow_age_pid = params->flow_age_pid;
 
     if (params->flags & PDS_FLAG_INIT_TYPE_SOFT) {
         asic_init_type = ASIC_INIT_TYPE_SOFT;
@@ -73,12 +72,20 @@ pds_global_init (pds_cinit_params_t *params)
         return (pds_ret_t)ret;
     }
 
+    is_flow_age_pid = (params->flow_age_pid == getpid());
     if (asic::asic_is_soft_init()) {
-        PDS_TRACE_ERR("PDS soft init done\n");
-        //return (pds_ret_t)ret;
+        if (is_flow_age_pid) {
+
+            // In hard-init mode, nicmgr thread would have been launched
+            // from pds_init() above. Otherwise, if the current soft process
+            // is designated for flow aging, nicmgr thread needs to be
+            // spawned here to create the FTL device.
+            ftl_dev_impl::ftl_dev_create_thread_spawn();
+        }
+        PDS_TRACE_DEBUG("PDS soft init done\n");
     }
 
-    ret = pds_flow_cache_create();
+    ret = pds_flow_cache_create(params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Flow cache init failed with ret %u\n", ret);
         return (pds_ret_t)ret;
@@ -98,10 +105,13 @@ pds_global_init (pds_cinit_params_t *params)
 
     // In hard init mode, pds_flow_age_init() will drive the FTL lif
     // initialization but will stop short of starting the scanners.
-    // The process designated as CPP for FTL will continue that
+    // The process designated for aging will continue that
     // initialization the rest of the way.
-    if (asic::asic_is_hard_init() || nicmgr_shm_is_cpp_pid(FTL)) {
-        ret = (sdk_ret_t)pds_flow_age_init();
+    if (is_flow_age_pid || asic::asic_is_hard_init()) {
+        if (asic::asic_is_soft_init()) {
+            ftl_dev_impl::ftl_dev_create_thread_wait_ready();
+        }
+        ret = (sdk_ret_t)pds_flow_age_init(params);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Flow aging init failed with ret %u\n", ret);
         }

@@ -13,7 +13,6 @@
 
 #include "nic/include/base.hpp"
 #include "nic/sdk/platform/misc/include/misc.h"
-#include "nicmgr_shm_cpp.hpp"
 
 #include "logger.hpp"
 #include "ftl_dev.hpp"
@@ -50,46 +49,38 @@
 FtlDev::FtlDev(devapi *dapi,
                void *dev_spec,
                PdClient *pd_client,
+               uint32_t lif_base,
                EV_P) :
     spec((ftl_devspec_t *)dev_spec),
     pd(pd_client),
     dev_api(dapi),
-    lif_base(0),
+    shm_mem(nicmgr_shm::getInstance()),
+    lif_base(lif_base),
+    dtor_lif_free(false),
     delphi_mounted(false),
     EV_A(EV_A)
 {
     ftl_lif_res_t       lif_res;
     sdk_ret_t           ret = SDK_RET_OK;
-    ftl_timestamp_t     ts;
+
+    dev_pstate = (ftldev_pstate_t *)
+                 shm_mem->alloc_find_pstate(FTL_DEV_NAME, sizeof(*dev_pstate));
+    if (!dev_pstate) {
+        NIC_LOG_ERR("{}: Failed to locate memory for pstate", DevNameGet());
+        throw;
+    }
 
     /*
-     * Allocate LIFs
+     * Allocate LIFs if necessary
      */
-    if (sdk::asic::asic_is_hard_init()) {
+    if (!lif_base) {
+        new (dev_pstate) ftldev_pstate_t(spec);
         ret = pd->lm_->alloc_id(&lif_base, spec->lif_count);
         if (ret != SDK_RET_OK) {
             NIC_LOG_ERR("{}: Failed to allocate lifs. ret: {}", DevNameGet(), ret);
             throw;
         }
-
-    } else if (nicmgr_shm_is_cpp_pid(FTL)) {
-        ts.time_expiry_set(FTL_DEV_LIF_CREATE_TIME_US);
-        while (!nicmgr_shm_lif_fully_created(FTL)) {
-            if (ts.time_expiry_check()) {
-                NIC_LOG_ERR("{}: Failed to locate lifs", DevNameGet());
-                throw;
-            }
-
-            /*
-             * Inside nicmgr init thread so it's ok to sleep
-             */
-            usleep(100000);
-        }
-        lif_base = nicmgr_shm_base_lif_id(FTL);
-
-    } else {
-        NIC_LOG_DEBUG("{}: creation skipped", DevNameGet());
-        return;
+        dtor_lif_free = true;
     }
 
     NIC_LOG_DEBUG("{}: lif_base {} lif_count {}",
@@ -106,14 +97,73 @@ FtlDev::FtlDev(devapi *dapi,
         throw;
     }
     lif_vec.push_back(lif);
+}
+
+FtlDev *
+FtlDev::SoftFtlDev(devapi *dapi,
+                   PdClient *pd_client,
+                   EV_P)
+{
+    nicmgr_shm          *shm_mem = nicmgr_shm::getInstance();
+    FtlDev              *dev;
+    ftldev_pstate_t     *dev_pstate;
+    ftl_devspec_t       *spec;
+    ftl_timestamp_t     ts;
+    uint32_t            lif_base;
+
+    dev_pstate = (ftldev_pstate_t *)
+                 shm_mem->alloc_find_pstate(FTL_DEV_NAME, sizeof(*dev_pstate));
+    if (!dev_pstate) {
+        NIC_LOG_DEBUG("No pstate memory for {} - skipping soft init",
+                      FTL_DEV_NAME);
+        return nullptr;
+    }
+
+    ts.time_expiry_set(FTL_DEV_LIF_CREATE_TIME_US);
+    while (!dev_pstate->lif_fully_inited()) {
+        if (ts.time_expiry_check()) {
+            NIC_LOG_ERR("Failed to locate lifs for {}", FTL_DEV_NAME);
+            throw;
+        }
+
+        /*
+         * Inside nicmgr init thread so it's ok to sleep
+         */
+        usleep(100000);
+    }
+
+    lif_base = dev_pstate->base_lif_id();
+    if (!lif_base) {
+        NIC_LOG_ERR("Invalid base_lif_id for {}", FTL_DEV_NAME);
+        throw;
+    }
+
+    spec = new struct ftl_devspec;
+    memset(spec, 0, sizeof(*spec));
+
+    spec->name.assign(dev_pstate->name);
+    spec->lif_count = dev_pstate->lif_count;
+    spec->session_hw_scanners = dev_pstate->session_hw_scanners;
+    spec->session_burst_size = dev_pstate->session_burst_size;
+    spec->session_burst_resched_time_us = dev_pstate->session_burst_resched_time_us;
+    spec->conntrack_hw_scanners = dev_pstate->conntrack_hw_scanners;
+    spec->conntrack_burst_size = dev_pstate->conntrack_burst_size;
+    spec->conntrack_burst_resched_time_us = dev_pstate->conntrack_burst_resched_time_us;
+    spec->sw_pollers = dev_pstate->sw_pollers;
+    spec->sw_poller_qdepth = dev_pstate->sw_poller_qdepth;
+
+    dev = new FtlDev(dapi, spec, pd_client, lif_base, EV_A);
+    if (!dev) {
+        NIC_LOG_ERR("Failed to create device for {}", FTL_DEV_NAME);
+        throw;
+    }
 
     /*
      * HAL can be considered as up at this point for soft init
-     * (by virtue of nicmgr_shm_lif_fully_created() above)
+     * (by virtue of lif_fully_created() above)
      */
-    if (sdk::asic::asic_is_soft_init() && nicmgr_shm_is_cpp_pid(FTL)) {
-        lif->HalEventHandler(true);
-    }
+    dev->HalEventHandler(true);
+    return dev;
 }
 
 FtlDev::~FtlDev()
@@ -125,7 +175,7 @@ FtlDev::~FtlDev()
         delete lif;
     }
     lif_vec.clear();
-    if (sdk::asic::asic_is_hard_init()) {
+    if (dtor_lif_free) {
         pd->lm_->free_id(lif_base, spec->lif_count);
     }
 }
@@ -162,8 +212,8 @@ FtlDev::SetHalClient(devapi *dapi)
 struct ftl_devspec *
 FtlDev::ParseConfig(boost::property_tree::ptree::value_type node)
 {
-    ftl_devspec *ftl_spec;
-    auto        val = node.second;
+    ftl_devspec_t           *ftl_spec;
+    auto                    val = node.second;
 
     ftl_spec = new struct ftl_devspec;
     memset(ftl_spec, 0, sizeof(*ftl_spec));
@@ -178,10 +228,7 @@ FtlDev::ParseConfig(boost::property_tree::ptree::value_type node)
     ftl_spec->conntrack_burst_resched_time_us = val.get<uint32_t>("conntrack_burst_resched_time_us");
     ftl_spec->sw_pollers = val.get<uint32_t>("sw_pollers");
     ftl_spec->sw_poller_qdepth = val.get<uint32_t>("sw_poller_qdepth");
-
-    ftl_spec->qos_group = val.get<string>("qos_group", "DEFAULT");
-    NIC_LOG_DEBUG("Creating FTL device with name: {}, qos_group: {}",
-                  ftl_spec->name, ftl_spec->qos_group);
+    NIC_LOG_DEBUG("Creating FTL device with name: {}", ftl_spec->name);
 
     return ftl_spec;
 }

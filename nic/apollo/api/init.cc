@@ -32,7 +32,6 @@
 #include "nic/apollo/api/upgrade_state.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/nicmgr/nicmgr.hpp"
-#include "platform/src/lib/nicmgr/include/nicmgr_shm_cpp.hpp"
 #include "platform/sysmon/sysmon.hpp"
 #include "nic/sdk/platform/asicerror/interrupts.hpp"
 #include "nic/apollo/api/internal/monitor.hpp"
@@ -388,21 +387,6 @@ spawn_feature_threads (void)
     }
 }
 
-// @ksmurty please remove these hacks and move to athena specific
-// code
-static void
-spawn_soft_threads (void)
-{
-    if (nicmgr_shm_is_cpp_pid_any_dev()) {
-
-        // spawn nicmgr thread
-        core::spawn_nicmgr_thread(&api::g_pds_state);
-        while (!core::is_nicmgr_ready()) {
-            pthread_yield();
-        }
-    }
-}
-
 }    // namespace api
 
 std::string
@@ -495,8 +479,6 @@ pds_init (pds_init_params_t *params)
     api::asic_global_config_init(params, &asic_cfg);
     asic_cfg.device_profile = &device_profile;
 
-    nicmgr_shm_init(params);
-
     // skip the threads, ports and monitoring if it is soft initialization
     if (sdk::asic::asic_is_hard_init()) {
         // upgrade init
@@ -546,11 +528,6 @@ pds_init (pds_init_params_t *params)
     } else {
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
-
-        // spawn soft init threads, if any
-        // @ksmurty please remove these hacks and move to athena specific
-        // code
-        api::spawn_soft_threads();
 
     }
     return SDK_RET_OK;

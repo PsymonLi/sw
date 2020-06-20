@@ -119,6 +119,7 @@ public:
 
     // init functions
     void Init(devicemgr_cfg_t *cfg);
+    void SoftInit(devicemgr_cfg_t *cfg);
     void UpgradeGracefulInit(devicemgr_cfg_t *cfg);
     void UpgradeHitlessInit(devicemgr_cfg_t *cfg);
 
@@ -130,6 +131,7 @@ public:
     Device *GetDevice(std::string name);
     Device *GetDeviceByLif(uint32_t lif_id);
     void AddDevice(DeviceType type, void *dev_spec);
+    void SoftAddDevice(DeviceType type);
     void DeleteDevices();
     sdk_ret_t RemoveDevice(std::string name);
     void RestoreDeviceGraceful(DeviceType type, void *dev_state);

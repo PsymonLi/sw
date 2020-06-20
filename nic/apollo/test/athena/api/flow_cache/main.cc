@@ -8,6 +8,7 @@
 /// This file contains the all flow cache test cases for athena
 ///
 //----------------------------------------------------------------------------
+#include <unistd.h>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
@@ -19,7 +20,7 @@
 
 extern "C" {
 // Function prototypes
-sdk_ret_t pds_flow_cache_create(void);
+sdk_ret_t pds_flow_cache_create(pds_cinit_params_t *params);
 void pds_flow_cache_delete(void);
 void pds_flow_cache_set_core_id(uint32_t core_id);
 }
@@ -39,12 +40,15 @@ protected:
     virtual ~flow_cache_test() {}
     
     virtual void SetUp() {
+        pds_cinit_params_t init_params;
         SDK_TRACE_INFO("============== SETUP : %s.%s ===============",
                        ::testing::UnitTest::GetInstance()->current_test_info()->test_case_name(),
                        ::testing::UnitTest::GetInstance()->current_test_info()->name());
         
         flow_mock_init();
-        pds_flow_cache_create();
+        memset(&init_params, 0, sizeof(init_params));
+        init_params.flow_age_pid = getpid();
+        pds_flow_cache_create(&init_params);
         pds_flow_cache_set_core_id(2);
     }
     virtual void TearDown() {

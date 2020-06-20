@@ -19,7 +19,6 @@
 #include "nic/sdk/platform/misc/include/maclib.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 #include "nic/sdk/platform/mnet/include/mnet.h"
-#include "nicmgr_shm_cpp.hpp"
 
 #include "logger.hpp"
 
@@ -143,28 +142,31 @@ void
 DeviceManager::Init(devicemgr_cfg_t *cfg) {
     PlatformInit(cfg);
     HalLifIDReserve();
-
-    // Note: some pipelines (such as athena) can support certain nicmgr
-    // devices even in soft init mode, in which case, the device LIFs
-    // will be rebuilt from HW state.
-    if (sdk::asic::asic_is_hard_init()) {
-        LifsReset();
-        PciemgrInit(cfg);
-        HeartbeatStart();
-    }
+    LifsReset();
+    PciemgrInit(cfg);
+    HeartbeatStart();
     this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Init Done");
+}
+
+void
+DeviceManager::SoftInit(devicemgr_cfg_t *cfg) {
+    PlatformInit(cfg);
+    HalLifIDReserve();
+    this->shm_mem = nicmgr_shm::factory(false);
+#ifdef ATHENA
+    SoftAddDevice(FTL);
+#endif
+    NIC_HEADER_TRACE("DeviceManager SoftInit Done");
 }
 
 void
 DeviceManager::UpgradeGracefulInit(devicemgr_cfg_t *cfg) {
     PlatformInit(cfg);
     HalLifIDReserve();
-    if (sdk::asic::asic_is_hard_init()) {
-        LifsReset();
-        PciemgrInit(cfg);
-        HeartbeatStart();
-    }
+    LifsReset();
+    PciemgrInit(cfg);
+    HeartbeatStart();
     this->shm_mem = nicmgr_shm::factory(true);
     NIC_HEADER_TRACE("DeviceManager Graceful Init Done");
 }
@@ -649,11 +651,6 @@ DeviceManager::LoadProfile(string device_json_file, bool init_pci)
 void
 DeviceManager::AddDevice(DeviceType type, void *dev_spec)
 {
-    // In soft init mode, create the device only for CPP process.
-    if (sdk::asic::asic_is_soft_init() && !nicmgr_shm_is_cpp_pid(type)) {
-        return;
-    }
-
     switch (type) {
     case DEBUG:
         NIC_LOG_ERR("Unsupported Device Type DEBUG");
@@ -713,9 +710,29 @@ DeviceManager::AddDevice(DeviceType type, void *dev_spec)
 #ifdef ATHENA
     case FTL: {
         //TODO: Add Bus type for FtlDev
-        FtlDev *ftl_dev = new FtlDev(dev_api, dev_spec, pd, EV_A);
+        FtlDev *ftl_dev = new FtlDev(dev_api, dev_spec, pd, 0, EV_A);
         ftl_dev->SetType(type);
         devices[ftl_dev->GetName()] = ftl_dev;
+        break;
+    }
+#endif
+    default:
+        break;
+    }
+}
+
+void
+DeviceManager::SoftAddDevice(DeviceType type)
+{
+    switch (type) {
+
+#ifdef ATHENA
+    case FTL: {
+        FtlDev *ftl_dev = FtlDev::SoftFtlDev(dev_api, pd, EV_A);
+        if (ftl_dev) {
+            ftl_dev->SetType(type);
+            devices[ftl_dev->GetName()] = ftl_dev;
+        }
         break;
     }
 #endif
@@ -985,7 +1002,7 @@ DeviceManager::DeviceCreate(bool status) {
     skip_hwinit = true;
 #endif
 
-    if (status && sdk::asic::asic_is_hard_init()) {
+    if (status) {
         /* Create local devices creation thread */
         mnet_list = new vector<struct mnet_dev_create_req_t *>;
         for (auto it = devices.begin(); it != devices.end(); it++) {

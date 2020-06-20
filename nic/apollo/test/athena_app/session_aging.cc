@@ -444,15 +444,12 @@ session_aging_expiry_fn(uint32_t expiry_id,
 bool
 session_aging_init(test_vparam_ref_t vparam)
 {
-    pds_ret_t   ret;
-
-    // Start with init() in case that had never been done
-    ret = pds_flow_age_init();
+    pds_ret_t   ret = PDS_RET_OK;
 
     // On SIM platform, the following needs to be set early
     // before scanners are started to prevent lockup in scanners
     // due to the lack of true LIF timers in SIM.
-    if (!hw() && SESSION_RET_VALIDATE(ret)) {
+    if (!hw()) {
         ret = ftl_pollers_client::force_session_expired_ts_set(true);
     }
     if (SESSION_RET_VALIDATE(ret)) {

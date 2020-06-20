@@ -117,11 +117,11 @@ flow_cache_entry_setup_key (flow_hash_entry_t *entry,
 }
 
 sdk_ret_t
-pds_flow_cache_create ()
+pds_flow_cache_create (pds_cinit_params_t *params)
 {
     sdk_table_factory_params_t factory_params = { 0 };
 
-    sdk_ret_t ret = (sdk_ret_t)pds_flow_session_ctx_init();
+    sdk_ret_t ret = (sdk_ret_t)pds_flow_session_ctx_init(params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Session context init failed with ret %u\n", ret);
         return ret;
