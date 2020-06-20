@@ -174,8 +174,6 @@ const (
 	TransceiverStatus_SFP_25GBASE_CR_S TransceiverStatus_Pid = 3
 	TransceiverStatus_SFP_25GBASE_CR_L TransceiverStatus_Pid = 4
 	TransceiverStatus_SFP_25GBASE_CR_N TransceiverStatus_Pid = 5
-	TransceiverStatus_QSFP_50G_CR2_FC  TransceiverStatus_Pid = 6
-	TransceiverStatus_QSFP_50G_CR2     TransceiverStatus_Pid = 7
 	// Fiber, grouping all together
 	TransceiverStatus_QSFP_100G_AOC    TransceiverStatus_Pid = 50
 	TransceiverStatus_QSFP_100G_ACC    TransceiverStatus_Pid = 51
@@ -208,8 +206,6 @@ var TransceiverStatus_Pid_name = map[int32]string{
 	3:    "SFP_25GBASE_CR_S",
 	4:    "SFP_25GBASE_CR_L",
 	5:    "SFP_25GBASE_CR_N",
-	6:    "QSFP_50G_CR2_FC",
-	7:    "QSFP_50G_CR2",
 	50:   "QSFP_100G_AOC",
 	51:   "QSFP_100G_ACC",
 	52:   "QSFP_100G_SR4",
@@ -240,8 +236,6 @@ var TransceiverStatus_Pid_value = map[string]int32{
 	"SFP_25GBASE_CR_S": 3,
 	"SFP_25GBASE_CR_L": 4,
 	"SFP_25GBASE_CR_N": 5,
-	"QSFP_50G_CR2_FC":  6,
-	"QSFP_50G_CR2":     7,
 	"QSFP_100G_AOC":    50,
 	"QSFP_100G_ACC":    51,
 	"QSFP_100G_SR4":    52,
