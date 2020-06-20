@@ -530,10 +530,43 @@ l2seg_pd_depgm_ifs_inp_prop_tbl(l2seg_t *l2seg)
                 uplink_if = find_if_by_handle(*p_hdl_id);
                 if_idx = uplink_if_get_idx(uplink_if);
                 shared_l2seg_hdl = l2seg->other_shared_mgmt_l2seg_hdl[if_idx];
+                if (shared_l2seg_hdl != HAL_HANDLE_INVALID) {
+                    shared_l2seg = l2seg_lookup_by_handle(shared_l2seg_hdl);
+                    shared_l2seg->other_shared_mgmt_l2seg_hdl[0] = HAL_HANDLE_INVALID;
+                    HAL_TRACE_DEBUG("detaching shared mgmt l2seg: l2seg:{} <-> l2seg:{}::if:{}",
+                                    shared_l2seg->seg_id, l2seg->seg_id, uplink_if->if_id);
+                    up_args.l2seg = shared_l2seg;
+                    up_args.intf = uplink_if;
+                    ret = l2seg_uplink_upd_input_properties_tbl(&up_args, 0, NULL, 0, NULL);
+                    if (ret != HAL_RET_OK) {
+                        HAL_TRACE_ERR("Unable to update input properties for "
+                                      "(l2seg:{}, uplink:{}). ret: {}",
+                                      shared_l2seg->seg_id, uplink_if->if_id, ret);
+                    }
+                    l2seg_pd->inp_prop_tbl_idx[if_idx] = INVALID_INDEXER_INDEX;
+                    l2seg_pd->inp_prop_tbl_idx_pri[if_idx] = INVALID_INDEXER_INDEX;
+
+                    HAL_TRACE_DEBUG("l2seg mgmt:{} <-> cust:{}:if_id:{} is becoming detached. "
+                                    "Repgm ENICs and EPs in mgmt", 
+                                    shared_l2seg->seg_id, l2seg->seg_id,
+                                    uplink_if->if_id);
+                    ret = l2seg_repgm_mgmt_enics_eps(shared_l2seg, NULL);
+                    if (ret != HAL_RET_OK) {
+                        HAL_TRACE_ERR("Unable to repgm enics and eps in "
+                                      "mgmt l2seg. err: {}", ret);
+                    }
+                }
+            }
+        } else {
+            vrf = vrf_lookup_by_handle(l2seg->vrf_handle);
+            uplink_if = find_if_by_handle(vrf->designated_uplink);
+            if_idx = uplink_if_get_idx(uplink_if);
+            shared_l2seg_hdl = l2seg->other_shared_mgmt_l2seg_hdl[0];
+            if (shared_l2seg_hdl != HAL_HANDLE_INVALID) {
                 shared_l2seg = l2seg_lookup_by_handle(shared_l2seg_hdl);
-                shared_l2seg->other_shared_mgmt_l2seg_hdl[0] = HAL_HANDLE_INVALID;
+                shared_l2seg->other_shared_mgmt_l2seg_hdl[if_idx] = HAL_HANDLE_INVALID;
                 HAL_TRACE_DEBUG("detaching shared mgmt l2seg: l2seg:{} <-> l2seg:{}::if:{}",
-                                shared_l2seg->seg_id, l2seg->seg_id, uplink_if->if_id);
+                                l2seg->seg_id, shared_l2seg->seg_id, uplink_if->if_id);
                 up_args.l2seg = shared_l2seg;
                 up_args.intf = uplink_if;
                 ret = l2seg_uplink_upd_input_properties_tbl(&up_args, 0, NULL, 0, NULL);
@@ -545,38 +578,10 @@ l2seg_pd_depgm_ifs_inp_prop_tbl(l2seg_t *l2seg)
                 l2seg_pd->inp_prop_tbl_idx[if_idx] = INVALID_INDEXER_INDEX;
                 l2seg_pd->inp_prop_tbl_idx_pri[if_idx] = INVALID_INDEXER_INDEX;
 
-                HAL_TRACE_DEBUG("l2seg mgmt:{} <-> cust:{}:if_id:{} is becoming detached. "
-                                "Repgm ENICs and EPs in mgmt", 
-                                shared_l2seg->seg_id, l2seg->seg_id,
-                                uplink_if->if_id);
-                ret = l2seg_repgm_mgmt_enics_eps(shared_l2seg, NULL);
-                if (ret != HAL_RET_OK) {
-                    HAL_TRACE_ERR("Unable to repgm enics and eps in "
-                                  "mgmt l2seg. err: {}", ret);
-                }
+                // De-program Cust. EPs classic reg mac entries
+                ret = l2seg_program_cust_eps_reg_mac(shared_l2seg, l2seg, false, 
+                                                     if_idx, TABLE_OPER_REMOVE);
             }
-        } else {
-            vrf = vrf_lookup_by_handle(l2seg->vrf_handle);
-            uplink_if = find_if_by_handle(vrf->designated_uplink);
-            if_idx = uplink_if_get_idx(uplink_if);
-            shared_l2seg_hdl = l2seg->other_shared_mgmt_l2seg_hdl[0];
-            shared_l2seg = l2seg_lookup_by_handle(shared_l2seg_hdl);
-            shared_l2seg->other_shared_mgmt_l2seg_hdl[if_idx] = HAL_HANDLE_INVALID;
-            HAL_TRACE_DEBUG("detaching shared mgmt l2seg: l2seg:{} <-> l2seg:{}::if:{}",
-                            l2seg->seg_id, shared_l2seg->seg_id, uplink_if->if_id);
-            up_args.l2seg = shared_l2seg;
-            up_args.intf = uplink_if;
-            ret = l2seg_uplink_upd_input_properties_tbl(&up_args, 0, NULL, 0, NULL);
-            if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("Unable to update input properties for "
-                              "(l2seg:{}, uplink:{}). ret: {}",
-                              shared_l2seg->seg_id, uplink_if->if_id, ret);
-            }
-            l2seg_pd->inp_prop_tbl_idx[if_idx] = INVALID_INDEXER_INDEX;
-            l2seg_pd->inp_prop_tbl_idx_pri[if_idx] = INVALID_INDEXER_INDEX;
-
-            // De-program Cust. EPs classic reg mac entries
-            ret = l2seg_program_cust_eps_reg_mac(shared_l2seg, l2seg, false, if_idx, TABLE_OPER_REMOVE);
         }
     } else {
         for (int i = 0; i < HAL_MAX_UPLINK_IF_PCS; i++) {
