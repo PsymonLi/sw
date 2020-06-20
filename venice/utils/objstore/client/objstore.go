@@ -154,11 +154,26 @@ func (c *client) initCredentialManager(clientName string) error {
 		c.credentialsManager = vminio.NewAPIServerBasedCredsManager(c.apiClient.ClusterV1())
 		return nil
 	}
-	apiClient, err := getAPIClient(c.resolverClient, clientName)
-	if err != nil {
+
+	retryCount := 0
+	done := false
+	var err error
+
+	for !done && retryCount < c.connRetries {
+		retryCount = retryCount + 1
+		apiClient, err := getAPIClient(c.resolverClient, clientName)
+		if err == nil {
+			done = true
+			c.credentialsManager = vminio.NewAPIServerBasedCredsManager(apiClient.ClusterV1())
+		} else {
+			time.Sleep(time.Second)
+			objsLog.Infof("Failed to initialize API client. retrying..")
+		}
+	}
+	if !done || retryCount == c.connRetries {
 		return errors.Wrap(err, "Failed to initialize API client")
 	}
-	c.credentialsManager = vminio.NewAPIServerBasedCredsManager(apiClient.ClusterV1())
+
 	return nil
 }
 
