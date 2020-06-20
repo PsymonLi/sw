@@ -316,10 +316,10 @@ vcn_subnet = subnet.SubnetObject( vcn_subnet_id, vcn_vpc_id, ipaddress.IPv4Netwo
 
 # Create VNIC object
 # id, subnetid, vpcid, macaddr, hostifindex, sourceguard=False, fabricencap='NONE', fabricencapid=1, rxmirrorid = [], txmirrorid = []
-vnic1 = vnic.VnicObject(1, 1, subnet1_local_vnic_mac, subnet1_host_if_idx, False, 'VXLAN', subnet1_fabric_encap, node_uuid=node_uuid, primary=True )
-vnic3 = vnic.VnicObject(3, 3, subnet3_local_vnic_mac, subnet3_host_if_idx, False, 'VXLAN', subnet3_fabric_encap, node_uuid=node_uuid, primary=True, vlan=subnet3_vlan )
-vnic4 = vnic.VnicObject(4, 4, subnet4_local_vnic_mac, subnet4_host_if_idx, False, 'VXLAN', subnet4_fabric_encap, node_uuid=node_uuid, primary=True )
-vnic5 = vnic.VnicObject(5, 5, subnet5_local_vnic_mac, subnet5_host_if_idx, False, 'VXLAN', subnet5_fabric_encap, node_uuid=node_uuid, primary=True )
+vnic1 = vnic.VnicObject(1, 1, subnet1_local_vnic_mac, subnet1_host_if_idx, False, 'VXLAN', subnet1_fabric_encap, node_uuid=node_uuid, primary=True, hostname='hostname1' )
+vnic3 = vnic.VnicObject(3, 3, subnet3_local_vnic_mac, subnet3_host_if_idx, False, 'VXLAN', subnet3_fabric_encap, node_uuid=node_uuid, primary=True, hostname='hostname2', vlan=subnet3_vlan )
+vnic4 = vnic.VnicObject(4, 4, subnet4_local_vnic_mac, subnet4_host_if_idx, False, 'VXLAN', subnet4_fabric_encap, node_uuid=node_uuid, primary=True, hostname='hostname3' )
+vnic5 = vnic.VnicObject(5, 5, subnet5_local_vnic_mac, subnet5_host_if_idx, False, 'VXLAN', subnet5_fabric_encap, node_uuid=node_uuid, primary=True, hostname='hostname4' )
 
 # Create VCN VNIC object
 vcn_vnic = vnic.VnicObject(vcn_vnic_id, vcn_subnet_id, vcn_vnic_mac, vcn_host_if_idx, False, 'VXLAN', vcn_subnet_encap, node_uuid=node_uuid )
