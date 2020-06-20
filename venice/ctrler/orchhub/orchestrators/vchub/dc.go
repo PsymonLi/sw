@@ -125,7 +125,7 @@ func (v *VCHub) RemovePenDC(dcName string) {
 		v.deleteWorkload(&workload.Workload)
 	}
 
-	hosts := v.pCache.ListHosts(v.Ctx)
+	hosts := v.pCache.ListHosts(v.Ctx, false)
 	for _, host := range hosts {
 		if utils.IsObjForOrch(host.Labels, v.OrchConfig.Name, dcName) {
 			v.deleteHostStateFromDc(host, existingDC, true)

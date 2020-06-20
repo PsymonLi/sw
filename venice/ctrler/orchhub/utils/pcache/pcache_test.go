@@ -117,7 +117,7 @@ func TestPcache(t *testing.T) {
 	AssertEquals(t, entryWorkload, entry, "Get from pcache returned different values")
 	AssertEquals(t, "val1", entryWorkload.Labels[key1], "Workload not in pcache")
 
-	retWorkloads := pCache.ListWorkloads(context.Background())
+	retWorkloads := pCache.ListWorkloads(context.Background(), false)
 	AssertEquals(t, 1, len(retWorkloads), "Number of workloads did not match")
 	AssertEquals(t, expWorkload, retWorkloads[expWorkload.GetKey()], "Get from pcache returned different values")
 
@@ -220,7 +220,7 @@ func TestPcache(t *testing.T) {
 	retHost = pCache.GetHostByName(expMeta.Name)
 	AssertEquals(t, expHost, retHost, "Get from pcache returned different values")
 
-	retHosts := pCache.ListHosts(context.Background())
+	retHosts := pCache.ListHosts(context.Background(), false)
 	AssertEquals(t, 1, len(retHosts), "Number of hosts did not match")
 	AssertEquals(t, expHost, retHosts[expHost.GetKey()], "Get from pcache returned different values")
 

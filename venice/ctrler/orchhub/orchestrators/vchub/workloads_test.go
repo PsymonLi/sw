@@ -1574,6 +1574,150 @@ func TestWorkloads(t *testing.T) {
 				AssertEquals(t, expWorkload.ObjectMeta, item.ObjectMeta, "workloads are not same")
 			},
 		},
+		{
+			name: "workload with last host create",
+			events: []defs.Probe2StoreMsg{
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.VirtualMachine,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "virtualmachine-41",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.VirtualMachineConfigInfo{
+									Hardware: types.VirtualHardware{
+										Device: []types.BaseVirtualDevice{
+											generateVNIC("aa:bb:cc:dd:ee:ff", "10", "PG1", "E1000e"),
+											generateVNIC("aa:bb:cc:dd:dd:ff", "11", "PG2", "E1000"),
+										},
+									},
+								},
+							},
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "runtime",
+								Val: types.VirtualMachineRuntimeInfo{
+									Host: &types.ManagedObjectReference{
+										Type:  "HostSystem",
+										Value: "hostsystem-21",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-21",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.HostConfigInfo{
+									Network: &types.HostNetworkInfo{
+										Pnic: []types.PhysicalNic{
+											types.PhysicalNic{
+												Mac: macStr,
+												Key: "pnic-2",
+											},
+										},
+										ProxySwitch: []types.HostProxySwitch{
+											types.HostProxySwitch{
+												DvsName: dvsName,
+												Pnic:    []string{"pnic-1", "pnic-2"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				mockProbe := mock.NewMockProbeInf(mockCtrl)
+				vchub.probe = mockProbe
+				mockProbe.EXPECT().AddPenPG(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+				mockProbe.EXPECT().GetPGConfig(dcName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, fmt.Errorf("doesn't exist")).AnyTimes()
+				mockProbe.EXPECT().GetPenPG(dcName, gomock.Any(), gomock.Any()).Return(&object.DistributedVirtualPortgroup{
+					Common: object.NewCommon(nil,
+						types.ManagedObjectReference{
+							Type:  string(defs.DistributedVirtualPortgroup),
+							Value: "PG-10",
+						}),
+				}, nil).AnyTimes()
+				mockProbe.EXPECT().TagObjAsManaged(gomock.Any()).Return(nil).AnyTimes()
+				mockProbe.EXPECT().TagObjWithVlan(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+				mockProbe.EXPECT().UpdateDVSPortsVlan(dcName, dvsName, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+				// Setup state for DC1
+				addDCState(t, vchub, dcName)
+
+				orchInfo := []*network.OrchestratorInfo{
+					{
+						Name:      vchub.VcID,
+						Namespace: dcName,
+					},
+				}
+				statemgr.CreateNetwork(vchub.StateMgr, "default", "PG1", "10.1.1.0/24", "10.1.1.1", 100, nil, orchInfo)
+				addPGState(t, vchub, dcName, CreatePGName("PG1"), "PG1", "PG1")
+
+				statemgr.CreateNetwork(vchub.StateMgr, "default", "PG2", "10.1.1.0/24", "10.1.1.1", 200, nil, orchInfo)
+				addPGState(t, vchub, dcName, CreatePGName("PG2"), "PG2", "PG2")
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				expMeta := &api.ObjectMeta{
+					Name:      v.createVMWorkloadName(dcName, "virtualmachine-41"),
+					Tenant:    globals.DefaultTenant,
+					Namespace: globals.DefaultNamespace,
+				}
+				expWorkload := &workload.Workload{
+					TypeMeta: api.TypeMeta{
+						Kind:       "Workload",
+						APIVersion: "v1",
+					},
+					ObjectMeta: *expMeta,
+					Spec: workload.WorkloadSpec{
+						Interfaces: []workload.WorkloadIntfSpec{
+							workload.WorkloadIntfSpec{
+								MACAddress:  "aabb.ccdd.ddff",
+								Network:     "PG2",
+								IpAddresses: []string{},
+							},
+							workload.WorkloadIntfSpec{
+								MACAddress:  "aabb.ccdd.eeff",
+								Network:     "PG1",
+								IpAddresses: []string{},
+							},
+						},
+					},
+				}
+				workloadAPI := v.StateMgr.Controller().Workload()
+				AssertEventually(t, func() (bool, interface{}) {
+					item, err := workloadAPI.Find(expMeta)
+					return item != nil, err
+				}, "Workload not in pcache/statemgr")
+
+				item, _ := workloadAPI.Find(expMeta)
+				Assert(t, item != nil, "Workload not in statemgr")
+				Assert(t, item.ObjectMeta.Name == expWorkload.ObjectMeta.Name, "workloads are not same")
+				for i, inf := range item.Spec.Interfaces {
+					Assert(t, inf.MicroSegVlan != 0, "Useg was not set for inf %s", inf.MACAddress)
+					expWorkload.Spec.Interfaces[i].MicroSegVlan = inf.MicroSegVlan
+				}
+				AssertEquals(t, expWorkload.Spec.Interfaces, item.Spec.Interfaces, "Interfaces were not equal")
+			},
+		},
 	}
 
 	runStoreTC(t, testCases)

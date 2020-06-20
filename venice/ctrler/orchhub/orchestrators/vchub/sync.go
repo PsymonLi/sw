@@ -56,7 +56,7 @@ func (v *VCHub) sync() bool {
 		v.Log.Errorf("Failed to get network list. Err : %v", err)
 	}
 
-	hosts := v.pCache.ListHosts(v.Ctx)
+	hosts := v.pCache.ListHosts(v.Ctx, false)
 
 	workloads, err := v.StateMgr.Controller().Workload().List(v.Ctx, &opts)
 	if err != nil {

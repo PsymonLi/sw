@@ -143,6 +143,32 @@ func (v *VCHub) validateWorkload(in interface{}) (bool, bool) {
 	return true, true
 }
 
+func (v *VCHub) rebuildWorkload(workloadName string) {
+	// Get object from pcache, and build an empty event for handleVM to process.
+	wlObj := v.pCache.GetWorkloadByName(workloadName)
+	if wlObj == nil {
+		v.Log.Errorf("No pcache entry for %s", wlObj.Name)
+	}
+	dcName := v.getDCNameForHost(wlObj.Spec.HostName)
+	labelDc := v.GetDC(dcName)
+	if labelDc == nil {
+		v.Log.Errorf("Failed to get DC obj for DC %s for workload %s", dcName, wlObj.Name)
+		return
+	}
+
+	evt := defs.VCEventMsg{
+		VcObject:   defs.VirtualMachine,
+		Key:        utils.ParseGlobalKey(v.OrchID, "", workloadName),
+		DcID:       labelDc.dcRef.Value,
+		DcName:     labelDc.Name,
+		Originator: v.VcID,
+		Changes:    []types.PropertyChange{},
+	}
+	// TODO: this function is called by hosts.go.
+	// Might need to be changed to be repushed to the store channel when worker sharding is added
+	v.handleVM(evt)
+}
+
 func (v *VCHub) handleVM(m defs.VCEventMsg) {
 	v.Log.Infof("Got handle vm event for %s in DC %s", m.Key, m.DcName)
 	meta := &api.ObjectMeta{
@@ -590,6 +616,11 @@ func (v *VCHub) resyncWorkload(wlObj *workload.Workload) {
 	}
 	labelDc := v.GetDC(labelDcName)
 
+	if labelDc == nil {
+		v.Log.Errorf("Failed to get DC obj for DC %s for workload %s", labelDcName, wlObj.Name)
+		return
+	}
+
 	m := defs.VCEventMsg{
 		VcObject:   defs.VirtualMachine,
 		Key:        vm.Self.Value,
@@ -636,7 +667,6 @@ func (v *VCHub) resyncWorkload(wlObj *workload.Workload) {
 
 	m = v.convertWorkloadToEvent(dc.dcRef.Value, dc.Name, vm)
 	v.handleVM(m)
-	// ResyncVMTags emits a store event. Don't call from store thread
 	if m, err := v.probe.ResyncVMTags(vm.Self.Value); err == nil {
 		v.handleVM(m.Val.(defs.VCEventMsg))
 	}

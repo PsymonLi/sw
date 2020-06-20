@@ -122,7 +122,7 @@ func (p *PCache) GetWorkloadByName(wlName string) *workload.Workload {
 }
 
 // ListWorkloads  gets all workloads in pcache + statemgr
-func (p *PCache) ListWorkloads(ctx context.Context) map[string]*workload.Workload {
+func (p *PCache) ListWorkloads(ctx context.Context, pcacheOnly bool) map[string]*workload.Workload {
 	p.RLock()
 	kindMap := p.kinds[WorkloadKind]
 	p.RUnlock()
@@ -134,6 +134,10 @@ func (p *PCache) ListWorkloads(ctx context.Context) map[string]*workload.Workloa
 			items[key] = entry.(*workload.Workload)
 		}
 		kindMap.Unlock()
+	}
+
+	if pcacheOnly {
+		return items
 	}
 
 	ctkitWorkloads, err := p.stateMgr.Controller().Workload().List(ctx, &api.ListWatchOptions{})
@@ -179,7 +183,7 @@ func (p *PCache) GetHostByName(hostName string) *cluster.Host {
 }
 
 // ListHosts gets all hosts in pcache + statemgr
-func (p *PCache) ListHosts(ctx context.Context) map[string]*cluster.Host {
+func (p *PCache) ListHosts(ctx context.Context, pcacheOnly bool) map[string]*cluster.Host {
 	p.RLock()
 	kindMap := p.kinds[HostKind]
 	p.RUnlock()
@@ -191,6 +195,10 @@ func (p *PCache) ListHosts(ctx context.Context) map[string]*cluster.Host {
 			items[key] = entry.(*cluster.Host)
 		}
 		kindMap.Unlock()
+	}
+
+	if pcacheOnly {
+		return items
 	}
 
 	ctkitHosts, err := p.stateMgr.Controller().Host().List(ctx, &api.ListWatchOptions{})

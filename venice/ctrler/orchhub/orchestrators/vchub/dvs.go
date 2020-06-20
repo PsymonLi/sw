@@ -332,7 +332,7 @@ func (v *VCHub) verifyOverridesOnDVS(dvs *PenDVS, forceWrite bool) {
 		currOverrides[portKey] = int(vlanSpec.VlanId)
 	}
 
-	workloads := v.pCache.ListWorkloads(v.Ctx)
+	workloads := v.pCache.ListWorkloads(v.Ctx, false)
 	workloadOverride := map[string]int{}
 	for _, workload := range workloads {
 		if !utils.IsObjForOrch(workload.Labels, v.VcID, dcName) {

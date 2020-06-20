@@ -8,7 +8,6 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/cluster"
-	"github.com/pensando/sw/api/generated/workload"
 	"github.com/pensando/sw/events/generated/eventtypes"
 	"github.com/pensando/sw/venice/ctrler/orchhub/orchestrators/vchub/defs"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
@@ -126,7 +125,14 @@ func (v *VCHub) handleHost(m defs.VCEventMsg) {
 		// Check if there are any stale hosts with the same DSC
 		v.fixStaleHost(hostObj)
 		v.pCache.Set(string(cluster.KindHost), hostObj)
-		v.pCache.RevalidateKind(string(workload.KindWorkload))
+		pcacheWorkloads := v.pCache.ListWorkloads(v.Ctx, true)
+		// TODO: Keep a host -> workload mapping for better performance.
+		// This should be done when host -> MAC mapping is added for non-pensando oui
+		for _, wl := range pcacheWorkloads {
+			if wl.Spec.HostName == hostObj.Name {
+				v.rebuildWorkload(wl.Name)
+			}
+		}
 	}
 
 	penDVS, _ := v.penDVSForVcHost(m.DcName, hConfig)
@@ -231,7 +237,7 @@ func (v *VCHub) fixStaleHost(host *cluster.Host) error {
 	// TODO: If host was moved from one VCenter to another, we can just check if it has
 	// some VC association and do the same?? (linked VC case)
 	// List hosts
-	hosts := v.pCache.ListHosts(v.Ctx)
+	hosts := v.pCache.ListHosts(v.Ctx, false)
 	var hostFound *cluster.Host
 	var matchingDSC string
 searchHosts:
@@ -341,7 +347,7 @@ func (v *VCHub) deleteHostStateFromDc(obj *cluster.Host, penDC *PenDC, deleteObj
 // DeleteHosts deletes all host objects from API server for this VCHub instance
 func (v *VCHub) DeleteHosts() {
 	// List hosts
-	hosts := v.pCache.ListHosts(v.Ctx)
+	hosts := v.pCache.ListHosts(v.Ctx, false)
 	for _, host := range hosts {
 		if !utils.IsObjForOrch(host.Labels, v.VcID, "") {
 			// Filter out hosts not for this Orch

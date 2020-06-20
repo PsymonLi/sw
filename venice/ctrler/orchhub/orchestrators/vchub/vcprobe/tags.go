@@ -689,7 +689,7 @@ func (t *tagsProbe) fetchTags() {
 	}
 }
 
-// ResyncVMTags resends tag events to the probeCh for the given vm
+// ResyncVMTags returns the tags for the given vm
 func (t *tagsProbe) ResyncVMTags(vmID string) (defs.Probe2StoreMsg, error) {
 	t.vmTagMapLock.Lock()
 	oldTags, ok := t.vmTagMap[vmID]
