@@ -37,7 +37,7 @@ typedef enum pds_if_state_e {
 /// \brief LLDP interface statistics
 typedef struct pds_if_lldp_stats_s {
     uint32_t tx_count;        ///< transmitted pkts
-    uint32_t rx_Count;        ///< received pkts
+    uint32_t rx_count;        ///< received pkts
     uint32_t rx_discarded;    ///< rx discarded pkts
     uint32_t rx_unrecognized; ///< rx unrecognized pkts
     uint32_t ageout_count;    ///< count of entry aged out

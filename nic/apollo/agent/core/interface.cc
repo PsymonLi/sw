@@ -395,10 +395,119 @@ interface_lldp_status_get (uint16_t lif_id, pds_if_lldp_status_t *lldp_status)
     return(SDK_RET_OK);
 }
 
+static sdk_ret_t
+lldp_stats_parse_json (pds_if_lldp_stats_t *lldp_stats,
+                       std::string lldp_stats_file)
+{
+    pt::ptree json_pt;
+    string    str;
+
+    // parse the lldp stats output json file
+    if (access(lldp_stats_file.c_str(), R_OK) < 0) {
+        PDS_TRACE_ERR("{} doesn't exist or not accessible\n", lldp_stats_file.c_str());
+        return SDK_RET_ERR;
+    }
+    std::ifstream json_cfg(lldp_stats_file.c_str());
+    read_json(json_cfg, json_pt);
+
+    try {
+        BOOST_FOREACH (pt::ptree::value_type &lldp,
+                       json_pt.get_child("lldp")) {
+            BOOST_FOREACH (pt::ptree::value_type &iface,
+                           lldp.second.get_child("interface")) {
+                str = iface.second.get<std::string>("name", "");
+                if (str.empty()) {
+                    PDS_TRACE_ERR("  No interface entry");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &tx,
+                               iface.second.get_child("tx")) {
+                    lldp_stats->tx_count = tx.second.get<uint32_t>("tx");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &rx,
+                               iface.second.get_child("rx")) {
+                    lldp_stats->rx_count = rx.second.get<uint32_t>("rx");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &rx_discarded,
+                               iface.second.get_child("rx_discarded_cnt")) {
+                    lldp_stats->rx_discarded =
+                        rx_discarded.second.get<uint32_t>("rx_discarded_cnt");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &rx_unrecognized,
+                               iface.second.get_child("rx_unrecognized_cnt")) {
+                    lldp_stats->rx_unrecognized =
+                        rx_unrecognized.second.get<uint32_t>("rx_unrecognized_cnt");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &ageout,
+                               iface.second.get_child("ageout_cnt")) {
+                    lldp_stats->ageout_count =
+                        ageout.second.get<uint32_t>("ageout_cnt");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &insert,
+                               iface.second.get_child("insert_cnt")) {
+                    lldp_stats->insert_count =
+                        insert.second.get<uint32_t>("insert_cnt");
+                }
+
+                BOOST_FOREACH (pt::ptree::value_type &delete_cnt,
+                               iface.second.get_child("delete_cnt")) {
+                    lldp_stats->delete_count =
+                        delete_cnt.second.get<uint32_t>("delete_cnt");
+                }
+            }
+        }
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << std::endl;
+        PDS_TRACE_ERR("Error reading lldp stats json");
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_OK;
+}
+
 // get the LLDP interface stats
 sdk_ret_t
-interface_lldp_stats_get (pds_if_lldp_stats_t *lldp_stats)
+interface_lldp_stats_get (uint16_t lif_id, pds_if_lldp_stats_t *lldp_stats)
 {
+    int         rc;
+    static int  iter = 0;
+    std::string stats_file;
+    std::string interfaces[3] = { "dsc0", "dsc1", "oob_mnic0" };
+    char        cmd[PATH_MAX];
+
+    if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
+        return SDK_RET_OK;
+    }
+
+    // LLDP is supported only on uplinks and OOB.
+    if (lif_id > 2) {
+        return SDK_RET_OK;
+    }
+
+    // create a new file for output json for every get call, in order to
+    // support concurrency
+    stats_file = "/tmp/" + std::to_string(iter++) + "_lldp_stats.json";
+
+    // get the LLDP stats in json format
+    snprintf(cmd, PATH_MAX, "/usr/sbin/lldpcli show statistics ports %s -f json0 > %s",
+             interfaces[lif_id].c_str(), stats_file.c_str());
+    std::string lldpcmd = std::string(cmd);
+    rc = system(lldpcmd.c_str());
+    if (rc == -1) {
+        PDS_TRACE_ERR("lldp stats command failed for {} with error {}",
+                      interfaces[lif_id].c_str(), rc);
+        remove(stats_file.c_str());
+        return SDK_RET_ERR;
+    }
+
+    // parse the LLDP stats output json file and populate lldp stats
+    lldp_stats_parse_json(lldp_stats, stats_file);
+
+    remove(stats_file.c_str());
     return SDK_RET_OK;
 }
 

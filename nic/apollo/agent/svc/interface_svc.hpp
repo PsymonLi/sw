@@ -331,17 +331,29 @@ pds_if_api_status_to_proto (pds::InterfaceStatus *proto_status,
     }
 }
 
+// TODO: use ifindex/uuid based API instead of using lif_id
 static inline void
-pds_if_lldp_stats_to_proto (pds::UplinkIfStats *uplink_stats)
+pds_if_lldp_stats_to_proto (pds::UplinkIfStats *uplink_stats, uint16_t lif_id)
 {
     pds_if_lldp_stats_t api_lldp_stats = { 0 };
 
     // get the latest LLDP stats
-    core::interface_lldp_stats_get(&api_lldp_stats);
+    core::interface_lldp_stats_get(lif_id, &api_lldp_stats);
+
+    // fill the stats
+    auto stats = uplink_stats->mutable_lldpifstats();
+    stats->set_txcount(api_lldp_stats.tx_count);
+    stats->set_rxcount(api_lldp_stats.rx_count);
+    stats->set_rxdiscarded(api_lldp_stats.rx_discarded);
+    stats->set_rxunrecognized(api_lldp_stats.rx_unrecognized);
+    stats->set_ageoutcount(api_lldp_stats.ageout_count);
+    stats->set_insertcount(api_lldp_stats.insert_count);
+    stats->set_deletecount(api_lldp_stats.delete_count);
 }
 
 static inline void
 pds_if_api_stats_to_proto (pds::InterfaceStats *proto_stats,
+                           const pds_if_status_t *api_status,
                            const pds_if_stats_t *api_stats,
                            if_type_t type)
 {
@@ -351,7 +363,7 @@ pds_if_api_stats_to_proto (pds::InterfaceStats *proto_stats,
             auto uplink_stats = proto_stats->mutable_uplinkifstats();
 
             // populate the uplink LLDP stats
-            pds_if_lldp_stats_to_proto(uplink_stats);
+            pds_if_lldp_stats_to_proto(uplink_stats, api_status->uplink_status.lif_id);
         }
         break;
     default:
@@ -369,7 +381,8 @@ pds_if_api_info_to_proto (void *entry, void *ctxt)
     pds_if_api_spec_to_proto(intf->mutable_spec(), &info->spec);
     pds_if_api_status_to_proto(intf->mutable_status(),
                                &info->status, info->spec.type);
-    pds_if_api_stats_to_proto(intf->mutable_stats(), &info->stats, info->spec.type);
+    pds_if_api_stats_to_proto(intf->mutable_stats(), &info->status,
+                              &info->stats, info->spec.type);
 }
 
 static inline sdk_ret_t

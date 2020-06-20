@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	lldpCmdTypeNbrs	    = 0
+	lldpCmdTypeNbrs     = 0
 	lldpCmdTypeLocalIfs = 1
 	lldpCmdTypeStats    = 2
 )
@@ -71,7 +71,6 @@ var lldpShowStatisticsCmd = &cobra.Command{
 	Short: "show lldp statistics information",
 	Long:  "show lldp statistics object information",
 	Run:   lldpShowStatisticsCmdHandler,
-	Hidden: true,
 }
 
 var lifClearCmd = &cobra.Command{
@@ -485,15 +484,35 @@ func printIfLldpInfo(intf *pds.Interface, cmdType int, numIntfs *int) {
 	portNum := utils.IdToStr(spec.GetUplinkSpec().GetPortId())
 
 	var lldpStatus *pds.LldpIfSpec
+	if cmdType == lldpCmdTypeStats {
+		// lldp show statistics
+		stats := intf.GetStats()
+		lldpStats := stats.GetUplinkIfStats().GetLldpIfStats()
+		lldpStatus = status.GetUplinkIfStatus().GetLldpStatus().GetLldpIfStatus()
+
+		if len(lldpStatus.GetIfName()) == 0 {
+			return
+		}
+		*numIntfs += 1
+
+		fmt.Printf("Interface : %s, Port : %s\n", ifStr, portNum)
+		fmt.Printf("  LLDP Interface : %s\n", lldpStatus.GetIfName())
+		fmt.Printf("    TxCount        : %s\n", fmt.Sprint(lldpStats.GetTxCount()))
+		fmt.Printf("    RxCount        : %s\n", fmt.Sprint(lldpStats.GetRxCount()))
+		fmt.Printf("    RxDiscarded    : %s\n", fmt.Sprint(lldpStats.GetRxDiscarded()))
+		fmt.Printf("    RxUnrecognized : %s\n", fmt.Sprint(lldpStats.GetRxUnrecognized()))
+		fmt.Printf("    AgeoutCount    : %s\n", fmt.Sprint(lldpStats.GetAgeoutCount()))
+		fmt.Printf("    InsertCount    : %s\n", fmt.Sprint(lldpStats.GetInsertCount()))
+		fmt.Printf("    DeleteCount    : %s\n\n", fmt.Sprint(lldpStats.GetDeleteCount()))
+		return
+	}
+
 	if cmdType == lldpCmdTypeNbrs {
 		// show neighbors
 		lldpStatus = status.GetUplinkIfStatus().GetLldpStatus().GetLldpNbrStatus()
 	} else if cmdType == lldpCmdTypeLocalIfs {
 		// lldp show interfaces
 		lldpStatus = status.GetUplinkIfStatus().GetLldpStatus().GetLldpIfStatus()
-	} else if cmdType == lldpCmdTypeStats {
-		// lldp show statistics
-		return
 	}
 
 	if len(lldpStatus.GetIfName()) == 0 {
@@ -501,47 +520,47 @@ func printIfLldpInfo(intf *pds.Interface, cmdType int, numIntfs *int) {
 	}
 	*numIntfs += 1
 
-	nbrProto := strings.Replace(lldpStatus.GetProto().String(),"LLDP_MODE_", "", -1)
+	nbrProto := strings.Replace(lldpStatus.GetProto().String(), "LLDP_MODE_", "", -1)
 	fmt.Printf("Interface : %s, Port : %s\n", ifStr, portNum)
 	rId := lldpStatus.GetRouterId()
 	if rId == 0 {
-	   rId = 1
+		rId = 1
 	}
 	fmt.Printf("  LLDP Interface : %s, via: %s, RID: %s, Time: %s\n",
-		   lldpStatus.GetIfName(), nbrProto, fmt.Sprint(rId), lldpStatus.GetAge())
+		lldpStatus.GetIfName(), nbrProto, fmt.Sprint(rId), lldpStatus.GetAge())
 	fmt.Printf("    Chassis :\n")
 	cid := lldpStatus.GetLldpIfChassisSpec().GetChassisId()
-	cidType := strings.Replace(cid.GetType().String(),"LLDPID_SUBTYPE_", "", -1)
+	cidType := strings.Replace(cid.GetType().String(), "LLDPID_SUBTYPE_", "", -1)
 	cidType = strings.ToLower(cidType)
 	cidValue := cid.GetValue()
 	fmt.Printf("      ChassisID  : %s %s\n", cidType, cidValue)
 	fmt.Printf("      SysName    : %s\n", lldpStatus.GetLldpIfChassisSpec().GetSysName())
 	fmt.Printf("      SysDescr   : %s\n", lldpStatus.GetLldpIfChassisSpec().GetSysDescr())
 	fmt.Printf("      MgmtIP     : %s\n",
-	    utils.IPAddrToStr(lldpStatus.GetLldpIfChassisSpec().GetMgmtIP()))
+		utils.IPAddrToStr(lldpStatus.GetLldpIfChassisSpec().GetMgmtIP()))
 
 	capabilities := lldpStatus.GetLldpIfChassisSpec().GetCapability()
 	for _, cap := range capabilities {
-	    capType := strings.Replace(cap.GetCapType().String(),"LLDP_CAPTYPE_", "", -1)
-	    capType = strings.Title(strings.ToLower(capType))
-	    capEnabledStr := "off"
-	    if cap.GetCapEnabled() {
-		capEnabledStr = "on"
-	    }
-	    fmt.Printf("      Capability : %s, %s\n", capType, capEnabledStr)
+		capType := strings.Replace(cap.GetCapType().String(), "LLDP_CAPTYPE_", "", -1)
+		capType = strings.Title(strings.ToLower(capType))
+		capEnabledStr := "off"
+		if cap.GetCapEnabled() {
+			capEnabledStr = "on"
+		}
+		fmt.Printf("      Capability : %s, %s\n", capType, capEnabledStr)
 	}
-	fmt.Printf("    Port :\n");
+	fmt.Printf("    Port :\n")
 	pid := lldpStatus.GetLldpIfPortSpec().GetPortId()
-	pidType := strings.Replace(pid.GetType().String(),"LLDPID_SUBTYPE_", "", -1)
-	pidType =strings.ToLower(pidType)
+	pidType := strings.Replace(pid.GetType().String(), "LLDPID_SUBTYPE_", "", -1)
+	pidType = strings.ToLower(pidType)
 	pidValue := pid.GetValue()
 	fmt.Printf("      PortID     : %s %s\n", pidType, pidValue)
 	fmt.Printf("      PortDescr  : %s\n", lldpStatus.GetLldpIfPortSpec().GetPortDescr())
 	ttl := fmt.Sprint(lldpStatus.GetLldpIfPortSpec().GetTtl())
 	if cmdType == lldpCmdTypeNbrs {
-	    fmt.Printf("      TTL        : %s\n\n", ttl)
+		fmt.Printf("      TTL        : %s\n\n", ttl)
 	} else {
-	    fmt.Printf("    TTL	         : 120\n\n")
+		fmt.Printf("    TTL	         : 120\n\n")
 	}
 }
 
@@ -603,15 +622,15 @@ func lldpShowCmdHandler(cmd *cobra.Command, args []string, cmdType int) {
 }
 
 func lldpShowNeighborsCmdHandler(cmd *cobra.Command, args []string) {
-     lldpShowCmdHandler(cmd, args, lldpCmdTypeNbrs)
+	lldpShowCmdHandler(cmd, args, lldpCmdTypeNbrs)
 }
 
 func lldpShowInterfacesCmdHandler(cmd *cobra.Command, args []string) {
-     lldpShowCmdHandler(cmd, args, lldpCmdTypeLocalIfs)
+	lldpShowCmdHandler(cmd, args, lldpCmdTypeLocalIfs)
 }
 
 func lldpShowStatisticsCmdHandler(cmd *cobra.Command, args []string) {
-     lldpShowCmdHandler(cmd, args, lldpCmdTypeStats)
+	lldpShowCmdHandler(cmd, args, lldpCmdTypeStats)
 }
 
 func lifGetNameFromKey(key []byte) string {
