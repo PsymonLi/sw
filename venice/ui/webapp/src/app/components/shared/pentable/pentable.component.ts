@@ -123,8 +123,17 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       // if there is a "filter" query param:
       // - wait until data finishes loading (component init)
       // - if data has been updated, emit search results for parent to update filtered list
-      if ((change.loading && change.loading.previousValue && !change.loading.currentValue) ||
-          (change.data && !this.loading && !Utility.getLodash().isEqual(change.data.previousValue, change.data.currentValue))) {
+      const loadingCompleted = change.loading && change.loading.previousValue && !change.loading.currentValue;
+      let dataChanged = false;
+      if (change.data && !this.loading) {
+        const _ = Utility.getLodash();
+        const sortFieldArr = this.sortField.split('.');
+        const prevDataSorted = _.sortBy(change.data.previousValue, data => _.get(data, sortFieldArr));
+        const currDataSorted = _.sortBy(change.data.currentValue, data => _.get(data, sortFieldArr));
+        dataChanged = !_.isEqual(prevDataSorted, currDataSorted);
+      }
+
+      if (loadingCompleted || dataChanged) {
         // emit search based on query params after current cycle
         setTimeout(() => {
           if (!this.searchInitialized) {

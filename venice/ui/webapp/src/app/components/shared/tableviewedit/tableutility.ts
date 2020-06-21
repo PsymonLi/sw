@@ -429,12 +429,12 @@ export class TableUtility {
   static textSearchTableOne(searchText: SearchTextRequirement, data: any[] | ReadonlyArray<any>,
     recordToStringFunction: (record: any) => string = (record) => {
       try {
-        return JSON.stringify(record);
-      } catch (err) {
-        console.error(err);
         // The input record may contain circular reference. e.g workload.ui.dscs --> dscs[i] links back to this workload. We trim UI fields and proceed.
-        const myrecord = Utility.trimUIFields(record);
-        return JSON.stringify(myrecord);
+        const obj = record.hasOwnProperty('_ui') &&  (typeof record.getModelValues === 'function') ?  Utility.trimUIFields(record) : record;
+        return JSON.stringify(obj);
+       } catch (err) {
+        console.error(err);
+        return JSON.stringify(record);
       }
     },
     trimTextValueFunction: (text: string) => string = (text) => text.replace(/"/g, '')
