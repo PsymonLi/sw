@@ -80,6 +80,7 @@ static constexpr int k_bgp_id = 50;
 static constexpr int k_l3_if_id  = 400;
 static constexpr int k_l3_if_id_2  = 410;
 static constexpr int k_lo_if_id  = 401;
+static int g_mirror_id  = 601;
 
 static void create_device_proto_grpc (bool overlay_routing = true) {
     ClientContext   context;
@@ -1004,7 +1005,7 @@ static void get_evpn_mac_ip_all () {
     }
 }
 
-static void create_ip_track (ip_addr_t& ip) {
+static void create_ip_track (ip_addr_t& ip, uint32_t id) {
     pds_ms::CPIPTrackTestCreateSpec request;
     pds_ms::CPIPTrackTestResponse response;
     ClientContext   context;
@@ -1016,9 +1017,13 @@ static void create_ip_track (ip_addr_t& ip) {
     destip->set_af(types::IP_AF_INET);
     destip->set_v4addr(inet_network(ipaddr2str(&ip)));
 
+    auto ip_track_obj_key = pds_ms::msidx2pdsobjkey(id);
+
+    proto_spec->set_pdsobjkey(ip_track_obj_key.id, PDS_MAX_KEY_LEN);
     proto_spec->set_pdsobjid (12); // Mirror session
 
-    printf ("Pushing Dest IP track start ...\n");
+    printf ("Pushing Dest IP track start IP %s UUID %s ...\n",
+            ipaddr2str(&ip), ip_track_obj_key.str());
     ret_status = g_cp_test_stub_->CPIPTrackTestCreate(&context, request, &response);
     if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
         printf("%s failed! ret_status=%d (%s) response.status=%d\n",
@@ -1027,7 +1032,7 @@ static void create_ip_track (ip_addr_t& ip) {
         exit(1);
     }
 }
-static void delete_ip_track (ip_addr_t& ip) {
+static void delete_ip_track (ip_addr_t& ip, uint32_t id) {
     pds_ms::CPIPTrackTestDeleteSpec request;
     pds_ms::CPIPTrackTestResponse response;
     ClientContext   context;
@@ -1035,11 +1040,12 @@ static void delete_ip_track (ip_addr_t& ip) {
 
     auto proto_spec = &request;
 
-    auto destip = proto_spec->mutable_destip();
-    destip->set_af(types::IP_AF_INET);
-    destip->set_v4addr(inet_network(ipaddr2str(&ip)));
+    auto ip_track_obj_key = pds_ms::msidx2pdsobjkey(id);
+    proto_spec->set_pdsobjkey(ip_track_obj_key.id, PDS_MAX_KEY_LEN);
 
-    printf ("Pushing Dest IP track stop ...\n");
+    printf ("Pushing Dest IP track stop IP %s UUID %s ...\n",
+            ipaddr2str(&ip), ip_track_obj_key.str());
+
     ret_status = g_cp_test_stub_->CPIPTrackTestDelete(&context, request, &response);
     if (!ret_status.ok() || (response.apistatus() != types::API_STATUS_OK)) {
         printf("%s failed! ret_status=%d (%s) response.status=%d\n",
@@ -1121,6 +1127,16 @@ int main(int argc, char** argv)
             }
             sleep(3);
             set_amx_control(false);
+        }
+        if (g_node_id == 1) {
+            ip_addr_t ip = {0};
+            ip.af = IP_AF_IPV4;
+            ip.addr.v4_addr = 0xc8c80202;
+            create_ip_track (ip, g_mirror_id-10);
+            create_ip_track (ip, g_mirror_id-10+1);
+            ip.addr.v4_addr = 0x0b000001;
+            create_ip_track (ip, g_mirror_id-20);
+            create_ip_track (ip, g_mirror_id-20+1);
         }
         if (g_node_id != 3) {
             create_intf_proto_grpc();
@@ -1287,15 +1303,17 @@ int main(int argc, char** argv)
             ip_addr_t ip = {0};
             ip.af = IP_AF_IPV4;
             ip.addr.v4_addr = 0x0e000001;
-            delete_ip_track (ip);
+            delete_ip_track (ip, g_mirror_id);
+            delete_ip_track (ip, g_mirror_id+1);
             ++ip.addr.v4_addr;
             return 0;
         } else if (!strcmp(argv[1], "del-ip-track-all")) {
             ip_addr_t ip = {0};
             ip.af = IP_AF_IPV4;
             ip.addr.v4_addr = 0x0d000001;
+            uint32_t id = g_mirror_id+10;
             for (int i=0; i<1000; ++i) {
-                delete_ip_track (ip);
+                delete_ip_track (ip, id+i);
                 ++ip.addr.v4_addr;
             }
             return 0;
@@ -1303,14 +1321,17 @@ int main(int argc, char** argv)
             ip_addr_t ip = {0};
             ip.af = IP_AF_IPV4;
             ip.addr.v4_addr = 0x0e000001;
-            create_ip_track (ip);
+            // Same tracked IP but 2 different UUIDs
+            create_ip_track (ip, g_mirror_id);
+            create_ip_track (ip, g_mirror_id+1);
             return 0;
         } else if (!strcmp(argv[1], "create-ip-track-all")) {
             ip_addr_t ip = {0};
             ip.af = IP_AF_IPV4;
             ip.addr.v4_addr = 0x0d000001;
+            uint32_t id = g_mirror_id+10;
             for (int i=0; i<1000; ++i) {
-                create_ip_track (ip);
+                create_ip_track (ip, id+i);
                 ++ip.addr.v4_addr;
             }
             return 0;
@@ -1318,10 +1339,11 @@ int main(int argc, char** argv)
             ip_addr_t ip = {0};
             ip.af = IP_AF_IPV4;
             ip.addr.v4_addr = 0x0f000001;
+            uint32_t id = 701;
             for (int i=0; i<1000; ++i) {
-                create_ip_track (ip);
+                create_ip_track (ip, id+i);
                 if (i%4 == 0) {
-                    delete_ip_track (ip);
+                    delete_ip_track (ip, id+i);
                 }
                 ++ip.addr.v4_addr;
             }

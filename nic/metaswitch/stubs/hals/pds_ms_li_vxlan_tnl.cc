@@ -43,7 +43,7 @@ static void unmap_indirect_ps_2_tep_ip_(state_t* state,
     if (indirect_ps_obj == nullptr) {
         return;
     }
-    indirect_ps_obj->reset_destip();
+    indirect_ps_obj->reset_ms_evpn_tep_ip();
 }
 
 void li_vxlan_tnl::parse_ips_info_(ATG_LIPI_VXLAN_ADD_UPDATE* vxlan_tnl_add_upd_ips) {
@@ -79,9 +79,10 @@ void li_vxlan_tnl::fetch_store_info_(pds_ms::state_t* state) {
         // Fetch the latest HAL underlay NHgroup ID for the TEP
         // Also associate the indirect pathset to the TEP
         store_info_.ms_upathset_dpcorr =
-            state_lookup_indirect_ps_and_map_ip(state,
-                                                ips_info_.ms_upathset,
-                                                ips_info_.tep_ip, true);
+            state_lookup_indirect_ps_and_map_ip(state, ips_info_.ms_upathset,
+                                                ips_info_.tep_ip, true,
+                                                /* Invalid for MS TEP IP */
+                                                k_pds_obj_key_invalid);
     }
 }
 

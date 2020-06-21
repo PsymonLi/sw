@@ -577,33 +577,50 @@ NBB_BYTE hals_ecmp_t::handle_indirect_ps_update_
         store_info_.pathset_obj = nullptr;
     }
 
-    auto destip_pair =
+    auto indirect_ps_obj =
         state_indirect_ps_lookup_and_map_dpcorr(state_ctxt.state(),
                                                 ips_info_.pathset_id,
                                                 ips_info_.direct_ps_dpcorr);
-    auto destip = destip_pair.first;
+    auto& destip = indirect_ps_obj->destip();
     if (ip_addr_is_zero(&destip)) {
         PDS_TRACE_DEBUG("Indirect Pathset %d Create IPS DPCorr %d",
                         ips_info_.pathset_id, ips_info_.direct_ps_dpcorr);
         return rc;
     }
 
-    PDS_TRACE_DEBUG("Indirect Pathset %d Update IPS %s %s new DPCorr %d",
-                    ips_info_.pathset_id,
-                    (destip_pair.second) ? "TEP" : "tracked DestIP",
-                    ipaddr2str(&destip_pair.first),
-                    ips_info_.direct_ps_dpcorr);
+    auto l_pathset_id = ips_info_.pathset_id;
+    auto l_direct_ps_dpcorr = ips_info_.direct_ps_dpcorr;
+    auto state = state_ctxt.state();
 
-    if (!destip_pair.second) {
+    // Walk back-ref: indirect pathset -> list of ip-track obj uuids
+    // and trigger HAL reachability change for each Object
+    indirect_ps_obj->walk_ip_track_obj_keys(
+        [l_pathset_id, l_direct_ps_dpcorr, &destip, state]
+        (const pds_obj_key_t& ip_track_obj_key) -> bool {
+            PDS_TRACE_DEBUG("Indirect Pathset %d Update IPS for IP tracked"
+                            " obj %s destip %s new DPCorr %d",
+                            l_pathset_id, ip_track_obj_key.str(),
+                            ipaddr2str(&destip), l_direct_ps_dpcorr);
+
+            auto ip_track_obj = state->
+                ip_track_store().get(ip_track_obj_key);
+            ip_track_reachability_change(ip_track_obj_key,
+                                         destip, l_direct_ps_dpcorr,
+                                         ip_track_obj->pds_obj_id());
+            return true;
+        });
+
+    if (!indirect_ps_obj->is_ms_evpn_tep_ip()) {
         // Indirect pathset is NOT tracking a MS EVPN TEP IP
-        auto ip_track_obj = state_ctxt.state()->ip_track_store().get(destip);
-        ip_track_reachability_change(destip, ips_info_.direct_ps_dpcorr,
-                                     ip_track_obj->pds_obj_id());
         // Send synchronous IPS response to MS for Dest IP track change
         return ATG_OK;
     }
 
-    auto& tep_ip = destip_pair.first;
+    PDS_TRACE_DEBUG("Indirect Pathset %d Update IPS for TEP %s new DPCorr %d",
+                    ips_info_.pathset_id, ipaddr2str(&destip),
+                    ips_info_.direct_ps_dpcorr);
+
+    auto& tep_ip = destip;
     auto tep_obj = state_ctxt.state()->tep_store().get(tep_ip);
     if (tep_obj == nullptr) {
         // This Pathset does not have any reference yet
@@ -616,11 +633,9 @@ NBB_BYTE hals_ecmp_t::handle_indirect_ps_update_
     li_vxlan_tnl tnl;
     // Alloc new cookie to capture async info
     cookie_uptr_.reset (new cookie_t);
-    auto direct_ps_dpcorr = ips_info_.direct_ps_dpcorr;
-    auto l_pathset_id = ips_info_.pathset_id;
 
     cookie_uptr_->send_ips_reply =
-        [add_upd_ecmp_ips, l_pathset_id, tep_ip, direct_ps_dpcorr]
+        [add_upd_ecmp_ips, l_pathset_id, tep_ip, l_direct_ps_dpcorr]
         (bool pds_status, bool ips_mock) -> void {
             //-----------------------------------------------------------------
             // This block is executed asynchronously when PDS response is rcvd
@@ -628,14 +643,14 @@ NBB_BYTE hals_ecmp_t::handle_indirect_ps_update_
             if (unlikely(ips_mock)) return; // UT
             PDS_TRACE_DEBUG("++++ TEP %s Underlay Pathset %d "
                             "NHGroup %d Async reply %s ++++",
-                            ipaddr2str(&tep_ip), l_pathset_id, direct_ps_dpcorr,
+                            ipaddr2str(&tep_ip), l_pathset_id, l_direct_ps_dpcorr,
                             (pds_status) ? "Success" : "Failure");
 
             send_ips_response_(add_upd_ecmp_ips, l_pathset_id,
-                               direct_ps_dpcorr);
+                               l_direct_ps_dpcorr);
         };
     return tnl.handle_upathset_update(std::move(state_ctxt),
-                                      tep_obj, direct_ps_dpcorr,
+                                      tep_obj, l_direct_ps_dpcorr,
                                       std::move(cookie_uptr_));
 }
 

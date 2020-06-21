@@ -239,11 +239,10 @@ ms_hw_tbl_id_t
 state_lookup_indirect_ps_and_map_ip (state_t* state,
                                      ms_ps_id_t indirect_pathset,
                                      const ip_addr_t& ip,
-                                     bool ms_evpn_tep_ip);
-void
-state_unmap_indirect_ps_from_ip (state_t* state, ms_ps_id_t indirect_pathset);
+                                     bool ms_evpn_tep_ip,
+                                     const pds_obj_key_t& obj_key);
 
-std::pair<ip_addr_t,bool>
+indirect_ps_obj_t*
 state_indirect_ps_lookup_and_map_dpcorr (state_t* state,
                                          ms_ps_id_t indirect_pathset,
                                          ms_hw_tbl_id_t direct_ps_dpcorr);

@@ -21,6 +21,7 @@ extern "C" {
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/metaswitch/stubs/common/pds_ms_error.hpp"
 #include "nic/apollo/api/include/pds_batch.hpp"
+#include "nic/sdk/include/sdk/base.hpp"
 #include <string>
 
 namespace pds_ms {
@@ -325,6 +326,23 @@ static inline std::string objkey_list_str(InputIt first, InputIt last) {
         str = "<>";
     }
     return str;
+}
+
+// build obj key from protobuf spec
+static inline sdk_ret_t
+pds_obj_key_proto_to_spec (pds_obj_key_t *key,
+                           const ::std::string& proto_key)
+{
+    if (proto_key.length() > PDS_MAX_KEY_LEN) {
+        return SDK_RET_INVALID_ARG;
+    }
+    // set all the key bytes to 0 1st and hash on the full key can't include
+    // uninitialized memory
+    key->reset();
+    // set the key bytes
+    memcpy(key->id, proto_key.data(),
+           SDK_MIN(proto_key.length(), PDS_MAX_KEY_LEN));
+    return SDK_RET_OK;
 }
 
 

@@ -179,6 +179,7 @@ pds_batch_ctxt_guard_t hals_route_t::make_batch_pds_spec_(state_t* state,
 
 sdk_ret_t hals_route_t::underlay_route_add_upd_() {
     bool tracked = false;
+    pds_obj_key_t pds_obj_key;
     ip_addr_t destip;
     obj_id_t pds_obj_id;
 
@@ -190,15 +191,23 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
         if (it_internal != state->ip_track_internalip_store().end()) {
             auto ip_track_obj = 
                 state->ip_track_store().get(it_internal->second);
+            pds_obj_key = ip_track_obj->pds_obj_key();
             destip = ip_track_obj->destip();
             pds_obj_id = ip_track_obj->pds_obj_id();
             tracked = true;
 
-            // Add back ref from the indirect pathset to the route
-            auto nhgroup_id = 
-                state_lookup_indirect_ps_and_map_ip(state,ips_info_.pathset_id,
-                                                    destip, false);
-            ips_info_.ecmp_id = nhgroup_id;
+            auto mgmt_ctxt = mgmt_state_t::thread_context();
+            // TODO - for now cascaded mode and indirect pathsets are only
+            // used for overlay routing enabled mode. Remove check later
+            // when we switch to cascaded mode for ovelay routing dis as well.
+            if (mgmt_ctxt.state()->overlay_routing_en()) {
+                // Add to back-ref: indirect pathset -> list of ip-track obj uuids
+                auto nhgroup_id =
+                    state_lookup_indirect_ps_and_map_ip(state,ips_info_.pathset_id,
+                                                        destip, false, pds_obj_key);
+                ip_track_obj->set_indirect_ps_id(ips_info_.pathset_id);
+                ips_info_.ecmp_id = nhgroup_id;
+            }
         }
     }
 
@@ -206,8 +215,8 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
         return SDK_RET_OK;
     }
     if (tracked) {
-        return ip_track_reachability_change(destip, ips_info_.ecmp_id,
-                                            pds_obj_id);
+        return ip_track_reachability_change(pds_obj_key, destip,
+                                            ips_info_.ecmp_id, pds_obj_id);
     }
 
     if (mgmt_state_t::thread_context().state()->overlay_routing_en()) {
@@ -226,11 +235,36 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
 }
 
 sdk_ret_t hals_route_t::underlay_route_del_() {
-    // TODO: HAL objects associated with tracked Dest IPs need to be
-    // black-holed when the underlay reachability is lost ??
-    // We can also reach here when tracking is stopped in which case
-    // the destip would have been deleted in which case there
-    // is nothing to update - so need to differentiate these
+    {
+        auto state_ctxt = state_t::thread_context();
+        auto state = state_ctxt.state();
+
+        auto it_internal = state->ip_track_internalip_store().find(ips_info_.pfx);
+        if (it_internal != state->ip_track_internalip_store().end()) {
+            auto ip_track_obj =
+                state->ip_track_store().get(it_internal->second);
+            if (ip_track_obj != nullptr) {
+                auto& pds_obj_key = ip_track_obj->pds_obj_key();
+                auto indirect_ps_id = ip_track_obj->indirect_ps_id();
+                auto indirect_ps_obj =
+                    state->indirect_ps_store().get(indirect_ps_id);
+                if (indirect_ps_obj != nullptr) {
+                    // Remove from back-ref:
+                    // indirect pathset -> list of ip-track obj uuids
+                    PDS_TRACE_DEBUG("Reset IP track Obj %s from indirect pathset %d",
+                                    pds_obj_key.str(), indirect_ps_id);
+                    indirect_ps_obj->del_ip_track_obj(pds_obj_key);
+                    ip_track_obj->set_indirect_ps_id(PDS_MS_ECMP_INVALID_INDEX);
+                    // TODO: HAL objects associated with tracked Dest IPs need to be
+                    // black-holed when the underlay reachability is lost ??
+                    // We can also reach here when tracking is deleted for an object
+                    // in which case nothing to do here. Need to differentiate between
+                    // these 2 cases.
+                }
+            }
+        }
+    }
+
     if (mgmt_state_t::thread_context().state()->overlay_routing_en()) {
         return SDK_RET_OK;
     }

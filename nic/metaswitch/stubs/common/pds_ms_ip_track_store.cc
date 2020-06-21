@@ -27,9 +27,10 @@ ip_track_slab_init (slab_uptr_t slabs_[], sdk::lib::slab_id_t slab_id)
     ip_track_obj_t::set_slab(slabs_[slab_id].get());
 }
 
-ip_track_obj_t::ip_track_obj_t(const ip_addr_t& destip,
+ip_track_obj_t::ip_track_obj_t(const pds_obj_key_t& pds_obj_key,
+                               const ip_addr_t& destip,
                                obj_id_t pds_obj_id)
-    : destip_(destip), pds_obj_id_(pds_obj_id) {
+    : pds_obj_key_(pds_obj_key), destip_(destip), pds_obj_id_(pds_obj_id) {
     // Allocate index
     // Enter thread-safe context to access/modify global state
     auto state_ctxt = state_t::thread_context();
@@ -48,15 +49,16 @@ ip_track_obj_t::~ip_track_obj_t() {
     auto state_ctxt = pds_ms::state_t::thread_context();
     auto rs = state_ctxt.state()->ip_track_internal_idx_free(internal_index_);
     if (rs != SDK_RET_OK) {
-        PDS_TRACE_ERR("DestIP Internal tracking index %d free failed for %s"
+        PDS_TRACE_ERR("DestIP Internal tracking index %d free failed for %s %s"
                       " with err %d",
-                       internal_index_, ipaddr2str(&destip_), rs);
+                       internal_index_, pds_obj_key_.str(),
+                       ipaddr2str(&destip_), rs);
         return;
     }
     PDS_TRACE_VERBOSE("Freed destip internal track index %d", internal_index_);
 }
 
-ip_prefix_t ip_track_obj_t::internal_ip_prefix() {
+ip_prefix_t ip_track_obj_t::internal_ip_prefix() const {
     ip_prefix_t internal_ip_pfx = {0};
     internal_ip_pfx.len = 32;
     internal_ip_pfx.addr.af = IP_AF_IPV4;

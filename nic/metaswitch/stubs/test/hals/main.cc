@@ -446,28 +446,34 @@ TEST(pds_ms_ip_track_test, crud_test) {
     ip_addr_t  track;
     track.addr.v4_addr = 0x0a000001;
     track.af = IP_AF_IPV4;
-  
+    uint32_t mirror_id = 701;
+    std::unordered_map <ip_addr_t, pds_obj_key_t, pds_ms::ip_hash>
+        ip_track_obj_map;
+
    int repeat = 2000;
     for (int i=0; i< repeat; ++i) { 
-        pds_ms::ip_track_add(track, OBJ_ID_MIRROR_SESSION);
+        auto ip_track_obj_key = pds_ms::msidx2pdsobjkey(mirror_id++);
+        pds_ms::ip_track_add(ip_track_obj_key, track, OBJ_ID_MIRROR_SESSION);
+        ip_track_obj_map.emplace(std::make_pair(track, ip_track_obj_key));
         track.addr.v4_addr += 1;
     }
     {
     auto state_ctxt = pds_ms::state_t::thread_context();
     track.addr.v4_addr = 0x0a000001;
     for (int i=0;i<repeat; ++i) {
-        auto ip_track_obj = state_ctxt.state()->ip_track_store().get(track);
+        auto ip_track_obj = state_ctxt.state()->ip_track_store().
+                               get(ip_track_obj_map[track]);
         ASSERT_TRUE(ip_track_obj != nullptr);
         auto it = state_ctxt.state()->ip_track_internalip_store().
                      find(ip_track_obj->internal_ip_prefix());
         ASSERT_TRUE(it != state_ctxt.state()->ip_track_internalip_store().end());
-        ASSERT_TRUE(IPADDR_EQ(&it->second, &track));
+        ASSERT_EQ(it->second, ip_track_obj_map[track]);
         track.addr.v4_addr += 1;
     }
     }
     track.addr.v4_addr = 0x0a000001;
     for (int i=0; i< repeat; ++i) { 
-        pds_ms::ip_track_del(track);
+        pds_ms::ip_track_del(ip_track_obj_map[track]);
         track.addr.v4_addr += 1;
     }
     {

@@ -121,11 +121,12 @@ ms_hw_tbl_id_t
 state_lookup_indirect_ps_and_map_ip (state_t* state,
                                      ms_ps_id_t indirect_pathset,
                                      const ip_addr_t& destip,
-                                     bool ms_evpn_tep_ip)
+                                     bool ms_evpn_tep_ip,
+                                     const pds_obj_key_t& obj_key)
 {
     auto indirect_ps_obj = state->indirect_ps_store().get(indirect_pathset);
     if (indirect_ps_obj == nullptr) {
-        // If the indirect ps is not present it could mean that that
+        // If the indirect ps is not present it could mean that
         // MS create pointed to a black-hole and we did not know
         // that it was an indirect pathset
         PDS_TRACE_DEBUG("Set new indirect pathset %d -> blackhole",
@@ -134,7 +135,7 @@ state_lookup_indirect_ps_and_map_ip (state_t* state,
 
     } else if (!ip_addr_is_zero(&(indirect_ps_obj->destip()))) {
 
-        // Assert there is only 1 IP referring to each indirect Pathset
+        // Assert that each indirect pathset is only tracking 1 destination IP
         if (!ip_addr_is_equal (&(indirect_ps_obj->destip()), &destip)) {
             PDS_TRACE_ERR("Attempt to stitch %s %s to MS indirect pathset %d"
                           " that is already stitched to DestIP %s",
@@ -143,37 +144,24 @@ state_lookup_indirect_ps_and_map_ip (state_t* state,
                           ipaddr2str(&(indirect_ps_obj->destip())));
             SDK_ASSERT(0);
         }
-        SDK_ASSERT(ms_evpn_tep_ip == indirect_ps_obj->is_ms_evpn_tep_ip());
-        return indirect_ps_obj->direct_ps_dpcorr();
     }
-    PDS_TRACE_DEBUG("Stitch %s %s to indirect pathset %d direct pathset %d",
-                    (ms_evpn_tep_ip) ? "TEP" : "tracked DestIP",
-                    ipaddr2str(&destip), indirect_pathset,
-                    indirect_ps_obj->direct_ps_dpcorr());
     if (ms_evpn_tep_ip) {
-        indirect_ps_obj->set_ms_evpn_tepip(destip);
+        indirect_ps_obj->set_ms_evpn_tep_ip(destip);
+        PDS_TRACE_DEBUG("Stitch TEP %s to indirect pathset %d, direct pathset %d",
+                        ipaddr2str(&destip), indirect_pathset,
+                        indirect_ps_obj->direct_ps_dpcorr());
     } else {
-        indirect_ps_obj->set_destip(destip);
+        indirect_ps_obj->add_ip_track_obj(obj_key, destip);
+        PDS_TRACE_DEBUG("Stitch IP tracked obj %s destip %s to "
+                        "indirect pathset %d, direct pathset %d",
+                        obj_key.str(),
+                        ipaddr2str(&destip), indirect_pathset,
+                        indirect_ps_obj->direct_ps_dpcorr());
     }
     return indirect_ps_obj->direct_ps_dpcorr();
 }
 
-void
-state_unmap_indirect_ps_from_ip (state_t* state, ms_ps_id_t indirect_pathset)
-{
-    auto indirect_ps_obj = state->indirect_ps_store().get(indirect_pathset);
-    if (indirect_ps_obj == nullptr) {
-        return;
-    }
-    PDS_TRACE_DEBUG("Unstitch %s %s from indirect pathset %d",
-                    (indirect_ps_obj->is_ms_evpn_tep_ip()) ? "TEP" : "IP track",
-                    ipaddr2str(&indirect_ps_obj->destip()), indirect_pathset);
-    indirect_ps_obj->reset_destip();
-}
-
-// Update the indirect PS to direct PS mapping
-// Return the Destination IP that is using this indirect PS if any
-std::pair<ip_addr_t,bool>
+indirect_ps_obj_t*
 state_indirect_ps_lookup_and_map_dpcorr (state_t* state,
                                          ms_ps_id_t indirect_pathset,
                                          ms_hw_tbl_id_t direct_ps_dpcorr)
@@ -192,7 +180,6 @@ state_indirect_ps_lookup_and_map_dpcorr (state_t* state,
                         direct_ps_dpcorr);
         indirect_ps_obj->set_direct_ps_dpcorr(direct_ps_dpcorr);
     }
-    return std::pair<ip_addr_t,bool> (indirect_ps_obj->destip(),
-                                      indirect_ps_obj->is_ms_evpn_tep_ip());
+    return indirect_ps_obj;
 }
 } // End namespace

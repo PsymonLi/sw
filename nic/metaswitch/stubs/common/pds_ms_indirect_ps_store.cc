@@ -32,7 +32,15 @@ indirect_ps_obj_t::indirect_ps_obj_t() {
     set_zero_ip(destip_);
 }
 
-void indirect_ps_obj_t::reset_destip(void) {
+void indirect_ps_obj_t::chk_and_reset_destip_(void) {
+    if (!ip_track_obj_keys_.empty()) {
+        return;
+    }
+    if (ms_evpn_tep_ip_) {
+        return;
+    }
+    // Reset Dest IP only if neither EVPN TEP nor external IP tracked objects
+    // are referring to this indirect pathset
     set_zero_ip(destip_);
 }
 

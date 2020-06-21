@@ -10,10 +10,11 @@
 namespace pds_ms {
 
 sdk_ret_t
-ip_track_add (ip_addr_t& destip, obj_id_t pds_obj_id);
+ip_track_add (const pds_obj_key_t& pds_obj_key, ip_addr_t& destip,
+              obj_id_t pds_obj_id);
 
 sdk_ret_t
-ip_track_del (ip_addr_t& destip);
+ip_track_del (const pds_obj_key_t& pds_obj_key);
 
 };
 

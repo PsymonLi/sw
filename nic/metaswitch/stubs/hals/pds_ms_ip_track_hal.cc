@@ -8,13 +8,14 @@ namespace pds_ms {
 
 // Call-back from MS underlay route update
 sdk_ret_t
-ip_track_reachability_change (ip_addr_t& destip,
+ip_track_reachability_change (const pds_obj_key_t& pds_obj_key,
+                              ip_addr_t& destip,
 							  ms_hw_tbl_id_t nhgroup_id,
 							  obj_id_t pds_obj_id) {
 
-    PDS_TRACE_DEBUG("++++ IP Track %s reachability change to "
+    PDS_TRACE_DEBUG("++++ UUID %s IP Track %s reachability change to "
                     "Underlay NHgroup %d ++++",
-                    ipaddr2str(&destip), nhgroup_id);
+                    pds_obj_key.str(), ipaddr2str(&destip), nhgroup_id);
 
     // TODO Call HAL API based on obj type
     // pds_obj_key_t nh_group = msidx2pdsobjkey(nhgroup_id);
