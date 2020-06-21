@@ -95,9 +95,10 @@ apulu_impl_state::table_stats(debug::table_stats_get_cb_t cb, void *ctxt) {
 static void
 nacl_dump_header (int fd)
 {
-    dprintf(fd, "LE  - Learn enable             FM  - Flow Miss\n"
+    dprintf(fd, "LE  - Learn enable             FM  - Flow miss\n"
                 "RP  - Rx packet                TP  - Tunnel Pkt\n"
                 "NhV - ARM to P4 Nexthop Valid  LMM - Local mapping miss\n"
+                "Act - Action (R - Redirect, AR - Redirect to ARM, P - Permit)\n"
                 "KT  - Key type\n");
     dprintf(fd, "%s\n", std::string(190, '-').c_str());
     dprintf(fd, "%-4s%-8s%-6s%-3s%-3s%-3s%-3s%-3s%-4s%-4s"
