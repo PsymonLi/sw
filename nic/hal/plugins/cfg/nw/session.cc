@@ -3011,29 +3011,21 @@ build_tcp_packet (hal::flow_t *flow, session_t *session,
         }
     }
 
-    if (sep == NULL || (sep && !(sep->ep_flags & EP_FLAGS_LOCAL))) { // source is not found or is remote
-        cpu_header->src_lif = HAL_LIF_CPU;
-        if (flow->pgm_attrs.use_vrf) {
-            pd::pd_vrf_get_fromcpu_vlanid_args_t args;
-            args.vrf = hal::vrf_lookup_by_handle(session->vrf_handle);
-            args.vid = &cpu_header->hw_vlan_id;
+    if ((sep == NULL || (sep && !(sep->ep_flags & EP_FLAGS_LOCAL))) &&
+        (dep && (dep->ep_flags & EP_FLAGS_LOCAL))) { // source is not found or is remote
+        if_t   *sif = NULL;
 
-            pd_func_args.pd_vrf_get_fromcpu_vlanid = &args;
-            if (hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_VRF_GET_FRCPU_VLANID,
-                                         &pd_func_args) == HAL_RET_OK) {
-                cpu_header->flags |= CPU_TO_P4PLUS_FLAGS_UPD_VLAN;
-            }
-        } else {
-            pd::pd_l2seg_get_fromcpu_vlanid_args_t   args;
-            args.l2seg = l2seg;
-            args.vid = &cpu_header->hw_vlan_id;
-
-            pd_func_args.pd_l2seg_get_fromcpu_vlanid = &args;
-            if (pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FRCPU_VLANID,
-                                         &pd_func_args) == HAL_RET_OK) {
-                cpu_header->flags |= CPU_TO_P4PLUS_FLAGS_UPD_VLAN;
-            }
+        sif = ep_get_pinned_uplink(dep);
+        if (sif == NULL) {
+            HAL_TRACE_ERR("Couldnt get source if for session :{}", key);
+            return 0;
         }
+
+        pd::pd_if_get_hw_lif_id_args_t args;
+        args.pi_if = sif;
+        pd_func_args.pd_if_get_hw_lif_id = &args;
+        hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_IF_GET_HW_LIF_ID, &pd_func_args);
+        cpu_header->src_lif = args.hw_lif_id;    
         eth_hdr = (ether_header_t *)(pkt);
         eth_hdr->etype = htons((key.flow_type == FLOW_TYPE_V4)?ETH_TYPE_IPV4:ETH_TYPE_IPV6);
         offset = sizeof(ether_header_t);
