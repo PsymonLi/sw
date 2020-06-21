@@ -16,7 +16,7 @@ import { TimeRange } from '@app/components/shared/timerange/utility';
 import { UIChartComponent } from '@app/components/shared/primeng-chart/chart';
 import { FieldSelectorTransform } from '../transforms/fieldselector.transform';
 import { FieldValueTransform, ValueMap, QueryMap } from '../transforms/fieldvalue.transform';
-import { ClusterDistributedServiceCard, ClusterNode, ClusterDistributedServiceCardStatus_admission_phase } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterNode, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile } from '@sdk/v1/models/generated/cluster';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { ITelemetry_queryMetricsQuerySpec, Telemetry_queryMetricsQuerySpec_function } from '@sdk/v1/models/generated/telemetry_query';
 import { LabelSelectorTransform } from '../transforms/labelselector.transform';
@@ -134,6 +134,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
   networkInterfacesTypeMap: { [key: string]: NetworkNetworkInterface[] } = {};
   naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
   networkInterfaces: NetworkNetworkInterface[] = [];
+  dscProfiles: ReadonlyArray<ClusterDSCProfile> = [];
   nodes: ReadonlyArray<ClusterNode> = [];
 
   macAddrToName: { [key: string]: string; } = {};
@@ -173,6 +174,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
     this.getNaples();
     this.getNodes();
     this.getNetworkInterfaces();
+    this.getDSCProfiles();
 
     if (this.chartConfig == null) {
       this.chartConfig = {
@@ -380,6 +382,19 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
       }
     );
     this.subscriptions.push(sub);
+  }
+
+  getDSCProfiles() {
+    const subscription = this.clusterService.ListDSCProfileCache().subscribe(
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.dscProfiles = response.data as ClusterDSCProfile[];
+      },
+      this._controllerService.webSocketErrorHandler('Failed to get DSC Profile')
+    );
+    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
 
   checkIfQueriesSelectorChanged(newQuery: TelemetryPollingMetricQueries, oldQuery: TelemetryPollingMetricQueries): boolean {

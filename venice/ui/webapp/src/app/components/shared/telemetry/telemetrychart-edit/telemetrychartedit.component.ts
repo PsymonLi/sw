@@ -9,7 +9,7 @@ import { AuthService } from '@app/services/generated/auth.service';
 import { ClusterService } from '@app/services/generated/cluster.service';
 import { UIConfigsService, Features } from '@app/services/uiconfigs.service';
 import { MetricsqueryService } from '@app/services/metricsquery.service';
-import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase } from '@sdk/v1/models/generated/cluster';
+import { ClusterDistributedServiceCard, ClusterDistributedServiceCardStatus_admission_phase, ClusterDSCProfile } from '@sdk/v1/models/generated/cluster';
 import { MetricMeasurement, MetricsMetadata, MetricField } from '@sdk/metrics/generated/metadata';
 import { Subject, Subscription } from 'rxjs';
 import { TelemetrychartComponent } from '../telemetrychart/telemetrychart.component';
@@ -80,6 +80,9 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
   isToShowDebugMetric: boolean = false;
 
   previousSelectedValue = null;
+
+  MAX_LINE_ERRORMSG: string = 'The metrics chart allows a maximum of ' + TelemetrychartComponent.MAX_LEGEND_EDIT_MODE +
+      ' plot lines. This is calculated by the number of selected fields multiplied by the number of selected items.';
 
   constructor(protected controllerService: ControllerService,
     protected clusterService: ClusterService,
@@ -189,7 +192,7 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
         if (metaData && metaData.objectKind === 'NetworkInterface') {
           res = this.getCardFieldDataForNetworkInterfaces(res, metaData.interfaceType, transform);
         } else {
-          res = this.getCardFieldDataForDSC(res, transform);
+          res = this.getCardFieldDataForDSC(res, transform, metaData);
         }
         res = [...res];
       }
@@ -199,31 +202,35 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
   }
 
 
-  getCardFieldDataForDSC(res: RepeaterData[], transform) {
-    res[0].values = this.chart.naples.map((naple: ClusterDistributedServiceCard) => {
+  getCardFieldDataForDSC(res: RepeaterData[], transform, metaData) {
+    res[0].values = [];
+    this.chart.naples.forEach((naple: ClusterDistributedServiceCard) => {
       // VS-1600.  DSCs are in various status, we want to inform user about DSC status.  User can choose decommissioned DSCs in metrics pages, but not encouraged
       let dscLabel =  (naple.spec.id) ? naple.spec.id : naple.meta.name ;
       dscLabel +=  (naple.status['admission-phase'] === ClusterDistributedServiceCardStatus_admission_phase.admitted) ? '' : ' (' + naple.status['admission-phase'] +  ')';
-      return {
-        label: dscLabel,
-        value: naple.status['primary-mac']
-      };
+      if (!metaData || !metaData.features || metaData.features.length === 0 ||
+          ObjectsRelationsUtility.isDSCInFlowawareOrFallwallMode(naple, this.chart.dscProfiles as ClusterDSCProfile[])) {
+        res[0].values.push({
+          label: dscLabel,
+          value: naple.status['primary-mac']
+        });
+      }
     });
     // if the current chart has some dscs which have been deleted,
     // they need to be added into the dropdown menu to avoid exceptions
     if (transform && transform.currValue && transform.currValue.length > 0 &&
-      transform.currValue[0] && transform.currValue[0].valueFormControl &&
-      transform.currValue[0].valueFormControl.length > 0) {
-    transform.currValue[0].valueFormControl.forEach((dsc: string) => {
-      const option = res[0].values.find(item => item.value === dsc);
-      if (!option) {
-        res[0].values.push({
-          label: dsc + '(Removed from PSM)',
-          value: dsc
-        });
-      }
-    });
-  }
+        transform.currValue[0] && transform.currValue[0].valueFormControl &&
+        transform.currValue[0].valueFormControl.length > 0) {
+      transform.currValue[0].valueFormControl.forEach((dsc: string) => {
+        const option = res[0].values.find(item => item.value === dsc);
+        if (!option) {
+          res[0].values.push({
+            label: dsc + '(Removed from PSM)',
+            value: dsc
+          });
+        }
+      });
+    }
     return res;
   }
 
@@ -260,22 +267,63 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     return 'DSCs';
   }
 
+  onFieldsChange(checkValue: boolean, source: DataSource, dataValue: any, dataLabel: string) {
+    if (checkValue && source.fields && source.fields.length > 1) {
+      let errorMsg: string = null;
+      const metaData = this.getMeasurementMetadata(source.measurement);
+      if (metaData) {
+        const firstFieldMetaData = metaData.fields.find(item =>
+            item.name === source.fields[0]);
+        const dataFieldMetaData = metaData.fields.find(item =>
+            item.name === dataValue);
+        if (firstFieldMetaData && firstFieldMetaData.aggregationFunc &&
+            dataFieldMetaData && dataFieldMetaData.aggregationFunc &&
+            firstFieldMetaData.aggregationFunc !==
+              dataFieldMetaData.aggregationFunc) {
+          errorMsg = 'Field "' + dataLabel + '" is using an aggregate function ' +
+            'which is incompatible with that of other fields. Please unselect all others fields first.';
+        }
+      }
+      if (!errorMsg && source.transforms && source.transforms.length > 0) {
+        const transform: FieldSelectorTransform = source.transforms.find(item =>
+            item.transformName === 'FieldSelector') as FieldSelectorTransform;
+        if (transform.formArray && transform.formArray.controls &&
+            transform.formArray.controls.length > 0 &&  transform.formArray.controls[0] &&
+            transform.formArray.controls[0].value && transform.formArray.controls[0].value.valueFormControl &&
+            transform.formArray.controls[0].value.valueFormControl.length * source.fields.length >
+            TelemetrychartComponent.MAX_LEGEND_EDIT_MODE) {
+          errorMsg = this.MAX_LINE_ERRORMSG;
+        }
+      }
+      if (errorMsg) {
+        this._controllerService.invokeConfirm({
+          header: 'Failed selecting field ' + dataLabel,
+          message: errorMsg,
+          acceptLabel: 'Close',
+          acceptVisible: true,
+          rejectVisible: false,
+          accept: () => {
+            source.fields = source.fields.filter(item => item !== dataValue);
+            this.chart.dataSources = [...this.chart.dataSources];
+          }
+        });
+      }
+    }
+  }
+
   // check how may cards selected before we submit this event to the transformer
   onCardValuesChanged (event: any, transform: any) {
     const metaData = this.getMeasurementMetadata(transform.measurement);
     const selectType = (metaData && metaData.objectKind === 'NetworkInterface') ?
         'Network Interface' : 'DSC';
     const headMsg = 'Failed adding ' + selectType + ' to the chart';
-    const errorMsg = 'The metrics chart allows a maximum of ' + TelemetrychartComponent.MAX_LEGEND_EDIT_MODE +
-      ' plot lines. This is calculated by the number of selected fields multiplied by the number of selected ' +
-      selectType + 's.';
     const values = Utility.formatRepeaterData(event);
     if (transform.fields && transform.fields.length > 0 && values && values[0] &&
         values[0].valueFormControl && values[0].valueFormControl.length *
         transform.fields.length > TelemetrychartComponent.MAX_LEGEND_EDIT_MODE) {
       this._controllerService.invokeConfirm({
         header: headMsg,
-        message: errorMsg,
+        message: this.MAX_LINE_ERRORMSG,
         acceptLabel: 'Close',
         acceptVisible: true,
         rejectVisible: false,
@@ -283,7 +331,14 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
           if (transform.formArray && transform.formArray.controls &&
               transform.formArray.controls.length > 0 &&  transform.formArray.controls[0]) {
             transform.formArray.controls[0].setValue(this.previousSelectedValue);
-            this.chart.dataSources = Utility.getLodash().cloneDeep(this.chart.dataSources);
+            this.chart.dataSources = this.chart.dataSources.map(ds => {
+              if (ds.transforms && ds.transforms.length > 0) {
+                ds.transforms = ds.transforms.map(item => {
+                  return item === transform ? Utility.getLodash().clone(item) : item;
+                });
+              }
+              return ds;
+            });
           }
         }
       });

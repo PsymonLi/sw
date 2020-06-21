@@ -177,9 +177,9 @@
                     styleClass="telemetrychartedit-checkbox"
                     labelStyleClass="telemetrychartedit-checkbox"
                     name="fieldSelection" [value]="option.name" [label]="option.displayName"
-                    [appErrorTooltip]="option.description"
-                    [(ngModel)]="source.fields"></p-checkbox>
-
+                    [appErrorTooltip]="option.description" [(ngModel)]="source.fields"
+                    (onChange)="onFieldsChange($event, source, option.name, option.displayName)">
+        </p-checkbox>
       </ng-container>
     </div>
     <div [@fastSlideInOut] *ngIf="source.fields.length != 0" fxFlex="none" fxLayout="column">
