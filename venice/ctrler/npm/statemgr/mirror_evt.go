@@ -142,6 +142,8 @@ func (mss *MirrorSessionState) Write() error {
 	//Do write only if changed
 	if propgatationStatusDifferent(prop, newProp) {
 		mss.MirrorSession.Status.PropagationStatus = *newProp
+		log.Infof("Updating propogation status for %v , Updated %v, pending %v",
+			mss.MirrorSession.Name, newProp.Updated, newProp.Pending)
 		return mss.MirrorSession.Write()
 	}
 
@@ -922,14 +924,13 @@ func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionStat
 
 //OnMirrorSessionUpdate mirror session update handle
 func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorSession, nmirror *monitoring.MirrorSession) error {
-	log.Infof("Got mirror update for %#v", nmirror.ObjectMeta)
-
 	// see if anything changed
 	_, ok := ref.ObjDiff(mirror.Spec, nmirror.Spec)
 	if (mirror.GenerationID == nmirror.GenerationID) && !ok {
 		//mss.MirrorSession.ObjectMeta = nmirror.ObjectMeta
 		return nil
 	}
+	log.Infof("Processing mirror update for %#v", nmirror.ObjectMeta)
 
 	ms, err := MirrorSessionStateFromObj(mirror)
 	if err != nil {

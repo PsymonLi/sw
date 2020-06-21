@@ -552,6 +552,8 @@ func (sma *SmNetworkInterface) getInterfacesMatchingSelector(selectors []*labels
 
 	networkStates := []*NetworkInterfaceState{}
 
+	sma.Lock()
+	defer sma.Unlock()
 	for _, labelIntfs := range sma.intfsByLabel {
 		label := labelIntfs.label
 		if selectorsMatch(selectors, labels.Set(label)) {
@@ -858,8 +860,6 @@ func (sma *SmNetworkInterface) updateMirror(nw *NetworkInterfaceState) error {
 //UpdateInterfacesMatchingSelector  updates interface mirror matching selector
 func (sma *SmNetworkInterface) UpdateInterfacesMatchingSelector(oldSelCol *interfaceMirrorSelector,
 	newSelCol *interfaceMirrorSelector) error {
-	sma.Lock()
-	defer sma.Unlock()
 	nwInterfaceStatesMap := make(map[string]*NetworkInterfaceState)
 
 	if newSelCol != nil {
