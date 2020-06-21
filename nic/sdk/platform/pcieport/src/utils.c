@@ -156,15 +156,17 @@ pcieport_set_crs(pcieport_t *p, const int on)
  * in reset by clearing reset_n bits;
  */
 void
-pcieport_set_serdes_reset(pcieport_t *p, const int on)
+pcieport_set_serdes_reset(const int port,
+                          const u_int16_t lanemask,
+                          const int on)
 {
-    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_SD_ASYNC_RESET_N, p->port));
+    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_SD_ASYNC_RESET_N, port));
     if (on) {
-        v &= ~p->lanemask;
+        v &= ~lanemask;
     } else {
-        v |= p->lanemask;
+        v |= lanemask;
     }
-    pal_reg_wr32(PP_(CFG_PP_SD_ASYNC_RESET_N, p->port), v);
+    pal_reg_wr32(PP_(CFG_PP_SD_ASYNC_RESET_N, port), v);
 }
 
 /*
@@ -173,15 +175,17 @@ pcieport_set_serdes_reset(pcieport_t *p, const int on)
  * in reset by clearing reset_n bits;
  */
 void
-pcieport_set_pcs_reset(pcieport_t *p, const int on)
+pcieport_set_pcs_reset(const int port,
+                       const u_int16_t lanemask,
+                       const int on)
 {
-    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_PCS_RESET_N, p->port));
+    u_int32_t v = pal_reg_rd32(PP_(CFG_PP_PCS_RESET_N, port));
     if (on) {
-        v &= ~p->lanemask;
+        v &= ~lanemask;
     } else {
-        v |= p->lanemask;
+        v |= lanemask;
     }
-    pal_reg_wr32(PP_(CFG_PP_PCS_RESET_N, p->port), v);
+    pal_reg_wr32(PP_(CFG_PP_PCS_RESET_N, port), v);
 }
 
 void

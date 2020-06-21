@@ -22,8 +22,12 @@ int pcieport_tgt_marker_rx_wait(pcieport_t *p);
 int pcieport_tgt_axi_pending_wait(pcieport_t *p);
 int pcieport_gate_open(pcieport_t *p);
 void pcieport_set_crs(pcieport_t *p, const int on);
-void pcieport_set_serdes_reset(pcieport_t *p, const int on);
-void pcieport_set_pcs_reset(pcieport_t *p, const int on);
+void pcieport_set_serdes_reset(const int port,
+                               const u_int16_t lanemask,
+                               const int on);
+void pcieport_set_pcs_reset(const int port,
+                            const u_int16_t lanemask,
+                            const int on);
 void pcieport_set_mac_reset(pcieport_t *p, const int on);
 int pcieport_get_ltssm_en(pcieport_t *p);
 void pcieport_set_ltssm_en(pcieport_t *p, const int on);

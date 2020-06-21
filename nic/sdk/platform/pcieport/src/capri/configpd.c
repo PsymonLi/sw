@@ -178,7 +178,6 @@ pcieport_set_sw_reset(pcieport_t *p, const int on)
 static void
 pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
 {
-    /* XXX ELBA-TODO check this maybe this moves to pd */
     if (on) {
         pal_reg_wr32(PP_(CFG_PP_PCIE_PLL_RST_N, p->port), 0);
     } else {
@@ -187,16 +186,15 @@ pcieport_set_pcie_pll_rst(pcieport_t *p, const int on)
 }
 
 static void
-pcieport_set_pcs_interrupt_disable(pcieport_t *p)
+pcieport_set_pcs_interrupt_disable(const int port, const u_int16_t lanemask)
 {
-    /* XXX ELBA-TODO check this maybe this moves to pd */
-    pal_reg_wr32(PP_(CFG_PP_PCS_INTERRUPT_DISABLE, p->port), p->lanemask);
+    pal_reg_wr32(PP_(CFG_PP_PCS_INTERRUPT_DISABLE, port), lanemask);
 }
 
 static void
-pcieport_pcs_int_disable(pcieport_t *p)
+pcieport_pcs_int_disable(const int port, const u_int16_t lanemask)
 {
-    pcieport_set_pcs_interrupt_disable(p);
+    pcieport_set_pcs_interrupt_disable(port, lanemask);
 }
 
 static int
@@ -285,10 +283,10 @@ pcieportpd_config_host(pcieport_t *p)
 {
     if (!pal_is_asic()) {
         /* toggle these resets */
-        pcieport_set_serdes_reset(p, 1);
-        pcieport_set_pcs_reset(p, 1);
-        pcieport_set_serdes_reset(p, 0);
-        pcieport_set_pcs_reset(p, 0);
+        pcieport_set_serdes_reset(p->port, p->lanemask, 1);
+        pcieport_set_pcs_reset(p->port, p->lanemask, 1);
+        pcieport_set_serdes_reset(p->port, p->lanemask, 0);
+        pcieport_set_pcs_reset(p->port, p->lanemask, 0);
     } else {
         pcieport_info_t *pi = pcieport_info_get();
 
@@ -302,7 +300,7 @@ pcieportpd_config_host(pcieport_t *p)
             }
 
             pcieportpd_select_pcie_refclk(p->port, host_clock);
-            pcieport_set_serdes_reset(p, 0);
+            pcieport_set_serdes_reset(p->port, p->lanemask, 0);
             if (pcieportpd_serdes_init() < 0) {
                 return -1;
             }
@@ -315,8 +313,8 @@ pcieportpd_config_host(pcieport_t *p)
             pcieport_pcsd_control_sris(p->sris);
             pi->serdes_init = 1;
         }
-        pcieport_set_pcs_reset(p, 1);
-        pcieport_set_pcs_reset(p, 0);
+        pcieport_set_pcs_reset(p->port, p->lanemask, 1);
+        pcieport_set_pcs_reset(p->port, p->lanemask, 0);
     }
 
     pcieport_set_sw_reset(p, 0);
@@ -396,6 +394,43 @@ pcieportpd_select_pcie_refclk(const int port, const int host_clock)
     }
 }
 
+/*
+ * Park the pcie mac and serdes hw blocks in reset to match
+ * the hardware reset state.  Then, when bringing the pcie link
+ * out of reset on the next poweron cycle the normal asic sequence
+ * will find the hardware in the expected state.
+ *
+ * This sequence is the reverse order of the init sequence when
+ * powering up and downloading serdes.
+ */
+static int
+pcieport_reset(pcieport_t *p)
+{
+    /*
+     * The serdes init sequence in cap_pcie_serdes_setup()
+     * brings all 16 lanes out of reset and downloads serdesfw
+     * to all 16 lanes.  To keep that setup sequence happy
+     * we park all 16 lanes in reset here, rather than use
+     * the port-specific p->lanemask.
+     */
+    const u_int16_t lanemask = 0xffff;
+
+    pcieport_set_ltssm_en(p, 0);
+    pcieport_set_mac_reset(p, 1);
+    pcieport_set_sw_reset(p, 1);
+    pcieport_pcs_int_disable(p->port, lanemask);
+    pcieport_set_pcs_reset(p->port, lanemask, 1);
+    pcieport_set_serdes_reset(p->port, lanemask, 1);
+    pcieport_set_pcie_pll_rst(p, 1);
+    pcieportpd_select_pcie_refclk(p->port, 0); /* select local refclk */
+    return 0;
+}
+
+/*
+ * On SWM/OCP cards we enter the LOW power state and want
+ * to shut off the pcie serdes to conserve power while running
+ * in this reduced power state.
+ */
 int
 pcieportpd_config_powerdown(pcieport_t *p)
 {
@@ -404,14 +439,8 @@ pcieportpd_config_powerdown(pcieport_t *p)
     if (!p->config) return -EIO;
     if (!p->host)   return -EINVAL;
 
-    pcieport_set_ltssm_en(p, 0);
-    pcieport_set_mac_reset(p, 1);
-    pcieport_set_sw_reset(p, 1);
-    pcieport_pcs_int_disable(p);
-    pcieport_set_pcs_reset(p, 1);
-    pcieport_set_serdes_reset(p, 1);
-    pcieport_set_pcie_pll_rst(p, 1);
-    pcieportpd_select_pcie_refclk(p->port, 0); /* select local refclk */
+    pcieport_reset(p);
+
     pi->serdes_init = 0;
     p->stats.powerdown++;
     return 0;
