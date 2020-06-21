@@ -52,8 +52,8 @@ if [ $? -eq 1 ] ; then
 fi
 
 TEMP=$(mktemp -d rpms.XXXXXX)
-cp $TOPDIR/platfrom/tools/build-rpm.sh $TEMP/drivers-linux-eth
 tar xf $TARBALL -C $TEMP
+cp $TOPDIR/platform/tools/build-rpm.sh $TEMP/drivers-linux-eth
 
 count=0
 retcode=0
