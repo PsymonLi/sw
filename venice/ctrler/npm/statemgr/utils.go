@@ -7,6 +7,7 @@ import (
 
 	"github.com/pensando/sw/venice/globals"
 
+	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
@@ -70,6 +71,14 @@ func ParseToIPPrefix(in string) (*netproto.IPPrefix, error) {
 // AddNpmSystemLabel mark object label to identify venice created object
 func AddNpmSystemLabel(labels map[string]string) {
 	labels[NpmNameKey] = "Auto"
+}
+
+// IsCleanupCandidate check whether a network can be garbage collected
+func IsCleanupCandidate(nw *ctkit.Network) bool {
+	if nw != nil {
+		return IsObjInternal(nw.Labels) && len(nw.Spec.Orchestrators) == 0
+	}
+	return false
 }
 
 // IsObjInternal check for venice auto created object label

@@ -285,7 +285,7 @@ func (ns *NetworkState) RemoveEndpoint(ep *EndpointState) error {
 	}
 	delete(ns.endpointDB, ep.endpointKey())
 	delete(ns.macaddrDB, ep.Endpoint.Status.MacAddress)
-	if len(ns.endpointDB) == 0 && IsObjInternal(ns.Network.Labels) {
+	if len(ns.endpointDB) == 0 && IsCleanupCandidate(ns.Network) {
 		ns.curState = networkMarkDelete
 		log.Errorf("mark for garbage collection networkstate: {%+v}", ns)
 	}
@@ -650,7 +650,7 @@ func (sm *Statemgr) cleanUnusedNetworks() {
 	defer sm.networkKindLock.Unlock()
 	nws, _ := sm.ListNetworks()
 	for _, nw := range nws {
-		if nw.isNetworkMarkedDelete() && IsObjInternal(nw.Network.Labels) {
+		if nw.isNetworkMarkedDelete() && IsCleanupCandidate(nw.Network) {
 			log.Infof("network garbage collector delete: %+v", nw)
 			// delete the endpoint in api server
 			nwInfo := network.Network{
@@ -666,7 +666,7 @@ func (sm *Statemgr) cleanUnusedNetworks() {
 			if err != nil {
 				log.Errorf("Ignore error deleting the network. Err: %v", err)
 			}
-		} else if len(nw.endpointDB) == 0 && IsObjInternal(nw.Network.Labels) {
+		} else if len(nw.endpointDB) == 0 && IsCleanupCandidate(nw.Network) {
 			// rel A to rel B stale networks gets cleaned up
 			log.Errorf("marking for garbage collection networkstate: {%+v}", nw)
 			nw.curState = networkMarkDelete

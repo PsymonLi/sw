@@ -10886,7 +10886,7 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 			return true, nil
 		}
 		return false, nil
-	}, "Stale network still present", "10s", "120s")
+	}, "Stale network still present", "10s", "40s")
 
 	foundEp, ok := nw.FindEndpoint("testWorkload-0001.0203.0405")
 	Assert(t, ok, "Could not find the endpoint", "testWorkload-0001.0203.0405")
@@ -10897,6 +10897,7 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 			Name:      "networkOrch",
 			Namespace: "default",
 			Tenant:    "default",
+			Labels:    map[string]string{},
 		},
 		Spec: network.NetworkSpec{
 			Type:   network.NetworkType_Bridged.String(),
@@ -10915,9 +10916,22 @@ func TestNetworkLabelingAndCleanup(t *testing.T) {
 	// call labelInternalNetworkObject
 	stateMgr.labelInternalNetworkObjects()
 	nw3, err := stateMgr.FindNetwork("default", "networkOrch")
-	AssertOk(t, err, "Could not find updated network")
+	AssertOk(t, err, "Could not find created network")
 	Assert(t, !IsObjInternal(nw3.Network.Labels), "Orchhub ref network must not have label")
 
+	// network with orchestration should not be deleted even if it has
+	// internal label
+	AddNpmSystemLabel(netwrk.Labels)
+	err = stateMgr.ctrler.Network().Update(netwrk)
+	AssertOk(t, err, "Could not update network")
+	nw3, err = stateMgr.FindNetwork("default", "networkOrch")
+	AssertOk(t, err, "Could not find updated network")
+	log.Infof("networkOrch : %v", nw3)
+	sleepTime := 21
+	log.Infof("Sleeping for %v seconds garbage collector to finish cleanup", sleepTime)
+	time.Sleep(time.Duration(sleepTime) * time.Second) //wait for garbage collector to finish
+	_, err = stateMgr.FindNetwork("default", "networkOrch")
+	AssertOk(t, err, "network: networkOrch got garbage collected")
 }
 
 func TestMain(m *testing.M) {
