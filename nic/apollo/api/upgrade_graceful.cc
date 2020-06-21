@@ -74,22 +74,29 @@ upg_ev_ready (upg_ev_params_t *params)
     return SDK_RET_OK;
 }
 
-static sdk_ret_t
-upg_ev_link_down (upg_ev_params_t *params)
+static void
+port_quiesce_response_cb (sdk_ret_t status)
 {
-    sdk_ret_t ret;
-
-    PDS_TRACE_DEBUG("Shutting down all uplink ports");
-    ret = port_shutdown_all();
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("Upgrade Port shutdown failed, err %u", ret);
-    }
+    PDS_TRACE_DEBUG("Quiesced all uplink ports, status %u", status);
     // stop the learn thread
     learn_state *lstate = api::g_pds_state.learn_db();
     core::stop_learn_thread();
     // detaching dpdk driver
     if (lstate->learn_lif()) {
         lstate->learn_lif()->destroy(lstate->learn_lif());
+    }
+    api::upg_ev_process_response(status, UPG_MSG_ID_LINK_DOWN);
+}
+
+static sdk_ret_t
+upg_ev_link_down (upg_ev_params_t *params)
+{
+    sdk_ret_t ret;
+
+    PDS_TRACE_DEBUG("Quiescing down all uplink ports");
+    ret = port_quiesce_all(port_quiesce_response_cb);
+    if ((ret != SDK_RET_OK) && (ret != SDK_RET_IN_PROGRESS)) {
+        PDS_TRACE_ERR("Uplink Port quiescing failed, err %u", ret);
     }
     return ret;
 }

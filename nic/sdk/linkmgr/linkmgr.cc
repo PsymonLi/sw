@@ -278,6 +278,20 @@ port_event_disable (linkmgr_entry_data_t *data)
 }
 
 static void
+port_quiesce_req_handler (ipc_msg_ptr msg, const void *ctx)
+{
+    linkmgr_entry_data_t *data = (linkmgr_entry_data_t *)msg->data();
+    port *port_p = (port *)data->ctxt;
+    linkmgr_entry_data_t resp = *data;
+    sdk_ret_t ret;
+
+    ret = port_p->port_quiesce();
+    // send response back to blocked caller
+    resp.status = ret;
+    respond(msg, &resp, sizeof(resp));
+}
+
+static void
 port_enable_req_handler (ipc_msg_ptr msg, const void *ctx)
 {
     SDK_ATOMIC_STORE_BOOL(&hal_cfg, false);
@@ -290,6 +304,12 @@ port_enable_req_handler (ipc_msg_ptr msg, const void *ctx)
 static void
 port_rsp_handler (ipc_msg_ptr msg, const void *request_cookie)
 {
+    linkmgr_entry_data_t *data = (linkmgr_entry_data_t *)msg->data();
+
+    if (msg->length() && data->response_cb) {
+        SDK_TRACE_DEBUG("Responding the status, status %u", data->status);
+        data->response_cb(data->response_cookie, data->status);
+    }
 }
 
 static void
@@ -451,6 +471,8 @@ linkmgr_event_thread_init (void *ctxt)
                         port_enable_req_handler, NULL);
     reg_request_handler(LINKMGR_OPERATION_PORT_DISABLE,
                         port_disable_req_handler, NULL);
+    reg_request_handler(LINKMGR_OPERATION_PORT_QUIESCE,
+                        port_quiesce_req_handler, NULL);
 }
 
 static void
@@ -1627,20 +1649,12 @@ port_store_user_config (port_args_t *port_args)
 }
 
 sdk_ret_t
-port_shutdown (void *pd_p)
+port_quiesce (void *pd_p, linkmgr_async_response_cb_t response_cb,
+              void *response_cookie)
 {
     port *port_p = (port *)pd_p;
 
-    return port::port_disable(port_p);
-}
-
-sdk_ret_t
-port_pb_shutdown (void *pd_p)
-{
-    // it is ok to call this in the caller context as it is an asic call
-    port *port_p = (port *)pd_p;
-
-    return port_p->port_pb_enable(false);
+    return port::port_quiesce(port_p, response_cb, response_cookie);
 }
 
 uint16_t

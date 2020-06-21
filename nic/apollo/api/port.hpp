@@ -29,7 +29,11 @@ void xcvr_event_cb(xcvr_event_info_t *xcvr_event_info);
  */
 void port_event_cb(port_event_info_t *port_event_info);
 
-sdk_ret_t port_shutdown_all(void);
+/// \brief port quiesce callback
+typedef void(*port_quiesce_async_response_cb_t)(sdk_ret_t);
+
+/// \brief port quiesce function
+sdk_ret_t port_quiesce_all(port_quiesce_async_response_cb_t);
 
 /**
   * @brief   reset port stats
@@ -57,6 +61,7 @@ sdk_ret_t port_get(pds_obj_key_t *key, pds_if_info_t *info);
 /// \param[in]  ctxt    opaque context passed to cb
 /// \return #SDK_RET_OK on success, failure status code on error
 sdk_ret_t port_get_all(if_read_cb_t cb, void *ctxt);
+
 
 }    // namespace api
 

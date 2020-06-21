@@ -1590,6 +1590,23 @@ port::port_link_sm_reset (void)
 }
 
 sdk_ret_t
+port::port_quiesce(void)
+{
+    sdk_ret_t ret;
+
+    ret = port_disable();
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Port disable failed");
+        return ret;
+    }
+    ret = port_pb_enable(false);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Port pb disable failed");
+    }
+    return ret;
+}
+
+sdk_ret_t
 port::port_disable(void)
 {
     // check if already disabled
@@ -2116,15 +2133,17 @@ sdk_ret_t
 port::port_enable(port *port_p)
 {
     sdk_ret_t ret;
+    linkmgr_entry_data_t data;
 
     // wait for linkmgr control thread to process port event
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
 
-    linkmgr_entry_data_t data;
     data.ctxt  = port_p;
     data.timer = NULL;
+    data.response_cb = NULL;
+
     ret = linkmgr_notify(LINKMGR_OPERATION_PORT_ENABLE, &data,
                          q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
 
@@ -2138,21 +2157,48 @@ sdk_ret_t
 port::port_disable(port *port_p)
 {
     sdk_ret_t ret;
+    linkmgr_entry_data_t data;
 
     // wait for linkmgr control thread to process port event
     while (!is_linkmgr_ctrl_thread_ready()) {
         pthread_yield();
     }
 
-    linkmgr_entry_data_t data;
     data.ctxt  = port_p;
     data.timer = NULL;
+    data.response_cb = NULL;
 
     ret = linkmgr_notify(LINKMGR_OPERATION_PORT_DISABLE, &data,
                          q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
 
     if (ret != SDK_RET_OK) {
         SDK_TRACE_ERR("Error notifying control-thread for port disable");
+    }
+    return ret;
+}
+
+sdk_ret_t
+port::port_quiesce(port *port_p, linkmgr_async_response_cb_t response_cb,
+                   void *response_cookie)
+{
+    sdk_ret_t ret;
+    linkmgr_entry_data_t data;
+
+    // wait for linkmgr control thread to process port event
+    while (!is_linkmgr_ctrl_thread_ready()) {
+        pthread_yield();
+    }
+
+    data.ctxt  = port_p;
+    data.timer = NULL;
+    data.response_cb = response_cb;
+    data.response_cookie = response_cookie;
+
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_QUIESCE, &data,
+                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
+
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Error notifying control-thread for port quiesce");
     }
     return ret;
 }

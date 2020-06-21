@@ -44,11 +44,17 @@ typedef enum linkmgr_opn_e {
     LINKMGR_OPERATION_PORT_DEBOUNCE_TIMER,
     LINKMGR_OPERATION_PORT_LINK_POLL_TIMER,
     LINKMGR_OPERATION_XCVR_POLL_TIMER,
+    LINKMGR_OPERATION_PORT_QUIESCE,
 } linkmgr_opn_t;
 
+typedef void (*linkmgr_async_response_cb_t)(void *cookie, sdk_ret_t status);
+
 typedef struct linkmgr_entry_data_s {
-    void  *ctxt;   // data passed by caller
-    void  *timer;  // timer data passed by timer callbacks
+    void *ctxt;                              // data passed by caller
+    void *timer;                             // timer data passed by timer callbacks
+    linkmgr_async_response_cb_t response_cb; // response callback for async threads
+    void *response_cookie;                   // async response cookie
+    sdk_ret_t status;                        // operation status
 } linkmgr_entry_data_t;
 
 //------------------------------------------------------------------------------

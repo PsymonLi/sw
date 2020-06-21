@@ -24,6 +24,7 @@ typedef void (*port_log_fn_t)(sdk_trace_level_e trace_level,
                               const char *msg);
 
 typedef void (*xcvr_event_notify_t)(xcvr_event_info_t *xcvr_event_info);
+typedef void (*linkmgr_async_response_cb_t)(void *cookie, sdk_ret_t status);
 
 typedef enum linkmgr_thread_id_e {
     LINKMGR_THREAD_ID_MIN         = 0,
@@ -113,9 +114,8 @@ port_admin_state_t port_default_admin_state(void);
 void linkmgr_threads_stop(void);
 void linkmgr_threads_wait(void);
 void port_store_user_config(port_args_t *port_args);
-// TODO : below better to use linkmgr events
-sdk_ret_t port_shutdown (void *port_p);
-sdk_ret_t port_pb_shutdown (void *port_p);
+sdk_ret_t port_quiesce(void *port_p, linkmgr_async_response_cb_t response_cb,
+                       void *reponse_cookie);
 sdk_ret_t linkmgr_threads_suspend(void);
 sdk_ret_t linkmgr_threads_resume(void);
 bool linkmgr_threads_suspended(void);

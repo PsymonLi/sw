@@ -26,11 +26,15 @@
 
 namespace api {
 
-typedef struct port_shutdown_walk_cb_ctxt_s {
-    bool port_shutdown;
-    bool port_pb_shutdown;
+typedef struct port_quiesce_walk_cb_ctxt_s {
     bool err;
-} port_shutdown_walk_cb_ctxt_t;
+    port_quiesce_async_response_cb_t response_cb;
+    uint32_t req_count;
+} port_quiesce_walk_cb_ctxt_t;
+
+// TODO : right now port walk is multiple requests.
+// when it is a single request, can remove this variable
+static port_quiesce_walk_cb_ctxt_t g_port_quiesce_walk_ctxt;
 
 static bool
 port_event_lif_cb (void *entry, void *ctxt)
@@ -189,49 +193,52 @@ xcvr_event_cb (xcvr_event_info_t *xcvr_event_info)
     if_db()->walk(IF_TYPE_ETH, xvcr_event_walk_cb, xcvr_event_info);
 }
 
+static void
+port_quiesce_response_cb (void *ctxt, sdk_ret_t status)
+{
+    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
+
+    SDK_ASSERT(ctx->req_count);
+    ctx->req_count--;
+    if (status != SDK_RET_OK) {
+        ctx->err = true;
+    }
+    if ((ctx->req_count == 0) && (ctx->response_cb)) {
+       ctx->response_cb(ctx->err ? SDK_RET_ERR : SDK_RET_OK);
+       ctx->response_cb = NULL;
+    }
+}
+
 bool
-port_shutdown_walk_cb (void *entry, void *ctxt)
+port_quiesce_walk_cb (void *entry, void *ctxt)
 {
     if_entry *intf = (if_entry *)entry;
-    port_shutdown_walk_cb_ctxt_t *ctx = (port_shutdown_walk_cb_ctxt_t *)ctxt;
+    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
     sdk_ret_t ret;
 
-    if (ctx->port_shutdown) {
-        ret = sdk::linkmgr::port_shutdown(intf->port_info());
-    } else if (ctx->port_pb_shutdown) {
-        ret = sdk::linkmgr::port_pb_shutdown(intf->port_info());
-    } else {
-        ret = SDK_RET_ERR;
-    }
-
+    ret = sdk::linkmgr::port_quiesce(intf->port_info(),
+                                     port_quiesce_response_cb, ctx);
     if (ret != SDK_RET_OK) {
         ctx->err = true;
     }
-
+    ctx->req_count++;
     return false;
 }
 
 sdk_ret_t
-port_shutdown_all (void)
+port_quiesce_all (port_quiesce_async_response_cb_t response_cb)
 {
-    port_shutdown_walk_cb_ctxt_t ctxt = { 0 };
+    port_quiesce_walk_cb_ctxt_t *ctx = &g_port_quiesce_walk_ctxt;
 
-    // let first disable all
-    ctxt.port_shutdown = true;
-    if_db()->walk(IF_TYPE_ETH, port_shutdown_walk_cb, &ctxt);
-    if (ctxt.err) {
-       return SDK_RET_ERR;
+    ctx->response_cb = response_cb;
+    ctx->err = false;
+    ctx->req_count = 0;
+    if_db()->walk(IF_TYPE_ETH, port_quiesce_walk_cb, ctx);
+    if (ctx->err) {
+        ctx->response_cb = NULL; // callback is not needed
+        return SDK_RET_ERR;
     }
-
-    // TODO : check with team on whether the 2 loop walk is needed or not
-    // pb disable
-    ctxt.port_shutdown = false;
-    ctxt.port_pb_shutdown = true;
-    if_db()->walk(IF_TYPE_ETH, port_shutdown_walk_cb, &ctxt);
-    if (ctxt.err) {
-       return SDK_RET_ERR;
-    }
-    return SDK_RET_OK;
+    return SDK_RET_IN_PROGRESS;
 }
 
 static bool
