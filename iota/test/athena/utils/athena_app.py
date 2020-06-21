@@ -10,31 +10,34 @@ import iota.test.athena.utils.misc as misc_utils
 import iota.harness.infra.store as store
 
 ATHENA_SEC_APP_KILL_WAIT_TIME = 5 # secs
+INIT_WAIT_TIME_DEFAULT = 200 # secs
 
-
-def get_bitw_nodes():
-    node_names = []
+def get_athena_node_nic_names():
+    node_nic_names = []
 
     nics =  store.GetTopology().GetNicsByPipeline("athena")
     for nic in nics:
-        node_names.append(nic.GetNodeName())
+        node_nic_names.append((nic.GetNodeName(), nic.Name()))
 
-    return node_names[:]
+    return node_nic_names
 
 
-def athena_sec_app_kill(node_name = None):
-    node_names = []
+def athena_sec_app_kill(node_name = None, nic_name = None):
+    node_nic_names = []
 
-    if node_name is None:
-        node_names = get_bitw_nodes()
+    if (not node_name and nic_name) or (node_name and not nic_name):
+        raise Exception("specify both node_name and nic_name or neither")
+
+    if node_name and nic_name:
+        node_nic_names.append((node_name, nic_name))
     else:
-        node_names.append(node_name)
+        node_nic_names = get_athena_node_nic_names()
     
-    for nname in node_names:
+    for nname, nicname in node_nic_names:
         req = api.Trigger_CreateExecuteCommandsRequest()
         
         cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
-        api.Trigger_AddNaplesCommand(req, nname, cmd)
+        api.Trigger_AddNaplesCommand(req, nname, cmd, nicname)
 
         resp = api.Trigger(req)
         ps_cmd_resp = resp.commands[0]
@@ -44,11 +47,12 @@ def athena_sec_app_kill(node_name = None):
             athena_sec_app_pid = ps_cmd_resp.stdout.strip().split()[1]
         
             api.Logger.info("athena sec app already running on node %s "
-                            "with pid %s. Killing it." % (nname, 
-                            athena_sec_app_pid))
+                            "nic %s with pid %s. Killing it." % (nname, 
+                            nicname, athena_sec_app_pid))
             
             req = api.Trigger_CreateExecuteCommandsRequest()
-            api.Trigger_AddNaplesCommand(req, nname, "pkill -n athena_app")
+            api.Trigger_AddNaplesCommand(req, nname, "pkill -n athena_app",
+                                        nicname)
             
             resp = api.Trigger(req)
             pkill_cmd_resp = resp.commands[0]
@@ -63,24 +67,30 @@ def athena_sec_app_kill(node_name = None):
 
 
         else:
-            api.Logger.info("athena sec app not running on node %s" % nname)
+            api.Logger.info("athena sec app not running on node %s nic %s" % (
+                            nname, nicname))
 
     return api.types.status.SUCCESS
 
 
-def athena_sec_app_start(node_name = None, init_wait_time = 200):
-    node_names = []
+def athena_sec_app_start(node_name = None, nic_name = None, 
+                            init_wait_time = INIT_WAIT_TIME_DEFAULT):
+    node_nic_names = []
 
-    if node_name is None:
-        node_names = get_bitw_nodes()
+    if (not node_name and nic_name) or (node_name and not nic_name):
+        raise Exception("specify both node_name and nic_name or neither")
+
+    if node_name and nic_name:
+        node_nic_names.append((node_name, nic_name))
     else:
-        node_names.append(node_name)
+        node_nic_names = get_athena_node_nic_names()
     
-    for nname in node_names:
+    for nname, nicname in node_nic_names:
         req = api.Trigger_CreateExecuteCommandsRequest()
         
         cmd = "/nic/tools/start-sec-agent-iota.sh"
-        api.Trigger_AddNaplesCommand(req, nname, cmd, background = True)
+        api.Trigger_AddNaplesCommand(req, nname, cmd, nicname, 
+                                            background = True)
         
         resp = api.Trigger(req)
         cmd = resp.commands[0]
@@ -88,17 +98,17 @@ def athena_sec_app_start(node_name = None, init_wait_time = 200):
 
         if cmd.exit_code != 0:
             api.Logger.error("command to start athena sec app failed on "
-                            "node %s" % nname)
+                            "node %s nic %s" % (nname, nicname))
             return api.types.status.FAILURE
         
 
     # sleep for init to complete
     misc_utils.Sleep(init_wait_time)
             
-    for nname in node_names:
+    for nname, nicname in node_nic_names:
         req = api.Trigger_CreateExecuteCommandsRequest()
         cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
-        api.Trigger_AddNaplesCommand(req, nname, cmd)
+        api.Trigger_AddNaplesCommand(req, nname, cmd, nicname)
 
         resp = api.Trigger(req)
         cmd = resp.commands[0]
@@ -106,30 +116,35 @@ def athena_sec_app_start(node_name = None, init_wait_time = 200):
         
         if cmd.exit_code != 0:
             api.Logger.error("ps failed or athena_app failed to start "
-                    "on node %s" % nname)
+                    "on node %s nic %s" % (nname, nicname))
             return api.types.status.FAILURE
         
         if  "athena_app" in cmd.stdout:
             athena_sec_app_pid = cmd.stdout.strip().split()[1]
-            api.Logger.info("Athena sec app came up on node %s and "
-                            "has pid %s" % (nname, athena_sec_app_pid))
+            api.Logger.info("Athena sec app came up on node %s nic %s and "
+                            "has pid %s" % (nname, nicname, 
+                            athena_sec_app_pid))
 
     return api.types.status.SUCCESS
 
 
-def athena_sec_app_might_start(node_name = None, init_wait_time = 200):
-    node_names = []
+def athena_sec_app_might_start(node_name = None, nic_name = None, 
+                                init_wait_time = INIT_WAIT_TIME_DEFAULT):
+    node_nic_names = []
 
-    if node_name is None:
-        node_names = get_bitw_nodes()
+    if (not node_name and nic_name) or (node_name and not nic_name):
+        raise Exception("specify both node_name and nic_name or neither")
+
+    if node_name and nic_name:
+        node_nic_names.append((node_name, nic_name))
     else:
-        node_names.append(node_name)
+        node_nic_names = get_athena_node_nic_names()
     
-    for nname in node_names:
+    for nname, nicname in node_nic_names:
         req = api.Trigger_CreateExecuteCommandsRequest()
         
         cmd = "ps -aef | grep athena_app | grep soft-init | grep -v grep"
-        api.Trigger_AddNaplesCommand(req, nname, cmd)
+        api.Trigger_AddNaplesCommand(req, nname, cmd, nicname)
 
         resp = api.Trigger(req)
         ps_cmd_resp = resp.commands[0]
@@ -139,28 +154,33 @@ def athena_sec_app_might_start(node_name = None, init_wait_time = 200):
             athena_sec_app_pid = ps_cmd_resp.stdout.strip().split()[1]
         
             api.Logger.info("athena sec app already running on node %s "
-                            "with pid %s." % (nname, athena_sec_app_pid))
+                            "nic %s with pid %s." % (nname, nicname, 
+                            athena_sec_app_pid))
         else:
-            ret = athena_sec_app_start(nname, init_wait_time)
+            ret = athena_sec_app_start(nname, nicname, init_wait_time)
             if ret != api.types.status.SUCCESS:
                 return ret
 
     return api.types.status.SUCCESS
 
-def athena_sec_app_restart(node_name = None, init_wait_time = 200):
-    node_names = []
+def athena_sec_app_restart(node_name = None, nic_name = None, 
+                            init_wait_time = INIT_WAIT_TIME_DEFAULT):
+    node_nic_names = []
 
-    if node_name is None:
-        node_names = get_bitw_nodes()
+    if (not node_name and nic_name) or (node_name and not nic_name):
+        raise Exception("specify both node_name and nic_name or neither")
+
+    if node_name and nic_name:
+        node_nic_names.append((node_name, nic_name))
     else:
-        node_names.append(node_name)
-
-    for nname in node_names:
-        ret = athena_sec_app_kill(nname)
+        node_nic_names = get_athena_node_nic_names()
+    
+    for nname, nicname in node_nic_names:
+        ret = athena_sec_app_kill(nname, nicname)
         if ret != api.types.status.SUCCESS:
             return ret
 
-        ret = athena_sec_app_start(nname, init_wait_time)
+        ret = athena_sec_app_start(nname, nicname, init_wait_time)
         if ret != api.types.status.SUCCESS:
             return ret
 

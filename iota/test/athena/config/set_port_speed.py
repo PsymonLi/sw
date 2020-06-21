@@ -7,17 +7,17 @@ import iota.test.athena.utils.pdsctl as pdsctl
 def Main(step):
 
     up0_uuid, up1_uuid = None, None
-    node_names = athena_app_utils.get_bitw_nodes()
+    node_nic_pairs = athena_app_utils.get_athena_node_nic_names()
 
-    for nname in node_names:
+    for nname, nicname in node_nic_pairs:
    
         # get UUIDs of the uplink ports
         req = api.Trigger_CreateExecuteCommandsRequest()
       
         cmd = "pdsctl show port status"
         show_cmd_substr = "port status"
-        ret, resp = pdsctl.ExecutePdsctlShowCommand(nname, show_cmd_substr,
-                                                                yaml=False)
+        ret, resp = pdsctl.ExecutePdsctlShowCommand(nname, nicname, 
+                                        show_cmd_substr, yaml=False)
         if ret != True:
             api.Logger.error("%s command failed" % cmd)
             return api.types.status.FAILURE
@@ -45,32 +45,20 @@ def Main(step):
         cmd = "pdsctl debug update port"
         debug_cmd_substr = "debug update port"
         
-        up0_speed_args = '--port ' + up0_uuid + ' --speed 50g --fec-type none'
-        ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
-                                            up0_speed_args, yaml=False)
+        up0_speed_args = '--port ' + up0_uuid + ' --speed 50g --fec-type none' \
+                        + ' --auto-neg disable'
+        ret, resp = pdsctl.ExecutePdsctlCommand(nname, nicname, 
+                            debug_cmd_substr, up0_speed_args, yaml=False)
         if ret != True:
             api.Logger.error("%s %s command failed" % (cmd, up0_speed_args))
             return api.types.status.FAILURE
 
-        up0_autoneg_args = ' --port ' + up0_uuid + ' --auto-neg disable'
-        ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
-                                            up0_autoneg_args, yaml=False)
-        if ret != True:
-            api.Logger.error("%s %s command failed" % (cmd, up0_autoneg_args))
-            return api.types.status.FAILURE
-
-        up1_speed_args = '--port ' + up1_uuid + ' --speed 50g --fec-type none'
-        ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
-                                            up1_speed_args, yaml=False)
+        up1_speed_args = '--port ' + up1_uuid + ' --speed 50g --fec-type none' \
+                        + ' --auto-neg disable'
+        ret, resp = pdsctl.ExecutePdsctlCommand(nname, nicname, 
+                            debug_cmd_substr, up1_speed_args, yaml=False)
         if ret != True:
             api.Logger.error("%s %s command failed" % (cmd, up1_speed_args))
-            return api.types.status.FAILURE
-
-        up1_autoneg_args = ' --port ' + up1_uuid + ' --auto-neg disable'
-        ret, resp = pdsctl.ExecutePdsctlCommand(nname, debug_cmd_substr, 
-                                            up1_autoneg_args, yaml=False)
-        if ret != True:
-            api.Logger.error("%s %s command failed" % (cmd, up1_autoneg_args))
             return api.types.status.FAILURE
 
     return api.types.status.SUCCESS

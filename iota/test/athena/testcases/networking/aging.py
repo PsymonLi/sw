@@ -6,34 +6,37 @@ import iota.test.athena.utils.athena_app as athena_app_utils
 from iota.harness.infra.glopts import GlobalOptions
 # from apollo.config.store import client as EzAccessStoreClient
 
+INIT_WAIT_TIME_AGING = 80 # secs
 
 def Setup(tc):
-    tc.nics =  store.GetTopology().GetNicsByPipeline("athena")
-    tc.nodes= []
-    for nic in tc.nics:
-        tc.nodes.append(nic.GetNodeName())
-    api.Logger.info("Test aging for Athena pipeline on node {}".format(tc.nodes))
+    tc.node_nic_pairs = athena_app_utils.get_athena_node_nic_names()
+    api.Logger.info("Test aging for Athena pipeline on {}".format(
+                    tc.node_nic_pairs))
     return api.types.status.SUCCESS
 
 def scriptExec(tc):
     if GlobalOptions.dryrun:
         return api.types.status.SUCCESS
-    for node in tc.nodes:
-        api.Logger.info("Running test %s on %s ..." % (tc.args.test, node))
-        client.ScriptExecCommand(node, tc, tc.args.test_dir, tc.args.test,
+    for node, nic in tc.node_nic_pairs:
+        api.Logger.info("Running test %s on (%s, %s) ..." % (tc.args.test, 
+                                                            node, nic))
+        client.ScriptExecCommand(node, nic, tc, tc.args.test_dir, tc.args.test,
                                  getattr(tc.args, "log_file", None))
     return api.types.status.SUCCESS
 
 
 def Trigger(tc):
-    for node in tc.nodes:
+    for node, nic in tc.node_nic_pairs:
         if getattr(tc.args, "restart_app", False):
-            ret = athena_app_utils.athena_sec_app_restart(node, 80)
+            ret = athena_app_utils.athena_sec_app_restart(node, nic,
+                                                INIT_WAIT_TIME_AGING)
         else:
-            ret = athena_app_utils.athena_sec_app_might_start(node, 80)
+            ret = athena_app_utils.athena_sec_app_might_start(node, nic,
+                                                INIT_WAIT_TIME_AGING)
 
         if ret != api.types.status.SUCCESS:
-            api.Logger.error("Failed to start athena sec app on node %s" % node)
+            api.Logger.error("Failed to start athena sec app on (%s, %s)" % (
+                            node, nic))
             return (ret)
 
     ret = scriptExec(tc)
@@ -51,10 +54,10 @@ def VerifyDumpCount(tc):
     if hasattr(tc.args, "dump_expected_count"):
         expected_count = int(getattr(tc.args, "dump_expected_count"))
 
-    for node in tc.nodes:
+    for node, nic in tc.node_nic_pairs:
         req = api.Trigger_CreateExecuteCommandsRequest()
         api.Trigger_AddNaplesCommand(req, node, "grep -c %s %s" % (tc.args.dump_sym,
-                                     tc.args.dump_file))
+                                     tc.args.dump_file), nic)
         resp = api.Trigger(req)
         cmd = resp.commands[0]
         api.PrintCommandResults(cmd)

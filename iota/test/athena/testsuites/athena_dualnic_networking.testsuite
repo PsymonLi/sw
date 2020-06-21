@@ -37,7 +37,7 @@ common:
 testbundles:
     precheckin:
         #- classic/driver-features-sanity.testbundle
-        - networking/networking.testbundle
+        - networking/dualnic_networking.testbundle
 
     sanity:
         # Relative paths from iota/test/athena/testbundles/

@@ -29,7 +29,8 @@ def Setup(tc):
     # get node info
     tc.bitw_node_name = None
     tc.bitw_node = None
-    
+    tc.bitw_nic_name = None
+
     tc.wl_node_name = None
     tc.wl_node = None
     
@@ -37,6 +38,7 @@ def Setup(tc):
     nics =  store.GetTopology().GetNicsByPipeline("athena")
     for nic in nics:
         tc.bitw_node_name = nic.GetNodeName()
+        tc.bitw_nic_name = nic.Name()
         break
 
     workloads = api.GetWorkloads()
@@ -174,7 +176,8 @@ def Verify(tc):
                               tc.bitw_node_name)
             return api.types.status.FAILURE
 
-    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name, 80)
+    ret = athena_app_utils.athena_sec_app_restart(tc.bitw_node_name,
+                                                tc.bitw_nic_name, 80) 
     if ret != api.types.status.SUCCESS:
         api.Logger.error("Failed to restart athena sec app on node %s" % \
                         tc.bitw_node_name)

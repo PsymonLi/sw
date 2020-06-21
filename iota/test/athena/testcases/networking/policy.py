@@ -13,10 +13,7 @@ import os
 # Need to start athena_app first
 
 def Setup(tc):
-    tc.nics =  store.GetTopology().GetNicsByPipeline("athena")
-    tc.nodes= []
-    for nic in tc.nics:
-        tc.nodes.append(nic.GetNodeName())
+    tc.node_nic_pairs = athena_app_utils.get_athena_node_nic_names()
     tc.policy_type = getattr(tc.args, 'type', "default")
     curr_dir = os.path.dirname(os.path.realpath(__file__))
     tc.custom_policy_path = curr_dir + '/config/' + tc.policy_type + '.json'
@@ -24,7 +21,7 @@ def Setup(tc):
 
     # if file is already there, it will overwrite the old file
     cmd = ""
-    for node in tc.nodes:
+    for node, nic in tc.node_nic_pairs:
         # because new logic in athena_app is to read policy.json in /data
         # if we want to test default policy.json, we have to clean /data first
         if tc.policy_type == "default":
@@ -38,48 +35,53 @@ def Setup(tc):
             cmd = "mv /" + tc.policy_type + ".json  /data/policy.json"
 
         req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddNaplesCommand(req, node, cmd)
-        api.Trigger_AddNaplesCommand(req, node, "sync")
+        api.Trigger_AddNaplesCommand(req, node, cmd, nic)
+        api.Trigger_AddNaplesCommand(req, node, "sync", nic)
         resp = api.Trigger(req)
         for cmd in resp.commands:
             api.PrintCommandResults(cmd)
             if cmd.exit_code != 0:
-                api.Logger.error("copy policy.json file to /data/ failed on node {}".format(node))
+                api.Logger.error("copy policy.json file to /data/ failed on "
+                                "{}".format((node, nic)))
                 return api.types.status.FAILURE
     return api.types.status.SUCCESS
 
 def Trigger(tc):
-    for node in tc.nodes:
-        ret = athena_app_utils.athena_sec_app_restart(node, 180)
+    for node, nic in tc.node_nic_pairs:
+        ret = athena_app_utils.athena_sec_app_restart(node, nic, 180) 
         if ret != api.types.status.SUCCESS:
-            api.Logger.error("Failed to restart athena sec app on node %s" % node)
+            api.Logger.error("Failed to restart athena sec app on (%s, %s)" % (
+                            node, nic))
             return (ret)
 
-    for node in tc.nodes:
+    for node, nic in tc.node_nic_pairs:
         req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddNaplesCommand(req, node, "ps -aef | grep athena_app | grep soft-init | grep -v 'grep'")
+        cmd = "ps -aef | grep athena_app | grep soft-init | grep -v 'grep'"
+        api.Trigger_AddNaplesCommand(req, node, cmd, nic)
 
         resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("ps failed on Node {}".format(node))
+        cmd_resp = resp.commands[0]
+        api.PrintCommandResults(cmd_resp)
+        if cmd_resp.exit_code != 0:
+            api.Logger.error("ps failed on {}".format((node, nic)))
             return api.types.status.FAILURE
-        if "athena_app" not in cmd.stdout:
-            api.Logger.error("no athena_app running on Node {}, need to start athena_app first".format(node))
+        if "athena_app" not in cmd_resp.stdout:
+            api.Logger.error("no athena_app running on {}, need to start "
+                            "athena_app first".format((node, nic)))
             return api.types.status.FAILURE
 
-        athena_sec_app_pid = cmd.stdout.strip().split()[1]
-        api.Logger.info("athena_app up and running on Node {} with PID {}".format(node, athena_sec_app_pid))
+        athena_sec_app_pid = cmd_resp.stdout.strip().split()[1]
+        api.Logger.info("athena_app up and running on {} with PID {}".format(
+                        (node, nic), athena_sec_app_pid))
 
         req = api.Trigger_CreateExecuteCommandsRequest()
         sig_cmd = "kill -SIGUSR1 " + athena_sec_app_pid
-        api.Trigger_AddNaplesCommand(req, node, sig_cmd)
+        api.Trigger_AddNaplesCommand(req, node, sig_cmd, nic)
         resp = api.Trigger(req)
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("kill -SIGUSR1 failed on Node {}".format(node))
+        cmd_resp = resp.commands[0]
+        api.PrintCommandResults(cmd_resp)
+        if cmd_resp.exit_code != 0:
+            api.Logger.error("kill -SIGUSR1 failed on {}".format((node, nic)))
             return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
@@ -119,14 +121,15 @@ def VerifyCustomPolicy(tc, flow_count, cfg_path):
 def Verify(tc):
     misc_utils.Sleep(15) # time gap before further cmd, flow count need time to settle down
 
-    for node in tc.nodes:
+    for node, nic in tc.node_nic_pairs:
         req = api.Trigger_CreateExecuteCommandsRequest()
-        api.Trigger_AddNaplesCommand(req, node, "wc -l /data/flows_sec.log")
+        api.Trigger_AddNaplesCommand(req, node, 
+                        "wc -l /data/flows_sec.log", nic)
         resp = api.Trigger(req)
         cmd = resp.commands[0]
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:
-            api.Logger.error("wc failed on Node {}".format(node))
+            api.Logger.error("wc failed on {}".format((node, nic)))
             return api.types.status.FAILURE
 
         flow_count = cmd.stdout.strip().split()[0]
@@ -144,21 +147,23 @@ def Verify(tc):
 
 def Teardown(tc):
 
-    for node in tc.nodes:
-        ret = athena_app_utils.athena_sec_app_kill(node)
+    for node, nic in tc.node_nic_pairs:
+        ret = athena_app_utils.athena_sec_app_kill(node, nic)
         if ret != api.types.status.SUCCESS:
             return ret
 
         req = api.Trigger_CreateExecuteCommandsRequest()
         if tc.policy_type == "default":
-            api.Trigger_AddNaplesCommand(req, node, "> /data/flows_sec.log")
+            api.Trigger_AddNaplesCommand(req, node, 
+                                "> /data/flows_sec.log", nic)
         else:
-            api.Trigger_AddNaplesCommand(req, node, "rm -f /data/policy.json && > /data/flows_sec.log")
+            api.Trigger_AddNaplesCommand(req, node, 
+                        "rm -f /data/policy.json && > /data/flows_sec.log", nic)
 
         resp = api.Trigger(req)
         cmd = resp.commands[0]
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:
-            api.Logger.error("clean flow log failed on Node {}".format(node))
+            api.Logger.error("clean flow log failed on {}".format((node, nic)))
             return api.types.status.FAILURE
     return api.types.status.SUCCESS

@@ -1,0 +1,69 @@
+meta:
+    name    : dualnic-networking
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : Verify_Athena_App_Running_No_DPDK
+        testcase: testcases.networking.athena_app_no_dpdk_verify
+        enable  : True
+
+    -   name    : Pdsctl_Port_Cmd
+        testcase: testcases.networking.pdsctl_port
+        enable  : True
+
+    -   name    : Pdsctl_Show_Cmd
+        testcase: testcases.networking.pdsctl_show
+        enable  : True
+
+    -   name    : Policy_Custom_2_flows
+        testcase: testcases.networking.policy
+        enable  : True
+        args    :
+            type    : policy_2
+
+    -   name    : Policy_Custom_2M_flows
+        testcase: testcases.networking.policy
+        enable  : True
+        args    :
+            type    : policy_2M
+
+    #=======================================
+    # Aging Tests (without traffic)
+    #=======================================
+
+    -   name    : session_aging_hw_large
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : session_aging_hw_large.txt
+            log_file: /var/log/pensando/iota_session_large_test.log
+
+    -   name    : cache_aging_hw_medium
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : cache_aging_hw_medium.txt
+            dump_file: /data/iota_cache_medium.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_cache_medium_test.log
+
+    -   name    : cache_aging_hw_large
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : cache_aging_hw_large.txt
+            dump_file: /data/iota_cache_large.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_cache_large_test.log
+
+    #=======================================
+    # Aging Tests (with traffic) ... still to come
+    #=======================================
+
+
