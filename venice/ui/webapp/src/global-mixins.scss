@@ -503,3 +503,7 @@ $backgroundGradientYellow: linear-gradient(to left, rgba(255, 255, 255, 0), #fff
 .ui-flex {
   flex: 1 1 !important;
 }
+
+.pensUI-app .ui-dialog-content.ui-widget-content {
+  max-height: 500px;
+}

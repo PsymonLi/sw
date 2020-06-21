@@ -18,6 +18,7 @@
   <div *featureGuard="'cloud'" fxFlex="none" fxLayout="row" fxLayoutGap="10px">
     <app-dsbdhosts *roleGuard="'clusterhost_read'" [lastUpdateTime]="lastUpdateTime" fxFlex="none">
     </app-dsbdhosts>
+    <app-rrhealthcard></app-rrhealthcard>
   </div>
 </div>
 <div fxLayout="row" *ngIf="hideOldWidgets" style="flex-wrap: wrap">

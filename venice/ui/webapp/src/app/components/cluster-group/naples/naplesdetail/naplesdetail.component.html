@@ -120,11 +120,13 @@
                        [matTooltip]="selectedObj.status['admission-phase'] === 'rejected' || selectedObj.status['admission-phase'] === 'pending' ? selectedObj.status['adm-phase-reason'] : ''">
                     {{ selectedObj ? admissionPhaseEnum[selectedObj.status['admission-phase']] : '' }}
                     <mat-icon *ngIf="selectedObj.status['admission-phase'] === 'rejected'"
-                              fxFlex="nogrow" [inline]="true"
+                              fxFlex="nogrow"
+                              [inline]="true"
                               class="global-alert-warning-icon naplesdetail-phase-icon">error
                     </mat-icon>
                     <mat-icon *ngIf="selectedObj.status['admission-phase'] === 'pending'"
-                              fxFlex="nogrow" [inline]="true"
+                              fxFlex="nogrow"
+                              [inline]="true"
                               class="global-alert-info-icon naplesdetail-phase-icon">notifications
                     </mat-icon>
                   </div>
@@ -137,7 +139,8 @@
                     <mat-icon *ngIf=" !isNICHealthy(selectedObj) && !isNICNotAdmitted(selectedObj)"
                               fxFlex="nogrow"
                               [inline]="true"
-                              class="global-alert-critical-icon naples-bad-indicator-icon">error
+                              class="global-alert-critical-icon naplesdetail-bad-indicator-icon">
+                      error
                     </mat-icon>
                   </div>
                 </div>
@@ -296,6 +299,41 @@
                 </a>
               </div>
             </div>
+            <div fxFlex="none" fxLayout="row" *featureGuard="'cloud'">
+              <ng-container
+                            *ngIf="selectedObj && selectedObj?.status['control-plane-status']['bgp-status'].length > 0">
+                <!-- Field titles -->
+                <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
+                  <div class="naplesdetail-node-fieldtitle" fxFlex="30px" fxLayout="row"
+                       fxLayoutAlign="start center">
+                    <div>Control Plane Status:</div>
+                  </div>
+                </div>
+                <div fxFlex="40px"></div>
+                <!-- Values -->
+                <div class="naplesdetail-interfaces-container" fxFlex="200px">
+                  <a (click)="onShowDSCControlPlaneStatus($event, selectedObj)"
+                     class="naplesdetail-controlpanelstatus-all-peers-div"
+                     [matTooltip]="'Click to view all peers'">
+                    {{selectedObj?.status['control-plane-status']['bgp-status'].length}} peer(s)
+                  </a>
+                  <div *ngFor="let w of selectedObj.status['control-plane-status']['bgp-status'] let i=index"
+                       class="naplesdetail-controlpanelstatus-one-peers-div">
+                    <ng-container>
+                      <a *ngIf="i < maxDSCcontrolplanestatusRow"
+                         (click)="onShowControlPlaneStatusPeer($event, selectedObj, w)"
+                         [matTooltip]="'Click to view configuration details'">{{w['peer-address']}}</a>
+                      <a *ngIf="i === maxDSCcontrolplanestatusRow"
+                         (click)="onShowDSCControlPlaneStatus($event, selectedObj)"
+                         [matTooltip]="'Click to view all peers'">
+                        ...
+                        {{selectedObj.status['control-plane-status']['bgp-status'].length - maxDSCcontrolplanestatusRow}}
+                        more</a>
+                    </ng-container>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
             <div fxFlex="none" fxLayout="row" *featureGuard="'enterprise'">
               <!-- Field titles -->
               <div fxFlex="none" fxLayout="column" fxLayoutAlign="start start">
@@ -310,8 +348,8 @@
                 <ng-container *roleGuard="'workloadworkload_read'">
                   <app-workloadscolumn *ngIf="hasWorkloads()"
                                        [workloads]="this.selectedObj['associatedWorkloads']"
-                                       [hovered]="true"
-                                       [filterValue]="selectedObj.meta.name" [numOfRows]="10"
+                                       [hovered]="true" [filterValue]="selectedObj.meta.name"
+                                       [numOfRows]="10"
                                        linkTooltip="Show all workloads on this DSC in the Workload page">
                   </app-workloadscolumn>
                 </ng-container>
@@ -366,24 +404,23 @@
 </ng-template>
 
 <ng-template #interface>
-  <div fxLayout="row wrap" fxLayoutGap="10px"
-       class="naplesdetail-interface-charts-container"
+  <div fxLayout="row wrap" fxLayoutGap="10px" class="naplesdetail-interface-charts-container"
        *ngIf="!showInterfaceTable">
     <div fxFlex="none" class="detail-card-wrapper">
       <div class="detail-card-border"></div>
       <div fxLayout="column" class="detail-card naplesdetail-interface-container">
         <div fxFlex="nogrow" fxLayout="row">
           <app-naplesdetail-iftopology *ngIf="networkInterfaces && networkInterfaces.length > 0"
-                                       fxFlex="none" fxLayout="row"
-                                       class="naplesdetail-interface-topology"
+                                       fxFlex="none"
+                                       fxLayout="row" class="naplesdetail-interface-topology"
                                        (mouseOverInterfaceEmit)="onMouseOverInterface($event)"
                                        [interfaceTopos]="interfaceTopos"
                                        [interfaceStatsUpdateTime]="interfaceStatsUpdateTime"
                                        [mouseOverInterface]="mouseOverInterface">
           </app-naplesdetail-iftopology>
           <app-naplesdetail-ifstats *ngIf="networkInterfaces && networkInterfaces.length > 0"
-                                    fxFlex="nogrow" fxLayout="row"
-                                    [interfaceStats]="interfaceStats"
+                                    fxFlex="nogrow"
+                                    fxLayout="row" [interfaceStats]="interfaceStats"
                                     [mouseOverInterface]="mouseOverInterface"
                                     (collapseExpandClickEmit)="onCollapseExpandClick($event)"
                                     class="naplesdetail-interface-detail-container">
@@ -394,8 +431,8 @@
     </div>
     <div fxFlex="" class="detail-card detail-card-wrapper">
       <div class="detail-card-border"></div>
-      <app-cpu-memory-storage-stats *ngIf="detailLoaded"
-                                    [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
+      <app-cpu-memory-storage-stats *ngIf="detailLoaded" [heroCards]="heroCards"
+                                    [lastUpdateTime]="lastUpdateTime">
       </app-cpu-memory-storage-stats>
       <div class="detail-card-border" *ngIf="detailLoaded"></div>
     </div>
@@ -410,16 +447,16 @@
       <div fxLayout="column" class="detail-card naplesdetail-interface-table-container">
         <div fxFlex="nogrow" fxLayout="row">
           <app-naplesdetail-iftopology *ngIf="networkInterfaces && networkInterfaces.length > 0"
-                                       fxFlex="none" fxLayout="row"
-                                       class="naplesdetail-interface-topology"
+                                       fxFlex="none"
+                                       fxLayout="row" class="naplesdetail-interface-topology"
                                        (mouseOverInterfaceEmit)="onMouseOverInterface($event)"
                                        [interfaceStatsUpdateTime]="interfaceStatsUpdateTime"
                                        [interfaceTopos]="interfaceTopos"
                                        [mouseOverInterface]="mouseOverInterface">
           </app-naplesdetail-iftopology>
           <app-naplesdetail-iftable *ngIf="networkInterfaces && networkInterfaces.length > 0"
-                                    fxFlex="glow" fxLayout="column"
-                                    [interfaceStats]="interfaceStats"
+                                    fxFlex="glow"
+                                    fxLayout="column" [interfaceStats]="interfaceStats"
                                     [mouseOverInterface]="mouseOverInterface"
                                     [counterStarted]="interfaceStats_counting"
                                     (startCount)="startInterfaceStatsCounter()"
@@ -439,7 +476,8 @@
     <div class="detail-card">
       <div class="detail-card-border"></div>
       <app-naplesdetail-charts fxLayout="row" class="naplesdetail-charts-container"
-                               *ngIf="detailLoaded" [selectedId]="selectedId">
+                               *ngIf="detailLoaded"
+                               [selectedId]="selectedId">
       </app-naplesdetail-charts>
       <div class="detail-card-border"></div>
     </div>

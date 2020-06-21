@@ -711,28 +711,29 @@ export class Utility {
    * objectCallback and nonObjectCallback are functions.
    * linkComponent is a compontent.ts
    */
-  static traverseJSONObject(data: any, objectCallback: any, nonObjectCallback: any, linkComponent: any) {
+  static traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
     for (const key in data) {
       if (typeof (data[key]) === 'object' && data[key] !== null) {
         if (Array.isArray(data[key])) {
-          objectCallback(data, data[key], key, -1, linkComponent);
+          // sample array [{"peer-address":"18.0.25.1","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65001,"address-families":["BGP_AFI_IPV4"]},{"peer-address":"20.3.0.54","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65005,"address-families":["BGP_AFI_L2VPN"]}]
           for (let i = 0; i < data[key].length; i++) {
-            if (objectCallback) {
-              objectCallback(data[key], data[key][i], key, i, linkComponent);
-            }
-            this.traverseJSONObject(data[key][i], objectCallback, nonObjectCallback, linkComponent);
+             if (typeof (data[key][i]) === 'object' && data[key][i] !== null) {
+              const spaces = linkComponent.padSpace(indentLevel * 5 );
+              list.push( spaces + i  +  ' ' + key );
+              this.traverseJSONObject(data[key][i], indentLevel + 1 + 1 , list, linkComponent);
+             } else {
+              const spaces = linkComponent.padSpace(indentLevel * 5);
+              list.push( spaces + key + ' : ' + data[key][i]);
+             }
           }
-
         } else {
-          if (objectCallback) {
-            objectCallback(data, data[key], key, -1, linkComponent);
-          }
-          this.traverseJSONObject(data[key], objectCallback, nonObjectCallback, linkComponent);
+          const spaces = linkComponent.padSpace(indentLevel * 5 );
+          list.push( spaces + key );
+          this.traverseJSONObject(data[key], indentLevel + 1, list, linkComponent);
         }
       } else {
-        if (nonObjectCallback) {
-          nonObjectCallback(data, data[key], key, linkComponent);
-        }
+        const spaces = linkComponent.padSpace(indentLevel * 5);
+        list.push( spaces + key + ' : ' + data[key]);
       }
     }
   }

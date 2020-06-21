@@ -139,7 +139,7 @@
   cursor: pointer;
 }
 
-.naples-bad-indicator-icon {
+.naplesdetail-bad-indicator-icon {
   margin-left: 5px
 }
 
@@ -198,4 +198,18 @@
 
 .naplesdetail-charts-card {
   min-width: 480px;
+}
+
+.naplesdetail-controlpanelstatus-all-peers-div {
+  cursor: pointer;
+  color: #007bff !important;
+}
+
+.naplesdetail-controlpanelstatus-one-peers-div a {
+  cursor: pointer;
+  color: #007bff !important;
+}
+
+.naples-controlpanelstatus-all-peers-div {
+  cursor: pointer;
 }

@@ -1,0 +1,92 @@
+<div class="rrhealthcard">
+  <app-flip [flipState]="flipState">
+    <ng-container flip-front *ngTemplateOutlet="cardFront"></ng-container>
+  </app-flip>
+</div>
+
+<ng-template #cardFront>
+  <app-basecard [title]="title"
+                [backgroundIcon]="backgroundIcon"
+                [themeColor]="themeColor"
+                [icon]="icon"
+                [timeRange]="''"
+                [cardState]="cardState"
+                [lastUpdateTime]="lastUpdateTime"
+                [menuItems]="menuItems">
+    <div *ngIf="!loading" fxFlex="100%" class="rrhealthcard-bg" fxLayout="column">
+      <div fxFlex="100%" fxLayout="row">
+        <ng-container *ngTemplateOutlet="nodeDetails ;context:{node: this.routingHealthList[0]}">
+        </ng-container>
+        <ng-container *ngTemplateOutlet="nodeDetails ;context:{node: this.routingHealthList[1]}">
+        </ng-container>
+      </div>
+      <div fxFlex="100%" fxLayout="row" class="rrhealthcard-alerts">
+        <div fxFlex="100%" fxLayout="column">
+          <div fxFlex="100%" fxLayout="row">
+            <div class="rrhealthcard-alerts-text">New warning alerts</div>
+            <div fxFlex="1 0 auto"></div>
+            <div class="rrhealthcard-alerts-number">{{this.alertCountMap['warn']}}</div>
+          </div>
+          <div fxFlex="100%" fxLayout="row">
+            <div class="rrhealthcard-alerts-text">New critical alerts</div>
+            <div fxFlex="1 0 auto"></div>
+            <div class="rrhealthcard-alerts-number">{{this.alertCountMap['critical']}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </app-basecard>
+</ng-template>
+
+<ng-template #nodeDetails let-node="node">
+  <div *ngIf="node" fxFlex="1 0 auto" fxLayout="column" class="rrhealthcard-spacing">
+    <div fxFlex="100%" fxLayout="row" fxLayoutAlign="start center">
+      <div [matTooltip]="'Click to see RR status detail'"
+           (click)="this.selectNodeAndShowDialog(node)">
+        <mat-icon *ngIf="getNodeHealth(node)"
+                  class="rrhealthcard-node-status-icon rrhealthcard-clickable-icon rrhealthcard-icon-healthy"
+                  fxLayoutAlign="center center">
+          lens
+        </mat-icon>
+        <mat-icon *ngIf="!getNodeHealth(node)"
+                  class="rrhealthcard-node-status-icon rrhealthcard-clickable-icon rrhealthcard-icon-error"
+                  fxLayoutAlign="center center">
+          error
+        </mat-icon>
+      </div>
+      <a [matTooltip]="'Navigate to node page'" routerLink="/cluster/cluster/{{node.meta.name}}"
+         class="rrhealthcard-node-name">{{ node.meta.name }}</a>
+    </div>
+    <div fxFlex="100%" fxLayout="row" class="rrhealthcard-node-details">
+      <div class="rrhealthcard-node-address">{{ node.status["router-id"] }}</div>
+    </div>
+    <div fxFlex="100%" fxLayout="row" class="rrhealthcard-node-details"
+         fxLayoutAlign="start center">
+      <div class="rrhealthcard-peer-text">EXTERNAL PEERS</div>
+      <div fxFlex="1 0 auto"></div>
+      <mat-icon *ngIf="getExternalPeerHealth(node)"
+                class="rrhealthcard-icon rrhealthcard-icon-healthy" fxLayoutAlign="center center">
+        lens
+      </mat-icon>
+      <mat-icon [matTooltip]="unhealthyPeerStatusMessage(node, 'external-peers')"
+                *ngIf="!getExternalPeerHealth(node)"
+                class="rrhealthcard-icon rrhealthcard-icon-error" fxLayoutAlign="center center">
+        error
+      </mat-icon>
+    </div>
+    <div fxFlex="100%" fxLayout="row" class="rrhealthcard-node-details"
+         fxLayoutAlign="start center">
+      <div class="rrhealthcard-peer-text">INTERNAL PEERS</div>
+      <div fxFlex="1 0 auto"></div>
+      <mat-icon *ngIf="getInternalPeerHealth(node)"
+                class="rrhealthcard-icon rrhealthcard-icon-healthy" fxLayoutAlign="center center">
+        lens
+      </mat-icon>
+      <mat-icon [matTooltip]="unhealthyPeerStatusMessage(node, 'internal-peers')"
+                *ngIf="!getInternalPeerHealth(node)"
+                class="rrhealthcard-icon rrhealthcard-icon-error" fxLayoutAlign="center center">
+        error
+      </mat-icon>
+    </div>
+  </div>
+</ng-template>

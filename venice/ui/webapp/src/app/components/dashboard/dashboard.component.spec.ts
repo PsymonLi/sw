@@ -23,6 +23,7 @@ import { NaplesComponent } from './widgets/naples/naples.component';
 import { PolicyhealthComponent } from './widgets/policyhealth/policyhealth.component';
 import { DsbdworkloadComponent } from './widgets/dsbdworkload/dsbdworkload.component';
 import { HostCardComponent } from './widgets/hostcard/hostcard.component';
+import { RrhealthcardComponent } from './widgets/rrhealthcard/rrhealthcard.component';
 
 import { MatIconRegistry } from '@angular/material';
 import { ConfirmationService } from 'primeng/primeng';
@@ -42,6 +43,7 @@ import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum'
 import { DsbdcardComponent } from './widgets/dsbdcard/dsbdcard.component';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { FwlogService } from '@app/services/generated/fwlog.service';
+import { SearchService } from '@app/services/generated/search.service';
 @Component({
   template: ''
 })
@@ -64,7 +66,8 @@ describe('DashboardComponent', () => {
         DummyComponent,
         WorkloadsComponent,
         DsbdcardComponent,
-        HostCardComponent
+        HostCardComponent,
+        RrhealthcardComponent,
       ],
       imports: [
 
@@ -95,7 +98,8 @@ describe('DashboardComponent', () => {
         MetricsqueryService,
         ClusterService,
         WorkloadService,
-        FwlogService
+        FwlogService,
+        SearchService,
       ]
     });
       });
@@ -162,13 +166,13 @@ describe('DashboardComponent', () => {
       expect(cards.length).toBe(1);
     });
 
-    it('host card', () => {
+    it('host and rr health card', () => {
       TestingUtility.setCloudMode();
       TestingUtility.addPermissions([UIRolePermissions.clusterhost_read]);
       fixture.detectChanges();
       // metrics should be hidden
       const cards = fixture.debugElement.queryAll(By.css('app-flip'));
-      expect(cards.length).toBe(1);
+      expect(cards.length).toBe(2);
     });
 
   });

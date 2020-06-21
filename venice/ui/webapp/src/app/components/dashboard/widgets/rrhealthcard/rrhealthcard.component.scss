@@ -1,0 +1,69 @@
+@import 'src/global-mixins';
+
+.rrhealthcard {
+  position: relative;
+  margin: 10px;
+  width: 450px;
+  height: 240px;
+}
+
+.rrhealthcard-node-name {
+  @include primary-font(18px, #676763, 400);
+}
+
+.rrhealthcard-node-address {
+  @include primary-font(16px, rgba(103, 103, 99, 0.5), 400);
+}
+
+.rrhealthcard-node-details {
+  margin-left: 24px;
+}
+
+.rrhealthcard-node-status-icon {
+  font-size: 16px;
+}
+
+.rrhealthcard-icon {
+  font-size: 14px;
+}
+
+.rrhealthcard-clickable-icon {
+  cursor: pointer;
+}
+
+.rrhealthcard-icon-healthy {
+  color: #77a746;
+}
+
+.rrhealthcard-icon-error {
+  color: #dd3b09;
+}
+
+.rrhealthcard-peer-text {
+  @include primary-font(14px, #676763, 400);
+}
+
+.rrhealthcard-spacing {
+  margin: 10px 25px 15px 25px;
+}
+
+.rrhealthcard-alerts {
+  margin: 0px 30px 10px 30px;
+
+  .rrhealthcard-alerts-text {
+    @include primary-font(14px, #676763, 400);
+  }
+
+  .rrhealthcard-alerts-number {
+    @include primary-font(16px, #b592e3, 400);
+  }
+}
+
+.rrhealthcard-dialog-header {
+  @include primary-font(16px, #676763, 600);
+  padding-right: 25px;
+}
+
+.rrhealthcard-dialog-content {
+  @include primary-font(14px, #676763, 400);
+}

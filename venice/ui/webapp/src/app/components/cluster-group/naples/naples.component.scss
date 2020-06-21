@@ -118,18 +118,18 @@ $vertical-gutter: 5px;
   color: #77a746;
 }
 
-.dsc-table-caption .tableheader-title-container {
+.naples-table-caption .tableheader-title-container {
   flex: 0 0 auto !important;
 }
 
-.dsc-table-header-title-append {
+.naples-table-header-title-append {
   @include primary-font(20px, #484848);
   margin-right: 5px;
   text-align: left;
   white-space: nowrap;
 }
 
-.dsc-actionbuttons {
+.naples-actionbuttons {
   width: 100%;
 }
 
@@ -150,4 +150,12 @@ $vertical-gutter: 5px;
   pointer-events: none;
   -webkit-transform: translate(-50%, 0);
   transform: translate(-50%, 0);
+}
+
+.naples-controlpanelstatus-one-peers-div a {
+  cursor: pointer;
+}
+
+.naples-controlpanelstatus-all-peers-div {
+  cursor: pointer;
 }

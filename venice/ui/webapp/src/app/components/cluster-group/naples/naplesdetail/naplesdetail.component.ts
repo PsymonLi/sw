@@ -196,6 +196,8 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
 
   interfaceStats_counting: boolean = false;
 
+  maxDSCcontrolplanestatusRow: number = 4;
+
   constructor(protected _controllerService: ControllerService,
     private _route: ActivatedRoute,
     private _router: Router,
@@ -1160,5 +1162,41 @@ export class NaplesdetailComponent extends BaseComponent implements OnInit, OnDe
   onCollapseExpandClick(action: string) {
     this.showInterfaceTable = action === 'expand';
   }
+
+  showDSCControlPlaneStatusHelper(stringMsgs: string, header: string, msgHeader: string) {
+    // we don't want the panel collapse when clicking on "view reasons"
+    event.stopPropagation();
+    event.preventDefault();
+    const delimiter = '<br/>';
+    const msg = stringMsgs;
+    this._controllerService.invokeConfirm({
+      icon: 'pi pi-info-circle',
+      header: header ,
+      message: msgHeader + delimiter + msg,
+      acceptLabel: 'Close',
+      acceptVisible: true,
+      rejectVisible: false,
+      accept: () => {
+        // When a primeng alert is created, it tries to "focus" on a button, not adding a button returns an error.
+        // So we create a button but hide it later.
+      }
+    });
+ }
+
+ onShowDSCControlPlaneStatus($event, rowData: ClusterDistributedServiceCard  | Readonly<ClusterDistributedServiceCard>) {
+   if (!rowData.status['control-plane-status']) {
+     return;
+   }
+   const reasons = this.getJSONStringList(rowData.status['control-plane-status']);
+   const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+   this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status - ' + dscName, 'Peers') ;
+
+ }
+
+ onShowControlPlaneStatusPeer($event, rowData: ClusterDistributedServiceCard | Readonly<ClusterDistributedServiceCard>, w) {
+   const reasons = this.getJSONStringList(w);
+   const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+   this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status Peer - ' + dscName, 'Configuration') ;
+ }
 
 }

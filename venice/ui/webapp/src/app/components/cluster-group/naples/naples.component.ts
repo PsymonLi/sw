@@ -117,6 +117,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
     },
     { field: 'status.host', header: 'Host', class: '', sortable: true, width: 100 },
     { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
+    { field: 'status.control-plane-status', header: 'Control Plane Status', class: '', sortable: true, width: 100 },
     { field: 'workloads', header: 'Workloads', class: '', sortable: false, localSearch: true, width: 100 },
     { field: 'meta.mod-time', header: 'Modification Time', class: '', sortable: true, width: '170px' },
     { field: 'meta.creation-time', header: 'Creation Time', class: '', sortable: true, width: '170px' },
@@ -214,6 +215,8 @@ export class NaplesComponent extends DataComponent implements OnInit {
   saveDSCProfileOperationDone: boolean;
   saveLabelsOperationDone: boolean;
 
+  maxDSCcontrolplanestatusRow: number = 4;
+
   constructor(private clusterService: ClusterService,
     protected controllerService: ControllerService,
     protected metricsqueryService: MetricsqueryService,
@@ -246,9 +249,18 @@ export class NaplesComponent extends DataComponent implements OnInit {
   }
 
   filterColumns() {
-    this.cols = this.cols.filter((col: TableCol) => {
-      return !((this.uiconfigsService.isFeatureEnabled('cloud') && (col.field === 'workloads' || col.field === 'spec.dscprofile')));
-    });
+    // if backend is Venice-for-cloud, don't show [workload  dscProfile]
+    // if backend is Venice-for-enterprise, don't show [status.control-plane-status]
+    if (this.uiconfigsService.isFeatureEnabled('enterprise')) {
+      this.cols = this.cols.filter((col: TableCol) => {
+        return col.field !== 'status.control-plane-status';
+      });
+    }
+    if (this.uiconfigsService.isFeatureEnabled('cloud')) {
+      this.cols = this.cols.filter((col: TableCol) => {
+        return ! (col.field === 'workloads' || col.field === 'spec.dscprofile' );
+      });
+    }
   }
 
   /**
@@ -503,7 +515,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
 
   buildAdvSearchCols() {
     this.advSearchCols = this.cols.filter((col: TableCol) => {
-      return (col.field !== 'workloads');
+      return ! (col.field === 'workloads' || col.field === 'status.control-plane-status');
     });
     if (!this.uiconfigsService.isFeatureEnabled('cloud')) {
       this.advSearchCols.push(
@@ -718,7 +730,7 @@ export class NaplesComponent extends DataComponent implements OnInit {
     }
   }
 
-  displayColumn(data, col): any {
+  displayColumn(data: ClusterDistributedServiceCard, col: TableCol): any {
     const fields = col.field.split('.');
     const value = Utility.getObjectValueByPropertyPath(data, fields);
     const column = col.field;
@@ -1477,5 +1489,41 @@ export class NaplesComponent extends DataComponent implements OnInit {
 
   clearSelectedDataObjects() {
     this.dscTable.selectedDataObjects = [];
+  }
+
+  showDSCControlPlaneStatusHelper(stringMsgs: string, header: string, msgHeader: string) {
+     // we don't want the panel collapse when clicking on "view reasons"
+     event.stopPropagation();
+     event.preventDefault();
+     const delimiter = '<br/>';
+     const msg = stringMsgs;
+     this._controllerService.invokeConfirm({
+       icon: 'pi pi-info-circle',
+       header: header ,
+       message: msgHeader + delimiter + msg,
+       acceptLabel: 'Close',
+       acceptVisible: true,
+       rejectVisible: false,
+       accept: () => {
+         // When a primeng alert is created, it tries to "focus" on a button, not adding a button returns an error.
+         // So we create a button but hide it later.
+       }
+     });
+  }
+
+  onShowDSCControlPlaneStatus($event, rowData: ClusterDistributedServiceCard) {
+    if (!rowData.status['control-plane-status']) {
+      return;
+    }
+    const reasons = this.getJSONStringList(rowData.status['control-plane-status']);
+    const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+    this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status - ' + dscName, 'Peers') ;
+
+  }
+
+  onShowControlPlaneStatusPeer($event, rowData: ClusterDistributedServiceCard, w) {
+    const reasons = this.getJSONStringList(w);
+    const dscName = (rowData.spec.id) ? rowData.spec.id : rowData.meta.name;
+    this.showDSCControlPlaneStatusHelper(reasons, 'Control Plane Status Peer - ' + dscName, 'Configuration') ;
   }
 }

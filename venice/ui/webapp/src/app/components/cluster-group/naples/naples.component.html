@@ -1,12 +1,11 @@
 <app-pagebody [icon]="bodyicon" header="Distributed Services Cards Overview">
   <div fxFlex="none" fxLayout="column">
-    <div fxFlex="none" *roleGuard="'metrics_read'" fxLayout="row wrap"
-         fxLayoutGap="10px" class="naples-stats-charts-container">
+    <div fxFlex="none" *roleGuard="'metrics_read'" fxLayout="row wrap" fxLayoutGap="10px"
+         class="naples-stats-charts-container">
       <div fxFlex="0 0 600px" *ngIf="hasAdmittedDSC" fxLayout="column"
            class="detail-card detail-card-wrapper naples-chart-container">
         <div class="detail-card-border"></div>
-        <app-cpu-memory-storage-stats
-                                      [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
+        <app-cpu-memory-storage-stats [heroCards]="heroCards" [lastUpdateTime]="lastUpdateTime">
         </app-cpu-memory-storage-stats>
         <div class="detail-card-border margin-top-auto"></div>
       </div>
@@ -36,22 +35,14 @@
       </div>
     </div>
   </div>
-  <app-pentable #dscTable
-                [actionTemplate]="actionTemplate"
-                [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate"
-                [columns]="cols"
-                [data]="dataObjects"
+  <app-pentable #dscTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
                 [enableCheckbox]="true"
-                [exportFilename]="exportFilename"
-                [exportMap]="exportMap"
-                [loading]="tableLoading"
+                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
                 [rowHeight]="46"
-                [searchable]="true"
-                (searchCancelledEmitter)="onCancelSearch($event)"
+                [searchable]="true" (searchCancelledEmitter)="onCancelSearch($event)"
                 [searchCols]="advSearchCols"
-                (searchEmitter)="onSearchDSCs()"
-                [searchFormArray]="fieldFormArray"
+                (searchEmitter)="onSearchDSCs()" [searchFormArray]="fieldFormArray"
                 searchKind="DistributedServiceCard"
                 [searchCustomQueryOptions]="customQueryOptions"
                 [searchMultiSelectFields]="multiSelectFields">
@@ -59,10 +50,10 @@
 </app-pagebody>
 
 <ng-template #actionButtonsTemplate>
-  <div fxLayout="row" *ngIf="!tableLoading" class="dsc-actionbuttons">
+  <div fxLayout="row" *ngIf="!tableLoading" class="naples-actionbuttons">
     <div fxFlex="1 0 50%">
       <div *ngIf="dataObjects.length !== dataObjectsBackUp.length"
-           class="dsc-table-header-title-append">
+           class="naples-table-header-title-append">
         <span matTooltip="Total DSCs">
           | System has ({{ dataObjectsBackUp.length }})
         </span>
@@ -71,13 +62,9 @@
     <div fxFlex="1 0 50%" fxLayoutAlign="start center"
          *roleGuard="'clusterdistributedservicecard_update'">
       <!-- LABEL EDITOR -->
-      <mat-icon class="naples-add-label-button"
-                *ngIf="this.dscTable.selectedDataObjects.length>0"
-                [matTooltip]="'Add labels to selected DSC'"
-                (click)="editLabels()">label</mat-icon>
-      <app-labeleditor
-                       [metadata]="labelEditorMetaData"
-                       [inLabelEditMode]="inLabelEditMode"
+      <mat-icon class="naples-add-label-button" *ngIf="this.dscTable.selectedDataObjects.length>0"
+                [matTooltip]="'Add labels to selected DSC'" (click)="editLabels()">label</mat-icon>
+      <app-labeleditor [metadata]="labelEditorMetaData" [inLabelEditMode]="inLabelEditMode"
                        (saveEmitter)="handleEditSave($event)"
                        (cancelEmitter)="handleEditCancel($event)"
                        [objects]="this.dscTable.selectedDataObjects"
@@ -86,14 +73,12 @@
       </app-labeleditor>
       <!-- DSC PROFILE EDITOR -->
       <ng-container *featureGuard="'enterprise'">
-        <mat-icon class="naples-add-label-button"
-                  *ngIf="this.dscTable.selectedDataObjects.length>0"
-                  [matTooltip]="'Assign DSC profile to selected DSC'"
-                  (click)="assignDSCProfile()">book</mat-icon>
+        <mat-icon class="naples-add-label-button" *ngIf="this.dscTable.selectedDataObjects.length>0"
+                  [matTooltip]="'Assign DSC profile to selected DSC'" (click)="assignDSCProfile()">
+          book</mat-icon>
       </ng-container>
 
-      <app-dscprofilesetter [inEditMode]="inProfileAssigningMode"
-                            [selections]="dscprofileOptions"
+      <app-dscprofilesetter [inEditMode]="inProfileAssigningMode" [selections]="dscprofileOptions"
                             (saveEmitter)="handleSetDSCProfileSave($event)"
                             (cancelEmitter)="handleSetDSCProfileCancel($event)"
                             [saveDSCProfileOperationDone]="saveDSCProfileOperationDone">
@@ -104,12 +89,11 @@
 </ng-template>
 
 <ng-template #captionTemplate let-count="count">
-  <div class="dsc-table-caption" fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
-    <app-tableheader fxFlex="auto" fxLayout="row" title="Distributed Services Cards"
-                     [total]="count"
-                     [tableMenuItems]="this.dscTable.tableMenuItems"
-                     [icon]="naplesIcon" [enableColumnSelect]="true"
-                     [cols]="cols" (columnSelectChange)="onColumnSelectChange($event)">
+  <div class="naples-table-caption" fxLayout="row" style="border-bottom: 1px solid #d9d9d9;">
+    <app-tableheader fxFlex="auto" fxLayout="row" title="Distributed Services Cards" [total]="count"
+                     [tableMenuItems]="this.dscTable.tableMenuItems" [icon]="naplesIcon"
+                     [enableColumnSelect]="true" [cols]="cols"
+                     (columnSelectChange)="onColumnSelectChange($event)">
       <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
     </app-tableheader>
   </div>
@@ -151,6 +135,30 @@
       <ng-container *ngSwitchCase="'meta.labels'">
         {{formatLabels(rowData.meta.labels)}}
       </ng-container>
+      <ng-container *ngSwitchCase="'status.control-plane-status'">
+        <ng-container *featureGuard="'cloud'">
+          <ng-container *ngIf="rowData.status['control-plane-status']['bgp-status'].length > 0 ">
+            <a (click)="onShowDSCControlPlaneStatus($event, rowData)"
+               class="naples-controlpanelstatus-all-peers-div"
+               [matTooltip]="'Click to view all peers'">
+              {{rowData.status['control-plane-status']['bgp-status'].length}} peer(s) </a>
+            <div *ngFor="let w of rowData.status['control-plane-status']['bgp-status'] let i=index"
+                 class="naples-controlpanelstatus-one-peers-div">
+              <ng-container>
+                <a *ngIf="i < maxDSCcontrolplanestatusRow"
+                   (click)="onShowControlPlaneStatusPeer($event, rowData, w)"
+                   [matTooltip]="'Click to view configuration details'">{{w['peer-address']}}</a>
+                <a *ngIf="i === maxDSCcontrolplanestatusRow"
+                   (click)="onShowDSCControlPlaneStatus($event, rowData)"
+                   [matTooltip]="'Click to view all peers'">
+                  ...
+                  {{rowData.status['control-plane-status']['bgp-status'].length - maxDSCcontrolplanestatusRow}}
+                  more</a>
+              </ng-container>
+            </div>
+          </ng-container>
+        </ng-container>
+      </ng-container>
       <ng-container *ngSwitchCase="'spec.dscprofile'">
         <a [routerLink]="['/cluster/dscprofiles']"
            [queryParams]="{ dscprofile: rowData.spec.dscprofile  }">{{ rowData.spec.dscprofile }}</a>
@@ -158,8 +166,8 @@
       <ng-container *ngSwitchCase="'status.conditions'">
         <div>
           <mat-icon *ngIf="isNICHealthy(rowData)" fxFlex="nogrow"
-                    class="naples-status-icon naples-status-green-icon" [inline]="true"
-                    matTooltip="Healthy">verified_user</mat-icon>
+                    class="naples-status-icon naples-status-green-icon"
+                    [inline]="true" matTooltip="Healthy">verified_user</mat-icon>
           <mat-icon *ngIf="isNICUnhealthy(rowData)" fxFlex="nogrow" [inline]="true"
                     class="naples-status-icon global-alert-critical-icon"
                     [matTooltip]="'Health: Unhealthy. ' + displayReasons(rowData)">error</mat-icon>
@@ -174,8 +182,8 @@
       </ng-container>
       <ng-container *ngSwitchCase="'workloads'">
         <app-workloadscolumn *ngIf="hasWorkloads(rowData)"
-                             [workloads]="rowData._ui.associatedWorkloads" [hovered]="hovered"
-                             [filterValue]="rowData.meta.name" [numOfRows]="8"
+                             [workloads]="rowData._ui.associatedWorkloads"
+                             [hovered]="hovered" [filterValue]="rowData.meta.name" [numOfRows]="8"
                              linkTooltip="Show all workloads on this DSC in the Workload page">
         </app-workloadscolumn>
       </ng-container>
@@ -205,8 +213,7 @@
     </button>
     <button mat-icon-button *ngIf="showDeleteButton(rowData)">
       <mat-icon matTooltip="Delete Card" *roleGuard="'clusterdistributedservicecard_delete'"
-                class="global-table-action-icon"
-                (click)="onDeleteRecord($event, rowData)">delete
+                class="global-table-action-icon" (click)="onDeleteRecord($event, rowData)">delete
       </mat-icon>
 
     </button>

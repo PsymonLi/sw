@@ -295,4 +295,23 @@ export class BaseComponent implements OnInit {
     return Utility.isEmpty(field.value);
   }
 
+  padSpace(level: number , space: string = '&nbsp;') {
+    let output = '&nbsp;';
+    for ( let i = 0; i < level; i ++ ) {
+      output += space;
+    }
+    return output;
+  }
+
+    /**
+   * This API get routingHealth node status info.
+   * @param rrNode
+   */
+  getJSONStringList(node: any): string {
+    const obj = Utility.trimUIFields(node.getModelValues());
+    const list = [];
+    Utility.traverseJSONObject(obj, 0, list, this);
+    return list.join('<br/>');
+  }
+
 }
