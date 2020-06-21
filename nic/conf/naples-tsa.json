@@ -238,7 +238,7 @@
                                 },
                                 {       "Name" : "DscAgent State",
                                         "Method": 0,
-                                        "Command": "mkdir dscagent-state && cp /data/*.db dscagent-state/"
+                                        "Command": "mkdir dscagent-state && cp /data/pen-netagent.db dscagent-state/"
                                 }
 			],
 
