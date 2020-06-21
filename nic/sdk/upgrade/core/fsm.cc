@@ -205,6 +205,8 @@ send_ipc_to_next_service (void)
 void
 execute_exit_script (upg_status_t status)
 {
+    upg_send_exit_event(fsm_states.init_params()->upg_mode);
+
     if (UPG_STATUS_OK != status) {
         std::string exit_script("");
         exit_script = UPGMGR_EXIT_SCRIPT;

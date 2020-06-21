@@ -82,6 +82,16 @@ upg_send_broadcast_request (ipc_svc_dom_id_t dom_id, upg_stage_t stage,
     sdk::ipc::broadcast(ev_id, &msg, sizeof(msg));
 }
 
+void
+upg_send_exit_event (upg_mode_t mode)
+{
+    upg_event_msg_t msg;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.mode  = mode;
+    sdk::ipc::broadcast(UPG_EV_EXIT, &msg, sizeof(msg));
+}
+
 static void
 upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *req_cookie,
                 const void *ctxt)

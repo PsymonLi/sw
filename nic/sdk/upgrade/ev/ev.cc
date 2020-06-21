@@ -92,13 +92,13 @@ upg_ev_process_response (sdk_ret_t status, const void *cookie)
 // upgrade event handler
 // these events are coming from upgrade manager over sdk IPC
 static void
-upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+upg_ev_handler_ (sdk::ipc::ipc_msg_ptr msg, const void *ctxt,
+                 upg_ev_hdlr_t ev_func)
 {
     upg_event_msg_t *event = (upg_event_msg_t *)msg->data();
     upg_ev_params_t params;
     sdk_ret_t ret;
     upg_ev_info_t *info = new upg_ev_info_t();
-    upg_ev_hdlr_t ev_func;
     upg_ev_id_t ev_id;
 
     info->msg_in = msg;
@@ -111,7 +111,9 @@ upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     }
 
     ev_id = upg_stage2event(event->stage);
-    ev_func = upg_event2hdlr(ev_id);
+    if (!ev_func) {
+        ev_func = upg_event2hdlr(ev_id);
+    }
 
     // if it not implemented, just return OK
     if (!ev_func) {
@@ -139,6 +141,12 @@ upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
     return;
 }
 
+static void
+upg_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    upg_ev_handler_(msg, ctxt, NULL);
+}
+
 void
 upg_ev_hdlr_register (upg_ev_t &ev)
 {
@@ -157,29 +165,18 @@ upg_ev_hdlr_register (upg_ev_t &ev)
     }
 }
 
-static void
-upg_svc_ready_ev_handler (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+void
+upg_ev_hdlr_unregister (void)
 {
-    // ignore the request if the regular event registration is done
-    // by the process/thread
-    if (upg_ev_bitmap) {
-        return;
-    }
-    upg_ev_handler(msg, ctxt);
+    memset(&upg_ev, 0, sizeof(upg_ev_t));
+    upg_ev_bitmap = 0ULL;
 }
 
 void
-upg_ev_svc_ready_hdlr_register (upg_ev_t &ev)
+upg_invoke_ev_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt,
+                    upg_ev_hdlr_t hdlr)
 {
-    memcpy(&upg_ev, &ev, sizeof(upg_ev_t));
-    upg_mode_t mode = sdk::upg::upg_init_mode();
-
-    // subscribe for upgrade events from upgrade manager
-    if (sdk::platform::upgrade_mode_none(mode)) {
-        sdk::ipc::subscribe(UPG_EV_COMPAT_CHECK, upg_svc_ready_ev_handler, NULL);
-    } else {
-        sdk::ipc::subscribe(UPG_EV_READY, upg_svc_ready_ev_handler, NULL);
-    }
+    upg_ev_handler_(msg, ctxt, hdlr);
 }
 
 }   // namespace upg

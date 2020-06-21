@@ -8,12 +8,12 @@
 ///
 //----------------------------------------------------------------------------
 
+#include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/apollo/core/core.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/upgrade_state.hpp"
-
 
 sdk_ret_t
 pds_upgrade (sdk::upg::upg_ev_params_t *params)
@@ -46,17 +46,11 @@ pds_upgrade (sdk::upg::upg_ev_params_t *params)
 }
 
 static sdk_ret_t
-pds_upgrade_ev_init_hdlr (sdk::upg::upg_ev_params_t *params)
+upgrade_init_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     sdk_ret_t ret;
     uint32_t thr_id = core::PDS_THREAD_ID_UPGRADE;
 
-    // ignore the request if the upgrade thread is launched already.
-    // TODO : ipc unsuscribe option
-    if (sdk::lib::thread::find(thr_id)) {
-        PDS_TRACE_DEBUG("Upgrade, ignoring the request from init thread");
-        return SDK_RET_IN_PROGRESS;
-    }
     // save the params
     api::g_upg_state->set_ev_params(params);
 
@@ -79,13 +73,45 @@ pds_upgrade_ev_init_hdlr (sdk::upg::upg_ev_params_t *params)
 }
 
 void
+pds_upgrade_teardown (void)
+{
+    sdk::event_thread::event_thread *thr;
+
+    thr = (sdk::event_thread::event_thread *)
+              sdk::lib::thread::find(core::PDS_THREAD_ID_UPGRADE);
+    if (!thr) {
+        PDS_TRACE_INFO("Upgrade thread already exited");
+        return;
+    }
+    // stop and wait
+    PDS_TRACE_DEBUG("Upgrade thread teardown starting..");
+    thr->stop();
+    thr->wait();
+    thr->destroy(thr);
+    PDS_TRACE_DEBUG("Upgrade thread teardown done");
+}
+
+static void
+upgrade_ev_init_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    // thread should not be present
+    SDK_ASSERT(!sdk::lib::thread::find(core::PDS_THREAD_ID_UPGRADE));
+    // process the event in default path. this would start a new
+    // thread and response will be send from that thread context
+    sdk::upg::upg_invoke_ev_hdlr(msg, ctxt, upgrade_init_hdlr);
+}
+
+static void
+upgrade_ev_exit_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
+{
+    // teardown the existing
+    pds_upgrade_teardown();
+}
+
+void
 pds_upgrade_init (void)
 {
-    sdk::upg::upg_ev_t ev = { 0 };
-
-    ev.svc_ipc_id = core::PDS_THREAD_ID_UPGRADE;
-    strncpy(ev.svc_name, "pdsagent", sizeof(ev.svc_name));
-    ev.compat_check_hdlr = pds_upgrade_ev_init_hdlr;
-    ev.ready_hdlr = pds_upgrade_ev_init_hdlr;
-    upg_ev_svc_ready_hdlr_register(ev);
+    sdk::ipc::subscribe(UPG_EV_COMPAT_CHECK, upgrade_ev_init_hdlr, NULL);
+    sdk::ipc::subscribe(UPG_EV_READY, upgrade_ev_init_hdlr, NULL);
+    sdk::ipc::subscribe(UPG_EV_EXIT, upgrade_ev_exit_hdlr, NULL);
 }

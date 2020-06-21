@@ -20,6 +20,7 @@
 #include "stdio.h"
 #include "include/sdk/globals.hpp"
 #include "upgrade/include/upgrade.hpp"
+#include "lib/ipc/ipc.hpp"
 
 namespace sdk {
 namespace upg {
@@ -46,6 +47,7 @@ namespace upg {
     E(UPG_EV_ROLLBACK,        EV_ID_UPGMGR(UPG_STAGE_ROLLBACK),        "")  \
     E(UPG_EV_REPEAL,          EV_ID_UPGMGR(UPG_STAGE_REPEAL),          "")  \
     E(UPG_EV_FINISH,          EV_ID_UPGMGR(UPG_STAGE_FINISH),          "")  \
+    E(UPG_EV_EXIT,            (SDK_IPC_EVENT_ID_UPGMGR_MAX - 1),       "")  \
     E(UPG_EV_MAX,             (SDK_IPC_EVENT_ID_UPGMGR_MAX),           "")
 
 SDK_DEFINE_ENUM(upg_ev_id_t, UPG_EV_ENTRIES)
@@ -240,17 +242,14 @@ typedef struct upg_ev_s {
 
 // registers both discovery(broadcast) and other events
 void upg_ev_hdlr_register(upg_ev_t &ev);
+void upg_ev_hdlr_unregister(void);
 
-// registers only service discovery(broadcast) events. needed where the discovery
-// and the stage events are handled in seperate threads. in that case the stage
-// events can be registered only after the discovery stage as only one thread
-// should respond to the discovery event for the given service
-void upg_ev_svc_ready_hdlr_register(upg_ev_t &ev);
-
+// application can register for specific event and invoke the
+// specific handlers for non default processing
+void upg_invoke_ev_hdlr(sdk::ipc::ipc_msg_ptr msg, const void *ctxt,
+                        upg_ev_hdlr_t hdlr);
 
 #undef EV_ID_UPGMGR
-
-
 
 }   // namespace upg
 }   // namespace sdk
@@ -270,6 +269,7 @@ using sdk::upg::upg_ev_id_t::UPG_EV_REPEAL;
 using sdk::upg::upg_ev_id_t::UPG_EV_PRE_RESPAWN;
 using sdk::upg::upg_ev_id_t::UPG_EV_RESPAWN;
 using sdk::upg::upg_ev_id_t::UPG_EV_FINISH;
+using sdk::upg::upg_ev_id_t::UPG_EV_EXIT;
 using sdk::upg::upg_ev_id_t::UPG_EV_MAX;
 
 /// @}

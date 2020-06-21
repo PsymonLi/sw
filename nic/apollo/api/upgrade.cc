@@ -407,6 +407,7 @@ upgrade_thread_init_fn (void *ctxt)
 void
 upgrade_thread_exit_fn (void *ctxt)
 {
+    sdk::upg::upg_ev_hdlr_unregister();
 }
 
 void
