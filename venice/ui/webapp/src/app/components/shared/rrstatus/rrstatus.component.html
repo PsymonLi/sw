@@ -1,0 +1,122 @@
+<div class="ui-flex" fxLayout="column" class="detail-card rr-status-container">
+  <div class="ui-flex" fxLayout="column">
+    <div class="ui-flex rr-status-title">
+      <span class="rr-status-title-span">ROUTE REFLECTOR</span>
+      <span class="rrstatus-health-lastupdated">{{ last_updated | PrettyDate }}</span>
+    </div>
+    <div class="detail-card-border"></div>
+    <div class="ui-flex rrstatus-health-text-container-parent">
+      <div fxFlex="40" fxlayoutalign="start start" class="rrstatus-health-text-container">
+        <span class="rrstatus-health-text" (click)="onRRNodeHealthClick()"
+              [matTooltip]="'View Detail'">{{ isRoutingHealthNodeHealthy() ? 'HEALTHY' : 'UNHEALTHY'}}</span>
+      </div>
+      <div fxFlex="40" fxlayoutalign="start center" class="rrstatus-health-cluster-parent">
+        <span class="rrstatus-health-cluster-name">Cluster: {{ clustername }}</span>
+      </div>
+    </div>
+    <div class="rrstatus-health-info-container">
+      <div class="ui-flex">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div class="ui-flex">
+            <div fxLayout="row" fxFlex="grow"
+                 class="ui-flex rrstatus-health-info-divider rrstatus-border-container">
+              <div class="detail-card-border"></div>
+            </div>
+            <div fxFlex="1O0px" fxLayout="row" fxLayoutAlign="end start"
+                 class="rrstatus-health-info-divider">
+              <div class="rrstatus-health-info-router">
+                ROUTER ID
+              </div>
+            </div>
+          </div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node">
+          <div class="ui-flex ">
+            <div fxLayout="row" fxFlex="grow"
+                 class="rrstatus-health-info-divider rrstatus-border-container">
+              <div class="detail-card-border"></div>
+            </div>
+            <div fxFlex="auto" fxLayout="row" fxLayoutAlign="end start"
+                 class="ui-flex rrstatus-health-info-divider">
+              <div class="rrstatus-health-info-router">
+                NODE
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="ui-flex">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div fxLayout="column" fxLayoutAlign=" end" class="ui-flex rrstatus-health-router">
+            <span>{{ nodeHealth.meta.name }}</span>
+          </div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node">
+          <div fxLayout="column" fxLayoutAlign=" end" class="rrstatus-health-node">
+            <span>{{ nodeHealth._ui.node }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-flex rrstatus-health-row-height" fxlayoutalign=" center">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div class="detail-card-border rrstatus-health-borderconf"></div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node">
+          <div class="ui-flex rrstatus-health-metric" fxLayoutAlign="start center">
+            <span class="rrstatus-health-peers">INTERNAL PEERS</span>
+            <mat-icon class="rrstatus-health-icon" fxLayoutAlign="start center"
+                      [ngClass]="[isPeerHealthy('internal') ? 'rrstatus-healthy' : 'rrstatus-unhealthy']">
+              {{ isPeerHealthy('internal') ? 'fiber_manual_record' : 'info' }}</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-flex">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div class="ui-flex rrstatus-health-metric-configured" fxLayoutAlign="center center">
+            <span
+                  class="rrstatus-health-metricval">{{nodeHealth.status['internal-peers'].configured}}</span>
+            <span class="rrstatus-health-metrictext">CONFIGURED</span>
+          </div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node rrstatus-health-info-established">
+          <div class="ui-flex" fxLayoutAlign="start center">
+            <span
+                  class="rrstatus-health-metricval">{{nodeHealth.status['internal-peers'].established}}</span>
+            <span class="rrstatus-health-metrictext">ESTABLISHED</span>
+          </div>
+        </div>
+      </div>
+      <div class="ui-flex rrstatus-health-row-height" fxlayoutalign=" center">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div class="detail-card-border rrstatus-health-borderconf"></div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node">
+          <div class="ui-flex rrstatus-health-metric" fxLayoutAlign="start center">
+            <span class="rrstatus-health-peers">EXTERNAL PEERS</span>
+            <mat-icon class="rrstatus-health-icon"
+                      [ngClass]="[isPeerHealthy('external') ? 'rrstatus-healthy' : 'rrstatus-unhealthy']">
+              {{ isPeerHealthy('external') ? 'fiber_manual_record' : 'info' }}</mat-icon>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-flex">
+        <div fxFlex="50" fxlayoutalign="start start" class="rrstatus-health-info-router">
+          <div class="ui-flex rrstatus-health-metric-configured" fxLayoutAlign="center center">
+            <span
+                  class="rrstatus-health-metricval">{{nodeHealth.status['external-peers'].configured}}</span>
+            <span class="rrstatus-health-metrictext">CONFIGURED</span>
+          </div>
+        </div>
+        <div fxFlex="50" class="rrstatus-health-info-node rrstatus-health-info-established">
+          <div class="ui-flex" fxLayoutAlign="start center">
+            <span
+                  class="rrstatus-health-metricval">{{nodeHealth.status['external-peers'].established}}</span>
+            <span class="rrstatus-health-metrictext">ESTABLISHED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

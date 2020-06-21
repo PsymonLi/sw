@@ -24,7 +24,7 @@ import { FieldsRequirement_operator, ISearchSearchResponse, SearchSearchRequest,
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
 import * as moment from 'moment';
 import { ConfirmDialog } from 'primeng/primeng';
-import { Subject, Subscription } from 'rxjs';
+import { Subject, Subscription, Observable, forkJoin } from 'rxjs';
 import { filter, map, takeUntil } from 'rxjs/operators';
 import { SideNavItem, sideNavMenu } from './appcontent.sidenav';
 import { Utility } from './common/Utility';
@@ -37,6 +37,9 @@ import { SearchService } from './services/generated/search.service';
 import { WorkloadService } from './services/generated/workload.service';
 import { HelpoverlayComponent } from './widgets/helpcontent/helpoverlay.component';
 import { Animations } from '@app/animations';
+import { RoutingService } from './services/generated/routing.service';
+import { RoutingHealth } from '@sdk/v1/models/generated/routing';
+import { DiagnosticsService } from './services/generated/diagnostics.service';
 
 export interface GetUserObjRequest {
   success: (resp: { body: IAuthUser | IApiStatus | Error; statusCode: number; }) => void;
@@ -142,6 +145,8 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     protected workloadService: WorkloadService,
     protected authService: AuthService,
     protected rolloutService: RolloutService,
+    protected routingService: RoutingService,
+    protected diagnosticsService: DiagnosticsService,
     private cdr: ChangeDetectorRef,
     protected router: Router
   ) {
@@ -168,7 +173,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
 
     this.setMomentJSSettings();
 
-
+    this.waitfForFeatureReady();  // wait for uiConfig.service have feature info ready.
 
     this.clocktimer = setInterval(() => {
       this.clock = new Date();
@@ -292,6 +297,25 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     //   // template: this.helpTemplate
     //   id: 'authpolicy'
     // });
+   // /*
+  }
+
+  /**
+   * This api use setInterval technique to wait for uiconfigsService have feature info ready. Then it will invoke getModole() API
+   */
+  waitfForFeatureReady() {
+    const id = setInterval(checkFeatureReady, 1000);
+    const self = this;
+    function checkFeatureReady() {
+      if (self.uiconfigsService.isFeatureEnabled('cloud')) {
+        self.getModules();
+        clearInterval(id);
+      } else if (self.uiconfigsService.isFeatureEnabled('enterprise')) {
+        clearInterval(id);
+      } else {
+        // debug console.log(self.getClassName(), ' waitfForFeatureReady() waiting' );
+      }
+    }
   }
 
   getContentClass(): string {
@@ -717,6 +741,105 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     } else if (this.alertHighestSeverity === 'info') {
       return 'app-notification-info';
     }
+  }
+
+   /**
+   * Fetch diagnostics module
+   */
+  getModules() {
+    const subscription = this.diagnosticsService.ListModuleCache().subscribe(
+      (response) => {
+        /* module json looks like this
+         {
+            "kind": "Module",
+            "api-version": "v1",
+            "meta": {
+                "name": "node2-pen-pegasus"
+            },
+            "spec": {
+                "log-level": "info"
+            },
+            "status": {
+                "node": "node2",
+                "module": "pen-pegasus",
+                "category": "venice",
+                "service": "pen-pegasus-676fcbcc64-sc97j",
+                "service-ports": [
+                    {
+                        "name": "pen-pegasus",
+                        "port": 179
+                    },
+                    {
+                        "name": "pen-pegasus-cxm",
+                        "port": 8001
+                    }
+                ]
+            }
+         },
+        */
+        const pegasusNodes = response.data.filter(module => module.status.module === 'pen-pegasus');
+        // find nodes that host "pen-pegasus" module
+        // user routing.proto HealthStatus to figure out RR health
+        const nodeNames = pegasusNodes.map( node => node.status.node);
+        const observables: Observable<any>[] = [];
+        nodeNames.forEach( (n: string ) => {
+          // build url  /routing/v1/node2/health // node2 is nodeNames[i];
+          observables.push(this.routingService.GetHealthZ(n));
+        });
+        const sub = forkJoin(observables).subscribe(
+          (results) => {
+            const isAllOK = Utility.isForkjoinResultAllOK(results);
+            if (isAllOK) {
+              // process RRStatus    /routing/v1/node2/health return json like below
+              /*
+                 {
+                     "kind": "",
+                     "meta": {
+                         "name": "",     <=============  no name
+                         "generation-id": "",
+                         "creation-time": "",
+                         "mod-time": ""
+                     },
+                     "spec": {},
+                     "status": {
+                         "router-id": "192.168.30.12",
+                         "internal-peers": {
+                             "configured": 2,
+                             "established": 2   <-------- this is healthy configured_# = established_#
+                         },
+                         "external-peers": {
+                             "configured": 3,
+                             "established": 0   <--------- this is not healthy configured_# != established_#
+                         },
+                         "unexpected-peers": 0
+                     }
+                 }
+              */
+              const routinghealthlist = results.map((r, i) => {
+                const obj = new RoutingHealth(r.body);
+                obj.meta.name = obj.status['router-id']; // patch name
+                obj._ui = { node: nodeNames[i] };
+                return obj;
+              });
+              Utility.getInstance().setRoutinghealthlist(routinghealthlist);
+              this._controllerService.publish(Eventtypes.RR_HEALTH_STATUS, routinghealthlist);
+            } else {
+              const error = Utility.joinErrors(results);
+              this._controllerService.invokeRESTErrorToaster('Failure', error);
+            }
+          },
+          (error) => {
+            this._controllerService.invokeRESTErrorToaster('Failure', error);
+          }
+        );
+        this.subscriptions.push(sub);
+
+      },
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Error', 'Failed to fetch modules');
+      }
+    );
+    this.subscriptions.push(subscription);
   }
   /**
    * Call server to fetch all alerts using search API to populate RHS alert-list

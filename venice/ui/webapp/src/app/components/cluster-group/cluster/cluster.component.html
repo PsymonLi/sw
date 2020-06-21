@@ -109,7 +109,9 @@
             <th class="nodename">Name</th>
             <th>Quorum</th>
             <th>Phase</th>
-            <th>Condition</th>
+            <th *featureGuard="'enterprise'">Condition</th>
+            <th class="cluster-details-node-rrstatus" *featureGuard="'cloud'"
+                [matTooltip]="'Configurable Services'">Services</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-node>
@@ -129,8 +131,30 @@
             <td>
               <div class="cluster-details-nodes-table-cell">{{ phaseEnum[node.status.phase] }}</div>
             </td>
-            <td>
+            <td *featureGuard="'enterprise'">
               <div class="cluster-details-nodes-table-cell">{{ displayCondition(node) }}</div>
+            </td>
+            <td class="cluster-details-node-rrstatus" *featureGuard="'cloud'">
+              <div class="cluster-details-nodes-table-cell" fxLayout="row"
+                   fxLayoutAlign="start center">
+                <ng-container *ngFor="let item of routinghealthlist">
+                  <ng-container *ngIf="item._ui.node === node.meta.name">
+                    <img class="cluster-node-service-RR" [matTooltip]="'Route reflector process'"
+                         src="/assets/images/icons/ico_rr_badge.svg" />
+                    <span class="cluster-node-RR-id"
+                          [matTooltip]="'Click to see routing health detail.'"
+                          (click)="onRRStatusNodeClick($event, node, item)">{{ item.meta.name }}</span>
+                    <ng-container *ngIf="isRoutingHealthNodeHealthy(item)">
+                      <span [matTooltip]="'Healthy!'"
+                            class="cluster-node-status cluster-node-status-RR-common cluster-node-status-RR-healthy"></span>
+                    </ng-container>
+                    <ng-container *ngIf="!isRoutingHealthNodeHealthy(item)">
+                      <span [matTooltip]="'Unhealthy! Contact administrator to configure routing service.'"
+                            class="cluster-node-status cluster-node-status-RR-common cluster-node-status-RR-unhealthy"></span>
+                    </ng-container>
+                  </ng-container>
+                </ng-container>
+              </div>
             </td>
           </tr>
         </ng-template>

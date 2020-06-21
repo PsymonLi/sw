@@ -34,8 +34,6 @@ import { BehaviorSubject } from 'rxjs';
 import { MonitoringService } from '@app/services/generated/monitoring.service';
 import { MessageService } from '@app/services/message.service';
 import { MetricsqueryService } from '@app/services/metricsquery.service';
-import { DiagnosticsService } from '@app/services/generated/diagnostics.service';
-
 import { TestingUtility } from '@app/common/TestingUtility';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import { AuthService } from '@app/services/auth.service';
@@ -89,8 +87,7 @@ describe('ClusterComponent', () => {
         MetricsqueryService,
         MessageService,
         AuthService,
-        AuthServiceGen,
-        DiagnosticsService
+        AuthServiceGen
       ]
     });
       });

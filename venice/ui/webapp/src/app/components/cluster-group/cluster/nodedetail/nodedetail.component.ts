@@ -16,6 +16,7 @@ import { MetricsPollingOptions, MetricsqueryService, TelemetryPollingMetricQueri
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { AlertsEventsSelector } from '@app/components/shared/alertsevents/alertsevents.component';
 import { StatArrowDirection, CardStates } from '@app/components/shared/basecard/basecard.component';
+import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 
 /**
  * If a user navigates to a node that doesn't exist
@@ -92,6 +93,10 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
   telemetryKind: string = 'Node';
 
   alertseventsSelector: AlertsEventsSelector;
+  routinghealthlist: RoutingHealth[];
+  nodeHealth: RoutingHealth;
+  showRRHealth: boolean = false;
+  last_updated: string;
 
   constructor(protected _controllerService: ControllerService,
     private _route: ActivatedRoute,
@@ -105,11 +110,25 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
   ngOnInit() {
     this.initializeData();
     this._controllerService.publish(Eventtypes.COMPONENT_INIT, { 'component': 'NodedetailComponent', 'state': Eventtypes.COMPONENT_INIT });
+    this.routinghealthlist = Utility.getInstance().getRoutinghealthlist();
     this._route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.selectedId = id;
       this.initializeData();
       this.getNodedetails();
+      setTimeout(() => {
+        if (this.uiconfigsService.isFeatureEnabled('cloud')) {
+          this.routinghealthlist = Utility.getInstance().getRoutinghealthlist();
+          if (this.routinghealthlist) {
+            this.getNodeHealth(this.selectedId);
+          }
+          const mySub =  this._controllerService.subscribe(Eventtypes.RR_HEALTH_STATUS, (payload) => {
+              this.routinghealthlist = Utility.getInstance().getRoutinghealthlist();
+              this.getNodeHealth(this.selectedId);
+            });
+          this.subscriptions.push(mySub);
+        }
+      }, 1000);
       this._controllerService.setToolbarData({
         buttons: [],
         breadcrumb: [
@@ -117,6 +136,18 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
           { label: id, url: Utility.getBaseUIUrl() + 'cluster/cluster/' + id }]
       });
     });
+  }
+  getNodeHealth(nodeName) {
+    if (this.routinghealthlist) {
+      for (let i = 0; i < this.routinghealthlist.length; i++) {
+        if (this.routinghealthlist[i]._ui.node === nodeName) {
+          this.showRRHealth = true;
+          this.nodeHealth = this.routinghealthlist[i];
+          this.last_updated = Utility.getPayloadDatetime();
+          break;
+        }
+      }
+    }
   }
 
   initializeData() {

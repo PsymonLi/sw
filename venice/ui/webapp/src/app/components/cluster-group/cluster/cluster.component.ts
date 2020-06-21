@@ -12,7 +12,7 @@ import { MetricsPollingOptions, MetricsqueryService, TelemetryPollingMetricQueri
 import { ClusterCluster, ClusterNode } from '@sdk/v1/models/generated/cluster';
 import { Telemetry_queryMetricsQuerySpec } from '@sdk/v1/models/generated/telemetry_query';
 import { ITelemetry_queryMetricsQueryResponse, ITelemetry_queryMetricsQueryResult } from '@sdk/v1/models/telemetry_query';
-import { Subscription } from 'rxjs';
+import { Observable, Subscription, forkJoin } from 'rxjs';
 import { StatArrowDirection, CardStates } from '@app/components/shared/basecard/basecard.component';
 import {Animations} from '@app/animations';
 import { UIRolePermissions } from '@sdk/v1/models/generated/UI-permissions-enum';
@@ -22,6 +22,9 @@ import { NodeConditionValues } from '@app/components/cluster-group/naples';
 import { TimeRange, KeyOperatorValueKeyword } from '@app/components/shared/timerange/utility';
 import { GraphConfig } from '@app/models/frontend/shared/userpreference.interface';
 import { DiagnosticsService } from '@app/services/generated/diagnostics.service';
+import { RoutingService } from '@app/services/generated/routing.service';
+import { RoutingHealth } from '@sdk/v1/models/generated/routing';
+import { Eventtypes } from '@app/enum/eventtypes.enum';
 
 @Component({
   selector: 'app-cluster',
@@ -88,12 +91,13 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   dialogRef: any;
   telemetryKind: string = 'Node';
 
+  routinghealthlist: RoutingHealth[];
+
   constructor(
     private _clusterService: ClusterService,
     protected uiconfigService: UIConfigsService,
     protected _controllerService: ControllerService,
     protected metricsqueryService: MetricsqueryService,
-    protected diagnosticsService: DiagnosticsService,
     protected dialog: MatDialog,
   ) {
     super(_controllerService, uiconfigService);
@@ -101,13 +105,18 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
 
   ngOnInit() {
     // VS-1581 - try to avoid collision getMetrics() call and other fetch data REST call.
-     this.getCluster();
-     this.getNodes();
-     if (this.uiconfigService.isFeatureEnabled('cloud')) {
-       this.getModules();
-     }
+    this.getCluster();
+    this.getNodes();
     setTimeout(() => {
       this.getMetrics();
+      if (this.uiconfigsService.isFeatureEnabled('cloud')) {
+        this.routinghealthlist = Utility.getInstance().getRoutinghealthlist();
+        // we want to listen to backend RR-node change
+        const sub = this._controllerService.subscribe(Eventtypes.RR_HEALTH_STATUS, (payload) => {
+            this.routinghealthlist = Utility.getInstance().getRoutinghealthlist();
+          });
+        this.subscriptions.push(sub);
+      }
     }, 1000);
 
     this._controllerService.setToolbarData({
@@ -172,47 +181,7 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
     this.subscriptions.push(subscription);
   }
 
-  /**
-   * Fetch diagnostics module
-   */
-  getModules() {
-    const subscription = this.diagnosticsService.ListModuleCache().subscribe(
-      (response) => {
-        /* module json looks like this
-          {
-              "kind": "Module",
-              "api-version": "v1",
-              "meta": {
-                "name": "node3-pen-perseus",
-                "self-link": "/configs/diagnostics/v1/modules/node3-pen-perseus"
-              },
-              "spec": {
-                "log-level": "info"
-              },
-              "status": {
-                "node": "node3",
-                "module": "pen-perseus",
-                "category": "venice",
-                "service": "pen-pegasus-68f8c67b-7h7mc",
-                "service-ports": [
-                  {
-                    "name": "pen-perseus",
-                    "port": 9060
-                  }
-                ]
-              }
-            }
-        */
-        const perseusNodes = response.data.filter(module => module.status.module === 'pen-perseus');
-        // find nodes that host "pen-perseus" module
-        // user routing.proto HealthStatus to figure out RR health
-      },
-      (error) => {
-        this._controllerService.invokeRESTErrorToaster('Error', 'Failed to fetch modules');
-      }
-    );
-    this.subscriptions.push(subscription);
-  }
+
 
   /**
    * We start 3 metric polls.
@@ -289,7 +258,6 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   displayCondition(node: ClusterNode) {
     return Utility.getNodeCondition(node);
   }
-
   avgDayQuery(): MetricsPollingQuery {
     return MetricsUtility.pastDayAverageQueryPolling(this.telemetryKind);
   }
@@ -383,4 +351,67 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   getNodeStatusClass(node: ClusterNode): string {
     return (this.displayCondition(node) === NodeConditionValues.HEALTHY) ? 'cluster-node-status-healthy' : 'cluster-node-status-unhealthy';
   }
+
+  onRRStatusNodeClick($event, node: ClusterNode, rrNode: RoutingHealth ) {
+    event.stopPropagation();
+    event.preventDefault();
+    const delimiter = '<br/>';
+    const msg = Utility.routerHealthNodeStatus(rrNode);
+    const healthStatus = (this.isRoutingHealthNodeHealthy(rrNode)) ? ' Healthy' : 'Unhealthy';
+    this._controllerService.invokeConfirm({
+      icon: 'pi pi-info-circle',
+      header: 'Route Reflector [' + rrNode.meta.name + '] ',
+      message: 'Status: ' +  healthStatus  + delimiter + msg,
+      acceptLabel: 'Close',
+      acceptVisible: true,
+      rejectVisible: false,
+      accept: () => {
+        // When a primeng alert is created, it tries to "focus" on a button, not adding a button returns an error.
+        // So we create a button but hide it later.
+      }
+    });
+  }
+
+  isRoutingHealthNodeHealthy(rrNode: RoutingHealth): boolean {
+    return (rrNode.status['internal-peers'].established === rrNode.status['internal-peers'].configured ) &&
+    (rrNode.status['external-peers'].established === rrNode.status['external-peers'].configured ) &&
+    (rrNode.status['unexpected-peers'] === 0);
+  }
+  /**
+   * This API get routingHealth node status info.
+   * @param rrNode
+   */
+  /*
+  getRoutingHealthNodeStatus(rrNode: RoutingHealth): string {
+    const obj = Utility.trimUIFields(rrNode.status.getModelValues());
+    const list = [];
+    this.traverseJSONObject(obj, 0, list, this);
+    return list.join('<br/>');
+  }
+  padSpace(level: number , space: string = '&nbsp;') {
+    let output = '&nbsp;';
+    for ( let i = 0; i < level; i ++ ) {
+      output += space;
+    }
+    return output;
+  }
+  traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
+    for (const key in data) {
+      if (typeof (data[key]) === 'object' && data[key] !== null) {
+        if (Array.isArray(data[key])) {
+          for (let i = 0; i < data[key].length; i++) {
+            this.traverseJSONObject(data[key][i], indentLevel + 1 , list, linkComponent);
+          }
+        } else {
+          const spaces = linkComponent.padSpace(indentLevel * 5 );
+          list.push( spaces + key );
+          this.traverseJSONObject(data[key], indentLevel + 1, list, linkComponent);
+        }
+      } else {
+        const spaces = linkComponent.padSpace(indentLevel * 5);
+        list.push( spaces + key + ' : ' + data[key]);
+      }
+    }
+  }
+  */
 }

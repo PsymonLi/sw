@@ -93,7 +93,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     { field: 'spec.attach-tenant', header: 'Attach Tenant', class: ' networkinterfaces-column-tenant', sortable: true, width: '150px' },
     { field: 'spec.attach-network', header: 'Attach Network', class: ' networkinterfaces-column-network', sortable: true, width: '150px' },
     { field: 'status.if-host-status.mac-address', header: 'Mac Address', class: ' networkinterfaces-column-mac', sortable: true, width: '150px' },
-    // TODO: add ip column
+    { field: 'status.if-uplink-status.ip-config.ip-address', header: 'IP Address', class: ' networkinterfaces-column-IP', sortable: true, width: '150px' },
     { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: '125px' },
     { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: '100px' },
     { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
@@ -152,7 +152,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   filterColumns() {
     this.cols = this.cols.filter((col: TableCol) => {
-      return !((this.uiconfigsService.isFeatureEnabled('enterprise') && (col.field === 'spec.attach-tenant' || col.field === 'spec.attach-network')));
+      return !((this.uiconfigsService.isFeatureEnabled('enterprise') && (col.field === 'spec.attach-tenant' || col.field === 'spec.attach-network' || col.field === 'status.if-uplink-status.ip-config.ip-address')));
     });
   }
 

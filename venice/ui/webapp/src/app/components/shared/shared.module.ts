@@ -56,6 +56,7 @@ import { TelemetrychartviewComponent } from './telemetry/telemetrychart-view/tel
 import {AlertIndicationBarComponent} from './alert-indication-bar/alert-indication-bar.component';
 import { DscprofilesetterComponent } from './dscprofilesetter/dscprofilesetter.component';
 import { ExportLogsComponent } from './exportlogs/exportlogs.component';
+import { RrstatusComponent } from './rrstatus/rrstatus.component';
 
 @NgModule({
   imports: [
@@ -116,7 +117,8 @@ import { ExportLogsComponent } from './exportlogs/exportlogs.component';
     TelemetrychartviewComponent,
     AlertIndicationBarComponent,
     DscprofilesetterComponent,
-    ExportLogsComponent
+    ExportLogsComponent,
+    RrstatusComponent
   ],
   exports: [
     PagebodyComponent,
@@ -166,7 +168,8 @@ import { ExportLogsComponent } from './exportlogs/exportlogs.component';
     TelemetrychartviewComponent,
     AlertIndicationBarComponent,
     DscprofilesetterComponent,
-    ExportLogsComponent
+    ExportLogsComponent,
+    RrstatusComponent
   ],
   providers: [
     DomHandler

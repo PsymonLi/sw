@@ -9,7 +9,13 @@
       </app-cpu-memory-storage-stats>
       <div class="detail-card-border"></div>
     </div>
-    <div fxFlex="1 0 500px"></div>
+    <div fxFlex="1 0 500px">
+      <div *ngIf="showRRHealth" class="nodedetail-rrstatus-card">
+        <div class="detail-card-border"></div>
+        <app-rrstatus [last_updated]="last_updated" [nodeHealth]="nodeHealth"></app-rrstatus>
+        <div class="detail-card-border"></div>
+      </div>
+    </div>
   </div>
   <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}" fxFlex
        class="nodedetail-alertsevents-container">

@@ -1,0 +1,132 @@
+@import 'src/global-mixins';
+
+.rr-status-container {
+  width: 100%;
+  height: 100%;
+  color: $mediumGray;
+  background-image: $backgroundGradientYellow !important;
+}
+
+.rr-status-title {
+  .rr-status-title-span {
+    @include primary-font(22px, $mediumGray, 300);
+    padding-left: 6px;
+  }
+
+  height : 32px !important;
+}
+
+.rrstatus-health-text-container {
+  display: inline !important;
+  cursor: pointer;
+}
+
+.rrstatus-health-text-container-parent {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.rrstatus-health-text {
+  @include primary-font(29px, $mediumGray, normal);
+  margin-top: 17px;
+  margin-left: 13px;
+  margin-right: 15px;
+}
+
+.rrstatus-health-cluster-name {
+  margin-top: 13px;
+  @include primary-font(16px, $mediumGray, 300);
+}
+
+.rrstatus-border-container {
+  padding-top: 15px;
+}
+
+.rrstatus-health-info-router {
+  @include primary-font(21px, $mediumGray, 300);
+  margin-right: 5px;
+}
+
+.rrstatus-health-info-node {
+  margin-left: 5px;
+  margin-right: 14px;
+  height: inherit;
+
+  .rrstatus-health-info-divider {
+    margin-left: 16px;
+  }
+}
+
+.rrstatus-health-node,
+.rrstatus-health-router {
+  @include primary-font(28px, $mediumGray, 200);
+}
+
+.rrstatus-health-node {
+  margin-right: 15px;
+}
+
+.rrstatus-health-router {
+  margin-right: 20px;
+}
+
+.rrstatus-health-info {
+  margin-right: 29px;
+}
+
+.rrstatus-health-peers {
+  @include primary-font(21px, $mediumGray, 300);
+  margin-left: 17px;
+}
+
+.rrstatus-health-icon {
+  margin-left: 11px;
+  font-size: 14px !important;
+}
+
+.rrstatus-health-metricval {
+  @include primary-font(30px, $mediumGray, 300);
+}
+
+.rrstatus-health-metrictext {
+  margin-left: 5px;
+  @include primary-font(16px, $mediumGray, 300);
+  margin-right: 16px;
+}
+
+.rrstatus-health-borderconf {
+  margin-top: 17px;
+  margin-bottom: 16px;
+}
+
+.rrstatus-healthy {
+  color: #77a746;
+}
+
+.rrstatus-unhealthy {
+  color: #dd3b09;
+}
+
+.rrstatus-health-metric-configured {
+  padding-left: 87px;
+}
+
+.rrstatus-health-row-height {
+  height: 24px !important;
+}
+
+.rrstatus-health-lastupdated {
+  display: inline;
+  margin-left: 22px;
+  @include primary-font(14px, $mediumGray, 300);
+}
+
+.rrstatus-health-info-established {
+  .rrstatus-health-metricval {
+    margin-left: 28px;
+  }
+}
+
+.rrstatus-health-cluster-parent {
+  margin-top: 10px;
+}

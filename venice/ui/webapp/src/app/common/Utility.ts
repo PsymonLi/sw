@@ -28,6 +28,7 @@ import { ControllerService } from '../services/controller.service';
 import { LogService } from '../services/logging/log.service';
 import { UIConfigsService } from '../services/uiconfigs.service';
 import {IApiObjectMeta} from '@sdk/v1/models/generated/cluster';
+import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 
 /**
  * VeniceObjectCacheStore is for data-cache.
@@ -215,6 +216,7 @@ export class Utility {
   // Defince data cache store
   private veniceObjectCacheStore: VeniceObjectCacheStore = {};
   private clusterLicense: ClusterLicense;
+  private _routinghealthlist: RoutingHealth[];
 
   private constructor() { }
 
@@ -2290,6 +2292,42 @@ export class Utility {
     retArr.push(targetStr);
     return retArr;
   }
+
+   /**
+   * This API get routingHealth node status info.
+   * @param rrNode
+   */
+  public static routerHealthNodeStatus(rrNode: RoutingHealth): string {
+    const obj = Utility.trimUIFields(rrNode.status.getModelValues());
+    const list = [];
+    this.traverseNodeJSONObject(obj, 0, list, this);
+    return list.join('<br/>');
+  }
+  public static padSpace(level: number , space: string = '&nbsp;') {
+    let output = '&nbsp;';
+    for ( let i = 0; i < level; i ++ ) {
+      output += space;
+    }
+    return output;
+  }
+  public static traverseNodeJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
+    for (const key in data) {
+      if (typeof (data[key]) === 'object' && data[key] !== null) {
+        if (Array.isArray(data[key])) {
+          for (let i = 0; i < data[key].length; i++) {
+            this.traverseNodeJSONObject(data[key][i], indentLevel + 1 , list, this);
+          }
+        } else {
+          const spaces = linkComponent.padSpace(indentLevel * 5 );
+          list.push( spaces + key );
+          this.traverseNodeJSONObject(data[key], indentLevel + 1, list, this);
+        }
+      } else {
+        const spaces = linkComponent.padSpace(indentLevel * 5);
+        list.push( spaces + key + ' : ' + data[key]);
+      }
+    }
+  }
   setControllerService(controllerService: ControllerService) {
     this.myControllerService = controllerService;
   }
@@ -2339,6 +2377,14 @@ export class Utility {
 
   getTenant(): string {
     return this._tenant;
+  }
+
+  getRoutinghealthlist (): RoutingHealth[] {
+    return this._routinghealthlist;
+  }
+
+  setRoutinghealthlist( routinghealthlist: RoutingHealth[]) {
+    this._routinghealthlist = routinghealthlist;
   }
 
   getNamespace(): string {

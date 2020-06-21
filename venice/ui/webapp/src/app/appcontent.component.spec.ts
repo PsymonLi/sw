@@ -66,6 +66,8 @@ import { Router } from '@angular/router';
 import { Utility } from './common/Utility';
 import { ISearchSearchResponse } from '@sdk/v1/models/generated/search';
 import { WorkloadService } from './services/generated/workload.service';
+import { DiagnosticsService } from '@app/services/generated/diagnostics.service';
+import { RoutingService } from '@app/services/generated/routing.service';
 
 describe('AppcontentComponent', () => {
   let component: AppcontentComponent;
@@ -119,6 +121,8 @@ describe('AppcontentComponent', () => {
         ClusterService,
         RolloutService,
         WorkloadService,
+        DiagnosticsService,
+        RoutingService
       ],
     });
 
@@ -286,6 +290,8 @@ describe('UIBlock during rollout progress', () => {
       RolloutService,
       WorkloadService,
       LicenseService,
+      DiagnosticsService,
+      RoutingService,
       {provide: Router, useValue: mockRouter}
     ],
   });

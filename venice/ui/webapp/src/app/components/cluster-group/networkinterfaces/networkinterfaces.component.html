@@ -199,6 +199,49 @@
         </div>
       </div>
 
+      <div class="ui-flex" fxLayout="row">
+        <div class="ui-flex" fxLayout="column">
+          <div fxLayout="row">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">MAC:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
+              {{this.selectedNetworkInterface.status['if-host-status']['mac-address']}}
+            </a>
+          </div>
+        </div>
+        <div class="ui-flex" fxLayout="column">
+          <div fxLayout="row" *featureGuard="'cloud'">
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-key ui-flex">IP
+              Address:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
+              {{this.selectedNetworkInterface.status['if-uplink-status']['ip-config']['ip-address']}}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-flex" fxLayout="row" *featureGuard="'cloud'">
+        <div class="ui-flex" fxLayout="column">
+          <div fxLayout="row">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Attached Tenant:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
+              {{this.selectedNetworkInterface.spec['attach-tenant']}}
+            </a>
+          </div>
+        </div>
+        <div class="ui-flex" fxLayout="column">
+          <div fxLayout="row">
+            <a fxLayoutAlign="start center"
+               class="networknetworkinterface-detail-key ui-flex">Attached Network:</a>
+            <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex">
+              {{this.selectedNetworkInterface.spec['attach-network']}}
+            </a>
+          </div>
+        </div>
+      </div>
+
+
     </div>
   </div>
 </ng-template>

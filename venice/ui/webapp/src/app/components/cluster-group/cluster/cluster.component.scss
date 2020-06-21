@@ -91,7 +91,7 @@ $table-headerheight: 55px;
     }
 
     .cluster-details-nodes-table {
-      margin: 5px 10px 10px 50px;
+      margin: 5px 10px 10px 5px;
 
       tr {
         background-color: transparent !important;
@@ -137,6 +137,19 @@ $table-headerheight: 55px;
         width: 110px;
       }
 
+      td.cluster-details-node-rrstatus,
+      th.cluster-details-node-rrstatus {
+        width: 130px;
+      }
+
+      td.cluster-details-node-rrstatus span {
+        padding-right: 5px;
+      }
+
+      .node-rrstatus-ip {
+        padding-right: 5px;
+      }
+
       .cluster-node-status {
         border-radius: 50%;
         height: 7px;
@@ -145,11 +158,17 @@ $table-headerheight: 55px;
         margin-right: 5px
       }
 
-      .cluster-node-status-healthy {
+      .cluster-node-status-RR-common {
+        height: 10px;
+        width: 10px;
+        margin-left: 3px;
+      }
+
+      .cluster-node-status-RR-healthy {
         background-color: #77a746;
       }
 
-      .cluster-node-status-unhealthy {
+      .cluster-node-status-RR-unhealthy {
         background-color: #dd3b09;
       }
 
@@ -159,6 +178,12 @@ $table-headerheight: 55px;
         width: 14px;
         color: #fcb710;
         margin-left: 3px;
+      }
+
+      .cluster-node-RR-id {
+        margin-left: 3px;
+        cursor: pointer;
+        color: #007bff;
       }
     }
   }

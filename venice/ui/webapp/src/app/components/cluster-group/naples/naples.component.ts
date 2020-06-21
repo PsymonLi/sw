@@ -74,7 +74,7 @@ interface DSCUiModel {
 
 
 
-export class NaplesComponent extends DataComponent implements OnInit, OnDestroy {
+export class NaplesComponent extends DataComponent implements OnInit {
 
   @ViewChild('dscTable') dscTable: PentableComponent;
 
@@ -134,8 +134,6 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
   };
 
   advSearchCols: TableCol[] = [];
-
-  subscriptions: Subscription[] = [];
 
   bodyicon: any = {
     margin: {
@@ -1184,28 +1182,6 @@ export class NaplesComponent extends DataComponent implements OnInit, OnDestroy 
 
   handleEditCancel($event) {
     this.inLabelEditMode = false;
-  }
-
-  ngOnDestroy() {
-    const ts = (new Date()).getTime();
-    const hour = Utility.DEFAULT_CACHE_DURATION;
-
-    const workloadVeniceObjectCache: VeniceObjectCache = {
-      timestamp: ts,
-      duration: hour,
-      data: this.workloadList
-    };
-    Utility.getInstance().setVeniceObjectCache('Workload', workloadVeniceObjectCache);
-
-    if (this.dataObjects && this.dataObjects.length >= this.searchDSCsCount) {
-      const dscsVeniceObjectCache: VeniceObjectCache = {
-        timestamp: ts,
-        duration: hour,
-        data: this.dataObjects as any[]
-      };
-
-      Utility.getInstance().setVeniceObjectCache('DistributedServiceCard', dscsVeniceObjectCache);
-    }
   }
 
   // buildMoreWorkloadTooltip(dsc: ClusterDistributedServiceCard): string {
