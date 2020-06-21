@@ -785,7 +785,7 @@ do_insert_dhcp_binding (dhcpctl_handle *dhcp_connection,
     dhcpctl_data_string ipaddr = NULL;
     dhcpctl_data_string mac = NULL;
     dhcpctl_data_string statements;
-    dhcpctl_status waitstatus = 0;
+    dhcpctl_status wait_status = 0;
     dhcpctl_handle host = NULL;
     subnet_entry *subnet;
     pds_obj_key_t dhcp_policy_key;
@@ -1003,7 +1003,7 @@ do_insert_dhcp_binding (dhcpctl_handle *dhcp_connection,
         return SDK_RET_ERR;
     }
 
-    ret = dhcpctl_wait_for_completion(host, &waitstatus);
+    ret = dhcpctl_wait_for_completion(host, &wait_status);
     if (ret != ISC_R_SUCCESS) {
         PDS_TRACE_ERR("dhcp wait for completion failure, err %u", ret);
         omapi_object_dereference(&host, MDL);
@@ -1034,7 +1034,7 @@ mapping_impl_state::insert_dhcp_binding(pds_mapping_spec_t *spec) {
     }
 
     // if dhcpd restarts the omapi control channel between pds-agent
-    // and dhcpd will be broken. In that case we need to clear dhcp_connection_
+    // and dhcpd will be broken. In that case we need to clear connection handle
     // and retry so that the control channel will be re-established.
     ret = do_insert_dhcp_binding(&dhcp_connection_, spec);
     if (ret == SDK_RET_ERR) {
@@ -1048,7 +1048,7 @@ mapping_impl_state::insert_dhcp_binding(pds_mapping_spec_t *spec) {
 static sdk_ret_t
 do_remove_dhcp_binding (dhcpctl_handle *dhcp_connection, pds_mapping_key_t *skey) {
     dhcpctl_status ret = 0;
-    dhcpctl_status waitstatus = 0;
+    dhcpctl_status wait_status = 0;
     dhcpctl_handle host = NULL;
     char dhcp_reservation[dhcp_reservation_name_len];
 
@@ -1088,7 +1088,7 @@ do_remove_dhcp_binding (dhcpctl_handle *dhcp_connection, pds_mapping_key_t *skey
         return SDK_RET_ERR;
     }
 
-    ret = dhcpctl_wait_for_completion(host, &waitstatus);
+    ret = dhcpctl_wait_for_completion(host, &wait_status);
     if (ret != ISC_R_SUCCESS) {
         PDS_TRACE_ERR("dhcp wait for completion failure, err %u", ret);
         omapi_object_dereference(&host, MDL);
@@ -1102,7 +1102,7 @@ do_remove_dhcp_binding (dhcpctl_handle *dhcp_connection, pds_mapping_key_t *skey
         return SDK_RET_ERR;
     }
 
-    ret = dhcpctl_wait_for_completion(host, &waitstatus);
+    ret = dhcpctl_wait_for_completion(host, &wait_status);
     if (ret != ISC_R_SUCCESS) {
         PDS_TRACE_ERR("dhcp wait for completion failure, err %u", ret);
         omapi_object_dereference(&host, MDL);
@@ -1123,12 +1123,126 @@ mapping_impl_state::remove_dhcp_binding(pds_mapping_key_t *skey) {
     }
 
     // if dhcpd restarts the omapi control channel between pds-agent
-    // and dhcpd will be broken. In that case we need to clear dhcp_connection_
+    // and dhcpd will be broken. In that case we need to clear connection handle
     // and retry so that the control channel will be re-established.
     ret = do_remove_dhcp_binding(&dhcp_connection_, skey);
     if (ret == SDK_RET_ERR) {
         dhcp_connection_ = NULL;
         ret = do_remove_dhcp_binding(&dhcp_connection_, skey);
+    }
+
+    return ret;
+}
+
+static sdk_ret_t
+do_update_dhcp_binding (dhcpctl_handle *dhcp_connection, vnic_entry *vnic,
+                        subnet_entry *subnet) {
+    dhcpctl_status ret = SDK_RET_OK;
+    dhcpctl_handle host = { 0 };
+    dhcpctl_data_string ipaddr = { 0 };
+    dhcpctl_data_string omapi_mac = { 0 };
+    dhcpctl_status wait_status = 0;
+    pds_mapping_spec_t mapping_spec = { 0 };
+
+    // we enter this block in two cases to establish the connection with the
+    // dhcpd server.
+    // 1. when this code path is excercised for the first time after pds-agent
+    //    starts.
+    // 2. after dhcpd restarts.
+    if (!(*dhcp_connection)) {
+        ret = dhcpctl_connect(dhcp_connection, k_dhcp_ctl_ip, k_dhcp_ctl_port,
+                              dhcpctl_null_handle);
+        if (ret != ISC_R_SUCCESS) {
+            PDS_TRACE_ERR("Failed to connect to dhcpd, err %u", ret);
+            return SDK_RET_ERR;
+        }
+    }
+
+    ret = dhcpctl_new_object(&host, *dhcp_connection, "host");
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("Failed to allocate host object, err %u", ret);
+        return SDK_RET_OOM;
+    }
+
+    ret = omapi_data_string_new(&omapi_mac, ETH_ADDR_LEN, MDL);
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("Failed to allocate omapi_mac object, err %u", ret);
+        omapi_object_dereference(&host, MDL);
+        return SDK_RET_OOM;
+    }
+
+    memcpy(omapi_mac->value, vnic->mac(), ETH_ADDR_LEN);
+    ret = dhcpctl_set_value(host, omapi_mac, "hardware-address");
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("Failed to set hardware address, err %u", ret);
+        dhcpctl_data_string_dereference(&omapi_mac, MDL);
+        omapi_object_dereference(&host, MDL);
+        return SDK_RET_OOM;
+    }
+
+    ret = dhcpctl_open_object(host, *dhcp_connection, 0);
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("dhcp open object failed, err %u", ret);
+        dhcpctl_data_string_dereference(&omapi_mac, MDL);
+        omapi_object_dereference(&host, MDL);
+        return SDK_RET_ERR;
+    }
+
+    ret = dhcpctl_wait_for_completion(host, &wait_status);
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("dhcp wait for completion failure, err %u", ret);
+        dhcpctl_data_string_dereference(&omapi_mac, MDL);
+        omapi_object_dereference(&host, MDL);
+        return SDK_RET_ERR;
+    }
+
+    ret = dhcpctl_get_value(&ipaddr, host, "ip-address");
+    if (ret != ISC_R_SUCCESS) {
+        PDS_TRACE_ERR("Failed to get the IP address, err %u", ret);
+        dhcpctl_data_string_dereference(&omapi_mac, MDL);
+        omapi_object_dereference(&host, MDL);
+        return SDK_RET_ERR;
+    }
+
+    // now we have all the info required. Create a dummy mapping_spec
+    // and use it to update the mapping.
+    mapping_spec.skey.type = PDS_MAPPING_TYPE_L3;
+    mapping_spec.skey.vpc = subnet->vpc();
+    mapping_spec.skey.ip_addr.af = IP_AF_IPV4;
+    sdk::lib::memrev((uint8_t *)&mapping_spec.skey.ip_addr.addr.v4_addr,
+                     ipaddr->value, IP4_ADDR8_LEN);
+    mapping_spec.subnet = subnet->key();
+    mapping_spec.vnic = vnic->key();
+    memcpy((uint8_t *)&mapping_spec.overlay_mac, vnic->mac(), sizeof(mac_addr_t));
+
+    // remove the existing binding and add updated binding
+    mapping_impl_db()->remove_dhcp_binding(&mapping_spec.skey);
+    mapping_impl_db()->insert_dhcp_binding(&mapping_spec);
+
+    dhcpctl_data_string_dereference(&ipaddr, MDL);
+    dhcpctl_data_string_dereference(&omapi_mac, MDL);
+    omapi_object_dereference(&host, MDL);
+
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+mapping_impl_state::update_dhcp_binding(vnic_entry *vnic,
+                                        subnet_entry *subnet) {
+    sdk_ret_t ret = SDK_RET_OK;
+    device_entry *device = device_find();
+
+    if ((!device) || (device->overlay_routing_enabled())) {
+        return ret;
+    }
+
+    // if dhcpd restarts the omapi control channel between pds-agent
+    // and dhcpd will be broken. In that case we need to clear connection handle
+    // and retry so that the control channel will be re-established.
+    ret = do_update_dhcp_binding(&dhcp_connection_, vnic, subnet);
+    if (ret == SDK_RET_ERR) {
+        dhcp_connection_ = NULL;
+        ret = do_update_dhcp_binding(&dhcp_connection_, vnic, subnet);
     }
 
     return ret;

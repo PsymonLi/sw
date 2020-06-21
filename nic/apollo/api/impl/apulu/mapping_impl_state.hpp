@@ -86,6 +86,12 @@ public:
     /// \return   SDK_RET_OK on success, failure status code on error
     sdk_ret_t remove_dhcp_binding(pds_mapping_key_t *skey);
 
+    /// \brief update dhcp binding corresponding to this vnic
+    /// \param[in] vnic    vnic being updated
+    /// \param[in] subnet  subnet in which the vnic belongs to
+    /// \return   SDK_RET_OK on success, failure status code on error
+    sdk_ret_t update_dhcp_binding(vnic_entry *vnic, subnet_entry *subnet);
+
     /// \brief return instance of LOCAL_MAPPING table
     /// \return   pointer to the LOCAL_MAPPING table instance
     mem_hash *local_mapping_tbl(void) { return local_mapping_tbl_; }

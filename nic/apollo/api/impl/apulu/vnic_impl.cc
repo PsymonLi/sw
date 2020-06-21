@@ -1167,13 +1167,16 @@ vnic_impl::activate_delete_(pds_epoch_t epoch, vnic_entry *vnic) {
 sdk_ret_t
 vnic_impl::upd_dhcp_binding_(vnic_entry *vnic, vnic_entry *orig_vnic,
                              subnet_entry *subnet, pds_vnic_spec_t *spec) {
+
+    sdk_ret_t ret = SDK_RET_OK;
+
     if (orig_vnic->primary() && !vnic->primary()) {
         // vnic was marked as primary and but it is marked as non-primary
         // now, if we had hostname attribute set on this vnic earlier, we
         // must reset it in the DHCP bindings
         if (orig_vnic->hostname()[0] != '\0') {
             // reset the hostname in the DHCP bindings
-            // TODO:
+            ret = mapping_impl_db()->update_dhcp_binding(vnic, subnet);
         }
     } else if (!orig_vnic->primary() && vnic->primary()) {
         // vnic was marked as non-primary and but it is marked as primary
@@ -1181,17 +1184,18 @@ vnic_impl::upd_dhcp_binding_(vnic_entry *vnic, vnic_entry *orig_vnic,
         // update the DHCP binding
         if (spec->hostname[0] != '\0') {
             // update DHCP binding with the hostname
-            // TODO:
+            ret = mapping_impl_db()->update_dhcp_binding(vnic, subnet);
         }
     } else if (vnic->primary() && (spec->hostname[0] != '\0')) {
         // primary attribute has not changed, but hostname could have changed
         if (memcmp(spec->hostname, orig_vnic->hostname(),
                    PDS_MAX_HOST_NAME_LEN)) {
             // update DHCP binding with the hostname
-            // TODO:
+            ret = mapping_impl_db()->update_dhcp_binding(vnic, subnet);
         }
     }
-    return SDK_RET_OK;
+
+    return ret;
 }
 
 sdk_ret_t
