@@ -385,7 +385,7 @@ process_health_info(const int port)
     // wait for "enough" to report.
     if ((same_session(nhi, lhi) &&
          (nhi->intr_ltssmst - lhi->intr_ltssmst >= LTSSMST_THRESHOLD)) ||
-        (!same_session(nhi, lhi) &&
+        (!same_session(nhi, lhi) && hs->ltssmst_base &&
          (nhi->intr_ltssmst - hs->ltssmst_base >= LTSSMST_THRESHOLD))) {
         set_warn(hs, "intr_ltssmst %" PRIu64, nhi->intr_ltssmst);
         goto want_log;
