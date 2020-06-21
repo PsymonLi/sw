@@ -35,7 +35,7 @@ This section defines how the software upgrade rollout will proceed.
 | Start Time | specific  start time or now|
 | End Time | specific end time. If not specified, PSM will run upgrade until completion|
 | Strategy | Linear or Exponential |
-| Upgrade Type | Disuptive or On Next Host Reboot |
+| Upgrade Type | Graceful or On Next Host Reboot. |
 | Max DSC in Parallel | The number of Distributed Service Cards (DSCs) to be upgraded in parallel |
 | Max Allowed DSCs failures | The total number of failed Distributed Service Card upgrade failures to occur before upgrade process is stopped |
 | Retry for failed DSCs | If checked, PSM will retry upgrading DSCs up to 5 times before upgrade end time is reached. Requires Max Allowed DSC failures to be greater than 0. |
