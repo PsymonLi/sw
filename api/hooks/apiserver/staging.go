@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/pensando/sw/api"
+	"github.com/pensando/sw/api/bulkedit"
 	"github.com/pensando/sw/api/cache"
 	apierrors "github.com/pensando/sw/api/errors"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -283,8 +284,8 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 	handle_err:
 		// Handle failure arising from switch case above
 		if err != nil {
-			err = fmt.Errorf("Performing operation %s on ObjURI %s failed: %v ", oper, objURI, err.Error())
-			h.l.Errorf("Performing operation %s on ObjURI %s failed: %v ", oper, objURI, err.Error())
+			err = fmt.Errorf("Performing operation %s on Object %s failed: %v ", oper, objURI, err.Error())
+			h.l.Errorf("Performing operation %s on Object %s failed: %v ", oper, objURI, err.Error())
 			buf.Status.Errors = append(buf.Status.Errors, &staging.ValidationError{
 				ItemId: staging.ItemId{
 					URI:    item.GetURI(),
@@ -294,6 +295,7 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 			})
 		}
 	}
+	buf.Spec = bulkedit.BulkEditActionSpec{}
 
 	if len(buf.Status.Errors) > 0 {
 		buf.Status.ValidationResult = staging.BufferStatus_FAILED.String()
@@ -302,7 +304,7 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 		buf.Status.ValidationResult = staging.BufferStatus_SUCCESS.String()
 	}
 
-	return buf, false, err
+	return buf, false, nil
 }
 
 func (h *stagingHooks) restoreEmptyOverlays(kvs kvstore.Interface, logger log.Logger) {

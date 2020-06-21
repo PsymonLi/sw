@@ -6226,6 +6226,56 @@ func TestStagingBulkEdit(t *testing.T) {
 		t.Fatalf("expecting 0 objects in list, got %d", len(wlRet))
 	}
 
+	fakeNetw := &network.Network{
+		TypeMeta: api.TypeMeta{
+			Kind:       "Network",
+			APIVersion: "v1",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    globals.DefaultTenant,
+			Name:      "TestNtworkABCD",
+			Namespace: globals.DefaultNamespace,
+		},
+		Spec: network.NetworkSpec{
+			Type:        network.NetworkType_Bridged.String(),
+			IPv4Subnet:  "10.0.0.0/8",
+			IPv4Gateway: "10.1.1.1",
+		},
+	}
+
+	netwAny, _ := types.MarshalAny(fakeNetw)
+
+	// Test bulkedit failure scenario, try to delete an object that does not
+	bulkeditAction = &staging.BulkEditAction{
+		TypeMeta: api.TypeMeta{
+			Kind:       "BulkEditAction",
+			APIVersion: "v1",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name:      bufName,
+			Tenant:    tenantName,
+			Namespace: "default",
+		},
+		Spec: bulkedit.BulkEditActionSpec{
+			Items: []*bulkedit.BulkEditItem{
+				&bulkedit.BulkEditItem{
+					URI:    "/configs/network/v1/tenant/default/networks/TestNtworkABCD",
+					Method: "delete",
+					Object: &api.Any{Any: *netwAny},
+				},
+			},
+		},
+	}
+
+	// Make the bulkedit call
+	bufRet, err := restcl.StagingV1().Buffer().Bulkedit(ctx, bulkeditAction)
+	if err != nil {
+		t.Fatalf("Error performing bulkeditaction :%v", err)
+	}
+
+	Assert(t, bufRet.Status.GetValidationResult() == staging.BulkEditActionStatus_FAILED.String(), "expected bulkedit action validation status to be failed")
+	Assert(t, len(bufRet.Status.GetErrors()) == 1, fmt.Sprintf("expected 1 error, got %d", len(bufRet.Status.GetErrors())))
+
 	_, err = apicl.StagingV1().Buffer().Delete(ctx, &api.ObjectMeta{
 		Name:   bufName,
 		Tenant: tenantName,
