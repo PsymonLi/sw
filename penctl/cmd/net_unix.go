@@ -70,7 +70,7 @@ func pickNetwork(cmd *cobra.Command, args []string) error {
 	naplesURL += ":" + revProxyPort + "/"
 	err := isNaplesReachable()
 	if err != nil {
-		fmt.Printf("Could not reach Distributed Service Card\n")
+		fmt.Println("Could not reach Distributed Service Card")
 	}
-	return nil
+	return err
 }
