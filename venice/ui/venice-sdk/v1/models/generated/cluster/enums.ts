@@ -53,6 +53,7 @@ export enum ClusterDSCProfileSpec_feature_set {
     'smartnic' = "smartnic",
     'flowaware' = "flowaware",
     'flowaware_firewall' = "flowaware_firewall",
+    'sdn' = "sdn",
 }
 
 export enum ClusterDistributedServiceCardSpec_mgmt_mode {
@@ -162,6 +163,7 @@ export enum ClusterDSCProfileSpec_deployment_target_uihint {
 export enum ClusterDSCProfileSpec_feature_set_uihint {
     'flowaware' = "FlowAware",
     'flowaware_firewall' = "FlowAware with Firewall",
+    'sdn' = "SDN",
     'smartnic' = "SmartNIC",
 }
 

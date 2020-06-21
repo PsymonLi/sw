@@ -43,6 +43,8 @@ message DSCProfileSpec {
        FLOWAWARE = 1; // Flows are learnt in this mode
        // ui-hint: FlowAware with Firewall
        FLOWAWARE_FIREWALL  = 2; // Flows are learnt and policy enforced
+       //ui-hint: SDN
+       SDN = 3;
     }
     string DeploymentTarget    = 1 [(venice.check) = "StrEnum(DSCProfileSpec.Deployment_Target)",
                              (gogoproto.nullable) = true, (gogoproto.jsontag) = "deployment-target"];

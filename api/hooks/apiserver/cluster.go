@@ -272,19 +272,31 @@ func (cl *clusterHooks) createDefaultRouteTable(ctx context.Context, kv kvstore.
 	return r, true, nil
 }
 
-// createDefaultDSCProfile is a pre-commit hook to creates default RouteTable when a tenant is created
-func (cl *clusterHooks) createDefaultDSCProfile(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
-	r, ok := i.(cluster.Tenant)
+// updateDefaultDSCProfile is a pre-commit hook to creates default RouteTable when a tenant is created
+func (cl *clusterHooks) updateDefaultDSCProfile(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+	ff, ok := i.(cluster.License)
 	if !ok {
-		cl.logger.ErrorLog("method", "createDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default dscProfile called for invalid object type [%#v]", i))
+		cl.logger.ErrorLog("method", "updateDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default dscProfile called for invalid object type [%#v]", i))
 		return i, true, errors.New("invalid input type")
 	}
-	if r.GetName() != globals.DefaultTenant {
-		return r, true, nil
+	overlayRoutingEnabled := false
+	for _, v := range ff.Spec.Features {
+		switch v.FeatureKey {
+		case "OverlayRouting":
+			overlayRoutingEnabled = true
+		}
 	}
-
 	rt := &cluster.DSCProfile{}
 	rt.Defaults("all")
+	if overlayRoutingEnabled {
+		cl.logger.DebugLog("method", "updateDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default with overlay routing "))
+		rt.Spec.DeploymentTarget = "host"
+		rt.Spec.FeatureSet = "sdn"
+	} else {
+		rt.Spec.DeploymentTarget = "host"
+		rt.Spec.FeatureSet = "smartnic"
+		return ff, true, nil
+	}
 	apiSrv := apisrvpkg.MustGetAPIServer()
 	rt.APIVersion = apiSrv.GetVersion()
 	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
@@ -299,9 +311,64 @@ func (cl *clusterHooks) createDefaultDSCProfile(ctx context.Context, kv kvstore.
 	}
 	rt.CreationTime, rt.ModTime = api.Timestamp{Timestamp: *ts}, api.Timestamp{Timestamp: *ts}
 	rtk := rt.MakeKey(string(apiclient.GroupCluster))
-	err = txn.Create(rtk, rt)
+
+	cur := &cluster.DSCProfile{}
+	if err := kv.Get(ctx, rtk, cur); err != nil {
+		err = txn.Create(rtk, rt)
+		if err != nil {
+			return ff, true, errors.New("adding create operation to transaction failed")
+		}
+	} else {
+		cur.Spec.DeploymentTarget = rt.Spec.DeploymentTarget
+		cur.Spec.FeatureSet = rt.Spec.FeatureSet
+		err = txn.Update(rtk, cur)
+		if err != nil {
+			return ff, true, errors.New("adding update operation to transaction failed")
+		}
+	}
+	return ff, true, nil
+}
+
+// createDefaultDSCProfile is a pre-commit hook to creates default RouteTable when a tenant is created
+func (cl *clusterHooks) createDefaultDSCProfile(ctx context.Context, kv kvstore.Interface, txn kvstore.Txn, key string, oper apiintf.APIOperType, dryRun bool, i interface{}) (interface{}, bool, error) {
+	r, ok := i.(cluster.Tenant)
+	if !ok {
+		cl.logger.ErrorLog("method", "createDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default dscProfile called for invalid object type [%#v]", i))
+		return i, true, errors.New("invalid input type")
+	}
+	if r.GetName() != globals.DefaultTenant {
+		return r, true, nil
+	}
+
+	rt := &cluster.DSCProfile{}
+	rt.Defaults("all")
+	if featureflags.IsOVerlayRoutingEnabled() {
+		cl.logger.DebugLog("method", "createDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default with overlay routing "))
+		rt.Spec.DeploymentTarget = "host"
+		rt.Spec.FeatureSet = "sdn"
+	} else {
+		cl.logger.DebugLog("method", "createDefaultDSCProfile", "msg", fmt.Sprintf("API server hook to create default with overlay routing disabled"))
+	}
+	apiSrv := apisrvpkg.MustGetAPIServer()
+	rt.APIVersion = apiSrv.GetVersion()
+	rt.SelfLink = rt.MakeURI("configs", rt.APIVersion, string(apiclient.GroupCluster))
+	rt.Name = globals.DefaultDSCProfile
+	rt.Tenant = ""
+	rt.Namespace = ""
+	rt.GenerationID = "1"
+	rt.UUID = uuid.NewV4().String()
+	ts, err := types.TimestampProto(time.Now())
 	if err != nil {
-		return r, true, errors.New("adding create operation to transaction failed")
+		return i, true, err
+	}
+	rt.CreationTime, rt.ModTime = api.Timestamp{Timestamp: *ts}, api.Timestamp{Timestamp: *ts}
+	rtk := rt.MakeKey(string(apiclient.GroupCluster))
+	cur := &cluster.DSCProfile{}
+	if err := kv.Get(ctx, rtk, cur); err != nil {
+		err = txn.Create(rtk, rt)
+		if err != nil {
+			return r, true, errors.New("adding create operation to transaction failed")
+		}
 	}
 	return r, true, nil
 }
@@ -1364,6 +1431,8 @@ func registerClusterHooks(svc apiserver.Service, logger log.Logger) {
 	svc.GetCrudService("License", apiintf.CreateOper).GetRequestType().WithValidate(r.validateFFBootstrap)
 	svc.GetCrudService("License", apiintf.UpdateOper).WithPreCommitHook(r.checkFFBootstrap)
 
+	svc.GetCrudService("License", apiintf.CreateOper).WithPreCommitHook(r.updateDefaultDSCProfile)
+	svc.GetCrudService("License", apiintf.UpdateOper).WithPreCommitHook(r.updateDefaultDSCProfile)
 	svc.GetCrudService("License", apiintf.CreateOper).WithPostCommitHook(r.applyFeatureFlags)
 	svc.GetCrudService("License", apiintf.UpdateOper).WithPostCommitHook(r.applyFeatureFlags)
 	apisrv.RegisterRestoreCallback(r.restoreFeatureFlags)

@@ -52,6 +52,7 @@ func (x DSCProfileSpec_Deployment_Target) String() string {
 var DSCProfileSpec_Feature_Set_normal = map[string]string{
 	"flowaware":          "flowaware",
 	"flowaware_firewall": "flowaware_firewall",
+	"sdn":                "sdn",
 	"smartnic":           "smartnic",
 }
 
@@ -59,12 +60,14 @@ var DSCProfileSpec_Feature_Set_vname = map[int32]string{
 	0: "smartnic",
 	1: "flowaware",
 	2: "flowaware_firewall",
+	3: "sdn",
 }
 
 var DSCProfileSpec_Feature_Set_vvalue = map[string]int32{
 	"smartnic":           0,
 	"flowaware":          1,
 	"flowaware_firewall": 2,
+	"sdn":                3,
 }
 
 func (x DSCProfileSpec_Feature_Set) String() string {

@@ -7284,12 +7284,14 @@
           "enum": [
             "smartnic",
             "flowaware",
-            "flowaware_firewall"
+            "flowaware_firewall",
+            "sdn"
           ],
           "default": "smartnic",
           "x-ui-hints": {
             "flowaware": "FlowAware",
             "flowaware_firewall": "FlowAware with Firewall",
+            "sdn": "SDN",
             "smartnic": "SmartNIC"
           }
         }

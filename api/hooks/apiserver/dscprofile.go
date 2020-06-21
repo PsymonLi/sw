@@ -10,6 +10,7 @@ import (
 	apiintf "github.com/pensando/sw/api/interfaces"
 	apiutils "github.com/pensando/sw/api/utils"
 	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/kvstore"
 )
 
@@ -57,6 +58,13 @@ func (cl *clusterHooks) DSCProfilePreCommitHook(ctx context.Context, kvs kvstore
 }
 
 func checkValidProfile(profile cluster.DSCProfile) error {
+	if featureflags.IsOVerlayRoutingEnabled() {
+		if profile.Spec.DeploymentTarget != cluster.DSCProfileSpec_HOST.String() ||
+			profile.Spec.FeatureSet != cluster.DSCProfileSpec_SDN.String() {
+			return fmt.Errorf("fwdMode:%s flowpolicy mode:%s is not supported", profile.Spec.DeploymentTarget, profile.Spec.FeatureSet)
+		}
+		return nil
+	}
 	if profile.Spec.DeploymentTarget == cluster.DSCProfileSpec_VIRTUALIZED.String() {
 		if profile.Spec.FeatureSet != cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String() {
 			return fmt.Errorf(" fwdMode:%s flowpolicy mode:%s is not supported", profile.Spec.DeploymentTarget, profile.Spec.FeatureSet)
