@@ -458,7 +458,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
                 return;
               }
 
-              const currMoment = moment.utc(values[index].value);
+              const currMoment = moment.utc((values[index] as any).value);
               return currMoment.format('HH:mm');
             },
           },
@@ -476,8 +476,8 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
                 return;
               }
 
-              const currMoment = moment.utc(values[index].value);
-              const prevMoment = index > 0 && values[index - 1] ? moment.utc(values[index - 1].value) : null;
+              const currMoment = moment.utc((values[index] as any).value);
+              const prevMoment = index > 0 && values[index - 1] ? moment.utc((values[index - 1] as any).value) : null;
               const sameDay = prevMoment && currMoment.isSame(prevMoment, 'day');
               return sameDay ? '' : currMoment.format('MM/DD');
             },

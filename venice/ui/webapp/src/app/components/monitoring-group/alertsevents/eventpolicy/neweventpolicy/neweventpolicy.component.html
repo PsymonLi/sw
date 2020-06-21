@@ -36,7 +36,7 @@
         <div fxFlex="20px" fxLayout="row"></div>
 
         <div fxFlex="noshrink" fxLayout="row">
-          <app-syslog #syslogComponent
+          <app-syslog #syslogComponent [isInline]="isInline"
                       [syslogExport]="newObject.$formGroup.get(['spec']).value"
                       targetTransport="<TCP/UDP>/<port>"
                       fxFlex="nogrow" fxLayout="column"

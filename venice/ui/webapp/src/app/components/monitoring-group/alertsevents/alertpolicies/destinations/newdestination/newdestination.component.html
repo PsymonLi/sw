@@ -58,6 +58,7 @@
 
 <ng-template #syslog>
   <app-syslog #syslogComponent
+              [isInline]="isInline"
               [syslogFieldsetWidth]="true"
               [syslogRequiredOption]="true"
               [syslogExport]="newObject.$formGroup.get(['spec', 'syslog-export']).value"

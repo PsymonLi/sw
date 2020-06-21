@@ -47,6 +47,16 @@ $dary-grey: #a9a9a9;
   align-items: center;
 }
 
+app-listcontainer {
+  .syslog-value {
+    margin: 0px;
+
+    input {
+      width: 100%;
+    }
+  }
+}
+
 .syslog-export-parent {
 
   .syslog-value,
@@ -101,13 +111,5 @@ $dary-grey: #a9a9a9;
   .syslog-format-title {
     font-size: 12px;
     color: #898989;
-  }
-}
-
-.syslog-add-delete-container {
-  justify-content: flex-end;
-
-  .syslog-add {
-    margin-top: 5px;
   }
 }

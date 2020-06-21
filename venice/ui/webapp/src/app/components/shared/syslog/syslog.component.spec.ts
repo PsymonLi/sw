@@ -17,6 +17,7 @@ import { MessageService } from '@app/services/message.service';
 import { RouterTestingModule } from '@angular/router/testing';
 import { AuthService } from '@app/services/auth.service';
 import { FieldContainerComponent } from '../form/layout/fieldcontainer.component';
+import { ListContainerComponent } from '../form/layout/listcontainer.component';
 import { SyslogComponent } from './syslog.component';
 
 describe('SyslogComponent', () => {
@@ -27,6 +28,7 @@ describe('SyslogComponent', () => {
     TestBed.configureTestingModule({
       declarations: [
         FieldContainerComponent,
+        ListContainerComponent,
         SyslogComponent
       ],
       imports: [

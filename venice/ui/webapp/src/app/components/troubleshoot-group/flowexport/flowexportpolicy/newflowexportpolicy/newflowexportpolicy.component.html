@@ -11,7 +11,7 @@
       <ng-container *ngTemplateOutlet="metaSpec"></ng-container>
       <ng-container>
         <div class="newflow-export-policy-packet">
-          <app-syslog #syslogComponent
+          <app-syslog #syslogComponent [isInline]="isInline"
                       [syslogExport]="syslogConfig"
                       [formatOptions]="formatOptions"
                       targetTransport="UDP/<port>"

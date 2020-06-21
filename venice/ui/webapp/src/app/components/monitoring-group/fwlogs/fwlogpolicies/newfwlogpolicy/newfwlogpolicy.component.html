@@ -62,7 +62,7 @@
       </div>
 
       <div fxFlex="noshrink" fxLayout="row">
-        <app-syslog #syslogComponent
+        <app-syslog #syslogComponent [isInline]="isInline"
                     [syslogFieldsetWidth]="true"
                     [syslogRequiredOption]="!newObject.$formGroup.get(['spec', 'psm-target', 'enable']).value"
                     [syslogExport]="newObject.$formGroup.get(['spec']).value"
