@@ -477,6 +477,9 @@ pds_svc_mapping_delete (const pds::MappingDeleteRequest *proto_req,
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         if (!core::agent_state::state()->pds_mock_mode()) {
             ret = pds_local_mapping_delete(&key, bctxt);
+            if (!batched_internally) {
+                proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+            }
             if (ret != SDK_RET_OK) {
                 goto end;
             }
@@ -486,8 +489,10 @@ pds_svc_mapping_delete (const pds::MappingDeleteRequest *proto_req,
     if (batched_internally) {
         // commit the internal batch
         ret = pds_batch_commit(bctxt);
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
     }
-    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
     return ret;
 
 end:
@@ -495,8 +500,10 @@ end:
     if (batched_internally) {
         // commit the internal batch
         pds_batch_destroy(bctxt);
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
     }
-    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
     return ret;
 }
 

@@ -320,15 +320,29 @@ pds_svc_vpc_delete (const pds::VPCDeleteRequest *proto_req,
         if (ret == SDK_RET_ENTRY_NOT_FOUND) {
             if (core::agent_state::state()->device()->overlay_routing_en) {
                 // no need to call the pds API in overlay-routing mode
+                if (!batched_internally) {
+                    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+                }
                 goto end;
             }
             // if VPC is not found in control plane then it might be a
             // tenant VPC in non overlay-routing mode
             if (!core::agent_state::state()->pds_mock_mode()) {
                 ret = pds_vpc_delete(&key, bctxt);
+                if (!batched_internally) {
+                    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+                }
+            } else {
+                if (!batched_internally) {
+                    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+                }
             }
             if (ret != SDK_RET_OK) {
                 goto end;
+            }
+        } else {
+            if (!batched_internally) {
+                proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
             }
         }
     }
@@ -336,8 +350,10 @@ pds_svc_vpc_delete (const pds::VPCDeleteRequest *proto_req,
     if (batched_internally) {
         // commit the internal batch
         ret = pds_batch_commit(bctxt);
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
     }
-    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
     return ret;
 
 end:
@@ -346,7 +362,6 @@ end:
         // destroy the internal batch
         pds_batch_destroy(bctxt);
     }
-    proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
     return ret;
 }
 
@@ -527,7 +542,9 @@ pds_svc_vpc_peer_delete (const pds::VPCPeerDeleteRequest *proto_req,
     for (int i = 0; i < proto_req->id_size(); i++) {
         pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
         ret = pds_vpc_peer_delete(&key, bctxt);
-        proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        if (!batched_internally) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
         if (ret != SDK_RET_OK) {
             goto end;
         }
@@ -536,6 +553,9 @@ pds_svc_vpc_peer_delete (const pds::VPCPeerDeleteRequest *proto_req,
     if (batched_internally) {
         // commit the internal batch
         pds_batch_commit(bctxt);
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
     }
     return ret;
 
@@ -544,6 +564,9 @@ end:
     if (batched_internally) {
         // destroy the internal batch
         pds_batch_destroy(bctxt);
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            proto_rsp->add_apistatus(sdk_ret_to_api_status(ret));
+        }
     }
     return ret;
 }
