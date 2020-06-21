@@ -4,7 +4,7 @@ image:
   bind_dir: "/sw"
   work_dir: "/sw/iota/test/standalone"
 
-queue_name: baremetal
+queue_name: compat
 
 e2e-targets:
  e2e-windows-bm-dualnic:
@@ -28,8 +28,9 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
- e2e-windows-bm-dualnic-bonding:
+          BmOs: windows
+
+ e2e-windows-bm-bonding-dualnic:
    commands: ["sh", "-c", "make windows && ./run_iota.sh --testsuite transparent_basenet_bond_windows --precheckin --skip-sanity --enable-multi-naples"]
    owners: ["email:srivatsa@pensando.io"]
    area:
@@ -50,7 +51,7 @@ e2e-targets:
        username: vm
        password: vm
        vars:
-          BmOs: linux
+          BmOs: windows
 
 logfiles:
   - /sw/iota/iota_sanity_logs.tar.gz

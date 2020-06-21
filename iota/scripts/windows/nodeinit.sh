@@ -204,11 +204,9 @@ if ($skipInstall) {
 		}
 
 		# override possible command line setting
-		# with default settings if multiple NICs
-		if ($numMgmt -gt 1) {
-			$ownIP = "169.254.XX.2"
-			$trgIP = "169.254.XX.1"
-		}
+		# with default settings if multiple NICs and new addressing scheme
+                $ownIP = "169.254.XX.2"
+                $trgIP = "169.254.XX.1"
 
 		# Preparing Management IPs and NIC IPs
 		foreach ($mgmtIF in $mgmtIFs){

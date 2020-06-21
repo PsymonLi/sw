@@ -77,8 +77,6 @@ parser.add_argument('--reset', dest='reset_naples',
                     action='store_true', help='Reset naples')
 parser.add_argument('--naples-only-setup', dest="naples_only_setup",
                     action='store_true', help='Setup only naples')
-parser.add_argument('--esx-script', dest='esx_script',
-                    default=None, help='ESX start up script')
 parser.add_argument('--use-gold-firmware', dest='use_gold_firmware',
                     action='store_true', help='Only use gold firmware')
 parser.add_argument('--fast-upgrade', dest='fast_upgrade',
@@ -353,12 +351,19 @@ class EntityManagement:
         return False
 
     @_exceptionWrapper(_errCodes.ENTITY_SSH_CMD_FAILED, "SSH cmd failed")
-    def RunSshCmd(self, command, ignore_failure = False):
+    def RunSshCmd(self, command, ignore_failure = False, retry=3):
         date_command = "%s %s \"date\"" % (self.ssh_pfx, self.ssh_host)
         os.system(date_command)
         full_command = "%s %s \"%s\"" % (self.ssh_pfx, self.ssh_host, command)
         print(full_command)
-        retcode = os.system(full_command)
+        retcode = 0
+        for _ in range(0, retry):
+            retcode = os.system(full_command)
+            if retcode == 0:
+                break
+            time.sleep(1)
+            print("RunSshCmd Failed. Retrying...")
+
         if ignore_failure is False and retcode != 0:
             print("ERROR: Failed to run command: %s (exit = %d)" % (command,retcode))
             raise Exception(full_command)
@@ -622,7 +627,7 @@ class NaplesManagement(EntityManagement):
         if hasattr(self.nic_spec, 'OobandLink') and self.nic_spec.OobandLink == False:
             print("Naples: OobandLink not available")
             return False
-        return True
+        return self.__is_oob_available
         #for _ in range(6):
         #    output = self.RunCommandOnConsoleWithOutput("ip link | grep " + GlobalOptions.mgmt_intf)
         #    ifconfig_regexp='state (.+?) mode'
@@ -652,17 +657,19 @@ class NaplesManagement(EntityManagement):
         return False
 
     def ReadExternalIP(self):
-        if not self.IsOOBAvailable():
-            return False
         #Read IP if already set
         if self.__read_ip(GlobalOptions.mgmt_intf):
             self.SSHPassInit()
+            self.__is_oob_available = True
             return True
         if not self.__run_dhclient():
+            self.__is_oob_available = False
             return False
         if self.__read_ip(GlobalOptions.mgmt_intf):
             self.SSHPassInit()
+            self.__is_oob_available = True
             return True
+        self.__is_oob_available = False
         return False
 
     #if oob is not available read internal IP
@@ -903,7 +910,7 @@ class HostManagement(EntityManagement):
             self.RunSshCmd("sudo -E mkdir -p /pensando && sudo -E chown vm:vm /pensando")
             self.CopyIN(node_init_script, HOST_NAPLES_DIR)
             print('running nodeinit.sh cleanup with args: {0}'.format(nodeinit_args))
-            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
+            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args), retry=1)
 
         if GlobalOptions.skip_driver_install:
             print('user requested to skip driver install')
@@ -926,7 +933,7 @@ class HostManagement(EntityManagement):
             #Run with not mgmt first
             if gold_fw or not GlobalOptions.no_mgmt:
                 print('running nodeinit.sh with args: {0}'.format(nodeinit_args))
-                self.RunSshCmd("sudo -E %s/nodeinit.sh --no-mgmt --image %s --mode %s" % (HOST_NAPLES_DIR, os.path.basename(driver_pkg), GlobalOptions.mode))
+                self.RunSshCmd("sudo -E %s/nodeinit.sh --no-mgmt --image %s --mode %s" % (HOST_NAPLES_DIR, os.path.basename(driver_pkg), GlobalOptions.mode), retry=1)
                 #mgmtIPCmd = "sudo -E python5  %s/pen_nics.py --mac-hint %s --intf-type int-mnic --op mnic-ip --os %s" % (HOST_NAPLES_DIR, self.naples.mac_addr, self.__host_os)
                 #output, errout = self.RunSshCmdWithOutput(mgmtIPCmd)
                 #print("Command output ", output)
@@ -937,7 +944,7 @@ class HostManagement(EntityManagement):
             else:
                 nodeinit_args += " --no-mgmt" + " --image " + os.path.basename(driver_pkg) + " --mode " + GlobalOptions.mode
             print('running nodeinit.sh with args: {0}'.format(nodeinit_args))
-            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args))
+            self.RunSshCmd("sudo -E %s/nodeinit.sh %s" % (HOST_NAPLES_DIR, nodeinit_args), retry=1)
         return
 
     @_exceptionWrapper(_errCodes.HOST_COPY_FAILED, "Host Init Failed")
@@ -1037,11 +1044,15 @@ class EsxHostManagement(HostManagement):
     def __init__(self, ipaddr, server_type, host_username, host_password, driver_images):
         HostManagement.__init__(self, ipaddr, server_type, host_username, host_password)
         self.driver_images = driver_images
-        if GlobalOptions.esx_script is None:
-            GlobalOptions.esx_script = ESX_CTRL_VM_BRINGUP_SCRIPT
+        self.__esx_host_init_done = False
+
+    def SetNaples(self, naples):
+        self.naples = naples
+        self.SetHost(self)
 
     @_exceptionWrapper(_errCodes.HOST_ESX_CTRL_VM_COPY_FAILED, "ESX ctrl vm copy failed")
     def ctrl_vm_copyin(self, src_filename, entity_dir, naples_dir = None):
+        self.__esx_host_init()
         dest_filename = entity_dir + "/" + os.path.basename(src_filename)
         cmd = "%s %s %s:%s" % (self.__ctr_vm_scp_pfx, src_filename,
                                self.__ctr_vm_ssh_host, dest_filename)
@@ -1072,6 +1083,7 @@ class EsxHostManagement(HostManagement):
 
     @_exceptionWrapper(_errCodes.HOST_ESX_CTRL_VM_RUN_CMD_FAILED, "ESX ctrl vm run failed")
     def ctrl_vm_run(self, command, background = False, ignore_result = False):
+        self.__esx_host_init()
         if background:
             cmd = "%s -f %s \"%s\"" % (self.__ctr_vm_ssh_pfx, self.__ctr_vm_ssh_host, command)
         else:
@@ -1099,6 +1111,8 @@ class EsxHostManagement(HostManagement):
 
     @_exceptionWrapper(_errCodes.HOST_ESX_CTRL_VM_INIT_FAILED, "Ctrl VM init failed")
     def __esx_host_init(self, ignore_naples_ssh=True):
+        if self.__esx_host_init_done:
+            return
         self.WaitForSsh(port=443)
         time.sleep(30)
         if not ignore_naples_ssh:
@@ -1107,9 +1121,12 @@ class EsxHostManagement(HostManagement):
                 return
         # Use first instance of naples
         naples_inst = self.naples[0]
+        if naples_inst.mac_addr == None:
+            raise Exception("Failed to setup control VM on ESX - missing mac-hint")
+
         outFile = "/tmp/esx_" +  self.ipaddr + ".json"
         esx_startup_cmd = ["timeout", "2400"]
-        esx_startup_cmd.extend([GlobalOptions.esx_script])
+        esx_startup_cmd.extend([ESX_CTRL_VM_BRINGUP_SCRIPT])
         esx_startup_cmd.extend(["--esx-host", self.ipaddr])
         esx_startup_cmd.extend(["--esx-username", self.username])
         esx_startup_cmd.extend(["--esx-password", self.password])
@@ -1129,13 +1146,13 @@ class EsxHostManagement(HostManagement):
         self.__ctr_vm_ssh_host = "%s@%s" % (self.__esx_ctrl_vm_username, self.__esx_ctrl_vm_ip)
         self.__ctr_vm_scp_pfx = "sshpass -p %s scp -o UserKnownHostsFile=/dev/null  -o StrictHostKeyChecking=no " % self.__esx_ctrl_vm_password
         self.__ctr_vm_ssh_pfx = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null  -o StrictHostKeyChecking=no " % self.__esx_ctrl_vm_password
+        self.__esx_host_init_done = True
 
     @_exceptionWrapper(_errCodes.HOST_ESX_INIT_FAILED, "Host init failed")
     def Init(self, driver_pkg = None, cleanup = True, gold_fw = False):
         self.WaitForSsh()
         os.system("date")
         self.__check_naples_deivce()
-        self.__esx_host_init()
 
     @_exceptionWrapper(_errCodes.HOST_DRIVER_INSTALL_FAILED, "ESX Driver install failed")
     def __install_drivers(self, pkg, file_type="SrcBundle"):
@@ -1154,7 +1171,7 @@ class EsxHostManagement(HostManagement):
         if file_type == "SrcBundle":
             assert(self.RunSshCmd("cd %s && tar xf %s" % (HOST_NAPLES_DIR, os.path.basename(pkg))) == 0)
         for _ in range(0, 5):
-            exit_status = self.RunSshCmd("/%s/nodeinit.sh --install" % (HOST_NAPLES_DIR))
+            exit_status = self.RunSshCmd("/%s/nodeinit.sh --install" % (HOST_NAPLES_DIR), retry=1)
             if  exit_status == 0:
             #if ret == 0:
                 install_success = True
@@ -1176,7 +1193,6 @@ class EsxHostManagement(HostManagement):
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FROM_HOST_FAILED, "FW install Failed")
     def InstallMainFirmware(self, mount_data = True, copy_fw = True):
 
-        self.__esx_host_init()
         for naples_inst in self.naples:
             naples_inst.InstallPrep()
 
@@ -1191,7 +1207,6 @@ class EsxHostManagement(HostManagement):
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FAILED, "Gold Firmware Install failed")
     def InstallGoldFirmware(self):
-        self.__esx_host_init()
         for naples_inst in self.naples: 
             if not naples_inst.IsNaplesGoldFWLatest():
                 self.ctrl_vm_copyin(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.gold_fw_img),
@@ -1407,15 +1422,21 @@ class PenOrchestrator:
                 setattr(nic, 'NaplesName', name)
 
     def AtExitCleanup(self):
-        if not self.__naples:
-            return
-        for naples_inst in self.__naples:
-            try: 
-                naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover)) # Make sure it is connected
-                naples_inst.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
-                naples_inst.Close()
-            except: 
-                print("failed to read firmware. error was: {0}".format(traceback.format_exc()))
+        if self.__naples:
+            for naples_inst in self.__naples:
+                try: 
+                    naples_inst.Connect(bringup_oob=(not GlobalOptions.auto_discover)) # Make sure it is connected
+                    naples_inst.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
+                    naples_inst.SendlineExpect("ifconfig -a", "#", trySync=True)
+                    naples_inst.Close()
+                except: 
+                    print("failed to read firmware. error was: {0}".format(traceback.format_exc()))
+
+        if self.__host:
+            if isinstance(self.__host, EsxHostManagement): 
+                self.__host.ctrl_vm_run("/usr/sbin/ifconfig -a", ignore_result=True)
+            else:
+                self.__host.RunSshCmd("ifconfig -a", ignore_failure=True)
 
     def __doNaplesReboot(self):
 
@@ -1624,7 +1645,10 @@ class PenOrchestrator:
 
 
                     #Check whether we can run ssh command
-                    naples_inst.RunSshCmd("date")
+                    if naples_inst.IsOOBAvailable() and naples_inst.IsSSHUP():
+                        naples_inst.RunSshCmd("date")
+                    else:
+                        self.__host.RunNaplesCmd(naples_inst, "date")
                 if not self.__host.IsSSHUP():
                     raise
 

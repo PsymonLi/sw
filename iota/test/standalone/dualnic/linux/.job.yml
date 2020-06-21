@@ -4,7 +4,7 @@ image:
   bind_dir: "/sw"
   work_dir: "/sw/iota/test/standalone"
 
-queue_name: baremetal
+queue_name: compat
 
 e2e-targets:
  e2e-linux-bm-dualnic:
@@ -17,7 +17,7 @@ e2e-targets:
      - build-iris-arm
      - build-iota
    clusters:
-     - image: build-17
+     - image: build-23
        count: 2
        resources:
          servers:
