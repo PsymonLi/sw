@@ -145,7 +145,6 @@ mirror_session_upd_walk_cb_ (void *obj, void *ctxt)
     sdk_ret_t ret;
     vpc_entry *vpc;
     pds_obj_key_t vpc_key;
-    pds_mirror_session_spec_t spec;
     pds_mirror_session_info_t info = { 0 };
     mirror_session *ms = (mirror_session *)obj;
     pds_batch_ctxt_t bctxt = (pds_batch_ctxt_t)ctxt;
@@ -173,10 +172,11 @@ mirror_session_upd_walk_cb_ (void *obj, void *ctxt)
         return false;
     }
 
-    ret = pds_mirror_session_update(&spec, bctxt);
+    // and post an update
+    ret = pds_mirror_session_update(&info.spec, bctxt);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to update mirror session %s, err %u",
-                      spec.key.str(), ret);
+                      info.spec.key.str(), ret);
         // continue the walk and update other mirror sessions still !!
     }
     return false;
