@@ -54,7 +54,8 @@
     </div>
     <app-tableheader title="Alerts" [count]="dataObjects.length" [total]="alerts.length"
                      [icon]="alertsIcon"
-                     [enableColumnSelect]="false" width="250px" class="alertdetail-tableheader">
+                     [enableColumnSelect]="false" width="250px"
+                     [class]="showAlertsAdvSearch ? 'alertdetail-tableheader' : ''">
       <div fxFlex="50" fxLayoutAlign="start center">
         <div fxFlex="none">
           <mat-icon *ngIf="showBatchResolveIcon()" matTooltip="Resolve Selected Alerts"

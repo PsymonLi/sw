@@ -1,4 +1,4 @@
-<app-pagebody [icon]="bodyicon" [header]="selectedId">
+<app-pagebody [header]="selectedId" [icon]="bodyicon" [transparent]="true">
   <div fxFlex="none" fxLayout="row wrap" fxLayoutGap="10px"
        class="nodedetail-stats-charts-container">
     <div fxFlex="1 0 500px" class="detail-card detail-card-wrapper nodedetail-stats-container"
@@ -19,7 +19,13 @@
   </div>
   <div *roleGuard="{opt: ['monitoringAlert_read', 'eventsevent_read']}" fxFlex
        class="nodedetail-alertsevents-container">
-    <app-shared-alertsevents [selector]="alertseventsSelector"></app-shared-alertsevents>
+    <div class="detail-card-wrapper">
+      <div class="detail-card" fxLayout="column">
+        <div class="detail-card-border"></div>
+        <app-shared-alertsevents [selector]="alertseventsSelector"></app-shared-alertsevents>
+        <div class="detail-card-border"></div>
+      </div>
+    </div>
   </div>
   <!-- Deletion screen overlay displays when the policy we are viewing is deleted -->
   <!-- Missing screen overlay displays when the policy does not exist-->

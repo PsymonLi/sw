@@ -159,3 +159,11 @@ $vertical-gutter: 5px;
 .naples-controlpanelstatus-all-peers-div {
   cursor: pointer;
 }
+
+.naples-card-table {
+  border: 1px solid #cec5bd;
+
+  .ui-table-caption {
+    border: none;
+  }
+}

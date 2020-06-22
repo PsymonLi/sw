@@ -1,4 +1,4 @@
-<app-pagebody [icon]="bodyicon" header="Distributed Services Cards Overview">
+<app-pagebody header="Distributed Services Cards Overview" [icon]="bodyicon" [transparent]="true">
   <div fxFlex="none" fxLayout="column">
     <div fxFlex="none" *roleGuard="'metrics_read'" fxLayout="row wrap" fxLayoutGap="10px"
          class="naples-stats-charts-container">
@@ -35,18 +35,20 @@
       </div>
     </div>
   </div>
-  <app-pentable #dscTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
-                [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
-                [enableCheckbox]="true"
-                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
-                [rowHeight]="46"
-                [searchable]="true" (searchCancelledEmitter)="onCancelSearch($event)"
-                [searchCols]="advSearchCols"
-                (searchEmitter)="onSearchDSCs()" [searchFormArray]="fieldFormArray"
-                searchKind="DistributedServiceCard"
-                [searchCustomQueryOptions]="customQueryOptions"
-                [searchMultiSelectFields]="multiSelectFields">
-  </app-pentable>
+  <div class="naples-card-table">
+    <app-pentable #dscTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
+                  [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
+                  [enableCheckbox]="true"
+                  [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="tableLoading"
+                  [rowHeight]="46"
+                  [searchable]="true" (searchCancelledEmitter)="onCancelSearch($event)"
+                  [searchCols]="advSearchCols"
+                  (searchEmitter)="onSearchDSCs()" [searchFormArray]="fieldFormArray"
+                  searchKind="DistributedServiceCard"
+                  [searchCustomQueryOptions]="customQueryOptions"
+                  [searchMultiSelectFields]="multiSelectFields">
+    </app-pentable>
+  </div>
 </app-pagebody>
 
 <ng-template #actionButtonsTemplate>

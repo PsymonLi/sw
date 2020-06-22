@@ -19,7 +19,11 @@
 }
 
 .nodedetail-alertsevents-container {
-  min-height: 600px;
+  margin: 0 10px;
+
+  app-shared-alertsevents {
+    min-height: 600px;
+  }
 }
 
 .nodedetail-overlay {

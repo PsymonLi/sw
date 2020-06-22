@@ -114,7 +114,7 @@
 
       <div fxFlex="20px"></div>
 
-      <div fxFlex="none" fxLayout="row">
+      <div class="partial-edit-sgpolicy-chips" fxFlex="none" fxLayout="row">
         <span
               [ngClass]="{'app-formchips-requiredField': isFieldEmpty(data.rule.$formGroup.get(['from-ip-addresses']))}">
           <app-formchips fxFlex="none" [chipsLabel]="'Source ' + IPS_LABEL"
