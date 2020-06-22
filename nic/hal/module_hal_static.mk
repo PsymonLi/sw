@@ -116,6 +116,7 @@ MODULE_ARLIBS	= \
 	sdkring \
 	sdkxcvrdriver \
 	shmmgr \
+	shmstore \
 	slab \
 	sldirectmap \
 	sysmgr \

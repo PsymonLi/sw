@@ -5,6 +5,7 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
+#include "nic/sdk/linkmgr/linkmgr.hpp"
 #include "nic/apollo/include/upgrade_shmstore.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/core.hpp"
@@ -458,6 +459,12 @@ upg_ev_switchover (upg_ev_params_t *params)
     // sim it always fail, so ignore the error
     if (api::g_pds_state.platform_type() != platform_type_t::PLATFORM_TYPE_HW) {
         ret = SDK_RET_OK;
+    }
+    if (ret == SDK_RET_OK) {
+        ret = sdk::linkmgr::port_upgrade_switchover();
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Port switchover failed, ret %u", ret);
+        }
     }
     if (ret == SDK_RET_OK) {
         ret = impl_base::pipeline_impl()->upgrade_switchover();

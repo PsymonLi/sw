@@ -20,6 +20,18 @@ using sdk::types::xcvr_state_t;
 using sdk::types::xcvr_pid_t;
 using sdk::utils::in_mem_fsm_logger;
 
+#define LINK_SHM_SEGMENT    "link_shm_segment"
+#define XCVR_SHM_SEGMENT    "xcvr_shm_segment"
+
+typedef struct port_obj_meta_s {
+    uint64_t num_ports;         ///< number of stored ports
+    uint64_t port_size;         ///< size of each port
+    uint64_t reserved1;         ///< reserved field
+    uint64_t reserved2;         ///< reserved field
+    uint64_t reserved3;         ///< reserved field
+    uint8_t  obj[0];            ///< start offset of structs
+} __PACK__ port_obj_meta_t;
+
 typedef void (*port_log_fn_t)(sdk_trace_level_e trace_level,
                               const char *msg);
 
@@ -44,17 +56,19 @@ typedef struct linkmgr_cfg_s {
     xcvr_event_notify_t xcvr_event_cb;
     port_log_fn_t       port_log_fn;
     bool                process_mode;
-    port_admin_state_t  admin_state;    // default port admin state
-    mpartition          *mempartition;  // memory partition context from HAL
-    sdk::lib::shmstore  *backup_store;  // shared memory backup store instance
-                                        // from HAL for backing up the states
-    sdk::lib::shmstore  *restore_store; // shared memory backup store instance
-                                        // from HAL for restoring the states
-                                        // during bringup
-    module_version_t    curr_version;   // curent version
-    module_version_t    prev_version;   // previous version info passed from hal,
-                                        // valid only in upgrade scenarios
-} linkmgr_cfg_t;
+    port_admin_state_t  admin_state;    ///< default port admin state
+    mpartition          *mempartition;  ///< memory partition context from HAL
+    sdk::lib::shmstore  *backup_store;  ///< shared memory backup store instance
+                                        ///< from HAL for backing up the states
+    sdk::lib::shmstore  *restore_store; ///< shared memory backup store instance
+                                        ///< from HAL for restoring the states
+                                        ///< during bringup
+    module_version_t    curr_version;   ///< curent version
+    module_version_t    prev_version;   ///< previous version info passed from hal,
+                                        ///< valid only in upgrade scenarios
+    bool                use_shm;        ///< use shared memory for port allocation
+} __PACK__ linkmgr_cfg_t;
+
 extern linkmgr_cfg_t g_linkmgr_cfg;
 
 typedef struct port_args_s {
@@ -99,6 +113,15 @@ typedef struct port_args_s {
 
 sdk_ret_t linkmgr_init(linkmgr_cfg_t *cfg);
 void *port_create(port_args_t *port_args);
+
+/// \brief  returns the size of the linkmgr shm store
+/// \return size of the linkmgr shmstore to be allocated
+size_t linkmgr_shm_size(void);
+
+/// \brief  enable port operations after upgrade
+/// \return SDK_RET_OK on success, failure status code on error
+sdk_ret_t port_upgrade_switchover(void);
+
 sdk_ret_t port_update(void *port_p, port_args_t *port_args);
 sdk_ret_t port_delete(void *port_p);
 sdk_ret_t port_get(void *port_p, port_args_t *port_args);

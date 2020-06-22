@@ -8,6 +8,8 @@
 #include "lib/event_thread/event_thread.hpp"
 #include "port.hpp"
 
+#define LINKMGR_MAX_PORTS 9
+
 namespace sdk {
 namespace linkmgr {
 

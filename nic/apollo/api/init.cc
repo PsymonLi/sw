@@ -107,6 +107,7 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
     cfg.port_log_fn = NULL;
     cfg.admin_state = port_admin_state_t::PORT_ADMIN_STATE_UP;
     cfg.mempartition = g_pds_state.mempartition();
+    cfg.use_shm = true;
     if (g_upg_state) {
         cfg.backup_store = g_upg_state->backup_shmstore(thread_id, true);
         cfg.restore_store = g_upg_state->restore_shmstore(thread_id, true);

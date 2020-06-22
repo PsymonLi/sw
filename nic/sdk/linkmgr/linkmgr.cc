@@ -1,5 +1,6 @@
 // {C} Copyright 2017 Pensando Systems Inc. All rights reserved
 
+#include <boost/interprocess/managed_shared_memory.hpp>
 #include "asic/asic.hpp"
 #include "platform/drivers/xcvr.hpp"
 #include "port_serdes.hpp"
@@ -14,14 +15,15 @@
 #include "port.hpp"
 #include "include/sdk/port_utils.hpp"
 #include "lib/utils/utils.hpp"
+#include "lib/shmmgr/shmmgr.hpp"
 
 using namespace sdk::event_thread;
 using namespace sdk::ipc;
+using namespace boost::interprocess;
 
 namespace sdk {
 namespace linkmgr {
 
-static int aacs_server_port_num = -1;
 bool hal_cfg = false;
 
 // global log buffer
@@ -36,26 +38,19 @@ linkmgr_cfg_t g_linkmgr_cfg;
 // sdk-linkmgr threads
 sdk::lib::thread *g_linkmgr_threads[LINKMGR_THREAD_ID_MAX];
 
-// xcvr poll timer handle
-sdk::event_thread::timer_t xcvr_poll_timer_handle;
-
 // link down poll list
-sdk::event_thread::timer_t port_link_poll_timer_handle;
 port *link_poll_timer_list[MAX_LOGICAL_PORTS];
-
-// Global setting for link status poll. Default is enabled.
-bool port_link_poll_en = true;
 
 bool
 port_link_poll_enabled (void)
 {
-    return port_link_poll_en;
+    return g_linkmgr_state->link_poll_en();
 }
 
 void
 linkmgr_set_link_poll_enable (bool enable)
 {
-    port_link_poll_en = enable;
+    g_linkmgr_state->set_link_poll_en(enable);
 }
 
 uint32_t
@@ -322,6 +317,29 @@ port_disable_req_handler (ipc_msg_ptr msg, const void *ctx)
     respond(msg, NULL, 0);
 }
 
+/// \brief  start the link poll and transceiver poll timers
+///         in the context of linkmgr-ctrl thread
+/// \return SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+linkmgr_ctrl_timers_start (void)
+{
+    timer_start(g_linkmgr_state->xcvr_poll_timer_handle());
+    timer_start(g_linkmgr_state->link_poll_timer_handle());
+    SDK_TRACE_DEBUG("starting poll timers");
+    return SDK_RET_OK;
+}
+
+/// \brief callback for the port switchover event
+///        in the context of the linkmgr-ctrl thread
+static void
+linkmgr_ctrl_switchover (ipc_msg_ptr msg, const void *ctx)
+{
+    linkmgr_ctrl_timers_start();
+
+    // send response back to blocked caller
+    respond(msg, NULL, 0);
+}
+
 void
 port_bringup_timer_cb (sdk::event_thread::timer_t *timer)
 {
@@ -389,27 +407,16 @@ linkmgr_notify (uint8_t operation, linkmgr_entry_data_t *data,
 }
 
 static sdk_ret_t
-linkmgr_timers_init (void)
+linkmgr_ctrl_timers_init (void)
 {
     // init the transceiver poll timer
-    timer_init(&xcvr_poll_timer_handle, xcvr_poll_timer_cb,
+    timer_init(g_linkmgr_state->xcvr_poll_timer_handle(), xcvr_poll_timer_cb,
                XCVR_POLL_TIME, XCVR_POLL_TIME);
-    timer_start(&xcvr_poll_timer_handle);
 
     // init the link poll timer
-    timer_init(&port_link_poll_timer_handle, port_link_poll_timer_cb,
-               LINKMGR_LINK_POLL_TIME, LINKMGR_LINK_POLL_TIME);
-    timer_start(&port_link_poll_timer_handle);
-
-    SDK_TRACE_DEBUG("starting poll timers");
-
-    return SDK_RET_OK;
-}
-
-static sdk_ret_t
-xcvr_poll_init (linkmgr_cfg_t *cfg)
-{
-    sdk::platform::xcvr_init(cfg->xcvr_event_cb);
+    timer_init(g_linkmgr_state->link_poll_timer_handle(),
+               port_link_poll_timer_cb, LINKMGR_LINK_POLL_TIME,
+               LINKMGR_LINK_POLL_TIME);
     return SDK_RET_OK;
 }
 
@@ -429,43 +436,46 @@ linkmgr_event_thread_init (void *ctxt)
 
     serdes_sbm_set_sbus_clock_divider(sbm_clk_div());
 
-    for (uint32_t asic_port = 0; asic_port < num_asic_ports(0); ++asic_port) {
-        uint32_t sbus_addr = sbus_addr_asic_port(0, asic_port);
+    // download serdes fw only if port state is not restored from memory
+    if (g_linkmgr_state->port_restore_state() == false) {
+        for (uint32_t asic_port = 0; asic_port < num_asic_ports(0); ++asic_port) {
+            uint32_t sbus_addr = sbus_addr_asic_port(0, asic_port);
 
-        if (sbus_addr == 0) {
-            continue;
+            if (sbus_addr == 0) {
+                continue;
+            }
+
+            sdk::linkmgr::serdes_fns.serdes_spico_upload(sbus_addr, cfg_file.c_str());
+
+            int build_id = sdk::linkmgr::serdes_fns.serdes_get_build_id(sbus_addr);
+            int rev_id   = sdk::linkmgr::serdes_fns.serdes_get_rev(sbus_addr);
+
+            if (build_id != exp_build_id || rev_id != exp_rev_id) {
+                SDK_TRACE_DEBUG("sbus_addr 0x%x,"
+                                " build_id 0x%x, exp_build_id 0x%x,"
+                                " rev_id 0x%x, exp_rev_id 0x%x",
+                                sbus_addr, build_id, exp_build_id,
+                                rev_id, exp_rev_id);
+                // TODO fail if no match
+            }
+
+            sdk::linkmgr::serdes_fns.serdes_spico_status(sbus_addr);
+
+            SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
+                            sbus_addr,
+                            sdk::linkmgr::serdes_fns.serdes_spico_crc(sbus_addr));
         }
-
-        sdk::linkmgr::serdes_fns.serdes_spico_upload(sbus_addr, cfg_file.c_str());
-
-        int build_id = sdk::linkmgr::serdes_fns.serdes_get_build_id(sbus_addr);
-        int rev_id   = sdk::linkmgr::serdes_fns.serdes_get_rev(sbus_addr);
-
-        if (build_id != exp_build_id || rev_id != exp_rev_id) {
-            SDK_TRACE_DEBUG("sbus_addr 0x%x,"
-                            " build_id 0x%x, exp_build_id 0x%x,"
-                            " rev_id 0x%x, exp_rev_id 0x%x",
-                            sbus_addr, build_id, exp_build_id,
-                            rev_id, exp_rev_id);
-            // TODO fail if no match
-        }
-
-        sdk::linkmgr::serdes_fns.serdes_spico_status(sbus_addr);
-
-        SDK_TRACE_DEBUG("sbus_addr 0x%x, spico_crc %d",
-                        sbus_addr,
-                        sdk::linkmgr::serdes_fns.serdes_spico_crc(sbus_addr));
     }
 
     pal_wr_unlock(SBUSLOCK);
 
     srand(time(NULL));
 
-    // initialize xcvr polling
-    xcvr_poll_init(&g_linkmgr_cfg);
-
-    // init the linkmgr timers
-    linkmgr_timers_init();
+    // Init the linkmgr timers
+    // In regular bringup, timers are started after allocating port and
+    // xcvr memory
+    // In upgrade mode, timers are started during switchover
+    linkmgr_ctrl_timers_init();
 
     reg_request_handler(LINKMGR_OPERATION_PORT_ENABLE,
                         port_enable_req_handler, NULL);
@@ -473,6 +483,8 @@ linkmgr_event_thread_init (void *ctxt)
                         port_disable_req_handler, NULL);
     reg_request_handler(LINKMGR_OPERATION_PORT_QUIESCE,
                         port_quiesce_req_handler, NULL);
+    reg_request_handler(LINKMGR_OPERATION_PORT_SWITCHOVER,
+                        linkmgr_ctrl_switchover, NULL);
 }
 
 static void
@@ -641,10 +653,188 @@ linkmgr_threads_resumed (void)
     return linkmgr_threads_suspended_(false);
 }
 
+static sdk_ret_t
+xcvr_shm_init (linkmgr_cfg_t *cfg)
+{
+    void *backup_mem = NULL;
+    void *mem = NULL;
+    size_t size;
+
+    // transceiver info size
+    size = sdk::platform::xcvr_mem_size();
+
+    // If shared memory segment exists for transceivers:
+    //     Find the memory segment in restore store
+    //     If the number of ports in segment != catalog->num_fp_ports,
+    //         then return error
+    //     If Version change, copy from restore store to backup store
+    // Else:
+    //     Create the segment in backup store
+    //     Store number of entries, size of each entry in meta
+
+    if (g_linkmgr_state->port_restore_state()) {
+        mem = cfg->restore_store->open_segment(XCVR_SHM_SEGMENT);
+        if (mem == NULL) {
+            SDK_TRACE_ERR("Error opening shared mem segment for xcvr in "
+                          "restore store, size %lu", size);
+            return SDK_RET_OOM;
+        }
+    } else {
+        SDK_TRACE_DEBUG("Allocating xcvr segment size %lu", size);
+        mem = cfg->backup_store->create_segment(XCVR_SHM_SEGMENT,
+                                                        size);
+        if (mem == NULL) {
+            SDK_TRACE_ERR("Error creating shared mem segment for xcvr in "
+                          "backup store, size %lu", size);
+            return SDK_RET_OOM;
+        }
+    }
+    sdk::platform::xcvr_init(cfg->xcvr_event_cb, mem, backup_mem);
+    return SDK_RET_OK;
+}
+
+static uint64_t
+link_shm_size (void)
+{
+    return sizeof(port_obj_meta_t) +
+           (sizeof(port) * g_linkmgr_cfg.catalog->num_fp_ports());
+}
+
+static sdk_ret_t
+link_shm_init (linkmgr_cfg_t *cfg)
+{
+    std::size_t size;
+    port_obj_meta_t *port_obj_meta;
+
+    // port segment size
+    size = link_shm_size();
+
+    // If shared memory segment exists for ports:
+    //     Find the segment in restore store
+    //     If the number of ports in segment != catalog->num_fp_ports,
+    //         then return error
+    //     If Version change, copy from restore store to backup store
+    // Else:
+    //     Create the segment in backup store
+    //     Store number of entries, size of each entry in meta
+
+    if (g_linkmgr_state->port_restore_state()) {
+        g_linkmgr_state->set_mem(
+            cfg->restore_store->open_segment(LINK_SHM_SEGMENT));
+        if (g_linkmgr_state->mem() == NULL) {
+            SDK_TRACE_ERR("Error opening shared mem segment for ports in "
+                          "restore store, size %lu", size);
+            return SDK_RET_OOM;
+        }
+        port_obj_meta = (port_obj_meta_t *)g_linkmgr_state->mem();
+        SDK_TRACE_DEBUG("Found port num_ports %lu, size %lu",
+                        port_obj_meta->num_ports, port_obj_meta->port_size);
+        // fail the upgrade if the number of ports have changed
+        if (port_obj_meta->num_ports !=
+                cfg->catalog->num_fp_ports()) {
+            SDK_TRACE_ERR("Number of ports mismtach, restore memory %lu, "
+                          "catalog %u", port_obj_meta->num_ports,
+                          cfg->catalog->num_fp_ports());
+            return SDK_RET_ERR;
+        }
+    } else {
+        SDK_TRACE_DEBUG("Allocating port segment size %lu", size);
+        g_linkmgr_state->set_mem(
+            cfg->backup_store->create_segment(LINK_SHM_SEGMENT, size));
+        if (g_linkmgr_state->mem() == NULL) {
+            SDK_TRACE_ERR("Error creating shared mem segment for ports in "
+                          "backup store, size %lu", size);
+            return SDK_RET_OOM;
+        }
+        port_obj_meta = (port_obj_meta_t *)g_linkmgr_state->mem();
+        port_obj_meta->num_ports = cfg->catalog->num_fp_ports();
+        port_obj_meta->port_size = sizeof(port);
+        SDK_TRACE_DEBUG("Setting port num_ports %lu, size %lu",
+                        port_obj_meta->num_ports, port_obj_meta->port_size);
+    }
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+linkmgr_shm_init (linkmgr_cfg_t *cfg)
+{
+    sdk_ret_t ret;
+
+    // If hitless init:
+    //     restore_store != NULL
+    //     If version match:
+    //         backup_store = NULL
+    //     Else:
+    //         backup_store != NULL
+    // Else:
+    //     restore_store = NULL
+    //     backup_store != NULL
+
+    // if restore_store exists, then restore state from memory
+    if (cfg->restore_store != NULL) {
+        SDK_TRACE_DEBUG("port upgrade restoring port state");
+        g_linkmgr_state->set_port_restore_state(true);
+    }
+
+    // shm init for ports
+    ret = link_shm_init(cfg);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Link shm init failed, err %u", ret);
+        return ret;
+    }
+
+    // shm init for transceivers
+    ret = xcvr_shm_init(cfg);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Transceiver shm init failed, err %u", ret);
+    }
+    return ret;
+}
+
+static sdk_ret_t
+xcvr_init_ (linkmgr_cfg_t *cfg)
+{
+    void *mem;
+    size_t size;
+
+    // transceiver info size
+    size = sdk::platform::xcvr_mem_size();
+
+    mem = SDK_CALLOC(SDK_MEM_ALLOC_ID_LINKMGR, size);
+    if (mem == NULL) {
+        SDK_TRACE_ERR("Failed to allocate memory for transceiver");
+        return SDK_RET_OOM;
+    }
+    return sdk::platform::xcvr_init(cfg->xcvr_event_cb, mem, NULL);
+}
+
+/// \brief  sends msg to linkmgr-ctrl thread to start the link poll and
+///         transceiver poll timers
+/// \return SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+linkmgr_timers_start (void)
+{
+    sdk_ret_t ret;
+    linkmgr_entry_data_t data;
+
+    // wait for linkmgr control thread to process port event
+    while (!is_linkmgr_ctrl_thread_ready()) {
+        pthread_yield();
+    }
+    data.ctxt  = NULL;
+    data.timer = NULL;
+    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_SWITCHOVER, &data,
+                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Error notifying control-thread for port enable");
+    }
+    return ret;
+}
+
 sdk_ret_t
 linkmgr_init (linkmgr_cfg_t *cfg)
 {
-    sdk_ret_t    ret = SDK_RET_OK;
+    sdk_ret_t ret;
 
     g_linkmgr_cfg = *cfg;
 
@@ -662,7 +852,28 @@ linkmgr_init (linkmgr_cfg_t *cfg)
         return ret;
     }
 
-    return SDK_RET_OK;
+    if (cfg->use_shm) {
+        // allocate port and transceiver struct in shared memory
+        ret = linkmgr_shm_init(cfg);
+    } else {
+        xcvr_init_(cfg);
+    }
+    // start link poll and transceiver poll timers
+    linkmgr_timers_start();
+    return ret;
+}
+
+size_t
+linkmgr_shm_size (void)
+{
+    size_t size;
+
+    // size of the linkmgr shared memory
+    size = link_shm_size() + sdk::platform::xcvr_mem_size();
+
+    // segment find fails if we allocated exact memory
+    size += size/2;
+    return size;
 }
 
 //-----------------------------------------------------------------------------
@@ -1046,25 +1257,176 @@ port_init_defaults (port_args_t *args)
     }
 }
 
+/// \brief     enable port operations after upgrade
+/// \param[in] port_p pointer to port struct
+/// \return    SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+port_switchover_ (port *port_p)
+{
+    sdk_ret_t ret;
+    uint32_t ifindex;
+    uint64_t mask = 1 << (port_p->port_num() - 1);
+
+    ifindex =
+        sdk::lib::catalog::logical_port_to_ifindex(port_p->port_num());
+    SDK_TRACE_DEBUG("port upgrade switchover for port %s",
+                    eth_ifindex_to_str(ifindex).c_str());
+
+    // If Link was UP before upgrade:
+    //     Add the port to link poll timer
+    //     Set port bmap to reflect link up
+    // Else:
+    //     Disable the port
+    //     If the port admin state is up
+    //         Enable the port
+    if (port_p->oper_status() == port_oper_status_t::PORT_OPER_STATUS_UP) {
+        // add to link status poll timer if the link was up before upgrade
+        ret = port_link_poll_timer_add(port_p);
+
+        // set bmap for link status
+        g_linkmgr_state->set_port_bmap(g_linkmgr_state->port_bmap() | mask);
+    } else {
+        // disable a port to invoke soft reset
+        ret = port::port_disable(port_p);
+        if (ret != SDK_RET_OK) {
+            SDK_TRACE_ERR("port %u disable failed", port_p->port_num());
+        }
+        if (port_p->admin_state() == port_admin_state_t::PORT_ADMIN_STATE_UP) {
+            ret = port::port_enable(port_p);
+            if (ret != SDK_RET_OK) {
+                SDK_TRACE_ERR("port %u enable failed", port_p->port_num());
+            }
+        }
+    }
+    return ret;
+}
+
+sdk_ret_t
+port_upgrade_switchover (void)
+{
+    uint32_t i;
+    port *port_p;
+
+    if (!g_linkmgr_cfg.use_shm) {
+        SDK_TRACE_DEBUG("port switchover not supported for non-shm");
+        return SDK_RET_OK;
+    }
+    // start link poll and transceiver poll timers
+    linkmgr_timers_start();
+
+    for (i = 0; i < LINKMGR_MAX_PORTS; i++) {
+        port_p = g_linkmgr_state->port_p(i);
+        if (port_p) {
+            port_switchover_(port_p);
+        }
+    }
+    return SDK_RET_OK;
+}
+
+/// \brief     restore the port state during upgrade
+/// \param[in] port_p pointer to port struct
+/// \param[in] args port information
+/// \return    SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+port_restore_ (port *port_p, port_args_t *args)
+{
+    sdk_ret_t ret;
+    uint32_t ifindex;
+    uint64_t mask = 1 << (args->port_num - 1);
+
+    ifindex =
+        sdk::lib::catalog::logical_port_to_ifindex(args->port_num);
+    SDK_TRACE_DEBUG("port upgrade restoring state for port %s",
+                    eth_ifindex_to_str(ifindex).c_str());
+
+    // init the bringup and debounce timers
+    port_p->timers_init();
+
+    port_p->set_mac_fns(&mac_fns);
+    port_p->set_serdes_fns(&serdes_fns);
+    if(args->port_type == port_type_t::PORT_TYPE_MGMT) {
+        port_p->set_mac_fns(&mac_mgmt_fns);
+    } else {
+        g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
+                                            mask);
+    }
+    // set the source mac addr for pause frames
+    // TODO required during upgrade?
+    // port_p->port_mac_set_pause_src_addr(args->mac_addr);
+
+    // init MAC stats hbm region address
+    ret = port::port_mac_stats_init(port_p);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("port %u mac stats init failed", args->port_num);
+        return ret;
+    }
+    return SDK_RET_OK;
+}
+
+static port *
+shm_port_alloc (port_args_t *args)
+{
+    void *mem;
+    if_index_t ifindex;
+    uint32_t parent_port;
+    port_obj_meta_t *port_obj_meta;
+
+    SDK_TRACE_DEBUG(
+        "Allocate %s in shared memory", eth_ifindex_to_str(
+        sdk::lib::catalog::logical_port_to_ifindex(args->port_num)).c_str());
+
+    ifindex = sdk::lib::catalog::logical_port_to_ifindex(args->port_num);
+    parent_port = ETH_IFINDEX_TO_PARENT_PORT(ifindex);
+    if (g_linkmgr_state->mem() == NULL) {
+        return NULL;
+    }
+    port_obj_meta = (port_obj_meta_t *)g_linkmgr_state->mem();
+    mem = port_obj_meta->obj +
+          (port_obj_meta->port_size * (parent_port - 1));
+    return new (mem) port();
+}
+
 //-----------------------------------------------------------------------------
 // PD If Create
 //-----------------------------------------------------------------------------
 void *
 port_create (port_args_t *args)
 {
-    sdk_ret_t ret = SDK_RET_OK;
-    void      *mem = NULL;
-    port      *port_p = NULL;
+    sdk_ret_t ret;
+    void *mem;
+    port *port_p;
+    uint32_t ifindex;
 
     port_init_num_lanes(args);
     if (validate_port_create (args) == false) {
-        // TODO return codes
         return NULL;
     }
-
     port_init_defaults(args);
-    mem = g_linkmgr_state->port_slab()->alloc();
-    port_p = new (mem) port();
+    if (g_linkmgr_cfg.use_shm) {
+        port_p = shm_port_alloc(args);
+        if (port_p == NULL) {
+            return NULL;
+        }
+    } else {
+        mem = g_linkmgr_state->port_slab()->alloc();
+        if (mem == NULL) {
+            return NULL;
+        }
+        port_p = new (mem) port();
+    }
+
+    if (g_linkmgr_state->port_restore_state()) {
+        ret = port_restore_(port_p, args);
+        if (ret != SDK_RET_OK) {
+            ifindex =
+                sdk::lib::catalog::logical_port_to_ifindex(args->port_num);
+            SDK_TRACE_ERR("Failed to restore port %s",
+                          eth_ifindex_to_str(ifindex).c_str());
+            return NULL;
+        }
+        g_linkmgr_state->set_port_p(args->port_num - 1, port_p);
+        return port_p;
+    }
 
     // init the bringup and debounce timers
     port_p->timers_init();
@@ -1533,8 +1895,9 @@ port_has_admin_state_changed (port_args_t *args)
 static void*
 linkmgr_aacs_start (void* ctxt)
 {
-    if (aacs_server_port_num != -1) {
-        sdk::linkmgr::serdes_fns.serdes_aacs_start(aacs_server_port_num);
+    if (g_linkmgr_state->aacs_server_port_num() != -1) {
+        sdk::linkmgr::serdes_fns.serdes_aacs_start(
+            g_linkmgr_state->aacs_server_port_num());
     }
 
     return NULL;
@@ -1547,9 +1910,9 @@ start_aacs_server (int port)
     int thread_id    = 0;
     int sched_policy = SCHED_OTHER;
 
-    if (aacs_server_port_num != -1) {
+    if (g_linkmgr_state->aacs_server_port_num() != -1) {
         SDK_TRACE_DEBUG("AACS server already started on port %d",
-                        aacs_server_port_num);
+                        g_linkmgr_state->aacs_server_port_num());
         return SDK_RET_OK;
     }
 
@@ -1575,7 +1938,7 @@ start_aacs_server (int port)
     }
 
     g_linkmgr_threads[thread_id] = thread;
-    aacs_server_port_num = port;
+    g_linkmgr_state->set_aacs_server_port_num(port);
     thread->start(NULL);
 
     return SDK_RET_OK;
@@ -1595,7 +1958,7 @@ stop_aacs_server (void)
     }
 
     // reset the server port
-    aacs_server_port_num = -1;
+    g_linkmgr_state->set_aacs_server_port_num(-1);
 }
 
 port_admin_state_t

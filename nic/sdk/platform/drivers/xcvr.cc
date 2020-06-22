@@ -14,7 +14,7 @@ namespace platform {
 using sdk::types::xcvr_pid_t;
 using sdk::linkmgr::port_args_t;
 
-xcvr_t g_xcvr[XCVR_MAX_PORTS];
+xcvr_t *g_xcvr[XCVR_MAX_PORTS];
 xcvr_event_notify_t g_xcvr_notify_cb;
 
 // global var to enable/disable transceiver checks for links
@@ -304,10 +304,30 @@ xcvr_sprom_parse (int port, uint8_t *data) {
     return SDK_RET_OK;
 }
 
-void
-xcvr_init (xcvr_event_notify_t xcvr_notify_cb)
+sdk_ret_t
+xcvr_init (xcvr_event_notify_t xcvr_notify_cb, void *mem, void *backup_mem)
 {
+    upg_obj_meta_t *upg_obj_meta;
+
     g_xcvr_notify_cb = xcvr_notify_cb;
+    if (mem == NULL) {
+        SDK_TRACE_ERR("xcvr memory cannot be NULL");
+        return SDK_RET_ERR;
+    }
+    if (backup_mem == NULL) {
+        upg_obj_meta = (upg_obj_meta_t *)mem;
+
+        upg_obj_meta->num_entries = XCVR_MAX_PORTS;
+        upg_obj_meta->entry_size = sizeof(xcvr_t);
+
+        for (uint32_t port = 0; port < XCVR_MAX_PORTS; ++port) {
+            g_xcvr[port] =
+                (xcvr_t *)(upg_obj_meta->obj + (sizeof(xcvr_t) * port));
+        }
+    } else {
+        // TODO version change, copy from mem to backup_mem
+    }
+    return SDK_RET_OK;
 }
 
 void
@@ -407,6 +427,13 @@ xcvr_enable(int port, bool enable, uint8_t mask)
 
     return SDK_RET_OK;
 }
+
+uint64_t
+xcvr_mem_size (void)
+{
+    return sizeof(upg_obj_meta_t) + (sizeof(xcvr_t) * XCVR_MAX_PORTS);
+}
+
 
 } // namespace platform
 } // namespace sdk

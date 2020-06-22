@@ -156,84 +156,93 @@ typedef struct xcvr_s {
     uint8_t        cache[XCVR_SPROM_CACHE_SIZE];
 } __PACK__ xcvr_t;
 
-extern xcvr_t g_xcvr[XCVR_MAX_PORTS];
+typedef struct upg_obj_meta_s {
+    uint64_t num_entries;       ///< number of stored structs
+    uint64_t entry_size;        ///< size of each struct
+    uint64_t reserved1;         ///< reserved field
+    uint64_t reserved2;         ///< reserved field
+    uint64_t reserved3;         ///< reserved field
+    uint8_t  obj[0];            ///< start offset of structs
+} upg_obj_meta_t;
+
+extern xcvr_t *g_xcvr[XCVR_MAX_PORTS];
 
 inline void
 xcvr_reset (int port) {
-    memset(&g_xcvr[port], 0, sizeof(xcvr_t));
+    memset(g_xcvr[port], 0, sizeof(xcvr_t));
 }
 
 inline void
 xcvr_cache_reset (int port) {
-    memset(g_xcvr[port].cache, 0, sizeof(uint8_t) * XCVR_SPROM_CACHE_SIZE);
+    memset(g_xcvr[port]->cache, 0, sizeof(uint8_t) * XCVR_SPROM_CACHE_SIZE);
 }
 
 inline xcvr_state_t
 xcvr_state (int port) {
-    return g_xcvr[port].state;
+    return g_xcvr[port]->state;
 }
 
 inline void
 xcvr_set_state (int port, xcvr_state_t state) {
-    g_xcvr[port].state = state;
+    g_xcvr[port]->state = state;
 }
 
 inline uint8_t *
 xcvr_cache (int port) {
-    return g_xcvr[port].cache;
+    return g_xcvr[port]->cache;
 }
 
 inline void
 xcvr_set_cache (int port, uint8_t *data, int len) {
-    memcpy(g_xcvr[port].cache, data, len);
+    memcpy(g_xcvr[port]->cache, data, len);
 }
 
 inline void
 xcvr_set_pid (int port, xcvr_pid_t pid) {
-    g_xcvr[port].pid = pid;
+    g_xcvr[port]->pid = pid;
 }
 
 inline xcvr_pid_t
 xcvr_pid (int port) {
-    return g_xcvr[port].pid;
+    return g_xcvr[port]->pid;
 }
 
 inline xcvr_type_t
 xcvr_type (int port) {
-    return g_xcvr[port].type;
+    return g_xcvr[port]->type;
 }
 
 inline bool
 xcvr_get_debounce (int port) {
-    return g_xcvr[port].debounce;
+    return g_xcvr[port]->debounce;
 }
 
 inline void
 xcvr_set_debounce (int port) {
-    g_xcvr[port].debounce = true;
+    g_xcvr[port]->debounce = true;
 }
 
 inline void
 xcvr_reset_debounce (int port) {
-    g_xcvr[port].debounce = false;
+    g_xcvr[port]->debounce = false;
 }
 
 inline void
 set_cable_type (int port, cable_type_t cable_type)
 {
-    g_xcvr[port].cable_type = cable_type;
+    g_xcvr[port]->cable_type = cable_type;
 }
 
 inline cable_type_t
 cable_type (int port)
 {
-    return g_xcvr[port].cable_type;
+    return g_xcvr[port]->cable_type;
 }
 
 inline port_an_args_t*
 xcvr_get_an_args (int port)
 {
-    return &g_xcvr[port].port_an_args;
+    return &g_xcvr[port]->port_an_args;
 }
 
 inline void
@@ -248,25 +257,31 @@ xcvr_set_an_args (int port, uint32_t user_cap,
 
 inline void
 xcvr_set_type (int port, xcvr_type_t type) {
-    g_xcvr[port].type = type;
+    g_xcvr[port]->type = type;
 }
 
 inline bool
 xcvr_sprom_read_count_inc (int port) {
-    g_xcvr[port].sprom_read_count ++;
-    if (g_xcvr[port].sprom_read_count == XCVR_SPROM_READ_MAX) {
-        g_xcvr[port].sprom_read_count = 0;
+    g_xcvr[port]->sprom_read_count ++;
+    if (g_xcvr[port]->sprom_read_count == XCVR_SPROM_READ_MAX) {
+        g_xcvr[port]->sprom_read_count = 0;
         return false;
     }
     return true;
 }
 
-sdk_ret_t xcvr_poll_init(void);
 void xcvr_poll_timer(void);
-void xcvr_init(xcvr_event_notify_t xcvr_notify_cb);
 bool xcvr_valid(int port);
 sdk_ret_t xcvr_get(int port, xcvr_event_info_t *xcvr_event_info);
 sdk_ret_t xcvr_enable(int port, bool enable, uint8_t mask);
+
+/// \brief     initialize the transceiver info callback and memory
+/// \param[in] xcvr_notify_cb callback to be invoked for transceiver events
+/// \param[in] mem pointer to memory
+/// \param[in] backup_mem pointer to backup memory
+/// \return    SDK_RET_OK on success, failure status code on error
+sdk_ret_t xcvr_init(xcvr_event_notify_t xcvr_notify_cb, void *mem,
+                    void *backup_mem);
 
 static inline bool
 xcvr_valid_check_enabled (void)
@@ -283,37 +298,37 @@ xcvr_set_valid_check (bool enable)
 static inline port_speed_t
 cable_speed (int port)
 {
-    return g_xcvr[port].cable_speed;
+    return g_xcvr[port]->cable_speed;
 }
 
 static inline void
 xcvr_set_cable_speed (int port, port_speed_t speed)
 {
-    g_xcvr[port].cable_speed = speed;
+    g_xcvr[port]->cable_speed = speed;
 }
 
 static inline void
 xcvr_set_fec_type (int port, port_fec_type_t fec_type)
 {
-    g_xcvr[port].fec_type = fec_type;
+    g_xcvr[port]->fec_type = fec_type;
 }
 
 static inline port_fec_type_t
 xcvr_fec_type (int port)
 {
-    return g_xcvr[port].fec_type;
+    return g_xcvr[port]->fec_type;
 }
 
 static inline uint32_t
 xcvr_length_dac (int port)
 {
-    return g_xcvr[port].length_dac;
+    return g_xcvr[port]->length_dac;
 }
 
 static inline void
 xcvr_parse_length (int port, uint8_t *data)
 {
-    xcvr_t *xcvr = &g_xcvr[port];
+    xcvr_t *xcvr = g_xcvr[port];
 
     xcvr->length_om3 = 0;
     xcvr->length_smfkm = data[XCVR_SPROM_LEN_SMFKM_OFFSET];
@@ -402,6 +417,12 @@ xcvr_vendor_revision (uint32_t phy_port, const uint8_t *xcvr_sprom)
                                   XCVR_SPROM_VENDOR_REV_SFP_END_OFFSET);
     }
 }
+
+/// \brief  returns the size to be allocate for all transceiver ports including
+///         meta info
+/// \return size of the transceiver info for all transceiver ports including
+///         meta info
+uint64_t xcvr_mem_size(void);
 
 } // namespace platform
 } // namespace sdk

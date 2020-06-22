@@ -58,7 +58,7 @@ port::port_max_serdes_ready_retries (void)
 uint32_t
 port::port_max_an_retries (void)
 {
-    int phy_port = sdk::lib::catalog::logical_port_to_phy_port(this->port_num_);
+    int phy_port = sdk::lib::catalog::logical_port_to_phy_port(port_num());
 
     if (sdk::platform::xcvr_type(phy_port -1) == xcvr_type_t::XCVR_TYPE_SFP) {
         return MAX_PORT_SFP_AN_HCD_RETRIES;
@@ -1912,7 +1912,7 @@ port::port_mac_stats_init(void)
         return SDK_RET_ERR;
     }
     SDK_TRACE_DEBUG("port %u stats_init, port_stats_base_addr_ = 0x%lx",
-                    this->port_num_, this->port_stats_base_addr_);
+                    port_num(), this->port_stats_base_addr_);
     return SDK_RET_OK;
 }
 
@@ -1938,7 +1938,7 @@ port::port_mac_stats_publish(uint64_t *stats_data)
     ret = sdk::asic::asic_mem_write(this->port_stats_base_addr_, (uint8_t *) stats_data, len);
     if (ret != SDK_RET_OK) {
         SDK_TRACE_DEBUG("port %u stats_publish port_stats_base_addr_ = 0x%lx asic_mem_write failed ret = 0x%x",
-                         this->port_num_, this->port_stats_base_addr_, ret);
+                        port_num(), this->port_stats_base_addr_, ret);
     }
     return ret;
 }

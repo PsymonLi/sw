@@ -58,6 +58,10 @@ typedef enum neg_mode_e {
     AUTO_NEG = 1,
 } neg_mode_t;
 
+typedef struct port_header_s {
+    uint32_t port_num;
+} port_header_t;
+
 class port {
 public:
     port(size_t sm_logger_capacity=64) {
@@ -103,9 +107,9 @@ public:
         this->loopback_mode_ = loopback_mode;
     }
 
-    uint32_t port_num(void) { return this->port_num_; }
+    uint32_t port_num(void) { return this->header_.port_num; }
     void set_port_num(uint32_t port_num) {
-        this->port_num_ = port_num;
+        this->header_.port_num = port_num;
     }
 
     void set_admin_state(port_admin_state_t admin_state) {
@@ -476,7 +480,7 @@ public:
     sdk_ret_t timers_init(void);
 
 private:
-    uint32_t                  port_num_;                  // uplink port number
+    port_header_t             header_;                    ///< port header
     port_oper_status_t        oper_status_;               // port operational status
     port_speed_t              port_speed_;                // port speed
     port_type_t               port_type_;                 // port type

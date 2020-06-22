@@ -45,6 +45,7 @@ typedef enum linkmgr_opn_e {
     LINKMGR_OPERATION_PORT_LINK_POLL_TIMER,
     LINKMGR_OPERATION_XCVR_POLL_TIMER,
     LINKMGR_OPERATION_PORT_QUIESCE,
+    LINKMGR_OPERATION_PORT_SWITCHOVER,
 } linkmgr_opn_t;
 
 typedef void (*linkmgr_async_response_cb_t)(void *cookie, sdk_ret_t status);
