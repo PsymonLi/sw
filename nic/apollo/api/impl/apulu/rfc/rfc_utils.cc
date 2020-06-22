@@ -36,16 +36,40 @@ inode_compare_cb (const void *n1, const void *n2, void *ctxt)
         (tree_type == ITREE_TYPE_IPV6)) {
         if (IPADDR_GT(&inode1->ipaddr, &inode2->ipaddr)) {
             return 1;
+        } else if (IPADDR_EQ(&inode1->ipaddr, &inode2->ipaddr)) {
+            /**
+             * if keys are same sort them based on start flag,
+             * such that nodes with start flag as true come later
+             */
+            if (inode1->rfc.start && !inode2->rfc.start) {
+                return 1;
+            }
         }
         return -1;
     } else if (tree_type == ITREE_TYPE_PORT) {
         if (inode1->port > inode2->port) {
             return 1;
+        } else if (inode1->port == inode2->port) {
+            /**
+             * if keys are same sort them based on start flag,
+             * such that nodes with start flag as true come later
+             */
+            if (inode1->rfc.start && !inode2->rfc.start) {
+                return 1;
+            }
         }
         return  -1;
     } else {
         if (inode1->key32 > inode2->key32) {
             return 1;
+        } else if (inode1->key32 == inode2->key32) {
+            /**
+             * if keys are same sort them based on start flag,
+             * such that nodes with start flag as true come later
+             */
+            if (inode1->rfc.start && !inode2->rfc.start) {
+                return 1;
+            }
         }
         return -1;
     }
@@ -59,6 +83,14 @@ inode_compare_tag_cb (const void *n1, const void *n2, void *ctxt)
 
     if (inode1->key32 > inode2->key32) {
         return 1;
+    } else if (inode1->key32 == inode2->key32) {
+        /**
+         * if keys are same sort them based on start flag,
+         * such that nodes with start flag as true come later
+         */
+        if (inode1->rfc.start && !inode2->rfc.start) {
+            return 1;
+        }
     }
     return -1;
 }

@@ -1,0 +1,30 @@
+# Apulu Tag pfx IPV4 modules list for  policy
+feature:
+    id          : rfc
+    sub         : ipv4_egress_tag_pfx
+    package     : test.rfc
+    module      : rfc
+    runorder    : 12000
+    enable      : True
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : TAG_PFX_SRC_TAG
+        spec    : rfc_egress.testspec
+        iterate :
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 1
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 2
+
+    - module:
+        name    : TAG_PFX_DST_TAG
+        spec    : rfc_tag_only_v4_egress.testspec
+        iterate :
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 4
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 5
+

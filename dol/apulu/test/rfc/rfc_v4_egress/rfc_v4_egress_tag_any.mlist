@@ -6,7 +6,7 @@ feature:
     module      : rfc
     runorder    : 10000
     enable      : True
-    ignore      : True
+    ignore      : False
 modules:
 
     - module:
@@ -18,7 +18,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_FIRST
-        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - prefix : first
@@ -32,7 +31,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_LAST
-        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - prefix : last
@@ -46,7 +44,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_LEFT
-        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - sport  : left
@@ -59,7 +56,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_RIGHT
-        ignore  : False
         spec    : rfc_egress.testspec
         args    :
             - sport  : right
@@ -78,16 +74,14 @@ modules:
 
     - module:
         name    : DST_SPECIFIC
-        ignore  : False
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         iterate :
             - policy : filter://AddrFamily=IPV4,PolicyType=user_specific_dst_tag
             - policy : filter://AddrFamily=IPV4,PolicyType=icmp_specific_dst_tag
 
     - module:
         name    : DST_TAG_ADJCENT_FIRST
-        ignore  : False
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         args    :
             - prefix : first
             - sport  : first
@@ -100,8 +94,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LAST
-        ignore  : False
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         args    :
             - prefix : last
             - sport  : last
@@ -114,8 +107,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LEFT
-        ignore  : False
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         args    :
             - sport  : left
             - dport  : left
@@ -127,8 +119,7 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_RIGHT
-        ignore  : False
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         args    :
             - sport  : right
             - dport  : right
@@ -140,6 +131,6 @@ modules:
 
     - module:
         name    : DST_TAG_ANY_PROTO
-        spec    : tag_only.testspec
+        spec    : rfc_tag_only_v4_egress.testspec
         iterate :
             - policy : filter://AddrFamily=IPV4,OverlapType=any_proto_dst_tag

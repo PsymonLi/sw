@@ -1,0 +1,21 @@
+# Apulu Tag only IPV4 modules list for  policy
+feature:
+    id          : rfc
+    sub         : ipv4_tag_only_egress
+    package     : test.rfc
+    module      : rfc
+    runorder    : 12000
+    enable      : True
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : TAG_ONLY_BASIC
+        spec    : rfc_tag_only_v4_egress.testspec
+        iterate :
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 1
+            - policy : filter://AddrFamily=IPV4
+              ruleindex : 3
+

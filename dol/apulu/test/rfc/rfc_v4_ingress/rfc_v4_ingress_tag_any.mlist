@@ -6,7 +6,7 @@ feature:
     module      : rfc
     runorder    : 10000
     enable      : True
-    ignore      : True
+    ignore      : False
 modules:
 
     - module:
@@ -18,7 +18,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_FIRST
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - prefix : first
@@ -32,7 +31,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_LAST
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - prefix : last
@@ -46,7 +44,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_LEFT
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - sport  : left
@@ -59,7 +56,6 @@ modules:
 
     - module:
         name    : SRC_TAG_ADJCENT_RIGHT
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - sport  : right
@@ -79,14 +75,12 @@ modules:
     - module:
         name    : DST_TAG_SPECIFIC
         spec    : rfc_ingress.testspec
-        ignore  : False
         iterate :
             - policy : filter://AddrFamily=IPV4,PolicyType=user_specific_dst_tag
             - policy : filter://AddrFamily=IPV4,PolicyType=icmp_specific_dst_tag
 
     - module:
         name    : DST_TAG_ADJCENT_FIRST
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - prefix : first
@@ -100,7 +94,6 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LAST
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - prefix : last
@@ -114,7 +107,6 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_LEFT
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - sport  : left
@@ -127,7 +119,6 @@ modules:
 
     - module:
         name    : DST_TAG_ADJCENT_RIGHT
-        ignore  : False
         spec    : rfc_ingress.testspec
         args    :
             - sport  : right

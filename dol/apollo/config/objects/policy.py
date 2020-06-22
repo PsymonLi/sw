@@ -418,7 +418,12 @@ class PolicyObject(base.ConfigObjectBase):
         ################# PUBLIC ATTRIBUTES OF POLICY OBJECT #####################
         self.VPCId = vpcid
         self.Direction = direction
-        self.FwdMode = fwdmode
+        self.FwdMode = None
+        if fwdmode == 'tagmode':
+            if self.Direction == 'ingress':
+                self.FwdMode = 'R2L'
+            elif self.Direction == 'egress':
+                self.FwdMode = 'L2R'
         if af == utils.IP_VERSION_6:
             self.PolicyId = next(ResmgrClient[node].V6SecurityPolicyIdAllocator)
             self.AddrFamily = 'IPV6'

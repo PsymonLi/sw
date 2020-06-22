@@ -36,6 +36,8 @@ DryRunSanity rfc_negative_1 rfc SUB="ipv4_egress_negative_1,ipv4_ingress_negativ
 DryRunSanity rfc_negative_2 rfc SUB="ipv4_egress_negative_2,ipv4_ingress_negative_2"
 DryRunSanity rfc_empty rfc SUB="ipv4_egress_empty,ipv4_ingress_empty"
 DryRunSanity rfc_tags_pfx_range rfc SUB="ipv4_egress_tag_pfx_range,ipv4_ingress_tag_pfx_range"
+DryRunSanity rfc_tags_pfx rfc SUB="ipv4_egress_tag_pfx,ipv4_ingress_tag_pfx"
+DryRunSanity rfc_tags_only rfc SUB="ipv4_tag_only_egress,ipv4_tag_only_ingress"
 DryRunSanity rfc_tags_crud rfc SUB="ltag_crud,rtag_crud"
 DryRunSanity rfc_dual_policy rfc SUB="ipv4_ingress_dual_policy,ipv4_egress_dual_policy"
 
