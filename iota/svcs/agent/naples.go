@@ -1202,9 +1202,17 @@ func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 
 		// enable k8s node
 		if naplesConfig.KubeInfo != nil {
+			// run k8s installation script
+			cmd := []string{"sh", "-c", "/pensando/iota/kube-install.sh"}
+			if stderr, stdout, err := Utils.Run(cmd, 0, false, true, nil); err != nil {
+				msg := fmt.Sprintf("Failed to install kube package: %v/%v", stdout, stderr)
+				naples.logger.Error(msg)
+				return &iota.Node{NodeStatus: &iota.IotaAPIResponse{ApiStatus: iota.APIResponseType_API_SERVER_ERROR, ErrorMsg: msg}}, err
+			}
+
 			confFile := "/etc/kubernetes/join.conf"
 			// update config file with master IP & token
-			cmd := []string{"sed", "-i", "s/kube-master-address/" + naplesConfig.KubeInfo.K8SMasterIp + "/g", confFile}
+			cmd = []string{"sed", "-i", "s/kube-master-address/" + naplesConfig.KubeInfo.K8SMasterIp + "/g", confFile}
 			if stderr, stdout, err := Utils.Run(cmd, 0, false, false, nil); err != nil {
 				msg := fmt.Sprintf("Failed to update config file %s : %v\n%v", naplesConfig.KubeInfo.K8SMasterIp, stdout, stderr)
 				naples.logger.Error(msg)
@@ -1245,7 +1253,7 @@ func (naples *naplesHwNode) Init(in *iota.Node) (*iota.Node, error) {
 				f.Close()
 			}
 
-			cmd = []string{"kubeadm", "join", "--config", confFile, "--ignore-preflight-errors=FileAvailable--etc-kubernetes-pki-ca.crt"}
+			cmd = []string{"kubeadm", "join", "--config", confFile, "--ignore-preflight-errors=FileAvailable--etc-kubernetes-pki-ca.crt,Service-Docker"}
 			if stderr, stdout, err := Utils.Run(cmd, 0, false, false, nil); err != nil {
 				msg := fmt.Sprintf("Failed to join k8s master %s : %v\n%v", naplesConfig.KubeInfo.K8SMasterIp, stdout, stderr)
 				naples.logger.Error(msg)

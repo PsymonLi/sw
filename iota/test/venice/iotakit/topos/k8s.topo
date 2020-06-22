@@ -5,6 +5,9 @@ nodes:
         instances: 1
     k8s-master:
         instances: 1
+    venice:
+        image: ../bin/venice.tgz
+        instances: 1
 
 workload:
   esx:

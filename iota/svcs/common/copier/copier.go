@@ -143,7 +143,7 @@ func (c *Copier) CopyTo(ipPort, dstDir string, files []string) error {
 			}
 		}
 
-        fileInfo, err := os.Stat(absSrcFile);
+        fileInfo, err := os.Stat(absSrcFile)
         if err != nil {
             log.Infof("failed to get filesize for file %s",absSrcFile)
             return err

@@ -64,6 +64,14 @@ func (kube *kubeMasterNode) bringUpKube(ip string, hostname string, reload bool,
                 return errors.Wrap(err, stdout)
         }
 */
+	// run k8s installation script
+	cmd := []string{"sh", "-c", "/pensando/iota/kube-install.sh"}
+	if stderr, stdout, err := utils.Run(cmd, 0, false, false, nil); err != nil {
+		msg := fmt.Sprintf("Failed to install kube package: %v/%v", stdout, stderr)
+		kube.logger.Error(msg)
+		return errors.Wrap(err, msg)
+	}
+
 	kube.logger.Println("initializing k8s master...")
 	install := []string{"kubeadm", "init", "--token", token}
 	if stderr, stdout, err := utils.Run(install, 0, false, false, nil); err != nil {
@@ -75,6 +83,18 @@ func (kube *kubeMasterNode) bringUpKube(ip string, hostname string, reload bool,
 	cni := []string{"kubectl", "--kubeconfig", "/etc/kubernetes/admin.conf", "apply", "-f", "/etc/kubernetes/calico.yaml"}
 	if stderr, stdout, err := utils.Run(cni, 0, false, false, nil); err != nil {
 		kube.logger.Printf("Running k8s adding cni failed: %v %v %v", stderr, stdout, err.Error())
+		return errors.Wrap(err, stdout)
+	}
+
+	cp := []string{"cp", "/etc/kubernetes/admin.conf", Common.DstIotaEntitiesDir + "/" + kube.NodeName()}
+	if stderr, stdout, err := utils.Run(cp, 0, false, false, nil); err != nil {
+		kube.logger.Printf("Running copying k8s config failed: %v %v %v", stderr, stdout, err.Error())
+		return errors.Wrap(err, stdout)
+	}
+
+	cm := []string{"chmod", "+r", Common.DstIotaEntitiesDir + "/" + kube.NodeName() + "/" + "admin.conf"}
+	if stderr, stdout, err := utils.Run(cm, 0, false, false, nil); err != nil {
+		kube.logger.Printf("Running copying k8s config failed: %v %v %v", stderr, stdout, err.Error())
 		return errors.Wrap(err, stdout)
 	}
 

@@ -16,6 +16,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+
 	expect "github.com/pensando/goexpect"
 	iota "github.com/pensando/sw/iota/protos/gogen"
 	"github.com/pensando/sw/iota/svcs/common"
@@ -301,6 +305,7 @@ type TestBed struct {
 	switchName      string
 	cleanup         bool //clean up testbed after done
 	tbMsg           *iota.TestBedMsg
+	k8sClient       *kubernetes.Clientset
 }
 
 func (tb *TestBed) GetSwitch() string {
@@ -1733,7 +1738,7 @@ func (tb *TestBed) setupTestBed() error {
 			}
 			//we are reinstalling, reset current mapping
 			tb.resetNaplesCache()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Hour))
+			ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
 			defer cancel()
 			instResp, err := client.InstallImage(ctx, testBedMsg)
 			if err != nil {
@@ -1742,7 +1747,7 @@ func (tb *TestBed) setupTestBed() error {
 				return nerr
 			}
 			if instResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
-				log.Errorf("Error during InitTestBed(). ApiResponse: %+v Err: %v", instResp.ApiResponse, err)
+				log.Errorf("Error during installing image in InitTestBed(). ApiResponse: %+v Err: %v", instResp.ApiResponse, err)
 				return fmt.Errorf("Error during install image: %v", instResp.ApiResponse)
 			}
 
@@ -1991,8 +1996,43 @@ func (tb *TestBed) setupTestBed() error {
 						node.NaplesConfigs.Configs[iter].NaplesSecondaryIpAddress = naplesConfig.NaplesSecondaryIpAddress
 						node.HostIntfs[convertToVeniceFormatMac(naplesConfig.NodeUuid)] = naplesConfig.HostIntfs
 					}
+					if kubeInfo != nil {
+						// check the node is up from k8s master
+						k8sNode, err := tb.k8sClient.CoreV1().Nodes().Get(node.NodeName, v1.GetOptions{})
+						if err != nil {
+							msg := fmt.Sprintf("error get k8s node %s info:  Err %v", node.NodeName, err)
+							log.Errorf(msg)
+							return fmt.Errorf(msg)
+						}
+						if k8sNode.Status.Conditions[len(k8sNode.Status.Conditions)-1].Type != "Ready" {
+							msg := fmt.Sprintf("k8s node %s status not ready:  Err %v", node.NodeName, k8sNode.Status.Conditions)
+							log.Errorf(msg)
+							return fmt.Errorf(msg)
+						}
+					}
 				} else if IsThirdParty(node.Personality) {
 					node.HostIntfs[""] = nr.GetThirdPartyNicConfig().HostIntfs
+				} else if node.Personality == iota.PersonalityType_PERSONALITY_K8S_MASTER {
+					// copy config file to local
+					err = tb.CopyFromNode(node.NodeName, []string{"admin.conf"}, ".")
+					if err != nil {
+						msg := fmt.Sprintf("error copying files from k8s node:  Err %v", err)
+						log.Errorf(msg)
+						return fmt.Errorf(msg)
+					}
+					confLocation := fmt.Sprintf("%s/src/github.com/pensando/sw/iota/admin.conf", os.Getenv("GOPATH"))
+					config, err2 := clientcmd.BuildConfigFromFlags("https://"+node.K8sMasterConfig.K8SMasterIp, confLocation)
+					if err2 != nil {
+						msg := fmt.Sprintf("error building k8s config file:  Err %v", err2)
+						log.Errorf(msg)
+						return fmt.Errorf(msg)
+					}
+					tb.k8sClient, err2 = kubernetes.NewForConfig(config)
+					if err2 != nil {
+						msg := fmt.Sprintf("error new k8s API client:  Err %v", err2)
+						log.Errorf(msg)
+						return fmt.Errorf(msg)
+					}
 				}
 			}
 		}

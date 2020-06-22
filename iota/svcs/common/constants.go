@@ -200,10 +200,14 @@ var (
 	// IotaAgentBinaryPathFreebsd captures the location of the build IOTA Agent Binary for Freebsd
 	IotaAgentBinaryPathFreebsd = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/bin/agent/%s", os.Getenv("GOPATH"), IotaAgentBinaryNameFreebsd)
 
-	//NicFinderConf nic finder conf
-	NicFinderConf = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/%s", os.Getenv("GOPATH"), NicFinderConfFileName)
+	IotaScript = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/", os.Getenv("GOPATH"))
 
-	NicFinderScript = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/%s", os.Getenv("GOPATH"), PenNicFinderScriptName)
+	//NicFinderConf nic finder conf
+	NicFinderConf = IotaScript + NicFinderConfFileName
+
+	NicFinderScript = IotaScript + PenNicFinderScriptName
+
+	K8sInstallScript = IotaScript + "kube-install.sh"
 
 	PenctlAuthTokenFile = fmt.Sprintf("%s/src/github.com/pensando/sw/iota/scripts/%s", os.Getenv("GOPATH"), PenctlAuthTokenFileName)
 
@@ -229,6 +233,7 @@ var (
 
 	// CleanupCommands lists the clean up commands required to clean up an IOTA node.
 	CleanupCommands = []string{
+		`sudo -E kubeadm reset -f`,
 		`sudo -E /pensando/iota/images/INSTALL.sh --clean-only`,
 		`sudo -E systemctl stop pen-cmd`,
 		`sudo -E docker rm -fv $(docker ps -aq)`,

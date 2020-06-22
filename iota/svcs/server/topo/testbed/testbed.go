@@ -288,6 +288,12 @@ func (n *TestNode) InitNode(reboot, restoreAgentFiles bool, c *ssh.ClientConfig,
 		return err
 	}
 
+	// Copy k8s installation script to the remote node
+	if err := n.CopyTo(c, constants.DstIotaAgentDir, []string{constants.K8sInstallScript}); err != nil {
+		log.Errorf("TOPO SVC | InitTestBed | Failed to copy k8s installation script to TestNode: %v, at IPAddress: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress)
+		return err
+	}
+
 	//Copy Nic configuration
 	log.Infof("TOPO SVC | InitTestBed | Running init for TestNode: %v, IPAddress: %v Nic Finder Conf: %v", n.GetNodeInfo().Name, n.GetNodeInfo().IPAddress, constants.NicFinderConf)
 	if err := n.CopyTo(c, constants.DstIotaAgentDir, []string{constants.NicFinderConf}); err != nil {

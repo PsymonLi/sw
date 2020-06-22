@@ -414,6 +414,37 @@ func (tb *TestBed) CopyToNode(nodeName string, files []string, destDir string) e
 	return nil
 }
 
+
+// CopyFromNode copies a file from node
+func (tb *TestBed) CopyFromNode(nodeName string, files []string, destDir string) error {
+	// copy message
+	copyMsg := iota.EntityCopyMsg{
+		Direction:   iota.CopyDirection_DIR_OUT,
+		NodeName:    nodeName,
+		EntityName:  nodeName,
+		Files:       files,
+		DestDir:     destDir,
+		ApiResponse: &iota.IotaAPIResponse{},
+	}
+
+	// send it to iota
+	topoClient := iota.NewTopologyApiClient(tb.iotaClient.Client)
+	ctx, cancel := context.WithTimeout(context.Background(), maxOpTimeout)
+	copyResp, err := topoClient.EntityCopy(ctx, &copyMsg)
+	cancel()
+	if err != nil {
+		log.Errorf("Copy failed: Err: %v", err)
+		return fmt.Errorf("Copy files failed.  Err: %v", err)
+	} else if copyResp.ApiResponse.ApiStatus != iota.APIResponseType_API_STATUS_OK {
+		log.Errorf("Copy failed: Resp: %v", copyResp)
+		return fmt.Errorf("Copy files failed. API Status: %+v ", copyResp.ApiResponse)
+	}
+
+	log.Debugf("Got Copy resp: %+v", copyResp)
+
+	return nil
+}
+
 // CopyFromWorkload copies files from naples
 func (tb *TestBed) CopyFromWorkload(nodeName, workloadName string, files []string, destDir string) error {
 	return tb.CopyToFromWorkload(iota.CopyDirection_DIR_OUT, nodeName, workloadName, files, destDir)
