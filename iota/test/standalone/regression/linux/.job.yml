@@ -10,7 +10,7 @@ queue_name: baremetal
 e2e-targets:
 
  e2e-linux-bm-regression-eth-RHEL78:
-   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression"]
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
@@ -34,7 +34,7 @@ e2e-targets:
           BmOs: linux
 
  e2e-linux-bm-regression-eth-RHEL82:
-   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression"]
+   commands: ["sh", "-c", "make regression-eth && ./run_iota.sh --testsuite transparent_basenet --regression --skip-sanity"]
    owners: ["email:dbarsky@pensando.io"]
    area:
    sub-area:
