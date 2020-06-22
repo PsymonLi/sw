@@ -41,6 +41,9 @@ var ArpClient *arp.Client
 // MgmtLink is the global management link for netagent
 var MgmtLink netlink.Link
 
+// MgmtIntf is the global management Interface for netagent
+var MgmtIntf *net.Interface
+
 // GwCache is the global cache for ip to their gateway (if needed)
 var GwCache sync.Map
 
@@ -467,7 +470,7 @@ func resolveWithDeadline(ctx context.Context, IP net.IP) (string, error) {
 
 	go func(arpChan chan string, IP net.IP) {
 		// Delete for arp Expiry to take effect
-		log.Infof("Delete arpCache for %s", IP.String())
+		log.Infof("Delete arpCache for %s %v %v", IP.String(), MgmtIntf, ArpClient)
 		arpCache.Delete(IP.String())
 		err := ArpClient.Request(IP)
 		if err != nil {
@@ -508,33 +511,39 @@ func updateArpClient(mgmtIntf *net.Interface, mgmtLink netlink.Link) {
 	if err != nil {
 		return
 	}
+	MgmtIntf = mgmtIntf
 	ArpClient = client
 	MgmtLink = mgmtLink
 }
 
-// IPWatch starts a watch for IP on bond0 interface and updates ArpClient and MgmtIntf
-func IPWatch(infraAPI types.InfraAPI) {
-	var mgmtIP string
+// SecondaryIntfWatch starts a watch for IP on bond0 interface and updates ArpClient and MgmtIntf
+func SecondaryIntfWatch(infraAPI types.InfraAPI) {
+	var mgmtIP, hwAddr string
 	mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
 	if err != nil {
 		log.Errorf("Failed to get the mgmt information. config: %v: %v", infraAPI.GetConfig(), err)
 	} else {
 		mgmtIP = utils.GetMgmtIP(mgmtLink)
+		hwAddr = mgmtIntf.HardwareAddr.String()
 	}
+	log.Infof("bond0 IP: %v", mgmtIP)
 	updateArpClient(mgmtIntf, mgmtLink)
 	go func() {
 		ticker := time.NewTicker(time.Second * 1)
 		for {
 			select {
 			case <-ticker.C:
-				var ip string
 				mgmtIntf, mgmtLink, err := utils.GetMgmtInfo(infraAPI.GetConfig())
 				if err == nil {
-					ip = utils.GetMgmtIP(mgmtLink)
-					if ip != "" && ip != mgmtIP {
-						log.Infof("bond0 IP changed from %s to %s. Updating ArpClient", mgmtIP, ip)
+					ip := utils.GetMgmtIP(mgmtLink)
+					addr := mgmtIntf.HardwareAddr.String()
+					ipChanged := ip != "" && ip != mgmtIP
+					addrChanged := addr != "" && addr != hwAddr
+					if ipChanged || addrChanged {
+						log.Infof("bond0 changed,IP: %s to %s, HardwareAddr: %s to %s. Updating ArpClient", mgmtIP, ip, hwAddr, addr)
 						updateArpClient(mgmtIntf, mgmtLink)
 						mgmtIP = ip
+						hwAddr = addr
 					}
 				}
 			}

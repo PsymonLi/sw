@@ -205,7 +205,7 @@ func (i *IrisAPI) PipelineInit() error {
 
 	// Start the watch for bond0 IP so that ArpClient can be updated
 	log.Infof("Starting the IP watch on bond0")
-	iris.IPWatch(i.InfraAPI)
+	iris.SecondaryIntfWatch(i.InfraAPI)
 
 	// Start the ARP receive loop. Should be singleton.
 	go iris.ResolveWatch()
