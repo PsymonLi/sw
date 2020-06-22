@@ -9,9 +9,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	_ "net/http/pprof"
-	"runtime/debug"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 
@@ -88,18 +86,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error creating controller instance: %v", err)
 	}
-
-	// set Garbage collection ratio and periodically free OS memory
-	debug.SetGCPercent(20)
-	go func() {
-		for {
-			select {
-			case <-time.After(2 * time.Minute):
-				// force GC and free OS memory
-				debug.FreeOSMemory()
-			}
-		}
-	}()
 
 	// run a REST server for pprof
 	router := mux.NewRouter()
