@@ -288,7 +288,7 @@ func TestValidateAuthenticatorConfigHook(t *testing.T) {
 					TokenExpiry: "24h",
 				},
 			},
-			errs: []error{errors.New("local authenticator config not defined")},
+			errs: []error{},
 		},
 		{
 			name: "Missing Radius config",

@@ -292,9 +292,6 @@ func (s *authHooks) validateAuthenticatorConfig(i interface{}, ver string, ignSt
 	for _, authenticatorType := range authenticatorOrder {
 		switch authenticatorType {
 		case auth.Authenticators_LOCAL.String():
-			if r.Spec.Authenticators.GetLocal() == nil {
-				ret = append(ret, errors.New("local authenticator config not defined"))
-			}
 		case auth.Authenticators_LDAP.String():
 
 			ret = append(ret, ldap.ValidateLdapConfig(r.Spec.Authenticators.GetLdap())...)
