@@ -135,6 +135,7 @@ nic/build/$ARCH/$PIPELINE/lib/libsdkplatformutils.so                   /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkp4.so                              /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsdkp4utils.so                         /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libshmmgr.so                             /nic/lib/
+nic/build/$ARCH/$PIPELINE/lib/libshmstore.so                           /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libsknobs.so                             /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libslab.so                               /nic/lib/
 nic/build/$ARCH/$PIPELINE/lib/libssl.so.1.1                            /nic/lib/
