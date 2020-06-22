@@ -44,7 +44,7 @@ func NewRequirement(key string, op Operator, vals []string) (*Requirement, error
 		if len(vals) != 1 {
 			return nil, fmt.Errorf("values must contain one value")
 		}
-	case Operator_in, Operator_notIn:
+	case Operator_in, Operator_notIn, Operator_inField:
 		if len(vals) == 0 {
 			return nil, fmt.Errorf("values must contain one or more values")
 		}
@@ -80,8 +80,10 @@ func (r *Requirement) hasValue(value string) bool {
 // (6) The operator is Gte (supported on non-string fields), Fields has the Requirements's key and
 //		obj's value for that key is greater than or equal to Requirement's value
 func (r *Requirement) MatchesObj(obj matchObject) bool {
+	op := Operator(Operator_value[r.Operator])
+
 	vals, err := ref.FieldValues(reflect.ValueOf(obj), r.Key)
-	if err != nil || len(vals) == 0 {
+	if op != Operator_inField && (err != nil || len(vals) == 0) {
 		return false
 	}
 	switch Operator(Operator_value[r.Operator]) {
@@ -99,6 +101,25 @@ func (r *Requirement) MatchesObj(obj matchObject) bool {
 			}
 		}
 		return true
+	case Operator_inField:
+		for _, field := range r.Values {
+			key := strings.TrimPrefix(r.Key, "(")
+			key = strings.TrimSuffix(key, ")")
+
+			f := keyRE.FindString(field)
+			fieldValues, err := ref.FieldValues(reflect.ValueOf(obj), f)
+			if err != nil {
+				continue
+			}
+
+			for _, val := range fieldValues {
+				if val == key {
+					return true
+				}
+			}
+		}
+
+		return false
 	case Operator_lt, Operator_lte, Operator_gt, Operator_gte:
 		schemaType := runtime.GetDefaultScheme().Kind2SchemaType(obj.GetObjectKind())
 		keyType, err := ref.GetScalarFieldType(schemaType, r.Key)
@@ -229,6 +250,8 @@ func (r *Requirement) Print() string {
 		buffer.WriteString(" in ")
 	case Operator_notIn:
 		buffer.WriteString(" notin ")
+	case Operator_inField:
+		buffer.WriteString(" inField ")
 	}
 
 	if len(r.Values) == 1 {
@@ -263,7 +286,7 @@ func (r *Requirement) PrintSQL() (string, error) {
 	var useQuotes bool
 
 	switch Operator(Operator_value[r.Operator]) {
-	case Operator_equals, Operator_in:
+	case Operator_equals, Operator_in, Operator_inField:
 		operator = "="
 		joinOperator = "OR"
 		useQuotes = true
@@ -411,6 +434,8 @@ func parse(sel string) ([]*Requirement, error) {
 			op = Operator_in
 		case "notin":
 			op = Operator_notIn
+		case "infield":
+			op = Operator_inField
 		case "<":
 			op = Operator_lt
 		case "<=":
@@ -499,7 +524,6 @@ func ParseWithValidation(schemaType string, selector string) (*Selector, error) 
 	if err := sel.ValidateRequirements(schemaType, false); err != nil {
 		return nil, err
 	}
-
 	return sel, nil
 }
 
@@ -516,6 +540,34 @@ func (s *Selector) ValidateRequirements(schemaType string, ignoreNonExistentFiel
 			return fmt.Errorf("operator %v not supported", s.Requirements[ii].GetOperator())
 		}
 
+		op := Operator(Operator_value[s.Requirements[ii].GetOperator()])
+		if op == Operator_inField {
+			if !strings.HasPrefix(s.Requirements[ii].Key, "(") || !strings.HasSuffix(s.Requirements[ii].Key, ")") {
+				return fmt.Errorf("key for inField type must be inside ()")
+			}
+
+			if strings.Count(s.Requirements[ii].Key, "(") > 1 {
+				return fmt.Errorf("key for inField has more than one brackets")
+			}
+
+			if strings.Count(s.Requirements[ii].Key, ")") > 1 {
+				return fmt.Errorf("key for inField has more than one brackets")
+			}
+
+			values := []string{}
+			for _, v := range s.Requirements[ii].Values {
+				result, err := ref.FieldByJSONTag(schemaType, v)
+				if err != nil {
+					return err
+				}
+
+				values = append(values, result)
+			}
+
+			s.Requirements[ii].Values = values
+			continue
+		}
+
 		result, err := ref.FieldByJSONTag(schemaType, s.Requirements[ii].Key)
 		if err != nil {
 			if ignoreNonExistentFields && strings.Contains(err.Error(), "Did not find field") {
@@ -529,7 +581,7 @@ func (s *Selector) ValidateRequirements(schemaType string, ignoreNonExistentFiel
 			return err
 		}
 
-		switch Operator(Operator_value[s.Requirements[ii].GetOperator()]) {
+		switch op {
 		case Operator_lt, Operator_gt, Operator_lte, Operator_gte:
 			if fieldType == "TYPE_STRING" || fieldType == "TYPE_BOOL" { // not supported for relational operators
 				return fmt.Errorf("operator not supported on the key [%s]", s.Requirements[ii].Key)

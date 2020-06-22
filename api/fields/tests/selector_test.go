@@ -13,6 +13,7 @@ import (
 	_ "github.com/pensando/sw/api/generated/exports/apiserver"
 	"github.com/pensando/sw/api/generated/monitoring"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/workload"
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
 
@@ -22,6 +23,7 @@ func TestSelectorParse(t *testing.T) {
 		"x.c!=a,y.c=b",
 		"w.y[z]=foo bar,x.x[y].z=bar",
 		"v.x.y[z]!=foo,w.w[x].y[z]=bar",
+		"(00ae.cd00.1234) infield (a-x.b,a.b-c)",
 		"x.x=loooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooongone",
 	}
 	testGoodSetStrings := []string{
@@ -275,6 +277,20 @@ func TestParseWithValidation(t *testing.T) {
 			},
 		},
 		{
+			schemaType: "workload.Endpoint",
+			selStr:     "(aaaa.bbbb.cccc) infield (spec.node-uuid,status.node-uuid)",
+			expSuccess: true,
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(aaaa.bbbb.cccc)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.NodeUUID"},
+					},
+				},
+			},
+		},
+		{
 			schemaType: "network.LbPolicy",
 			selStr:     "spec.health-check.max-timeouts>test",
 			expSuccess: false,
@@ -485,6 +501,104 @@ func TestMatchesObj(t *testing.T) {
 			t.Fatalf("Expected to match, but failed: index %v, selector %v", ii, tests[ii].selector)
 		}
 	}
+
+	e := &workload.Endpoint{
+		TypeMeta: api.TypeMeta{
+			Kind: "Endpoint",
+		},
+		Spec: workload.EndpointSpec{
+			NodeUUID: "00ae.cd00.1111",
+		},
+		Status: workload.EndpointStatus{
+			WorkloadName: "workload1",
+			NodeUUID:     "00ae.cd01.5555",
+		},
+	}
+
+	testsEP := []struct {
+		selector Selector
+		match    bool
+	}{
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd00.1111)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd00.1111)",
+						Operator: "inField",
+						Values:   []string{"Status.NodeUUID", "Spec.NodeUUID"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd01.5555)",
+						Operator: "inField",
+						Values:   []string{"Status.NodeUUID"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd01.5555)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.NodeUUID"},
+					},
+				},
+			},
+			match: true,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd01.5556)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.NodeUUID"},
+					},
+				},
+			},
+			match: false,
+		},
+		{
+			selector: Selector{
+				Requirements: []*Requirement{
+					{
+						Key:      "(00ae.cd01.5555)",
+						Operator: "inField",
+						Values:   []string{"Spec.NodeUUID", "Status.WorkloadName"},
+					},
+				},
+			},
+			match: false,
+		},
+	}
+
+	for ii := range testsEP {
+		if testsEP[ii].selector.MatchesObj(e) != testsEP[ii].match {
+			t.Fatalf("Expected to match, but failed: index %v, selector %v", ii, testsEP[ii].selector)
+		}
+	}
+
 }
 
 func TestMatchesOnNonStringKeys(t *testing.T) {

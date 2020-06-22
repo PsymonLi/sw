@@ -27,6 +27,7 @@ export enum FieldsRequirement_operator {
     'gte' = "gte",
     'lt' = "lt",
     'lte' = "lte",
+    'infield' = "infield",
 }
 
 export enum LabelsRequirement_operator {
@@ -118,6 +119,7 @@ export enum MonitoringMatchedRequirement_operator {
     'gte' = "gte",
     'lt' = "lt",
     'lte' = "lte",
+    'infield' = "infield",
 }
 
 export enum MonitoringMeasurementCriteria_function {

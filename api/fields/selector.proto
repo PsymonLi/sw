@@ -31,6 +31,8 @@ enum Operator {
   lt           = 6;  // Key should be lesser than the Value
   // ui-hint: less than or equals
   lte          = 7;  // Key should be lesser than or equal to the Value
+  //  ui-hint : in field
+  inField      = 8; // a value should be in one of the fields
 }
 
 // Requirement defines a single matching condition for a selector.

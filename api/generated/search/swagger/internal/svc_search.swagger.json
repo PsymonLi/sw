@@ -614,7 +614,8 @@
             "gt",
             "gte",
             "lt",
-            "lte"
+            "lte",
+            "infield"
           ],
           "default": "equals",
           "x-ui-hints": {
