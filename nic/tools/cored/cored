@@ -49,6 +49,20 @@ ctrlc_handler() {
 trap ctrlc_handler SIGINT
 trap exit_handler EXIT
 
+# Finds build workspace given the build version string.
+get_build_ws() {
+    for dir in $HOURLY_BUILD $RELEASE_BUILD
+    do
+        build_host_workspace="$dir/$1"
+        cd ${build_host_workspace}
+        cd_ret=$?
+        if [ $cd_ret -eq 0 ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Reads build meta data.
 get_build_meta() {
     build_pipeline=$(jq -r '.sw.pipeline' $1 2> /dev/null)
@@ -66,18 +80,36 @@ get_build_meta() {
         build_host=`hostname`
 
         pushd . > /dev/null
-        build_host_workspace="$HOURLY_BUILD/${build_version}"
-
-        # cd to the directory to test it's existence
-        cd $build_host_workspace
+        exit_script=false
+        get_build_ws ${build_version}
         if [ $? -ne 0 ]; then
-            build_host_workspace="$RELEASE_BUILD/${build_version}"
-            cd $build_host_workspace
-            if [ $? -ne 0 ]; then
-                echo "Error: Can't find build work space '${build_host_workspace}'. Exiting..."
-                popd > /dev/null
-                exit 1
+            echo "Warning!!!: Can't find build work space '${build_host_workspace}'."
+            version_alternate=$(echo "${build_version}" | awk -F '-dirty' '{print $1}')
+            if [ "${build_version}" = "${version_alternate}" ]; then
+                echo " Exiting."
+                exit_script=true
+            else
+                while true; do
+                    read -p "Want to explore alternate locations using version tag: $version_alternate?" yn
+                    case $yn in
+                        [Yy]* ) 
+                            get_build_ws ${version_alternate}
+                            if [ $? -ne 0 ]; then
+                                echo "Error: Can't find build work space '${build_host_workspace}'. Exiting."
+                                exit_script=true
+                            fi
+                            break;;
+                        [Nn]* ) 
+                            exit_script=true
+                            break;;
+                        * ) echo "Please answer yes or no.";;
+                    esac
+                done
             fi
+        fi
+        popd > /dev/null
+        if ($exit_script); then
+            exit 1
         fi
 
         if [ "${build_pipeline}" = "apulu" ]; then
@@ -85,7 +117,6 @@ get_build_meta() {
         else
             build_host_workspace="${build_host_workspace}/sw-${build_pipeline}-capri/sw"
         fi
-        popd > /dev/null
 
         # Not doing '--dirty' option (packaging script does use it though) as it
         # is taking ages to run and being dirty shouldn't be a possibility anyway
@@ -231,7 +262,7 @@ echo "Decoding on host `hostname`, in work space:`pwd`"
 # build of the core being debugged.
 tag=`$get_tag`
 if [ "${build_tag}" != "${tag}" ]; then
-    echo "Warning!!!: Work space tag doesn't match with build. ws. tag ${tag} build tag ${build_tag} !!!"
+    echo "Warning!!!: Work space tag '${tag}' doesn't match with build tag '${build_tag}' !!!"
     while true; do
         read -p "Do you wish to still continue to decode from here?" yn
         case $yn in
