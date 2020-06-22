@@ -202,6 +202,8 @@ typedef enum xcvr_pid_s {
     XCVR_PID_SFP_25GBASE_CR_S,
     XCVR_PID_SFP_25GBASE_CR_L,
     XCVR_PID_SFP_25GBASE_CR_N,
+    XCVR_PID_QSFP_50G_CR2_FC,
+    XCVR_PID_QSFP_50G_CR2,
 
     // Fiber
     XCVR_PID_QSFP_100G_AOC = 50,
