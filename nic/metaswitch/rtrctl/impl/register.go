@@ -17,7 +17,7 @@ func RegisterClearNodes(params *CLIParams, base *cobra.Command) {
 
 	//bgp commands
 	base.AddCommand(bgpClearCmd)
-	bgpClearCmd.PersistentFlags().StringVarP(&laddr, "local-addr", "l", "", "Local Address IP")
+	bgpClearCmd.PersistentFlags().StringVarP(&laddr, "local-addr", "l", "", "Configured Local Address IP")
 	bgpClearCmd.PersistentFlags().StringVarP(&paddr, "peer-addr", "p", "", "Peer Address IP")
 	bgpClearCmd.PersistentFlags().StringVarP(&option, "option", "o", "", "Option can be either hard or refresh_in or refresh_out or refresh_both")
 	bgpClearCmd.PersistentFlags().StringVarP(&afi, "afi", "a", "", "AFI can be ipv4 or l2vpn")

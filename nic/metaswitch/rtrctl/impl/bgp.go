@@ -796,6 +796,10 @@ func bgpClearCmdHandler(cmd *cobra.Command, args []string) error {
 		saf = types.BGPSafi_BGP_SAFI_EVPN
 	}
 	if len(laddr) == 0 {
+		if opt == types.BGPClearRouteOptions_BGP_CLEAR_ROUTE_REFRESH_OUT ||
+			opt == types.BGPClearRouteOptions_BGP_CLEAR_ROUTE_REFRESH_BOTH {
+			return errors.New("Only hard reset and refresh_in are allowed on all peers")
+		}
 		req := &types.BGPClearRouteRequest{
 			Option: opt,
 		}
@@ -805,8 +809,7 @@ func bgpClearCmdHandler(cmd *cobra.Command, args []string) error {
 		}
 
 		if respMsg.ApiStatus != types.ApiStatus_API_STATUS_OK {
-			fmt.Println(respMsg.ApiStatus)
-			return errors.New("Operation failed with error")
+			return fmt.Errorf("Operation failed with error %v", respMsg.ApiStatus)
 		}
 	} else {
 		if af == types.BGPAfi_BGP_AFI_NONE {
@@ -829,10 +832,15 @@ func bgpClearCmdHandler(cmd *cobra.Command, args []string) error {
 			}
 
 			if respMsg.ApiStatus != types.ApiStatus_API_STATUS_OK {
-				fmt.Println(respMsg.ApiStatus)
-				return errors.New("Operation failed with error")
+				if respMsg.ApiStatus == types.ApiStatus_API_STATUS_INVALID_ARG {
+					return errors.New("Incorrect configured-local or peer address")
+				}
+				return fmt.Errorf("Operation failed with error %v", respMsg.ApiStatus)
 			}
 		} else {
+			if opt == types.BGPClearRouteOptions_BGP_CLEAR_ROUTE_HARD {
+				return errors.New("Hard reset cannot be done with peer afi/safi")
+			}
 			req := &types.BGPClearRouteRequest{
 				Option: opt,
 				PeerOrPeeraf: &types.BGPClearRouteRequest_PeerAf{
@@ -854,7 +862,10 @@ func bgpClearCmdHandler(cmd *cobra.Command, args []string) error {
 			}
 
 			if respMsg.ApiStatus != types.ApiStatus_API_STATUS_OK {
-				return errors.New("Operation failed with error")
+				if respMsg.ApiStatus == types.ApiStatus_API_STATUS_INVALID_ARG {
+					return errors.New("Incorrect or incompatible arguments")
+				}
+				return fmt.Errorf("Operation failed with error %v", respMsg.ApiStatus)
 			}
 		}
 	}
