@@ -262,6 +262,7 @@ export const customMetrics  = [
         tags: [
           "Level1"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'DecommissionedNICs',
@@ -274,6 +275,7 @@ export const customMetrics  = [
         tags: [
           "Level1"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'DisconnectedNICs',
@@ -286,6 +288,7 @@ export const customMetrics  = [
         tags: [
           "Level2"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'HealthyNICs',
@@ -298,6 +301,7 @@ export const customMetrics  = [
         tags: [
           "Level2"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'PendingNICs',
@@ -310,6 +314,7 @@ export const customMetrics  = [
         tags: [
           "Level1"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'RejectedNICs',
@@ -322,6 +327,7 @@ export const customMetrics  = [
         tags: [
           "Level1"
         ],
+        aggregationFunc: 'max',
       },
       {
         name: 'UnhealthyNICs',
@@ -334,6 +340,7 @@ export const customMetrics  = [
         tags: [
           "Level2"
         ],
+        aggregationFunc: 'max',
       },
     ]
   }

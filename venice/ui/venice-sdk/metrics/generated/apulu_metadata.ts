@@ -3610,7 +3610,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "DecommissionedNICs",
@@ -3622,7 +3623,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "DisconnectedNICs",
@@ -3634,7 +3636,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "HealthyNICs",
@@ -3646,7 +3649,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "PendingNICs",
@@ -3658,7 +3662,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "RejectedNICs",
@@ -3670,7 +3675,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "UnhealthyNICs",
@@ -3682,7 +3688,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     }
   ]
 },

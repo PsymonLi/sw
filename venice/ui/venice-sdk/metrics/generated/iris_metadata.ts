@@ -4765,7 +4765,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "DecommissionedNICs",
@@ -4777,7 +4778,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "DisconnectedNICs",
@@ -4789,7 +4791,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "HealthyNICs",
@@ -4801,7 +4804,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "PendingNICs",
@@ -4813,7 +4817,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "RejectedNICs",
@@ -4825,7 +4830,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level1"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     },
     {
       "name": "UnhealthyNICs",
@@ -4837,7 +4843,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "scaleMin": 0,
       "tags": [
         "Level2"
-      ]
+      ],
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     }
   ]
 },

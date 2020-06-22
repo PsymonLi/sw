@@ -25,17 +25,26 @@ func TestGetFieldNamesFromKind(t *testing.T) {
 
 	// Real test case for three proto files
 	// If the original field config changed, the answer here must also be changed
-	v = GetFieldNamesFromKind("IPv4FlowBehavioralMetrics")
+	v = GetFieldNamesFromKind("SessionSummaryMetrics")
 	flowstatsAnswer := []string{
-		"Instances",
-		"PpsThreshold",
-		"PpsThresholdExceedEvents",
-		"PpsThresholdExceedEventFirstTimestamp",
-		"PpsThresholdExceedEventLastTimestamp",
-		"BwThreshold",
-		"BwThresholdExceedEvents",
-		"BwThresholdExceedEventFirstTimestamp",
-		"BwThresholdExceedEventLastTimestamp",
+		"TotalActiveSessions",
+		"NumL2Sessions",
+		"NumTcpSessions",
+		"NumUdpSessions",
+		"NumIcmpSessions",
+		"NumDropSessions",
+		"NumAgedSessions",
+		"NumTcpResets",
+		"NumIcmpErrors",
+		"NumTcpCxnsetupTimeouts",
+		"NumSessionCreateErrors",
+		"NumTcpHalfOpenSessions",
+		"NumOtherActiveSessions",
+		"NumTcpSessionLimitDrops",
+		"NumUdpSessionLimitDrops",
+		"NumIcmpSessionLimitDrops",
+		"NumOtherSessionLimitDrops",
+		"NumDscSessionLimitDrops",
 	}
 	sort.Strings(v)
 	sort.Strings(flowstatsAnswer)
@@ -94,8 +103,8 @@ func TestGlobalMetricsMap(t *testing.T) {
 	Assert(t, IsGroupValid("ftestats"), "expected: true, got: false")
 	Assert(t, !IsGroupValid("invalid"), "expected: false, got: true")
 
-	Assert(t, IsKindValid("flowstats", "IPv4FlowBehavioralMetrics"), "expected: true, got: false")
-	Assert(t, !IsKindValid("flowstats", "IPv4FlowDropMetricsInvalid"), "expected: false, got: true")
+	Assert(t, IsKindValid("rulestats", "RuleMetrics"), "expected: true, got: false")
+	Assert(t, !IsKindValid("rulestats", "RuleMetricsInvalid"), "expected: false, got: true")
 
 	Assert(t, IsFieldNameValid("ftestats", "FteCPSMetrics", "ConnectionsPerSecond"), "expected: true, got: false")
 	Assert(t, !IsFieldNameValid("ftestats", "FteCPSMetrics", "CConnectionsPerSecond"), "expected: false, got: true")
