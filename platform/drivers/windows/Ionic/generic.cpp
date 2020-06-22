@@ -3813,3 +3813,35 @@ get_nearby_core_count(struct ionic *ionic)
 
 	return;
 }
+
+
+bool validate_ipv4_checksum(struct ipv4hdr* header) {
+    USHORT HeaderChecksum = 0;
+    PUSHORT pWordBuff;
+    DWORD WordSize, dwSum = 0, i;
+    if (header) {
+        // save original checksum
+        HeaderChecksum = header->check;
+        header->check = 0;
+        WordSize = header->ihl;
+        WordSize <<= 1; // (*2)
+        pWordBuff = (PUSHORT)header;
+        for (i = 0; i < WordSize; i++) {
+            dwSum += ntohs(pWordBuff[i]);
+        }
+        // restore original checksum
+        header->check = HeaderChecksum;
+        // keep only the last 16 bits of the 32 bit calculated sum
+        while (dwSum >> 16)
+            dwSum = (dwSum & 0xFFFF) + (dwSum >> 16);
+
+        // Take the one's complement of dwSum
+        dwSum = ~dwSum;
+        dwSum = dwSum & 0xffff;
+
+        if ((USHORT)dwSum == ntohs(HeaderChecksum))
+            return true;
+    }
+
+    return false;
+}

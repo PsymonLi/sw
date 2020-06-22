@@ -1463,3 +1463,4 @@ ionic_perfmon_cb(void *SystemContext,
 
 void DestroyVLANRanges(IN struct ionic* adapter);
 
+bool validate_ipv4_checksum(struct ipv4hdr* header);

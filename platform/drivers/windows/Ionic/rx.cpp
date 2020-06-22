@@ -488,6 +488,16 @@ _ionic_do_rsc(struct qcq *qcq,
     // compare ip headers, resolve tcp headers
     if (ipv4) {
         ULONG ipv4_hlen = 4 * ipv4->ihl;
+        NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
+        csum_info.Value = NET_BUFFER_LIST_INFO(nbl, TcpIpChecksumNetBufferListInfo);
+        // if IPv4 checksum offload was not enabled, we have to verify it here before reporting
+        if (!csum_info.Receive.IpChecksumSucceeded) {
+            if (!validate_ipv4_checksum(ipv4)) {
+                DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_WARNING, "%s IPv4 checksum verification failed.\n", __FUNCTION__));
+                return IONIC_RSC_IGNORE;
+            }
+        }
+
         if (ipv4_hlen < 20) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
                 "%s rsc ipv4 invalid ihl %ul\n", __FUNCTION__, ipv4->ihl));
@@ -591,6 +601,17 @@ _ionic_do_rsc(struct qcq *qcq,
     if (last_ipv4) {
         ULONG ipv4_len = 0, last_ipv4_len = 0;
 
+        if (NET_BUFFER_LIST_COALESCED_SEG_COUNT(last_nbl) == 0) {
+            NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
+            csum_info.Value = NET_BUFFER_LIST_INFO(last_nbl, TcpIpChecksumNetBufferListInfo);
+            // if IPv4 checksum offload was not enabled, we have to verify it here before reporting
+            if (!csum_info.Receive.IpChecksumSucceeded) {
+                if (!validate_ipv4_checksum(ipv4)) {
+                    DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_WARNING, "%s IPv4 checksum verification failed (last_nbl).\n", __FUNCTION__));
+                    return IONIC_RSC_IGNORE;
+                }
+            }
+        }
         ipv4_len = ntohs(ipv4->tot_len);
         if (NET_BUFFER_DATA_LENGTH(nb) - ipv4_len - eth_hlen > 64) {
             DbgTrace((TRACE_COMPONENT_RSC, TRACE_LEVEL_VERBOSE,
@@ -654,17 +675,23 @@ _ionic_do_rsc(struct qcq *qcq,
         ++rx_stats->rsc_events;
         ++rx_stats->rsc_packets;
         ++NET_BUFFER_LIST_COALESCED_SEG_COUNT(last_nbl);
+
+        // Tell the stack that the "valid" checksum is now "invalid"
+        NDIS_TCP_IP_CHECKSUM_NET_BUFFER_LIST_INFO csum_info;
+        csum_info.Value = NET_BUFFER_LIST_INFO(last_nbl, TcpIpChecksumNetBufferListInfo);
+        csum_info.Receive.TcpChecksumSucceeded = 1;
+        csum_info.Receive.IpChecksumSucceeded = 1;
+        csum_info.Receive.TcpChecksumValueInvalid = 1;
+        csum_info.Receive.IpChecksumValueInvalid = 1;
+        NET_BUFFER_LIST_INFO(last_nbl, TcpIpChecksumNetBufferListInfo) = csum_info.Value;
     }
 
     rx_stats->rsc_bytes += NET_BUFFER_DATA_LENGTH(nb) - off;
     ++rx_stats->rsc_packets;
     ++NET_BUFFER_LIST_COALESCED_SEG_COUNT(last_nbl);
 
-    if (tcp->ack == last_tcp->ack) {
-        ++NET_BUFFER_LIST_DUP_ACK_COUNT(last_nbl);
-    } else {
-        last_tcp->ack = tcp->ack;
-    }
+    last_tcp->ack = tcp->ack;
+ 
 
     pkt = *(struct rxq_pkt**)NET_BUFFER_MINIPORT_RESERVED(nb);
     last_pkt = *(struct rxq_pkt**)NET_BUFFER_MINIPORT_RESERVED(last_nb);
