@@ -77,7 +77,7 @@ func (idr *Indexer) fwlogsRequestCreator(id int, req *indexRequest, bulkTimeout 
 		key := tenantName + "_" + dscID
 		if time.Now().Sub(idr.lastFwlogsDroppedWarnEventRaisedTime[key]).Minutes() >=
 			flowlogsDroppedWarnEventReportingPeriod {
-			idr.lastFwlogsDroppedCriticalEventRaisedTime[key] = time.Now()
+			idr.lastFwlogsDroppedWarnEventRaisedTime[key] = time.Now()
 			return true
 		}
 		return false
