@@ -424,7 +424,7 @@ mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to read mirror session %s at idx %u", 
                       spec->key.str(), hw_id_);
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
+        return sdk::SDK_RET_HW_READ_ERR;
     }
     switch (mirror_data.action_id) {
     case MIRROR_RSPAN_ID:
@@ -461,7 +461,7 @@ mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats,
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to read mirror session %s stats at idx %u",
                       key->str(), hw_id_);
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
+        return sdk::SDK_RET_HW_READ_ERR;
     }
     switch (mirror_data.action_id) {
     case MIRROR_RSPAN_ID:

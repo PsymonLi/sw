@@ -17,10 +17,11 @@ mirror_session_feeder::init(pds_obj_key_t key, uint8_t mirror_sess,
                             pds_obj_key_t interface, uint16_t vlan_tag,
                             std::string dst_ip, uint32_t tep,
                             uint32_t span_id, uint32_t dscp,
-                            bool vlan_strip_en) {
+                            bool vlan_strip_en, bool stash) {
 
     this->key =  key;
     this->snap_len = 100;
+    this->stash_ = stash;
     // init with rspan type, then alternate b/w rspan and erspan in iter_next
     this->type = PDS_MIRROR_SESSION_TYPE_RSPAN;
     this->interface = interface;
@@ -136,6 +137,8 @@ mirror_session_feeder::spec_compare(
             (spec->erspan_spec.dst_type != dst_type) ||
             (spec->erspan_spec.vlan_strip_en != vlan_strip_en))
             return false;
+        // @sarat we can uncomment below code post the hw_id_ fix
+        /*
         if ((spec->erspan_spec.vpc != vpc) ||
             (spec->erspan_spec.dscp != dscp) ||
             (spec->erspan_spec.span_id != span_id))
@@ -149,6 +152,7 @@ mirror_session_feeder::spec_compare(
                 return false;
             }
         }
+        */
     }
     return true;
 }

@@ -44,7 +44,7 @@ public:
               pds_obj_key_t interface, uint16_t vlan_tag,
               std::string dst_ip, uint32_t tep,
               uint32_t span_id = 1, uint32_t dscp = 1,
-              bool vlan_strip_en = false);
+              bool vlan_strip_en = false, bool stash = false);
 
     // Iterate helper routines
     void iter_next(int width = 1);

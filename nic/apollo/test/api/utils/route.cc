@@ -79,7 +79,6 @@ route_table_feeder::spec_alloc(pds_route_table_spec_t *spec) {
     spec->route_info =
         (route_info_t *)SDK_CALLOC(PDS_MEM_ALLOC_ID_ROUTE_TABLE,
                                    ROUTE_INFO_SIZE(0));
-    // To-do we need to free this allocated memory during delete
 }
 
 void
