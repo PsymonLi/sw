@@ -59,7 +59,7 @@ host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
     pds_lif_spec_t *lif_spec = &spec.lif;
 
     memset(&spec, 0, sizeof(pds_host_if_spec_t));
-    spec.key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
+    spec.key = uuid_from_objid(HOST_IFINDEX(info->lif_id));
     lif_spec->key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
     lif_spec->id = info->lif_id;
     lif_spec->peer_lif_id = info->peer_lif_id;
@@ -186,7 +186,7 @@ devapi_impl::lif_upd_name(uint32_t lif_id, string name) {
         PDS_TRACE_ERR("Lif %u not found", lif_id);
         return sdk::SDK_RET_ENTRY_NOT_FOUND;
     }
-    key = uuid_from_objid(LIF_IFINDEX(lif_id));
+    key = uuid_from_objid(HOST_IFINDEX(lif_id));
     ret = pds_host_if_update_name(&key, name);
     if (unlikely(ret != SDK_RET_OK)) {
         PDS_TRACE_ERR("Lif %u update name failed", lif_id);
@@ -211,11 +211,13 @@ devapi_impl::lif_upd_state(uint32_t lif_id, lif_state_t state) {
 
     // notify rest of the system
     memset(&event, 0, sizeof(event));
-    event.lif.ifindex = LIF_IFINDEX(lif_id);
-    event.lif.state = state;
-    memcpy(event.lif.name, lif->name(), sizeof(event.lif.name));
-    memcpy(event.lif.mac, lif->mac(), ETH_ADDR_LEN);
-    sdk::ipc::broadcast(EVENT_ID_LIF_STATUS, &event, sizeof(event));
+    event.intf.ifindex = HOST_IFINDEX(lif_id);
+    event.intf.state =
+        state == (sdk::types::LIF_STATE_UP) ? PDS_IF_STATE_UP :
+                                              PDS_IF_STATE_DOWN;
+    memcpy(event.intf.name, lif->name(), sizeof(event.intf.name));
+    memcpy(event.intf.mac, lif->mac(), ETH_ADDR_LEN);
+    sdk::ipc::broadcast(EVENT_ID_HOST_IF_STATUS, &event, sizeof(event));
     return SDK_RET_OK;
 }
 
@@ -276,6 +278,19 @@ devapi_impl::eth_dev_admin_status_update(uint32_t lif_id, lif_state_t state) {
     }
     lif->set_admin_state(state);
     return SDK_RET_OK;
+}
+
+lif_state_t
+devapi_impl::compute_eth_dev_status(uint32_t lif_id, lif_state_t admin_state) {
+    if_entry *intf;
+    pds_obj_key_t key = uuid_from_objid(HOST_IFINDEX(lif_id));
+
+    intf = if_db()->find(&key);
+    if ((intf->admin_state() == PDS_IF_STATE_UP) &&
+        (admin_state == sdk::types::LIF_STATE_UP)) {
+        return sdk::types::LIF_STATE_UP;
+    }
+    return sdk::types::LIF_STATE_DOWN;
 }
 
 sdk_ret_t

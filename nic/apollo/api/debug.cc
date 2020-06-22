@@ -224,7 +224,6 @@ pds_handle_cmd (cmd_ctxt_t *ctxt)
     default:
         ret = SDK_RET_INVALID_ARG;
     }
-
     return ret;
 }
 

@@ -169,7 +169,7 @@ hal_event_callback (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
     case EVENT_ID_PORT_STATUS:
         handle_port_event(event->port);
         break;
-    case EVENT_ID_LIF_STATUS:
+    case EVENT_ID_HOST_IF_STATUS:
         // TODO: Need to propagate LIF events to the software-IF
         break;
     case EVENT_ID_MAC_LEARN:

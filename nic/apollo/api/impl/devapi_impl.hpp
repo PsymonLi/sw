@@ -76,6 +76,8 @@ public:
     // eth APIs
     virtual sdk_ret_t eth_dev_admin_status_update(uint32_t lif_id,
                                                   lif_state_t state);
+    virtual lif_state_t compute_eth_dev_status(uint32_t lif_id,
+                                               lif_state_t admin_state);
 
     // qos APIs
     virtual sdk_ret_t qos_class_get(uint8_t group, qos_class_info_t *info) override;

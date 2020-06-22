@@ -13,9 +13,11 @@
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/sdk/include/sdk/if.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/core/event.hpp"
+#include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/api/if.hpp"
@@ -265,17 +267,26 @@ if_impl::activate_host_if_(if_entry *intf, if_entry *orig_intf,
         }
     }
 
-    // handle admin state update
+    // handle admin state update from provider
     if (obj_ctxt->upd_bmap & PDS_IF_UPD_ADMIN_STATE) {
+        // provider wants to keep this device down
         if (spec->admin_state == PDS_IF_STATE_DOWN) {
-            // we need to bring the lif down
-            memset(&event, 0, sizeof(event));
-            event.event_id = (event_id_t)SDK_IPC_EVENT_ID_HOST_DEV_DOWN;
-            event.host_dev.id = lif->id();
-            sdk::ipc::broadcast(SDK_IPC_EVENT_ID_HOST_DEV_DOWN, &event,
-                                sizeof(event));
-        } else {
-            // check if the admin status on lif and act accordingly
+            // send the host device down event, if its not down already
+            if (lif->state() != sdk::types::LIF_STATE_DOWN) {
+                // notify nicmgr to inform host driver to bring this device down
+                memset(&event, 0, sizeof(event));
+                event.event_id = (event_id_t)SDK_IPC_EVENT_ID_HOST_DEV_DOWN;
+                event.host_dev.id = lif->id();
+                sdk::ipc::broadcast(SDK_IPC_EVENT_ID_HOST_DEV_DOWN, &event,
+                                    sizeof(event));
+            }
+        } else if (lif->state() != sdk::types::LIF_STATE_UP) {
+                // notify nicmgr to inform host driver to bring this device up
+                memset(&event, 0, sizeof(event));
+                event.event_id = (event_id_t)SDK_IPC_EVENT_ID_HOST_DEV_UP;
+                event.host_dev.id = lif->id();
+                sdk::ipc::broadcast(SDK_IPC_EVENT_ID_HOST_DEV_UP, &event,
+                                    sizeof(event));
         }
     }
     return SDK_RET_OK;
@@ -539,8 +550,11 @@ sdk_ret_t
 if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     if_entry *intf;
     uint32_t port_num;
+    if_index_t if_index;
     pds_if_spec_t *spec;
+    uint8_t num_lifs = 0;
     p4pd_error_t p4pd_ret;
+    pds_obj_key_t lif_key;
     pds_if_info_t *if_info = (pds_if_info_t *)info;
     p4i_device_info_actiondata_t p4i_device_info_data;
 
@@ -557,23 +571,26 @@ if_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
         port_num = if_impl::port(intf);
         if (port_num == TM_PORT_UPLINK_0) {
             sdk::lib::memrev(spec->l3_if_info.mac_addr,
-                             p4i_device_info_data.p4i_device_info.device_mac_addr1,
-                             ETH_ADDR_LEN);
+                          p4i_device_info_data.p4i_device_info.device_mac_addr1,
+                          ETH_ADDR_LEN);
         } else if (port_num == TM_PORT_UPLINK_1) {
             sdk::lib::memrev(spec->l3_if_info.mac_addr,
-                             p4i_device_info_data.p4i_device_info.device_mac_addr2,
-                             ETH_ADDR_LEN);
+                          p4i_device_info_data.p4i_device_info.device_mac_addr2,
+                          ETH_ADDR_LEN);
         }
     } else if (spec->type == IF_TYPE_UPLINK) {
         if_info->status.uplink_status.lif_id = hw_id_;
     } else if (spec->type == IF_TYPE_HOST) {
-        uint8_t num_lifs = 0;
-        lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
+        if_index =
+            LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(spec->key)));
+        lif_key = uuid_from_objid(if_index);
+        lif_impl *lif = (lif_impl *)lif_impl_db()->find(&lif_key);
         if_info->status.host_if_status.lifs[num_lifs++] = lif->key();
         if_info->status.host_if_status.num_lifs = num_lifs;
         strncpy(if_info->status.host_if_status.name,
                 intf->name().c_str(), SDK_MAX_NAME_LEN);
-        MAC_ADDR_COPY(if_info->status.host_if_status.mac_addr, intf->host_if_mac());
+        MAC_ADDR_COPY(if_info->status.host_if_status.mac_addr,
+                      intf->host_if_mac());
     }
     return SDK_RET_OK;
 }

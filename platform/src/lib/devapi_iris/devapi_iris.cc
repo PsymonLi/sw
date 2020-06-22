@@ -454,6 +454,13 @@ end:
     return ret;
 }
 
+lif_state_t
+devapi_iris::compute_eth_dev_status(uint32_t lif_id, lif_state_t admin_state) {
+    // there is no provider override in iris case, this is dependent on either
+    // corresponding uplink state adkmin state from user on the host
+    return admin_state;
+}
+
 sdk_ret_t
 devapi_iris::qos_class_get(uint8_t group, qos_class_info_t *info)
 {

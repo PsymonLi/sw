@@ -31,8 +31,10 @@ public:
     virtual sdk_ret_t lif_del_mac(uint32_t lif_id, mac_t mac) = 0;
     virtual sdk_ret_t lif_add_vlan(uint32_t lif_id, vlan_t vlan) = 0;
     virtual sdk_ret_t lif_del_vlan(uint32_t lif_id, vlan_t vlan) = 0;
-    virtual sdk_ret_t lif_add_macvlan(uint32_t lif_id, mac_t mac, vlan_t vlan) = 0;
-    virtual sdk_ret_t lif_del_macvlan(uint32_t lif_id, mac_t mac, vlan_t vlan) = 0;
+    virtual sdk_ret_t lif_add_macvlan(uint32_t lif_id, mac_t mac,
+                                      vlan_t vlan) = 0;
+    virtual sdk_ret_t lif_del_macvlan(uint32_t lif_id, mac_t mac,
+                                      vlan_t vlan) = 0;
     virtual sdk_ret_t lif_upd_vlan_offload(uint32_t lif_id, bool vlan_strip,
                                            bool vlan_insert) = 0;
     virtual sdk_ret_t lif_upd_rx_mode(uint32_t lif_id, bool broadcast,
@@ -41,7 +43,8 @@ public:
     virtual sdk_ret_t lif_upd_rx_mmode(uint32_t lif_id, bool all_multicast) = 0;
     virtual sdk_ret_t lif_upd_rx_pmode(uint32_t lif_id, bool promiscuous) = 0;
     virtual sdk_ret_t lif_upd_name(uint32_t lif_id, string name) = 0;
-    virtual sdk_ret_t lif_get_max_filters(uint32_t *ucast_filters, uint32_t *mcast_filters) = 0;
+    virtual sdk_ret_t lif_get_max_filters(uint32_t *ucast_filters,
+                                          uint32_t *mcast_filters) = 0;
     virtual sdk_ret_t lif_upd_state(uint32_t lif_id, lif_state_t state) = 0;
     virtual sdk_ret_t lif_upd_rdma_sniff(uint32_t lif_id, bool rdma_sniff) = 0;
     virtual sdk_ret_t lif_upd_bcast_filter(uint32_t lif_id,
@@ -49,12 +52,19 @@ public:
     virtual sdk_ret_t lif_upd_mcast_filter(uint32_t lif_id,
                                            lif_mcast_filter_t mcast_filter) = 0;
     virtual sdk_ret_t lif_upd_rx_en(uint32_t lif_id, bool rx_en) = 0;
-    virtual sdk_ret_t lif_upd_max_tx_rate(uint32_t lif_id, uint64_t rate_in_Bps) = 0;
-    virtual sdk_ret_t lif_get_max_tx_rate(uint32_t lif_id, uint64_t *rate_in_Bps) = 0;
+    virtual sdk_ret_t lif_upd_max_tx_rate(uint32_t lif_id,
+                                          uint64_t rate_in_Bps) = 0;
+    virtual sdk_ret_t lif_get_max_tx_rate(uint32_t lif_id,
+                                          uint64_t *rate_in_Bps) = 0;
 
     // eth APIs
     virtual sdk_ret_t eth_dev_admin_status_update(uint32_t lif_id,
                                                   lif_state_t state) = 0;
+    // given host admin state (from driver) on a lif, return the final
+    // state of the lif after taking provider admin state configuration into
+    // account
+    virtual lif_state_t compute_eth_dev_status(uint32_t lif_id,
+                                               lif_state_t admin_state) = 0;
 
     // qos APIs
     virtual sdk_ret_t qos_class_get(uint8_t group, qos_class_info_t *info) = 0;
@@ -62,14 +72,16 @@ public:
     virtual sdk_ret_t qos_class_create(qos_class_info_t *info) = 0;
     virtual sdk_ret_t qos_class_update(qos_class_info_t *info) = 0;
     virtual sdk_ret_t qos_class_delete(uint8_t group, bool clear_stats) = 0;
-    virtual sdk_ret_t qos_clear_stats(uint32_t port_num, uint8_t qos_group_bitmap) = 0;
-    virtual sdk_ret_t qos_get_txtc_cos(const string &group, uint32_t uplink_port,
-                                       uint8_t *cos) = 0;
+    virtual sdk_ret_t qos_clear_stats(uint32_t port_num,
+                                      uint8_t qos_group_bitmap) = 0;
+    virtual sdk_ret_t qos_get_txtc_cos(const string &group,
+                                       uint32_t uplink_port, uint8_t *cos) = 0;
     virtual sdk_ret_t qos_class_set_global_pause_type(uint8_t pause_type) = 0;
     virtual sdk_ret_t qos_reset(uint32_t group) = 0;
 
     // uplink APIs
-    virtual sdk_ret_t uplink_create(uint32_t id, uint32_t port, bool is_oob) = 0;
+    virtual sdk_ret_t uplink_create(uint32_t id, uint32_t port,
+                                    bool is_oob) = 0;
     virtual sdk_ret_t uplink_destroy(uint32_t port) = 0;
     virtual sdk_ret_t uplink_available_count(uint8_t *count) = 0;
 
@@ -98,8 +110,9 @@ public:
     // single wire management APIs
     virtual sdk_ret_t swm_enable(void) = 0;
     virtual sdk_ret_t swm_disable(void) = 0;
-    virtual sdk_ret_t swm_create_channel(uint32_t channel, uint32_t port_num, uint32_t lif_id) = 0;
-    virtual sdk_ret_t swm_get_channels_info(std::set<channel_info_t *>* channels_info) = 0;
+    virtual sdk_ret_t swm_create_channel(uint32_t channel, uint32_t port_num,
+                                         uint32_t lif_id) = 0;
+    virtual sdk_ret_t swm_get_channels_info(std::set<channel_info_t *> *channels_info) = 0;
     virtual sdk_ret_t swm_add_mac(mac_t mac, uint32_t channel) = 0;
     virtual sdk_ret_t swm_del_mac(mac_t mac, uint32_t channel) = 0;
     virtual sdk_ret_t swm_add_vlan(vlan_t vlan, uint32_t channel) = 0;
@@ -107,8 +120,10 @@ public:
     virtual sdk_ret_t swm_upd_rx_bmode(bool broadcast, uint32_t channel) = 0;
     virtual sdk_ret_t swm_upd_rx_mmode(bool all_multicast, uint32_t channel) = 0;
     virtual sdk_ret_t swm_upd_rx_pmode(bool promiscuous, uint32_t channel) = 0;
-    virtual sdk_ret_t swm_upd_bcast_filter(lif_bcast_filter_t bcast_filter, uint32_t channel) = 0;
-    virtual sdk_ret_t swm_upd_mcast_filter(lif_mcast_filter_t mcast_filter, uint32_t channel) = 0;
+    virtual sdk_ret_t swm_upd_bcast_filter(lif_bcast_filter_t bcast_filter,
+                                           uint32_t channel) = 0;
+    virtual sdk_ret_t swm_upd_mcast_filter(lif_mcast_filter_t mcast_filter,
+                                           uint32_t channel) = 0;
     virtual sdk_ret_t swm_enable_tx(uint32_t channel) = 0;
     virtual sdk_ret_t swm_disable_tx(uint32_t channel) = 0;
     virtual sdk_ret_t swm_enable_rx(uint32_t channel) = 0;
@@ -116,7 +131,8 @@ public:
     virtual sdk_ret_t swm_reset_channel(uint32_t channel) {
         return SDK_RET_INVALID_OP;
     }
-    virtual sdk_ret_t swm_upd_vlan_mode(bool enable, uint32_t mode, uint32_t channel) = 0;
+    virtual sdk_ret_t swm_upd_vlan_mode(bool enable, uint32_t mode,
+                                        uint32_t channel) = 0;
 
     // accel APIs
     virtual sdk_ret_t accel_rgroup_add(string name,

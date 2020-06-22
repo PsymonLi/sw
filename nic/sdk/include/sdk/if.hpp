@@ -43,6 +43,8 @@ typedef uint32_t if_index_t;     ///< interface index
 #define ETH_IF_DEFAULT_SLOT                      1
 #define LIF_IF_LIF_ID_MASK                       0xFFFFFF
 #define LOOPBACK_IF_ID_MASK                      0xFFFFFF
+#define LOOPBACK_IF_ID_MASK                      0xFFFFFF
+#define HOST_IF_ID_MASK                          0xFFFFFF
 
 ///< interface index is formed from
 ///<     t_ --> type of the interface (4 bits)
@@ -67,34 +69,37 @@ typedef uint32_t if_index_t;     ///< interface index
 #define CONTROL_IFINDEX(if_id_)    ((IF_TYPE_CONTROL << IF_TYPE_SHIFT) | (if_id_))
 #define HOST_IFINDEX(if_id_)       ((IF_TYPE_HOST << IF_TYPE_SHIFT) | (if_id_))
 
-#define IFINDEX_TO_IFTYPE(ifindex_)         \
+#define IFINDEX_TO_IFTYPE(ifindex_)                      \
             ((ifindex_ >> IF_TYPE_SHIFT) & IF_TYPE_MASK)
 
-#define IFINDEX_TO_IFID(ifindex_)         \
+#define IFINDEX_TO_IFID(ifindex_)                        \
             ((ifindex_) & ~(IF_TYPE_MASK << IF_TYPE_SHIFT))
 
-#define ETH_IFINDEX_TO_SLOT(ifindex_)           \
+#define ETH_IFINDEX_TO_SLOT(ifindex_)                    \
             ((ifindex_ >> ETH_IF_SLOT_SHIFT) & ETH_IF_SLOT_MASK)
 
-#define ETH_IFINDEX_TO_PARENT_PORT(ifindex_)    \
+#define ETH_IFINDEX_TO_PARENT_PORT(ifindex_)             \
             ((ifindex_ >> ETH_IF_PARENT_PORT_SHIFT) & ETH_IF_PARENT_PORT_MASK)
 
-#define ETH_IFINDEX_TO_CHILD_PORT(ifindex_)    \
+#define ETH_IFINDEX_TO_CHILD_PORT(ifindex_)              \
             (ifindex_ & ETH_IF_CHILD_PORT_MASK)
 
-#define ETH_IFINDEX_TO_UPLINK_IFINDEX(ifindex_)      \
-            ((IF_TYPE_UPLINK << IF_TYPE_SHIFT) |     \
+#define ETH_IFINDEX_TO_UPLINK_IFINDEX(ifindex_)          \
+            ((IF_TYPE_UPLINK << IF_TYPE_SHIFT) |         \
              ((ifindex_) & ~(IF_TYPE_MASK << IF_TYPE_SHIFT)))
 
-#define UPLINK_IFINDEX_TO_ETH_IFINDEX(ifindex_)      \
-            ((IF_TYPE_ETH << IF_TYPE_SHIFT) |        \
+#define UPLINK_IFINDEX_TO_ETH_IFINDEX(ifindex_)          \
+            ((IF_TYPE_ETH << IF_TYPE_SHIFT) |            \
              ((ifindex_) & ~(IF_TYPE_MASK << IF_TYPE_SHIFT)))
 
-#define LIF_IFINDEX_TO_LIF_ID(ifindex_)    \
+#define LIF_IFINDEX_TO_LIF_ID(ifindex_)                  \
             (ifindex_ & LIF_IF_LIF_ID_MASK)
 
-#define LOOPBACK_IFINDEX_TO_LOOPBACK_IF_ID(ifindex_)    \
+#define LOOPBACK_IFINDEX_TO_LOOPBACK_IF_ID(ifindex_)     \
             (ifindex_ & LOOPBACK_IF_ID_MASK)
+
+#define HOST_IFINDEX_TO_IF_ID(ifindex_)                  \
+            (ifindex_ & HOST_IF_ID_MASK)
 
 static inline std::string
 ifindex_to_type_str (uint32_t ifindex) {
