@@ -43,6 +43,7 @@ ETH_KOPT += CROSS_COMPILE=aarch64-linux-gnu-
 ETH_KOPT += ARCH=arm64
 ALL += mnet
 ALL += mnet_uio_pdrv_genirq
+KCFLAGS += -DCONFIG_IONIC_MNIC
 export PATH := $(PATH):$(TOOLCHAIN_DIR)/bin
 
 else
