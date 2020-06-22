@@ -417,16 +417,20 @@ done:
 //---------------------------------------------------------------------------
 // ftl_hint_table iterate_: Iterate entries from hint table
 //---------------------------------------------------------------------------
-sdk_ret_t
+bool
 hint_table::iterate_(Apictx *ctx) {
     uint32_t hintX = 0;
+    bool iterate_stop = false;
 
     // initialize the context
     auto hctx = ctxnew_(ctx);
     SDK_ASSERT_RETURN(hctx->is_max_recircs() == false, SDK_RET_MAX_RECIRC_EXCEED);
     SDK_ASSERT_RETURN(initctx_(hctx) == SDK_RET_OK, SDK_RET_ERR);
     SDK_ASSERT(hctx->bucket->read_(hctx) == SDK_RET_OK);
-    auto ret = base_table::invoke_iterate_cb_(hctx);
+    iterate_stop = base_table::invoke_iterate_cb_(hctx);
+    if (unlikely(iterate_stop)) {
+        return iterate_stop;
+    }
 
     // walk the hint list
     for(uint32_t i = 1; i <= hctx->props->num_hints; i++) {
@@ -438,19 +442,23 @@ hint_table::iterate_(Apictx *ctx) {
         }
         hctx->hint_slot = i;
         hctx->hint = hintX;
-        ret = iterate_(hctx);
-        FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
+        iterate_stop = iterate_(hctx);
+        if (unlikely(iterate_stop)) {
+            return iterate_stop;
+        }
     }
     hctx->entry->get_hint(Apictx::hint_slot::HINT_SLOT_MORE, hintX);
     if (HINT_IS_VALID(hintX)) {
         hctx->hint_slot = hctx->entry->get_more_hint_slot();
         hctx->hint = hintX;
-        ret = iterate_(hctx);
-        FTL_RET_CHECK_AND_GOTO(ret, done, "hint table iterate r:%d", ret);
+        iterate_stop = iterate_(hctx);
+        if (unlikely(iterate_stop)) {
+            return iterate_stop;
+        }
     }
 
 done:
-    return SDK_RET_OK;
+    return iterate_stop;
 }
 
 sdk_ret_t

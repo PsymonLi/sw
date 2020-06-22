@@ -315,9 +315,7 @@ __label__ done;
     ret = ctxinit_(thread_id, sdk::table::SDK_TABLE_API_ITERATE, params);
     FTL_RET_CHECK_AND_GOTO(ret, done, "ctxinit r:%d", ret);
 
-    ret = static_cast<main_table*>(main_table_)->iterate_(get_apictx(thread_id,
-                                                                     0));
-    FTL_RET_CHECK_AND_GOTO(ret, done, "iterate r:%d", ret);
+    static_cast<main_table*>(main_table_)->iterate_(get_apictx(thread_id, 0));
 
 done:
     FTL_API_END_(ret);

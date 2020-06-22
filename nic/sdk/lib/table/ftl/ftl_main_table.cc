@@ -312,11 +312,12 @@ done:
 //---------------------------------------------------------------------------
 // main_table iterate_: Iterate entries from main table
 //---------------------------------------------------------------------------
-sdk_ret_t
+bool
 main_table::iterate_(Apictx *ctx) {
-__label__ cont_outer_loop;
+__label__ cont_main_table;
     uint32_t i = 0;
     uint32_t hintX = 0;
+    bool iterate_stop = false;
 
     for (i = 0; i < table_size_; i++) {
         // init context
@@ -331,30 +332,43 @@ __label__ cont_outer_loop;
             continue;
         }
         SDK_ASSERT(ctx->bucket->read_(ctx) == SDK_RET_OK);
-        base_table::invoke_iterate_cb_(ctx);
+        iterate_stop = base_table::invoke_iterate_cb_(ctx);
+        if (unlikely(iterate_stop)) {
+            unlock_(ctx);
+            return iterate_stop;
+        }
 
         // walk the hint list
         for (uint32_t j = 1; j <= ctx->props->num_hints; j++) {
             ctx->entry->get_hint(j, hintX);
             if (HINT_IS_VALID(hintX) == false) {
-                goto cont_outer_loop;
+                // assuming defragmentation will keep all hints contiguous
+                goto cont_main_table;
             }
             ctx->hint_slot = j;
             ctx->hint = hintX;
-            hint_table_->iterate_(ctx);
+            iterate_stop = hint_table_->iterate_(ctx);
+            if (unlikely(iterate_stop)) {
+                unlock_(ctx);
+                return iterate_stop;
+            }
         }
         // check for more hint
         ctx->entry->get_hint(Apictx::hint_slot::HINT_SLOT_MORE, hintX);
         if (HINT_IS_VALID(hintX)) {
             ctx->hint_slot = ctx->entry->get_more_hint_slot();
             ctx->hint = hintX;
-            hint_table_->iterate_(ctx);
+            iterate_stop = hint_table_->iterate_(ctx);
+            if (unlikely(iterate_stop)) {
+                unlock_(ctx);
+                return iterate_stop;
+            }
         }
-cont_outer_loop:
+cont_main_table:
         unlock_(ctx);
     }
 
-    return SDK_RET_OK;
+    return iterate_stop;
 }
 
 sdk_ret_t

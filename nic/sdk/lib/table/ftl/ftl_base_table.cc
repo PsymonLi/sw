@@ -35,7 +35,7 @@ base_table::destroy_(base_table *table) {
     table->buckets_ = NULL;
 }
 
-sdk_ret_t
+bool
 base_table::invoke_iterate_cb_(Apictx *ctx) {
     sdk_table_api_params_t params = { 0 };
 
@@ -49,9 +49,7 @@ base_table::invoke_iterate_cb_(Apictx *ctx) {
     params.handle.epoch(ctx->bucket->epoch_);
     params.entry = ctx->entry;
     params.cbdata = ctx->params->cbdata;
-    ctx->params->itercb(&params);
-
-    return SDK_RET_OK;
+    return ctx->params->itercb(&params);
 }
 
 sdk_ret_t

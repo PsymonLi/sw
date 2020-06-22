@@ -22,7 +22,6 @@ typedef struct ftl_cb_data_s {
 } ftl_cb_data_t;
 
 uint32_t ftlv4_entry_count;
-bool g_ftl_skip_walk = false;
 
 static bool
 ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
@@ -34,7 +33,7 @@ ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
     struct in_addr src, dst;
     char srcstr[INET_ADDRSTRLEN + 1], dststr[INET_ADDRSTRLEN + 1];
 
-    if (!g_ftl_skip_walk && hwentry->get_entry_valid()) {
+    if (hwentry->get_entry_valid()) {
         ftlv4_entry_count++;
         if (summary) {
             return false;
@@ -60,7 +59,7 @@ ftlv4_entry_iter_cb (sdk::table::sdk_table_api_params_t *params)
                 drop ? "D" : "A");
         if ((0 == (ftlv4_entry_count % UDS_SOCK_ALIVE_CHECK_COUNT)) &&
             !is_uds_socket_alive(cbdata->sock_fd)) {
-            g_ftl_skip_walk = true;
+            return true;
         }
     }
     return false;
@@ -122,7 +121,6 @@ vpp_uds_flow_dump(int sock_fd, int io_fd, bool summary)
     cbdata.summary = summary;
 
     ftlv4_entry_count = 0;
-    g_ftl_skip_walk = false;
     params.itercb = ftlv4_entry_iter_cb;
     params.cbdata = &cbdata;
     params.force_hwread = false;

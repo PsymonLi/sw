@@ -51,8 +51,8 @@ public:
         //SDK_SPINLOCK_DESTROY(&slock_);
     }
 
-    sdk_ret_t iterate_(Apictx *ctx);
-    sdk_ret_t invoke_iterate_cb_(Apictx *ctx);
+    bool iterate_(Apictx *ctx);
+    bool invoke_iterate_cb_(Apictx *ctx);
     sdk_ret_t clear_(Apictx *ctx);
 };
 
@@ -78,7 +78,7 @@ private:
     sdk_ret_t find_(Apictx *ctx,
                     Apictx **retctx);
     sdk_ret_t get_with_handle_(Apictx *ctx);
-    sdk_ret_t iterate_(Apictx *ctx);
+    bool iterate_(Apictx *ctx);
     sdk_ret_t clear_(Apictx *ctx);
     sdk_ret_t defragment_(Apictx *ctx);
     sdk_ret_t tail_(Apictx *ctx,
@@ -118,7 +118,7 @@ private:
     sdk_ret_t get_with_handle_(Apictx *ctx);
     sdk_ret_t find_(Apictx *ctx,
                     Apictx **retctx);
-    sdk_ret_t iterate_(Apictx *ctx);
+    bool iterate_(Apictx *ctx);
     sdk_ret_t clear_(Apictx *ctx);
     void lock_(Apictx *ctx);
     void unlock_(Apictx *ctx);
