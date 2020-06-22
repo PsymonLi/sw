@@ -677,8 +677,10 @@ action f_p4plus_to_p4_1() {
             add(inner_ipv4.identification, inner_ipv4.identification,
                 p4plus_to_p4.ip_id_delta);
         } else {
-            add(ipv4.identification, ipv4.identification,
-                p4plus_to_p4.ip_id_delta);
+            if (ipv4.valid == TRUE) {
+                add(ipv4.identification, ipv4.identification,
+                    p4plus_to_p4.ip_id_delta);
+            }
         }
     }
 

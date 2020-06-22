@@ -33,8 +33,10 @@ action offloads() {
             add(ipv4_2.identification, ipv4_2.identification,
                 p4plus_to_p4.ip_id_delta);
         } else {
-            add(ipv4_1.identification, ipv4_1.identification,
-                p4plus_to_p4.ip_id_delta);
+            if (ipv4_1.valid == TRUE) {
+                add(ipv4_1.identification, ipv4_1.identification,
+                    p4plus_to_p4.ip_id_delta);
+            }
         }
     }
 

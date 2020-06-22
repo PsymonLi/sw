@@ -38,11 +38,11 @@ p4plus_to_p4_1_update_ip_id:
     // update IP id
     bbne            k.p4plus_to_p4_update_ip_id, TRUE, p4plus_to_p4_1_update_tcp_seq_no
     seq             c1, k.inner_ipv4_valid, TRUE
+    seq             c2, k.ipv4_valid, TRUE
     cmov            r1, c1, k.inner_ipv4_identification, k.ipv4_identification
     add             r1, r1, k.p4plus_to_p4_ip_id_delta
     phvwr.c1        p.inner_ipv4_identification, r1
-    phvwr.!c1       p.ipv4_identification, r1
-
+    phvwr.c2        p.ipv4_identification, r1
 
 p4plus_to_p4_1_update_tcp_seq_no:
     // update TCP sequence number

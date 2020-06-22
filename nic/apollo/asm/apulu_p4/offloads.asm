@@ -31,10 +31,11 @@ offloads:
 offloads_update_ip_id:
     bbne            k.p4plus_to_p4_update_ip_id, TRUE, offloads_update_tcp_seq_no
     seq             c1, k.ipv4_2_valid, TRUE
+    seq             c2, k.ipv4_1_valid, TRUE
     cmov            r1, c1, k.ipv4_2_identification, k.ipv4_1_identification
     add             r1, r1, k.p4plus_to_p4_ip_id_delta
     phvwr.c1        p.ipv4_2_identification, r1
-    phvwr.!c1       p.ipv4_1_identification, r1
+    phvwr.c2        p.ipv4_1_identification, r1
 
 offloads_update_tcp_seq_no:
     bbne            k.p4plus_to_p4_update_tcp_seq_no, TRUE, offloads_tso

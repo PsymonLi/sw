@@ -16,7 +16,7 @@ input_properties_mac_vlan_nop:
 
 .align
 input_properties_mac_vlan_drop:
-    phvwr           p.control_metadata_drop_reason[DROP_INPUT_PROPERTIES_MISS], 1 
+    phvwr           p.control_metadata_drop_reason[DROP_INPUT_PROPERTIES_MISS], 1
     phvwr           p.capri_intrinsic_drop, 1
     b               input_properties_mac_vlan
     sne            c1, r0, r0
@@ -34,10 +34,9 @@ input_properties_mac_vlan:
     phvwr           p.l4_metadata_tcp_data_len, r1
 
 input_properties_mac_vlan_tcp:
-    crestore        [c3-c2], k.{ipv4_valid,ipv6_valid}, 0x3
-    crestore        [c4], k.inner_ipv6_valid, 0x1 
+    crestore        [c4-c2], k.{inner_ipv6_valid,ipv4_valid,ipv6_valid}, 0x7
     bbne            k.tcp_valid, TRUE, input_properties_mac_vlan_common
-    crestore        [c5], k.inner_ipv4_valid, 0x1 
+    crestore        [c5], k.inner_ipv4_valid, 0x1
 #ifdef ELBA
     /* TBD-ELBA-REBASE : bcpri not supported by Elba: */
     /* Added the following 3 lines based on dac2 input */
