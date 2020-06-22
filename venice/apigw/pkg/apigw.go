@@ -13,6 +13,7 @@ import (
 	"net/textproto"
 	"net/url"
 	"os"
+	goruntime "runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -461,6 +462,11 @@ Loop:
 	}
 	if a.diagSvc == nil {
 		a.diagSvc = diagsvc.GetDiagnosticsServiceWithDefaults(globals.APIGw, k8s.GetNodeName(), diagapi.ModuleStatus_Venice, a.rslver, a.logger)
+		a.diagSvc.RegisterCustomAction("stack-trace", func(action string, params map[string]string) (interface{}, error) {
+			buf := make([]byte, 1<<20)
+			blen := goruntime.Stack(buf, true)
+			return fmt.Sprintf("=== goroutine dump ====\n %s \n=== END ===", buf[:blen]), nil
+		})
 	}
 	a.authGetter = authnmgr.GetAuthGetter(globals.APIGw, grpcaddr, a.rslver, a.logger)
 	a.permGetter = rbac.GetPermissionGetter(globals.APIGw, grpcaddr, a.rslver)
