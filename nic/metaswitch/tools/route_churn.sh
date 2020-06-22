@@ -2,6 +2,7 @@
 #set -x
 
 BGP_LOCAL_IP=0
+BGP_PEER_IP=0
 NAPLES=0
 QUERY_BGP=0
 QUERY_PEER=0
@@ -12,6 +13,7 @@ MONITOR_LOG_PATH=./route-churn/
 MONITOR_LOG_FILE=monitor.log
 CLEANUP=0
 SKIP_INIT=0
+TYPE5_GEN=0
 
 argc=$#
 argv=("$@")
@@ -26,6 +28,9 @@ for (( j=0; j<argc; j++ )); do
     elif [ ${argv[j]} == '--peer' ];then
         (( j=j+1 ))
         BGP_PEER_IP=${argv[j]}
+    elif [ ${argv[j]} == '--routes' ];then
+        (( j=j+1 ))
+        NUM_ROUTES=${argv[j]}
     elif [ ${argv[j]} == '--local' ];then
         (( j=j+1 ))
         BGP_LOCAL_IP=${argv[j]}
@@ -39,6 +44,8 @@ for (( j=0; j<argc; j++ )); do
         CLEANUP=1
     elif [ ${argv[j]} == '--skipinit' ];then
         SKIP_INIT=1
+    elif [ ${argv[j]} == '--t5gen' ];then
+        TYPE5_GEN=1
     fi
 done
 
@@ -190,6 +197,19 @@ function cleanup {
     en_bgp_peer
 }
 
+function type5_gen {
+    # Setup IRB interafce and RTM redist
+    setup_type5
+    # Create prefix routes and advertise
+    for iter in $(seq 1 $NUM_ROUTES);
+    do
+       CUR_OFFSET=$((iter * OFFSET))
+       printf -v NEWBASE '%#x' "$((BASE + CUR_OFFSET))"
+       echo "Add route#$iter prefix $NEWBASE"
+       conf_type5 $NEWBASE
+    done
+}
+
 BASE=2148532224
 OFFSET=65536
 if [[ $QUERY_BGP == 1 ]]; then
@@ -223,22 +243,18 @@ if [[ $CLEANUP == 1 ]]; then
     exit
 fi
 
+if [[ $TYPE5_GEN == 1 ]]; then
+    type5_gen
+    exit
+fi
+
 # Route churn
 start_top
 monitor_naples 0 "initial"
 
 if [[ $SKIP_INIT == 0 ]]; then
     disable_bgp_peer
-    # Setup IRB interafce and RTM redist
-    setup_type5
-    # Create prefix routes and advertise
-    for iter in $(seq 1 $NUM_ROUTES);
-    do
-       CUR_OFFSET=$((iter * OFFSET))
-       printf -v NEWBASE '%#x' "$((BASE + CUR_OFFSET))"
-       echo "Add route#$iter prefix $NEWBASE"
-       conf_type5 $NEWBASE
-    done
+    type5_gen
 fi
 
 echo "Starting route churn"

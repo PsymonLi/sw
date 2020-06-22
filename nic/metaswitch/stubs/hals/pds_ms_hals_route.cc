@@ -50,7 +50,12 @@ bool hals_route_t::parse_ips_info_(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips) {
 pds_obj_key_t hals_route_t::make_pds_rttable_key_(state_t* state) {
     auto vpc_obj = state->vpc_store().get(ips_info_.vrf_id);
     if (unlikely(vpc_obj == nullptr)) {
-        throw Error("Cannot find VPC store obj for id " + ips_info_.vrf_id);
+        throw Error(std::string("Cannot find VPC store obj for id ").
+                    append(std::to_string(ips_info_.vrf_id)));
+    }
+    if (unlikely(!vpc_obj->hal_created())) {
+        PDS_TRACE_DEBUG("VRF %d has already been deleted", ips_info_.vrf_id);
+        return rttbl_key_;
     }
     rttbl_key_ = vpc_obj->properties().vpc_spec.v4_route_table;
     return (rttbl_key_);
@@ -63,10 +68,7 @@ make_pds_rttable_spec(state_t* state, pds_route_table_spec_t &rttable,
     rttable.key = rttable_key;
 
     auto rttbl_store = state->route_table_store().get(rttable.key);
-    if (unlikely(rttbl_store == nullptr)) {
-        throw Error(std::string("Did not find route table store for ")
-                    .append(rttable_key.str()));
-    }
+    SDK_ASSERT(rttbl_store != nullptr);
     // Get the routes pointer. PDS API will make a copy of the
     // route table and free it up once api processing is complete
     // after batch commit
@@ -83,7 +85,10 @@ hals_route_t::update_route_store_(state_t* state,
     route_.attrs.prefix = ips_info_.pfx;
     route_.attrs.nh_type = PDS_NH_TYPE_OVERLAY_ECMP;
     route_.attrs.nh_group = msidx2pdsobjkey(ips_info_.ecmp_id);
+
     auto rttbl_store = state->route_table_store().get(rttable_key);
+    SDK_ASSERT(rttbl_store != nullptr);
+
     if (!op_delete_) {
         auto rt = rttbl_store->get_route(route_.attrs.prefix);
         if (rt == nullptr) {
@@ -121,6 +126,8 @@ process_route_batch(state_t *state, const pds_obj_key_t& rttable_key,
     // and pushed later when the number of routes goes below the route
     // table capacity
     auto rttbl_store = state->route_table_store().get(rttable_key);
+    SDK_ASSERT(rttbl_store != nullptr);
+
     int num_routes = rttbl_store->num_routes();
     if (num_routes > PDS_MS_MAX_NUM_ROUTES) {
         PDS_TRACE_ERR("Num routes %d is greater than max %d. Skipping "
@@ -300,11 +307,8 @@ batch_commit_route_table (state_t *state, pds_batch_ctxt_guard_t &bctxt_guard,
     PDS_TRACE_DEBUG ("Route-Table %s PDS Batch commit successful",
                      rttbl_key.str());
     auto rttbl_store = state->route_table_store().get(rttbl_key);
-    if (unlikely(rttbl_store == nullptr)) {
-        PDS_TRACE_ERR("Did not find rttbl store for rttbl %s",
-                       rttbl_key.str());
-        return;
-    }
+    SDK_ASSERT(rttbl_store != nullptr);
+
     // Commit successful. Stop timers
     timer_stop(state->get_route_timer_list(),
                rttbl_store->batch_commit_timer());
@@ -491,6 +495,10 @@ route_timer_expiry_cb (NTL_TIMER_LIST_CB *list_cb, NTL_TIMER_CB *timer_cb)
         auto vpc_obj = state_ctxt.state()->vpc_store().get(vrf_id);
         if (unlikely(vpc_obj == nullptr)) {
             PDS_TRACE_ERR("Cannot find VPC store obj for vrf_id: %d", vrf_id);
+            return;
+        }
+        if (unlikely(!vpc_obj->hal_created())) {
+            PDS_TRACE_DEBUG("VRF %d has already been deleted", vrf_id);
             return;
         }
         rttable_key = vpc_obj->properties().vpc_spec.v4_route_table;
