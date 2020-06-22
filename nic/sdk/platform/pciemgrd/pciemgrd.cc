@@ -62,7 +62,7 @@ static int swm_alom_present(void)
     int cntl;
 
     id = cpld_reg_rd(CPLD_REGISTER_ID);
-    if (id == -1) {
+    if (id < 0) {
         pciesys_logerror("error reading cpld id\n");
         return 0;
     }
@@ -72,7 +72,7 @@ static int swm_alom_present(void)
         return 1;
 
     cntl = cpld_reg_rd(CPLD_REGISTER_CTRL);
-    if (cntl == -1) {
+    if (cntl < 0) {
         pciesys_logerror("error reading cpld ctrl reg\n");
         return 0;
     }

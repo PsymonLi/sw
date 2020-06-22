@@ -119,30 +119,30 @@ write_gpios(int gpio, uint32_t data)
     //control only one gpio
     if (gpio > 7) {
         if ((fd = open("/dev/gpiochip1", O_RDWR, 0)) < 0) {
-            return -1;
+            return -10;
         }
         hr.lineoffsets[0] = gpio - 7;
     } else {
         if ((fd = open("/dev/gpiochip0", O_RDWR, 0)) < 0) {
-            return -1;
+            return -11;
         }
         hr.lineoffsets[0] = gpio;
     }
     if (ioctl(fd, GPIO_GET_CHIPINFO_IOCTL, &ci) < 0) {
         close(fd);
-        return -1;
+        return -12;
     }
     hr.flags = GPIOHANDLE_REQUEST_OUTPUT;
     hr.lines = 1;
     hd.values[0] = data;
     if (ioctl(fd, GPIO_GET_LINEHANDLE_IOCTL, &hr) < 0) {
         close(fd);
-        return -1;
+        return -13;
     }
     close(fd);
     if (ioctl(hr.fd, GPIOHANDLE_SET_LINE_VALUES_IOCTL, &hd) < 0) {
         close(hr.fd);
-        return -1;
+        return -14;
     }
     close(hr.fd);
     return 0;
@@ -159,11 +159,11 @@ read_gpios(int d, uint32_t mask)
 
     snprintf(buf, sizeof (buf), "/dev/gpiochip%d", d);
     if ((fd = open(buf, O_RDWR, 0)) <  0) {
-        return -1;
+        return -20;
     }
     if (ioctl(fd, GPIO_GET_CHIPINFO_IOCTL, &ci) < 0) {
         close(fd);
-        return -1;
+        return -21;
     }
     memset(&hr, 0, sizeof (hr));
     n = 0;
@@ -176,12 +176,12 @@ read_gpios(int d, uint32_t mask)
     hr.lines = n;
     if (ioctl(fd, GPIO_GET_LINEHANDLE_IOCTL, &hr) < 0) {
         close(fd);
-        return -1;
+        return -22;
     }
     close(fd);
     if (ioctl(hr.fd, GPIOHANDLE_GET_LINE_VALUES_IOCTL, &hd) < 0) {
         close(hr.fd);
-        return -1;
+        return -23;
     }
     close(hr.fd);
     value = 0;
@@ -217,11 +217,11 @@ cpld_read(uint8_t addr)
     msg[1].len = 1;
 
     if ((fd = open(spidev0_path, O_RDWR, 0)) < 0) {
-        return -1;
+        return -30;
     }
     if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
         close(fd);
-        return -1;
+        return -31;
     }
 
     close(fd);
@@ -243,12 +243,12 @@ cpld_write(uint8_t addr, uint8_t data)
     msg[0].len = 3;
 
     if ((fd = open(spidev0_path, O_RDWR, 0)) < 0) {
-        return -1;
+        return -40;
     }
 
     if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
         close(fd);
-        return -1;
+        return -41;
     }
 
     close(fd);
@@ -266,14 +266,14 @@ cpld_send_cmd_spi(int fd, const uint8_t* data, uint32_t size)
     int rc = 0;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -50;
     }
     if (ioctl(fd, SPI_IOC_MESSAGE(1), msg) < 0) {
-        rc = -1;
+        rc = -51;
     }
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -52;
     }
     return rc;
 }
@@ -293,14 +293,14 @@ cpld_send_cmd_spi_rx(int fd, const uint8_t* data, uint32_t size,
 
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -60;
     }
     if (ioctl(fd, SPI_IOC_MESSAGE(2), msg) < 0) {
-        rc = -1;
+        rc = -61;
     }
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -62;
     }
     return rc;
 }
@@ -310,16 +310,16 @@ cpld_reg_bit_set(int reg, int bit)
 {
     int cpld_data = 0;
     int mask = 0x01 << bit;
-    int rc = -1;
+    int rc = -70;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -71;
     }
     cpld_data = cpld_read(reg);
     if (cpld_data == -1) {
         if (!pal_wr_unlock(CPLDLOCK)) {
             pal_mem_trace("Failed to unlock.\n");
-            return -1;
+            return -72;
         }
         return cpld_data;
     }
@@ -327,7 +327,7 @@ cpld_reg_bit_set(int reg, int bit)
     rc = cpld_write(reg, cpld_data);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -73;
     }
     return rc;
 }
@@ -337,11 +337,11 @@ cpld_reg_bits_set(int reg, int bit, int nbits, int val)
 {
     int cpld_data = 0;
     int mask = 0;
-    int rc = -1;
+    int rc = -80;
 
     if (val >= (1 << nbits)) {
         pal_mem_trace("Incompatible value and mask\n");
-        return -1;
+        return -81;
     }
 
     mask = (1 << nbits) - 1;
@@ -349,13 +349,13 @@ cpld_reg_bits_set(int reg, int bit, int nbits, int val)
 
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -82;
     }
     cpld_data = cpld_read(reg);
     if (cpld_data == -1) {
         if (!pal_wr_unlock(CPLDLOCK)) {
             pal_mem_trace("Failed to unlock.\n");
-            return -1;
+            return -83;
         }
         return cpld_data;
     }
@@ -363,7 +363,7 @@ cpld_reg_bits_set(int reg, int bit, int nbits, int val)
     rc = cpld_write(reg, cpld_data);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -84;
     }
     return rc;
 }
@@ -373,16 +373,16 @@ cpld_reg_bit_reset(int reg, int bit)
 {
     int cpld_data = 0;
     int mask = 0x01 << bit;
-    int rc = -1;
+    int rc = -90;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -91;
     }
     cpld_data = cpld_read(reg);
     if (cpld_data == -1) {
         if (!pal_wr_unlock(CPLDLOCK)) {
             pal_mem_trace("Failed to unlock.\n");
-            return -1;
+            return -92;
         }
         return cpld_data;
     }
@@ -390,7 +390,7 @@ cpld_reg_bit_reset(int reg, int bit)
     rc = cpld_write(reg, cpld_data);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -93;
     }
     return rc;
 }
@@ -401,12 +401,12 @@ cpld_reg_rd(uint8_t reg)
     int value = 0;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -100;
     }
     value = cpld_read(reg);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -101;
     }
     return value;
 }
@@ -414,15 +414,15 @@ cpld_reg_rd(uint8_t reg)
 int
 cpld_reg_wr(uint8_t reg, uint8_t data)
 {
-    int rc = -1;
+    int rc = -110;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -111;
     }
     rc = cpld_write(reg, data);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -112;
     }
     return rc;
 }
@@ -432,7 +432,7 @@ int cpld_mdio_rd(uint8_t addr, uint16_t* data, uint8_t phy)
     uint8_t data_lo, data_hi;
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -120;
     }
     cpld_write(MDIO_CRTL_HI_REG, addr);
     cpld_write(MDIO_CRTL_LO_REG, (phy << 3) | MDIO_RD_ENA | MDIO_ACC_ENA);
@@ -452,7 +452,7 @@ int cpld_mdio_wr(uint8_t addr, uint16_t data, uint8_t phy)
 {
     if (!pal_wr_lock(CPLDLOCK)) {
         pal_mem_trace("Could not lock pal.lck\n");
-        return -1;
+        return -130;
     }
     cpld_write(MDIO_CRTL_HI_REG, addr);
     cpld_write(MDIO_DATA_LO_REG, (data & 0xFF));
@@ -462,7 +462,7 @@ int cpld_mdio_wr(uint8_t addr, uint16_t data, uint8_t phy)
     cpld_write(MDIO_CRTL_LO_REG, 0);
     if (!pal_wr_unlock(CPLDLOCK)) {
         pal_mem_trace("Failed to unlock.\n");
-        return -1;
+        return -131;
     }
     return 0;
 }

@@ -41,6 +41,12 @@
 #include "nic/sdk/lib/runenv/runenv.h"
 #include "nic/sdk/platform/pciemgr_if/include/pciemgr_if.hpp"
 
+// Each PAL CPLD access that fails to acquire the file lock burns
+// 50 msec.  This additional retry at the application level means
+// the program will give up after 3 seconds and be restarted.
+#define RETRY_LIMIT    40
+#define RETRY_DELAY    (25 * 1000)    // 25 msec
+
 // CPLD to Capri gpio interrupt pin
 #define CPLD_CAPRI_INT_GPIO    0
 
@@ -103,7 +109,7 @@ static int dev_fd;
 static int
 cpldmon_exit(const char *msg, int ret)
 {
-    if (close(dev_fd) == -1)
+    if (close(dev_fd) < 0)
         CLOG_ERROR("Failed to close /dev/gpiochip0");
     CLOG_ERROR("{} ({})", msg, ret);
     closelog();
@@ -188,10 +194,44 @@ dump_cpld_extended_int_status(int ext_int_status) {
 }
 
 static int
+cpld_reg_rd_retry(int cpldreg)
+{
+    int cnt = 1;
+    int ret;
+
+    do {
+        ret = cpld_reg_rd(cpldreg);
+        if (ret < 0) {
+            CLOG_INFO("cpld read error {} reg {}", ret, cpldreg);
+            usleep(RETRY_DELAY);
+        }
+    } while ((ret < 0) && (++cnt <= RETRY_LIMIT));
+
+    return ret;
+}
+
+static int
+cpld_reg_wr_retry(int cpldreg, uint8_t regval)
+{
+    int cnt = 1;
+    int ret;
+
+    do {
+        ret = cpld_reg_wr(cpldreg, regval);
+        if (ret < 0) {
+            CLOG_INFO("cpld write error {} reg {}", ret, cpldreg);
+            usleep(RETRY_DELAY);
+        }
+    } while ((ret < 0) && (++cnt <= RETRY_LIMIT));
+
+    return ret;
+}
+
+static int
 get_cpld_int_enable()
 {
-    int ret = cpld_reg_rd(CPLD_REGISTER_INTERRUPT_ENABLE);
-    if (ret == -1)
+    int ret = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_ENABLE);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld interrupt enable register", ret);
     if (debug)
         dump_cpld_int_enable(ret);
@@ -201,8 +241,8 @@ get_cpld_int_enable()
 static int
 get_cpld_int_status()
 {
-    int ret = cpld_reg_rd(CPLD_REGISTER_INTERRUPT_STATUS);
-    if (ret == -1)
+    int ret = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_STATUS);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld interrupt status register", ret);
     if (debug)
         dump_cpld_int_status(ret);
@@ -212,8 +252,8 @@ get_cpld_int_status()
 static int
 get_cpld_extended_int_enable()
 {
-    int ret = cpld_reg_rd(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
-    if (ret == -1)
+    int ret = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld extended interrupt enable register", ret);
     if (debug)
         dump_cpld_extended_int_enable(ret);
@@ -223,8 +263,8 @@ get_cpld_extended_int_enable()
 static int
 get_cpld_extended_int_status()
 {
-    int ret = cpld_reg_rd(CPLD_REGISTER_EXT_INTERRUPT_STATUS);
-    if (ret == -1)
+    int ret = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_STATUS);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld extended interrupt status register", ret);
     if (debug)
         dump_cpld_extended_int_status(ret);
@@ -239,19 +279,19 @@ cpld_clear_enable_interrupt(uint8_t interrupt)
     int ret;
 
     // Clear
-    cpld_reg = cpld_reg_rd(CPLD_REGISTER_INTERRUPT_ENABLE);
-    if (cpld_reg == -1) {
+    cpld_reg = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_ENABLE);
+    if (cpld_reg < 0) {
         cpldmon_exit("Error reading cpld interrupt enable register", ret);
     } else {
         regval = cpld_reg & ~interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld interrupt enable register", ret);
     }
     // Enable
     regval = cpld_reg | interrupt;
-    ret = cpld_reg_wr(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
-    if (ret == -1)
+    ret = cpld_reg_wr_retry(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
+    if (ret < 0)
         cpldmon_exit("Error writing cpld interrupt enable register", ret);
     return 0;
 }
@@ -264,19 +304,19 @@ cpld_clear_enable_extended_interrupt(uint8_t interrupt)
     int ret;
 
     // Clear
-    cpld_reg = cpld_reg_rd(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
-    if (cpld_reg == -1) {
+    cpld_reg = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
+    if (cpld_reg < 0) {
         cpldmon_exit("Error reading cpld extended interrupt enable register", ret);
     } else {
         regval = cpld_reg & ~interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld extended interrupt enable register", ret);
     }
     // Enable
     regval = cpld_reg | interrupt;
-    ret = cpld_reg_wr(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
-    if (ret == -1)
+    ret = cpld_reg_wr_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
+    if (ret < 0)
         cpldmon_exit("Error writing cpld extended interrupt enable register", ret);
     return 0;
 }
@@ -287,13 +327,13 @@ cpld_enable_interrupt(uint8_t interrupt)
     int ret;
     uint8_t regval;
 
-    ret = cpld_reg_rd(CPLD_REGISTER_INTERRUPT_ENABLE);
-    if (ret == -1) {
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_ENABLE);
+    if (ret < 0) {
         cpldmon_exit("Error reading cpld interrupt enable register", ret);
     } else {
         regval = ret | interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld interrupt enable register", ret);
         if (debug)
             CLOG_INFO("{}: Interrupt enable register 0x{}", __func__, regval);
@@ -307,13 +347,13 @@ cpld_disable_interrupt(uint8_t interrupt)
     int ret;
     uint8_t regval;
 
-    ret = cpld_reg_rd(CPLD_REGISTER_INTERRUPT_ENABLE);
-    if (ret == -1) {
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_ENABLE);
+    if (ret < 0) {
         cpldmon_exit("Error reading cpld interrupt enable register", ret);
     } else {
         regval = ret & ~interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld interrupt enable register", ret);
         if (debug)
             CLOG_INFO("{}: Interrupt enable register 0x{}", __func__, regval);
@@ -327,13 +367,13 @@ cpld_enable_extended_interrupt(uint8_t interrupt)
     int ret;
     uint8_t regval;
    
-    ret = cpld_reg_rd(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
-    if (ret == -1) {
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
+    if (ret < 0) {
         cpldmon_exit("Error reading cpld extended interrupt register", ret);
     } else {
         regval = ret | interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld extended interrupt register", ret);
         if (debug)
             CLOG_INFO("{}: Extended interrupt enable register 0x{}", __func__, regval);
@@ -347,13 +387,13 @@ cpld_disable_extended_interrupt(uint8_t interrupt)
     int ret;
     uint8_t regval;
 
-    ret = cpld_reg_rd(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
-    if (ret == -1) {
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
+    if (ret < 0) {
         cpldmon_exit("Error reading cpld extended interrupt register", ret);
     } else {
         regval = ret & ~interrupt;
-        ret = cpld_reg_wr(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
-        if (ret == -1)
+        ret = cpld_reg_wr_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
+        if (ret < 0)
             cpldmon_exit("Error writing cpld extended interrupt register", ret);
         if (debug)
             CLOG_INFO("{}: Extended interrupt enable register 0x{}", __func__, regval);
@@ -384,8 +424,8 @@ bool
 naples25_swm(void) {
     int ret;
 
-    ret = cpld_reg_rd(CPLD_REGISTER_ID);
-    if (ret == -1)
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_ID);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld id register", ret);
     if (ret == CPLD_ID_NAPLES25_SWM)
         return true;
@@ -396,8 +436,8 @@ bool
 naples25_ocp(void) {
     int ret;
 
-    ret = cpld_reg_rd(CPLD_REGISTER_ID);
-    if (ret == -1)
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_ID);
+    if (ret < 0)
         cpldmon_exit("Error reading cpld id register", ret);
     if (ret == CPLD_ID_NAPLES25_OCP)
         return true;
@@ -477,13 +517,8 @@ main(int argc, char *argv[])
 
     // Operational details
     // - The CPLD interrupt enable bit needs to be set for valid status.
-    // - CPLD read or write failure results in program exit.
+    // - Persistent CPLD read or write failure results in program exit.
     // - Restartable flag is set for this daemon in sysmgr.
-
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGQUIT, SIG_IGN);
-    signal(SIGINT, SIG_IGN);
-    signal(SIGHUP, SIG_IGN);
 
     CLOG_INFO("STARTING");
 
@@ -506,8 +541,8 @@ main(int argc, char *argv[])
 
     // Currently only Naples25 SWM and OCP cards have response timing
     // that requires use of the CPLD to Capri interrupt.
-    ret = cpld_reg_rd(CPLD_REGISTER_ID);
-    if (ret == -1) {
+    ret = cpld_reg_rd_retry(CPLD_REGISTER_ID);
+    if (ret < 0) {
         cpldmon_exit("Error reading cpld id register", ret);
     } else {
         if (ret != CPLD_ID_NAPLES25_SWM && ret != CPLD_ID_NAPLES25_OCP) {
@@ -521,6 +556,9 @@ main(int argc, char *argv[])
     // Reboot after panic for single wire management cards otherwise
     // management over shared LOM will not recover without chassis power cycle.
     system("echo 1 > /sys/kernel/reboot/panic_reboot");
+
+    // Initialize pciemgr object for power mode change notifications.
+    class pciemgr *pciemgr = new class pciemgr("cpldmon");
 
     // Check PCIe standup mode.  If CPLD indicates ALOM is present
     // OR if it is OCP card (runenv does this checking for us) 
@@ -540,14 +578,29 @@ main(int argc, char *argv[])
         // Live status check
         if (cpld_cntl_reg & HOST_POWER_ON) {
             SET_HALF_CLOCK(0, 0);
+            pciemgr->powermode(FULL_POWER);
             sleep(2);
             if (get_card_power(&card_power) == 0)
-                CLOG_INFO("Main power is on, card power is now {} Watts", card_power);
+                CLOG_INFO("Main power is on, card power is now {} Watts",
+                          card_power);
+        } else {
+            // This matters for this sequence, otherwise no-op as u-boot
+            // handoff at low power.  Essentially always take action based
+            // on live status as the interrupt edge could be missed.
+            // - cpldmon starts and waiting on gpio interrupt
+            // - host power is on, ASIC at full power, pciemgrd notified
+            // - interrupt and there is a program exit due to PAL error
+            // - host power goes off before cpldmon is ready for interrupts
+            // - Therefore, set capri clock to match host power state
+            //   here during live status check
+            CLOG_INFO("Live status check, main power is off");
+            SET_QUARTER_CLOCK_MODE(0, 0);
         }
     }
     else {
         CLOG_INFO("NCSI feature not enabled, core clock set to 416 MHz");
         SET_HALF_CLOCK(0, 0);
+        pciemgr->powermode(FULL_POWER);
         sleep(2);
         if (get_card_power(&card_power) == 0)
             CLOG_INFO("Card power {} Watts", card_power);
@@ -555,7 +608,7 @@ main(int argc, char *argv[])
 
     // Configure CPLD to Capri GPIO interrupt
     dev_fd = open(device_name, 0);
-    if (dev_fd == -1) {
+    if (dev_fd < 0) {
         ret = -errno;
         cpldmon_exit("Failed to open /dev/gpiochip0", ret);
     }
@@ -572,13 +625,13 @@ main(int argc, char *argv[])
     strcpy(req.consumer_label, "cpld-capri-gpio");
 
     ret = ioctl(dev_fd, GPIO_GET_LINEEVENT_IOCTL, &req);
-    if (ret == -1) {
+    if (ret < 0) {
         cpldmon_exit("gpio get lineevent ioctl error", -errno);
     }
 
     /* Read initial states */
     ret = ioctl(req.fd, GPIOHANDLE_GET_LINE_VALUES_IOCTL, &data);
-    if (ret == -1) {
+    if (ret < 0) {
         ret = -errno;
         cpldmon_exit("gpiohandle get line values ioctl error", ret);
     }
@@ -610,13 +663,10 @@ main(int argc, char *argv[])
     //cpld_clear_enable_interrupt(SFP_P2_ERROR);
     //cpld_clear_enable_interrupt(TEST_INTERRUPT);
 
-    // Initialize pciemgr object for power mode change notifications.
-    class pciemgr *pciemgr = new class pciemgr("cpldmon");
-
     // Main loop responds to CPLD to Capri interrupt
     while (1) {
         ret = read(req.fd, &event, sizeof(event));
-        if (ret == -1) {
+        if (ret < 0) {
             if (errno == -EAGAIN) {
                 CLOG_WARN("No event");
                 continue;

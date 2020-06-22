@@ -7,7 +7,7 @@
 #define MAXFILENAME 128
 
 // Lock failure retry
-#define RETRY_LIMIT    4
+#define RETRY_LIMIT    5
 #define RETRY_DELAY    (10 * 1000)    // 10 msec
 
 typedef struct {
