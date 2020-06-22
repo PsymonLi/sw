@@ -8,9 +8,20 @@ testcases:
         testcase: testcases.networking.athena_app_no_dpdk_verify
         enable  : True
 
-#    -   name    : Verify_KNI_Ping
-#        testcase: testcases.networking.kni_ping
-#        enable  : True
+    -   name    : Setup_KNI
+        testcase: testcases.networking.kni_setup
+        enable  : True
+
+    -   name    : Verify_KNI_Traffic
+        testcase: testcases.networking.kni_traffic
+        enable  : True
+        iterators :
+            type         : nested
+            traffic_type : ['ping', 'TCP', 'UDP']
+
+    -   name    : Teardown_KNI
+        testcase: testcases.networking.kni_teardown
+        enable  : True
 
     -   name    : Pdsctl_Port_Cmd
         testcase: testcases.networking.pdsctl_port

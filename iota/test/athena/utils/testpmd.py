@@ -15,11 +15,13 @@ def ParseArgs(_args):
 
     return args
 
-def __start_testpmd(req, node, cmd, background=True):
+def __start_testpmd(req, node, cmd):
 
-    api.Trigger_AddNaplesCommand(req, node, cmd, background)
+    devices = api.GetDeviceNames(node)
+    for device in devices:
+        api.Trigger_AddNaplesCommand(req, node, cmd, device, background=True)
 
-def StartTestpmd(req, node, common_args=None, args=None, background=True):
+def StartTestpmd(req, node, common_args=None, args=None):
 
     cmd = __CMDBASE
     if common_args is not None:
@@ -28,4 +30,4 @@ def StartTestpmd(req, node, common_args=None, args=None, background=True):
             cmd = cmd + __CMDSEP + '--'
             cmd = cmd + __CMDSEP + ParseArgs(args)
 
-    return __start_testpmd(req, node, cmd, background)
+    return __start_testpmd(req, node, cmd)
