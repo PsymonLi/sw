@@ -2693,7 +2693,9 @@ Eth::QuiesceEventHandler(bool quiesce)
 
     /* HAL will bringdown the real ports so devices bound to those ports will
        get a link event. Generate a link down event here for fake ports. */
-    if (spec->uplink_port_num != 0) {
+    if (spec->uplink_port_num != 0 ||
+        spec->eth_type == ETH_HOST ||
+        spec->eth_type == ETH_MNIC_INBAND_MGMT) {
         return;
     }
 
