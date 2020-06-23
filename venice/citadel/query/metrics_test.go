@@ -883,10 +883,8 @@ func TestValidateQuerySpec(t *testing.T) {
 				Function:  "max",
 				SortOrder: telemetry_query.SortOrder_Ascending.String(),
 			},
-			errMsgs: []string{
-				"Function max requires exactly one field",
-			},
-			pass: false,
+			errMsgs: []string{},
+			pass:    true,
 		},
 		{
 			desc: "valid Max function query",
@@ -911,10 +909,84 @@ func TestValidateQuerySpec(t *testing.T) {
 				Fields:    []string{"f1", "f2"},
 				SortOrder: telemetry_query.SortOrder_Ascending.String(),
 			},
-			errMsgs: []string{
-				"Function max requires exactly one field",
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "Min function with no field",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "min",
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
 			},
-			pass: false,
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "valid Min function query",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "min",
+				Fields:    []string{"f1"},
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
+			},
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "Min function query with more than one field",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "min",
+				Fields:    []string{"f1", "f2"},
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
+			},
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "Median function with no field",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "median",
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
+			},
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "valid Median function query",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "median",
+				Fields:    []string{"f1"},
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
+			},
+			errMsgs: []string{},
+			pass:    true,
+		},
+		{
+			desc: "Median function query with more than one field",
+			qs: &telemetry_query.MetricsQuerySpec{
+				TypeMeta: api.TypeMeta{
+					Kind: "Node",
+				},
+				Function:  "median",
+				Fields:    []string{"f1", "f2"},
+				SortOrder: telemetry_query.SortOrder_Ascending.String(),
+			},
+			errMsgs: []string{},
+			pass:    true,
 		},
 		{
 			desc: "Mean query with no fields",

@@ -40,6 +40,7 @@ export enum Telemetry_queryMetricsQuerySpec_function {
     'last' = "last",
     'top' = "top",
     'bottom' = "bottom",
+    'min' = "min",
 }
 
 export enum Telemetry_queryMetricsQuerySpec_sort_order {

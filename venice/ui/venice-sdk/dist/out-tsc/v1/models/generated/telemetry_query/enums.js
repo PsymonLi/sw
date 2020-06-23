@@ -42,6 +42,7 @@ var Telemetry_queryMetricsQuerySpec_function;
     Telemetry_queryMetricsQuerySpec_function["last"] = "last";
     Telemetry_queryMetricsQuerySpec_function["top"] = "top";
     Telemetry_queryMetricsQuerySpec_function["bottom"] = "bottom";
+    Telemetry_queryMetricsQuerySpec_function["min"] = "min";
 })(Telemetry_queryMetricsQuerySpec_function = exports.Telemetry_queryMetricsQuerySpec_function || (exports.Telemetry_queryMetricsQuerySpec_function = {}));
 var Telemetry_queryMetricsQuerySpec_sort_order;
 (function (Telemetry_queryMetricsQuerySpec_sort_order) {

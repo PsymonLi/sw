@@ -89,14 +89,14 @@ func (q *Server) validateMetricsQuerySpec(qs *telemetry_query.MetricsQuerySpec) 
 	}
 
 	switch qs.Function {
-	case telemetry_query.TsdbFunctionType_MAX.String(),
-		telemetry_query.TsdbFunctionType_TOP.String(),
-		telemetry_query.TsdbFunctionType_BOTTOM.String():
-
-		// Can only specify one field
-		if len(qs.Fields) != 1 {
-			errorStrings = append(errorStrings, "Function "+qs.Function+" requires exactly one field")
-		}
+	case telemetry_query.TsdbFunctionType_TOP.String():
+		//none
+	case telemetry_query.TsdbFunctionType_BOTTOM.String():
+		//none
+	case telemetry_query.TsdbFunctionType_MAX.String():
+		//none
+	case telemetry_query.TsdbFunctionType_MIN.String():
+		//none
 	case telemetry_query.TsdbFunctionType_MEAN.String():
 		//none
 	case telemetry_query.TsdbFunctionType_MEDIAN.String():
@@ -275,7 +275,9 @@ func buildCitadelMetricsQuery(qs *telemetry_query.MetricsQuerySpec) (string, err
 			for _, field := range selectedFields {
 				newFields = append(newFields, fmt.Sprintf("%s(%s)", qs.Function, field))
 			}
-			if qs.Function == telemetry_query.TsdbFunctionType_MAX.String() {
+			if (qs.Function == telemetry_query.TsdbFunctionType_MAX.String() ||
+				qs.Function == telemetry_query.TsdbFunctionType_MIN.String()) &&
+				len(selectedFields) == 1 && !strings.Contains(newFields[0], "*") {
 				// We add * to select the other fields to give the max query context
 				newFields = append(newFields, "*")
 			}

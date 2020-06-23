@@ -653,7 +653,8 @@
             "difference",
             "last",
             "top",
-            "bottom"
+            "bottom",
+            "min"
           ],
           "default": "none",
           "description": "Functions specify an operation function to be applied, example mean()/max()."

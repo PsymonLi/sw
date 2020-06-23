@@ -22,6 +22,7 @@ enum TsdbFunctionType {
     LAST       = 6; // pick the entry with the most recent timestamp
     TOP        = 7; // pick top 10 entries
     BOTTOM     = 8; // pick bottom 10 entries
+    MIN        = 9; // returns minimum of the fields
 }
 
 enum SortOrder {

@@ -35,6 +35,7 @@ var TsdbFunctionType_normal = map[string]string{
 	"max":        "max",
 	"mean":       "mean",
 	"median":     "median",
+	"min":        "min",
 	"none":       "none",
 	"top":        "top",
 }
@@ -49,6 +50,7 @@ var TsdbFunctionType_vname = map[int32]string{
 	6: "last",
 	7: "top",
 	8: "bottom",
+	9: "min",
 }
 
 var TsdbFunctionType_vvalue = map[string]int32{
@@ -61,6 +63,7 @@ var TsdbFunctionType_vvalue = map[string]int32{
 	"last":       6,
 	"top":        7,
 	"bottom":     8,
+	"min":        9,
 }
 
 func (x TsdbFunctionType) String() string {
