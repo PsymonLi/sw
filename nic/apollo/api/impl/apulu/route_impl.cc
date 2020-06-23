@@ -95,8 +95,6 @@ route_table_impl::clone(void) {
 
     cloned_impl = route_table_impl_db()->alloc();
     new (cloned_impl) route_table_impl();
-    // deep copy is not needed as we don't store pointers
-    *cloned_impl = *this;
     return cloned_impl;
 }
 

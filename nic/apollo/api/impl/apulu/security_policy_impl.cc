@@ -53,8 +53,7 @@ security_policy_impl::clone(void) {
 
     cloned_impl = security_policy_impl_db()->alloc();
     new (cloned_impl) security_policy_impl();
-    // deep copy is not needed as we don't store pointers
-    *cloned_impl = *this;
+    cloned_impl->class_ids_ = this->class_ids_;
     return cloned_impl;
 }
 
