@@ -97,6 +97,7 @@ sdk_ret_t capri_txs_scheduler_tx_reserve(uint32_t reserve_offset,
  */
 sdk_ret_t capri_txs_policer_lif_params_update(uint32_t hw_lif_id,
                                               capri_txs_policer_lif_params_t *txs_hw_params);
+sdk_ret_t capri_txs_policer_lif_params_delete(uint32_t hw_lif_id);
 
 typedef struct capri_txs_scheduler_cos_stats_s {
     uint32_t cos;

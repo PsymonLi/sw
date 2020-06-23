@@ -326,7 +326,7 @@ capri_txs_scheduler_lif_params_update (uint32_t hw_lif_id,
     lif_cos_bmp = txs_hw_params->cos_bmp;
     if ((hw_lif_id >= CAPRI_TXS_MAX_TABLE_ENTRIES) ||
         (txs_hw_params->sched_table_offset >= CAPRI_TXS_MAX_TABLE_ENTRIES)) {
-        SDK_TRACE_ERR("CAPRI-TXS::%s: Invalid parameters to function %u,%u",__func__, hw_lif_id,
+        SDK_TRACE_ERR("Invalid parameters to function %u,%u", hw_lif_id,
                        txs_hw_params->sched_table_offset);
         return SDK_RET_INVALID_ARG;
     }
@@ -380,7 +380,7 @@ capri_txs_policer_lif_params_update (uint32_t hw_lif_id,
 
     if ((hw_lif_id >= CAPRI_TXS_MAX_TABLE_ENTRIES) ||
         (txs_hw_params->sched_table_end_offset >= CAPRI_TXS_MAX_TABLE_ENTRIES)) {
-        SDK_TRACE_ERR("CAPRI-TXS::%s: Invalid parameters to function %u,%u",__func__, hw_lif_id,
+        SDK_TRACE_ERR("Invalid parameters to function %u,%u", hw_lif_id,
                        txs_hw_params->sched_table_end_offset);
         return SDK_RET_INVALID_ARG;
     }
@@ -396,6 +396,25 @@ capri_txs_policer_lif_params_update (uint32_t hw_lif_id,
                     "for hw-lif-id %u", txs_hw_params->sched_table_start_offset,
                      txs_hw_params->sched_table_end_offset, hw_lif_id);
 
+    return SDK_RET_OK;
+}
+
+sdk_ret_t
+capri_txs_policer_lif_params_delete (uint32_t hw_lif_id)
+{
+    cap_top_csr_t &cap0 = g_capri_state_pd->cap_top();
+    cap_txs_csr_t &txs_csr = cap0.txs.txs;
+
+    if (hw_lif_id >= CAPRI_TXS_MAX_TABLE_ENTRIES) {
+        SDK_TRACE_ERR("Invalid parameters to function %u", hw_lif_id);
+        return SDK_RET_INVALID_ARG;
+    }
+
+    // program mapping from rate-limiter-table entry (indexed by hw-lif-id) to scheduler table entries.
+    // the scheduler table entries (also called Rate-limiter-group, RLG)  will be paused when rate-limiter entry goes red.
+    txs_csr.dhs_sch_rlid_map_sram.entry[hw_lif_id].read();
+    txs_csr.dhs_sch_rlid_map_sram.entry[hw_lif_id].clear();
+    txs_csr.dhs_sch_rlid_map_sram.entry[hw_lif_id].write();
     return SDK_RET_OK;
 }
 

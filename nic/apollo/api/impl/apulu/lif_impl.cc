@@ -151,35 +151,45 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
     uint64_t refresh_interval_us = SDK_DEFAULT_POLICER_REFRESH_INTERVAL;
     tx_table_s5_t4_lif_rate_limiter_table_actiondata_t rlimit_data = { 0 };
 
-    rlimit_data.action_id =
-        TX_TABLE_S5_T4_LIF_RATE_LIMITER_TABLE_TX_STAGE5_LIF_EGRESS_RL_PARAMS_ID;
-    if (policer->rate == 0) {
-        rlimit_data.lif_egress_rl_params.entry_valid = 0;
-    } else {
-        rlimit_data.lif_egress_rl_params.entry_valid = 1;
-        rlimit_data.lif_egress_rl_params.pkt_rate =
-            (policer->type ==
-                      sdk::qos::policer_type_t::POLICER_TYPE_PPS) ? 1 : 0;
-        rlimit_data.lif_egress_rl_params.rlimit_en = 1;
-        ret = sdk::qos::policer_to_token_rate(
-                                         policer, refresh_interval_us,
-                                         SDK_MAX_POLICER_TOKENS_PER_INTERVAL,
-                                         &rate_tokens, &burst_tokens);
+    if (policer) {
+        rlimit_data.action_id =
+            TX_TABLE_S5_T4_LIF_RATE_LIMITER_TABLE_TX_STAGE5_LIF_EGRESS_RL_PARAMS_ID;
+        if (policer->rate == 0) {
+            rlimit_data.lif_egress_rl_params.entry_valid = 0;
+        } else {
+            rlimit_data.lif_egress_rl_params.entry_valid = 1;
+            rlimit_data.lif_egress_rl_params.pkt_rate =
+                (policer->type ==
+                          sdk::qos::policer_type_t::POLICER_TYPE_PPS) ? 1 : 0;
+            rlimit_data.lif_egress_rl_params.rlimit_en = 1;
+            ret = sdk::qos::policer_to_token_rate(
+                                             policer, refresh_interval_us,
+                                             SDK_MAX_POLICER_TOKENS_PER_INTERVAL,
+                                             &rate_tokens, &burst_tokens);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Error converting rate to token rate, err %u", ret);
+                return ret;
+            }
+            memcpy(rlimit_data.lif_egress_rl_params.burst, &burst_tokens,
+                   sizeof(rlimit_data.lif_egress_rl_params.burst));
+            memcpy(rlimit_data.lif_egress_rl_params.rate, &rate_tokens,
+                   sizeof(rlimit_data.lif_egress_rl_params.rate));
+        }
+        ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_withid(&rlimit_data,
+                                                                  id_, NULL);
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Error converting rate to token rate, err %u", ret);
+            PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
+                          key_.str(), ret);
             return ret;
         }
-        memcpy(rlimit_data.lif_egress_rl_params.burst, &burst_tokens,
-               sizeof(rlimit_data.lif_egress_rl_params.burst));
-        memcpy(rlimit_data.lif_egress_rl_params.rate, &rate_tokens,
-               sizeof(rlimit_data.lif_egress_rl_params.rate));
-    }
-    ret = lif_impl_db()->tx_rate_limiter_tbl()->insert_withid(&rlimit_data,
-                                                              id_, NULL);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
-                      key_.str(), ret);
-        return ret;
+    } else {
+        // remove tx policer
+        ret = lif_impl_db()->tx_rate_limiter_tbl()->remove(id_);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("LIF_TX_POLICER table write failure, lif %s, err %u",
+                          key_.str(), ret);
+            return ret;
+        }
     }
 
     lif_scheduler_params.lif_id = id_;
@@ -188,11 +198,20 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
     lif_scheduler_params.tx_sched_num_table_entries = tx_sched_num_entries_;
     lif_scheduler_params.total_qcount = total_qcount_;
     lif_scheduler_params.cos_bmp = cos_bmp_;
-    // Program mapping from rate-limiter-table to scheduler-table rate-limiter-group (RLG) for pausing.
-    ret = sdk::asic::pd::asicpd_tx_policer_program(&lif_scheduler_params);
-    if (ret != SDK_RET_OK) {
-        PDS_TRACE_ERR("lif %s unable to program hw for tx policer", key_.str());
-        return ret;
+    if (policer) {
+        // program mapping from rate-limiter-table to scheduler-table rate-limiter-group (RLG) for pausing.
+        ret = sdk::asic::pd::asicpd_tx_policer_program(&lif_scheduler_params);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("lif %s unable to program hw for tx policer", key_.str());
+            return ret;
+        }
+    } else {
+        // remove tx policer
+        ret = sdk::asic::pd::asicpd_tx_policer_cleanup(&lif_scheduler_params);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("lif %s unable to cleanup hw for tx policer", key_.str());
+            return ret;
+        }
     }
 
     return SDK_RET_OK;

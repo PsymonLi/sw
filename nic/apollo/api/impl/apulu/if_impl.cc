@@ -228,11 +228,15 @@ sdk_ret_t
 if_impl::activate_host_if_(if_entry *intf, if_entry *orig_intf,
                            pds_if_spec_t *spec, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
+    if_index_t if_index;
     ::core::event_t event;
+    pds_obj_key_t lif_key;
     sdk::qos::policer_t policer;
     pds_policer_info_t policer_info;
-    lif_impl *lif = (lif_impl *)lif_impl_db()->find(&spec->key);
 
+    if_index = LIF_IFINDEX(HOST_IFINDEX_TO_IF_ID(objid_from_uuid(spec->key)));
+    lif_key = uuid_from_objid(if_index);
+    lif_impl *lif = (lif_impl *)lif_impl_db()->find(&lif_key);
     if (!lif) {
         PDS_TRACE_ERR("activate host if %s failed, lif %s not found",
                       intf->key2str().c_str(), spec->key.str());
@@ -261,8 +265,9 @@ if_impl::activate_host_if_(if_entry *intf, if_entry *orig_intf,
             ret = lif->program_tx_policer(&policer);
             SDK_ASSERT(ret == SDK_RET_OK);
         } else if (orig_intf->host_if_tx_policer() != k_pds_obj_key_invalid) {
-            // we have to clean up the previous policer programming
-            // TODO: @rsrikanth please handle this case
+            // clean up policer programming
+            ret = lif->program_tx_policer(NULL);
+            SDK_ASSERT(ret == SDK_RET_OK);
         }
     }
 

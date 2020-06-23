@@ -71,6 +71,7 @@ asicpd_tx_scheduler_map_reserve (asicpd_scheduler_lif_params_t *lif)
 {
     // TODO
     SDK_ASSERT(0);
+    return SDK_RET_ERR;
 }
 
 sdk_ret_t
@@ -177,6 +178,14 @@ asicpd_tx_policer_program (asicpd_scheduler_lif_params_t *lif)
     }
 end:
     return ret;
+}
+
+sdk_ret_t
+asicpd_tx_policer_cleanup (asicpd_scheduler_lif_params_t *lif)
+{
+    // TODO
+    SDK_ASSERT(0);
+    return SDK_RET_ERR;
 }
 
 }    // namespace pd

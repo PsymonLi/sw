@@ -175,6 +175,21 @@ end:
     return ret;
 }
 
+sdk_ret_t
+asicpd_tx_policer_cleanup (asicpd_scheduler_lif_params_t *lif)
+{
+    sdk_ret_t ret = SDK_RET_OK;
+
+    if (lif) {
+        ret = capri_txs_policer_lif_params_delete(lif->hw_lif_id);
+        if (ret != SDK_RET_OK) {
+            SDK_TRACE_ERR("lif_id %u,failed to delete tx policer lif params in hw",
+                           lif->lif_id);
+        }
+    }
+    return ret;
+}
+
 }    // namespace pd
 }    // namespace asic
 }    // namespace sdk

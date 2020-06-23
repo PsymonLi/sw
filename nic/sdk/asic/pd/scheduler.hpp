@@ -21,6 +21,7 @@ sdk_ret_t asicpd_tx_scheduler_map_free(asicpd_scheduler_lif_params_t *lif);
 sdk_ret_t asicpd_tx_scheduler_map_program(asicpd_scheduler_lif_params_t *lif);
 sdk_ret_t asicpd_tx_scheduler_map_cleanup(asicpd_scheduler_lif_params_t *lif);
 sdk_ret_t asicpd_tx_policer_program(asicpd_scheduler_lif_params_t *lif);
+sdk_ret_t asicpd_tx_policer_cleanup(asicpd_scheduler_lif_params_t *lif);
 sdk_ret_t asicpd_tx_scheduler_map_reserve(asicpd_scheduler_lif_params_t *lif);
 
 }   // namespace pd
