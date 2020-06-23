@@ -23,11 +23,7 @@ if [ "$1" = "register" ]; then
 		easy_install pip
 		pip install pyyaml
 
-		yum install -y rh-python36
-		yum install -y rh-python36-setuptools
-		ln -s /opt/rh/rh-python36/root/usr/bin/python3.6 /usr/bin/python3
-		ln -s /opt/rh/rh-python36/root/usr/bin/pip3.6 /usr/bin/pip3
-		#easy_install-3.6 pip
+		yum install -y rh-python3
 		pip3 install --upgrade pip
 		pip3 install pyyaml
 
