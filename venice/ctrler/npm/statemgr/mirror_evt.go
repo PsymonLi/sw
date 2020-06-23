@@ -346,6 +346,11 @@ func (mss *MirrorSessionState) programMirrorSession(ms *monitoring.MirrorSession
 		mss.MirrorSession.Status.ScheduleState = monitoring.MirrorSessionState_STOPPED.String()
 		mss.expTimer = nil
 	}
+
+	if mss.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION ||
+		mss.State == monitoring.MirrorSessionState_SCHEDULED {
+		mss.MirrorSession.Write()
+	}
 }
 
 // MirrorSessionStateFromObj conerts from memdb object to network state
@@ -436,7 +441,6 @@ func (smm *SmMirrorSessionInterface) handleMirrorSessionTimerEvent(et mirrorTime
 
 		if mss.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION ||
 			mss.State == monitoring.MirrorSessionState_SCHEDULED {
-			mss.MirrorSession.Write()
 		}
 		smm.addMirror(mss)
 	case mirrorExpTimer:
@@ -568,7 +572,6 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionCreate(obj *ctkit.MirrorSess
 
 	if ms.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION ||
 		ms.State == monitoring.MirrorSessionState_SCHEDULED {
-		ms.MirrorSession.Write()
 		return nil
 	}
 

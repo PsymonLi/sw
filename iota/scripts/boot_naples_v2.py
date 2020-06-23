@@ -477,13 +477,19 @@ class NaplesManagement(EntityManagement):
             raise Exception("Clear line failed ")
 
     def __run_dhclient(self):
-        try:
-            self.SendlineExpect("dhclient " + GlobalOptions.mgmt_intf, "#", timeout = 10)
-            return True
-        except:
-            #Send Ctrl-c as we did not get IP
-            self.SendlineExpect('\003', "#")
-            return False
+        for _ in range(4):
+            try:
+                self.SendlineExpect("dhclient " + GlobalOptions.mgmt_intf, "#", timeout = 30)
+                print("dhclient success")
+                return True
+            except:
+                #Send Ctrl-c as we did not get IP
+                self.clear_buffer()
+                self.SendlineExpect("", "#")
+                self.SyncLine()
+                continue
+        print("dhclient failed")
+        return False
 
     @_exceptionWrapper(_errCodes.NAPLES_LOGIN_FAILED, "Failed to login to naples")
     def __login(self, force_connect=True):
@@ -662,9 +668,11 @@ class NaplesManagement(EntityManagement):
             self.SSHPassInit()
             self.__is_oob_available = True
             return True
-        if not self.__run_dhclient():
-            self.__is_oob_available = False
-            return False
+        self.clear_buffer()
+        self.SendlineExpect("", "#")
+        self.SyncLine()
+        self.__run_dhclient()
+        self.SyncLine()
         if self.__read_ip(GlobalOptions.mgmt_intf):
             self.SSHPassInit()
             self.__is_oob_available = True
@@ -1433,10 +1441,10 @@ class PenOrchestrator:
                     print("failed to read firmware. error was: {0}".format(traceback.format_exc()))
 
         if self.__host:
-            if isinstance(self.__host, EsxHostManagement): 
-                self.__host.ctrl_vm_run("/usr/sbin/ifconfig -a", ignore_result=True)
-            else:
+            if not isinstance(self.__host, EsxHostManagement): 
                 self.__host.RunSshCmd("ifconfig -a", ignore_failure=True)
+                #self.__host.ctrl_vm_run("/usr/sbin/ifconfig -a", ignore_result=True)
+            #else:
 
     def __doNaplesReboot(self):
 
@@ -1633,11 +1641,11 @@ class PenOrchestrator:
 
 
 
-
         if GlobalOptions.only_mode_change == False and GlobalOptions.only_init == False:
             try:
                 for naples_inst in self.__naples:
                     naples_inst.Connect(force_connect=False)
+
                   #Read Naples Gold FW version if system in good state.
                     #If not able to read then we will reset
                     naples_inst.ReadGoldFwVersion()

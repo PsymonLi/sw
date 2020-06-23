@@ -142,7 +142,7 @@ func (it *integTestSuite) CreateEndpoint(tenant, namespace, net, epName, vmName,
 			HomingHostAddr:     hostAddr,
 			HomingHostName:     hostName,
 			MicroSegmentVlan:   usegVlan,
-			NodeUUID:           "testHost-0",
+			NodeUUID:           "0001.0000.0000",
 		},
 	}
 
