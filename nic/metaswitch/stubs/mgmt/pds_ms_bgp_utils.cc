@@ -424,9 +424,9 @@ bgp_peer_pre_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh)
             bgp_peer_fill_keys_(req, (bgp_peer_uuid_obj_t*)uuid_obj);
         } else if (uuid_obj->obj_type() != uuid_obj_type_t::BGP) {
             // non-matching UUID in get request
-            throw Error (std::string("BGP Peer get with non-matching UUID type ").
+            throw Error (std::string("BGP Peer request with incorrect UUID ").
                          append(uuid.str()).append(" of type ").
-                         append(uuid_obj_type_str(uuid_obj->obj_type())), 
+                         append(uuid_obj_type_str(uuid_obj->obj_type())),
                          SDK_RET_INVALID_ARG);
         }
     } else {
@@ -494,10 +494,10 @@ bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
             PDS_TRACE_VERBOSE("BGP Peer request with BGP UUID %s",
                               uuid.str());
         } else {
-            // non-matching UUID in get request
-            throw Error (std::string("BGP Peer with non-matching UUID type ").
-                         append(uuid.str()).append(" of type ").
-                         append(uuid_obj_type_str(uuid_obj->obj_type())), 
+            // non-matching UUID in set request
+            throw Error (std::string("BGP Peer request with duplicate UUID ").
+                         append(uuid.str()).append(". UUID already used for ").
+                         append(uuid_obj_type_str(uuid_obj->obj_type())),
                          SDK_RET_INVALID_ARG);
         }
     } else if (row_status != AMB_ROW_DESTROY) {
@@ -588,7 +588,7 @@ bgp_peer_afi_safi_pre_get(BGPPeerAfSpec &req,
             bgp_peer_af_fill_keys_(req, (bgp_peer_af_uuid_obj_t*)uuid_obj);
         } else {
             // non-matching UUID in get request
-            throw Error (std::string("BGP PeerAf get with non-matching UUID type ").
+            throw Error (std::string("BGP PeerAf request with incorrect UUID ").
                          append(uuid.str()).append(" of type ").
                          append(uuid_obj_type_str(uuid_obj->obj_type())), 
                          SDK_RET_INVALID_ARG);
@@ -660,10 +660,10 @@ bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
             PDS_TRACE_VERBOSE("BGP PeerAF request with BGP UUID %s",
                               uuid.str());
         } else {
-            // non-matching UUID in get request
-            throw Error (std::string("BGP PeerAF with non-matching UUID type ").
-                         append(uuid.str()).append(" of type ").
-                         append(uuid_obj_type_str(uuid_obj->obj_type())), 
+            // non-matching UUID in set request
+            throw Error (std::string("BGP PeerAf request with duplicate UUID ").
+                         append(uuid.str()).append(". UUID already used for ").
+                         append(uuid_obj_type_str(uuid_obj->obj_type())),
                          SDK_RET_INVALID_ARG);
         }
     } else if (row_status != AMB_ROW_DESTROY) {
