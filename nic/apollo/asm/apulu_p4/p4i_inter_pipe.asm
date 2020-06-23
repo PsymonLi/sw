@@ -104,7 +104,7 @@ ingress_to_rxdma2:
     phvwr           p.p4i_to_arm_ingress_bd_id, k.{vnic_metadata_bd_id}.hx
     phvwr           p.p4i_to_arm_vpc_id, k.{vnic_metadata_vpc_id}.hx
     phvwr           p.p4i_to_arm_lif, k.{capri_intrinsic_lif}.hx
-    phvwr           p.p4i_to_arm_mapping_xlate_id, k.{p4i_i2e_xlate_id}.hx
+    phvwr           p.p4i_to_arm_mapping_xlate_id, k.{p4i_i2e_xlate_id}.wx
 
     phvwr           p.p4i_to_arm_payload_offset, r6
     phvwr           p.offset_metadata_l3_1, r7[39:32]

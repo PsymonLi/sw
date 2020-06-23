@@ -10,7 +10,6 @@ header_type apulu_i2e_metadata_t {
         vpc_id              : 16;
         mapping_lkp_id      : 16;
         nexthop_id          : 16;
-        xlate_id            : 16;
         meter_enabled       : 1;
         rx_packet           : 1;
         nexthop_type        : 2;
@@ -26,6 +25,6 @@ header_type apulu_i2e_metadata_t {
         skip_stats_update   : 1;
         tx_policer_id       : 10;
         copp_class          : 4;
-        pad1                : 4;
+        xlate_id            : 20;
     }
 }

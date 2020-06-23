@@ -169,7 +169,8 @@ table ip_mac_binding {
 /******************************************************************************/
 action service_mapping_info(xlate_id) {
     // if hardware register indicates hit, take the results
-    modify_field(p4i_to_arm.service_xlate_id, xlate_id);
+    modify_field(scratch_metadata.xlate_id, xlate_id);
+    modify_field(p4i_to_arm.service_xlate_id, scratch_metadata.xlate_id);
 }
 
 @pragma stage 5

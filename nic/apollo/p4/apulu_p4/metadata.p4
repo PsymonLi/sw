@@ -93,7 +93,7 @@ header_type control_metadata_t {
 header_type rewrite_metadata_t {
     fields {
         flags               : 16;
-        xlate_id            : 16;
+        xlate_id            : 20;
         xlate_id2           : 16;
         dmaci               : 48;
         device_ipv4_addr    : 32;
@@ -156,6 +156,7 @@ header_type scratch_metadata_t {
         priority            : 5;
         erspan_type         : 2;
         drop_reason         : 8;
+        xlate_id            : 20;
 
         // policer
         policer_valid       : 1;

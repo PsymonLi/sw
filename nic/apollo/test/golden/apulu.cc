@@ -63,6 +63,8 @@ using namespace sdk::asic::pd;
 #define UDP21_SPORT_OFFSET  66
 #define UDP22_SPORT_OFFSET  84
 #define UDP_SPORT_SIZE      2
+#define FLOW_HASH_OFFSET    6
+#define FLOW_HASH_SIZE      4
 
 typedef struct __attribute__((__packed__)) lifqstate_ {
     uint64_t pc : 8;
@@ -244,6 +246,20 @@ is_equal_double_encap_pkt (std::vector<uint8_t> pkt1, std::vector<uint8_t> pkt2,
             std::equal(pkt1.begin() + udp2_sport_offset + UDP_SPORT_SIZE,
                        pkt1.end(),
                        pkt2.begin() + udp2_sport_offset + UDP_SPORT_SIZE));
+}
+
+static bool
+is_equal_arm_pkt (std::vector<uint8_t> pkt1, std::vector<uint8_t> pkt2)
+{
+    if (pkt1.size() != pkt2.size()) {
+       return false;
+    }
+
+    return (std::equal(pkt1.begin(),
+                       pkt1.begin() + FLOW_HASH_OFFSET, pkt2.begin()) &&
+            std::equal(pkt1.begin() + FLOW_HASH_OFFSET + FLOW_HASH_SIZE,
+                       pkt1.end(),
+                       pkt2.begin() + FLOW_HASH_OFFSET + FLOW_HASH_SIZE));
 }
 #endif
 
@@ -1772,7 +1788,7 @@ TEST_F(apulu_test, test1)
             step_network_pkt(ipkt, TM_PORT_UPLINK_0);
             if (!getenv("SKIP_VERIFY")) {
                 get_next_pkt(opkt, port, cos);
-                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(is_equal_arm_pkt(opkt, epkt));
                 EXPECT_TRUE(port == TM_PORT_UPLINK_1);
             }
             testcase_end(tcid, i + 1);
@@ -1833,7 +1849,7 @@ TEST_F(apulu_test, test1)
             step_network_pkt(ipkt, TM_PORT_UPLINK_0);
             if (!getenv("SKIP_VERIFY")) {
                 get_next_pkt(opkt, port, cos);
-                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(is_equal_arm_pkt(opkt, epkt));
                 EXPECT_TRUE(port == TM_PORT_UPLINK_1);
             }
             testcase_end(tcid, i + 1);
@@ -1957,7 +1973,7 @@ TEST_F(apulu_test, test1)
             step_network_pkt(ipkt, TM_PORT_UPLINK_0);
             if (!getenv("SKIP_VERIFY")) {
                 get_next_pkt(opkt, port, cos);
-                EXPECT_TRUE(opkt == epkt);
+                EXPECT_TRUE(is_equal_arm_pkt(opkt, epkt));
                 EXPECT_TRUE(port == TM_PORT_UPLINK_1);
             }
             testcase_end(tcid, i + 1);

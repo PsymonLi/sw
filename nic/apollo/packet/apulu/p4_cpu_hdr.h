@@ -27,8 +27,8 @@ typedef struct p4_rx_cpu_hdr_s {
     uint32_t session_id;
     uint16_t lif;
     uint16_t egress_bd_id;
-    uint16_t service_xlate_id;
-    uint16_t mapping_xlate_id;
+    uint32_t service_xlate_id;
+    uint32_t mapping_xlate_id;
     uint16_t tx_meter_id;
     uint16_t nexthop_id;
     uint16_t vpc_id;

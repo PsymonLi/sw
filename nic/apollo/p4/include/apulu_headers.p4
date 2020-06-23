@@ -63,8 +63,8 @@ header_type apulu_p4_to_arm_header_t {
         session_id              : 32;
         lif                     : 16;
         egress_bd_id            : 16;
-        service_xlate_id        : 16;
-        mapping_xlate_id        : 16;
+        service_xlate_id        : 32;
+        mapping_xlate_id        : 32;
         tx_meter_id             : 16;
         nexthop_id              : 16;
         vpc_id                  : 16;

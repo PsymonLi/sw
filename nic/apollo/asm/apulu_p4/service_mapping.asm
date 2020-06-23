@@ -13,7 +13,7 @@ struct phv_                 p;
 service_mapping_info:
     nop.e
     phvwr.c1    p.p4i_to_arm_service_xlate_id, \
-                    d.{service_mapping_info_d.xlate_id}.hx
+                    d.{service_mapping_info_d.xlate_id}.wx
 
 /*****************************************************************************/
 /* error function                                                            */

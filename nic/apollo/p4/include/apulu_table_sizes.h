@@ -20,7 +20,7 @@
 #define MAPPING_OHASH_TABLE_SIZE                            524288      // 512K
 #define SESSION_TABLE_SIZE                                  2097152     // 2M
 #define MIRROR_SESSION_TABLE_SIZE                           256
-#define NAT_TABLE_SIZE                                      65536       // 64K
+#define NAT_TABLE_SIZE                                      1048576     // 1M
 #define NAT2_TABLE_SIZE                                     8192        // 8K
 #define ECMP_TABLE_SIZE                                     2048
 #define TUNNEL_TABLE_SIZE                                   2048

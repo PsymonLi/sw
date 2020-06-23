@@ -462,6 +462,11 @@ parser parse_txdma_to_egress {
 @pragma xgress egress
 parser parse_txdma_to_arm {
     extract(txdma_to_p4e);
+    return parse_txdma_to_arm_split;
+}
+
+@pragma xgress egress
+parser parse_txdma_to_arm_split {
     extract(p4e_to_arm);
     return parse_egress;
 }
