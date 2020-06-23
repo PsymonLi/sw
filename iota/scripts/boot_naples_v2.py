@@ -557,13 +557,23 @@ class NaplesManagement(EntityManagement):
         self.__login()
 
     def InstallPrep(self):
-        self.SendlineExpect("mount -t ext4 /dev/mmcblk0p6 /sysconfig/config0", "#")
-        self.SendlineExpect("mount -t ext4 /dev/mmcblk0p7 /sysconfig/config1", "#")
-        self.SendlineExpect("mount -t ext4 /dev/mmcblk0p10 /data", "#")
+        data = [
+            ["/dev/mmcblk0p6", "/sysconfig/config0"],
+            ["/dev/mmcblk0p7", "/sysconfig/config1"],
+            ["/dev/mmcblk0p10", "/data"],
+        ]
+        for src,dst in data:
+            midx = self.SendlineExpect("mount -t ext4 " + src + " " + dst,
+                                       ["#", "mount point does not exist", 
+                                        "special device " + src + " does not exist"], 
+                                       timeout = 30)
+            if midx == 1:
+                raise Exception("failed to mount. mount point " + dst + " does not exist")
+            if midx == 2:
+                raise Exception("failed to mount. device " + src + " does not exist")
         self.CleanUpOldFiles()
-        self.SendlineExpect("umount /sysconfig/config0", "#")
-        self.SendlineExpect("umount /sysconfig/config1", "#")
-        self.SendlineExpect("umount /data", "#")
+        for src,dst in data:
+            self.SendlineExpect("umount " + src, "#")
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FAILED, "Main Firmware Install failed")
     def InstallMainFirmware(self, copy_fw = True):
@@ -807,10 +817,19 @@ class NaplesManagement(EntityManagement):
 
     def SetUpInitFiles(self):
         CreateConfigConsoleNoAuth()
-        self.SendlineExpect("mount -t ext4 /dev/mmcblk0p6 /sysconfig/config0", "#")
+        src = "/dev/mmcblk0p6"
+        dst = "/sysconfig/config0"
+        midx = self.SendlineExpect("mount -t ext4 " + src + " " + dst,
+                                   ["#", "mount point does not exist",
+                                   "special device " + src + " does not exist"],
+                                   timeout = 30)
+        if midx == 1:
+            raise Exception("failed to mount. mount point " + dst + " does not exist")
+        if midx == 2:
+            raise Exception("failed to mount. device " + src + " does not exist")
         self.CopyIN(NAPLES_CONFIG_SPEC_LOCAL,
-                    entity_dir = "/sysconfig/config0")
-        self.SendlineExpect("umount /sysconfig/config0", "#")
+                    entity_dir = dst)
+        self.SendlineExpect("umount " + dst, "#")
 
     @_exceptionWrapper(_errCodes.NAPLES_INIT_FOR_UPGRADE_FAILED, "Init for upgrade failed")
     def InitForUpgrade(self, goldfw = True, mode = True, uuid = True):

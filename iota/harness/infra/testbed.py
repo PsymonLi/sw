@@ -582,7 +582,7 @@ class _Testbed:
                 utils.LogException(Logger)
                 Logger.error("Failed to recover testbed")
                 Logger.debug(traceback.format_exc())
-                return types.status.CRITICAL
+                return types.status.TESTBED_INIT_FAILURE
             if GlobalOptions.dryrun:
                 status = types.status.SUCCESS
 

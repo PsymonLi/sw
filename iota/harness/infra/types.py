@@ -14,6 +14,7 @@ __status = [
     'CRITICAL',
     'OFFLINE_TESTBED',
     'SKIPPED',
+    'TESTBED_INIT_FAILURE',
 ]
 status = utils.List2Enum(__status)
 
