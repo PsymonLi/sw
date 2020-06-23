@@ -27,7 +27,9 @@ func TestWorkloads(t *testing.T) {
 	dcName := "DC1"
 	dvsName := CreateDVSName(dcName)
 	pNicMac := append(createPenPnicBase(), 0xbb, 0x00, 0x00)
+	pNicMac2 := append(createPenPnicBase(), 0xcc, 0x00, 0x00)
 	macStr := conv.MacString(pNicMac)
+	macStr2 := conv.MacString(pNicMac2)
 
 	testCases := []storeTC{
 		{
@@ -657,7 +659,7 @@ func TestWorkloads(t *testing.T) {
 									Network: &types.HostNetworkInfo{
 										Pnic: []types.PhysicalNic{
 											types.PhysicalNic{
-												Mac: macStr,
+												Mac: macStr2,
 												Key: "pnic-2",
 											},
 										},

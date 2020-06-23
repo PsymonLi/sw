@@ -98,6 +98,7 @@ type ProbeInf interface {
 	ListHosts(dcRef *types.ManagedObjectReference) ([]mo.HostSystem, error)
 	StopWatchForDC(dcName, dcID string)
 	StartWatchForDC(dcName, dcID string)
+	GetHostConnectionState(hostID string, retry int) (types.HostSystemConnectionState, error)
 	GetVM(vmID string, retry int) (mo.VirtualMachine, error)
 	WithSession(func(context.Context) (interface{}, error)) (interface{}, error)
 
@@ -527,6 +528,31 @@ func (v *VCProbe) ListHosts(dcRef *types.ManagedObjectReference) ([]mo.HostSyste
 	var hosts []mo.HostSystem
 	err := v.ListObj(defs.HostSystem, []string{"config", "name"}, &hosts, dcRef)
 	return hosts, err
+}
+
+// GetHostConnectionState returns the given host's connection state
+func (v *VCProbe) GetHostConnectionState(hostID string, retry int) (types.HostSystemConnectionState, error) {
+	fn := func() (interface{}, error) {
+		err := v.ReserveClient()
+		if err != nil {
+			return nil, err
+		}
+		defer v.ReleaseClient()
+		client := v.GetClient()
+		hostRef := types.ManagedObjectReference{
+			Type:  string(defs.HostSystem),
+			Value: hostID,
+		}
+		var host mo.HostSystem
+		objVM := object.NewVirtualMachine(client.Client, hostRef)
+		err = objVM.Properties(v.ClientCtx, hostRef, []string{"runtime"}, &host)
+		return host, err
+	}
+	ret, err := v.withRetry(fn, retry)
+	if ret == nil {
+		return "", err
+	}
+	return ret.(mo.HostSystem).Runtime.ConnectionState, err
 }
 
 // GetVM fetches the given VM by ID

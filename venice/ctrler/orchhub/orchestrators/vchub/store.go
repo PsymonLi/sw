@@ -265,7 +265,7 @@ func (v *VCHub) handleRetryEvent(m defs.RetryMsg) {
 }
 
 func (v *VCHub) handleVCNotification(m defs.VCNotificationMsg) {
-	v.Log.Debugf("Received VC Notification %s %v", m.Type, m.Msg)
+	v.Log.Infof("Received VC Notification %s %v", m.Type, m.Msg)
 	switch m.Msg.(type) {
 	case defs.VMotionStartMsg:
 		v.handleVMotionStart(m.Msg.(defs.VMotionStartMsg))

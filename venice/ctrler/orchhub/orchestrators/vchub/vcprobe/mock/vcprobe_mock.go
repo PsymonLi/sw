@@ -396,6 +396,19 @@ func (mr *MockProbeInfMockRecorder) StartWatchForDC(dcName, dcID interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartWatchForDC", reflect.TypeOf((*MockProbeInf)(nil).StartWatchForDC), dcName, dcID)
 }
 
+// GetHostConnectionState mocks base method
+func (m *MockProbeInf) GetHostConnectionState(hostID string, retry int) (types.HostSystemConnectionState, error) {
+	ret := m.ctrl.Call(m, "GetHostConnectionState", hostID, retry)
+	ret0, _ := ret[0].(types.HostSystemConnectionState)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHostConnectionState indicates an expected call of GetHostConnectionState
+func (mr *MockProbeInfMockRecorder) GetHostConnectionState(hostID, retry interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHostConnectionState", reflect.TypeOf((*MockProbeInf)(nil).GetHostConnectionState), hostID, retry)
+}
+
 // GetVM mocks base method
 func (m *MockProbeInf) GetVM(vmID string, retry int) (mo.VirtualMachine, error) {
 	ret := m.ctrl.Call(m, "GetVM", vmID, retry)

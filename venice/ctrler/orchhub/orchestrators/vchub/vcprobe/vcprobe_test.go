@@ -207,6 +207,15 @@ func TestListAndWatch(t *testing.T) {
 	AssertOk(t, err, "list host failed")
 	AssertEquals(t, 1, len(hosts), "List Host response length did not match exp")
 
+	// Get host
+	hostState, err := vcp.GetHostConnectionState(hosts[0].Self.Value, 1)
+	AssertOk(t, err, "failed to get host")
+	AssertEquals(t, types.HostSystemConnectionStateDisconnected, hostState, "hosts were not equal")
+
+	// host with random ID
+	_, err = vcp.GetHostConnectionState("host-bad-id", 1)
+	Assert(t, err != nil, "expected failure when getting host")
+
 	// Create DVS for listing
 	pvlanConfigSpecArray := testutils.GenPVLANConfigSpecArray(testParams, "add")
 	dvsCreateSpec := testutils.GenDVSCreateSpec(testParams, pvlanConfigSpecArray)

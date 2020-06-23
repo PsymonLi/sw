@@ -298,22 +298,10 @@ func TestVCSyncHost(t *testing.T) {
 		"test",
 		conv.MacString(pNicMac),
 	)
-	utils.AddOrchNameLabel(staleHost2.Labels, "AnotherVC")
-	utils.AddOrchNamespaceLabel(staleHost2.Labels, "AnotherDC")
+	utils.AddOrchNameLabel(staleHost2.Labels, orchConfig.Name)
+	utils.AddOrchNamespaceLabel(staleHost2.Labels, dc1.Obj.Name)
 	err = sm.Controller().Host().Create(&staleHost2)
 	AssertOk(t, err, "failed to create host")
-
-	// Create a another stale host with same mac addr but different VC id
-	staleHost := createHostObj(
-		vchub.createHostName(dc1.Obj.Self.Value, "hostsystem-00000"),
-		"test",
-		conv.MacString(pNicMac),
-	)
-	utils.AddOrchNameLabel(staleHost.Labels, orchConfig.Name)
-	utils.AddOrchNamespaceLabel(staleHost.Labels, dc1.Obj.Name)
-	// replace stale host with same mac but different VC by this one
-	vchub.fixStaleHost(&staleHost)
-	vchub.pCache.Set("Host", &staleHost)
 
 	// Stale host that will have a stale workload referring to it
 	staleHost3 := createHostObj(

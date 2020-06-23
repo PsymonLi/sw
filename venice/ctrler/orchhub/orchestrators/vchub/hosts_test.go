@@ -819,6 +819,9 @@ func TestHosts(t *testing.T) {
 					},
 				}
 				vchub.StateMgr.Controller().Host().Create(staleHost)
+				mockProbe := mock.NewMockProbeInf(mockCtrl)
+				vchub.probe = mockProbe
+				mockProbe.EXPECT().GetHostConnectionState(gomock.Any(), gomock.Any()).Return(types.HostSystemConnectionStateConnected, nil).Times(1)
 			},
 			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
 				expMeta := &api.ObjectMeta{
@@ -941,6 +944,9 @@ func TestHosts(t *testing.T) {
 				}
 				vchub.StateMgr.Controller().Host().Create(conflictHost)
 				eventRecorder.ClearEvents()
+				mockProbe := mock.NewMockProbeInf(mockCtrl)
+				vchub.probe = mockProbe
+				mockProbe.EXPECT().GetHostConnectionState(gomock.Any(), gomock.Any()).Return(types.HostSystemConnectionStateConnected, nil).Times(1)
 			},
 			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
 				AssertEventually(t, func() (bool, interface{}) {
@@ -957,6 +963,106 @@ func TestHosts(t *testing.T) {
 				AssertOk(t, err, "Failed to list hosts")
 				// Conflicting host will be written since there are no api hooks to reject it.
 				AssertEquals(t, 2, len(hosts), "Conflict host should not be deleted")
+			},
+		},
+		{
+			name: "delete stale host when new host is disconnected",
+			events: []defs.Probe2StoreMsg{
+				// use multiple events to create host
+				// send name property before config property
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "name",
+								Val:  "Host_Named_Foo",
+							},
+						},
+					},
+				},
+				{
+					MsgType: defs.VCEvent,
+					Val: defs.VCEventMsg{
+						VcObject:   defs.HostSystem,
+						DcID:       dcName,
+						DcName:     dcName,
+						Key:        "hostsystem-44",
+						Originator: "127.0.0.1:8990",
+						Changes: []types.PropertyChange{
+							types.PropertyChange{
+								Op:   types.PropertyChangeOpAdd,
+								Name: "config",
+								Val: types.HostConfigInfo{
+									Network: &types.HostNetworkInfo{
+										Pnic: []types.PhysicalNic{
+											types.PhysicalNic{
+												Key: "pnic-1",
+												Mac: macStr,
+											},
+										},
+										ProxySwitch: []types.HostProxySwitch{
+											types.HostProxySwitch{
+												DvsName: dvsName,
+												Pnic:    []string{"pnic-1"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			setup: func(vchub *VCHub, mockCtrl *gomock.Controller, eventRecorder *mockevtsrecorder.Recorder) {
+				// Setup state for DC1
+				addDCState(t, vchub, dcName)
+				staleHost := &cluster.Host{
+					TypeMeta: api.TypeMeta{
+						Kind:       "Host",
+						APIVersion: "v1",
+					},
+					ObjectMeta: api.ObjectMeta{
+						Name: vchub.createHostName(dcName, "hostsystem-100000"),
+						Labels: map[string]string{
+							utils.OrchNameKey:  "randomOrch",
+							utils.NamespaceKey: "n1",
+						},
+					},
+					Spec: cluster.HostSpec{
+						DSCs: []cluster.DistributedServiceCardID{
+							cluster.DistributedServiceCardID{
+								MACAddress: macStr,
+							},
+						},
+					},
+				}
+				vchub.StateMgr.Controller().Host().Create(staleHost)
+				mockProbe := mock.NewMockProbeInf(mockCtrl)
+				vchub.probe = mockProbe
+				mockProbe.EXPECT().GetHostConnectionState(gomock.Any(), gomock.Any()).Return(types.HostSystemConnectionStateDisconnected, nil).Times(1)
+			},
+			verify: func(v *VCHub, eventRecorder *mockevtsrecorder.Recorder) {
+				expMeta := &api.ObjectMeta{
+					Name: v.createHostName(dcName, "hostsystem-100000"),
+				}
+
+				time.Sleep(250 * time.Millisecond)
+				AssertEventually(t, func() (bool, interface{}) {
+					hostAPI := v.StateMgr.Controller().Host()
+					_, err := hostAPI.Find(expMeta)
+					return err == nil, err
+				}, "Host not in statemgr")
+
+				hostAPI := v.StateMgr.Controller().Host()
+				_, err := hostAPI.Find(expMeta)
+				Assert(t, err == nil, "Failed to get host: err %v", err)
 			},
 		},
 	}

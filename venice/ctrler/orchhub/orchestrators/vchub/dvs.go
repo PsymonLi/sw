@@ -406,19 +406,32 @@ func (v *VCHub) verifyOverrides(forceWrite bool) {
 		return
 	}
 
+	wg := sync.WaitGroup{}
 	processDC := func(dc *PenDC) {
+		defer wg.Done()
+
+		dvsWg := sync.WaitGroup{}
 		dc.Lock()
-		defer dc.Unlock()
 		for _, dvs := range dc.DvsMap {
-			v.verifyOverridesOnDVS(dvs, false)
+			dvsWg.Add(1)
+			go func(dvsObj *PenDVS) {
+				defer dvsWg.Done()
+				v.verifyOverridesOnDVS(dvsObj, false)
+			}(dvs)
 		}
+		dc.Unlock()
+
+		dvsWg.Wait()
 	}
 
 	v.DcMapLock.Lock()
-	defer v.DcMapLock.Unlock()
 	for _, dc := range v.DcMap {
-		processDC(dc)
+		wg.Add(1)
+		go processDC(dc)
 	}
+	v.DcMapLock.Unlock()
+
+	wg.Wait()
 }
 
 // Resetting vlan overrides is not needed. As soon as port is disconnected,

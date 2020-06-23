@@ -123,7 +123,7 @@ func (v *VCHub) handleHost(m defs.VCEventMsg) {
 	if stateMgrHost == nil {
 		v.Log.Infof("Creating host %s", hostObj.Name)
 		// Check if there are any stale hosts with the same DSC
-		v.fixStaleHost(hostObj)
+		v.fixStaleHost(m.Key, hostObj)
 		v.pCache.Set(string(cluster.KindHost), hostObj)
 		pcacheWorkloads := v.pCache.ListWorkloads(v.Ctx, true)
 		// TODO: Keep a host -> workload mapping for better performance.
@@ -230,7 +230,7 @@ func (v *VCHub) processHostConfig(prop types.PropertyChange, dcID string, dcName
 	hostObj.Spec.DSCs = DSCs
 }
 
-func (v *VCHub) fixStaleHost(host *cluster.Host) error {
+func (v *VCHub) fixStaleHost(hostID string, host *cluster.Host) error {
 	// check if there is another host with the same MACAddr (DSC)
 	// If that host belongs to this VC it is likely that vcenter host-id changed for some
 	// reason, delete that host and create new one.
@@ -272,6 +272,21 @@ searchHosts:
 		v.Log.Infof("No duplicate host found")
 		return nil
 	}
+	// Verify host isn't in a disconnected state
+	connState, err := v.probe.GetHostConnectionState(hostID, defaultRetryCount)
+	if err == nil {
+		if connState != types.HostSystemConnectionStateConnected {
+			// Host is not in a connected state
+			err = fmt.Errorf("Host %s %s has connection state %v", hostID, host.Name, connState)
+			v.Log.Errorf("%s", err)
+			return err
+		}
+	} else {
+		errMsg := fmt.Errorf("Failed to fetch host %s %s, assuming to be disconnected. Err %s", hostID, host.Name, err)
+		v.Log.Errorf("%s", errMsg)
+		return errMsg
+	}
+
 	var vcID string
 	ok := false
 	if hostFound.Labels != nil {
