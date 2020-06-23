@@ -198,6 +198,21 @@ timestamp_diff_to_str (timespec_t *ts1, timespec_t *ts2, char *buff,
     return snprintf(buff, size, "%lu.%.9lu", diff.tv_sec, diff.tv_nsec);
 }
 
+//--------------------------------------------------------------------------
+// print timestamp in Y-m-d H:M:S.e format
+//--------------------------------------------------------------------------
+static inline size_t
+timestamp_str (char *buff, size_t size, timespec_t *ts)
+{
+    uint32_t   written = 0;
+
+    written = strftime(buff, size, "[%Y-%m-%d %H:%M:%S",
+                       localtime(&ts->tv_sec));
+    written += snprintf(buff + written, size - written, ".%.lu]",
+                        ts->tv_nsec/TIME_NSECS_PER_MSEC);
+    return written;
+}
+
 }    // namespace sdk
 
 using sdk::timespec_t;

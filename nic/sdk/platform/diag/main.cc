@@ -53,63 +53,49 @@ usage (int argc, char* argv[])
     return 1;
 }
 
-static inline size_t
-print_timestamp (char *buff, size_t size)
-{
-    uint32_t written = 0;
-    timespec_t ts;
-
-    clock_gettime(CLOCK_REALTIME, &ts);
-    written = strftime(buff, size, "[%Y-%m-%d %H:%M:%S",
-                       localtime(&ts.tv_sec));
-    written += snprintf(buff + written, size - written, ".%.lu]",
-                        ts.tv_nsec/TIME_NSECS_PER_MSEC);
-    return written;
-}
-
 static int
 diag_logger (uint32_t mod_id, sdk_trace_level_e trace_level,
              const char *format, ...)
 {
     char       logbuf[1024];
     va_list    args;
-    uint32_t   written = 0;
+    timespec_t ts;
 
     assert(g_log_fp);
-
     if (trace_level > g_trace_level) {
         return 0;
     }
 
-    written = print_timestamp(logbuf, sizeof(logbuf));
+    clock_gettime(CLOCK_REALTIME, &ts);
+    sdk::timestamp_str(logbuf, sizeof(logbuf), &ts);
+    fprintf(g_log_fp, "%s", logbuf);
 
     switch (trace_level) {
     case sdk::lib::SDK_TRACE_LEVEL_ERR:
-        written += snprintf(logbuf + written, sizeof(logbuf) - written, " E ");
+        fprintf(g_log_fp, " E ");
         break;
     case sdk::lib::SDK_TRACE_LEVEL_WARN:
-        written += snprintf(logbuf + written, sizeof(logbuf) - written, " W ");
+        fprintf(g_log_fp, " W ");
         break;
     case sdk::lib::SDK_TRACE_LEVEL_INFO:
-        written += snprintf(logbuf + written, sizeof(logbuf) - written, " I ");
+        fprintf(g_log_fp, " I ");
         break;
     case sdk::lib::SDK_TRACE_LEVEL_DEBUG:
-        written += snprintf(logbuf + written, sizeof(logbuf) - written, " D ");
+        fprintf(g_log_fp, " D ");
         break;
     case sdk::lib::SDK_TRACE_LEVEL_VERBOSE:
-        written += snprintf(logbuf + written, sizeof(logbuf) - written, " V ");
+        fprintf(g_log_fp, " V ");
         break;
     default:
         return 0;
     }
 
     va_start(args, format);
-    vsnprintf(logbuf + written, sizeof(logbuf) - written, format, args);
+    vfprintf(g_log_fp, format, args);
     va_end(args);
 
-    fprintf(g_log_fp, "%s\n", logbuf);
+    fprintf(g_log_fp, "\n");
     fflush(g_log_fp);
-
     return 0;
 }
 

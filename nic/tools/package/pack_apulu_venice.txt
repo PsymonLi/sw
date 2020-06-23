@@ -46,5 +46,5 @@ nic/build/$ARCH/$PIPELINE/bin/alerts_gen                          /nic/bin/
 nic/vpp/tools/start-vpp-naples-sim.sh                             /nic/tools/
 nic/vpp/conf/vpp_1_worker_naples_sim.conf                         /nic/conf/vpp/
 
-#diag binaries
+# diag binaries
 nic/build/$ARCH/$PIPELINE/bin/diag_test                           /nic/bin/

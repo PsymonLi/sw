@@ -361,5 +361,5 @@ nic/conf/$PIPELINE/upgrade_cc_hitless_version.json                /nic/upgrade/e
 nic/conf/$PIPELINE/upgrade_cc_graceful_version.json               /nic/upgrade/etc/
 nic/build/$ARCH/$PIPELINE/lib/libpdsupgapi.so                     /nic/lib/
 
-#diag binaries
+# diag binaries
 nic/build/$ARCH/$PIPELINE/bin/diag_test                           /nic/bin/
