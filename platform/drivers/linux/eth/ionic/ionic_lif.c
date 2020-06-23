@@ -101,23 +101,29 @@ static void ionic_link_status_check(struct ionic_lif *lif)
 	struct net_device *netdev = lif->netdev;
 	u16 link_status;
 	bool link_up;
-	int err = 0;
 
 	link_status = le16_to_cpu(lif->info->status.link_status);
 	link_up = link_status == IONIC_PORT_OPER_STATUS_UP;
 
 	if (link_up) {
-		if (!test_bit(IONIC_LIF_F_UP, lif->state) &&
-		    !test_bit(IONIC_LIF_F_TRANS, lif->state)) {
-			rtnl_lock();
-			err = ionic_open(netdev);
-			rtnl_unlock();
+		u32 link_speed;
+
+		if (!netif_carrier_ok(netdev)) {
+			/* force an update in shared structs */
+			ionic_port_identify(lif->ionic);
+
+			link_speed = le32_to_cpu(lif->info->status.link_speed);
+			netdev_info(netdev, "Link up - %d Gbps\n",
+				    link_speed / 1000);
+			netif_carrier_on(netdev);
 		}
 
-		if (!err && !netif_carrier_ok(netdev)) {
-			netdev_info(netdev, "Link up - %u Gbps\n",
-				le32_to_cpu(lif->info->status.link_speed) / 1000);
-			netif_carrier_on(netdev);
+		if (!test_bit(IONIC_LIF_F_UP, lif->state) &&
+		    netif_running(netdev) &&
+		    !test_bit(IONIC_LIF_F_TRANS, lif->state)) {
+			rtnl_lock();
+			ionic_open(netdev);
+			rtnl_unlock();
 		}
 	} else {
 		if (netif_carrier_ok(netdev)) {
@@ -351,23 +357,9 @@ static void ionic_qcq_free(struct ionic_lif *lif, struct ionic_qcq *qcq)
 
 	ionic_debugfs_del_qcq(qcq);
 
-	if (qcq->q_base) {
-		dma_free_coherent(dev, qcq->q_size, qcq->q_base, qcq->q_base_pa);
-		qcq->q_base = NULL;
-		qcq->q_base_pa = 0;
-	}
-
-	if (qcq->cq_base) {
-		dma_free_coherent(dev, qcq->cq_size, qcq->cq_base, qcq->cq_base_pa);
-		qcq->cq_base = NULL;
-		qcq->cq_base_pa = 0;
-	}
-
-	if (qcq->sg_base) {
-		dma_free_coherent(dev, qcq->sg_size, qcq->sg_base, qcq->sg_base_pa);
-		qcq->sg_base = NULL;
-		qcq->sg_base_pa = 0;
-	}
+	dma_free_coherent(dev, qcq->total_size, qcq->base, qcq->base_pa);
+	qcq->base = NULL;
+	qcq->base_pa = 0;
 
 	/* only the slave Tx and Rx qcqs will have master_slot set */
 	if (qcq->master_slot) {
@@ -449,6 +441,7 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 			   unsigned int pid, struct ionic_qcq **qcq)
 {
 	struct ionic_dev *idev = &lif->ionic->idev;
+	u32 q_size, cq_size, sg_size, total_size;
 	struct device *dev = lif->ionic->dev;
 	void *q_base, *cq_base, *sg_base;
 	dma_addr_t cq_base_pa = 0;
@@ -459,6 +452,21 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 	int err;
 
 	*qcq = NULL;
+
+	q_size  = num_descs * desc_size;
+	cq_size = num_descs * cq_desc_size;
+	sg_size = num_descs * sg_desc_size;
+
+	total_size = ALIGN(q_size, PAGE_SIZE) + ALIGN(cq_size, PAGE_SIZE);
+	/* Note: aligning q_size/cq_size is not enough due to cq_base
+	 * address aligning as q_base could be not aligned to the page.
+	 * Adding PAGE_SIZE.
+	 */
+	total_size += PAGE_SIZE;
+	if (flags & IONIC_QCQ_F_SG) {
+		total_size += ALIGN(sg_size, PAGE_SIZE);
+		total_size += PAGE_SIZE;
+	}
 
 	new = devm_kzalloc(dev, sizeof(*new), GFP_KERNEL);
 	if (!new) {
@@ -475,7 +483,7 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 	if (!new->q.info) {
 		netdev_err(lif->netdev, "Cannot allocate queue info\n");
 		err = -ENOMEM;
-		goto err_out_free_qcq;
+		goto err_out;
 	}
 
 	new->q.type = type;
@@ -485,7 +493,7 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 			   desc_size, sg_desc_size, pid);
 	if (err) {
 		netdev_err(lif->netdev, "Cannot initialize queue\n");
-		goto err_out_free_q_info;
+		goto err_out;
 	}
 
 	if (flags & IONIC_QCQ_F_INTR) {
@@ -550,91 +558,46 @@ static int ionic_qcq_alloc(struct ionic_lif *lif, unsigned int type,
 	err = ionic_cq_init(lif, &new->cq, &new->intr, num_descs, cq_desc_size);
 	if (err) {
 		netdev_err(lif->netdev, "Cannot initialize completion queue\n");
-		goto err_out_free_cq_info;
+		goto err_out_free_irq;
 	}
 
-	if (flags & IONIC_QCQ_F_NOTIFYQ) {
-		/* q & cq need to be contiguous in case of notifyq */
-		new->q_size = PAGE_SIZE + ALIGN(num_descs * desc_size, PAGE_SIZE) +
-						ALIGN(num_descs * cq_desc_size, PAGE_SIZE);
-		new->q_base = dma_alloc_coherent(dev, new->q_size + new->cq_size,
-						&new->q_base_pa, GFP_KERNEL);
-		if (!new->q_base) {
-			netdev_err(lif->netdev, "Cannot allocate qcq DMA memory\n");
-			err = -ENOMEM;
-			goto err_out_free_cq_info;
-		}
-		q_base = (void *)ALIGN((uintptr_t)new->q_base, PAGE_SIZE);
-		q_base_pa = ALIGN(new->q_base_pa, PAGE_SIZE);
-		ionic_q_map(&new->q, q_base, q_base_pa);
-
-		cq_base = (void *)ALIGN((uintptr_t)q_base +
-			ALIGN(num_descs * desc_size, PAGE_SIZE), PAGE_SIZE);
-		cq_base_pa = ALIGN(new->q_base_pa +
-			ALIGN(num_descs * desc_size, PAGE_SIZE), PAGE_SIZE);
-		ionic_cq_map(&new->cq, cq_base, cq_base_pa);
-		ionic_cq_bind(&new->cq, &new->q);
-	} else {
-		new->q_size = PAGE_SIZE + (num_descs * desc_size);
-		new->q_base = dma_alloc_coherent(dev, new->q_size, &new->q_base_pa,
-						GFP_KERNEL);
-		if (!new->q_base) {
-			netdev_err(lif->netdev, "Cannot allocate queue DMA memory\n");
-			err = -ENOMEM;
-			goto err_out_free_cq_info;
-		}
-		q_base = (void *)ALIGN((uintptr_t)new->q_base, PAGE_SIZE);
-		q_base_pa = ALIGN(new->q_base_pa, PAGE_SIZE);
-		ionic_q_map(&new->q, q_base, q_base_pa);
-
-		new->cq_size = PAGE_SIZE + (num_descs * cq_desc_size);
-		new->cq_base = dma_alloc_coherent(dev, new->cq_size, &new->cq_base_pa,
-						GFP_KERNEL);
-		if (!new->cq_base) {
-			netdev_err(lif->netdev, "Cannot allocate cq DMA memory\n");
-			err = -ENOMEM;
-			goto err_out_free_q;
-		}
-		cq_base = (void *)ALIGN((uintptr_t)new->cq_base, PAGE_SIZE);
-		cq_base_pa = ALIGN(new->cq_base_pa, PAGE_SIZE);
-		ionic_cq_map(&new->cq, cq_base, cq_base_pa);
-		ionic_cq_bind(&new->cq, &new->q);
+	new->base = dma_alloc_coherent(dev, total_size, &new->base_pa,
+				       GFP_KERNEL);
+	if (!new->base) {
+		netdev_err(lif->netdev, "Cannot allocate queue DMA memory\n");
+		err = -ENOMEM;
+		goto err_out_free_irq;
 	}
+
+	new->total_size = total_size;
+
+	q_base = new->base;
+	q_base_pa = new->base_pa;
+
+	cq_base = (void *)ALIGN((uintptr_t)q_base + q_size, PAGE_SIZE);
+	cq_base_pa = ALIGN(q_base_pa + q_size, PAGE_SIZE);
 
 	if (flags & IONIC_QCQ_F_SG) {
-		new->sg_size = PAGE_SIZE + (num_descs * sg_desc_size);
-		new->sg_base = dma_alloc_coherent(dev, new->sg_size, &new->sg_base_pa,
-						GFP_KERNEL);
-		if (!new->sg_base) {
-			netdev_err(lif->netdev, "Cannot allocate sg DMA memory\n");
-			err = -ENOMEM;
-			goto err_out_free_cq;
-		}
-		sg_base = (void *)ALIGN((uintptr_t)new->sg_base, PAGE_SIZE);
-		sg_base_pa = ALIGN(new->sg_base_pa, PAGE_SIZE);
+		sg_base = (void *)ALIGN((uintptr_t)cq_base + cq_size,
+					PAGE_SIZE);
+		sg_base_pa = ALIGN(cq_base_pa + cq_size, PAGE_SIZE);
 		ionic_q_sg_map(&new->q, sg_base, sg_base_pa);
 	}
+
+	ionic_q_map(&new->q, q_base, q_base_pa);
+	ionic_cq_map(&new->cq, cq_base, cq_base_pa);
+	ionic_cq_bind(&new->cq, &new->q);
 
 	*qcq = new;
 
 	return 0;
 
-err_out_free_cq:
-	dma_free_coherent(dev, new->cq_size, new->cq_base, new->cq_base_pa);
-err_out_free_q:
-	dma_free_coherent(dev, new->q_size, new->q_base, new->q_base_pa);
-err_out_free_cq_info:
-	devm_kfree(dev, new->cq.info);
 err_out_free_irq:
 	if (flags & IONIC_QCQ_F_INTR)
 		devm_free_irq(dev, new->intr.vector, &new->napi);
 err_out_free_intr:
 	if (flags & IONIC_QCQ_F_INTR)
 		ionic_intr_free(lif->ionic, new->intr.index);
-err_out_free_q_info:
-	devm_kfree(dev, new->q.info);
-err_out_free_qcq:
-	devm_kfree(dev, new);
 err_out:
 	dev_err(dev, "qcq alloc of %s%d failed %d\n", name, index, err);
 	return err;
@@ -2752,13 +2715,8 @@ static struct ionic_lif *ionic_lif_alloc(struct ionic *ionic, unsigned int index
 	lif->identity = lid;
 	lif->ionic = ionic;
 	lif->index = index;
-#ifdef CONFIG_IONIC_MNIC
-	lif->ntxq_descs = IONIC_DEF_MNIC_TX_DESC;
-	lif->nrxq_descs = IONIC_DEF_MNIC_RX_DESC;
-#else
 	lif->ntxq_descs = IONIC_DEF_TXRX_DESC;
 	lif->nrxq_descs = IONIC_DEF_TXRX_DESC;
-#endif
 
 	/* Convert the default coalesce value to actual hw resolution */
 	lif->rx_coalesce_usecs = IONIC_ITR_COAL_USEC_DEFAULT;
@@ -3088,7 +3046,7 @@ static int ionic_lif_notifyq_init(struct ionic_lif *lif)
 			.intr_index = cpu_to_le16(lif->adminqcq->intr.index),
 			.pid = cpu_to_le16(q->pid),
 			.ring_size = ilog2(q->num_descs),
-			.ring_base = cpu_to_le64(q->base_pa)
+			.ring_base = cpu_to_le64(q->base_pa),
 		}
 	};
 

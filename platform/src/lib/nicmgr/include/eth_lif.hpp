@@ -275,7 +275,6 @@ private:
 
     // Helper methods
     bool IsLifTypeCpu(void);
-    bool IsLifTypeMnic(void);
     bool IsLifInitialized();
     bool IsTrustedLif();
 

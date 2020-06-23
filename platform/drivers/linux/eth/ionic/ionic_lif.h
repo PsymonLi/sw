@@ -65,15 +65,9 @@ struct ionic_q_stats {
 };
 
 struct ionic_qcq {
-	void *q_base;
-	dma_addr_t q_base_pa;
-	u32 q_size;
-	void *cq_base;
-	dma_addr_t cq_base_pa;
-	u32 cq_size;
-	void *sg_base;
-	dma_addr_t sg_base_pa;
-	u32 sg_size;
+	void *base;
+	dma_addr_t base_pa;
+	unsigned int total_size;
 	bool armed;
 	struct ionic_queue q;
 	struct ionic_cq cq;
