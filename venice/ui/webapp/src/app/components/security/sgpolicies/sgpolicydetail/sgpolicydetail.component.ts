@@ -74,12 +74,12 @@ class SecuritySGRuleWrapper {
 }
 
 interface RuleHitEntry {
-    EspHits: number;
-    IcmpHits: number;
-    OtherHits: number;
-    TcpHits: number;
-    TotalHits: number;
-    UdpHits: number;
+  EspHits: number;
+  IcmpHits: number;
+  OtherHits: number;
+  TcpHits: number;
+  TotalHits: number;
+  UdpHits: number;
 }
 
 
@@ -113,12 +113,12 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   ];
 
   ruleHitItems: SelectItem[] = [
-    { label: 'TCP Hits', value: 'TcpHits'},
-    { label: 'UDP Hits', value: 'UdpHits'},
-    { label: 'ICMP Hits', value: 'IcmpHits'},
-    { label: 'ESP Hits', value: 'EspHits'},
-    { label: 'Other Hits', value: 'OtherHits'},
-    { label: 'Total Hits', value: 'TotalHits'},
+    { label: 'TCP Hits', value: 'TcpHits' },
+    { label: 'UDP Hits', value: 'UdpHits' },
+    { label: 'ICMP Hits', value: 'IcmpHits' },
+    { label: 'ESP Hits', value: 'EspHits' },
+    { label: 'Other Hits', value: 'OtherHits' },
+    { label: 'Total Hits', value: 'TotalHits' },
   ];
 
   // Used for the table - when true there is a loading icon displayed
@@ -190,7 +190,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   ruleCount: number = 0;
 
   // map from rule index to rule hash
-  ruleHashMap: { [index: number]: string} = {};
+  ruleHashMap: { [index: number]: string } = {};
   // Map from rule has to aggregate hits
   ruleMetrics: { [hash: string]: RuleHitEntry } = {};
   // Map from rule hash to tooltip string
@@ -198,7 +198,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
   ruleMetricsTooltip: { [hash: string]: string } = {};
 
   // EDIT MODE
-  ruleEditableMap: {[index: number]: boolean} = {};
+  ruleEditableMap: { [index: number]: boolean } = {};
   editObject: SecurityNetworkSecurityPolicy = null;
   newRuleIndex: number = -1;
 
@@ -227,10 +227,10 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     },
     'TotalHits': (opts: CustomExportFunctionOpts) => {
       const entry = this.ruleMetrics[opts.data.ruleHash];
-        if (entry == null) {
-          return '';
-        }
-        return String(entry.TotalHits); // to return string
+      if (entry == null) {
+        return '';
+      }
+      return String(entry.TotalHits); // to return string
     }
   };
 
@@ -335,13 +335,14 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     this.subscriptions.push(sub);
   }
 
+
   getNaples() {
-    this.naplesEventUtility = new HttpEventUtility<ClusterDistributedServiceCard>(ClusterDistributedServiceCard);
-    this.naples = this.naplesEventUtility.array as ReadonlyArray<ClusterDistributedServiceCard>;
-    const subscription = this.clusterService.WatchDistributedServiceCard().subscribe(
-      response => {
-        this.naplesEventUtility.processEvents(response);
-        // mac-address to Name map
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naples = response.data as ClusterDistributedServiceCard[]; // mac-address to Name map
         this.macToNameMap = {};
         for (const smartnic of this.naples) {
           if (smartnic.spec.id != null && smartnic.spec.id !== '') {
@@ -349,10 +350,13 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
           }
         }
       },
-      this._controllerService.webSocketErrorHandler('Failed to get DSCs info')
+      (error) => {
+        this._controllerService.invokeRESTErrorToaster('Error', 'Failed to get DSCs info');
+      }
     );
-    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
+    this.subscriptions.push(dscSubscription);
   }
+
 
   getNaplesName(mac: string): string {
     return this.macToNameMap[mac];
@@ -533,7 +537,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     this.searchSubscription = this.searchService.PostPolicyQuery(req).subscribe(
       (data) => {
         const body = data.body as ISearchPolicySearchResponse;
-        if (body.status ===  SearchPolicySearchResponse_status.match) {
+        if (body.status === SearchPolicySearchResponse_status.match) {
           if (this.selectedPolicy == null || body.results[this.selectedPolicy.meta.name] == null) {
             this.searchErrorMessage = 'No Matching Rule';
             this.searchPolicyInvoked = true;
@@ -649,7 +653,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
           this.dataObjects = [];
         }
         // Once receive server update, we update the toolbar.
-        this.setToolbar( this.selectedPolicyId);
+        this.setToolbar(this.selectedPolicyId);
       },
       this._controllerService.webSocketErrorHandler('Failed to get SG Policy')
     );
@@ -661,7 +665,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     if (this.selectedPolicy == null) {
       return;
     }
-    this.selectedPolicy.status['rule-status'].forEach( (rule, index) => {
+    this.selectedPolicy.status['rule-status'].forEach((rule, index) => {
       this.ruleHashMap[index] = rule['rule-hash'];
     });
   }
@@ -696,7 +700,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
             if (res.series == null) {
               return;
             }
-            res.series.forEach( (s) => {
+            res.series.forEach((s) => {
               if (s.tags == null) {
                 return;
               }
@@ -717,8 +721,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
                 TotalHits: 0,
                 UdpHits: 0
               };
-              uniquePoints.forEach( (point) => {
-                this.ruleHitItems.map(item => item.value).forEach( (col) => {
+              uniquePoints.forEach((point) => {
+                this.ruleHitItems.map(item => item.value).forEach((col) => {
                   const index = s.columns.indexOf(col);
                   ruleHits[col] += point[index];
                 });
@@ -803,9 +807,9 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     retStrs.forEach((str) => {
       maxLength = Math.max(maxLength, str.length);
     });
-    retStrs = retStrs.map( (str) => {
+    retStrs = retStrs.map((str) => {
       const items = str.split(' ');
-      const count =  items[items.length - 1];
+      const count = items[items.length - 1];
       let title = '';
       for (let index = 0; index < items.length - 1; index++) {
         title += items[index];
@@ -900,7 +904,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
     const editrules: Array<SecuritySGRule> = [];
     this.editObject = new SecurityNetworkSecurityPolicy(this.selectedPolicy);
     this.tableContainer.selectedDataObjects.forEach((ruleObj, index) => {
-        editrules.push(ruleObj.rule);
+      editrules.push(ruleObj.rule);
     });
     this.editObject.spec.rules = editrules;
     this.display = true;
@@ -967,7 +971,7 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
       const policy = (this.newRuleIndex > -1) ?
         this.updateFromNewRule(editedObject, this.newRuleIndex) :
         this.updateFromEditObject(editedObject);
-        this.updatePolicy(policy);
+      this.updatePolicy(policy);
     }
   }
 
@@ -1004,8 +1008,8 @@ export class SgpolicydetailComponent extends TableviewAbstract<ISecurityNetworkS
           this.resetMapsAndSelection();
         },
         (error) => {
-            this.controllerService.invokeRESTErrorToaster(Utility.CREATE_FAILED_SUMMARY, error);
-            this.resetMapsAndSelection();
+          this.controllerService.invokeRESTErrorToaster(Utility.CREATE_FAILED_SUMMARY, error);
+          this.resetMapsAndSelection();
         }
       );
     }

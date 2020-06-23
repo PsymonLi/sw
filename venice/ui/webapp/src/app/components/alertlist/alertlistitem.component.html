@@ -1,15 +1,18 @@
 <div *ngIf="alert" class="alertlistitem-widget"
-     [ngClass]="{'alertlistitem-widget-check':alert.check}" (click)="onAlertItemClick($event)">
+     [ngClass]="{'alertlistitem-widget-check':alert._ui.check}" (click)="onAlertItemClick($event)">
   <div class="alertlistitem-front-group-div">
     <mat-icon *ngIf="getAlertItemSeverity() === 'info'" fxFlex="none"
+              (click)="onAlertItemIconClick($event)"
               [ngClass]="getAlertItemIconClass()" [matTooltip]="getAlertItemIconTooltip()">
       info
     </mat-icon>
     <mat-icon *ngIf="getAlertItemSeverity() === 'warn'" fxFlex="none"
+              (click)="onAlertItemIconClick($event)"
               [ngClass]="getAlertItemIconClass()" [matTooltip]="getAlertItemIconTooltip()">
       warning
     </mat-icon>
     <mat-icon *ngIf="getAlertItemSeverity() === 'critical'" fxFlex="none"
+              (click)="onAlertItemIconClick($event)"
               [ngClass]="getAlertItemIconClass()" [matTooltip]="getAlertItemIconTooltip()">
       error
     </mat-icon>
@@ -18,7 +21,7 @@
     <div class="alertlistitem-back-group-div-toprow">
       <span class="alertlistitem-display-text-bold alertlistitem-label">
         {{alert.status['alert-policy-id']}}</span>
-      <span class="alertlistitem-display-text alertlistitem-check" *ngIf="alert.check"><i
+      <span class="alertlistitem-display-text alertlistitem-check" *ngIf="alert._ui.check"><i
            class="fa fa-check"></i></span>
     </div>
     <div class="alertlistitem-display-text-bold alertlistitem-desc">{{alert.status.message}}</div>
@@ -27,9 +30,10 @@
             class="alertlistitem-display-text-small alertlistitem-user">{{alert.status.source.component}}
         <a href="{{alert['alertSourceNameLink']}}" [matTooltip]="getAlertItemSourceNameTooltip()"
            (click)="onAlertItemSourceNameClick()">{{alert.status.source['node-name']}}</a>
-        {{alert.status['object-ref'].kind}}</span>
+        {{alert.status['object-ref'].kind}}
+        {{alert.status['object-ref'].name ?  ' ' + alert.status['object-ref'].name : '' }}</span>
       <span
-            class="alertlistitem-display-text-small alertlistitem-time">{{alert.meta['creation-time']| PrettyDate }}</span>
+            class="alertlistitem-display-text-small alertlistitem-time">{{ dateToString(alert.meta['creation-time'])| PrettyDate }}</span>
     </div>
   </div>
 

@@ -680,11 +680,6 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
-  dateToString(date) {
-    const prettyDate = new PrettyDatePipe('en-US');
-    return prettyDate.transform(date);
-  }
-
   creationFormClose() {
     this.eventsTable.creationFormClose();
   }

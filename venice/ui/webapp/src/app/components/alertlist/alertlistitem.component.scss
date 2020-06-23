@@ -42,6 +42,10 @@
   font-size: 36px;
 }
 
+.alertlistitem-icon-common {
+  cursor: pointer;
+}
+
 .alertlistitem-icon-critical {
   color: #dd3b09;
 }
@@ -98,4 +102,8 @@
 .alertlistitem-time {
   float: right;
   margin-right: 5px;
+}
+
+.pensando-ui.ui-overflow-hidden .ui-confirmdialog {
+  width: 40em;
 }

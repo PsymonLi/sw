@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, ViewEncapsulation } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, ViewEncapsulation, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 
 import { Utility } from '../../common/Utility';
 import { MonitoringAlert, MonitoringAlertSpec_state, MonitoringAlertStatus_severity, MonitoringAlertSpec_state_uihint } from '@sdk/v1/models/generated/monitoring';
+import { BaseComponent } from '../base/base.component';
 
 
 /**
@@ -16,9 +17,10 @@ import { MonitoringAlert, MonitoringAlertSpec_state, MonitoringAlertStatus_sever
   selector: 'app-alertlist',
   templateUrl: './alertlist.component.html',
   styleUrls: ['./alertlist.component.scss'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AlertlistComponent implements OnInit, OnDestroy, OnChanges {
+export class AlertlistComponent  extends BaseComponent  implements OnInit, OnDestroy, OnChanges {
   @Input() data: ReadonlyArray<MonitoringAlert> = [];
   @Output() alertsClose: EventEmitter<any> = new EventEmitter();
   @Output() expandAllAlertsClick: EventEmitter<any> = new EventEmitter();
@@ -38,7 +40,9 @@ export class AlertlistComponent implements OnInit, OnDestroy, OnChanges {
   // This variable limit how many alert-items listed in Venice-UI alert panel
   maxNumber: number = 20;
 
-  constructor() { }
+  constructor(protected cdr: ChangeDetectorRef) {
+    super(null, null);
+  }
 
   /**
    * Component life cycle API
@@ -60,6 +64,7 @@ export class AlertlistComponent implements OnInit, OnDestroy, OnChanges {
     if (this.data && Array.isArray(this.data)) {
       this.alerts = this.data;
       this.computeAlertNumbers();
+      this.cdr.detectChanges();
     }
   }
 

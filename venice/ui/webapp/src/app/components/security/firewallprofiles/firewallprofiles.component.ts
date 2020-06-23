@@ -152,10 +152,6 @@ export class FirewallprofilesComponent  extends TablevieweditAbstract<ISecurityF
     }
   }
 
-  dateToString(date) {
-    const prettyDate = new PrettyDatePipe('en-US');
-    return prettyDate.transform(date);
-  }
 
   closeDetails() {
     this.selectedFirewallProfile = null;

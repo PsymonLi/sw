@@ -516,10 +516,6 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
-  dateToString(date) {
-    const prettyDate = new PrettyDatePipe('en-US');
-    return prettyDate.transform(date);
-  }
 
   getEventNameFromURI(uri) {
     const split_uri = uri.split('/');

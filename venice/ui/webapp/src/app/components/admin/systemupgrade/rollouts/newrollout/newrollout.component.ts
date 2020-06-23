@@ -115,8 +115,7 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
     matIcon: 'update'
   };
 
-  naplesEventUtility: HttpEventUtility<ClusterDistributedServiceCard>;
-  naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
+  naples: ClusterDistributedServiceCard [] = [];
   naplesIdMap: { [id: string]: ClusterDistributedServiceCard } = {};
   naplesRuleMap: { [rule: string]: Set<string> } = {};
   duplicateMatchMap: { [nicid: string]: number[] } = {};
@@ -162,9 +161,9 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
 
   // When we get a response containing all DistributedServiceCards objects, we build labelData to be used for the label selector.
   // We also generate a Map of each label-rule to all the matchedDistributedServiceCards.
+
   handleReadDistributedServiceCardsResponse(response) {
     this.orderConstraintslabelData = [];
-    this.naplesEventUtility.processEvents(response);
     this.generateRuleAndIdMap();
     const labels = Utility.getLabels(this.naples as any[]);
     for (const key of Object.keys(labels)) {
@@ -200,16 +199,18 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
   }
 
   getNaplesLabelsKeyValues() {
-    this.naplesEventUtility = new HttpEventUtility<ClusterDistributedServiceCard>(ClusterDistributedServiceCard);
-    this.naples = this.naplesEventUtility.array as ReadonlyArray<ClusterDistributedServiceCard>;
-    const subscription = this.clusterService.WatchDistributedServiceCard().subscribe(
-      response => {
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naples  = response.data as ClusterDistributedServiceCard [];
         this.handleReadDistributedServiceCardsResponse(response);
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get labels')
+      }
     );
-    this.subscriptions.push(subscription);
+    this.subscriptions.push(dscSubscription);
   }
+
 
   initRolloutData() {
     if (!this.isInline) {  // create mode

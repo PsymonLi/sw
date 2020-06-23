@@ -711,28 +711,29 @@ export class Utility {
    * objectCallback and nonObjectCallback are functions.
    * linkComponent is a compontent.ts
    */
-  static traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
+  static traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any, seen?: Set < any >) {
+
     for (const key in data) {
       if (typeof (data[key]) === 'object' && data[key] !== null) {
         if (Array.isArray(data[key])) {
           // sample array [{"peer-address":"18.0.25.1","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65001,"address-families":["BGP_AFI_IPV4"]},{"peer-address":"20.3.0.54","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65005,"address-families":["BGP_AFI_L2VPN"]}]
           for (let i = 0; i < data[key].length; i++) {
              if (typeof (data[key][i]) === 'object' && data[key][i] !== null) {
-              const spaces = linkComponent.padSpace(indentLevel * 5 );
+              const spaces = (linkComponent && linkComponent.padSpace) ?  linkComponent.padSpace(indentLevel * 5 ) : '';
               list.push( spaces + i  +  ' ' + key );
               this.traverseJSONObject(data[key][i], indentLevel + 1 + 1 , list, linkComponent);
              } else {
-              const spaces = linkComponent.padSpace(indentLevel * 5);
+              const spaces =  (linkComponent && linkComponent.padSpace) ? linkComponent.padSpace(indentLevel * 5) : '';
               list.push( spaces + key + ' : ' + data[key][i]);
              }
           }
         } else {
-          const spaces = linkComponent.padSpace(indentLevel * 5 );
+          const spaces = (linkComponent && linkComponent.padSpace) ?  linkComponent.padSpace(indentLevel * 5 ) : '';
           list.push( spaces + key );
           this.traverseJSONObject(data[key], indentLevel + 1, list, linkComponent);
         }
       } else {
-        const spaces = linkComponent.padSpace(indentLevel * 5);
+        const spaces =  (linkComponent && linkComponent.padSpace) ? linkComponent.padSpace(indentLevel * 5) : '';
         list.push( spaces + key + ' : ' + data[key]);
       }
     }
@@ -2311,12 +2312,25 @@ export class Utility {
     }
     return output;
   }
+
   public static traverseNodeJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
     for (const key in data) {
       if (typeof (data[key]) === 'object' && data[key] !== null) {
         if (Array.isArray(data[key])) {
           for (let i = 0; i < data[key].length; i++) {
-            this.traverseNodeJSONObject(data[key][i], indentLevel + 1 , list, this);
+            if (typeof (data[key][i]) === 'string') {
+              // example: values: ["SERVICE_STOPPED",..]
+              if (i === 0) {
+                const spaces = linkComponent.padSpace(indentLevel * 5 );
+                list.push( spaces + key + ' : ' +  (Array.isArray( data[key][i]) ?  data[key][i].join(',') : data[key][i])) ;
+              } else {
+              const spaces = linkComponent.padSpace( (indentLevel + 1)  * 5 );
+              console.log ('traverseNodeJSONObject here');
+              list.push( spaces  +  data[key][i]);
+              }
+            } else {
+              this.traverseNodeJSONObject(data[key][i], indentLevel + 1 , list, this);
+            }
           }
         } else {
           const spaces = linkComponent.padSpace(indentLevel * 5 );
@@ -2329,6 +2343,7 @@ export class Utility {
       }
     }
   }
+
   setControllerService(controllerService: ControllerService) {
     this.myControllerService = controllerService;
   }

@@ -58,7 +58,7 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
   startingSortField: string = 'time';
   startingSortOrder: number = -1;
 
-  naples: ReadonlyArray<ClusterDistributedServiceCard> = [];
+  naples: ClusterDistributedServiceCard[] = [];
   // Used for processing the stream events
   naplesEventUtility: HttpEventUtility<ClusterDistributedServiceCard>;
   macAddrToName: { [key: string]: string; } = {};
@@ -271,21 +271,22 @@ export class FwlogsComponent extends TableviewAbstract<IFwlogFwLog, FwlogFwLog> 
   }
 
   getNaples() {
-    this.naplesEventUtility = new HttpEventUtility<ClusterDistributedServiceCard>(ClusterDistributedServiceCard);
-    this.naples = this.naplesEventUtility.array as ReadonlyArray<ClusterDistributedServiceCard>;
-    const subscription = this.clusterService.WatchDistributedServiceCard().subscribe(
-      response => {
-        this.naplesEventUtility.processEvents(response);
+    const dscSubscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
+      (response) => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.naples  = response.data as ClusterDistributedServiceCard [];
         // mac-address to name map
         this.macAddrToName = {};
         for (const smartnic of this.naples) {
           this.macAddrToName[smartnic.meta.name] = smartnic.spec.id;
         }
-      },
-      this.controllerService.webSocketErrorHandler('Failed to get DSCs')
+      }
     );
-    this.subscriptions.push(subscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
+    this.subscriptions.push(dscSubscription); // add subscription to list, so that it will be cleaned up when component is destroyed.
   }
+
 
   handleRuleClick() {
     this.controllerService.navigate(['/security', 'sgpolicies', this.policyName]);

@@ -7,6 +7,7 @@ import { SortEvent } from 'primeng/components/common/api';
 import { ControllerService } from '../../services/controller.service';
 import { TableUtility } from '../shared/tableviewedit/tableutility';
 import { Subscription } from 'rxjs';
+import { PrettyDatePipe } from '../shared/Pipes/PrettyDate.pipe';
 // declare var google: any;
 
 /**
@@ -312,6 +313,11 @@ export class BaseComponent implements OnInit {
     const list = [];
     Utility.traverseJSONObject(obj, 0, list, this);
     return list.join('<br/>');
+  }
+
+  dateToString(date) {
+    const prettyDate = new PrettyDatePipe('en-US');
+    return prettyDate.transform(date);
   }
 
 }

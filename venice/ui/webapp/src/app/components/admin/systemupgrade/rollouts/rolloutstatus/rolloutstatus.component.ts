@@ -191,11 +191,9 @@ export class RolloutstatusComponent extends BaseComponent implements OnInit, OnD
   }
 
   getNaples() {
-    this.naplesEventUtility = new HttpEventUtility<ClusterDistributedServiceCard>(ClusterDistributedServiceCard);
-    this.naples = this.naplesEventUtility.array as ReadonlyArray<ClusterDistributedServiceCard>;
-    const subscription = this.clusterService.WatchDistributedServiceCard().subscribe(
+     const subscription = this.clusterService.ListDistributedServiceCardCache().subscribe(
       response => {
-        this.naplesEventUtility.processEvents(response);
+        this.naples  = response.data as ReadonlyArray<ClusterDistributedServiceCard> ;
         this.naplesCopy = this.naples;
       },
       (error) => {

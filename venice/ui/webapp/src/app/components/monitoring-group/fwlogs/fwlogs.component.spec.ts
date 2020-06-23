@@ -227,8 +227,8 @@ describe('fwlogsComponent', () => {
     spyOn(fwlogService, 'PostGetLogs').and.returnValue(
       new BehaviorSubject({body: fwlog})
     );
-    spyOn(clusterService, 'WatchDistributedServiceCard').and.returnValue(
-      TestingUtility.createWatchEventsSubject([
+    spyOn(clusterService, 'ListDistributedServiceCardCache').and.returnValue(
+      TestingUtility.createDataCacheSubject([
         naple1
       ])
     );
