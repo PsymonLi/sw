@@ -116,7 +116,8 @@ func (w *worker) Run(ctx context.Context) {
 		case <-ticker.C:
 			if len(w.queue) == 0 {
 				w.Lock()
-				if makeTimestamp()-atomic.LoadInt64(&w.lastQueueTime) > (100 * int64(time.Millisecond)) {
+				idleTime := ((100 * time.Millisecond).Nanoseconds()) / int64(time.Millisecond)
+				if makeTimestamp()-atomic.LoadInt64(&w.lastQueueTime) > idleTime {
 					w.state = idle
 				}
 				w.Unlock()
