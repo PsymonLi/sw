@@ -39,7 +39,7 @@ def Verify(tc):
             testobj = yaml.load(portInfo, Loader=yaml.FullLoader)#parse the YAML
             if bool(testobj):#last split is always empty - skip it. Otherwise process it
                  portId=testobj['spec']['keyorhandle']['keyorhandle']['portid']
-                 portStatus=testobj['status']['operstatus']
+                 portStatus=testobj['status']['linkstatus']['operstate']
                  if portStatus!=1 :
                       api.Logger.error("Node Name:[%s] Port:[%d] Status:[%d] - Port Is in bad state "% (cmd.node_name,portId,portStatus))
                       result = api.types.status.FAILURE
