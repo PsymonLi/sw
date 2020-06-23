@@ -411,7 +411,7 @@ bgp_peer_pre_get(BGPPeerSpec &req, BGPPeerGetResponse* resp, NBB_VOID* kh)
     BGPPeerKeyHandle *key_handle = (BGPPeerKeyHandle *)kh;
 
     if (key_handle->id_or_key_case() == key_handle->kIdFieldNumber) {
-        pds_ms_get_uuid(&uuid, req.id());
+        pds_ms_get_uuid(&uuid, key_handle->id());
         auto mgmt_ctxt = mgmt_state_t::thread_context();
         auto uuid_obj = mgmt_ctxt.state()->lookup_uuid(uuid);
 
@@ -444,7 +444,7 @@ bgp_peer_pre_set(BGPPeerSpec &req, NBB_LONG row_status,
     if (row_status == AMB_ROW_DESTROY) {
         BGPPeerKeyHandle *key_handle = (BGPPeerKeyHandle *)kh;
         if (key_handle->id_or_key_case() == key_handle->kIdFieldNumber) {
-            pds_ms_get_uuid(&uuid, req.id());
+            pds_ms_get_uuid(&uuid, key_handle->id());
         } 
     } else {
         // create/update should have valid UUID
@@ -574,7 +574,7 @@ bgp_peer_afi_safi_pre_get(BGPPeerAfSpec &req,
     BGPPeerAfKeyHandle *key_handle = (BGPPeerAfKeyHandle *)kh;
 
     if (key_handle->id_or_key_case() == key_handle->kIdFieldNumber) {
-        pds_ms_get_uuid(&uuid, req.id());
+        pds_ms_get_uuid(&uuid, key_handle->id());
 
         auto mgmt_ctxt = mgmt_state_t::thread_context();
         auto uuid_obj = mgmt_ctxt.state()->lookup_uuid(uuid);
@@ -610,7 +610,7 @@ bgp_peer_afi_safi_pre_set(BGPPeerAfSpec &req, NBB_LONG row_status,
     if (row_status == AMB_ROW_DESTROY) {
         BGPPeerAfKeyHandle *key_handle = (BGPPeerAfKeyHandle *)kh;
         if (key_handle->id_or_key_case() == key_handle->kIdFieldNumber) {
-            pds_ms_get_uuid(&uuid, req.id());
+            pds_ms_get_uuid(&uuid, key_handle->id());
         } 
     } else {
         // create/update should have valid UUID
