@@ -9,12 +9,16 @@ import (
 	"github.com/pensando/sw/api/cache/mocks"
 	"github.com/pensando/sw/api/generated/cluster"
 	apiintf "github.com/pensando/sw/api/interfaces"
+	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/log"
 	"github.com/pensando/sw/venice/utils/runtime"
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
 
 func TestDSCProfilePreCommitHooks(t *testing.T) {
+
+	fts := []cluster.Feature{}
+	featureflags.Update(fts)
 
 	hooks := &clusterHooks{
 		logger: log.SetConfig(log.GetDefaultConfig("DSCProfile-Hooks-Precommit-Test")),
