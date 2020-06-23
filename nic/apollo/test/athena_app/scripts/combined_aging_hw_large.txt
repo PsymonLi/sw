@@ -1,5 +1,6 @@
+test_log_file_create /var/log/pensando/iota_combined_large_test.log
 skip_fte_flow_prog_set TRUE
-session_table_clear_full 8388608
+session_and_cache_clear_full 8388608
 conntrack_table_clear_full 8388608
 
 session_aging_init
@@ -10,25 +11,20 @@ session_aging_accel_control false
 conntrack_aging_accel_control false
 session_aging_tolerance_secs_set 0
 conntrack_aging_tolerance_secs_set 0
-
-session_aging_normal_tmo_set 5
-session_aging_accel_tmo_set 2
-
-conntrack_aging_normal_tmo_set {ICMP unestablished 6} {icmp established 6} {others unestablished 6} {others established 6}
-conntrack_aging_normal_tmo_set {udp unestablished 6} {UDP ESTABLISHED 6}
-conntrack_aging_normal_tmo_set {tcp unestablished 6} {TCP syn_sent 6} {TCP SYN_RECV 6} {tcp synack_sent 6} {tcp synack_recv 6} {tcp established 6} {tcp fin_sent 6} {tcp fin_recv 6} {tcp time_wait 6} {tcp rst_close 6}
-
-conntrack_aging_accel_tmo_set {ICMP unestablished 2} {icmp established 2} {others unestablished 2} {others established 2}
-conntrack_aging_accel_tmo_set {udp unestablished 2} {UDP ESTABLISHED 2}
-conntrack_aging_accel_tmo_set {tcp unestablished 2} {TCP syn_sent 2} {TCP SYN_RECV 2} {tcp synack_sent 2} {tcp synack_recv 2} {tcp established 2} {tcp fin_sent 2} {tcp fin_recv 2} {tcp time_wait 2} {tcp rst_close 2}
+session_aging_tmo_artificial_long_set
 
 session_populate_full 6145304
 conntrack_populate_full {TCP fin_sent 7736083}
+session_aging_normal_tmo_set 3
+conntrack_aging_normal_tmo_set {tcp fin_sent 3}
 combined_aging_test
 
 #random with specified {start_idx count} and random {flowtype flowstate}
+session_aging_tmo_artificial_long_set
 session_populate_random 391103 2074777
 conntrack_populate_random {6765 199607} {tcp syn_sent}
+session_aging_normal_tmo_set 4
+conntrack_aging_normal_tmo_set {tcp syn_sent 4}
 combined_aging_test
 
 #switch to accelerated aging
@@ -37,13 +33,21 @@ conntrack_aging_accel_control true
 
 session_populate_random 92868 3137088
 conntrack_populate_random {13 1846977}
+session_aging_accel_tmo_set 5
+conntrack_aging_accel_tmo_set {ICMP unestablished 2} {icmp established 2}  {others unestablished 2} {others established 2}
+conntrack_aging_accel_tmo_set {udp unestablished 2} {UDP ESTABLISHED 2}
+conntrack_aging_accel_tmo_set {tcp unestablished 2} {TCP syn_sent 2} {TCP SYN_RECV 2} {tcp synack_sent 2} {tcp synack_recv 2} {tcp established 2} {tcp fin_sent 2} {tcp fin_recv 2} {tcp time_wait 2} {tcp rst_close 2}
 combined_aging_test
+
+flow_cache_dump /data/iota_combined_large.log
 
 session_aging_metrics_show
 conntrack_aging_metrics_show
 
 session_aging_accel_control FALSE
 conntrack_aging_accel_control false
+session_aging_tmo_factory_dflt_set
+
 conntrack_aging_fini
 session_aging_fini
 

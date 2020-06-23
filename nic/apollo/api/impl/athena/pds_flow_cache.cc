@@ -21,6 +21,7 @@
 #include "ftl_wrapper.h"
 #include "gen/p4gen/athena/include/p4pd.h"
 #include "pds_flow_session_ctx.hpp"
+#include "pds_conntrack_ctx.hpp"
 
 using namespace sdk;
 using namespace sdk::table;
@@ -124,6 +125,12 @@ pds_flow_cache_create (pds_cinit_params_t *params)
     sdk_ret_t ret = (sdk_ret_t)pds_flow_session_ctx_init(params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Session context init failed with ret %u\n", ret);
+        return ret;
+    }
+
+    ret = (sdk_ret_t)pds_conntrack_ctx_init();
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Conntrack context init failed with ret %u\n", ret);
         return ret;
     }
 
@@ -419,6 +426,7 @@ void
 pds_flow_cache_delete ()
 {
     ftl_table->destroy(ftl_table);
+    pds_conntrack_ctx_fini();
     pds_flow_session_ctx_fini();
     return;
 }

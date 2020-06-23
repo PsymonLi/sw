@@ -36,7 +36,7 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
 /*
  * Global tolerance for use across multiple linked tests
  */
-static aging_tolerance_t    session_tolerance;
+static aging_tolerance_t    session_tolerance(EXPIRY_TYPE_SESSION);
 static aging_metrics_t      session_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_SESSION);
 
 const aging_tolerance_t&
@@ -71,7 +71,7 @@ session_table_clear_full(test_vparam_ref_t vparam)
     uint32_t    depth;
     pds_ret_t   ret = PDS_RET_OK;
 
-    depth = vparam.expected_num(session_table_depth());
+    depth = vparam.expected_num(session_table_depth()) + 1;
     depth = std::min(depth, session_table_depth());
 
     flow_session_key_init(&key);
@@ -83,9 +83,10 @@ session_table_clear_full(test_vparam_ref_t vparam)
         if (!SESSION_DELETE_RET_VALIDATE(ret)) {
             break;
         }
+        fte_ath::fte_session_index_free(key.session_info_id);
     }
     TEST_LOG_INFO("Cleared %u session entries: ret %d\n",
-                  key.session_info_id, ret);
+                  key.session_info_id - 1, ret);
     return SESSION_DELETE_RET_VALIDATE(ret);
 }
 
@@ -182,7 +183,7 @@ session_populate_full(test_vparam_ref_t vparam)
     pds_ret_t   ret = PDS_RET_OK;
 
     session_metrics.baseline();
-    depth = vparam.expected_num(session_table_depth());
+    depth = vparam.expected_num(session_table_depth()) + 1;
     depth = std::min(depth, session_table_depth());
 
     session_tolerance.reset(depth);
@@ -210,8 +211,9 @@ session_and_cache_clear_full(test_vparam_ref_t vparam)
     pds_flow_data_t         data;
     uint32_t                depth;
     pds_ret_t               ret = PDS_RET_OK;
+    pds_ret_t               cache_ret = PDS_RET_OK;
 
-    depth = vparam.expected_num(session_table_depth());
+    depth = vparam.expected_num(session_table_depth()) + 1;
     depth = std::min(depth, session_table_depth());
 
     data.index_type = PDS_FLOW_SPEC_INDEX_SESSION;
@@ -221,24 +223,24 @@ session_and_cache_clear_full(test_vparam_ref_t vparam)
          key.session_info_id++) {
 
         data.index = key.session_info_id;
-        ret = pds_flow_cache_entry_delete_by_flow_info(&data);
-        if (ret == PDS_RET_RETRY) {
+        cache_ret = pds_flow_cache_entry_delete_by_flow_info(&data);
+        if (cache_ret == PDS_RET_RETRY) {
 
             // Skip this entry
+            cache_ret = PDS_RET_OK;
             continue;
         }
-        if (!SESSION_DELETE_RET_VALIDATE(ret)) {
-            break;
-        }
         ret = pds_flow_session_info_delete(&key);
-        if (!SESSION_DELETE_RET_VALIDATE(ret)) {
+        if (!SESSION_DELETE_RET_VALIDATE(cache_ret) ||
+            !SESSION_DELETE_RET_VALIDATE(ret)) {
             break;
         }
         fte_ath::fte_session_index_free(key.session_info_id);
     }
-    TEST_LOG_INFO("Cleared %u entries: ret %d\n",
-                  key.session_info_id, ret);
-    return SESSION_DELETE_RET_VALIDATE(ret);
+    TEST_LOG_INFO("Cleared %u entries: ret %d cache_ret %d\n",
+                  key.session_info_id - 1, ret, cache_ret);
+    return SESSION_DELETE_RET_VALIDATE(ret) &&
+           SESSION_DELETE_RET_VALIDATE(cache_ret);
 }
 
 bool
@@ -255,6 +257,7 @@ session_and_cache_populate(test_vparam_ref_t vparam)
     flow_key_field_t        sport;
     uint32_t                value;
     uint32_t                count;
+    uint32_t                conntrack_id;
     uint32_t                proto = IPPROTO_NONE;
     pds_ret_t               ret = PDS_RET_OK;
     pds_ret_t               cache_ret = PDS_RET_OK;
@@ -305,6 +308,7 @@ session_and_cache_populate(test_vparam_ref_t vparam)
               (uint64_t)dport.count();
     session_tolerance.reset(ids_max > UINT32_MAX ? UINT32_MAX : ids_max);
     session_tolerance.using_fte_indices(true);
+    conntrack_id = session_tolerance.session_assoc_conntrack_id();
 
     for (vnic.restart(); vnic.count(); vnic.next_value()) {
         for (sip.restart(); sip.count(); sip.next_value()) {
@@ -326,8 +330,15 @@ session_and_cache_populate(test_vparam_ref_t vparam)
                                 ret = PDS_RET_OK;
                                 goto done;
                             }
+
+                            if (conntrack_id) {
+                                session_spec.data.conntrack_id = conntrack_id++;
+                            }
+
                             ret = pds_flow_session_info_create(&session_spec);
                             if (!SESSION_CREATE_RET_VALIDATE(ret)) {
+                                fte_ath::fte_session_index_free(
+                                         session_spec.key.session_info_id);
                                 goto done;
                             }
                             session_tolerance.create_id_map_insert(
@@ -400,7 +411,8 @@ done:
 pds_ret_t
 session_aging_expiry_fn(uint32_t expiry_id,
                         pds_flow_age_expiry_type_t expiry_type,
-                        void *user_ctx)
+                        void *user_ctx,
+                        uint32_t *ret_handle)
 {
     pds_ret_t   ret = PDS_RET_OK;
     sdk_ret_t   fte_ret = SDK_RET_OK;
@@ -409,8 +421,14 @@ session_aging_expiry_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_SESSION:
         if (aging_expiry_dflt_fn) {
-            session_tolerance.session_tmo_tolerance_check(expiry_id);
-            ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
+            inter_poll_params_t *inter_poll =
+                  static_cast<inter_poll_params_t *>(user_ctx);
+
+            if (!inter_poll || !inter_poll->skip_expiry_fn) {
+                session_tolerance.session_tmo_tolerance_check(expiry_id);
+                ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type,
+                                              user_ctx, ret_handle);
+            }
             if (ret != PDS_RET_RETRY) {
                 session_tolerance.expiry_count_inc();
                 session_tolerance.create_id_map_find_erase(expiry_id);
@@ -422,7 +440,8 @@ session_aging_expiry_fn(uint32_t expiry_id,
         break;
 
     case EXPIRY_TYPE_CONNTRACK:
-        ret = conntrack_aging_expiry_fn(expiry_id, expiry_type, user_ctx);
+        ret = conntrack_aging_expiry_fn(expiry_id, expiry_type,
+                                        user_ctx, ret_handle);
         break;
 
     default:
@@ -548,7 +567,9 @@ session_4combined_result_check(void)
                   session_tolerance.over_age_min(),
                   session_tolerance.over_age_max());
     session_tolerance.create_id_map_empty_check();
-    session_metrics.expiry_count_check(session_tolerance.expiry_count());
+    if (!session_tolerance.session_assoc_conntrack_id()) {
+        session_metrics.expiry_count_check(session_tolerance.expiry_count());
+    }
     return session_4combined_expiry_count_check() &&
            session_tolerance.zero_failures();
 }
@@ -567,7 +588,7 @@ session_aging_test(test_vparam_ref_t vparam)
 bool
 session_aging_normal_tmo_set(test_vparam_ref_t vparam)
 {
-    session_tolerance.reset();
+    session_tolerance.normal_tmo.reset();
     session_tolerance.normal_tmo.session_tmo_set(vparam.expected_num());
     return session_tolerance.zero_failures();
 }
@@ -575,17 +596,46 @@ session_aging_normal_tmo_set(test_vparam_ref_t vparam)
 bool
 session_aging_accel_tmo_set(test_vparam_ref_t vparam)
 {
-    session_tolerance.reset();
+    session_tolerance.accel_tmo.reset();
     session_tolerance.accel_tmo.session_tmo_set(vparam.expected_num());
     return session_tolerance.zero_failures();
 }
 
 bool
+session_aging_tmo_factory_dflt_set(test_vparam_ref_t vparam)
+{
+    session_tolerance.normal_tmo.failures_clear();
+    session_tolerance.accel_tmo.failures_clear();
+    session_tolerance.normal_tmo.tmo_factory_dflt_set();
+    session_tolerance.accel_tmo.tmo_factory_dflt_set();
+    return session_tolerance.normal_tmo.zero_failures() &&
+           session_tolerance.accel_tmo.zero_failures();
+}
+
+bool
+session_aging_tmo_artificial_long_set(test_vparam_ref_t vparam)
+{
+    session_tolerance.normal_tmo.failures_clear();
+    session_tolerance.accel_tmo.failures_clear();
+    session_tolerance.normal_tmo.tmo_artificial_long_set();
+    session_tolerance.accel_tmo.tmo_artificial_long_set();
+    return session_tolerance.normal_tmo.zero_failures() &&
+           session_tolerance.accel_tmo.zero_failures();
+}
+
+bool
 session_aging_accel_control(test_vparam_ref_t vparam)
 {
-    session_tolerance.reset();
+    session_tolerance.failures_clear();
     session_tolerance.age_accel_control(vparam.expected_bool());
     return session_tolerance.zero_failures();
+}
+
+bool
+session_assoc_conntrack_id_set(test_vparam_ref_t vparam)
+{
+    session_tolerance.session_assoc_conntrack_id(vparam.expected_num());
+    return true;
 }
 
 bool

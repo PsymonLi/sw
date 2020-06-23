@@ -44,7 +44,8 @@ void fte_thread_init(unsigned int core_id);
 sdk_ret_t fte_flows_init(void);
 pds_ret_t fte_flows_aging_expiry_fn(uint32_t expiry_id,
                                     pds_flow_age_expiry_type_t expiry_type,
-                                    void *user_ctx);
+                                    void *user_ctx,
+                                    uint32_t *ret_handle);
 pds_ret_t fte_dump_flows(const char *fname,
                          bool append);
 pds_ret_t fte_dump_flows(zmq_msg_t *rx_msg = nullptr,
@@ -57,6 +58,12 @@ pds_ret_t fte_dump_sessions(const char *fname,
                             uint32_t count = 0);
 pds_ret_t fte_dump_sessions(zmq_msg_t *rx_msg,
                             zmq_msg_t *tx_msg);
+pds_ret_t fte_dump_conntrack(const char *fname,
+                             bool append,
+                             uint32_t start_idx = 0,
+                             uint32_t count = 0);
+pds_ret_t fte_dump_conntrack(zmq_msg_t *rx_msg,
+                             zmq_msg_t *tx_msg);
 
 #define MAX_LINE_SZ 128
 static inline void pkt_hex_dump_trace(const char *label, char *buf, uint16_t len)

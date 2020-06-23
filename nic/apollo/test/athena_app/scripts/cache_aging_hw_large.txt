@@ -6,29 +6,35 @@ test_log_file_create /var/log/pensando/iota_cache_large_test.log
 skip_fte_flow_prog_set TRUE
 session_and_cache_clear_full 8388608
 
+conntrack_aging_init
 session_aging_init
 session_aging_force_expired_ts false
 session_aging_accel_control false
 session_aging_tolerance_secs_set 0
+session_aging_tmo_artificial_long_set
 
-session_aging_normal_tmo_set 6
-session_aging_accel_tmo_set 2
-
+#session with conntrack association
+session_assoc_conntrack_id_set 1
+conntrack_populate_full {tcp established 8894304}
 session_and_cache_populate tcp {vnic 1 2} {sip 192.168.1.1 100} {dip 198.168.1.1 100} {sport 2000 10} {dport 4000 10}
-session_aging_test
+conntrack_aging_normal_tmo_set {tcp established 3}
+session_aging_normal_tmo_set 3
+combined_aging_test
+session_assoc_conntrack_id_set 0
 
 #switch to accelerated aging
 session_aging_accel_control true
-
 session_and_cache_populate udp {vnic 1 2} {sip 222.100.1.1 128} {dip 111.110.1.1 128} {sport 8000 10} {dport 9000 10}
+session_aging_accel_tmo_set 2
 session_aging_test
 
 flow_cache_dump /data/iota_cache_large.log
 
 session_aging_metrics_show
+conntrack_aging_metrics_show
 session_aging_accel_control FALSE
-session_aging_normal_tmo_set 300
-session_aging_accel_tmo_set 30
+session_aging_tmo_factory_dflt_set
+session_assoc_conntrack_id_set 0
 session_aging_fini
 
 skip_fte_flow_prog_set false

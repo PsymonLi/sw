@@ -298,7 +298,7 @@ private:
 
     struct {
         uint32_t                get;
-        uint32_t                set;;
+        uint32_t                set;
     } counters;
 };
 
@@ -315,6 +315,8 @@ public:
     }
 
     void reset(void);
+    void tmo_factory_dflt_set(void);
+    void tmo_artificial_long_set(void);
     void session_tmo_set(uint32_t tmo_val);
     uint32_t session_tmo_get(void) const { return tmo_rec.session_tmo; }
     uint32_t max_tmo_get(void) const { return max_tmo; }
@@ -325,7 +327,10 @@ public:
     uint32_t conntrack_tmo_get(pds_flow_type_t flowtype,
                                pds_flow_state_t flowstate);
 
+    void failures_clear(void) { failures.clear(); }
+
     uint32_t fail_count(void) { return failures.total(); }
+    bool zero_failures(void) { return fail_count() == 0; }
 
 private:
     void tmo_set(void);
@@ -412,12 +417,15 @@ private:
 class aging_tolerance_t
 {
 public:
-    aging_tolerance_t(uint32_t num_ids_max = AGING_TOLERANCE_STORE_ID_THRESH) :
+    aging_tolerance_t(pds_flow_age_expiry_type_t expiry_type,
+                      uint32_t num_ids_max = AGING_TOLERANCE_STORE_ID_THRESH) :
         normal_tmo(false),
         accel_tmo(true),
+        expiry_type(expiry_type),
         curr_tmo(&normal_tmo),
         num_ids_max(num_ids_max),
         tolerance_secs(0),
+        session_assoc_conntrack_id_(0),
         using_fte_indices_(false)
     {
         rte_atomic32_set(&over_age_min_, UINT32_MAX);
@@ -434,6 +442,12 @@ public:
     void age_accel_control(bool enable_sense);
     void session_tmo_tolerance_check(uint32_t id);
     void conntrack_tmo_tolerance_check(uint32_t id);
+
+    void session_assoc_conntrack_id(uint32_t conntrack_id)
+    {
+        session_assoc_conntrack_id_ = conntrack_id;
+    }
+    bool session_assoc_conntrack_id(void) { return session_assoc_conntrack_id_; }
 
     void create_id_map_insert(uint32_t id);
     void create_id_map_find_erase(uint32_t id);
@@ -467,6 +481,13 @@ public:
         return num_ids_max <= AGING_TOLERANCE_STORE_ID_THRESH;
     }
 
+    void failures_clear(void)
+    {
+        failures.clear();
+        normal_tmo.failures_clear();
+        accel_tmo.failures_clear();
+    }
+
     uint32_t fail_count(void)
     { 
         return failures.total()         + 
@@ -481,16 +502,31 @@ public:
 
 private:
 
+    const char *id_str(void)
+    {
+        switch (expiry_type) {
+        case EXPIRY_TYPE_SESSION:
+            return "session_id";
+        case EXPIRY_TYPE_CONNTRACK:
+            return "conntrack_id";
+        default:
+            break;
+        }
+        return "id_type_unknown";
+    }
+
     void tmo_tolerance_check(uint32_t id,
                              uint32_t delta_secs,
                              uint32_t applic_tmo_secs);
 
+    pds_flow_age_expiry_type_t  expiry_type;
     aging_tmo_cfg_t             *curr_tmo;
     uint32_t                    num_ids_max;
     uint32_t                    tolerance_secs;
     rte_atomic32_t              over_age_min_;
     rte_atomic32_t              over_age_max_;
     tolerance_fail_count_t      failures;
+    uint32_t                    session_assoc_conntrack_id_;
     bool                        using_fte_indices_;
 
     id_map_t                    create_id_map;
@@ -578,6 +614,20 @@ private:
 
     enum ftl_dev_if::ftl_qtype     qtype;
     ftl_dev_if::lif_attr_metrics_t base;
+};
+
+/**
+ * Session-Conntrack inter-poll parameters
+ */
+class inter_poll_params_t
+{
+public:
+    inter_poll_params_t() :
+        skip_expiry_fn(false)
+    {
+    }
+
+    bool                        skip_expiry_fn;
 };
 
 #ifndef USEC_PER_SEC
@@ -734,6 +784,9 @@ bool test_log_file_create(test_vparam_ref_t vparam);
 bool test_log_file_append(test_vparam_ref_t vparam);
 void test_log_file_close(void);
 
+const char *flowtype_str_get(uint32_t flowtype);
+const char *flowstate_str_get(uint32_t flowstate);
+
 }    // namespace athena_app
 }    // namespace test
 
@@ -746,6 +799,7 @@ bool app_test_exit(test::athena_app::test_vparam_ref_t vparam);
 bool skip_fte_flow_prog_set(test::athena_app::test_vparam_ref_t vparam);
 bool flow_cache_dump(test::athena_app::test_vparam_ref_t vparam);
 bool session_info_dump(test::athena_app::test_vparam_ref_t vparam);
+bool conntrack_dump(test::athena_app::test_vparam_ref_t vparam);
 
 bool skip_fte_flow_prog(void);
 bool skip_dpdk_init(void);

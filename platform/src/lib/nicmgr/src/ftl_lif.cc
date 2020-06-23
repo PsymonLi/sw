@@ -1491,6 +1491,8 @@ FtlLif::age_tmo_cb_set(const char *which,
     access.small_write(offsetof(age_tmo_cb_t, cb_activate),
                        (uint8_t *)&age_tmo_cb->cb_activate,
                        sizeof(age_tmo_cb->cb_activate));
+    access.cache_invalidate();
+
     /*
      * Timeout values are stored in big endian to make it
      * convenient for MPU code to load them with bit truncation.
@@ -1525,6 +1527,7 @@ FtlLif::age_tmo_cb_set(const char *which,
     access.small_write(offsetof(age_tmo_cb_t, cb_activate),
                        (uint8_t *)&age_tmo_cb->cb_activate,
                        sizeof(age_tmo_cb->cb_activate));
+    access.cache_invalidate();
 }
 
 void
@@ -1562,6 +1565,7 @@ FtlLif::force_session_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
     access.small_write(offsetof(age_tmo_cb_t, force_session_expired_ts),
                        (uint8_t *)&age_tmo_cb->force_session_expired_ts,
                        sizeof(age_tmo_cb->force_session_expired_ts));
+    access.cache_invalidate();
 }
 
 void
@@ -1573,6 +1577,7 @@ FtlLif::force_conntrack_expired_ts_set(age_tmo_cb_t *age_tmo_cb,
     access.small_write(offsetof(age_tmo_cb_t, force_conntrack_expired_ts),
                        (uint8_t *)&age_tmo_cb->force_conntrack_expired_ts,
                        sizeof(age_tmo_cb->force_conntrack_expired_ts));
+    access.cache_invalidate();
 }
 
 ftl_status_code_t
@@ -1587,11 +1592,13 @@ FtlLif::normal_age_tmo_cb_select(void)
         normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
                                   (uint8_t *)&normal_age_tmo_cb.cb_select,
                                   sizeof(normal_age_tmo_cb.cb_select));
+        normal_age_access().cache_invalidate();
 
         accel_age_tmo_cb.cb_select = false;
         accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
                                  (uint8_t *)&accel_age_tmo_cb.cb_select,
                                  sizeof(accel_age_tmo_cb.cb_select));
+        accel_age_access().cache_invalidate();
     }
 
     return FTL_RC_SUCCESS;
@@ -1609,11 +1616,13 @@ FtlLif::accel_age_tmo_cb_select(void)
         accel_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
                                  (uint8_t *)&accel_age_tmo_cb.cb_select,
                                  sizeof(accel_age_tmo_cb.cb_select));
+        accel_age_access().cache_invalidate();
 
         normal_age_tmo_cb.cb_select = false;
         normal_age_access().small_write(offsetof(age_tmo_cb_t, cb_select),
                                   (uint8_t *)&normal_age_tmo_cb.cb_select,
                                   sizeof(normal_age_tmo_cb.cb_select));
+        normal_age_access().cache_invalidate();
     }
 
     return FTL_RC_SUCCESS;

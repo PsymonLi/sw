@@ -11,6 +11,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/test/api/utils/base.hpp"
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
+#include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
 #include "nic/apollo/test/athena/api/flow_session_info/utils.hpp"
 #include "nic/apollo/test/athena/api/include/scale.hpp"
 
@@ -34,8 +35,10 @@ protected:
         num_read = 0;
         num_delete = 0;
         num_entries = 0;
+        pds_conntrack_ctx_init();
     }
     void TearDown() {
+        pds_conntrack_ctx_fini();
         display_gtest_stats();
     }
     static void SetUpTestCase() {

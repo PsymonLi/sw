@@ -89,6 +89,17 @@ testcases:
             test    : session_aging_hw_large.txt
             log_file: /var/log/pensando/iota_session_large_test.log
 
+    -   name    : conntrack_aging_hw_large
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_aging_hw_large.txt
+            dump_file: /data/iota_conntrack_large.log
+            dump_sym: flow_type
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_conntrack_large_test.log
+
     -   name    : cache_aging_hw_medium
         testcase: testcases.networking.aging
         enable  : True
@@ -110,6 +121,28 @@ testcases:
             dump_sym: SrcIP
             dump_expected_count: 0
             log_file: /var/log/pensando/iota_cache_large_test.log
+
+    -   name    : combined_aging_hw_medium
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : combined_aging_hw_medium.txt
+            dump_file: /data/iota_combined_medium.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_combined_medium_test.log
+
+    -   name    : combined_aging_hw_large
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : combined_aging_hw_large.txt
+            dump_file: /data/iota_combined_large.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_combined_large_test.log
 
     #=======================================
     # Aging Tests (with traffic) ... still to come

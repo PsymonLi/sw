@@ -2009,14 +2009,17 @@ fte_setup_flow (void)
 pds_ret_t
 fte_flows_aging_expiry_fn(uint32_t expiry_id,
                           pds_flow_age_expiry_type_t expiry_type,
-                          void *user_ctx)
+                          void *user_ctx,
+                          uint32_t *ret_handle)
 {
+    uint32_t    handle = 0;
     pds_ret_t   ret = PDS_RET_OK;
 
     switch (expiry_type) {
 
     case EXPIRY_TYPE_SESSION:
-        ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
+        ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type,
+                                      user_ctx, &handle);
 
         /*
          * Let aging scanners find the entry again if retry needed.
@@ -2027,7 +2030,18 @@ fte_flows_aging_expiry_fn(uint32_t expiry_id,
         break;
 
     case EXPIRY_TYPE_CONNTRACK:
-        ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type, user_ctx);
+        ret = (*aging_expiry_dflt_fn)(expiry_id, expiry_type,
+                                      user_ctx, &handle);
+        if (ret != PDS_RET_RETRY) {
+            if (handle) {
+                fte_session_index_free(handle);
+            }
+
+            /*
+             * If FTE also maintains a bitmap of allocated conntrack IDs,
+             * the expiry_id should be released here.
+             */
+        }
         break;
 
     default:

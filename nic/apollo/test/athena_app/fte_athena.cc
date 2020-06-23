@@ -55,6 +55,8 @@
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_l2_flow_cache.h"
 #include "nic/apollo/api/impl/athena/pds_flow_session_ctx.hpp"
+#include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
+#include "nic/apollo/api/include/athena/pds_conntrack.h"
 #include "app_test_utils.hpp"
 #include "fte_athena.hpp"
 #include "athena_app_server.hpp"
@@ -210,6 +212,8 @@ static FILE *g_stats_fp;
             fprintf(fp, args);                      \
         }                                           \
     } while (false)                                 \
+
+#define CONNTRACK_DUMP_LOG(args...)     SESSION_DUMP_LOG(args)
 
 // Send burst of packets on an output interface 
 static inline void
@@ -852,6 +856,81 @@ fte_dump_sessions(zmq_msg_t *rx_msg,
         ATHENA_APP_MSG_STR_TERM(req->fname);
         rsp->status = fte_dump_sessions(req->fname, req->append,
                                         req->start_idx, req->count);
+    }
+    return (pds_ret_t)rsp->status;
+}
+
+static void
+dump_conntrack_entry(FILE *fp,
+                     const pds_conntrack_key_t *key,
+                     const pds_conntrack_info_t *info)
+
+{
+    uint32_t    handle;
+
+    pds_conntrack_ctx_get(key->conntrack_id, &handle);
+    CONNTRACK_DUMP_LOG("ID:%u flow_type:%s flow_state:%s handle:%u timestamp:%u\n",
+                       key->conntrack_id,
+                       test::athena_app::flowtype_str_get(info->spec.data.flow_type),
+                       test::athena_app::flowstate_str_get(info->spec.data.flow_state),
+                       handle, info->status.timestamp);
+}
+
+pds_ret_t
+fte_dump_conntrack(const char *fname,
+                   bool append,
+                   uint32_t start_idx,
+                   uint32_t count)
+{
+    pds_ret_t ret = PDS_RET_OK;
+    FILE *fp = nullptr;
+
+    PDS_TRACE_DEBUG("\nPrinting Conntrack info entries\n");
+    ret = switch_to_file(fname, &fp, append);
+    if ((ret == PDS_RET_OK) && fp) {
+        pds_conntrack_key_t key = {0};
+        pds_conntrack_info_t info = {0};
+
+        if (start_idx == 0) {
+            start_idx = 1;
+        }
+        if (count == 0) {
+            count = PDS_CONNTRACK_ID_MAX;
+        }
+        key.conntrack_id = start_idx;
+        while (count && (key.conntrack_id < PDS_CONNTRACK_ID_MAX)) {
+            ret = pds_conntrack_state_read(&key, &info);
+
+            // entry not found means conntrack was not installed
+            if (ret != PDS_RET_ENTRY_NOT_FOUND) {
+                if (ret != PDS_RET_OK) {
+                    break;
+                }
+                dump_conntrack_entry(fp, &key, &info);
+            }
+            key.conntrack_id++;
+            count--;
+        }
+    }
+
+    revert_from_file(fname, &fp, nullptr);
+    return (ret == PDS_RET_ENTRY_NOT_FOUND) ? PDS_RET_OK : ret;
+}
+
+pds_ret_t
+fte_dump_conntrack(zmq_msg_t *rx_msg,
+                   zmq_msg_t *tx_msg)
+{
+    test::athena_app::conntrack_dump_t *req;
+
+    SERVER_RSP_INIT(tx_msg, rsp, test::athena_app::server_rsp_t);
+    req = (test::athena_app::conntrack_dump_t *)zmq_msg_data(rx_msg);
+    rsp->status = test::athena_app::server_msg_size_check(rx_msg,
+                                                          sizeof(*req));
+    if (rsp->status == PDS_RET_OK) {
+        ATHENA_APP_MSG_STR_TERM(req->fname);
+        rsp->status = fte_dump_conntrack(req->fname, req->append,
+                                         req->start_idx, req->count);
     }
     return (pds_ret_t)rsp->status;
 }

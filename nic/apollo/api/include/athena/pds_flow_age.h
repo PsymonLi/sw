@@ -42,10 +42,19 @@ typedef struct pds_flow_age_timeout_s {
     uint32_t    session_tmo;            ///< Session table base timeout
 } __PACK__ pds_flow_age_timeouts_t;
 
-/// \brief handler to process an expired session or conntrack ID
+/// \brief     Handler to process an expired session or conntrack ID
+/// \param[in] expiry_id: ID of expired session or conntrack entry
+/// \param[in] expiry_type: type of entry (session or conntrack)
+/// \param[in] user_ctx: pointer to user context, if any
+/// \param[out] ret_handle: location to hold a returned handle. A non-zero
+///            handle may be returned in the case of an expired conntrack
+///            entry, in which case, the handle will contain the session ID
+///            associated with the expired conntrack entry.
+/// \return    #PDS_RET_OK on success, failure status code on error
 typedef pds_ret_t (*pds_flow_expiry_fn_t)(uint32_t expiry_id,
                                           pds_flow_age_expiry_type_t expiry_type,
-                                          void *user_ctx);
+                                          void *user_ctx,
+                                          uint32_t *ret_handle);
 
 /// \brief     Initialize flow aging module
 /// \param[in] params pds init parameters

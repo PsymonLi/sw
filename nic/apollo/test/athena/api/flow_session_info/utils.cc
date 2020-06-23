@@ -33,12 +33,12 @@ fill_data (pds_flow_session_data_t *data, uint32_t index,
 
     if (!update) {
         info_index = index;
-        data->conntrack_id = index;
         data->skip_flow_log = index % 2;
         memcpy(data->host_mac, host_mac, ETH_ADDR_LEN);
     } else {
         info_index = index + 300;
     }
+    data->conntrack_id = index;
 
     if (direction & HOST_TO_SWITCH) {
         h2s_info = &data->host_to_switch_flow_info;

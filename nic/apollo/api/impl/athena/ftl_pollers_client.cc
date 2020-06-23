@@ -13,6 +13,7 @@
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
 #include "nic/apollo/api/include/athena/pds_flow_cache.h"
 #include "nic/apollo/api/include/athena/pds_conntrack.h"
+#include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
 
 #include <rte_spinlock.h>
 #include <rte_atomic.h>
@@ -34,7 +35,8 @@ static bool                 expiry_log_en;
 static pds_ret_t
 expiry_fn_dflt_fn(uint32_t expiry_id,
                   pds_flow_age_expiry_type_t expiry_type,
-                  void *user_ctx);
+                  void *user_ctx,
+                  uint32_t *ret_handle);
 
 /*
  * The user is expected to invoke poll_control() only once during
@@ -379,10 +381,12 @@ expiry_submap_process(uint32_t submap_id,
 {
     pds_flow_expiry_fn_t    expiry_fn = pollers_expiry_fn_get();
     uint32_t                sub_expiry_id;
+    uint32_t                handle;
 
 #define SUBMAP_TST_BIT(bit)                                         \
     if (submap & ((1 << (bit)))) {                                  \
-        expiry_fn(sub_expiry_id + (bit), expiry_type, user_ctx);    \
+        expiry_fn(sub_expiry_id + (bit), expiry_type,               \
+                  user_ctx, &handle);                               \
     }                                                               \
 
     if (submap) {
@@ -402,10 +406,12 @@ expiry_submap_process(uint32_t submap_id,
 static pds_ret_t
 expiry_fn_dflt_fn(uint32_t expiry_id,
                   pds_flow_age_expiry_type_t expiry_type,
-                  void *user_ctx)
+                  void *user_ctx,
+                  uint32_t *ret_handle)
 {
     pds_ret_t   ret = PDS_RET_INVALID_ARG;
 
+    *ret_handle = 0;
     switch (expiry_type) {
 
     case EXPIRY_TYPE_SESSION: {
@@ -444,15 +450,28 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_CONNTRACK: {
         pds_conntrack_key_t     key = {0};
+        uint32_t                session_id = 0;
 
         if (expiry_log_en) {
             PDS_TRACE_DEBUG("conntrack_id %u expired", expiry_id);
         }
 
+        pds_conntrack_ctx_get(expiry_id, &session_id);
+        if (session_id) {
+
+            /*
+             * Caution: recursion!
+             */
+            ret = expiry_fn_dflt_fn(session_id, EXPIRY_TYPE_SESSION,
+                                    user_ctx, ret_handle);
+            *ret_handle = session_id;
+            if (ret == PDS_RET_RETRY) {
+                break;
+            }
+        }
+
         /*
-         * Temporary: the following code is just a placeholder as the API
-         * pds_conntrack_state_delete() alone is probably not sufficient
-         * for completely removing a conntrack entry.
+         * Other errors are not recoverable so clean up the entry.
          */
         key.conntrack_id = expiry_id;
         ret = pds_conntrack_state_delete(&key);

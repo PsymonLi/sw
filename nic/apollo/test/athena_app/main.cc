@@ -1057,6 +1057,23 @@ session_info_dump(test_vparam_ref_t vparam)
                                       start_idx, count) == PDS_RET_OK;
 }
 
+bool
+conntrack_dump(test_vparam_ref_t vparam)
+{
+    const char  *fname = vparam.expected_str().c_str();
+    uint32_t    start_idx = 0;
+    uint32_t    count = 0;
+
+    if (vparam.size() > 1) {
+        vparam.num(1, &start_idx);
+    }
+    if (vparam.size() > 2) {
+        vparam.num(2, &count);
+    }
+    return fte_ath::fte_dump_conntrack(fname, false,
+                                       start_idx, count) == PDS_RET_OK;
+}
+
 #ifdef __x86_64__
 TEST(athena_app_gtest, sim)
 {

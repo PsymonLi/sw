@@ -40,6 +40,8 @@ table_size_get(uint32_t table_id)
         return 256*1024;
     } else if (table_id == P4TBL_ID_SESSION_INFO) {
         return 4*1024*1024;
+    } else if (table_id == P4TBL_ID_CONNTRACK) {
+        return 4*1024*1024;
     }
     return 0;
 }
@@ -128,6 +130,11 @@ p4pd_table_properties_get (uint32_t table_id, p4pd_table_properties_t *props)
     // Session info table properties needed for ageing ctx init
     if (table_id == P4TBL_ID_SESSION_INFO) {
         props->tablename = (char *) "SessionInfo";
+        props->tabledepth = table_size_get(table_id);
+        return 0;
+    }
+    if (table_id == P4TBL_ID_CONNTRACK) {
+        props->tablename = (char *) "Conntrack";
         props->tabledepth = table_size_get(table_id);
         return 0;
     }

@@ -109,6 +109,11 @@ typedef struct {
     uint32_t        count;
 } session_info_dump_t;
 
+/*
+ * Server conntrack dump request message
+ */
+typedef session_info_dump_t   conntrack_dump_t;
+
 int  server_init(void); 
 void server_fini(void);
 void server_poll(void);

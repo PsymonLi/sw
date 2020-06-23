@@ -313,7 +313,8 @@
         },
         {
             "name": "ftl_dev_age_tmo",
-            "size": "1K"
+            "size": "1K",
+            "cache": "p4plus-all"
         },
         {
             "name": "tls_proxy_pad_table",

@@ -10,29 +10,35 @@ session_aging_init
 session_aging_force_expired_ts false
 session_aging_accel_control false
 session_aging_tolerance_secs_set 0
-
-session_aging_normal_tmo_set 6
-session_aging_accel_tmo_set 4
+session_aging_tmo_artificial_long_set
 
 session_populate_full 138972
-session_aging_test
-session_populate_full 262555
+session_aging_normal_tmo_set 6
 session_aging_test
 
-session_populate_random 192641 84119
+session_aging_tmo_artificial_long_set
+session_populate_full 262555
+session_aging_normal_tmo_set 3
 session_aging_test
+
+session_aging_tmo_artificial_long_set
+session_populate_random 192641 84119
+session_aging_normal_tmo_set 2
+session_aging_test
+session_aging_tmo_artificial_long_set
 session_populate_random
+session_aging_normal_tmo_set 2
 session_aging_test
 
 #switch to accelerated aging
 session_aging_accel_control true
 session_populate_random 8362 173947
+session_aging_accel_tmo_set 4
 session_aging_test
 
 session_aging_metrics_show
 session_aging_accel_control False
-session_aging_normal_tmo_set 300
-session_aging_accel_tmo_set 30
+session_aging_tmo_factory_dflt_set
 session_aging_fini
 
 skip_fte_flow_prog_set false

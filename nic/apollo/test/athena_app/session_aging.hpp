@@ -31,31 +31,38 @@ bool session_and_cache_populate(test_vparam_ref_t vparam);
 bool session_aging_test(test_vparam_ref_t vparam);
 bool session_aging_normal_tmo_set(test_vparam_ref_t vparam);
 bool session_aging_accel_tmo_set(test_vparam_ref_t vparam);
+bool session_aging_tmo_factory_dflt_set(test_vparam_ref_t vparam);
+bool session_aging_tmo_artificial_long_set(test_vparam_ref_t vparam);
 bool session_aging_accel_control(test_vparam_ref_t vparam);
+bool session_assoc_conntrack_id_set(test_vparam_ref_t vparam);
 bool session_aging_metrics_show(test_vparam_ref_t vparam);
 
-#define SESSION_AGING_NAME2FN_MAP                                   \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_init),                 \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_force_expired_ts),     \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_fini),                 \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tolerance_secs_set),   \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_table_clear_full),           \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_simple),            \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_random),            \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_full),              \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_and_cache_clear_full),       \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_and_cache_populate),         \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_test),                 \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_expiry_log_set),       \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_normal_tmo_set),       \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_tmo_set),        \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_control),        \
-    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_metrics_show),         \
+#define SESSION_AGING_NAME2FN_MAP                                       \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_init),                     \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_force_expired_ts),         \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_fini),                     \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tolerance_secs_set),       \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_table_clear_full),               \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_simple),                \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_random),                \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_populate_full),                  \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_and_cache_clear_full),           \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_and_cache_populate),             \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_test),                     \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_expiry_log_set),           \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_normal_tmo_set),           \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_tmo_set),            \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tmo_factory_dflt_set),     \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_tmo_artificial_long_set),  \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_accel_control),            \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_assoc_conntrack_id_set),         \
+    APP_TEST_NAME2FN_MAP_ENTRY(session_aging_metrics_show),             \
 
 
 pds_ret_t session_aging_expiry_fn(uint32_t expiry_id,
                                   pds_flow_age_expiry_type_t expiry_type,
-                                  void *user_ctx);
+                                  void *user_ctx,
+                                  uint32_t *ret_handle);
 bool session_4combined_expiry_count_check(bool poll_needed = false);
 bool session_4combined_result_check(void);
 

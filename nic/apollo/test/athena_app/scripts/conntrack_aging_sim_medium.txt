@@ -4,6 +4,7 @@
 
 skip_fte_flow_prog_set TRUE
 conntrack_table_clear_full 4096
+session_and_cache_clear_full 4096
 
 conntrack_aging_init
 #conntrack_aging_expiry_log_set TRUE
@@ -11,7 +12,7 @@ conntrack_aging_force_expired_ts true
 
 conntrack_aging_normal_tmo_set {tcp established 300}
 conntrack_aging_accel_tmo_set {tcp established 100}
-conntrack_populate_full {TCP FIN_SENT 1023}
+conntrack_populate_full {TCP FIN_SENT 100}
 conntrack_aging_test
 conntrack_populate_full {udp ESTABLISHED 888}
 conntrack_aging_test
@@ -22,6 +23,7 @@ conntrack_aging_test
 #random with specified {start_idx count} and specified {flowtype flowstate}
 conntrack_populate_random {526 97} {tcp established}
 conntrack_aging_test
+
 #random everything
 conntrack_populate_random
 conntrack_aging_test

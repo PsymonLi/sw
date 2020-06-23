@@ -11,6 +11,7 @@
 #include "app_test_utils.hpp"
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
+#include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
 
 FILE    *app_test_log_fp;
 
@@ -65,6 +66,29 @@ const static std::map<string,pds_flow_state_t> flowstate2num_map =
     {"REMOVED",         REMOVED},
 };
 
+const static char *flowtype_str_table[] =
+{
+    [PDS_FLOW_TYPE_TCP]          = "TCP",
+    [PDS_FLOW_TYPE_UDP]          = "UDP",
+    [PDS_FLOW_TYPE_ICMP]         = "ICMP",
+    [PDS_FLOW_TYPE_OTHERS]       = "Others",
+};
+
+const static char *flowstate_str_table[] =
+{
+    [UNESTABLISHED]              = "unestablished",
+    [PDS_FLOW_STATE_SYN_SENT]    = "syn_sent",
+    [PDS_FLOW_STATE_SYN_RECV]    = "syn_recv",
+    [PDS_FLOW_STATE_SYNACK_SENT] = "synack_sent",
+    [PDS_FLOW_STATE_SYNACK_RECV] = "synack_recv",
+    [ESTABLISHED]                = "established",
+    [FIN_SENT]                   = "fin_sent",
+    [FIN_RECV]                   = "fin_recv",
+    [TIME_WAIT]                  = "time_wait",
+    [RST_CLOSE]                  = "rst_close",
+    [REMOVED]                    = "removed",
+};
+
 const static std::map<string,uint32_t> proto2num_map =
 {
     {"tcp",             IPPROTO_TCP},
@@ -74,6 +98,24 @@ const static std::map<string,uint32_t> proto2num_map =
     {"icmp",            IPPROTO_ICMP},
     {"ICMP",            IPPROTO_ICMP},
 };
+
+const char *
+flowtype_str_get(uint32_t flowtype)
+{
+    if (flowtype < ARRAY_SIZE(flowtype_str_table)) {
+        return flowtype_str_table[flowtype];
+    }
+    return "unknown";
+}
+
+const char *
+flowstate_str_get(uint32_t flowstate)
+{
+    if (flowstate < ARRAY_SIZE(flowstate_str_table)) {
+        return flowstate_str_table[flowstate];
+    }
+    return "unknown";
+}
 
 static const bool *
 truefalse2hool_find(const std::string& token)
@@ -848,6 +890,50 @@ aging_tmo_cfg_t::tmo_set(void)
     }
 }
 
+void 
+aging_tmo_cfg_t::tmo_factory_dflt_set(void)
+{
+    tmo_rec.tcp_syn_tmo      = SCANNER_TCP_SYN_TMO_DFLT;
+    tmo_rec.tcp_est_tmo      = SCANNER_TCP_EST_TMO_DFLT;
+    tmo_rec.tcp_fin_tmo      = SCANNER_TCP_FIN_TMO_DFLT;
+    tmo_rec.tcp_timewait_tmo = SCANNER_TCP_TIMEWAIT_TMO_DFLT;
+    tmo_rec.tcp_rst_tmo      = SCANNER_TCP_RST_TMO_DFLT;
+    tmo_rec.icmp_tmo         = SCANNER_ICMP_TMO_DFLT;
+    tmo_rec.udp_tmo          = SCANNER_UDP_TMO_DFLT;
+    tmo_rec.udp_est_tmo      = SCANNER_UDP_EST_TMO_DFLT;
+    tmo_rec.others_tmo       = SCANNER_OTHERS_TMO_DFLT;
+    tmo_rec.session_tmo      = SCANNER_SESSION_TMO_DFLT;
+    if (is_accel_tmo) {
+        tmo_rec.tcp_syn_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.tcp_est_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.tcp_fin_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.tcp_timewait_tmo /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.tcp_rst_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.icmp_tmo         /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.udp_tmo          /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.udp_est_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.others_tmo       /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+        tmo_rec.session_tmo      /= SCANNER_ACCEL_TMO_SCALE_FACTOR_DFLT;
+    }
+    tmo_set();
+}
+
+void 
+aging_tmo_cfg_t::tmo_artificial_long_set(void)
+{
+    tmo_rec.tcp_syn_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.tcp_est_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.tcp_fin_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.tcp_timewait_tmo = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.tcp_rst_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.icmp_tmo         = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.udp_tmo          = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.udp_est_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.others_tmo       = SCANNER_SESSION_TMO_DFLT;
+    tmo_rec.session_tmo      = SCANNER_SESSION_TMO_DFLT;
+    tmo_set();
+}
+
 /*
  * Aging results, with tolerance
  */
@@ -870,7 +956,7 @@ aging_tolerance_t::reset(uint32_t ids_max)
     /*
      * Note: we don't reset accel_control to allow caller to test
      * with whichever control is currently active. Neither do we
-     * reset tolerance_secs.
+     * reset tolerance_secs or session_assoc_conntrack_id.
      */
 }
 
@@ -928,13 +1014,15 @@ aging_tolerance_t::create_id_map_find_erase(uint32_t id)
         if (create_id_map.find_erase(id)) {
             erase_count_inc();
         } else {
-            TEST_LOG_ERR("entry_id %u was not created for this test\n", id);
+            TEST_LOG_ERR("%s %u was not created for this test\n",
+                         id_str(), id);
             failures.create_erase_inc();
         }
     } else if (erase_count() < create_count()) {
         erase_count_inc();
     } else {
-        TEST_LOG_ERR("entry_id %u not removable or already removed\n", id);
+        TEST_LOG_ERR("%s %u not removable or already removed\n",
+                     id_str(), id);
         failures.create_erase_inc();
     }
 }
@@ -955,8 +1043,8 @@ aging_tolerance_t::create_id_map_empty_check(void)
                 create_id_map.size() :
                 (create_count() - erase_count());
     if (rem_count) {
-        TEST_LOG_ERR("Not all entries were aged out, remaining count: %u\n",
-                     rem_count);
+        TEST_LOG_ERR("Not all %s entries were aged out, remaining count: %u\n",
+                     id_str(), rem_count);
         failures.empty_check_inc();
     }
 }
@@ -1039,8 +1127,8 @@ aging_tolerance_t::tmo_tolerance_check(uint32_t id,
 {
     if (delta_secs < applic_tmo_secs) {
         if (failures.under_age() == 0) {
-            TEST_LOG_ERR("entry_id %u aged out in < timeout of %u seconds "
-                         "(actual: %u)\n", id, applic_tmo_secs, delta_secs);
+            TEST_LOG_ERR("%s %u aged out in < timeout of %u seconds (actual: "
+                         "%u)\n", id_str(), id, applic_tmo_secs, delta_secs);
         }
         failures.under_age_inc();
     } else {
@@ -1049,8 +1137,8 @@ aging_tolerance_t::tmo_tolerance_check(uint32_t id,
         over_age_max(std::max(over_age, over_age_max()));
         if (over_age > tolerance_secs) {
             if (failures.over_age() == 0) {
-                TEST_LOG_ERR("entry_id %u took extra %u seconds to age out "
-                             "(tolerance is %u seconds)\n",
+                TEST_LOG_ERR("%s %u took extra %u seconds to age out "
+                             "(tolerance is %u seconds)\n", id_str(),
                              id, over_age, tolerance_secs);
             }
             failures.over_age_inc();

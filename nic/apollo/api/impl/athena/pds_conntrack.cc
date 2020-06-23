@@ -18,12 +18,6 @@
 #include "gen/p4gen/p4/include/ftl.h"
 #include "ftl_dev_impl.hpp"
 
-//#define CONNTRACK_STATE_FASTER_DELETE
-
-#ifndef BITS_PER_BYTE
-#define BITS_PER_BYTE   8
-#endif
-
 using namespace sdk;
 
 extern "C" {
@@ -33,7 +27,7 @@ pds_conntrack_state_create (pds_conntrack_spec_t *spec)
 {
     p4pd_error_t      p4pd_ret = P4PD_SUCCESS;
     uint32_t          conntrack_id = PDS_CONNTRACK_ID_MAX;
-    conntrack_entry_t entry = { 0 };
+    conntrack_entry_t entry;
 
     if (!spec) {
         PDS_TRACE_ERR("spec is null");
@@ -67,7 +61,7 @@ pds_conntrack_state_read (pds_conntrack_key_t *key,
 {
     p4pd_error_t      p4pd_ret = P4PD_SUCCESS;
     uint32_t          conntrack_id = PDS_CONNTRACK_ID_MAX;
-    conntrack_entry_t entry = { 0 };
+    conntrack_entry_t entry;
 
     if (!key || !info) {
         PDS_TRACE_ERR("key/info is null");
@@ -110,39 +104,12 @@ pds_conntrack_state_update (pds_conntrack_spec_t *spec)
     return pds_conntrack_state_create(spec);
 }
 
-#ifdef CONNTRACK_STATE_FASTER_DELETE
-static int
-conntrack_state_delete(uint32_t conntrack_id,
-                       conntrack_actiondata_t *null_actiondata)
-{
-    static p4pd_table_properties_t tbl_ctx;
-
-    if (!tbl_ctx.hbm_layout.entry_width) {
-        p4pd_global_table_properties_get(P4TBL_ID_CONNTRACK, &tbl_ctx);
-        if (!tbl_ctx.hbm_layout.entry_width ||
-            (sizeof(conntrack_actiondata_t) < tbl_ctx.hbm_layout.entry_width)) {
-            PDS_TRACE_ERR("Failed entry_width %u or sizeof unpacked "
-                          "conntrack_actiondata_t %u error",
-                          tbl_ctx.hbm_layout.entry_width,
-                          (unsigned)sizeof(conntrack_actiondata_t));
-            return PDS_RET_HW_PROGRAM_ERR;
-        }
-    }
-
-    // conntrack entry width is small so can always just write the whole entry.
-
-    return sdk::asic::pd::asicpd_hbm_table_entry_write(P4TBL_ID_CONNTRACK,
-                          conntrack_id, (uint8_t *)null_actiondata,
-                          tbl_ctx.hbm_layout.entry_width * BITS_PER_BYTE);
-}
-#endif
-
 pds_ret_t
 pds_conntrack_state_delete (pds_conntrack_key_t *key)
 {
     p4pd_error_t p4pd_ret;
     uint32_t conntrack_id;
-    conntrack_actiondata_t conntrack_actiondata = { 0 };
+    conntrack_entry_t entry;
 
     if (!key) {
         PDS_TRACE_ERR("key is null");
@@ -154,13 +121,8 @@ pds_conntrack_state_delete (pds_conntrack_key_t *key)
         return PDS_RET_INVALID_ARG;
     }
 
-#ifdef CONNTRACK_STATE_FASTER_DELETE
-    p4pd_ret = conntrack_state_delete(conntrack_id, &conntrack_actiondata);
-#else
-    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_CONNTRACK,
-                                       conntrack_id, NULL, NULL,
-                                       &conntrack_actiondata);
-#endif
+    entry.clear();
+    p4pd_ret = entry.write(conntrack_id);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to clear conntrack table at index %u",
                       conntrack_id);

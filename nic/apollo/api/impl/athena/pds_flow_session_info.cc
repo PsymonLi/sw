@@ -17,6 +17,7 @@
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "gen/p4gen/p4/include/ftl.h"
 #include "ftl_dev_impl.hpp"
+#include "pds_conntrack_ctx.hpp"
 
 
 #ifndef BITS_PER_BYTE
@@ -223,7 +224,16 @@ pds_flow_session_info_create (pds_flow_session_spec_t *spec)
                        spec->key.session_info_id);
         return PDS_RET_HW_PROGRAM_ERR;
     }
-    return PDS_RET_OK;
+
+    if (spec->data.conntrack_id) {
+        ret = pds_conntrack_ctx_set(spec->data.conntrack_id,
+                                    spec->key.session_info_id);
+        if (ret != PDS_RET_OK) {
+            entry.clear();
+            entry.write(spec->key.session_info_id);
+        }
+    }
+    return ret;
 }
 
 pds_ret_t
@@ -277,6 +287,7 @@ pds_flow_session_info_update (pds_flow_session_spec_t *spec)
     pds_ret_t                 ret = PDS_RET_OK;
     p4pd_error_t              p4pd_ret = P4PD_SUCCESS;;
     session_info_entry_t      entry;
+    session_info_entry_t      old_entry;
     uint32_t                  session_info_id = 0;
 
     if (!spec) {
@@ -295,6 +306,8 @@ pds_flow_session_info_update (pds_flow_session_spec_t *spec)
         PDS_TRACE_ERR("Direction %u is invalid", spec->key.direction);
         return PDS_RET_INVALID_ARG;
     }
+    old_entry.clear();
+    old_entry.read(session_info_id);
     entry.clear();
     entry.read(session_info_id);
     if ((ret = pds_flow_session_entry_setup(&entry, 
@@ -309,7 +322,21 @@ pds_flow_session_info_update (pds_flow_session_spec_t *spec)
                       session_info_id);
         return PDS_RET_HW_PROGRAM_ERR;
     }
-    return PDS_RET_OK;
+
+    if (old_entry.get_conntrack_id() != spec->data.conntrack_id) {
+        if (old_entry.get_conntrack_id()) {
+            pds_conntrack_ctx_clr(old_entry.get_conntrack_id());
+        }
+        if (spec->data.conntrack_id) {
+            ret = pds_conntrack_ctx_set(spec->data.conntrack_id,
+                                        session_info_id);
+            if (ret != PDS_RET_OK) {
+                entry.clear();
+                entry.write(session_info_id);
+            }
+        }
+    }
+    return ret;
 }
 
 
@@ -318,6 +345,7 @@ pds_flow_session_info_delete (pds_flow_session_key_t *key)
 {
     p4pd_error_t              p4pd_ret = PDS_RET_OK;
     uint32_t                  session_info_id = 0;
+    uint32_t                  conntrack_id;
     session_info_entry_t      entry;
 
     if (!key) {
@@ -335,14 +363,38 @@ pds_flow_session_info_delete (pds_flow_session_key_t *key)
         PDS_TRACE_ERR("Direction %u is invalid", key->direction);
         return PDS_RET_INVALID_ARG;
     }
+    entry.read(session_info_id);
+    conntrack_id = entry.get_conntrack_id();
+    if (conntrack_id) {
+
+        /*
+         * Because valid_flag is last in the structure, a 2-step erase is
+         * needed here to ensure session scanner never sees a partially
+         * erased value of conntrack_id (while valid_flag is still true).
+         * TODO: find a similar fix for pds_flow_session_info_update()
+         * that will not result in a flow miss )possibly by having 2
+         * sentinel bits surrounding the conntrack_id field).
+         */
+        entry.set_valid_flag(FALSE);
+        p4pd_ret = entry.write(session_info_id);
+        if (p4pd_ret != P4PD_SUCCESS) {
+            goto hw_error;
+        }
+    }
     entry.clear();
-    p4pd_ret =  entry.write(session_info_id);
+    p4pd_ret = entry.write(session_info_id);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to delete session info table at index %u",
-                      session_info_id);
-        return PDS_RET_HW_PROGRAM_ERR;
+        goto hw_error;
+    }
+    if (conntrack_id) {
+        pds_conntrack_ctx_clr(conntrack_id);
     }
     return PDS_RET_OK;
+
+hw_error:
+    PDS_TRACE_ERR("Failed to delete session info table at index %u",
+                  session_info_id);
+    return PDS_RET_HW_PROGRAM_ERR;
 }
 }
 
