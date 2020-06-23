@@ -344,10 +344,10 @@ func TestBulkeditAction(t *testing.T) {
 	hooks := stagingHooks{l: log.GetNewLogger(log.GetDefaultConfig("hooksTest"))}
 	ret, skip, err := hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req)
 	if ret == nil || err != nil {
-		t.Fatalf("failed exec commitAction [%v](%s)", ret, err)
+		t.Fatalf("failed bulkeditAction [%v](%s)", ret, err)
 	}
 	if skip != false {
-		t.Fatalf("kvwrite enabled on commit")
+		t.Fatalf("kvwrite enabled on bulkedit")
 	}
 
 	retBuf := ret.(staging.BulkEditAction)
@@ -398,7 +398,7 @@ func TestBulkeditAction(t *testing.T) {
 		t.Fatalf("Expected FAILED Validation status, got %s\n", retBuf.Status.ValidationResult)
 	}
 
-	// 2. Send some junk type as input
+	// 2. Send some junk type as input req
 	req1 := staging.BufferStatus{}
 	_, _, err = hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req1)
 	if err == nil {
@@ -422,11 +422,16 @@ func TestBulkeditAction(t *testing.T) {
 					Method: "asdfghjkl0987654321",
 					Object: &api.Any{Any: *n1},
 				},
+				&bulkedit.BulkEditItem{
+					URI:    "/configs/network/v1/tenant/default/networks/testDelNetw",
+					Method: "create",
+					Object: &api.Any{Any: *n3},
+				},
 			},
 		},
 	}
 
-	_, _, err = hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req)
+	ret, _, err = hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req)
 	if err == nil {
 		t.Fatalf("Expected Invalid method type Error!\n")
 	}
@@ -434,5 +439,11 @@ func TestBulkeditAction(t *testing.T) {
 	retBuf = ret.(staging.BulkEditAction)
 	if retBuf.Status.ValidationResult != staging.BufferStatus_FAILED.String() {
 		t.Fatalf("Expected FAILED Validation status")
+	}
+	if len(retBuf.Status.GetErrors()) != 1 {
+		t.Fatalf("Expected 1 error, got %d", len(retBuf.Status.GetErrors()))
+	}
+	if len(retBuf.Status.GetItems()) != 2 {
+		t.Fatalf("Expected 2 Status items, got %d", len(retBuf.Status.GetItems()))
 	}
 }

@@ -218,7 +218,7 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 
 	ov, err := cache.GetOverlay(buf.Tenant, buf.Name)
 	if err != nil {
-		h.l.Errorf("could not find overlay (%s/%s) in Clear action hook (%s)", buf.Tenant, buf.Name, err)
+		h.l.Errorf("could not find overlay (%s/%s) in bulkeditaction hook (%s)", buf.Tenant, buf.Name, err)
 		err = fmt.Errorf("Invalid Staging buffer Name %s : %v", buf.Name, err)
 		buf.Status.ValidationResult = staging.BufferStatus_FAILED.String()
 		return buf, false, err
@@ -272,13 +272,6 @@ func (h *stagingHooks) bulkeditAction(ctx context.Context, kv kvstore.Interface,
 		default:
 			err = errors.New("Unknown method string " + oper + " for ObjURI " + objURI)
 			h.l.Errorf("Unknown Method string " + oper + " for Obj " + objURI)
-			buf.Status.Errors = append(buf.Status.Errors, &staging.ValidationError{
-				ItemId: staging.ItemId{
-					URI:    item.GetURI(),
-					Method: item.GetMethod(),
-				},
-				Errors: []string{err.Error()},
-			})
 		}
 
 	handle_err:
