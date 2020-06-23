@@ -1158,7 +1158,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "NumTcpCxnsetupTimeouts",
-      "displayName": "Connection-timeout Sessions",
+      "displayName": "Connection Timeout Sessions",
       "description": "Total Number of sessions that timed out at connection setup",
       "units": "Count",
       "baseType": "Counter",
@@ -1174,16 +1174,16 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "description": "Total Number of sessions that errored out during creation",
       "units": "Count",
       "baseType": "Counter",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
       "tags": [
         "Level4"
       ],
-      "jsType": "number"
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
       "name": "NumTcpHalfOpenSessions",
-      "displayName": "Half Open TCP Sessions",
-      "description": "Total Number of Half Open TCP sessions",
+      "displayName": "TCP Half Open Sessions",
+      "description": "Total Number of TCP Half Open sessions",
       "units": "Count",
       "baseType": "Counter",
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max,
@@ -1206,8 +1206,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "NumTcpSessionLimitDrops",
-      "displayName": "TCP Session limit exceed drops",
-      "description": "Total Number of sessions dropped due to TCP session limit",
+      "displayName": "TCP Half Open Session Limit Exceed Drops",
+      "description": "Total Number of sessions dropped due to TCP half open session limit",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1218,7 +1218,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "NumUdpSessionLimitDrops",
-      "displayName": "UDP Session limit exceed drops",
+      "displayName": "UDP Session Limit Exceed Drops",
       "description": "Total Number of sessions dropped due to UDP session limit",
       "units": "Count",
       "baseType": "Counter",
@@ -1230,7 +1230,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "NumIcmpSessionLimitDrops",
-      "displayName": "ICMP Session limit exceed drops",
+      "displayName": "ICMP Session Limit Exceed Drops",
       "description": "Total Number of sessions dropped due to ICMP session limit",
       "units": "Count",
       "baseType": "Counter",
@@ -1241,20 +1241,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
-      "name": "NumOtherSessionLimitDrops",
-      "displayName": "Other Session limit exceed drops",
-      "description": "Total Number of sessions other than TCP/UDP/ICMP dropped due to session limit",
-      "units": "Count",
-      "baseType": "Counter",
-      "tags": [
-        "Level4"
-      ],
-      "jsType": "number",
-      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
-    },
-    {
       "name": "NumDscSessionLimitDrops",
-      "displayName": "DSC Session limit exceed drops",
+      "displayName": "DSC Session Limit Exceed Drops",
       "description": "Total Number of sessions dropped due to DSC session limit",
       "units": "Count",
       "baseType": "Counter",

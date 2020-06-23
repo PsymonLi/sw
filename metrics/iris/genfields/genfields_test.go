@@ -43,12 +43,11 @@ func TestGetFieldNamesFromKind(t *testing.T) {
 		"NumTcpSessionLimitDrops",
 		"NumUdpSessionLimitDrops",
 		"NumIcmpSessionLimitDrops",
-		"NumOtherSessionLimitDrops",
 		"NumDscSessionLimitDrops",
 	}
 	sort.Strings(v)
 	sort.Strings(flowstatsAnswer)
-	Assert(t, reflect.DeepEqual(v, flowstatsAnswer), fmt.Sprintf("failed to get correct field list from kindToFieldNameMap for flowstats IPv4FlowBehavioralMetrics"))
+	Assert(t, reflect.DeepEqual(v, flowstatsAnswer), fmt.Sprintf("failed to get correct field list from kindToFieldNameMap for flowstats SessionSummaryMetrics"))
 
 	v = GetFieldNamesFromKind("RuleMetrics")
 	rulestatsAnswer := []string{

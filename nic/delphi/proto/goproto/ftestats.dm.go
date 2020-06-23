@@ -555,7 +555,7 @@ type SessionSummaryMetrics struct {
 
 	NumIcmpSessionLimitDrops metrics.Counter
 
-	NumOtherSessionLimitDrops metrics.Counter
+	NumOtherSessionLimitDrops metrics.Counter `structs:"-"`
 
 	NumDscSessionLimitDrops metrics.Counter
 

@@ -46,7 +46,6 @@ func init() {
 		"NumTcpSessionLimitDrops",
 		"NumUdpSessionLimitDrops",
 		"NumIcmpSessionLimitDrops",
-		"NumOtherSessionLimitDrops",
 		"NumDscSessionLimitDrops",
 	}
 	globalMetricsMap["ftestats"]["SessionSummaryMetrics"] = kindToFieldNameMap["SessionSummaryMetrics"]
@@ -74,24 +73,23 @@ func init() {
 	}
 
 	metricsFieldAggFuncMap["SessionSummaryMetrics"] = map[string]string{
-		"NumAgedSessions":           "last",
-		"NumDropSessions":           "last",
-		"NumDscSessionLimitDrops":   "last",
-		"NumIcmpErrors":             "last",
-		"NumIcmpSessionLimitDrops":  "last",
-		"NumIcmpSessions":           "max",
-		"NumL2Sessions":             "max",
-		"NumOtherActiveSessions":    "max",
-		"NumOtherSessionLimitDrops": "last",
-		"NumSessionCreateErrors":    "max",
-		"NumTcpCxnsetupTimeouts":    "last",
-		"NumTcpHalfOpenSessions":    "max",
-		"NumTcpResets":              "last",
-		"NumTcpSessionLimitDrops":   "last",
-		"NumTcpSessions":            "max",
-		"NumUdpSessionLimitDrops":   "last",
-		"NumUdpSessions":            "max",
-		"TotalActiveSessions":       "max",
+		"NumAgedSessions":          "last",
+		"NumDropSessions":          "last",
+		"NumDscSessionLimitDrops":  "last",
+		"NumIcmpErrors":            "last",
+		"NumIcmpSessionLimitDrops": "last",
+		"NumIcmpSessions":          "max",
+		"NumL2Sessions":            "max",
+		"NumOtherActiveSessions":   "max",
+		"NumSessionCreateErrors":   "last",
+		"NumTcpCxnsetupTimeouts":   "last",
+		"NumTcpHalfOpenSessions":   "max",
+		"NumTcpResets":             "last",
+		"NumTcpSessionLimitDrops":  "last",
+		"NumTcpSessions":           "max",
+		"NumUdpSessionLimitDrops":  "last",
+		"NumUdpSessions":           "max",
+		"TotalActiveSessions":      "max",
 	}
 
 }
