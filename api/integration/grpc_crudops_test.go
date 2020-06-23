@@ -5169,7 +5169,7 @@ func TestRoutingConfigReferences(t *testing.T) {
 		},
 		Spec: cluster.DSCProfileSpec{
 			DeploymentTarget: cluster.DSCProfileSpec_HOST.String(),
-			FeatureSet:       cluster.DSCProfileSpec_SMARTNIC.String(),
+			FeatureSet:       cluster.DSCProfileSpec_SDN.String(),
 		},
 	}
 	_, err = apicl.ClusterV1().DSCProfile().Create(ctx, prof)
