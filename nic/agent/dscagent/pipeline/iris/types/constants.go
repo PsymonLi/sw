@@ -19,34 +19,34 @@ const (
 	//-------------------------- Default Action Edit --------------------------
 
 	// IPInvalidLenAction is set to edit by default
-	IPInvalidLenAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	IPInvalidLenAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUnexpectedMSSAction is set to edit by default
-	TCPUnexpectedMSSAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUnexpectedMSSAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUnexpectedWinScaleAction is set to edit by default
-	TCPUnexpectedWinScaleAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUnexpectedWinScaleAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUnexpectedSACKPermAction is set to edit by default
-	TCPUnexpectedSACKPermAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUnexpectedSACKPermAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUrgentPtrNotSetAction is set to edit by default
-	TCPUrgentPtrNotSetAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUrgentPtrNotSetAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUrgentFlagNotSetAction is set to edit by default
-	TCPUrgentFlagNotSetAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUrgentFlagNotSetAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUrgentPayloadMissingAction is set to edit by default
-	TCPUrgentPayloadMissingAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUrgentPayloadMissingAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPDataLenGreaterThanMSSAction is set to edit by default
-	TCPDataLenGreaterThanMSSAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPDataLenGreaterThanMSSAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPDataLenGreaterThanWinSizeAction is set to edit by default
-	TCPDataLenGreaterThanWinSizeAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPDataLenGreaterThanWinSizeAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	// TCPUnexpectedTSOptionAction is set to edit by default
-	TCPUnexpectedTSOptionAction = halapi.NormalizationAction_NORM_ACTION_EDIT
+	TCPUnexpectedTSOptionAction = halapi.NormalizationAction_NORM_ACTION_ALLOW
 
 	//-------------------------- Default Action Drop --------------------------
 
