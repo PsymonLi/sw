@@ -663,6 +663,11 @@ class VnicObjectClient(base.ConfigClientBase):
         vnic.SUBNET = new_subnet
         vnic.Vnid = vnic.SUBNET.Vnid
 
+        if not utils.IsDryRun():
+            node_uuid = EzAccessStoreClient[new_subnet.Node].GetNodeUuid(new_subnet.Node)
+            vnic.HostIfIdx = vnic.SUBNET.HostIfIdx[0]
+            vnic.HostIfUuid = utils.PdsUuid(vnic.HostIfIdx, node_uuid=node_uuid)
+
         # Handle node change scenario
         if old_subnet.Node != new_subnet.Node:
             # Delete VNIC from old node

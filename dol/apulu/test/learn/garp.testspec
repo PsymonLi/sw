@@ -12,7 +12,7 @@ packets:
         template    : ref://factory/packets/id=ETH_ARP
         headers     :
             eth:
-                src   : ref://testcase/config/localmapping/VNIC/MACAddr
+                src   : callback://networking/learn/GetMACAddrForValidation
                 dst   : ref://testcase/config/localmapping/VNIC/SUBNET/VirtualRouterMACAddr
             qtag:
                 vlan  : ref://testcase/config/localmapping/VNIC/VlanId

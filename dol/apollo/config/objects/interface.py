@@ -663,6 +663,8 @@ class InterfaceObjectClient(base.ConfigClientBase):
         if utils.IsDryRun() or not utils.IsNetAgentMode():
             return
         for subnet in subnets:
+            if len(subnet.HostIfIdx) == 0:
+                continue
             hostif = self.FindHostInterface(node, subnet.HostIfIdx[0])
             if hostif:
                 hostif.UpdateVrfAndNetwork(subnet, dissociate)

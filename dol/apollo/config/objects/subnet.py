@@ -222,6 +222,9 @@ class SubnetObject(base.ConfigObjectBase):
         if not utils.IsNetAgentMode():
             return False
 
+        if utils.IsDryRun():
+            return True
+
         if len(self.HostIfUuid) != 0:
             #dissociate this from subnet first
             InterfaceClient.UpdateHostInterfaces(self.Node, [self], True)
@@ -234,6 +237,12 @@ class SubnetObject(base.ConfigObjectBase):
         self.HostIfUuid = []
         for ifidx in self.HostIfIdx:
             self.HostIfUuid.append(utils.PdsUuid(ifidx, node_uuid=node_uuid))
+
+        vnicObjs = list(filter(lambda x: (x.ObjType == api.ObjectTypes.VNIC), self.Children))
+        for vnic in vnicObjs:
+            vnic.HostIfIdx = self.HostIfIdx[0]
+            vnic.HostIfUuid = utils.PdsUuid(vnic.HostIfIdx, node_uuid=node_uuid)
+
         InterfaceClient.UpdateHostInterfaces(self.Node, [ self ])
         return True
 

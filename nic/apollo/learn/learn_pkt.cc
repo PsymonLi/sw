@@ -218,6 +218,7 @@ extract_ip_learn_info (char *pkt_data, learn_ctxt_t *ctxt)
 
         // for RARP packets, we are not interested in IP address
         if (ctxt->pkt_ctxt.impl_info.hints & LEARN_HINT_RARP) {
+            extract_arp_pkt_type(ctxt, htons(arp_hdr->op), arp_data);
             return false;
         }
 
@@ -263,6 +264,13 @@ extract_learn_info (char *pkt_data, learn_ctxt_t *ctxt)
     // MAC addr is always available, populate ep->mac_key
     src_mac = pkt_data + impl->l2_offset + ETH_ADDR_LEN;
     MAC_ADDR_COPY(&ctxt->mac_key.mac_addr, src_mac);
+    if (!is_mac_set(ctxt->mac_key.mac_addr)) {
+        PDS_TRACE_ERR("Source MAC 00:00:00:00:00:00 is invalid, subnet %s,"
+                      " pkt type %s", impl->subnet.str(),
+                      sdk::types::pkttype2str(impl->pkt_type).c_str());
+        ctxt->pkt_ctxt.pkt_type = LEARN_PKT_TYPE_NONE;
+        return SDK_RET_ERR;
+    }
     ctxt->mac_key.subnet = impl->subnet;
     ctxt->mac_entry = ep_mac_db()->find(&ctxt->mac_key);
     ctxt->mac_learn_type = detect_learn_type(ctxt, PDS_MAPPING_TYPE_L2);
@@ -517,6 +525,9 @@ process_learn_pkt (void *mbuf)
     // parse MAC and IP address and extract learn info
     ret = extract_learn_info(pkt_data, &ctxt);
     if (unlikely(ret != SDK_RET_OK)) {
+        if (reinject_pkt_to_p4(mbuf, &ctxt) == SDK_RET_OK) {
+            drop_pkt_on_err = false;
+        }
         goto error;
     }
 

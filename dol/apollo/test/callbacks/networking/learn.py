@@ -16,3 +16,9 @@ def GetIPAddrForValidation(testcase, args):
     prefix = testcase.config.localmapping.VNIC.SUBNET.IPPrefix[1]
     ip_start = int(next(prefix.hosts()))
     return str(ipaddress.ip_address(ip_start + prefix.num_addresses + 3))
+
+def GetMACAddrForValidation(testcase, args):
+    if testcase.module.name != "LEARN_INVALID_MACADDR":
+        return testcase.config.localmapping.VNIC.MACAddr
+    # return invalid macaddr
+    return MacAddressBase(integer=0)

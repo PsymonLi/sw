@@ -91,6 +91,9 @@ pds_learn_pkt_drop_reason_to_proto (uint8_t reason)
     case learn::PKT_DROP_REASON_ARP_REPLY:
         proto_reason = pds::LEARN_PKTDROP_REASON_ARP_REPLY;
         break;
+    case learn::PKT_DROP_REASON_RARP:
+        proto_reason = pds::LEARN_PKTDROP_REASON_RARP;
+        break;
     default:
         proto_reason = pds::LEARN_PKTDROP_REASON_NONE;
         break;

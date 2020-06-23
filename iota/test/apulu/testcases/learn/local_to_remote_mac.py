@@ -112,6 +112,11 @@ def Trigger(tc):
     mac = ctx[wl]['new_mac']
     ip_prefix_list = [ctx[wl]['new_ip_prefix']] + ctx[wl]['new_sec_ip_prefixes']
 
+    # Associate HostInterface to this subnet
+    if len(subnet.HostIfIdx) == 0 and not subnet.ModifyHostInterface():
+        api.Logger.error(f"Failed to associate new HostIf to subnet {subnet}({new_home})");
+        return api.types.status.FAILURE
+
     api.Logger.info(f"Moving {wl.workload_name} {wl.vnic.SUBNET}({wl.node_name}) => {subnet}({new_home}) "
                     f"with mac {mac}, ip prefixes {ip_prefix_list}")
     return move_utils.MoveEpMACEntry(wl, subnet, mac, ip_prefix_list)

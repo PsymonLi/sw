@@ -18,7 +18,10 @@ def Setup(tc):
     tc.node = random.choice(api.GetNaplesHostnames())
     tc.learn_mac_obj = random.choice(learn_utils.GetLearnMACObjects(tc.node))
     tc.subnet = tc.learn_mac_obj.SUBNET
-    tc.hostifidx = tc.subnet.HostIfIdx
+    if api.IsDryrun():
+        tc.hostifidx = 'dryrun'
+    else:
+        tc.hostifidx = tc.subnet.HostIfIdx[0]
     tc.wload = config_api.FindWorkloadByVnic(tc.learn_mac_obj)
     api.Logger.debug("Chosen subnet %s" % tc.subnet)
     return api.types.status.SUCCESS
@@ -28,7 +31,7 @@ def __modify_workload_interface(tc):
     if api.IsDryrun():
         tc.wload.parent_interface = 'dryrun'
     else:
-        tc.wload.parent_interface = intf_client.FindHostInterface(tc.subnet.Node, tc.subnet.HostIfIdx).GetInterfaceName()
+        tc.wload.parent_interface = intf_client.FindHostInterface(tc.subnet.Node, tc.subnet.HostIfIdx[0]).GetInterfaceName()
     tc.wload.interface = tc.wload.parent_interface
     store.SetWorkloadRunning(tc.wload.workload_name)
     wl_api.ReAddWorkload(tc.wload)
@@ -46,11 +49,12 @@ def Trigger(tc):
         old_intf = new_intf = 'dryrun'
     else:
         old_intf = intf_client.FindHostInterface(tc.subnet.Node, tc.hostifidx).GetInterfaceName()
-        new_intf = intf_client.FindHostInterface(tc.subnet.Node, tc.subnet.HostIfIdx).GetInterfaceName()
+        new_intf = intf_client.FindHostInterface(tc.subnet.Node, tc.subnet.HostIfIdx[0]).GetInterfaceName()
     api.Logger.debug(f"Subnet moved from HostInterface {old_intf} to {new_intf}")
     misc_utils.Sleep(3) # needed until delay_delete is enabled
     ret = tc.subnet.VerifyDepsOperSt('Delete')
     if not ret:
+        api.Logger.error(f"Oper state is not as expected after host interface is modified")
         return api.types.status.FAILURE
     __modify_workload_interface(tc)
     return api.types.status.SUCCESS

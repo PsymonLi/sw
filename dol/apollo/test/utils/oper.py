@@ -38,8 +38,10 @@ def GetNumLearnIp(node, subnet=None):
     return (len(cli_op.split("---")) - 1)
 
 def GetNumLocalMapping(node):
-    ret, cli_op = utils.RunPdsctlShowCmd(node, "mapping internal local", yaml=False)
+    args = " | grep " + "\"No. of mappings:\""
+    ret, cli_op = utils.RunPdsctlShowCmd(node, "mapping internal local", args, yaml=False)
     if not ret:
         logger.error(f"show mapping internal local failed for node {node}")
         return -1
-    return (len(cli_op.split('\n')) - 4) # skipping the header lines in the output
+    data = cli_op.split("No. of mappings: ", 1)
+    return (int(data[1]) if len(data) > 1 else 0)

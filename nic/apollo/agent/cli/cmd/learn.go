@@ -490,6 +490,8 @@ func LearnPktDropReasonToStr(reason pds.LearnPktDropReason) string {
 		reasonStr = "Tx failures"
 	case pds.LearnPktDropReason_LEARN_PKTDROP_REASON_ARP_REPLY:
 		reasonStr = "ARP replies"
+	case pds.LearnPktDropReason_LEARN_PKTDROP_REASON_RARP:
+		reasonStr = "RARP"
 	default:
 		reasonStr = "Unknown"
 	}

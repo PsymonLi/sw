@@ -130,7 +130,7 @@ def setDataPortStatePerUplink(naples_nodes, oper, id):
         #node_uuid = 750763714960
         for uplink in uplink_list:
             intf_uuid = uplink % node_uuid  
-            cmd = ("debug port --admin-state %s --port "+intf_uuid) % oper
+            cmd = ("debug update port --admin-state %s --port "+intf_uuid) % oper
             ret, resp = pdsctl.ExecutePdsctlCommand(node, cmd, yaml=False)
             if ret != True:
                 api.Logger.error("oper:%s uplink failed at node %s : %s" %(oper, node, resp))
@@ -147,7 +147,7 @@ def setDataPortState(naples_nodes, oper):
         #node_uuid = 750763714960
         for uplink in [UPLINK_PREFIX1, UPLINK_PREFIX2]:
             intf_uuid = uplink % node_uuid  
-            cmd = ("debug port --admin-state %s --port "+intf_uuid) % oper
+            cmd = ("debug update port --admin-state %s --port "+intf_uuid) % oper
             ret, resp = pdsctl.ExecutePdsctlCommand(node, cmd, yaml=False)
             if ret != True:
                 api.Logger.error("oper:%s uplink failed at node %s : %s" %(oper, node, resp))
