@@ -598,8 +598,8 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 	case types.Delete:
 		var existingIntf netproto.Interface
 
-		// Allow only L3 and loopback interfaces be deleted
-		if intf.Spec.Type != netproto.InterfaceSpec_L3.String() && intf.Spec.Type != netproto.InterfaceSpec_LOOPBACK.String() {
+		// Allow only L3 interfaces be deleted
+		if intf.Spec.Type != netproto.InterfaceSpec_L3.String() {
 			log.Error(errors.Wrapf(types.ErrBadRequest, "Interface: %s | Err: %v", intf.GetKey(), types.ErrInvalidInterfaceType))
 			return nil, errors.Wrapf(types.ErrBadRequest, "Interface: %s | Err: %v", intf.GetKey(), types.ErrInvalidInterfaceType)
 		}
