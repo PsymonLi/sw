@@ -11,7 +11,7 @@ import textwrap
 import ssl
 import shutil
 
-TOOL_VERSION = '1.11'
+TOOL_VERSION = '1.12'
 
 CLI_UPLINKS = 'esxcfg-nics '
 CLI_VS = 'esxcfg-vswitch '
@@ -529,7 +529,7 @@ class Pencli:
 
         return 0
 
-    def ChangeDscMode(self, dsc_id, config_opt, management_network, mgmt_ip, gw, inband_ip, controllers):
+    def ChangeDscMode(self, dsc_id, config_opt, management_network, mgmt_ip, gw, inband_ip, controllers, token):
         cmd = ''
         if config_opt == 'static':
             controllers_str = ''
@@ -549,7 +549,11 @@ class Pencli:
             if self.__compat:
                 connection = http.client.HTTPConnection(self.__dsc_int_ip, 8888, timeout=50)
             else:
-                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=50, context=ssl._create_unverified_context())
+                context = ssl._create_unverified_context()
+                if len(token):
+                    context.load_cert_chain(certfile=token, keyfile=token)
+
+                connection = http.client.HTTPSConnection(self.__dsc_int_ip, 8888, timeout=50, context=context)
 
             print("Changing DSC mode")
             connection.request("POST", "/api/v1/naples/", cmd)
@@ -878,12 +882,10 @@ def ValidateArgsForDscModeChange(args):
                 print('Cannot configure ip on inb when it is also mgmt network')
                 return 1
         else:
-            if args.inband_ip is None:
-                print('Inband IP address cannot be empty when mgmt network is oob')
-                return 1
-            if '/' not in args.inband_ip:
-                print('Please provide inband IP address in CIDR format(For example: 10.10.10.19/24')
-                return 1
+            if args.inband_ip is not None:
+                if '/' not in args.inband_ip:
+                    print('Please provide inband IP address in CIDR format(For example: 10.10.10.19/24')
+                    return 1
     else:
         if args.mgmt_ip is not None:
             print('You do not need to provide management IP address for dhcp based configurations.')
@@ -915,7 +917,7 @@ def ChangeDscMode(args):
         print('Failed at validating connectivity to Pensando DSC')
         return 1
 
-    ret = pencli.ChangeDscMode(args.dsc_id, args.config_opt, args.management_network, args.mgmt_ip, args.gw, args.inband_ip, args.controllers)
+    ret = pencli.ChangeDscMode(args.dsc_id, args.config_opt, args.management_network, args.mgmt_ip, args.gw, args.inband_ip, args.controllers, args.token)
     pencli.CleanupPenMgmtNetwork()
 
     if ret:
@@ -991,6 +993,7 @@ if __name__ == '__main__':
     subparser.add_argument('--controllers', help = 'List of controller IP addresses or ids, separated by commas(for example: 10.10.10.11,10.10.10.12,10.10.10.13')
     subparser.add_argument('--uplink', default = '', help = 'Which management uplink to be used, required only in dual DSCs environment')
     subparser.add_argument('--dsc_id', required=True, help = 'User defined DSC ID')
+    subparser.add_argument('--token', default = '', help = 'Token used for updating DSC after being admitted')
     subparser.add_argument('--verbose', action='store_true', help = 'increase output verbosity')
 
     subparser = subparsers.add_parser('version', help = 'Return the current version of this tool')
