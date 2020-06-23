@@ -430,11 +430,20 @@ export class TableUtility {
     recordToStringFunction: (record: any) => string = (record) => {
       try {
         // The input record may contain circular reference. e.g workload.ui.dscs --> dscs[i] links back to this workload. We trim UI fields and proceed.
-        const obj = record.hasOwnProperty('_ui') &&  (typeof record.getModelValues === 'function') ?  Utility.trimUIFields(record) : record;
-        return JSON.stringify(obj);
-       } catch (err) {
-        console.error(err);
         return JSON.stringify(record);
+      } catch (err) {
+        // console.error(err); // silence the error
+        const obj = record.hasOwnProperty('_ui') && (typeof record.getModelValues === 'function') ? Utility.trimUIFields(record) : record;
+        const objString = JSON.stringify(obj);
+        let uiString = '';
+        try {
+          // Since record._ui can be a full Venice obj, we further
+          uiString = JSON.stringify(Utility.trimUIFields(record._ui) );
+          return objString + ' ' + uiString;
+        } catch (err1) {
+          // console.error(err); // silence the error
+          return objString;
+        }
       }
     },
     trimTextValueFunction: (text: string) => string = (text) => text.replace(/"/g, '')

@@ -102,6 +102,7 @@ export class HostsComponent extends DataComponent implements OnInit {
   subscriptions: Subscription[] = [];
   dataObjects: ReadonlyArray<ClusterHost> = [];
   dataObjectsBackUp: ReadonlyArray<ClusterHost> = [];
+  dataObjectsInit: boolean = false;
   disableTableWhenRowExpanded: boolean = true;
   isTabComponent: boolean = false;
 
@@ -150,7 +151,9 @@ export class HostsComponent extends DataComponent implements OnInit {
 
   maxWorkloadsPerRow: number = 8;
 
+  naplesInit: boolean = false;
   naplesList: ClusterDistributedServiceCard[] = [];
+  workloadInit: boolean = false;
   workloadList: WorkloadWorkload[] = [];
   searchHostsCount: number = 0;
 
@@ -170,8 +173,7 @@ export class HostsComponent extends DataComponent implements OnInit {
    * We have to keep building host[i] -> workloads[] map to show data in UI.
    *
    */
-  buildHostWorkloadsMap(myworkloads: ReadonlyArray<WorkloadWorkload> | WorkloadWorkload[],
-    hosts: ReadonlyArray<ClusterHost> | ClusterHost[], source: BuildHostWorkloadMapSourceType) {
+  buildHostWorkloadsMap(myworkloads: ReadonlyArray<WorkloadWorkload> | WorkloadWorkload[], hosts: ReadonlyArray<ClusterHost> | ClusterHost[], updateBackUp?: boolean) {
     if (myworkloads && hosts) {
       this.hostWorkloadsTuple = ObjectsRelationsUtility.buildHostWorkloadsMap(myworkloads, hosts);
       this.dataObjects = this.dataObjects.map(host => {
@@ -183,7 +185,16 @@ export class HostsComponent extends DataComponent implements OnInit {
         host._ui = hostUiModel;
         return host;
       });
-      // backup dataObjects
+    }
+
+    /**
+     * Update backup list on:
+     *  - any list is initialized
+     *  - anytime main object (host) list is updated
+     *
+     * This will protect backup list from corruption when dataObjects !== dataObjectsBackUp (e.g. searching, etc)
+     */
+    if (updateBackUp) {
       this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.dataObjects);
     }
   }
@@ -318,17 +329,15 @@ export class HostsComponent extends DataComponent implements OnInit {
    * This API is used in getRecords().
    * Whenever, REST calls fetch host, dsc or workload, this function will be invoked.
    */
-  handleDataReady() {
+  handleDataReady(updateBackUp?: boolean) {
     // When naplesList is ready, build DSC-maps
     if (this.naplesList) {
       const _myDSCnameToMacMap: DSCsNameMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
       this.nameToMacMap = _myDSCnameToMacMap.nameToMacMap;
       this.macToNameMap = _myDSCnameToMacMap.macToNameMap;
     }
-    // When workload and hostList are ready, build host-workload map
-    if (this.workloadList && this.dataObjects && this.dataObjects.length > 0) {
-      this.buildHostWorkloadsMap(this.workloadList, this.dataObjects, BuildHostWorkloadMapSourceType.watchHosts);  // host[i] -> workloads[] map
-    }
+
+    this.buildHostWorkloadsMap(this.workloadList, this.dataObjects, updateBackUp);  // host[i] -> workloads[] map
   }
 
   /**
@@ -344,13 +353,21 @@ export class HostsComponent extends DataComponent implements OnInit {
    *
    */
   getRecords() {
+    this.tableLoading = true;
+
     const workloadSubscription = this.workloadService.ListWorkloadCache().subscribe(
       (response) => {
         if (response.connIsErrorState) {
           return;
         }
         this.workloadList = response.data as WorkloadWorkload[];
-        this.handleDataReady();
+        this.handleDataReady(!this.workloadInit);
+        this.workloadInit = true;
+        this.tableLoading = this.isTableLoading();
+      },
+      (error) => {
+        this.workloadInit = true;
+        this.tableLoading = this.isTableLoading();
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -361,7 +378,13 @@ export class HostsComponent extends DataComponent implements OnInit {
           return;
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
-        this.handleDataReady();
+        this.handleDataReady(!this.naplesInit);
+        this.naplesInit = true;
+        this.tableLoading = this.isTableLoading();
+      },
+      (error) => {
+        this.naplesInit = true;
+        this.tableLoading = this.isTableLoading();
       }
     );
     this.subscriptions.push(dscSubscription);
@@ -374,7 +397,8 @@ export class HostsComponent extends DataComponent implements OnInit {
         }
         this.dataObjects = response.data;
         this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjects); // VS-1395  force table to refresh data.
-        this.handleDataReady();
+        this.handleDataReady(true);
+        this.dataObjectsInit = true;
 
         // check if any hosts have vcenter integration
         // once such a host is found add advSearchCol and break
@@ -395,12 +419,20 @@ export class HostsComponent extends DataComponent implements OnInit {
           });
           this.vcenterAddedToAdvSearch = false;
         }
+
+        this.tableLoading = this.isTableLoading();
+      },
+      (error) => {
+        this.dataObjectsInit = true;
+        this.tableLoading = this.isTableLoading();
       }
     );
     this.subscriptions.push(hostSubscription);
   }
 
-
+  isTableLoading(): boolean {
+    return !(this.naplesInit && this.workloadInit && this.dataObjectsInit);
+  }
   deleteRecord(object: ClusterHost): Observable<{ body: IClusterHost | IApiStatus | Error | IClusterHost; statusCode: number }> {
     return this.clusterService.DeleteHost(object.meta.name);
   }
@@ -421,6 +453,7 @@ export class HostsComponent extends DataComponent implements OnInit {
   onCancelSearch($event) {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
     this.dataObjects = this.dataObjectsBackUp;
+    this.handleDataReady();
   }
 
   /**
