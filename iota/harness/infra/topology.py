@@ -186,7 +186,7 @@ class Node(object):
         def SetBondIntfs(self, bond_intfs):
             self.__bond_intfs = bond_intfs
 
-        def SetPorts(self, ports):
+        def SetPorts(self, ports, speed):
             self.__ports = ports
             for port in self.__ports:
                 if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
@@ -196,6 +196,7 @@ class Node(object):
                     setattr(nw_obj, 'SwitchUsername', port.SwitchUsername)
                     setattr(nw_obj, 'SwitchPassword', port.SwitchPassword)
                     setattr(nw_obj, 'Name', 'e1/' + str(port.SwitchPort))
+                    setattr(nw_obj, "Speed", speed)
                     self.__data_networks.append(nw_obj)
             return
 
@@ -360,6 +361,7 @@ class Node(object):
 
         defaultMode =store.GetTestbed().GetCurrentTestsuite().GetDefaultNicMode()
         defaultPipeline =store.GetTestbed().GetCurrentTestsuite().GetDefaultNicPipeline()
+        portSpeed = store.GetTestbed().GetCurrentTestsuite().GetPortSpeed()
         
         nics = getattr(self.__inst, "Nics", None)
         if  self.__node_type == "bm":
@@ -393,7 +395,7 @@ class Node(object):
                         device.SetNaplesPipeline(defaultPipeline)
 
                     device.SetNicFirewallRules()
-                    device.SetPorts(getattr(nic, 'Ports', []))
+                    device.SetPorts(getattr(nic, 'Ports', []), portSpeed)
                     if not GlobalOptions.enable_multi_naples:
                         break
             else:
@@ -1196,7 +1198,7 @@ class Topology(object):
                     switch_ips[nw.SwitchIP] = switch_ctx
                 switch_ctx.username = nw.SwitchUsername
                 switch_ctx.password = nw.SwitchPassword
-                switch_ctx.speed = getattr(nw,"Speed",topo_pb2.DataSwitch.Speed_auto)
+                switch_ctx.speed = nw.Speed
                 switch_ctx.mtu = 9216
                 switch_ctx.ip = nw.SwitchIP
                 switch_ctx.ports.append(nw.Name)
