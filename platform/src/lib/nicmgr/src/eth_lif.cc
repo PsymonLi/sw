@@ -2403,9 +2403,10 @@ EthLif::_CmdSetAttr(void *req, void *req_data, void *resp, void *resp_data)
                 NIC_LOG_ERR("{}: Change MTU not permitted on host/internal management interfaces");
                 return (IONIC_RC_EINVAL);
             }
-            if (cmd->mtu > MTU_MAX) {
+            uint32_t mtu_max = MTU_MAX - dev_api->max_encap_hdr_len();
+            if (cmd->mtu > mtu_max) {
                 NIC_LOG_ERR("{}: Requested MTU {} greater than max {}",
-                            hal_lif_info_.name, cmd->mtu, MTU_MAX);
+                            hal_lif_info_.name, cmd->mtu, mtu_max);
                 return (IONIC_RC_EINVAL);
             }
             if (cmd->mtu < MTU_MIN) {

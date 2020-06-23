@@ -1563,8 +1563,8 @@ Eth::_CmdPortIdentify(void *req, void *req_data, void *resp, void *resp_data)
         port_status->fec_type = IONIC_PORT_FEC_TYPE_NONE;
     }
 
-    // The port mtu would incude the FCS.
-    port_config->mtu -= ETH_FCS;
+    // The port mtu would incude the FCS and encap headers.
+    port_config->mtu -= ETH_FCS + dev_api->max_encap_hdr_len();
     if (spec->uplink_port_num == 0) {
         cfg->state = IONIC_PORT_OPER_STATUS_UP;
         port_config->state = IONIC_PORT_OPER_STATUS_UP;
@@ -1584,8 +1584,8 @@ Eth::_CmdPortInit(void *req, void *req_data, void *resp, void *resp_data)
 
     DEVAPI_CHECK
 
-    // The host mtu would not incude the FCS.
-    port_config->mtu += ETH_FCS;
+    // The host mtu would not incude the FCS and encap headers.
+    port_config->mtu += ETH_FCS + dev_api->max_encap_hdr_len();
 
     if (spec->uplink_port_num != 0) {
         ret = dev_api->port_set_config(spec->uplink_port_num, (port_config_t *)cfg);
@@ -1670,8 +1670,8 @@ Eth::_CmdPortSetAttr(void *req, void *req_data, void *resp, void *resp_data)
         cfg.speed = cmd->speed;
         break;
     case IONIC_PORT_ATTR_MTU:
-        // The host mtu would not incude the FCS.
-        cfg.mtu = cmd->mtu + ETH_FCS;
+        // The host mtu would not incude the FCS and encap headers.
+        cfg.mtu = cmd->mtu + ETH_FCS + dev_api->max_encap_hdr_len();
         break;
     case IONIC_PORT_ATTR_AUTONEG:
         cfg.an_enable = cmd->an_enable;
@@ -1784,8 +1784,8 @@ Eth::_CmdPortGetAttr(void *req, void *req_data, void *resp, void *resp_data)
         comp->speed = cfg.speed;
         break;
     case IONIC_PORT_ATTR_MTU:
-        // The port mtu would incude the FCS.
-        comp->mtu = cfg.mtu - ETH_FCS;
+        // The port mtu would incude the FCS and encap headers.
+        comp->mtu = cfg.mtu - ETH_FCS - dev_api->max_encap_hdr_len();
         break;
     case IONIC_PORT_ATTR_AUTONEG:
         comp->an_enable = cfg.an_enable;
@@ -2138,7 +2138,12 @@ Eth::_CmdLifIdentify(void *req, void *req_data, void *resp, void *resp_data)
         ident->eth.max_frame_size = MTU_DEFAULT;
     } else {
         ident->eth.min_frame_size = MTU_MIN;
-        ident->eth.max_frame_size = MTU_MAX;
+        ident->eth.max_frame_size = MTU_MAX - dev_api->max_encap_hdr_len();
+        // XXX The encap header length is expected not to change for the
+        // lifetime of the lif.  Otherwise, if it can change, then the length
+        // subtracted and added from the mtu may be inconsistent between
+        // identify/query and set, or after setting the mtu it could become
+        // invalid due to the configuration change.
     }
 
     ident->eth.config.features = 0;

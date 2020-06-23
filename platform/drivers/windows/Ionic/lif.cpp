@@ -310,6 +310,13 @@ ionic_lifs_alloc(struct ionic *ionic)
     
     ionic_lif_identify(ionic, IONIC_LIF_TYPE_CLASSIC, lid);
 
+    // The initial frame size came from registry configuration, and is
+    // constrained to limits required by Windows.  Now that we know the actual
+    // limits from lif identify, further constrain the configuration to these
+    // limits.
+    ionic->frame_size = min_t(uint32_t, ionic->frame_size, lid->eth.max_frame_size);
+    ionic->frame_size = max_t(uint32_t, ionic->frame_size, lid->eth.min_frame_size);
+
     lif = ionic_lif_alloc(ionic, 0);
     if (lif) {
         lif->identity = lid;
