@@ -30,7 +30,7 @@ import { Eventtypes } from '@app/enum/eventtypes.enum';
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class AlertstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy {
+export class AlertstableComponent extends DataComponent implements OnInit, OnChanges {
   @ViewChild('timeRangeComponent') timeRangeComponent: TimeRangeComponent;
   @ViewChild('alertsTable') alertsTable: PentableComponent;
 
@@ -49,15 +49,14 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
 
   // holds a subset (possibly all) of this.alerts
   // This are the alerts that will be displayed
-  dataObjects: ReadonlyArray<MonitoringAlert> = [];
-  dataObjectsBackup: ReadonlyArray<MonitoringAlert> = [];
+  dataObjects: MonitoringAlert[] = [];
+  dataObjectsBackUp: MonitoringAlert[] = [];
 
   fieldFormArray = new FormArray([]);
   maxSearchRecords: number = 4000;
   alertsLoading = false;
   advSearchCols: TableCol[] = [];
 
-  subscriptions: Subscription[] = [];
   alertSubscription: Subscription;
 
   // Alert State filters
@@ -76,6 +75,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     { field: 'status.message', header: 'Message', class: 'alertsevents-column-message', sortable: false, width: 25 },
     { field: 'spec.state', header: 'State', class: 'alertsevents-column-state', sortable: false, width: 5 },
     { field: 'status.source', header: 'Source Node & Component', class: 'alerts-column-source', sortable: false },
+    { field: 'status.total-hits', header: 'Total Hits', class: 'alerts-column-totalhits', sortable: true },
   ];
 
   alertsIcon: Icon = {
@@ -195,7 +195,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
 
   getAlerts() {
     this.dataObjects = [];
-    this.dataObjectsBackup = [];
+    this.dataObjectsBackUp = [];
     this.alertsLoading = true;
     this.alertsEventUtility = new HttpEventUtility<MonitoringAlert>(MonitoringAlert);
     this.alerts = this.alertsEventUtility.array;
@@ -208,7 +208,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
           this.alertsTable.clearSearch();
         }
         this.alertsEventUtility.processEvents(response);
-        this.dataObjectsBackup = Utility.getLodash().cloneDeepWith(this.alerts);
+        this.dataObjectsBackUp = Utility.getLodash().cloneDeepWith(this.alerts) as MonitoringAlert[];
         this.setAlertNumbersObject();
         this.filterAlerts();
       },
@@ -306,11 +306,18 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     const successMsg: string = 'Updated ' + alerts.length + ' alerts';
     const failureMsg: string = 'Failed to update alerts';
     const stagingBulkEditAction = this.buildBulkEditUpdateAlertsPayload(alerts, newState);
+    this.alertsLoading = true;
     this.bulkEditHelper(alerts, stagingBulkEditAction, successMsg, failureMsg);
   }
 
-  onBulkEditSuccess() {
+  onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
+    this.alertsLoading = false;
     this.invokeTimeRangeValidator();
+  }
+
+  onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
+    this.alertsLoading = false;
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
   }
 
   buildBulkEditUpdateAlertsPayload(updateAlerts: MonitoringAlert[], newState: MonitoringAlertSpec_state, buffername: string = ''): IStagingBulkEditAction {
@@ -409,13 +416,18 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
  */
   updateAlertState(alert: MonitoringAlert, newState: MonitoringAlertSpec_state, summary: string, msg: string) {
     // Create copy so that when we modify it doesn't change the view
+    this.alertsLoading = true;
     const observable = this.buildUpdateAlertStateObservable(alert, newState);
     const subscription = observable.subscribe(
       response => {
         this._controllerService.invokeSuccessToaster(summary, msg);
+        this.alertsLoading = false;
         this.invokeTimeRangeValidator(); // Gets new time and update table accordingly. Avoids using Stale Time Query
       },
-      this._controllerService.restErrorHandler(summary + ' Failed')
+      () => {
+        this.alertsLoading = false;
+        this._controllerService.restErrorHandler(summary + ' Failed');
+      }
     );
     this.subscriptions.push(subscription);
   }
@@ -529,13 +541,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
-  ngOnDestroy() {
-    this.subscriptions.forEach(
-      subscription => {
-        subscription.unsubscribe();
-      }
-    );
-
+  OnDestroyHook() {
     if (this.alertSubscription != null) {
       this.alertSubscription.unsubscribe();
     }
@@ -544,7 +550,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
 
   onCancelSearch() {
     this.controllerService.invokeInfoToaster('Information', 'Cleared search criteria, Table refreshed.');
-    this.alerts = this.dataObjectsBackup;
+    this.alerts = this.dataObjectsBackUp;
     this.setAlertNumbersObject();
     this.filterAlerts();
   }
@@ -556,7 +562,7 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
    */
   onSearchAlerts(field = this.alertsTable.sortField, order = this.alertsTable.sortOrder) {
     this.alertsLoading = true;
-    const searchResults = this.onSearchDataObjects(field, order, 'Alert', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackup, this.alertsTable.advancedSearchComponent);
+    const searchResults = this.onSearchDataObjects(field, order, 'Alert', this.maxSearchRecords, this.advSearchCols, this.dataObjectsBackUp, this.alertsTable.advancedSearchComponent);
     if (searchResults && searchResults.length > 0) {
       this.alerts = searchResults;
       this.setAlertNumbersObject();

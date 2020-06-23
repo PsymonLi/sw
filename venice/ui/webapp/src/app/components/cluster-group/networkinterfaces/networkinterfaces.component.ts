@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Animations } from '@app/animations';
@@ -114,6 +114,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   disableTableWhenRowExpanded = true;
   tableLoading: boolean = false;
   inLabelEditMode: boolean = false;
+  labelLoading: boolean = false;
 
   selectedNetworkInterface: NetworkNetworkInterface = null;
 
@@ -310,6 +311,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   }
 
   handleEditSave(networkinterfaces: NetworkNetworkInterface[]) {
+    this.labelLoading = true;
     this.bulkeditLabels(networkinterfaces);  // Use bulkedit when backend is ready
   }
 
@@ -327,6 +329,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
     const successMsg: string = 'Updated ' + networkinterfaces.length + ' network interface labels';
     const failureMsg: string = 'Failed to update network interface labels';
     const stagingBulkEditAction = this.buildBulkEditLabelsPayload(networkinterfaces);
+    this.tableLoading = true;
     this.bulkEditHelper(networkinterfaces, stagingBulkEditAction, successMsg, failureMsg );
   }
 
@@ -361,6 +364,8 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   onInvokeAPIonMultipleRecordsSuccess() {
     this.inLabelEditMode = false;
+    this.labelLoading = false;
+    this.tableLoading = false;
   }
 
   onBulkEditSuccess(veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string) {
@@ -368,7 +373,9 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   }
 
   onBulkEditFailure(error: Error, veniceObjects: any[], stagingBulkEditAction: IStagingBulkEditAction, successMsg: string, failureMsg: string, ) {
-      this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackUp);
+    this.labelLoading = false;
+    this.tableLoading = false;
   }
 
   private handleForkJoin(observables: Observable<any>[], summary: string, objectType: string) {

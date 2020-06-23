@@ -34,7 +34,7 @@
                      fxLayout="auto"
                      [tableMenuItems]="networkInterfaceTable.tableMenuItems"
                      title="Network Interfaces"
-                     [total]="count">
+                     [total]="count" class="networknetworkinterface-tableheader">
       <ng-container *ngTemplateOutlet="actionButtonsTemplate"></ng-container>
     </app-tableheader>
   </div>
@@ -61,6 +61,7 @@
         <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
                          (saveEmitter)="handleEditSave($event)"
                          [inLabelEditMode]="inLabelEditMode"
+                         [loading]="labelLoading"
                          [metadata]="labelEditorMetaData"
                          [nameKey]="'meta.name'"
                          [objects]="getSelectedDataObjects()">

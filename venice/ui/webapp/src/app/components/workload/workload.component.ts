@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild, ViewEncapsulation, OnDestroy } from '@angular/core';
 import { FormArray } from '@angular/forms';
 import { MatDialog } from '@angular/material';
 import { Animations } from '@app/animations';
@@ -56,14 +56,13 @@ interface WorkloadUiModel {
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class WorkloadComponent extends DataComponent  implements OnInit {
+export class WorkloadComponent extends DataComponent implements OnInit {
   // Feature Flags
   hideWorkloadWidgets: boolean = !this.uiconfigsService.isFeatureEnabled('workloadWidgets');
 
   @ViewChild('workloadTable') workloadTable: PentableComponent;
   maxSearchRecords: number = 8000;
 
-  subscriptions: Subscription[] = [];
   // Workload Widget vars
   heroStatsToggled = true;
 
@@ -758,22 +757,6 @@ export class WorkloadComponent extends DataComponent  implements OnInit {
   onDeleteSelectedWorkloads(event) {
     if (!this.disableMultiDelIcons()) {
       this.onDeleteSelectedRows(event);
-    }
-  }
-
-  ngOnDestroyHook() {
-    // we save workloads to host only we have full set of workloads.
-    if (this.dataObjects && this.dataObjects.length >= this.searchWorkloadCount) {
-      const ts = (new Date()).getTime();
-      const hour = Utility.DEFAULT_CACHE_DURATION;
-
-      const workloadVeniceObjectCache: VeniceObjectCache = {
-        timestamp: ts,
-        duration: hour,
-        data: this.dataObjects as any[]
-      };
-
-      Utility.getInstance().setVeniceObjectCache('Workload', workloadVeniceObjectCache);
     }
   }
 

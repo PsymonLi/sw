@@ -167,13 +167,21 @@
       <div class="ui-flex" fxLayout="row">
         <div class="ui-flex" fxLayout="column">
           <div fxLayout="row">
-            <a fxFlex="25" fxLayoutAlign="start center" class="alertdetail-key">Source Node &
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Source Node &
               Component:</a>
-            <a fxFlex="75" fxLayoutAlign="start center" class="alertdetail-value">
+            <a fxLayoutAlign="start center" class="alertdetail-value ui-flex">
               <a class="alertdetail-link" href="{{getAlertSourceNameLink(this.selectedAlert)}}"
                  [matTooltip]="getAlertSourceNameTooltip(this.selectedAlert)">
                 {{ this.selectedAlert.status.source['node-name'] }} </a> :
               {{ this.selectedAlert.status.source.component }}
+            </a>
+          </div>
+        </div>
+        <div class="ui-flex" fxLayout="column">
+          <div fxLayout="row">
+            <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Total Hits:</a>
+            <a fxLayoutAlign="start center" class="alertdetail-value ui-flex">
+              {{ this.selectedAlert.status['total-hits'] }}
             </a>
           </div>
         </div>

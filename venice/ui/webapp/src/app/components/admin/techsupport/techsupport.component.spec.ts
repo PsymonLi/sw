@@ -90,8 +90,8 @@ describe('TechsupportComponent', () => {
 
     beforeEach(() => {
       const service = TestBed.get(MonitoringService);
-      spyOn(service, 'WatchTechSupportRequest').and.returnValue(
-        TestingUtility.createWatchEventsSubject([new MonitoringTechSupportRequest()])
+      spyOn(service, 'ListTechSupportRequestCache').and.returnValue(
+        TestingUtility.createDataCacheSubject([new MonitoringTechSupportRequest()])
       );
       testHelper.fixture = fixture;
     });

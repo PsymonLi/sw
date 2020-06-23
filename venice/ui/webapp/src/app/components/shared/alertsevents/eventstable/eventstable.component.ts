@@ -32,7 +32,7 @@ import { Eventtypes } from '@app/enum/eventtypes.enum';
   animations: [Animations],
   encapsulation: ViewEncapsulation.None
 })
-export class EventstableComponent extends DataComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit, DoCheck {
+export class EventstableComponent extends DataComponent implements OnInit, OnChanges, AfterViewInit, DoCheck {
 
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
   @ViewChild('exportLogsComponent') exportLogsComponent: ExportLogsComponent;
@@ -660,13 +660,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
-  ngOnDestroy() {
-    this.subscriptions.forEach(
-      subscription => {
-        subscription.unsubscribe();
-      }
-    );
-
+  OnDestroyHook() {
     if (this.eventsSubscription != null) {
       this.eventsSubscription.unsubscribe();
     }

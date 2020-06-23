@@ -5,7 +5,7 @@ import { ControllerService } from '@app/services/controller.service';
 import { LocalSearchRequest, AdvancedSearchComponent } from '@app/components/shared/advanced-search/advanced-search.component';
 import { FieldsRequirement, SearchTextRequirement } from '@sdk/v1/models/generated/search';
 import { TableUtility } from '@app/components/shared/tableviewedit/tableutility';
-import { Output, EventEmitter, ViewChild, OnInit } from '@angular/core';
+import { Output, EventEmitter, ViewChild, OnInit, OnDestroy } from '@angular/core';
 import { TableCol } from '@app/components/shared/tableviewedit';
 import { StagingService } from '@app/services/generated/staging.service';
 import { StagingCommitAction, StagingBuffer, IBulkeditBulkEditItem, IStagingBulkEditAction } from '@sdk/v1/models/generated/staging';
@@ -13,7 +13,7 @@ import { switchMap, buffer } from 'rxjs/operators';
 import { UIConfigsService } from '@app/services/uiconfigs.service';
 import { BaseComponent } from '@app/components/base/base.component';
 
-export abstract class DataComponent extends BaseComponent implements OnInit {
+export abstract class DataComponent extends BaseComponent implements OnInit, OnDestroy {
   @ViewChild('advancedSearchComponent') advancedSearchComponent: AdvancedSearchComponent;
 
   @Output() operationOnMultiRecordsComplete: EventEmitter<any> = new EventEmitter<any>();
@@ -24,6 +24,15 @@ export abstract class DataComponent extends BaseComponent implements OnInit {
       protected uiconfigsService: UIConfigsService) {
       super(controllerService, uiconfigsService);
       this.setupBulkEdit();
+  }
+
+  onDestroyHook() {}
+
+  ngOnDestroy(): void {
+    this.onDestroyHook();
+    this.subscriptions.forEach(subscription => {
+      subscription.unsubscribe();
+    });
   }
 
 
