@@ -192,6 +192,17 @@ qspi_set_read_delay(uint32_t n)
     qspi_writereg(QSPI_READ_CAPTURE, val);
 }
 
+static int
+qspi_calc_div(uint32_t clk, uint32_t freq)
+{
+    int div = (clk / freq) & -2;
+    if (div == 0) {
+        return 2;
+    }
+    div += 2 * (clk / div > freq);
+    return (div < 32) ? div : 32;
+}
+
 void
 qspi_init(void)
 {
@@ -210,7 +221,7 @@ qspi_init(void)
         qspi_set_div(4);
         qspi_set_read_144_mode();
     } else {
-        qspi_set_div(QSPI_CLK_FREQ_ASIC / board_qspi_frequency());
+        qspi_set_div(qspi_calc_div(QSPI_CLK_FREQ_ASIC, board_qspi_frequency()));
         qspi_set_read_122_mode();
     }
     qspi_set_read_delay(board_qspi_read_delay());

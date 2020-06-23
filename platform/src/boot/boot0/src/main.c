@@ -87,11 +87,20 @@ boot_uboot_image(int fwid)
 static int
 select_track(void)
 {
+    int track;
+
     if (gpio_bit(GPIO_PIN_FORCE_GOLDEN)) {
-        return FW_GOLD;
+        track = FW_GOLD;
     } else {
-        return get_pri_fw();
+        // get the selected firmware from the flash fwsel record
+        track = get_pri_fw();
+
+        // some boards (e.g. Vomero) prohibit goldfw booting via fwsel
+        if (track == FW_GOLD && !board_fwsel_goldfw_ok()) {
+            track = FW_MAIN_A;
+        }
     }
+    return track;
 }
 
 static int

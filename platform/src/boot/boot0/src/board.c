@@ -51,6 +51,7 @@ struct board_info {
     uint8_t     qspi_read_delay;        // qspi read delay
     uint8_t     bsm_wdt_disable;        // do not use the wdt
     uint8_t     reset_on_panic;         // reset system upon panic
+    uint8_t     fwsel_gold_not_ok;      // cannot boot goldfw via fwsel
     uint16_t    log2_bfl_secsize;       // boot fault log sector size
     uint32_t    qspi_frequency;         // qspi frequency
     const bsm_fwid_map_t *fwid_map;     // bsm fwid map
@@ -75,6 +76,7 @@ static const struct board_info brd[BOARD_TYPE_NUM] = {
         .fwid_map           = &vomero_bsm_fwid_map,
         .qspi_read_delay    = 1,
         .qspi_frequency     = 40000000,
+        .fwsel_gold_not_ok  = 1,
     },
     [BOARD_TYPE_VOMERO_REV2] = {
         .chip_type          = CHIP_TYPE_ASIC,
@@ -82,6 +84,7 @@ static const struct board_info brd[BOARD_TYPE_NUM] = {
         .fwid_map           = &vomero_bsm_fwid_map,
         .qspi_read_delay    = 1,
         .qspi_frequency     = 40000000,
+        .fwsel_gold_not_ok  = 1,
     }
 };
 
@@ -195,4 +198,10 @@ board_get_part(const char *name, intptr_t *addrp, uint32_t *sizep)
         }
     }
     return -1;
+}
+
+int
+board_fwsel_goldfw_ok(void)
+{
+    return (board_info_ptr()->fwsel_gold_not_ok == 0);
 }

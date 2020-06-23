@@ -38,7 +38,8 @@ const bsm_fwid_map_t *board_bsm_fwid_map(void);
 uint8_t board_bsm_wdt_disable(void);
 uint8_t board_reset_on_panic(void);
 int board_get_part(const char *name, intptr_t *addrp, uint32_t *sizep);
-int board_get_bfl_log2_secsize();
+int board_get_bfl_log2_secsize(void);
+int board_fwsel_goldfw_ok(void);
 
 // cpld.c
 uint8_t cpld_read(int reg);
