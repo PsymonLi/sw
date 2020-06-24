@@ -39,9 +39,9 @@ export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, Clu
 
   featureSets: SelectItem[] = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_feature_set);
 
-  hostFeatureSets: SelectItem[] = this.featureSets.slice(0, 2);
+  hostFeatureSets: SelectItem[] = [];
 
-  virtualizedFeatureSets: SelectItem[] = this.featureSets.slice(2);
+  virtualizedFeatureSets: SelectItem[] = [];
 
   // NEW 5/8/2020
   selectedDeploymentTarget: SelectItem;
@@ -60,6 +60,19 @@ export class NewdscprofileComponent extends CreationForm<IClusterDSCProfile, Clu
   }
 
   postNgInit(): void {
+
+    // populate form options depending on ui-config
+    if (this.uiconfigsService.isFeatureEnabled('enterprise')) {
+      this.featureSets = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_feature_set, ['sdn']);
+      this.hostFeatureSets = this.featureSets.slice(0, 2);
+      this.virtualizedFeatureSets = this.featureSets.slice(2);
+    } else {
+      // for cloud, only show [host - sdn] combination
+      this.depolymentTargetOptions = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_deployment_target, ['virtualized']);
+      this.featureSets = Utility.convertEnumToSelectItem(ClusterDSCProfileSpec_feature_set, ['smartnic', 'flowaware', 'flowaware_firewall']);
+      this.hostFeatureSets = this.featureSets;
+    }
+
     if (this.isInline) {
       const dscProfile: ClusterDSCProfile = this.newObject.getFormGroupValues();
       if (dscProfile.spec['deployment-target'] === DSCProfileUtil.DTARGET_HOST) {
