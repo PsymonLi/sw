@@ -92,7 +92,7 @@ func (f *elasticLogRetriever) HandleRequest(ctx context.Context, req *diagapi.Di
 			return nil, err
 		}
 	}
-	result, err := f.elasticClient.Search(ctx, index, "", query, nil, int32(from), int32(maxResults), "@timestamp", true)
+	result, err := f.elasticClient.Search(ctx, index, "doc", query, nil, int32(from), int32(maxResults), "@timestamp", true)
 	if err != nil {
 		f.logger.ErrorLog("method", "HandleRequest", "msg", fmt.Sprintf("search failed for query: %+v, result: %+v", *query, result), "err", err)
 		return nil, err

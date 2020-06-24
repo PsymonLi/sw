@@ -168,12 +168,16 @@ func GetDiagnosticsService(module, node string, category diagapi.ModuleStatus_Ca
 // GetDiagnosticsServiceWithDefaults returns debug Service with log service registered
 func GetDiagnosticsServiceWithDefaults(module, node string, category diagapi.ModuleStatus_CategoryType, rslvr resolver.Interface, logger log.Logger) diagnostics.Service {
 	server := GetDiagnosticsService(module, node, category, logger)
-	if err := server.RegisterHandler("Debug", diagapi.DiagnosticsRequest_Log.String(), NewElasticLogsHandler(module, node, category, rslvr, logger)); err != nil {
-		logger.ErrorLog("method", "GetDiagnosticsServiceWithDefaults", "msg", "failed to register elastic logs handler", "err", err)
+	if err := server.RegisterHandler("Debug", diagapi.DiagnosticsRequest_Log.String(), NewFileLogHandler(module, node, category, logger)); err != nil {
+		logger.ErrorLog("method", "GetDiagnosticsServiceWithDefaults", "msg", "failed to register file log handler", "err", err)
 		// TODO throw an event
 	}
 	if err := server.RegisterHandler("Debug", diagapi.DiagnosticsRequest_Stats.String(), NewExpVarHandler(module, node, category, logger)); err != nil {
 		logger.ErrorLog("method", "GetDiagnosticsServiceWithDefaults", "msg", "failed to register expvar handler", "err", err)
+		// TODO throw an event
+	}
+	if err := server.RegisterHandler("Debug", diagapi.DiagnosticsRequest_Profile.String(), NewPprofHandler(module, node, category, logger)); err != nil {
+		logger.ErrorLog("method", "GetDiagnosticsServiceWithDefaults", "msg", "failed to register heap handler", "err", err)
 		// TODO throw an event
 	}
 	return server

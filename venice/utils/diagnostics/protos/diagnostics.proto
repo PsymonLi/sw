@@ -32,3 +32,7 @@ message Stats {
 message String {
     string Content = 1 [(gogoproto.jsontag) = "string,omitempty"];
 }
+
+message Profile {
+    bytes Buffer = 1 [(gogoproto.jsontag) = "buffer, omitempty"];
+}

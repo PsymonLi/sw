@@ -97,9 +97,10 @@ func NewNetctrler(serverURL, restURL, apisrvURL string, resolver resolver.Interf
 	if enableDiagnostics {
 		diagSvc = &diagHandler{}
 		options = append(options,
-			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Log.String(), diagsvc.NewElasticLogsHandler(globals.Npm, utils.GetHostname(), diagapi.ModuleStatus_Venice, resolver, logger)),
+			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Log.String(), diagsvc.NewFileLogHandler(globals.Npm, utils.GetHostname(), diagapi.ModuleStatus_Venice, logger)),
 			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Stats.String(), diagsvc.NewExpVarHandler(globals.Npm, utils.GetHostname(), diagapi.ModuleStatus_Venice, logger)),
-			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Action.String(), diagSvc))
+			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Action.String(), diagSvc),
+			statemgr.WithDiagnosticsHandler("Debug", diagapi.DiagnosticsRequest_Profile.String(), diagsvc.NewPprofHandler(globals.Npm, utils.GetHostname(), diagapi.ModuleStatus_Venice, logger)))
 
 	}
 	// create network state manager
