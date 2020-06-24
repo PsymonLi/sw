@@ -863,8 +863,6 @@ def GetVirtualRouterIP(testcase, pkt, args=None):
             return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterIPAddr[1])
 
 def GetVirtualRouterMAC(testcase, pkt, args=None):
-    if testcase.config.root.FwdMode == 'L3':
-            return str(testcase.config.remotemapping.SUBNET.VirtualRouterMACAddr)
     return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterMACAddr)
 
 def __is_any_cfg_deleted(tc):

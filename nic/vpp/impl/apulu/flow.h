@@ -826,12 +826,13 @@ always_inline int
 pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib, u16 nh_hw_id,
                      u8 is_ip4, u16 *next, u32 *counter)
 {
-    uint16_t bd_id;
-    uint32_t vrip = 0;
-    uint8_t *vrmac;
+    uint16_t bd_id, ingress_bd_id;
+    uint32_t vrip = 0, ingress_vrip;
+    uint8_t *vrmac, *ingress_vrmac;
     icmp46_header_t *icmp0;
 
     if (is_ip4) {
+        ethernet_header_t *eth0;
         ip4_header_t *ip40;
         u32 dst_ip;
         u8 protocol;
@@ -846,6 +847,16 @@ pds_flow_vr_ip_ping (p4_rx_cpu_hdr_t *hdr, vlib_buffer_t *vlib, u16 nh_hw_id,
         bd_id = ((p4_rx_cpu_hdr_t *)hdr)->egress_bd_id;
         pds_impl_db_vr_ip_mac_get(bd_id, &vrip, &vrmac);
         if (dst_ip == vrip) {
+            ingress_bd_id = ((p4_rx_cpu_hdr_t *)hdr)->ingress_bd_id;
+            pds_impl_db_vr_ip_mac_get(ingress_bd_id, &ingress_vrip, &ingress_vrmac);
+            eth0 = (ethernet_header_t *)((u8 *)ip40 -
+                   (vnet_buffer(vlib)->l3_hdr_offset -
+                   vnet_buffer(vlib)->l2_hdr_offset));
+            if (clib_memcmp(eth0->dst_address, ingress_vrmac, ETH_ADDR_LEN) != 0) {
+                *next = FLOW_CLASSIFY_NEXT_DROP;
+                counter[FLOW_CLASSIFY_COUNTER_VRIP_MAC_MISMATCH] += 1;
+                return 0;
+            }
             if (protocol == IP_PROTOCOL_ICMP) {
                 if (PREDICT_TRUE(icmp0->type == ICMP4_echo_request)) {
                     vnet_buffer(vlib)->pds_tx_data.vnic_id = hdr->vnic_id;

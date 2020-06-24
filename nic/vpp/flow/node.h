@@ -71,6 +71,7 @@
         _(SES_NOT_FOUND, "Packets with invalid session id")         \
         _(DEFUNCT_RFLOW, "Defunct rflow")                           \
         _(L2L_NDEF_IFLOW, "Non-defunct L2l iflow")                  \
+        _(VRIP_MAC_MISMATCH, "VR IPv4 packet with invalid MAC")     \
 
 #define foreach_flow_prog_next                                      \
         _(FWD_FLOW, "pds-fwd-flow" )                                \
