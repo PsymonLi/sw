@@ -199,6 +199,9 @@ export class UIConfigsService implements OnDestroy {
   }
 
   set userPermissions(value: IAuthOperationStatus[]) {
+    if (Utility.getLodash().isEqual(this._userPermissions, value)) {
+      return;
+    }
     this._userPermissions = value;
     this.setUIPermissions();
   }
@@ -208,6 +211,9 @@ export class UIConfigsService implements OnDestroy {
   }
 
   set licenseObj(value: IClusterLicense) {
+    if (Utility.getLodash().isEqual(this._licenseObj, value)) {
+      return;
+    }
     this._licenseObj = value;
     this.setFeatures();
   }
@@ -608,9 +614,6 @@ export class UIConfigsService implements OnDestroy {
     if (this.controllerService.isUserLogin()) {
       if (this.userPermissions.length <= 0) {
         this.setUserPermissionsFromLocalStorage();
-      }
-      if (Utility.isEmptyObject(this.uiPermissions)) {
-        this.setUIPermissions();
       }
     }
     // VS-802 end.

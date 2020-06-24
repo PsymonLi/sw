@@ -31,13 +31,6 @@ export class LicenseService extends Clusterv1Service implements OnDestroy {
         (payload) => { this.publishAJAXEnd(payload); }
       );
       this.serviceUtility.setId(this.getClassName());
-      // Cache on load
-      const sub = this._controllerService.subscribe(Eventtypes.LOGIN_SUCCESS, (payload) => {
-        this.createListDistributedServiceCardCache();
-        this.createListHostCache();
-        this.createListDSCProfileCache();
-      });
-      this.subscriptions.push(sub);
   }
 
   ngOnDestroy() {

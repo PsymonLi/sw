@@ -34,7 +34,7 @@ export class NetworkService extends Networkv1Service implements OnDestroy {
       );
       this.serviceUtility.setId(this.getClassName());
       // Cache on load
-      const sub = this._controllerService.subscribe(Eventtypes.LOGIN_SUCCESS, (payload) => {
+      const sub = this._controllerService.subscribe(Eventtypes.NEW_USER_PERMISSIONS, (payload) => {
         this.createListNetworkInterfaceCache();
       });
       this.subscriptions.push(sub);

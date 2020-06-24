@@ -303,6 +303,9 @@ export class GenServiceUtility {
         },
           (error) => {
             const controller = Utility.getInstance().getControllerService();
+            if (controller == null) {
+              return;
+            }
             controller.webSocketErrorHandler('Failed to get ' + key)(error);
             observer.next({
               data: eventUtility.array,
@@ -395,7 +398,8 @@ export class GenServiceUtility {
         const pingServerTimer = setInterval(() => {
           const _observer = this.urlWsMap[url];
           if (_observer != null) {
-            if (Utility.getInstance().getControllerService().isUserLogin()) {
+            const controllerService = Utility.getInstance().getControllerService();
+            if (controllerService != null && controllerService.isUserLogin()) {
               // for debug: // console.log('GenUtil.handleWatchRequest() ping server timer ' + this.id + ' ' + url);
               _observer.next(true);  // fire up observer to keep ws active
             } else {
