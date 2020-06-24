@@ -8,3 +8,4 @@ drivers/esxi/vib/
 drivers/esxi/signed_drivers/
 goldfw
 minigoldfw
+drivers/pencap/
