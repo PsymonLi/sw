@@ -3025,10 +3025,19 @@ build_tcp_packet (hal::flow_t *flow, session_t *session,
         args.pi_if = sif;
         pd_func_args.pd_if_get_hw_lif_id = &args;
         hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_IF_GET_HW_LIF_ID, &pd_func_args);
-        cpu_header->src_lif = args.hw_lif_id;    
-        eth_hdr = (ether_header_t *)(pkt);
-        eth_hdr->etype = htons((key.flow_type == FLOW_TYPE_V4)?ETH_TYPE_IPV4:ETH_TYPE_IPV6);
-        offset = sizeof(ether_header_t);
+        cpu_header->src_lif = args.hw_lif_id;
+        if (is_l2seg_native(l2seg, sif)) { 
+            eth_hdr = (ether_header_t *)(pkt);
+            eth_hdr->etype = htons((key.flow_type == FLOW_TYPE_V4)?ETH_TYPE_IPV4:ETH_TYPE_IPV6);
+            offset = sizeof(ether_header_t);
+        } else {
+            vlan_hdr = (vlan_header_t *)(pkt);
+            vlan_hdr->tpid = htons(ETH_TYPE_DOT1Q);
+            vlan_hdr->vlan_tag = htons(l2seg->wire_encap.val);
+            vlan_hdr->etype = htons((key.flow_type == FLOW_TYPE_V4)?ETH_TYPE_IPV4:ETH_TYPE_IPV6);
+            offset = sizeof(vlan_header_t);
+            eth_hdr = (ether_header_t *)vlan_hdr;
+        }
     } else if (sep && (sep->ep_flags & EP_FLAGS_LOCAL)) {
         if_t   *sif = NULL;
 
