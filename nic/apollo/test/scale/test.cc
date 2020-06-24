@@ -945,7 +945,7 @@ create_vpcs (uint32_t num_vpcs, uint32_t num_policies,
         }
     }
 
-    if (artemis()) {
+    if (artemis() || apulu()) {
         // create infra/underlay/provider VPC
         memset(&pds_vpc, 0, sizeof(pds_vpc));
         pds_vpc.type = PDS_VPC_TYPE_UNDERLAY;
@@ -1772,6 +1772,10 @@ create_rspan_mirror_sessions (uint32_t num_sessions)
             return rv;
         }
     }
+    // push any left over mirror session objects
+    rv = create_mirror_session(NULL);
+    SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                            "create RSPAN mirror session failed, ret %u", rv);
     return SDK_RET_OK;
 }
 
@@ -1787,7 +1791,7 @@ create_erspan_mirror_sessions (uint32_t num_sessions)
         ms.type = PDS_MIRROR_SESSION_TYPE_ERSPAN;
         ms.snap_len = 128;
         ms.erspan_spec.type = PDS_ERSPAN_TYPE_2;
-        ms.erspan_spec.vpc = test::int2pdsobjkey(i);
+        ms.erspan_spec.vpc = test::int2pdsobjkey(g_test_params.num_vpcs + 1);
         ms.erspan_spec.dst_type = PDS_ERSPAN_DST_TYPE_IP;
         // Only IPv4 ERSPAN collector is supported for now
         //ms.erspan_spec.tep = test::int2pdsobjkey(i);
@@ -1797,11 +1801,15 @@ create_erspan_mirror_sessions (uint32_t num_sessions)
         ms.erspan_spec.span_id = 128;
         rv = create_mirror_session(&ms);
         if (rv != SDK_RET_OK) {
-            printf("Failed to create mirror session %s, err %u\n",
+            printf("Failed to create ERSPAN mirror session %s, err %u\n",
                    ms.key.str(), rv);
             return rv;
         }
     }
+    // push any left over mirror session objects
+    rv = create_mirror_session(NULL);
+    SDK_ASSERT_TRACE_RETURN((rv == SDK_RET_OK), rv,
+                            "create mirror session failed, ret %u", rv);
     return SDK_RET_OK;
 }
 

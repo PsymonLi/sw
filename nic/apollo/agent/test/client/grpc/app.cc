@@ -652,9 +652,11 @@ create_mirror_session_impl (pds_mirror_session_spec_t *spec)
     Status                   status;
 
     if (spec) {
-        pds_mirror_session_api_spec_to_proto(g_mirror_session_req.add_request(), spec);
+        pds_mirror_session_api_spec_to_proto(g_mirror_session_req.add_request(),
+                                             spec);
     }
-    if ((g_mirror_session_req.request_size() >= APP_GRPC_BATCH_COUNT) || !spec) {
+    if ((g_mirror_session_req.request_size() >= APP_GRPC_BATCH_COUNT) ||
+        !spec) {
         status = g_mirror_stub_->MirrorSessionCreate(&context,
                                                      g_mirror_session_req,
                                                      &response);
@@ -664,7 +666,6 @@ create_mirror_session_impl (pds_mirror_session_spec_t *spec)
         }
         g_mirror_session_req.clear_request();
     }
-
     return SDK_RET_OK;
 }
 
