@@ -115,7 +115,7 @@ pds_host_if_create (pds_host_if_spec_t *spec)
 
     // register for lif metrics
     sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
-                              *(sdk::metrics::key_t *)spec->key.id,
+                              *(sdk::metrics::key_t *)lif_spec->key.id,
                               (void *)(lif_stats_base_addr +
                               (lif_spec->id * block_size)));
     return SDK_RET_OK;
