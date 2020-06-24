@@ -29,7 +29,6 @@ var FieldsRequirement_operator;
     FieldsRequirement_operator["gte"] = "gte";
     FieldsRequirement_operator["lt"] = "lt";
     FieldsRequirement_operator["lte"] = "lte";
-    FieldsRequirement_operator["infield"] = "infield";
 })(FieldsRequirement_operator = exports.FieldsRequirement_operator || (exports.FieldsRequirement_operator = {}));
 var Telemetry_queryMetricsQuerySpec_function;
 (function (Telemetry_queryMetricsQuerySpec_function) {

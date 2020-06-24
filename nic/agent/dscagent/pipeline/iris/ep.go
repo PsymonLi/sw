@@ -46,8 +46,7 @@ func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 		}
 	}
 
-	nodeUUID := infraAPI.GetDscName()
-	endpointReqMsg := convertEndpoint(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID, nodeUUID)
+	endpointReqMsg := convertEndpoint(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID)
 	if endpointReqMsg == nil {
 		log.Errorf("Converting EP failed. ")
 		return fmt.Errorf("failed to convert ep")
@@ -85,11 +84,6 @@ func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 }
 
 func updateEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClient, intfClient halapi.InterfaceClient, endpoint netproto.Endpoint, vrfID, networkID uint64) error {
-	if isMigrating(endpoint) && !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration == netproto.MigrationState_START.String() {
-		log.Infof("Got migration message for EP %v which is moving out. Ignoring.", endpoint)
-		return nil
-	}
-
 	updateEnic := endpoint.Status.EnicID != 0
 	// Handle interface updates for local EPs
 	if len(endpoint.Spec.Migration) > 0 && endpoint.Spec.Migration == netproto.MigrationState_START.String() {
@@ -199,15 +193,7 @@ func getNetprotoMigration(migrationState halapi.MigrationState) string {
 	return netproto.MigrationState_NONE.String()
 }
 
-func isMigrating(endpoint netproto.Endpoint) bool {
-	return len(endpoint.Spec.Migration) != 0 && endpoint.Spec.Migration != netproto.MigrationState_NONE.String()
-}
-
-func isMigratingIn(endpoint netproto.Endpoint, curNodeUUID string) bool {
-	return len(endpoint.Status.NodeUUID) != 0 && endpoint.Spec.NodeUUID != endpoint.Status.NodeUUID && endpoint.Spec.NodeUUID == curNodeUUID
-}
-
-func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, networkID uint64, nodeUUID string) *halapi.EndpointRequestMsg {
+func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, networkID uint64) *halapi.EndpointRequestMsg {
 
 	ret := &halapi.EndpointRequestMsg{
 		Request: []*halapi.EndpointSpec{
@@ -219,7 +205,7 @@ func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, network
 		},
 	}
 
-	if isMigrating(endpoint) && isMigratingIn(endpoint, nodeUUID) {
+	if len(endpoint.Spec.Migration) != 0 && endpoint.Spec.Migration != netproto.MigrationState_NONE.String() && len(endpoint.Status.NodeUUID) != 0 && endpoint.Spec.NodeUUID != endpoint.Status.NodeUUID {
 		log.Infof("Migration in progress")
 		if len(endpoint.Spec.HomingHostAddr) == 0 {
 			log.Errorf("No homing host IP passed. Cannot initiate migration.")

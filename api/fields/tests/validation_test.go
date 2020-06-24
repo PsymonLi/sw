@@ -29,8 +29,7 @@ func TestFieldKeyValidation(t *testing.T) {
 		"x.a-b-c[*].d-e-f",    // - is valid
 		"x.a-b-c[*].d-e-f[x]", // - is valid
 		"x.ABC[x].d-e-f[*]",   // upper case is valid
-		"aaaa.bbbb.cccc",
-		"(aaae.cdbb.cccc)",
+
 		// single level keys are needed for objects that do not have spec/status. e.g. events
 		"abcd",
 	}
@@ -55,12 +54,6 @@ func TestFieldKeyValidation(t *testing.T) {
 		"x-.ab",        // cant end in -
 		"x.-a-b",       // cant begin in -
 		"-x.ab",        // cant being in -
-		"(",
-		")",
-		")a(",
-		"()",
-		"(aaae.cdbb.)",
-		"(.cdbb)",
 	}
 	for ii := range goodKeys {
 		if err := fields.ValidateFieldKey(goodKeys[ii]); err != nil {
@@ -97,7 +90,6 @@ func TestFieldOpValidation(t *testing.T) {
 		"<",
 		">=",
 		"<=",
-		" infield ",
 	}
 	badOps := []string{
 		"in",    // no spaces
@@ -114,7 +106,6 @@ func TestFieldOpValidation(t *testing.T) {
 		"< =",
 		"=> ",
 		"==<=",
-		"infield",
 	}
 	for ii := range goodOps {
 		if err := fields.ValidateFieldOp(goodOps[ii]); err != nil {
@@ -148,7 +139,6 @@ func TestFieldValsValidation(t *testing.T) {
 		"(abc,100)",
 		"(100,200,300)",
 		"(abc\\,def,def)",
-		"(abc-def.xyz,pqr.abc-def)",
 	}
 	badVals := []string{
 		"()",
@@ -206,7 +196,6 @@ func TestSelectorValidation(t *testing.T) {
 		"x.x>5,y.y>=7",
 		fmt.Sprintf("xx>=%v", timeNow.String()),
 		"x.x= something dummy  z.z=d ", // TODO: this case should fail
-		"(aaaa.bbbb.cccc) infield (a.b-c,a-c.b)",
 	}
 	badSels := []string{
 		"",
