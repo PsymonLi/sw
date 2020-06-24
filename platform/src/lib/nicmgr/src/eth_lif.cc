@@ -333,6 +333,7 @@ void
 EthLif::ServiceControl(bool start)
 {
     bool lif_inited = (lif_pstate->state >= LIF_STATE_INIT);
+    uint64_t addr;
 
     if (start) {
         if (lif_inited) {
@@ -343,12 +344,20 @@ EthLif::ServiceControl(bool start)
             ev_timer_start(EV_A_ & stats_timer);
 
             // Initialize EDMA service
-            if (!edmaq->Init(0, admin_cosA, admin_cosB)) {
+            addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID);
+            if (addr < 0) {
+                NIC_LOG_ERR("{}: Failed to get qstate address for edma queue", hal_lif_info_.name);
+            }
+            if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
                 NIC_LOG_ERR("{}: Failed to initialize EdmaQ service",
                             hal_lif_info_.name);
             }
 
-            if (!edmaq_async->Init(0, admin_cosA, admin_cosB)) {
+            addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID);
+            if (addr < 0) {
+                NIC_LOG_ERR("{}: Failed to get qstate address for edma async queue", hal_lif_info_.name);
+            }
+            if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
                 NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service",
                             hal_lif_info_.name);
             }
