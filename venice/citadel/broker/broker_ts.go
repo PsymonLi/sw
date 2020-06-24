@@ -407,7 +407,7 @@ func (br *Broker) ExecuteQuerySingle(ctx context.Context, database string, qry s
 				}
 
 				originMeasurementName := measurement.Name
-				if cq.IsContinuousQueryMeasurement(measurement.Name) {
+				if br.IsContinuousQueryMeasurement(measurement.Name) {
 					originMeasurementName = strings.Split(measurement.Name, "_")[0]
 					suffix := strings.Split(measurement.Name, "_")[1]
 					// lookup whether it is a valid CQ suffix or not
@@ -530,7 +530,7 @@ func (br *Broker) ExecuteQuerySingleReplica(ctx context.Context, database string
 				}
 
 				originMeasurementName := measurement.Name
-				if cq.IsContinuousQueryMeasurement(measurement.Name) {
+				if br.IsContinuousQueryMeasurement(measurement.Name) {
 					originMeasurementName = strings.Split(measurement.Name, "_")[0]
 					suffix := strings.Split(measurement.Name, "_")[1]
 					// lookup whether it is a valid CQ suffix or not
@@ -1163,6 +1163,21 @@ func (br *Broker) DeleteContinuousQuery(ctx context.Context, database string, cq
 	return nil
 }
 
+// AddContinuousQueryMeasurement add continuous query measurement name into cqMeasurementMap
+func (br *Broker) AddContinuousQueryMeasurement(name string) {
+	br.cqMutex.Lock()
+	defer br.cqMutex.Unlock()
+	br.cqMeasurementMap[name] = true
+}
+
+// IsContinuousQueryMeasurement check whether a measurement is a continuous query measurement or not in  cqMeasurementMap
+func (br *Broker) IsContinuousQueryMeasurement(name string) bool {
+	br.cqMutex.Lock()
+	defer br.cqMutex.Unlock()
+	_, ok := br.cqMeasurementMap[name]
+	return ok
+}
+
 // continuousQueryWaitDB launch goroutine for CQ until db is created
 func (br *Broker) continuousQueryWaitDB() {
 	for {
@@ -1291,8 +1306,8 @@ func (br *Broker) continuousQueryRoutine(ctx context.Context, database string) {
 						continue
 					}
 
-					// if created without error, registered in AllCQMeasurement
-					cq.AllCQMeasurementMap[cqSpec.CQName] = true
+					// if created without error, registered in broker.cqMeasurementMap
+					br.AddContinuousQueryMeasurement(cqSpec.CQName)
 				}
 				br.metricsWithCQCreated[measurement] = true
 			}

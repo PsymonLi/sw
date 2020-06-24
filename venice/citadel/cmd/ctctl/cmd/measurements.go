@@ -79,7 +79,7 @@ func measurementCmdHandler(cmd *cobra.Command, args []string) {
 
 	for _, m := range args {
 		// check continuous query
-		if cq.IsContinuousQueryMeasurement(m) {
+		if cq.HasContinuousQuerySuffix(m) {
 			rp := cq.RetentionPolicyMap[strings.Split(m, "_")[1]].Name
 			m = `"default"."` + rp + `"."` + m + `"`
 		}

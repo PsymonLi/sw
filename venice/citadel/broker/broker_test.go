@@ -386,9 +386,8 @@ func TestBrokerTstoreContinuousQuery(t *testing.T) {
 		Hours:   7 * 24,
 		GroupBy: "5s",
 	}
-	cq.AllCQMeasurementMap["Node_5seconds"] = true
-	defer delete(cq.RetentionPolicyMap, "5seconds")
-	defer delete(cq.AllCQMeasurementMap, "Node_5seconds")
+	brokers[0].AddContinuousQueryMeasurement("Node_5seconds")
+	Assert(t, brokers[0].IsContinuousQueryMeasurement("Node_5seconds"), "Failed to verify Node_5seconds as cq measurement after adding it to map")
 
 	err = brokers[0].CreateContinuousQuery(context.Background(), "cqdb", "testcq", "default", 7*24, cqQuery)
 	AssertOk(t, err, "Error creating continuous query")

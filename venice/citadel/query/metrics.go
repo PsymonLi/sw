@@ -267,6 +267,7 @@ func buildCitadelMetricsQuery(qs *telemetry_query.MetricsQuerySpec) (string, err
 
 		case telemetry_query.TsdbFunctionType_MEAN.String(),
 			telemetry_query.TsdbFunctionType_MAX.String(),
+			telemetry_query.TsdbFunctionType_MIN.String(),
 			telemetry_query.TsdbFunctionType_LAST.String(),
 			telemetry_query.TsdbFunctionType_MEDIAN.String(),
 			telemetry_query.TsdbFunctionType_DIFFERENCE.String():
@@ -334,7 +335,7 @@ func buildCitadelMetricsQuery(qs *telemetry_query.MetricsQuerySpec) (string, err
 
 	// if it is non-cq measurement, automatically select CQ table based on start and end time
 	suffix := ""
-	if !cq.IsContinuousQueryMeasurement(measurement) {
+	if !cq.HasContinuousQuerySuffix(measurement) {
 		// get CQ table suffix based on time range
 		suffix = selectContinuousQueryTable(startTimeObj)
 		// update measurement name

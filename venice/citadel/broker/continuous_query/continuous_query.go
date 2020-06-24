@@ -86,19 +86,20 @@ var RetentionPolicyMap = map[string]ContinuousQueryRetentionSpec{
 	},
 }
 
-// AllCQMeasurementMap collects all saved continuous query measureement
-var AllCQMeasurementMap = map[string]bool{}
-
-// IsContinuousQueryMeasurement check whether a measurement is a continuous query measurement or not
-func IsContinuousQueryMeasurement(name string) bool {
-	_, ok := AllCQMeasurementMap[name]
-	return ok
-}
-
 // IsTag check whether a column is a tag or not
 func IsTag(columnName string) bool {
 	_, ok := tagMap[columnName]
 	return ok
+}
+
+// HasContinuousQuerySuffix whether metrics name has continuous query suffix or not
+func HasContinuousQuerySuffix(name string) bool {
+	for suffix := range RetentionPolicyMap {
+		if strings.HasSuffix(name, "_"+suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 // GetAggFuncString retrieve aggregation function from map

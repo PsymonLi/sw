@@ -57,9 +57,11 @@ type Broker struct {
 	ctxCancelFunc context.CancelFunc // cancel func for routine Ctx
 
 	// for continuous query
+	cqMutex              sync.Mutex
 	cqRoutineCreated     bool
-	metricsWithCQCreated map[string]bool   // original metrics name : true
-	cqInfoMap            map[string]string // cq name : query string
+	metricsWithCQCreated map[string]bool   // metrics with all cq successfully created
+	cqInfoMap            map[string]string // cache for cq query string
+	cqMeasurementMap     map[string]bool   // name of all cq measurement
 
 	// for periodic metrics cleaner
 	cleanerRoutineCreated bool
@@ -95,8 +97,10 @@ func NewBroker(cfg *meta.ClusterConfig, nodeUUID string, logger log.Logger) (*Br
 	broker.ctx, broker.ctxCancelFunc = context.WithCancel(context.Background())
 
 	// continuous query
+	broker.cqMutex = sync.Mutex{}
 	broker.metricsWithCQCreated = make(map[string]bool)
 	broker.cqInfoMap = make(map[string]string)
+	broker.cqMeasurementMap = make(map[string]bool)
 	go broker.continuousQueryWaitDB()
 
 	return &broker, nil
