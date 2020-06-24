@@ -59,6 +59,7 @@ AdminQ::AdminQ(const char *name, PdClient *pd, uint16_t lif, uint8_t req_qtype, 
 
     req_init = false;
     resp_init = false;
+    adminq_running = false;
 }
 
 bool
@@ -74,11 +75,33 @@ AdminQ::Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
         return false;
     }
 
-    evutil_add_prepare(EV_A_ & adminq_prepare, AdminQ::Poll, this);
-    evutil_add_check(EV_A_ & adminq_check, AdminQ::Poll, this);
-    evutil_timer_start(EV_A_ & adminq_timer, AdminQ::Poll, this, 0.0, 0.001);
+    PollStart();
 
     return true;
+}
+
+void
+AdminQ::PollStart(void)
+{
+    if (!adminq_running) {
+        evutil_add_prepare(EV_A_ & adminq_prepare, AdminQ::Poll, this);
+        evutil_add_check(EV_A_ & adminq_check, AdminQ::Poll, this);
+        evutil_timer_start(EV_A_ & adminq_timer, AdminQ::Poll, this, 0.0, 0.001);
+        adminq_running = true;
+        NIC_LOG_DEBUG("{}: adminq polling started", name);
+    }
+}
+
+void
+AdminQ::PollStop(void)
+{
+    if(adminq_running) {
+        evutil_remove_prepare(EV_A_ & adminq_prepare);
+        evutil_remove_check(EV_A_ & adminq_check);
+        evutil_timer_stop(EV_A_ & adminq_timer);
+        adminq_running = false;
+        NIC_LOG_DEBUG("{}: adminq polling stopped", name);
+    }
 }
 
 bool
@@ -210,9 +233,7 @@ AdminQ::Reset()
         return false;
     }
 
-    evutil_remove_prepare(EV_A_ & adminq_prepare);
-    evutil_remove_check(EV_A_ & adminq_check);
-    evutil_timer_stop(EV_A_ & adminq_timer);
+    PollStop();
 
     return true;
 }

@@ -466,7 +466,7 @@ nicmgr_upg_init (void)
                              nicmgr_upg_process_response);
 
     // load the states
-    if (sdk::platform::upgrade_mode_graceful(upg_init_mode)) {
+    if (!sdk::platform::upgrade_mode_none(upg_init_mode)) {
         ret = restore_objs();
         if (ret != SDK_RET_OK) {
             // api::g_upg_state->set_upg_init_error();

@@ -46,17 +46,7 @@ trap trap_finish EXIT
 $BUILD_DIR/bin/pciemgrd -d &
 $PDSPKG_TOPDIR/apollo/tools/$PIPELINE/start-agent-sim.sh > $PDSPKG_TOPDIR/agent.log 2>&1 &
 
-# temp fix till nicmgr is ready
-if [[ $HITLESS_DOM == "dom_b" ]];then
-    while [ ! -f $PDSPKG_TOPDIR/nicmgr.log ];do
-        sleep 1
-    done
-    # use the config from dom_a
-    cp /tmp/dom_a/conf/gen/device_info.txt $PDSPKG_TOPDIR/conf/gen
-    cp /tmp/dom_a/nicmgr.log $PDSPKG_TOPDIR/
-else
-    upg_wait_for_pdsagent
-fi
+upg_wait_for_pdsagent
 
 $PDSPKG_TOPDIR/vpp/tools/start-vpp-sim.sh ${DOL_ARGS} &
 

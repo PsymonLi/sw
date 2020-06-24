@@ -335,6 +335,10 @@ lif_mgr::init(lif_qstate_t *qstate)
             allocation_sizes_[alloc_offset] = alloc_units;
             alloc_offset *= kAllocUnit;
             state->hbm_address = hbm_base_ + alloc_offset;
+
+            // save the info for pstate
+            qstate->hbm_address = state->hbm_address;
+            qstate->allocation_size = state->allocation_size;
         } else {
             // make sure reserve old size
             assert(state->allocation_size == qstate->allocation_size);
