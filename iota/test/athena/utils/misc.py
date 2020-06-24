@@ -38,6 +38,25 @@ def get_vnic(plcy_obj, _vnic_type, _nat):
 
     raise Exception("Matching vnic not found")
 
+# ==============================================
+# Return: vnic object from given policy handle
+# gets index of vnic object based on vnic type 
+# and nat
+# ==============================================
+def get_vnic_index(plcy_obj, _vnic_type, _nat):
+
+    vnics = plcy_obj['vnic']
+
+    for idx, vnic in enumerate(vnics):
+        vnic_type = 'L2' if is_L2_vnic(vnic) else 'L3'
+        nat = 'yes' if "nat" in vnic else 'no'
+
+        if vnic_type == _vnic_type and \
+           nat == _nat:
+            return idx
+
+    raise Exception("Matching vnic not found")
+
 # ===========================================
 # Return: vnic id of vnic
 # gets vnic id of vnic from given
@@ -50,11 +69,11 @@ def get_vnic_id(plcy_obj, _vnic_type, _nat):
     return int(vnic['vnic_id'])
 
 # ===========================================
-# Return: workload index for vnic
+# Return: workload index for Nth vnic
 # gets workload index of vnic based on
-# vnic id
+# 1-based index of vnic obj in vnics list 
 # ===========================================
-def get_wl_idx(uplink, vnic_id):
+def get_wl_idx(uplink, vnic_idx):
     # in workloads list, the interface is alternatively assigned to wl
     # skip the fist two workloads in list which have vlan == 0
 
@@ -62,9 +81,9 @@ def get_wl_idx(uplink, vnic_id):
         raise Exception("Invalid uplink {}".format(uplink))
 
     if uplink == 0:
-        return (2 * vnic_id)
+        return (2 * vnic_idx)
     if uplink == 1:
-        return (2 * vnic_id + 1)
+        return (2 * vnic_idx + 1)
 
 # ===========================================
 # Return: flow_hit_count
@@ -174,3 +193,18 @@ def match_dynamic_flows(tc, vnic_id, flow):
 
     return True
 
+
+# ===========================================
+# Return: List of (node, nic) pairs names for 
+# nics running in classic mode
+# ===========================================
+
+def get_classic_node_nic_pairs():
+    classic_node_nic_pairs = []
+
+    for node in api.GetNodes():
+        for dev_name in api.GetDeviceNames(node.Name()):
+            if api.GetTestbedNicMode(node.Name(), dev_name) == 'classic':
+                classic_node_nic_pairs.append((node.Name(), dev_name)) 
+    
+    return classic_node_nic_pairs

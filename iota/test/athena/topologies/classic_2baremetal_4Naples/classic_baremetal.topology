@@ -27,13 +27,16 @@ nodes:
 
 vlan_mappings:
     vlan_group_1:
+        groups:
         - node: node1
           nic: 1
-          port: 3
+          port: 2
         - node: node1
           nic: 2
           port: 2
     vlan_group_2:
+        skip_allocation: true
+        groups:
         - node: node1
           nic: 2
           port: 3
@@ -41,9 +44,10 @@ vlan_mappings:
           nic: 1
           port: 2
     vlan_group_3:
+        groups:
         - node: node2
           nic: 1
           port: 3
         - node: node2
           nic: 2
-          port: 2
+          port: 3

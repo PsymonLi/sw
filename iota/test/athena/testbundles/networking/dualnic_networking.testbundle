@@ -28,6 +28,65 @@ testcases:
         args    :
             type    : policy_2M
 
+    #========================================
+    #  Datapath Tests
+    #========================================
+
+
+    -   name    : Generate_DP_Policy
+        testcase: testcases.networking.generate_dp_policy
+        enable  : True
+        args    :
+            dualnic    : True
+
+    -   name    : L3_End_To_End_Data_Path
+        testcase: testcases.networking.e2e_data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no']
+            pyld_size : [64, 1024]
+            iptype    : ['v4']
+        args    :
+            pkt_cnt   : 10
+
+    -   name    : L3_NAT_End_To_End_Data_Path
+        testcase: testcases.networking.e2e_data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['yes']
+            pyld_size : [1024, 4096]
+            iptype    : ['v4']
+        args    :
+            pkt_cnt   : 10
+
+    -   name    : L2_End_To_End_Data_Path
+        testcase: testcases.networking.e2e_data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L2']
+            nat       : ['no']
+            pyld_size : [4096, 9000]
+            iptype    : ['v4']
+        args    :
+            pkt_cnt   : 10
+
+    -   name    : L2_NAT_End_To_End_Data_Path
+        testcase: testcases.networking.e2e_data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L2']
+            nat       : ['yes']
+            pyld_size : [64, 9000]
+            iptype    : ['v4']
+        args    :
+            pkt_cnt   : 10
+
     #=======================================
     # Aging Tests (without traffic)
     #=======================================

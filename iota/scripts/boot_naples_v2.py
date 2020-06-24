@@ -447,6 +447,7 @@ class NaplesManagement(EntityManagement):
         super().__init__(ipaddr = None, username = nic_spec.NaplesUsername, password = nic_spec.NaplesPassword, fw_images = fw_images)
         self.nic_spec = nic_spec
         self.gold_fw_latest = False
+        self.__is_oob_available = False
         return
 
     def GetName(self):
@@ -1657,11 +1658,11 @@ class PenOrchestrator:
             # Common to Case 2 and Case 1.
             # Initialize the Node, this is needed in all cases.
             self.__host.Init(driver_pkg = self.__driver_images.drivers_pkg, cleanup = False)
-
-
+            return
 
         if GlobalOptions.only_mode_change == False and GlobalOptions.only_init == False:
             try:
+                fast_update_candidate = True
                 for naples_inst in self.__naples:
                     naples_inst.Connect(force_connect=False)
 
@@ -1675,7 +1676,9 @@ class PenOrchestrator:
                     if naples_inst.IsOOBAvailable() and naples_inst.IsSSHUP():
                         naples_inst.RunSshCmd("date")
                     else:
-                        self.__host.RunNaplesCmd(naples_inst, "date")
+                        # ignore_failure=True because driver may not be loaded right now
+                        self.__host.RunNaplesCmd(naples_inst, "date", ignore_failure=True)
+                        fast_update_candidate = False
                 if not self.__host.IsSSHUP():
                     raise
 
@@ -1686,9 +1689,10 @@ class PenOrchestrator:
 
                 #Try optimistic Fast update
                 print ("Attempting fast update")
-                __fast_update()
-                print ("Fast update successfull")
-                return
+                if fast_update_candidate:
+                    __fast_update()
+                    print ("Fast update successfull")
+                    return
             except:
                 # Because ForceSwitchToGoldFW is time-sensetive operation (sending Ctrl-c), allowing both IpmiReset
                 self.__ipmi_reboot_allowed = True
