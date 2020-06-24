@@ -5,8 +5,8 @@ MODULE_TARGET   = athena_cps
 MODULE_PIPELINE = athena
 MODULE_INCS     = $(TOPDIR)/nic/apollo/api/include/athena
 MODULE_LDFLAGS  = -L$(MS_LIB_DIR)
-MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi pdsapi_impl \
-                  thread trace logger pdsapi memhash sltcam \
+MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi_athena pdsapi_athena_impl \
+                  thread trace logger pdsapi_athena memhash sltcam \
                   event_thread slhash penmetrics \
                   ${NIC_FTL_LIBS} \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \

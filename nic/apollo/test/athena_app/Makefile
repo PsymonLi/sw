@@ -33,7 +33,7 @@ LDFLAGS += -L/tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib \
            -L/tool/toolchain/aarch64-1.1/aarch64-linux-gnu/usr/lib/aarch64-linux-gnu
 endif
 
-LDLIBS += -lpal -lpdsframework -lpdscore -lpdslearn -lpdsapi -lpdsapi_impl -lsdkftl \
+LDLIBS += -lpal -lpdsframework -lpdscore -lpdslearn -lpdsapi_athena -lpdsapi_athena_impl -lsdkftl \
 		-lpdsagent_athena -lprotobuf\
 		-lgrpc++_reflection -lgrpc++ -lgrpc_unsecure -lgrpc++_unsecure \
 		-ldpdk -lthread -ltrace -llogger -lmemhash -lsltcam -leth_p4plus \

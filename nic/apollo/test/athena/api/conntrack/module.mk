@@ -4,7 +4,7 @@ include ${MKDEFS}/pre.mk
 MODULE_TARGET   = athena_conntrack_test.gtest
 MODULE_PIPELINE = athena
 MODULE_ARCH     = x86_64
-MODULE_SOLIBS   = pal pdsframework pdscore pdsapi pdsapi_impl \
+MODULE_SOLIBS   = pal pdsframework pdscore pdsapi_athena pdsapi_athena_impl \
                   pdstest pdstestapiutils \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \
                   ${NIC_SDK_SOLIBS} ${NIC_HAL_PD_SOLIBS_${ARCH}} \

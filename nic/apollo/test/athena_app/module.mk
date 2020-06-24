@@ -5,9 +5,8 @@ MODULE_TARGET   = athena_app.bin
 MODULE_PIPELINE = athena
 MODULE_INCS     = ${MODULE_GEN_DIR} ${BLD_OUT_DIR}/pen_dpdk_submake/include/
 MODULE_LDFLAGS  = -L$(MS_LIB_DIR)
-MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi pdsapi_impl \
-                  thread trace logger pdsapi memhash sltcam \
-                  pdsagent_athena\
+MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi_athena pdsapi_athena_impl \
+                  thread trace logger memhash sltcam pdsagent_athena \
                   event_thread slhash penmetrics \
                   ${NIC_FTL_LIBS} \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \

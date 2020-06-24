@@ -6,8 +6,8 @@ MODULE_PIPELINE = athena
 MODULE_ARCH     = x86_64
 MODULE_INCS     = ${MODULE_GEN_DIR}
 MODULE_LDFLAGS  = -L$(MS_LIB_DIR)
-MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi pdsapi_impl \
-                  thread trace logger pdsapi memhash sltcam \
+MODULE_SOLIBS   = pal pdsframework pdscore pdslearn pdsapi_athena pdsapi_athena_impl \
+                  thread trace logger memhash sltcam \
                   event_thread slhash \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \
                   ${NIC_SDK_SOLIBS} ${NIC_HAL_PD_SOLIBS_${ARCH}} \

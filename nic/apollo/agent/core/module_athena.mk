@@ -7,5 +7,5 @@ MODULE_INCS     = ${MODULE_GEN_DIR}
 MODULE_SRCS     = $(wildcard ${MODULE_DIR}/state.cc) \
                   $(wildcard ${MODULE_DIR}/svc_thread.cc) \
                   $(wildcard ${MODULE_DIR}/interface.cc)
-MODULE_SOLIBS   = pdsapi event_thread upgrade_ev
+MODULE_SOLIBS   = pdsapi_athena event_thread upgrade_ev
 include ${MKDEFS}/post.mk

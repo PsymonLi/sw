@@ -4,7 +4,7 @@ include ${MKDEFS}/pre.mk
 MODULE_TARGET   = libsvc_athena.lib
 MODULE_PIPELINE = athena
 MODULE_INCS     = ${MODULE_GEN_DIR}
-MODULE_SOLIBS   = pal pdsframework pdscore pdsapi pdsapi_impl \
+MODULE_SOLIBS   = pal pdsframework pdscore pdsapi_athena pdsapi_athena_impl \
                   ${NIC_${PIPELINE}_P4PD_SOLIBS} \
                   ${NIC_SDK_SOLIBS} ${NIC_HAL_PD_SOLIBS_${ARCH}} \
                   sdkp4 sdkp4utils sdk_asicrw_if sdk${ASIC} \
