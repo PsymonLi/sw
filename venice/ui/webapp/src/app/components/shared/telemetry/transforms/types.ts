@@ -321,20 +321,14 @@ export class DataSource {
 
   buildMetricsPollingQuery(): MetricsPollingQuery {
     const query = MetricsUtility.timeSeriesQueryPolling(this.measurement, this.fields);
-    let teleAggregateFunction = null;
     if (this.measurement && this.fields && this.fields.length > 0) {
       if (MetricsMetadata[this.measurement] && MetricsMetadata[this.measurement].fields) {
         const fieldMetaData = MetricsMetadata[this.measurement].fields.find(item =>
             item.name === this.fields[0]);
         if (fieldMetaData && fieldMetaData.aggregationFunc) {
-          teleAggregateFunction = fieldMetaData.aggregationFunc;
+          query.query.function = fieldMetaData.aggregationFunc;
         }
       }
-    }
-    if (teleAggregateFunction) {
-      query.query.function = teleAggregateFunction;
-    } else if (this.measurement === 'Cluster') {
-      query.query.function = Telemetry_queryMetricsQuerySpec_function.last; // VS-741 use median function to show DSC count
     }
     return query;
   }

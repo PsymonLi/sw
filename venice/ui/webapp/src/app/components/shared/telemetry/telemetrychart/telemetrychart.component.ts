@@ -30,6 +30,7 @@ import { RoundCountersTransform } from '../transforms/roundcounters.transform';
 import { debounceTime } from 'rxjs/operators';
 import { NetworkService } from '@app/services/generated/network.service';
 import { NetworkNetworkInterface } from '@sdk/v1/models/generated/network';
+import { ObjectsRelationsUtility } from '@app/common/ObjectsRelationsUtility';
 
 /**
  * A data source allows a user to select a single measurement,
@@ -139,6 +140,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
 
   macAddrToName: { [key: string]: string; } = {};
   nameToMacAddr: { [key: string]: string; } = {};
+  interfaceNameMap: { [key: string]: string; } = {};
 
   // Map from object kind to map from key to map of values to object names
   // that have that label
@@ -173,7 +175,6 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
     this.setupValueOverrides();
     this.getNaples();
     this.getNodes();
-    this.getNetworkInterfaces();
     this.getDSCProfiles();
 
     if (this.chartConfig == null) {
@@ -231,15 +232,25 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
     };
     const valueMapNaplesReporterID = (res: ITelemetry_queryMetricsQueryResult) => {
       const fieldDSC = 'reporterID';
-      res.series.forEach((s) => {
-        if (s.tags != null) {
-          const tagValDSC = s.tags[fieldDSC];
+      res.series.forEach((s: Telemetry_queryMetricsResultSeries) => {
+        const sourceTags = s.tags as SourceMeta;
+        if (sourceTags != null) {
+          const tagValDSC = sourceTags[fieldDSC];
           if (tagValDSC != null && this.macAddrToName[tagValDSC] != null) {
             // VS-1600 FieldValueTransform.transformMetricData() call back to here.  Decorate Labels
             const dscName = this.macAddrToName[tagValDSC];
             const isAdmitted = this.isDSCAdmittedByDSCMac(tagValDSC);
             const dsc = this.naples.find( (nic: ClusterDistributedServiceCard) => nic.meta.name === tagValDSC);
-            s.tags[fieldDSC] = (dsc && isAdmitted) ? dscName : dscName +  ' (' + dsc.status['admission-phase'] + ')';
+            sourceTags[fieldDSC] = (dsc && isAdmitted) ? dscName : dscName +  ' (' + dsc.status['admission-phase'] + ')';
+          } else if (sourceTags.name && this.interfaceNameMap[sourceTags.name])  { // for interface
+            const dscMac = sourceTags.name.substring(0, 14);
+            const naple = this.naples.find(dsc => dsc.meta.name === dscMac);
+            let admitted: boolean = true;
+            if (naple) {
+              admitted = naple.status['admission-phase'] === ClusterDistributedServiceCardStatus_admission_phase.admitted;
+            }
+            sourceTags.name = admitted ? this.interfaceNameMap[sourceTags.name] :
+                this.interfaceNameMap[sourceTags.name] + ' (' + naple.status['admission-phase'] + ')';
           }
         }
         const fieldIndex = s.columns.findIndex((f) => {
@@ -353,6 +364,8 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
             this.nameToMacAddr[nic.spec.id] = nic.meta.name;
           }
         }
+        // have to load naples before interfaces to make sure the label of interfaces are correct
+        this.getNetworkInterfaces();
         this.getMetrics();
       },
       this.controllerService.webSocketErrorHandler('Failed to get DSCs')
@@ -369,6 +382,7 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
         if (response.connIsErrorState) {
           return;
         }
+        this.interfaceNameMap = {};
         this.networkInterfacesTypeMap = {};
         this.networkInterfaces = response.data as NetworkNetworkInterface[];
         for (const i of this.networkInterfaces) {
@@ -377,6 +391,9 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
               this.networkInterfacesTypeMap[i.status.type] = [];
             }
             this.networkInterfacesTypeMap[i.status.type].push(i);
+            this.interfaceNameMap[i.meta.name] =
+                ObjectsRelationsUtility.getNetworkinterfaceUIName(
+                  i, this.naples as ClusterDistributedServiceCard[]);
           }
         }
       }
@@ -708,8 +725,12 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
       // Check on NetworkNetworkInterface.
       const niName = this.getNetworkInterfaceNameFromResultSeries(sourceMeta);
       if (niName) {
+        if (niName.indexOf(' (') > 0 && niName[niName.length - 1] === ')') {
+          return true;
+        }
         // Find network-interface object -> get dsc-name -> see if DSC object exists and is in admitted stage
-        const networkInterface: NetworkNetworkInterface = this.networkInterfaces.find((ni: NetworkNetworkInterface) => ni.meta.name === niName);
+        const networkInterface: NetworkNetworkInterface = this.networkInterfaces.find((ni: NetworkNetworkInterface) =>
+            ni.meta.name === niName || this.interfaceNameMap[ni.meta.name] === niName);
         if (networkInterface) {
           const dscname = networkInterface.status['dsc-id'];
           const isDSCbad = !this.isDSCExist( dscname) || !this.isDSCAdmittedByDSCName(dscname); // return true if non-exist or is not-admitted
