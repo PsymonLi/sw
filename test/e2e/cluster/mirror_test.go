@@ -574,5 +574,23 @@ var _ = Describe("mirror session tests", func() {
 				return true
 			}, 180, 30).Should(BeTrue(), fmt.Sprintf("Failed to get mirror session active state after scheduled time %s", ms.Name))
 		})
+		It("Validate propagation status for mirror session", func() {
+			ctx := ts.tu.MustGetLoggedInContext(context.Background())
+			ms := testMirrorSessions[1]
+			By("Creating MirrorSession ------")
+			_, err := mirrorRestIf.Create(ctx, &ms)
+			Expect(err).ShouldNot(HaveOccurred())
+			By("Checking that MirrorSession has been propagated to agents------")
+			Eventually(func() bool {
+				mirrorStat, err := mirrorRestIf.Get(ctx, &ms.ObjectMeta)
+				Expect(err).ShouldNot(HaveOccurred())
+				if int(mirrorStat.Status.PropagationStatus.Updated) != len(ts.tu.NaplesNodes) {
+					By(fmt.Sprintf("MirrorSession Status : %+v", mirrorStat.Status))
+					return false
+				}
+				By(fmt.Sprintf("MirrorSession Status : %+v", mirrorStat.Status))
+				return true
+			}, 120, 1).Should(BeTrue(), "Failed to Propagate the MirrorSession")
+		})
 	})
 })

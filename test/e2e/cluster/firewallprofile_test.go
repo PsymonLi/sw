@@ -174,10 +174,11 @@ func (fwp *firewallTestGroup) testFirewallUpdate() {
 	Eventually(func() bool {
 		fwpStat, err := fwp.suite.restSvc.SecurityV1().FirewallProfile().Get(fwp.suite.loggedInCtx, &updateFwp.ObjectMeta)
 		Expect(err).ShouldNot(HaveOccurred())
-		if fwpStat.Status.PropagationStatus.Pending != 0 {
-			log.Errorf("FirewallProfile Status : %v", fwpStat.Status)
+		if int(fwpStat.Status.PropagationStatus.Updated) != len(ts.tu.NaplesNodes) {
+			By(fmt.Sprintf("FirewallProfile Status : %v", fwpStat.Status))
 			return false
 		}
+		By(fmt.Sprintf("FirewallProfile Status : %v", fwpStat.Status))
 		return true
 	}, 120, 1).Should(BeTrue(), "Failed to Propagate the FirewallProfile update")
 

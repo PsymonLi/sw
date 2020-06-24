@@ -1391,6 +1391,43 @@ var _ = Describe("flow export policy tests", func() {
 			Expect(err).ShouldNot(BeNil(), fmt.Sprintf("policy create didn't fail, %v", err))
 
 		})
+		It("Validate propagation status for export policy", func() {
+			ctx := ts.tu.MustGetLoggedInContext(context.Background())
+			policy := &monitoring.FlowExportPolicy{
+				TypeMeta: api.TypeMeta{
+					Kind: "flowExportPolicy",
+				},
+				ObjectMeta: api.ObjectMeta{
+					Namespace: globals.DefaultNamespace,
+					Tenant:    globals.DefaultTenant,
+					Name:      "test-propagation",
+				},
+
+				Spec: monitoring.FlowExportPolicySpec{
+					Interval:         "10s",
+					TemplateInterval: "5m",
+					Format:           "IPFIX",
+					Exports: []monitoring.ExportConfig{
+						{
+							Destination: "192.168.100.1",
+							Transport:   "UDP/5055",
+						},
+					},
+				},
+			}
+			_, err := flowExpClient.Create(ctx, policy)
+			Expect(err).Should(BeNil(), fmt.Sprintf("failed to create  %v, %v", policy.Name, err))
+			Eventually(func() bool {
+				policyStat, err := flowExpClient.Get(ctx, &policy.ObjectMeta)
+				Expect(err).ShouldNot(HaveOccurred())
+				if int(policyStat.Status.PropagationStatus.Updated) != len(ts.tu.NaplesNodes) {
+					By(fmt.Sprintf("flowExportPolicy Status : %+v", policyStat.Status))
+					return false
+				}
+				By(fmt.Sprintf("flowExportPolicy Status : %+v", policyStat.Status))
+				return true
+			}, 120, 1).Should(BeTrue(), "Failed to Propagate the flowExportPolicy")
+		})
 	})
 })
 
