@@ -34,4 +34,5 @@ else
 fi
 
 rpm -e $rpm
+rmmod ionic
 

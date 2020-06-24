@@ -34,6 +34,12 @@ for f in $PENCTL_FILES ; do
 done
 
 install -D -p -t $PENCTL_DIR $PENCTL_FILES
+if ! echo $PATH | grep $PENCTL_DIR ; then
+	echo
+	echo "$PROG: The penctl tool was installed in $PENCTL_DIR"
+	echo "       Please be sure to add this to your PATH variable."
+	echo
+fi
 
 
 #
@@ -61,4 +67,4 @@ cd ${BASE_DIR}/drivers/linux
 RPMFILE=`ls ${rpm}-*.${distro}.x86_64.rpm`
 
 rpm -ihv $RPMFILE
-
+modprobe ionic
