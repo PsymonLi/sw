@@ -32,6 +32,11 @@ action p4i_device_info(device_mac_addr1, device_mac_addr2,
         p4i_recirc();
     }
 
+    // caculate lif tx stats id
+    modify_field(control_metadata.lif_tx_stats_id,
+                 ((capri_intrinsic.lif << 4) +
+                  (LIF_STATS_TX_UCAST_BYTES_OFFSET / 64)));
+
     subtract(capri_p4_intrinsic.packet_len, capri_p4_intrinsic.frame_size,
              offset_metadata.l2_1);
     if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
@@ -85,11 +90,6 @@ action p4e_device_info(device_ipv4_addr, device_ipv6_addr) {
                          PACKET_TYPE_UNICAST);
         }
     }
-
-    // caculate lif tx stats id
-    modify_field(control_metadata.lif_tx_stats_id,
-                 ((p4e_i2e.src_lif << 4) +
-                 (LIF_STATS_TX_UCAST_BYTES_OFFSET / 64)));
 
     if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
         modify_field(capri_intrinsic.tm_iq, capri_intrinsic.tm_oq);

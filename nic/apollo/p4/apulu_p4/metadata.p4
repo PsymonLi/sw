@@ -157,6 +157,7 @@ header_type scratch_metadata_t {
         erspan_type         : 2;
         drop_reason         : 8;
         xlate_id            : 20;
+        l2_pkt_type         : 2;
 
         // policer
         policer_valid       : 1;

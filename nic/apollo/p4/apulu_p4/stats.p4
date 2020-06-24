@@ -25,6 +25,61 @@ table vnic_tx_stats {
 }
 
 /*****************************************************************************/
+/* Lif Tx stats                                                              */
+/*****************************************************************************/
+action lif_tx_stats(ucast_bytes, ucast_pkts, mcast_bytes, mcast_pkts,
+                    bcast_bytes, bcast_pkts, pad1, pad2) {
+    if ((capri_intrinsic.drop == TRUE) or
+        (control_metadata.local_mapping_done == FALSE) or
+        (control_metadata.flow_done == FALSE)) {
+        // return;
+    }
+
+    if (ethernet_1.dstAddr == 0xFFFFFFFFFFFF) {
+        modify_field(scratch_metadata.l2_pkt_type, PACKET_TYPE_BROADCAST);
+    } else {
+        if ((ethernet_1.dstAddr & 0x010000000000) != 0) {
+            modify_field(scratch_metadata.l2_pkt_type, PACKET_TYPE_MULTICAST);
+        } else {
+            modify_field(scratch_metadata.l2_pkt_type, PACKET_TYPE_UNICAST);
+        }
+    }
+
+    // stats update implemented using tbladd in ASM
+    if (scratch_metadata.l2_pkt_type == PACKET_TYPE_UNICAST) {
+        add(scratch_metadata.in_packets, ucast_pkts, 1);
+        add(scratch_metadata.in_bytes, ucast_bytes,
+            capri_p4_intrinsic.packet_len);
+    }
+    if (scratch_metadata.l2_pkt_type == PACKET_TYPE_MULTICAST) {
+        add(scratch_metadata.in_packets, mcast_pkts, 1);
+        add(scratch_metadata.in_bytes, mcast_bytes,
+            capri_p4_intrinsic.packet_len);
+    }
+    if (scratch_metadata.l2_pkt_type == PACKET_TYPE_BROADCAST) {
+        add(scratch_metadata.in_packets, bcast_pkts, 1);
+        add(scratch_metadata.in_bytes, bcast_bytes,
+            capri_p4_intrinsic.packet_len);
+    }
+    modify_field(scratch_metadata.in_bytes, pad1);
+    modify_field(scratch_metadata.in_packets, pad2);
+}
+
+@pragma stage 5
+@pragma hbm_table
+@pragma index_table
+@pragma table_write
+table lif_tx_stats {
+    reads {
+        control_metadata.lif_tx_stats_id    : exact;
+    }
+    actions {
+        lif_tx_stats;
+    }
+    size : LIF_STATS_TABLE_SIZE;
+}
+
+/*****************************************************************************/
 /* Ingress drop stats                                                        */
 /*****************************************************************************/
 action p4i_drop_stats(drop_stats_pad, drop_stats_pkts) {
@@ -74,6 +129,9 @@ table p4i_drop_stats {
 
 control ingress_stats {
     apply(vnic_tx_stats);
+    if ((control_metadata.rx_packet == FALSE) and (arm_to_p4i.valid == FALSE)) {
+        apply(lif_tx_stats);
+    }
     if (capri_intrinsic.drop == TRUE) {
         apply(p4i_drop_stats);
     }
@@ -142,48 +200,4 @@ table p4e_drop_stats {
 
 control egress_stats {
     apply(vnic_rx_stats);
-    apply(lif_tx_stats);
-}
-
-/*****************************************************************************/
-/* Lif Tx stats                                                              */
-/*****************************************************************************/
-action lif_tx_stats(ucast_bytes, ucast_pkts, mcast_bytes, mcast_pkts,
-                    bcast_bytes, bcast_pkts, pad1, pad2) {
-    if ((egress_recirc.mapping_done == FALSE) or
-        (control_metadata.rx_packet == TRUE) or
-        (control_metadata.span_copy == TRUE) or
-        (p4e_to_arm.valid == TRUE)) {
-        //return;
-    }
-
-    // stats update implemented using tbladd in ASM
-    if (p4e_to_p4plus_classic_nic.l2_pkt_type == PACKET_TYPE_UNICAST) {
-        add(scratch_metadata.in_bytes, ucast_bytes, meter_metadata.meter_len);
-        add(scratch_metadata.in_packets, ucast_pkts, 1);
-    }
-    if (p4e_to_p4plus_classic_nic.l2_pkt_type == PACKET_TYPE_MULTICAST) {
-        add(scratch_metadata.in_bytes, mcast_bytes, meter_metadata.meter_len);
-        add(scratch_metadata.in_packets, mcast_pkts, 1);
-    }
-    if (p4e_to_p4plus_classic_nic.l2_pkt_type == PACKET_TYPE_BROADCAST) {
-        add(scratch_metadata.in_bytes, bcast_bytes, meter_metadata.meter_len);
-        add(scratch_metadata.in_packets, bcast_pkts, 1);
-    }
-    modify_field(scratch_metadata.in_bytes, pad1);
-    modify_field(scratch_metadata.in_packets, pad2);
-}
-
-@pragma stage 5
-@pragma hbm_table
-@pragma index_table
-@pragma table_write
-table lif_tx_stats {
-    reads {
-        control_metadata.lif_tx_stats_id    : exact;
-    }
-    actions {
-        lif_tx_stats;
-    }
-    size : LIF_STATS_TABLE_SIZE;
 }

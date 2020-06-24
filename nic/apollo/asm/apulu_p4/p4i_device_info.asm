@@ -10,6 +10,9 @@ struct phv_                 p;
 %%
 
 p4i_device_info:
+    add             r1, (LIF_STATS_TX_UCAST_BYTES_OFFSET / 64), \
+                        k.capri_intrinsic_lif, 4
+    phvwr           p.control_metadata_lif_tx_stats_id, r1
     sub             r1, k.capri_p4_intrinsic_frame_size, \
                         k.offset_metadata_l2_1
     sne             c1, k.capri_intrinsic_tm_oq, TM_P4_RECIRC_QUEUE
