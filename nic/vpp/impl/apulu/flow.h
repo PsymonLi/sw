@@ -122,7 +122,7 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
                      u16 thread_id, u16 *next, u32 *counter)
 {
     session_track_actiondata_t track_actiondata = {0};
-    static struct session_info_entry_t actiondata = {0};
+    struct session_info_entry_t actiondata = {0};
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_rewrite_flags_t *rewrite_flags;
     pds_flow_hw_ctx_t *ctx;
@@ -138,23 +138,16 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
             vnet_buffer2(b)->pds_nat_data.xlate_idx;
         actiondata.rx_xlate_id =
             vnet_buffer2(b)->pds_nat_data.xlate_idx_rflow;
-        actiondata.tx_xlate_id2 = 0;
-        actiondata.rx_xlate_id2 = 0;
     } else if (pds_is_flow_svc_map_en(b)) {
         /* Service mapping case (pip, port --> vip, port) */
         actiondata.tx_xlate_id =
             vnet_buffer2(b)->pds_nat_data.xlate_idx;
-        actiondata.rx_xlate_id = 0;
-        actiondata.tx_xlate_id2 = 0;
-        actiondata.rx_xlate_id2 = 0;
     } else if (vnet_buffer2(b)->pds_nat_data.xlate_idx) {
         /* static nat */
         actiondata.tx_xlate_id =
             vnet_buffer2(b)->pds_nat_data.xlate_idx;
         actiondata.rx_xlate_id =
             vnet_buffer2(b)->pds_nat_data.xlate_idx + 1;
-        actiondata.tx_xlate_id2 = 0;
-        actiondata.rx_xlate_id2 = 0;
     }
     if (vnet_buffer2(b)->pds_nat_data.xlate_idx2) {
         // Twice NAT
