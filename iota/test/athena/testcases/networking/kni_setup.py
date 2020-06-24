@@ -66,7 +66,7 @@ def Trigger(tc):
     api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
 
     # pre testpmd setup
-    cmd = "echo 512 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages"
+    cmd = "echo 256 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages"
     api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
 
     cmd = "mkdir -p /dev/hugepages"
@@ -83,8 +83,9 @@ def Trigger(tc):
     args.append({'coremask' : '0x6'})
     args.append({'portmask' : '0x3'})
     args.append({'stats-period' : '3'})
-    args.append({'max-pkt-len' : '1500'})
-    args.append({'mbuf-size' : '1500'})
+    args.append({'max-pkt-len' : '9208'})
+    args.append({'mbuf-size' : '10240'})
+    args.append({'total-num-mbufs' : '10240'})
 
     testpmd.StartTestpmd(req, tc.bitw_node_name,
                          common_args, args)
