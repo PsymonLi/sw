@@ -530,6 +530,7 @@ typedef struct pd_if_create_args_s {
             // enic if specific info
             struct {
                 lif_t *lif;
+                bool   skip_inp_mac_vlan_pgm_upl_entry;
 
                 // Classic mode fields
                 bool            pinned_uplink_change;

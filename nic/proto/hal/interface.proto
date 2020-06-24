@@ -499,6 +499,7 @@ message IfEnicInfo {
       EnicInfo          enic_info                   = 4 [(gogoproto.moretags) = "venice:constraints={intf.IfEnicInfo.enic_type==interface_pb2.IF_ENIC_TYPE_USEG}"]; // enic info for non-classic types
       EnicClassicInfo   classic_enic_info           = 5 [(gogoproto.moretags) = "venice:constraints={intf.IfEnicInfo.enic_type==interface_pb2.IF_ENIC_TYPE_CLASSIC}"];
   }
+  bool                  vmotion_enic                = 6;
 }
 
 // mandatory attributes expected if interface type is IF_TYPE_UPLINK

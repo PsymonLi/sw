@@ -111,7 +111,7 @@ pd_enicif_delink_pi_pd(pd_enicif_t *pd_enicif, if_t *pi_if)
 }
 
 hal_ret_t pd_enicif_alloc_res(pd_enicif_t *pd_enicif);
-hal_ret_t pd_enicif_program_hw(pd_enicif_t *pd_enicif);
+hal_ret_t pd_enicif_program_hw(pd_enicif_t *pd_enicif, bool skip_inp_mac_vlan_pgm_upl_entry);
 hal_ret_t pd_enicif_free (pd_enicif_t *enicif);
 void link_pi_pd(pd_enicif_t *pd_upif, if_t *pi_if);
 void unlink_pi_pd(pd_enicif_t *pd_upif, if_t *pi_if);
@@ -119,7 +119,8 @@ hal_ret_t
 pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
                                     pd_if_update_args_t *args,
                                     pd_if_lif_update_args_t *lif_args,
-                                    table_oper_t oper);
+                                    table_oper_t oper,
+                                    bool skip_inp_mac_vlan_pgm_upl_entry);
 hal_ret_t
 pd_enicif_pd_pgm_output_mapping_tbl(pd_enicif_t *pd_enicif,
                                     pd_if_update_args_t *args,

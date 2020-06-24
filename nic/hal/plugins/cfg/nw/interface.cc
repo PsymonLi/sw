@@ -607,8 +607,7 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
     if_t                        *hal_if    = NULL;
     pd::pd_func_args_t          pd_func_args = {0};
     lif_t                       *lif = NULL;
-
-    // if_create_app_ctxt_t        *app_ctxt  = NULL;
+    if_create_app_ctxt_t        *app_ctxt  = NULL;
 
     if (cfg_ctxt == NULL) {
         HAL_TRACE_ERR("invalid cfg_ctxt");
@@ -618,11 +617,12 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
 
     lnode = cfg_ctxt->dhl.next;
     dhl_entry = dllist_entry(lnode, dhl_entry_t, dllist_ctxt);
-    // app_ctxt = (if_create_app_ctxt_t *)cfg_ctxt->app_ctxt;
+    app_ctxt = (if_create_app_ctxt_t *)cfg_ctxt->app_ctxt;
 
     hal_if = (if_t *)dhl_entry->obj;
 
-    HAL_TRACE_DEBUG("if_id : {}:create add cb", hal_if->if_id);
+    HAL_TRACE_DEBUG("if_id : {}:create add cb vmotion_enic: {}",
+                    hal_if->if_id, app_ctxt->vmotion_enic);
 
     // PD Call to allocate PD resources and HW programming
     pd::pd_if_create_args_init(&pd_if_args);
@@ -630,6 +630,7 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
     if (hal_if->if_type != intf::IF_TYPE_UPLINK &&
         hal_if->if_type != intf::IF_TYPE_UPLINK_PC) {
         pd_if_args.lif = find_lif_by_handle(hal_if->lif_handle);
+        pd_if_args.skip_inp_mac_vlan_pgm_upl_entry = app_ctxt->vmotion_enic;
     }
     pd_func_args.pd_if_create = &pd_if_args;
     ret = pd::hal_pd_call(pd::PD_FUNC_ID_IF_CREATE,  &pd_func_args);
@@ -1578,7 +1579,7 @@ interface_create (InterfaceSpec& spec, InterfaceResponse *rsp)
     if_t                        *hal_if = NULL;
     // if_t                        *uplink_if = NULL;
     // lif_t                       *lif = NULL;
-    if_create_app_ctxt_t        app_ctxt;
+    if_create_app_ctxt_t        app_ctxt = { 0 };
     dhl_entry_t                 dhl_entry = { 0 };
     cfg_op_ctxt_t               cfg_ctxt = { 0 };
     if_mirror_info_t            mirror_spec;
@@ -1677,6 +1678,9 @@ interface_create (InterfaceSpec& spec, InterfaceResponse *rsp)
                                        mirrorsession_id();
     }
     app_ctxt.mirror_spec = &mirror_spec;
+    if (hal_if->if_type == intf::IF_TYPE_ENIC) {
+        app_ctxt.vmotion_enic = spec.if_enic_info().vmotion_enic();
+    }
 
     // form ctxt and call infra add
     // app_ctxt.l2seg = l2seg;

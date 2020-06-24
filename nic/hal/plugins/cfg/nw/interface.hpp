@@ -247,6 +247,7 @@ typedef struct if_create_app_ctxt_s {
     // l2seg_t    *l2seg;                                 // valid for enic if
     // lif_t      *lif;                                   // valid for enic if
     if_mirror_info_t    *mirror_spec;
+    bool                 vmotion_enic;
 } __PACK__ if_create_app_ctxt_t;
 
 typedef struct if_update_app_ctxt_s {

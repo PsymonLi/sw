@@ -32,12 +32,26 @@ func HandleEndpoint(infraAPI types.InfraAPI, epClient halapi.EndpointClient, int
 	}
 }
 
+func isMigrating(endpoint netproto.Endpoint) bool {
+	return len(endpoint.Spec.Migration) != 0 && endpoint.Spec.Migration != netproto.MigrationState_NONE.String()
+}
+
+func isMigratingIn(endpoint netproto.Endpoint, curNodeUUID string) bool {
+	return len(endpoint.Status.NodeUUID) != 0 && endpoint.Spec.NodeUUID != endpoint.Status.NodeUUID && endpoint.Spec.NodeUUID == curNodeUUID
+}
+
 func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClient, intfClient halapi.InterfaceClient, endpoint netproto.Endpoint, vrfID, networkID uint64) error {
 	createEnic := endpoint.Status.EnicID != 0
 	// Handle interface creates for local EPs
 	if createEnic {
-		interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan)
+		isEPMigrating := false
+		if isMigrating(endpoint) && isMigratingIn(endpoint, infraAPI.GetDscName()) {
+			log.Info("Creating ENIC for migration")
+			isEPMigrating = true
+		}
+		interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan, isEPMigrating)
 		log.Infof("ENIC Msg: %v", interfaceReqMsg.String())
+
 		resp, err := intfClient.InterfaceCreate(context.Background(), interfaceReqMsg)
 		if resp != nil {
 			if err := utils.HandleErr(types.Create, resp.Response[0].ApiStatus, err, fmt.Sprintf("create Failed for ENIC Interface. ID: %d", endpoint.Status.EnicID)); err != nil {
@@ -92,7 +106,7 @@ func updateEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 	}
 
 	if updateEnic {
-		interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan)
+		interfaceReqMsg := convertEnicInterface(endpoint.Spec.MacAddress, endpoint.Status.EnicID, networkID, endpoint.Spec.UsegVlan, false)
 		log.Infof("ENIC Msg: %v", interfaceReqMsg.String())
 		resp, err := intfClient.InterfaceUpdate(context.Background(), interfaceReqMsg)
 		if resp != nil {
@@ -281,23 +295,26 @@ func convertEPAttrs(addresses []string, mgmtIntf string, usegVLAN uint32, enicID
 	}
 }
 
-func convertEnicInterface(macAddress string, intfID, l2SegID uint64, usegVLAN uint32) *halapi.InterfaceRequestMsg {
+func convertEnicInterface(macAddress string, intfID, l2SegID uint64, usegVLAN uint32, isEPMigrating bool) *halapi.InterfaceRequestMsg {
+	enic := halapi.IfEnicInfo{
+		EnicType: halapi.IfEnicType_IF_ENIC_TYPE_USEG,
+		EnicTypeInfo: &halapi.IfEnicInfo_EnicInfo{
+			EnicInfo: &halapi.EnicInfo{
+				L2SegmentKeyHandle: convertL2SegKeyHandle(l2SegID),
+				MacAddress:         utils.ConvertMacAddress(macAddress),
+				EncapVlanId:        usegVLAN,
+			},
+		},
+		VmotionEnic: isEPMigrating,
+	}
+
 	return &halapi.InterfaceRequestMsg{
 		Request: []*halapi.InterfaceSpec{
 			{
 				KeyOrHandle: convertIfKeyHandles(0, intfID)[0],
 				Type:        halapi.IfType_IF_TYPE_ENIC,
 				IfInfo: &halapi.InterfaceSpec_IfEnicInfo{
-					IfEnicInfo: &halapi.IfEnicInfo{
-						EnicType: halapi.IfEnicType_IF_ENIC_TYPE_USEG,
-						EnicTypeInfo: &halapi.IfEnicInfo_EnicInfo{
-							EnicInfo: &halapi.EnicInfo{
-								L2SegmentKeyHandle: convertL2SegKeyHandle(l2SegID),
-								MacAddress:         utils.ConvertMacAddress(macAddress),
-								EncapVlanId:        usegVLAN,
-							},
-						},
-					},
+					IfEnicInfo: &enic,
 				},
 			},
 		},

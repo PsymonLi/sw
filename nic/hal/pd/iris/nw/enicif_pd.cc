@@ -62,7 +62,7 @@ pd_enicif_create(pd_if_create_args_t *args)
     }
 
     // Program HW
-    ret = pd_enicif_program_hw(pd_enicif);
+    ret = pd_enicif_program_hw(pd_enicif, args->skip_inp_mac_vlan_pgm_upl_entry);
 
 end:
     if (ret != HAL_RET_OK) {
@@ -105,7 +105,7 @@ pd_enicif_update (pd_if_update_args_t *args)
 
         if (args->lif_change || args->tx_mirr_change) {
             ret = pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif, args, NULL,
-                                                      TABLE_OPER_UPDATE);
+                                                      TABLE_OPER_UPDATE, false);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Failed to repgm inp. prop. mac vlan table. ret:{}", ret);
                 goto end;
@@ -117,7 +117,7 @@ pd_enicif_update (pd_if_update_args_t *args)
             // - Create a new mac-vlan entry with new encap vlan. 
             //   Clone will have new encap vlan
             ret = pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_clone, args, 
-                                                      NULL, TABLE_OPER_UPDATE);
+                                                      NULL, TABLE_OPER_UPDATE, false);
         }
 
         // TODO Deprecated: Pinning on ENICs for classic is moved to Lifs.
@@ -835,7 +835,7 @@ pd_enicif_pd_depgm_output_mapping_tbl (pd_enicif_t *pd_enicif)
 // Program HW
 // ----------------------------------------------------------------------------
 hal_ret_t
-pd_enicif_program_hw(pd_enicif_t *pd_enicif)
+pd_enicif_program_hw(pd_enicif_t *pd_enicif, bool skip_inp_mac_vlan_pgm_upl_entry)
 {
     hal_ret_t ret;
     if_t      *hal_if = (if_t *)pd_enicif->pi_if;
@@ -863,7 +863,8 @@ pd_enicif_program_hw(pd_enicif_t *pd_enicif)
     if (hal_if->enic_type != intf::IF_ENIC_TYPE_CLASSIC) {
         // Program Input Properties Mac Vlan
         ret = pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif, NULL, NULL,
-                                                  TABLE_OPER_INSERT);
+                                                  TABLE_OPER_INSERT,
+                                                  skip_inp_mac_vlan_pgm_upl_entry);
     }
 
     if (ret != HAL_RET_OK) {
@@ -1644,7 +1645,7 @@ pd_enicif_lif_update(pd_if_lif_update_args_t *args)
         if (args->vlan_insert_en_changed || args->pinned_uplink_changed) {
             // Program Input Properties Mac Vlan
             ret = pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif, NULL, args,
-                                                      TABLE_OPER_UPDATE);
+                                                      TABLE_OPER_UPDATE, false);
         }
     }
 
@@ -1897,10 +1898,17 @@ pd_if_inp_mac_vlan_pgm(pd_func_args_t *pd_func_args)
     // Uplink Entry - Has to be installed only in EndHost Mode Used to do Deja-vu check.
     // The src_lif will not match the lif on uplink if.
 
-    HAL_TRACE_DEBUG("program for Host traffic (EnicIf): {} create: {}",
-                    if_get_if_id((if_t*)pd_enicif->pi_if), args->create);
+    HAL_TRACE_DEBUG("program for Host traffic (EnicIf): {} create: {} Idx: {}",
+                    if_get_if_id((if_t*)pd_enicif->pi_if), args->create,
+                    pd_enicif->inp_prop_mac_vlan_idx_upl);
 
     if (args->create) {
+        if (pd_enicif->inp_prop_mac_vlan_idx_upl != INVALID_INDEXER_INDEX) {
+            HAL_TRACE_ERR("program for Host traffic (EnicIf): {} Idx: {}",
+                          if_get_if_id((if_t*)pd_enicif->pi_if),
+                          pd_enicif->inp_prop_mac_vlan_idx_upl);
+            return HAL_RET_OK;
+        }
         memset(&data, 0, sizeof(data));
 
         // Direction bit: Handles Encap Vlan vs User Vlan conflicts
@@ -2026,7 +2034,8 @@ hal_ret_t
 pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
                                     pd_if_update_args_t *args,
                                     pd_if_lif_update_args_t *lif_args,
-                                    table_oper_t oper)
+                                    table_oper_t oper,
+                                    bool skip_inp_mac_vlan_pgm_upl_entry)
 {
     hal_ret_t                                   ret = HAL_RET_OK;
     input_properties_mac_vlan_swkey_t           key;
@@ -2086,7 +2095,8 @@ pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
     pd_enicif_inp_prop_mac_vlan_form_data(pd_enicif, lif, ENICIF_UPD_FLAGS_NONE, NULL, args, lif_args,
                                  data, true);
 
-    HAL_TRACE_DEBUG("pinned uplink's lport: {}", inp_prop_mac_vlan_data.dst_lport);
+    HAL_TRACE_DEBUG("pinned uplink's lport: {} skip:{}", inp_prop_mac_vlan_data.dst_lport,
+                    skip_inp_mac_vlan_pgm_upl_entry);
 
     if (oper == TABLE_OPER_INSERT) {
         ret = pd_enicif_pgm_inp_prop_mac_vlan_entry(&key, &mask, &data,
@@ -2129,7 +2139,7 @@ pd_enicif_pgm_inp_prop_mac_vlan_tbl(pd_enicif_t *pd_enicif,
         }
     }
 
-    if (oper == TABLE_OPER_INSERT) {
+    if ((oper == TABLE_OPER_INSERT) && (!skip_inp_mac_vlan_pgm_upl_entry)) {
         // Entry 2: Uplink Entry - Has to be installed only in EndHost Mode
         //          Used to do Deja-vu check. The src_lif will not match the
         //          lif on uplink if.
