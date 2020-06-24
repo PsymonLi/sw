@@ -31,6 +31,9 @@ var InsertionKinds = []string{"Profile", "IPAMPolicy", "Interface", "InterfaceMi
 // AllKinds captures all the objects that agent will watch from Venice
 var AllKinds = []string{"App", "NetworkSecurityPolicy", "Vrf", "Network", "Endpoint", "SecurityProfile", "RouteTable", "RoutingConfig", "IPAMPolicy", "Interface"}
 
+// ResyncReverseKinds kinds which expects add/update first and then delete during resync
+var ResyncReverseKinds = []string{"Profile"}
+
 // IPAddressKind captures the type of IPAddress options, Singleton, Hyphen separated range or CIDR
 type IPAddressKind int
 

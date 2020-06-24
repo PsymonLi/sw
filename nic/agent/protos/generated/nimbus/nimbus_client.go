@@ -38,13 +38,14 @@ const (
 
 // NimbusClient is the nimbus client
 type NimbusClient struct {
-	sync.Mutex                        // lock the npm client
-	clientName string                 // client's name
-	srvURL     string                 // rpc server URL
-	waitGrp    sync.WaitGroup         // wait group to wait on all go routines to exit
-	rpcClient  *rpckit.RPCClient      // grpc client for watch
-	objlocks   map[string]*sync.Mutex // object level locks
-	debugStats *debugStats.Stats
+	sync.Mutex                                 // lock the npm client
+	clientName          string                 // client's name
+	srvURL              string                 // rpc server URL
+	waitGrp             sync.WaitGroup         // wait group to wait on all go routines to exit
+	rpcClient           *rpckit.RPCClient      // grpc client for watch
+	objlocks            map[string]*sync.Mutex // object level locks
+	debugStats          *debugStats.Stats
+	resyncReversedKinds []string //option to registe for client if add/update should be first followed by delete
 }
 
 // NewNimbusClient creates a new nimbus client
@@ -1498,6 +1499,12 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 		obj := kindOrderObjects[len(kindOrderObjects)-1-index]
 		lobj := obj.lobj
 
+		for _, kind := range client.resyncReversedKinds {
+			if kind == obj.kind {
+				continue
+			}
+		}
+
 		switch obj.kind {
 
 		case "App":
@@ -1654,6 +1661,128 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 		}
 	}
 
+	//now do delete objects which are expecting in reverse order
+	for index := range kindOrderObjects {
+		// delete order is reverse of add/update order
+		obj := kindOrderObjects[len(kindOrderObjects)-1-index]
+		lobj := obj.lobj
+
+		for _, kind := range client.resyncReversedKinds {
+			if kind != obj.kind {
+				continue
+			}
+		}
+
+		switch obj.kind {
+
+		case "App":
+			if lobj != nil {
+				client.diffAppsDynamic(lobj.objects.(*netproto.AppList), reactor.(AppReactor), ostream, delteDiffOp)
+			} else {
+				client.diffAppsDynamic(nil, reactor.(AppReactor), ostream, delteDiffOp)
+			}
+
+		case "Endpoint":
+			if lobj != nil {
+				client.diffEndpointsDynamic(lobj.objects.(*netproto.EndpointList), reactor.(EndpointReactor), ostream, delteDiffOp)
+			} else {
+				client.diffEndpointsDynamic(nil, reactor.(EndpointReactor), ostream, delteDiffOp)
+			}
+
+		case "FlowExportPolicy":
+			if lobj != nil {
+				client.diffFlowExportPolicysDynamic(lobj.objects.(*netproto.FlowExportPolicyList), reactor.(FlowExportPolicyReactor), ostream, delteDiffOp)
+			} else {
+				client.diffFlowExportPolicysDynamic(nil, reactor.(FlowExportPolicyReactor), ostream, delteDiffOp)
+			}
+
+		case "IPAMPolicy":
+			if lobj != nil {
+				client.diffIPAMPolicysDynamic(lobj.objects.(*netproto.IPAMPolicyList), reactor.(IPAMPolicyReactor), ostream, delteDiffOp)
+			} else {
+				client.diffIPAMPolicysDynamic(nil, reactor.(IPAMPolicyReactor), ostream, delteDiffOp)
+			}
+
+		case "Interface":
+			if lobj != nil {
+				client.diffInterfacesDynamic(lobj.objects.(*netproto.InterfaceList), reactor.(InterfaceReactor), ostream, delteDiffOp)
+			} else {
+				client.diffInterfacesDynamic(nil, reactor.(InterfaceReactor), ostream, delteDiffOp)
+			}
+
+		case "InterfaceMirrorSession":
+			if lobj != nil {
+				client.diffInterfaceMirrorSessionsDynamic(lobj.objects.(*netproto.InterfaceMirrorSessionList), reactor.(InterfaceMirrorSessionReactor), ostream, delteDiffOp)
+			} else {
+				client.diffInterfaceMirrorSessionsDynamic(nil, reactor.(InterfaceMirrorSessionReactor), ostream, delteDiffOp)
+			}
+
+		case "MirrorSession":
+			if lobj != nil {
+				client.diffMirrorSessionsDynamic(lobj.objects.(*netproto.MirrorSessionList), reactor.(MirrorSessionReactor), ostream, delteDiffOp)
+			} else {
+				client.diffMirrorSessionsDynamic(nil, reactor.(MirrorSessionReactor), ostream, delteDiffOp)
+			}
+
+		case "Network":
+			if lobj != nil {
+				client.diffNetworksDynamic(lobj.objects.(*netproto.NetworkList), reactor.(NetworkReactor), ostream, delteDiffOp)
+			} else {
+				client.diffNetworksDynamic(nil, reactor.(NetworkReactor), ostream, delteDiffOp)
+			}
+
+		case "NetworkSecurityPolicy":
+			if lobj != nil {
+				client.diffNetworkSecurityPolicysDynamic(lobj.objects.(*netproto.NetworkSecurityPolicyList), reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
+			} else {
+				client.diffNetworkSecurityPolicysDynamic(nil, reactor.(NetworkSecurityPolicyReactor), ostream, delteDiffOp)
+			}
+
+		case "Profile":
+			if lobj != nil {
+				client.diffProfilesDynamic(lobj.objects.(*netproto.ProfileList), reactor.(ProfileReactor), ostream, delteDiffOp)
+			} else {
+				client.diffProfilesDynamic(nil, reactor.(ProfileReactor), ostream, delteDiffOp)
+			}
+
+		case "RouteTable":
+			if lobj != nil {
+				client.diffRouteTablesDynamic(lobj.objects.(*netproto.RouteTableList), reactor.(RouteTableReactor), ostream, delteDiffOp)
+			} else {
+				client.diffRouteTablesDynamic(nil, reactor.(RouteTableReactor), ostream, delteDiffOp)
+			}
+
+		case "RoutingConfig":
+			if lobj != nil {
+				client.diffRoutingConfigsDynamic(lobj.objects.(*netproto.RoutingConfigList), reactor.(RoutingConfigReactor), ostream, delteDiffOp)
+			} else {
+				client.diffRoutingConfigsDynamic(nil, reactor.(RoutingConfigReactor), ostream, delteDiffOp)
+			}
+
+		case "SecurityProfile":
+			if lobj != nil {
+				client.diffSecurityProfilesDynamic(lobj.objects.(*netproto.SecurityProfileList), reactor.(SecurityProfileReactor), ostream, delteDiffOp)
+			} else {
+				client.diffSecurityProfilesDynamic(nil, reactor.(SecurityProfileReactor), ostream, delteDiffOp)
+			}
+
+		case "Vrf":
+			if lobj != nil {
+				client.diffVrfsDynamic(lobj.objects.(*netproto.VrfList), reactor.(VrfReactor), ostream, delteDiffOp)
+			} else {
+				client.diffVrfsDynamic(nil, reactor.(VrfReactor), ostream, delteDiffOp)
+			}
+
+		}
+	}
+
+}
+
+//SetReSyncReverse option for client for resync to be reverse (add/update and then delete during resync)
+func (client *NimbusClient) SetReSyncReverse(ctx context.Context, kinds []string) error {
+
+	client.resyncReversedKinds = kinds
+	return nil
 }
 
 func (client *NimbusClient) WatchAggregate(ctx context.Context, kinds []string, reactor AggReactor) error {

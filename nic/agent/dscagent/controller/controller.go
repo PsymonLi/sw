@@ -360,6 +360,7 @@ func (c *API) watchObjects() {
 	// Add to the WG so that when Stop() is invoked we wait for all watchers to exit
 	// before cleaning up the RPC clients
 	c.Add(1)
+	c.nimbusClient.SetReSyncReverse(c.WatchCtx, types.ResyncReverseKinds)
 	if err := c.nimbusClient.WatchAggregate(c.WatchCtx, c.kinds, c.PipelineAPI); err != nil {
 		log.Error(errors.Wrapf(types.ErrAggregateWatch, "Controller API: %s", err))
 	}

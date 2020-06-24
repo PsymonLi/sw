@@ -43,6 +43,7 @@ type NimbusClient struct {
 	rpcClient       *rpckit.RPCClient             // grpc client for watch
 	objlocks        map[string]*sync.Mutex // object level locks
 	debugStats      *debugStats.Stats
+	resyncReversedKinds []string //option to registe for client if add/update should be first followed by delete
 }
 
 // NewNimbusClient creates a new nimbus client
@@ -340,6 +341,12 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 		obj := kindOrderObjects[len(kindOrderObjects)-1-index]
 		lobj := obj.lobj
 
+		for _, kind := range client.resyncReversedKinds {
+			if kind == obj.kind {
+				continue
+			}
+		}
+
 		switch obj.kind {
 		{{range $key, $value := $manifest}}
 		case "{{$value.Object}}":
@@ -366,6 +373,39 @@ func (client *NimbusClient) diffAggWatchObjects(kinds []string, objList *netprot
 		}
 	}
 
+
+	//now do delete objects which are expecting in reverse order
+	for index := range kindOrderObjects {
+		// delete order is reverse of add/update order
+		obj := kindOrderObjects[len(kindOrderObjects)-1-index]
+		lobj := obj.lobj
+
+		for _, kind := range client.resyncReversedKinds {
+			if kind != obj.kind {
+				continue
+			}
+		}
+
+		switch obj.kind {
+		{{range $key, $value := $manifest}}
+		case "{{$value.Object}}":
+			if lobj != nil {
+				client.diff{{$value.Object}}sDynamic(lobj.objects.(*netproto.{{$value.Object}}List), reactor.({{$value.Object}}Reactor), ostream, delteDiffOp)
+			} else {
+				client.diff{{$value.Object}}sDynamic(nil, reactor.({{$value.Object}}Reactor), ostream, delteDiffOp)
+			}
+		{{end}}
+		}
+	}
+
+}
+
+
+//SetReSyncReverse option for client for resync to be reverse (add/update and then delete during resync)
+func (client *NimbusClient) SetReSyncReverse(ctx context.Context, kinds []string) error {
+
+	client.resyncReversedKinds = kinds
+	return nil
 }
 
 func (client *NimbusClient) WatchAggregate(ctx context.Context, kinds []string, reactor AggReactor) error {

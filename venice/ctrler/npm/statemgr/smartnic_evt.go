@@ -226,7 +226,8 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 			}
 		}
 	} else {
-		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String() {
+		if nsnic.Status.AdmissionPhase == cluster.DistributedServiceCardStatus_ADMITTED.String() &&
+			!sm.dscDecommissioned(nsnic) {
 			sns.decommissioned = false
 			_, err = sm.AddDsc(smartNic)
 			if err != nil {
