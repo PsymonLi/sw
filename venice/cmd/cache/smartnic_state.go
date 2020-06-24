@@ -234,7 +234,7 @@ func (sm *Statemgr) UpdateSmartNIC(updObj *cluster.DistributedServiceCard, write
 	}
 
 	log.Debugf("Updated SmartNIC state {%+v}", cachedState)
-	return nil
+	return err
 }
 
 // DeleteSmartNIC deletes a smartNIC state
