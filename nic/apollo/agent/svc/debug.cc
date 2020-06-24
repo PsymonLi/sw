@@ -18,9 +18,9 @@ Status
 DebugSvcImpl::ClockFrequencyUpdate(ServerContext *context,
                                    const pds::ClockFrequencyRequest *proto_req,
                                    pds::ClockFrequencyResponse *proto_rsp) {
-    sdk_ret_t ret;
     uint32_t freq;
     pds_clock_freq_t clock_freq;
+    sdk_ret_t ret = SDK_RET_INVALID_ARG;
 
     if (proto_req == NULL) {
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);

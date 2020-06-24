@@ -735,30 +735,32 @@ pds_svc_interface_get (const pds::InterfaceGetRequest *proto_req,
                        pds::InterfaceGetResponse *proto_rsp)
 {
     sdk_ret_t ret;
+    pds_obj_key_t key;
     pds_if_info_t info;
-    pds_obj_key_t key = { 0 };
 
     if (proto_req == NULL) {
         proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return SDK_RET_INVALID_ARG;
     }
 
-    for (int i = 0; i < proto_req->id_size(); i++) {
-        pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
-        memset(&info, 0, sizeof(info));
-        ret = core::interface_get(&key, &info);
-        proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
-        if (ret != SDK_RET_OK) {
-            break;
-        }
-        pds_if_api_info_to_proto(&info, proto_rsp);
-    }
-
     if (proto_req->id_size() == 0) {
         ret = core::interface_get_all(pds_if_api_info_to_proto, proto_rsp);
         proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+        return ret;
+    } else {
+        for (int i = 0; i < proto_req->id_size(); i++) {
+            pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
+            memset(&info, 0, sizeof(info));
+            ret = core::interface_get(&key, &info);
+            proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+            if (ret != SDK_RET_OK) {
+                break;
+            }
+            pds_if_api_info_to_proto(&info, proto_rsp);
+        }
+        return ret;
     }
-    return ret;
+    return SDK_RET_OK;
 }
 
 static inline sdk_ret_t
@@ -767,21 +769,30 @@ pds_svc_lif_get (const pds::LifGetRequest *proto_req,
 {
     sdk_ret_t ret;
     pds_obj_key_t key;
+    pds_lif_info_t info;
 
-    if (proto_req) {
+    if (proto_req == NULL) {
+        proto_rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
+        return SDK_RET_INVALID_ARG;
+    }
+
+    if (proto_req->id_size() == 0) {
+        ret = pds_lif_read_all(pds_lif_api_info_to_proto, proto_rsp);
+        proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+        return ret;
+    } else {
         for (int i = 0; i < proto_req->id_size(); i ++) {
-            pds_lif_info_t info = { 0 };
             pds_obj_key_proto_to_api_spec(&key, proto_req->id(i));
             ret = pds_lif_read(&key, &info);
             proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
+            if (ret != SDK_RET_OK) {
+                break;
+            }
             pds_lif_api_info_to_proto(&info, proto_rsp);
         }
-        if (proto_req->id_size() == 0) {
-            ret = pds_lif_read_all(pds_lif_api_info_to_proto, proto_rsp);
-            proto_rsp->set_apistatus(sdk_ret_to_api_status(ret));
-        }
+        return ret;
     }
-    return ret;
+    return SDK_RET_OK;
 }
 
 static inline sdk_ret_t
