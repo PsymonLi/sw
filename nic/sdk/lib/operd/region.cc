@@ -22,7 +22,7 @@ const std::string CONFIG_LOCATION = "/nic/conf/operd-regions.json";
 const std::string CONFIG_OVERRIDE = "OPERD_REGIONS";
 const int OPEN_TRIES = 10;
 const int SPIN_SLEEP_MS = 25;
-const int SPIN_MAX_TRIES = 10;
+const int SPIN_MAX_TRIES = 100;
 const uint8_t UPDATE_IN_PROGRESS = 1;
 const uint8_t UPDATE_READY = 0;
 
