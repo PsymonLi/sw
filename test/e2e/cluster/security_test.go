@@ -34,6 +34,33 @@ type securityTestGroup struct {
 // instantiate test suite
 var securityTg = &securityTestGroup{}
 
+func validateDSCProfileStatus(ctx context.Context, snIf cmd.ClusterV1DistributedServiceCardInterface, dscIf cmd.ClusterV1DSCProfileInterface) {
+	Eventually(func() bool {
+		snics, err := snIf.List(ctx, &api.ListWatchOptions{})
+		if err != nil {
+			By(fmt.Sprintf("Error getting list of NICs: %v", err))
+			return false
+		}
+		for _, snic := range snics {
+			dscProfileName := snic.Spec.DSCProfile
+			dscProfile := cmd.DSCProfile{
+				TypeMeta: api.TypeMeta{Kind: "DSCProfile"},
+				ObjectMeta: api.ObjectMeta{
+					Name: dscProfileName,
+				},
+			}
+			dstat, err := dscIf.Get(ctx, &dscProfile.ObjectMeta)
+			Expect(err).ShouldNot(HaveOccurred())
+			if dstat.Status.PropagationStatus.Pending != 0 {
+				log.Errorf("%v Status %v on DSC %v", dscProfileName, dstat.Status, snic.Name)
+				return false
+			}
+			By(fmt.Sprintf("DSC Profile %v Propagation complete on %v", dscProfileName, snic.Name))
+		}
+		return true
+	}, 90, 10).Should(BeTrue(), fmt.Sprintf("DSC Profile Propagation is incomplete DSCs"))
+}
+
 // setupTest setup test suite
 func (stg *securityTestGroup) setupTest() {
 	stg.suite = ts
@@ -45,8 +72,10 @@ func (stg *securityTestGroup) setupTest() {
 		return err
 	}, 30, 5).Should(BeNil(), "Failed to get node auth token")
 	snIf := ts.tu.APIClient.ClusterV1().DistributedServiceCard()
+	dscIf := ts.tu.APIClient.ClusterV1().DSCProfile()
 	validateCluster()
 	validateNICHealth(context.Background(), snIf, ts.tu.NumNaplesHosts, cmd.ConditionStatus_TRUE)
+	validateDSCProfileStatus(context.Background(), snIf, dscIf)
 	apiGwAddr := ts.tu.ClusterVIP + ":" + globals.APIGwRESTPort
 	restSvc, err := apiclient.NewRestAPIClient(apiGwAddr)
 	if err == nil {
@@ -217,6 +246,7 @@ func (stg *securityTestGroup) testSgpolicyCreateDelete() {
 				By(fmt.Sprintf("ts:%s security policy list has invalid items, sg policies: %+v", time.Now().String(), sgplist))
 				return false
 			}
+			By(fmt.Sprintf("ts:%s security policy list success, err: %+v sgs: %+v", time.Now().String(), err, sgplist))
 		}
 		return true
 	}, 30, 1).Should(BeTrue(), "Failed to get sg policies on netagent")
@@ -237,6 +267,7 @@ func (stg *securityTestGroup) testSgpolicyCreateDelete() {
 				By(fmt.Sprintf("ts:%s security policy list has invalid items, sg policies: %+v", time.Now().String(), sgplist))
 				return false
 			}
+			By(fmt.Sprintf("ts:%s security policy list success, err: %+v sgs: %+v", time.Now().String(), err, sgplist))
 		}
 		return true
 	}, 30, 1).Should(BeTrue(), "Failed to get sg policies on netagent")
@@ -288,6 +319,7 @@ func (stg *securityTestGroup) testSecurityGroupCreateDelete() {
 				By(fmt.Sprintf("ts:%s security group list has invalid items, security groups: %+v", time.Now().String(), sglist))
 				return false
 			}
+			By(fmt.Sprintf("ts:%s security group list success, err: %+v sgs: %+v", time.Now().String(), err, sglist))
 		}
 		return true
 	}, 30, 1).Should(BeTrue(), "Failed to get security groups on netagent")
@@ -310,6 +342,7 @@ func (stg *securityTestGroup) testSecurityGroupCreateDelete() {
 				By(fmt.Sprintf("ts:%s security group list has invalid items, sg groups: %+v", time.Now().String(), sglist))
 				return false
 			}
+			By(fmt.Sprintf("ts:%s security group list success, err: %+v sgs: %+v", time.Now().String(), err, sglist))
 		}
 		return true
 	}, 30, 1).Should(BeTrue(), "Failed to get security groups on netagent")
