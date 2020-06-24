@@ -431,15 +431,13 @@ func TestBulkeditAction(t *testing.T) {
 		},
 	}
 
-	ret, _, err = hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req)
-	if err == nil {
-		t.Fatalf("Expected Invalid method type Error!\n")
-	}
+	ret, _, _ = hooks.bulkeditAction(context.TODO(), nil, nil, "key", apiintf.CreateOper, false, req)
 
 	retBuf = ret.(staging.BulkEditAction)
 	if retBuf.Status.ValidationResult != staging.BufferStatus_FAILED.String() {
 		t.Fatalf("Expected FAILED Validation status")
 	}
+	// Unknown method error for object n1
 	if len(retBuf.Status.GetErrors()) != 1 {
 		t.Fatalf("Expected 1 error, got %d", len(retBuf.Status.GetErrors()))
 	}
