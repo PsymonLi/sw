@@ -1,12 +1,15 @@
-/**
- * Copyright (c) 2018 Pensando Systems, Inc.
- *
- * @file    pds_state.cc
- *
- * @brief   This file contains implementation of pds state class
- */
+//
+// {C} Copyright 2018 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// This file contains implementation of pds state class
+///
+//----------------------------------------------------------------------------
 
 #include "nic/sdk/lib/metrics/metrics.hpp"
+#include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/api/internal/metrics.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 
@@ -20,12 +23,6 @@ pds_state g_pds_state;
 #define FIRMWARE_DESCRIPTION_KEY "sw.pipeline"
 #define FIRMWARE_BUILD_TIME_KEY  "sw.build_time"
 
-/**
- * @defgroup PDS_STATE - Internal state
- * @{
- */
-
-/**< @brief    constructor */
 pds_state::pds_state() {
     catalog_ = NULL;
     mpartition_ = NULL;
@@ -46,7 +43,6 @@ pds_state::pds_state() {
     }
 }
 
-/**< @brief    destructor */
 pds_state::~pds_state() {
 }
 
@@ -107,7 +103,8 @@ pds_state::parse_firmware_version_file_(void) {
     read_json(json_cfg, pt);
     try {
         firmware_version_str_ = pt.get<std::string>(FIRMWARE_VERSION_KEY);
-        firmware_description_str_ = pt.get<std::string>(FIRMWARE_DESCRIPTION_KEY);
+        firmware_description_str_ =
+            pt.get<std::string>(FIRMWARE_DESCRIPTION_KEY);
         firmware_build_time_str_ = pt.get<std::string>(FIRMWARE_BUILD_TIME_KEY);
     } catch (std::exception const& e) {
         std::cerr << e.what() << std::endl;
@@ -124,21 +121,23 @@ pds_state::init(string pipeline, string cfg_file) {
     pipeline_ = pipeline;
     SDK_ASSERT(parse_global_config_(pipeline, cfg_file) == SDK_RET_OK);
 
-    // create persistent store
-    if (platform_type_ == platform_type_t::PLATFORM_TYPE_HW) {
-        path = "/data/";
-    } else {
-        path = std::string(getenv("PDSPKG_TOPDIR"));
-        if (path.empty()) {
-            path = "./";
+    if (!sdk::asic::asic_is_soft_init()) {
+        // create persistent store
+        if (platform_type_ == platform_type_t::PLATFORM_TYPE_HW) {
+            path = "/data/";
         } else {
-            path += "/";
+            path = std::string(getenv("PDSPKG_TOPDIR"));
+            if (path.empty()) {
+                path = "./";
+            } else {
+                path += "/";
+            }
         }
-    }
-    path += "pdsagent.db";
-    kvstore_ = sdk::lib::kvstore::factory(path, (1UL << 31));
-    if (kvstore_ == NULL) {
-        return SDK_RET_ERR;
+        path += "pdsagent.db";
+        kvstore_ = sdk::lib::kvstore::factory(path, (1UL << 31));
+        if (kvstore_ == NULL) {
+            return SDK_RET_ERR;
+        }
     }
     state_[PDS_STATE_DEVICE] = new device_state();
     state_[PDS_STATE_LIF] = new lif_state();
@@ -237,7 +236,5 @@ pds_state::transaction_end(bool abort) {
     }
     return kvstore_->txn_commit();
 }
-
-/** * @} */    // end of PDS_STATE
 
 }    // namespace api

@@ -16,9 +16,26 @@
 
 namespace api {
 
-// update the reachability information for the given mirror session
-// ERSPAN collector IP
+/// \brief this API is invoked by metaswitch stub to inform
+///        forwarding/reachability information for a given erspan collector
+///        in a mirror session
+/// \param[in] key        mirror session key
+/// \param[in] nh_info    nexthop or nexthop group information
+/// \return    SDK_RET_OK on sucess or error code in case of failure
 sdk_ret_t pds_mirror_session_update(pds_obj_key_t *key, nh_info_t *nh_info);
+
+/// \brief this API is invoked by metaswitch stubs to cleanup the forwarding
+///        information about a ERSPAN mirror session thats been deleted
+/// \param[in] key        mirror session key
+/// \return    SDK_RET_OK on sucess or error code in case of failure
+sdk_ret_t pds_mirror_session_delete(pds_obj_key_t *key);
+
+/// \brief this API is invoked to get the reachability information for a erspan
+///        collector while programming a mirror session in p4
+/// \param[in] key         mirror session key
+/// \param[out] nh_info    nexthop/nexthop-group key corresponding to the mirror
+/// \return    SDK_RET_OK on sucess or error code in case of failure
+sdk_ret_t pds_mirror_session_nh(pds_obj_key_t *key, nh_info_t *nh_info);
 
 }    // namespace api
 
