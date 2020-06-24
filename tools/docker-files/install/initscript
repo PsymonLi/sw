@@ -41,6 +41,7 @@ cp -f /target/etc/pensando/shared/common/venice.conf /host/etc/pensando/configs/
 cp -f /target/usr/bin/gettechsupport.sh /host/usr/pensando/bin/gettechsupport.sh
 cp -f /target/usr/bin/penctl.linux /host/usr/pensando/bin/penctl
 cp -f /target/usr/bin/psmctl.linux /host/usr/pensando/bin/psmctl
+cp -f /target/usr/bin/INSTALL.sh /host/usr/pensando/bin/INSTALL.sh
 
 
 #move to directories that are expected by the various services
