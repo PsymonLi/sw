@@ -71,6 +71,7 @@
   "logs": [
       "/var/log/",
       "/obfl/",
-      "/sysconfig/"
+      "/sysconfig/",
+      "/data/pre-upgrade-logs/"
     ]
 }
