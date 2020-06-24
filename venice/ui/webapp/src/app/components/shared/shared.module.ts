@@ -23,6 +23,9 @@ import { FieldselectorComponent } from './fieldselector/fieldselector.component'
 import { HerocardComponent } from './herocard/herocard.component';
 import { WidgetsModule } from 'web-app-framework';
 import { WorkloadsColumnComponent } from './table-columns/workloadscolumn.component';
+import { PsmNumberBoxComponent } from './form/inputcomponent/psmnumberbox/psmnumberbox.component';
+import { PsmTextBoxComponent } from './form/inputcomponent/psmtextbox/psmtextbox.component';
+import { PsmSelectBoxComponent } from './form/inputcomponent/psmselectbox/psmselectbox.component';
 import { PsmMultiSelectComponent } from './form/inputcomponent/psmmultiselectbox/psmmultiselectbox.component';
 import { PsmCalendarComponent } from './form/inputcomponent/psmcalendar/psmcalendar.component';
 import { ListContainerComponent } from './form/layout/listcontainer.component';
@@ -53,7 +56,7 @@ import { SyslogComponent } from './syslog/syslog.component';
 import { TelemetrychartComponent } from './telemetry/telemetrychart/telemetrychart.component';
 import { TelemetrycharteditComponent } from './telemetry/telemetrychart-edit/telemetrychartedit.component';
 import { TelemetrychartviewComponent } from './telemetry/telemetrychart-view/telemetrychartview.component';
-import {AlertIndicationBarComponent} from './alert-indication-bar/alert-indication-bar.component';
+import { AlertIndicationBarComponent } from './alert-indication-bar/alert-indication-bar.component';
 import { DscprofilesetterComponent } from './dscprofilesetter/dscprofilesetter.component';
 import { ExportLogsComponent } from './exportlogs/exportlogs.component';
 import { RrstatusComponent } from './rrstatus/rrstatus.component';
@@ -87,6 +90,9 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     FieldselectorComponent,
     HerocardComponent,
     WorkloadsColumnComponent,
+    PsmNumberBoxComponent,
+    PsmTextBoxComponent,
+    PsmSelectBoxComponent,
     PsmMultiSelectComponent,
     PsmCalendarComponent,
     ListContainerComponent,
@@ -138,6 +144,9 @@ import { RrstatusComponent } from './rrstatus/rrstatus.component';
     FieldselectorComponent,
     HerocardComponent,
     WorkloadsColumnComponent,
+    PsmNumberBoxComponent,
+    PsmTextBoxComponent,
+    PsmSelectBoxComponent,
     PsmMultiSelectComponent,
     PsmCalendarComponent,
     ListContainerComponent,

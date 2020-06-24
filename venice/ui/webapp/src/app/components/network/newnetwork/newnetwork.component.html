@@ -1,8 +1,5 @@
 <div fxFlex="auto" fxLayout="column" class="psm-form new-network-container">
-  <app-inlinebuttons class="new-network" *ngIf="isInline"
-                     [saveButtonClass]="computeFormSubmitButtonClass()"
-                     [saveTooltip]="getSubmitButtonToolTip()"
-                     (saveFunc)="editSaveObject()" (cancelFunc)="editCancelObject()">
+  <app-inlinebuttons class="new-network" *ngIf="isInline" [form]="this">
   </app-inlinebuttons>
   <div fxFlex="noshrink" fxLayout="column" fxLayoutAlign="start center"
        [class]="isInline? 'new-network-editform-inline' : ''">
@@ -15,19 +12,15 @@
 <ng-template #singleMode>
   <div fxFlex fxLayout="column" [formGroup]="newObject.$formGroup">
     <div fxFlex="nogrow" fxLayout="column" class="new-network-input-container">
-      <span formGroupName="meta"
-            [ngClass]="{requiredField: isFieldEmpty(newObject.$formGroup.get(['meta', 'name']))}">
-        <input fxFlex="nogrow" formControlName="name" class="new-network-input" appErrorTooltip
-               spellcheck="false" type="text"
-               pInputText appFloatLabel="Name">
-      </span>
+      <div fxFlex="nogrow" fxLayout="row" formGroupName="meta">
+        <app-psmtextbox fxFlex="300px" label="Name" formControlName="name">
+        </app-psmtextbox>
+      </div>
       <div fxFlex="15px"></div>
-      <span formGroupName="spec"
-            [ngClass]="{requiredField: isFieldEmpty(newObject.$formGroup.get(['spec', 'vlan-id']))}">
-        <input fxFlex="nogrow" formControlName="vlan-id" class="new-network-input" appErrorTooltip
-               spellcheck="false" type="number" min="0" max="4096"
-               pInputText appFloatLabel="VLAN">
-      </span>
+      <div fxFlex="nogrow" fxLayout="row" formGroupName="spec">
+        <app-psmnumberbox fxFlex="300px" label="VLAN" formControlName="vlan-id" min="0" max="4096">
+        </app-psmnumberbox>
+      </div>
     </div>
     <div fxFlex="15px"></div>
     <app-fieldcontainer fieldTitle="Orchestrators" class="new-network-orchestrators-container">
@@ -42,21 +35,15 @@
 </ng-template>
 
 <ng-template #vcenterRowTemplate let-orchestrator="item" let-index="index">
-  <div fxFlex="595px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
-    <span fxFlex="none" fxLayout="row" [ngClass]="{
-        'new-network-orchestrator-selectbox': true,
-        'requiredField': !isFieldEmpty(orchestrator.get(['namespace'])) && isFieldEmpty(orchestrator.get(['orchestrator-name']))
-    }">
-      <p-dropdown appFloatLabel="vCenter Name" appendTo="body" class="new-network-select"
-                  (onChange)="onVcenterChange(orchestrator)"
-                  [options]="vcenterOptions" formControlName="orchestrator-name">
-        <ng-template let-item pTemplate="item">
-          <span *ngIf="item.value">{{item.label}}</span>
-        </ng-template>
-      </p-dropdown>
-    </span>
-    <div fxFlex="15px"></div>
-    <app-psmmultiselectbox fxFlex="285px" label="Datacenter Names" formControlName="namespace"
+  <div fxFlex="585px" fxLayout="row" [formGroup]="orchestrator" fxLayoutAlign="start start">
+    <app-psmselectbox fxFlex="285px" label="vCenter Name"
+                      [addEmptyOption]="true" emptyOptionLabel="Select a vCenter"
+                      (change)="onVcenterChange(orchestrator)"
+                      [options]="vcenterOptions" formControlName="orchestrator-name">
+    </app-psmselectbox>
+    <div fxFlex="5px"></div>
+    <app-psmmultiselectbox
+                           fxFlex="285px" label="Datacenter Names" formControlName="namespace"
                            [showRequired]="!isFieldEmpty(orchestrator.get(['orchestrator-name']))"
                            [hintTooltip]="'Datacenter in the orchestrator in which this network should be created in. Type \'ALL\' for all datacenters.'"
                            [options]="orchestrator.datacenterOptions || []"

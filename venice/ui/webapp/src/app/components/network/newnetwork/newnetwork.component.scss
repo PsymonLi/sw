@@ -1,64 +1,19 @@
 @import "src/global-mixins";
 
-$horizontal-gutter: 10px;
-$vertical-gutter: 5px;
-$dary-grey: #a9a9a9;
-
 .new-network-container {
   background: white;
 
   .new-network-content {
-    margin-top: 4* $vertical-gutter;
+    margin: 20px 0px;
     @include primary-font();
-    width: 600px;
-    margin-bottom: 20px;
-
-    .new-network-input-container {
-      width: 300px;
-    }
-
-    .new-network-input,
-    .new-network-select {
-      width: 100%;
-      height: 30px;
-    }
-
-    .new-network-select {
-      input {
-        height: 28px;
-      }
-    }
 
     .new-network-orchestrators-container {
       width: 636px;
+      margin-left: 10px;
 
-      .new-network-radio-hidden {
-        visibility: hidden;
-      }
-
-      .new-network-radio-format {
-        margin-left: 5px;
-        @include global-mat-radio(12px);
+      app-psmselectbox {
         position: relative;
-        top: -10px;
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect {
-        border-color: rgb(214, 214, 214) !important;
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect-open {
-        border: solid 1px #6ba0e5 !important;
-        box-shadow: inset 5px 0 0 0 #6ba0e5 !important;
-      }
-
-      p-multiselect.ng-invalid .ui-multiselect-open .ui-multiselect-label {
-        box-shadow: inset 5px 0 0 0 #6ba0e5 !important;
-      }
-
-      .new-network-orchestrator-selectbox,
-      .new-network-orchestrator-inputbox {
-        width: 285px;
+        left: -10px;
       }
     }
   }

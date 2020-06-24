@@ -1,6 +1,7 @@
 .psm-form {
   .psm-form-multi-select-container {
     height: 30px;
+    width: calc(100% - 10px);
 
     .psm-form-multi-select-box {
       display: block;
@@ -22,6 +23,7 @@
 
         .ui-multiselect-label {
           box-shadow: inset 5px 0 0 0 #e57553 !important;
+          height: 28px;
           border-radius: 0px !important;
         }
       }

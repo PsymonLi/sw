@@ -1,8 +1,10 @@
 <div class="form-inlinebuttons-container" fxLayout="row" fxLayoutAlign="end start">
-  <div fxFlex="nogrow" class="button-container" [matTooltip]="saveTooltip"
+  <div fxFlex="nogrow" class="button-container"
+       [matTooltip]="form ? form.getSubmitButtonToolTip(): saveTooltip ? saveTooltip : ''"
        [matTooltipClass]="'form-inlinebuttons-tooltip'">
-    <span (click)="save()" [ngClass]="['global-button-primary', saveButtonClass ?
-        saveButtonClass : '', 'form-inlinebuttons-savebutton']">SAVE
+    <span (click)="save()"
+          [ngClass]="['global-button-primary', form ?
+      form.computeFormSubmitButtonClass() : saveButtonClass ? saveButtonClass : '', 'form-inlinebuttons-savebutton']">SAVE
     </span>
   </div>
   <div fxFlex="nogrow" class="button-container">

@@ -1,6 +1,6 @@
 <div fxLayout="row" fxLayoutAlign="start end">
   <div [class]="getIconSpanClasses()">*</div>
-  <div fxFlex="grow" [class]="getSpanClasses()">
+  <div [class]="getSpanClasses()">
     <p-multiSelect [id]="boxId" appendTo="body" [class]="getComponentClass()"
                    [options]="allOptions" [filter]="filter"
                    [showHeader]="showHeader"

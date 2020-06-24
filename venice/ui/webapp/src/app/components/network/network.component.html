@@ -101,6 +101,7 @@
     </div>
     <div *roleGuard="'networknetwork_update'" fxFlex="1 0 50%">
       <div *ngIf="dataObjects.length > 0" fxFlex="none" fxLayoutAlign="start center">
+        <!--
         <mat-icon [ngClass]="{
           'global-multi-records-delete-icon': true,
           'global-button-disabled': !hasSelectedRows()
@@ -116,6 +117,7 @@
                          [nameKey]="'meta.name'"
                          [objects]="getSelectedDataObjects()">
         </app-labeleditor>
+        -->
         <mat-icon [ngClass]="{
             'global-multi-records-delete-icon': true,
             'global-button-disabled': !hasSelectedRows()

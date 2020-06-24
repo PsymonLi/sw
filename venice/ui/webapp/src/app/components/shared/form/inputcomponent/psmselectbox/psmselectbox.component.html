@@ -1,0 +1,16 @@
+<div fxLayout="row" fxLayoutAlign="start end">
+  <div [class]="getIconSpanClasses()">*</div>
+  <div [class]="getSpanClasses()">
+    <p-dropdown [id]="boxId" appendTo="body" [class]="getComponentClass()"
+                [options]="allOptions" [disabled]="disabled" [matTooltip]="getTooltip()"
+                [matTooltipClass]="currentTooltipClass"
+                [(ngModel)]="innerValue" (onBlur)="onBoxBlur($event)"
+                (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
+                (ngModelChange)="onInnerCtrlChange()">
+      <ng-template let-item pTemplate="item">
+        <span *ngIf="item.value">{{item.label}}</span>
+      </ng-template>
+    </p-dropdown>
+    <label *ngIf="label" [for]="boxId">{{ label }}</label>
+  </div>
+</div>

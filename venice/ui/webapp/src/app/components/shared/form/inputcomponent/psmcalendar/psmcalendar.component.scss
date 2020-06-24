@@ -1,6 +1,7 @@
 .psm-form {
   .psm-form-calender-container {
     width: 100%;
+    width: calc(100% - 10px);
 
     .psm-form-calender-box {
       display: block;

@@ -111,6 +111,6 @@ export class PsmMultiSelectComponent extends FormInputComponent implements OnIni
         newVal.indexOf(this.allOption.value) > -1) {
       this.disableAllOtherOptions();
     }
-    return val;
+    return newVal;
   }
 }

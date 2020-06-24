@@ -1,0 +1,36 @@
+.psm-form {
+  .psm-form-text-box-container {
+    width: calc(100% - 10px);
+
+    &>label {
+      left: .75em;
+    }
+
+    &>input:focus~label,
+    &>input.ui-state-filled~label,
+    &>.ui-inputwrapper-focus~label,
+    &>.ui-inputwrapper-filled~label {
+      left: .25em;
+    }
+
+    .psm-form-text-box {
+      display: block;
+      width: 100%;
+      height: 30px;
+    }
+
+    &.psm-invalid-box {
+      input {
+        border: 1px solid #e57553 !important;
+      }
+
+      input.ui-inputtext:focus {
+        box-shadow: inset 5px 0 0 0 #e57553 !important;
+      }
+
+      .ui-state-filled~label {
+        color: #e57553 !important;
+      }
+    }
+  }
+}

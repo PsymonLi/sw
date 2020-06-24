@@ -103,7 +103,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
       this.existingObjectVlanId = ctrl.value;
     } else {
       this.addFieldValidator(ctrl, this.isVlanAlreadyUsed(this.existingObjects));
-      this.addFieldValidator(ctrl, minValueValidator(0));
     }
 
     // Add one collectors if it doesn't already have one
@@ -263,25 +262,6 @@ export class NewnetworkComponent extends CreationForm<INetworkNetwork, NetworkNe
     this.generateDCNamesOptions(orchestrator.value['orchestrator-name'], orchestrator as any);
     this.cdr.detectChanges();
   }
-
-  /*
-     When there is any NONE-ALL options selected, OPTION_ALL will be removed
-     When none is seleced, we set OPTION_ALL as default.
-  */
- onDatacenterOptionChange(event, orchestrator: FormGroup) {
-  const values = orchestrator.get('namespace').value;
-  if (values.length >= 1 && values.includes(this.ALL_DATACENTERS)) {
-    // When all is set, we untoggle everything else.
-    if (event.itemValue === this.ALL_DATACENTERS) {
-      orchestrator.get('namespace').setValue([this.ALL_DATACENTERS]);
-    } else {
-      const index = values.indexOf(this.ALL_DATACENTERS);
-      values.splice(index, 1);
-      orchestrator.get('namespace').setValue(values);
-    }
-  }
-}
-
 
   generateDCNamesOptions(vCenter: string, orchestratorObj: any): SelectItem[] {
     if (vCenter && this.vcenters && this.vcenters.length > 0) {

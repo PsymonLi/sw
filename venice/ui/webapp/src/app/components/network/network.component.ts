@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, ChangeDetectorRef, ViewChild, ChangeDetectionStrategy } from '@angular/core';
 import { Animations } from '@app/animations';
 import { Icon } from '@app/models/frontend/shared/icon.interface';
 import { IApiStatus, NetworkNetwork, INetworkNetwork, NetworkOrchestratorInfo } from '@sdk/v1/models/generated/network';
@@ -35,6 +35,7 @@ interface NetworkUIModel {
   encapsulation: ViewEncapsulation.None,
   templateUrl: './network.component.html',
   styleUrls: ['./network.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [Animations]
 })
 
@@ -98,7 +99,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
     { field: 'spec.vlan-id', header: 'VLAN', class: 'network-column-vlan', sortable: true, width: '80px'},
     { field: 'spec.orchestrators', header: 'Orchestrators', class: 'network-column-orchestrators', sortable: false, width: 35 },
     { field: 'associatedWorkloads', header: 'Workloads', class: '', sortable: false, width: 35 },
-    { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
+    // { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
     { field: 'meta.creation-time', header: 'Creation Time', class: 'vcenter-integration-column-date', sortable: true, width: '180px' }
   ];
 
@@ -126,10 +127,12 @@ export class NetworkComponent extends DataComponent implements OnInit {
           this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
         }
         this.tableLoading = false;
+        this.cdr.detectChanges();
       },
       (error) => {
         this.tableLoading = false;
         this.controllerService.invokeRESTErrorToaster('Error', 'Failed to get networks');
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(hostSubscription);
@@ -148,7 +151,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
             value: vcenter.meta.name
           };
         });
-        this.vcenterOptions.push({label: '', value: null});
+        this.cdr.detectChanges();
       },
       this.controllerService.webSocketErrorHandler('Failed to get vCenters')
     );
@@ -169,6 +172,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
         if (!this.networkTable.isShowRowExpand()) {
           this.dataObjects = Utility.getLodash().cloneDeepWith(this.dataObjectsBackup);
         }
+        this.cdr.detectChanges();
       }
     );
     this.subscriptions.push(workloadSubscription);
@@ -181,7 +185,7 @@ export class NetworkComponent extends DataComponent implements OnInit {
         cssClass: 'global-button-primary networks-button networks-button-ADD',
         text: 'ADD NETWORK',
         computeClass: () =>  !(this.networkTable.showRowExpand) ? '' : 'global-button-disabled',
-        callback: () => { this.networkTable.createNewObject(); }
+        callback: () => { this.networkTable.createNewObject(); this.cdr.detectChanges(); }
       }];
     }
     this.controllerService.setToolbarData({
