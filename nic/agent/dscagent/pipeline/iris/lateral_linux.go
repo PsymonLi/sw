@@ -404,12 +404,23 @@ func resolveIPAddress(ctx context.Context, destIP, gwIP string) string {
 				return ""
 			}
 
-			// Pick the first route. Dest IP in not in the local subnet. Use GW IP as the destIP for ARP'ing
-			if routes[0].Gw == nil {
-				log.Errorf("Default gateway not configured for destIP %s.", destIP)
+			mgmtIP := utils.GetMgmtIP(MgmtLink)
+			// Pick the first route sourced at mgmt IP.
+			// Dest IP in not in the local subnet. Use GW IP as the destIP for ARP'ing
+			for _, r := range routes {
+				if r.Src == nil || r.Gw == nil {
+					continue
+				}
+				if r.Src.String() != mgmtIP {
+					continue
+				}
+				gwIP = r.Gw.String()
+				break
+			}
+			if gwIP == "" {
+				log.Errorf("Default gateway not configured for destIP on bond0. Routes %v destIP:%v mgmtIP: %v.", routes, destIP, mgmtIP)
 				return ""
 			}
-			gwIP = routes[0].Gw.String()
 		}
 		log.Infof("Dest IP %s not in management subnet %v. Using Gateway IP: %v  as destIP for ARPing...", destIP, mgmtSubnet, gwIP)
 		// Update destIP to be GwIP
