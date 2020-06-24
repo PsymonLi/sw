@@ -1,0 +1,36 @@
+# Feature learn endpoints
+
+feature:
+    id          : learn
+    sub         : ipv4
+    package     : test.learn
+    module      : learn_ipv4
+    runorder    : 60
+    enable      : True
+    ignore      : False
+
+modules:
+
+    - module:
+        name    : LEARN_MAC_IP_WITH_ICMP
+        spec    : learn_ipv4.testspec
+        args    :
+            - proto: ICMP
+        iterate :
+            - flow : filter://FlType=MAPPING,FwdMode=L2,Label=NETWORKING
+
+    - module:
+        name    : LEARN_MAC_IP_WITH_TCP
+        spec    : learn_ipv4.testspec
+        args    :
+            - proto: TCP
+        iterate :
+            - flow : filter://FlType=MAPPING,FwdMode=L2,Label=NETWORKING
+
+    - module:
+        name    : LEARN_MAC_IP_WITH_UDP
+        spec    : learn_ipv4.testspec
+        args    :
+            - proto: UDP
+        iterate :
+            - flow : filter://FlType=MAPPING,FwdMode=L2,Label=NETWORKING
