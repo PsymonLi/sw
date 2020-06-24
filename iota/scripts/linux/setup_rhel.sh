@@ -6,6 +6,7 @@ os_version=`awk -F= '$1=="VERSION_ID" { print $2 ;}' /etc/os-release | sed -e 's
 if [ "$1" = "register" ]; then
 	# register and add repos
 	/usr/sbin/subscription-manager register --username rhel@pensando.io --password N0isystem$ --auto-attach
+	/usr/sbin/subscription-manager attach --pool=8a85f99c707807c80170843dd71c7775
 	
 	# for RHEL 7	
         if [[ $os_version == *"7"* ]]; then
@@ -23,7 +24,7 @@ if [ "$1" = "register" ]; then
 		easy_install pip
 		pip install pyyaml
 
-		yum install -y rh-python3
+		yum install -y python3
 		pip3 install --upgrade pip
 		pip3 install pyyaml
 
