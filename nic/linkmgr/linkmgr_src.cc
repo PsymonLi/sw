@@ -46,6 +46,16 @@ namespace linkmgr {
 class linkmgr_state    *g_linkmgr_state;
 ::utils::log           *linkmgr_logger;
 
+typedef struct port_quiesce_walk_cb_ctxt_s {
+    bool err;
+    port_quiesce_async_response_cb_t response_cb;
+    uint32_t req_count;
+} port_quiesce_walk_cb_ctxt_t;
+
+// TODO : right now port walk is multiple requests.
+// when it is a single request, can remove this variable
+static port_quiesce_walk_cb_ctxt_t g_port_quiesce_walk_ctxt;
+
 sdk::lib::thread *
 current_thread (void)
 {
@@ -1474,6 +1484,62 @@ hal_ret_t
 mac_stats_update (void)
 {
     return port_get_all(NULL, NULL);
+}
+
+static void
+port_quiesce_response_cb (void *ctxt, sdk_ret_t status)
+{
+    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
+
+    SDK_TRACE_DEBUG("[upgrade] port_quiesce_response_cb, req_count %u, "
+                    "resp_cb %p", ctx->req_count, ctx->response_cb);
+    SDK_ASSERT(ctx->req_count);
+    ctx->req_count--;
+    if (status != SDK_RET_OK) {
+        ctx->err = true;
+    }
+    if ((ctx->req_count == 0) && (ctx->response_cb)) {
+       ctx->response_cb(ctx->err ? SDK_RET_ERR : SDK_RET_OK);
+       ctx->response_cb = NULL;
+    }
+}
+
+static void
+port_quiesce_walk_cb (port_args_t *port_args, void *ctxt, hal_ret_t hal_ret)
+{
+    port_t *pi_p;
+    port_quiesce_walk_cb_ctxt_t *ctx = (port_quiesce_walk_cb_ctxt_t *)ctxt;
+    sdk_ret_t ret;
+
+    if (hal_ret != HAL_RET_OK) {
+        return;
+    }
+    pi_p = find_port_by_id(port_args->port_num);
+    if (pi_p == NULL) {
+        return;
+    }
+    ctx->req_count++;
+    ret = sdk::linkmgr::port_quiesce(pi_p->pd_p, port_quiesce_response_cb, ctx);
+    if (ret != SDK_RET_OK) {
+        ctx->err = true;
+    }
+    return;
+}
+
+sdk_ret_t
+port_quiesce_all (port_quiesce_async_response_cb_t response_cb)
+{
+    port_quiesce_walk_cb_ctxt_t *ctx = &g_port_quiesce_walk_ctxt;
+
+    ctx->response_cb = response_cb;
+    ctx->err = false;
+    ctx->req_count = 0;
+    port_get_all(port_quiesce_walk_cb, ctx);
+    if (ctx->err) {
+        ctx->response_cb = NULL;
+        return SDK_RET_ERR;
+    }
+    return SDK_RET_IN_PROGRESS;
 }
 
 hal_ret_t

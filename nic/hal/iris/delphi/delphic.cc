@@ -203,5 +203,14 @@ end:
     return rsp.rsp_ret;
 }
 
+void
+send_upg_stage_status (delphic_upg_id_t upg_id, bool status)
+{
+    if (!g_delphic) {
+        return;
+    }
+    g_delphic->send_upg_stage_status(upg_id, status);
+}
+
 }    // namespace svc
 }    // namespace hal

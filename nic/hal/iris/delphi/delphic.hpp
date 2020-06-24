@@ -44,6 +44,8 @@ private:
 std::shared_ptr<delphi_client> delphic(void);
 
 sdk_ret_t micro_seg_mode_notify(MicroSegMode mode);
+void send_upg_stage_status(delphic_upg_id_t upg_id, bool status);
+
 }    // namespace svc
 }    // namespace hal
 

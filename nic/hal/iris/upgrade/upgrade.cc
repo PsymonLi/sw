@@ -11,6 +11,7 @@
 #include "nic/hal/plugins/cfg/lif/lif.hpp"
 #include "nic/hal/src/internal/system.hpp"
 #include "nic/hal/iris/upgrade/upg_ipc.hpp"
+#include "nic/hal/iris/delphi/delphic.hpp"
 
 using namespace sdk::asic::pd;
 
@@ -33,6 +34,16 @@ upgrade_handler::CompatCheckHandler(UpgCtx& upgCtx)
     HAL_TRACE_DEBUG("[upgrade] Handling compat checks msg ... preVer {} postVer {}", preVer, postVer);
 
     return HdlrResp(::upgrade::SUCCESS, empty_str);
+}
+
+static void
+port_quiesce_response_cb (sdk_ret_t ret)
+{
+    if (ret != SDK_RET_OK) {
+        HAL_TRACE_DEBUG("[upgrade] Port quiesce failed, err {}", ret);
+    }
+    hal::svc::send_upg_stage_status(DELPHIC_UPG_ID_HAL, ret == SDK_RET_OK? true : false);
+    return;
 }
 
 //------------------------------------------------------------------------------
@@ -58,25 +69,17 @@ upgrade_handler::LinkDownHandler (UpgCtx& upgCtx)
         }
     }
 
+    HAL_TRACE_DEBUG("Quiescing down all uplink ports");
     // disable all uplink ports
     // - as part of this delphi notifications will be sent out per port
-    ret = linkmgr::port_disable(0);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_DEBUG("[upgrade] Port disable failed, err {}", ret);
-        rsp = HdlrResp(::upgrade::FAIL, HAL_RET_ENTRIES_str(ret));
-        goto err;
-    }
-
     // flush PB/TM for all uplinks
-    sdk_ret = asicpd_tm_enable_disable_uplink_port(false, TM_PORT_UPLINK_ALL);
-    ret = hal_sdk_ret_to_hal_ret(sdk_ret);
-    if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("[upgrade] Unable to flush PB for uplinks. err: {}", ret);
-        rsp = HdlrResp(::upgrade::FAIL, HAL_RET_ENTRIES_str(ret));
+    sdk_ret = linkmgr::port_quiesce_all(port_quiesce_response_cb);
+    if ((sdk_ret != SDK_RET_OK) && (sdk_ret != SDK_RET_IN_PROGRESS)) {
+        HAL_TRACE_ERR("[upgrade]  Port quiesce failed, err {}", sdk_ret);
+        rsp = HdlrResp(::upgrade::FAIL, SDK_RET_ENTRIES_str(sdk_ret));
         goto err;
     }
-
-    rsp = HdlrResp(::upgrade::SUCCESS, empty_str);
+    rsp.resp = ::upgrade::INPROGRESS;
 err:
     return rsp;
 }
