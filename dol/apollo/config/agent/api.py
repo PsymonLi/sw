@@ -74,7 +74,7 @@ SOCK_BUF_LEN = 1024 * 1024
 
 class AgentPorts(enum.IntEnum):
     NONE = 0
-    NMDREST = 8888
+    REVPROXY = 8888
     PDSAGENT = 11357
     UPGRADE  = 11358
     OPERD = 11359
@@ -193,7 +193,7 @@ class ClientResponseModule:
 
 class ClientRESTModule:
     def __init__(self, ip, uri):
-        self.url = f"https://{ip}:{AgentPorts.NMDREST.value}{uri}"
+        self.url = f"https://{ip}:{AgentPorts.REVPROXY.value}{uri}"
         return
 
     def Create(self, objs):
@@ -507,11 +507,34 @@ class PdsAgentClient(AgentClientBase):
             self.RestReqs = [None] * ObjectTypes.MAX
             self.__create_restreq_table()
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            if not self.IsReverseProxyUp():
+                assert (0), f"Failed to connect to reverse proxy at {self.IPAddr}:{AgentPorts.REVPROXY.value}"
 
         if (os.environ.get("USE_UDS", None)):
             self.Transport = Transport.UDS
             self.CreateMsgRespTable()
         return
+
+    def IsReverseProxyUp(self):
+        if GlobalOptions.dryrun: return True
+        retry = urllib3.util.retry.Retry(connect=6, backoff_factor=1)
+        revProxy = f"RevProxy-{self.IPAddr}:{AgentPorts.REVPROXY.value}"
+        c = urllib3.HTTPSConnectionPool(self.IPAddr, port=AgentPorts.REVPROXY.value,
+                                        cert_reqs='CERT_NONE', retries=retry)
+        try:
+            logger.info(f"Connecting to {revProxy}")
+            r = c.request('GET', '/api/v1/naples/')
+        except:
+            logger.error(f"Error establishing https connection to {revProxy}")
+            return False
+        if r.status != HTTPStatus.OK:
+            logger.error(f"Error in https connection to {revProxy}, status:{r.status}{r.reason}")
+            return False
+        # wait for netagent to be up
+        # TODO: connect to 9050 once we have netagent client but only for DOL
+        time.sleep(60)
+        logger.info(f"Connected to {revProxy}")
+        return True
 
     def GetAgentPort(self):
         try:
@@ -753,7 +776,7 @@ class PdsAgentClient(AgentClientBase):
 
     def GetRestURL(self):
         if not GlobalOptions.netagent: return None
-        return f"https://{self.IPAddr}:{AgentPorts.NMDREST.value}"
+        return f"https://{self.IPAddr}:{AgentPorts.REVPROXY.value}"
 
     def Start(self, objtype, obj):
         if GlobalOptions.dryrun: return

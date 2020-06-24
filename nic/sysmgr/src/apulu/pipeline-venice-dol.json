@@ -4,7 +4,7 @@
         "command": "pciemgrd -d",
         "dependencies": [],
         "flags": ["critical"],
-        "timeout": 30.0,
+        "timeout": 0.0,
         "cpu-affinity": "0x3"
     },
     {
