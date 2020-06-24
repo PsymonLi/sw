@@ -132,10 +132,9 @@ func (objTracker *smObjectTracker) updateNodeVersion(nodeuuid, generationID stri
 
 	update := false
 
-	_, ok := objTracker.nodeVersions[nodeuuid]
+	currentVersion, ok := objTracker.nodeVersions[nodeuuid]
 	//Update only if entry found or gen ID matches
-	//some objects could be sent my memdb/topo based on triggers/events
-	if ok || objTracker.generationID == generationID {
+	if ok && objTracker.generationID == generationID && currentVersion != generationID {
 		objTracker.nodeVersions[nodeuuid] = generationID
 		update = true
 	}

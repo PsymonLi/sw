@@ -193,13 +193,6 @@ func checkLLDPNeighborUpdate(netif *network.LLDPNeighbor, agentNetif *netproto.L
 		netif.PortDescription != agentNetif.PortDescription ||
 		netif.MgmtAddress != agentNetif.MgmtAddress {
 
-		// change in LLDP neighbor info
-		netif.ChassisID = agentNetif.ChassisID
-		netif.SysName = agentNetif.SysName
-		netif.SysDescription = agentNetif.SysDescription
-		netif.PortID = agentNetif.PortID
-		netif.PortDescription = agentNetif.PortDescription
-		netif.MgmtAddress = agentNetif.MgmtAddress
 		return true
 	}
 	return false
@@ -221,7 +214,6 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 	opStatus := strings.ToUpper(agentNetif.Status.OperStatus)
 	if obj.NetworkInterfaceState.Status.OperStatus != opStatus {
 		log.Infof("Updating network interface state %v : %v", agentNetif.Name, opStatus)
-		obj.NetworkInterfaceState.Status.OperStatus = opStatus
 		update = true
 	}
 
@@ -231,8 +223,10 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 			update = true
 		}
 	}
+	if update {
+		obj.NetworkInterfaceState.NetworkInterface = *(convertNetifObj(nodeID, agentNetif))
+	}
 	obj.NetworkInterfaceState.Unlock()
-
 	if update == false {
 		return nil
 	}

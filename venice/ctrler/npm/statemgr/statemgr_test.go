@@ -4624,7 +4624,7 @@ func TestMirrorCreateDeleteWithNetworkInterface(t *testing.T) {
 		for _, intf := range intfs {
 			log.Infof("Mirror sessions %v ", len(intf.mirrorSessions))
 			Assert(t, len(intf.mirrorSessions) == 1, "Number of mirror sesiosn don't match")
-			_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 			Assert(t, ok, "Mirror sessions not present")
 			Assert(t, len(intf.mirrorSessions) != 0, "Mirror sessions not cleared")
 		}
@@ -4648,7 +4648,7 @@ func TestMirrorCreateDeleteWithNetworkInterface(t *testing.T) {
 
 			log.Infof("Mirror sessions %v ", len(intf.mirrorSessions))
 			Assert(t, len(intf.mirrorSessions) == 0, "Number of mirror sesiosn don't match")
-			Assert(t, len(smgrMirrorInterface.mirrorSessions) == 0, "Number of mirror sesiosn don't match")
+			Assert(t, len(smgrMirrorInterface.getAllInterfaceMirrorSessions()) == 0, "Number of mirror sesiosn don't match")
 			Assert(t, len(intf.mirrorSessions) == 0, "Mirror sessions not cleared")
 
 		}
@@ -4728,7 +4728,7 @@ func TestMirrorCreateDeleteSameCollectorDifferentMirrors(t *testing.T) {
 		for _, intf := range intfs {
 			log.Infof("Num %v ", len(intf.mirrorSessions))
 			Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-			_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 			Assert(t, ok, "Collector not present")
 		}
 
@@ -4749,9 +4749,9 @@ func TestMirrorCreateDeleteSameCollectorDifferentMirrors(t *testing.T) {
 
 		for _, intf := range intfs {
 			Assert(t, len(intf.mirrorSessions) == 2, "Number of collectors don't match")
-			_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 			Assert(t, ok, "Collector not present")
-			_, ok = smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[1]]
+			_, ok = smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[1])
 			Assert(t, ok, "Collector not present")
 		}
 
@@ -4772,7 +4772,7 @@ func TestMirrorCreateDeleteSameCollectorDifferentMirrors(t *testing.T) {
 
 		for _, intf := range intfs {
 			Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-			_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 			Assert(t, ok, "Collector not present")
 			Assert(t, len(intf.mirrorSessions) == 1, "Mirror sessions not cleared")
 		}
@@ -4872,7 +4872,7 @@ func TestMirrorCreateUpdateLabelWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -4989,7 +4989,7 @@ func TestMirrorCreateRemoveLabelWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5108,7 +5108,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5198,7 +5198,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5312,7 +5312,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterfaceWithDirection(t *testin
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5334,7 +5334,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterfaceWithDirection(t *testin
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5453,7 +5453,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterfaceWithDirection2(t *testi
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5475,7 +5475,7 @@ func TestMirrorCreateUpdateCollectorsWithNetworkInterfaceWithDirection2(t *testi
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5613,7 +5613,7 @@ func TestMirrorCreateUpdateLaterLabelWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5727,7 +5727,7 @@ func TestMirrorCreateUpdateLabelCollectorsWithNetworkInterface(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5767,7 +5767,7 @@ func TestMirrorCreateUpdateLabelCollectorsWithNetworkInterface(t *testing.T) {
 	//label2 collectors need to be addeded
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5886,7 +5886,7 @@ func TestMirrorCreateUpdateLabelCollectorsWithNetworkInterfaceSame(t *testing.T)
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5918,7 +5918,7 @@ func TestMirrorCreateUpdateLabelCollectorsWithNetworkInterfaceSame(t *testing.T)
 	//label2 collectors need to be addeded
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -5929,7 +5929,7 @@ func TestMirrorCreateUpdateLabelCollectorsWithNetworkInterfaceSame(t *testing.T)
 	//label2 collectors need to be addeded
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -6058,7 +6058,7 @@ func TestNetworkInterfaceUpdateLabelWithMirror(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -6172,7 +6172,7 @@ func TestNetworkInterfaceUpdateLabelSwapWithMirror(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 		log.Infof("Mirror session name %v", intf.mirrorSessions)
 		Assert(t, intf.mirrorSessions[0] == "default/default/"+mirrorSesssion.Name, "Mirror session name did not match")
@@ -6187,7 +6187,7 @@ func TestNetworkInterfaceUpdateLabelSwapWithMirror(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 		Assert(t, intf.mirrorSessions[0] == "default/default/"+mirrorSesssion1.Name, "Mirror session name did not match")
 	}
@@ -6215,7 +6215,7 @@ func TestNetworkInterfaceUpdateLabelSwapWithMirror(t *testing.T) {
 	//label2 has not collectors yet
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 		Assert(t, intf.mirrorSessions[0] == "default/default/"+mirrorSesssion1.Name, "Mirror session name did not match")
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"default/default/" + mirrorSesssion1.Name})
@@ -6250,7 +6250,7 @@ func TestNetworkInterfaceUpdateLabelSwapWithMirror(t *testing.T) {
 	//label2 has not collectors yet
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 		Assert(t, intf.mirrorSessions[0] == "default/default/"+mirrorSesssion1.Name, "Mirror session name did not match")
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"default/default/" + mirrorSesssion1.Name})
@@ -6262,7 +6262,7 @@ func TestNetworkInterfaceUpdateLabelSwapWithMirror(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 		log.Infof("Mirror session name %v %v", intf.mirrorSessions[0], mirrorSesssion.Name)
 		Assert(t, intf.mirrorSessions[0] == "default/default/"+mirrorSesssion.Name, "Mirror session name did not match")
@@ -6537,7 +6537,7 @@ func TestWatcherWithMirrorCreateDelete(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -6701,7 +6701,7 @@ func TestWatcherWithMirrorCreateUpdate(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -6935,7 +6935,7 @@ func TestWatcherWithMirrorCreateDeleteBeforeWatcherJoin(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -7099,7 +7099,7 @@ func TestWatcherWithMirrorCreateDeleteMultipleTimes(t *testing.T) {
 
 		for _, intf := range intfs {
 			Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-			_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+			_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 			Assert(t, ok, "Collector not present")
 		}
 
@@ -7253,7 +7253,7 @@ func TestWatcherWithMirrorCreateFakeUpdate(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -7490,7 +7490,7 @@ func TestWatcherWithMirrorCreateUpdateDelete(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -7715,7 +7715,7 @@ func TestWatcherWithMirrorCreateUpdateCollector(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -7879,7 +7879,7 @@ func TestWatcherWithMirrorRemoveLabel(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -8029,7 +8029,7 @@ func TestWatcherWithMirrorCreateUpdateRemoveCollector(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -8251,7 +8251,7 @@ func TestWatcherWithMirrorCreateUpdateWithDirection(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 
 		stringSliceEqual(intf.NetworkInterfaceState.Status.MirroSessions, []string{"testMirror"})
@@ -8514,7 +8514,7 @@ func TestWatcherWithMirrorCreateUpdateDeleteDifferentInterfaces(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 
@@ -8695,7 +8695,7 @@ func TestMirror(t *testing.T) {
 
 	for _, intf := range intfs {
 		Assert(t, len(intf.mirrorSessions) == 1, "Number of collectors don't match")
-		_, ok := smgrMirrorInterface.mirrorSessions[intf.mirrorSessions[0]]
+		_, ok := smgrMirrorInterface.mirrorSessions.Load(intf.mirrorSessions[0])
 		Assert(t, ok, "Collector not present")
 	}
 

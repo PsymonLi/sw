@@ -5,6 +5,7 @@ package statemgr
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -464,7 +465,7 @@ func (smm *SmMirrorSessionInterface) FindMirrorSession(tenant, name string) (*Mi
 type SmMirrorSessionInterface struct {
 	featureMgrBase
 	sm                 *Statemgr
-	mirrorSessions     map[string]*MirrorSessionState
+	mirrorSessions     *sync.Map
 	mirrorTimerWatcher chan MirrorTimerEvent // mirror session Timer watcher
 	numMirrorSessions  int                   // total mirror sessions created
 	dscMirrorSessions  map[string]*[]*dscMirrorSession
@@ -489,10 +490,10 @@ func initSmMirrorInterface() {
 	mgr := MustGetStatemgr()
 	smgrMirrorInterface = &SmMirrorSessionInterface{
 		sm:                 mgr,
-		mirrorSessions:     make(map[string]*MirrorSessionState),
 		dscMirrorSessions:  make(map[string]*[]*dscMirrorSession),
 		mirrorTimerWatcher: make(chan MirrorTimerEvent, watcherQueueLen),
 	}
+	smgrMirrorInterface.mirrorSessions = new(sync.Map)
 	mgr.Register("statemgrmirrorSession", smgrMirrorInterface)
 }
 
@@ -594,27 +595,30 @@ func (smm *SmMirrorSessionInterface) addMirror(ms *MirrorSessionState) error {
 
 //AddMirrorSession add mirror session
 func (smm *SmMirrorSessionInterface) addMirrorSession(ms *MirrorSessionState) error {
-	smm.mirrorSessions[ms.MirrorSession.GetKey()] = ms
+	smm.mirrorSessions.Store(ms.MirrorSession.GetKey(), ms)
 	return nil
 }
 
 //deleteMirrorSession delete mirror session
 func (smm *SmMirrorSessionInterface) deleteMirrorSession(ms *MirrorSessionState) error {
-	delete(smm.mirrorSessions, ms.MirrorSession.GetKey())
+	smm.mirrorSessions.Delete(ms.MirrorSession.GetKey())
 	return nil
 }
 
 func (smm *SmMirrorSessionInterface) getAllInterfaceMirrorSessions() []*interfaceMirrorSelector {
 
 	intfMirrors := []*interfaceMirrorSelector{}
-	for _, ms := range smm.mirrorSessions {
+
+	smm.mirrorSessions.Range(func(key interface{}, item interface{}) bool {
+		ms := item.(*MirrorSessionState)
 		mirror, err := MirrorSessionStateFromObj(ms.MirrorSession)
 		if err != nil {
 			log.Errorf("Error finding mirror object for delete %v", err)
-			continue
+			return true
 		}
+
 		if mirror.markedForDelete || ms.MirrorSession.MirrorSession.Spec.Interfaces == nil {
-			continue
+			return true
 		}
 
 		intfMirrors = append(intfMirrors, &interfaceMirrorSelector{
@@ -622,7 +626,8 @@ func (smm *SmMirrorSessionInterface) getAllInterfaceMirrorSessions() []*interfac
 			intfMirrorSession: &ms.intfMirrorSession,
 			mirrorSession:     interfaceMirrorSessionKey(ms),
 		})
-	}
+		return true
+	})
 
 	return intfMirrors
 }
