@@ -19,6 +19,8 @@ elif [ $LinkMgrTest = "40Gb" ]; then
 	sshpass -p lab123 ssh -o StrictHostKeyChecking=no diag@192.168.69.245 "$LinkMgrTestScript -s $LinkMgrTestPath/setup_3_40G_only.json -t 103 -v $LinkMgrTestPath/$FW.tar"
 elif [ $LinkMgrTest = "25Gb" ]; then
 	sshpass -p lab123 ssh -o StrictHostKeyChecking=no diag@192.168.69.245 "$LinkMgrTestScript -s $LinkMgrTestPath/setup_6_10-25G_hpe.json -t 103 -v $LinkMgrTestPath/$FW.tar"
+elif [ $LinkMgrTest = "25Gb_mtp3" ]; then
+        sshpass -p lab123 ssh -o StrictHostKeyChecking=no diag@192.168.69.245 "$LinkMgrTestScript -s $LinkMgrTestPath/setup_10_10G-25G_mtplm3.json -t 103 -v $LinkMgrTestPath/$FW.tar"
 elif [ $LinkMgrTest = "100Gb_vomero" ]; then
 	sshpass -p lab123 ssh -o StrictHostKeyChecking=no diag@192.168.69.245 "$LinkMgrTestScript -s $LinkMgrTestPath/setup_4_100g_vomero.json -t 103 -v $LinkMgrTestPath/$FW.tar"
 fi

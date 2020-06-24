@@ -23,6 +23,15 @@ targets:
     build-dependencies:
      - build-iris-arm
 
+  linkmgr-25-mtp3:
+    commands: ["sh", "-c", "make linkmgr-25-mtp3"]
+    owners: ["email:avinash@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+     - build-iris-arm
+
   linkmgr-25:
     commands: ["sh", "-c", "make linkmgr-25"]
     owners: ["email:avinash@pensando.io"]
