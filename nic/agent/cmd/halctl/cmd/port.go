@@ -615,18 +615,18 @@ func portXcvrShowResp(resp *halproto.PortGetResponse) {
 	lengthOm2 := int(xcvrSprom[16])
 	lengthOm1 := int(xcvrSprom[17])
 	lengthDac := int(xcvrSprom[18])
-	vendorName := string(xcvrSprom[20:35])
-	vendorPn := string(xcvrSprom[40:55])
-	vendorSn := string(xcvrSprom[68:83])
+	vendorName := string(xcvrSprom[20:36])
+	vendorPn := string(xcvrSprom[40:56])
+	vendorSn := string(xcvrSprom[68:84])
 
 	if strings.Contains(xcvrPid.String(), "QSFP") {
 		// convert from units of 2m to meters
 		lengthOm3 = int(xcvrSprom[15]) * 2
 
-		vendorRev = string(xcvrSprom[56:57])
+		vendorRev = string(xcvrSprom[56:58])
 	} else {
 		lengthOm3 = int(xcvrSprom[19])
-		vendorRev = string(xcvrSprom[56:59])
+		vendorRev = string(xcvrSprom[56:60])
 
 		// convert from units of 10m to meters
 		lengthOm1 *= 10
