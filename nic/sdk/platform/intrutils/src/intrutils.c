@@ -3,11 +3,14 @@
  */
 
 #include <stddef.h>
+#include <assert.h>
 #include <sys/param.h>
 
 #include "platform/pal/include/pal.h"
 #include "platform/intrutils/include/intrutils.h"
 #include "intrutilspd.h"
+
+#define INTR_COUNT              ASIC_(INTR_CSR_DHS_INTR_ASSERT_ENTRY_ARRAY_COUNT)
 
 #define INTR_MSIXCFG_OFFSET     ASIC_(INTR_CSR_DHS_INTR_MSIXCFG_BYTE_OFFSET)
 #define INTR_MSIXCFG_BASE       (INTR_BASE + INTR_MSIXCFG_OFFSET)
@@ -36,9 +39,16 @@
 
 #define NWORDS(a)               (sizeof(a) / sizeof(u_int32_t))
 
+unsigned int
+intr_count(void)
+{
+    return INTR_COUNT;
+}
+
 u_int64_t
 intr_msixcfg_addr(const int intrb)
 {
+    assert(intrb < INTR_COUNT);
     return INTR_MSIXCFG_BASE + (intrb * INTR_MSIXCFG_STRIDE);
 }
 
@@ -51,12 +61,14 @@ intr_msixcfg_size(const int intrc)
 u_int64_t
 intr_fwcfg_addr(const int intrb)
 {
+    assert(intrb < INTR_COUNT);
     return INTR_FWCFG_BASE + (intrb * INTR_FWCFG_STRIDE);
 }
 
 u_int64_t
 intr_drvcfg_addr(const int intrb)
 {
+    assert(intrb < INTR_COUNT);
     return INTR_DRVCFG_BASE + (intrb * INTR_DRVCFG_STRIDE);
 }
 
@@ -69,6 +81,7 @@ intr_drvcfg_size(const int intrc)
 u_int64_t
 intr_assert_addr(const int intr)
 {
+    assert(intr < INTR_COUNT);
     return INTR_ASSERT_BASE + (intr * INTR_ASSERT_STRIDE);
 }
 
@@ -99,6 +112,7 @@ intr_pba_size(const int intrc)
 u_int64_t
 intr_state_addr(const int intr)
 {
+    assert(intr < INTR_COUNT);
     return INTR_STATE_BASE + (intr * INTR_STATE_STRIDE);
 }
 

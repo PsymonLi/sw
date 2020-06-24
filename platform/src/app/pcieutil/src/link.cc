@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Pensando Systems Inc.
+ * Copyright (c) 2018-2020, Pensando Systems Inc.
  */
 
 #include <stdio.h>
@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
+#include <sys/time.h>
 #include <cinttypes>
 
 #include "nic/sdk/platform/pal/include/pal.h"
@@ -16,6 +17,15 @@
 #include "cmd.h"
 #include "utils.hpp"
 #include "pcieutilpd.h"
+
+static struct timeval tv;
+
+static inline uint64_t
+lgettimestamp(void)
+{
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
 static const char *
 ltssm_str(const unsigned int ltssm)
@@ -71,6 +81,7 @@ static void
 linkpoll(int argc, char *argv[])
 {
     struct linkstate {
+        unsigned int perstni:1;
         unsigned int perstn:1;
         unsigned int phystatus:1;
         unsigned int portgate:1;
@@ -82,21 +93,27 @@ linkpoll(int argc, char *argv[])
         unsigned int fifo_wr:8;
         int gen;
         int width;
+        u_int8_t recovery;
     } ostbuf, *ost = &ostbuf, nstbuf, *nst = &nstbuf, *tst;
-    u_int64_t otm, ntm, starttm, totaltm;
-    int port, polltm_us, opt, showall;
-    char genGxW_str[16];
+    u_int64_t otm, ntm, starttm, totaltm, pa;
+    int port, polltm_us, opt, showall, showfifos;
+    char genGxW_str[16], fifo_str[16];
+    struct tm *tm;
 
     port = default_pcieport();
     polltm_us = 0;
     totaltm = 0;
     showall = 0;
+    showfifos = 0;
 
     optind = 0;
-    while ((opt = getopt(argc, argv, "ap:t:T:")) != -1) {
+    while ((opt = getopt(argc, argv, "afp:t:T:")) != -1) {
         switch (opt) {
         case 'a':
             showall = 1;
+            break;
+        case 'f':
+            showfifos = 1;
             break;
         case 'p':
             port = strtoul(optarg, NULL, 0);
@@ -114,26 +131,34 @@ linkpoll(int argc, char *argv[])
         }
     }
 
-    printf("              perstn (pcie refclk good)\n");
-    printf("              |phystatus (phy out of reset)\n");
-    printf("              ||ltssm_en (link training ready)\n");
-    printf("              |||portgate_open (traffic can flow)\n");
-    printf("              ||||cfg_retry off (cfg transactions allowed)\n");
-    printf("              |||||                 reversed lanes\n");
-    printf("              |||||  fifo           |\n");
-    printf(" +time (sec)  Pplgr  rd/wr  genGxW  r ltssm\n");
+    const int w = 38;
+    printf("%*s perstn_dn2up_interrupt\n", w, "");
+    printf("%*s |perstn (pcie refclk good)\n", w, "");
+    printf("%*s ||phystatus (phy out of reset)\n", w, "");
+    printf("%*s |||ltssm_en (link training ready)\n", w, "");
+    printf("%*s ||||portgate_open (traffic can flow)\n", w, "");
+    printf("%*s |||||cfg_retry off (cfg trans allowed)\n", w, "");
+    printf("%*s |||||| core-recov%s reversed lanes\n", w, "",
+           showfifos ? "        " : "");
+    printf("%*s |||||| |%s          |\n", w, "",
+           showfifos ? "    fifo" : "");
+    printf("[yyyyddmm-hh:mm:ss.usecs  +time (sec)] "
+           "IPplgr ---%s genGxW r ltssm\n",
+           showfifos ? "  rd/wr " : "");
 
     memset(ost, 0, sizeof(*ost));
     memset(nst, 0, sizeof(*nst));
+    fifo_str[0] = '\0';
     otm = 0;
     ntm = 0;
-    starttm = gettimestamp();
+    starttm = lgettimestamp();
     while (1) {
         const u_int32_t sta_rst = pal_reg_rd32(PXC_(STA_C_PORT_RST, port));
         const u_int32_t sta_mac = pal_reg_rd32(PXC_(STA_C_PORT_MAC, port));
         const u_int32_t cfg_mac = pal_reg_rd32(PXC_(CFG_C_PORT_MAC, port));
-        u_int16_t portfifo[8], depths;
+        const u_int32_t int_pp  = pal_reg_rd32(PP_(INT_PP_INTREG, port));
 
+        nst->perstni = (int_pp & PP_INTREG_PERSTN(port)) != 0;
         nst->perstn = (sta_rst & STA_RSTF_(PERSTN)) != 0;
         nst->phystatus = (sta_rst & STA_RSTF_(PHYSTATUS_OR)) != 0;
         nst->portgate = (sta_mac & STA_C_PORT_MACF_(PORTGATE_OPEN)) != 0;
@@ -146,27 +171,30 @@ linkpoll(int argc, char *argv[])
         // (this is not perfect, still racy)
         if (pcieport_is_accessible(port)) {
             portcfg_read_genwidth(port, &nst->gen, &nst->width);
-            snprintf(genGxW_str, sizeof(genGxW_str),
-                     "gen%dx%-2d", nst->gen, nst->width);
             nst->reversed = pcieport_get_mac_lanes_reversed(port);
+            pa = PXP_(SAT_P_PORT_CNT_CORE_INITIATED_RECOVERY, port);
+            nst->recovery = pal_reg_rd32(pa);
         } else {
             nst->gen = 0;
             nst->width = 0;
-            genGxW_str[0] = '\0';
             nst->reversed = 0;
+            nst->recovery = 0;
         }
 
+        if (showfifos) {
+            u_int16_t portfifo[8], depths;
 #ifdef ASIC_CAPRI
-        // XXX ELBA-TODO - make pcieport_portfifo_depth()
-        pal_reg_rd32w(PXB_(STA_ITR_PORTFIFO_DEPTH), (u_int32_t *)portfifo, 4);
-        depths = portfifo[port];
+            // XXX ELBA-TODO - make pcieport_portfifo_depth()
+            pa = PXB_(STA_ITR_PORTFIFO_DEPTH);
+            pal_reg_rd32w(pa, (u_int32_t *)portfifo, 4);
+            depths = portfifo[port];
 #else
-        portfifo[0] = 0;
-        depths = portfifo[0];
+            portfifo[0] = 0;
+            depths = portfifo[0];
 #endif
-
-        nst->fifo_wr = depths;
-        nst->fifo_rd = depths >> 8;
+            nst->fifo_wr = depths;
+            nst->fifo_rd = depths >> 8;
+        }
 
         /* fold small depths to 0's */
         if (!showall && nst->fifo_wr <= 2) nst->fifo_wr = 0;
@@ -176,20 +204,37 @@ linkpoll(int argc, char *argv[])
         if (!showall && nst->ltssm_st == 1) nst->ltssm_st = 0;
 
         if (memcmp(nst, ost, sizeof(*nst)) != 0) {
-            ntm = gettimestamp();
+            ntm = lgettimestamp();
             if (otm == 0) otm = ntm;
 
-            printf("[+%010.6lf] %c%c%c%c%c %3u/%-3u %-7s %c 0x%02x %s\n",
+            if (nst->gen || nst->width) {
+                snprintf(genGxW_str, sizeof(genGxW_str), "gen%dx%-2d%c",
+                         nst->gen, nst->width, nst->reversed ? 'r' : ' ');
+            } else {
+                genGxW_str[0] = '\0';
+            }
+
+            if (showfifos) {
+                snprintf(fifo_str, sizeof(fifo_str), " %3u/%-3u",
+                         nst->fifo_rd, nst->fifo_wr);
+            }
+
+            tm = localtime(&tv.tv_sec);
+            printf("[%04d%02d%02d-%02d:%02d:%02d.%06ld +%010.6lf] "
+                   "%c%c%c%c%c%c %-3d%s %-8s 0x%02x %s\n",
+                   tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                   tm->tm_hour, tm->tm_min, tm->tm_sec,
+                   tv.tv_usec,
                    (ntm - otm) / 1000000.0,
+                   nst->perstni         ? 'I' : '-',
                    nst->perstn          ? 'P' : '-',
                    nst->phystatus == 0  ? 'p' :'-',
                    nst->ltssm_en        ? 'l' : '-',
                    nst->portgate        ? 'g' : '-',
                    nst->crs == 0        ? 'r' : '-',
-                   nst->fifo_rd,
-                   nst->fifo_wr,
+                   nst->recovery,
+                   fifo_str,
                    genGxW_str,
-                   nst->reversed ? 'r' : ' ',
                    nst->ltssm_st,
                    ltssm_str(nst->ltssm_st));
 
@@ -200,9 +245,14 @@ linkpoll(int argc, char *argv[])
         }
 
         if (totaltm) {
-            u_int64_t nowtm = gettimestamp();
+            u_int64_t nowtm = lgettimestamp();
             if (nowtm - starttm >= totaltm) {
-                printf("[+%010.6lf] stop after %" PRId64 " seconds\n",
+                tm = localtime(&tv.tv_sec);
+                printf("[%04d%02d%02d-%02d:%02d:%02d.%06ld +%010.6lf] "
+                       "stop after %" PRId64 " seconds\n",
+                       tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+                       tm->tm_hour, tm->tm_min, tm->tm_sec,
+                       tv.tv_usec,
                        (nowtm - otm) / 1000000.0, totaltm / 1000000);
                 break;
             }
@@ -212,8 +262,9 @@ linkpoll(int argc, char *argv[])
 }
 CMDFUNC(linkpoll,
 "poll pcie link state",
-"linkpoll [-a][-p <port>][-t <polltm>][-T <runtime>\n"
+"linkpoll [-af][-p <port>][-t <polltm>][-T <runtime>\n"
 "    -a             show all state changes (default ignores small changes)\n"
+"    -f             include rd/wr fifos (default off)\n"
 "    -p <port>      poll port <port> (default port 0)\n"
 "    -t <polltm>    <polltm> microseconds between poll events (default 0)\n"
 "    -T <runtime>   run for <runtime> seconds, then exit\n"

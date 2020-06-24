@@ -241,6 +241,9 @@ server_loop(pciemgrenv_t *pme)
 
     pciesys_loginfo("pciemgrd started\n");
 
+    // create pciemgr_if service
+    pciemgrs_open(NULL, pciemgr_msg_cb);
+
 #ifdef IRIS
 #ifdef __aarch64__
     // connect to delphi
@@ -279,7 +282,6 @@ server_loop(pciemgrenv_t *pme)
     upg_ev_init();
 #endif
 
-    pciemgrs_open(NULL, pciemgr_msg_cb);
     pciesys_loginfo("pciemgrd ready\n");
     evutil_run(EV_DEFAULT);
     /* NOTREACHED */
@@ -290,6 +292,7 @@ server_loop(pciemgrenv_t *pme)
  close_port_error_out:
     close_hostports();
  error_out:
+    pciemgrs_close();
     pciesys_loginfo("pciemgrd exit %d\n", r);
     return r;
 }

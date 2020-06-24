@@ -74,6 +74,7 @@ u_int32_t intr_pba_size(const int intrc);
 /*
  * Interrupt resource configuration/initialization.
  */
+unsigned int intr_count(void);
 void
 intr_drvcfg(const int intr,
             const int mask, const int coal_init, const int mask_on_assert);

@@ -24,7 +24,7 @@
 #include <sys/io.h>
 #endif
 
-enum { SPACEMEM, SPACEIO };
+enum { SPACEMEM, SPACEIO, SPACECFG };
 enum { DIRRD, DIRWR };
 
 typedef struct req {
@@ -32,6 +32,7 @@ typedef struct req {
     size_t size;
     int space;
     int dir;
+    int bdf;
     char **wvals;
     int nwvals;
 } req_t;
@@ -42,13 +43,14 @@ static void
 usage(void)
 {
     fprintf(stderr,
-            "Usage: physmem [-1248bhldi] <addr> [<write-val> ...]\n"
-            "    -b|1   byte (1-byte) access\n"
-            "    -h|2   half-word (2-byte) access\n"
-            "    -l|4   word (4-byte) access (default)\n"
-            "    -d|8   double-word (8-byte) access\n"
-            "    -i     iospace access\n"
-            "    -m     memory space access (default)\n");
+"Usage: physmem [-1248bhldi][-c bb:dd.f] <addr> [<write-val> ...]\n"
+"    -b|1       byte (1-byte) access\n"
+"    -h|2       half-word (2-byte) access\n"
+"    -l|4       word (4-byte) access (default)\n"
+"    -d|8       double-word (8-byte) access\n"
+"    -c bb:dd.f cfgspace access device bb:dd.f\n"
+"    -i         iospace access\n"
+"    -m         memory space access (default)\n");
 }
 
 static void
@@ -219,6 +221,45 @@ do_ioreq(req_t *req)
     }
 }
 
+static u_int64_t mmconfig_base = 0x40000000;
+
+static u_int64_t mmconfig_addr(const int bdf)
+{
+    /* base + bdf * 4096 */
+    return mmconfig_base + (bdf << 12);
+}
+
+static void
+do_cfgreq(req_t *cfgreq)
+{
+    req_t memreq;
+
+    memset(&memreq, 0, sizeof(memreq));
+    memreq.space = SPACEMEM;
+    memreq.dir = cfgreq->dir;
+    memreq.size = cfgreq->size;
+    memreq.addr = mmconfig_addr(cfgreq->bdf) + cfgreq->addr;
+    memreq.wvals = cfgreq->wvals;
+    memreq.nwvals = cfgreq->nwvals;
+
+    do_memreq(&memreq);
+}
+
+static inline int
+bdf_make(const int b, const int d, const int f)
+{
+    return ((b & 0xff) << 8) | ((d & 0x1f) << 3) | (f & 0x7);
+}
+
+static inline int
+bdf_from_str(const char *bdfstr)
+{
+    int b, d, f;
+    int n = sscanf(bdfstr, "%02x:%02x.%d", &b, &d, &f);
+    if (n != 3) return -1;
+    return bdf_make(b, d, f);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -230,7 +271,7 @@ main(int argc, char *argv[])
     req.dir = DIRRD;
     req.size = 4;
 
-    while ((opt = getopt(argc, argv, "1248bhldim")) != -1) {
+    while ((opt = getopt(argc, argv, "1248bhldc:im")) != -1) {
         switch (opt) {
         case '1':
         case 'b':
@@ -247,6 +288,14 @@ main(int argc, char *argv[])
         case '8':
         case 'd':
             req.size = 8;
+            break;
+        case 'c':
+            req.space = SPACECFG;
+            req.bdf = bdf_from_str(optarg);
+            if (req.bdf < 0) {
+                usage();
+                exit(1);
+            }
             break;
         case 'i':
             req.space = SPACEIO;
@@ -276,10 +325,11 @@ main(int argc, char *argv[])
 
     page_size_init();
 
-    if (req.space == SPACEMEM) {
-        do_memreq(&req);
-    } else {
-        do_ioreq(&req);
+    switch (req.space) {
+    case SPACEMEM: do_memreq(&req); break;
+    case SPACEIO:  do_ioreq(&req); break;
+    case SPACECFG: do_cfgreq(&req); break;
+    default: usage(); exit(3); break;
     }
 
     exit(0);

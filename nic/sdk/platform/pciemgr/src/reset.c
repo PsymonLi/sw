@@ -38,7 +38,10 @@ pciehw_reset_lifs_event(pciehwdev_t *phwdev,
 static void
 pciehw_reset_event(pciehwdev_t *phwdev, const pciehdev_rsttype_t rsttype)
 {
-    pciehw_reset_lifs_event(phwdev, phwdev->lifb, phwdev->lifc, rsttype);
+    /* skip bridges, no lif so no reset event */
+    if (phwdev->lifc) {
+        pciehw_reset_lifs_event(phwdev, phwdev->lifb, phwdev->lifc, rsttype);
+    }
 }
 
 static void

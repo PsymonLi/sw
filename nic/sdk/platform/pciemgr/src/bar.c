@@ -179,6 +179,7 @@ pciehw_barrw_notify(const pciehdev_event_t evtype,
                     const tlpauxinfo_t *info,
                     const pciehw_spmt_t *spmt)
 {
+    const pciehwbar_t *phwbar = pciehw_bar_get(phwdev, spmt->cfgidx);
     pciehdev_eventdata_t evd;
     pciehdev_memrw_notify_t *memrw;
 
@@ -189,7 +190,7 @@ pciehw_barrw_notify(const pciehdev_event_t evtype,
     memrw = &evd.memrw_notify;
     memrw->baraddr = stlp->addr;
     memrw->cfgidx = spmt->cfgidx;
-    memrw->baroffset = stlp->addr - pmt_bar_getaddr(&spmt->pmt);
+    memrw->baroffset = stlp->addr - phwbar->addr;
     memrw->size = stlp->size;
     memrw->localpa = info->direct_addr;
     memrw->data = stlp->data; /* data, if write */
