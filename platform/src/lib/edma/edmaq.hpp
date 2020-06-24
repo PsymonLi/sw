@@ -10,10 +10,10 @@
 
 #include "nic/include/edmaq.h"
 #include "nic/sdk/platform/evutils/include/evutils.h"
+#include "nic/sdk/platform/utils/program.hpp"
 
-#include "pd_client.hpp"
-#include "pal_compat.hpp"
-#include "nicmgr_utils.hpp"
+using namespace sdk::lib;
+using namespace sdk::platform::utils;
 
 #define EDMAQ_COMP_POLL_S           (0.001) // 1 ms
 #define EDMAQ_COMP_TIMEOUT_S        (0.01)  // 10 ms
@@ -31,13 +31,17 @@ class EdmaQ {
 public:
     EdmaQ(
         const char *name,
-        PdClient *pd,
         uint16_t lif,
-        uint8_t qtype, uint32_t qid, uint16_t ring_size,
+        uint8_t qtype,
+        uint32_t qid,
+        uint64_t ring_base,
+        uint64_t comp_base,
+        uint16_t ring_size,
         EV_P
     );
 
-    bool Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB);
+    bool Init(sdk::platform::utils::program_info *pinfo, uint64_t qstate_ptr, uint8_t cos_sel,
+        uint8_t cosA, uint8_t cosB);
     bool Reset();
     bool Debug(bool enable);
 
@@ -48,19 +52,19 @@ public:
 
 private:
     const char *name;
-    PdClient *pd;
     bool init;
 
     uint16_t lif;
     uint8_t qtype;
     uint32_t qid;
-    uint16_t ring_size;
 
     uint16_t head;
     uint16_t tail;
+    uint64_t qstate_addr;
     uint64_t ring_base;
-    uint16_t comp_tail;
     uint64_t comp_base;
+    uint16_t ring_size;
+    uint16_t comp_tail;
     uint8_t exp_color;
 
     struct edmaq_ctx *pending;

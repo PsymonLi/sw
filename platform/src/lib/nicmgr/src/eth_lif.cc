@@ -13,6 +13,7 @@
 
 #include "nic/include/edmaq.h"
 #include "nic/p4/common/defines.h"
+#include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/include/sdk/eth.hpp"
 #include "nic/sdk/platform/intrutils/include/intrutils.h"
@@ -492,15 +493,17 @@ EthLif::LifConfigStatusMem(bool mem_clr) {
     NIC_LOG_INFO("{}: lif_status_addr {:#x}", hal_lif_info_.name, lif_status_addr);
 }
 
-void
+status_code_t
 EthLif::LifQInit(bool mem_clr) {
+    uint64_t ring_base; 
+    uint64_t comp_base; 
     // NotifyQ
     notify_ring_base =
         pd->nicmgr_mem_alloc(4096 + (sizeof(union ionic_notifyq_comp) *
                                      ETH_NOTIFYQ_RING_SIZE));
     if (notify_ring_base == 0) {
         NIC_LOG_ERR("{}: Failed to allocate notify ring!", hal_lif_info_.name);
-        throw;
+        return (IONIC_RC_ENOMEM);
     }
 
     if (mem_clr) {
@@ -514,7 +517,7 @@ EthLif::LifQInit(bool mem_clr) {
     edma_buf_addr = pd->nicmgr_mem_alloc(4096);
     if (edma_buf_addr == 0) {
         NIC_LOG_ERR("{}: Failed to allocate edma buffer!", hal_lif_info_.name);
-        throw;
+        return (IONIC_RC_ENOMEM);
     }
 
     NIC_LOG_INFO("{}: edma_buf_addr {:#x}", hal_lif_info_.name, edma_buf_addr);
@@ -522,22 +525,52 @@ EthLif::LifQInit(bool mem_clr) {
     edma_buf = (uint8_t *)MEM_MAP(edma_buf_addr, 4096, 0);
     if (edma_buf == NULL) {
         NIC_LOG_ERR("{}: Failed to map edma buffer", hal_lif_info_.name);
-        throw;
+        return (IONIC_RC_ENOMEM);
     }
 
-    edmaq = new EdmaQ(hal_lif_info_.name, pd, hal_lif_info_.lif_id,
-                      ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
-                      ETH_EDMAQ_RING_SIZE, EV_A);
+    ring_base = pd->nicmgr_mem_alloc((sizeof(struct edma_cmd_desc) * ETH_EDMAQ_RING_SIZE));
+    if (ring_base == 0) {
+        NIC_LOG_ERR("{}: Failed to allocate edma async ring!", hal_lif_info_.name);
+        return (IONIC_RC_ENOMEM);
+    }
+    MEM_CLR(ring_base, 0, (sizeof(struct edma_cmd_desc) * ETH_EDMAQ_RING_SIZE));
 
-    edmaq_async = new EdmaQ(hal_lif_info_.name, pd, hal_lif_info_.lif_id,
+    comp_base = pd->nicmgr_mem_alloc((sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE));
+    if (comp_base == 0) {
+        NIC_LOG_ERR("{}: Failed to allocate edma async ring!", hal_lif_info_.name);
+        return (IONIC_RC_ENOMEM);
+    }
+
+    MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE)); 
+    
+    edmaq = new EdmaQ(hal_lif_info_.name, hal_lif_info_.lif_id,
+                      ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
+                      ring_base, comp_base, ETH_EDMAQ_RING_SIZE, EV_A);
+
+    ring_base = pd->nicmgr_mem_alloc((sizeof(struct edma_cmd_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
+    if (ring_base == 0) {
+        NIC_LOG_ERR("{}: Failed to allocate edma async ring!", hal_lif_info_.name);
+        return (IONIC_RC_ENOMEM);
+    }
+    MEM_CLR(ring_base, 0, (sizeof(struct edma_cmd_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
+   
+    comp_base = pd->nicmgr_mem_alloc((sizeof(struct edma_comp_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
+    if (comp_base == 0) {
+        NIC_LOG_ERR("{}: Failed to allocate edma async completion ring!", hal_lif_info_.name);
+        return (IONIC_RC_ENOMEM);
+    }
+    MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
+    edmaq_async = new EdmaQ(hal_lif_info_.name, hal_lif_info_.lif_id,
                             ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID,
-                            ETH_EDMAQ_ASYNC_RING_SIZE, EV_A);
+                            ring_base, comp_base, ETH_EDMAQ_ASYNC_RING_SIZE, EV_A);
 
     // AdminQ
     adminq =
         new AdminQ(hal_lif_info_.name, pd, hal_lif_info_.lif_id, ETH_ADMINQ_REQ_QTYPE,
                    ETH_ADMINQ_REQ_QID, ETH_ADMINQ_REQ_RING_SIZE, ETH_ADMINQ_RESP_QTYPE,
                    ETH_ADMINQ_RESP_QID, ETH_ADMINQ_RESP_RING_SIZE, AdminCmdHandler, this, EV_A);
+
+    return (IONIC_RC_SUCCESS);
 }
 
 void
@@ -596,7 +629,6 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     uint64_t addr;
     struct ionic_lif_init_cmd *cmd = (struct ionic_lif_init_cmd *)req;
     enum eth_lif_state pre_state;
-
     NIC_LOG_DEBUG("{}: LIF_INIT", hal_lif_info_.name);
 
     if (lif_pstate->state == LIF_STATE_CREATING) {
@@ -756,12 +788,22 @@ EthLif::CmdInit(void *req, void *req_data, void *resp, void *resp_data)
     MEM_SET(notify_ring_base, 0, 4096 + (sizeof(union ionic_notifyq_comp) * ETH_NOTIFYQ_RING_SIZE), 0);
 
     // Initialize EDMA service
-    if (!edmaq->Init(0, admin_cosA, admin_cosB)) {
+    addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID);
+    if (addr < 0) {
+        NIC_LOG_ERR("{}: Failed to get qstate address for edma queue", hal_lif_info_.name);
+        return (IONIC_RC_ERROR);
+    }
+    if (!edmaq->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
         NIC_LOG_ERR("{}: Failed to initialize EdmaQ service", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }
 
-    if (!edmaq_async->Init(0, admin_cosA, admin_cosB)) {
+    addr = pd->lm_->get_lif_qstate_addr(hal_lif_info_.lif_id, ETH_EDMAQ_ASYNC_QTYPE, ETH_EDMAQ_ASYNC_QID);
+    if (addr < 0) {
+        NIC_LOG_ERR("{}: Failed to get qstate address for edma async queue", hal_lif_info_.name);
+        return (IONIC_RC_ERROR);
+    }
+    if (!edmaq_async->Init(pd->pinfo_, addr, 0, admin_cosA, admin_cosB)) {
         NIC_LOG_ERR("{}: Failed to initialize EdmaQ Async service", hal_lif_info_.name);
         return (IONIC_RC_ERROR);
     }

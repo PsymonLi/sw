@@ -3,54 +3,57 @@
 */
 
 #include "edmaq.hpp"
-#include "logger.hpp"
-
+#include "spdlog/spdlog.h"
+#include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
+#include "nic/sdk/asic/pd/db.hpp"
 #include "nic/sdk/asic/common/asic_common.hpp"
+#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_qstate.hpp"
+#include "nic/sdk/platform/pal/include/pal_mem.h"
+#include "nic/sdk/lib/pal/pal.hpp"
+
+#define MEM_SET(pa, val, sz, flags) { \
+    uint8_t v = val; \
+    for (size_t i = 0; i < sz; i += sizeof(v)) { \
+        sdk::lib::pal_mem_write(pa + i, &v, sizeof(v)); \
+    } \
+}
+#define MEM_CLR(pa, va, sz) { \
+        MEM_SET(pa, 0, sz, 0); \
+}
 
 EdmaQ::EdmaQ(
     const char *name,
-    PdClient *pd,
     uint16_t lif,
-    uint8_t qtype, uint32_t qid, uint16_t ring_size, EV_P
+    uint8_t qtype,
+    uint32_t qid,
+    uint64_t ring_base,
+    uint64_t comp_base,
+    uint16_t ring_size, EV_P
 ) :
     name(name),
-    pd(pd),
     lif(lif),
-    qtype(qtype), qid(qid), ring_size(ring_size)
+    qtype(qtype),
+    qid(qid),
+    ring_base(ring_base),
+    comp_base(comp_base),
+    ring_size(ring_size)
 {
     this->loop = loop;
 
+    SDK_TRACE_INFO("%s: edma_ring_base 0x%lx edma_comp_base 0x%lx ring_size 0x%x",
+        name, ring_base, comp_base, ring_size);
     if (ring_size & (ring_size - 1)) {
-        NIC_LOG_ERR("{}: Ring size has to be power of 2", name);
+        SDK_TRACE_ERR("%s: Ring size has to be power of 2", name);
         throw;
     }
 
     head = 0;
     tail = 0;
-    ring_base = pd->nicmgr_mem_alloc((sizeof(struct edma_cmd_desc) * ring_size));
-    if (ring_base == 0) {
-        NIC_LOG_ERR("{}: Failed to allocate edma ring!", name);
-        throw;
-    }
-
-    // clear ring base before lif init to avoid garbage values
-    // and unexpected driver behaviour
-    MEM_CLR(ring_base, 0, (sizeof(struct edma_cmd_desc) * ring_size));
-
     comp_tail = 0;
     exp_color = 1;
-    comp_base = pd->nicmgr_mem_alloc((sizeof(struct edma_comp_desc) * ring_size));
-    if (comp_base == 0) {
-        NIC_LOG_ERR("{}: Failed to allocate edma completion ring!", name);
-        throw;
-    }
-
-    // clear comp base before lif init to avoid garbage values
-    // and unexpected driver behaviour
-    MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ring_size));
-
-    NIC_LOG_INFO("{}: edma_ring_base {:#x} edma_comp_base {:#x}",
+    SDK_TRACE_INFO("%s: edma_ring_base 0x%lx edma_comp_base 0x%lx",
         name, ring_base, comp_base);
 
     pending = (struct edmaq_ctx *)calloc(1, sizeof(struct edmaq_ctx) * ring_size);
@@ -59,7 +62,8 @@ EdmaQ::EdmaQ(
 }
 
 bool
-EdmaQ::Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
+EdmaQ::Init(sdk::platform::utils::program_info *pinfo, uint64_t qstate_ptr, uint8_t cos_sel,
+    uint8_t cosA, uint8_t cosB)
 {
     edma_qstate_t qstate = {0};
 
@@ -68,27 +72,21 @@ EdmaQ::Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
     comp_tail = 0;
     exp_color = 1;
 
-    NIC_LOG_INFO("{}: Initializing edmaq lif {} qtype {} qid {}",
+    // Init the edmaq instance field
+    qstate_addr = qstate_ptr;
+ 
+    SDK_TRACE_INFO("%s: Initializing edmaq lif 0x%x qtype %d qid 0x%x",
         name, lif, qtype, qid);
 
     // Init rings
     MEM_SET(ring_base, 0, (sizeof(struct edma_cmd_desc) * ring_size), 0);
     MEM_SET(comp_base, 0, (sizeof(struct edma_comp_desc) * ring_size), 0);
-
-    // Init Qstate
-    uint64_t addr = pd->lm_->get_lif_qstate_addr(lif, qtype, qid);
-    if (addr < 0) {
-        NIC_LOG_ERR("{}: Failed to get qstate address for edma queue",
-            name);
-        return false;
-    }
-
-    NIC_LOG_DEBUG("{}: Initializing edma qstate {:#x}", name, addr);
+    SDK_TRACE_INFO("%s: Initializing edma qstate 0x%lx", name, qstate_addr);
 
     uint8_t off;
-    if (pd->get_pc_offset("txdma_stage0.bin", "edma_stage0", &off, NULL) < 0) {
-        NIC_LOG_ERR("Failed to get PC offset of program: txdma_stage0.bin label: edma_stage0");
-        return false;
+    if (sdk::asic::get_pc_offset(pinfo, "txdma_stage0.bin", "edma_stage0", &off) < 0) {
+        SDK_TRACE_DEBUG("Failed to get PC offset of program: txdma_stage0.bin label: edma_stage0"); 
+       return false;
     }
     qstate.pc_offset = off;
     qstate.cos_sel = cos_sel;
@@ -107,10 +105,10 @@ EdmaQ::Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
     qstate.cq_ring_base = comp_base;
     qstate.cfg.intr_enable = 0;
     qstate.intr_assert_index = 0;
-    WRITE_MEM(addr, (uint8_t *)&qstate, sizeof(qstate), 0);
+    sdk::lib::pal_mem_write(qstate_addr, (uint8_t *)&qstate, sizeof(qstate), 0);
 
     PAL_barrier();
-    sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(edma_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
+    sdk::asic::pd::asicpd_p4plus_invalidate_cache(qstate_addr, sizeof(edma_qstate_t), P4PLUS_CACHE_INVALIDATE_TXDMA);
 
     init = true;
 
@@ -120,24 +118,15 @@ EdmaQ::Init(uint8_t cos_sel, uint8_t cosA, uint8_t cosB)
 bool
 EdmaQ::Reset()
 {
-    uint64_t addr;
     uint64_t db_data;
     asic_db_addr_t db_addr = { 0 };
+    uint64_t addr = qstate_addr;
 
-    NIC_LOG_INFO("{}: Resetting edmaq lif {} qtype {} qid {}",
+    SDK_TRACE_INFO("%s: Resetting edmaq lif 0x%x qtype %d qid 0x%x",
         name, lif, qtype, qid);
 
     if (!init)
         return true;
-
-    addr = pd->lm_->get_lif_qstate_addr(lif, qtype, qid);
-    if (addr < 0) {
-        NIC_LOG_ERR("{}: Failed to get qstate address for edma queue",
-            name);
-        return false;
-    }
-    NIC_LOG_DEBUG("{}: Resetting edma qstate {:#x}", name, addr);
-
     MEM_SET(addr, 0, fldsiz(edma_qstate_t, pc_offset), 0);
     PAL_barrier();
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(edma_qstate_t),
@@ -160,18 +149,12 @@ bool
 EdmaQ::Debug(bool enable)
 {
     struct edma_cfg_qstate cfg = {0};
+    uint64_t addr = qstate_addr;
 
-    uint64_t addr = pd->lm_->get_lif_qstate_addr(lif, qtype, qid);
-    if (addr < 0) {
-        NIC_LOG_ERR("{}: Failed to get qstate address for edma queue",
-            name);
-        return false;
-    }
-
-    READ_MEM(addr + offsetof(struct edma_qstate, cfg),
+    sdk::lib::pal_mem_read(addr + offsetof(struct edma_qstate, cfg),
         (uint8_t *)&cfg, sizeof(cfg), 0);
     cfg.debug = enable;
-    WRITE_MEM(addr + offsetof(struct edma_qstate, cfg),
+    sdk::lib::pal_mem_write(addr + offsetof(struct edma_qstate, cfg),
         (uint8_t *)&cfg, sizeof(cfg), 0);
 
     sdk::asic::pd::asicpd_p4plus_invalidate_cache(addr, sizeof(edma_qstate_t),
@@ -218,7 +201,7 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
             /* Blocking wait for completion above should have made space in the ring.
                So we should not hit the following condition at all */
             if (ring_full(head, tail, ring_size)) {
-                NIC_LOG_ERR("{}: EDMA queue full head {} tail {}", name, head, tail);
+                SDK_TRACE_ERR("%s: EDMA queue full head %d tail %d", name, head, tail);
                 return false;
             }
         }
@@ -239,7 +222,7 @@ EdmaQ::Post(edma_opcode opcode, uint64_t from, uint64_t to, uint16_t size,
         cmd.src_addr = from + offset;
         cmd.dst_lif = lif;
         cmd.dst_addr = to + offset;
-        WRITE_MEM(addr, (uint8_t *)&cmd, sizeof(struct edma_cmd_desc), 0);
+        sdk::lib::pal_mem_write(addr, (uint8_t *)&cmd, sizeof(struct edma_cmd_desc), 0);
         head = (head + 1) % ring_size;
 
         offset += transfer_sz;
@@ -281,7 +264,7 @@ EdmaQ::Poll()
     ev_tstamp now = ev_now(EV_A);
     bool timeout = (pending[tail].deadline < now);
 
-    READ_MEM(addr, (uint8_t *)&comp, sizeof(struct edma_comp_desc), 0);
+    sdk::lib::pal_mem_read(addr, (uint8_t *)&comp, sizeof(struct edma_comp_desc), 0);
     if (comp.color == exp_color || timeout) {
         if (pending[tail].cb) {
             pending[tail].cb(pending[tail].obj);

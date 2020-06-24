@@ -304,7 +304,7 @@ private:
     void Create();
 
     void LifConfigStatusMem(bool mem_clr);
-    void LifQInit(bool mem_clr);
+    status_code_t LifQInit(bool mem_clr);
     void QinfoInit(void);
     void FwBufferInit(void);
     void LifStatsInit();

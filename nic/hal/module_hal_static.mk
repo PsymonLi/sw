@@ -79,6 +79,7 @@ MODULE_ARLIBS	= \
 	mnet \
 	nat \
 	nicmgr \
+	edma \
 	eth_p4plus \
 	nicmgr_iris \
 	nicmgrproto \

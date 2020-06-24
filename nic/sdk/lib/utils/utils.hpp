@@ -14,6 +14,10 @@ namespace lib {
 
 #define NUM_BITS_IN_BYTE  8
 
+/* Size of the field in the structure. */
+#define fldsiz(type, field) \
+	(sizeof(((type *)0)->field))
+
 static inline uint16_t
 count_bits_set (uint64_t mask)
 {

@@ -13,9 +13,6 @@
 #define	fldoff(type, field) \
 	((int)&(((type *)0)->field))
 
-/* Size of the field in the structure. */
-#define	fldsiz(type, field) \
-	(sizeof(((type *)0)->field))
 
 /* Address of the structure from a field. */
 #define	strbase(type, addr, field) \

@@ -4,6 +4,7 @@
 
 #include "adminq.hpp"
 #include "logger.hpp"
+#include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
 

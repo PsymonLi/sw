@@ -79,6 +79,7 @@ copy_files() {
     pack_apollo+='platform/src/lib/pciemgr_if platform/drivers platform/drivers/common platform/src/lib/nicmgr '
     pack_apollo+='platform/src/lib/eth_p4plus '
     pack_apollo+='platform/src/lib/rdmamgr_apollo '
+    pack_apollo+='platform/src/lib/edma '
 
     protobuf=" "
     metaswitch=" "
@@ -201,7 +202,7 @@ remove_files() {
 
 save_files() {
     # Mention the .so to be saved and restored'
-    files='libsdkcapri_csrint.so libnicmgr_'$pipeline'.so libpciemgr_if.so librdmamgr_apollo.so pdsctl.gobin libeth_p4plus.so '
+    files='libsdkcapri_csrint.so libnicmgr_'$pipeline'.so libpciemgr_if.so librdmamgr_apollo.so pdsctl.gobin libeth_p4plus.so libedma_'$pipeline'.so'
 
     # Platform includes used by nicmgr
     platform_inc='pciemgr_if/include/pciemgr_if.hpp '
