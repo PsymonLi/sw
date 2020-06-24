@@ -281,7 +281,7 @@ cpld_clear_enable_interrupt(uint8_t interrupt)
     // Clear
     cpld_reg = cpld_reg_rd_retry(CPLD_REGISTER_INTERRUPT_ENABLE);
     if (cpld_reg < 0) {
-        cpldmon_exit("Error reading cpld interrupt enable register", ret);
+        cpldmon_exit("Error reading cpld interrupt enable register", cpld_reg);
     } else {
         regval = cpld_reg & ~interrupt;
         ret = cpld_reg_wr_retry(CPLD_REGISTER_INTERRUPT_ENABLE, regval);
@@ -306,7 +306,7 @@ cpld_clear_enable_extended_interrupt(uint8_t interrupt)
     // Clear
     cpld_reg = cpld_reg_rd_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE);
     if (cpld_reg < 0) {
-        cpldmon_exit("Error reading cpld extended interrupt enable register", ret);
+        cpldmon_exit("Error reading cpld extended interrupt enable register", cpld_reg);
     } else {
         regval = cpld_reg & ~interrupt;
         ret = cpld_reg_wr_retry(CPLD_REGISTER_EXT_INTERRUPT_ENABLE, regval);
@@ -408,14 +408,16 @@ get_card_power(float *power)
     FILE *fd;
 
     fd = fopen(POWER, "r");
-    if (fd < 0) {
+    if (!fd) {
         CLOG_INFO("Error opening sysfs hwmon1/power1_input ({})", -errno);
         return -1;
     }
     if (fscanf(fd, "%lu", &power_milliwatts) < 0) {
         CLOG_INFO("Error reading sysfs hwmon1/power1_input ({})", -errno);
+        fclose(fd);
         return -1;
     }
+    fclose(fd);
     *power = (float)power_milliwatts/1000000.0;
     return 0;
 }
