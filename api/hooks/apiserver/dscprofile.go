@@ -65,6 +65,9 @@ func checkValidProfile(profile cluster.DSCProfile) error {
 		}
 		return nil
 	}
+	if profile.Spec.FeatureSet == cluster.DSCProfileSpec_SDN.String() {
+		return fmt.Errorf(" fwdMode:%s flowpolicy mode:%s is not supported", profile.Spec.DeploymentTarget, profile.Spec.FeatureSet)
+	}
 	if profile.Spec.DeploymentTarget == cluster.DSCProfileSpec_VIRTUALIZED.String() {
 		if profile.Spec.FeatureSet != cluster.DSCProfileSpec_FLOWAWARE_FIREWALL.String() {
 			return fmt.Errorf(" fwdMode:%s flowpolicy mode:%s is not supported", profile.Spec.DeploymentTarget, profile.Spec.FeatureSet)

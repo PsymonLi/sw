@@ -234,6 +234,28 @@ func (sm *Statemgr) OnDistributedServiceCardUpdate(smartNic *ctkit.DistributedSe
 				log.Errorf("Error Adding smartnic. Err: %v", err)
 				return err
 			}
+			//On reAdmit, push the profile to nimbus.
+			// On  Decomission we removed from nimbus.
+			// Reason: On readmit, bitId for this naples will change
+			profile := smartNic.DistributedServiceCard.Spec.DSCProfile
+			profileState, err := sm.FindDSCProfile("", profile)
+			if err == nil {
+				profileState.DSCProfile.Lock()
+				profileVersion := dscProfileVersion{
+					profileState.DSCProfile.Name,
+					profileState.DSCProfile.GenerationID,
+				}
+				profileState.DscList[smartNic.ObjectMeta.Name] = profileVersion
+				sns.profileVersion = profileVersion
+				ret := profileState.PushObj.AddObjReceivers([]objReceiver.Receiver{sns.recvHandle})
+				if ret != nil {
+					log.Infof("Add receiver failed %v for dsc %s for profile %s", ret, smartNic.Name, profile)
+				} else {
+					log.Infof("Added the dsc: %s to profile: %s", smartNic.Name, profile)
+					sm.PeriodicUpdaterPush(profileState)
+				}
+				profileState.DSCProfile.Unlock()
+			}
 		}
 	}
 	if !sns.decommissioned {
