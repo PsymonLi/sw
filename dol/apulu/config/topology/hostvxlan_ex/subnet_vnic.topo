@@ -1,0 +1,16 @@
+node :
+  - id : 1
+
+    vpc : 
+      - id : 2
+        subnet:
+          - id : 1
+            v4ingrpolicycount: 1
+            v4egrpolicycount: 1
+            vnic :
+              - id : 1
+                v4ingrpolicycount: 1
+                v4egrpolicycount: 1
+              - id : 3
+                v4ingrpolicycount: 1
+                v4egrpolicycount: 1

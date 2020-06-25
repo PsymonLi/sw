@@ -264,26 +264,39 @@ class ConfigObjectBase(base.ConfigObjectBase):
         self.__unimplemented()
 
     def UpdateAttributes(self, spec):
-        self.__unimplemented()
+        if spec:
+            self.SpecUpdate(spec)
+            #self.AddToReconfigState('update')
+        else:
+            self.AutoUpdate()
+        logger.info("Object Updated")
+        self.Show()
+        return
 
-    def Update(self, spec=None):
+    # update the python object
+    def ObjUpdate(self, spec, clone=True):
         if self.Mutable:
             if spec is None and self.HasPrecedent():
                 logger.info("%s object updated already" % self)
             else:
                 logger.info("Updating obj %s" % self)
-                clone = self.CopyObject()
-                clone.Precedent = None
-                self.Precedent = clone
-                if utils.IsReconfigInProgress(self.Node):
-                    self.ReconfigAttribs(spec)
-                else:
-                    self.UpdateAttributes(spec)
+                if clone:
+                    clone = self.CopyObject()
+                    clone.Precedent = None
+                    self.Precedent = clone
+                self.UpdateAttributes(spec)
                 logger.info("Updated values -")
                 self.Show()
-                self.SetDirty(True)
-                return self.CommitUpdate()
         return True
+
+    # push the update to DSC
+    def ProcessUpdate(self):
+        self.SetDirty(True)
+        return self.CommitUpdate()
+
+    def Update(self, spec=None):
+        self.ObjUpdate(spec)
+        return self.ProcessUpdate()
 
     def RollbackUpdate(self, spec=None):
         self.PrepareRollbackUpdate(spec)
@@ -390,19 +403,19 @@ class ConfigObjectBase(base.ConfigObjectBase):
         return grpcmsg
     
     def AddToReconfigState(self, op):
-        if op == 'create':
-            self.NodeObj.ReconfigState.Created.append(self)
-        elif op == 'update':
-            self.NodeObj.ReconfigState.Updated.append(self)
-        else:
-            assert(0)
+        if utils.IsReconfigInProgress(self.Node):
+            if op == 'create':
+                self.NodeObj.ReconfigState.Created.append(self)
+            elif op == 'update':
+                self.NodeObj.ReconfigState.Updated.append(self)
+            else:
+                assert(0)
         return
 
     def IsReconfigInProgress(self):
         if self.NodeObj.ReconfigState.InProgress:
             return True
         return False
-
 
 class ConfigClientBase(base.ConfigClientBase):
     def __init__(self, objtype, maxlimit=0):

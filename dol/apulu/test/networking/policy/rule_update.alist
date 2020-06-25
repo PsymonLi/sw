@@ -1,0 +1,21 @@
+# .alist(args list) - list of args;
+# modules in the mlist will be repeated for each args
+
+args :
+    - topos:
+        - subnet.topo
+        - security_profile_none.topo
+        - norules_skip_teardown.topo
+        - norules_deny.topo
+
+    - topos:
+        - 1rule.topo
+
+    - topos:
+        - 2rules.topo
+
+    - topos:
+        - 3rules.topo
+
+    - topos:
+        - 4rules.topo

@@ -1,4 +1,6 @@
 #! /usr/bin/python3
+import pdb
+
 from collections import defaultdict
 from infra.common.logging import logger
 import infra.common.objects as objects
@@ -74,6 +76,7 @@ class VnicObject(base.ConfigObjectBase):
         self.GID('Vnic%d'%self.VnicId)
         self.UUID = utils.PdsUuid(self.VnicId, self.ObjType)
         self.SUBNET = parent
+        #self.VPC = self.SUBNET.VPC
         self.HostIfIdx = None
         self.HostIfUuid = None
         if utils.IsDol():
@@ -234,7 +237,12 @@ class VnicObject(base.ConfigObjectBase):
                 return False
         return True
 
-    def UpdateAttributes(self, spec):
+    def SpecUpdate(self, spec):
+        utils.ReconfigPolicies(self, spec)
+        self.AddToReconfigState('update')
+        return
+
+    def AutoUpdate(self):
         if self.Dot1Qenabled:
             self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
         self.UseHostIf = not(self.UseHostIf)
@@ -242,9 +250,15 @@ class VnicObject(base.ConfigObjectBase):
         return
 
     def RollbackAttributes(self):
-        if self.Dot1Qenabled:
-            self.VlanId = self.GetPrecedent().VlanId
-        self.UseHostIf = not(self.UseHostIf)
+        if utils.IsReconfigInProgress(self.Node):
+            utils.ModifyPolicyDependency(self, True)
+            attrlist = ["IngV4SecurityPolicyIds", "EgV4SecurityPolicyIds"]
+            self.RollbackMany(attrlist)
+            utils.ModifyPolicyDependency(self, False)
+        else:
+            if self.Dot1Qenabled:
+                self.VlanId = self.GetPrecedent().VlanId
+            self.UseHostIf = not(self.UseHostIf)
         return
 
     def PopulateKey(self, grpcmsg):
@@ -528,20 +542,6 @@ class VnicObject(base.ConfigObjectBase):
         self.CommitUpdate()
         return
 
-    def ReconfigAttribs(self, spec):
-        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                      self.VPC, "V4", "ingress", False, False)
-        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                     self.VPC, "V4", "egress", False, False)
-        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                      self.VPC, "V6", "ingress", False, False)
-        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                     self.VPC, "V6", "egress", False, False)
-        self.AddToReconfigState('update')
-        logger.info("Object Updated")
-        self.Show()
-        return
-
 class VnicObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.VNIC, Resmgr.MAX_VNIC)
@@ -619,13 +619,8 @@ class VnicObjectClient(base.ConfigClientBase):
             return False
         return True
 
-    def GenerateObjects(self, node, parent, subnet_spec_obj):
-        if getattr(subnet_spec_obj, 'vnic', None) == None:
-            return
-
-        if utils.IsReconfigInProgress(node):
-            for spec in subnet_spec_obj.vnic:
-                self.Reconfig(node, spec)
+    def GenerateObjects(self, node, parent, subnet_spec):
+        if getattr(subnet_spec, 'vnic', None) == None:
             return
 
         def __get_mirrors(vnicspec, attr):
@@ -633,12 +628,27 @@ class VnicObjectClient(base.ConfigClientBase):
             ms = [mirrorspec.msid for mirrorspec in vnicmirror or []]
             return ms
 
-        for vnic_spec_obj in subnet_spec_obj.vnic:
-            for c in range(vnic_spec_obj.count):
+        for spec in subnet_spec.vnic:
+            id = getattr(spec, 'id', None)
+            if id:
+                obj = self.GetVnicObject(node, id)
+                if utils.IsReconfigInProgress(node):
+                    if obj:
+                        obj.ObjUpdate(spec)
+                    else:
+                        #TODO test this
+                        rxmirror = __get_mirrors(spec, 'rxmirror')
+                        txmirror = __get_mirrors(spec, 'txmirror')
+                        obj = VnicObject(node, parent, spec, rxmirror, txmirror)
+                        self.Objs[node].update({obj.VnicId: obj})
+                        self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(),  obj.VlanId): obj})
+                        utils.AddToReconfigState(obj, 'create')
+                    continue
+            for c in range(spec.count):
                 # Alternate src dst validations
-                rxmirror = __get_mirrors(vnic_spec_obj, 'rxmirror')
-                txmirror = __get_mirrors(vnic_spec_obj, 'txmirror')
-                obj = VnicObject(node, parent, vnic_spec_obj, rxmirror, txmirror)
+                rxmirror = __get_mirrors(spec, 'rxmirror')
+                txmirror = __get_mirrors(spec, 'txmirror')
+                obj = VnicObject(node, parent, spec, rxmirror, txmirror)
                 self.Objs[node].update({obj.VnicId: obj})
                 self.__l2mapping_objs[node].update({(obj.MACAddr.getnum(), obj.SUBNET.UUID.GetUuid(),  obj.VlanId): obj})
         return

@@ -153,7 +153,7 @@ class DolTriggerEngineObject(TriggerEngineObject):
         if GlobalOptions.dryrun:
             return
         if step.trigger.delay:
-           logger.info("Trigger Delay: %d" % step.trigger.delay)
+           logger.info("Trigger Delay: %.1f" % step.trigger.delay)
            time.sleep(step.trigger.delay)
         return
 

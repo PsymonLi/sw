@@ -476,6 +476,7 @@ def GetBatchCommitStatus(node):
 
 def InformDependents(dependee, cbFn):
     # inform dependent objects
+    if not IsInformRelatedObjs(dependee.Node): return
     for objType, ObjList in dependee.Deps.items():
         for depender in ObjList:
             getattr(depender, cbFn)(dependee)
@@ -511,7 +512,6 @@ def CreateObject(obj):
         if robj.IsOriginDiscovered():
             logger.info(f"Skip Recreating discovered object {robj} on {node}")
             return True
-        logger.info(f"[Re]Creating object {robj} on {node}")
         if robj.Duplicate != None:
             #TODO: Ideally a new dependee object should be created first
             # and all dependents should be updated to point to the new object
@@ -530,16 +530,19 @@ def CreateObject(obj):
                 return False
             confClient.DeleteObjFromDict(robj.Duplicate)
             robj.Duplicate = None
+            logger.info(f"[Re]Creating object {robj} on {node}")
+        else:
+            logger.info(f"Creating object {robj} on {node}")
         res = TriggerCreate(robj)
         if not res:
-            logger.error(f"Failed to restore {robj} on {node}")
+            logger.error(f"Failed to create {robj} on {node}")
             return res
         if IsUpdateSupported():
             InformDependents(robj, 'RestoreNotify')
         return True
 
     # create from top to bottom
-    res = RestoreObj(obj);
+    res = RestoreObj(obj)
     if not res:
         logger.error(f"Failed to restore {obj} on {node}, skip creating children")
         return res
@@ -1189,12 +1192,25 @@ def ValidatePolicerAttr(cfgAttr, specAttr):
         return False
     return True
 
-def GetPolicies(subnet, spec, node, parent, af, direction, is_subnet=True, generate=True):
+def GetPolicies(obj, spec, node, af, direction, generate=True):
+
+    is_subnet = True if obj.ObjType == api.ObjectTypes.SUBNET else False
+    def __get_vpc_id():
+        if is_subnet:
+            return obj.VPC.VPCId
+        else:
+            return obj.SUBNET.VPC.VPCId
+        return None
+
     def __get_policies_frm_count(node, vpcid, count, cb):
+        addrfamily = 'IPV4' if 'V4' == af else 'IPV6'
+        PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
+        count = min(count, PolicyClient.GetObjsCount(direction, addrfamily))
         policyids = []
         for c in range(count):
             id = cb(node, vpcid)
-            policyids.append(id)
+            if id:
+                policyids.append(id)
         return policyids
 
     PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
@@ -1208,15 +1224,16 @@ def GetPolicies(subnet, spec, node, parent, af, direction, is_subnet=True, gener
     policyids = getattr(spec, specific_attr, None)
     if policyids: return policyids
     count = getattr(spec, count_attr, 0)
-    if count == 0: return []
+    if not count: return []
     if generate:
         if is_subnet:
-            policy_id = cb(node, parent.VPCId)
-            return PolicyClient.GenerateSubnetPolicies(subnet, policy_id, count, direction, True if af == 'V6' else False)
+
+            policy_id = cb(node, __get_vpc_id())
+            return PolicyClient.GenerateSubnetPolicies(obj, policy_id, count, direction, True if af == 'V6' else False)
         else:
-            return PolicyClient.GenerateVnicPolicies(count, subnet, direction, True if af == 'V6' else False)
+            return PolicyClient.GenerateVnicPolicies(count, obj, direction, True if af == 'V6' else False)
     else:
-        return __get_policies_frm_count(node, parent.VPCId, count, cb)
+        return __get_policies_frm_count(node, __get_vpc_id(), count, cb)
 
 def GetTopoSpec(filename):
     path = '%s/config/topology/%s' % \
@@ -1269,3 +1286,42 @@ def SetReconfigInProgress(node, state=True):
     ReconfigState = GetReconfigState(node)
     ReconfigState.InProgress = True
     return
+
+def ModifyPolicyDependency(obj, delete):
+    policyids = obj.IngV4SecurityPolicyIds + obj.EgV4SecurityPolicyIds
+    PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
+    policyobjs = PolicyClient.GetObjectsByKeys(obj.Node, policyids)
+    for policy in policyobjs:
+        if policy != None:
+            if delete:
+                policy.DeleteDependent(obj)
+            else:
+                policy.AddDependent(obj)
+    return
+
+def ReconfigPolicies(obj, spec):
+    ModifyPolicyDependency(obj, True)
+    obj.IngV4SecurityPolicyIds = GetPolicies(obj, spec, obj.Node, \
+                                    "V4", "ingress", False)
+    obj.EgV4SecurityPolicyIds = GetPolicies(obj, spec, obj.Node, \
+                                    "V4", "egress", False)
+    obj.IngV6SecurityPolicyIds = GetPolicies(obj, spec, obj.Node, \
+                                    "V6", "ingress", False)
+    obj.EgV6SecurityPolicyIds = GetPolicies(obj, spec, obj.Node, \
+                                    "V6", "egress", False)
+    ModifyPolicyDependency(obj, False)
+    return
+
+def IsInformRelatedObjs(node):
+    if IsReconfigInProgress(node):
+        return False
+    return True
+
+def IsAttribUpdated(obj, attr):
+    if not obj.Precedent:
+        return False
+    val1 = getattr(obj, attr, None)
+    val2 = getattr(obj.Precedent, attr, None)
+    if val1 != val2:
+        return True
+    return False

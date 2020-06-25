@@ -3,178 +3,216 @@
 
 args :
     # security-profile none cases
+    # 1
     - topos:
         - subnet.topo
         - security_profile_none.topo
         # no policies attached
 
+    # 2
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
+    # 3
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
+    # 4
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
+    # 5
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
+    # 6
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_allow.topo
+    # 7
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_deny.topo
+    # 8
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_allow_none.topo
+    # 9
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_allow_allow.topo
+    # 10
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_allow_deny.topo
+    # 11
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_deny_none.topo
+    # 12
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_deny_allow.topo
+    # 13
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_deny_deny.topo
 
 
+    # 14
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - norules_none.topo
+    # 15
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - norules_allow.topo
+    # 16
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - norules_deny.topo
+    # 17
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_nomatch_none.topo
+    # 18
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_nomatch_allow.topo
+    # 19
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_nomatch_deny.topo
+    # 20
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_allow_none.topo
+    # 21
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_allow_allow.topo
+    # 22
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_allow_deny.topo
+    # 23
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_deny_none.topo
+    # 24
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_deny_allow.topo
+    # 25
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_none.topo
         - rules_deny_deny.topo
 
-
+    # policy 1 - empty policy with default action as allow
+    # policy 2 - all other types
+    # 26
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - norules_allow.topo
+    # 27
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - norules_deny.topo
+    # 28
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_nomatch_none.topo
+    # 29
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_nomatch_allow.topo
+    # 30
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_nomatch_deny.topo
+    # 31
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_allow_none.topo
+    # 32
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_allow_allow.topo
+    # 33
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_allow_deny.topo
+    # 34
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_deny_none.topo
+    # 35
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_deny_allow.topo
+    # 36
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_allow.topo
         - rules_deny_deny.topo
+    # 37
     - topos:
         - subnet.topo
         - security_profile_none.topo
@@ -182,98 +220,120 @@ args :
         - norules_none.topo
 
 
+    # policy1 - empty policy, default action - deny
+    # policy2 - all other types
+    # 38
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - norules_deny.topo
+    # 39
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_nomatch_none.topo
+    # 40
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_nomatch_allow.topo
+    # 41
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_nomatch_deny.topo
+    # 42
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_allow_none.topo
+    # 43
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_allow_allow.topo
+    # 44
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_allow_deny.topo
+    # 45
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_deny_none.topo
+    # 46
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_deny_allow.topo
+    # 47
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - norules_deny.topo
         - rules_deny_deny.topo
 
-
+    # policy1 - rules that do not match, default action -none
+    # policy2 - all types
+    # 48
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_nomatch_none.topo
+    # 49
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_nomatch_allow.topo
+    # 50
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_nomatch_deny.topo
+    # 51
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_allow_none.topo
+    # 52
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_allow_allow.topo
+    # 53
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_allow_deny.topo
+    # 54
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_deny_none.topo
+    # 55
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_none.topo
         - rules_deny_allow.topo
+    # 56
     - topos:
         - subnet.topo
         - security_profile_none.topo
@@ -281,16 +341,20 @@ args :
         - rules_deny_deny.topo
 
 
+    # policy1 - rules do not match, default action allow
+    # 57
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_allow.topo
         - rules_nomatch_allow.topo
+    # 58
     - topos:
         - subnet.topo
         - security_profile_none.topo
         - rules_nomatch_allow.topo
         - rules_nomatch_deny.topo
+    # 59
     - topos:
         - subnet.topo
         - security_profile_none.topo

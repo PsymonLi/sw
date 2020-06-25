@@ -1,6 +1,7 @@
 #! /usr/bin/python3
-import json
 import ipaddress
+import json
+import pdb
 
 from infra.common.logging import logger
 from infra.common.glopts  import GlobalOptions
@@ -50,6 +51,8 @@ class VpcObject(base.ConfigObjectBase):
             self.VPCId = spec.id
         else:
             self.VPCId = next(ResmgrClient[node].VpcIdAllocator)
+        self.__index = index
+        self.__count = maxcount
         self.GID('Vpc%d'%self.VPCId)
         self.UUID = utils.PdsUuid(self.VPCId, self.ObjType)
         self.IPPrefix = {}
@@ -108,76 +111,53 @@ class VpcObject(base.ConfigObjectBase):
         self.__ip_subnet_prefix_pool = {}
         self.__ip_subnet_prefix_pool[0] = {}
         self.__ip_subnet_prefix_pool[1] = {}
-        self.Show()
+        return
 
+    def GenerateChildren(self, spec):
         ############### CHILDREN OBJECT GENERATION
-
-        # Generate Port Configuration
+        node = self.Node
         #PortClient.GenerateObjects(node, self, spec)
-
-        # Generate Interface Configuration
         InterfaceClient.GenerateObjects(node, self, spec)
-
         if utils.IsPipelineApollo() and self.Type == vpc_pb2.VPC_TYPE_UNDERLAY:
             # Nothing to be done for underlay vpc
             return
-
-        # Generate DHCP configuration
         if self.IsUnderlayVPC():
             DHCPRelayClient.GenerateObjects(node, self.VPCId, spec)
-
-        # Generate NextHop configuration
         if hasattr(spec, 'nexthop'):
             NhClient.GenerateObjects(node, self, spec)
-
-        # Generate NextHopGroup configuration
         if hasattr(spec, 'nexthop-group'):
             NhGroupClient.GenerateObjects(node, self, spec)
-
-        # Generate Tunnel configuration
         if hasattr(spec, 'tunnel'):
             tunnel.client.GenerateObjects(node, EzAccessStoreClient[node].GetDevice(), spec.tunnel)
-
-        # Generate Tag configuration.
         if hasattr(spec, 'tagtbl'):
             tag.client.GenerateObjects(node, self, spec)
-
-        # Generate Policy configuration.
         if hasattr(spec, 'policy'):
             policy.client.GenerateObjects(node, self, spec)
-
-        # Generate DHCP Policy configuration.
         if hasattr(spec, 'dhcppolicy'):
             DHCPProxyClient.GenerateObjects(node, self, spec)
-
-        # Generate Route configuration.
         if hasattr(spec, 'routetbl'):
             # find peer vpcid
-            if (index + 1) == maxcount:
-                vpc_peerid = self.VPCId - maxcount + 1
+            if (self.__index + 1) == self.__count:
+                vpc_peerid = self.VPCId - self.__count + 1
             else:
                 vpc_peerid = self.VPCId + 1
             # For underlay-vpc, the route-table is implicitly created, so our
             # routetable object create is not needed (will fail with exists error).
             if spec.type != 'underlay':
                 route.client.GenerateObjects(node, self, spec, vpc_peerid)
-
-        # Generate Meter configuration
         meter.client.GenerateObjects(node, self, spec)
-
-        # Generate Metaswitch configuration
-        evpnipvrf.client.GenerateObjects(node, self, spec)
-        evpnipvrfrt.client.GenerateObjects(node, self, spec)
-
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, self.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, self.VPCId)
         self.V4RouteTable = route.client.GetRouteV4Table(node, self.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, self.VPCId, self.V6RouteTableId)
-        # Generate Subnet configuration post policy & route
         if hasattr(spec, 'subnet'):
             subnet.client.GenerateObjects(node, self, spec)
-        self.DeriveOperInfo()
-
+        # Generate Metaswitch configuration
+        evpnipvrf.client.GenerateObjects(node, self, spec)
+        evpnipvrfrt.client.GenerateObjects(node, self, spec)
+        # Generate BGP configuration
+        BGPClient.GenerateObjects(node, self, spec)
+        BGPPeerClient.GenerateObjects(node, self, spec)
         # Generate NAT Port Block configuration
         if hasattr(spec, 'nat'):
             self.__nat_pool = {}
@@ -187,10 +167,8 @@ class VpcObject(base.ConfigObjectBase):
             self.__nat_pool[utils.NAT_ADDR_TYPE_SERVICE] = \
                 iter(Resmgr.GetVpcInfraNatPoolPfx(self.VPCId).subnets(new_prefix=prefix_len))
             nat_pb.client.GenerateObjects(node, self, spec)
-
-        # Generate BGP configuration
-        BGPClient.GenerateObjects(node, self, spec)
-        BGPPeerClient.GenerateObjects(node, self, spec)
+        self.DeriveOperInfo()
+        self.Show()
         return
 
     def __repr__(self):
@@ -271,7 +249,14 @@ class VpcObject(base.ConfigObjectBase):
             self.__svc_mapping_shared_count = (self.__svc_mapping_shared_count + 1) % self.__max_svc_mapping_shared_count
         return __get()
 
-    def UpdateAttributes(self, spec):
+    def SpecUpdate(self, spec):
+        if hasattr(spec, 'policy'):
+            policy.client.GenerateObjects(self.Node, self, spec)
+        if hasattr(spec, 'subnet'):
+            subnet.client.GenerateObjects(self.Node, self, spec)
+        return
+
+    def AutoUpdate(self):
         self.VirtualRouterMACAddr = ResmgrClient[self.Node].VirtualRouterMacAllocator.get()
         self.Tos += 1
 
@@ -442,13 +427,6 @@ class VpcObject(base.ConfigObjectBase):
         self.CommitUpdate()
         return
 
-    def ReconfigAttribs(self, spec):
-        if hasattr(spec, 'policy'):
-            policy.client.GenerateObjects(self.Node, self, spec)
-        if hasattr(spec, 'subnet'):
-            subnet.client.GenerateObjects(self.Node, self, spec)
-        return
-
 class VpcObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.VPC, Resmgr.MAX_VPC)
@@ -474,22 +452,23 @@ class VpcObjectClient(base.ConfigClientBase):
         CfgJsonHelper.WriteConfig()
 
     def GenerateObjects(self, node, topospec):
-        # reconfig scenario
-        if utils.IsReconfigInProgress(node):
-            for p in topospec.vpc:
-                self.Reconfig(node, p)
-            return
-
-        # regular config generation 
         vpc_count = 0
         for p in topospec.vpc:
-            vpc_count += p.count
-            for c in range(p.count):
+            count = max(1, getattr(p, 'count', 0))
+            vpc_count += count
+            for c in range(count):
+                obj = None
                 if hasattr(p, "nat46"):
                     if p.nat46 is True and not utils.IsPipelineArtemis():
                         continue
-                obj = VpcObject(node, p, c, p.count)
-                self.Objs[node].update({obj.VPCId: obj})
+                if utils.IsReconfigInProgress(node):
+                    if getattr(p, 'id', None):
+                        obj = self.GetVpcObject(node, p.id)
+                        obj.ObjUpdate(p, clone=False)
+                if not obj:    
+                    obj = VpcObject(node, p, c, p.count)
+                    self.Objs[node].update({obj.VPCId: obj})
+                    obj.GenerateChildren(p)
                 if obj.IsUnderlayVPC():
                     EzAccessStoreClient[node].SetUnderlayVPC(obj)
         # Write the flow and nexthop config to agent hook file
@@ -497,6 +476,7 @@ class VpcObjectClient(base.ConfigClientBase):
             self.__write_cfg(vpc_count)
         if utils.IsPipelineApulu():
             # Associate Nexthop objects
+            if utils.IsReconfigInProgress(node): return
             NhGroupClient.CreateAllocator(node)
             NhClient.AssociateObjects(node)
             NhGroupClient.AssociateObjects(node)
@@ -510,42 +490,20 @@ class VpcObjectClient(base.ConfigClientBase):
 
         # netagent requires route table before vpc
         super().CreateObjects(node)
-
-        # Create DHCP Relay Objects
         DHCPRelayClient.CreateObjects(node)
-
-        # Create DHCP Relay Objects
         DHCPProxyClient.CreateObjects(node)
-
-        # Create Tag object.
         tag.client.CreateObjects(node)
-
-        # Create Policy object.
         policy.client.CreateObjects(node)
-
-        # Create Policer object.
         policer.client.CreateObjects(node)
-
-        # Create Route object.
         if not GlobalOptions.netagent:
             route.client.CreateObjects(node)
-
-        # Create Meter Objects
         meter.client.CreateObjects(node)
-
-        # Create BGP Objects
         BGPClient.CreateObjects(node)
         BGPPeerClient.CreateObjects(node)
         BGPPeerAfClient.CreateObjects(node)
-
-        # Create Metaswitch objects
         evpnipvrf.client.CreateObjects(node)
         evpnipvrfrt.client.CreateObjects(node)
-
-        # Create Subnet Objects after policy & route
         subnet.client.CreateObjects(node)
-
-        # Create NAT Port Block Objects
         nat_pb.client.CreateObjects(node)
         return
 

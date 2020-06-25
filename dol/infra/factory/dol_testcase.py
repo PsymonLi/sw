@@ -244,7 +244,7 @@ class DOLTestCase(TestCase):
         else:
             tcsn.delay = spdelay
         if tcsn.delay:
-            logger.info("  - Adding Delay of %d seconds." % tcsn.delay)
+            logger.info("  - Adding Delay of %.1f seconds." % tcsn.delay)
         return
 
     def _setup_trigger(self, tcstep, spstep):

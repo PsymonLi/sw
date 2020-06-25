@@ -101,7 +101,7 @@ node:
                   rmacaddr : macaddr/00ae.cd00.0811
                   ripaddr  : '2.1.0.2'
                   tunnelid : 1
-            - id               : 3
+            - id               : 2
               count            : 1
               v4prefixlen      : 24
               v4prefix         : '9.0.0.0\24'
@@ -132,10 +132,10 @@ node:
                   vnicencapvalue : 999
                   vnictype : "local"
                   remoteroutes :
-                     - '3.1.0.0\24'
-                     - '2.1.0.0\24'
-                     - '10.0.200.0\24'
-                     - '64.0.0.0\24'
+                    - '3.1.0.0\24'
+                    - '2.1.0.0\24'
+                    - '10.0.200.0\24'
+                    - '64.0.0.0\24'
               rmap:                       # Remote IP mappings per subnet
                 - id       : 4
                   count    : 1

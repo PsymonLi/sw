@@ -1,5 +1,6 @@
 node:
   - id : 1
+    skip-teardown : true
 
     vpc : 
       - id : 2

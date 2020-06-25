@@ -66,10 +66,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = route.client.GetRouteV4TableId(node, parent.VPCId)
         self.V6RouteTableId = route.client.GetRouteV6TableId(node, parent.VPCId)
 
-        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V4", "ingress")
-        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V6", "ingress")
-        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V4", "egress")
-        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, parent, "V6", "egress")
+        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, "V4", "ingress")
+        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, "V6", "ingress")
+        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, node, "V4", "egress")
+        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, node, "V6", "egress")
 
         self.V4RouteTable = route.client.GetRouteV4Table(node, parent.VPCId, self.V4RouteTableId)
         self.V6RouteTable = route.client.GetRouteV6Table(node, parent.VPCId, self.V6RouteTableId)
@@ -136,17 +136,23 @@ class SubnetObject(base.ConfigObjectBase):
         # Generate VNIC and Remote Mapping configuration
         vnic.client.GenerateObjects(node, self, spec)
         rmapping.client.GenerateObjects(node, self, spec)
+        return
 
     def __repr__(self):
         return "Subnet: %s |VPC: %s |PfxSel:%d|MAC:%s" %\
                (self.UUID, self.VPC.UUID, self.PfxSel, self.VirtualRouterMACAddr.get())
 
     def Show(self):
+        def __get_uuid_str():
+            uuid = "["
+            for each in self.HostIfUuid:
+                uuid += f'{each.GetUuid()}, ' 
+            uuid += "]"
+            return uuid
+
         logger.info("SUBNET object:", self)
         logger.info("- %s" % repr(self))
         logger.info("- Prefix %s VNI %d" % (self.IPPrefix, self.Vnid))
-        logger.info('- HostIfIdx:%s' % (self.HostIfIdx))
-        logger.info('- HostIfUuid:%s' % (self.HostIfUuid))
         logger.info("- VirtualRouter IP:%s" % (self.VirtualRouterIPAddr))
         logger.info("- VRMac:%s" % (self.VirtualRouterMACAddr))
         logger.info(f"- DHCPPolicy: {self.DHCPPolicyIds}")
@@ -160,7 +166,9 @@ class SubnetObject(base.ConfigObjectBase):
             lififindex = hex(utils.LifId2LifIfIndex(lif.id))
             logger.info("- HostInterface:%s|%s|%s" %\
                 (hostif.GetInterfaceName(), lif.GID(), lififindex))
+        logger.info('- HostIfIdx:%s' % (self.HostIfIdx))
         if self.HostIfUuid:
+            logger.info(f"- HostIf: {__get_uuid_str()}")
             logger.info("- HostIf:%s" % self.HostIfUuid)
         self.Status.Show()
         return
@@ -207,17 +215,6 @@ class SubnetObject(base.ConfigObjectBase):
         InterfaceClient.UpdateHostInterfaces(self.Node, [ self ])
         return True
 
-    def ModifyPolicyDependency(self, delete):
-        policyids = self.IngV4SecurityPolicyIds + self.EgV4SecurityPolicyIds
-        policyobjs = PolicyClient.GetObjectsByKeys(self.Node, policyids)
-        for obj in policyobjs:
-            if obj != None:
-                if delete:
-                    obj.DeleteDependent(self)
-                else:
-                    obj.AddDependent(self)
-        return
-
     def ModifyHostInterface(self, hostifidx=None):
         if not utils.IsNetAgentMode():
             return False
@@ -246,7 +243,13 @@ class SubnetObject(base.ConfigObjectBase):
         InterfaceClient.UpdateHostInterfaces(self.Node, [ self ])
         return True
 
-    def UpdateAttributes(self, spec):
+    def SpecUpdate(self, spec):
+        utils.ReconfigPolicies(self, spec)
+        self.AddToReconfigState('update')
+        self.Show()
+        return
+
+    def AutoUpdate(self):
         self.VirtualRouterMACAddr = ResmgrClient[self.Node].VirtualRouterMacAllocator.get()
         if utils.IsDol():
             hostIf = InterfaceClient.GetHostInterface(self.Node)
@@ -257,11 +260,10 @@ class SubnetObject(base.ConfigObjectBase):
         self.V4RouteTableId = 0
 
         # remove self from dependee list of those policies before updating it
-        self.ModifyPolicyDependency(True)
+        utils.ModifyPolicyDependency(self, True)
         self.IngV4SecurityPolicyIds = [PolicyClient.GetIngV4SecurityPolicyId(self.Node, self.VPC.VPCId)]
         self.EgV4SecurityPolicyIds = [PolicyClient.GetEgV4SecurityPolicyId(self.Node, self.VPC.VPCId)]
-        self.ModifyPolicyDependency(False)
-
+        utils.ModifyPolicyDependency(self, False)
         if self.IpV6Valid:
             self.VirtualRouterIPAddr[0] = next(Resmgr.CreateIpv6AddrPool(self.IPPrefix[0]))
         self.VirtualRouterIPAddr[1] = next(Resmgr.CreateIpv4AddrPool(self.IPPrefix[1]))
@@ -269,12 +271,12 @@ class SubnetObject(base.ConfigObjectBase):
         return
 
     def RollbackAttributes(self):
-        self.ModifyPolicyDependency(True)
+        utils.ModifyPolicyDependency(self, True)
         attrlist = ["VirtualRouterMACAddr", "HostIf", "HostIfIdx", "HostIfUuid",
             "V4RouteTableId", "IngV4SecurityPolicyIds", "EgV4SecurityPolicyIds",
             "VirtualRouterIPAddr", "IPAMname"]
         self.RollbackMany(attrlist)
-        self.ModifyPolicyDependency(False)
+        utils.ModifyPolicyDependency(self, False)
         return
 
     def PopulateKey(self, grpcmsg):
@@ -572,20 +574,6 @@ class SubnetObject(base.ConfigObjectBase):
                 return False
         return True
 
-    def ReconfigAttribs(self, spec):
-        self.IngV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                      self.VPC, "V4", "ingress", True, False)
-        self.EgV4SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                     self.VPC, "V4", "egress", True, False)
-        self.IngV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                      self.VPC, "V6", "ingress", True, False)
-        self.EgV6SecurityPolicyIds = utils.GetPolicies(self, spec, self.Node, \
-                                     self.VPC, "V6", "egress", True, False)
-        self.AddToReconfigState('update')
-        logger.info("Object Updated")
-        self.Show()
-        return
-
 class SubnetObjectClient(base.ConfigClientBase):
     def __init__(self):
         super().__init__(api.ObjectTypes.SUBNET, Resmgr.MAX_SUBNET)
@@ -595,20 +583,25 @@ class SubnetObjectClient(base.ConfigClientBase):
         return self.GetObjectByKey(node, subnetid)
 
     def GenerateObjects(self, node, parent, vpc_spec_obj):
-        if utils.IsReconfigInProgress(node):
-            for spec in vpc_spec_obj.subnet:
-                self.Reconfig(node, spec) 
-            return
-
         poolid = 0
-        for subnet_spec_obj in vpc_spec_obj.subnet:
-            if hasattr(subnet_spec_obj, 'v6prefixlen'):
-                v6prefixlen = subnet_spec_obj.v6prefixlen
-            else:
-                v6prefixlen = 0
-            parent.InitSubnetPefixPools(poolid, v6prefixlen, subnet_spec_obj.v4prefixlen)
-            for c in range(subnet_spec_obj.count):
-                obj = SubnetObject(node, parent, subnet_spec_obj, poolid)
+        for spec in vpc_spec_obj.subnet:
+            id = getattr(spec, 'id', None)
+            if id:
+                obj = self.GetSubnetObject(node, id)
+                if utils.IsReconfigInProgress(node):
+                    if obj:
+                        obj.ObjUpdate(spec)
+                        obj.GenerateChildren(node, spec)
+                    else:
+                        #TODO test this
+                        obj = SubnetObject(node, parent, spec, poolid)
+                        self.Objs[node].update({obj.SubnetId: obj})
+                        utils.AddToReconfigState(obj, 'create')
+                    return
+            v6prefixlen = getattr(spec, 'v6prefixlen', 0)
+            parent.InitSubnetPefixPools(poolid, v6prefixlen, spec.v4prefixlen)
+            for c in range(spec.count):
+                obj = SubnetObject(node, parent, spec, poolid)
                 self.Objs[node].update({obj.SubnetId: obj})
             poolid = poolid + 1
         return

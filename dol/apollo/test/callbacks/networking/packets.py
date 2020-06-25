@@ -492,8 +492,7 @@ def __rule_dump(tc_rule, match_rule):
         logger.info("Final matching rule for packet")
         match_rule.Show()
 
-def __get_final_result(tc_rule, match_rule, testcase):
-    policy = getattr(testcase.config, 'policy', None)
+def __get_final_result(tc_rule, match_rule, testcase, policy):
     securityprofile = testcase.config.securityprofile
     iterelem = testcase.module.iterator.Get()
     result = getattr(iterelem, "result", None) if iterelem else None
@@ -504,18 +503,19 @@ def __get_final_result(tc_rule, match_rule, testcase):
     elif match_rule:
         final_result = match_rule.Action
         logger.info(f"Matching to rule action: {final_result}")
-    elif policy and (policy.DefaultFWAction != "none"):
-        final_result = utils.GetRpcSecurityRuleAction(policy.DefaultFWAction)
-        logger.info(f"Matching to policy default action: {final_result}")
-    elif not securityprofile:
-        final_result = types_pb2.SECURITY_RULE_ACTION_DENY
-        logger.info(f"security profile not configured, Matching to action: {final_result}")
-    elif securityprofile.DefaultFWAction != types_pb2.SECURITY_RULE_ACTION_NONE:
-        final_result = securityprofile.DefaultFWAction
-        logger.info(f"Matching to security profile default action: {final_result}")
+    elif policy:
+        if policy.DefaultFWAction != 'none':
+            final_result = utils.GetRpcSecurityRuleAction(policy.DefaultFWAction)
+            logger.info(f"Matching to policy default action: {final_result}")
+        elif securityprofile and \
+            securityprofile.DefaultFWAction != types_pb2.SECURITY_RULE_ACTION_NONE:
+            final_result = securityprofile.DefaultFWAction
+            logger.info(f"Matching to security profile default action: {final_result}")
+        else:
+            final_result = types_pb2.SECURITY_RULE_ACTION_DENY
+            logger.info(f"No policy match and security profile not configured, Matching to action: {final_result}")
     else:
-        final_result = types_pb2.SECURITY_RULE_ACTION_DENY
-        logger.info(f"Matching to default action: {final_result}")
+        assert(0)
     __rule_dump(tc_rule, match_rule)
     return final_result
 
@@ -525,14 +525,13 @@ def __match_and_get_final_result(policies, pkt, direction, testcase):
     rules = []
     for policyid in policies:
         policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
-        if policyobj:
-            rules = sorted(policyobj.rules, key=lambda x: x.Priority)
+        rules = sorted(policyobj.rules, key=lambda x: x.Priority)
         match_rule = None
         for rule in rules:
             if __is_matching_rule(packet_tuples, rule, direction, testcase):
                 match_rule = rule
                 break
-        final_result = __get_final_result(tc_rule, match_rule, testcase)
+        final_result = __get_final_result(tc_rule, match_rule, testcase, policyobj)
         if final_result is types_pb2.SECURITY_RULE_ACTION_DENY:
             break
     __rule_dump(tc_rule, match_rule)
@@ -543,8 +542,7 @@ def __get_matching_rule(policies, pkt, direction, testcase):
     rules = []
     for policyid in policies:
         policyobj = __get_config_object(ObjectTypes.POLICY, policyid)
-        if policyobj:
-            rules.extend(policyobj.rules)
+        rules.extend(policyobj.rules)
     # Get a new copy of stable sorted (based on priority) rules
     # Note: lower the value of rule.Priority higher the Priority
     rules = sorted(rules, key=lambda x: x.Priority)
@@ -564,9 +562,14 @@ def __get_security_policies_from_lmapping(lmapping, direction):
     vnic = lmapping.VNIC
     subnet = vnic.SUBNET
     policies = []
-    # TODO: order in which they applied
-    policies.extend(getattr(vnic, attr))
-    policies.extend(getattr(subnet, attr))
+    if direction == 'egress':
+        policies.extend(getattr(vnic, attr))
+        policies.extend(getattr(subnet, attr))
+    elif direction == 'ingress':
+        policies.extend(getattr(subnet, attr))
+        policies.extend(getattr(vnic, attr))
+    else:
+        assert(0)
     return policies
 
 def GetExpectedCPSPacket(testcase, args):
@@ -584,12 +587,16 @@ def GetExpectedCPSPacket(testcase, args):
             direction = 'ingress'
     # get all security policies which needs to be applied
     policies = __get_security_policies_from_lmapping(testcase.config.localmapping, direction)
+    if not len(policies):
+        # 'allow' if there is no policy attached
+        return testcase.packets.Get(args.epkt_pass)
     pkt = testcase.packets.Get(args.ipkt).GetScapyPacket()
     if device.PolicyAnyDeny:
         final_result = __match_and_get_final_result(policies, pkt, direction, testcase)
     else:
         match_rule = __get_matching_rule(policies, pkt, direction, testcase)
-        final_result = __get_final_result(tc_rule, match_rule, testcase)
+        policyobj = __get_config_object(ObjectTypes.POLICY, policies[0])
+        final_result = __get_final_result(tc_rule, match_rule, testcase, policyobj)
     if final_result == types_pb2.SECURITY_RULE_ACTION_DENY:
         logger.info("GetExpectedCPSPacket: packet denied")
         return None

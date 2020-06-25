@@ -1,0 +1,17 @@
+# .alist(args list) - list of args;
+# modules in the mlist will be repeated for each args
+
+# stateful/stateless and incremental update cases
+args :
+    - topos:
+        - subnet_vnic.topo
+        - security_profile_none.topo
+        - rules_allow_allow.topo
+        - rules_stateless_allow_allow.topo
+
+    - topos:
+        - subnet_vnic.topo
+        - security_profile_none.topo
+        - rules_allow_allow.topo
+        - rules_allow_allow.topo
+        - rules_stateless_allow_allow.topo

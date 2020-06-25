@@ -316,7 +316,7 @@ class DolVerifEngineObject(VerifEngineObject):
             final_delay = step.expect.delay
             if GlobalOptions.rtl:
                 final_delay = step.expect.delay * RTL_RETRY_SCALE
-            logger.info("Expectation Delay: %d" % final_delay)
+            logger.info("Expectation Delay: %.1f" % final_delay)
             time.sleep(final_delay)
         return
 

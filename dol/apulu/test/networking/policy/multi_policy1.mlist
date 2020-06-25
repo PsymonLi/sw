@@ -1,23 +1,23 @@
 feature:
     id          : policy
-    sub         : multi_policy
+    sub         : multi_policy1
     package     : test.networking
     module      : policy
     runorder    : 8080
     enable      : True
     ignore      : True
-    argslist    : multi_policy.alist
+    argslist    : multi_policy1.alist
 
 modules:
 
     - module:
-        name            : POLICY_TC_START
-        spec            : load_topo.testspec
+        name        : POLICY_TC_START
+        spec        : load_topo.testspec
 
     - module:
         name        : PACKET
         mlist       : packet.mlist
 
     - module:
-        name            : POLICY_TC_TEARDOWN
-        spec            : teardown_topo.testspec
+        name        : POLICY_TC_TEARDOWN
+        spec        : teardown_topo.testspec

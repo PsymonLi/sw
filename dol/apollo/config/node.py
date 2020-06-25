@@ -85,6 +85,7 @@ def initialize_object_info():
 
 class ReconfigState():
     def __init__(self):
+        self.SkipTeardown = False
         self.InProgress = False
         self.Created = []
         self.Updated = []
@@ -232,7 +233,7 @@ class NodeObject(base.ConfigObjectBase):
         if not topos:
             return
         path = '%s/config/topology/%s' % \
-        (GlobalOptions.pipeline, GlobalOptions.topology)
+               (GlobalOptions.pipeline, GlobalOptions.topology)
         for topo in topos:
             tspec = None
             tspec = self.__get_topospec(topo)
@@ -246,7 +247,7 @@ class NodeObject(base.ConfigObjectBase):
         for obj in self.ReconfigState.Created:
             obj.Create()
         for obj in self.ReconfigState.Updated:
-            obj.Update()
+            obj.ProcessUpdate()
         self.ReconfigState.InProgress = False
         return
 
@@ -255,6 +256,7 @@ class NodeObject(base.ConfigObjectBase):
         update = False
         if cfg_spec:
             topospec = self.__get_all_topospec(cfg_spec)
+            self.ReconfigState.SkipTeardown = getattr(topospec, 'skip-teardown', self.ReconfigState.SkipTeardown)
             self.ReconfigState.InProgress = True
         else:
             topospec = self.__topospec
@@ -277,20 +279,24 @@ class NodeObject(base.ConfigObjectBase):
             obj.Read()
         for obj in self.ReconfigState.Updated:
             obj.Read()
-        return
+        return True
 
     def Teardown(self, spec):
+        self.ReconfigState.InProgress = True
         for obj in self.ReconfigState.Updated[:]:
-            obj.RollbackUpdate()
+            if not self.ReconfigState.SkipTeardown:
+                obj.RollbackUpdate()
             self.ReconfigState.Updated.remove(obj)
         for obj in self.ReconfigState.Created[:]:
-            if not obj.Delete():
-                logger.error(f'Delete of object failed : {obj}')
-                assert(0)
-            obj.Cleanup()
+            if not self.ReconfigState.SkipTeardown:
+                if not obj.Delete():
+                    logger.error(f'Delete of object failed : {obj}')
+                    assert(0)
+                obj.Cleanup()
             self.ReconfigState.Created.remove(obj)
         if len(self.ReconfigState.Created) or len(self.ReconfigState.Updated):
             assert(0)
+        self.ReconfigState.InProgress = False
         return True
 
     def IsRetryEnabled(self):

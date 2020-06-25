@@ -1,0 +1,33 @@
+node:
+  - id : 1
+    skip-teardown : false
+
+    vpc : 
+      - id : 2
+        policy:
+          - id : 1
+            policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : deny
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO'
+                action    : allow
+                v4pfx     : '0.0.0.0\0'
+                v6pfx     : '::\0'
+              - protocol  : any
+                priority  : 'MAXPRIO'
+                action    : allow
+                v4pfx     : '0.0.0.0\0'
+                v6pfx     : '::\0'
+              - protocol  : any
+                priority  : 'MAXPRIO'
+                action    : allow
+                v4pfx     : '0.0.0.0\0'
+                v6pfx     : '::\0'
+              - protocol  : any
+                priority  : 'MAXPRIO'
+                action    : allow
+                v4pfx     : '0.0.0.0\0'
+                v6pfx     : '::\0'
