@@ -518,7 +518,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropInputMapping",
-      "displayName": "Input Mapping Table Drops",
+      "displayName": "Input Mapping Table",
       "description": "number of packets dropped due to missing lookup in input mapping table",
       "units": "Count",
       "baseType": "Counter",
@@ -530,7 +530,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropMultiDestNotPinnedUplink",
-      "displayName": "Multi-dest-not-pinned-uplink Drops",
+      "displayName": "Multi-Dest Not Pinned Uplink",
       "description": "number of multi-destination (multicast) packets dropped because they were not seen on right pinned uplink",
       "units": "Count",
       "baseType": "Counter",
@@ -542,7 +542,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropFlowHit",
-      "displayName": "Drop-flow-hit Drops",
+      "displayName": "Drop Flow Hit",
       "description": "number of packets dropped due to hitting drop flows",
       "units": "Count",
       "baseType": "Counter",
@@ -554,7 +554,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropFlowMiss",
-      "displayName": "Flow-miss Drops",
+      "displayName": "Flow Miss",
       "description": "number of packets dropped due to missing a flow-hit",
       "units": "Count",
       "baseType": "Counter",
@@ -566,7 +566,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropNacl",
-      "displayName": "Drop-NACL-hit Drops",
+      "displayName": "Drop NACL Hit",
       "description": "number of packets dropped due to drop-nacl hit",
       "units": "Count",
       "baseType": "Counter",
@@ -578,7 +578,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropIpsg",
-      "displayName": "Drop-IPSG Drops",
+      "displayName": "Drop IPSG",
       "description": "number of packets dropped due to drop-ipsg hit",
       "units": "Count",
       "baseType": "Counter",
@@ -590,7 +590,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropIpNormalization",
-      "displayName": "IP-Normalization Drops",
+      "displayName": "IP Normalization",
       "description": "number of packets dropped due to IP packet normalization",
       "units": "Count",
       "baseType": "Counter",
@@ -602,7 +602,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpNormalization",
-      "displayName": "TCP-Normalization Drops",
+      "displayName": "TCP Normalization",
       "description": "number of TCP packets dropped due to TCP normalization",
       "units": "Count",
       "baseType": "Counter",
@@ -614,7 +614,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpRstWithInvalidAckNum",
-      "displayName": "TCP-RST-Invalid-ACK Drops",
+      "displayName": "TCP RST Invalid ACK",
       "description": "number of TCP RST packets dropped due to invalid ACK number",
       "units": "Count",
       "baseType": "Counter",
@@ -626,7 +626,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpNonSynFirstPkt",
-      "displayName": "TCP-RST-Invalid-ACK Drops",
+      "displayName": "TCP Non-SYN First Packet",
       "description": "number of TCP non-SYN first packets dropped",
       "units": "Count",
       "baseType": "Counter",
@@ -638,7 +638,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropIcmpNormalization",
-      "displayName": "ICMP-Normalization Drops",
+      "displayName": "ICMP Normalization",
       "description": "number of packets dropped due to ICMP packet normalization",
       "units": "Count",
       "baseType": "Counter",
@@ -650,7 +650,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropInputPropertiesMiss",
-      "displayName": "Input-properties-miss Drops",
+      "displayName": "Input Properties Miss",
       "description": "number of packets dropped due to input properties miss",
       "units": "Count",
       "baseType": "Counter",
@@ -662,7 +662,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpOutOfWindow",
-      "displayName": "TCP-out-of-window Drops",
+      "displayName": "TCP Out Of Window",
       "description": "number of TCP packets dropped due to out-of-window",
       "units": "Count",
       "baseType": "Counter",
@@ -674,7 +674,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpSplitHandshake",
-      "displayName": "TCP-split-handshake Drops",
+      "displayName": "TCP Split Handshake",
       "description": "number of TCP packets dropped due to split handshake",
       "units": "Count",
       "baseType": "Counter",
@@ -686,7 +686,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpWinZeroDrop",
-      "displayName": "TCP-zero-window Drops",
+      "displayName": "TCP Zero Window",
       "description": "number of TCP packets dropped due to window size being zero",
       "units": "Count",
       "baseType": "Counter",
@@ -698,7 +698,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpDataAfterFin",
-      "displayName": "TCP-data-after-FIN Drops",
+      "displayName": "TCP Data After FIN",
       "description": "number of TCP packets dropped due to data received after FIN was seen",
       "units": "Count",
       "baseType": "Counter",
@@ -710,7 +710,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpNonRstPktAfterRst",
-      "displayName": "TCP-non-RST-after-RST Drops",
+      "displayName": "TCP Non-RST After RST",
       "description": "number of TCP packets dropped due to non-RST seen after RST",
       "units": "Count",
       "baseType": "Counter",
@@ -722,7 +722,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpInvalidResponderFirstPkt",
-      "displayName": "TCP-responder-first-packet Drops",
+      "displayName": "TCP Responder First Packet",
       "description": "number of TCP packets dropped due to invalid first packet seen from responder",
       "units": "Count",
       "baseType": "Counter",
@@ -734,7 +734,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropTcpUnexpectedPkt",
-      "displayName": "TCP-unexpected-packet Drops",
+      "displayName": "TCP Unexpected Packet",
       "description": "number of TCP packets dropped due to unexpected packet seen",
       "units": "Count",
       "baseType": "Counter",
@@ -746,7 +746,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropSrcLifMismatch",
-      "displayName": "Source-LIF-mismatch Drops",
+      "displayName": "Source LIF Mismatch",
       "description": "number of packets dropped due to packets received on unexpected source LIF",
       "units": "Count",
       "baseType": "Counter",
@@ -758,7 +758,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropIcmpFragPkt",
-      "displayName": "ICMP/ICMPv6-Fragment Drops",
+      "displayName": "ICMP/ICMPv6 Fragment",
       "description": "ICMP/ICMPv6 fragmented packet drops",
       "units": "Count",
       "baseType": "Counter",
@@ -770,7 +770,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "DropIpFragPkt",
-      "displayName": "IP Fragment Drops",
+      "displayName": "IP Fragment",
       "description": "IP fragmented packet drops",
       "units": "Count",
       "baseType": "Counter",
