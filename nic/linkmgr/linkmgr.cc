@@ -24,13 +24,10 @@
 using grpc::Server;
 using grpc::ServerBuilder;
 using boost::property_tree::ptree;
-using sdk::linkmgr::linkmgr_thread_id_t;
 using hal::CFG_OP_WRITE;
 using hal::utils::hal_logger;
 
 namespace linkmgr {
-
-sdk::lib::thread *g_linkmgr_threads[linkmgr_thread_id_t::LINKMGR_THREAD_ID_MAX];
 
 // TODO required?
 extern class linkmgr_state *g_linkmgr_state;
@@ -110,42 +107,6 @@ linkmgr_thread_init (void)
     if (thread_prio < 0) {
         return HAL_RET_ERR;
     }
-
-    // spawn periodic thread that does background tasks
-    thread_id = linkmgr_thread_id_t::LINKMGR_THREAD_ID_PERIODIC;
-    g_linkmgr_threads[thread_id] =
-        sdk::lib::thread::factory(
-                        std::string("linkmgr-periodic").c_str(),
-                        thread_id,
-                        sdk::lib::THREAD_ROLE_CONTROL,
-                        0x0 /* use all control cores */,
-                        linkmgr_periodic_start,
-                        thread_prio - 1,
-                        SCHED_OTHER,
-                        true);
-    if (g_linkmgr_threads[thread_id] == NULL) {
-        SDK_TRACE_ERR("Failed to create linkmgr periodic thread");
-        return HAL_RET_ERR;
-    }
-
-    // start the periodic thread
-    g_linkmgr_threads[thread_id]->start(g_linkmgr_threads[thread_id]);
-
-    // create a thread object for CFG thread
-    thread_id = linkmgr_thread_id_t::LINKMGR_THREAD_ID_CFG;
-    g_linkmgr_threads[thread_id] =
-        sdk::lib::thread::factory(std::string("linkmgr-cfg").c_str(),
-                                  thread_id,
-                                  sdk::lib::THREAD_ROLE_CONTROL,
-                                  0x0 /* use all control cores */,
-                                  sdk::lib::thread::dummy_entry_func,
-                                  thread_prio -1,
-                                  SCHED_OTHER,
-                                  true);
-    g_linkmgr_threads[thread_id]->set_data(g_linkmgr_threads[thread_id]);
-    g_linkmgr_threads[thread_id]->set_pthread_id(pthread_self());
-    g_linkmgr_threads[thread_id]->set_running(true);
-
     return HAL_RET_OK;
 }
 

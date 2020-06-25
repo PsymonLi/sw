@@ -91,7 +91,7 @@ linkmgr_init (catalog *catalog, const char *cfg_path)
 {
     linkmgr_cfg_t cfg;
     marvell_cfg_t marvell_cfg;
-    uint32_t thread_id = sdk::linkmgr::LINKMGR_THREAD_ID_CFG;
+    uint32_t thread_id = SDK_IPC_ID_LINKMGR_CTRL;
 
     // initialize the marvell switch
     memset(&marvell_cfg, 0, sizeof(marvell_cfg_t));

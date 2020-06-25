@@ -39,7 +39,6 @@ using sdk::linkmgr::port_args_t;
 using sdk::SDK_RET_OK;
 using sdk::linkmgr::mac_info_t;
 using grpc::ServerBuilder;
-using sdk::linkmgr::linkmgr_thread_id_t;
 
 namespace linkmgr {
 

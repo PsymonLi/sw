@@ -21,6 +21,9 @@ using namespace sdk::event_thread;
 using namespace sdk::ipc;
 using namespace boost::interprocess;
 
+#define SDK_THREAD_ID_LINKMGR_MIN SDK_IPC_ID_LINKMGR_AACS_SERVER
+#define SDK_THREAD_ID_LINKMGR_MAX SDK_IPC_ID_LINKMGR_CTRL
+
 namespace sdk {
 namespace linkmgr {
 
@@ -34,9 +37,6 @@ linkmgr_state *g_linkmgr_state;
 
 // global sdk-linkmgr config
 linkmgr_cfg_t g_linkmgr_cfg;
-
-// sdk-linkmgr threads
-sdk::lib::thread *g_linkmgr_threads[LINKMGR_THREAD_ID_MAX];
 
 // link down poll list
 port *link_poll_timer_list[MAX_LOGICAL_PORTS];
@@ -189,21 +189,14 @@ port_link_poll_timer_delete(port *port)
     return SDK_RET_OK;
 }
 
-sdk::lib::thread *
-current_thread (void)
-{
-    return sdk::lib::thread::current_thread() ?
-                       sdk::lib::thread::current_thread() :
-                       g_linkmgr_threads[LINKMGR_THREAD_ID_CFG];
-}
-
 bool
 is_linkmgr_ctrl_thread (void)
 {
     bool is_ctrl_thread;
 
-    sdk::lib::thread *curr_thread = current_thread();
-    sdk::lib::thread *ctrl_thread = g_linkmgr_threads[LINKMGR_THREAD_ID_CTRL];
+    sdk::lib::thread *curr_thread = sdk::lib::thread::current_thread();
+    sdk::lib::thread *ctrl_thread =
+        sdk::lib::thread::find(SDK_IPC_ID_LINKMGR_CTRL);
 
     // TODO assert once the thread store is fixed
     if (curr_thread == NULL) {
@@ -231,8 +224,10 @@ end:
 bool
 is_linkmgr_ctrl_thread_ready (void)
 {
-    return (g_linkmgr_threads[LINKMGR_THREAD_ID_CTRL] &&
-            g_linkmgr_threads[LINKMGR_THREAD_ID_CTRL]->ready());
+    sdk::lib::thread *curr_thread =
+        sdk::lib::thread::find(SDK_IPC_ID_LINKMGR_CTRL);
+
+    return (curr_thread && curr_thread->ready());
 }
 
 void
@@ -401,7 +396,7 @@ linkmgr_notify (uint8_t operation, linkmgr_entry_data_t *data,
             break;
     }
 
-    request(LINKMGR_THREAD_ID_CTRL, operation, data,
+    request(SDK_IPC_ID_LINKMGR_CTRL, operation, data,
             sizeof(linkmgr_entry_data_t), port_rsp_handler, NULL);
     return SDK_RET_OK;
 }
@@ -512,7 +507,7 @@ thread_init (linkmgr_cfg_t *cfg)
     event_thread_init(cfg);
 
     // init the control thread
-    thread_id = LINKMGR_THREAD_ID_CTRL;
+    thread_id = SDK_IPC_ID_LINKMGR_CTRL;
     new_thread =
         sdk::event_thread::event_thread::factory(
             "linkmgr-ctrl", thread_id,
@@ -526,8 +521,6 @@ thread_init (linkmgr_cfg_t *cfg)
             true);
     SDK_ASSERT_TRACE_RETURN((new_thread != NULL), SDK_RET_ERR,
                             "linkmgr-ctrl thread create failure");
-    g_linkmgr_threads[thread_id] = new_thread;
-
     new_thread->start(new_thread);
     return SDK_RET_OK;
 }
@@ -536,12 +529,15 @@ void
 linkmgr_threads_stop (void)
 {
     int thread_id;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
             // stop the thread
-            SDK_TRACE_DEBUG("Stopping thread %s", g_linkmgr_threads[thread_id]->name());
-            g_linkmgr_threads[thread_id]->stop();
+            SDK_TRACE_DEBUG("Stopping thread %s", thread->name());
+            thread->stop();
         }
     }
 }
@@ -550,14 +546,16 @@ void
 linkmgr_threads_wait (void)
 {
     int thread_id;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
-            SDK_TRACE_DEBUG("Waiting thread %s to exit", g_linkmgr_threads[thread_id]->name());
-            g_linkmgr_threads[thread_id]->wait();
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
+            SDK_TRACE_DEBUG("Waiting thread %s to exit", thread->name());
+            thread->wait();
             // free the allocated thread
-            sdk::lib::thread::destroy(g_linkmgr_threads[thread_id]);
-            g_linkmgr_threads[thread_id] = NULL;
+            sdk::lib::thread::destroy(thread);
         }
     }
 }
@@ -567,10 +565,13 @@ linkmgr_threads_suspend (void)
 {
     int thread_id;
     sdk_ret_t ret;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
-            ret = g_linkmgr_threads[thread_id]->suspend();
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
+            ret = thread->suspend();
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -584,10 +585,13 @@ linkmgr_threads_resume (void)
 {
     int thread_id;
     sdk_ret_t ret;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
-            ret = g_linkmgr_threads[thread_id]->resume();
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
+            ret = thread->resume();
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -601,12 +605,15 @@ linkmgr_threads_ready (void)
 {
     int thread_id;
     bool ready;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
-            ready = g_linkmgr_threads[thread_id]->ready();
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
+            ready = thread->ready();
             SDK_TRACE_DEBUG("Linkmgr thread %s ready %u",
-                            g_linkmgr_threads[thread_id]->name(), ready);
+                            thread->name(), ready);
             if (!ready) {
                 return false;
             }
@@ -622,16 +629,19 @@ linkmgr_threads_suspended_ (bool status)
     int thread_id;
     bool suspended;
     bool rv = true;
+    sdk::lib::thread *thread;
 
-    for (thread_id = 0; thread_id < LINKMGR_THREAD_ID_MAX; thread_id++) {
-        if (g_linkmgr_threads[thread_id] != NULL) {
-            suspended = g_linkmgr_threads[thread_id]->suspended();
+    for (thread_id = SDK_THREAD_ID_LINKMGR_MIN;
+            thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
+        thread = sdk::lib::thread::find(thread_id);
+        if (thread != NULL) {
+            suspended = thread->suspended();
             if (status) {
                 SDK_TRACE_DEBUG("Linkmgr thread %s suspended %u",
-                                g_linkmgr_threads[thread_id]->name(), suspended);
+                                thread->name(), suspended);
             } else {
                 SDK_TRACE_DEBUG("Linkmgr thread %s resumed %u",
-                                g_linkmgr_threads[thread_id]->name(), !suspended);
+                                thread->name(), !suspended);
             }
             if ((status ? suspended : !suspended) == false) {
                 rv = false;
@@ -1921,7 +1931,7 @@ start_aacs_server (int port)
         return SDK_RET_ERR;
     }
 
-    thread_id = LINKMGR_THREAD_ID_AACS_SERVER;
+    thread_id = SDK_IPC_ID_LINKMGR_AACS_SERVER;
     sdk::lib::thread *thread =
         sdk::lib::thread::factory(
                         std::string("aacs-server").c_str(),
@@ -1936,25 +1946,22 @@ start_aacs_server (int port)
         SDK_TRACE_ERR("Failed to create linkmgr aacs server thread");
         return SDK_RET_ERR;
     }
-
-    g_linkmgr_threads[thread_id] = thread;
     g_linkmgr_state->set_aacs_server_port_num(port);
     thread->start(NULL);
-
     return SDK_RET_OK;
 }
 
 void
 stop_aacs_server (void)
 {
-    int thread_id = LINKMGR_THREAD_ID_AACS_SERVER;
+    uint32_t thread_id = SDK_IPC_ID_LINKMGR_AACS_SERVER;
+    sdk::lib::thread *thread = sdk::lib::thread::find(thread_id);
 
-    if (g_linkmgr_threads[thread_id] != NULL) {
+    if (thread != NULL) {
         // stop the thread
-        g_linkmgr_threads[thread_id]->stop();
+        thread->stop();
         // free the allocated thread
-        sdk::lib::thread::destroy(g_linkmgr_threads[thread_id]);
-        g_linkmgr_threads[thread_id] = NULL;
+        sdk::lib::thread::destroy(thread);
     }
 
     // reset the server port

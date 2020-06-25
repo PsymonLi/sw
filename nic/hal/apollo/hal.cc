@@ -29,7 +29,6 @@ namespace hal {
 
 // process globals
 extern bool      gl_super_user;
-thread    *g_hal_threads[HAL_THREAD_ID_MAX];
 
 //------------------------------------------------------------------------------
 // initialize all the signal handlers
@@ -71,6 +70,7 @@ hal_init (hal_cfg_t *hal_cfg)
     char         *user    = NULL;
     catalog      *catalog = NULL;
     hal_ret_t    ret      = HAL_RET_OK;
+    sdk::lib::thread *thread;
     sdk::linkmgr::linkmgr_cfg_t  sdk_cfg;
     std::string mpart_json = hal_cfg->cfg_path + "/apollo/hbm_mem.json";
 
@@ -128,7 +128,10 @@ hal_init (hal_cfg_t *hal_cfg)
         // start fte threads
         for (uint32_t i = 0; i < hal_cfg->num_data_cores; i++) {
             tid = HAL_THREAD_ID_FTE_MIN + i;
-            g_hal_threads[tid]->start(g_hal_threads[tid]);
+            thread = sdk::lib::thread::find(tid);
+            if (thread) {
+                thread->start(thread);
+            }
         }
     } else {
         // FTE disabled

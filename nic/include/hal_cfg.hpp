@@ -14,17 +14,17 @@ namespace hal {
 enum {
     HAL_THREAD_ID_MIN                 = 0,
     HAL_THREAD_ID_CFG                 = HAL_THREAD_ID_MIN,
-    HAL_THREAD_ID_PERIODIC            = 1,
-    HAL_THREAD_ID_FTE_MIN             = 2,
-    HAL_THREAD_ID_FTE_MAX             = 4,
-    HAL_THREAD_ID_ASIC_RW             = 5,
-    HAL_THREAD_ID_DELPHI_CLIENT       = 6,
-    HAL_THREAD_ID_LINKMGR_CTRL        = 7,
-    HAL_THREAD_ID_VMOTION             = 8,
-    HAL_THREAD_ID_NICMGR              = 9,
-    HAL_THREAD_ID_MAX                 = 10,
-    HAL_THREAD_ID_VMOTION_THREADS_MIN = 11, // 64 Worker vMotion threads
-    HAL_THREAD_ID_VMOTION_THREADS_MAX = 74,
+    HAL_THREAD_ID_PERIODIC            = HAL_THREAD_ID_MIN + 1,
+    HAL_THREAD_ID_FTE_MIN             = HAL_THREAD_ID_MIN + 2,
+    HAL_THREAD_ID_FTE_MAX             = HAL_THREAD_ID_MIN + 4,
+    HAL_THREAD_ID_ASIC_RW             = HAL_THREAD_ID_MIN + 5,
+    HAL_THREAD_ID_LINKMGR_CTRL        = HAL_THREAD_ID_MIN + 6,  ///< should match sdk_ipc_id_t
+    HAL_THREAD_ID_DELPHI_CLIENT       = HAL_THREAD_ID_MIN + 7,
+    HAL_THREAD_ID_VMOTION             = HAL_THREAD_ID_MIN + 8,
+    HAL_THREAD_ID_NICMGR              = HAL_THREAD_ID_MIN + 9,
+    HAL_THREAD_ID_MAX                 = HAL_THREAD_ID_MIN + 10,
+    HAL_THREAD_ID_VMOTION_THREADS_MIN = HAL_THREAD_ID_MIN + 11, // 64 Worker vMotion threads
+    HAL_THREAD_ID_VMOTION_THREADS_MAX = HAL_THREAD_ID_MIN + 74,
 };
 
 #define HAL_MAX_NAME_STR       16

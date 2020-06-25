@@ -38,15 +38,6 @@ typedef void (*port_log_fn_t)(sdk_trace_level_e trace_level,
 typedef void (*xcvr_event_notify_t)(xcvr_event_info_t *xcvr_event_info);
 typedef void (*linkmgr_async_response_cb_t)(void *cookie, sdk_ret_t status);
 
-typedef enum linkmgr_thread_id_e {
-    LINKMGR_THREAD_ID_MIN         = 0,
-    LINKMGR_THREAD_ID_CFG         = LINKMGR_THREAD_ID_MIN,
-    LINKMGR_THREAD_ID_PERIODIC    = 1,
-    LINKMGR_THREAD_ID_AACS_SERVER = 2,
-    LINKMGR_THREAD_ID_CTRL        = 7,  // match with HAL_THREAD_ID_LINKMGR_CTRL
-    LINKMGR_THREAD_ID_MAX         = 8,
-} linkmgr_thread_id_t;
-
 typedef struct linkmgr_cfg_s {
     platform_type_t     platform_type;
     sdk::lib::catalog   *catalog;

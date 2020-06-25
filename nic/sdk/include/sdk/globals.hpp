@@ -13,12 +13,14 @@
 
 /// \brief ipc endpoint ids reserved for sdk processes
 typedef enum sdk_ipc_id_s {
-    SDK_IPC_ID_MIN          = 0,
-    SDK_IPC_ID_UPGMGR       = SDK_IPC_ID_MIN + 1,
-    SDK_IPC_ID_PCIEMGR      = SDK_IPC_ID_MIN + 2,
-    SDK_IPC_ID_OPERD        = SDK_IPC_ID_MIN + 3,
-    SDK_IPC_ID_OPERD_PLUGIN = SDK_IPC_ID_MIN + 4,
-    SDK_IPC_ID_MAX          = SDK_IPC_ID_MIN + 31,
+    SDK_IPC_ID_MIN                 = 0,
+    SDK_IPC_ID_UPGMGR              = SDK_IPC_ID_MIN + 1,
+    SDK_IPC_ID_PCIEMGR             = SDK_IPC_ID_MIN + 2,
+    SDK_IPC_ID_OPERD               = SDK_IPC_ID_MIN + 3,
+    SDK_IPC_ID_OPERD_PLUGIN        = SDK_IPC_ID_MIN + 4,
+    SDK_IPC_ID_LINKMGR_AACS_SERVER = SDK_IPC_ID_MIN + 5,
+    SDK_IPC_ID_LINKMGR_CTRL        = SDK_IPC_ID_MIN + 6,
+    SDK_IPC_ID_MAX                 = SDK_IPC_ID_MIN + 31,
 } sdk_ipc_id_t;
 
 /// \brief ipc broadcast event ids reserved for sdk processes

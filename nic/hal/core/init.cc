@@ -20,8 +20,8 @@ namespace hal {
 
 using boost::property_tree::ptree;
 
-static sdk::lib::thread    *g_hal_threads[HAL_THREAD_ID_MAX];
-bool                       gl_super_user = false;
+bool gl_super_user = false;
+
 //------------------------------------------------------------------------------
 // initialize all the signal handlers
 //------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ hal_get_current_thread (void)
 {
     return sdk::lib::thread::current_thread() ?
                sdk::lib::thread::current_thread() :
-               g_hal_threads[HAL_THREAD_ID_CFG];
+               sdk::lib::thread::find(HAL_THREAD_ID_CFG);
 }
 
 //------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ sdk::lib::thread *
 hal_get_thread (uint32_t thread_id)
 {
     if (thread_id < HAL_THREAD_ID_MAX) {
-        return g_hal_threads[thread_id];
+        return sdk::lib::thread::find(thread_id);
     }
     return NULL;
 }
@@ -109,24 +109,25 @@ hal_get_thread (uint32_t thread_id)
 hal_ret_t
 hal_thread_destroy (void)
 {
+    sdk::lib::thread *thread;
 
     for (uint32_t tid = HAL_THREAD_ID_MIN; tid < HAL_THREAD_ID_MAX; tid++) {
-        if (!g_hal_threads[tid]) {
+        thread = sdk::lib::thread::find(tid);
+        if (!thread) {
             continue;
         }
         // config thread is handled differently during init
         if (tid == HAL_THREAD_ID_CFG) {
             continue;
         }
-        if(g_hal_threads[tid]->is_running()) {
+        if(thread->is_running()) {
             // stop the thread
-            HAL_TRACE_INFO("Stopping thread {}", g_hal_threads[tid]->name());
-            g_hal_threads[tid]->stop();
+            HAL_TRACE_INFO("Stopping thread {}", thread->name());
+            thread->stop();
         } else {
-            HAL_TRACE_INFO("Thread {} is not running", g_hal_threads[tid]->name());
+            HAL_TRACE_INFO("Thread {} is not running", thread->name());
         }
     }
-    sdk::linkmgr::linkmgr_threads_stop();
     hal::utils::hal_logger()->flush();
     return HAL_RET_OK;
 }
@@ -140,25 +141,26 @@ hal_wait (void)
 {
     int         rv;
     uint32_t    tid;
+    sdk::lib::thread *thread;
 
     for (tid = HAL_THREAD_ID_MIN; tid < HAL_THREAD_ID_MAX; tid++) {
-        if (!g_hal_threads[tid]) {
+        thread = sdk::lib::thread::find(tid);
+        if (!thread) {
             continue;
         }
         // config thread is handled differently during init
         if (tid == HAL_THREAD_ID_CFG) {
             continue;
         }
-        HAL_TRACE_INFO("Waiting for thread {} to stop", g_hal_threads[tid]->name());
+        HAL_TRACE_INFO("Waiting for thread {} to stop", thread->name());
         hal::utils::hal_logger()->flush();
-        rv = pthread_join(g_hal_threads[tid]->pthread_id(), NULL);
+        rv = pthread_join(thread->pthread_id(), NULL);
         if (rv != 0) {
             HAL_TRACE_ERR("pthread_join failure, thread {}, err : {}",
-                          g_hal_threads[tid]->name(), rv);
+                          thread->name(), rv);
             return HAL_RET_ERR;
         }
     }
-    sdk::linkmgr::linkmgr_threads_wait();
     return HAL_RET_OK;
 }
 
@@ -171,7 +173,7 @@ hal_thread_get (uint32_t thread_id)
     if (thread_id >= HAL_THREAD_ID_MAX) {
         return NULL;
     }
-    return g_hal_threads[thread_id];
+    return sdk::lib::thread::find(thread_id);
 }
 
 //------------------------------------------------------------------------------
@@ -180,7 +182,7 @@ hal_thread_get (uint32_t thread_id)
 void
 hal_thread_start (uint32_t thread_id, void *ctxt)
 {
-    g_hal_threads[thread_id]->start(ctxt);
+    sdk::lib::thread::find(thread_id)->start(ctxt);
 }
 
 //------------------------------------------------------------------------------
@@ -189,8 +191,8 @@ hal_thread_start (uint32_t thread_id, void *ctxt)
 bool
 hal_thread_ready (uint32_t thread_id)
 {
-    if (g_hal_threads[thread_id]) {
-        return g_hal_threads[thread_id]->ready();
+    if (sdk::lib::thread::find(thread_id)) {
+        return sdk::lib::thread::find(thread_id)->ready();
     }
     return false;
 }
@@ -201,17 +203,6 @@ hal_thread_ready (uint32_t thread_id)
 hal_ret_t
 hal_thread_add (sdk::lib::thread *hal_thread)
 {
-    uint32_t    tid;
-
-    if (hal_thread == NULL) {
-        return HAL_RET_INVALID_ARG;
-    }
-    tid = hal_thread->thread_id();
-    if ((tid >= HAL_THREAD_ID_MAX) || g_hal_threads[tid]) {
-        return HAL_RET_INVALID_ARG;
-    }
-    g_hal_threads[tid] = hal_thread;
-
     return HAL_RET_OK;
 }
 
@@ -225,16 +216,16 @@ hal_thread_create (const char *name, uint32_t thread_id,
                    sdk::lib::thread_entry_func_t entry_func,
                    uint32_t thread_prio, int sched_policy, void *data)
 {
-    g_hal_threads[thread_id] =
+    sdk::lib::thread *thread =
         sdk::lib::thread::factory(name, thread_id, thread_role, cores_mask,
                                   entry_func, thread_prio, sched_policy,
                                   (thread_role == sdk::lib::THREAD_ROLE_DATA) ?
                                        false : true);
-    if (g_hal_threads[thread_id]) {
-        g_hal_threads[thread_id]->set_data(data);
+    if (thread) {
+        thread->set_data(data);
     }
 
-    return g_hal_threads[thread_id];
+    return thread;
 }
 
 //------------------------------------------------------------------------------

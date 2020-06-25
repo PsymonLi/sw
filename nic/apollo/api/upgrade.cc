@@ -216,7 +216,7 @@ upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
 sdk_ret_t
 linkmgr_shmstore_create (upg_mode_t mode)
 {
-    return upg_oper_shmstore_create(sdk::linkmgr::LINKMGR_THREAD_ID_CFG,
+    return upg_oper_shmstore_create(SDK_IPC_ID_LINKMGR_CTRL,
                                     PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_NAME,
                                     PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_SIZE, mode);
 }
