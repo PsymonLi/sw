@@ -45,12 +45,24 @@ def Setup(tc):
     api.Logger.info("wl0: vlan: {}, mac: {}, ip: {}".format(tc.wl0.uplink_vlan, tc.wl0.mac_address, tc.wl0.ip_address))
     api.Logger.info("wl1: vlan: {}, mac: {}, ip: {}".format(tc.wl1.uplink_vlan, tc.wl1.mac_address, tc.wl1.ip_address))
 
+    # check if mnic_p2p interface is present
+    req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
+    cmd = "ifconfig mnic_p2p" 
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
+
+    resp = api.Trigger(req)
+    for cmd in resp.commands:
+        api.PrintCommandResults(cmd)
+
+        if cmd.exit_code != 0:
+            api.Logger.error("mnic_p2p intf not found on naples %s" % \
+                              tc.bitw_node_name)
+            return api.types.status.FAILURE
+
     return api.types.status.SUCCESS
 
 def Trigger(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
-
-    # TODO check if mnic_p2p interface is present
 
     tc.mnic_p2p_ip = str(ip_address(tc.wl0.ip_address) + 1)
     api.SetTestsuiteAttr("mnic_p2p_ip", tc.mnic_p2p_ip)
@@ -93,6 +105,10 @@ def Trigger(tc):
     # wait till testpmd is ready
     api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, "sleep 5")
 
+    # verify that testpmd has started
+    cmd = 'ps -ef | grep testpmd | grep -v grep'
+    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
+
     tc.resp = api.Trigger(req)
 
     return api.types.status.SUCCESS
@@ -108,6 +124,11 @@ def Verify(tc):
             api.Logger.error("KNI setup failed on node %s" % \
                               tc.bitw_node_name)
             return api.types.status.FAILURE
+
+        if "grep testpmd" in cmd.command:
+            if len(cmd.stdout) == 0:
+                api.Logger.error("Failed to start testpmd")
+                return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
 
