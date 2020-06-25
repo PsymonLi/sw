@@ -17,21 +17,29 @@ metrics_read (std::string name, sdk::metrics::key_t key,
 {
     void *handler;
     sdk::metrics::counters_t counters;
+    uint32_t num_counters;
 
     if (g_handlers.count(name) == 0) {
         handler = sdk::metrics::metrics_open(name.c_str());
+        if (handler == NULL) {
+            // requested metrics is not initialized yet
+            rsp->set_apistatus(types::ApiStatus::API_STATUS_RETRY);
+            return;
+        }
         g_handlers[name] = handler;
     } else {
         handler = g_handlers[name];
     }
 
-    if (handler == NULL) {
-        rsp->set_apistatus(types::ApiStatus::API_STATUS_RETRY);
+    counters = sdk::metrics::metrics_read(handler, key);
+    num_counters = counters.size();
+    if (num_counters == 0) {
+        // metrics requested for the key is not available
+        rsp->set_apistatus(types::ApiStatus::API_STATUS_INVALID_ARG);
         return;
     }
 
-    counters = sdk::metrics::metrics_read(handler, key);
-    for (uint32_t i = 0; i < counters.size(); i++) {
+    for (uint32_t i = 0; i < num_counters; i++) {
         ::operd::CountersStatus *status = rsp->add_response();
         ::operd::CounterStatus *counter = status->add_counters();
         counter->set_name(counters[i].first);
