@@ -51,6 +51,7 @@ copy_files() {
         if [ $agent == 1 ];then
             pkgf+='nic/tools/package/pack_apulu_venice.txt '
         fi
+        p4d+='nic/p4/ipsec-p4+ nic/asm/ipsec-p4+ '
     elif [ "$pipeline" == "apollo" ];then
         pkgf+='nic/tools/package/pack_apollo.txt '
         apollod+='nic/conf/apollo '

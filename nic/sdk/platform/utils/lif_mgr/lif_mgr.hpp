@@ -69,6 +69,8 @@ public:
     sdk_ret_t disable(uint32_t lif_id);
     lif_qstate_t *get_lif_qstate(uint32_t lif_id);
     int64_t get_lif_qstate_addr(uint32_t lif_id, uint32_t type, uint32_t qid);
+    static int64_t get_lif_qstate_addr(lif_qstate_t *qstate, uint32_t lif_id,
+                                       uint32_t type, uint32_t qid);
     int64_t get_lif_qstate_base_addr(uint32_t lif_id, uint32_t type);
 
     mpartition *get_mpartition() {

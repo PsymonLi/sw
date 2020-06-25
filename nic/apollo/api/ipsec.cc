@@ -179,10 +179,12 @@ ipsec_sa_entry::factory(void *spec, bool encrypt_sa) {
     ipsec_sa = (ipsec_sa_entry *)ipsec_sa_db()->alloc();
     if (ipsec_sa) {
         if (encrypt_sa) {
+            new (ipsec_sa) ipsec_sa_encrypt_entry();
             ipsec_sa->impl_ = impl_base::factory(
                     impl::IMPL_OBJ_ID_IPSEC_SA_ENCRYPT, spec);
             ipsec_sa->set_encrypt_sa(true);
         } else {
+            new (ipsec_sa) ipsec_sa_decrypt_entry();
             ipsec_sa->impl_ = impl_base::factory(
                     impl::IMPL_OBJ_ID_IPSEC_SA_DECRYPT, spec);
             ipsec_sa->set_encrypt_sa(false);

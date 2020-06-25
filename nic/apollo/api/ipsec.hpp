@@ -207,13 +207,13 @@ public:
         return "ipsec_sa_encrypt-" + std::string(key_.str());
     }
 
-private:
     /// \brief constructor
     ipsec_sa_encrypt_entry();
 
     /// \brief destructor
     ~ipsec_sa_encrypt_entry();
 
+private:
     /// \brief      fill the ipsec sa sw spec
     /// \param[out] spec specification
     void fill_spec_(pds_ipsec_sa_encrypt_spec_t *spec);
@@ -246,13 +246,13 @@ public:
         return "ipsec_sa_decrypt-" + std::string(key_.str());
     }
 
-private:
     /// \brief constructor
     ipsec_sa_decrypt_entry();
 
     /// \brief destructor
     ~ipsec_sa_decrypt_entry();
 
+private:
     /// \brief      fill the ipsec sa sw spec
     /// \param[out] spec specification
     void fill_spec_(pds_ipsec_sa_decrypt_spec_t *spec);

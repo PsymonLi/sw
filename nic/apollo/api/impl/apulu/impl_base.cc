@@ -27,6 +27,7 @@
 #include "nic/apollo/api/impl/apulu/policer_impl.hpp"
 #include "nic/apollo/api/impl/apulu/service_impl.hpp"
 #include "nic/apollo/api/impl/apulu/dhcp_impl.hpp"
+#include "nic/apollo/api/impl/apulu/ipsec_impl.hpp"
 
 namespace api {
 namespace impl {
@@ -126,6 +127,12 @@ impl_base::factory(impl_obj_id_t obj_id, void *spec) {
 
     case IMPL_OBJ_ID_DHCP_POLICY:
         return dhcp_policy_impl::factory((pds_dhcp_policy_spec_t *)spec);
+
+    case IMPL_OBJ_ID_IPSEC_SA_ENCRYPT:
+        return ipsec_sa_impl::factory((void *)spec, true);
+
+    case IMPL_OBJ_ID_IPSEC_SA_DECRYPT:
+        return ipsec_sa_impl::factory((void *)spec, false);
 
     default:
         break;

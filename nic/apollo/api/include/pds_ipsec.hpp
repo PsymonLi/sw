@@ -19,7 +19,8 @@
 /// \defgroup PDS_IPSEC IPSEC APIs
 /// @{
 
-#define PDS_MAX_IPSEC_SA                    1024
+#define PDS_MAX_IPSEC_SA_SHIFT              14
+#define PDS_MAX_IPSEC_SA                    (1 << PDS_MAX_IPSEC_SA_SHIFT)
 #define PDS_MAX_IPSEC_KEY_SIZE              32
 
 // \brief IPSec protocol
@@ -71,6 +72,7 @@ typedef struct pds_ipsec_sa_encrypt_spec_s {
 
 /// \brief IPSec encrypt SA status
 typedef struct pds_ipsec_sa_encrypt_status_s {
+    uint32_t                hw_id;
     uint32_t                key_index;
     uint32_t                seq_no;
 } __PACK__ pds_ipsec_sa_encrypt_status_t;
@@ -110,6 +112,7 @@ typedef struct pds_ipsec_sa_decrypt_spec_s {
 
 /// \brief IPSec decrypt SA status
 typedef struct pds_ipsec_sa_decrypt_status_s {
+    uint32_t                hw_id;
     uint32_t                key_index;
     uint32_t                new_key_index;
     uint32_t                rekey_active;

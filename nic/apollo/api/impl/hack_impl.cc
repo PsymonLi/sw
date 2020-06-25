@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include "nic/sdk/include/sdk/ipsec.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/platform/utils/lif_manager_base.hpp"
 #include "nic/sdk/platform/utils/qstate_mgr.hpp"
@@ -28,6 +29,7 @@ using sdk::platform::utils::program_info;
 using namespace sdk::asic::pd;
 
 #define JLIF2QSTATE_MAP_NAME        "lif2qstate_map"
+#define JIPSEC_LIF2QSTATE_MAP_NAME  "ipsec_lif2qstate_map"
 #define JRXDMA_TO_TXDMA_BUF_NAME    "rxdma_to_txdma_buf"
 #define JRXDMA_TO_TXDMA_DESC_NAME   "rxdma_to_txdma_desc"
 
@@ -119,6 +121,62 @@ init_service_lif (uint32_t lif_id, const char *cfg_path)
     lif_info.queue_info[0].type_num = 0;
     lif_info.queue_info[0].size = 1; // 64B
     lif_info.queue_info[0].entries = 1; // 2 Queues
+    api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
+    api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
+    return SDK_RET_OK;
+}
+
+/**
+ * @brief    init routine to initialize ipsec LIF
+ * @return    SDK_RET_OK on success, failure status code on error
+ */
+sdk_ret_t
+init_ipsec_lif (uint32_t lif_id)
+{
+    sdk::platform::utils::LIFQState qstate = { 0 };
+    qstate.lif_id = lif_id;
+    qstate.hbm_address = api::g_pds_state.mempartition()->start_addr(JIPSEC_LIF2QSTATE_MAP_NAME);
+    SDK_ASSERT(qstate.hbm_address != INVALID_MEM_ADDRESS);
+    qstate.params_in.type[0].entries = PDS_MAX_IPSEC_SA_SHIFT;
+    qstate.params_in.type[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 3);
+    qstate.params_in.type[1].entries = PDS_MAX_IPSEC_SA_SHIFT;
+    qstate.params_in.type[1].size = (IPSEC_QSTATE_SIZE_SHIFT - 3);
+    asicpd_qstate_push(&qstate, 0);
+
+    // initialize ipsec lif mgr
+    lif_mgr *ipsec_lif_mgr;
+    lif_qstate_t *lif_qstate = (lif_qstate_t *)SDK_CALLOC(
+                               PDS_MEM_ALLOC_ID_HACK_IMPL_LIF_QSTATE,
+                               sizeof(lif_qstate_t));
+    lif_qstate->lif_id = lif_id;
+    lif_qstate->hbm_address = api::g_pds_state.mempartition()->start_addr(
+                              JIPSEC_LIF2QSTATE_MAP_NAME);
+    lif_qstate->type[0].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_qstate->type[0].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
+    lif_qstate->type[0].hbm_offset = 0;
+    lif_qstate->type[1].qtype_info.size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_qstate->type[1].qtype_info.entries = PDS_MAX_IPSEC_SA_SHIFT;
+    lif_qstate->type[1].hbm_offset = IPSEC_QSTATE_SIZE * PDS_MAX_IPSEC_SA;
+    api::g_pds_state.set_ipsec_lif_qstate(lif_qstate);
+
+    //Program the TxDMA scheduler for this LIF.
+    sdk::platform::lif_info_t lif_info;
+    api::pds_host_if_spec_t if_spec;
+
+    memset(&lif_info, 0, sizeof(lif_info));
+    strncpy(lif_info.name, "Apollo IPSEC LIF", sizeof(lif_info.name));
+    lif_info.lif_id = lif_id;
+    lif_info.type = sdk::platform::LIF_TYPE_SERVICE;
+    lif_info.tx_sched_table_offset = INVALID_INDEXER_INDEX;
+    lif_info.tx_sched_num_table_entries = 0;
+    // encrypt qtype
+    lif_info.queue_info[0].type_num = IPSEC_ENCRYPT_QTYPE;
+    lif_info.queue_info[0].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_info.queue_info[0].entries = PDS_MAX_IPSEC_SA_SHIFT;
+    // decrypt qtype
+    lif_info.queue_info[1].type_num = IPSEC_DECRYPT_QTYPE;
+    lif_info.queue_info[1].size = (IPSEC_QSTATE_SIZE_SHIFT - 5);
+    lif_info.queue_info[1].entries = PDS_MAX_IPSEC_SA_SHIFT;
     api::impl::host_if_spec_from_lif_info(if_spec, &lif_info);
     api::impl::lif_impl::program_tx_scheduler(&if_spec.lif);
     return SDK_RET_OK;

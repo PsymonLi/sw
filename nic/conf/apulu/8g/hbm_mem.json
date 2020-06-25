@@ -140,6 +140,12 @@
             "cache": "p4plus-all"
         },
         {
+            "name": "ipsec_lif2qstate_map",
+            "kind": "static",
+            "size": "9M",
+            "comment": "256B * 16K * 2 sessions"
+        },
+        {
             "name": "rxdma_to_txdma_buf",
             "kind": "static",
             "size": "10M",

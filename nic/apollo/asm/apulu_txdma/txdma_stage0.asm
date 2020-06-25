@@ -27,6 +27,8 @@ struct phv_ p;
     .param      nicmgr_fetch_desc
     .param      nicmgr_drop
     .param      read_qstate_info
+    .param      esp_ipv4_tunnel_h2n_txdma_stage0
+    .param      esp_ipv4_tunnel_n2h_txdma_stage0
 
 //Keep offset 0 for none to avoid invoking unrelated program when
 //qstate's pc_offset is not initialized
@@ -47,6 +49,20 @@ eth_tx_arm_rx_stage0:
 .align
 eth_tx_stage0:
     j eth_tx_fetch_desc
+    nop
+
+//Do not change the order of this entry
+//This has to align with the rxdma_stage0.s program
+.align
+ipsec_tx_stage0:
+    j esp_ipv4_tunnel_h2n_txdma_stage0
+    nop
+
+//Do not change the order of this entry
+//This has to align with the rxdma_stage0.s program
+.align 
+ipsec_tx_n2h_stage0:
+    j esp_ipv4_tunnel_n2h_txdma_stage0
     nop
 
 .align

@@ -20,6 +20,8 @@ struct phv_ p;
 %%
     .param      eth_rx_app_header
     .param      eth_rx_drop
+    .param      esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table
+    .param      esp_ipv4_tunnel_n2h_rxdma_initial_table
 
 //Keep offset 0 for none to avoid invoking unrelated program when
 //qstate's pc_offset is not initialized
@@ -40,4 +42,18 @@ eth_rx_stage0:
 .align
 eth_tx_stage0_dummy:
     j eth_rx_drop
+    nop
+
+//Do not change the order of this entry
+//This has to align with the txdma_stage0.s program
+.align
+ipsec_rx_stage0:
+    j esp_ipv4_tunnel_h2n_ipsec_encap_rxdma_initial_table 
+    nop
+
+//Do not change the order of this entry
+//This has to align with the txdma_stage0.s program
+.align
+ipsec_rx_n2h_stage0:
+    j esp_ipv4_tunnel_n2h_rxdma_initial_table
     nop

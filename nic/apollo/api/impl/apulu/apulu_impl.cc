@@ -35,6 +35,7 @@
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 
 extern sdk_ret_t init_service_lif(uint32_t lif_id, const char *cfg_path);
+extern sdk_ret_t init_ipsec_lif(uint32_t lif_id);
 extern sdk_ret_t service_lif_upg_verify(uint32_t lif_id, const char *cfg_path);
 
 #define MEM_REGION_RXDMA_PROGRAM_NAME "rxdma_program"
@@ -808,6 +809,8 @@ apulu_impl::pipeline_init(void) {
     api::g_pds_state.lif_db()->impl_state_set(g_pds_impl_state.lif_impl_db());
 
     ret = init_service_lif(APULU_SERVICE_LIF, p4pd_cfg.cfg_path);
+    SDK_ASSERT(ret == SDK_RET_OK);
+    ret = init_ipsec_lif(APULU_IPSEC_LIF);
     SDK_ASSERT(ret == SDK_RET_OK);
     ret = table_init_();
     SDK_ASSERT(ret == SDK_RET_OK);

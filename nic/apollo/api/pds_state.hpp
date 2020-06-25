@@ -15,6 +15,7 @@
 #include "nic/sdk/lib/catalog/catalog.hpp"
 #include "nic/sdk/platform/utils/mpartition.hpp"
 #include "nic/sdk/platform/utils/program.hpp"
+#include "nic/sdk/platform/utils/lif_mgr/lif_mgr.hpp"
 #include "nic/sdk/lib/kvstore/kvstore.hpp"
 #include "nic/apollo/api/device_state.hpp"
 #include "nic/apollo/api/tep_state.hpp"
@@ -114,6 +115,10 @@ public:
     string mempartition_cfg(void) { return mpart_cfg_; }
     void set_prog_info(program_info *pginfo) { pginfo_ = pginfo; }
     program_info *prog_info(void) const { return pginfo_; }
+    void set_ipsec_lif_qstate(lif_qstate_t *ipsec_lif_qstate) {
+        ipsec_lif_qstate_ = ipsec_lif_qstate;
+    }
+    lif_qstate_t *ipsec_lif_qstate(void) const { return ipsec_lif_qstate_; }
     platform_type_t platform_type(void) const { return platform_type_; }
     sdk_ret_t slab_walk(state_walk_cb_t walk_cb, void *ctxt) override;
     sdk_ret_t walk(state_walk_cb_t walk_cb, void *ctxt) override;
@@ -290,6 +295,7 @@ private:
     // TODO: remove this after we phase out apollo/artemis tests
     bool                    ipc_mock_;
     program_info            *pginfo_;
+    lif_qstate_t            *ipsec_lif_qstate_;
     uint64_t                control_cores_mask_;
     uint16_t                num_control_cores_;
     uint64_t                data_cores_mask_;

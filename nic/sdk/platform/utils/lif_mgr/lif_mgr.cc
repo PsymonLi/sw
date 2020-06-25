@@ -216,6 +216,18 @@ end:
 }
 
 //-----------------------------------------------------------------------------
+// Gets Lif queue's Qstate address
+//-----------------------------------------------------------------------------
+int64_t
+lif_mgr::get_lif_qstate_addr(lif_qstate_t *qstate, uint32_t lif_id,
+                             uint32_t type, uint32_t qid)
+{
+    return (int64_t)(qstate->hbm_address + qstate->type[type].hbm_offset +
+                    (qid * (1 << (qstate->type[type].qtype_info.size + 5))));
+
+}
+
+//-----------------------------------------------------------------------------
 // Gets Lif queue's base Qstate address
 //-----------------------------------------------------------------------------
 int64_t
