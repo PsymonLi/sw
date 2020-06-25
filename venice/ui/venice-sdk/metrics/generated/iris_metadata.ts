@@ -81,7 +81,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "scope": "PerRingPerSubRing",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AccelHwRingMetrics"
 },
   AccelPfInfo: {
   "name": "AccelPfInfo",
@@ -175,7 +176,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   ],
   "scope": "PerLIF",
   "objectKind": "NetworkInterface",
-  "interfaceType": "host-pf"
+  "interfaceType": "host-pf",
+  "uiGroup": "AccelPfInfo"
 },
   AccelSeqQueueInfoMetrics: {
   "name": "AccelSeqQueueInfoMetrics",
@@ -232,7 +234,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "scope": "PerLIFPerQ",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AccelSeqQueueInfoMetrics"
 },
   AccelSeqQueueMetrics: {
   "name": "AccelSeqQueueMetrics",
@@ -481,7 +484,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "scope": "PerLIFPerQ",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AccelSeqQueueMetrics"
 },
   DropMetrics: {
   "name": "DropMetrics",
@@ -793,7 +797,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level4"
   ],
   "scope": "PerASIC",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "DropMetrics"
 },
   FteCPSMetrics: {
   "name": "FteCPSMetrics",
@@ -869,7 +874,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "FLOWAWARE",
     "FLOWAWARE_FIREWALL"
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "SessionSummaryMetrics"
 },
   FteLifQMetrics: {
   "name": "FteLifQMetrics",
@@ -1041,7 +1047,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "FLOWAWARE",
     "FLOWAWARE_FIREWALL"
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "FteLifQMetrics"
 },
   SessionSummaryMetrics: {
   "name": "SessionSummaryMetrics",
@@ -1273,7 +1280,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "FLOWAWARE",
     "FLOWAWARE_FIREWALL"
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "SessionSummaryMetrics"
 },
   MacMetrics: {
   "name": "MacMetrics",
@@ -2162,7 +2170,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   ],
   "scope": "PerEthPort",
   "objectKind": "NetworkInterface",
-  "interfaceType": "uplink-eth"
+  "interfaceType": "uplink-eth",
+  "uiGroup": "MacMetrics"
 },
   MgmtMacMetrics: {
   "name": "MgmtMacMetrics",
@@ -2619,7 +2628,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   ],
   "scope": "PerMgmtPort",
   "objectKind": "NetworkInterface",
-  "interfaceType": "uplink-mgmt"
+  "interfaceType": "uplink-mgmt",
+  "uiGroup": "MgmtMacMetrics"
 },
   LifMetrics: {
   "name": "LifMetrics",
@@ -3028,7 +3038,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
   ],
   "scope": "PerLIF",
   "objectKind": "NetworkInterface",
-  "interfaceType": "host-pf"
+  "interfaceType": "host-pf",
+  "uiGroup": "LifMetrics"
 },
   NMDMetrics: {
   "name": "NMDMetrics",
@@ -3061,7 +3072,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     }
   ],
   "scope": "PerNode",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "NMDMetrics"
 },
   PcieMgrMetrics: {
   "name": "PcieMgrMetrics",
@@ -3553,7 +3565,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerPciePort",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PcieMgrMetrics"
 },
   PciePortMetrics: {
   "name": "PciePortMetrics",
@@ -4141,7 +4154,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerPciePort",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PciePortMetrics"
 },
   RuleMetrics: {
   "name": "RuleMetrics",
@@ -4237,7 +4251,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerFwRule",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "RuleMetrics"
 },
   AsicMemoryMetrics: {
   "name": "AsicMemoryMetrics",
@@ -4297,7 +4312,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "UnknownScope",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AsicMemoryMetrics"
 },
   AsicPowerMetrics: {
   "name": "AsicPowerMetrics",
@@ -4357,7 +4373,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerASIC",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AsicPowerMetrics"
 },
   AsicTemperatureMetrics: {
   "name": "AsicTemperatureMetrics",
@@ -4489,7 +4506,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     "Level7"
   ],
   "scope": "PerASIC",
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AsicTemperatureMetrics"
 },
   Node: {
   "name": "Node",
@@ -4610,7 +4628,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "string",
       "isTag": true
     }
-  ]
+  ],
+  "uiGroup": "Node"
 },
   DistributedServiceCard: {
   "name": "DistributedServiceCard",
@@ -4731,7 +4750,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "jsType": "string",
       "isTag": true
     }
-  ]
+  ],
+  "uiGroup": "DistributedServiceCard"
 },
   Cluster: {
   "name": "Cluster",
@@ -4834,6 +4854,7 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       ],
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     }
-  ]
+  ],
+  "uiGroup": "Cluster"
 },
 }

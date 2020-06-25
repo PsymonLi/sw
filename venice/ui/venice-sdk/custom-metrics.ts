@@ -118,7 +118,8 @@ export const customMetrics  = [
         jsType: 'string',
         isTag: true,
       },
-    ]
+    ],
+    uiGroup: "Node"
   },
   {
     name: 'DistributedServiceCard',
@@ -239,7 +240,8 @@ export const customMetrics  = [
         jsType: 'string',
         isTag: true,
       },
-    ]
+    ],
+    uiGroup: "DistributedServiceCard"
   },
   {
     name: 'Cluster',
@@ -342,6 +344,7 @@ export const customMetrics  = [
         ],
         aggregationFunc: 'max',
       },
-    ]
+    ],
+    uiGroup: "Cluster"
   }
 ];

@@ -20,6 +20,7 @@ export interface MetricMeasurement {
   name: string,
   description: string,
   displayName: string,
+  uiGroup: string
   objectKind?: string,
   // Type of interface, if objectKind is networkInterface
   interfaceType?: string,

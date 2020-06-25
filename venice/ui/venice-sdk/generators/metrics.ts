@@ -73,6 +73,12 @@ export function generatePipelineMetricMetadata(pipeline, inputBaseFolder, output
         m.interfaceType = networkInfMapping[m.scope]
       }
 
+      m.uiGroup = m.name;
+      // TODO: remove once this comes from proto annotations
+      if (m.name == "FteCPSMetrics") {
+        m.uiGroup = "SessionSummaryMetrics"
+      }
+
       if (m.fields == null) {
         return;
       }

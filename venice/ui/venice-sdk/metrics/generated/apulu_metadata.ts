@@ -144,7 +144,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "FlowStatsSummary"
 },
   LifMetrics: {
   "name": "LifMetrics",
@@ -524,7 +525,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
     }
   ],
   "objectKind": "NetworkInterface",
-  "interfaceType": "host-pf"
+  "interfaceType": "host-pf",
+  "uiGroup": "LifMetrics"
 },
   MacMetrics: {
   "name": "MacMetrics",
@@ -1617,7 +1619,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
     }
   ],
   "objectKind": "NetworkInterface",
-  "interfaceType": "uplink-eth"
+  "interfaceType": "uplink-eth",
+  "uiGroup": "MacMetrics"
 },
   MgmtMacMetrics: {
   "name": "MgmtMacMetrics",
@@ -2026,7 +2029,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
     }
   ],
   "objectKind": "NetworkInterface",
-  "interfaceType": "uplink-mgmt"
+  "interfaceType": "uplink-mgmt",
+  "uiGroup": "MgmtMacMetrics"
 },
   PcieMgrMetrics: {
   "name": "PcieMgrMetrics",
@@ -2518,7 +2522,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PcieMgrMetrics"
 },
   PciePortMetrics: {
   "name": "PciePortMetrics",
@@ -3106,7 +3111,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PciePortMetrics"
 },
   MemoryMetrics: {
   "name": "MemoryMetrics",
@@ -3166,7 +3172,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "MemoryMetrics"
 },
   PowerMetrics: {
   "name": "PowerMetrics",
@@ -3226,7 +3233,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PowerMetrics"
 },
   AsicTemperatureMetrics: {
   "name": "AsicTemperatureMetrics",
@@ -3286,7 +3294,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "AsicTemperatureMetrics"
 },
   PortTemperatureMetrics: {
   "name": "PortTemperatureMetrics",
@@ -3346,7 +3355,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     }
   ],
-  "objectKind": "DistributedServiceCard"
+  "objectKind": "DistributedServiceCard",
+  "uiGroup": "PortTemperatureMetrics"
 },
   Node: {
   "name": "Node",
@@ -3467,7 +3477,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "string",
       "isTag": true
     }
-  ]
+  ],
+  "uiGroup": "Node"
 },
   DistributedServiceCard: {
   "name": "DistributedServiceCard",
@@ -3588,7 +3599,8 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       "jsType": "string",
       "isTag": true
     }
-  ]
+  ],
+  "uiGroup": "DistributedServiceCard"
 },
   Cluster: {
   "name": "Cluster",
@@ -3691,6 +3703,7 @@ export const MetricsMetadataApulu: { [key: string]: MetricMeasurement } = {
       ],
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.max
     }
-  ]
+  ],
+  "uiGroup": "Cluster"
 },
 }

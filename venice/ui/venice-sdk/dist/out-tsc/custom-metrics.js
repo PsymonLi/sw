@@ -120,7 +120,8 @@ exports.customMetrics = [
                 jsType: 'string',
                 isTag: true,
             },
-        ]
+        ],
+        uiGroup: "Node"
     },
     {
         name: 'DistributedServiceCard',
@@ -241,7 +242,8 @@ exports.customMetrics = [
                 jsType: 'string',
                 isTag: true,
             },
-        ]
+        ],
+        uiGroup: "DistributedServiceCard"
     },
     {
         name: 'Cluster',
@@ -344,6 +346,7 @@ exports.customMetrics = [
                 ],
                 aggregationFunc: 'max',
             },
-        ]
+        ],
+        uiGroup: "Cluster"
     }
 ];
