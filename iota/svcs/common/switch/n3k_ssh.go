@@ -1017,19 +1017,11 @@ func (sw *nexus3k) UnsetBreakoutMode(port string) error {
 	cmds := []string{
 		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
 	}
-	err := sw.runConfigCommands(cmds)
-	if err != nil {
-		return err
-	}
+	sw.runConfigCommands(cmds)
+	portStr := "interface " + parts[0] + "/" + parts[1] + "/1"
 	cmds = []string{
-		"interface " + port,
 		"no fec off",
 	}
-	sw.runConfigCommands(cmds)
-	cmds = []string{
-		"interface " + port + "/1",
-		"no fec off",
-	}
-	sw.runConfigCommands(cmds)
+	sw.runConfigIFCommands(portStr, cmds)
 	return nil
 }

@@ -389,12 +389,7 @@ func (sw *nexus3kRest) UnsetBreakoutMode(port string) error {
 	}
 	sw.runConfigCommands(cmds)
 	cmds = []string{
-		"interface " + port,
-		"no fec off",
-	}
-	sw.runConfigCommands(cmds)
-	cmds = []string{
-		"interface " + port + "/1",
+		"interface " + parts[0] + "/" + parts[1] + "/1",
 		"no fec off",
 	}
 	sw.runConfigCommands(cmds)

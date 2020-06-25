@@ -453,11 +453,8 @@ func (n *TestNode) StartAgent(command string, cfg *ssh.ClientConfig) error {
 
 func clearSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string) error {
 	for _, port := range ports {
-		err := dataSwitch.UnsetBreakoutMode(port)
-		if err != nil {
-			return err
-		}
-		err = dataSwitch.UnsetTrunkMode(port)
+		dataSwitch.UnsetBreakoutMode(port)
+		err := dataSwitch.UnsetTrunkMode(port)
 		if err != nil {
 			return err
 		}
