@@ -3,17 +3,20 @@
 package statemgr
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
+	"github.com/pensando/sw/api/generated/cluster"
 	"github.com/pensando/sw/api/generated/ctkit"
 	"github.com/pensando/sw/api/generated/network"
+	"github.com/pensando/sw/api/generated/security"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/memdb"
 	"github.com/pensando/sw/venice/utils/ref"
 	"github.com/pensando/sw/venice/utils/runtime"
 )
@@ -46,8 +49,10 @@ func init() {
 
 // RoutingConfigState is a wrapper for RoutingConfig object
 type RoutingConfigState struct {
-	sync.Mutex
-	RoutingConfig *ctkit.RoutingConfig `json:"-"` // RoutingConfig object
+	smObjectTracker
+	RoutingConfig   *ctkit.RoutingConfig `json:"-"` // RoutingConfig object
+	stateMgr        *Statemgr
+	markedForDelete bool
 }
 
 // RoutingConfigStateFromObj converts from memdb object to RoutingConfig state
@@ -134,8 +139,10 @@ func (sma *SmRoute) GetRoutingConfigWatchOptions() *api.ListWatchOptions {
 func NewRoutingConfigState(routecfg *ctkit.RoutingConfig, sma *SmRoute) (*RoutingConfigState, error) {
 	rtcfg := &RoutingConfigState{
 		RoutingConfig: routecfg,
+		stateMgr:      sma.sm,
 	}
 	routecfg.HandlerCtx = rtcfg
+	rtcfg.smObjectTracker.init(rtcfg)
 	return rtcfg, nil
 }
 
@@ -153,7 +160,7 @@ func (sma *SmRoute) OnRoutingConfigCreate(obj *ctkit.RoutingConfig) error {
 	log.Info("OnRoutingConfigCreate created: ", rtcfg.RoutingConfig)
 
 	// store it in local DB
-	err = sma.sm.mbus.AddObjectWithReferences(rtcfg.RoutingConfig.MakeKey(string(apiclient.GroupNetwork)), convertRoutingConfig(rtcfg), references(obj))
+	err = sma.sm.AddObjectToMbus(rtcfg.RoutingConfig.MakeKey(string(apiclient.GroupNetwork)), rtcfg, references(obj))
 	if err != nil {
 		log.Errorf("could not add RoutingConfig to nimbus (%s)", err)
 		return err
@@ -183,7 +190,7 @@ func (sma *SmRoute) OnRoutingConfigUpdate(oldcfg *ctkit.RoutingConfig, newcfg *n
 		return fmt.Errorf("Can not find routingconfig state")
 	}
 
-	err = sma.sm.mbus.UpdateObjectWithReferences(newcfg.MakeKey(string(apiclient.GroupNetwork)), convertRoutingConfig(rtcfg), references(newcfg))
+	err = sma.sm.UpdateObjectToMbus(newcfg.MakeKey(string(apiclient.GroupNetwork)), rtcfg, references(newcfg))
 	if err != nil {
 		log.Errorf("could not update RoutingConfig to nimbus (%s)", err)
 		return err
@@ -205,7 +212,7 @@ func (sma *SmRoute) OnRoutingConfigDelete(obj *ctkit.RoutingConfig) error {
 	}
 
 	log.Info("OnRoutingConfigDelete, found: ", rtcfg.RoutingConfig)
-	err = sma.sm.mbus.DeleteObjectWithReferences(rtcfg.RoutingConfig.MakeKey(string(apiclient.GroupNetwork)), convertRoutingConfig(rtcfg), references(obj))
+	err = sma.sm.DeleteObjectToMbus(rtcfg.RoutingConfig.MakeKey(string(apiclient.GroupNetwork)), rtcfg, references(obj))
 	if err != nil {
 		log.Errorf("could not delete RoutingConfig to nimbus (%s)", err)
 		return err
@@ -216,4 +223,208 @@ func (sma *SmRoute) OnRoutingConfigDelete(obj *ctkit.RoutingConfig) error {
 // OnRoutingConfigReconnect is called when ctkit reconnects to apiserver
 func (sma *SmRoute) OnRoutingConfigReconnect() {
 	return
+}
+
+// Write writes the object to api server
+func (rtCfgSt *RoutingConfigState) Write() error {
+	var err error
+
+	rtCfgSt.RoutingConfig.Lock()
+	defer rtCfgSt.RoutingConfig.Unlock()
+
+	prop := &rtCfgSt.RoutingConfig.Status.PropagationStatus
+	propStatus := rtCfgSt.getPropStatus()
+	newProp := &security.PropagationStatus{
+		GenerationID:  propStatus.generationID,
+		MinVersion:    propStatus.minVersion,
+		Pending:       propStatus.pending,
+		PendingNaples: propStatus.pendingDSCs,
+		Updated:       propStatus.updated,
+		Status:        propStatus.status,
+	}
+
+	//Do write only if changed
+	if rtCfgSt.stateMgr.propgatationStatusDifferent(prop, newProp) {
+		rtCfgSt.RoutingConfig.Status.PropagationStatus = *newProp
+		err = rtCfgSt.RoutingConfig.Write()
+		if err != nil {
+			rtCfgSt.RoutingConfig.Status.PropagationStatus = *prop
+		}
+	}
+	return err
+}
+
+// OnRoutingConfigCreateReq gets called when agent sends create request
+func (sm *Statemgr) OnRoutingConfigCreateReq(nodeID string, objinfo *netproto.RoutingConfig) error {
+	return nil
+}
+
+// OnRoutingConfigUpdateReq gets called when agent sends update request
+func (sm *Statemgr) OnRoutingConfigUpdateReq(nodeID string, objinfo *netproto.RoutingConfig) error {
+	return nil
+}
+
+// OnRoutingConfigDeleteReq gets called when agent sends delete request
+func (sm *Statemgr) OnRoutingConfigDeleteReq(nodeID string, objinfo *netproto.RoutingConfig) error {
+	return nil
+}
+
+// OnRoutingConfigOperUpdate gets called when policy updates arrive from agents
+func (sm *Statemgr) OnRoutingConfigOperUpdate(nodeID string, objinfo *netproto.RoutingConfig) error {
+	log.Errorf("OnRoutingConfigOperUpdate: rtcfg operupdate for: nodeid: %s | objinfo: %v", nodeID, objinfo)
+	sm.UpdateRoutingConfigStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+	return nil
+}
+
+// OnRoutingConfigOperDelete gets called when policy delete arrives from agent
+func (sm *Statemgr) OnRoutingConfigOperDelete(nodeID string, objinfo *netproto.RoutingConfig) error {
+	return nil
+}
+
+//GetDBObject get db object
+func (rtCfgSt *RoutingConfigState) GetDBObject() memdb.Object {
+	return convertRoutingConfig(rtCfgSt)
+}
+
+// GetKey returns the key of RoutingConfig
+func (rtCfgSt *RoutingConfigState) GetKey() string {
+	return rtCfgSt.RoutingConfig.GetKey()
+}
+
+//TrackedDSCs keeps a list of DSCs being tracked for propagation status
+func (rtCfgSt *RoutingConfigState) TrackedDSCs() []string {
+	dscs, _ := rtCfgSt.stateMgr.ListDistributedServiceCards()
+
+	trackedDSCs := []string{}
+	for _, dsc := range dscs {
+		if rtCfgSt.stateMgr.isDscEnforcednMode(&dsc.DistributedServiceCard.DistributedServiceCard) && rtCfgSt.stateMgr.IsObjectValidForDSC(dsc.DistributedServiceCard.DistributedServiceCard.Status.PrimaryMAC, "RoutingConfig", rtCfgSt.RoutingConfig.ObjectMeta) {
+			trackedDSCs = append(trackedDSCs, dsc.DistributedServiceCard.DistributedServiceCard.Name)
+		}
+	}
+	return trackedDSCs
+}
+
+// UpdateRoutingConfigStatus updates the status of an sg policy
+func (sm *Statemgr) UpdateRoutingConfigStatus(nodeuuid, tenant, name, generationID string) {
+	rtCfg, err := sm.FindRoutingConfig("", "default", name)
+	if err != nil {
+		log.Errorf("UpdateRoutingConfigStatus: rtcfg not found for: nodeid: %s | tenant: %s | name: %s | genID: %s", nodeuuid, tenant, name, generationID)
+		return
+	}
+
+	rtCfg.updateNodeVersion(nodeuuid, generationID)
+
+}
+
+// FindRoutingConfig finds RoutingConfig by name
+func (sm *Statemgr) FindRoutingConfig(tenant, ns, name string) (*RoutingConfigState, error) {
+	// find it in db
+	obj, err := sm.FindObject("RoutingConfig", tenant, ns, name)
+	if err != nil {
+		return nil, err
+	}
+
+	return RoutingConfigStateFromObj(obj)
+}
+
+func (sm *Statemgr) handleRtCfgPropTopoUpdate(update *memdb.PropagationStTopoUpdate) {
+	if update == nil {
+		log.Errorf("handleRtCfgPropTopoUpdate invalid update received")
+		return
+	}
+
+	// check if rtcfg status needs updates
+	for _, d1 := range update.AddDSCs {
+		if i1, ok := update.AddObjects["RoutingConfig"]; ok {
+			for _, ii := range i1 {
+				rtCfg, err := sm.FindRoutingConfig("", "default", ii)
+				if err != nil {
+					sm.logger.Errorf("rtcfg look up failed for name: %s", ii)
+					continue
+				}
+				rtCfg.RoutingConfig.Lock()
+				rtCfg.smObjectTracker.startDSCTracking(d1)
+				rtCfg.RoutingConfig.Unlock()
+			}
+		}
+	}
+
+	for _, d2 := range update.DelDSCs {
+		if i1, ok := update.DelObjects["RoutingConfig"]; ok {
+			for _, ii := range i1 {
+				rtCfg, err := sm.FindRoutingConfig("", "default", ii)
+				if err != nil {
+					sm.logger.Errorf("rtcfg look up failed for name: %s", ii)
+					continue
+				}
+				rtCfg.RoutingConfig.Lock()
+				rtCfg.smObjectTracker.stopDSCTracking(d2)
+				rtCfg.RoutingConfig.Unlock()
+			}
+		}
+	}
+}
+
+// GetAgentWatchFilter is called when filter get is happening based on netagent watchoptions
+func (sma *SmRoute) GetAgentWatchFilter(ctx context.Context, kind string, opts *api.ListWatchOptions) []memdb.FilterFn {
+	return sma.sm.GetAgentWatchFilter(ctx, kind, opts)
+}
+
+//ProcessDSCCreate create
+func (sma *SmRoute) ProcessDSCCreate(dsc *cluster.DistributedServiceCard) {
+
+	sma.dscTracking(dsc, true)
+}
+
+// ListRoutingConfigs lists all routingCfgs
+func (sm *Statemgr) ListRoutingConfigs() ([]*RoutingConfigState, error) {
+	objs := sm.ListObjects("RoutingConfig")
+
+	var rtCfgs []*RoutingConfigState
+	for _, obj := range objs {
+		rtCfg, err := RoutingConfigStateFromObj(obj)
+		if err != nil {
+			return rtCfgs, err
+		}
+
+		rtCfgs = append(rtCfgs, rtCfg)
+	}
+
+	return rtCfgs, nil
+}
+
+func (sma *SmRoute) dscTracking(dsc *cluster.DistributedServiceCard, start bool) {
+
+	rtCfgs, err := sma.sm.ListRoutingConfigs()
+	if err != nil {
+		log.Errorf("Error listing routing configs %v", err)
+		return
+	}
+
+	for _, rtCfg := range rtCfgs {
+		if start && sma.sm.isDscEnforcednMode(dsc) && sma.sm.IsObjectValidForDSC(dsc.Status.PrimaryMAC, "RoutingConfig", rtCfg.RoutingConfig.ObjectMeta) {
+			rtCfg.smObjectTracker.startDSCTracking(dsc.Name)
+		} else {
+			rtCfg.smObjectTracker.stopDSCTracking(dsc.Name)
+		}
+	}
+}
+
+//ProcessDSCUpdate update
+func (sma *SmRoute) ProcessDSCUpdate(dsc *cluster.DistributedServiceCard, ndsc *cluster.DistributedServiceCard) {
+
+	//Process only if it is deleted or decomissioned
+	if sma.sm.dscDecommissioned(ndsc) {
+		sma.dscTracking(ndsc, false)
+		return
+	}
+	//Run only if profile changes.
+	if dsc.Spec.DSCProfile != ndsc.Spec.DSCProfile {
+		sma.dscTracking(ndsc, true)
+	}
+}
+
+//ProcessDSCDelete delete
+func (sma *SmRoute) ProcessDSCDelete(dsc *cluster.DistributedServiceCard) {
+	sma.dscTracking(dsc, false)
 }

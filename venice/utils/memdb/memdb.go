@@ -258,7 +258,11 @@ type topoMgrInterface interface {
 	handleUpdateEvent(old, new Object, key string) *PropagationStTopoUpdate
 	handleDeleteEvent(obj Object, key string) *PropagationStTopoUpdate
 	getRefCnt(dsc, kind, tenant, name string) int
+	addRefCnt(dsc, kind, tenant, name string)
+	delRefCnt(dsc, kind, tenant, name string)
 	dump() string
+	Lock()
+	Unlock()
 }
 
 func sendToWatcher(ev Event, watcher *Watcher) error {

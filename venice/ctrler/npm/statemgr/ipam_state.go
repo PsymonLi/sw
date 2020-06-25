@@ -36,7 +36,6 @@ func (sma *SmIPAM) CompleteRegistration() {
 	}
 
 	sma.sm.SetIPAMPolicyReactor(smgrIPAM)
-	sma.sm.SetIPAMPolicyStatusReactor(smgrIPAM)
 }
 
 func init() {
@@ -230,28 +229,28 @@ func (ips *IPAMState) Write() error {
 }
 
 // OnIPAMPolicyCreateReq gets called when agent sends create request
-func (sma *SmIPAM) OnIPAMPolicyCreateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+func (sm *Statemgr) OnIPAMPolicyCreateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
 	return nil
 }
 
 // OnIPAMPolicyUpdateReq gets called when agent sends update request
-func (sma *SmIPAM) OnIPAMPolicyUpdateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+func (sm *Statemgr) OnIPAMPolicyUpdateReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
 	return nil
 }
 
 // OnIPAMPolicyDeleteReq gets called when agent sends delete request
-func (sma *SmIPAM) OnIPAMPolicyDeleteReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
+func (sm *Statemgr) OnIPAMPolicyDeleteReq(nodeID string, objinfo *netproto.IPAMPolicy) error {
 	return nil
 }
 
 // OnIPAMPolicyOperUpdate gets called when policy updates arrive from agents
-func (sma *SmIPAM) OnIPAMPolicyOperUpdate(nodeID string, objinfo *netproto.IPAMPolicy) error {
-	sma.UpdateIPAMPolicyStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+func (sm *Statemgr) OnIPAMPolicyOperUpdate(nodeID string, objinfo *netproto.IPAMPolicy) error {
+	sm.UpdateIPAMPolicyStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
 	return nil
 }
 
 // OnIPAMPolicyOperDelete gets called when policy delete arrives from agent
-func (sma *SmIPAM) OnIPAMPolicyOperDelete(nodeID string, objinfo *netproto.IPAMPolicy) error {
+func (sm *Statemgr) OnIPAMPolicyOperDelete(nodeID string, objinfo *netproto.IPAMPolicy) error {
 	return nil
 }
 
@@ -279,8 +278,8 @@ func (ips *IPAMState) TrackedDSCs() []string {
 }
 
 // UpdateIPAMPolicyStatus updates the status of an sg policy
-func (sma *SmIPAM) UpdateIPAMPolicyStatus(nodeuuid, tenant, name, generationID string) {
-	ips, err := sma.FindIPAMPolicy(tenant, "default", name)
+func (sm *Statemgr) UpdateIPAMPolicyStatus(nodeuuid, tenant, name, generationID string) {
+	ips, err := sm.FindIPAMPolicy(tenant, "default", name)
 	if err != nil {
 		return
 	}

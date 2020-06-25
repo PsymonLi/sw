@@ -541,6 +541,7 @@ func (sm *Statemgr) runPropagationTopoUpdater(c <-chan *memdb.PropagationStTopoU
 			sm.handleNetworkPropTopoUpdate(update)
 			sm.handleVrfPropTopoUpdate(update)
 			sm.handleIPAMPropTopoUpdate(update)
+			sm.handleRtCfgPropTopoUpdate(update)
 		}
 	}
 }
@@ -654,6 +655,7 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 		logger.Errorf("Error starting vrf RPC server")
 		return err
 	}
+	log.Infof("Interface status reactor: %v", sm.NetworkInterfaceStatusReactor)
 	sm.topics.NetworkInterfaceTopic, err = nimbus.AddInterfaceTopic(mserver, sm.NetworkInterfaceStatusReactor)
 	if err != nil {
 		log.Errorf("Error starting network interface RPC server")
@@ -662,7 +664,13 @@ func (sm *Statemgr) Run(rpcServer *rpckit.RPCServer, apisrvURL string, rslvr res
 
 	sm.topics.IPAMPolicyTopic, err = nimbus.AddIPAMPolicyTopic(mserver, sm.IPAMPolicyStatusReactor)
 	if err != nil {
-		log.Errorf("Error starting network interface RPC server: %v", err)
+		log.Errorf("Error starting ipam policy RPC server: %v", err)
+		return err
+	}
+
+	sm.topics.RoutingConfigTopic, err = nimbus.AddRoutingConfigTopic(mserver, sm.RoutingConfigStatusReactor)
+	if err != nil {
+		log.Errorf("Error starting routing config RPC server: %v", err)
 		return err
 	}
 

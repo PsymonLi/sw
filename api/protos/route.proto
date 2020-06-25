@@ -12,7 +12,7 @@ import "github.com/pensando/sw/api/meta.proto";
 import "github.com/pensando/sw/api/labels/selector.proto";
 
 import "tenant.proto";
-
+import "sgpolicy.proto";
 
 message RouteDistinguisher {
     enum RDType {
@@ -171,6 +171,8 @@ message BGPAuthStatus {
 message RoutingConfigStatus {
     // Authentication config status
     repeated BGPAuthStatus AuthConfigStatus = 1 [(gogoproto.jsontag) = "auth-config-status,omitempty"];
+    // The status of the configuration propagation to the Naples
+    security.PropagationStatus PropagationStatus = 2 [(gogoproto.nullable) = false, (gogoproto.jsontag) = "propagation-status"];
 }
 
 message RoutingConfig {

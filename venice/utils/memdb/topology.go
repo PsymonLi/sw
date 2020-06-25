@@ -91,6 +91,8 @@ func (tr *topoRefCnt) addRefCnt(dsc, kind, tenant, name string) {
 		key2 = tenant + "%" + name
 	case "Tenant":
 		key2 = tenant
+	case "RoutingConfig":
+		key2 = name
 	default:
 		return
 	}
@@ -111,6 +113,8 @@ func (tr *topoRefCnt) delRefCnt(dsc, kind, tenant, name string) {
 		key2 = tenant + "%" + name
 	case "Tenant":
 		key2 = tenant
+	case "RoutingConfig":
+		key2 = name
 	default:
 		return
 	}
@@ -136,6 +140,9 @@ func (tr *topoRefCnt) getRefCnt(dsc, kind, tenant, name string) int {
 	case "Vrf", "Network":
 		key1 = dsc + "%" + "Tenant"
 		key2 = tenant
+	case "RoutingConfig":
+		key1 = dsc + "%" + kind
+		key2 = name
 	default:
 		return 0
 	}
@@ -1662,6 +1669,9 @@ func (tm *topoMgr) handleInterfaceUpdate(old, new Object, key string) (bool, *Pr
 
 // SendRoutingConfig handles routing config refered to by DSC config
 func (md *Memdb) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
+	md.topoHandler.Lock()
+	defer md.topoHandler.Unlock()
+	update := newPropUpdate()
 	if oldRtCfg == "" {
 		opts := api.ListWatchOptions{}
 		opts.Name = newRtCfg
@@ -1671,12 +1681,18 @@ func (md *Memdb) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
 			return
 		}
 		log.Infof("Sending reconcile event for RoutingConfig | dsc: %s | opts: %v", dsc, opts)
+		md.topoHandler.addRefCnt(dsc, "RoutingConfig", "", newRtCfg)
 		md.sendReconcileEvent(dsc, "RoutingConfig", nil, newFlt)
+		update.AddDSCs = append(update.AddDSCs, dsc)
+		update.AddObjects["RoutingConfig"] = []string{newRtCfg}
 	} else if newRtCfg == "" {
+		md.topoHandler.delRefCnt(dsc, "RoutingConfig", "", oldRtCfg)
 		oldFlt := md.clearWatchOptions(dsc, "RoutingConfig")
 		if len(oldFlt) != 0 {
 			md.sendReconcileEvent(dsc, "RoutingConfig", oldFlt, nil)
 		}
+		update.DelDSCs = append(update.DelDSCs, dsc)
+		update.DelObjects["RoutingConfig"] = []string{oldRtCfg}
 	} else {
 		opts := api.ListWatchOptions{}
 		opts.Name = newRtCfg
@@ -1685,17 +1701,34 @@ func (md *Memdb) SendRoutingConfig(dsc, oldRtCfg, newRtCfg string) {
 			log.Errorf("RoutingConfig addDscWatchOptions for dsc: %s | name(old/new): %s/%s | err: %s", dsc, oldRtCfg, newRtCfg, err)
 			return
 		}
+		md.topoHandler.delRefCnt(dsc, "RoutingConfig", "", oldRtCfg)
+		md.topoHandler.addRefCnt(dsc, "RoutingConfig", "", newRtCfg)
 		log.Infof("Sending reconcile event for RoutingConfig | dsc: %s | opts: %v", dsc, opts)
 		md.sendReconcileEvent(dsc, "RoutingConfig", oldFlt, newFlt)
+		update.AddDSCs = append(update.AddDSCs, dsc)
+		update.AddObjects["RoutingConfig"] = []string{newRtCfg}
+		update.DelDSCs = append(update.DelDSCs, dsc)
+		update.DelObjects["RoutingConfig"] = []string{oldRtCfg}
 	}
+	md.sendPropagationUpdate(update)
 }
 
 func (tm *topoMgr) getRefCnt(dsc, kind, tenant, name string) int {
 	return tm.refCounts.getRefCnt(dsc, kind, tenant, name)
 }
 
+func (tm *topoMgr) addRefCnt(dsc, kind, tenant, name string) {
+	tm.refCounts.addRefCnt(dsc, kind, tenant, name)
+}
+
+func (tm *topoMgr) delRefCnt(dsc, kind, tenant, name string) {
+	tm.refCounts.delRefCnt(dsc, kind, tenant, name)
+}
+
 // IsObjectValidForDSC returns true if the object should be propogated to the DSC with id
 func (md *Memdb) IsObjectValidForDSC(dsc, kind string, ometa api.ObjectMeta) bool {
+	md.topoHandler.Lock()
+	defer md.topoHandler.Unlock()
 	if !md.isControllerWatchFilter(kind) {
 		return true
 	}

@@ -8,9 +8,11 @@ import { minValueValidator, maxValueValidator, minLengthValidator, maxLengthVali
 import { BaseModel, PropInfoItem } from '../basemodel/base-model';
 
 import { NetworkBGPAuthStatus, INetworkBGPAuthStatus } from './network-bgp-auth-status.model';
+import { SecurityPropagationStatus, ISecurityPropagationStatus } from './security-propagation-status.model';
 
 export interface INetworkRoutingConfigStatus {
     'auth-config-status'?: Array<INetworkBGPAuthStatus>;
+    'propagation-status'?: ISecurityPropagationStatus;
     '_ui'?: any;
 }
 
@@ -20,9 +22,16 @@ export class NetworkRoutingConfigStatus extends BaseModel implements INetworkRou
     '_ui': any = {};
     /** Authentication config status. */
     'auth-config-status': Array<NetworkBGPAuthStatus> = null;
+    /** The status of the configuration propagation to the Naples. */
+    'propagation-status': SecurityPropagationStatus = null;
     public static propInfo: { [prop in keyof INetworkRoutingConfigStatus]: PropInfoItem } = {
         'auth-config-status': {
             description:  `Authentication config status.`,
+            required: false,
+            type: 'object'
+        },
+        'propagation-status': {
+            description:  `The status of the configuration propagation to the Naples.`,
             required: false,
             type: 'object'
         },
@@ -51,6 +60,7 @@ export class NetworkRoutingConfigStatus extends BaseModel implements INetworkRou
     constructor(values?: any, setDefaults:boolean = true) {
         super();
         this['auth-config-status'] = new Array<NetworkBGPAuthStatus>();
+        this['propagation-status'] = new SecurityPropagationStatus();
         this._inputValue = values;
         this.setValues(values, setDefaults);
     }
@@ -68,6 +78,11 @@ export class NetworkRoutingConfigStatus extends BaseModel implements INetworkRou
         } else {
             this['auth-config-status'] = [];
         }
+        if (values) {
+            this['propagation-status'].setValues(values['propagation-status'], fillDefaults);
+        } else {
+            this['propagation-status'].setValues(null, fillDefaults);
+        }
         this.setFormGroupValuesToBeModelValues();
     }
 
@@ -76,12 +91,18 @@ export class NetworkRoutingConfigStatus extends BaseModel implements INetworkRou
         if (!this._formGroup) {
             this._formGroup = new FormGroup({
                 'auth-config-status': new FormArray([]),
+                'propagation-status': CustomFormGroup(this['propagation-status'].$formGroup, NetworkRoutingConfigStatus.propInfo['propagation-status'].required),
             });
             // generate FormArray control elements
             this.fillFormArray<NetworkBGPAuthStatus>('auth-config-status', this['auth-config-status'], NetworkBGPAuthStatus);
             // We force recalculation of controls under a form group
             Object.keys((this._formGroup.get('auth-config-status') as FormGroup).controls).forEach(field => {
                 const control = this._formGroup.get('auth-config-status').get(field);
+                control.updateValueAndValidity();
+            });
+            // We force recalculation of controls under a form group
+            Object.keys((this._formGroup.get('propagation-status') as FormGroup).controls).forEach(field => {
+                const control = this._formGroup.get('propagation-status').get(field);
                 control.updateValueAndValidity();
             });
         }
@@ -95,6 +116,7 @@ export class NetworkRoutingConfigStatus extends BaseModel implements INetworkRou
     setFormGroupValuesToBeModelValues() {
         if (this._formGroup) {
             this.fillModelArray<NetworkBGPAuthStatus>(this, 'auth-config-status', this['auth-config-status'], NetworkBGPAuthStatus);
+            this['propagation-status'].setFormGroupValuesToBeModelValues();
         }
     }
 }

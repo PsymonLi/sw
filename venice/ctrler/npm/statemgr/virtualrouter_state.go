@@ -42,7 +42,6 @@ func (sma *SmVirtualRouter) CompleteRegistration() {
 	}
 
 	sma.sm.SetVirtualRouterReactor(sma)
-	sma.sm.SetVrfStatusReactor(sma)
 }
 
 func init() {
@@ -334,28 +333,28 @@ func (vs *VirtualRouterState) Write() error {
 }
 
 // OnVrfCreateReq gets called when agent sends create request
-func (sma *SmVirtualRouter) OnVrfCreateReq(nodeID string, objinfo *netproto.Vrf) error {
+func (sm *Statemgr) OnVrfCreateReq(nodeID string, objinfo *netproto.Vrf) error {
 	return nil
 }
 
 // OnVrfUpdateReq gets called when agent sends update request
-func (sma *SmVirtualRouter) OnVrfUpdateReq(nodeID string, objinfo *netproto.Vrf) error {
+func (sm *Statemgr) OnVrfUpdateReq(nodeID string, objinfo *netproto.Vrf) error {
 	return nil
 }
 
 // OnVrfDeleteReq gets called when agent sends delete request
-func (sma *SmVirtualRouter) OnVrfDeleteReq(nodeID string, objinfo *netproto.Vrf) error {
+func (sm *Statemgr) OnVrfDeleteReq(nodeID string, objinfo *netproto.Vrf) error {
 	return nil
 }
 
 // OnVrfOperUpdate gets called when policy updates arrive from agents
-func (sma *SmVirtualRouter) OnVrfOperUpdate(nodeID string, objinfo *netproto.Vrf) error {
-	sma.UpdateVirtualRouterStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
+func (sm *Statemgr) OnVrfOperUpdate(nodeID string, objinfo *netproto.Vrf) error {
+	sm.UpdateVirtualRouterStatus(nodeID, objinfo.ObjectMeta.Tenant, objinfo.ObjectMeta.Name, objinfo.ObjectMeta.GenerationID)
 	return nil
 }
 
 // OnVrfOperDelete gets called when policy delete arrives from agent
-func (sma *SmVirtualRouter) OnVrfOperDelete(nodeID string, objinfo *netproto.Vrf) error {
+func (sm *Statemgr) OnVrfOperDelete(nodeID string, objinfo *netproto.Vrf) error {
 	return nil
 }
 
@@ -387,8 +386,8 @@ func (vs *VirtualRouterState) TrackedDSCs() []string {
 }
 
 // UpdateVirtualRouterStatus updates the status of an sg policy
-func (sma *SmVirtualRouter) UpdateVirtualRouterStatus(nodeuuid, tenant, name, generationID string) {
-	vs, err := sma.FindVirtualRouter(tenant, "default", name)
+func (sm *Statemgr) UpdateVirtualRouterStatus(nodeuuid, tenant, name, generationID string) {
+	vs, err := sm.FindVirtualRouter(tenant, "default", name)
 	if err != nil {
 		return
 	}

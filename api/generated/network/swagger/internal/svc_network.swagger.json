@@ -2783,6 +2783,53 @@
             "required": false,
             "type": "boolean",
             "format": "boolean"
+          },
+          {
+            "name": "propagation-status.generation-id",
+            "description": "The Generation ID this status is for.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.updated",
+            "description": "The number of Naples that this version has already been pushed to.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.pending",
+            "description": "Number of Naples pending. If this is 0 it can be assumed that everything is up to date.",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "propagation-status.min-version",
+            "description": "The Version running on the slowest Naples.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.status",
+            "description": "Textual description of propagation status.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "propagation-status.pending-dscs",
+            "description": "list of DSCs where propagation did not complete.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         ],
         "tags": [
@@ -9487,6 +9534,10 @@
             "$ref": "#/definitions/networkBGPAuthStatus"
           },
           "description": "Authentication config status."
+        },
+        "propagation-status": {
+          "$ref": "#/definitions/securityPropagationStatus",
+          "description": "The status of the configuration propagation to the Naples."
         }
       }
     },
