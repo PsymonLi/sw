@@ -88,7 +88,7 @@ app-pentable,
 }
 
 .pentable-checkbox {
-  width: 31px;
+  width: 50px;
 
   .ui-chkbox {
     margin-right: 0;
@@ -97,6 +97,39 @@ app-pentable,
       box-shadow: none;
     }
   }
+
+  .pentable-th-box {
+    display: flex;
+
+    .ui-dropdown {
+
+      .ui-dropdown-label {
+        display: none;
+      }
+
+      .ui-dropdown-trigger {
+        right: unset;
+      }
+    }
+  }
+
+  p-dropdown>div,
+  p-dropdown>div:hover,
+  p-dropdown>div.ui-state-focus,
+  p-dropdown>div.ui-dropdown-open {
+    background-color: transparent !important;
+    border: none !important;
+    width: 0 !important;
+  }
+}
+
+.ui-dropdown-item .pentable-select-option {
+  @include primary-font();
+  padding: 5px 5px 5px 0;
+}
+
+.ui-dropdown-item.ui-state-highlight .pentable-select-option {
+  @include primary-font(14px, currentColor);
 }
 
 .pentable-disabled {

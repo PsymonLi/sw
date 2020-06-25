@@ -46,11 +46,23 @@
       <tr>
         <th *ngIf="enableCheckbox" class="pentable-checkbox">
           <div class="pentable-th-box">
-            <p-checkbox [binary]="true"
-                        matTooltip="Select/Deselect All Records In Current Page"
-                        (onChange)="onHeaderCheckboxToggle($event)"
-                        [(ngModel)]="pageSelected">
-            </p-checkbox>
+            <div *ngIf="!selectAllMode">
+              <p-checkbox [binary]="true"
+                          matTooltip="Select/Deselect All Records In Current Page"
+                          (onChange)="onHeaderCheckboxToggle($event)"
+                          [(ngModel)]="pageSelected">
+              </p-checkbox>
+            </div>
+            <div *ngIf="selectAllMode">
+              <p-tableHeaderCheckbox matTooltip="Select/Deselect All Records">
+              </p-tableHeaderCheckbox>
+            </div>
+            <p-dropdown [options]="selectOptions" (onChange)="onSelectModeChange($event)"
+                        appendTo="body">
+              <ng-template let-select pTemplate="item">
+                <div class="pentable-select-option">{{select.label}}</div>
+              </ng-template>
+            </p-dropdown>
           </div>
         </th>
         <th *ngFor="let col of selectedColumns; let last = last"

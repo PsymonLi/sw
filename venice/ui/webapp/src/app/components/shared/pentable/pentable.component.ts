@@ -14,6 +14,7 @@ import { CustomExportMap, TableCol } from '../tableviewedit';
 import { TableUtility } from '../tableviewedit/tableutility';
 import { TableMenuItem } from '../tableheader/tableheader.component';
 import { RepeaterData } from 'web-app-framework';
+import { SelectItem } from 'primeng/api';
 
 @Component({
     selector: 'app-pentable',
@@ -88,8 +89,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       onClick: () => {
         this.exportTableDataJSON();
       }
-    }
+    },
   ];
+  selectAllMode: boolean = false;
+  selectOptions: SelectItem[] = [
+    {label: 'Select by page', value: 'page'},
+    {label: 'Select all', value: 'all'},
+];
+
 
   constructor(private _route: ActivatedRoute, protected controllerService: ControllerService, protected renderer: Renderer2) {
     super(controllerService);
@@ -383,6 +390,16 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
       const objKeySet = this.genDataObjectsSetByKey(pageDataObjects);
       this.pageSelected = this.isSuperset(this.selectedDataObjectsKeySet, objKeySet);
     }
+  }
+
+  onSelectModeChange($event) {
+    this.selectedDataObjects = [];
+    if ($event.value === 'all') {
+      this.selectAllMode = true;
+    } else {
+      this.selectAllMode = false;
+    }
+    this.isPageSelected();
   }
 
   onSearch() {
