@@ -7,6 +7,10 @@
 
 #include <nic/vpp/infra/utils.h>
 #include <nic/apollo/packet/apulu/p4_cpu_hdr.h>
+#include <nic/apollo/p4/include/apulu_table_sizes.h>
+
+#define PDS_DYNAMIC_NAT_START_INDEX     NAT_NUM_STATIC_ENTRIES
+#define PDS_MAX_DYNAMIC_NAT             (NAT_TABLE_SIZE - NAT_NUM_STATIC_ENTRIES)
 
 #ifdef __cplusplus
 extern "C" {

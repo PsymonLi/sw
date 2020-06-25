@@ -21,6 +21,7 @@
 #define SESSION_TABLE_SIZE                                  2097152     // 2M
 #define MIRROR_SESSION_TABLE_SIZE                           256
 #define NAT_TABLE_SIZE                                      1048576     // 1M
+#define NAT_NUM_STATIC_ENTRIES                              131072      // 128K carved out of NAT_TABLE_SIZE
 #define NAT2_TABLE_SIZE                                     8192        // 8K
 #define ECMP_TABLE_SIZE                                     2048
 #define TUNNEL_TABLE_SIZE                                   2048

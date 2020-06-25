@@ -8,11 +8,8 @@
 #include <vppinfra/clib.h>
 #include <nic/vpp/impl/nat.h>
 #include <nic/vpp/impl/ftl_wrapper.h>
+#include <mapping.h>
 #include "nat_api.h"
-
-// TODO move to right place
-#define PDS_MAX_DYNAMIC_NAT 32768
-#define PDS_DYNAMIC_NAT_START_INDEX 1000
 
 #define IPV4_MASK 0xffffffff
 #define PORT_MASK 0xffff

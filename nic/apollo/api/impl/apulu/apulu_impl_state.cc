@@ -14,6 +14,7 @@
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/apollo/api/include/pds_tep.hpp"
 #include "nic/apollo/api/impl/apulu/apulu_impl_state.hpp"
+#include "nic/apollo/p4/include/apulu_table_sizes.h"
 #include "gen/p4gen/apulu/include/p4pd.h"
 #include "gen/p4gen/p4plus_txdma/include/p4plus_txdma_p4pd.h"
 
@@ -65,10 +66,9 @@ apulu_impl_state::apulu_impl_state(pds_state *state) {
     SDK_ASSERT(copp_idxr_ != NULL);
 
     // NAT table bookkeeping (reserve 0th entry for no xlation)
-    // NOTE: 1st half of the table is used for config and 2nd half by VPP
+    // NOTE: 1st section of NAT table is used for config and the rest by VPP
     //       for dynamic bindings
-    p4pd_global_table_properties_get(P4TBL_ID_NAT, &tinfo);
-    nat_idxr_ = rte_indexer::factory(tinfo.tabledepth >> 1, true, true);
+    nat_idxr_ = rte_indexer::factory(NAT_NUM_STATIC_ENTRIES, true, true);
     SDK_ASSERT(nat_idxr_ != NULL);
 
     // DNAT table bookkeeping
