@@ -294,7 +294,6 @@ Eth::Init() {
     IntrMemAlloc();
     EQstateMemAlloc();
     DevcmdRegMemAlloc();
-    DevcmdRegInit();
     CMBMemAlloc();
 
     // Create all LIFs
@@ -319,6 +318,7 @@ Eth::Init() {
     // config stats and start services
     PortConfigMem(true);
     PortStatusMem(true);
+    DevcmdRegInit();
     DevcmdInit();
     DevcmdStart();
     StatsInit();
@@ -371,6 +371,7 @@ Eth::UpgradeGracefulInit(struct eth_devspec *spec) {
     // config stats and start services
     PortConfigMem(false);
     PortStatusMem(false);
+    DevcmdRegInit();
     DevcmdInit();
     DevcmdStart();
     StatsInit();
@@ -424,13 +425,13 @@ Eth::UpgradeHitlessInit(struct eth_devspec *spec)
     // config stats and start services
     PortConfigMem(false);
     PortStatusMem(false);
-
 }
 
 void
 Eth::ServiceControl(bool start)
 {
     if (start) {
+        DevcmdRegInit();
         DevcmdInit();
         DevcmdStart();
         StatsInit();
