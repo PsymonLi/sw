@@ -1,9 +1,15 @@
 {
   "tasks": [
       "date",
+      "uptime",
       "ps -aefl",
       "df -k",
       "ifconfig -a",
+      "ipaddr",
+      "ip route",
+      "iptables -L",
+      "arp -a",
+      "netstat -tuln",
       "pcieutil techsupport",
       "pdsctl show techsupport",
       "pdsctl show bgp",
@@ -58,6 +64,7 @@
       "/obfl/",
       "/update/",
       "/data/logs/",
+      "/dev/shm/",
       "/sysconfig/"
     ]
 }

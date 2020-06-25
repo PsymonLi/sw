@@ -63,6 +63,8 @@ func tsShowCmdHandler(cmd *cobra.Command, args []string) {
 	vpcShowCmdHandler(nil, nil)
 	fmt.Printf("\n=== VNIC information ===\n")
 	vnicShowCmdHandler(nil, nil)
+	fmt.Printf("\n=== VNIC statistics===\n")
+	vnicShowStatisticsCmdHandler(nil, nil)
 	fmt.Printf("\n=== Subnet information ===\n")
 	subnetShowCmdHandler(nil, nil)
 	fmt.Printf("\n=== Route information ===\n")

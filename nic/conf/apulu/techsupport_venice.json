@@ -1,11 +1,17 @@
 {
   "tasks": [
       "date",
+      "uptime",
       "ps -aefl",
       "df -k",
       "cat /proc/cpuinfo",
       "cat /proc/iomem",
       "ifconfig -a",
+      "ipaddr",
+      "ip route",
+      "iptables -L",
+      "arp -a",
+      "netstat -tuln",
       "/nic/tools/fwupdate -l",
       "/nic/tools/fwupdate -r",
       "/nic/tools/fwupdate -S",
@@ -72,6 +78,7 @@
       "/var/log/",
       "/obfl/",
       "/sysconfig/",
+      "/dev/shm/",
       "/data/pre-upgrade-logs/"
     ]
 }
