@@ -20,4 +20,4 @@ function finish {
 trap finish EXIT
 
 CMD="$BUILD_DIR/bin/pdsupgmgr $* 2>&1 &"
-$GDB $CMD
+$CMD

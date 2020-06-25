@@ -19,8 +19,7 @@ using grpc::Server;
 using grpc::ServerBuilder;
 
 typedef void (*sig_handler_t)(int sig, siginfo_t *info, void *ptr);
-
-#define NIC_TOOLS "/nic/tools/"  # TODO : Need to remove @chinmoy
+static std::string g_tools_dir;
 
 namespace sdk {
 namespace upg {
@@ -76,12 +75,9 @@ atexit_handler (void)
 {
 
     std::string exit_script(UPGMGR_EXIT_SCRIPT);
-    std::string tools_dir = sdk::upg::fsm_states.init_params()->tools_dir ;
-    if (!tools_dir.empty()) {
-     exit_script = tools_dir + "/" + exit_script + " -s";
-    } else  {
-        exit_script = "NIC_TOOLS" + exit_script + " -s";
-    }
+
+    SDK_ASSERT(!g_tools_dir.empty());
+    exit_script = g_tools_dir + "/" + exit_script + " -s";
     if (!sdk::upg::execute(exit_script.c_str())) {
         UPG_TRACE_ERR("Failed to execute exit script !");
     }
@@ -152,6 +148,7 @@ main (int argc, char **argv)
             if (optarg) {
                 dir_given = true;
                 params.tools_dir = std::string(optarg);
+                g_tools_dir = std::string(optarg);
             } else {
                 fprintf(stderr, "tools directory is not specified\n");
                 print_usage(argv);
