@@ -114,6 +114,13 @@
           "BaseType": "Counter"
         },
         {
+          "Name": "FramesRxPripause",
+          "DisplayName": "Rx PFC Frames",
+          "Description": "Frames Received of PFC",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
           "Name": "FramesRxTooLong",
           "DisplayName": "Rx Too long Frames",
           "Description": "Received Frames Too Long",
@@ -275,6 +282,13 @@
           "BaseType": "Counter"
         },
         {
+          "Name": "FramesTxPripause",
+          "DisplayName": "Tx PFC Frames",
+          "Description": "Frames Transmitted of PFC",
+          "Units": "Count",
+          "BaseType": "Counter"
+        },
+        {
           "Name": "FramesTxVlan",
           "DisplayName": "Tx VLAN Frames",
           "Description": "Frames Transmitted VLAN",
@@ -367,113 +381,113 @@
         },
         {
           "Name": "FramesTxPri_0",
-          "DisplayName": "Tx Pri0 Frames",
-          "Description": "Pri#0 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri0 Frames",
+          "Description": "Frames Transmitted of PFC Pri#0",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_1",
-          "DisplayName": "Tx Pri1 Frames",
-          "Description": "Pri#1 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri1 Frames",
+          "Description": "Frames Transmitted of PFC Pri#1",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_2",
-          "DisplayName": "Tx Pri2 Frames",
-          "Description": "Pri#2 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri2 Frames",
+          "Description": "Frames Transmitted of PFC Pri#2",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_3",
-          "DisplayName": "Tx Pri3 Frames",
-          "Description": "Pri#3 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri3 Frames",
+          "Description": "Frames Transmitted of PFC Pri#3",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_4",
-          "DisplayName": "Tx Pri4 Frames",
-          "Description": "Pri#4 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri4 Frames",
+          "Description": "Frames Transmitted of PFC Pri#4",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_5",
-          "DisplayName": "Tx Pri5 Frames",
-          "Description": "Pri#5 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri5 Frames",
+          "Description": "Frames Transmitted of PFC Pri#5",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_6",
-          "DisplayName": "Tx Pri6 Frames",
-          "Description": "Pri#6 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri6 Frames",
+          "Description": "Frames Transmitted of PFC Pri#6",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesTxPri_7",
-          "DisplayName": "Tx Pri7 Frames",
-          "Description": "Pri#7 Frames Transmitted",
+          "DisplayName": "Tx PFC Pri7 Frames",
+          "Description": "Frames Transmitted of PFC Pri#7",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_0",
-          "DisplayName": "Rx Pri0 Frames",
-          "Description": "Pri#0 Frames Received",
+          "DisplayName": "Rx PFC Pri0 Frames",
+          "Description": "Frames Received of PFC Pri#0",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_1",
-          "DisplayName": "Rx Pri1 Frames",
-          "Description": "Pri#1 Frames Received",
+          "DisplayName": "Rx PFC Pri1 Frames",
+          "Description": "Frames Received of PFC Pri#1",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_2",
-          "DisplayName": "Rx Pri2 Frames",
-          "Description": "Pri#2 Frames Received",
+          "DisplayName": "Rx PFC Pri2 Frames",
+          "Description": "Frames Received of PFC Pri#2",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_3",
-          "DisplayName": "Rx Pri3 Frames",
-          "Description": "Pri#3 Frames Received",
+          "DisplayName": "Rx PFC Pri3 Frames",
+          "Description": "Frames Received of PFC Pri#3",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_4",
-          "DisplayName": "Rx Pri4 Frames",
-          "Description": "Pri#4 Frames Received",
+          "DisplayName": "Rx PFC Pri4 Frames",
+          "Description": "Frames Received of PFC Pri#4",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_5",
-          "DisplayName": "Rx Pri5 Frames",
-          "Description": "Pri#5 Frames Received",
+          "DisplayName": "Rx PFC Pri5 Frames",
+          "Description": "Frames Received of PFC Pri#5",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_6",
-          "DisplayName": "Rx Pri6 Frames",
-          "Description": "Pri#6 Frames Received",
+          "DisplayName": "Rx PFC Pri6 Frames",
+          "Description": "Frames Received of PFC Pri#6",
           "Units": "Count",
           "BaseType": "Counter"
         },
         {
           "Name": "FramesRxPri_7",
-          "DisplayName": "Rx Pri7 Frames",
-          "Description": "Pri#7 Frames Received",
+          "DisplayName": "Rx PFC Pri7 Frames",
+          "Description": "Frames Received of PFC Pri#7",
           "Units": "Count",
           "BaseType": "Counter"
         },
