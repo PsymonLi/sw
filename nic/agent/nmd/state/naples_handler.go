@@ -965,11 +965,14 @@ func (n *NMD) SendNICUpdates() error {
 
 			// TODO : Get status from platform and fill nic Status
 			nicObj.Status = cmd.DistributedServiceCardStatus{
-				AdmissionPhase:      cmd.DistributedServiceCardStatus_ADMITTED.String(),
-				Conditions:          n.UpdateNaplesHealth(),
-				ControlPlaneStatus:  agentStatus.ControlPlaneStatus,
-				IsConnectedToVenice: agentStatus.IsConnectedToVenice,
-				UnhealthyServices:   agentStatus.UnhealthyServices,
+				AdmissionPhase: cmd.DistributedServiceCardStatus_ADMITTED.String(),
+				Conditions:     n.UpdateNaplesHealth(),
+			}
+
+			if agentStatus != nil {
+				nicObj.Status.ControlPlaneStatus = agentStatus.ControlPlaneStatus
+				nicObj.Status.IsConnectedToVenice = agentStatus.IsConnectedToVenice
+				nicObj.Status.UnhealthyServices = agentStatus.UnhealthyServices
 			}
 
 			// Send nic status
