@@ -2,7 +2,27 @@
 import time
 import iota.harness.api as api
 import iota.test.apulu.utils.pdsctl as pdsctl
+import iota.test.utils.p4ctl as p4ctl
 from apollo.config.store import client as EzAccessStoreClient
+from iota.harness.infra.glopts import GlobalOptions
+
+txRewriteFlags = {
+    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x1001',
+    'PDS_FLOW_L2L_INTER_SUBNET' : '0x1405',
+    'PDS_FLOW_L2R_INTRA_SUBNET' : '0x81',
+    'PDS_FLOW_L2R_INTER_SUBNET' : '0x485',
+    'PDS_FLOW_R2L_INTRA_SUBNET' : '0x81',
+    'PDS_FLOW_R2L_INTER_SUBNET' : '0x485'
+}
+
+rxRewriteFlags = {
+    'PDS_FLOW_L2L_INTRA_SUBNET' : '0x1001',
+    'PDS_FLOW_L2L_INTER_SUBNET' : '0x1405',
+    'PDS_FLOW_L2R_INTRA_SUBNET' : '0x1',
+    'PDS_FLOW_L2R_INTER_SUBNET' : '0x405',
+    'PDS_FLOW_R2L_INTRA_SUBNET' : '0x1',
+    'PDS_FLOW_R2L_INTER_SUBNET' : '0x405'
+}
 
 def verifyFlowLogging(af, workload_pairs):
     req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
@@ -102,6 +122,20 @@ def verifyFlowTable(af, workload_pairs):
 
     return api.types.status.SUCCESS
 
+def getFlowEntries(node):
+    if api.GlobalOptions.dryrun:
+        # Return a dummy entry
+        resp = ["256     I/H       3     2.0.0.2             6915      2.0.0.5             2048        ICMP   A"]
+        return api.types.status.SUCCESS, resp
+
+    ret, entries = pdsctl.ExecutePdsctlShowCommand(node, "flow", yaml=False)
+    if ret != True:
+        api.Logger.error("Failed to execute show flows on node %s : %s" %
+                         (node, resp))
+        return api.types.status.FAILURE
+    # Skip first 16 lines as they are part of the legend
+    return api.types.status.SUCCESS, entries.splitlines()[16:-1]
+
 def verifyFlows(af, workload_pairs):
     resp = verifyFlowTable(af, workload_pairs)
     if resp != api.types.status.SUCCESS:
@@ -111,4 +145,40 @@ def verifyFlows(af, workload_pairs):
     if resp != api.types.status.SUCCESS:
         api.Logger.error("verifyFlowLogging resp: %s" % (resp))
         return resp
+    return api.types.status.SUCCESS
+
+def verifyFtlEntry(node, flowHandle):
+    # If secondary index is valid, then look into ipv4_flow_ohash table.
+    # Otherwise look into ipv4_flow table
+    if flowHandle.split()[8] != "-1":
+        flowPrimary = False
+        flowIndex = flowHandle.split()[8]
+        tableName = "ipv4_flow_ohash"
+        params = "ipv4_flow_ohash_index %s" % flowIndex
+    else:
+        flowPrimary = True
+        flowIndex = flowHandle.split()[5]
+        tableName = "ipv4_flow"
+        params = "ipv4_flow_index %s" % flowIndex
+
+    resp = p4ctl.RunP4CtlCmd_READ_TABLE(node, tableName, params=params)
+    if resp == None:
+        api.Logger.error("Failed to execute p4ctl read on node %s : %s" %
+                         (node, resp))
+        return api.types.status.FAILURE, resp
+    return api.types.status.SUCCESS, resp
+
+def verifyFlowFlags(node, flowHandle, pktType):
+    if GlobalOptions.dryrun:
+        return api.types.status.SUCCESS
+
+    # Verify that the local_to_local flag is correctly set in FTL for flow
+    ret, resp = verifyFtlEntry(node, flowHandle)
+    if ret != api.types.status.SUCCESS:
+        return ret
+
+    if "L2L" in pktType:
+        assert resp.splitlines()[26].split()[2] == '0x1'
+    else:
+        assert resp.splitlines()[26].split()[2] == '0x0'
     return api.types.status.SUCCESS

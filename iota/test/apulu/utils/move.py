@@ -4,6 +4,7 @@ import iota.harness.infra.store as store
 import iota.test.apulu.config.api as config_api
 import iota.test.apulu.config.bringup_workloads as wl_api
 import iota.test.utils.arping as arp
+import iota.test.utils.host as host_utils
 import iota.harness.infra.utils.parser as parser
 import iota.test.apulu.utils.connectivity as conn_utils
 import iota.test.apulu.utils.learn as learn_utils
@@ -18,50 +19,47 @@ vnic_client   = config_api.GetObjClient('vnic')
 subnet_client = config_api.GetObjClient('subnet')
 intf_client   = config_api.GetObjClient('interface')
 
-def __add_secondary_ip_to_workloads(workload, ip_addrs):
+def __add_ip_to_workloads(workload, ip_addr, secondary=False):
     """
-    Adds scondary IP addresses to workload Interface.
-
+    Adds IP addresses to workload Interface.
     """
     if not api.IsSimulation():
         req = api.Trigger_CreateAllParallelCommandsRequest()
     else:
         req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
 
-    for ip in ip_addrs:
-        api.Logger.debug(f"ifconfig add from {workload.node_name}, {workload.workload_name}, {workload.interface}, {ip}")
-        api.Trigger_AddCommand(req, workload.node_name, workload.workload_name,
-                               f"ifconfig {workload.interface} add {ip}")
+    add = "add" if secondary else ""
+    api.Logger.debug(f"ifconfig add from {workload.node_name}, {workload.workload_name}, {workload.interface}, {ip_addr}")
+    api.Trigger_AddCommand(req, workload.node_name, workload.workload_name,
+                           f"ifconfig {workload.interface} {add} {ip_addr}")
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
         if cmd.exit_code != 0:
             api.PrintCommandResults(cmd)
-            api.Logger.error("Failed to execute the {cmd.command}")
+            api.Logger.error(f"Failed to execute the {cmd.command}")
             return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
 
-def __del_secondary_ip_from_workloads(workload, ip_addrs):
+def __del_ip_from_workloads(workload, ip_addr):
     """
-    Deletes scondary IP addresses from workload Interface.
-
+    Deletes IP addresses from workload Interface.
     """
     if not api.IsSimulation():
         req = api.Trigger_CreateAllParallelCommandsRequest()
     else:
         req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
 
-    for ip in ip_addrs:
-        api.Logger.debug(f"ifconfig del from {workload.node_name}, {workload.workload_name}, {workload.interface}, {ip}")
-        api.Trigger_AddCommand(req, workload.node_name, workload.workload_name,
-                               f"ifconfig {workload.interface} del {ip}")
+    api.Logger.debug(f"ifconfig del from {workload.node_name}, {workload.workload_name}, {workload.interface}, {ip_addr}")
+    api.Trigger_AddCommand(req, workload.node_name, workload.workload_name,
+                           f"ifconfig {workload.interface} del {ip_addr}")
 
     resp = api.Trigger(req)
     for cmd in resp.commands:
         if cmd.exit_code != 0:
             api.PrintCommandResults(cmd)
-            api.Logger.error("Failed to execute the {cmd.command}")
+            api.Logger.error(f"Failed to execute the {cmd.command}")
             return api.types.status.FAILURE
 
     return api.types.status.SUCCESS
@@ -201,38 +199,78 @@ def MoveEpMACEntry(workload, target_subnet, ep_mac_addr, ep_ip_prefixes):
 
     return api.types.status.SUCCESS
 
-def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefixes):
+def MoveEpIPEntry(src_workload, dst_workload, ep_ip_prefix):
     """
-    Moves ip prefixes from source workload to destination workload.
-    Note : This API supports moving only secondary IP addresses.
+    Moves IP from source workload to destination workload.
+    """
+    ep_ip_addr = __ip_from_prefix(ep_ip_prefix)
+    src_primary_move = False
 
-    """
-    # Update mapping entries on source workload
-    src_workload.sec_ip_prefixes = [ p for p in src_workload.sec_ip_prefixes if p not in ep_ip_prefixes ]
-    src_workload.sec_ip_addresses = [ __ip_from_prefix(p) for p in src_workload.sec_ip_prefixes ]
+    # Update mapping entries on source workload and modify the IP addresses
+    # If moving IP is the primary, then make one of the secondary IPs as primary
+    # Otherwise just remove the IP
+    if src_workload.ip_prefix == ep_ip_prefix:
+        src_primary_move = True
+        src_workload.ip_prefix = src_workload.sec_ip_prefixes[0]
+        src_workload.ip_address = __ip_from_prefix(src_workload.ip_prefix)
+        src_workload.sec_ip_prefixes.remove(src_workload.ip_prefix)
+        src_workload.sec_ip_addresses.remove(src_workload.ip_address)
+
+        api.Logger.info(f"Changing IP address from {ep_ip_prefix} to {src_workload.ip_prefix} "
+                        f"on {src_workload.workload_name}")
+        ret = __del_ip_from_workloads(src_workload, ep_ip_addr)
+        if ret != api.types.status.SUCCESS:
+            return ret
+        ret = __add_ip_to_workloads(src_workload, src_workload.ip_address)
+        if ret != api.types.status.SUCCESS:
+            return ret
+    elif ep_ip_prefix in src_workload.sec_ip_prefixes:
+        src_workload.sec_ip_prefixes.remove(ep_ip_prefix)
+        src_workload.sec_ip_addresses.remove(ep_ip_addr)
+        api.Logger.info(f"Removing IP address {ep_ip_prefix} from {src_workload.workload_name}")
+        ret = __del_ip_from_workloads(src_workload, ep_ip_addr)
+        if ret != api.types.status.SUCCESS:
+            return ret
+
     __mapping_entry_handler(src_workload.vnic, [src_workload.ip_prefix] + src_workload.sec_ip_prefixes)
 
     # Update mapping entries on destination workload
-    dst_workload.sec_ip_prefixes += ep_ip_prefixes
-    dst_workload.sec_ip_addresses += [ __ip_from_prefix(p) for p in ep_ip_prefixes ]
+    # If the IP being moved was primary in the src, move it as secondary on the
+    # destination and vice-versa
+    if src_primary_move:
+        dst_workload.sec_ip_prefixes += [ep_ip_prefix]
+        dst_workload.sec_ip_addresses += [__ip_from_prefix(ep_ip_prefix)]
+        api.Logger.info(f"Adding IP address {ep_ip_prefix} to {dst_workload.workload_name}")
+        ret = __add_ip_to_workloads(dst_workload, ep_ip_addr, secondary=True)
+        if ret != api.types.status.SUCCESS:
+            return ret
+    else:
+        # Move the primary to secondary and add the moving prefix as primary
+        cur_pri_prefix = dst_workload.ip_prefix
+        dst_workload.ip_prefix = ep_ip_prefix
+        dst_workload.ip_address = ep_ip_addr
+        dst_workload.sec_ip_prefixes += [cur_pri_prefix]
+        dst_workload.sec_ip_addresses += [__ip_from_prefix(cur_pri_prefix)]
+
+        api.Logger.info(f"Changing IP address from {cur_pri_prefix} to {ep_ip_prefix} "
+                        f"on {dst_workload.workload_name}")
+
+        ret = __add_ip_to_workloads(dst_workload, dst_workload.ip_address)
+        if ret != api.types.status.SUCCESS:
+            return ret
+        ret = __add_ip_to_workloads(dst_workload, __ip_from_prefix(cur_pri_prefix),
+                                    secondary=True)
+        if ret != api.types.status.SUCCESS:
+            return ret
+
     __mapping_entry_handler(dst_workload.vnic, [dst_workload.ip_prefix] + dst_workload.sec_ip_prefixes)
 
-    ep_ip_addrs = [  __ip_from_prefix(p) for p in ep_ip_prefixes ]
-
-    # Deletes secondary IP addresses from source workload
-    api.Logger.info(f"Deleting secondary IP addresses {ep_ip_addrs} from {src_workload.workload_name}")
-    ret =  __del_secondary_ip_from_workloads(src_workload, ep_ip_addrs)
-    if ret != api.types.status.SUCCESS:
-        return ret
-
-    # Adds secondary IP addresses from destination workload
-    api.Logger.info(f"Adding secondary IP addresses {ep_ip_addrs} from {dst_workload.workload_name}")
-    ret = __add_secondary_ip_to_workloads(dst_workload, ep_ip_addrs)
-    if ret != api.types.status.SUCCESS:
-        return ret
+    # Delete ARP entry for the IP from the destination
+    host_utils.DeleteARP(dst_workload.node_name, dst_workload.workload_name,
+                         dst_workload.interface, ep_ip_addr)
 
     # Send Grat ARP
-    arp.SendGratArp([dst_workload])
+    arp.SendGratArp([src_workload, dst_workload])
 
     return ret
 

@@ -42,12 +42,43 @@ def ExecuteVPPctlClearCommand(node, cmd, args=None):
 def ParseShowCommand(node_name, type, args=None):
     ret = api.types.status.SUCCESS
     if api.GlobalOptions.dryrun:
+        # Return dummy entry to check the fields
         return api.types.status.SUCCESS, None
     res, resp = ExecuteVPPctlShowCommand(node_name, type, args)
     if res != True:
         api.Logger.error(f"Failed to execute show {type} at node {node_name} : {resp}")
         ret = api.types.status.FAILURE
 
+    return ret, resp
+
+def ParseShowSessionCommand(node_name, type, args=None):
+    ret = api.types.status.SUCCESS
+    if api.GlobalOptions.dryrun:
+        # Populate dummy values
+        resp = {}
+        resp['txRewriteFlags'] = '0x81'
+        resp['rxRewriteFlags'] = '0x1'
+        resp['iflowHandle'] = 'primary : 2224747 secondary : -1 epoch : 0'
+        resp['rflowHandle'] = 'primary : 326769 secondary : -1 epoch : 0'
+        resp['pktType'] = ('PDS_FLOW_L2R_INTRA_SUBNET' if node_name == 'node1' else
+                           'PDS_FLOW_R2L_INTRA_SUBNET')
+        resp['srcIp'] = '2.0.0.2'
+        resp['dstIp'] = '2.0.0.5'
+        return ret, resp
+
+    ret, resp = ParseShowCommand(node_name, type)
+    if (ret != api.types.status.SUCCESS or
+        'Session does not exist' in resp):
+        return ret, resp
+    vppResp = re.split(r"[~\r\n]+", resp)
+    resp = {}
+    resp['txRewriteFlags'] = vppResp[3].split()[3]
+    resp['rxRewriteFlags'] = vppResp[7].split()[3]
+    resp['iflowHandle'] = vppResp[20]
+    resp['rflowHandle'] = vppResp[21]
+    resp['pktType'] = vppResp[22].split()[3]
+    resp['srcIp'] = vppResp[28].split()[1]
+    resp['dstIp'] = vppResp[28].split()[2]
     return ret, resp
 
 def GetVppV4FlowStatistics(node_name, counter, args=None):
@@ -70,7 +101,7 @@ def GetVppV4FlowStatistics(node_name, counter, args=None):
             if len(string.split(' ')) == 2:
                 key, val = string.split(' ')
                 d[key] = val
-    
+
     return ret, d[counter]
 
 def ParseClearCommand(node_name, type, args=None):

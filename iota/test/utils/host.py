@@ -87,7 +87,7 @@ def GetHostMgmtInterface(node):
         api.Trigger_AddHostCommand(req, node, cmd)
         resp = api.Trigger(req)
         #ToDo Change after fixing debug knob
-	
+
         mgmt_intf = resp.commands[1].stdout.strip().split("\n")
         return mgmt_intf[0]
     elif api.GetNodeOs(node) == "freebsd":
@@ -103,7 +103,7 @@ def GetIPAddress(node, interface):
         cmd = "ifconfig " + interface +  " | grep inet | awk '{print $2}'"
     elif api.GetNodeOs(node) == "windows":
         cmd = "ip -4 address show " + interface + " | grep inet | awk '{print $2}' |  cut -d/ -f 1 "
- 
+
     api.Trigger_AddHostCommand(req, node, cmd)
     resp = api.Trigger(req)
     return resp.commands[0].stdout.strip("\n")
@@ -305,7 +305,7 @@ def AddStaticARP(node, interface, hostname, macaddr):
     return result
 
 
-def DeleteARP(node, interface, hostname):
+def DeleteARP(node, entity, interface, hostname):
     result = api.types.status.SUCCESS
     if api.GetNodeOs(node) == "linux":
         cmd = "ip neigh del " + hostname + " dev " + interface
@@ -314,8 +314,9 @@ def DeleteARP(node, interface, hostname):
     else:
         assert(0)
 
+    api.Logger.info(f"Deleting Arp from {node} {entity} {interface} {hostname}")
     req = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    api.Trigger_AddHostCommand(req, node, cmd)
+    api.Trigger_AddCommand(req, node, entity, cmd)
     resp = api.Trigger(req)
     if resp.commands[0].exit_code != 0:
         result = api.types.status.FAILURE

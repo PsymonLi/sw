@@ -218,7 +218,7 @@ show_flow_stats_command_fn (vlib_main_t * vm,
             vlib_cli_output(vm, "IPv4 flow statistics\n");
             if (detail) {
                 vlib_cli_output(vm, "Total number of IPv4 flow entries in hardware %u",
-                                ftlv4_get_flow_count(fm->table4, 
+                                ftlv4_get_flow_count(fm->table4,
                                                      vm->thread_index));
             }
             for (i = 1; i < no_of_threads; i++) {
@@ -570,7 +570,7 @@ dump_flow_entries_command_fn (vlib_main_t * vm,
     if (ip4) {
         vlib_cli_output(vm, "Reading IPv4 flow entries from HW, Please wait...\n");
         vlib_worker_thread_barrier_sync(vm);
-        ret = ftlv4_dump_hw_entries(fm->table4, logfile, detail, 
+        ret = ftlv4_dump_hw_entries(fm->table4, logfile, detail,
                                     vm->thread_index);
         vlib_worker_thread_barrier_release(vm);
         if (ret < 0) {
@@ -833,53 +833,53 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
         return;
     }
 
-    vlib_cli_output(vm, "Session Info\n");
-    vlib_cli_output(vm, "------------\n");
-    vlib_cli_output(vm, "  Transmit Info\n");
-    vlib_cli_output(vm, "    %-19s: 0x%x\n", "Rewrite Flags", 
-                    session_info.tx_rewrite_flags);   
-    vlib_cli_output(vm, "    %-19s: %d\n", "NAT ID 1", 
+    vlib_cli_output(vm, "Session Info");
+    vlib_cli_output(vm, "------------");
+    vlib_cli_output(vm, "  Transmit Info");
+    vlib_cli_output(vm, "    %-19s: 0x%x", "Rewrite Flags",
+                    session_info.tx_rewrite_flags);
+    vlib_cli_output(vm, "    %-19s: %d", "NAT ID 1",
                     session_info.tx_xlate_id);
-    vlib_cli_output(vm, "    %-19s: %d\n", "NAT ID 2",
+    vlib_cli_output(vm, "    %-19s: %d", "NAT ID 2",
                     session_info.tx_xlate_id2);
-    vlib_cli_output(vm, "  Receive Info\n");
-    vlib_cli_output(vm, "    %-19s: 0x%x\n", "Rewrite Flags",
+    vlib_cli_output(vm, "  Receive Info");
+    vlib_cli_output(vm, "    %-19s: 0x%x", "Rewrite Flags",
                     session_info.rx_rewrite_flags);
-    vlib_cli_output(vm, "    %-19s: %d\n", "NAT ID 1",
+    vlib_cli_output(vm, "    %-19s: %d", "NAT ID 1",
                     session_info.rx_xlate_id);
-    vlib_cli_output(vm, "    %-19s: %d\n", "NAT ID 2",
+    vlib_cli_output(vm, "    %-19s: %d", "NAT ID 2",
                     session_info.rx_xlate_id2 );
-    vlib_cli_output(vm, "  %-21s: %d\n", "Meter ID",
+    vlib_cli_output(vm, "  %-21s: %d", "Meter ID",
                     session_info.meter_id);
-    vlib_cli_output(vm, "  %-21s: %lu\n", "Last seen timestamp",
+    vlib_cli_output(vm, "  %-21s: %lu", "Last seen timestamp",
                     pds_session_get_timestamp(ses_id));
-    vlib_cli_output(vm, "  %-21s: %lu\n", "Current timestamp",
+    vlib_cli_output(vm, "  %-21s: %lu", "Current timestamp",
                     pds_system_get_current_tick());
-    vlib_cli_output(vm, "  %-21s: %s\n", "Session tracking",
+    vlib_cli_output(vm, "  %-21s: %s", "Session tracking",
                     session_info.session_tracking_en ? "Enabled" : "Disabled");
-    vlib_cli_output(vm, "  %-21s: %s\n", "Session action",
+    vlib_cli_output(vm, "  %-21s: %s", "Session action",
                     session_info.drop ? "Drop" : "Allow");
     if (session_info.qid_en) {
-        vlib_cli_output(vm, "  %-21s: %u\n", "Session qid",
+        vlib_cli_output(vm, "  %-21s: %u", "Session qid",
                         session_info.qid);
     } else {
-        vlib_cli_output(vm, "  %-21s: %s\n", "Session qid",
+        vlib_cli_output(vm, "  %-21s: %s", "Session qid",
                         "Disabled");
     }
-    vlib_cli_output(vm, "  %-21s: %s\n", "Session state", 
+    vlib_cli_output(vm, "  %-21s: %s", "Session state",
                     pds_flow_state_str[session->flow_state]);
-    vlib_cli_output(vm, "  %-21s: %d\n", "Keepalive retries",
+    vlib_cli_output(vm, "  %-21s: %d", "Keepalive retries",
                     session->keep_alive_retry);
-    vlib_cli_output(vm, "  %-21s: %d\n", "Ingress Subnet ID",
+    vlib_cli_output(vm, "  %-21s: %d", "Ingress Subnet ID",
                     session->ingress_bd);
-    vlib_cli_output(vm, "  %-21s: %lu\n", "Timer Handle", session->timer_hdl);
-    vlib_cli_output(vm, "  %-21s: 0x%" PRIx64 "\n", "IFlow handle",
-                    session->iflow.handle);
-    vlib_cli_output(vm, "  %-21s: 0x%" PRIx64 "\n", "RFlow handle",
-                    session->rflow.handle);
-    vlib_cli_output(vm, "  %-21s: %s\n", "Packet type", 
+    vlib_cli_output(vm, "  %-21s: %lu", "Timer Handle", session->timer_hdl);
+    vlib_cli_output(vm, "  %-21s: %s", "IFlow handle",
+                    ftlv4_get_handle_str(session->iflow.handle));
+    vlib_cli_output(vm, "  %-21s: %s", "RFlow handle",
+                    ftlv4_get_handle_str(session->rflow.handle));
+    vlib_cli_output(vm, "  %-21s: %s", "Packet type",
                     pds_flow_pkt_type_str[session->packet_type]);
-    vlib_cli_output(vm, "  %-21s: %s\n", "Flags",
+    vlib_cli_output(vm, "  %-21s: %s", "Flags",
                     session->iflow_rx ? "IFLOW_RX_PACKET" : "None" );
     vlib_cli_output(vm, "  %-21s: %d\n", "Src Vnic ID", session->src_vnic_id);
     if (pds_flow_packet_l2l(session->packet_type)) {
@@ -890,7 +890,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     for (int i = 0; i < 130; i++) {
         strcat(delimiter, "-");
     }
-    vlib_cli_output(vm, "\n%s", delimiter);
+    vlib_cli_output(vm, "%s", delimiter);
     vlib_cli_output(vm, "%-6s%-40s%-40s%-8s%-8s%-8s%-5s%-11s%-5s",
                     "BDId", "SrcAddr", "DstAddr", "SrcPort",
                     "DstPort", "IPProto", "Role", "SessionIdx", "Epoch");
@@ -921,7 +921,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
                             flow_info.session_index,
                             flow_info.epoch);
             if (detail) {
-                vlib_cli_output(vm, "%-4s%-10d%-10d%-6d%-10d\n",
+                vlib_cli_output(vm, "%-4s%-10d%-10d%-6d%-10d",
                                 "",
                                 flow_info.nexthop_valid,
                                 flow_info.nexthop_type,
@@ -951,7 +951,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
                             flow_info.session_index,
                             flow_info.epoch);
             if (detail) {
-                vlib_cli_output(vm, "%-4s%-10d%-10d%-6d%-10d\n",
+                vlib_cli_output(vm, "%-4s%-10d%-10d%-6d%-10d",
                                 "",
                                 flow_info.nexthop_valid,
                                 flow_info.nexthop_type,
@@ -962,7 +962,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
     }
 
     if (session_info.session_tracking_en && detail) {
-        vlib_cli_output(vm, "\nSession tracking info");
+        vlib_cli_output(vm, "Session tracking info");
         vlib_cli_output(vm, "%s", delimiter);
         vlib_cli_output(vm, "%-10s%-20s%-20s%-20s%-10s%-10s%-6s%-12s%-15s",
                         "FlowRole", "FlowState", "SeqNo", "AckNo", "WinSize",

@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 # pdsctl utils
-import pdb
 import subprocess
 import os
 

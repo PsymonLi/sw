@@ -964,4 +964,21 @@ ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
     return 0;
 }
 
+char *
+ftlv4_get_handle_str (uint64_t handle)
+{
+    static char handle_str[255] = {0};
+    handle_t ftl_handle = (handle_t)handle;
+
+    sprintf(handle_str, "%s : %d %s : %d %s : %d",
+            "primary",
+            ftl_handle.pindex(),
+            "secondary",
+            ftl_handle.svalid() ? ftl_handle.sindex() : -1,
+            "epoch",
+            ftl_handle.epoch());
+
+    return handle_str;
+}
+
 }

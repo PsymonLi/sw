@@ -5,9 +5,12 @@ meta:
     nics    : [ pensando ]
 
 testcases:
-    -   name    : Local_To_Remote_Ip
-        testcase: testcases.learn.local_to_remote_ip
-        stress  : True
+    -   name      : Local_To_Remote_Ip
+        testcase  : testcases.learn.local_to_remote_ip
+        stress    : True
+        iterators :
+            type       : simple
+            subnet_mov : [ intra-subnet ]
 
     -   name    : Local_To_Remote_Mac
         testcase: testcases.learn.local_to_remote_mac

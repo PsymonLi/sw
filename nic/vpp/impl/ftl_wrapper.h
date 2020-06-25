@@ -15,9 +15,9 @@ typedef struct flow_hash_entry_t flow_entry;
 
 typedef char* (*key2str_t)(void *key);
 typedef char* (*appdata2str_t)(void *data);
-typedef void (*session_update_cb) (uint32_t ses_id, 
+typedef void (*session_update_cb) (uint32_t ses_id,
                                    uint64_t new_handle64,
-                                   bool iflow, 
+                                   bool iflow,
                                    bool move_complete, bool lock);
 typedef int (*nat_flow_dealloc_cb) (uint32_t vpc_id, uint32_t dip, uint16_t dport,
              uint8_t protocol, uint32_t sip, uint16_t sport);
@@ -150,7 +150,7 @@ ftlv4 * ftlv4_create(void *key2str,
 
 void ftlv4_delete(ftlv4 *obj);
 
-int ftlv4_dump_hw_entries(ftlv4 *obj, char *logfile, 
+int ftlv4_dump_hw_entries(ftlv4 *obj, char *logfile,
                           uint8_t detail, uint16_t thread_id);
 
 int ftlv4_dump_hw_entry(ftlv4 *obj, uint32_t src, uint32_t dst,
@@ -174,7 +174,7 @@ void ftlv4_dump_stats(ftlv4 *obj, char *buf, int max_len);
 
 void ftlv4_dump_stats_cache(char *buf, int max_len);
 
-int ftlv4_clear(ftlv4 *obj, 
+int ftlv4_clear(ftlv4 *obj,
                 bool clear_global_state,
                 bool clear_thread_local_state,
                 uint16_t thread_id);
@@ -204,7 +204,7 @@ int ftlv4_cache_get_count(uint16_t thread_id);
 void ftlv4_cache_advance_count(int val, uint16_t thread_id);
 
 int ftlv4_cache_program_index(ftlv4 *obj, uint16_t id,
-                              uint64_t *handle, 
+                              uint64_t *handle,
                               uint16_t thread_id);
 
 int ftlv4_cache_delete_index(ftlv4 *obj, uint16_t id, uint16_t thread_id);
@@ -342,7 +342,7 @@ void ftll2_set_key(flow_entry *entry,
                    uint16_t ether_type,
                    uint16_t lookup_id);
 
-int ftlv4_remove(ftlv4 *obj, v4_flow_entry *entry, 
+int ftlv4_remove(ftlv4 *obj, v4_flow_entry *entry,
                  uint32_t hash, uint16_t thread_id);
 
 int ftlv4_remove_cached_entry(ftlv4 *obj, uint16_t thread_id);
@@ -353,7 +353,7 @@ int ftlv4_remove_nat_session(uint32_t vpc_id, ftlv4 *obj, uint16_t thread_id);
 
 int ftlv4_update_cached_entry(ftlv4 *obj, uint16_t thread_id);
 
-int ftlv4_get_with_handle(ftlv4 *obj, uint64_t handle, 
+int ftlv4_get_with_handle(ftlv4 *obj, uint64_t handle,
                           uint16_t thread_id);
 
 void ftlv4_get_last_read_session_info(uint32_t *sip,
@@ -414,6 +414,8 @@ int ftlv6_remove(ftlv6 *obj, flow_entry *entry, uint32_t hash);
 int ftlv4_insert_with_new_lookup_id (ftlv4 *obj, uint64_t handle,
                                      uint64_t *ret_handle,
                                      uint16_t lookup_id, bool l2l);
+
+char *ftlv4_get_handle_str (uint64_t handle);
 
 int ftlv6_remove_cached_entry(ftlv6 *obj);
 
