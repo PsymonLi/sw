@@ -17,7 +17,6 @@
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/apollo/core/trace.hpp"
-#include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/internal/lif.hpp"
 #include "nic/apollo/api/impl/apulu/pds_impl_state.hpp"
 #include "nic/apollo/api/impl/lif_impl.hpp"
@@ -219,23 +218,14 @@ lif_impl::program_tx_policer(sdk::qos::policer_t *policer) {
 
 void
 lif_impl::set_name(const char *name) {
-    pds_event_t event;
-
     if ((type_ == sdk::platform::LIF_TYPE_HOST_MGMT) ||
         (type_ == sdk::platform::LIF_TYPE_HOST)) {
         memcpy(name_, name, SDK_MAX_NAME_LEN);
-        // notify lif update
-        event.event_id = PDS_EVENT_ID_LIF_UPDATE;
-        pds_lif_to_lif_spec(&event.lif_info.spec, this);
-        pds_lif_to_lif_status(&event.lif_info.status, this);
-        g_pds_state.event_notify(&event);
     }
 }
 
 void
 lif_impl::set_admin_state(lif_state_t state) {
-    pds_event_t event;
-
     // update the admin state
     admin_state_ = state;
 #if 0
@@ -1258,7 +1248,6 @@ sdk_ret_t
 lif_impl::create_host_lif_(pds_lif_spec_t *spec) {
     uint32_t idx;
     sdk_ret_t ret;
-    pds_event_t event;
     lif_actiondata_t lif_data = { 0 };
 
     PDS_TRACE_DEBUG("Creating host lif %u", id_);
@@ -1277,12 +1266,6 @@ lif_impl::create_host_lif_(pds_lif_spec_t *spec) {
     if (unlikely(ret != SDK_RET_OK)) {
         goto error;
     }
-
-    // notify lif creation
-    event.event_id = PDS_EVENT_ID_LIF_CREATE;
-    pds_lif_to_lif_spec(&event.lif_info.spec, this);
-    pds_lif_to_lif_status(&event.lif_info.status, this);
-    g_pds_state.event_notify(&event);
     return SDK_RET_OK;
 
 error:

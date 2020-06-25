@@ -15,6 +15,7 @@
 #include "nic/apollo/framework/api_params.hpp"
 #include "nic/apollo/framework/api_ctxt.hpp"
 #include "nic/apollo/core/trace.hpp"
+#include "nic/apollo/core/event.hpp"
 #include "nic/apollo/api/pds_state.hpp"
 #include "nic/apollo/api/if.hpp"
 #include "nic/apollo/api/if_state.hpp"
@@ -31,6 +32,29 @@ static inline if_entry *
 pds_if_entry_find (const if_index_t *key)
 {
     return (if_db()->find((if_index_t *)key));
+}
+
+sdk_ret_t
+pds_if_read (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
+{
+    if_entry *entry;
+
+    if (key == NULL || info == NULL) {
+        return SDK_RET_INVALID_ARG;
+    }
+
+    if ((entry = pds_if_entry_find(key)) == NULL) {
+        PDS_TRACE_ERR("Failed to find interface 0x%x", *key);
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+
+    return entry->read(info);
+}
+
+sdk_ret_t
+port_get (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
+{
+    return pds_if_read(key, info);
 }
 
 static inline void
@@ -115,98 +139,49 @@ pds_host_if_create (pds_host_if_spec_t *spec)
 
     // register for lif metrics
     sdk::metrics::row_address(g_pds_state.hostif_metrics_handle(),
-                              *(sdk::metrics::key_t *)lif_spec->key.id,
+                              *(sdk::metrics::key_t *)spec->key.id,
                               (void *)(lif_stats_base_addr +
                               (lif_spec->id * block_size)));
     return SDK_RET_OK;
 }
 
 sdk_ret_t
-pds_host_if_init (pds_host_if_spec_t *spec)
+pds_host_if_create_notify (pds_obj_key_t *key)
 {
     sdk_ret_t ret;
-    api::impl::lif_impl *lif;
-    pds_lif_spec_t *lif_spec = &spec->lif;
+    pds_event_t event;
+    pds_if_info_t if_info = { 0 };
 
-    lif = api::impl::lif_impl_db()->find(&lif_spec->id);
-    if (unlikely(lif == NULL)) {
-        PDS_TRACE_ERR("Lif %s not found", lif_spec->key.str());
-        return SDK_RET_ENTRY_NOT_FOUND;
-    }
-
-    if (sdk::platform::upgrade_mode_hitless(api::g_upg_state->upg_init_mode()) &&
-        (lif_spec->tx_sched_table_offset != INVALID_INDEXER_INDEX)) {
-        // reserve the bits, configuration has been done already by A
-        // during A to B hitless upgrade
-        ret = api::impl::lif_impl::reserve_tx_scheduler(lif_spec);
-        SDK_ASSERT(ret == SDK_RET_OK);
-    } else {
-        // program tx scheduler
-        ret = api::impl::lif_impl::program_tx_scheduler(lif_spec);
-        if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("Lif %s program tx scheduler failed with err %u",
-                          lif_spec->key.str(), ret);
-            goto err;
-        }
-    }
-
-    // lif create
-    ret = lif->create(lif_spec);
-    if (ret == SDK_RET_OK) {
-        PDS_TRACE_DEBUG("Created lif %s, id %u %s %u %s",
-                        lif_spec->key.str(), lif_spec->id,
-                        lif_spec->name, lif_spec->type,
-                        macaddr2str(lif_spec->mac));
-        lif->set_tx_sched_info(lif_spec->tx_sched_table_offset,
-                               lif_spec->tx_sched_num_table_entries);
-        lif->set_cos_bmp(lif_spec->cos_bmp);
-        lif->set_total_qcount(lif_spec->total_qcount);
+    event.event_id = PDS_EVENT_ID_HOST_IF_CREATE;
+    ret = pds_if_read(key, &if_info);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Read host if %s failed", key->str());
         return ret;
     }
-
-    PDS_TRACE_ERR("lif %s create failed!, id %u %s %u %s ret %u",
-                  lif_spec->key.str(), lif_spec->id,
-                  lif_spec->name, lif_spec->type,
-                  macaddr2str(lif_spec->mac),
-                  ret);
-
-err:
+    event.if_info.spec = if_info.spec;
+    event.if_info.status = if_info.status;
+    g_pds_state.event_notify(&event);
     return ret;
 }
 
 sdk_ret_t
 pds_host_if_update_name (pds_obj_key_t *key, std::string name)
 {
+    pds_event_t event;
     api::if_entry *intf;
+    pds_if_info_t if_info = { 0 };
 
     intf = if_db()->find(key);
     if (intf) {
         intf->set_host_if_name(name.c_str());
+        intf->read(&if_info);
+        // notify host if update
+        event.event_id = PDS_EVENT_ID_HOST_IF_UPDATE;
+        event.if_info.spec = if_info.spec;
+        event.if_info.status = if_info.status;
+        g_pds_state.event_notify(&event);
     }
     return SDK_RET_OK;
-}
-
-sdk_ret_t
-pds_if_read (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
-{
-    if_entry *entry;
-
-    if (key == NULL || info == NULL) {
-        return SDK_RET_INVALID_ARG;
-    }
-
-    if ((entry = pds_if_entry_find(key)) == NULL) {
-        PDS_TRACE_ERR("Failed to find interface 0x%x", *key);
-        return SDK_RET_ENTRY_NOT_FOUND;
-    }
-
-    return entry->read(info);
-}
-
-sdk_ret_t
-port_get (_In_ const if_index_t *key, _Out_ pds_if_info_t *info)
-{
-    return pds_if_read(key, info);
 }
 
 }    // namespace api

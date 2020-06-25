@@ -33,6 +33,7 @@ const (
 	ifTypeL3          = 7
 	ifTypeLif         = 8
 	ifTypeLoopback    = 9
+	ifTypeHost        = 11
 	ifTypeShift       = 28
 	ifSlotShift       = 24
 	ifParentPortShift = 16
@@ -341,7 +342,7 @@ func getIfTypeStr(ifIndex uint32, subType string) (intfType string, err error) {
 		return "tunnel", nil
 	case ifTypeL3:
 		return "l3", nil
-	case ifTypeLif:
+	case ifTypeLif, ifTypeHost:
 		return "pf", nil
 	case ifTypeLoopback:
 		return "lo", nil
@@ -363,7 +364,7 @@ func GetIfName(systemMac string, ifIndex uint32, subType string) (ifName string,
 		slotStr := strconv.FormatUint(uint64(ifIndexToSlot(ifIndex)), 10)
 		parentPortStr := strconv.FormatUint(uint64(ifIndexToParentPort(ifIndex)), 10)
 		return systemMac + ifNameDelimiter + ifTypeStr + ifNameDelimiter + slotStr + ifNameDelimiter + parentPortStr, nil
-	case ifTypeEthPC, ifTypeTunnel, ifTypeL3, ifTypeLif, ifTypeLoopback:
+	case ifTypeEthPC, ifTypeTunnel, ifTypeL3, ifTypeLif, ifTypeLoopback, ifTypeHost:
 		return systemMac + ifNameDelimiter + ifTypeStr + ifNameDelimiter + strconv.FormatUint(uint64(ifIndexToID(ifIndex)), 10), nil
 	}
 	return "", errors.Wrapf(types.ErrInvalidInterfaceType,

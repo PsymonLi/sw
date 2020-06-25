@@ -26,6 +26,7 @@
 #include "nic/apollo/api/impl/lif_impl.hpp"
 #include "nic/apollo/api/impl/lif_impl_state.hpp"
 #include "nic/apollo/api/internal/pds_if.hpp"
+#include "nic/apollo/api/upgrade_state.hpp" 
 
 namespace api {
 namespace impl {
@@ -53,13 +54,9 @@ devapi_impl::destroy(devapi *impl) {
     SDK_FREE(SDK_MEM_ALLOC_DEVAPI_IMPL, impl);
 }
 
-void
-host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
+static void
+lif_spec_from_info (pds_lif_spec_t *lif_spec, lif_info_t *info)
 {
-    pds_lif_spec_t *lif_spec = &spec.lif;
-
-    memset(&spec, 0, sizeof(pds_host_if_spec_t));
-    spec.key = uuid_from_objid(HOST_IFINDEX(info->lif_id));
     lif_spec->key = uuid_from_objid(LIF_IFINDEX(info->lif_id));
     lif_spec->id = info->lif_id;
     lif_spec->peer_lif_id = info->peer_lif_id;
@@ -73,6 +70,16 @@ host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
     lif_spec->total_qcount = devapi_impl::lif_get_qcount(info);
     lif_spec->cos_bmp = devapi_impl::lif_get_cos_bmp(info);
     MAC_ADDR_COPY(lif_spec->mac, info->mac);
+}
+
+void
+host_if_spec_from_lif_info (pds_host_if_spec_t &spec, lif_info_t *info)
+{
+    pds_lif_spec_t *lif_spec = &spec.lif;
+
+    memset(&spec, 0, sizeof(pds_host_if_spec_t));
+    spec.key = uuid_from_objid(HOST_IFINDEX(info->lif_id));
+    lif_spec_from_info(lif_spec, info);
     strncpy(spec.name, lif_spec->name, sizeof(lif_spec->name));
     spec.name[SDK_MAX_NAME_LEN - 1] = '\0';
     MAC_ADDR_COPY(spec.mac, lif_spec->mac);
@@ -88,10 +95,60 @@ devapi_impl::lif_create(lif_info_t *info) {
 
 sdk_ret_t
 devapi_impl::lif_init(lif_info_t *info) {
-    pds_host_if_spec_t spec;
+    sdk_ret_t ret;
+    pds_lif_spec_t lif_spec;
+    api::impl::lif_impl *lif;
+    pds_obj_key_t host_if_key;
 
-    host_if_spec_from_lif_info(spec, info);
-    return pds_host_if_init(&spec);
+    lif_spec_from_info(&lif_spec, info);
+    lif = api::impl::lif_impl_db()->find(&lif_spec.id);
+    if (unlikely(lif == NULL)) {
+        PDS_TRACE_ERR("Lif %s not found", lif_spec.key.str());
+        return SDK_RET_ENTRY_NOT_FOUND;
+    }
+
+    if (sdk::platform::upgrade_mode_hitless(api::g_upg_state->upg_init_mode()) &&
+        (lif_spec.tx_sched_table_offset != INVALID_INDEXER_INDEX)) {
+        // reserve the bits, configuration has been done already by A
+        // during A to B hitless upgrade
+        ret = api::impl::lif_impl::reserve_tx_scheduler(&lif_spec);
+        SDK_ASSERT(ret == SDK_RET_OK);
+    } else {
+        // program tx scheduler
+        ret = api::impl::lif_impl::program_tx_scheduler(&lif_spec);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Lif %s program tx scheduler failed with err %u",
+                          lif_spec.key.str(), ret);
+            goto err;
+        }
+    }
+
+    // lif create
+    ret = lif->create(&lif_spec);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("lif %s create failed!, id %u %s %u %s ret %u",
+                      lif_spec.key.str(), lif_spec.id,
+                      lif_spec.name, lif_spec.type,
+                      macaddr2str(lif_spec.mac),
+                      ret);
+        goto err;
+    }
+
+    PDS_TRACE_DEBUG("Created lif %s, id %u %s %u %s",
+                    lif_spec.key.str(), lif_spec.id,
+                    lif_spec.name, lif_spec.type,
+                    macaddr2str(lif_spec.mac));
+    lif->set_tx_sched_info(lif_spec.tx_sched_table_offset,
+                           lif_spec.tx_sched_num_table_entries);
+    lif->set_cos_bmp(lif_spec.cos_bmp);
+    lif->set_total_qcount(lif_spec.total_qcount);
+    if (lif_spec.type == sdk::platform::LIF_TYPE_HOST) {
+        host_if_key = uuid_from_objid(HOST_IFINDEX(info->lif_id));
+        pds_host_if_create_notify(&host_if_key);
+    }
+
+err:
+    return ret;
 }
 
 sdk_ret_t

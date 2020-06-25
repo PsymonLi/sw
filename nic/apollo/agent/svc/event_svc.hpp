@@ -21,14 +21,14 @@ static inline pds::EventId
 pds_event_id_api_to_proto_event_id (pds_event_id_t event_id)
 {
     switch (event_id) {
-    case PDS_EVENT_ID_LIF_CREATE:
-        return pds::EVENT_ID_LIF_CREATE;
-    case PDS_EVENT_ID_LIF_UPDATE:
-        return pds::EVENT_ID_LIF_UPDATE;
-    case PDS_EVENT_ID_LIF_UP:
-        return pds::EVENT_ID_LIF_UP;
-    case PDS_EVENT_ID_LIF_DOWN:
-        return pds::EVENT_ID_LIF_DOWN;
+    case PDS_EVENT_ID_HOST_IF_CREATE:
+        return pds::EVENT_ID_HOST_IF_CREATE;
+    case PDS_EVENT_ID_HOST_IF_UPDATE:
+        return pds::EVENT_ID_HOST_IF_UPDATE;
+    case PDS_EVENT_ID_HOST_IF_UP:
+        return pds::EVENT_ID_HOST_IF_UP;
+    case PDS_EVENT_ID_HOST_IF_DOWN:
+        return pds::EVENT_ID_HOST_IF_DOWN;
     case PDS_EVENT_ID_PORT_CREATE:
         return pds::EVENT_ID_PORT_CREATE;
     case PDS_EVENT_ID_PORT_UP:
@@ -51,14 +51,14 @@ pds_proto_event_id_to_api_event_id (pds::EventId proto_event_id)
         return PDS_EVENT_ID_PORT_UP;
     case pds::EVENT_ID_PORT_DOWN:
         return PDS_EVENT_ID_PORT_DOWN;
-    case pds::EVENT_ID_LIF_CREATE:
-        return PDS_EVENT_ID_LIF_CREATE;
-    case pds::EVENT_ID_LIF_UPDATE:
-        return PDS_EVENT_ID_LIF_UPDATE;
-    case pds::EVENT_ID_LIF_UP:
-        return PDS_EVENT_ID_LIF_UP;
-    case pds::EVENT_ID_LIF_DOWN:
-        return PDS_EVENT_ID_LIF_DOWN;
+    case pds::EVENT_ID_HOST_IF_CREATE:
+        return PDS_EVENT_ID_HOST_IF_CREATE;
+    case pds::EVENT_ID_HOST_IF_UPDATE:
+        return PDS_EVENT_ID_HOST_IF_UPDATE;
+    case pds::EVENT_ID_HOST_IF_UP:
+        return PDS_EVENT_ID_HOST_IF_UP;
+    case pds::EVENT_ID_HOST_IF_DOWN:
+        return PDS_EVENT_ID_HOST_IF_DOWN;
     default:
         break;
     }
@@ -94,14 +94,14 @@ pds_event_to_proto_event_response (pds::EventResponse *proto_rsp,
     proto_rsp->set_status(types::ApiStatus::API_STATUS_OK);
     proto_rsp->set_eventid(pds_event_id_api_to_proto_event_id(event->event_id));
     switch (event->event_id) {
-    case PDS_EVENT_ID_LIF_CREATE:
-    case PDS_EVENT_ID_LIF_UPDATE:
-    case PDS_EVENT_ID_LIF_UP:
-    case PDS_EVENT_ID_LIF_DOWN:
-        pds_lif_api_spec_to_proto_spec(proto_rsp->mutable_lifeventinfo()->mutable_spec(),
-                                       &event->lif_info.spec);
-        pds_lif_api_status_to_proto(proto_rsp->mutable_lifeventinfo()->mutable_status(),
-                                    &event->lif_info.status);
+    case PDS_EVENT_ID_HOST_IF_CREATE:
+    case PDS_EVENT_ID_HOST_IF_UPDATE:
+    case PDS_EVENT_ID_HOST_IF_UP:
+    case PDS_EVENT_ID_HOST_IF_DOWN:
+        pds_if_api_spec_to_proto(proto_rsp->mutable_ifeventinfo()->mutable_spec(),
+                                 &event->if_info.spec);
+        pds_if_api_status_to_proto(proto_rsp->mutable_ifeventinfo()->mutable_status(),
+                                   &event->if_info.status, event->if_info.spec.type);
         return SDK_RET_OK;
     default:
     case PDS_EVENT_ID_PORT_CREATE:

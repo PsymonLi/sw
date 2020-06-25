@@ -1678,12 +1678,12 @@ func (a *ApuluAPI) retrieveObject(kind, key string, umToFunc func([]byte) error)
 	return nil
 }
 
-func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifStatus) error {
+func (a *ApuluAPI) handleHostInterface(spec *halapi.InterfaceSpec, status *halapi.InterfaceStatus) error {
 	// parse the uuid
 	intfID := spec.GetId()
 	uid, err := uuid.FromBytes(intfID)
 	if err != nil {
-		log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse lif uuid %v, err %v", spec.GetId(), err))
+		log.Error(errors.Wrapf(types.ErrBadRequest, "Failed to parse host if uuid %v, err %v", spec.GetId(), err))
 		return err
 	}
 	// form the interface name
@@ -1694,9 +1694,9 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 			spec.GetId(), status.GetIfIndex(), err))
 		return err
 	}
-	// skip any internal lifs
-	if spec.GetType() != halapi.LifType_LIF_TYPE_HOST {
-		log.Infof("Skipping LIF_CREATE event for lif %v, type %v", uid.String(), spec.GetType().String())
+	// skip any non-host ifs
+	if spec.GetType() != halapi.IfType_IF_TYPE_HOST {
+		log.Infof("Skipping IF_CREATE event for if %v, type %v", uid.String(), spec.GetType().String())
 		return nil
 	}
 	log.Infof("Got host If update Spec:[%+v] Status [%+v]", spec, status)
@@ -1721,10 +1721,10 @@ func (a *ApuluAPI) handleHostInterface(spec *halapi.LifSpec, status *halapi.LifS
 			DSCID:       a.InfraAPI.GetConfig().DSCID,
 			InterfaceID: uint64(status.GetIfIndex()),
 			IFHostStatus: netproto.InterfaceHostStatus{
-				MacAddress: utils.Uint64ToMac(spec.MacAddress),
-				HostIfName: status.GetName(),
+				MacAddress: utils.Uint64ToMac(status.GetHostIfStatus().MacAddress),
+				HostIfName: status.GetHostIfStatus().GetName(),
 			},
-			OperStatus: status.GetStatus().String(),
+			OperStatus: status.GetHostIfStatus().GetStatus().String(),
 		},
 	}
 
@@ -1935,19 +1935,19 @@ func (a *ApuluAPI) initEventStream() {
 				Action:  halapi.EventOp_EVENT_OP_SUBSCRIBE,
 			},
 			{
-				EventId: halapi.EventId_EVENT_ID_LIF_CREATE,
+				EventId: halapi.EventId_EVENT_ID_HOST_IF_CREATE,
 				Action:  halapi.EventOp_EVENT_OP_SUBSCRIBE,
 			},
 			{
-				EventId: halapi.EventId_EVENT_ID_LIF_UPDATE,
+				EventId: halapi.EventId_EVENT_ID_HOST_IF_UPDATE,
 				Action:  halapi.EventOp_EVENT_OP_SUBSCRIBE,
 			},
 			{
-				EventId: halapi.EventId_EVENT_ID_LIF_UP,
+				EventId: halapi.EventId_EVENT_ID_HOST_IF_UP,
 				Action:  halapi.EventOp_EVENT_OP_SUBSCRIBE,
 			},
 			{
-				EventId: halapi.EventId_EVENT_ID_LIF_DOWN,
+				EventId: halapi.EventId_EVENT_ID_HOST_IF_DOWN,
 				Action:  halapi.EventOp_EVENT_OP_SUBSCRIBE,
 			},
 		},
@@ -1960,11 +1960,13 @@ func (a *ApuluAPI) initEventStream() {
 	}
 	eventStream.Send(evtReqMsg)
 
-	// get all the LIFs known at this time
-	lifReqMsg := &halapi.LifGetRequest{}
-	lifs, err := a.InterfaceClient.LifGet(context.Background(), lifReqMsg)
+	// get all the host IFs known at this time
+	ifReqMsg := &halapi.InterfaceGetRequest{
+		Id: [][]byte{},
+	}
+	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), ifReqMsg)
 	if err != nil {
-		log.Error(errors.Wrapf(types.ErrPipelineLifGet, "Init: %v", err))
+		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: %v", err))
 	}
 
 	// get all the physical ports
@@ -1991,17 +1993,17 @@ func (a *ApuluAPI) initEventStream() {
 				log.Error(errors.Wrapf(types.ErrDatapathHandling, "Iris: %v", err))
 			}
 
-			lif := resp.GetLifEventInfo()
+			intf := resp.GetIfEventInfo()
 			port := resp.GetPortEventInfo()
 			switch resp.EventId {
-			case halapi.EventId_EVENT_ID_LIF_CREATE:
+			case halapi.EventId_EVENT_ID_HOST_IF_CREATE:
 				fallthrough
-			case halapi.EventId_EVENT_ID_LIF_UPDATE:
+			case halapi.EventId_EVENT_ID_HOST_IF_UPDATE:
 				fallthrough
-			case halapi.EventId_EVENT_ID_LIF_UP:
+			case halapi.EventId_EVENT_ID_HOST_IF_UP:
 				fallthrough
-			case halapi.EventId_EVENT_ID_LIF_DOWN:
-				err = a.handleHostInterface(lif.Spec, lif.Status)
+			case halapi.EventId_EVENT_ID_HOST_IF_DOWN:
+				err = a.handleHostInterface(intf.Spec, intf.Status)
 			case halapi.EventId_EVENT_ID_PORT_CREATE:
 				fallthrough
 			case halapi.EventId_EVENT_ID_PORT_UP:
@@ -2012,9 +2014,9 @@ func (a *ApuluAPI) initEventStream() {
 		}
 	}(eventStream)
 
-	// Store initial Lifs
-	for _, lif := range lifs.Response {
-		a.handleHostInterface(lif.Spec, lif.Status)
+	// Store initial host ifs
+	for _, intf := range intfs.Response {
+		a.handleHostInterface(intf.Spec, intf.Status)
 	}
 
 	// handle the ports
@@ -2027,7 +2029,7 @@ func (a *ApuluAPI) initEventStream() {
 	intReqMsg := &halapi.InterfaceGetRequest{
 		Id: [][]byte{},
 	}
-	intfs, err := a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
+	intfs, err = a.InterfaceClient.InterfaceGet(context.Background(), intReqMsg)
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrPipelineInterfaceGet, "Init: could not get interfaces %v", err))
 	} else {
