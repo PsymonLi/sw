@@ -146,7 +146,7 @@
 
 
 <ng-template #EditSource let-source>
-  <div fxFlex="none">Measurement:</div>
+  <div fxFlex="none">Statistics:</div>
   <mat-radio-group fxFlex="none" fxLayout="row wrap" fxLayoutAlign="start center"
                    fxLayoutGap="30px"
                    class="telemetrychartedit-input telemetrychartedit-radio-buttons"
@@ -171,15 +171,17 @@
     <div fxFlex="none">Fields:</div>
     <div fxFlex="none" fxLayout="row wrap" fxLayoutAlign="start center" fxLayoutGap="30px"
          class="telemetrychartedit-input">
-      <ng-container *ngFor="let option of metricsMetadata[source.measurement].fields">
-        <p-checkbox fxFlex="nogrow" class="telemetrychartedit-checkbox-container"
-                    *ngIf="(option.baseType !== 'string') && ((source.fields != null && source.fields.includes(option.name)) || showDebug || (option.tags != null && !option.tags.includes('Level7')))"
-                    styleClass="telemetrychartedit-checkbox"
-                    labelStyleClass="telemetrychartedit-checkbox"
-                    name="fieldSelection" [value]="option.name" [label]="option.displayName"
-                    [appErrorTooltip]="option.description" [(ngModel)]="source.fields"
-                    (onChange)="onFieldsChange($event, source, option.name, option.displayName)">
-        </p-checkbox>
+      <ng-container *ngFor="let measurement of measurementMapping[source.measurement]">
+        <ng-container *ngFor="let option of measurement.fields">
+          <p-checkbox fxFlex="nogrow" class="telemetrychartedit-checkbox-container"
+                      *ngIf="(option.baseType !== 'string') && ((source.fields != null && source.fields.includes(option.name)) || showDebug || (option.tags != null && !option.tags.includes('Level7')))"
+                      styleClass="telemetrychartedit-checkbox"
+                      labelStyleClass="telemetrychartedit-checkbox"
+                      name="fieldSelection" [value]="option.name" [label]="option.displayName"
+                      [appErrorTooltip]="option.description" [(ngModel)]="source.fields"
+                      (onChange)="onFieldsChange($event, source, option.name, option.displayName, measurement)">
+          </p-checkbox>
+        </ng-container>
       </ng-container>
     </div>
     <div [@fastSlideInOut] *ngIf="source.fields.length != 0" fxFlex="none" fxLayout="column">

@@ -64,6 +64,7 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
 
   metricsMetadata: { [key: string]: MetricMeasurement } = MetricsMetadata;
   measurements: MetricMeasurement[] = [];
+  measurementMapping: {[key: string]: MetricMeasurement[]} = {};
 
   // Subscription for the metric polling
   subscriptions: Subscription[] = [];
@@ -115,10 +116,20 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     Object.keys(this.metricsMetadata).forEach( (m) => {
       const mObj: MetricMeasurement = this.metricsMetadata[m];
       mObj.fields.sort(this.sortField);
-      this.measurements.push(mObj);
+      const upGroup: string = mObj.uiGroup;
+      if (!this.measurementMapping[upGroup]) {
+        this.measurementMapping[upGroup] = [];
+      }
+      this.measurementMapping[upGroup].push(mObj);
+      if (upGroup === mObj.name) {
+        this.measurements.push(mObj);
+      } else {
+        this.measurementMapping[mObj.name] = this.measurementMapping[upGroup];
+      }
     });
     this.measurements.sort(this.sortMeasurement);
   }
+
 
   sortField(a: MetricField, b: MetricField) {
     if ((!a.tags || a.tags.length === 0) && b.tags && b.tags.length > 0) {
@@ -267,21 +278,28 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
     return 'DSCs';
   }
 
-  onFieldsChange(checkValue: boolean, source: DataSource, dataValue: any, dataLabel: string) {
+  onFieldsChange(checkValue: boolean, source: DataSource, dataValue: any,
+      dataLabel: string, measurement: MetricMeasurement) {
     if (checkValue && source.fields && source.fields.length > 1) {
       let errorMsg: string = null;
-      const metaData = this.getMeasurementMetadata(source.measurement);
-      if (metaData) {
-        const firstFieldMetaData = metaData.fields.find(item =>
-            item.name === source.fields[0]);
-        const dataFieldMetaData = metaData.fields.find(item =>
-            item.name === dataValue);
-        if (firstFieldMetaData && firstFieldMetaData.aggregationFunc &&
-            dataFieldMetaData && dataFieldMetaData.aggregationFunc &&
-            firstFieldMetaData.aggregationFunc !==
-              dataFieldMetaData.aggregationFunc) {
-          errorMsg = 'Field "' + dataLabel + '" is using an aggregate function ' +
-            'which is incompatible with that of other fields. Please unselect all others fields first.';
+      if (source.measurement !== measurement.name) {
+        errorMsg = 'Field "' + dataLabel + '" is not from the same type of '
+            + 'Statistics that other fields belong to. Please unselect all others fields first.';
+      }
+      if (!errorMsg) {
+        const metaData = this.getMeasurementMetadata(source.measurement);
+        if (metaData) {
+          const firstFieldMetaData = metaData.fields.find(item =>
+              item.name === source.fields[0]);
+          const dataFieldMetaData = metaData.fields.find(item =>
+              item.name === dataValue);
+          if (firstFieldMetaData && firstFieldMetaData.aggregationFunc &&
+              dataFieldMetaData && dataFieldMetaData.aggregationFunc &&
+              firstFieldMetaData.aggregationFunc !==
+                dataFieldMetaData.aggregationFunc) {
+            errorMsg = 'Field "' + dataLabel + '" is using an aggregate function ' +
+              'which is incompatible with that of other fields. Please unselect all others fields first.';
+          }
         }
       }
       if (!errorMsg && source.transforms && source.transforms.length > 0) {
@@ -307,7 +325,13 @@ export class TelemetrycharteditComponent extends BaseComponent implements OnInit
             this.chart.dataSources = [...this.chart.dataSources];
           }
         });
+        return;
       }
+    }
+    if (source.measurement !== measurement.name) {
+      const tempArray = [...source.fields];
+      source.measurement = measurement.name;
+      source.fields = [...tempArray];
     }
   }
 
