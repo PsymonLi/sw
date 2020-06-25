@@ -1,0 +1,20 @@
+meta:
+    name    : bootstrap
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : Setup_Bootstrap
+        testcase: testcases.networking.bootstrap_setup
+        enable  : True
+
+    -   name    : Verify_Bootstrap_Traffic
+        testcase: testcases.networking.bootstrap_traffic
+        enable  : True
+        iterators :
+            type         : nested
+            traffic_type : ['ping', 'TCP', 'UDP']
+
+    -   name    : Teardown_Bootstrap
+        testcase: testcases.networking.bootstrap_teardown
+        enable  : True

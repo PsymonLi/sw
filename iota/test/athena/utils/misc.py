@@ -193,7 +193,6 @@ def match_dynamic_flows(tc, vnic_id, flow):
 
     return True
 
-
 # ===========================================
 # Return: List of (node, nic) pairs names for 
 # nics running in classic mode
@@ -208,3 +207,20 @@ def get_classic_node_nic_pairs():
                 classic_node_nic_pairs.append((node.Name(), dev_name)) 
     
     return classic_node_nic_pairs
+
+# ===========================================
+# Return: void
+# Configure/Unconfigure a parent or sub
+# interface on naples
+# ===========================================
+def configureNaplesIntf(req, node, intf,
+                        ip, mask,
+                        vlan = None):
+
+    if vlan is not None:
+        cmd = "vconfig add " + intf + " " + vlan
+        api.Trigger_AddNaplesCommand(req, node, cmd)
+        intf += '.' + vlan
+
+    cmd = "ifconfig " + intf + " " + ip + " netmask " + mask
+    api.Trigger_AddNaplesCommand(req, node, cmd)

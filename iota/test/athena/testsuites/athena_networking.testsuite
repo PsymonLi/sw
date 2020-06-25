@@ -41,6 +41,7 @@ testbundles:
 
     sanity:
         # Relative paths from iota/test/athena/testbundles/
+        - networking/bootstrap.testbundle
 
     regression:
         # Relative paths from iota/test/athena/testbundles/
