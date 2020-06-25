@@ -125,6 +125,10 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 					// Raise a reboot pending notification. TODO investigate if we can get rid of reboot requirement on decommission
 					recorder.Event(eventtypes.DSC_DECOMMISSIONED, fmt.Sprintf("DSC %s(%s) needs to be rebooted on decommission", nic.Spec.ID, nic.Name), nic)
 
+					// Stop ongoing updates.
+					n.stopNICUpd <- true
+					time.Sleep(time.Second * 3)
+
 					// Update the object to be sent as health update to CMD
 					nic.Status.AdmissionPhase = cmd.DistributedServiceCardStatus_DECOMMISSIONED.String()
 					nic.Status.AdmissionPhaseReason = "DistributedServiceCard management mode changed to HOST"
@@ -136,6 +140,8 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 							LastTransitionTime: time.Now().UTC().Format(time.RFC3339),
 						},
 					}
+
+					log.Infof("Sending NIC update after decommission. NIC: %v", nic)
 
 					// Send one last health update to CMD before restarting the reverse proxy
 					err = n.UpdateSmartNICReq(nic)
@@ -157,6 +163,8 @@ func (n *NMD) UpdateSmartNIC(nic *cmd.DistributedServiceCard) error {
 							time.Sleep(time.Second)
 						}
 					}
+
+					log.Infof("Successfully sent update after decommission. NIC: %v", nic)
 
 					// restart rev proxy so that it can go back to HTTP and no client auth
 					err = n.RestartRevProxyWithRetries()
