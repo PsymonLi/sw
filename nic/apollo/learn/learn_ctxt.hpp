@@ -46,6 +46,7 @@ typedef std::vector<event_t> event_list_t;
 
 /// \brief context specific to learn packets
 typedef struct learn_pkt_ctxt_s {
+    void *                  mbuf;               ///< incoming pkt buffer
     uint8_t                 pkt_drop_reason;    ///< pkt drop reason
     uint8_t                 pkt_type;
     impl::learn_info_t      impl_info;          ///< learn info provided by impl
@@ -342,7 +343,7 @@ add_ip_to_event_list (learn_ctxt_t *ctxt, event_id_t learn_event)
 
 // for remote delete events, we have only mapping key
 static inline void
-add_del_event_to_list (learn_ctxt_t *ctxt)
+add_del_event_to_list (learn_ctxt_t *ctxt, pds_obj_key_t *subnet = nullptr)
 {
     event_t event;
     core::learn_event_info_t *info = &event.learn;
@@ -357,6 +358,9 @@ add_del_event_to_list (learn_ctxt_t *ctxt)
         event.event_id = EVENT_ID_IP_DELETE;
         info->vpc = mkey->vpc;
         info->ip_addr = mkey->ip_addr;
+        if (subnet) {
+            info->subnet = *subnet;
+        }
     }
     ctxt->lbctxt->bcast_events.push_back(event);
 }

@@ -18,6 +18,7 @@
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/learn/ep_mac_state.hpp"
 #include "nic/apollo/learn/ep_ip_state.hpp"
+#include "nic/apollo/learn/pending_ntfn.hpp"
 
 using api::state_walk_cb_t;
 
@@ -151,7 +152,6 @@ typedef struct learn_counters_s {
 // and not to advance the epoch
 #define LEARN_API_EPOCH_START           0xdeaddead
 
-
 /// \brief singleton to hold the global state of learn module
 class learn_state : public state_base {
 public:
@@ -236,19 +236,24 @@ public:
     /// \return   SDK_RET_OK on success, failure status code on error
     sdk_ret_t slab_walk(state_walk_cb_t walk_cb, void *ctxt) override;
 
+    /// \brief      return pending notification state
+    /// \return     pointer to pending notificaiton state
+    pending_ntfn_state_t *pending_ntfn_state(void) { return &pend_ntfn_state_; }
+
 private:
     /// \brief      intialize learn lif device
     /// \return     #SDK_RET_OK on success, error code on failure
     sdk_ret_t lif_init_(void);
 private:
-    pds_epoch_t epoch_;                 ///< epoch for api batch
-    rte_indexer *vnic_objid_idxr_;      ///< vnic object id
-    dpdk_device *learn_lif_;            ///< learn lif device
-    uint16_t arp_probe_timeout_secs_;   ///< arp probe timeout
-    uint16_t pkt_poll_interval_msecs_;  ///< learn pkt poll frequency
-    learn_counters_t counters_;         ///< debug counters
-    ep_mac_state *ep_mac_state_;        ///< endpoint MAC state
-    ep_ip_state *ep_ip_state_;          ///< endpoint IP state
+    pds_epoch_t epoch_;                     ///< epoch for api batch
+    rte_indexer *vnic_objid_idxr_;          ///< vnic object id
+    dpdk_device *learn_lif_;                ///< learn lif device
+    uint16_t arp_probe_timeout_secs_;       ///< arp probe timeout
+    uint16_t pkt_poll_interval_msecs_;      ///< learn pkt poll frequency
+    learn_counters_t counters_;             ///< debug counters
+    ep_mac_state *ep_mac_state_;            ///< endpoint MAC state
+    ep_ip_state *ep_ip_state_;              ///< endpoint IP state
+    pending_ntfn_state_t pend_ntfn_state_;  ///< pending notification state
 };
 
 }    // namepsace learn

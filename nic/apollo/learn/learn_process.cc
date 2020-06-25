@@ -15,6 +15,7 @@
 #include "nic/apollo/api/utils.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
+#include "nic/apollo/learn/pending_ntfn.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
 
 namespace learn {
@@ -254,9 +255,31 @@ process_r2l_move_ip (learn_ctxt_t *ctxt)
 }
 
 static inline sdk_ret_t
-process_new_remote_mac_ip (learn_ctxt_t *ctxt)
+process_new_remote_mac (learn_ctxt_t *ctxt)
 {
     return remote_mapping_create(ctxt, ctxt->api_ctxt.spec);
+}
+
+static sdk_ret_t
+process_new_remote_ip (learn_ctxt_t *ctxt)
+{
+    sdk_ret_t ret;
+    ep_ip_key_t ep_ip_key;
+    pds_mapping_key_t *mkey = ctxt->api_ctxt.mkey;
+    event_t event;
+
+    ret = remote_mapping_create(ctxt, ctxt->api_ctxt.spec);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+    // check if this is a L2R move candidate for flow fixup
+    ep_ip_key.vpc = mkey->vpc;
+    ep_ip_key.ip_addr = mkey->ip_addr;
+    if (process_pending_ntfn_l2r(&ep_ip_key, &event)) {
+        event.event_id = EVENT_ID_IP_MOVE_L2R;
+        ctxt->lbctxt->bcast_events.push_back(event);
+    }
+    return SDK_RET_OK;
 }
 
 // structure to pass batch context to walk callback and get return status
@@ -270,6 +293,8 @@ static bool l2r_mac_move_cb (void *entry, void *cb_args)
     //send ARP probe and delete mapping
     ep_ip_entry *ip_entry = (ep_ip_entry *)entry;
     cb_args_t *args = (cb_args_t *)cb_args;
+    pds_obj_key_t vnic_key;
+    sdk_ret_t ret;
 
     send_arp_probe(ip_entry);
     args->ret = delete_local_ip_mapping(ip_entry, args->ctxt->bctxt);
@@ -280,6 +305,22 @@ static bool l2r_mac_move_cb (void *entry, void *cb_args)
 
     // these are local deletes, send ageout event
     // IP address information is not in the context, send it explicitly
+    add_ip_to_event_list(ip_entry->key(), args->ctxt, EVENT_ID_IP_AGE);
+
+    // we will hold sending flow fix up notification and wait to see
+    // if this IP moves l2r too
+    vnic_key = api::uuid_from_objid(args->ctxt->mac_entry->vnic_obj_id());
+    ret = add_pending_ip_del_ntfn(ip_entry->key(),
+                                  vnic_db()->find(&vnic_key)->subnet(),
+                                  NTFN_TYPE_IP_DEL_L2R);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Unable to delay flow fixup IP delete notification to "
+                      "check potential L2R move for %s, error code %u",
+                      ip_entry->key2str().c_str(), ret);
+        add_ip_to_event_list(ip_entry->key(), args->ctxt, EVENT_ID_IP_DELETE);
+    }
+
+    // EVPN notification
     add_ip_to_event_list(ip_entry->key(), args->ctxt, EVENT_ID_IP_AGE);
     return false;
 }
@@ -393,7 +434,7 @@ process_delete_mac (learn_ctxt_t *ctxt)
 
 // caller ensures key type is L3
 static vnic_entry *
-ip_mapping_key_to_vnic (pds_mapping_key_t *key)
+ip_mapping_key_to_vnic (pds_mapping_key_t *key, pds_obj_key_t *subnet_key)
 {
     sdk_ret_t ret;
     ep_mac_key_t mac_key;
@@ -410,6 +451,7 @@ ip_mapping_key_to_vnic (pds_mapping_key_t *key)
                       ret);
         return nullptr;
     }
+    *subnet_key = info.spec.subnet;
     MAC_ADDR_COPY(&mac_key.mac_addr, &info.spec.vnic_mac);
     mac_key.subnet = info.spec.subnet;
     mac_entry = learn_db()->ep_mac_db()->find(&mac_key);
@@ -425,23 +467,41 @@ process_delete_ip (learn_ctxt_t *ctxt)
 {
     sdk_ret_t ret;
     pds_mapping_key_t *mkey = ctxt->api_ctxt.mkey;
+    pds_obj_key_t subnet;
+    ep_ip_key_t ep_ip_key;
+    pending_ntfn_type_t ntfn_type;
 
     // if the MAC associated with this IP is local, API caller may be deleting
     // remote IP mappings after the MAC did a R2L move, send ARP request before
     // deleting to proactively check if IP has also moved along with the MAC
-
-    // TODO: check if API caller can send MAC and subnet for deletes so that we
-    // can look up learn database to check if MAC associated with this IP
-    // has moved R2L
-    vnic_entry *vnic = ip_mapping_key_to_vnic(mkey);
+    subnet.reset();
+    vnic_entry *vnic = ip_mapping_key_to_vnic(mkey, &subnet);
     if (vnic) {
         send_arp_probe(vnic, mkey->ip_addr.addr.v4_addr);
     }
     ret = remote_mapping_delete(ctxt, mkey);
-    if (ret == SDK_RET_OK) {
-        add_del_event_to_list(ctxt);
+    if (unlikely(ret != SDK_RET_OK)) {
+        return ret;
     }
-    return ret;
+
+    // we need to check for potential moves
+    if (vnic == nullptr) {
+        // MAC is remote, delay delete ntfn for potential R2R move
+        ntfn_type = NTFN_TYPE_IP_DEL_R2R;
+    }  else {
+        // mac is local, wait to see if this IP moves R2L too
+        ntfn_type = NTFN_TYPE_IP_DEL_R2L;
+    }
+    ep_ip_key.vpc = mkey->vpc;
+    ep_ip_key.ip_addr = mkey->ip_addr;
+    ret = add_pending_ip_del_ntfn(&ep_ip_key, subnet, ntfn_type);
+    if (unlikely(ret != SDK_RET_OK)) {
+        PDS_TRACE_ERR("Unable to delay flow fixup IP delete notification to "
+                      "check potential R2L move for %s, error code %u",
+                      ctxt->log_str(PDS_MAPPING_TYPE_L3), ret);
+        add_del_event_to_list(ctxt, &subnet);
+    }
+    return SDK_RET_OK;
 }
 
 static inline void
@@ -484,7 +544,7 @@ process_learn_dispatch (learn_ctxt_t *ctxt, ep_learn_type_t learn_type,
         DISPATCH_MAC_OR_IP(process_r2l_move, ctxt, mtype, ret);
         break;
     case LEARN_TYPE_NEW_REMOTE:
-        ret = process_new_remote_mac_ip(ctxt);
+        DISPATCH_MAC_OR_IP(process_new_remote, ctxt, mtype, ret);
         break;
     case LEARN_TYPE_MOVE_L2R:
         DISPATCH_MAC_OR_IP(process_l2r_move, ctxt, mtype, ret);

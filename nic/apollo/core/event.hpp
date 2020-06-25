@@ -15,7 +15,9 @@
 #include <signal.h>
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
-#include "nic/apollo/api/pds_state.hpp"
+#include "nic/sdk/include/sdk/if.hpp"
+#include "nic/apollo/api/include/pds.hpp"
+#include "nic/apollo/api/include/pds_if.hpp"
 #include "nic/apollo/include/globals.hpp"
 
 // event identifiers

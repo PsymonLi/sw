@@ -26,7 +26,6 @@ pds_event_id_to_vpp_event_id (event_id_t event_id)
     case EVENT_ID_IP_MOVE_R2L:
         return PDS_FLOW_IP_MOVE_R2L;
     case EVENT_ID_IP_DELETE:
-    case EVENT_ID_IP_AGE:
         return PDS_FLOW_IP_DELETE;
     default:
         flow_log_error("unhandled move event %u", event_id);
@@ -92,7 +91,6 @@ pds_ipc_ip_move_handle_cb (sdk::ipc::ipc_msg_ptr msg, const void *ctx)
         (void)pds_ipc_ip_move_handle(event, false);
         break;
     case EVENT_ID_IP_DELETE:
-    case EVENT_ID_IP_AGE:
         (void)pds_ipc_ip_move_handle(event, true);
         break;
     default:
@@ -107,7 +105,6 @@ void pds_vpp_learn_subscribe ()
     sdk::ipc::subscribe(EVENT_ID_IP_MOVE_R2L, &pds_ipc_ip_move_handle_cb, NULL);
     sdk::ipc::subscribe(EVENT_ID_IP_MOVE_L2R, &pds_ipc_ip_move_handle_cb, NULL);
     sdk::ipc::subscribe(EVENT_ID_IP_DELETE, &pds_ipc_ip_move_handle_cb, NULL);
-    sdk::ipc::subscribe(EVENT_ID_IP_AGE, &pds_ipc_ip_move_handle_cb, NULL);
 }
 
 }

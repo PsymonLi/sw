@@ -317,6 +317,13 @@ dpdk_device::get_data_ptr(dpdk_mbuf *packet) {
     return rte_pktmbuf_mtod((struct rte_mbuf *)packet, char *);
 }
 
+int
+dpdk_device::get_data_len(dpdk_mbuf *packet) {
+    struct rte_mbuf *mbuf = (struct rte_mbuf *)packet;
+
+    return mbuf->pkt_len;
+}
+
 char *
 dpdk_device::append_data(dpdk_mbuf *packet, uint16_t len) {
     return rte_pktmbuf_append((struct rte_mbuf *)packet, len);

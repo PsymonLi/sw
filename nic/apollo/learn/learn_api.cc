@@ -17,6 +17,7 @@
 #include "nic/apollo/learn/learn.hpp"
 #include "nic/apollo/learn/learn_api.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
+#include "nic/apollo/learn/pending_ntfn.hpp"
 #include "nic/apollo/learn/learn_thread.hpp"
 
 namespace learn {
@@ -200,6 +201,7 @@ process_subnet_delete (pds_obj_key_t key)
 {
     sdk_ret_t ret;
 
+    flush_pending_ntfns_for_subnet(key);
     ret = clear_all_eps_in_subnet(key);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to clear endpoints for subnet %s, error code "
@@ -245,6 +247,7 @@ process_subnet_update (pds_subnet_spec_t *spec)
     // delete endpoints learnt on each host if that is disassociated
     // from the subnet
     if (num_detach_host_ifs > 0) {
+        flush_pending_ntfns_for_lifs(detach_host_ifs, num_detach_host_ifs);
         ret = clear_all_eps_on_lifs(detach_host_ifs, num_detach_host_ifs);
         if (ret != SDK_RET_OK) {
             PDS_TRACE_ERR("Failed to clear endpoints learnt on host interfaces "

@@ -234,6 +234,11 @@ ip_ageout (ep_ip_entry *ip_entry)
     if (unlikely(ret != SDK_RET_OK)) {
         return ret;
     }
+    // broadcast AGEOUT event for control plane
+    broadcast_learn_event(&event);
+
+    // broadcast DELETE event for data plane
+    event.event_id = EVENT_ID_IP_DELETE;
     broadcast_learn_event(&event);
     return SDK_RET_OK;
 }

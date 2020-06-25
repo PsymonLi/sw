@@ -17,6 +17,7 @@
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/learn/ep_aging.hpp"
 #include "nic/apollo/learn/ep_utils.hpp"
+#include "nic/apollo/learn/pending_ntfn.hpp"
 #include "nic/apollo/learn/learn_ctxt.hpp"
 #include "nic/apollo/learn/utils.hpp"
 
@@ -332,6 +333,8 @@ validate_learn (learn_ctxt_t *ctxt)
                               ipaddr2str(&ctxt->ip_key.ip_addr),
                               ipv4pfx2str(&v4_prefix));
                 LEARN_COUNTER_INCR(validation_err[IP_ADDR_SUBNET_MISMATCH]);
+                // partial dump of pkt for debug
+                dbg_dump_pkt(ctxt->pkt_ctxt.mbuf, "Subnet check failed");
                 return SDK_RET_ERR;
             }
         } else {
@@ -395,9 +398,12 @@ update_ep_ip (learn_ctxt_t *ctxt)
         ctxt->ip_entry->add_to_db();
         ctxt->mac_entry->add_ip(ctxt->ip_entry);
 
-        // for R2L we broadcast both new learn and r2l messages
         add_ip_to_event_list(ctxt, EVENT_ID_IP_LEARN);
-        if (ctxt->ip_learn_type == LEARN_TYPE_MOVE_R2L) {
+        // for R2L we need flow fixup notification
+        // new learn could be an IP that just moved from remote following the
+        // MAC which moved first
+        if (ctxt->ip_learn_type == LEARN_TYPE_MOVE_R2L ||
+            process_pending_ntfn_r2l(ctxt->ip_entry->key())) {
             add_ip_to_event_list(ctxt, EVENT_ID_IP_MOVE_R2L);
         }
         break;
@@ -512,6 +518,7 @@ process_learn_pkt (void *mbuf)
     ctxt.ctxt_type = LEARN_CTXT_TYPE_PKT;
     memset(&lbctxt.counters, 0, sizeof(lbctxt.counters));
     ctxt.lbctxt = &lbctxt;
+    ctxt.pkt_ctxt.mbuf = mbuf;
 
     // default drop reason
     ctxt.pkt_ctxt.pkt_drop_reason = PKT_DROP_REASON_PARSE_ERR;

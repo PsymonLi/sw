@@ -110,6 +110,30 @@ learn_lif_avail_mbuf_count (void)
     return 0;
 }
 
+/// \brief hexdump packet for debugging, call this only in
+/// the error path
+static inline void
+dbg_dump_pkt (void *pbuf, const char *msg)
+{
+    dpdk_mbuf *mbuf = (dpdk_mbuf *)pbuf;
+    int len = dpdk_device::get_data_len(mbuf);
+    unsigned char *pkt = (unsigned char *)learn_lif_mbuf_data_start(mbuf);
+    int i = 0;
+    int pos;
+    char buf[80];
+
+    len = len > 128 ? 128 : len;
+    PDS_TRACE_VERBOSE("%s, packet dump", msg);
+    while (i < len) {
+        pos = 0;
+        for (int j = 0; j < 16 && i < len; j++) {
+            pos += sprintf(buf + pos, "%02x ", pkt[i++]);
+        }
+        PDS_TRACE_VERBOSE("%s", buf);
+    }
+    PDS_TRACE_VERBOSE("Packet dump end");
+}
+
 }    // namespace learn
 
 #endif    // __LEARN_UTILS_HPP__

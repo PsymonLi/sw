@@ -12,7 +12,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "gen/p4gen/athena/include/p4pd.h"
 #include "nic/apollo/core/core.hpp"
-#include "nic/apollo/core/event.hpp"
+#include "nic/apollo/api/pds_state.hpp"
 
 namespace ftl_dev_impl {
 

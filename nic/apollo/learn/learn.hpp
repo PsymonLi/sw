@@ -12,6 +12,7 @@
 #define __LEARN__LEARN_HPP__
 
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/sdk/lib/ht/ht.hpp"
 #include "nic/apollo/api/include/pds.hpp"
 #include "nic/apollo/api/include/pds_mapping.hpp"
 #include "nic/apollo/api/include/pds_vnic.hpp"
@@ -49,10 +50,24 @@ typedef struct {
 } __PACK__ ep_mac_key_t;
 
 /// \brief key to L3 endpoint data base
-typedef struct {
+typedef struct ep_ip_key_s {
     pds_obj_key_t vpc;
     ip_addr_t ip_addr;
+
+    bool operator ==(const ep_ip_key_s &key) const {
+        return (key.vpc == vpc) &&
+            (memcmp(&key.ip_addr, &ip_addr, sizeof(ip_addr_t)) == 0);
+    }
+
 } __PACK__ ep_ip_key_t;
+
+/// \brief hasher class for ep_ip_key_t
+class ep_ip_key_hash {
+    public:
+        std::size_t operator()(const ep_ip_key_t& key) const {
+            return hash_algo::fnv_hash((void *)&key, sizeof(key));
+        }
+};
 
 /// \brief learn type of the endpoint under process
 typedef enum {

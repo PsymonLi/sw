@@ -103,6 +103,7 @@ learn_state::lif_init_(void) {
 sdk_ret_t
 learn_state::init (void) {
     // instantiate MAC and IP states
+    sdk_ret_t ret;
     ep_mac_state_ = new ep_mac_state();
     ep_ip_state_ = new ep_ip_state();
     if (ep_mac_state_ == nullptr || ep_ip_state_ == nullptr) {
@@ -112,6 +113,10 @@ learn_state::init (void) {
     vnic_objid_idxr_ = rte_indexer::factory(PDS_MAX_VNIC, false, true);
     if (vnic_objid_idxr_ == nullptr) {
         return SDK_RET_ERR;
+    }
+    ret = pending_ntfn_state_init(&pend_ntfn_state_);
+    if (ret != SDK_RET_OK) {
+        return ret;
     }
     return lif_init_();
 }
