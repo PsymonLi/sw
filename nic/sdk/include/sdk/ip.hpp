@@ -281,6 +281,19 @@ ippfx2str (const ip_prefix_t *ip_pfx)
     return buf;
 }
 
+static inline const char*
+ipaf2str (uint8_t af) {
+
+    switch (af) {
+    case IP_AF_IPV4: 
+        return "IPv4";
+    case IP_AF_IPV6:
+        return "IPv6";
+    default:
+        return "None";
+    }
+}
+
 static inline int
 str2ipv4addr (const char *str, ipv4_addr_t *v4_addr)
 {

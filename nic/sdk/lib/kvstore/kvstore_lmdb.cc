@@ -20,20 +20,31 @@ thread_local MDB_txn *kvstore_lmdb::t_txn_hdl_ = NULL;
 thread_local MDB_dbi kvstore_lmdb::db_dbi_;
 
 sdk_ret_t
-kvstore_lmdb::init(string dbpath, size_t size) {
-    int rv;
-    const char *db = dbpath.c_str();
+kvstore_lmdb::init(string dbpath, size_t size, kvstore_mode_t mode) {
+    int          rv;
+    const char   *db = dbpath.c_str();
+    unsigned int flags = 0;
+    mdb_mode_t   mdb_mode = 0;
 
-    // remove the kvstore file, if it exists
-    unlink(db);
-    unlink((dbpath + "-db.lock").c_str());
+    if (mode == KVSTORE_MODE_READ_WRITE) {
+        // remove the kvstore file, if it exists
+        unlink(db);
+        unlink((dbpath + "-lock").c_str());
+
+        flags = (MDB_NOSUBDIR | MDB_WRITEMAP);
+        mdb_mode = (S_IRUSR | S_IWUSR);
+    } else {
+        flags = (MDB_NOSUBDIR | MDB_RDONLY);
+        mdb_mode = S_IRUSR;
+    }
 
      rv = mdb_env_create(&env_);
      if (likely(rv == 0)) {
-         rv = mdb_env_set_mapsize(env_, size);
+         if (mode == KVSTORE_MODE_READ_WRITE) {
+             rv = mdb_env_set_mapsize(env_, size);
+         }
          if (likely(rv == 0)) {
-             rv = mdb_env_open(env_, db, MDB_NOSUBDIR | MDB_WRITEMAP,
-                               S_IRUSR | S_IWUSR);
+             rv = mdb_env_open(env_, db, flags, mdb_mode);
              if (likely(rv == 0)) {
                  // everything went through
                  return SDK_RET_OK;
@@ -59,14 +70,14 @@ end:
 }
 
 kvstore *
-kvstore_lmdb::factory(string dbpath, size_t size) {
+kvstore_lmdb::factory(string dbpath, size_t size, kvstore_mode_t mode) {
     void *mem;
     kvstore_lmdb *kvs;
 
     mem = SDK_CALLOC(SDK_MEM_ALLOC_KVSTORE, sizeof(kvstore_lmdb));
     if (mem) {
         kvs = new (mem) kvstore_lmdb();
-        if (kvs->init(dbpath, size) != SDK_RET_OK) {
+        if (kvs->init(dbpath, size, mode) != SDK_RET_OK) {
             kvs->~kvstore_lmdb();
             SDK_FREE(SDK_MEM_ALLOC_KVSTORE, mem);
             return NULL;

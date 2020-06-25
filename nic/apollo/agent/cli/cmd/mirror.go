@@ -268,7 +268,7 @@ func printErspanMirrorSession(ms *pds.MirrorSession) {
 
 		erspanTypeStr := strings.Replace(erspanSpec.GetType().String(), "ERSPAN_TYPE_", "", -1)
 
-		fmt.Printf("%-40s%-10s%-40s%-44s%-10s%-10s%-10s\n",
+		fmt.Printf("%-40s%-10s%-40s%-44s%-10d%-10d%-10d\n",
 			utils.IdToStr(spec.GetId()),
 			erspanTypeStr, utils.IdToStr(erspanSpec.GetVPCId()),
 			dstStr, erspanSpec.GetSpanId(),

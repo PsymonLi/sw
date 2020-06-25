@@ -364,3 +364,6 @@ nic/build/$ARCH/$PIPELINE/lib/libpdsupgapi.so                     /nic/lib/
 
 # diag binaries
 nic/build/$ARCH/$PIPELINE/bin/diag_test                           /nic/bin/
+
+# pdsdbutil
+nic/build/$ARCH/$PIPELINE//bin/pdsdbutil                          /nic/bin/

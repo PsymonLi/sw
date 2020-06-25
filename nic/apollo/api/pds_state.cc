@@ -22,6 +22,9 @@ pds_state g_pds_state;
 #define FIRMWARE_VERSION_KEY     "sw.version"
 #define FIRMWARE_DESCRIPTION_KEY "sw.pipeline"
 #define FIRMWARE_BUILD_TIME_KEY  "sw.build_time"
+#define KVSTORE_MAP_SIZE         (1UL << 31)
+
+using sdk::lib::kvstore;
 
 pds_state::pds_state() {
     catalog_ = NULL;
@@ -134,7 +137,8 @@ pds_state::init(string pipeline, string cfg_file) {
             }
         }
         path += "pdsagent.db";
-        kvstore_ = sdk::lib::kvstore::factory(path, (1UL << 31));
+        kvstore_ = kvstore::factory(path, KVSTORE_MAP_SIZE,
+                                    kvstore::KVSTORE_MODE_READ_WRITE);
         if (kvstore_ == NULL) {
             return SDK_RET_ERR;
         }

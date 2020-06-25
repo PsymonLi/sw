@@ -26,7 +26,12 @@ public:
         TXN_TYPE_READ_ONLY,
         TXN_TYPE_READ_WRITE,
     } txn_type_t;
-    static kvstore *factory(std::string dbpath, size_t size);
+    typedef enum kvstore_mode_e {
+        KVSTORE_MODE_READ_WRITE,
+        KVSTORE_MODE_READ_ONLY
+    } kvstore_mode_t;
+    static kvstore *factory(std::string dbpath, size_t size,
+                            kvstore_mode_t mode);
     static void destroy(kvstore *kvs);
     virtual sdk_ret_t txn_start(txn_type_t txn_type) = 0;
     virtual sdk_ret_t txn_commit(void) = 0;
