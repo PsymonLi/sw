@@ -43,7 +43,7 @@ type MacMetrics struct {
 
 	FramesRxJabber metrics.Counter
 
-	FramesRxPripause metrics.Counter `structs:"-"`
+	FramesRxPripause metrics.Counter
 
 	FramesRxStompedCrc metrics.Counter `structs:"-"`
 
@@ -95,7 +95,7 @@ type MacMetrics struct {
 
 	FramesTxPause metrics.Counter
 
-	FramesTxPripause metrics.Counter `structs:"-"`
+	FramesTxPripause metrics.Counter
 
 	FramesTxVlan metrics.Counter
 
