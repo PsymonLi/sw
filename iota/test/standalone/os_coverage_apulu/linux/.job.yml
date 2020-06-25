@@ -1,0 +1,373 @@
+---
+version: 2.0
+image:
+  bind_dir: "/sw"
+  work_dir: "/sw/iota/test/standalone"
+rebase: true
+queue_name: baremetal
+
+# e2e-targets is the scheduler for CI runs to specify baremetal or virtual machine. 
+e2e-targets:
+  # baremetal + baremetal Esx test cases
+ 
+ e2e-linux-bm-eth-ubuntu18:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-17
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+
+ e2e-linux-bm-eth-RHEL75:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-32
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL73:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-33
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL76:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-9
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL77:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-28
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL78:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   #commands: [ "sh" , "-c", "cat /warmd.json && sleep 30000000"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-29
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL80:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-13
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL81:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-27
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-RHEL82:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-34
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-SLES12SP4:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-20
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+ 
+ e2e-linux-bm-eth-SLES12SP5:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-21
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+
+ e2e-linux-bm-eth-SLES15:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-15
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+ 
+ e2e-linux-bm-eth-SLES15SP1:
+   commands: ["sh", "-c", "make apulu-networking && ./run_iota.sh --pipeline apulu --testsuite apulu_core"]
+   owners: ["email:raghava@pensando.io"]
+   area:
+   sub-area:
+   feature:
+   max-duration: 24h
+   build-dependencies:
+     - build-apulu-arm
+     - build-iota
+   clusters:
+     - image: build-16
+       count: 2
+       resources:
+         servers:
+           - type: server-a
+           - type: hpe
+         nic-type: naples
+   provision:
+       username: vm
+       password: vm
+       vars:
+          BmOs: linux
+          VmOs: linux
+          EsxUsername: root
+          EsxPassword: Pen0trl!
+ 
+logfiles:
+  - /sw/iota/iota_sanity_logs.tar.gz
+  - /sw/iota/all_corefiles.tgz
+  - /testcase_result_export/testsuite_apulu_core_results.json
+  - /testcase_result_export/testsuite_apulu_sdn_pds_e2e_results.json
+  - /testcase_result_export/testsuite_apulu_sdn_pds_cps_results.json

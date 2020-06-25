@@ -306,6 +306,8 @@ jobs:
     labels: ["compat-server-reboot-uefi"]
   iota/test/standalone/os_coverage/linux:
     label: ["CI-Weekly"]
+  iota/test/standalone/os_coverage_apulu/linux:
+    label: ["CI-Weekly"]
   iota/test/standalone/cnic_swm:
     labels: ["CI-Sanity-Build", "CI-Sanity-CnicSWM"]
   iota/test/standalone/sanity/swm:
