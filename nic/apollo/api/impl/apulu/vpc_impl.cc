@@ -356,7 +356,6 @@ vpc_impl::activate_create_(pds_epoch_t epoch, vpc_entry *vpc,
     // fill the data
     vni_data.vni_info.bd_id = bd_hw_id_;
     vni_data.vni_info.vpc_id = hw_id_;
-    sdk::lib::memrev(vni_data.vni_info.rmac, spec->vr_mac, ETH_ADDR_LEN);
     vni_data.vni_info.is_l3_vnid = TRUE;
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, vni_hdl_);
@@ -396,7 +395,6 @@ vpc_impl::activate_update_(pds_epoch_t epoch, vpc_entry *new_vpc,
     memset(&vni_data, 0, sizeof(vni_data));
     vni_data.vni_info.bd_id = bd_hw_id_;
     vni_data.vni_info.vpc_id = hw_id_;
-    sdk::lib::memrev(vni_data.vni_info.rmac, spec->vr_mac, ETH_ADDR_LEN);
     vni_data.vni_info.is_l3_vnid = TRUE;
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, vni_hdl_);
@@ -507,8 +505,8 @@ vpc_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
         PDS_TRACE_ERR("Failed to read VPC table at index %u", hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
-    spec->fabric_encap.val.vnid = vpc_data.vpc_info.vni;
     sdk::lib::memrev(spec->vr_mac, vpc_data.vpc_info.vrmac, ETH_ADDR_LEN);
+    spec->fabric_encap.val.vnid = vpc_data.vpc_info.vni;
     spec->tos = vpc_data.vpc_info.tos;
     vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,

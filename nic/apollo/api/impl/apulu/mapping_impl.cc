@@ -2331,7 +2331,7 @@ mapping_impl::read_remote_mapping_(vpc_entry *vpc, subnet_entry *subnet,
                                    pds_mapping_info_t *info) {
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
-    bd_actiondata_t bd_data;
+    p4e_bd_actiondata_t bd_data;
     mapping_swkey_t mapping_key;
     nexthop_group_impl *nh_group;
     mapping_appdata_t mapping_data;
@@ -2374,12 +2374,13 @@ mapping_impl::read_remote_mapping_(vpc_entry *vpc, subnet_entry *subnet,
     }
     sdk::lib::memrev(spec->overlay_mac, mapping_data.dmaci, ETH_ADDR_LEN);
 
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, mapping_data.egress_bd_id,
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_BD,
+                                      mapping_data.egress_bd_id,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         return sdk::SDK_RET_HW_READ_ERR;
     }
-    spec->fabric_encap.val.vnid = bd_data.bd_info.vni;
+    spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
     spec->fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
 
     status->subnet_hw_id = mapping_data.egress_bd_id;

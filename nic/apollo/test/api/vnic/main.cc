@@ -494,7 +494,7 @@ TEST_F(vnic_test, vnic_update_subnet) {
 }
 
 /// \brief update vnic encap val
-TEST_F(vnic_test, vnic_update_vnic_encap_val) {
+TEST_F(vnic_test, DISABLED_vnic_update_vnic_encap_val) {
     if (!apulu()) return;
 
     vnic_feeder feeder;
@@ -801,7 +801,7 @@ TEST_F(vnic_test, vnic_update_v6_meter) {
 }
 
 /// \brief update vnic switch flag
-TEST_F(vnic_test, vnic_update_switch_vnic) {
+TEST_F(vnic_test, DISABLED_vnic_update_switch_vnic) {
     if (!apulu()) return;
 
     vnic_feeder feeder;

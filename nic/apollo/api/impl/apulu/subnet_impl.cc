@@ -35,13 +35,22 @@
     (data_)->egress_bd_id = (bd_hw_id_);                                       \
 }
 
-#define PDS_IMPL_FILL_BD_DATA(data_, spec_)                                    \
+#define PDS_IMPL_FILL_P4I_BD_DATA(data_, spec_)                                \
 {                                                                              \
     memset((data_), 0, sizeof(*data_));                                        \
-    (data_)->action_id = BD_BD_INFO_ID;                                        \
-    (data_)->bd_info.vni = (spec_)->fabric_encap.val.vnid;                     \
-    (data_)->bd_info.tos = (spec_)->tos;                                       \
-    sdk::lib::memrev((data_)->bd_info.vrmac, (spec_)->vr_mac, ETH_ADDR_LEN);   \
+    (data_)->action_id = P4I_BD_INGRESS_BD_INFO_ID;                            \
+    sdk::lib::memrev((data_)->p4i_bd_info.vrmac,                               \
+                     (spec_)->vr_mac, ETH_ADDR_LEN);                           \
+}
+
+#define PDS_IMPL_FILL_P4E_BD_DATA(data_, spec_)                                \
+{                                                                              \
+    memset((data_), 0, sizeof(*data_));                                        \
+    (data_)->action_id = P4E_BD_EGRESS_BD_INFO_ID;                             \
+    (data_)->p4e_bd_info.vni = (spec_)->fabric_encap.val.vnid;                 \
+    (data_)->p4e_bd_info.tos = (spec_)->tos;                                   \
+    sdk::lib::memrev((data_)->p4e_bd_info.vrmac,                               \
+                     (spec_)->vr_mac, ETH_ADDR_LEN);                           \
 }
 
 namespace api {
@@ -404,7 +413,8 @@ sdk_ret_t
 subnet_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
-    bd_actiondata_t bd_data;
+    p4i_bd_actiondata_t p4i_bd_data;
+    p4e_bd_actiondata_t p4e_bd_data;
     pds_subnet_spec_t *spec = &obj_ctxt->api_params->subnet_spec;
 
     // install MAPPING table entries for VR IPs pointing to datapath lif
@@ -415,12 +425,22 @@ subnet_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         }
     }
 
+    // program BD table in the ingress pipe
+    PDS_IMPL_FILL_P4I_BD_DATA(&p4i_bd_data, spec);
+    PDS_TRACE_VERBOSE("Programming P4I_BD table at %u", hw_id_);
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_BD, hw_id_,
+                                       NULL, NULL, &p4i_bd_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program P4I_BD table at index %u", hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
     // program BD table in the egress pipe
-    PDS_IMPL_FILL_BD_DATA(&bd_data, spec);
-    PDS_TRACE_VERBOSE("Programming BD table at %u with vni %u for subnet %s",
-                      hw_id_, bd_data.bd_info.vni, spec->key.str());
-    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_BD, hw_id_,
-                                       NULL, NULL, &bd_data);
+    PDS_IMPL_FILL_P4E_BD_DATA(&p4e_bd_data, spec);
+    PDS_TRACE_VERBOSE("Programming P4E_BD table at %u with vni %u for subnet %s",
+                      hw_id_, p4e_bd_data.p4e_bd_info.vni, spec->key.str());
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_BD, hw_id_,
+                                       NULL, NULL, &p4e_bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to program BD table at index %u", hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
@@ -437,7 +457,8 @@ subnet_impl::cleanup_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     p4pd_error_t p4pd_ret;
     mapping_swkey_t mapping_key;
     sdk_table_api_params_t tparams;
-    bd_actiondata_t bd_data = { 0 };
+    p4i_bd_actiondata_t p4i_bd_data = { 0 };
+    p4e_bd_actiondata_t p4e_bd_data = { 0 };
     mapping_appdata_t mapping_data;
     subnet_entry *subnet = (subnet_entry *)api_obj;
 
@@ -490,14 +511,24 @@ subnet_impl::cleanup_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         }
     }
 
-    // program BD table in the egress pipe
-    bd_data.action_id = BD_BD_INFO_ID;
-    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_BD, hw_id_,
-                                       NULL, NULL, &bd_data);
+    // program BD table in the ingress pipe
+    p4i_bd_data.action_id = P4I_BD_INGRESS_BD_INFO_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_BD, hw_id_,
+                                       NULL, NULL, &p4i_bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to cleanup BD table at index %u", hw_id_);
+        PDS_TRACE_ERR("Failed to cleanup P4I_BD table at index %u", hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
+
+    // program BD table in the egress pipe
+    p4e_bd_data.action_id = P4E_BD_EGRESS_BD_INFO_ID;
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_BD, hw_id_,
+                                       NULL, NULL, &p4e_bd_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to cleanup P4E_BD table at index %u", hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
     return SDK_RET_OK;
 }
 
@@ -507,7 +538,8 @@ subnet_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
     subnet_impl *orig_impl;
-    bd_actiondata_t bd_data;
+    p4i_bd_actiondata_t p4i_bd_data;
+    p4e_bd_actiondata_t p4e_bd_data;
     pds_subnet_spec_t *spec;
 
     spec = &obj_ctxt->api_params->subnet_spec;
@@ -521,17 +553,30 @@ subnet_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
         }
     }
 
-    // program BD table in the egress pipe
-    PDS_IMPL_FILL_BD_DATA(&bd_data, spec);
-    PDS_TRACE_VERBOSE("Programming BD table at %u with vni %u for subnet %s",
-                      orig_impl->hw_id_, bd_data.bd_info.vni, spec->key.str());
-    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_BD, orig_impl->hw_id_,
-                                       NULL, NULL, &bd_data);
+    // program BD table in the ingress pipe
+    PDS_IMPL_FILL_P4I_BD_DATA(&p4i_bd_data, spec);
+    PDS_TRACE_VERBOSE("Programming P4I_BD table at %u", orig_impl->hw_id_);
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4I_BD, orig_impl->hw_id_,
+                                       NULL, NULL, &p4i_bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program BD table at index %u",
+        PDS_TRACE_ERR("Failed to program P4I_BD table at index %u",
                       orig_impl->hw_id_);
         return sdk::SDK_RET_HW_PROGRAM_ERR;
     }
+
+    // program BD table in the egress pipe
+    PDS_IMPL_FILL_P4E_BD_DATA(&p4e_bd_data, spec);
+    PDS_TRACE_VERBOSE("Programming P4E_BD table at %u with vni %u for subnet %s",
+                      orig_impl->hw_id_, p4e_bd_data.p4e_bd_info.vni,
+                      spec->key.str());
+    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_P4E_BD, orig_impl->hw_id_,
+                                       NULL, NULL, &p4e_bd_data);
+    if (p4pd_ret != P4PD_SUCCESS) {
+        PDS_TRACE_ERR("Failed to program P4E_BD table at index %u",
+                      orig_impl->hw_id_);
+        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    }
+
     return SDK_RET_OK;
 }
 
@@ -561,7 +606,6 @@ subnet_impl::activate_create_(pds_epoch_t epoch, subnet_entry *subnet,
     vni_data.action_id = VNI_VNI_INFO_ID;
     vni_data.vni_info.bd_id = hw_id_;
     vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
-    sdk::lib::memrev(vni_data.vni_info.rmac, spec->vr_mac, ETH_ADDR_LEN);
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, vni_hdl_);
     // program the VNI table
@@ -677,7 +721,6 @@ subnet_impl::activate_update_(pds_epoch_t epoch, subnet_entry *subnet,
     vni_data.action_id = VNI_VNI_INFO_ID;
     vni_data.vni_info.bd_id = hw_id_;
     vni_data.vni_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
-    sdk::lib::memrev(vni_data.vni_info.rmac, spec->vr_mac, ETH_ADDR_LEN);
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, vni_hdl_);
     if (obj_ctxt->upd_bmap & PDS_SUBNET_UPD_FABRIC_ENCAP) {
@@ -880,20 +923,20 @@ sdk_ret_t
 subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
     sdk_ret_t ret;
     p4pd_error_t p4pd_ret;
-    bd_actiondata_t bd_data;
+    p4e_bd_actiondata_t bd_data;
     vni_actiondata_t vni_data;
     vni_swkey_t vni_key = { 0 };
     sdk_table_api_params_t tparams;
 
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, hw_id_,
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_BD, hw_id_,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         PDS_TRACE_ERR("Failed to read BD table at index %u", hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
-    spec->fabric_encap.val.vnid = bd_data.bd_info.vni;
+    spec->fabric_encap.val.vnid = bd_data.p4e_bd_info.vni;
     spec->fabric_encap.type = PDS_ENCAP_TYPE_VXLAN;
-    sdk::lib::memrev(spec->vr_mac, bd_data.bd_info.vrmac, ETH_ADDR_LEN);
+    sdk::lib::memrev(spec->vr_mac, bd_data.p4e_bd_info.vrmac, ETH_ADDR_LEN);
     vni_key.vxlan_1_vni = spec->fabric_encap.val.vnid;
     PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &vni_key, NULL, &vni_data,
                                    VNI_VNI_INFO_ID, handle_t::null());
@@ -901,7 +944,7 @@ subnet_impl::fill_spec_(pds_subnet_spec_t *spec) {
     ret = vpc_impl_db()->vni_tbl()->get(&tparams);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to read VNI table for vnid %u, err %u",
-                      bd_data.bd_info.vni, ret);
+                      bd_data.p4e_bd_info.vni, ret);
         return sdk::SDK_RET_HW_READ_ERR;
     }
 

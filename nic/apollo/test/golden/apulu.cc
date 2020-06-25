@@ -782,19 +782,22 @@ lif_table_init (void)
 }
 
 static void
-vlan_table_init (void)
+lif_vlan_table_init (void)
 {
-    vlan_actiondata_t data;
-    vlan_vlan_info_t *vlan_info = &data.action_u.vlan_vlan_info;
-    uint16_t tbl_id = P4TBL_ID_VLAN;
-    uint16_t index = g_ctag1;
+    lif_vlan_swkey_t key;
+    lif_vlan_actiondata_t data;
+    lif_vlan_lif_vlan_info_t *lif_vlan_info =
+        &data.action_u.lif_vlan_lif_vlan_info;
+    uint16_t tbl_id = P4TBL_ID_LIF_VLAN;
 
+    memset(&key, 0, sizeof(key));
     memset(&data, 0, sizeof(data));
-    data.action_id = VLAN_VLAN_INFO_ID;
-    vlan_info->vpc_id = g_vpc_id1;
-    vlan_info->bd_id = g_bd_id1;
-    vlan_info->vnic_id = 0;
-    entry_write(tbl_id, index, 0, 0, &data, false, 0);
+    key.ctag_1_vid = g_ctag1;
+    data.action_id = LIF_VLAN_LIF_VLAN_INFO_ID;
+    lif_vlan_info->vpc_id = g_vpc_id1;
+    lif_vlan_info->bd_id = g_bd_id1;
+    lif_vlan_info->vnic_id = 0;
+    entry_write(tbl_id, 0, &key, 0, &data, true, LIF_VLAN_HASH_TABLE_SIZE);
 }
 
 static void
@@ -819,7 +822,7 @@ static void
 input_properties_init (void)
 {
     lif_table_init();
-    vlan_table_init();
+    lif_vlan_table_init();
     vni_table_init();
 }
 
@@ -1392,12 +1395,12 @@ sessions_init (void)
 static void
 egress_bd_init (void)
 {
-    bd_actiondata_t data;
-    bd_bd_info_t *bd_info = &data.action_u.bd_bd_info;
-    uint16_t tbl_id = P4TBL_ID_BD;
+    p4e_bd_actiondata_t data;
+    p4e_bd_egress_bd_info_t *bd_info = &data.action_u.p4e_bd_egress_bd_info;
+    uint16_t tbl_id = P4TBL_ID_P4E_BD;
 
     memset(&data, 0, sizeof(data));
-    data.action_id = BD_BD_INFO_ID;
+    data.action_id = P4E_BD_EGRESS_BD_INFO_ID;
     bd_info->vni = g_vni1;
     memcpy(bd_info->vrmac, &g_vrmac1, 6);
     entry_write(tbl_id, g_egress_bd_id1, 0, 0, &data, false, 0);

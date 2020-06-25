@@ -31,7 +31,7 @@ vpc_impl_state::vpc_impl_state(pds_state *state) {
     vpc_idxr_ = rte_indexer::factory(tinfo.tabledepth, false, true);
     SDK_ASSERT(vpc_idxr_ != NULL);
 
-    // instantiate P4 tables for bookkeeping
+    // instantiate VNI table for bookkeeping
     bzero(&tparams, sizeof(tparams));
     tparams.entry_trace_en = false;
     tparams.table_id = P4TBL_ID_VNI;

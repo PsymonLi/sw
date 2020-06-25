@@ -45,7 +45,6 @@ header p4_to_p4plus_ip_addr_t p4e_to_p4plus_classic_nic_ip;
 header p4_to_p4plus_ip_addr_t p4e_to_p4plus_classic_nic_ip2;
 
 header p4plus_to_p4_s1_t p4plus_to_p4;
-@pragma pa_header_union ingress ctag_1
 header p4plus_to_p4_s2_t p4plus_to_p4_vlan;
 
 @pragma synthetic_header
@@ -218,6 +217,8 @@ parser parse_cpu_packet {
 parser parse_ingress_packet {
     extract(ethernet_1);
     set_metadata(offset_metadata.l2_1, current + 0);
+    set_metadata(key_metadata.src, ethernet_1.srcAddr);
+    set_metadata(key_metadata.dst, ethernet_1.dstAddr);
     return select(latest.etherType) {
         ETHERTYPE_CTAG : parse_ctag_1;
         ETHERTYPE_IPV4 : parse_ipv4_1;

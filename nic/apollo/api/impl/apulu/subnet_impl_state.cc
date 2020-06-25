@@ -22,7 +22,7 @@ namespace impl {
 subnet_impl_state::subnet_impl_state(pds_state *state) {
     p4pd_table_properties_t    tinfo;
 
-    p4pd_global_table_properties_get(P4TBL_ID_BD, &tinfo);
+    p4pd_global_table_properties_get(P4TBL_ID_P4I_BD, &tinfo);
     // create indexer for subnet hw id allocation and reserve 0th entry
     subnet_idxr_ = rte_indexer::factory(tinfo.tabledepth, true, true);
     SDK_ASSERT(subnet_idxr_ != NULL);

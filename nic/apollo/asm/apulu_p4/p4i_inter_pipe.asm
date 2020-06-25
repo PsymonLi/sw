@@ -64,11 +64,11 @@ ingress_to_rxdma:
                         capri_txdma_intrinsic_valid}, 0x3B0
 
     add             r6, r0, k.offset_metadata_payload_offset
-    or              r7, k.{offset_metadata_l3_2,offset_metadata_l4_2}, \
-                        k.offset_metadata_l2_2, 16
     bbeq            k.p4plus_to_p4_insert_vlan_tag, FALSE, \
                         ingress_to_rxdma_vlan_insert_done
-    or              r7, r7, k.{offset_metadata_l3_1,offset_metadata_l4_1}, 24
+    or              r7, k.{offset_metadata_l4_1,offset_metadata_l2_2,\
+                        offset_metadata_l3_2,offset_metadata_l4_2}, \
+                        k.offset_metadata_l3_1, 32
     addi            r1, r0, 0x04040404
     addui           r1, r1, 0x04
     add             r7, r7, r1

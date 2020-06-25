@@ -252,6 +252,10 @@ vnic_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
     if ((vnic_encap_.type != spec->vnic_encap.type) ||
         (vnic_encap_.val.value != spec->vnic_encap.val.value)) {
         obj_ctxt->upd_bmap |= PDS_VNIC_UPD_VNIC_ENCAP;
+        PDS_TRACE_ERR("Attempt to modify immutable attr \"encap\" "
+                      "from %s to %s on vnic %s", pds_encap2str(&vnic_encap_),
+                      pds_encap2str(&spec->vnic_encap), key_.str());
+        return SDK_RET_INVALID_ARG;
     }
     if (switch_vnic_ != spec->switch_vnic) {
         obj_ctxt->upd_bmap |= PDS_VNIC_UPD_SWITCH_VNIC;

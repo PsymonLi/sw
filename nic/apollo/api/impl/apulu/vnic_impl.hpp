@@ -222,6 +222,7 @@ private:
         epoch_ = PDS_IMPL_VNIC_EPOCH_START;
         hw_id_ = 0xFFFF;
         nh_idx_ = 0xFFFF;
+        if_vlan_hdl_ = handle_t::null();
         local_mapping_hdl_ = handle_t::null();
         mapping_hdl_ = handle_t::null();
         binding_hw_id_ = PDS_IMPL_RSVD_IP_MAC_BINDING_HW_ID;
@@ -273,9 +274,9 @@ private:
     /// \param[in] vnic  vnic obj being programmed
     /// \param[in] spec  vnic configuration
     /// \return    SDK_RET_OK on success, failure status code on error
-    sdk_ret_t add_vlan_entry_(pds_epoch_t epoch, vpc_entry *vpc,
-                              subnet_entry *subnet, vnic_entry *vnic,
-                              pds_vnic_spec_t *spec);
+    sdk_ret_t add_if_vlan_entry_(pds_epoch_t epoch, vpc_entry *vpc,
+                                 subnet_entry *subnet, vnic_entry *vnic,
+                                 pds_vnic_spec_t *spec);
 
     /// \brief     add an entry to MAPPING table
     /// \param[in] epoch epoch being activated
@@ -343,9 +344,10 @@ private:
     void fill_status_(pds_vnic_status_t *status);
 private:
     // P4 datapath specific state
-    uint8_t epoch_;                    ///< datapath epoch of the vnic
-    uint16_t hw_id_;                   ///< hardware id
-    uint16_t nh_idx_;                  ///< nexthop table index for this vnic
+    uint8_t epoch_;           ///< datapath epoch of the vnic
+    uint16_t hw_id_;          ///< hardware id
+    uint16_t nh_idx_;         ///< nexthop table index for this vnic
+    handle_t if_vlan_hdl_;    ///<  (if, vlan) table entry handle
     ///< handle for LOCAL_MAPPING and MAPPING table entries (note that handles
     ///< are valid only in a transaction)
     handle_t local_mapping_hdl_;

@@ -94,6 +94,7 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
     sdk_ret_t ret;
     subnet_entry *subnet;
     sdk_table_api_params_t tparams;
+    lif_vlan_swkey_t if_vlan_key = { 0 };
     mapping_swkey_t mapping_key = { 0 };
     local_mapping_swkey_t local_mapping_key = { 0 };
     pds_vnic_spec_t *spec = &obj_ctxt->api_params->vnic_spec;
@@ -127,8 +128,25 @@ vnic_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
             hw_id_ = idx;
         }
 
+        // reserve an entry in (if, vlan) table
+        if (spec->vnic_encap.type != PDS_ENCAP_TYPE_NONE) {
+            if_vlan_key.ctag_1_vid = spec->vnic_encap.val.vlan_tag;
+            if_vlan_key.key_metadata_lif = 0;
+            PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &if_vlan_key, NULL, NULL,
+                                           LIF_VLAN_LIF_VLAN_INFO_ID,
+                                           handle_t::null());
+            ret = apulu_impl_db()->if_vlan_tbl()->reserve(&tparams);
+            if (ret != SDK_RET_OK) {
+                PDS_TRACE_ERR("Failed to reserve entry in (if, vlan) for "
+                              "vnic %s with encap %s, err %u", spec->key.str(),
+                              pds_encap2str(&spec->vnic_encap), ret);
+                return ret;
+            }
+            if_vlan_hdl_ = tparams.handle;
+        }
+
         subnet = subnet_find(&spec->subnet);
-        if (subnet == NULL) {
+        if (unlikely(subnet == NULL)) {
             PDS_TRACE_ERR("Unable to find subnet %s for vnic %s",
                           spec->subnet.str(), spec->key.str());
             return sdk::SDK_RET_INVALID_ARG;
@@ -197,6 +215,7 @@ vnic_impl::release_resources(api_base *api_obj) {
     subnet_entry *subnet;
     pds_obj_key_t subnet_key;
     sdk_table_api_params_t tparams;
+    lif_vlan_swkey_t if_vlan_key = { 0 };
     mapping_swkey_t mapping_key = { 0 };
     vnic_entry *vnic = (vnic_entry *)api_obj;
     local_mapping_swkey_t local_mapping_key = { 0 };
@@ -241,6 +260,15 @@ vnic_impl::release_resources(api_base *api_obj) {
         vnic_impl_db()->vnic_idxr()->free(hw_id_);
     }
 
+    // release (if, vlan) entry handle
+    if (if_vlan_hdl_.valid()) {
+        if_vlan_key.ctag_1_vid = vnic->vnic_encap().val.vlan_tag;
+        if_vlan_key.key_metadata_lif = 0;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &if_vlan_key, NULL, NULL,
+                                       LIF_VLAN_LIF_VLAN_INFO_ID, if_vlan_hdl_);
+        apulu_impl_db()->if_vlan_tbl()->release(&tparams);
+    }
+
     // free the IP_MAC_BINDING table entries reserved
     if (binding_hw_id_ != PDS_IMPL_RSVD_IP_MAC_BINDING_HW_ID) {
         mapping_impl_db()->ip_mac_binding_idxr()->free(binding_hw_id_);
@@ -254,6 +282,7 @@ vnic_impl::nuke_resources(api_base *api_obj) {
     subnet_entry *subnet;
     pds_obj_key_t subnet_key;
     sdk_table_api_params_t tparams;
+    lif_vlan_swkey_t if_vlan_key = { 0 };
     mapping_swkey_t mapping_key = { 0 };
     vnic_entry *vnic = (vnic_entry *)api_obj;
     local_mapping_swkey_t local_mapping_key = { 0 };
@@ -304,6 +333,15 @@ vnic_impl::nuke_resources(api_base *api_obj) {
     // free the vnic hw id
     if (hw_id_ != 0xFFFF) {
         vnic_impl_db()->vnic_idxr()->free(hw_id_);
+    }
+
+    // release (if, vlan) entry handle
+    if (if_vlan_hdl_.valid()) {
+        if_vlan_key.ctag_1_vid = vnic->vnic_encap().val.vlan_tag;
+        if_vlan_key.key_metadata_lif = 0;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &if_vlan_key, NULL, NULL,
+                                       LIF_VLAN_LIF_VLAN_INFO_ID, if_vlan_hdl_);
+        apulu_impl_db()->if_vlan_tbl()->remove(&tparams);
     }
 
     // free the IP_MAC_BINDING table entries reserved
@@ -998,34 +1036,37 @@ error:
     return ret;
 }
 
-#define vlan_info    action_u.vlan_vlan_info
+#define if_vlan_info        action_u.lif_vlan_lif_vlan_info
 sdk_ret_t
-vnic_impl::add_vlan_entry_(pds_epoch_t epoch, vpc_entry *vpc,
-                           subnet_entry *subnet, vnic_entry *vnic,
-                           pds_vnic_spec_t *spec) {
+vnic_impl::add_if_vlan_entry_(pds_epoch_t epoch, vpc_entry *vpc,
+                              subnet_entry *subnet, vnic_entry *vnic,
+                              pds_vnic_spec_t *spec) {
     sdk_ret_t ret;
-    p4pd_error_t p4pd_ret;
-    vlan_actiondata_t vlan_data;
+    lif_vlan_swkey_t if_vlan_key;
+    lif_vlan_actiondata_t if_vlan_data;
+    sdk_table_api_params_t tparams;
 
     if (spec->vnic_encap.type != PDS_ENCAP_TYPE_DOT1Q) {
         // vnic is not identified with vlan tag in this case
         return SDK_RET_OK;
     }
 
-    // program the VLAN table
-    memset(&vlan_data, 0, sizeof(vlan_data));
-    vlan_data.action_id = VLAN_VLAN_INFO_ID;
-    vlan_data.vlan_info.vnic_id = hw_id_;
-    vlan_data.vlan_info.bd_id = ((subnet_impl *)subnet->impl())->hw_id();
-    vlan_data.vlan_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
-    sdk::lib::memrev(vlan_data.vlan_info.rmac, subnet->vr_mac(), ETH_ADDR_LEN);
-    p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VLAN,
-                                       spec->vnic_encap.val.vlan_tag,
-                                       NULL, NULL, &vlan_data);
-    if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to program VLAN entry %u for vnic %s",
-                      spec->vnic_encap.val.vlan_tag, spec->key.str());
-        return sdk::SDK_RET_HW_PROGRAM_ERR;
+    // program the (if, vlan) table
+    if_vlan_key.ctag_1_vid = spec->vnic_encap.val.vlan_tag;;
+    if_vlan_key.key_metadata_lif = 0;
+    memset(&if_vlan_data, 0, sizeof(if_vlan_data));
+    if_vlan_data.action_id = LIF_VLAN_LIF_VLAN_INFO_ID;
+    if_vlan_data.if_vlan_info.vnic_id = hw_id_;
+    if_vlan_data.if_vlan_info.bd_id = ((subnet_impl *)subnet->impl())->hw_id();
+    if_vlan_data.if_vlan_info.vpc_id = ((vpc_impl *)vpc->impl())->hw_id();
+    PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &if_vlan_key, NULL, &if_vlan_data,
+                                   LIF_VLAN_LIF_VLAN_INFO_ID, if_vlan_hdl_);
+    ret = apulu_impl_db()->if_vlan_tbl()->insert(&tparams);
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Failed to program (if, vlan) entry for vnic %s, "
+                      "encap %s, err %u", spec->key.str(),
+                      pds_encap2str(&spec->vnic_encap), ret);
+        return ret;
     }
     return SDK_RET_OK;
 }
@@ -1099,7 +1140,7 @@ vnic_impl::activate_create_(pds_epoch_t epoch, vnic_entry *vnic,
         goto error;
     }
 
-    ret = add_vlan_entry_(epoch, vpc, subnet, vnic, spec);
+    ret = add_if_vlan_entry_(epoch, vpc, subnet, vnic, spec);
     if (unlikely(ret != SDK_RET_OK)) {
         goto error;
     }
@@ -1122,8 +1163,9 @@ vnic_impl::activate_delete_(pds_epoch_t epoch, vnic_entry *vnic) {
     subnet_entry *subnet;
     p4pd_error_t p4pd_ret;
     pds_encap_t vnic_encap;
-    vlan_actiondata_t vlan_data;
     pds_obj_key_t subnet_key;
+    lif_vlan_swkey_t if_vlan_key;
+    lif_vlan_actiondata_t if_vlan_data;
     sdk_table_api_params_t tparams;
     mapping_swkey_t mapping_key = { 0 };
     mapping_appdata_t mapping_data = { 0 };
@@ -1132,15 +1174,19 @@ vnic_impl::activate_delete_(pds_epoch_t epoch, vnic_entry *vnic) {
 
     vnic_encap = vnic->vnic_encap();
     if (vnic_encap.type == PDS_ENCAP_TYPE_DOT1Q) {
-        // deactivate the entry in VLAN table
-        memset(&vlan_data, 0, sizeof(vlan_data));
-        p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VLAN,
-                                           vnic_encap.val.vlan_tag,
-                                           NULL, NULL, &vlan_data);
-        if (p4pd_ret != P4PD_SUCCESS) {
-            PDS_TRACE_ERR("Failed to deactivate VLAN entry %u for vnic %s",
-                          vnic_encap.val.vlan_tag, vnic->key2str().c_str());
-            return sdk::SDK_RET_HW_PROGRAM_ERR;
+        // invalidate the entry in (if, vlan) table
+        memset(&if_vlan_data, 0, sizeof(if_vlan_data));
+        if_vlan_key.ctag_1_vid = vnic_encap.val.vlan_tag;;
+        if_vlan_key.key_metadata_lif = 0;
+        PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &if_vlan_key, NULL,
+                                       &if_vlan_data,
+                                       LIF_VLAN_LIF_VLAN_INFO_ID, if_vlan_hdl_);
+        ret = apulu_impl_db()->if_vlan_tbl()->update(&tparams);
+        if (ret != SDK_RET_OK) {
+            PDS_TRACE_ERR("Failed to clear (if, vlan) entry for vnic %s, "
+                          "encap %s, err %u", vnic->key2str().c_str(),
+                          pds_encap2str(&vnic_encap), ret);
+            return ret;
         }
     }
 
@@ -1227,10 +1273,11 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
     pds_vnic_spec_t *spec;
     p4pd_error_t p4pd_ret;
     pds_obj_key_t vpc_key;
-    vlan_actiondata_t vlan_data;
+    lif_vlan_actiondata_t if_vlan_data;
 
     spec = &obj_ctxt->api_params->vnic_spec;
     subnet = subnet_find(&spec->subnet);
+#if 0
     if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_VNIC_ENCAP) {
         if (orig_vnic->vnic_encap().type != PDS_ENCAP_TYPE_NONE) {
             // we need to cleanup old vlan table entry
@@ -1264,6 +1311,7 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
             }
         }
     }
+#endif
 
     // update DHCP binding, if needed
     ret = upd_dhcp_binding_(vnic, orig_vnic, subnet, spec);
@@ -1274,9 +1322,11 @@ vnic_impl::activate_update_(pds_epoch_t epoch, vnic_entry *vnic,
     vnic_impl_db()->insert(hw_id_, this);
     return SDK_RET_OK;
 
+#if 0
 end:
 
     return ret;
+#endif
 }
 
 sdk_ret_t

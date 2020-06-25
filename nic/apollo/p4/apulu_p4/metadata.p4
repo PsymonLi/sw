@@ -25,6 +25,7 @@ header_type key_metadata_t {
         parsed_sport    : 16;
         parsed_dport    : 16;
         entry_valid     : 1;
+        lif             : 11;
 
         local_mapping_lkp_type  : 2;
         local_mapping_lkp_id    : 16;
@@ -39,7 +40,6 @@ header_type vnic_metadata_t {
         egress_bd_id        : 16;
         vpc_id              : 16;
         binding_id          : 16;
-        vrmac               : 48;
         rx_policer_id       : 10;
         rx_vnic_id          : 16;
         rx_vnic_stats_id    : 16;

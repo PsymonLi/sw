@@ -1,8 +1,8 @@
 /******************************************************************************/
 /* LIF info                                                                   */
 /******************************************************************************/
-action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, vrmac,
-                learn_enabled, pinned_nexthop_type, pinned_nexthop_id) {
+action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, learn_enabled,
+                pinned_nexthop_type, pinned_nexthop_id, lif_vlan_en) {
     modify_field(control_metadata.rx_packet, direction);
     modify_field(p4i_i2e.rx_packet, direction);
     modify_field(control_metadata.lif_type, lif_type);
@@ -19,9 +19,12 @@ action lif_info(direction, lif_type, vnic_id, bd_id, vpc_id, vrmac,
     modify_field(p4i_i2e.nexthop_type, pinned_nexthop_type);
     modify_field(p4i_i2e.nexthop_id, pinned_nexthop_id);
     modify_field(control_metadata.learn_enabled, learn_enabled);
-    modify_field(vnic_metadata.vrmac, vrmac);
+    modify_field(scratch_metadata.flag, lif_vlan_en);
+    modify_field(key_metadata.lif, 0);
+    // ASM only
     // copy key (capri_intrinsic.lif or arm_to_p4i.lif) to p4i_i2e.src_lif
-    // this is done is ASM
+    // if lif_vlan_en is set, copy key (capri_intrinsic.lif or arm_to_p4i.lif)
+    // to key_metadata.lif
 }
 
 @pragma stage 0
@@ -47,20 +50,17 @@ table lif2 {
 }
 
 /******************************************************************************/
-/* VLAN info                                                                  */
+/* LIF/VLAN info                                                              */
 /******************************************************************************/
-action vlan_info(vnic_id, bd_id, vpc_id, rmac) {
+action lif_vlan_info(vnic_id, bd_id, vpc_id) {
     if (vnic_id != 0) {
         modify_field(vnic_metadata.vnic_id, vnic_id);
     }
     if (bd_id != 0) {
-        modify_field(scratch_metadata.mac, rmac);
         modify_field(vnic_metadata.bd_id, bd_id);
         if (arm_to_p4i.flow_lkp_id_override == FALSE) {
             modify_field(key_metadata.flow_lkp_id, bd_id);
         }
-    } else {
-        modify_field(scratch_metadata.mac, vnic_metadata.vrmac);
     }
     if (vpc_id != 0) {
         modify_field(vnic_metadata.vpc_id, vpc_id);
@@ -106,34 +106,40 @@ action vlan_info(vnic_id, bd_id, vpc_id, rmac) {
     }
 
     // keys for mapping lookup
-    if ((control_metadata.l2_enabled == FALSE) or
-        ((ipv4_1.valid == TRUE) and
-        (scratch_metadata.mac == ethernet_1.dstAddr))) {
-        modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_IPV4);
-        modify_field(p4i_i2e.mapping_lkp_addr, ipv4_1.dstAddr);
-        modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.vpc_id);
-    } else {
-        modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
-        modify_field(p4i_i2e.mapping_lkp_type, ethernet_1.dstAddr);
-        modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
-    }
+    modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
+    modify_field(p4i_i2e.mapping_lkp_type, ethernet_1.dstAddr);
+    modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
 }
 
 @pragma stage 1
-table vlan {
+table lif_vlan {
     reads {
-        ctag_1.vid  : exact;
+        key_metadata.lif    : exact;
+        ctag_1.vid          : exact;
     }
     actions {
-        vlan_info;
+        lif_vlan_info;
     }
-    size : VLAN_TABLE_SIZE;
+    size : LIF_VLAN_HASH_TABLE_SIZE;
+}
+
+@pragma stage 1
+@pragma overflow_table lif_vlan
+table lif_vlan_otcam {
+    reads {
+        key_metadata.lif    : ternary;
+        ctag_1.vid          : ternary;
+    }
+    actions {
+        lif_vlan_info;
+    }
+    size : LIF_VLAN_OTCAM_TABLE_SIZE;
 }
 
 /******************************************************************************/
 /* VNI info                                                                   */
 /******************************************************************************/
-action vni_info(vnic_id, bd_id, vpc_id, rmac, is_l3_vnid) {
+action vni_info(vnic_id, bd_id, vpc_id, is_l3_vnid) {
     // on miss, drop the packet
 
     if (vnic_id != 0) {
@@ -148,7 +154,6 @@ action vni_info(vnic_id, bd_id, vpc_id, rmac, is_l3_vnid) {
     if (vpc_id != 0) {
         modify_field(vnic_metadata.vpc_id, vpc_id);
     }
-    modify_field(scratch_metadata.mac, rmac);
     modify_field(control_metadata.tunneled_packet, TRUE);
     modify_field(p4i_to_arm.is_l3_vnid, is_l3_vnid);
 
@@ -164,17 +169,9 @@ action vni_info(vnic_id, bd_id, vpc_id, rmac, is_l3_vnid) {
     }
 
     // keys for mapping lookup
-    if ((control_metadata.l2_enabled == FALSE) or
-        ((ipv4_2.valid == TRUE) and
-        (scratch_metadata.mac == ethernet_2.dstAddr))) {
-        modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_IPV4);
-        modify_field(p4i_i2e.mapping_lkp_addr, ipv4_2.dstAddr);
-        modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.vpc_id);
-    } else {
-        modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
-        modify_field(p4i_i2e.mapping_lkp_type, ethernet_2.dstAddr);
-        modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
-    }
+    modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_MAC);
+    modify_field(p4i_i2e.mapping_lkp_type, ethernet_2.dstAddr);
+    modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.bd_id);
 }
 
 @pragma stage 1
@@ -250,9 +247,11 @@ control input_properties {
         apply(service_mapping);
         apply(service_mapping_otcam);
     } else {
-        apply(vlan);
+        apply(lif_vlan);
+        apply(lif_vlan_otcam);
     }
     apply(vnic);
+    apply(p4i_bd);
 }
 
 /******************************************************************************/
@@ -291,7 +290,42 @@ table vpc {
 /******************************************************************************/
 /* BD info                                                                    */
 /******************************************************************************/
-action bd_info(vni, vrmac, tos) {
+action ingress_bd_info(vrmac) {
+    modify_field(scratch_metadata.mac, vrmac);
+    if (control_metadata.tunneled_packet == TRUE) {
+        if (ipv4_2.valid == TRUE) {
+            if ((control_metadata.l2_enabled == FALSE) or
+                (scratch_metadata.mac == ethernet_2.dstAddr)) {
+                modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_IPV4);
+                modify_field(p4i_i2e.mapping_lkp_addr, ipv4_2.dstAddr);
+                modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.vpc_id);
+            }
+        }
+    } else {
+        if (ipv4_1.valid == TRUE) {
+            if ((control_metadata.l2_enabled == FALSE) or
+                (scratch_metadata.mac == ethernet_1.dstAddr)) {
+                modify_field(p4i_i2e.mapping_lkp_type, KEY_TYPE_IPV4);
+                modify_field(p4i_i2e.mapping_lkp_addr, ipv4_1.dstAddr);
+                modify_field(p4i_i2e.mapping_lkp_id, vnic_metadata.vpc_id);
+            }
+        }
+    }
+}
+
+@pragma stage 4
+@pragma index_table
+table p4i_bd {
+    reads {
+        vnic_metadata.bd_id : exact;
+    }
+    actions {
+        ingress_bd_info;
+    }
+    size : BD_TABLE_SIZE;
+}
+
+action egress_bd_info(vni, vrmac, tos) {
     if (p4e_i2e.binding_check_drop == TRUE) {
         egress_drop(P4E_DROP_MAC_IP_BINDING_FAIL);
     }
@@ -307,12 +341,12 @@ action bd_info(vni, vrmac, tos) {
 
 @pragma stage 3
 @pragma index_table
-table bd {
+table p4e_bd {
     reads {
         vnic_metadata.egress_bd_id  : exact;
     }
     actions {
-        bd_info;
+        egress_bd_info;
     }
     size : BD_TABLE_SIZE;
 }
@@ -338,6 +372,6 @@ table rx_vnic {
 
 control output_properties {
     apply(vpc);
-    apply(bd);
+    apply(p4e_bd);
     apply(rx_vnic);
 }

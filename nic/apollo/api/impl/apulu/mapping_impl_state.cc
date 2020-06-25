@@ -218,7 +218,7 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
     int                         sock_fd, io_fd;
     p4pd_error_t                p4pd_ret;
     sdk_ret_t                   ret;
-    bd_actiondata_t             bd_data;
+    p4e_bd_actiondata_t         bd_data;
     ip_addr_t                   public_ip = { 0 }, private_ip;
     mac_addr_t                  overlay_mac;
     pds_encap_t                 encap;
@@ -271,12 +271,13 @@ local_mapping_dump_cb (sdk_table_api_params_t *params)
     sdk::lib::memrev(overlay_mac, mapping_data.dmaci, ETH_ADDR_LEN);
 
     // read BD table
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, mapping_data.egress_bd_id,
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_BD,
+                                      mapping_data.egress_bd_id,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         return false;
     }
-    encap.val.vnid = bd_data.bd_info.vni;
+    encap.val.vnid = bd_data.p4e_bd_info.vni;
     if (encap.val.vnid) {
         encap.type = PDS_ENCAP_TYPE_VXLAN;
     } else {
@@ -333,7 +334,7 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
     int                         sock_fd, io_fd;
     p4pd_error_t                p4pd_ret;
     sdk_ret_t                   ret;
-    bd_actiondata_t             bd_data;
+    p4e_bd_actiondata_t         bd_data;
     ip_addr_t                   private_ip;
     mac_addr_t                  overlay_mac;
     pds_encap_t                 encap;
@@ -370,12 +371,13 @@ remote_l3_mapping_dump_cb (sdk_table_api_params_t *params)
     sdk::lib::memrev(overlay_mac, mapping_data->dmaci, ETH_ADDR_LEN);
 
     // read bd id table
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, mapping_data->egress_bd_id,
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_BD,
+                                      mapping_data->egress_bd_id,
                                       NULL, NULL, &bd_data);
     if (p4pd_ret != P4PD_SUCCESS) {
         return false;
     }
-    encap.val.vnid = bd_data.bd_info.vni;
+    encap.val.vnid = bd_data.p4e_bd_info.vni;
     if (encap.val.vnid) {
         encap.type = PDS_ENCAP_TYPE_VXLAN;
     } else {
@@ -427,7 +429,6 @@ remote_l2_mapping_dump_cb (sdk_table_api_params_t *params)
     int                         sock_fd, io_fd;
     p4pd_error_t                p4pd_ret;
     sdk_ret_t                   ret;
-    bd_actiondata_t             bd_data;
     mac_addr_t                  mac;
     string                      nexthop_type;
     char                        *subnet_uuid;

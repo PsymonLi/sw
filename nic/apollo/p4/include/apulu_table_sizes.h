@@ -1,6 +1,7 @@
 #define DEVICE_INFO_TABLE_SIZE                              16
 #define LIF_TABLE_SIZE                                      2048
-#define VLAN_TABLE_SIZE                                     4096
+#define LIF_VLAN_HASH_TABLE_SIZE                            8192
+#define LIF_VLAN_OTCAM_TABLE_SIZE                           1024
 #define VNI_HASH_TABLE_SIZE                                 8192
 #define VNI_OTCAM_TABLE_SIZE                                1024
 #define LOCAL_MAPPING_TABLE_SIZE                            131072      // 128K

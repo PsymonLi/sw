@@ -14,12 +14,12 @@ extern "C" {
 int
 pds_l2vnid_get(uint16_t bd_id, uint32_t *l2_vni) {
     p4pd_error_t p4pd_ret;
-    bd_actiondata_t bd_data;
+    p4e_bd_actiondata_t bd_data;
 
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_BD, bd_id, NULL, NULL,
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_P4E_BD, bd_id, NULL, NULL,
                                       &bd_data);
 
-    *l2_vni = bd_data.action_u.bd_bd_info.vni;
+    *l2_vni = bd_data.action_u.p4e_bd_egress_bd_info.vni;
 
     return p4pd_ret;
 }

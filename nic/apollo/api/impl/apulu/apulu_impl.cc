@@ -1082,6 +1082,7 @@ apulu_impl::write_to_txdma_table(mem_addr_t addr, uint32_t tableid,
 
 sdk_ret_t
 apulu_impl::transaction_begin(void) {
+    apulu_impl_db()->table_transaction_begin();
     vpc_impl_db()->table_transaction_begin();
     tep_impl_db()->table_transaction_begin();
     vnic_impl_db()->table_transaction_begin();
@@ -1094,6 +1095,7 @@ apulu_impl::transaction_begin(void) {
 
 sdk_ret_t
 apulu_impl::transaction_end(void) {
+    apulu_impl_db()->table_transaction_end();
     vpc_impl_db()->table_transaction_end();
     tep_impl_db()->table_transaction_end();
     vnic_impl_db()->table_transaction_end();
@@ -1270,7 +1272,6 @@ program_lif_table (uint16_t lif_hw_id, uint8_t lif_type, uint16_t vpc_hw_id,
         lif_data.lif_action.bd_id = bd_hw_id;
         lif_data.lif_action.vpc_id = vpc_hw_id;
         lif_data.lif_action.learn_enabled = learn_en ? TRUE : FALSE;
-        sdk::lib::memrev(lif_data.lif_action.vrmac, vr_mac, ETH_ADDR_LEN);
     }
 
     // program LIF tables now

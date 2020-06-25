@@ -13,6 +13,7 @@
 
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/sdk/lib/table/sltcam/sltcam.hpp"
+#include "nic/sdk/lib/table/slhash/slhash.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/pds_state.hpp"
@@ -20,6 +21,8 @@
 #include "nic/apollo/p4/include/apulu_defines.h"
 
 using sdk::table::handle_t;
+using sdk::table::slhash;
+
 
 namespace api {
 namespace impl {
@@ -46,6 +49,16 @@ public:
     /// \return    SDK_RET_OK on success, failure status code on error
     sdk_ret_t table_stats(debug::table_stats_get_cb_t cb, void *ctxt);
 
+    /// \brief  API to initiate transaction over all the table manamgement
+    ///         library instances
+    /// \return #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t table_transaction_begin(void);
+
+    /// \brief  API to end transaction over all the table manamgement
+    ///         library instances
+    /// \return #SDK_RET_OK on success, failure status code on error
+    sdk_ret_t table_transaction_end(void);
+
     /// \brief accessors
     sltcam *ingress_drop_stats_tbl(void) { return ingress_drop_stats_tbl_; }
     sltcam *egress_drop_stats_tbl(void) { return egress_drop_stats_tbl_; }
@@ -54,8 +67,8 @@ public:
     rte_indexer *copp_idxr(void) { return copp_idxr_; }
     rte_indexer *nat_idxr(void) { return nat_idxr_; }
     rte_indexer *dnat_idxr(void) { return dnat_idxr_; }
+    slhash *if_vlan_tbl(void) { return if_vlan_tbl_; }
     sdk_ret_t nacl_dump(int fd);
-
     friend class apulu_impl;            ///< friend of apulu_impl_state
 
 private:
@@ -66,6 +79,7 @@ private:
     rte_indexer *copp_idxr_;            ///< indexer for CoPP table
     rte_indexer *nat_idxr_;             ///< indexer for NAT table
     rte_indexer *dnat_idxr_;            ///< indexer for DNAT table
+    slhash *if_vlan_tbl_;               ///< (if, vlan) table
     handle_t ing_drop_stats_tbl_hdls_[P4I_DROP_REASON_MAX + 1];
     handle_t egr_drop_stats_tbl_hdls_[P4E_DROP_REASON_MAX + 1];
 };

@@ -104,7 +104,8 @@ extern ip_addr_t g_zero_ip;
 namespace api {
 namespace impl {
 
-#define bd_info action_u.bd_bd_info
+#define p4i_bd_info action_u.p4i_bd_ingress_bd_info
+#define p4e_bd_info action_u.p4e_bd_egress_bd_info
 
 #define PDS_IMPL_FILL_LOCAL_IP_MAPPING_SWKEY(key, vpc_hw_id, ip)             \
 {                                                                            \

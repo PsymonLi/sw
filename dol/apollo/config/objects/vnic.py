@@ -243,8 +243,8 @@ class VnicObject(base.ConfigObjectBase):
         return
 
     def AutoUpdate(self):
-        if self.Dot1Qenabled:
-            self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
+        #if self.Dot1Qenabled:
+            #self.VlanId = next(ResmgrClient[self.Node].VnicVlanIdAllocator)
         self.UseHostIf = not(self.UseHostIf)
         self.SourceGuard = not(self.SourceGuard)
         return
@@ -318,30 +318,39 @@ class VnicObject(base.ConfigObjectBase):
         if utils.ValidateRpcEncap(types_pb2.ENCAP_TYPE_DOT1Q \
                                   if self.Dot1Qenabled else types_pb2.ENCAP_TYPE_NONE, \
                                   self.VlanId, spec.VnicEncap) is False:
+            logger.error("vnic encap mistmatch")
             return False
         if EzAccessStoreClient[self.Node].IsDeviceEncapTypeMPLS():
             if utils.ValidateTunnelEncap(self.Node, self.MplsSlot, spec.FabricEncap) is False:
+                logger.error("MPLS fabric encap mismatch on vnic")
                 return False
         else:
             if utils.ValidateTunnelEncap(self.Node, self.Vnid, spec.FabricEncap) is False:
+                logger.error("Vxlan fabric encap mismatch on vnic")
                 return False
         if self.UseHostIf and self.HostIfUuid:
             if spec.HostIf != self.HostIfUuid.GetUuid():
+                logger.error("host if mismatch on vnic")
                 return False
         elif self.UseHostIf and self.SUBNET.HostIfUuid[0]:
             if spec.HostIf != self.SUBNET.HostIfUuid[0].GetUuid():
+                logger.error("host if mismatch on vnic")
                 return False
         if spec.MACAddress != self.MACAddr.getnum():
+            logger.error("vnic mac mismatch on vnic")
             return False
         if spec.SourceGuardEnable != self.SourceGuard:
+            logger.error("src guard attribute mismatch on vnic")
             return False
         if spec.V4MeterId != utils.PdsUuid.GetUUIDfromId(self.V4MeterId, api.ObjectTypes.METER):
             return False
         if spec.V6MeterId != utils.PdsUuid.GetUUIDfromId(self.V6MeterId, api.ObjectTypes.METER):
             return False
         if not utils.ValidatePolicerAttr(self.RxPolicer, spec.RxPolicerId):
+            logger.error("rx policer mismatch on vnic")
             return False
         if not utils.ValidatePolicerAttr(self.TxPolicer, spec.TxPolicerId):
+            logger.error("tx policer mismatch on vnic")
             return False
         specAttrs = ['IngV4SecurityPolicyId', 'IngV6SecurityPolicyId',\
                      'EgV4SecurityPolicyId', 'EgV6SecurityPolicyId']
@@ -350,24 +359,32 @@ class VnicObject(base.ConfigObjectBase):
         for cfgAttr, specAttr in zip(cfgAttrs, specAttrs):
             if not utils.ValidatePolicyAttr(getattr(self, cfgAttr, None), \
                                             getattr(spec, specAttr, None)):
+                logger.error("policy configuration mismatch on vnic")
                 return False
         specAttrs = ['RxMirrorSessionId', 'TxMirrorSessionId']
         cfgAttrs = ['RxMirror', 'TxMirror']
         for cfgAttr, specAttr in zip(specAttrs, cfgAttrs):
             if not utils.ValidateMirrorAttr(getattr(self, cfgAttr, None), \
                                             getattr(spec, specAttr, None)):
+                logger.error("rx/tx mirror session mismatch on vnic")
                 return False
         if self.SwitchVnic != spec.SwitchVnic:
+            logger.error("switch vnic attribute mismatch")
             return False
         if self.FlowLearnEn != spec.FlowLearnEn:
+            logger.error("flow learn enable attribute mismatch on vnic")
             return False
         if self.Primary != spec.Primary:
+            logger.error("primary attribute mismatch on vnic")
             return False
         if self.HostName != spec.HostName:
+            logger.error("hostname attribute mismatch on vnic")
             return False
         if self.MaxSessions != spec.MaxSessions:
+            logger.error("max. sessions attribute mismatch on vnic")
             return False
         if self.MeterEn != spec.MeterEn:
+            logger.error("meter enable attribute mismatch on vnic")
             return False
         return True
 

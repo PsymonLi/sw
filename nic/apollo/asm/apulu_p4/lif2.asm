@@ -15,6 +15,8 @@ lif_info:
     phvwr           p.p4i_i2e_rx_packet, d.lif_info_d.direction
     phvwr           p.control_metadata_learn_enabled, d.lif_info_d.learn_enabled
     phvwr           p.control_metadata_lif_type, d.lif_info_d.lif_type
+    seq             c1, d.lif_info_d.lif_vlan_en, TRUE
+    phvwr.c1        p.key_metadata_lif, k.arm_to_p4i_lif
     phvwr           p.vnic_metadata_vnic_id, d.lif_info_d.vnic_id
     phvwr           p.vnic_metadata_bd_id, d.lif_info_d.bd_id
     phvwr           p.vnic_metadata_vpc_id, d.lif_info_d.vpc_id
@@ -22,8 +24,7 @@ lif_info:
     phvwr.c1        p.key_metadata_flow_lkp_id, d.lif_info_d.bd_id
     phvwr.!c1       p.key_metadata_flow_lkp_id, k.arm_to_p4i_flow_lkp_id
     phvwr           p.p4i_i2e_skip_stats_update, k.arm_to_p4i_skip_stats_update
-    phvwr           p.p4i_to_arm_sw_meta, k.arm_to_p4i_sw_meta
-    phvwr.e         p.vnic_metadata_vrmac, d.lif_info_d.vrmac
+    phvwr.e         p.p4i_to_arm_sw_meta, k.arm_to_p4i_sw_meta
     phvwr.f         p.p4i_i2e_src_lif, k.arm_to_p4i_lif
 
 /*****************************************************************************/
