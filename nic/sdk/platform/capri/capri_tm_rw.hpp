@@ -71,7 +71,7 @@ using sdk::lib::indexer;
 // maintain the same queue when pkt goes through the pipeline in P4-ig and
 // P4-eg. However, hardware imposes few restrictions on the queue usage:
 //      - In the P4-ig port, the uplink traffic can use only 24-31 oqs
-//      - In the P4-eg port, 30 and 31 oqs are reserved for SPAN and CPU-COPY
+//      - In the P4-eg port, 30 and 31 oqs are reserved for CPU-COPY & SPAN resp
 //      - In both the ports one oq is needed for recirc cases.
 //
 // To accomodate these, the queue allocation is done as follows:
@@ -105,6 +105,8 @@ using sdk::lib::indexer;
 #define CAPRI_TM_P4_SWM_CNTRL_UC_QUEUE_REPLACEMENT      CAPRI_TM_P4_EG_UPLINK_CPU_COPY_QUEUE_REPLACEMENT  // 16
 #define CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE               CAPRI_TM_P4_SPAN_QUEUE      // 31
 #define CAPRI_TM_P4_SWM_CNTRL_FLOOD_QUEUE_REPLACEMENT   CAPRI_TM_P4_EG_UPLINK_SPAN_QUEUE_REPLACEMENT      // 17
+
+#define CAPRI_TM_ADMIN_QUEUE                            1
 
 #define QOS_SWM_CNTRL_CAM_ENTRY_START       0
 #define QOS_SWM_CNTRL_CAM_ENTRY_END         3

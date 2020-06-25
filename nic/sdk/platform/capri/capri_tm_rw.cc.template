@@ -2447,9 +2447,26 @@ capri_tm_program_pbc_buffers3 (capri_tm_buf_cfg_t *buf_cfg)
             tm_asic_profile()->port[port_type].recirc_q != ${pg}) {
             reserved_min = buf_cfg->chunks_per_q[port_type];
 
-            if (tm_is_high_perf_q(${pg})) {
+            if ( (tm_is_high_perf_q(${pg})) ||
+                 ( (${pinfo["enum"]} == CAPRI_TM_PORT_EGRESS) &&
+                   (${pg} == CAPRI_TM_P4_SPAN_QUEUE) ) ) {
+                /*
+                 * double the buffers for high-perf queues
+                 * also, doubling for span-queue to compensate for lower
+                 * priority and lower SPAN replication threshold
+                 */
                 reserved_min *= 2;
             }
+
+            if ( (${pinfo["enum"]} == CAPRI_TM_PORT_EGRESS) &&
+                 (${pg} == CAPRI_TM_ADMIN_QUEUE) ) {
+                /*
+                 * To double the buffers for SPAN queue at P4-Egr, reduce it
+                 * from ADMIN queue (1) which is not used at P4 ports.
+                 */
+                reserved_min = 0;
+            }
+
             reserved_min = reserved_min +
                 cells_to_chunks(bytes_to_cells(tm_cfg_profile()->jumbo_mtu[port_type])) + 2;
             headroom = 0;
@@ -2548,8 +2565,28 @@ capri_tm_program_p4_credits (capri_tm_buf_cfg_t *buf_cfg)
             (tm_asic_profile()->port[port_type].recirc_q != ${pg})) {
 
             credits = chunks_to_cells(buf_cfg->chunks_per_q[port_type]);
-            if (tm_is_high_perf_q(${pg})) {
+            if ( (tm_is_high_perf_q(${pg})) ||
+                 ( (${pinfo["enum"]} == CAPRI_TM_PORT_EGRESS) &&
+                   (${pg} == CAPRI_TM_P4_SPAN_QUEUE) ) ) {
+                /*
+                 * double the credits for high-perf queues
+                 * also, doubling for span-queue to compensate for lower
+                 * priority and lower SPAN replication threshold
+                 */
                 credits = chunks_to_cells(2 * buf_cfg->chunks_per_q[port_type]);
+            }
+
+            if ( (${pinfo["enum"]} == CAPRI_TM_PORT_EGRESS) &&
+                 (${pg} == CAPRI_TM_ADMIN_QUEUE) ) {
+                /*
+                 * To double the credits for SPAN queue at P4-Egr, reduce it
+                 * from ADMIN queue (1) which is not used at P4 ports.
+                 *
+                 * Instead of 0ing it out completely, give it atleast 1
+                 * Jumbo MTU credits to be able to dequeue just in case
+                 * something shows up on that queue (which is not expected).
+                 */
+                credits = 0 + bytes_to_cells(tm_cfg_profile()->jumbo_mtu[port_type]) + 2;
             }
 
             credit_enable |= 1<<${pg};
