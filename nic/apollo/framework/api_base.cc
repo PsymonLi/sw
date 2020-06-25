@@ -84,6 +84,9 @@ api_base::factory(api_ctxt_t *api_ctxt) {
     case OBJ_ID_SECURITY_PROFILE:
         return security_profile::factory(&api_ctxt->api_params->security_profile_spec);
 
+    case OBJ_ID_VPORT:
+        return vport_entry::factory(&api_ctxt->api_params->vport_spec);
+
     case OBJ_ID_IPSEC_SA_ENCRYPT:
         return ipsec_sa_entry::factory(&api_ctxt->api_params->ipsec_sa_encrypt_spec, true);
 
@@ -285,6 +288,9 @@ api_base::free(obj_id_t obj_id, api_base *api_obj) {
     case OBJ_ID_SECURITY_PROFILE:
         return security_profile::free((security_profile *)api_obj);
 
+    case OBJ_ID_VPORT:
+        return vport_entry::free((vport_entry *)api_obj);
+
     default:
         PDS_TRACE_ERR("Method not implemented for obj id %u\n", obj_id);
         break;
@@ -430,6 +436,12 @@ api_base::find_obj(api_ctxt_t *api_ctxt) {
     case OBJ_ID_VPC_PEER:
         return NULL;
 
+    case OBJ_ID_VPORT:
+        if (api_ctxt->api_op == API_OP_DELETE) {
+            return vport_db()->find(&api_ctxt->api_params->key);
+        }
+        return vport_db()->find(&api_ctxt->api_params->vport_spec.key);
+
     default:
         PDS_TRACE_ERR("Method not implemented for obj id %u\n",
                       api_ctxt->obj_id);
@@ -532,6 +544,10 @@ api_base::find_obj(obj_id_t obj_id, void *key) {
 #if 0
         api_obj = policy_db()->find_security_profile((pds_obj_key_t *)key);
 #endif
+        break;
+
+    case OBJ_ID_VPORT:
+        api_obj = vport_db()->find((pds_obj_key_t *)key);
         break;
 
     default:
