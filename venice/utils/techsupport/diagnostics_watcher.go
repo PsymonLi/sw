@@ -33,7 +33,16 @@ func (ag *TSMClient) StartModuleWorker() {
 
 // RunModuleWatcher establishes watch
 func (ag *TSMClient) RunModuleWatcher() {
-	defer ag.waitGrp.Done()
+	log.Infof("Starting module watcher")
+	defer func() {
+		log.Infof("Stopping module watcher")
+		ag.waitGrp.Done()
+	}()
+
+	if ag.tsGrpcClient == nil {
+		log.Errorf("techsupport grpc client not initialized. cannot start module watcher.")
+		return
+	}
 
 	ag.diagnosticsAPIClient = tsproto.NewDiagnosticsApiClient(ag.tsGrpcClient.ClientConn)
 	if ag.diagnosticsAPIClient == nil {

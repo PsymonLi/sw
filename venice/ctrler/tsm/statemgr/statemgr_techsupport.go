@@ -145,7 +145,11 @@ func (sm *Statemgr) deleteTechSupportObjectState(obj TechSupportObject) error {
 
 	if obj.GetObjectKind() == KindTechSupportRequest && sm.objstoreClient != nil {
 		state.(*TechSupportRequestState).CancelFunc()
-		tsr := obj.(*monitoring.TechSupportRequest)
+		tsr, ok := obj.(*monitoring.TechSupportRequest)
+		if !ok {
+			return fmt.Errorf("object is not of type *monitoring.TechSupportRequest, invalid cast")
+		}
+
 		log.Infof("Removing objects with prefix : %v", tsr.ObjectMeta.Name)
 		err = sm.objstoreClient.RemoveObjects(tsr.ObjectMeta.Name)
 		if err != nil {

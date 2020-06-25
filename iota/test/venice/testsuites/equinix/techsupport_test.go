@@ -103,7 +103,7 @@ var _ = Describe("TechSupport", func() {
 			// verify if techsupport request got completed successfully
 			Eventually(func() error {
 				return ts.model.VerifyTechsupport(techsupportName)
-			}, 5*time.Minute, 30*time.Second).Should(Succeed())
+			}, 10*time.Minute, 30*time.Second).Should(Succeed())
 
 			// TODO: Add File validations
 

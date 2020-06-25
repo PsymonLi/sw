@@ -3,7 +3,6 @@ package techsupport
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/pensando/sw/api/generated/diagnostics"
@@ -40,8 +39,6 @@ type TSMClient struct {
 	mac string
 	// the notifications that have been received
 	notifications []*tsproto.TechSupportRequestEvent
-	// a flag used to know if agent is watching or not -- access using atomics
-	watching int32 // 0 --> not watching, 1 --> watching
 	// rpc client used to watch and send updates
 	tsGrpcClient *rpckit.RPCClient
 	// API client used to watch and send updates
@@ -150,10 +147,6 @@ func (ag *TSMClient) Start() {
 	}
 }
 
-func (ag *TSMClient) isWatching() bool {
-	return atomic.LoadInt32(&ag.watching) != 0
-}
-
 // Stop stops the TSMClient
 func (ag *TSMClient) Stop() {
 	ag.Lock()
@@ -167,6 +160,12 @@ func (ag *TSMClient) Stop() {
 		ag.tsGrpcClient = nil
 	}
 	ag.tsAPIClient = nil
+	ag.diagnosticsAPIClient = nil
+
+	if ag.resolverClient != nil {
+		ag.resolverClient.Stop()
+		ag.resolverClient = nil
+	}
 
 	if ag.restServer != nil {
 		ag.restServer.Stop()

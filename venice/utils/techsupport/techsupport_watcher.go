@@ -3,16 +3,12 @@ package techsupport
 import (
 	"fmt"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/protos/tsproto"
 	tsconfig "github.com/pensando/sw/venice/ctrler/tsm/config"
-	"github.com/pensando/sw/venice/globals"
-	"github.com/pensando/sw/venice/utils/balancer"
 	"github.com/pensando/sw/venice/utils/log"
-	"github.com/pensando/sw/venice/utils/rpckit"
 
 	action "github.com/pensando/sw/venice/utils/techsupport/actionengine"
 	export "github.com/pensando/sw/venice/utils/techsupport/exporter"
@@ -39,21 +35,16 @@ func (ag *TSMClient) handleTechSupportEvents(events *tsproto.TechSupportRequestE
 
 func (ag *TSMClient) runTechSupportWatcher() {
 	log.Info("Starting Techsupport Watcher")
-	defer ag.waitGrp.Done()
+	defer func() {
+		log.Infof("Stopping Techsupport Watcher")
+		ag.waitGrp.Done()
+	}()
 
 	for {
-		tsGrpcClient, err := rpckit.NewRPCClient(ag.name, globals.Tsm, rpckit.WithBalancer(balancer.New(ag.resolverClient)))
-		if err != nil {
-			log.Errorf("Error creating TSM client %s: %v", ag.name, err)
-
-			if ag.isStopped() {
-				return
-			}
-
-			time.Sleep(time.Second)
-			continue
+		if ag.tsGrpcClient == nil {
+			log.Errorf("grpcclient is not initialized. cannot start techsupport watcher.")
+			return
 		}
-		ag.tsGrpcClient = tsGrpcClient
 
 		// start watch for techsupport requests
 		client := tsproto.NewTechSupportApiClient(ag.tsGrpcClient.ClientConn)
@@ -65,7 +56,7 @@ func (ag *TSMClient) runTechSupportWatcher() {
 
 		stream, err := client.WatchTechSupportRequests(ag.ctx, watchParams)
 		if err != nil {
-			log.Errorf("Error setting up watch for TechSupport requests. Err:%v", err)
+			log.Errorf("Error setting up watch for TechSupport requests. Err : %v", err)
 			if ag.isStopped() {
 				return
 			}
@@ -74,7 +65,6 @@ func (ag *TSMClient) runTechSupportWatcher() {
 			break
 		}
 
-		atomic.StoreInt32(&ag.watching, 1)
 		log.Infof("Started watch for TechSupport requests for Node : %v Type : %v", ag.name, ag.kind)
 		for {
 			evtList, err := stream.Recv()
@@ -91,11 +81,7 @@ func (ag *TSMClient) runTechSupportWatcher() {
 			ag.handleTechSupportEvents(evtList)
 		}
 		log.Infof("TSMClient %s stopped watch", ag.name)
-		atomic.StoreInt32(&ag.watching, 0)
 	}
-
-	ag.tsGrpcClient.Close()
-	ag.tsGrpcClient = nil
 }
 
 func (ag *TSMClient) sendUpdate(work *tsproto.TechSupportRequest, status tsproto.TechSupportRequestStatus_ActionStatus) {
