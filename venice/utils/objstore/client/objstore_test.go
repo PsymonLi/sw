@@ -126,6 +126,23 @@ func TestNewClient(t *testing.T) {
 	_, err = NewClient("ten1", "svc1", r, retryOpt, WithCredentialsManager(mockCredMgrWithError))
 	tu.AssertError(t, err, "new client initialization expected to fail when credential manager fails")
 	tu.Assert(t, strings.Contains(err.Error(), testErrMsg), "new client initialization failed with unexpected error")
+
+	// negative case - Client initialization fails when unable to connect to api-server
+	err = r.AddServiceInstance(&types.ServiceInstance{
+		TypeMeta: api.TypeMeta{
+			Kind: "ServiceInstance",
+		},
+
+		ObjectMeta: api.ObjectMeta{
+			Name: globals.APIServer,
+		},
+		Service: globals.APIServer,
+		URL:     "localhost:1234",
+	})
+	tu.AssertOk(t, err, "failed to add service "+globals.APIServer)
+	_, err = NewClient("ten1", "svc1", r, retryOpt)
+	tu.AssertError(t, err, "new client initialization expected to fail when api-server can not be resolved")
+	tu.Assert(t, strings.Contains(err.Error(), "Failed to initialize API client"), "new client initialization failed with unexpected error")
 }
 
 func setupMockCredsManager(c *gomock.Controller) *mock_credentials.MockCredentialsManager {

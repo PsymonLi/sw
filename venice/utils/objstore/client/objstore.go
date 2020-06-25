@@ -158,10 +158,11 @@ func (c *client) initCredentialManager(clientName string) error {
 	retryCount := 0
 	done := false
 	var err error
+	var apiClient apiclient.Services
 
 	for !done && retryCount < c.connRetries {
 		retryCount = retryCount + 1
-		apiClient, err := getAPIClient(c.resolverClient, clientName)
+		apiClient, err = getAPIClient(c.resolverClient, clientName)
 		if err == nil {
 			done = true
 			c.credentialsManager = vminio.NewAPIServerBasedCredsManager(apiClient.ClusterV1())
