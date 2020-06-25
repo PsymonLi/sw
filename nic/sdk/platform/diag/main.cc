@@ -114,7 +114,7 @@ init_logger (const char* log_name)
 #ifdef DEBUG_ENABLE
     g_trace_level = sdk::lib::SDK_TRACE_LEVEL_VERBOSE;
 #else
-    g_trace_level = sdk::lib::SDK_TRACE_LEVEL_ERR;
+    g_trace_level = sdk::lib::SDK_TRACE_LEVEL_INFO;
 #endif
     return SDK_RET_OK;
 }
