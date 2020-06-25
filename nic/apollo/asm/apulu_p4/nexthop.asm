@@ -38,6 +38,8 @@ nexthop_info2:
     phvwr           p.capri_rxdma_intrinsic_qtype, d.nexthop_info_d.qtype
     seq             c1, k.p4e_to_p4plus_classic_nic_rss_override, FALSE
     phvwr.c1        p.capri_rxdma_intrinsic_qid, d.nexthop_info_d.qid
+    phvwr           p.vnic_metadata_rx_vnic_stats_id, \
+                        d.nexthop_info_d.rx_vnic_id
     phvwr           p.rewrite_metadata_vlan_strip_en, \
                         d.nexthop_info_d.vlan_strip_en
 
@@ -48,10 +50,7 @@ nexthop_rewrite:
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_NEXTHOP
     phvwr.c1        p.ethernet_1_dstAddr, d.nexthop_info_d.dmaci
     seq             c1, r2[P4_REWRITE_DMAC_BITS], P4_REWRITE_DMAC_FROM_TUNNEL
-    phvwrpair.c1    p.ethernet_1_dstAddr[47:8], \
-                        k.rewrite_metadata_tunnel_dmaci_s0_e39, \
-                        p.ethernet_1_dstAddr[7:0], \
-                        k.rewrite_metadata_tunnel_dmaci_s40_e47
+    phvwr.c1        p.ethernet_1_dstAddr, k.rewrite_metadata_tunnel_dmaci
     seq             c1, r2[P4_REWRITE_SMAC_BITS], P4_REWRITE_SMAC_FROM_VRMAC
     phvwr.c1        p.ethernet_1_srcAddr, k.rewrite_metadata_vrmac
     seq             c1, r2[P4_REWRITE_VLAN_BITS], P4_REWRITE_VLAN_ENCAP
@@ -106,9 +105,10 @@ vxlan_encap:
     phvwr           p.{ethernet_0_dstAddr,ethernet_0_srcAddr}, \
                         d.{nexthop_info_d.dmaco,nexthop_info_d.smaco}
     seq             c1, r2[P4_REWRITE_VNI_BITS], P4_REWRITE_VNI_FROM_TUNNEL
-    sne.!c1         c1, k.rewrite_metadata_tunnel_vni, r0
-    cmov            r7, c1, k.rewrite_metadata_tunnel_vni, \
-                        k.rewrite_metadata_vni
+    add             r6, k.rewrite_metadata_tunnel_vni_s16_e23, \
+                        k.rewrite_metadata_tunnel_vni_s0_e15, 8
+    sne.!c1         c1, r6, r0
+    cmov            r7, c1, r6, k.rewrite_metadata_vni
     or              r7, r7, 0x8, 48
     or              r7, r0, r7, 8
     bbeq            k.rewrite_metadata_ip_type, IPTYPE_IPV6, ipv6_vxlan_encap
@@ -192,9 +192,10 @@ nexthop_erspan_copy:
     nop.!c1.e
 vxlan_encap2:
     seq             c1, r2[P4_REWRITE_VNI_BITS], P4_REWRITE_VNI_FROM_TUNNEL
-    sne.!c1         c1, k.rewrite_metadata_tunnel_vni, r0
-    cmov            r7, c1, k.rewrite_metadata_tunnel_vni, \
-                        k.rewrite_metadata_vni
+    add             r6, k.rewrite_metadata_tunnel_vni_s16_e23, \
+                        k.rewrite_metadata_tunnel_vni_s0_e15, 8
+    sne.!c1         c1, r6, r0
+    cmov            r7, c1, r6, k.rewrite_metadata_vni
     or              r7, r7, 0x8, 48
     or              r7, r0, r7, 8
     bbeq            k.rewrite_metadata_ip_type, IPTYPE_IPV6, ipv6_vxlan_encap2

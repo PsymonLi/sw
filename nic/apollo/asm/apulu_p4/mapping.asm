@@ -87,8 +87,8 @@ mapping_hit:
     phvwrpair       p.vnic_metadata_egress_bd_id, \
                         d.mapping_info_d.egress_bd_id, \
                         p.vnic_metadata_rx_vnic_id, d.mapping_info_d.rx_vnic_id
-    phvwrpair       p.egress_recirc_mapping_done, TRUE, \
-                        p.rewrite_metadata_dmaci, d.mapping_info_d.dmaci
+    phvwr           p.egress_recirc_mapping_done, TRUE
+    phvwr           p.rewrite_metadata_dmaci, d.mapping_info_d.dmaci
     phvwr           p.control_metadata_is_local, d.mapping_info_d.is_local
     bbeq            k.p4e_to_arm_valid, TRUE, mapping_hit_arm
     phvwr           p.control_metadata_mapping_done, TRUE

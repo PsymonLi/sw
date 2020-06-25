@@ -141,9 +141,7 @@ control ingress_stats {
 /* Egress VNIC stats                                                         */
 /*****************************************************************************/
 action vnic_rx_stats(in_packets, in_bytes) {
-    if ((control_metadata.is_local == FALSE) or
-        (egress_recirc.mapping_done == FALSE) or
-        (p4e_to_arm.valid == TRUE)) {
+    if ((egress_recirc.mapping_done == FALSE) or (p4e_to_arm.valid == TRUE)) {
         // return;
     }
     add(scratch_metadata.in_packets, in_packets, 1);
@@ -155,7 +153,7 @@ action vnic_rx_stats(in_packets, in_bytes) {
 @pragma table_write
 table vnic_rx_stats {
     reads {
-        vnic_metadata.rx_vnic_id    : exact;
+        vnic_metadata.rx_vnic_stats_id  : exact;
     }
     actions {
         vnic_rx_stats;

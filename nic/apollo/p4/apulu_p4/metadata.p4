@@ -34,14 +34,15 @@ header_type key_metadata_t {
 
 header_type vnic_metadata_t {
     fields {
-        vnic_id         : 16;
-        bd_id           : 16;
-        egress_bd_id    : 16;
-        vpc_id          : 16;
-        binding_id      : 16;
-        vrmac           : 48;
-        rx_policer_id   : 10;
-        rx_vnic_id      : 16;
+        vnic_id             : 16;
+        bd_id               : 16;
+        egress_bd_id        : 16;
+        vpc_id              : 16;
+        binding_id          : 16;
+        vrmac               : 48;
+        rx_policer_id       : 10;
+        rx_vnic_id          : 16;
+        rx_vnic_stats_id    : 16;
     }
 }
 

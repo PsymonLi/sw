@@ -771,6 +771,7 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
         nh_data.set_vlan(spec->vnic_encap.val.vlan_tag);
     }
     nh_data.set_dmaci(MAC_TO_UINT64(spec->mac_addr));
+    nh_data.set_rx_vnic_id(hw_id_);
     ret = nh_data.write(nh_idx_);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Failed to program NEXTHOP table for vnic %s at idx %u",
