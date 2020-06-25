@@ -240,8 +240,15 @@ zmq_ipc_endpoint::send_msg(ipc_msg_type_t type, uint32_t recipient,
     // Take ZMQ LOCK
     this->zlock();
 
-    rc = zmq_send(this->zsocket_, &preamble, sizeof(preamble), ZMQ_SNDMORE);
-    assert(rc != -1);
+    do {
+        rc = zmq_send(this->zsocket_, &preamble, sizeof(preamble), ZMQ_SNDMORE);
+    } while (rc == -1 && errno == EINTR);
+    if (rc == -1) {
+        fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
     SDK_TRACE_DEBUG("0x%lx: Sent message: type: %u, sender: %u, recipient: %u, "
                     "msg_code: %u, serial: %u, cookie: 0x%p, pointer: %d, "
                     "real_length: %zu, crc32: %u, tag: %u",
@@ -251,16 +258,24 @@ zmq_ipc_endpoint::send_msg(ipc_msg_type_t type, uint32_t recipient,
                     preamble.is_pointer, preamble.real_length, preamble.crc,
                     preamble.tag);
 
-     if (send_pointer) {
-         rc = zmq_send(this->zsocket_, &data, sizeof(data), 0);
-     } else {
-         rc = zmq_send(this->zsocket_, data, data_length, 0);
-     }
+
+    do {
+        if (send_pointer) {
+            rc = zmq_send(this->zsocket_, &data, sizeof(data), 0);
+        } else {
+            rc = zmq_send(this->zsocket_, data, data_length, 0);
+        }
+    } while (rc == -1 && errno == EINTR);
 
      // Release ZMQ LOCK
      this->zunlock();
-     
-     assert(rc != -1);
+
+     if (rc == -1) {
+        fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
 }
 
 void
@@ -271,7 +286,9 @@ zmq_ipc_endpoint::recv_msg(zmq_ipc_user_msg_ptr msg) {
     // Take ZMQ LOCK
     this->zlock();
 
-    rc = zmq_recv(this->zsocket_, preamble, sizeof(*preamble), 0);
+    do {
+        rc = zmq_recv(this->zsocket_, preamble, sizeof(*preamble), 0);
+    } while (rc == -1 && errno == EINTR);
     assert(rc == sizeof(*preamble));
 
     SDK_TRACE_DEBUG("0x%lx: Received message: type: %u, sender: %u, recipient: %u, "
@@ -284,8 +301,15 @@ zmq_ipc_endpoint::recv_msg(zmq_ipc_user_msg_ptr msg) {
                     preamble->tag);
     assert(preamble->recipient == this->id_);
 
-    rc = zmq_recvmsg(this->zsocket_, msg->zmsg(), 0);
-    assert(rc != -1);
+    do {
+        rc = zmq_recvmsg(this->zsocket_, msg->zmsg(), 0);
+    } while (rc == -1 && errno == EINTR);
+    if (rc == -1) {
+        fprintf(stdout, "zmq_recvmsg %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
 
     // Release ZMQ LOCK
     this->zunlock();
@@ -380,8 +404,15 @@ zmq_ipc_server::recv(void) {
         // Take ZMQ LOCK
         this->zlock();
 
-        rc = zmq_recvmsg(this->zsocket_, header->zmsg(), 0);
-        assert(rc != -1);
+        do {
+            rc = zmq_recvmsg(this->zsocket_, header->zmsg(), 0);
+        } while (rc == -1 && errno == EINTR);
+        if (rc == -1) {
+            fprintf(stdout, "zmq_recvmsg %s(%d)", strerror(errno), errno);
+            fflush(stdout);
+            fflush(stderr);
+            assert(rc != -1);
+        }
 
         // Release ZMQ LOCK
         this->zunlock();
@@ -421,9 +452,17 @@ zmq_ipc_server::reply(ipc_msg_ptr msg, const void *data,
     
     // See ZMQ Router to understand why we do this
     for (auto header: zmsg->headers()) {
-        rc = zmq_send(this->zsocket_, header->data(), header->length(),
-                      ZMQ_SNDMORE);
-        assert(rc != -1);
+        do {
+            rc = zmq_send(this->zsocket_, header->data(), header->length(),
+                          ZMQ_SNDMORE);
+        } while (rc == -1 && errno == EINTR);
+        if (rc == -1) {
+            fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+            fflush(stdout);
+            fflush(stderr);
+            assert(rc != -1);
+        }
+
     }
 
     // Release ZMQ LOCK
@@ -526,8 +565,15 @@ zmq_ipc_client_async::send(uint32_t msg_code, const void *data,
     
     // We use a Dealer socket talking to Router socket. See ZMQ documentation
     // why we need this
-    rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
-    assert(rc != -1);
+    do {
+        rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
+    } while (rc == -1 && errno == EINTR);
+    if (rc == -1) {
+        fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
 
     // Release ZMQ LOCK
     this->zunlock();
@@ -547,8 +593,15 @@ zmq_ipc_client_async::broadcast(uint32_t msg_code, const void *data,
 
     // We use a Dealer socket talking to Router socket. See ZMQ documentation
     // why we need this
-    rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
-    assert(rc != -1);
+    do {
+        rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
+    } while (rc == -1 && errno == EINTR);
+    if (rc == -1) {
+        fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
 
     // Release ZMQ LOCK
     this->zunlock();
@@ -571,7 +624,9 @@ zmq_ipc_client_async::recv(void) {
 
     // We use a Dealer socket talking to Router socket. See ZMQ documentation
     // why we need this
-    rc = zmq_recv(this->zsocket_, NULL, 0, 0);
+    do {
+        rc = zmq_recv(this->zsocket_, NULL, 0, 0);
+    } while (rc == -1 && errno == EINTR);
     assert(rc != -1);
 
     // Release ZMQ LOCK
@@ -613,7 +668,9 @@ zmq_ipc_client_sync::send_recv(uint32_t msg_code, const void *data,
     this->zlock();
     
     // We use Dealer socket
-    rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
+    do {
+        rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
+    } while (rc == -1 && errno == EINTR);
     assert(rc != -1);
 
     // Take ZMQ LOCK
@@ -636,13 +693,14 @@ zmq_ipc_client_sync::send_recv(uint32_t msg_code, const void *data,
     
     // We use a Dealer socket talking to Router socket. See ZMQ documentation
     // why we need this
-    rc = zmq_recv(this->zsocket_, NULL, 0, 0);
+    do {
+        rc = zmq_recv(this->zsocket_, NULL, 0, 0);
+    } while (rc == -1 && errno == EINTR);
     if (rc == -1) {
         assert(zmq_errno() == EAGAIN);
         this->zunlock();
         return nullptr;
     }
-    assert(rc != -1);
 
     // Release ZMQ LOCK
     this->zunlock();
@@ -663,8 +721,15 @@ zmq_ipc_client_sync::broadcast(uint32_t msg_code, const void *data,
     this->zlock();
 
     // We use Dealer socket
-    rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
-    assert(rc != -1);
+    do {
+        rc = zmq_send(this->zsocket_, NULL, 0, ZMQ_SNDMORE);
+    } while (rc == -1 && errno == EINTR);
+    if (rc == -1) {
+        fprintf(stdout, "zmq_send %s(%d)", strerror(errno), errno);
+        fflush(stdout);
+        fflush(stderr);
+        assert(rc != -1);
+    }
 
     // Release ZMQ LOCK
     this->zunlock();
