@@ -128,7 +128,7 @@ pds_session_prog_x1 (vlib_buffer_t *b, u32 session_id,
     pds_flow_hw_ctx_t *ctx;
     bool ses_track_en;
 
-    ctx = pds_flow_get_hw_ctx(session_id);
+    ctx = pds_flow_get_session(session_id);
     if (PREDICT_FALSE(!ctx)) {
         next[0] = SESSION_PROG_NEXT_DROP;
         return;
@@ -350,14 +350,14 @@ pds_flow_add_tx_hdrs_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1)
     tx1->lif_sbit8_ebit10 = lif1 >> 0x8;
 
     ses_id0 = vnet_buffer(b0)->pds_flow_data.ses_id;
-    ses0 = pds_flow_get_hw_ctx(ses_id0);
+    ses0 = pds_flow_get_session(ses_id0);
     if (ses0 && ses0->ingress_bd) {
         tx0->flow_lkp_id_override = 1;
         tx0->flow_lkp_id =
             clib_host_to_net_u16(ses0->ingress_bd);
     }
     ses_id1 = vnet_buffer(b1)->pds_flow_data.ses_id;
-    ses1 = pds_flow_get_hw_ctx(ses_id1);
+    ses1 = pds_flow_get_session(ses_id1);
     if (ses1 && ses1->ingress_bd) {
         tx1->flow_lkp_id_override = 1;
         tx1->flow_lkp_id =
@@ -389,7 +389,7 @@ pds_flow_add_tx_hdrs_x1 (vlib_buffer_t *b0)
     tx0->lif_sbit0_ebit7 = lif & 0xff;
     tx0->lif_sbit8_ebit10 = lif >> 0x8;
     ses_id = vnet_buffer(b0)->pds_flow_data.ses_id;
-    ses = pds_flow_get_hw_ctx(ses_id);
+    ses = pds_flow_get_session(ses_id);
     if (ses && ses->ingress_bd) {
         tx0->flow_lkp_id_override = 1;
         tx0->flow_lkp_id =
@@ -1053,7 +1053,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
     vnet_buffer2(p)->pds_nat_data.vnic_id = hdr->vnic_id;
 
     if (PREDICT_FALSE(pds_is_flow_session_present(p))) {
-        ctx = pds_flow_get_hw_ctx(
+        ctx = pds_flow_get_session(
               vnet_buffer(p)->pds_flow_data.ses_id);
         if (PREDICT_FALSE(NULL == ctx)) {
             *next = FLOW_CLASSIFY_NEXT_DROP;

@@ -12,7 +12,7 @@
 always_inline bool
 pds_flow_from_host (u32 ses_id, u8 flow_role)
 {
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session(ses_id);
     if (pds_flow_packet_l2l(session->packet_type)) {
         //both flows are from host
         return true;
@@ -33,7 +33,7 @@ pds_session_get_rewrite_flags (u32 ses_id, u8 pkt_type,
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_rewrite_flags_t *rewrite_flags;
     pds_impl_db_vnic_entry_t *vnic;
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session(ses_id);
     bool tx_vlan, rx_vlan;
 
     rewrite_flags = vec_elt_at_index(fm->rewrite_flags, pkt_type);

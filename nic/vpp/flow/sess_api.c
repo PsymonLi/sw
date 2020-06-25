@@ -44,7 +44,7 @@ pds_flow_get_ctr_idx (uint8_t proto, bool isv4)
 void
 pds_flow_delete_session (u32 ses_id)
 {
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session_and_lock(ses_id);
     pds_flow_main_t *fm = &pds_flow_main;
     int flow_log_enabled = 0;
     int thread = vlib_get_thread_index();
@@ -67,30 +67,25 @@ pds_flow_delete_session (u32 ses_id)
                                      session->drop,
                                      thread);
         }
-        session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->iflow.handle,
                                                 thread) != 0)) {
             goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(session->nat)) {
             ftlv4_update_iflow_nat_session(table4, thread);
         }
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            return;
+            goto end;
         }
-
-        session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4, session->rflow.handle,
                                                 thread) != 0)) {
             goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(session->nat)) {
             ftlv4_update_rflow_nat_session(table4, thread);
         }
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            return;
+            goto end;
         }
         if (PREDICT_FALSE(session->nat)) {
             u32 vpc_id = pds_vnic_vpc_id_get(session->src_vnic_id);
@@ -103,22 +98,17 @@ pds_flow_delete_session (u32 ses_id)
                                    FLOW_EXPORT_REASON_DEL,
                                    session->drop);
         }
-        session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->iflow.handle) != 0)) {
             goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            return;
+            goto end;
         }
-
-        session = pds_flow_get_hw_ctx_lock(ses_id);
         if (PREDICT_FALSE(ftlv6_get_with_handle(table, session->rflow.handle) != 0)) {
            goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            return;
+            goto end;
         }
     }
 
@@ -127,10 +117,8 @@ pds_flow_delete_session (u32 ses_id)
     clib_atomic_fetch_add(&fm->stats.counter[ctr_idx], -1);
     pds_session_id_dealloc(ses_id);
     pds_session_stats_clear(ses_id);
-    return;
-
 end:
-    pds_flow_hw_ctx_unlock(session);
+    pds_flow_session_unlock(ses_id);
     return;
 }
 

@@ -63,7 +63,7 @@ typedef enum pds_ipc_event_id_s {
 } pds_ipc_event_id_t;
 
 // in most extreme cases when the IPC peer dies, we need to bail out
-// and so 10 secs is long enough for that
-#define PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT             10.0
+// and so 60 secs is long enough for that
+#define PDS_API_THREAD_MAX_REQUEST_WAIT_TIMEOUT             60.0
 
 #endif    // __INCLUDE_GLOBALS_HPP__

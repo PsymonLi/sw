@@ -12,6 +12,7 @@
 #include <inttypes.h>
 #include "node.h"
 #include "cli_helper.h"
+#include "pdsa_hdlr.h"
 
 // *INDENT-OFF*
 VLIB_PLUGIN_REGISTER () = {
@@ -37,6 +38,8 @@ static const char *pds_flow_pkt_type_str[] = {
     "PDS_FLOW_L2L_INTER_SUBNET",
     "PDS_FLOW_L2R_INTRA_SUBNET",
     "PDS_FLOW_L2R_INTER_SUBNET",
+    "PDS_FLOW_R2L_INTRA_SUBNET",
+    "PDS_FLOW_R2L_INTER_SUBNET",
     "PDS_FLOW_L2N_OVERLAY_ROUTE_EN",
     "PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAPT",
     "PDS_FLOW_L2N_OVERLAY_ROUTE_EN_NAT",
@@ -45,8 +48,6 @@ static const char *pds_flow_pkt_type_str[] = {
     "PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_NAT",
     "PDS_FLOW_L2N_OVERLAY_ROUTE_DIS_TWICE_NAT",
     "PDS_FLOW_L2N_INTRA_VCN_ROUTE",
-    "PDS_FLOW_R2L_INTRA_SUBNET",
-    "PDS_FLOW_R2L_INTER_SUBNET",
     "PDS_FLOW_N2L_OVERLAY_ROUTE_EN",
     "PDS_FLOW_N2L_OVERLAY_ROUTE_EN_NAT",
     "PDS_FLOW_N2L_OVERLAY_ROUTE_DIS",
@@ -54,7 +55,7 @@ static const char *pds_flow_pkt_type_str[] = {
     "PDS_FLOW_N2L_OVERLAY_ROUTE_EN_SVC_NAT",
     "PDS_FLOW_N2L_OVERLAY_ROUTE_DIS_SVC_NAT",
     "PDS_FLOW_N2L_INTRA_VCN_ROUTE",
-    "PDS_FLOW_PKT_TYPE_MAX"
+    "PDS_FLOW_PKT_TYPE_MAX",
 };
 
 static const char *pds_flow_state_str[] = {
@@ -64,7 +65,7 @@ static const char *pds_flow_state_str[] = {
     "KeepaliveSent",
     "HalfCloseIflow",
     "HalfCloseRflow",
-    "Close"
+    "Close",
 };
 
 static clib_error_t *
@@ -827,7 +828,7 @@ pds_flow_session_info_show (vlib_main_t *vm, u32 ses_id, u8 detail)
 
     pds_session_get_info(ses_id, &session_info);
     pds_session_track_get_info(ses_id, &session_track_info);
-    session = pds_flow_get_hw_ctx(ses_id);
+    session = pds_flow_get_session(ses_id);
     if (!session) {
         vlib_cli_output(vm, "Session doesn't exists!");
         return;

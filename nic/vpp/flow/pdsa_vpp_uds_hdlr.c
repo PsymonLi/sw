@@ -23,7 +23,7 @@ void * pds_flow_get_table6_or_l2 (void)
 
 bool pds_flow_get_session_drop (u32 ses_id)
 {
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session(ses_id);
     return session->drop;
 }
 

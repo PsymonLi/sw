@@ -74,17 +74,16 @@ flow_monitor_process (vlib_main_t * vm,
 
         if (monitor_time == 0) {
             for (ses_id = 1; ses_id <= fm->max_sessions; ses_id++) {
-                session = pds_flow_get_hw_ctx(ses_id);
+                session = pds_flow_get_session_and_lock(ses_id);
                 if (session == NULL) {
                     continue;
                 }
-                pds_flow_hw_ctx_lock(session);
                 if (PREDICT_FALSE(session->monitor_seen)) {
                     flow_monitor_export_session(session, vm->thread_index);
                 } else {
                     session->monitor_seen = 1;
                 }
-                pds_flow_hw_ctx_unlock(session);
+                pds_flow_session_unlock(ses_id);
             }
             monitor_time = fm->monitor_interval;
         }

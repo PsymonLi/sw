@@ -33,31 +33,14 @@ typedef struct ipv6_flow_params_s {
     u8 thread_id;
 } ipv6_flow_params_t;
 
-static void
-pds_flow_delete_session_cb (vlib_main_t * vm)
-{
-  pds_flow_main_t *fm = &pds_flow_main;
-
-  pds_flow_delete_session(fm->ses_id_to_del);
-  clib_callback_enable_disable
-    (vm->worker_thread_main_loop_callbacks,
-     vm->worker_thread_main_loop_callback_tmp,
-     vm->worker_thread_main_loop_callback_lock,
-     (void *) pds_flow_delete_session_cb, 0 /* disable */ );
-}
-
 int
-pds_get_ipv4_flow_params (u32 ses_id, ipv4_flow_params_t *flow_params)
+pds_get_ipv4_flow_params (pds_flow_hw_ctx_t *session,
+                          ipv4_flow_params_t *flow_params)
 {
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx_lock(ses_id);
     ftlv4 *table4 = pds_flow_prog_get_table4();
     int thread = vlib_get_thread_index();
     int ret = 0;
     pds_flow_index_t flow_index;
-
-    if (PREDICT_FALSE(session == NULL)) {
-        return -1;
-    }
 
     flow_index.handle = session->iflow.handle;
     if (ftlv4_get_with_handle(table4, flow_index.handle,
@@ -73,7 +56,6 @@ pds_get_ipv4_flow_params (u32 ses_id, ipv4_flow_params_t *flow_params)
     ret = 0;
 
 end:
-    pds_flow_hw_ctx_unlock(session);
     return ret;
 }
 
@@ -121,46 +103,43 @@ pds_flow_delete (pds_flow_hw_ctx_t *session, u64 handle)
 {
     int thread = vlib_get_thread_index();
 
+    // we dont need locks here as main thread is blocked during fixup,
+    // so no thread accesses session as we are here in worker thread context.
+    // there can be i/r flow index update from other threads but they are
+    // considered atomic as index memory is always 64 byte aligned.
     if (session->v4) {
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
-
-        pds_flow_hw_ctx_lock(session);
         if (PREDICT_FALSE(ftlv4_get_with_handle(table4, handle, thread) !=0)) {
             goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ftlv4_remove_cached_entry(table4, thread)) != 0) {
-            return -1;
+            goto end;
         }
     } else {
         ftl *table = (ftl *)pds_flow_get_table6_or_l2();
-
-        pds_flow_hw_ctx_lock(session);
         if (PREDICT_FALSE(ftlv6_get_with_handle(table, handle) !=0)) {
             goto end;
         }
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ftlv6_remove_cached_entry(table)) != 0) {
-            return -1;
+            goto end;
         }
     }
     return 0;
 
 end:
-    pds_flow_hw_ctx_unlock(session);
     return -1;
 }
 
 static void
-pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
+pds_flow_fixup_rflow (pds_flow_fixup_data_t *data,
+                      u32 ses_id, u16 thread_id)
 {
     int ret;
     u64 handle;
     u16 bd_id, tx_rewrite, rx_rewrite;
     bool l2l;
-    u16 thread_id = vlib_get_thread_index();
     ftlv4 *table4 = pds_flow_prog_get_table4();
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(data->ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session(ses_id);
 
     if (PREDICT_FALSE(!session)) {
         return;
@@ -173,12 +152,9 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
         if (session->packet_type == PDS_FLOW_L2L_INTER_SUBNET) {
             session->packet_type = PDS_FLOW_L2R_INTER_SUBNET;
             // In this case, get bd_id from iflow
-            pds_flow_hw_ctx_lock(session);
             ret = ftlv4_get_with_handle(table4,
                                         session->iflow.handle,
                                         thread_id);
-            pds_flow_hw_ctx_unlock(session);
-
             if (PREDICT_FALSE(ret != 0)) {
                 return;
             }
@@ -191,7 +167,7 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
         // We need to insert the rflow with the new bd_id and then delete
         // the old flow
         handle = session->rflow.handle;
-        if (PREDICT_FALSE(pds_flow_lookup_id_update(session, data->iflow,
+        if (PREDICT_FALSE(pds_flow_lookup_id_update(session, false,
                                                     bd_id) != 0)) {
             return;
         }
@@ -211,12 +187,9 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
         }
 
         // In this case, we only need to update l2l flag in the rflow.
-        pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
                                     session->rflow.handle,
                                     thread_id);
-        pds_flow_hw_ctx_unlock(session);
-
         if (PREDICT_FALSE(ret != 0)) {
             return;
         }
@@ -231,7 +204,7 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
     case PDS_FLOW_R2L_INTER_SUBNET:
         // In this case, we are moving destination from local to remote, so delete the
         // session
-        pds_flow_delete_session(data->ses_id);
+        pds_flow_delete_session(ses_id);
         return;
     default:
         assert(0);
@@ -246,12 +219,9 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
         l2l = false;
     }
 
-    pds_flow_hw_ctx_lock(session);
     ret = ftlv4_get_with_handle(table4,
                                 session->iflow.handle,
                                 thread_id);
-    pds_flow_hw_ctx_unlock(session);
-
     if (PREDICT_FALSE(ret != 0)) {
         return;
     }
@@ -263,22 +233,22 @@ pds_flow_fixup_rflow (pds_flow_fixup_data_t *data)
     }
 
     // Also, update the session flags
-    pds_session_get_rewrite_flags(data->ses_id, session->packet_type,
+    pds_session_get_rewrite_flags(ses_id, session->packet_type,
                                   &tx_rewrite, &rx_rewrite);
-    pds_session_update_rewrite_flags(data->ses_id, tx_rewrite, rx_rewrite);
+    pds_session_update_rewrite_flags(ses_id, tx_rewrite, rx_rewrite);
     return;
 }
 
 static void
-pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
+pds_flow_fixup_iflow (pds_flow_fixup_data_t *data,
+                      u32 ses_id, u16 thread_id)
 {
     int ret;
     u64 handle;
     u16 bd_id, tx_rewrite, rx_rewrite;
     bool l2l;
     ftlv4 *table4 = pds_flow_prog_get_table4();
-    u16 thread_id = vlib_get_thread_index();
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(data->ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session(ses_id);
 
     if (PREDICT_FALSE(!session)) {
         return;
@@ -291,12 +261,9 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
         if (session->packet_type == PDS_FLOW_L2L_INTER_SUBNET) {
             session->packet_type = PDS_FLOW_R2L_INTER_SUBNET;
             // In this case, get bd_id from rflow
-            pds_flow_hw_ctx_lock(session);
             ret = ftlv4_get_with_handle(table4,
                                         session->rflow.handle,
                                         thread_id);
-            pds_flow_hw_ctx_unlock(session);
-
             if (PREDICT_FALSE(ret != 0)) {
                 return;
             }
@@ -309,7 +276,7 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
         // We need to insert the iflow with the new bd_id and then delete
         // the old flow
         handle = session->iflow.handle;
-        if (PREDICT_FALSE(pds_flow_lookup_id_update(session, data->iflow,
+        if (PREDICT_FALSE(pds_flow_lookup_id_update(session, true,
                                                     bd_id) != 0)) {
             return;
         }
@@ -329,12 +296,9 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
         }
 
         // In this case, we only need to update l2l flag in the iflow.
-        pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
                                     session->iflow.handle,
                                     thread_id);
-        pds_flow_hw_ctx_unlock(session);
-
         if (PREDICT_FALSE(ret != 0)) {
             return;
         }
@@ -349,7 +313,7 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
     case PDS_FLOW_L2R_INTER_SUBNET:
         // In this case, we are moving source from local to remote, so delete the
         // session
-        pds_flow_delete_session(data->ses_id);
+        pds_flow_delete_session(ses_id);
         return;
     default:
         assert(0);
@@ -366,12 +330,9 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
         l2l = false;
     }
 
-    pds_flow_hw_ctx_lock(session);
     ret = ftlv4_get_with_handle(table4,
                                 session->rflow.handle,
                                 thread_id);
-    pds_flow_hw_ctx_unlock(session);
-
     if (PREDICT_FALSE(ret != 0)) {
         return;
     }
@@ -384,9 +345,9 @@ pds_flow_fixup_iflow (pds_flow_fixup_data_t *data)
 
     // Also, update the session flags
     // Also, update the session flags
-    pds_session_get_rewrite_flags(data->ses_id, session->packet_type,
+    pds_session_get_rewrite_flags(ses_id, session->packet_type,
                                   &tx_rewrite, &rx_rewrite);
-    pds_session_update_rewrite_flags(data->ses_id, tx_rewrite, rx_rewrite);
+    pds_session_update_rewrite_flags(ses_id, tx_rewrite, rx_rewrite);
     return;
 }
 
@@ -395,16 +356,28 @@ pds_flow_fixup_internal_cb (vlib_main_t * vm)
 {
     pds_flow_main_t *fm = &pds_flow_main;
     pds_flow_fixup_data_t *data = &fm->fixup_data;
+    pds_flow_move_thread_t *fixup;
 
-    if (data->valid) {
-        if (data->iflow) {
+    fixup = &data->move_sess[vm->thread_index];
+    for (int i = 0; i < fixup->cur_len; i++) {
+        if (fixup->data[i].iflow) {
             // This means iflow needs to be fixed up
-            pds_flow_fixup_iflow(data);
+            pds_flow_fixup_iflow(data,
+                                 fixup->data[i].session_id,
+                                 vm->thread_index);
         } else {
-            pds_flow_fixup_rflow(data);
+            pds_flow_fixup_rflow(data,
+                                 fixup->data[i].session_id,
+                                 vm->thread_index);
         }
-        data->valid = false;
     }
+    fixup->cur_len = 0;
+    fixup = &data->delete_sess[vm->thread_index];
+    for (int i = 0; i < fixup->cur_len; i++) {
+        pds_flow_delete_session(fixup->data[i].session_id);
+    }
+    fixup->cur_len = 0;
+
     clib_callback_enable_disable
         (vm->worker_thread_main_loop_callbacks,
          vm->worker_thread_main_loop_callback_tmp,
@@ -413,28 +386,16 @@ pds_flow_fixup_internal_cb (vlib_main_t * vm)
 }
 
 always_inline void
-pds_flow_fixup_data_set (pds_flow_fixup_data_t *data, u32 ses_id, bool iflow,
+pds_flow_fixup_data_set (pds_flow_fixup_data_t *data,
                          u16 bd_id, u16 vnic_id)
 {
-    if (data->valid) {
-        flow_log_error("data is valid");
-        assert(false);
-    }
-    data->ses_id = ses_id;
-    data->iflow = iflow;
     data->bd_id = bd_id;
     data->vnic_id = vnic_id;
-    data->valid = true;
 }
 
 always_inline void
-pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id,
-                         u16 vnic_id, u8 thread_id)
+pds_flow_fixup_internal (int thread_id)
 {
-    pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_fixup_data_t *data = &fm->fixup_data;
-
-    pds_flow_fixup_data_set(data, ses_id, iflow, bd_id, vnic_id);
     clib_callback_enable_disable
         (vlib_mains[thread_id]->worker_thread_main_loop_callbacks,
          vlib_mains[thread_id]->worker_thread_main_loop_callback_tmp,
@@ -444,7 +405,7 @@ pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id,
            (vlib_mains[thread_id]->worker_thread_main_loop_callbacks,
             vlib_mains[thread_id]->worker_thread_main_loop_callback_lock,
             (void *) pds_flow_fixup_internal_cb)) {
-        usleep(100000);
+        usleep(1);
     }
     return;
 }
@@ -469,97 +430,78 @@ pds_flow_fixup_internal (u32 ses_id, bool iflow, u16 bd_id,
 //5. intra subnet cases(except R2L_INTRA_SUBNET) - only session flags need to be
 //updated
 always_inline bool
-pds_each_flow_fixup (u32 event_id, u32 addr, u32 ses_id, u16 bd_id, u16 vnic_id)
+pds_each_flow_fixup (u32 event_id, u32 addr,
+                     u32 ses_id, u16 bd_id,
+                     u16 vnic_id, bool del)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *session = pds_flow_get_hw_ctx(ses_id);
+    pds_flow_hw_ctx_t *session = pds_flow_get_session_and_lock(ses_id);
     bool ret = true, iflow;
+    pds_flow_pkt_type pkt_type;
+    pds_flow_move_thread_t *fixup;
 
     if (PREDICT_FALSE(session == NULL)) {
-        ret = false;
-        goto done;
+        return ret;
     }
+    pkt_type = session->packet_type;
 
     if (session->v4) {
         ipv4_flow_params_t flow_params;
         int ret_val;
 
-        ret_val = pds_get_ipv4_flow_params(ses_id, &flow_params);
+        ret_val = pds_get_ipv4_flow_params(session, &flow_params);
         if (PREDICT_FALSE(ret_val == -1)) {
             ret = false;
             goto done;
         }
 
+        // if we are changing from L2L to R2L or vice versa iflow needs
+        // to be changed.
+        // if we are changing from L2R to L2L or vice versa rflow needs
+        // to be changed.
         if (addr == flow_params.sip) {
             iflow = true;
         } else if (addr == flow_params.dip) {
             iflow = false;
         } else {
-            ret = false;
             goto done;
         }
 
-        if (event_id == PDS_FLOW_IP_DELETE) {
-            vec_add1(fm->delete_sessions, ses_id);
-            goto done;
+        if (del || (pkt_type >= PDS_FLOW_L2N_ASYMMETRIC_ROUTE)) {
+            fixup = &fm->fixup_data.delete_sess[flow_params.thread_id];
+        } else {
+            fixup = &fm->fixup_data.move_sess[flow_params.thread_id];
         }
-        // if we are changing from L2L to R2L or vice versa iflow needs
-        // to be changed.
-        // if we are changing from L2R to L2L or vice versa rflow needs
-        // to be changed.
-        pds_flow_fixup_internal(ses_id, iflow, bd_id, vnic_id,
-                                flow_params.thread_id);
+        if (fixup->cur_len >= PDS_FLOW_FIXUP_BATCH_SIZE) {
+            pds_flow_fixup_internal(flow_params.thread_id);
+        }
+        fixup->data[fixup->cur_len].iflow = iflow;
+        fixup->data[fixup->cur_len++].session_id = ses_id;
     } else {
         // TODO Handle ipv6
     }
 done:
+    pds_flow_session_unlock(ses_id);
     return ret;
 }
 
-always_inline void
-pds_flow_delete_sessions_fixup ()
-{
-    pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *session;
-    u32 *ses_id;
-    u8 i;
-
-    vec_foreach(ses_id, fm->delete_sessions)
-    {
-        fm->ses_id_to_del = *ses_id;
-        session = pds_flow_get_hw_ctx(*ses_id);
-        if (PREDICT_FALSE(session == NULL)) {
-            continue;
-        }
-        i = session->thread_id;
-        clib_callback_enable_disable(vlib_mains[i]->worker_thread_main_loop_callbacks,
-                                     vlib_mains[i]->worker_thread_main_loop_callback_tmp,
-                                     vlib_mains[i]->worker_thread_main_loop_callback_lock,
-                                     (void *) pds_flow_delete_session_cb, 1 /* enable */ );
-        while (clib_callback_is_set(vlib_mains[i]->worker_thread_main_loop_callbacks,
-                                    vlib_mains[i]->worker_thread_main_loop_callback_lock,
-                                    (void *) pds_flow_delete_session_cb)) {
-            usleep(100000);
-        }
-    }
-    vec_free(fm->delete_sessions);
-}
-
 void
-pds_ip_flow_fixup (u32 event_id, u32 ip_addr, u16 bd_id, u16 vnic_id)
+pds_ip_flow_fixup (u32 event_id, u32 ip_addr,
+                   u16 bd_id, u16 vnic_id, bool del)
 {
     pds_flow_main_t *fm = &pds_flow_main;
-    pds_flow_hw_ctx_t *session;
-    u32 ses_id;
+    u32 ses_id, thread_id;
 
-    for (ses_id = 0; ses_id <= fm->max_sessions; ses_id++) {
-        session = pds_flow_get_hw_ctx(ses_id);
-        if (PREDICT_TRUE(session != NULL)) {
-            pds_each_flow_fixup(event_id, ip_addr, ses_id, bd_id, vnic_id);
+    pds_flow_fixup_data_set(&fm->fixup_data, bd_id, vnic_id);
+    for (ses_id = 1; ses_id <= fm->max_sessions; ses_id++) {
+        if (!pds_each_flow_fixup(event_id, ip_addr, ses_id,
+                                 bd_id, vnic_id, del)) {
+            flow_log_error("Failed to fixup session %u", ses_id);
         }
     }
-
-    pds_flow_delete_sessions_fixup();
+    for (thread_id = 1; thread_id < fm->no_threads; thread_id++) {
+        pds_flow_fixup_internal(thread_id);
+    }
     return;
 }
 

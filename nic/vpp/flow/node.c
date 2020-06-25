@@ -514,7 +514,7 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
                                  u16 thread_index)
 {
     u8                  miss_hit = 1;
-    pds_flow_hw_ctx_t   *session = pds_flow_get_hw_ctx(session_id);
+    pds_flow_hw_ctx_t   *session = pds_flow_get_session(session_id);
     u8                  epoch;
     int                 ret;
 
@@ -527,11 +527,9 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
     if (is_ip4) {
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
 
-        pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
                                     session->rflow.handle,
                                     thread_index);
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -546,11 +544,9 @@ pds_l2l_def_rflow_prog_internal (vlib_buffer_t *p0,
             return;
         }
 
-        pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
                                     session->iflow.handle,
                                     thread_index);
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -585,7 +581,7 @@ pds_l2l_def_iflow_prog_internal (vlib_buffer_t *p0,
                                  u16 thread_index)
 {
     u8                  miss_hit = 1;
-    pds_flow_hw_ctx_t   *session = pds_flow_get_hw_ctx(session_id);
+    pds_flow_hw_ctx_t   *session = pds_flow_get_session(session_id);
     u8                  epoch;
     int                 ret;
     u16                 nh_id = 0;
@@ -603,11 +599,9 @@ pds_l2l_def_iflow_prog_internal (vlib_buffer_t *p0,
     if (is_ip4) {
         ftlv4 *table4 = (ftlv4 *)pds_flow_get_table4();
 
-        pds_flow_hw_ctx_lock(session);
         ret = ftlv4_get_with_handle(table4,
                                     session->iflow.handle,
                                     thread_index);
-        pds_flow_hw_ctx_unlock(session);
         if (PREDICT_FALSE(ret != 0)) {
             *next = FLOW_PROG_NEXT_DROP;
             counter[FLOW_PROG_COUNTER_FLOW_FAILED]++;
@@ -768,7 +762,7 @@ pds_l2l_rx_flow_prog_internal (vlib_buffer_t *p0,
                             u16 thread_index)
 {
     u8                  miss_hit;
-    pds_flow_hw_ctx_t   *session = pds_flow_get_hw_ctx(session_id);
+    pds_flow_hw_ctx_t   *session = pds_flow_get_session(session_id);
     u8                  epoch;
 
     if (PREDICT_FALSE(!session)) {
@@ -941,7 +935,7 @@ pds_flow_extract_prog_args_x1 (vlib_buffer_t *p0,
     icmp46_header_t     *icmp0;
     u8                  miss_hit = 0;
     u8                  napt = 0;
-    pds_flow_hw_ctx_t   *ses = pds_flow_get_hw_ctx(session_id);
+    pds_flow_hw_ctx_t   *ses = pds_flow_get_session(session_id);
     pds_flow_main_t     *fm = &pds_flow_main;
     u8                  l2l = 0;
 
@@ -1771,24 +1765,12 @@ pds_session_update_data(u32 ses_id, u64 new_handle,
 {
     pds_flow_hw_ctx_t *session = NULL;
     pds_flow_index_t *index = NULL;
-    session = pds_flow_get_hw_ctx(ses_id);
 
-    if (move_complete) {
-        if (PREDICT_FALSE(NULL == session)) {
-            return;
-        }
-        pds_flow_hw_ctx_unlock(session);
-        return;
+    session = pds_flow_get_session(ses_id);
+    if (PREDICT_TRUE(NULL != session)) {
+        index = iflow ? &session->iflow : &session->rflow;
+        index->handle = new_handle;
     }
-
-    if (lock) {
-        session = pds_flow_get_hw_ctx_lock(ses_id);
-        if (PREDICT_FALSE(NULL == session)) {
-            return;
-        }
-    }
-    index = iflow ? &session->iflow : &session->rflow;
-    index->handle = new_handle;
 }
 
 static clib_error_t *
@@ -1801,13 +1783,15 @@ pds_flow_init (vlib_main_t * vm)
     pds_vpp_flow_log_init();
     fm->max_sessions = pds_session_get_max();
     pool_init_fixed(fm->session_index_pool, fm->max_sessions);
+    vec_validate(fm->session_lock, fm->max_sessions);
     clib_memset(fm->session_index_pool, 0,
                 fm->max_sessions * sizeof(pds_flow_hw_ctx_t));
+    clib_memset(fm->session_lock, 0, fm->max_sessions * sizeof(u8));
 
     vec_validate(fm->session_id_thr_local_pool,
                  no_of_threads - 1);
     clib_memset(fm->session_id_thr_local_pool, 0,
-                (sizeof(pds_flow_session_id_thr_local_pool_t) * no_of_threads));
+                (sizeof(pds_flow_sess_id_thr_local_pool_t) * no_of_threads));
     pds_flow_rewrite_flags_init();
     if (0 != initialize_session()) {
         ASSERT(0);
@@ -1822,12 +1806,15 @@ pds_flow_init (vlib_main_t * vm)
     fm->table6_or_l2 = ftl_create((void *) pds_flow_key2str,
                                   (void *) pds_flow_appdata2str);
     vec_validate_init_empty(fm->stats_buf, DISPLAY_BUF_SIZE, 0);
-    
     vec_validate(fm->ses_time, no_of_threads - 1);
+    vec_validate(fm->fixup_data.delete_sess, no_of_threads - 1);
+    vec_validate(fm->fixup_data.move_sess, no_of_threads - 1);
 
     for (i = 0; i < no_of_threads; i++) {
-        fm->session_id_thr_local_pool[i].session_count = -1;
-        fm->session_id_thr_local_pool[i].del_session_count = 0;
+        fm->session_id_thr_local_pool[i].sess_count = -1;
+        fm->session_id_thr_local_pool[i].del_sess_count = 0;
+        fm->fixup_data.delete_sess[i].cur_len = 0;
+        fm->fixup_data.move_sess[i].cur_len = 0;
     }
 
     fm->drop_nexthop = pds_nh_drop_id_get();

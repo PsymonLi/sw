@@ -128,7 +128,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
 
     for (u32 i = 0; i < sess_info_cache_batch_get_count(thread_id); i++) {
         sess_info_t *sess = sess_info_cache_batch_get_entry_index(i, thread_id);
-        ctx = pds_flow_get_hw_ctx(sess->id);
+        ctx = pds_flow_get_session(sess->id);
 
         switch (ctx->flow_state) {
         case PDS_FLOW_STATE_CONN_SETUP:
@@ -161,7 +161,7 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
         default:
             continue;
         }
-        ctx->timer_hdl = tw_timer_start_16t_1w_2048sl(
+        ctx->timer_hdl = tw_timer_start_16t_2w_4096sl(
             &fm->timer_wheel[sess->thread_id],
             sess->id,
             timer, timeout);
