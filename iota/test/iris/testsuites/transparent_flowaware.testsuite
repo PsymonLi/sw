@@ -64,9 +64,9 @@ testbundles:
         # Relative paths from iota/test/iris/testbundles/
         - classic/ethtool.testbundle
         - networking/connectivity.testbundle
-        - networking/telemetry.testbundle
         - flowlog/flowlog.testbundle
         - aging/aging_flowaware.testbundle
+        - networking/telemetry.testbundle
         - networking/lif_telemetry.testbundle
         - linktest/linktest.testbundle
         - filters/filters.testbundle
