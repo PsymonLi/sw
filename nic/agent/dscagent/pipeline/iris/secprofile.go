@@ -24,7 +24,7 @@ func HandleSecurityProfile(infraAPI types.InfraAPI, client halapi.NwSecurityClie
 		return createSecurityProfileHandler(infraAPI, client, vrfClient, profile, vrf)
 	case types.Update:
 		return updateSecurityProfileHandler(infraAPI, client, vrfClient, profile, vrf)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteSecurityProfileHandler(infraAPI, client, vrfClient, profile, vrf)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

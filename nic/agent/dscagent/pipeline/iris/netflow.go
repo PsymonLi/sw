@@ -46,7 +46,7 @@ func HandleFlowExportPolicy(infraAPI types.InfraAPI, telemetryClient halapi.Tele
 		return createFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
 	case types.Update:
 		return updateFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteFlowExportPolicyHandler(infraAPI, telemetryClient, intfClient, epClient, netflow, vrfID)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)
@@ -212,7 +212,6 @@ func deleteFlowExportPolicyHandler(infraAPI types.InfraAPI, telemetryClient hala
 			compositeKey := fmt.Sprintf("%s/%s", netflow.GetKind(), cKey)
 			if err := DeleteLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, compositeKey, dstIP, c.Gateway, false); err != nil {
 				log.Error(errors.Wrapf(types.ErrNetflowDeleteLateralObjects, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err))
-				return errors.Wrapf(types.ErrNetflowDeleteLateralObjects, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 			}
 		} else {
 			log.Infof("NetflowCollector: %s | DstIP: %s | VrfName: %s still referenced by %s", netflow.GetKey(), dstIP, netflow.Spec.VrfName, strings.Join(netflowKeys.NetflowKeys, " "))

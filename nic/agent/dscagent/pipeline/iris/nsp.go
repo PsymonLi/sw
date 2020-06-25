@@ -28,7 +28,7 @@ func HandleNetworkSecurityPolicy(infraAPI types.InfraAPI, client halapi.NwSecuri
 		return createNetworkSecurityPolicyHandler(infraAPI, client, nsp, vrfID, ruleIDToAppMapping)
 	case types.Update:
 		return updateNetworkSecurityPolicyHandler(infraAPI, client, nsp, vrfID, ruleIDToAppMapping)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteNetworkSecurityPolicyHandler(infraAPI, client, nsp, vrfID)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

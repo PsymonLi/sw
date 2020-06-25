@@ -23,7 +23,7 @@ func HandleProfile(infraAPI types.InfraAPI, client halapi.SystemClient, oper typ
 		fallthrough
 	case types.Update:
 		return updateProfileHandler(infraAPI, client, profile)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteProfileHandler(infraAPI, client, profile)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

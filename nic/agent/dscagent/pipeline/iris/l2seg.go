@@ -23,7 +23,7 @@ func HandleL2Segment(infraAPI types.InfraAPI, client halapi.L2SegmentClient, ope
 		return createL2SegmentHandler(infraAPI, client, l2Seg, vrfID, uplinkIDs)
 	case types.Update:
 		return updateL2SegmentHandler(infraAPI, client, l2Seg, vrfID, uplinkIDs)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteL2SegmentHandler(infraAPI, client, l2Seg)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

@@ -22,7 +22,7 @@ func HandleTunnel(infraAPI types.InfraAPI, client halapi.InterfaceClient, oper t
 		return createTunnelHandler(infraAPI, client, tunnel, vrfID)
 	case types.Update:
 		return updateTunnelHandler(infraAPI, client, tunnel, vrfID)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteTunnelHandler(infraAPI, client, tunnel)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

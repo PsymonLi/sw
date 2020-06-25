@@ -14,7 +14,7 @@ func handleApp(infraAPI types.InfraAPI, oper types.Operation, app netproto.App) 
 		return createAppHandler(infraAPI, app)
 	case types.Update:
 		return updateAppHandler(infraAPI, app)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteAppHandler(infraAPI, app)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

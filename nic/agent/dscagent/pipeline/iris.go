@@ -38,6 +38,9 @@ import (
 )
 
 var knownUplinks = map[uint64]string{}
+var vrfIDs = map[string]uint64{}
+var networkIDs = map[string]uint64{}
+var vfs = []netproto.Vrf{}
 
 // IrisAPI implements PipelineAPI for Iris Pipeline
 type IrisAPI struct {
@@ -258,6 +261,11 @@ func (i *IrisAPI) HandleVrf(oper types.Operation, vrf netproto.Vrf) (vrfs []netp
 	i.Lock()
 	defer i.Unlock()
 
+	vrfs, err = handleVrf(i, oper, vrf)
+	return
+}
+
+func handleVrf(i *IrisAPI, oper types.Operation, vrf netproto.Vrf) (vrfs []netproto.Vrf, err error) {
 	err = utils.ValidateMeta(oper, vrf.Kind, vrf.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -458,18 +466,25 @@ func handleNetwork(i *IrisAPI, oper types.Operation, network netproto.Network) (
 			return nil, errors.Wrapf(types.ErrUnmarshal, "Network: %s | Err: %v", network.GetKey(), err)
 		}
 		network = existingNetwork
+	case types.Purge:
 	}
 	// Perform object validations
-	uplinkIDs, vrf, err := validator.ValidateNetwork(i.InfraAPI, oper, network)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	var uplinkIDs []uint64
+	if oper != types.Purge {
+		uplinks, vrf, err := validator.ValidateNetwork(i.InfraAPI, oper, network)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+		uplinkIDs = uplinks
 	}
 	log.Infof("Network: %s | Op: %s | %s", network.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("Network: %s | Op: %s | %s", network.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleL2Segment(i.InfraAPI, i.L2SegmentClient, oper, network, vrf.Status.VrfID, uplinkIDs)
+	err = iris.HandleL2Segment(i.InfraAPI, i.L2SegmentClient, oper, network, vrfID, uplinkIDs)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -579,20 +594,29 @@ func handleEndpoint(i *IrisAPI, oper types.Operation, endpoint netproto.Endpoint
 			return nil, errors.Wrapf(types.ErrUnmarshal, "Endpoint: %s | Err: %v", endpoint.GetKey(), err)
 		}
 		endpoint = existingEndpoint
+	case types.Purge:
 	}
 
 	// Perform object validations
-	network, vrf, err := validator.ValidateEndpoint(i.InfraAPI, endpoint)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID, networkID uint64
+	if oper != types.Purge {
+		network, vrf, err := validator.ValidateEndpoint(i.InfraAPI, endpoint)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+		networkID = network.Status.NetworkID
+	} else {
+		vrfID = getVrfID(endpoint.Tenant, endpoint.Namespace, endpoint.Spec.VrfName)
+		networkID = getNetworkID(endpoint.Tenant, endpoint.Namespace, endpoint.Spec.NetworkName)
 	}
 
 	log.Infof("Endpoint: %s | Op: %s | %s", endpoint.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("Endpoint: %s | Op: %s | %s", endpoint.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleEndpoint(i.InfraAPI, i.EpClient, i.IntfClient, oper, endpoint, vrf.Status.VrfID, network.Status.NetworkID)
+	err = iris.HandleEndpoint(i.InfraAPI, i.EpClient, i.IntfClient, oper, endpoint, vrfID, networkID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -606,6 +630,11 @@ func (i *IrisAPI) HandleInterface(oper types.Operation, intf netproto.Interface)
 	i.Lock()
 	defer i.Unlock()
 
+	intfs, err = handleInterface(i, oper, intf)
+	return
+}
+
+func handleInterface(i *IrisAPI, oper types.Operation, intf netproto.Interface) (intfs []netproto.Interface, err error) {
 	err = utils.ValidateMeta(oper, intf.Kind, intf.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -694,13 +723,16 @@ func (i *IrisAPI) HandleInterface(oper types.Operation, intf netproto.Interface)
 			return nil, errors.Wrapf(types.ErrUnmarshal, "Interface: %s | Err: %v", intf.GetKey(), err)
 		}
 		intf = existingInterface
+	case types.Purge:
 	}
 	// Perform object validations
 	collectorMap := make(map[uint64]int)
-	err = validator.ValidateInterface(i.InfraAPI, intf, collectorMap, iris.MirrorDestToIDMapping)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	if oper != types.Purge {
+		err = validator.ValidateInterface(i.InfraAPI, intf, collectorMap, iris.MirrorDestToIDMapping)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
 	}
 
 	log.Infof("Interface: %s | Op: %s | %s", intf.GetKey(), oper, types.InfoHandleObjBegin)
@@ -721,6 +753,11 @@ func (i *IrisAPI) HandleTunnel(oper types.Operation, tunnel netproto.Tunnel) (tu
 	i.Lock()
 	defer i.Unlock()
 
+	tunnels, err = handleTunnel(i, oper, tunnel)
+	return
+}
+
+func handleTunnel(i *IrisAPI, oper types.Operation, tunnel netproto.Tunnel) (tunnels []netproto.Tunnel, err error) {
 	err = utils.ValidateMeta(oper, tunnel.Kind, tunnel.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -809,20 +846,25 @@ func (i *IrisAPI) HandleTunnel(oper types.Operation, tunnel netproto.Tunnel) (tu
 			return nil, errors.Wrapf(types.ErrUnmarshal, "Tunnel: %s | Err: %v", tunnel.GetKey(), err)
 		}
 		tunnel = existingTunnel
+	case types.Purge:
 	}
 
 	// Perform object validations
-	vrf, err := validator.ValidateTunnel(i.InfraAPI, tunnel)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	if oper != types.Purge {
+		vrf, err := validator.ValidateTunnel(i.InfraAPI, tunnel)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
 	}
 
 	log.Infof("Tunnel: %s | Op: %s | %s", tunnel.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("Tunnel: %s | Op: %s | %s", tunnel.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleTunnel(i.InfraAPI, i.IntfClient, oper, tunnel, vrf.Status.VrfID)
+	err = iris.HandleTunnel(i.InfraAPI, i.IntfClient, oper, tunnel, vrfID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -997,21 +1039,29 @@ func handleNetworkSecurityPolicy(i *IrisAPI, oper types.Operation, nsp netproto.
 			return nil, errors.Wrapf(types.ErrUnmarshal, "NetworkSecurityPolicy: %s | Err: %v", nsp.GetKey(), err)
 		}
 		nsp = existingNetworkSecurityPolicy
-
+	case types.Purge:
 	}
 
 	// Perform object validations
-	vrf, ruleIDToAppMapping, err := validator.ValidateNetworkSecurityPolicy(i.InfraAPI, nsp)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	var ruleIDAppMapping *sync.Map
+	if oper != types.Purge {
+		vrf, mapping, err := validator.ValidateNetworkSecurityPolicy(i.InfraAPI, nsp)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+		ruleIDAppMapping = mapping
+	} else {
+		vrfID = getVrfID(nsp.Tenant, nsp.Namespace, nsp.Spec.VrfName)
 	}
 
 	log.Infof("NetworkSecurityPolicy: %v | Op: %s | %s", nsp.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("NetworkSecurityPolicy: %v | Op: %s | %s", nsp.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleNetworkSecurityPolicy(i.InfraAPI, i.NspClient, oper, nsp, vrf.Status.VrfID, ruleIDToAppMapping)
+	err = iris.HandleNetworkSecurityPolicy(i.InfraAPI, i.NspClient, oper, nsp, vrfID, ruleIDAppMapping)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1124,15 +1174,21 @@ func handleSecurityProfile(i *IrisAPI, oper types.Operation, profile netproto.Se
 			return nil, errors.Wrapf(types.ErrUnmarshal, "SecurityProfile: %s | Err: %v", profile.GetKey(), err)
 		}
 		profile = existingSecurityProfile
+	case types.Purge:
 	}
 	log.Infof("SecurityProfile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("SecurityProfile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Perform object validations
-	vrf, err := i.ValidateSecurityProfile(profile)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrf netproto.Vrf
+	if oper != types.Purge {
+		vrf, err = i.ValidateSecurityProfile(profile)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+	} else {
+		vrf = getVrf(profile.Tenant, profile.Namespace, types.DefaultVrf)
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
 	err = iris.HandleSecurityProfile(i.InfraAPI, i.NspClient, i.VrfClient, oper, profile, vrf)
@@ -1144,11 +1200,16 @@ func handleSecurityProfile(i *IrisAPI, oper types.Operation, profile netproto.Se
 	return
 }
 
-// HandleInterfaceMirrorSession handles CRUD Methods for MirrorSession Object
+// HandleInterfaceMirrorSession handles CRUD Methods for Interface MirrorSession Object
 func (i *IrisAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netproto.InterfaceMirrorSession) (mirrors []netproto.InterfaceMirrorSession, err error) {
 	i.Lock()
 	defer i.Unlock()
 
+	mirrors, err = handleInterfaceMirrorSession(i, oper, mirror)
+	return
+}
+
+func handleInterfaceMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.InterfaceMirrorSession) (mirrors []netproto.InterfaceMirrorSession, err error) {
 	err = utils.ValidateMeta(oper, mirror.Kind, mirror.ObjectMeta)
 	if err != nil {
 		log.Error(err)
@@ -1231,6 +1292,7 @@ func (i *IrisAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netp
 			return nil, errors.Wrapf(types.ErrUnmarshal, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
 		mirror = existingMirrorSession
+	case types.Purge:
 	}
 	log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
@@ -1240,10 +1302,16 @@ func (i *IrisAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netp
 	for _, collectors := range iris.MirrorDestToIDMapping {
 		mirrorSessions += len(collectors)
 	}
-	vrf, err := validator.ValidateInterfaceMirrorSession(i.InfraAPI, mirror, oper, mirrorSessions)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	if oper != types.Purge {
+		vrf, err := validator.ValidateInterfaceMirrorSession(i.InfraAPI, mirror, oper, mirrorSessions)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+	} else {
+		vrfID = getVrfID(mirror.Tenant, mirror.Namespace, mirror.Spec.VrfName)
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
@@ -1256,7 +1324,7 @@ func (i *IrisAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netp
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleInterfaceMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrf.Status.VrfID)
+	err = iris.HandleInterfaceMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1357,6 +1425,7 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 			return nil, errors.Wrapf(types.ErrUnmarshal, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
 		}
 		mirror = existingMirrorSession
+	case types.Purge:
 	}
 	log.Infof("MirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("MirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
@@ -1366,10 +1435,16 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 	for _, collectors := range iris.MirrorDestToIDMapping {
 		mirrorSessions += len(collectors)
 	}
-	vrf, err := validator.ValidateMirrorSession(i.InfraAPI, mirror, oper, mirrorSessions)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	if oper != types.Purge {
+		vrf, err := validator.ValidateMirrorSession(i.InfraAPI, mirror, oper, mirrorSessions)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+	} else {
+		vrfID = getVrfID(mirror.Tenant, mirror.Namespace, mirror.Spec.VrfName)
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
@@ -1382,7 +1457,7 @@ func handleMirrorSession(i *IrisAPI, oper types.Operation, mirror netproto.Mirro
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrf.Status.VrfID)
+	err = iris.HandleMirrorSession(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, mirror, vrfID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1489,6 +1564,7 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 			return nil, errors.Wrapf(types.ErrUnmarshal, "FlowExportPolicy: %s | Err: %v", netflow.GetKey(), err)
 		}
 		netflow = existingFlowExportPolicy
+	case types.Purge:
 	}
 	log.Infof("FlowExportPolicy: %s | Op: %s | %s", netflow.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("FlowExportPolicy: %s | Op: %s | %s", netflow.GetKey(), oper, types.InfoHandleObjEnd)
@@ -1498,10 +1574,16 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	for dest, keys := range iris.CollectorToNetflow {
 		collectorToKeys[dest] = len(keys.NetflowKeys)
 	}
-	vrf, err := validator.ValidateFlowExportPolicy(i.InfraAPI, netflow, oper, collectorToKeys)
-	if err != nil {
-		log.Error(err)
-		return nil, err
+	var vrfID uint64
+	if oper != types.Purge {
+		vrf, err := validator.ValidateFlowExportPolicy(i.InfraAPI, netflow, oper, collectorToKeys)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		vrfID = vrf.Status.VrfID
+	} else {
+		vrfID = getVrfID(netflow.Tenant, netflow.Namespace, netflow.Spec.VrfName)
 	}
 	if oper == types.Create || oper == types.Update {
 		if ip := utils.GetMgmtIP(iris.MgmtLink); ip == "" {
@@ -1514,7 +1596,7 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 		}
 	}
 	// Take a lock to ensure a single HAL API is active at any given point
-	err = iris.HandleFlowExportPolicy(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, netflow, vrf.Status.VrfID)
+	err = iris.HandleFlowExportPolicy(i.InfraAPI, i.TelemetryClient, i.IntfClient, i.EpClient, oper, netflow, vrfID)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1640,15 +1722,16 @@ func handleProfile(i *IrisAPI, oper types.Operation, profile netproto.Profile) (
 			log.Error(errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", profile.GetKey(), err))
 			return nil, errors.Wrapf(types.ErrUnmarshal, "Profile: %s | Err: %v", profile.GetKey(), err)
 		}
-
+		fallthrough
+	case types.Purge:
+		log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjBegin)
+		defer log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjEnd)
 		// Take a lock to ensure a single HAL API is active at any given point
 		if err := iris.HandleProfile(i.InfraAPI, i.SystemClient, oper, profile); err != nil {
 			log.Error(err)
 			return nil, err
 		}
-
 		return nil, nil
-
 	}
 	log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjBegin)
 	defer log.Infof("Profile: %s | Op: %s | %s", profile.GetKey(), oper, types.InfoHandleObjEnd)
@@ -1911,19 +1994,27 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	log.Info("Starting Decomission workflow")
 
 	// Populuate in memory state
+	v := netproto.Vrf{TypeMeta: api.TypeMeta{Kind: "Vrf"}}
 	s := netproto.NetworkSecurityPolicy{TypeMeta: api.TypeMeta{Kind: "NetworkSecurityPolicy"}}
 	a := netproto.App{TypeMeta: api.TypeMeta{Kind: "App"}}
 	e := netproto.Endpoint{TypeMeta: api.TypeMeta{Kind: "Endpoint"}}
+	t := netproto.Tunnel{TypeMeta: api.TypeMeta{Kind: "Tunnel"}}
 	n := netproto.Network{TypeMeta: api.TypeMeta{Kind: "Network"}}
+	intf := netproto.Interface{TypeMeta: api.TypeMeta{Kind: "Interface"}}
+	intfMirror := netproto.InterfaceMirrorSession{TypeMeta: api.TypeMeta{Kind: "InterfaceMirrorSession"}}
 	m := netproto.MirrorSession{TypeMeta: api.TypeMeta{Kind: "MirrorSession"}}
 	f := netproto.FlowExportPolicy{TypeMeta: api.TypeMeta{Kind: "FlowExportPolicy"}}
 	secprof := netproto.SecurityProfile{TypeMeta: api.TypeMeta{Kind: "SecurityProfile"}}
 	p := netproto.Profile{TypeMeta: api.TypeMeta{Kind: "Profile"}}
 
+	vrfs, _ := handleVrf(i, types.List, v)
 	policies, _ := handleNetworkSecurityPolicy(i, types.List, s)
 	apps, _ := handleApp(i, types.List, a)
 	endpoints, _ := handleEndpoint(i, types.List, e)
+	tunnels, _ := handleTunnel(i, types.List, t)
 	networks, _ := handleNetwork(i, types.List, n)
+	intfs, _ := handleInterface(i, types.List, intf)
+	intfMirrorSessions, _ := handleInterfaceMirrorSession(i, types.List, intfMirror)
 	mirrorSessions, _ := handleMirrorSession(i, types.List, m)
 	flowExportPolicies, _ := handleFlowExportPolicy(i, types.List, f)
 	sp, _ := handleSecurityProfile(i, types.List, secprof)
@@ -1936,8 +2027,18 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 
 	log.Info("Stores purged. Ensured state consistency")
 
+	// Populate vrfs, vrfIDs and networkIDs to be used for deletion
+	vfs = vrfs
+	for _, vrf := range vrfs {
+		vrfIDs[vrf.GetKey()] = vrf.Status.VrfID
+	}
+
+	for _, network := range networks {
+		networkIDs[network.GetKey()] = network.Status.NetworkID
+	}
+
 	for _, policy := range policies {
-		if _, err := handleNetworkSecurityPolicy(i, types.Delete, policy); err != nil {
+		if _, err := handleNetworkSecurityPolicy(i, types.Purge, policy); err != nil {
 			log.Errorf("Failed to purge the NetworkSecurityPolicy. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1946,7 +2047,7 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, app := range apps {
-		if _, err := handleApp(i, types.Delete, app); err != nil {
+		if _, err := handleApp(i, types.Purge, app); err != nil {
 			log.Errorf("Failed to purge the App. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1955,10 +2056,12 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, endpoint := range endpoints {
-		if strings.Contains(endpoint.Name, "_internal") {
+		// delete internal endpoints created as part of lateral objects
+		// when decomissioning
+		if strings.Contains(endpoint.Name, "_internal") && !deleteDB {
 			continue
 		}
-		if _, err := handleEndpoint(i, types.Delete, endpoint); err != nil {
+		if _, err := handleEndpoint(i, types.Purge, endpoint); err != nil {
 			log.Errorf("Failed to purge the Endpoint. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1966,11 +2069,19 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 		}
 	}
 
+	if deleteDB {
+		for _, tunnel := range tunnels {
+			if _, err := handleTunnel(i, types.Purge, tunnel); err != nil {
+				log.Errorf("Failed to purge the Tunnel. Err: %v", err)
+			}
+		}
+	}
+
 	for _, network := range networks {
 		if strings.Contains(network.Name, "_internal") {
 			continue
 		}
-		if _, err := handleNetwork(i, types.Delete, network); err != nil {
+		if _, err := handleNetwork(i, types.Purge, network); err != nil {
 			log.Errorf("Failed to purge the Network. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1979,7 +2090,7 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, secProfile := range sp {
-		if _, err := handleSecurityProfile(i, types.Delete, secProfile); err != nil {
+		if _, err := handleSecurityProfile(i, types.Purge, secProfile); err != nil {
 			log.Errorf("Failed to purge the secProfile. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1987,8 +2098,22 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 		}
 	}
 
+	// During decomission remove mirror configs from interface and delete Interface mirror sessions
+	if deleteDB {
+		for _, intrf := range intfs {
+			if _, err := handleInterface(i, types.Purge, intrf); err != nil {
+				log.Errorf("Failed to purge interface for mirror sessions. Err: %v", err)
+			}
+		}
+		for _, intfMirrorSession := range intfMirrorSessions {
+			if _, err := handleInterfaceMirrorSession(i, types.Purge, intfMirrorSession); err != nil {
+				log.Errorf("Failed to purge the interface MirrorSession. Err: %v", err)
+			}
+		}
+	}
+
 	for _, mirrorSession := range mirrorSessions {
-		if _, err := handleMirrorSession(i, types.Delete, mirrorSession); err != nil {
+		if _, err := handleMirrorSession(i, types.Purge, mirrorSession); err != nil {
 			log.Errorf("Failed to purge the MirrorSession. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -1997,7 +2122,7 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, flowExportPolicy := range flowExportPolicies {
-		if _, err := handleFlowExportPolicy(i, types.Delete, flowExportPolicy); err != nil {
+		if _, err := handleFlowExportPolicy(i, types.Purge, flowExportPolicy); err != nil {
 			log.Errorf("Failed to purge the FlowExportPolicy. Err: %v", err)
 		}
 		if deleteDB != true {
@@ -2006,7 +2131,7 @@ func purgeConfigs(i *IrisAPI, deleteDB bool) error {
 	}
 
 	for _, profile := range profiles {
-		if _, err := handleProfile(i, types.Delete, profile); err != nil {
+		if _, err := handleProfile(i, types.Purge, profile); err != nil {
 			log.Errorf("Failed to purge the Profiles. Err: %v", err)
 		}
 	}
@@ -2293,7 +2418,6 @@ func (i *IrisAPI) isLocalEP(nodeuuid string) bool {
 
 // HandleDSCInterfaceInfo handles configuring DSC interfaces served from the DB
 func (i *IrisAPI) HandleDSCInterfaceInfo(obj types.DistributedServiceCardStatus) {
-	log.Info("Handle CP Routing Config not implemented by Iris Pipeline")
 	return
 }
 
@@ -2326,13 +2450,86 @@ func (i *IrisAPI) startDynamicWatch(kinds []string) {
 	go startWatcher()
 }
 
+// StartAlertPoliciesWatch starts alert policies watch
 func (a *IrisAPI) StartAlertPoliciesWatch(ctx context.Context) {
-	log.Info("StartAlertPoliciesWatch not implemented by Iris Pipeline")
 	return
 }
 
 // GetDSCAgentStatus returns the current agent status
 func (i *IrisAPI) GetDSCAgentStatus(status *dscagentproto.DSCAgentStatus) {
-	log.Info("GetControlPlaneStatus not implemented by Iris Pipeline")
 	return
+}
+
+func getVrfID(tenant, namespace, name string) uint64 {
+	// Pick default vrf is unspecified or specified default
+	if len(name) == 0 || name == types.DefaultVrf {
+		if len(tenant) == 0 {
+			tenant = types.DefaultTenant
+		}
+		namespace = types.DefaultNamespace
+		name = types.DefaultVrf
+	}
+
+	if namespace == "" {
+		namespace = types.DefaultNamespace
+	}
+
+	v := netproto.Vrf{
+		TypeMeta: api.TypeMeta{
+			Kind: "Vrf",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    tenant,
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	return vrfIDs[v.GetKey()]
+}
+
+func getVrf(tenant, namespace, name string) netproto.Vrf {
+	// Pick default vrf is unspecified or specified default
+	if len(name) == 0 || name == types.DefaultVrf {
+		if len(tenant) == 0 {
+			tenant = types.DefaultTenant
+		}
+		namespace = types.DefaultNamespace
+		name = types.DefaultVrf
+	}
+
+	if namespace == "" {
+		namespace = types.DefaultNamespace
+	}
+
+	v := netproto.Vrf{
+		TypeMeta: api.TypeMeta{
+			Kind: "Vrf",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    tenant,
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	var vrf netproto.Vrf
+	for _, vf := range vfs {
+		if v.GetKey() == vf.GetKey() {
+			return vf
+		}
+	}
+	return vrf
+}
+
+func getNetworkID(tenant, namespace, name string) uint64 {
+	nt := netproto.Network{
+		TypeMeta: api.TypeMeta{
+			Kind: "Network",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Tenant:    tenant,
+			Namespace: namespace,
+			Name:      name,
+		},
+	}
+	return networkIDs[nt.GetKey()]
 }

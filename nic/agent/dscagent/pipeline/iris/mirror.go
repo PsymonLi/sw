@@ -44,7 +44,7 @@ func HandleMirrorSession(infraAPI types.InfraAPI, telemetryClient halapi.Telemet
 		return createMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
 	case types.Update:
 		return updateMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteMirrorSessionHandler(infraAPI, telemetryClient, intfClient, epClient, mirror, vrfID)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

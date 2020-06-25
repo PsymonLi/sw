@@ -51,6 +51,7 @@ const (
 	Create
 	Update
 	Delete
+	Purge
 )
 
 // ALG Bitmap Constants

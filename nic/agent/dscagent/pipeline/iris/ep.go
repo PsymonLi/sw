@@ -25,7 +25,7 @@ func HandleEndpoint(infraAPI types.InfraAPI, epClient halapi.EndpointClient, int
 		return createEndpointHandler(infraAPI, epClient, intfClient, endpoint, vrfID, networkID)
 	case types.Update:
 		return updateEndpointHandler(infraAPI, epClient, intfClient, endpoint, vrfID, networkID)
-	case types.Delete:
+	case types.Delete, types.Purge:
 		return deleteEndpointHandler(infraAPI, epClient, intfClient, endpoint, vrfID, networkID)
 	default:
 		return errors.Wrapf(types.ErrUnsupportedOp, "Op: %s", oper)

@@ -21,7 +21,7 @@ func HandleInterface(infraAPI types.InfraAPI, client halapi.InterfaceClient, ope
 	switch oper {
 	case types.Create:
 		return createInterfaceHandler(infraAPI, client, intf, collectorMap)
-	case types.Update:
+	case types.Update, types.Purge:
 		return updateInterfaceHandler(infraAPI, client, intf, collectorMap)
 	case types.Delete:
 		return deleteInterfaceHandler(infraAPI, client, intf)
