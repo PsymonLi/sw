@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	minioclient "github.com/minio/minio-go/v6"
+	miniogo "github.com/minio/minio-go/v6"
 	minio "github.com/minio/minio/cmd"
 	"github.com/pkg/errors"
 
@@ -25,6 +25,7 @@ import (
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/k8s"
 	"github.com/pensando/sw/venice/utils/log"
+	minioclient "github.com/pensando/sw/venice/utils/objstore/minio/client"
 	"github.com/pensando/sw/venice/utils/rpckit"
 	"github.com/pensando/sw/venice/utils/watchstream"
 	"github.com/pensando/sw/venice/vos"
@@ -285,46 +286,43 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 	if testURL != "" {
 		secureMinio = false
 	}
-	mclient, err := minioclient.New(url, minioCreds.AccessKey, minioCreds.SecretKey, secureMinio)
+	mclient, err := miniogo.New(url, minioCreds.AccessKey, minioCreds.SecretKey, secureMinio)
 	if err != nil {
 		log.Errorf("Failed to create client (%s)", err)
 		return nil, errors.Wrap(err, "Failed to create Client")
 	}
 	defTr := http.DefaultTransport.(*http.Transport)
+	tlcc, tlsc, err := getTLSConfig(testURL, false)
+	if err != nil {
+		return nil, err
+	}
+	defTr.TLSClientConfig = tlcc
 
-	var tlsc *tls.Config
-	if testURL == "" {
-		tlsp, err := rpckit.GetDefaultTLSProvider(globals.Vos)
-		if err != nil {
-			log.Errorf("failed to get tls provider (%s)", err)
-			return nil, errors.Wrap(err, "failed GetDefaultTLSProvider()")
-		}
-
-		tlsClientConfig, err := tlsp.GetClientTLSConfig(globals.Vos)
-		if err != nil {
-			log.Errorf("failed to get client tls config (%s)", err)
-			return nil, errors.Wrap(err, "client tls config")
-		}
-		defTr.TLSClientConfig = tlsClientConfig
-
-		tlsc, err = tlsp.GetServerTLSConfig(globals.Vos)
-		if err != nil {
-			log.Errorf("failed to get tls config (%s)", err)
-			return nil, errors.Wrap(err, "failed GetDefaultTLSProvider()")
-		}
-		tlsc.ServerName = globals.Vos
+	itlcc, _, err := getTLSConfig(testURL, true)
+	if err != nil {
+		return nil, err
 	}
 
 	mclient.SetCustomTransport(defTr)
 	client := &storeImpl{BaseBackendClient: mclient}
 	inst.Init(client)
 
+	adminClient, err := minioclient.NewPinnedAdminClient(url,
+		minioclient.WithCredentialsManager(credentialsManager), minioclient.WithTLSConfig(itlcc))
+
+	if err != nil {
+		log.Errorf("Failed to create admin client (%s)", err)
+		return nil, errors.Wrap(err, "Failed to create admin client")
+	}
+
+	go monitorAndRecoverMinio(ctx, adminClient)
+
 	grpcBackend, err := newGrpcServer(inst, client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start grpc listener")
 	}
 
-	httpBackend, err := newHTTPHandler(inst, client)
+	httpBackend, err := newHTTPHandler(inst, client, adminClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start http listener")
 	}
@@ -416,4 +414,79 @@ func GetBucketDiskThresholds() *sync.Map {
 	m.Store(DiskPaths[0]+"/"+"default."+fwlogsBucketName, float64(-1))
 	m.Store(DiskPaths[1]+"/"+"default."+fwlogsBucketName, float64(-1))
 	return m
+}
+
+func recoverMinioHelper(ctx context.Context, mAdminC minioclient.AdminClient) error {
+	log.Infof("recovering minio")
+
+	// 1. Delete backend_encrypted and config.json from all disks
+	// 2. Restart the services
+	for _, p := range DiskPaths {
+		path := p + "/.minio.sys/backend_encrypted"
+		if err := os.RemoveAll(path); err != nil {
+			log.Errorf("error in removing path %s", path)
+		}
+
+		path = p + "/.minio.sys/config/config.json"
+		if err := os.RemoveAll(path); err != nil {
+			log.Errorf("error in removing path %s", path)
+		}
+	}
+	return mAdminC.ServiceRestart(ctx)
+}
+
+func monitorAndRecoverMinio(ctx context.Context, mAdminC minioclient.AdminClient) {
+	log.Infof("starting monitoring & recovery routine")
+	errCount := 0
+	maxErrCount := 3
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(30 * time.Second):
+			_, err := mAdminC.ClusterInfo(ctx)
+			if err == nil {
+				continue
+			}
+
+			log.Errorf("minio cluster error %+v", err)
+			if strings.Contains(err.Error(), "Storage resources are insufficient for the read operation") {
+				errCount++
+				if errCount == maxErrCount {
+					errCount = 0
+					err := recoverMinioHelper(ctx, mAdminC)
+					if err != nil {
+						log.Errorf("error in recovering minio %+v", err)
+					}
+				}
+			}
+		}
+	}
+}
+
+func getTLSConfig(testURL string, insecure bool) (*tls.Config, *tls.Config, error) {
+	var tlsc *tls.Config
+	if testURL == "" {
+		tlsp, err := rpckit.GetDefaultTLSProvider(globals.Vos)
+		if err != nil {
+			log.Errorf("failed to get tls provider (%s)", err)
+			return nil, nil, errors.Wrap(err, "failed GetDefaultTLSProvider()")
+		}
+
+		tlsClientConfig, err := tlsp.GetClientTLSConfig(globals.Vos)
+		if err != nil {
+			log.Errorf("failed to get client tls config (%s)", err)
+			return nil, nil, errors.Wrap(err, "client tls config")
+		}
+
+		tlsc, err = tlsp.GetServerTLSConfig(globals.Vos)
+		if err != nil {
+			log.Errorf("failed to get tls config (%s)", err)
+			return nil, nil, errors.Wrap(err, "failed GetDefaultTLSProvider()")
+		}
+		tlsc.ServerName = globals.Vos
+		tlsc.InsecureSkipVerify = insecure
+		return tlsClientConfig, tlsc, nil
+	}
+	return nil, nil, nil
 }

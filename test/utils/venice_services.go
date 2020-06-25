@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -37,7 +38,9 @@ import (
 	"github.com/pensando/sw/venice/utils/events/exporters"
 	"github.com/pensando/sw/venice/utils/events/policy"
 	"github.com/pensando/sw/venice/utils/log"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 	"github.com/pensando/sw/venice/utils/resolver"
+	vospkg "github.com/pensando/sw/venice/vos/pkg"
 
 	// for registering services and hooks
 	_ "github.com/pensando/sw/api/generated/exports/apigw"
@@ -347,6 +350,23 @@ func StartEvtsProxy(hostname, serverAddr string, mr resolver.Interface, logger l
 	evtsProxy.StartDispatch()
 
 	return &EvtProxyServices{evtsProxy, policyMgr, policyWatcher}, evtsProxy.RPCServer.GetListenURL(), storeConfig, nil
+}
+
+// StartVos starts virtual object store
+func StartVos(ctx context.Context, logger log.Logger, credsManager minio.CredentialsManager) {
+	go func() {
+		url := "localhost"
+		paths := new(sync.Map)
+		paths.Store("/data/default.fwlogs", 50.00)
+		args := []string{globals.Vos,
+			"server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/data"}
+		credsMgrChannel := make(chan interface{}, 1)
+		credsMgrChannel <- credsManager
+		vospkg.New(ctx, false, url,
+			credsMgrChannel,
+			vospkg.WithBootupArgs(args),
+			vospkg.WithBucketDiskThresholds(paths))
+	}()
 }
 
 // helper function to parse the port from given address <ip:port>

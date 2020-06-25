@@ -2,6 +2,7 @@ package vospkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -118,6 +119,26 @@ func (f *mockBackend) SetBucketLifecycleWithContext(ctx context.Context, bucketN
 		return f.setLifecycleFunc(bucketName, lifecycle)
 	}
 	return nil
+}
+
+func (f *mockBackend) ClusterInfo(ctx context.Context) (string, error) {
+	info := map[string]string{"dummyInfo": "dummyValue"}
+	out, err := json.Marshal(info)
+	return string(out[:]), err
+}
+
+func (f *mockBackend) DataUsageInfo(ctx context.Context) (string, error) {
+	info := map[string]string{"dummyInfo": "dummyValue"}
+	out, err := json.Marshal(info)
+	return string(out[:]), err
+}
+
+func (f *mockBackend) ServiceRestart(ctx context.Context) error {
+	return nil
+}
+
+func (f *mockBackend) IsClusterOnline(ctx context.Context) (bool, error) {
+	return true, nil
 }
 
 type fakeStoreObj struct {

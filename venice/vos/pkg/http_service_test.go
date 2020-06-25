@@ -28,7 +28,7 @@ import (
 )
 
 func TestNewHandler(t *testing.T) {
-	h, err := newHTTPHandler(nil, nil)
+	h, err := newHTTPHandler(nil, nil, nil)
 	AssertOk(t, err, "newHTTPHandler returned error")
 	Assert(t, h != nil, "handler is nil")
 	ctx, cancel := context.WithCancel(context.Background())
@@ -345,4 +345,56 @@ func TestDebugConfigHandler(t *testing.T) {
 			Assert(t, false, "unknown path found in response ", path)
 		}
 	}
+}
+
+func TestMinioDebugHandlers(t *testing.T) {
+	// Actual tests are happening in integ.
+	// Just call the APIs here to get the coverage
+	paths := new(sync.Map)
+	paths.Store("/root/dummy_path1", 40.00)
+	paths.Store("/root/dummy_path2", 30.00)
+	fb := &mockBackend{}
+	inst := &instance{bucketDiskThresholds: paths}
+	inst.Init(fb)
+	srv := httpHandler{client: fb, instance: inst, adminClient: fb}
+	router := mux.NewRouter()
+	router.Methods("GET").Subrouter().Handle("/debug/minio/clusterinfo", http.HandlerFunc(srv.minioClusterInfoHandler()))
+	router.Methods("GET").Subrouter().Handle("/debug/minio/datausageinfo", http.HandlerFunc(srv.minioDataUsageInfoHandler()))
+	router.Methods("GET").Subrouter().Handle("/debug/minio/restartservices", http.HandlerFunc(srv.minioRestartServicesHandler()))
+	router.Methods("GET").Subrouter().Handle("/debug/minio/recoverconfigmigration", http.HandlerFunc(srv.minioRecoverFromConfigMigration()))
+	go http.ListenAndServe(fmt.Sprintf("127.0.0.1:9053"), router)
+	time.Sleep(time.Second * 4)
+
+	baseURL := "http://127.0.0.1:9053"
+	getHelper := func(url string) map[string]interface{} {
+		resp, err := http.Get(url)
+		AssertOk(t, err, "error is getting "+url)
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		AssertOk(t, err, "error is reading response of "+url)
+		fmt.Println("Shrey ", string(body[:]))
+		config := map[string]interface{}{}
+		err = json.Unmarshal(body, &config)
+		AssertOk(t, err, "error is unmarshaling response of "+url)
+		return config
+	}
+
+	// Get ClusterInfo
+	config := getHelper(baseURL + "/debug/minio/clusterinfo")
+	v, ok := config["dummyInfo"]
+	Assert(t, ok, "dummyInfo is not present in /debug/minio/clusterinfo response, response:", config)
+	Assert(t, v.(string) == "dummyValue", "cluster is not online, returned value", v.(string))
+
+	// Get DataUsageInfo
+	config = getHelper(baseURL + "/debug/minio/datausageinfo")
+	v, ok = config["dummyInfo"]
+	Assert(t, ok, "dummyInfo is not present in /debug/minio/clusterinfo response, response:", config)
+	Assert(t, v.(string) == "dummyValue", "cluster is not online, returned value", v.(string))
+
+	// Restart services
+	_, err := http.Get(baseURL + "/debug/minio/restartservices")
+	AssertOk(t, err, "error is restarting services")
+
+	_, err = http.Get(baseURL + "/debug/minio/recoverconfigmigration")
+	AssertOk(t, err, "error is recovering minio")
 }

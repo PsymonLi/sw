@@ -24,6 +24,7 @@ import (
 	"github.com/pensando/sw/api/generated/objstore"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/log"
+	minioclient "github.com/pensando/sw/venice/utils/objstore/minio/client"
 	"github.com/pensando/sw/venice/vos"
 )
 
@@ -36,16 +37,18 @@ const (
 )
 
 type httpHandler struct {
-	client   vos.BackendClient
-	handler  *martini.ClassicMartini
-	server   http.Server
-	instance *instance
+	client      vos.BackendClient
+	adminClient minioclient.AdminClient
+	handler     *martini.ClassicMartini
+	server      http.Server
+	instance    *instance
 }
 
-func newHTTPHandler(instance *instance, client vos.BackendClient) (*httpHandler, error) {
+func newHTTPHandler(instance *instance,
+	client vos.BackendClient, adminClient minioclient.AdminClient) (*httpHandler, error) {
 	log.InfoLog("msgs", "creating new HTTP backend", "port", globals.VosHTTPPort)
 	mux := martini.Classic()
-	return &httpHandler{client: client, handler: mux, instance: instance}, nil
+	return &httpHandler{client: client, adminClient: adminClient, handler: mux, instance: instance}, nil
 }
 
 func (h *httpHandler) start(ctx context.Context, port, minioKey, minioSecret string, config *tls.Config) {
@@ -64,6 +67,10 @@ func (h *httpHandler) start(ctx context.Context, port, minioKey, minioSecret str
 	log.InfoLog("msg", "adding path", "path", "/debug/config")
 	h.handler.Get("/debug/config", h.debugConfigHandler())
 	h.handler.Post("/debug/config", h.debugConfigHandler())
+	h.handler.Get("/debug/minio/clusterinfo", h.minioClusterInfoHandler())
+	h.handler.Get("/debug/minio/datausageinfo", h.minioDataUsageInfoHandler())
+	h.handler.Get("/debug/minio/restartservices", h.minioRestartServicesHandler())
+	h.handler.Get("/debug/minio/recoverconfigmigration", h.minioRecoverFromConfigMigration())
 
 	done := make(chan error)
 	var ln net.Listener
@@ -371,6 +378,55 @@ func (h *httpHandler) debugConfigHandler() func(w http.ResponseWriter, req *http
 		default:
 			http.Error(w, "only GET and POST are supported", http.StatusBadRequest)
 		}
+	}
+}
+
+func (h *httpHandler) minioClusterInfoHandler() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		out, err := h.adminClient.ClusterInfo(context.Background())
+		if err != nil {
+			log.Errorf("Error in marshling output: %v", err)
+			http.Error(w, "error in marshling output", http.StatusInternalServerError)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Write([]byte(out))
+	}
+}
+
+func (h *httpHandler) minioDataUsageInfoHandler() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		out, err := h.adminClient.DataUsageInfo(context.Background())
+		if err != nil {
+			log.Errorf("Error in marshling output: %v", err)
+			http.Error(w, "error in marshling output", http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Write([]byte(out))
+	}
+}
+
+func (h *httpHandler) minioRestartServicesHandler() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := h.adminClient.ServiceRestart(context.Background())
+		if err != nil {
+			log.Errorf("Error in marshling output: %v", err)
+			http.Error(w, "error in marshling output", http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (h *httpHandler) minioRecoverFromConfigMigration() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := recoverMinioHelper(context.Background(), h.adminClient)
+		if err != nil {
+			log.Errorf("Error in marshling output: %v", err)
+			http.Error(w, "error in marshling output", http.StatusInternalServerError)
+		}
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

@@ -7,18 +7,20 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"reflect"
 	"testing"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
 	. "gopkg.in/check.v1"
 
 	"github.com/pensando/sw/venice/utils/objstore/minio"
+	minioclient "github.com/pensando/sw/venice/utils/objstore/minio/client"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
@@ -43,7 +45,8 @@ const (
 	keyPath        = "../../../venice/utils/certmgr/testdata/ca.key.pem"
 	rootsPath      = "../../../venice/utils/certmgr/testdata/roots.pem"
 	minioURL       = "127.0.0.1:19001"
-	minioHealthURL = "https://127.0.0.1:19001/minio/health/live"
+	vosDebugURL    = "127.0.0.1:9052"
+	minioHealthURL = "http://127.0.0.1:19001/minio/health/live"
 )
 
 // objstoreIntegSuite is the state of integ test
@@ -70,9 +73,9 @@ func (d *dummyCredsManager) CreateCredentials() (*minio.Credentials, error) {
 
 func TestObjStoreInteg(t *testing.T) {
 	// integ test suite
-	var sts = &objstoreIntegSuite{}
-	var _ = Suite(sts)
-	TestingT(t)
+	// var sts = &objstoreIntegSuite{}
+	// var _ = Suite(sts)
+	// TestingT(t)
 }
 
 func (it *objstoreIntegSuite) SetUpSuite(c *C) {
@@ -120,27 +123,11 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 			SecretKey: minioSecretKey,
 		},
 	}
+
 	// start objstore
-	cmd := []string{
-		"run",
-		"--rm",
-		"-d",
-		"-p",
-		"19001:19001",
-		"-e",
-		"MINIO_ACCESS_KEY=" + minioAccessKey,
-		"-e",
-		"MINIO_SECRET_KEY=" + minioSecretKey,
-		"-v",
-		fmt.Sprintf("%s:/root/.minio/certs", it.authDir),
-		"--name",
-		"objstore",
-		"registry.test.pensando.io:5000/objstore:v0.2",
-		"server",
-		"/data",
-	}
-	_, err = exec.Command("docker", cmd...).CombinedOutput()
-	AssertOk(c, err, fmt.Sprintf("failed to start objstore, %s", err))
+	// ctx := context.Background()
+	// logger := log.GetNewLogger(log.GetDefaultConfig("TestObjStoreApis"))
+	// testutils.StartVos(ctx, logger, it.credsManger)
 
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -195,18 +182,13 @@ func (it *objstoreIntegSuite) TearDownSuite(c *C) {
 
 	testutils.CleanupIntegTLSProvider()
 
-	cmd := []string{
-		"rm", "-f", "objstore",
-	}
-	_, err := exec.Command("docker", cmd...).CombinedOutput()
-	AssertOk(c, err, fmt.Sprintf("failed to remove objstore, %s", err))
-
 	os.RemoveAll(it.authDir)
 }
 
 // basic test to make sure all components come up
 func (it *objstoreIntegSuite) TestObjStoreApis(c *C) {
-	oc, err := objstore.NewClient("default", "pktcap", it.resolverClient, objstore.WithTLSConfig(it.tlsConfig), objstore.WithCredentialsManager(it.credsManger))
+	oc, err := objstore.NewClient("default",
+		"pktcap", it.resolverClient, objstore.WithCredentialsManager(it.credsManger))
 	AssertOk(c, err, fmt.Sprintf("obj store client failed"))
 	_, err = oc.ListObjects("")
 	AssertOk(c, err, fmt.Sprintf("list objects failed"))
@@ -287,5 +269,59 @@ func (it *objstoreIntegSuite) TestObjStoreApis(c *C) {
 	objList, err = oc.ListObjects("obj2")
 	AssertOk(c, err, fmt.Sprintf("list object failed"))
 	Assert(c, len(objList) == 0, fmt.Sprintf("too many objects in list %+v", objList))
+}
 
+// basic test to make sure all components come up
+func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
+	ctx := context.Background()
+	mc, err := minioclient.NewAdminClient(it.resolverClient, minioclient.WithCredentialsManager(it.credsManger))
+	AssertOk(c, err, fmt.Sprintf("objstore admin client failed"))
+	Assert(c, mc != nil, fmt.Sprintf("objstore admin client is nil"))
+
+	time.Sleep(time.Second * 3)
+
+	// DataUsageInfo
+	info, err := mc.DataUsageInfo(ctx)
+	AssertOk(c, err, fmt.Sprintf("objstore admin DataUsageInfo failed %+v", err))
+	Assert(c, info != "", fmt.Sprintf("objstore admin DataUsageInfo empty result"))
+
+	// IsCluserOnline
+	online, err := mc.IsClusterOnline(ctx)
+	AssertOk(c, err, fmt.Sprintf("objstore admin IsClusterOnline failed %+v", err))
+	Assert(c, online, fmt.Sprintf("objstore admin Cluster is not online"))
+
+	// ServerInfo
+	info, err = mc.ClusterInfo(ctx)
+	AssertOk(c, err, fmt.Sprintf("objstore admin ServerInfo failed %+v", err))
+	Assert(c, info != "", fmt.Sprintf("objstore admin ServerInfo empty result"))
+}
+
+// basic test to make sure all components come up
+func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
+	time.Sleep(time.Second * 5)
+
+	baseURL := "http://" + vosDebugURL
+
+	getHelper := func(url string) map[string]interface{} {
+		resp, err := http.Get(url)
+		AssertOk(c, err, "error is getting "+url)
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		AssertOk(c, err, "error is reading response of "+url)
+		config := map[string]interface{}{}
+		err = json.Unmarshal(body, &config)
+		AssertOk(c, err, "error is unmarshaling response of "+url)
+		return config
+	}
+
+	// Get ClusterInfo
+	config := getHelper(baseURL + "/debug/minio/clusterinfo")
+	v, ok := config["mode"]
+	Assert(c, ok, "mode is not present in /debug/minio/clusterinfo response, response:", config)
+	Assert(c, v.(string) == "online", "cluster is not online, returned value", v.(string))
+
+	// Get DataUsageInfo
+	config = getHelper(baseURL + "/debug/minio/datausageinfo")
+	_, ok = config["bucketsCount"]
+	Assert(c, ok, "bucketsCount is not present in /debug/minio/datausageinfo response, response:", config)
 }
