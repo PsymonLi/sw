@@ -103,6 +103,7 @@ def UpdateConfigAfterUpgrade(tc):
     api.Logger.info("Updating Configurations after Upgrade")
     for node in tc.nodes:
         NodeClient.Get(node).Create()
+        NodeClient.Get(node).Read()
     api.Logger.info("Completed Config updates")
 
 
