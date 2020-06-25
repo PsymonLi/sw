@@ -12,9 +12,7 @@
 #define __MIRROR_SESSION_STATE_HPP__
 
 #include "nic/sdk/lib/slab/slab.hpp"
-#include "nic/sdk/lib/ht/ht.hpp"
 #include "nic/apollo/framework/api_base.hpp"
-#include "nic/apollo/framework/impl_base.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/mirror.hpp"
 
@@ -80,6 +78,12 @@ private:
     mirror_session *db_[PDS_MAX_MIRROR_SESSION];
     slab *mirror_session_slab_;    ///< slab to allocate mirror session entry
 };
+
+static inline mirror_session *
+mirror_session_find (pds_obj_key_t *key)
+{
+    return (mirror_session *)api_base::find_obj(OBJ_ID_MIRROR_SESSION, key);
+}
 
 /// \@}    // end of PDS_MIRROR_SESSION_STATE
 

@@ -1,16 +1,19 @@
-/**
- * Copyright (c) 2019 Pensando Systems, Inc.
- *
- * @file    vnic_state.hpp
- *
- * @brief   vnic database handling
- */
+//
+// Copyright (c) 2019 Pensando Systems, Inc.
+//
+//----------------------------------------------------------------------------
+///
+/// @file
+/// @brief   vnic database handling
+///
+//----------------------------------------------------------------------------
 
-#if !defined (__VNIC_STATE_HPP__)
+#ifndef __VNIC_STATE_HPP__
 #define __VNIC_STATE_HPP__
 
 #include "nic/sdk/lib/slab/slab.hpp"
 #include "nic/sdk/lib/ht/ht.hpp"
+#include "nic/apollo/framework/api_base.hpp"
 #include "nic/apollo/framework/state_base.hpp"
 #include "nic/apollo/api/vnic.hpp"
 
@@ -114,4 +117,4 @@ vnic_find (pds_obj_key_t *key)
 
 using api::vnic_state;
 
-#endif    /** __VNIC_STATE_HPP__ */
+#endif    // __VNIC_STATE_HPP__

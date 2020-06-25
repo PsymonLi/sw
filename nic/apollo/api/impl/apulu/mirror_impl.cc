@@ -419,10 +419,10 @@ mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
     p4pd_error_t p4pd_ret;
     mirror_actiondata_t mirror_data;
 
-    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id_, NULL, NULL, 
+    p4pd_ret = p4pd_global_entry_read(P4TBL_ID_MIRROR, hw_id_, NULL, NULL,
                                       &mirror_data);
     if (p4pd_ret != P4PD_SUCCESS) {
-        PDS_TRACE_ERR("Failed to read mirror session %s at idx %u", 
+        PDS_TRACE_ERR("Failed to read mirror session %s at idx %u",
                       spec->key.str(), hw_id_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
@@ -433,8 +433,8 @@ mirror_impl::fill_spec_(pds_mirror_session_spec_t *spec) {
     case MIRROR_ERSPAN_ID:
         spec->snap_len = mirror_data.erspan_action.truncate_len;
         spec->erspan_spec.dscp = mirror_data.erspan_action.dscp;
-        spec->erspan_spec.span_id = mirror_data.erspan_action.span_id; 
-        spec->erspan_spec.vlan_strip_en = 
+        spec->erspan_spec.span_id = mirror_data.erspan_action.span_id;
+        spec->erspan_spec.vlan_strip_en =
             mirror_data.erspan_action.vlan_strip_en;
         break;
     default:
@@ -451,7 +451,7 @@ mirror_impl::fill_status_(pds_mirror_session_status_t *status) {
 }
 
 sdk_ret_t
-mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats, 
+mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats,
                          pds_obj_key_t *key) {
     p4pd_error_t p4pd_ret;
     mirror_actiondata_t mirror_data;
@@ -465,7 +465,7 @@ mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats,
     }
     switch (mirror_data.action_id) {
     case MIRROR_RSPAN_ID:
-        // we support stats only for ERSPAN 
+        // we support stats only for ERSPAN
         break;
     case MIRROR_ERSPAN_ID:
         stats->packet_count = *(uint64_t *)mirror_data.erspan_action.npkts;
@@ -482,7 +482,7 @@ mirror_impl::fill_stats_(pds_mirror_session_stats_t *stats,
 sdk_ret_t
 mirror_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     sdk_ret_t ret;
-    pds_mirror_session_info_t *mirror_session_info = 
+    pds_mirror_session_info_t *mirror_session_info =
         (pds_mirror_session_info_t *)info;
 
     ret = fill_spec_(&mirror_session_info->spec);
@@ -500,6 +500,20 @@ mirror_impl::read_hw(api_base *api_obj, obj_key_t *key, obj_info_t *info) {
     }
     return SDK_RET_OK;
 
+}
+
+uint8_t
+compute_mirror_bitmap (uint8_t num_sessions, pds_obj_key_t *keys)
+{
+    mirror_session *ms;
+    uint8_t hw_id, bmap = 0;
+
+    for (uint8_t i = 0; i < num_sessions; i++) {
+        ms = mirror_session_find(&keys[i]);
+        hw_id = ((mirror_impl *)(ms->impl()))->hw_id();
+        bmap |= (1 << hw_id);
+    }
+    return bmap;
 }
 
 /// \@}

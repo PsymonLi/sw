@@ -30,6 +30,7 @@
 #include "nic/apollo/api/impl/apulu/policer_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vnic_impl.hpp"
 #include "nic/apollo/api/impl/apulu/vpc_impl.hpp"
+#include "nic/apollo/api/impl/apulu/mirror_impl.hpp"
 #include "nic/apollo/api/impl/apulu/svc/vnic_svc.hpp"
 #include "nic/apollo/api/impl/apulu/svc/svc_utils.hpp"
 #include "nic/apollo/p4/include/apulu_table_sizes.h"
@@ -711,8 +712,12 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     vnic_data.action_id = VNIC_VNIC_INFO_ID;
     vnic_data.ing_vnic_info.epoch = epoch_;
     vnic_data.ing_vnic_info.meter_enabled = spec->meter_en;
-    //vnic_data.ing_vnic_info.rx_mirror_session = spec->rx_mirror_session_bmap;
-    //vnic_data.ing_vnic_info.tx_mirror_session = spec->tx_mirror_session_bmap;
+    vnic_data.ing_vnic_info.rx_mirror_session =
+        compute_mirror_bitmap(spec->num_rx_mirror_session,
+                              spec->rx_mirror_session);
+    vnic_data.ing_vnic_info.tx_mirror_session =
+        compute_mirror_bitmap(spec->num_tx_mirror_session,
+                              spec->tx_mirror_session);
     vnic_data.ing_vnic_info.binding_check_enabled =
         spec->binding_checks_en ? TRUE : FALSE;
     if (tx_policer) {
@@ -861,9 +866,11 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
 
     // if mirror sessions or metering enable/disable config changed, update
     // ingress VNIC table entry
-    if ((obj_ctxt->upd_bmap & PDS_VNIC_UPD_METER_EN) ||
-        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_POLICER) ||
-        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_BINDING_CHECKS)) {
+    if ((obj_ctxt->upd_bmap & PDS_VNIC_UPD_METER_EN)          ||
+        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_POLICER)        ||
+        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_BINDING_CHECKS)    ||
+        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_MIRROR_SESSION) ||
+        (obj_ctxt->upd_bmap & PDS_VNIC_UPD_RX_MIRROR_SESSION)) {
         // do read-modify-update of the VNIC table entry
         p4pd_global_entry_read(P4TBL_ID_VNIC, hw_id_, NULL, NULL, &vnic_data);
         // take care of meter update
@@ -902,6 +909,18 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
         if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_BINDING_CHECKS) {
             vnic_data.ing_vnic_info.binding_check_enabled =
                 spec->binding_checks_en ? TRUE : FALSE;
+        }
+        // handle Rx mirror session update, if any
+        if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_RX_MIRROR_SESSION) {
+            vnic_data.ing_vnic_info.rx_mirror_session =
+                compute_mirror_bitmap(spec->num_rx_mirror_session,
+                                      spec->rx_mirror_session);
+        }
+        // handle Tx mirror session update, if any
+        if (obj_ctxt->upd_bmap & PDS_VNIC_UPD_TX_MIRROR_SESSION) {
+            vnic_data.ing_vnic_info.tx_mirror_session =
+                compute_mirror_bitmap(spec->num_tx_mirror_session,
+                                      spec->tx_mirror_session);
         }
         p4pd_ret = p4pd_global_entry_write(P4TBL_ID_VNIC, hw_id_,
                                            NULL, NULL, &vnic_data);
