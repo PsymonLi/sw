@@ -246,8 +246,9 @@ event_thread::init(const char *name, uint32_t thread_id,
     ev_async_init(&this->async_watcher_, event_thread::async_callback_);
     ev_async_start(this->loop_, &this->async_watcher_);
     g_event_thread_table[thread_id] = this;
-    // register for suspend and resume callbacks
-    this->register_suspend_cb(suspend_cb_, resume_cb_, this);
+    // register default suspend and resume callbacks
+    this->register_suspend_cb((sdk::lib::thread_suspend_cb_t)suspend,
+                              (sdk::lib::thread_resume_cb_t)resume, this);
     return 0;
 }
 
@@ -511,17 +512,16 @@ event_thread::stop(void) {
 }
 
 sdk_ret_t
-event_thread::suspend_cb_(void *arg) {
-     event_thread *thr = (event_thread *)arg;
+event_thread::suspend(event_thread *thread) {
     // This function can be called from different thread
     // No locking required
-    ev_async_send(thr->loop_, &thr->async_watcher_);
+    ev_async_send(thread->loop_, &thread->async_watcher_);
 
     return SDK_RET_OK;
 }
 
 sdk_ret_t
-event_thread::resume_cb_(void *arg) {
+event_thread::resume(event_thread *thread) {
     // This function can be called from different thread
     // No locking required
     return SDK_RET_OK;

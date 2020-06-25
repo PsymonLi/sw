@@ -139,6 +139,8 @@ public:
     virtual sdk_ret_t stop(void) override;
     struct ev_loop *ev_loop(void) { return loop_; }
 
+    static sdk_ret_t suspend(event_thread *thread);
+    static sdk_ret_t resume(event_thread *thread);
 protected:
     virtual int init(const char *name, uint32_t thread_id,
                      sdk::lib::thread_role_t thread_role, uint64_t cores_mask,
@@ -178,14 +180,11 @@ private:
     void delete_ipc_timer_watcher_(void *watcher);
     static void delete_ipc_timer_watcher(void *watcher, const void *infra_ctx);
 
-    
 private:
     // Private static callback functions that are hooked to libev
     static void *event_thread_entry_(void *ctx);
     static void async_callback_(struct ev_loop *loop, ev_async *watcher,
                                 int revents);
-    static sdk_ret_t suspend_cb_(void *arg);
-    static sdk_ret_t resume_cb_(void *arg);
 };
 
 } // namespace sdk
