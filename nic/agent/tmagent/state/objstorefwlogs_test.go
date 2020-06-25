@@ -259,7 +259,7 @@ func TestProcessFWEventForObjStore(t *testing.T) {
 func verifyLog(t *testing.T, testObject TestObject) {
 	Assert(t, testObject.ObjectName != "", "object name is empty")
 	Assert(t, testObject.BucketName == "default.fwlogs", "bucket name is not correct")
-	Assert(t, testObject.IndexBucketName == "meta-default.fwlogs", "index bucket name is not correct")
+	Assert(t, testObject.IndexBucketName == "default.meta-fwlogs", "index bucket name is not correct")
 	verifyData(t, testObject.Data)
 	Assert(t, testObject.Index != "", "index is empty")
 	Assert(t, len(testObject.Meta) != 0, "object meta is empty %s", testObject.Meta)

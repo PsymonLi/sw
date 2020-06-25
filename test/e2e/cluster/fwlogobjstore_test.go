@@ -37,8 +37,8 @@ import (
 const (
 	timeFormat             = "2006-01-02T15:04:05"
 	bucketPrefix           = "default"
-	metaBucketPrefix       = "meta-default"
 	bucketName             = "fwlogs"
+	metaBucketName         = "meta-fwlogs"
 	elasticContextDeadline = 90 * time.Second
 )
 
@@ -331,8 +331,8 @@ func setupFwLogsClients() (objstore.Client, objstore.Client) {
 		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(ts.tu.APIClient))
 	Expect(err).NotTo(HaveOccurred())
 
-	fwLogMetaClient, err := objstore.NewClient(metaBucketPrefix,
-		bucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(ts.tu.APIClient))
+	fwLogMetaClient, err := objstore.NewClient(bucketPrefix,
+		metaBucketName, ts.tu.Resolver(), objstore.WithTLSConfig(tlcConfig), objstore.WithAPIClient(ts.tu.APIClient))
 	Expect(err).NotTo(HaveOccurred())
 
 	return fwLogClient, fwLogMetaClient

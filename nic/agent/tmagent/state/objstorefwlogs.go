@@ -332,8 +332,8 @@ func transmitLogs(ctx context.Context,
 	return func() {
 		// TODO: this can be optimized. Bucket name should be calcualted only once per hour.
 		tenantName := getTenantNameFromSourceVrf(vrf)
-		bucketName := getBucketName(bucketPrefix, tenantName, vrf, fls.nodeUUID, startTs)
-		indexBucketName := getIndexBucketName(bucketName)
+		bucketName := getBucketName(tenantName)
+		indexBucketName := getIndexBucketName(tenantName)
 
 		// The logs in input slice logs are already sorted according to their Ts.
 		// Every entry in the logs slice, convert to CSV and write to buffer.
@@ -532,7 +532,7 @@ func getCSVIndexBuffer(index map[string]string, b *bytes.Buffer, zip bool) {
 	zw.Close()
 }
 
-func getBucketName(bucketPrefix, tenantName string, vrf uint64, dscID string, ts time.Time) string {
+func getBucketName(tenantName string) string {
 	var b bytes.Buffer
 	b.WriteString(tenantName)
 	b.WriteString(".")
@@ -540,11 +540,12 @@ func getBucketName(bucketPrefix, tenantName string, vrf uint64, dscID string, ts
 	return b.String()
 }
 
-func getIndexBucketName(dataBucketName string) string {
+func getIndexBucketName(tenantName string) string {
 	var b bytes.Buffer
-	b.WriteString("meta")
-	b.WriteString("-")
-	b.WriteString(dataBucketName)
+	b.WriteString(tenantName)
+	b.WriteString(".")
+	b.WriteString("meta-")
+	b.WriteString(fwlogsBucketName)
 	return b.String()
 }
 
