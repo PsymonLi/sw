@@ -1,4 +1,5 @@
 #! /usr/bin/python3
+
 from iota.test.iris.testcases.alg.dns.dns_utils import *
 from iota.test.iris.testcases.alg.alg_utils import *
 import pdb
@@ -53,6 +54,20 @@ def Trigger(tc):
     api.Trigger_AddNaplesCommand(req, naples.node_name,
                       "/nic/bin/halctl show session --dstport 53 --dstip {} --yaml".format(server.ip_address))
     tc.cmd_cookies.append("Find session")
+
+    api.Trigger_AddNaplesCommand(req, naples.node_name,
+                "/nic/bin/shmdump -file=/dev/shm/fwlog_ipc_shm -type=fwlog > /obfl/shmdump")
+    tc.cmd_cookies.append("Dump fwlog")
+
+    api.Trigger_AddNaplesCommand(req, naples.node_name,
+                 "cat /var/log/pensando/hal.log > /obfl/hallogs")
+    tc.cmd_cookies.append("Dump hal logs")
+
+    api.Trigger_AddCommand(req, client.node_name, client.workload_name,
+                        "sudo rm /etc/resolv.conf")
+    tc.cmd_cookies.append("Remove resolv.conf")
+
+    SetupDNSServer(server, stop=True)
  
     trig_resp = api.Trigger(req)
     term_resp = api.Trigger_TerminateAllCommands(trig_resp)
