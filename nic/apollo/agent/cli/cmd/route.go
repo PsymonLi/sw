@@ -143,7 +143,9 @@ func printRouteTable(rt *pds.RouteTable) {
 
 	fmt.Printf("%-40s%-9s", utils.IdToStr(spec.GetId()),
 		priorityStr)
-
+	if len(routes) == 0 {
+		fmt.Printf("%-40s%-20s%-8s%-40s\n", "-", "-", "-", "-")
+	}
 	for _, route := range routes {
 		if first != true {
 			fmt.Printf("%-40s%-9s", "", "")
