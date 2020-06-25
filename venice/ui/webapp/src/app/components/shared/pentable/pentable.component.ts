@@ -97,10 +97,6 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   ngOnInit() {
     this.selectedColumns = this.columns;
-    this.controllerService.publish(Eventtypes.COMPONENT_INIT, {
-      'component': this.getClassName(), 'state':
-        Eventtypes.COMPONENT_INIT
-    });
   }
 
   ngAfterViewInit() {
@@ -130,7 +126,13 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
         const sortFieldArr = this.sortField.split('.');
         const prevDataSorted = _.sortBy(change.data.previousValue, data => _.get(data, sortFieldArr));
         const currDataSorted = _.sortBy(change.data.currentValue, data => _.get(data, sortFieldArr));
-        dataChanged = !_.isEqual(prevDataSorted, currDataSorted);
+        dataChanged = prevDataSorted.length !== currDataSorted.length || currDataSorted.some((data, idx) => {
+          const prevData = prevDataSorted[idx];
+          if (data && data.meta && prevData && prevData.meta) {
+            return data.meta.uuid !== prevData.meta.uuid;
+          }
+          return false;
+        });
       }
 
       if (loadingCompleted || dataChanged) {
@@ -153,6 +155,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
           }
           this.searchEmitter.emit(null);
         }, 0);
+        this.reset();
       }
     }
 
@@ -201,10 +204,6 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     this.subscriptions.forEach(sub => {
       sub.unsubscribe();
     });
-    this.controllerService.publish(Eventtypes.COMPONENT_DESTROY, {
-      'component': this.getClassName(), 'state':
-        Eventtypes.COMPONENT_DESTROY
-    });
   }
 
   reset() {
@@ -232,7 +231,7 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
   }
   exportTableDataJSON() {
     TableUtility.exportTableJSON(this.columns, this.data, this.exportFilename, this.exportMap);
-    this.controllerService.invokeInfoToaster('FileExported', this.exportFilename + '.json');
+    this.controllerService.invokeInfoToaster('File Exported', this.exportFilename + '.json');
   }
 
   getCellWidth(width: any) {
@@ -369,6 +368,10 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
     this.isPageSelected();
   }
 
+  onSort() {
+    this.reset();
+  }
+
   /**
    * Table Header checkbox would be checked if all data objects in current page are selected
    */
@@ -393,12 +396,14 @@ export class PentableComponent extends BaseComponent implements AfterViewInit, O
 
   onSearchCancelled() {
     this.controllerService.navigate([], { queryParams: null });
+    this.reset();
     this.searchCancelledEmitter.emit();
   }
 
   clearSearch() {
     this.advancedSearchComponent.clearSearchForm();
     this.controllerService.navigate([], { queryParams: null });
+    this.reset();
   }
 
   onThMouseDown(event) {

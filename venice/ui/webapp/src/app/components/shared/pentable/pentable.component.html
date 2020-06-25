@@ -12,6 +12,7 @@
            (onPage)="onPage($event)"
            (onRowSelect)="rowSelected($event)"
            (onRowUnselect)="rowUnselected($event)"
+           (onSort)="onSort()"
            [paginator]="true"
            [reorderableColumns]="true"
            [resizableColumns]="resizableColumns && !isDisabled()"
@@ -107,13 +108,13 @@
         </td>
       </tr>
     </ng-template>
-    <ng-template pTemplate="paginatorright" let-state>
+    <ng-template pTemplate="paginatorright">
       <div class="pentable-paginator-right">
         Showing
-        <span class="pentable-paginator-value">{{state.first + 1}}</span>
+        <span class="pentable-paginator-value">{{first + 1}}</span>
         to
         <span class="pentable-paginator-value">
-          {{state.rows > data.length - state.first ? data.length : state.first + state.rows}}
+          {{numRows > data.length - first ? data.length : first + numRows}}
         </span>
         of
         <span class="pentable-paginator-value">{{data.length}}</span>

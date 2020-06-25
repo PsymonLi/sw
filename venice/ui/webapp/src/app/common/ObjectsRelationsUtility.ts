@@ -337,7 +337,7 @@ export class ObjectsRelationsUtility {
         for (const workload of workloads) {
             const workloadSpecHostName = workload.spec['host-name'];
             if (host.meta.name === workloadSpecHostName) {
-                workloadWorkloads.push(workload);
+                workloadWorkloads.push(Utility.trimUIFields(workload));
             }
         }
         return workloadWorkloads;
