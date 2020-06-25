@@ -949,6 +949,9 @@ func (nw *NetworkInterfaceState) Write() error {
 	nw.NetworkInterfaceState.Lock()
 	defer nw.NetworkInterfaceState.Unlock()
 
+	if nw.markedForDelete {
+		return nil
+	}
 	nw.NetworkInterfaceState.Status.MirroSessions = nw.mirrorSessions
 	err = nw.NetworkInterfaceState.Write()
 
@@ -1039,6 +1042,7 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceUpdate(ctkitNetif *ctkit.Networ
 // OnNetworkInterfaceDelete deletes an networkInterface
 func (sma *SmNetworkInterface) OnNetworkInterfaceDelete(ctkitNetif *ctkit.NetworkInterface) error {
 	// see if we already have it
+
 	obj, err := sma.sm.FindObject("NetworkInterface", ctkitNetif.Tenant, "", ctkitNetif.Name)
 	if err != nil {
 		log.Errorf("Can not find the Network Interface %s|%s", ctkitNetif.Tenant, ctkitNetif.Name)
@@ -1051,6 +1055,7 @@ func (sma *SmNetworkInterface) OnNetworkInterfaceDelete(ctkitNetif *ctkit.Networ
 		return err
 	}
 
+	ifcfg.markedForDelete = true
 	sma.clearLabelMap(ifcfg)
 	return sma.sm.DeletePushObjectToMbus(ctkitNetif.MakeKey(string(apiclient.GroupNetwork)),
 		ifcfg, references(ctkitNetif))
@@ -1096,6 +1101,9 @@ func (sma *SmNetworkInterface) deleteDSCInterfaces(dsc *cluster.DistributedServi
 	log.Infof("Deleting interfaces as DSC %v is decommissioned/deleted", dsc.Name)
 	for _, nwIntf := range nwIntfs {
 		if nwIntf.NetworkInterfaceState.Status.DSC == dsc.Status.PrimaryMAC {
+			nwIntf.NetworkInterfaceState.Lock()
+			nwIntf.markedForDelete = true
+			nwIntf.NetworkInterfaceState.Unlock()
 			now := time.Now()
 			for {
 				err := sma.sm.ctrler.NetworkInterface().Delete(&nwIntf.NetworkInterfaceState.NetworkInterface)
