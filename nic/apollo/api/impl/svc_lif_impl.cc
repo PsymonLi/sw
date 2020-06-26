@@ -1,10 +1,13 @@
-/**
- * Copyright (c) 2019 Pensando Systems, Inc.
- *
- * @file    hack_impl.cc
- *
- * @brief   placeholder file for temporary hacks
- */
+//
+// {C} Copyright 2019 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// internal service lif handling in apollo pipelines
+///
+//----------------------------------------------------------------------------
+
 
 #include <cmath>
 #include <cstdio>
