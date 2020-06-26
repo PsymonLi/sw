@@ -578,6 +578,10 @@ main(int argc, char *argv[])
         CLOG_INFO("NCSI feature is enabled");
 
         // Live status check
+        cpld_cntl_reg = cpld_reg_rd_retry(CPLD_REGISTER_CTRL);
+        if (cpld_cntl_reg < 0) {
+            cpldmon_exit("Error reading cpld ctrl register", cpld_cntl_reg);
+        }
         if (cpld_cntl_reg & HOST_POWER_ON) {
             SET_HALF_CLOCK(0, 0);
             pciemgr->powermode(FULL_POWER);
