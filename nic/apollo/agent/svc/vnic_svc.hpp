@@ -79,6 +79,8 @@ pds_vnic_api_status_to_proto (pds::VnicStatus *proto_status,
                               const pds_vnic_status_t *api_status)
 {
     proto_status->set_hwid(api_status->hw_id);
+    proto_status->set_nhhwid(api_status->nh_hw_id);
+    proto_status->set_epoch(api_status->epoch);
 }
 
 // populate proto buf stats from vnic API stats

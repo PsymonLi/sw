@@ -1404,6 +1404,7 @@ void
 vnic_impl::fill_status_(pds_vnic_status_t *status) {
     status->hw_id = hw_id_;
     status->nh_hw_id = nh_idx_;
+    status->epoch = epoch_;
 }
 
 sdk_ret_t
@@ -1470,7 +1471,6 @@ vnic_impl::fill_spec_(pds_vnic_spec_t *spec) {
                       spec->key.str(), nh_idx_);
         return sdk::SDK_RET_HW_READ_ERR;
     }
-
     MAC_UINT64_TO_ADDR(spec->mac_addr, nh_data.get_dmaci());
     return SDK_RET_OK;
 }
