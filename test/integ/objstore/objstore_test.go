@@ -265,19 +265,40 @@ func (it *objstoreIntegSuite) TestObjStoreAdminApis(c *C) {
 	time.Sleep(time.Second * 3)
 
 	// DataUsageInfo
-	info, err := mc.DataUsageInfo(ctx)
-	AssertOk(c, err, fmt.Sprintf("objstore admin DataUsageInfo failed %+v", err))
-	Assert(c, info != "", fmt.Sprintf("objstore admin DataUsageInfo empty result"))
+	AssertEventually(c, func() (bool, interface{}) {
+		info, err := mc.DataUsageInfo(ctx)
+		if err != nil {
+			log.Errorf("objstore DataUsageInfo err %+v", err)
+		}
+		if info == "" {
+			log.Infof("objstore DataUsageInfo empty result")
+		}
+		return err == nil && info != "", nil
+	}, "objstore DataUsageInfo API failed", "500ms", "15s")
 
 	// IsCluserOnline
-	online, err := mc.IsClusterOnline(ctx)
-	AssertOk(c, err, fmt.Sprintf("objstore admin IsClusterOnline failed %+v", err))
-	Assert(c, online, fmt.Sprintf("objstore admin Cluster is not online"))
+	AssertEventually(c, func() (bool, interface{}) {
+		online, err := mc.IsClusterOnline(ctx)
+		if err != nil {
+			log.Errorf("objstore admin IsClusterOnline failed err %+v", err)
+		}
+		if !online {
+			log.Infof("objstore admin IsClusterOnline false")
+		}
+		return err == nil && online, nil
+	}, "objstore IsClusterOnline API failed", "500ms", "15s")
 
 	// ServerInfo
-	info, err = mc.ClusterInfo(ctx)
-	AssertOk(c, err, fmt.Sprintf("objstore admin ServerInfo failed %+v", err))
-	Assert(c, info != "", fmt.Sprintf("objstore admin ServerInfo empty result"))
+	AssertEventually(c, func() (bool, interface{}) {
+		info, err := mc.ClusterInfo(ctx)
+		if err != nil {
+			log.Errorf("objstore admin ServerInfo failed err %+v", err)
+		}
+		if info == "" {
+			log.Infof("objstore admin ServerInfo empty result")
+		}
+		return err == nil && info != "", nil
+	}, "objstore ServerInfo API failed", "500ms", "15s")
 }
 
 // basic test to make sure all components come up
@@ -299,13 +320,27 @@ func (it *objstoreIntegSuite) TestObjStoreAdminDebugRESTApis(c *C) {
 	}
 
 	// Get ClusterInfo
-	config := getHelper(baseURL + "/debug/minio/clusterinfo")
-	v, ok := config["mode"]
-	Assert(c, ok, "mode is not present in /debug/minio/clusterinfo response, response:", config)
-	Assert(c, v.(string) == "online", "cluster is not online, returned value", v.(string))
+	AssertEventually(c, func() (bool, interface{}) {
+		config := getHelper(baseURL + "/debug/minio/clusterinfo")
+		v, ok := config["mode"]
+		if ok && v.(string) == "online" {
+			return true, nil
+		}
+		if !ok {
+			log.Errorf("mode is not present in /debug/minio/clusterinfo response, response: %s", config)
+		} else if v.(string) != "online" {
+			log.Infof("cluster is not online, returned value: %s", v.(string))
+		}
+		return false, nil
+	}, "objstore /debug/minio/clusterinfo API failed", "500ms", "15s")
 
-	// Get DataUsageInfo
-	config = getHelper(baseURL + "/debug/minio/datausageinfo")
-	_, ok = config["bucketsCount"]
-	Assert(c, ok, "bucketsCount is not present in /debug/minio/datausageinfo response, response:", config)
+	AssertEventually(c, func() (bool, interface{}) {
+		config := getHelper(baseURL + "/debug/minio/datausageinfo")
+		_, ok := config["bucketsCount"]
+		if ok {
+			return true, nil
+		}
+		log.Errorf("bucketsCount is not present in /debug/minio/datausageinfo response, response: %s", config)
+		return false, nil
+	}, "objstore /debug/minio/datausageinfo API failed", "500ms", "15s")
 }
