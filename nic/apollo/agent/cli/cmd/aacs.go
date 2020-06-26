@@ -1,5 +1,3 @@
-// +build apulu apollo
-
 package cmd
 
 import (
