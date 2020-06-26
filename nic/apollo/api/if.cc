@@ -593,6 +593,7 @@ if_entry::eth_if(if_entry *intf) {
     case IF_TYPE_ETH:
         return intf;
 
+    case IF_TYPE_CONTROL:
     case IF_TYPE_HOST:
         return NULL;
 
