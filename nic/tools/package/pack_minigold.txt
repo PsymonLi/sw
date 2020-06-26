@@ -25,5 +25,6 @@ nic/conf/catalog_hw_*.json                                        /nic/conf/
 nic/conf/serdes_*.json                                            /nic/conf/
 nic/sdk/third-party/libev/aarch64/lib/libev.so.4                  /nic/lib/
 nic/tools/fwupdate                                                /nic/tools/
+nic/tools/fwmeasure                                               /nic/tools/
 nic/tools/sysreset.sh                                             /nic/tools/
 nic/tools/sysupdate.sh                                            /nic/tools/

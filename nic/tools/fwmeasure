@@ -1,0 +1,217 @@
+#!/bin/sh
+
+#
+# FIRMWARE MEASUREMENT UTILITY
+#
+
+R=""
+if [ `arch` != aarch64 ]; then
+    export PATH=`pwd`/bin:$PATH
+    R=`pwd`/data
+fi
+
+IMAGE_A_PARTUUID=D4E53BE5-7DC1-4199-914C-48EDFEA92C5E
+IMAGE_B_PARTUUID=E2FD6D28-3300-4979-8062-B8AB599F3898
+
+MTDPART_UBOOT=boot0
+MTDPART_UBOOTA=uboota
+MTDPART_UBOOTB=ubootb
+MTDPART_GOLDUBOOT=golduboot
+MTDPART_MAINFWA=mainfwa
+MTDPART_MAINFWB=mainfwb
+MTDPART_GOLDFW=goldfw
+MTDPART_DIAGFW=diagfw
+MTDPART_FWSEL=fwsel
+
+usage()
+{
+cat << EOF >&2
+usage: fwread fwname
+  fwnames:
+    boot0       - First stage bootloader
+    ubootg      - Gold firmware u-boot
+    goldfw      - Gold firmware image
+    uboota      - A image u-boot
+    kernela     - A image kernel
+    systema     - A image filesystem
+    ubootb      - B image u-boot
+    kernelb     - B image kernel
+    systemb     - B image filesystem
+    diagfw      - Diag firmware image
+EOF
+exit 1
+}
+
+set -e
+set -o pipefail
+
+main()
+{
+    local dev part imtype path s i_len m_len len nblks algo
+
+    [ $# -ne 1 ] && usage
+    n=`fwname_to_target $1` || usage
+    set -- $n
+    dev=$1; part=$2; imtype=$3
+
+    path=`dev_part_to_path $dev $part`
+    s=`get_image_info $path $imtype`
+    set -- $s; i_len=$1; m_len=$2
+
+    algo=sha256
+
+    len=$(($i_len + $m_len))
+    nblks=$((($len + 511) / 512))
+    dd if=$path bs=512 count=$nblks status=none | head -c $len | hash $algo
+}
+
+fwname_to_target()
+{
+    local fwname=$1 dev="" part="" imtype=""
+
+    case "$fwname" in
+    boot0)      dev=mtd; part=$MTDPART_UBOOT;     imtype=uboot; ;;
+    uboota)     dev=mtd; part=$MTDPART_UBOOTA;    imtype=uboot; ;;
+    ubootb)     dev=mtd; part=$MTDPART_UBOOTB;    imtype=uboot; ;;
+    ubootg)     dev=mtd; part=$MTDPART_GOLDUBOOT; imtype=uboot; ;;
+    kernela)    dev=mtd; part=$MTDPART_MAINFWA;   imtype=kernel_fit; ;;
+    kernelb)    dev=mtd; part=$MTDPART_MAINFWB;   imtype=kernel_fit; ;;
+    systema)    dev=mmc; part=$IMAGE_A_PARTUUID;  imtype=system_image; ;;
+    systemb)    dev=mmc; part=$IMAGE_B_PARTUUID;  imtype=system_image; ;;
+    goldfw)     dev=mtd; part=$MTDPART_GOLDFW;    imtype=kernel_fit; ;;
+    diagfw)     dev=mtd; part=$MTDPART_DIAGFW;    imtype=kernel_fit; ;;
+    esac
+    if [ -z "$dev" ]; then
+        echo "Unknown file object $fwname" >&2
+        exit 1
+    fi
+    echo "$dev $part $imtype"
+}
+
+dev_part_to_path()
+{
+    local dev=$1 part=$2
+
+    case "$dev" in
+    mtd) find_mtdpart_byname $part; ;;
+    mmc) find_mmcpart_bypartuuid $part; ;;
+    *) echo "dev_part_to_path: unknown dev $dev" >&2; exit 1; ;;
+    esac
+}
+
+find_mtdpart_byname()
+{
+    local s file
+
+    s=`grep "\"$1\"" $R/proc/mtd` || true
+    if [ -z "$s" ]; then
+        echo "find_mtdpart_byname: $1 not found" >&2
+        exit 1
+    fi
+    file=`echo $s | awk -F: '{ print $1 }'`
+    echo $R/dev/$file
+}
+
+find_mmcpart_bypartuuid()
+{
+    local uuid=$1 i partno s
+
+    for i in $R/sys/class/block/mmcblk0p*; do
+        partno=`cat $i/partition`
+        s=`sgdisk -i $partno /dev/mmcblk0 | grep Partition.unique.GUID | tr '[a-z]' '[A-Z]' | awk '{ print $NF }'`
+        if [ "$s" = "$uuid" ]; then
+            echo $R/dev/mmcblk0p$partno
+            return
+        fi
+    done
+    echo "find_mmcpart_bypartuuid: uuid $uuid not found" >&2
+    exit 1
+}
+ 
+get_image_info()
+{
+    local path=$1 imtype=$2 get_info
+
+    case "$imtype" in
+    uboot)          get_info=get_uboot_info; ;;
+    kernel_fit)     get_info=get_kernel_fit_info; ;;
+    system_image)   get_info=get_system_image_info; ;;
+    *)              echo "get_image_info: imtype $imtype unknown" >&2; exit 1; ;;
+    esac
+    $get_info $path
+}
+
+get_uboot_info()
+{
+    local UBOOT_SIZE_MAGIC=0xfb89090a
+    local path=$1 u_magic u_len m_len
+    set -- `dd if=$path bs=16 count=1 status=none | od -t x4 | head -1`
+    u_magic=0x$3
+    if [ $u_magic != $UBOOT_SIZE_MAGIC ]; then
+        echo "uboot magic not found" >&2
+        return 1
+    fi
+    u_len=$((0x$4))
+    m_len=`get_meta_len $path $u_len`
+    echo "$u_len $m_len"
+}
+
+get_kernel_fit_info()
+{
+    local KERNEL_ITB_MAGIC=0xd00dfeed
+    local path=$1 v k_magic k_len m_len
+    set -- `dd if=$path bs=4 count=2 status=none | od -t x1 | head -1`
+    v=$(((0x$2 << 24) + (0x$3 << 16) + (0x$4 << 8) + 0x$5))
+    k_magic=`printf "0x%08x\n" $v`
+    if [ $k_magic != $KERNEL_ITB_MAGIC ]; then
+        echo "kernel_fit magic not found" >&2
+        return 1
+    fi
+    k_len=$(((0x$6 << 24) + (0x$7 << 16) + (0x$8 << 8) + 0x$9))
+    m_len=`get_meta_len $path $k_len`
+    echo "$k_len $m_len"
+}
+
+get_system_image_info()
+{
+    local SQUASHFS_MAGIC=0x73717368
+    local dev=$1 s_magic s_len m_len
+    set -- `dd if=$dev bs=4 count=1 status=none | od -t x4 | head -1`
+    s_magic=0x$2
+    if [ $s_magic != $SQUASHFS_MAGIC ]; then
+        echo "system_image magic not found" >&2
+        return 1
+    fi
+    set -- `dd if=$dev bs=8 skip=5 count=1 status=none | od -t x8 | head -1`
+    s_len=$(((0x$2 + 4095) & -4096))
+    m_len=`get_meta_len $path $s_len`
+    echo "$s_len $m_len"
+}
+
+get_meta_len()
+{
+    local path=$1 offs=$2
+    local FILE_META_MAGIC=0x55ffa330
+    local magic
+
+    set -- `dd if=$path bs=1 skip=$offs count=8 status=none | od -t x4 | head -1`
+    magic=0x$2
+    if [ $magic = $FILE_META_MAGIC ]; then
+        echo $((8 + 0x$3))
+    else
+        echo 0
+    fi
+}
+
+hash()
+{
+    local algo=$1
+    case "$algo" in
+    md5)    md5sum | awk '{ print $1 }'; ;;
+    sha256) sha256sum | awk '{ print $1 }'; ;;
+    sha512) sha512sum | awk '{ print $1 }'; ;;
+    *) echo "hash: invalid algo $algo" >&2; exit 1; ;;
+    esac
+}
+
+main "$@"
