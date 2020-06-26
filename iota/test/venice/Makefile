@@ -142,4 +142,13 @@ venice-sim-cloud:
 	../../bin/iota_cmd run --suite equinix --topo cloud_sim
 	../../bin/iota_cmd run --suite techsupport --skip-setup 
 
+venice-kube-e2e-basenet:
+	cd ../../../ && make ws-tools && make pull-assets && tar -zxf /sw/naples_fw_all.tgz -C .
+	ln -s /sw/bin/venice.tgz /go/src/github.com/pensando/sw/bin/venice.tgz
+	cd ../../ && make
+	mkdir -p /go/src/github.com/pensando/sw/bin/upgrade-bundle
+	asset-pull bundle_image 1.2.0-140 /go/src/github.com/pensando/sw/bin/upgrade-bundle/bundle.tar
+	#First run mirror suite in basenet
+	../../bin/iota_cmd run --suite basenet --topo k8s
+
 all: venice-e2e upgrade
