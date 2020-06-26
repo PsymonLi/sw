@@ -182,8 +182,12 @@ init_pds (std::string cfg_file, std::string memory_profile,
             init_params.device_profile = PDS_DEVICE_PROFILE_8PF;
         }
     }
-    if (oper_mode == "bitw") {
-        init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW;
+    if (oper_mode == "bitw_smart_switch") {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
+    } else if (oper_mode == "bitw_smart_service") {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
+    } else if (oper_mode == "bitw_classic_switch") {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
     } else {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_HOST;
     }

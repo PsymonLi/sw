@@ -275,11 +275,21 @@ parse_test_cfg (const char *cfg_file, test_params_t *test_params)
                     printf("TEP encap env var %s, encap %u\n",
                            tep_encap_env, test_params->fabric_encap.type);
                 }
-                str = obj.second.get<std::string>("host-mode", "");
-                if (str.empty() || !str.compare("true")) {
+                str = obj.second.get<std::string>("oper-mode", "");
+                if (str.empty() || !str.compare("host")) {
                     test_params->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
+                } else if (!str.compare("bitw_smart_switch")) {
+                    test_params->dev_oper_mode =
+                        PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
+                } else if (!str.compare("bitw_smart_service")) {
+                    test_params->dev_oper_mode =
+                        PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
+                } else if (!str.compare("bitw_classic_switch")) {
+                    test_params->dev_oper_mode =
+                        PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
                 } else {
-                    test_params->dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
+                    printf("Unknown operational mode %s", str.c_str());
+                    exit(1);
                 }
                 str = obj.second.get<std::string>("memory-profile", "default");
                 if (!str.compare("router")) {

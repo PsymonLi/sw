@@ -541,7 +541,7 @@ TEST_F(device_test, device_update_dev_oper_mode) {
     device_create(feeder);
 
     // trigger
-    spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
+    spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
     device_update(feeder, &spec, DEVICE_ATTR_DEV_OPER_MODE);
 
     // validate

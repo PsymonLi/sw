@@ -8,7 +8,7 @@
 ///
 ///----------------------------------------------------------------------------
 
-#if !defined (__DEVICE_HPP__)
+#ifndef __DEVICE_HPP__
 #define __DEVICE_HPP__
 
 #include "nic/apollo/framework/api_base.hpp"

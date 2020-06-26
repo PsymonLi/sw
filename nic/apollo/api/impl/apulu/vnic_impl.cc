@@ -801,7 +801,7 @@ vnic_impl::program_hw(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     // program the nexthop table
     device = device_find();
     memset(&nh_data, 0, nh_data.entry_size());
-    if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW) {
+    if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
         nh_data.set_port(0);
     } else {
         lif = lif_impl_db()->find(&spec->host_if);
@@ -865,7 +865,8 @@ vnic_impl::update_hw(api_base *orig_obj, api_base *curr_obj,
                           "idx %u", spec->key.str(), nh_idx_);
             return sdk::SDK_RET_HW_READ_ERR;
         }
-        if (g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_BITW) {
+        if (g_pds_state.device_oper_mode() ==
+                PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
             nh_data.set_port(0);
         } else {
             lif_key = vnic->host_if();

@@ -62,12 +62,19 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
     proto_spec->set_learnagetimeout(api_spec->learn_age_timeout);
     proto_spec->set_overlayroutingen(api_spec->overlay_routing_en);
     proto_spec->set_symmetricroutingen(api_spec->symmetric_routing_en);
+    // xlate device operational mode
     switch (api_spec->dev_oper_mode) {
-    case PDS_DEV_OPER_MODE_BITW:
-        proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_BITW);
-        break;
     case PDS_DEV_OPER_MODE_HOST:
         proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_HOST);
+        break;
+    case PDS_DEV_OPER_MODE_BITW_SMART_SWITCH:
+        proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_BITW_SMART_SWITCH);
+        break;
+    case PDS_DEV_OPER_MODE_BITW_SMART_SERVICE:
+        proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_BITW_SMART_SERVICE);
+        break;
+    case PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH:
+        proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_BITW_CLASSIC_SWITCH);
         break;
     default:
         proto_spec->set_devopermode(pds::DEVICE_OPER_MODE_NONE);
@@ -146,14 +153,21 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
     api_spec->overlay_routing_en = proto_spec.overlayroutingen();
     api_spec->symmetric_routing_en = proto_spec.symmetricroutingen();
     switch (proto_spec.devopermode()) {
-    case pds::DEVICE_OPER_MODE_BITW:
-        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
-        break;
     case pds::DEVICE_OPER_MODE_HOST:
         api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
         break;
+    case pds::DEVICE_OPER_MODE_BITW_SMART_SWITCH:
+        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
+        break;
+    case pds::DEVICE_OPER_MODE_BITW_SMART_SERVICE:
+        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
+        break;
+    case pds::DEVICE_OPER_MODE_BITW_CLASSIC_SWITCH:
+        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
+        break;
     default:
-        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_NONE;
+        // default is set to HOST mode
+        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
         break;
     }
     switch (proto_spec.deviceprofile()) {

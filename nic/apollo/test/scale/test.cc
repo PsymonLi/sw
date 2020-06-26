@@ -1540,7 +1540,7 @@ create_device_cfg (ip_addr_t *ipaddr, uint64_t macaddr,
         //g_device.learning_en = true;
     } else {
         // other pipelines don't support host mode
-        g_device.dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
+        g_device.dev_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
     }
     g_device.memory_profile = memory_profile;
     rv = create_device(&g_device);

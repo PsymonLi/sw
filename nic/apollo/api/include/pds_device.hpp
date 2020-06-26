@@ -25,13 +25,38 @@ using namespace std;
 /// \defgroup PDS_DEVICE Device API
 /// \@{
 
-///< operational mode of the device
+/// operational mode of the device
+/// NOTE:
+/// multiple connectivity models are possible in SMART_SWITCH and SMART_SERVICE
+/// modes:
+///     a. one uplink handles traffic from/to host side and other uplink handles
+///        traffic from/to fabric/sdn
+///     b. both uplinks can send and receive traffic from/to host and from/to
+///        fabric side (i.e., both links are treated the same way and probably
+///        ECMP-ed), this connectivity model is useful when DSC is deployed
+///        behind/alongside a switch and switch is redirecting traffic to DSCs
+///        (aka. sidecar model) and making forwarding decisions
 typedef enum pds_device_oper_mode_e {
-    PDS_DEV_OPER_MODE_NONE = 0,
-    ///< bump-in-the-wire mode with workloads on uplink port(s)
-    PDS_DEV_OPER_MODE_BITW = 1,
-    ///< host path mode with workloads on pcie
-    PDS_DEV_OPER_MODE_HOST = 2,
+    PDS_DEV_OPER_MODE_NONE                = 0,
+    /// HOST mode with workloads on pcie; it is flow based and supports all
+    /// features (IP services like firewall, NAT etc.) depending on the memory
+    /// profile configured
+    PDS_DEV_OPER_MODE_HOST                = 1,
+    /// in SMART_SWITCH mode, DSC acts as bump-in-the-wire device; it is flow
+    /// based and does forwarding (based on mappings and routes) while
+    /// supporting all IP (smart) service features (and is flow based) depending
+    /// on the memory profile configured; the switch connected via the sdn
+    /// port(s) will do only underlay routing on the encapped (by DSC) traiffc
+    PDS_DEV_OPER_MODE_BITW_SMART_SWITCH   = 2,
+    /// in SMART_SERVICE mode, DSC is flow based and provides IP service
+    /// features; it doesn't do forwarding (i.e. L2 or L3 lookups), i.e. no
+    /// L2/L3 mappings need to be configured and IP routing is not enabled
+    PDS_DEV_OPER_MODE_BITW_SMART_SERVICE  = 3,
+    /// in CLASSIC_SWITCH mode, DSC performs routing and no IP services are
+    /// performed; additionally this is not flow based mode and hence every
+    /// packet is subjected to route table and/or mapping lookups (routes are
+    /// either programmed via grpc or distributed via control protocol like BGP)
+    PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH = 4,
 } pds_device_oper_mode_t;
 
 typedef enum pds_device_profile_e {

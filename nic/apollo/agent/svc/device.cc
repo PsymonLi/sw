@@ -65,9 +65,15 @@ device_conf_update (pds_device_spec_t *spec)
         (spec->dev_oper_mode == PDS_DEV_OPER_MODE_HOST)) {
         // host (pcie) enabled mode
         output.put("oper-mode", "host");
-    } else {
-        // bump-in-the-wire mode
-        output.put("oper-mode", "bitw");
+    } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
+        // bump-in-the-wire smart switch mode
+        output.put("oper-mode", "bitw_smart_switch");
+    } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SERVICE) {
+        // bump-in-the-wire smart service mode
+        output.put("oper-mode", "bitw_smart_service");
+    } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH) {
+        // bump-in-the-wire classic switch mode
+        output.put("oper-mode", "bitw_classic_switch");
     }
 
     // set the port admin state

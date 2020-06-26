@@ -36,7 +36,7 @@ device_feeder::init(const char * device_ip_str, std::string mac_addr_str,
     if (apulu()) {
         spec.dev_oper_mode = dev_op_mode;
     } else {
-        spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW;
+        spec.dev_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SWITCH;
     }
     num_obj = num_device;
     stash_ = stash;

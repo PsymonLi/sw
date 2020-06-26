@@ -8,7 +8,7 @@
             "mac-addr" : "0x000201000001",
             "dual-stack": "true",
             "encap": "vxlan",
-            "host-mode": "true"
+            "oper-mode": "host"
         },
         {
             "kind" : "tep",
