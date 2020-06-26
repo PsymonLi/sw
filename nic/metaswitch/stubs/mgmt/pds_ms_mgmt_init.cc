@@ -14,6 +14,7 @@
 #include "nic/metaswitch/stubs/mgmt/gen/svc/cp_test_gen.hpp"
 #include "nic/metaswitch/stubs/mgmt/gen/svc/debugpdsms_gen.hpp"
 #include "nic/metaswitch/stubs/mgmt/gen/mgmt/pds_ms_internal_cp_route_utils_gen.hpp"
+#include "nic/metaswitch/stubs/mgmt/pds_ms_mgmt_stub_api.hpp"
 #include <nbase.h>
 #include <nbbstub.h>
 extern "C" {
@@ -298,16 +299,17 @@ EXIT_LABEL:
 static sdk_ret_t
 pds_ms_suspend_cb (void *arg)
 {
-    // TODO
-    return SDK_RET_ERR;
+    PDS_TRACE_INFO("routing thread suspend callback invoked");
+    return SDK_RET_OK;
 }
 
 // called from other thread context to resume the metaswitch service
 static sdk_ret_t
 pds_ms_resume_cb (void *arg)
 {
-    // TODO
-    return SDK_RET_ERR;
+    PDS_TRACE_INFO("routing thread resume callback invoked");
+    //mgmt_stub_api_set_bgp_state(true);
+    return SDK_RET_OK;
 }
 
 bool pds_ms_mgmt_init(bool rr_mode)
