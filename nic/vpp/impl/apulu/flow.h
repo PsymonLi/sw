@@ -345,8 +345,8 @@ pds_flow_add_tx_hdrs_x2 (vlib_buffer_t *b0, vlib_buffer_t *b1)
     tx0->lif_flags = 0;
     tx1->lif_flags = 0;
     tx0->lif_sbit0_ebit7 = lif0 & 0xff;
-    tx1->lif_sbit0_ebit7 = lif0 & 0xff;
-    tx0->lif_sbit8_ebit10 = lif1 >> 0x8;
+    tx1->lif_sbit0_ebit7 = lif1 & 0xff;
+    tx0->lif_sbit8_ebit10 = lif0 >> 0x8;
     tx1->lif_sbit8_ebit10 = lif1 >> 0x8;
 
     ses_id0 = vnet_buffer(b0)->pds_flow_data.ses_id;
