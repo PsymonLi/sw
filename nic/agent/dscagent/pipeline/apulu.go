@@ -1654,7 +1654,7 @@ func (a *ApuluAPI) PurgeConfigs(deleteDB bool) error {
 func (a *ApuluAPI) GetWatchOptions(ctx context.Context, kind string) (ret api.ListWatchOptions) {
 	switch kind {
 	case "Endpoint":
-		str := fmt.Sprintf("spec.node-uuid=%s", a.InfraAPI.GetDscName())
+		str := fmt.Sprintf("(%s) infield (spec.node-uuid,status.node-uuid)", a.InfraAPI.GetDscName())
 		ret.FieldSelector = str
 		// case "Interface":
 		// 	ret.FieldSelector = fmt.Sprintf("status.dsc=%s", a.InfraAPI.GetDscName())

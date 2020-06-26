@@ -60,7 +60,8 @@ func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 		}
 	}
 
-	endpointReqMsg := convertEndpoint(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID)
+	nodeUUID := infraAPI.GetDscName()
+	endpointReqMsg := convertEndpoint(endpoint, infraAPI.GetConfig().MgmtIntf, vrfID, networkID, nodeUUID)
 	if endpointReqMsg == nil {
 		log.Errorf("Converting EP failed. ")
 		return fmt.Errorf("failed to convert ep")
@@ -98,6 +99,11 @@ func createEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 }
 
 func updateEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClient, intfClient halapi.InterfaceClient, endpoint netproto.Endpoint, vrfID, networkID uint64) error {
+	if isMigrating(endpoint) && !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() {
+		log.Infof("Got migration message for EP %v with Migration Status %v. Ignoring.", endpoint.Spec.Migration, endpoint)
+		return nil
+	}
+
 	updateEnic := endpoint.Status.EnicID != 0
 	// Handle interface updates for local EPs
 	if len(endpoint.Spec.Migration) > 0 && endpoint.Spec.Migration == netproto.MigrationState_START.String() {
@@ -134,6 +140,19 @@ func updateEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClie
 }
 
 func deleteEndpointHandler(infraAPI types.InfraAPI, epClient halapi.EndpointClient, intfClient halapi.InterfaceClient, endpoint netproto.Endpoint, vrfID, networkID uint64) error {
+	if isMigrating(endpoint) {
+		// For migrating EPs, both source and destination DSCs get DELETE operation. Selectively act upon them.
+		if isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_ABORT.String() {
+			log.Infof("Got Delete for incoming EP %v with migraiton status %v. Ignoring delete.", endpoint.Name, endpoint.Spec.Migration)
+			return nil
+		} else if !isMigratingIn(endpoint, infraAPI.GetDscName()) && endpoint.Spec.Migration != netproto.MigrationState_DONE.String() {
+			log.Infof("Got delete for outgoing EP %v with migration status %v. Ignoring delete.", endpoint.Name, endpoint.Spec.Migration)
+			return nil
+		}
+
+		log.Infof("Deleting EP %v with migration status %v", endpoint.Name, endpoint.Spec.Migration)
+	}
+
 	defer func() {
 		if endpoint.Status.EnicID != 0 {
 			// Delete enic here
@@ -207,7 +226,7 @@ func getNetprotoMigration(migrationState halapi.MigrationState) string {
 	return netproto.MigrationState_NONE.String()
 }
 
-func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, networkID uint64) *halapi.EndpointRequestMsg {
+func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, networkID uint64, nodeUUID string) *halapi.EndpointRequestMsg {
 
 	ret := &halapi.EndpointRequestMsg{
 		Request: []*halapi.EndpointSpec{
@@ -219,7 +238,7 @@ func convertEndpoint(endpoint netproto.Endpoint, mgmtIntf string, vrfID, network
 		},
 	}
 
-	if len(endpoint.Spec.Migration) != 0 && endpoint.Spec.Migration != netproto.MigrationState_NONE.String() && len(endpoint.Status.NodeUUID) != 0 && endpoint.Spec.NodeUUID != endpoint.Status.NodeUUID {
+	if isMigrating(endpoint) && isMigratingIn(endpoint, nodeUUID) {
 		log.Infof("Migration in progress")
 		if len(endpoint.Spec.HomingHostAddr) == 0 {
 			log.Errorf("No homing host IP passed. Cannot initiate migration.")

@@ -36,7 +36,6 @@ func (sm *Statemgr) setWatchFilterFlags() {
 
 // GetAgentWatchFilter is called when filter get is happening based on netagent watchoptions
 func (sm *Statemgr) GetAgentWatchFilter(ctx context.Context, kind string, opts *api.ListWatchOptions) []memdb.FilterFn {
-
 	var filters []memdb.FilterFn
 	// the object kind has "netproto." prefix which is needed for Fieldselector fitlers to work, since the object
 	// name clashes with the names in api/protos
@@ -51,12 +50,11 @@ func (sm *Statemgr) GetAgentWatchFilter(ctx context.Context, kind string, opts *
 
 	// FIX for VS-1305, with Naples running release A code and Venice running newer code, Naples will send
 	// no watchoptions, fix the watchoptions here
-	if kind == ".Endpoint" {
-		if opts.FieldSelector == "" {
-			str := fmt.Sprintf("spec.node-uuid=%s", netutils.GetNodeUUIDFromCtx(ctx))
+	if strings.Contains(kind, ".Endpoint") {
+		if opts.FieldSelector == "" || !strings.Contains(opts.FieldSelector, "status") {
+			str := fmt.Sprintf("(%s) infield (spec.node-uuid,status.node-uuid)", netutils.GetNodeUUIDFromCtx(ctx))
 			opts.FieldSelector = str
-			kind = "netproto" + kind
-			sm.logger.Infof("GetAgentWatchFilter Update watch options for %s | to: %v", kind, opts)
+			kind = "netproto.Endpoint"
 		}
 	}
 	return sm.mbus.GetWatchFilter(kind, opts)

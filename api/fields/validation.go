@@ -18,7 +18,7 @@ import (
 //    Examples: "a", "a.b", "a.b.c", "a.b[*].c", "a.b[*]", "a.b[x].c", "a.b[x]"
 // 4) Operators "=", "!=" require a single value
 //    Examples: "x=a", "x!=a"
-// 5) Operators " in ", " notin " could have multiple values, but need ().
+// 5) Operators " in ", " notin ", " infield " could have multiple values, but need ().
 //    Examples: "x in (a)", "x notin (a,b)"
 // 6) Value(s) is/are a string of alphanumeric characters. "." and "/" are
 //    allowed in values. A single value does not require any scaffolding.
@@ -35,6 +35,10 @@ var (
 	varFmt             = "\\.[A-Za-z]([A-Za-z\\-]*[A-Za-z])*" // . separated variable
 	subscriptedStarFmt = varFmt + "\\[\\*\\]"                 // subscript [*] for maps
 	subscriptedVarFmt  = varFmt + "\\[[A-Za-z0-9]+\\]"        // subscript [key] for maps
+	valF               = "\\.[A-Za-z0-9]([A-Za-z0-9\\-]*[A-Za-z0-9])*"
+	//valTestFmt = "\\((" + startFmt + ")|(" + valF + ")*\\)"
+	valStartFmt = "[A-Za-z0-9]([A-Za-z0-9\\-]*[A-Za-z0-9])*"
+	valTestFmt  = "\\(" + valStartFmt + "(" + valF + ")*\\)"
 
 	// middleFmt is list of "." separated variables, optionally subscripted by "*"
 	// for slices or maps, "key" for maps.
@@ -44,7 +48,7 @@ var (
 	endFmt = "(" + subscriptedStarFmt + "|" + subscriptedVarFmt + "|" + varFmt + ")"
 
 	// support both multiple level (spec.network) and single level (severity) keys
-	fieldKeyFmt = "(" + startFmt + middleFmt + endFmt + "|" + startFmt + ")"
+	fieldKeyFmt = "(" + startFmt + middleFmt + endFmt + "|" + startFmt + "|" + valTestFmt + ")"
 
 	keyRE           = regexp.MustCompile(fieldKeyFmt)
 	validFieldKeyRE = regexp.MustCompile("^" + fieldKeyFmt + "$")
@@ -62,10 +66,10 @@ func ValidateFieldKey(k string) error {
 
 // Op related validations.
 var (
-	opFmt          = `(\s*<=\s*|\s*>=\s*|\s*=\s*|\s*!=\s*|\s+in\s+|\s+notin\s+|\s*<\s*|\s*>\s*)`
+	opFmt          = `(\s*<=\s*|\s*>=\s*|\s*=\s*|\s*!=\s*|\s+in\s+|\s+notin\s+|\s+infield\s+|\s*<\s*|\s*>\s*)`
 	opRE           = regexp.MustCompile(opFmt)
 	validFieldOpRE = regexp.MustCompile("^" + opFmt + "$")
-	fieldOpErrMsg  = "op must be one of {=, !=, in, notin, <, <=, >, >=}"
+	fieldOpErrMsg  = "op must be one of {=, !=, in, notin, infield, <, <=, >, >=}"
 )
 
 // ValidateFieldOp validate fieldOp
@@ -106,9 +110,9 @@ func ValidateFieldVals(vals string) error {
 // Selector validation.
 var (
 	singleOpFmt  = `(\s*<=\s*|\s*>=\s*|\s*=\s*|\s*!=\s*|\s*<\s*|\s*>\s*)` // spaces are optional around =, !=, <, <=, > and >=
-	setOpFmt     = `(\s+in\s+|\s+notin\s+)`                               // atleast one space is needed for in and notin
+	setOpFmt     = `(\s+in\s+|\s+notin\s+|\s+infield\s+)`                 // atleast one space is needed for in, infield and notin
 	singleValFmt = singleOpFmt + "(" + valFmt + ")?"                      // = and != need a single value or empty
-	setValFmt    = setOpFmt + valsFmt                                     // in and notin need multiple values
+	setValFmt    = setOpFmt + valsFmt                                     // in, infield and notin need multiple values
 	fieldValFmt  = "(" + singleValFmt + "|" + setValFmt + ")"
 	reqFmt       = "(" + fieldKeyFmt + fieldValFmt + ")"
 	reqStartFmt  = "^" + reqFmt + "+"
@@ -116,7 +120,7 @@ var (
 	selFmt       = reqStartFmt + reqNextFmt
 
 	validSelRE = regexp.MustCompile(selFmt)
-	selErrMsg  = "valid selector must be a comma separated set of <key,op,values> tuples, key is a string of alphabets, with indices for maps, op must be one of {=,!=,in,notin,<=,<,>=,>}, values must be a single alphanumeric string or a comma separated set of alphanumeric strings in parentheses"
+	selErrMsg  = "valid selector must be a comma separated set of <key,op,values> tuples, key is a string of alphabets, with indices for maps, op must be one of {=,!=,in,infield,notin,<=,<,>=,>}, values must be a single alphanumeric string or a comma separated set of alphanumeric strings in parentheses"
 )
 
 // ValidateSelector validates Selector

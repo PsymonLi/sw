@@ -3327,10 +3327,10 @@ func TestWatchFilter(t *testing.T) {
 	options1.Namespace = "test"
 
 	options2 := api.ListWatchOptions{}
-	options2.FieldSelector = "spec.node-uuid=0000.0000.0001"
+	options2.FieldSelector = "(0000.0000.0001) infield (spec.node-uuid,status.node-uuid)"
 
 	options3 := api.ListWatchOptions{}
-	options3.FieldSelector = "spec.node-uui=0000.0000.0001"
+	options3.FieldSelector = "spec.node-uui=0000.0000.0001,status.node-uui=0000.0000.0001"
 
 	filterFn1 := stateMgr.GetAgentWatchFilter(nil, "Network", &options1)
 	filterFn2 := stateMgr.GetAgentWatchFilter(nil, "netproto.Endpoint", &options2)
@@ -3414,13 +3414,14 @@ func TestWatchFilter(t *testing.T) {
 	Assert(t, res == true, "expecting filter to pass")
 
 	options9 := api.ListWatchOptions{}
-	options9.FieldSelector = "tenant=tenant1,name in (name2)"
+	options9.FieldSelector = "tenant=tenant1,name in (name2),status.node-uuid=aaaa.bbbb.cccc"
 
 	filterFn9 := stateMgr.GetAgentWatchFilter(nil, "netproto.Endpoint", &options9)
 	fmt.Println("Length of flts: ", len(filterFn9))
 	obj9 := obj2
 	obj9.Tenant = "tenant1"
 	obj9.Name = "name2"
+	obj9.Status.NodeUUID = "aaaa.bbbb.cccc"
 
 	res = true
 	for _, filt := range filterFn9 {
