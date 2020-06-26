@@ -1,13 +1,35 @@
 #!/bin/bash
 
 set -x
-set -e
+# set -e
 umask 000
 echo | ./VMware-ovftool-4.3.0-13981069-lin.x86_64.bundle --eulas-agreed
-# Build the OVA and download it using buildit tool
-build_id=`/t/buildit b -i /t/pen-install.iso pensando/e2e-images/venice/venice.yaml | grep 'Build ID: ' | uniq | sed 's/Build ID: //'`
+# Build the OVA and download it using buildit tool. Try a few times.
+for i in {1..10}; do
+    output=`/t/buildit b -i /t/pen-install.iso pensando/e2e-images/venice/venice.yaml`
+    if [[ $? != 0 ]]; then
+        echo "attemp: $i to run buildit failed"
+        echo -e "buildit output = $output"
+    else
+	break
+    fi
+    if [[ $i < 10 ]]; then
+	echo "retrying again in 60 seconds"
+	sleep 60
+    else
+	echo "giving up.."
+	exit 1
+    fi
+done
+# Parse build id
+build_id=`echo -e "$output" | grep 'Build ID: ' | uniq | sed 's/Build ID: //'`
+echo "Build ID = $build_id"
+if [[ $build_id != build-+([0-9]) ]]; then 
+    echo "cannot determine the build id"
+    exit 1
+fi
 # Directory to keep the output of the build
-if [ $# -eq 1 -a "$1" == "apulu" ]; then
+if [[ $# == 1 && $1 == "apulu" ]]; then
     echo "building ova and qcow2 for apulu venice"
     dir="output-apulu"
 else
