@@ -22,5 +22,6 @@ extern kvstore  *g_kvstore;
 sdk_ret_t pds_get_route_table(uuid *uuid);
 sdk_ret_t pds_get_policy(uuid *uuid);
 sdk_ret_t pds_get_mapping(uuid *uuid);
+sdk_ret_t pds_get_svc_mapping(uuid *uuid);
 
 #endif // __PDSDBUTIL_HPP__

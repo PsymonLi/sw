@@ -8,27 +8,30 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "pdsdbutil.hpp"
-#include "nic/apollo/api/include/pds_policy.hpp"
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/string_generator.hpp>
+#include "nic/apollo/api/include/pds_policy.hpp"
+#include "nic/apollo/api/impl/apulu/pdsdbutil/pdsdbutil.hpp"
 
 static int g_total_policies = 0;
 static long int g_total_rules = 0;
 
 static inline void
-pds_print_policy_legend (void) {
+pds_print_policy_legend (void)
+{
     printf("ICMP T/C : ICMP Type/Code\n\n");
 }
 
 static inline void
-pds_print_policy_summary (void) {
-    printf("\nNo. of security policies : %d\n", g_total_policies);
-    printf("Total no. of rules: %ld\n\n", g_total_rules);
+pds_print_policy_summary (void)
+{
+    printf("\nNo. of security policies : %u\n", g_total_policies);
+    printf("Total no. of rules: %lu\n\n", g_total_rules);
 }
 
 static inline void
-pds_print_policy_header (void) {
+pds_print_policy_header (void)
+{
     string hdr_line = string(203, '-');
     printf("%-203s\n", hdr_line.c_str());
     printf("%-40s%-9s%-48s%-48s%-12s%-12s%-8s%-10s%-10s%-6s\n",
@@ -53,7 +56,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
     rule_l3_match_t *l3_match;
     rule_l4_match_t *l4_match;
     rule_info_t     *rule_info = (rule_info_t *)rule_info_;
-    
+
     if (!rule_info) {
         return;
     }
@@ -67,7 +70,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
     } else {
         printf("%-18s : %-40s\n", "Policy ID", to_string(*uuid_).c_str());
     }
-    
+
     printf("%-18s : %-10s\n", "Address Family", ipaf2str(rule_info->af));
 
     switch (rule_info->default_action.fw_action.action) {
@@ -83,12 +86,12 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
     }
 
     pds_print_policy_header();
-    
+
     for (uint32_t i = 0; i < rule_info->num_rules; i++) {
         rule = &rule_info->rules[i];
         l3_match = &rule->attrs.match.l3_match;
         l4_match = &rule->attrs.match.l4_match;
-    
+
         proto_str = "-";
         src_port_str = "*";
         dst_port_str = "*";
@@ -102,7 +105,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
             dst_port_str = "-";
             break;
         }
-    
+
         src_ip_str = "*";
         src_ip_str2 = "";
         need_second_line = false;
@@ -131,7 +134,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
         default:
             break;
         }
-    
+
         dst_ip_str = "*";
         dst_ip_str2 = "";
         switch (l3_match->dst_match_type) {
@@ -158,7 +161,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
         default:
             break;
         }
-    
+
         icmp_str = "-";
         if (l3_match->ip_proto != IP_PROTO_ICMP) {
              src_port_str = to_string(l4_match->sport_range.port_lo);
@@ -173,7 +176,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
                 icmp_str = to_string(l4_match->icmp_type);
             } else if (l4_match->type_match_type == MATCH_ANY) {
                 icmp_str = "*";
-            } 
+            }
 
             icmp_str += "/";
             if (l4_match->code_match_type == MATCH_SPECIFIC) {
@@ -182,7 +185,7 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
                 icmp_str = "*";
             }
         }
-    
+
         switch (rule->attrs.action_data.fw_action.action) {
         case SECURITY_RULE_ACTION_ALLOW:
             action_str = "A";
@@ -194,13 +197,13 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
             action_str = "-";
             break;
         }
-    
+
         rule_id_str = "-";
         rule_uuid = string_generator()(string(rule->key.str()));
         if (!rule_uuid.is_nil()) {
             rule_id_str = to_string(rule_uuid);
         }
-    
+
         if (need_second_line) {
             printf("%-40s%-9s%-48s%-48s%-12s%-12s%-8s%-10d%-10s%-6s\n",
                    rule_id_str.c_str(), proto_str.c_str(),
@@ -222,20 +225,20 @@ pds_print_policy (void *key_, void *rule_info_, void *ctxt) {
 }
 
 sdk_ret_t
-pds_get_policy (uuid *uuid) {
+pds_get_policy (uuid *uuid)
+{
     string prefix_match = "policy";
     sdk_ret_t ret;
-    
+
     g_total_policies = 0;
     g_total_rules = 0;
 
     if (uuid && !uuid->is_nil()) {
         prefix_match += ":";
-        prefix_match += string((char*)uuid, uuid->size());
+        prefix_match += string((char *)uuid, uuid->size());
     }
     pds_print_policy_legend();
     ret = g_kvstore->iterate(pds_print_policy, uuid, prefix_match);
     pds_print_policy_summary();
     return ret;
 }
-

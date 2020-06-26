@@ -8,21 +8,23 @@
 ///
 //----------------------------------------------------------------------------
 
-#include "pdsdbutil.hpp"
-#include "nic/apollo/api/internal/pds_route.hpp"
 #include <boost/uuid/uuid_io.hpp>
+#include "nic/apollo/api/internal/pds_route.hpp"
+#include "nic/apollo/api/impl/apulu/pdsdbutil/pdsdbutil.hpp"
 
 static int g_total_route_tables = 0;
 static long int g_total_routes = 0;
 
 static inline void
-pds_print_route_table_summary (void) {
-    printf("\nNo. of route-tables : %d\n", g_total_route_tables);
-    printf("Total no. of routes : %ld\n\n", g_total_routes);
+pds_print_route_table_summary (void)
+{
+    printf("\nNo. of route-tables : %u\n", g_total_route_tables);
+    printf("Total no. of routes : %lu\n\n", g_total_routes);
 }
 
 static inline void
-pds_print_route_table_header (void) {
+pds_print_route_table_header (void)
+{
     string hdr_line = string(158, '-');
     printf("%-158s\n", hdr_line.c_str());
     printf("%-40s%-10s%-40s%-20s%-8s%-40s\n%-40s%-10s%-40s%-20s%-8s%-40s\n",
@@ -32,13 +34,14 @@ pds_print_route_table_header (void) {
 }
 
 static inline void
-pds_print_route_table (void *key_, void *route_info_, void *ctxt) {
+pds_print_route_table (void *key_, void *route_info_, void *ctxt)
+{
     pds_obj_key_t *key;
     uuid          *uuid_ = (uuid *)ctxt;
     route_info_t  *route_info = (route_info_t *)route_info_;
     char          priority_en_str = 'N';
     bool          first = true;
-    
+
     if (!route_info) {
         return;
     }
@@ -67,7 +70,7 @@ pds_print_route_table (void *key_, void *route_info_, void *ctxt) {
         // TODO:
         // Which of these enums is used to display NH ID?
         // -->PDS_NH_TYPE_UNDERLAY
-        // -->PDS_NH_TYPE_UNDERLAY_ECMP 
+        // -->PDS_NH_TYPE_UNDERLAY_ECMP
 
         // TODO:
         // PDS_NH_TYPE_IP case is deprecated - should we still support this case?
@@ -107,13 +110,14 @@ pds_print_route_table (void *key_, void *route_info_, void *ctxt) {
                    "-");
             first = false;
             break;
-            
+
         }
     }
 }
 
 sdk_ret_t
-pds_get_route_table (uuid *uuid) {
+pds_get_route_table (uuid *uuid)
+{
     string    prefix_match = "route";
     sdk_ret_t ret;
 
@@ -124,10 +128,9 @@ pds_get_route_table (uuid *uuid) {
 
     if (uuid && !uuid->is_nil()) {
         prefix_match += ":";
-        prefix_match += string((char*)uuid, uuid->size());
+        prefix_match += string((char *)uuid, uuid->size());
     }
     ret = g_kvstore->iterate(pds_print_route_table, uuid, prefix_match);
     pds_print_route_table_summary();
     return ret;
 }
-
