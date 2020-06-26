@@ -14,6 +14,8 @@ import (
 	minioclient "github.com/minio/minio-go/v6"
 	"github.com/pkg/errors"
 
+	"github.com/pensando/sw/venice/globals"
+	"github.com/pensando/sw/venice/utils/objstore/minio"
 	mock_credentials "github.com/pensando/sw/venice/utils/objstore/minio/mock"
 
 	"github.com/pensando/sw/venice/vos"
@@ -312,5 +314,20 @@ func TestNew(t *testing.T) {
 	testCertMgrChannel = make(chan interface{}, 1)
 	testCertMgrChannel <- mockCredentialManager
 	_, err = New(context.Background(), false, "testURL", testCertMgrChannel)
+	AssertError(t, err, "VOS constructor is expected to fail")
+
+	// positive case
+	c = gomock.NewController(t)
+	defer c.Finish()
+	mockCredentialManager = mock_credentials.NewMockCredentialsManager(c)
+	mockCredentialManager.EXPECT().GetCredentials().Return(&minio.Credentials{
+		AccessKey: "testAccessKey",
+		SecretKey: "testSecretKey",
+	}, nil).AnyTimes()
+
+	testCertMgrChannel = make(chan interface{}, 1)
+	testCertMgrChannel <- mockCredentialManager
+	args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", "localhost", globals.VosMinioPort), "/disk1"}
+	_, err = New(context.Background(), false, "testURL", testCertMgrChannel, WithBootupArgs(args))
 	AssertError(t, err, "VOS constructor is expected to fail")
 }

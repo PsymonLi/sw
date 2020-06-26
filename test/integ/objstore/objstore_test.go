@@ -26,14 +26,12 @@ import (
 	"github.com/pensando/sw/api/generated/apiclient"
 	testutils "github.com/pensando/sw/test/utils"
 	"github.com/pensando/sw/venice/cmd/credentials"
-	"github.com/pensando/sw/venice/cmd/grpc/service"
-	"github.com/pensando/sw/venice/cmd/services/mock"
-	"github.com/pensando/sw/venice/cmd/types/protos"
+	types "github.com/pensando/sw/venice/cmd/types/protos"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/certs"
 	"github.com/pensando/sw/venice/utils/log"
-	"github.com/pensando/sw/venice/utils/objstore/client"
-	"github.com/pensando/sw/venice/utils/resolver"
+	objstore "github.com/pensando/sw/venice/utils/objstore/client"
+	mockresolver "github.com/pensando/sw/venice/utils/resolver/mock"
 	"github.com/pensando/sw/venice/utils/rpckit"
 	. "github.com/pensando/sw/venice/utils/testutils"
 )
@@ -52,8 +50,7 @@ const (
 // objstoreIntegSuite is the state of integ test
 type objstoreIntegSuite struct {
 	restClient     apiclient.Services
-	resolverSrv    *rpckit.RPCServer
-	resolverClient resolver.Interface
+	resolverClient *mockresolver.ResolverClient
 	authDir        string
 	tlsConfig      *tls.Config
 	credsManger    minio.CredentialsManager
@@ -73,9 +70,9 @@ func (d *dummyCredsManager) CreateCredentials() (*minio.Credentials, error) {
 
 func TestObjStoreInteg(t *testing.T) {
 	// integ test suite
-	// var sts = &objstoreIntegSuite{}
-	// var _ = Suite(sts)
-	// TestingT(t)
+	var sts = &objstoreIntegSuite{}
+	var _ = Suite(sts)
+	TestingT(t)
 }
 
 func (it *objstoreIntegSuite) SetUpSuite(c *C) {
@@ -88,13 +85,19 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 	}
 
 	// Now create a mock resolver
-	m := mock.NewResolverService()
-	resolverHandler := service.NewRPCHandler(m)
-	resolverServer, err := rpckit.NewRPCServer(globals.Cmd, "localhost:0", rpckit.WithTracerEnabled(true))
-	c.Assert(err, IsNil)
-	types.RegisterServiceAPIServer(resolverServer.GrpcServer, resolverHandler)
-	resolverServer.Start()
-	it.resolverSrv = resolverServer
+	it.resolverClient = mockresolver.New()
+	penVos := types.ServiceInstance{
+		TypeMeta: api.TypeMeta{
+			Kind: "ServiceInstance",
+		},
+		ObjectMeta: api.ObjectMeta{
+			Name: "pen-vos",
+		},
+		Service: globals.VosMinio,
+		Node:    "localhost",
+		URL:     minioURL,
+	}
+	it.resolverClient.AddServiceInstance(&penVos)
 
 	caKey, err := certs.ReadPrivateKey(keyPath)
 	c.Assert(err, IsNil)
@@ -125,9 +128,9 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 	}
 
 	// start objstore
-	// ctx := context.Background()
-	// logger := log.GetNewLogger(log.GetDefaultConfig("TestObjStoreApis"))
-	// testutils.StartVos(ctx, logger, it.credsManger)
+	ctx := context.Background()
+	logger := log.GetNewLogger(log.GetDefaultConfig("TestObjStoreApis"))
+	testutils.StartVos(ctx, logger, it.credsManger)
 
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -144,24 +147,6 @@ func (it *objstoreIntegSuite) SetUpSuite(c *C) {
 		defer s.Body.Close()
 		return s.StatusCode == http.StatusOK, s
 	}, "minio server is unhealthy", "1s", "60s")
-
-	// populate the mock resolver with apiserver instance.
-	apiSrvSi := types.ServiceInstance{
-		TypeMeta: api.TypeMeta{
-			Kind: "ServiceInstance",
-		},
-		ObjectMeta: api.ObjectMeta{
-			Name: "objstore1",
-		},
-		Service: globals.VosMinio,
-		Node:    "localhost",
-		URL:     minioURL,
-	}
-	m.AddServiceInstance(&apiSrvSi)
-
-	// create a controller
-	rc := resolver.New(&resolver.Config{Name: globals.Npm, Servers: []string{resolverServer.GetListenURL()}})
-	it.resolverClient = rc
 }
 
 func (it *objstoreIntegSuite) SetUpTest(c *C) {
@@ -178,7 +163,6 @@ func (it *objstoreIntegSuite) TearDownSuite(c *C) {
 	log.Infof("Stop all Test Controllers")
 
 	it.resolverClient.Stop()
-	it.resolverSrv.Stop()
 
 	testutils.CleanupIntegTLSProvider()
 
