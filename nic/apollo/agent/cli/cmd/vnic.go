@@ -227,7 +227,15 @@ func printVnicDetail(vnic *pds.Vnic) {
 	egressV4Policy := spec.GetEgV4SecurityPolicyId()
 	ingressV6Policy := spec.GetIngV6SecurityPolicyId()
 	egressV6Policy := spec.GetEgV6SecurityPolicyId()
-
+	v4Meter := spec.GetV4MeterId()
+	v6Meter := spec.GetV6MeterId()
+	txPolicer := spec.GetTxPolicerId()
+	rxPolicer := spec.GetRxPolicerId()
+	isPrimary := spec.GetPrimary()
+	hostName := spec.GetHostName()
+	maxSessions := spec.GetMaxSessions()
+	flowLearn := spec.GetFlowLearnEn()
+	meterEn := spec.GetMeterEn()
 	fabricEncapStr := utils.EncapToString(spec.GetFabricEncap())
 	vnicEncapStr := utils.EncapToString(spec.GetVnicEncap())
 
@@ -266,6 +274,15 @@ func printVnicDetail(vnic *pds.Vnic) {
 	fmt.Printf("%-30s : %s\n", "Tx Mirror Session", txMirrorSessionStr)
 	fmt.Printf("%-30s : %t\n", "Switch Vnic", spec.GetSwitchVnic())
 	fmt.Printf("%-30s : %s\n", "Host Interface", lifName)
+	fmt.Printf("%-30s : %s\n", "Host Name", hostName)
+	fmt.Printf("%-30s : %t\n", "Primary Vnic", isPrimary)
+	fmt.Printf("%-30s : %d\n", "Maximum Sessions", maxSessions)
+	fmt.Printf("%-30s : %t\n", "Flow Learn Enabled", flowLearn)
+	fmt.Printf("%-30s : %t\n", "Meter Enabled", meterEn)
+	fmt.Printf("%-30s : %s\n", "IPv4 Meter ID:", utils.IdToStr(v4Meter))
+	fmt.Printf("%-30s : %s\n", "IPv6 Meter ID:", utils.IdToStr(v6Meter))
+	fmt.Printf("%-30s : %s\n", "Rx Policer ID:", utils.IdToStr(rxPolicer))
+	fmt.Printf("%-30s : %s\n", "Tx Policer ID:", utils.IdToStr(txPolicer))
 	if len(ingressV4Policy) != 0 {
 		keyStr := fmt.Sprintf("%-30s : ", "Ingress IPv4 Security Group ID")
 		for i := 0; i < len(ingressV4Policy); i++ {
