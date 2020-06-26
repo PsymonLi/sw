@@ -1469,6 +1469,18 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
+      "name": "FramesRxPripause",
+      "displayName": "Rx PFC Frames",
+      "description": "Frames Received of PFC",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
       "name": "FramesRxTooLong",
       "displayName": "Rx Too long Frames",
       "description": "Received Frames Too Long",
@@ -1745,6 +1757,18 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
       "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
     },
     {
+      "name": "FramesTxPripause",
+      "displayName": "Tx PFC Frames",
+      "description": "Frames Transmitted of PFC",
+      "units": "Count",
+      "baseType": "Counter",
+      "tags": [
+        "Level4"
+      ],
+      "jsType": "number",
+      "aggregationFunc": Telemetry_queryMetricsQuerySpec_function.last
+    },
+    {
       "name": "FramesTxVlan",
       "displayName": "Tx VLAN Frames",
       "description": "Frames Transmitted VLAN",
@@ -1902,8 +1926,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_0",
-      "displayName": "Tx Pri0 Frames",
-      "description": "Pri#0 Frames Transmitted",
+      "displayName": "Tx PFC Pri0 Frames",
+      "description": "Frames Transmitted of PFC Pri#0",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1914,8 +1938,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_1",
-      "displayName": "Tx Pri1 Frames",
-      "description": "Pri#1 Frames Transmitted",
+      "displayName": "Tx PFC Pri1 Frames",
+      "description": "Frames Transmitted of PFC Pri#1",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1926,8 +1950,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_2",
-      "displayName": "Tx Pri2 Frames",
-      "description": "Pri#2 Frames Transmitted",
+      "displayName": "Tx PFC Pri2 Frames",
+      "description": "Frames Transmitted of PFC Pri#2",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1938,8 +1962,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_3",
-      "displayName": "Tx Pri3 Frames",
-      "description": "Pri#3 Frames Transmitted",
+      "displayName": "Tx PFC Pri3 Frames",
+      "description": "Frames Transmitted of PFC Pri#3",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1950,8 +1974,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_4",
-      "displayName": "Tx Pri4 Frames",
-      "description": "Pri#4 Frames Transmitted",
+      "displayName": "Tx PFC Pri4 Frames",
+      "description": "Frames Transmitted of PFC Pri#4",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1962,8 +1986,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_5",
-      "displayName": "Tx Pri5 Frames",
-      "description": "Pri#5 Frames Transmitted",
+      "displayName": "Tx PFC Pri5 Frames",
+      "description": "Frames Transmitted of PFC Pri#5",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1974,8 +1998,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_6",
-      "displayName": "Tx Pri6 Frames",
-      "description": "Pri#6 Frames Transmitted",
+      "displayName": "Tx PFC Pri6 Frames",
+      "description": "Frames Transmitted of PFC Pri#6",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1986,8 +2010,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesTxPri_7",
-      "displayName": "Tx Pri7 Frames",
-      "description": "Pri#7 Frames Transmitted",
+      "displayName": "Tx PFC Pri7 Frames",
+      "description": "Frames Transmitted of PFC Pri#7",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -1998,8 +2022,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_0",
-      "displayName": "Rx Pri0 Frames",
-      "description": "Pri#0 Frames Received",
+      "displayName": "Rx PFC Pri0 Frames",
+      "description": "Frames Received of PFC Pri#0",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2010,8 +2034,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_1",
-      "displayName": "Rx Pri1 Frames",
-      "description": "Pri#1 Frames Received",
+      "displayName": "Rx PFC Pri1 Frames",
+      "description": "Frames Received of PFC Pri#1",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2022,8 +2046,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_2",
-      "displayName": "Rx Pri2 Frames",
-      "description": "Pri#2 Frames Received",
+      "displayName": "Rx PFC Pri2 Frames",
+      "description": "Frames Received of PFC Pri#2",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2034,8 +2058,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_3",
-      "displayName": "Rx Pri3 Frames",
-      "description": "Pri#3 Frames Received",
+      "displayName": "Rx PFC Pri3 Frames",
+      "description": "Frames Received of PFC Pri#3",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2046,8 +2070,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_4",
-      "displayName": "Rx Pri4 Frames",
-      "description": "Pri#4 Frames Received",
+      "displayName": "Rx PFC Pri4 Frames",
+      "description": "Frames Received of PFC Pri#4",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2058,8 +2082,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_5",
-      "displayName": "Rx Pri5 Frames",
-      "description": "Pri#5 Frames Received",
+      "displayName": "Rx PFC Pri5 Frames",
+      "description": "Frames Received of PFC Pri#5",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2070,8 +2094,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_6",
-      "displayName": "Rx Pri6 Frames",
-      "description": "Pri#6 Frames Received",
+      "displayName": "Rx PFC Pri6 Frames",
+      "description": "Frames Received of PFC Pri#6",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
@@ -2082,8 +2106,8 @@ export const MetricsMetadataIris: { [key: string]: MetricMeasurement } = {
     },
     {
       "name": "FramesRxPri_7",
-      "displayName": "Rx Pri7 Frames",
-      "description": "Pri#7 Frames Received",
+      "displayName": "Rx PFC Pri7 Frames",
+      "description": "Frames Received of PFC Pri#7",
       "units": "Count",
       "baseType": "Counter",
       "tags": [
