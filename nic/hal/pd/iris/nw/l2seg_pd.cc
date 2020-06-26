@@ -555,6 +555,14 @@ l2seg_pd_depgm_ifs_inp_prop_tbl(l2seg_t *l2seg)
                         HAL_TRACE_ERR("Unable to repgm enics and eps in "
                                       "mgmt l2seg. err: {}", ret);
                     }
+                } else {
+                    HAL_TRACE_DEBUG("No shared l2seg ... delete inp prop");
+                    ret = l2seg_pd_depgm_if_inp_prop_tbl(l2seg_pd, if_idx);
+                    if (ret != HAL_RET_OK) {
+                        HAL_TRACE_ERR("Unable to depgm ifs inp. prop. tbl. "
+                                      "ifpc_id: {}. ret: {}", if_idx, ret);
+                        break;
+                    }
                 }
             }
         } else {
