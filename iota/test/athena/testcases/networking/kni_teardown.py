@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import iota.harness.api as api
+import iota.test.athena.utils.misc as utils
 
 def Setup(tc):
 
@@ -17,14 +18,10 @@ def Trigger(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
 
     # undo config changes for mnic_p2p subintf
-    cmd = "ifconfig mnic_p2p." + str(tc.wl1.uplink_vlan) + " down && "
-    cmd += "vconfig rem mnic_p2p." + str(tc.wl1.uplink_vlan)
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
-
-    # undo config changes for mnic_p2p
-    cmd = "ifconfig mnic_p2p down && "
-    cmd += "ip addr del " + tc.mnic_p2p_ip + "/24 dev mnic_p2p"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
+    utils.configureNaplesIntf(req, tc.bitw_node_name, 'mnic_p2p',
+                              tc.mnic_p2p_ip, '24',
+                              vlan = str(tc.wl1.uplink_vlan),
+                              unconfig = True)
 
     # kill testpmd
     cmd = "pkill testpmd"

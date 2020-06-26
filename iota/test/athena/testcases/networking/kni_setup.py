@@ -3,6 +3,7 @@
 import iota.harness.api as api
 import iota.harness.infra.store as store
 import iota.test.athena.utils.testpmd as testpmd
+import iota.test.athena.utils.misc as utils
 from ipaddress import ip_address
 
 def Setup(tc):
@@ -65,17 +66,17 @@ def Trigger(tc):
     req = api.Trigger_CreateExecuteCommandsRequest(serial=True)
 
     tc.mnic_p2p_ip = str(ip_address(tc.wl0.ip_address) + 1)
-    api.SetTestsuiteAttr("mnic_p2p_ip", tc.mnic_p2p_ip)
-    cmd = "ifconfig mnic_p2p " + tc.mnic_p2p_ip + " netmask 255.255.255.0"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
-
-    cmd = "vconfig add mnic_p2p " + str(tc.wl1.uplink_vlan)
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
-
     tc.mnic_p2p_sub_ip = str(ip_address(tc.wl1.ip_address) + 1)
+
+    api.SetTestsuiteAttr("mnic_p2p_ip", tc.mnic_p2p_ip)
     api.SetTestsuiteAttr("mnic_p2p_sub_ip", tc.mnic_p2p_sub_ip)
-    cmd = "ifconfig mnic_p2p." + str(tc.wl1.uplink_vlan) + " " + tc.mnic_p2p_sub_ip + " netmask 255.255.255.0"
-    api.Trigger_AddNaplesCommand(req, tc.bitw_node_name, cmd)
+
+    utils.configureNaplesIntf(req, tc.bitw_node_name, 'mnic_p2p',
+                              tc.mnic_p2p_ip, '255.255.255.0')
+
+    utils.configureNaplesIntf(req, tc.bitw_node_name, 'mnic_p2p',
+                              tc.mnic_p2p_sub_ip, '255.255.255.0',
+                              vlan = str(tc.wl1.uplink_vlan))
 
     # pre testpmd setup
     cmd = "echo 256 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages"

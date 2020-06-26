@@ -215,12 +215,22 @@ def get_classic_node_nic_pairs():
 # ===========================================
 def configureNaplesIntf(req, node, intf,
                         ip, mask,
-                        vlan = None):
+                        vlan = None,
+                        unconfig = False):
 
-    if vlan is not None:
-        cmd = "vconfig add " + intf + " " + vlan
+    if unconfig == False:
+        if vlan is not None:
+            cmd = "vconfig add " + intf + " " + vlan
+            api.Trigger_AddNaplesCommand(req, node, cmd)
+            intf += '.' + vlan
+
+        cmd = "ifconfig " + intf + " " + ip + " netmask " + mask
         api.Trigger_AddNaplesCommand(req, node, cmd)
-        intf += '.' + vlan
+    else:
+        if vlan is not None:
+            cmd = "vconfig rem " + intf + "." + vlan
+            api.Trigger_AddNaplesCommand(req, node, cmd)
 
-    cmd = "ifconfig " + intf + " " + ip + " netmask " + mask
-    api.Trigger_AddNaplesCommand(req, node, cmd)
+        cmd = "ifconfig " + intf + " down && "
+        cmd += "ip addr del " + ip + "/" + mask + " dev " + intf
+        api.Trigger_AddNaplesCommand(req, node, cmd)
