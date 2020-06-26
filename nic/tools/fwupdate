@@ -1845,9 +1845,20 @@ do_install_bitfile_images()
 
     # Found a CPLD image for this card.  Check the version.
     mani_cpld_rev=`mani_value ".bitfiles[$counter - 1].version"`
-    if [ $CPLD_IGNORE_REV -eq 0 -a $running_cpld_rev -ge $mani_cpld_rev ]; then
-        return
+    mani_cpld_min_rev=`mani_opt_value ".bitfiles[$counter - 1].min_version"`
+    if [ $mani_cpld_min_rev = "null" ]; then
+        mani_cpld_min_rev=$running_cpld_rev
     fi
+    if [ $CPLD_IGNORE_REV -eq 0 ]; then
+        if [ $running_cpld_rev -ge $mani_cpld_rev ]; then
+            log_info "CPLD already at latest cpld cur=$running_cpld_rev, manifest=$mani_cpld_rev, install=NO"
+            return
+        elif [ $running_cpld_rev -lt $mani_cpld_min_rev ]; then
+            log_info "Running CPLD cannot be updated cur=$running_cpld_rev, min_revision=$mani_cpld_min_rev, install=NO"
+            return
+        fi
+    fi
+    log_info "CPLD cur=$running_cpld_rev, new=$mani_cpld_rev, install=YES"
     echo "===> Commit install CPLD rev $mani_cpld_rev over rev $running_cpld_rev"
     path=`mani_value ".bitfiles[$counter - 1].name"`
     echo "===> Install bitfile image $path"
