@@ -1,13 +1,17 @@
 package equinix_test
 
 import (
+	"encoding/json"
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	iota "github.com/pensando/sw/iota/protos/gogen"
 	"github.com/pensando/sw/iota/test/venice/iotakit/model/objects"
+	"github.com/pensando/sw/nic/agent/protos/netproto"
 	"github.com/pensando/sw/venice/utils/log"
-
 	uuid "github.com/satori/go.uuid"
+
 	yaml "gopkg.in/yaml.v2"
 
 	"time"
@@ -93,7 +97,7 @@ var _ = Describe("IPAM Tests", func() {
 
 			// verify ipam on subnet
 			// TODO: Enable and fix this once pdsctl show dhcp starts showing dhcpPolicy created
-			// verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
+			verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
 
 			if ts.tb.HasNaplesHW() {
 				// get workload pair and validate datapath
@@ -113,8 +117,7 @@ var _ = Describe("IPAM Tests", func() {
 			Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], customIpam)).Should(Succeed())
 
 			// verify ipam on subnet
-			// TODO: Enable and fix this once pdsctl show dhcp starts showing dhcpPolicy created
-			// verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
+			verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
 
 			if ts.tb.HasNaplesHW() {
 				// get workload pair and validate datapath
@@ -151,9 +154,8 @@ var _ = Describe("IPAM Tests", func() {
 			Expect(selNetwork.SetIPAMOnNetwork(selNetwork.Subnets()[0], customIpam)).Should(Succeed())
 
 			// verify ipam on subnets
-			// TODO: Enable and fix this once pdsctl show dhcp starts showing dhcpPolicy created
-			// verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
-			// verifyIPAMonSubnet(selNetwork.Subnets()[1].Name, defaultIpam, tenant)
+			verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, customIpam, tenant)
+			verifyIPAMonSubnet(selNetwork.Subnets()[1].Name, defaultIpam, tenant)
 
 			if ts.tb.HasNaplesHW() {
 				// get workload pair and validate datapath - customIpam
@@ -201,8 +203,7 @@ var _ = Describe("IPAM Tests", func() {
 			selNetwork := nwc.Any(1)
 
 			// verify ipam on subnet
-			// TODO: Enable and fix this once pdsctl show dhcp starts showing dhcpPolicy created
-			// verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, "test-policy", tenant)
+			verifyIPAMonSubnet(selNetwork.Subnets()[0].Name, "test-policy", tenant)
 			var wpc *objects.WorkloadPairCollection
 			if ts.tb.HasNaplesHW() {
 				// get workload pair and validate datapath
@@ -235,7 +236,7 @@ var _ = Describe("IPAM Tests", func() {
 			selNetwork := nwc.Any(1)
 
 			// verify ipam on subnet
-			//verifyNoIPAMonSubnet(selNetwork.Subnets()[0].Name, tenant)
+			verifyNoIPAMonSubnet(selNetwork.Subnets()[0].Name, tenant)
 
 			// ping should fail as there no ipam policy configured to get DHCP ip for host
 			var wpc *objects.WorkloadPairCollection
@@ -273,9 +274,46 @@ func GetNetworkCollectionFromVPC(vpc, tenant string) (*objects.NetworkCollection
 	return objects.VpcNetworkCollection(tenant, vpc, ts.model.ConfigClient())
 }
 
+func VerifyIPAMPropagation(ipam, tenant string) error {
+
+	npc, err := ts.model.Naples().SelectByTenant(tenant)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	veniceIpam, err := objects.GetIPAMPolicy(ts.model.ConfigClient(), ipam, tenant)
+	if err != nil {
+		log.Errorf("Error getting IPAMPolicies Err: %v", err)
+		return err
+	}
+	p := veniceIpam.PolicyObj
+	if p.Status.PropagationStatus.GenerationID != p.ObjectMeta.GenerationID {
+		log.Warnf("Propagation generation id did not match: Meta: %+v, PropagationStatus: %+v", p.ObjectMeta, p.Status.PropagationStatus)
+		return fmt.Errorf("Propagation generation id did not match")
+	}
+
+	totalNaples := int32(len(npc.FakeNodes)) + int32(len(npc.Nodes))
+	if (p.Status.PropagationStatus.Updated != totalNaples) || (p.Status.PropagationStatus.Pending != 0) {
+		log.Warnf("Propagation status incorrect: PropagationStatus: %+v, TotalNaples: %v", p.Status.PropagationStatus, totalNaples)
+		return fmt.Errorf("Propagation status was incorrect")
+	}
+
+	log.Infof("Propagation status matched: PropagationStatus: %+v, TotalNaples: %v", p.Status.PropagationStatus, totalNaples)
+	return nil
+}
+
 func verifyIPAMonSubnet(subnet, ipam, tenant string) error {
 
 	var data Subnet
+	var iData []netproto.IPAMPolicy
+	var ipam_uuid []string
+
+	Eventually(func() error {
+		return VerifyIPAMPropagation(ipam, tenant)
+	}).Should(Succeed())
+
+	if ts.scaleData {
+		log.Infof("Skip per naples checks for scale setup")
+		return nil
+	}
 
 	// get network
 	veniceNw, err := ts.model.GetNetwork(tenant, subnet)
@@ -285,14 +323,31 @@ func verifyIPAMonSubnet(subnet, ipam, tenant string) error {
 	// get ipam
 	veniceIpam, err := objects.GetIPAMPolicy(ts.model.ConfigClient(), ipam, tenant)
 	Expect(err).ShouldNot(HaveOccurred())
-	ipam_uuid := veniceIpam.PolicyObj.GetUUID()
 
 	var matchUUID = func(s string) bool {
 		err = yaml.Unmarshal([]byte(s), &data)
 		Expect(err).ShouldNot(HaveOccurred())
-		uid, _ := uuid.FromBytes(data.Spec.DHCPPolicyId[0])
-		log.Infof("IPAM UUID (venice):%v && Subnet UUID(pdsctl) :%v", ipam_uuid, uid.String())
-		return ipam_uuid == uid.String()
+		for i, d := range data.Spec.DHCPPolicyId {
+			uid, _ := uuid.FromBytes(d)
+			if ipam_uuid[i] != uid.String() {
+				log.Errorf("IPAM UUID (netagent):%v doesn't match with Subnet UUID(pdsctl) :%v", ipam_uuid, uid.String())
+				return false
+			}
+		}
+		return true
+	}
+
+	var matchServerIps = func(s string) bool {
+		err = json.Unmarshal([]byte(s), &iData)
+		for i, srv := range iData[0].Spec.DHCPRelay.Servers {
+			if srv.IPAddress != veniceIpam.PolicyObj.Spec.DHCPRelay.Servers[i].IPAddress {
+				log.Infof("IPAM curl op: [%+v] && json: [%+v]", s, iData[0])
+				log.Errorf("Venice IP :%v doesn't match with Netagent IP :%v", srv.IPAddress, veniceIpam.PolicyObj.Spec.DHCPRelay.Servers[i].IPAddress)
+				return false
+			}
+		}
+		ipam_uuid = iData[0].Status.IPAMPolicyIDs
+		return true
 	}
 
 	// wait for Naples to finish configuring
@@ -300,18 +355,34 @@ func verifyIPAMonSubnet(subnet, ipam, tenant string) error {
 
 	// fetch network from pdsctl. network should have updated IPAM Policy
 	ts.model.ForEachFakeNaples(func(nc *objects.NaplesCollection) error {
-		cmd := "/naples/nic/bin/pdsctl show subnet --id " + nw_uuid + " --yaml"
+		cmd := "curl localhost:9007/api/ipam-policies/"
 		cmdOut, err := ts.model.RunFakeNaplesBackgroundCommand(nc, cmd)
 		Expect(err).ShouldNot(HaveOccurred())
 		cmdResp, _ := cmdOut.([]*iota.Command)
 		for _, cmdLine := range cmdResp {
+			Expect(matchServerIps(cmdLine.Stdout)).Should(BeTrue())
+		}
+
+		cmd = "/naples/nic/bin/pdsctl show subnet --id " + nw_uuid + " --yaml"
+		cmdOut, err = ts.model.RunFakeNaplesBackgroundCommand(nc, cmd)
+		Expect(err).ShouldNot(HaveOccurred())
+		cmdResp, _ = cmdOut.([]*iota.Command)
+		for _, cmdLine := range cmdResp {
+			log.Infof("pdsctl show subnet op: [%v]", cmdLine.Stdout)
 			Expect(matchUUID(cmdLine.Stdout)).Should(BeTrue())
 		}
 		return nil
 	})
 	ts.model.ForEachNaples(func(nc *objects.NaplesCollection) error {
-		cmd := "/nic/bin/pdsctl show subnet --id " + nw_uuid + " --yaml"
+		cmd := "curl localhost:9007/api/ipam-policies/"
 		cmdOut, err := ts.model.RunNaplesCommand(nc, cmd)
+		Expect(err).ShouldNot(HaveOccurred())
+		for _, cmdLine := range cmdOut {
+			Expect(matchServerIps(cmdLine)).Should(BeTrue())
+		}
+
+		cmd = "/nic/bin/pdsctl show subnet --id " + nw_uuid + " --yaml"
+		cmdOut, err = ts.model.RunNaplesCommand(nc, cmd)
 		Expect(err).ShouldNot(HaveOccurred())
 		for _, cmdLine := range cmdOut {
 			Expect(matchUUID(cmdLine)).Should(BeTrue())
@@ -323,8 +394,12 @@ func verifyIPAMonSubnet(subnet, ipam, tenant string) error {
 
 func verifyNoIPAMonSubnet(subnet, tenant string) error {
 
-	var data Subnet
+	if ts.scaleData {
+		log.Infof("Skip per naples checks for scale setup")
+		return nil
+	}
 
+	var data Subnet
 	// get network
 	veniceNw, err := ts.model.GetNetwork(tenant, subnet)
 	Expect(err).ShouldNot(HaveOccurred())
