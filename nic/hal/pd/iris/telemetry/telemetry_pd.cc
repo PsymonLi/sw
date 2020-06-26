@@ -45,8 +45,8 @@ pd_mirror_update_hw (uint32_t id, mirror_actiondata_t *action_data)
     sdk_ret = session->update(id, action_data);
     ret = hal_sdk_ret_to_hal_ret(sdk_ret);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Programming sesion {} failed ({})",
-                      id, ret);
+        HAL_TRACE_DEBUG("Programming sesion {} not present in hw ({}). Creating",
+                        id, ret);
         if (sdk_ret == SDK_RET_ENTRY_NOT_FOUND) {
             sdk_ret = session->insert_withid(action_data, id);
             ret = hal_sdk_ret_to_hal_ret(sdk_ret);

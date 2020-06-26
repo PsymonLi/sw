@@ -235,7 +235,6 @@ func enicShowStatusOneResp(resp *halproto.InterfaceGetResponse) {
 	}
 	memberStr += "\n"
 	fmt.Printf("%-16s", memberStr)
-	fmt.Printf("\n")
 }
 
 func enicShowHeader() {

@@ -2992,8 +2992,13 @@ interface_update (InterfaceSpec& spec, InterfaceResponse *rsp)
 
     hal_if = if_lookup_key_or_handle(kh);
     if (!hal_if) {
-        HAL_TRACE_ERR("Failed to find if, id {}, handle {}",
-                      kh.interface_id(), kh.if_handle());
+        if (spec.type() != intf::IfType::IF_TYPE_CPU) {
+            HAL_TRACE_ERR("Failed to find if, id {}, handle {}",
+                          kh.interface_id(), kh.if_handle());
+        } else {
+            HAL_TRACE_DEBUG("Failed to find if, id {}, handle {}",
+                            kh.interface_id(), kh.if_handle());
+        }
         ret = HAL_RET_IF_NOT_FOUND;
         goto end;
     }
