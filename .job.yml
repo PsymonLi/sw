@@ -462,6 +462,7 @@ dependencies:
     - reference: nic/apollo/tools/apulu/sanity/base
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: nic/apollo/tools/athena/sanity/base
+    - reference: iota/test/standalone/precheckin/athena
     - reference: test/ci_targets/cloud-e2e
       exclude_dirs: ["p4/athena_p4-16", "test/athena_app", "test/athena", "api/impl/athena", "api/include/athena"]
     - reference: test/ci_targets/controlplane-dol
@@ -469,8 +470,6 @@ dependencies:
   nic/apollo/tools/dev-docker:
     - reference: nic/apollo/tools/apulu/sanity/customer-docker
     # - reference: nic/apollo/tools/athena/sanity/customer-docker
-  nic/apollo/agent:
-    - reference: iota/test/standalone/precheckin/athena
   nic/apollo/p4/athena_p4-16:
     - reference: iota/test/standalone/precheckin/athena
   nic/apollo/test/athena_app:

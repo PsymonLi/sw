@@ -124,65 +124,27 @@ def match_dynamic_flows(tc, vnic_id, flow):
             return api.types.status.FAILURE
 
     flow_dump_req = api.Trigger_CreateExecuteCommandsRequest()
-
-    # If reverse L3/L4 tuples for the s2h direction to make s2h 
-    # and h2s share the same flow, then we only have one flow entries per loop
     flow_dump_cmd = ""
-    flow_dump_cmd_h2s = ""
-    flow_dump_cmd_s2h = ""
 
     flow_dump_cmd += ("grep VNICID:" + str(vnic_id) + " /data/flow_dump_iota.log")
     flow_dump_cmd += (" | grep Proto:" + str(flow.proto_num) + "\ ")
 
-    if flow.proto == 'ICMP' and tc.nat == 'yes':
-        # for ICMP flow with nat we only verify vnic_id, proto, source and dst ip
-        flow_dump_cmd += (" | grep SrcIP:" + flow.sip)
-        flow_dump_cmd += (" | grep DstIP:" + flow.dip)
+    flow_dump_cmd += (" | grep SrcIP:" + flow.sip)
+    flow_dump_cmd += (" | grep DstIP:" + flow.dip)
+
+    if flow.proto == 'ICMP':
         flow_dump_cmd += (" | grep Sport:" + flow.icmp_type)
         flow_dump_cmd += (" | grep Dport:" + flow.icmp_code)
-        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd)
-    
+
     else:
-        if tc.nat == 'no':
-            # for UDP, TCP and ICMP flow without nat, we should get two flow entires with exchanged source ip and dst ip, 
-            # UDP and TCP also has exchanged source port and dst port
-            flow_dump_cmd_h2s = flow_dump_cmd + (" | grep SrcIP:" + flow.sip)
-            flow_dump_cmd_h2s += (" | grep DstIP:" + flow.dip)
+        flow_dump_cmd += (" | grep Sport:" + str(flow.sport))
+        flow_dump_cmd += (" | grep Dport:" + str(flow.dport))
 
-            flow_dump_cmd_s2h = flow_dump_cmd + (" | grep SrcIP:" + flow.dip)
-            flow_dump_cmd_s2h += (" | grep DstIP:" + flow.sip)
-
-
-            if flow.proto == 'ICMP':
-                flow_dump_cmd_h2s += (" | grep Sport:" + flow.icmp_type)
-                flow_dump_cmd_h2s += (" | grep Dport:" + flow.icmp_code)
-
-                flow_dump_cmd_s2h += (" | grep Sport:" + flow.icmp_type)
-                flow_dump_cmd_s2h += (" | grep Dport:" + flow.icmp_code)
-            else:
-                flow_dump_cmd_h2s += (" | grep Sport:" + str(flow.sport))
-                flow_dump_cmd_h2s += (" | grep Dport:" + str(flow.dport))
-
-                flow_dump_cmd_s2h += (" | grep Sport:" + str(flow.dport))
-                flow_dump_cmd_s2h += (" | grep Dport:" + str(flow.sport))
-
-        else:
-            # for UDP and TCP flow with nat, we should get two flow entires
-            # with exchanged source port and dst port
-            flow_dump_cmd += (" | grep SrcIP:" + flow.sip)
-            flow_dump_cmd += (" | grep DstIP:" + flow.dip)
-
-            flow_dump_cmd_h2s = flow_dump_cmd + (" | grep Sport:" + str(flow.sport))
-            flow_dump_cmd_h2s += (" | grep Dport:" + str(flow.dport))
-
-            flow_dump_cmd_s2h = flow_dump_cmd + (" | grep Sport:" + str(flow.dport))
-            flow_dump_cmd_s2h += (" | grep Dport:" + str(flow.sport))
-
-        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd_h2s)
-        api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd_s2h)
+    api.Trigger_AddNaplesCommand(flow_dump_req, tc.bitw_node_name, flow_dump_cmd)
 
     # TODO: Change response in tc.response, and verify in the middle
     flow_dump_resp = api.Trigger(flow_dump_req)
+
     for cmd in flow_dump_resp.commands:
         api.PrintCommandResults(cmd)
         if cmd.exit_code != 0:

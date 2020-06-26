@@ -217,14 +217,21 @@ def get_flows(tc):
 
     return flows_resp
 
-def send_pkt(tc, node, pkt_gen, pkt_cnt):
+def send_pkt(tc, node, pkt_gen, flow, pkt_cnt):
 
     # ==========================================
     # Send and Receive packets in H2S direction
     # ==========================================
     pkt_gen.set_dir_('h2s')
+    pkt_gen.set_sip(flow.sip)
+    pkt_gen.set_dip(flow.dip)
     pkt_gen.set_nat_flows_h2s_tx(nat_flows_h2s_tx)
     pkt_gen.set_nat_flows_h2s_rx(nat_flows_h2s_rx)
+
+    if flow.proto == 'UDP' or flow.proto == 'TCP':
+        pkt_gen.set_sport(flow.sport)
+        pkt_gen.set_dport(flow.dport)
+
     h2s_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
     # ==========
@@ -273,8 +280,15 @@ def send_pkt(tc, node, pkt_gen, pkt_cnt):
     # Send and Receive packets in S2H direction
     # ==========================================
     pkt_gen.set_dir_('s2h')
+    pkt_gen.set_sip(flow.dip)
+    pkt_gen.set_dip(flow.sip)
     pkt_gen.set_nat_flows_s2h_tx(nat_flows_s2h_tx)
     pkt_gen.set_nat_flows_s2h_rx(nat_flows_s2h_rx)
+
+    if flow.proto == 'UDP' or flow.proto == 'TCP':
+        pkt_gen.set_sport(flow.dport)
+        pkt_gen.set_dport(flow.sport)
+
     s2h_req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
     # ==========
@@ -437,16 +451,11 @@ def Trigger(tc):
             pkt_gen.set_node(node)
             pkt_gen.set_vnic(tc.vnic)
             pkt_gen.set_proto(tc.proto)
-            pkt_gen.set_sip(flow.sip)
-            pkt_gen.set_dip(flow.dip)
             pkt_gen.set_nat(tc.nat)
             pkt_gen.set_flow_id(idx)
             pkt_gen.set_pyld_size(tc.pyld_size)
 
-            if flow.proto == 'UDP' or flow.proto == 'TCP':
-                pkt_gen.set_sport(flow.sport)
-                pkt_gen.set_dport(flow.dport)
-            else:
+            if flow.proto == 'ICMP':
                 api.Logger.info("flow.icmp_type: %s, flow.icmp_code: %s" % (flow.icmp_type, flow.icmp_code))
                 pkt_gen.set_icmp_type(flow.icmp_type)
                 pkt_gen.set_icmp_code(flow.icmp_code)
@@ -454,35 +463,17 @@ def Trigger(tc):
             # Calculate the difference of flow cache hit count before and after sending pkt
             flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
 
-            # If flow is already installed in the flow cache, send all pkts at once
-            # If not, send the first pkt, verify flows and send the rest of them
             find_match = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
 
-            if find_match:
-                api.Logger.info("Will send all %d packets to fast path" % tc.pkt_cnt)
-                send_pkt(tc, node, pkt_gen, tc.pkt_cnt)
+            send_pkt(tc, node, pkt_gen, flow, tc.pkt_cnt)
 
-            else:
-                # Send the first pkt
-                api.Logger.info("Will send the first packet to slow path")
-                send_pkt(tc, node, pkt_gen, NUM_FIRST_PKT_PER_FLOW)
-
-                verify = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
-                if not verify:
-                    api.Logger.error("ERROR: flow is not installed in flow cache")
-                    return api.types.status.FAILURE
-
-                # Send the rest of pkts
-                if tc.pkt_cnt > NUM_FIRST_PKT_PER_FLOW:
-                    send_pkt(tc, node, pkt_gen, tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW)
-
+            verify = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
+            if not verify:
+                api.Logger.error("ERROR: flow is not installed in flow cache")
+                return api.types.status.FAILURE
 
             # The difference of flow cache hit count shoule be equal to
             # 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW) for s2h and h2s
-            # If reverse L3/L4 tuples for the s2h direction to make s2h 
-            # and h2s share the same flow, the difference is 
-            # 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW) + 1
-
             flow_hit_count_after = utils.get_flow_hit_count(tc.bitw_node_name)
 
             if flow_hit_count_after < flow_hit_count_before:
@@ -495,12 +486,8 @@ def Trigger(tc):
             if find_match:
                 # If flow is already installed in the flow cache, all pkts should go to fast path
                 cal_flow_hit_count = 2 * tc.pkt_cnt
-
-            elif flow.proto == 'ICMP' and tc.nat == 'yes':  
-                cal_flow_hit_count = 2 * tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW
-
             else:
-                cal_flow_hit_count = 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW)
+                cal_flow_hit_count = 2 * tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW
 
             if flow_hit_count != cal_flow_hit_count:
                 api.Logger.error("P4ctl shows %d pkts hit flow cache" % (flow_hit_count))
