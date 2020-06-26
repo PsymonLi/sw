@@ -127,46 +127,49 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 	if err := infraAPI.Store(vrf.Kind, vrf.GetKey(), dat); err != nil {
 		t.Fatal(err)
 	}
-	collectorToKeys := map[string]int{
-		"default-192.168.100.101-2055": 1,
-		"default-192.168.100.102-2055": 1,
-		"default-192.168.100.103-2055": 1,
-		"default-192.168.100.104-2055": 1,
-		"default-192.168.100.105-2055": 1,
-		"default-192.168.100.106-2055": 1,
-		"default-192.168.100.107-2055": 1,
-		"default-192.168.100.108-2055": 1,
-		"default-192.168.100.109-2055": 1,
-		"default-192.168.100.110-2055": 1,
-		"default-192.168.100.111-2055": 1,
-		"default-192.168.100.112-2055": 1,
-		"default-192.168.100.113-2055": 1,
-		"default-192.168.100.114-2055": 1,
-		"default-192.168.100.115-2055": 1,
-		"default-192.168.100.116-2055": 1,
-	}
 	// Make sure creates do not exceed the max collector per flow limit
-	_, err := ValidateFlowExportPolicy(infraAPI, netflow, types.Create, collectorToKeys)
+	_, err := ValidateFlowExportPolicy(infraAPI, netflow, types.Create, 8)
 	if err == nil {
 		t.Fatalf("Must return an error. %v", err)
 	}
+	// Make sure create doesn't exceed the max collector limit
 	netflow.Spec.Exports = []netproto.ExportConfig{
 		{
-			Destination: "192.168.100.117",
+			Destination: "192.168.100.111",
+			Transport: &netproto.ProtoPort{
+				Protocol: "udp",
+				Port:     "2055",
+			},
+		},
+		{
+			Destination: "192.168.100.112",
+			Transport: &netproto.ProtoPort{
+				Protocol: "udp",
+				Port:     "2055",
+			},
+		},
+		{
+			Destination: "192.168.100.113",
+			Transport: &netproto.ProtoPort{
+				Protocol: "udp",
+				Port:     "2055",
+			},
+		},
+		{
+			Destination: "192.168.100.114",
 			Transport: &netproto.ProtoPort{
 				Protocol: "udp",
 				Port:     "2055",
 			},
 		},
 	}
-	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Create, collectorToKeys)
+	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Create, 13)
 	if err == nil {
 		t.Fatalf("Must return an error. %v", err)
 	}
-	delete(collectorToKeys, "default-192.168.100.116-2055")
 
 	// Make sure create is allowed
-	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Create, collectorToKeys)
+	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Create, 12)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +190,6 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	collectorToKeys["default-192.168.100.116-2055"] = 1
 	netflow.Spec.Exports = []netproto.ExportConfig{
 		{
 			Destination: "192.168.100.115",
@@ -197,18 +199,12 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 			},
 		},
 		{
-			Destination: "192.168.100.117",
+			Destination: "192.168.100.116",
 			Transport: &netproto.ProtoPort{
 				Protocol: "udp",
 				Port:     "2055",
 			},
 		},
-	}
-	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Update, collectorToKeys)
-	if err == nil {
-		t.Fatalf("Must return an error. %v", err)
-	}
-	netflow.Spec.Exports = []netproto.ExportConfig{
 		{
 			Destination: "192.168.100.117",
 			Transport: &netproto.ProtoPort{
@@ -217,18 +213,15 @@ func TestValidateFlowExportPolicy(t *testing.T) {
 			},
 		},
 	}
-	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Update, collectorToKeys)
+	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Update, 15)
+	if err == nil {
+		t.Fatalf("Must return an error. %v", err)
+	}
+	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Update, 14)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Make sure a collector that is referenced by multiple flows
-	// is not removed in update
-	collectorToKeys["default-192.168.100.115-2055"] = 2
-	_, err = ValidateFlowExportPolicy(infraAPI, netflow, types.Update, collectorToKeys)
-	if err == nil {
-		t.Fatalf("Must return an error. %v", err)
-	}
 	err = infraAPI.Delete(vrf.Kind, vrf.GetKey())
 	if err != nil {
 		t.Fatal(err)

@@ -109,6 +109,17 @@ func ClassifyMirrorGenericAttributes(existingMirror, mirror netproto.MirrorSessi
 	return false
 }
 
+// ClassifyNetflowGenericAttributes returns whether exports need to be updated for a netflow
+func ClassifyNetflowGenericAttributes(existingNetflow, netflow netproto.FlowExportPolicy) bool {
+	if existingNetflow.Spec.Interval != netflow.Spec.Interval {
+		return true
+	}
+	if existingNetflow.Spec.TemplateInterval != netflow.Spec.TemplateInterval {
+		return true
+	}
+	return false
+}
+
 // CollectorEqual compares two MirrorCollector
 func CollectorEqual(mc1, mc2 netproto.MirrorCollector) bool {
 	if mc1.ExportCfg.Destination != mc2.ExportCfg.Destination {
@@ -121,6 +132,23 @@ func CollectorEqual(mc1, mc2 netproto.MirrorCollector) bool {
 		return false
 	}
 	if mc1.StripVlanHdr != mc2.StripVlanHdr {
+		return false
+	}
+	return true
+}
+
+// ExportEqual compares two ExportConfigs
+func ExportEqual(ec1, ec2 netproto.ExportConfig) bool {
+	if ec1.Destination != ec2.Destination {
+		return false
+	}
+	if ec1.Gateway != ec2.Gateway {
+		return false
+	}
+	if ec1.Transport.Protocol != ec2.Transport.Protocol {
+		return false
+	}
+	if ec1.Transport.Port != ec2.Transport.Port {
 		return false
 	}
 	return true

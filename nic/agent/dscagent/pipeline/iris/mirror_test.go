@@ -1186,7 +1186,7 @@ func TestClassifyMatchRules(t *testing.T) {
 			existingIDs = append(existingIDs, infraAPI.AllocateID(types.FlowMonitorRuleID, 0))
 		}
 		mirrorSessionToFlowMonitorRuleMapping[mirrorKey] = existingIDs
-		add, del, unchange, ids := classifyMatchRules(infraAPI, c.in1, c.in2, mirrorKey)
+		add, del, unchange, ids := classifyMatchRules(infraAPI, actionMirror, c.in1, c.in2, mirrorKey)
 		if len(add) != len(c.addedFlows) {
 			t.Errorf("failed len(add)=%v len(c.addedFlows)=%v", len(add), len(c.addedFlows))
 		}

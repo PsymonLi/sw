@@ -735,7 +735,7 @@ func handleInterface(i *IrisAPI, oper types.Operation, intf netproto.Interface) 
 		}
 	}
 
-	log.Infof("Interface: %s | Op: %s | %s", intf.GetKey(), oper, types.InfoHandleObjBegin)
+	log.Infof("Interface: [%+v] | Op: %s | MirrorDestToIDMapping: %v | %s", intf, oper, iris.MirrorDestToIDMapping, types.InfoHandleObjBegin)
 	defer log.Infof("Interface: %s | Op: %s | %s", intf.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Take a lock to ensure a single HAL API is active at any given point
@@ -1570,13 +1570,13 @@ func handleFlowExportPolicy(i *IrisAPI, oper types.Operation, netflow netproto.F
 	defer log.Infof("FlowExportPolicy: %s | Op: %s | %s", netflow.GetKey(), oper, types.InfoHandleObjEnd)
 
 	// Perform object validations
-	collectorToKeys := map[string]int{}
-	for dest, keys := range iris.CollectorToNetflow {
-		collectorToKeys[dest] = len(keys.NetflowKeys)
+	netflowSessions := 0
+	for _, exports := range iris.NetflowDestToIDMapping {
+		netflowSessions += len(exports)
 	}
 	var vrfID uint64
 	if oper != types.Purge {
-		vrf, err := validator.ValidateFlowExportPolicy(i.InfraAPI, netflow, oper, collectorToKeys)
+		vrf, err := validator.ValidateFlowExportPolicy(i.InfraAPI, netflow, oper, netflowSessions)
 		if err != nil {
 			log.Error(err)
 			return nil, err
