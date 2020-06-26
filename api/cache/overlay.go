@@ -1567,7 +1567,9 @@ func (c *overlay) Commit(ctx context.Context, action []apiintf.OverlayKey) error
 
 func (c *overlay) touch(ctx context.Context, key string, verVer int64) error {
 	var cacheObj runtime.Object
-	ovObj, err := c.findObjects(context.TODO(), key, cacheObj)
+	// explicity get the overlay object for this operation since even secondary objects are needed
+	ovObj := c.overlay[key]
+	_, err := c.findObjects(context.TODO(), key, cacheObj)
 	if ovObj != nil {
 		if ovObj.oper == operDelete {
 			return fmt.Errorf("[%v]operation would conflict [delete+touch] for [%v]", c.id, key)
