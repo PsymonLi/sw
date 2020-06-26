@@ -256,8 +256,8 @@ func (s *RPCServer) UpdateSmartNIC(updObj *cluster.DistributedServiceCard) (*clu
 		if refObj.Status.AdmissionPhase != cluster.DistributedServiceCardStatus_DECOMMISSIONED.String() {
 			recorder.Event(eventtypes.DSC_DECOMMISSIONED, fmt.Sprintf("DSC %s(%s) decommissioned from the cluster", updObj.Spec.ID, updObj.Name), updObj)
 		}
-		refObj.Status.AdmissionPhase = cluster.DistributedServiceCardStatus_DECOMMISSIONED.String()
-		refObj.Status.AdmissionPhaseReason = updObj.Status.AdmissionPhaseReason
+		// Copy the entire state because it may contain useful info
+		refObj.Status = updObj.Status
 	} else {
 		refHealthCond := cmdutils.GetNICCondition(refObj, cluster.DSCCondition_HEALTHY)
 		updHealthCond := cmdutils.GetNICCondition(updObj, cluster.DSCCondition_HEALTHY)
