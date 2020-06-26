@@ -5,17 +5,20 @@ meta:
     targetcount : 1
 
 testcases:
-    -   name: UPGRADE_DIRECT_GRACEFUL
+    -   name        : UPGRADE_DIRECT_GRACEFUL
         testcase    : testcases.naples_upgrade.upgrade
+        stress      : True
         disable     : False
         ignore      : False
-        stress      : True
         iterators   :
             type    : nested
             selection : [ any ]  # upgrade all or any
-        args        :
-            naples_upgr_pkg : "naples_fw.tar"
-            upgrade_mode : "graceful"  # mode can be graceful or hitless
+        args                  :
+            #timeout           : 14400
+            sleep             : 150
+            naples_upgr_pkg   : "naples_fw.tar"
+            upgrade_mode      : "graceful"  # mode can be graceful or hitless
+            allowed_down_time : 40
 
     -   name: UPGRADE_DIRECT_HITLESS
         testcase    : testcases.naples_upgrade.upgrade

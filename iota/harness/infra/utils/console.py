@@ -52,9 +52,22 @@ class Console(object):
         self.hdl.expect("#")
         return
 
-    def __get_output(self, command):
+    def __get_output(self, command, get_exit_code=False):
         self.__run_cmd(command)
-        return self.hdl.before
+        output = self.hdl.before
+        exit_code=0
+        if get_exit_code:
+            self.__run_cmd("echo $?")
+            status = self.hdl.before
+            try:
+                status = status.decode("utf-8").strip("echo $?")
+                status = status.strip("\r\n")
+                exit_code = int(status.split("\r\n")[0])
+            except Exception as e:
+                exit_code=2
+                print("Exception occured in parsing the exit_code(%s): %s"%(status, e))
+            return (output, exit_code)
+        return output
 
     def __str__(self):
         return "[%s]" % self.console_ip
@@ -76,10 +89,25 @@ class Console(object):
         hdl.close()
         time.sleep(1)
 
+    def clear_buffer(self):
+        try:
+            #Clear buffer
+            self.hdl.read_nonblocking(1000000000, timeout = 3)
+        except:
+            pass
+
     def __login(self):
-        midx = self.SendlineExpect("", ["#", "capri login:", "capri-gold login:"],
-                                   hdl = self.hdl)
-        if midx == 0: return
+        self.clear_buffer()
+        retry_count  = 0
+        while retry_count < 10:
+            retry_count += 1
+            midx = self.SendlineExpect("", ["##", "#naples", "Bringing up internal mnic",
+                                       "#", "capri login:", "capri-gold login:"],
+                                       hdl = self.hdl)
+            if midx == 0 or midx == 1 or midx == 2:
+                continue
+            elif midx == 3: return
+            else: break
         # Got capri login prompt, send username/password.
         self.SendlineExpect(self.username, "Password:")
         ret = self.SendlineExpect(self.password, ["#", pexpect.TIMEOUT])
@@ -112,8 +140,8 @@ class Console(object):
             self.hdl = None
         return
 
-    def RunCmdGetOp(self, cmd):
-        return self.__get_output(cmd)
+    def RunCmdGetOp(self, cmd, get_exit_code=False):
+        return self.__get_output(cmd, get_exit_code)
 
     def RunCmd(self, cmd):
         return self.__run_cmd(cmd)

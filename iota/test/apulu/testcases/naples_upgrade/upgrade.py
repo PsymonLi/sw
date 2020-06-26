@@ -14,9 +14,40 @@ import upgrade_pb2 as upgrade_pb2
 from apollo.config.node import client as NodeClient
 from apollo.oper.upgrade import client as UpgradeClient
 
+skip_connectivity_failure = False
+
+def check_pds_instance(tc):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    for node in tc.nodes:
+        api.Trigger_AddNaplesCommand(req, node, "grep Instantiated /var/log/pensando/pds-agent.log  | wc -l")
+        api.Trigger_AddNaplesCommand(req, node, "grep Instantiated /var/log/pensando/pds-agent.log  | wc -l | grep 9")
+    resp = api.Trigger(req)
+
+    for cmd_resp in resp.commands:
+        api.PrintCommandResults(cmd_resp)
+        if cmd_resp.exit_code != 0:
+            api.Logger.error("Failed to find required number of instances")
+
+    return api.types.status.SUCCESS
+
+def check_pds_agent_debug_data(tc):
+    req = api.Trigger_CreateExecuteCommandsRequest(serial = False)
+    for node in tc.nodes:
+        api.Trigger_AddNaplesCommand(req, node, "/nic/bin/pdsctl show mapping internal local")
+        api.Trigger_AddNaplesCommand(req, node, "/nic/bin/pdsctl show mapping remote --type l3")
+    resp = api.Trigger(req)
+
+    for cmd_resp in resp.commands:
+        api.PrintCommandResults(cmd_resp)
+        if cmd_resp.exit_code != 0:
+            api.Logger.error("Failed to dump the mapping table")
+
+    return api.types.status.SUCCESS
+
+
+
 def trigger_upgrade_request(tc):
     result = True
-
     if api.GlobalOptions.dryrun:
         return result
 
@@ -59,15 +90,12 @@ def ChooseWorkLoads(tc):
 
 
 def VerifyConnectivity(tc):
-    tc.pktsize = 128
-    tc.duration = 0
-    tc.interval = 0.1 #1msec
 
     if api.GlobalOptions.dryrun:
         return api.types.status.SUCCESS
 
     # ensure connectivity with foreground ping before test
-    if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
+    if ping.TestPing(tc, 'user_input', "ipv4", pktsize=128, interval=0.001, \
             count=5) != api.types.status.SUCCESS:
         api.Logger.info("Connectivity Verification Failed")
         return api.types.status.FAILURE
@@ -83,7 +111,7 @@ def VerifyMgmtConnectivity(tc):
     for node in tc.nodes:
         api.Logger.info("Checking connectivity to Naples Mgmt IP: %s"%api.GetNicIntMgmtIP(node))
         api.Trigger_AddHostCommand(req, node,
-                'ping -c 5 -i 0.2 {}'.format(api.GetNicIntMgmtIP(node)))
+                'ping -c 5 -i 0.01 {}'.format(api.GetNicIntMgmtIP(node)))
     resp = api.Trigger(req)
 
     if not resp.commands:
@@ -96,6 +124,35 @@ def VerifyMgmtConnectivity(tc):
             result = api.types.status.FAILURE
 
     return result
+
+
+def PacketTestSetup(tc):
+    if tc.upgrade_mode is None:
+        return api.types.status.SUCCESS
+
+    tc.bg_cmd_cookies = None
+    tc.bg_cmd_resp = None
+    tc.pktsize = 128
+    tc.duration = tc.sleep
+    tc.background = True
+    tc.pktlossverif = False
+    tc.interval = 0.001 #1msec
+    tc.count = int(tc.duration / tc.interval)
+
+    if tc.upgrade_mode != "graceful":
+        tc.pktlossverif = True
+
+    if api.GlobalOptions.dryrun:
+        return api.types.status.SUCCESS
+
+    # start background ping before start of test
+    if ping.TestPing(tc, 'user_input', "ipv4", tc.pktsize, interval=tc.interval, \
+            count=tc.count, pktlossverif=tc.pktlossverif, \
+            background=tc.background, hping3=True) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in triggering background Ping.")
+        return api.types.status.FAILURE
+
+    return api.types.status.SUCCESS
 
 
 # Push config after upgrade
@@ -111,6 +168,8 @@ def Setup(tc):
     result = api.types.status.SUCCESS
     tc.workload_pairs = []
     tc.skip = False
+    tc.sleep = getattr(tc.args, "sleep", 200)
+    tc.allowed_down_time = getattr(tc.args, "allowed_down_time", 0)
     tc.pkg_name = getattr(tc.args, "naples_upgr_pkg", "naples_fw.tar")
     tc.node_selection = tc.iterators.selection
     if tc.node_selection not in ["any", "all"]:
@@ -164,11 +223,19 @@ def Setup(tc):
         return result
 
     # verify connectivity
-    result = VerifyConnectivity(tc)
-    if result != api.types.status.SUCCESS:
+    if VerifyConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Connectivity Check during Setup.")
-        tc.skip = True
+        if not skip_connectivity_failure:
+            result = api.types.status.FAILURE
+            tc.skip = True
+            return result
+
+    # setup packet test based on upgrade_mode
+    result = PacketTestSetup(tc)
+    if result != api.types.status.SUCCESS or tc.skip:
+        api.Logger.error("Failed in Packet Test setup.")
         return result
+
     api.Logger.info(f"Upgrade: Setup returned {result}")
     return result
 
@@ -181,8 +248,7 @@ def Trigger(tc):
     api.Logger.info(f"Upgrade: Trigger returned {result}")
     return result
 
-
-def checkUpgradeStatus(tc):
+def checkUpgradeStatusViaConsole(tc):
     result = api.types.status.SUCCESS
     status_in_progress = True
     retry_count = 0
@@ -193,45 +259,34 @@ def checkUpgradeStatus(tc):
             # break if status is still in-progress after max retries
             result = api.types.status.FAILURE
             break
-        req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
 
+        status_in_progress = False
         for node in tc.nodes:
-            api.Trigger_AddNaplesCommand(req, node, "grep -vi in-progress /update/pds_upg_status.txt", timeout=2)
+            (resp, exit_code) = api.RunNaplesConsoleCmd(node, "grep -vi in-progress /update/pds_upg_status.txt", True)
+
+            api.Logger.verbose("checking upgrade for node: %s, exit_code:%s " %(node, exit_code))
+            if exit_code != 0:
+                status_in_progress = True
+                break
+            else:
+                api.Logger.info("Status other than in-progress found in %s, /update/pds_upg_status.txt"%node)
+                lines = resp.split('\r\n')
+                for line in lines:
+                    api.Logger.info(line.strip())
 
         if retry_count % 10 == 0:
             api.Logger.info("Checking for status not in-progress in file /update/pds_upg_status.txt, retries: %s"%retry_count)
-        resp = api.Trigger(req)
 
-        status_in_progress = False
-        try:
-            for cmd_resp in resp.commands:
-                if cmd_resp.exit_code != 0:
-                    status_in_progress = True
-                    continue
-                else:
-                    api.Logger.info("Status other than in-progress found in /update/pds_upg_status.txt")
-        except:
-            api.Logger.error("EXCEPTION occured in checking Upgrade manager status")
-            result = api.types.status.FAILURE
+        if status_in_progress:
             continue
 
-        if not status_in_progress:
-            req = api.Trigger_CreateExecuteCommandsRequest(serial=False)
-            for node in tc.nodes:
-                api.Trigger_AddNaplesCommand(req, node, "grep -i success /update/pds_upg_status.txt", timeout=2)
+        for node in tc.nodes:
+            (resp, exit_code) = api.RunNaplesConsoleCmd(node, "grep -i success /update/pds_upg_status.txt", True)
             api.Logger.info("Checking for success status in file /update/pds_upg_status.txt")
-            resp = api.Trigger(req)
-
-            result = api.types.status.SUCCESS
-            try:
-                for cmd_resp in resp.commands:
-                    if cmd_resp.exit_code != 0:
-                        result = api.types.status.FAILURE
-                    else:
-                        api.Logger.info("Success Status found in /update/pds_upg_status.txt")
-            except:
-                api.Logger.error("EXCEPTION occured in checking Upgrade manager status")
+            if exit_code != 0:
                 result = api.types.status.FAILURE
+            else:
+                api.Logger.info("Success Status found in /update/pds_upg_status.txt")
 
     if status_in_progress:
         api.Logger.error("Upgrade Failed: Status is still IN-PROGRESS")
@@ -246,32 +301,71 @@ def Verify(tc):
         # no upgrade done in case of dryrun
         return result
 
+    upg_switchover_time = 70
     # wait for upgrade to complete. status can be found from the presence of /update/pds_upg_status.txt
-    api.Logger.info("Sleep for 120 secs before checking for /update/pds_upg_status.txt")
-    misc_utils.Sleep(120)
+    api.Logger.info(f"Sleep for {upg_switchover_time} secs before checking for Upgrade status")
+    misc_utils.Sleep(upg_switchover_time)
 
+    if checkUpgradeStatusViaConsole(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in validation of Upgrade Manager completion status via Console")
+        if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
+            api.Logger.error("Failed to verify the upgrademgr logs after upgrade failed...")
+        return api.types.status.FAILURE
     if not naples_utils.EnableReachability(tc.nodes):
         api.Logger.error(f"Failed to reach naples {tc.nodes} post upgrade switchover")
         return api.types.status.FAILURE
-
-    misc_utils.Sleep(1)
 
     # verify connectivity
     if VerifyMgmtConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Mgmt Connectivity Check after Upgrade .")
         result = api.types.status.FAILURE
-    elif checkUpgradeStatus(tc) != api.types.status.SUCCESS:
-        api.Logger.error("Failed in validation of Upgrade Manager completion status")
-        result = api.types.status.FAILURE
 
     # push configs after upgrade
     UpdateConfigAfterUpgrade(tc)
 
-    misc_utils.Sleep(1)
+    # verify PDS instances
+    if check_pds_instance(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in check_pds_instances")
+        result = api.types.status.FAILURE
+
+    if check_pds_agent_debug_data(tc) != api.types.status.SUCCESS:
+        api.Logger.error("Failed in check_pds_agent_debug_data")
+        result = api.types.status.FAILURE
+
     # verify connectivity
     if VerifyConnectivity(tc) != api.types.status.SUCCESS:
         api.Logger.error("Failed in Connectivity Check after Upgrade .")
-        result = api.types.status.FAILURE
+        if not skip_connectivity_failure:
+            result = api.types.status.FAILURE
+
+    if tc.upgrade_mode:
+        tc.sleep = 100
+        # If rollout status is failure, then no need to wait for traffic test
+        if result == api.types.status.SUCCESS:
+            api.Logger.info("Sleep for %s secs for traffic test to complete"%tc.sleep)
+            misc_utils.Sleep(tc.sleep)
+
+        pkt_loss_duration = 0
+        # terminate background traffic and calculate packet loss duration
+        if tc.background:
+            if ping.TestTerminateBackgroundPing(tc, tc.pktsize,\
+                  pktlossverif=tc.pktlossverif) != api.types.status.SUCCESS:
+                api.Logger.error("Failed in Ping background command termination.")
+                result = api.types.status.FAILURE
+            # calculate max packet loss duration for background ping
+            pkt_loss_duration = ping.GetMaxPktLossDuration(tc, interval=tc.interval)
+            if pkt_loss_duration != 0:
+                indent = "-" * 10
+                if tc.pktlossverif:
+                    result = api.types.status.FAILURE
+                api.Logger.error(f"{indent} Packet Loss duration during UPGRADE of {tc.nodes} is {pkt_loss_duration} secs {indent}")
+                if tc.allowed_down_time and (pkt_loss_duration > tc.allowed_down_time):
+                    api.Logger.error(f"{indent} Exceeded allowed Loss Duration {tc.allowed_down_time} secs {indent}")
+                    # Failing test based on longer traffic loss duration is commented for now.
+                    # enable below line when needed.
+                    #result = api.types.status.FAILURE
+            else:
+                api.Logger.info("No Packet Loss Found during UPGRADE Test")
 
     if upgrade_utils.VerifyUpgLog(tc.nodes, tc.GetLogsDir()):
         api.Logger.error("Failed to verify the upgrademgr logs...")

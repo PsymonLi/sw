@@ -291,6 +291,30 @@ class Node(object):
                     self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
                 self.__console_hdl.RunCmdGetOp("iptables -D tcp_inbound -p tcp -m tcp --dport 11357:11360 -j DROP")
 
+        def RunNaplesConsoleCmd(self, cmd, get_exit_code=False):
+            if GlobalOptions.dryrun:
+                return
+            if not self.__nic_console_ip:
+                raise ValueError('no nic console ip configured at time of call to RunNaplesConsoleCmd()')
+            if self.__console_hdl:
+                self.__console_hdl.Close()
+            else:
+                self.__console_hdl = Console(self.__nic_console_ip, self.__nic_console_port, disable_log=True)
+
+            output = self.__console_hdl.RunCmdGetOp(cmd, get_exit_code)
+            exit_code = 0
+            if get_exit_code:
+                output, exit_code = output
+            try:
+                resp = re.split(cmd,output.decode("utf-8"),1)[1].strip('\r\n')
+            except Exception as e:
+                print("Resulted in exception in decoding response, %s"%e)
+                resp = output.decode("utf-8")
+            if get_exit_code:
+                return (resp, exit_code)
+            else:
+                return resp
+
         def GetDataNetworks(self):
             return self.__data_networks
 
@@ -1002,6 +1026,10 @@ class Node(object):
     def GetBondIp(self):
         return self.__bond_ip
 
+    def RunNaplesConsoleCmd(self, cmd, get_exit_code = False, device = None):
+        dev = self.__get_device(device)
+        return dev.RunNaplesConsoleCmd(cmd, get_exit_code)
+
 class Topology(object):
 
     RestartMethodAuto = ''
@@ -1624,6 +1652,9 @@ class Topology(object):
 
     def SetNicFirewallRules(self, node_name, device = None):
         return self.__nodes[node_name].SetNicFirewallRules(device)
+
+    def RunNaplesConsoleCmd(self, node_name, cmd, get_exit_code = False, device = None):
+        return self.__nodes[node_name].RunNaplesConsoleCmd(cmd, get_exit_code, device)
 
     def GetEsxHostIpAddress(self, node_name):
         return self.__nodes[node_name].EsxHostIpAddress()

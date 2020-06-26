@@ -312,6 +312,9 @@ def RestoreNicStaticRoutes(node_name):
 def SetNicFirewallRules(node_name):
     return store.GetTestbed().GetCurrentTestsuite().GetTopology().SetNicFirewallRules(node_name)
 
+def RunNaplesConsoleCmd(node_name, cmd, get_exit_code=False):
+    return store.GetTestbed().GetCurrentTestsuite().GetTopology().RunNaplesConsoleCmd(node_name, cmd, get_exit_code)
+
 def GetDataVlans():
     vlan_ids = []
     try:
