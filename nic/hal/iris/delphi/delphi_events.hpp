@@ -16,6 +16,8 @@ namespace hal {
 // Initializes event recorder
 hal_ret_t hal_events_recorder_init(void);
 void hal_session_event_notify(eventtypes::EventTypes event_id, uint64_t session_limit);
+void hal_workload_migration_event_notify(eventtypes::EventTypes event_id, const char *dir,
+                                         const char *mac);
 
 }    // namespace hal
 

@@ -82,5 +82,32 @@ void hal_session_event_notify(eventtypes::EventTypes event_id, uint64_t session_
     return;
 }
 
+void
+hal_workload_migration_event_notify(eventtypes::EventTypes event_id, const char *dir,
+                                    const char *mac)
+{
+    std::string descr = "DSC endpoint ";
+    descr.append(mac);
+    descr.append(" migrate ");
+    descr.append(dir);
+
+    if (event_id == eventtypes::DSC_ENDPOINT_MIGRATION_FAILED) {
+        descr.append(" failed");
+    } else if (event_id == eventtypes::DSC_ENDPOINT_MIGRATION_ABORTED) {
+        descr.append(" aborted");
+    } else if (event_id == eventtypes::DSC_ENDPOINT_MIGRATION_TIMEOUT) {
+        descr.append(" timedout");
+    } else {
+        HAL_TRACE_ERR("Unsupported workload migration event");
+        return;
+    }
+
+    if (hal_events_recorder_get()) {
+        hal_events_recorder_get()->event(event_id, descr.c_str());
+        HAL_TRACE_VERBOSE("Workload migration event raised: {}", descr);
+    }
+    return;
+}
+
 }    // namespace hal
 

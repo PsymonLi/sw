@@ -11,6 +11,7 @@
 #include "nic/sdk/lib/event_thread/event_thread.hpp"
 #include "nic/sdk/lib/rte_indexer/rte_indexer.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
+#include "gen/proto/eventtypes.pb.h"
 #include "nic/hal/vmotion/vmotion_tls.hpp"
 #include "nic/hal/vmotion/vmotion_src_host.hpp"
 #include "nic/hal/vmotion/vmotion_dst_host.hpp"
@@ -213,6 +214,7 @@ public:
     void          set_master_sock(int sock) { master_sock_fd_ = sock; } 
     hal_ret_t     delay_deinit();
     sdk::event_thread::event_thread* get_master_event_thrd(void) { return vmotion_.vmotion_master; }
+    static void   vmotion_notify_event(vmotion_ep *vmn_ep, MigrationState migration_state);
 
     // FSM Related methods
     static vmotion_src_host_fsm_def* src_host_fsm_def_;

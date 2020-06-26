@@ -46,6 +46,12 @@ src_host_end (vmotion_ep *vmn_ep, MigrationState migration_state, vmotion_thread
             ep->vmotion_state = migration_state;
         }
 
+        if ((migration_state == MigrationState::FAILED) ||
+            (migration_state == MigrationState::ABORTED) ||
+            (migration_state == MigrationState::TIMEOUT)) {
+            vmn_ep->get_vmotion()->vmotion_notify_event(vmn_ep, migration_state);
+        }
+
         VMOTION_FLAG_SET_THREAD_EXITED(vmn_ep);
 
         // Stats

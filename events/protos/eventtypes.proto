@@ -416,6 +416,16 @@ enum EventTypes {
     ORCH_HOST_CONFLICT                     = 1011 [(category)    = Orchestration,
                                            (severity)    = WARN,
                                            (desc)        = "Unable to create host due to conflicts with a user created host"];
+    DSC_ENDPOINT_MIGRATION_FAILED          = 1012 [(category) = Orchestration,
+                                           (severity) = CRITICAL,
+                                           (desc)     = "DSC Endpoint migration failed"];
+    DSC_ENDPOINT_MIGRATION_ABORTED         = 1013 [(category) = Orchestration,
+                                           (severity) = CRITICAL,
+                                           (desc)     = "DSC Endpoint migration aborted"];
+    DSC_ENDPOINT_MIGRATION_TIMEOUT         = 1014 [(category) = Orchestration,
+                                           (severity) = CRITICAL,
+                                           (desc)     = "DSC Endpoint migration timeout"];
+
     // ------------------------- Controller events ------------------------- //
     COLLECTOR_REACHABLE                    = 1101 [(category) = Network,
                                            (severity)         = INFO,

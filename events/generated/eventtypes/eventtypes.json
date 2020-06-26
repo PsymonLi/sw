@@ -6,6 +6,21 @@
    "Desc": "Disk threshold exceeded"
   },
   {
+   "Name": "DSC_ENDPOINT_MIGRATION_ABORTED",
+   "Severity": "critical",
+   "Desc": "DSC Endpoint migration aborted"
+  },
+  {
+   "Name": "DSC_ENDPOINT_MIGRATION_FAILED",
+   "Severity": "critical",
+   "Desc": "DSC Endpoint migration failed"
+  },
+  {
+   "Name": "DSC_ENDPOINT_MIGRATION_TIMEOUT",
+   "Severity": "critical",
+   "Desc": "DSC Endpoint migration timeout"
+  },
+  {
    "Name": "MIGRATION_FAILED",
    "Severity": "critical",
    "Desc": "Migration Failed"

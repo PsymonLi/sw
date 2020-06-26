@@ -9,6 +9,9 @@ interface EventType {
 export const categoryToEventType: { [cat: string]: string[] } = {
   : [
     'DISK_THRESHOLD_EXCEEDED',
+    'DSC_ENDPOINT_MIGRATION_ABORTED',
+    'DSC_ENDPOINT_MIGRATION_FAILED',
+    'DSC_ENDPOINT_MIGRATION_TIMEOUT',
     'MIGRATION_FAILED',
     'MIGRATION_TIMED_OUT',
     'ORCH_ALREADY_MANAGED',
@@ -122,6 +125,21 @@ export const eventTypes: { [name: string]: EventType } = {
       "Name": "DISK_THRESHOLD_EXCEEDED",
       "Severity": EventsEvent_severity.critical,
       "Desc": "Disk threshold exceeded",
+  },
+  'DSC_ENDPOINT_MIGRATION_ABORTED' : {
+      "Name": "DSC_ENDPOINT_MIGRATION_ABORTED",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC Endpoint migration aborted",
+  },
+  'DSC_ENDPOINT_MIGRATION_FAILED' : {
+      "Name": "DSC_ENDPOINT_MIGRATION_FAILED",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC Endpoint migration failed",
+  },
+  'DSC_ENDPOINT_MIGRATION_TIMEOUT' : {
+      "Name": "DSC_ENDPOINT_MIGRATION_TIMEOUT",
+      "Severity": EventsEvent_severity.critical,
+      "Desc": "DSC Endpoint migration timeout",
   },
   'MIGRATION_FAILED' : {
       "Name": "MIGRATION_FAILED",

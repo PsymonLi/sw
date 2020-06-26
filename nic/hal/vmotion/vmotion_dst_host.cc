@@ -62,6 +62,12 @@ dst_host_end (vmotion_ep *vmn_ep)
         ep->vmotion_state = vmn_ep->get_migration_state();
     }
 
+    if ((vmn_ep->get_migration_state() == MigrationState::FAILED) ||
+        (vmn_ep->get_migration_state() == MigrationState::ABORTED) ||
+        (vmn_ep->get_migration_state() == MigrationState::TIMEOUT)) {
+        vmn_ep->get_vmotion()->vmotion_notify_event(vmn_ep, vmn_ep->get_migration_state());
+    }
+
     VMOTION_FLAG_SET_THREAD_EXITED(vmn_ep);
 
     // Stats

@@ -650,6 +650,27 @@ func init() {
 		Desc:       "Unable to create host due to conflicts with a user created host",
 		SuppressMM: false}
 
+	eventTypes[DSC_ENDPOINT_MIGRATION_FAILED] = &EventTypeAttributes{
+		EType:      DSC_ENDPOINT_MIGRATION_FAILED.String(),
+		Severity:   "critical",
+		Category:   "",
+		Desc:       "DSC Endpoint migration failed",
+		SuppressMM: false}
+
+	eventTypes[DSC_ENDPOINT_MIGRATION_ABORTED] = &EventTypeAttributes{
+		EType:      DSC_ENDPOINT_MIGRATION_ABORTED.String(),
+		Severity:   "critical",
+		Category:   "",
+		Desc:       "DSC Endpoint migration aborted",
+		SuppressMM: false}
+
+	eventTypes[DSC_ENDPOINT_MIGRATION_TIMEOUT] = &EventTypeAttributes{
+		EType:      DSC_ENDPOINT_MIGRATION_TIMEOUT.String(),
+		Severity:   "critical",
+		Category:   "",
+		Desc:       "DSC Endpoint migration timeout",
+		SuppressMM: false}
+
 	eventTypes[COLLECTOR_REACHABLE] = &EventTypeAttributes{
 		EType:      COLLECTOR_REACHABLE.String(),
 		Severity:   "info",

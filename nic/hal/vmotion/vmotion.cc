@@ -6,6 +6,7 @@
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/include/hal_mem.hpp"
 #include "nic/hal/core/core.hpp"
+#include "nic/hal/iris/delphi/delphi_events.hpp"
 
 namespace hal {
 
@@ -745,6 +746,25 @@ vmotion::vmotion_dbg_history_entry_add(vmotion_ep *vmn_ep)
     entry->vmotion_state = (ep ? ep->vmotion_state : MigrationState::NONE);
     entry->flags         = *vmn_ep->get_flags(); 
     entry->sm_state      = vmn_ep->get_sm()->get_state();
+}
+
+void
+vmotion::vmotion_notify_event(vmotion_ep *vmn_ep, MigrationState migration_state)
+{
+    eventtypes::EventTypes  event_type;
+    const char *dir = ((vmn_ep->get_vmotion_type() == VMOTION_TYPE_MIGRATE_IN) ? "in" : "out");
+
+    if (migration_state == MigrationState::FAILED) {
+        event_type = eventtypes::DSC_ENDPOINT_MIGRATION_FAILED;
+    } else if (migration_state == MigrationState::ABORTED) {
+        event_type = eventtypes::DSC_ENDPOINT_MIGRATION_ABORTED;
+    } else if (migration_state == MigrationState::TIMEOUT) {
+        event_type = eventtypes::DSC_ENDPOINT_MIGRATION_TIMEOUT;
+    } else {
+        return;
+    }
+
+    hal_workload_migration_event_notify(event_type, dir, macaddr2str(*vmn_ep->get_ep_mac()));
 }
 
 } // namespace hal
