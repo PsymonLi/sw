@@ -52,6 +52,7 @@ def gen_plcy_cfg_local_wl_topo(tc):
         api.Logger.error('Failed to get host interfaces')
         return api.types.status.FAILURE
 
+    tc.host_ifs[(tc.wl_node_name, tc.classic_nic)] = host_intfs
     up0_intf = host_intfs[0]
     up1_intf = host_intfs[1]
 
@@ -270,8 +271,12 @@ def Setup(tc):
    
     tc.athena_node_nic_pairs = athena_app_utils.get_athena_node_nic_names()
     tc.wl_node_nic_pairs = utils.get_classic_node_nic_pairs()
+    tc.host_ifs = {}
 
     if tc.dualnic:
+        for node, nic in tc.wl_node_nic_pairs:
+            tc.host_ifs[(node, nic)] = api.GetNaplesHostInterfaces(node, nic)
+        
         gen_plcy_cfg_e2e_wl_topo(tc)
 
         wl_nodes = [nname for nname, nic in tc.wl_node_nic_pairs]
@@ -280,9 +285,9 @@ def Setup(tc):
 
     else:
         # Assuming only one bitw node and one workload node
-        tc.bitw_node_name = tc.athena_node_nic_pairs[0][0]
-        tc.wl_node_name = tc.wl_node_nic_pairs[0][0]
-        
+        tc.bitw_node_name, tc.bitw_nic = tc.athena_node_nic_pairs[0]
+        tc.wl_node_name, tc.classic_nic = tc.wl_node_nic_pairs[0]
+       
         gen_plcy_cfg_local_wl_topo(tc)
 
         # Install python scapy packages
@@ -295,14 +300,19 @@ def Trigger(tc):
     # Copy policy.json to /data and restart Athena sec app on Athena Node
     tc.resp = []
     
-    for node, nic in tc.athena_node_nic_pairs:
-        req = api.Trigger_CreateExecuteCommandsRequest()
+    req = api.Trigger_CreateExecuteCommandsRequest()
         
+    for node, nic in tc.athena_node_nic_pairs:
         cmd = "mv /policy.json /data/policy.json"
         api.Trigger_AddNaplesCommand(req, node, cmd, nic)
 
-        resp = api.Trigger(req)
-        tc.resp.append(resp)
+    for node, nic in tc.wl_node_nic_pairs:
+        # configure host interface MTUs to jumbo (9198 max allowed on Linux)
+        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][0], 9198)
+        utils.configureHostIntfMtu(req, node, tc.host_ifs[(node, nic)][1], 9198)
+
+    resp = api.Trigger(req)
+    tc.resp.append(resp)
 
     return api.types.status.SUCCESS
 
@@ -312,12 +322,17 @@ def Verify(tc):
         return api.types.status.FAILURE
 
     for resp in tc.resp:
-        cmd = resp.commands[0]
-        api.PrintCommandResults(cmd)
-        if cmd.exit_code != 0:
-            api.Logger.error("moving policy.json to /data failed on "
-                        "node %s card %s" % (cmd.node_name, cmd.entity_name))
-            return api.types.status.FAILURE
+        for cmd in resp.commands:
+            api.PrintCommandResults(cmd)
+            if cmd.exit_code != 0:
+                if 'mv' in cmd.command:
+                    api.Logger.error("moving policy.json to /data failed on "
+                                "node %s card %s" % (cmd.node_name, cmd.entity_name))
+                
+                if 'mtu' in cmd.command:
+                    api.Logger.error("Interface mtu set command failed: %s" % 
+                                    cmd.command)
+                return api.types.status.FAILURE
 
     for node, nic in tc.athena_node_nic_pairs:
         ret = athena_app_utils.athena_sec_app_restart(node, nic, 80) 

@@ -8,6 +8,10 @@ testcases:
         testcase: testcases.networking.athena_app_no_dpdk_verify
         enable  : True
 
+    -   name    : KNI_Klm_Check
+        testcase: testcases.networking.kni_klm
+        enable  : True
+
     -   name    : Setup_KNI
         testcase: testcases.networking.kni_setup
         enable  : True
@@ -62,15 +66,60 @@ testcases:
         args    :
             max_dyn_flow_count : 64
 
-    -   name    : Data_Path_Test
+    -   name    : L3_Data_Path_Test
         testcase: testcases.networking.data_path
         enable  : True
         iterators :
             type     : nested
-            vnic_type : ['L3','L2']
-            nat       : ['no','yes']
+            vnic_type : ['L3']
+            nat       : ['no']
             proto     : ['UDP', 'TCP', 'ICMP']
             pyld_size : [64, 1024]
+            flow_type : ['dynamic']
+            bidir     : ['yes']
+        args    :
+            flow_cnt  : 1
+            pkt_cnt   : 10
+
+    -   name    : L3_NAT_Data_Path_Test
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['yes']
+            proto     : ['UDP', 'TCP', 'ICMP']
+            pyld_size : [1024, 9000]
+            flow_type : ['dynamic']
+            bidir     : ['yes']
+        args    :
+            flow_cnt  : 1
+            pkt_cnt   : 10
+
+    -   name    : L2_Data_Path_Test
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L2']
+            nat       : ['no']
+            proto     : ['UDP', 'TCP', 'ICMP']
+            pyld_size : [4096, 9000]
+            flow_type : ['dynamic']
+            bidir     : ['yes']
+        args    :
+            flow_cnt  : 1
+            pkt_cnt   : 10
+
+    -   name    : L2_NAT_Data_Path_Test
+        testcase: testcases.networking.data_path
+        enable  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L2']
+            nat       : ['yes']
+            proto     : ['UDP', 'TCP', 'ICMP']
+            pyld_size : [64, 9000]
             flow_type : ['dynamic']
             bidir     : ['yes']
         args    :

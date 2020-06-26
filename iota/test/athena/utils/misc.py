@@ -196,3 +196,17 @@ def configureNaplesIntf(req, node, intf,
         cmd = "ifconfig " + intf + " down && "
         cmd += "ip addr del " + ip + "/" + mask + " dev " + intf
         api.Trigger_AddNaplesCommand(req, node, cmd)
+
+# =============================================
+# Return: void
+# Configure host interface MTU
+# =============================================
+def configureHostIntfMtu(req, node, intf, mtu=1500):
+    
+    CMD_SEP = ' '
+
+    base_cmd = "ifconfig"
+    cmd_args = [intf, "mtu", str(mtu)]
+    
+    cmd = base_cmd + CMD_SEP + CMD_SEP.join(cmd_args)
+    api.Trigger_AddHostCommand(req, node, cmd)
