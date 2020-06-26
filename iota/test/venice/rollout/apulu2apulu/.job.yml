@@ -28,7 +28,7 @@ e2e-targets:
          pvt-networks:
          - control-1
          - control-2
-     - image: build-7
+     - image: build-17
        count: 2
        resources:
          # ESX could be installed on any server
