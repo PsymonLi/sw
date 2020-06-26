@@ -65,10 +65,6 @@ typedef enum sdk_timer_id_e {
     SDK_TIMER_ID_PORT_EVENT
 } sdk_timer_id_t;
 
-sdk_ret_t linkmgr_notify(uint8_t operation, linkmgr_entry_data_t *data,
-                         q_notify_mode_t mode);
-sdk_ret_t port_link_poll_timer_add(port *port);
-sdk_ret_t port_link_poll_timer_delete(port *port);
 bool is_linkmgr_ctrl_thread(void);
 bool is_linkmgr_ctrl_thread_ready(void);
 sdk::lib::thread *current_thread(void);
@@ -92,8 +88,6 @@ serdes_info_t* serdes_info_get(uint32_t sbus_addr,
                                uint32_t port_speed,
                                uint32_t cable_type);
 uint32_t logical_port_to_tm_port(uint32_t logical_port);
-void port_bringup_timer_cb(sdk::event_thread::timer_t *timer);
-void port_debounce_timer_cb(sdk::event_thread::timer_t *timer);
 
 static inline bool
 get_file_value (const char *filename, uint32_t *value)

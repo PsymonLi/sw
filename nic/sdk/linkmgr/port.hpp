@@ -459,20 +459,6 @@ public:
 
     static sdk_ret_t port_mac_stats_init(port *port_p);
 
-    // If current_thread is hal-control thread, invoke method directly
-    // Else trigger hal-control thread to invoke method
-    static sdk_ret_t port_enable(port *port_p);
-
-    // If current_thread is hal-control thread, invoke method directly
-    // Else trigger hal-control thread to invoke method
-    static sdk_ret_t port_disable(port *port_p);
-
-    // If current_thread is hal-control thread, invoke method directly
-    // Else trigger hal-control thread to invoke method
-    static sdk_ret_t port_quiesce(port *port_p,
-                                  linkmgr_async_response_cb_t response_cb,
-                                  void *response_cookie);
-
     // set and start the timer
     static sdk_ret_t port_timer_start(sdk::event_thread::timer_t *timer,
                                       double timeout);

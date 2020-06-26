@@ -13,6 +13,7 @@
 #include "platform/pal/include/pal.h"
 #include "lib/pal/pal.hpp"
 #include "asic/rw/asicrw.hpp"
+#include "linkmgr_ctrl.hpp"
 
 using namespace sdk::asic::pd;
 
@@ -1145,7 +1146,7 @@ port::port_link_sm_process(bool start_en_timer)
                 // reset state
 
                 // remove from link poll timer if present
-                port_link_poll_timer_delete(this);
+                port_link_poll_timer_delete((void *)this);
 
                 // set operational status as down
                 this->set_oper_status(port_oper_status_t::PORT_OPER_STATUS_DOWN);
@@ -1496,7 +1497,7 @@ port::port_link_sm_process(bool start_en_timer)
                 // enable pCal
 
                 // add to link poll timer
-                port_link_poll_timer_add(this);
+                port_link_poll_timer_add((void *)this);
 
                 // update the AN oper mode
                 set_auto_neg_enable(is_auto_neg() == AUTO_NEG? true : false);
@@ -1648,7 +1649,7 @@ port::port_event_notify(port_event_t port_event)
         // increment the link down counter
         set_num_link_down(num_link_down() + 1);
 
-        port_link_poll_timer_delete(this);
+        port_link_poll_timer_delete((void *)this);
         break;
 
     default:
@@ -2127,80 +2128,6 @@ port::phy_port_mac_addr(uint32_t phy_port, mac_addr_t mac_addr) {
     // subsequent ports
     mac_addr[5] += (uint8_t)(phy_port - 1);
     return SDK_RET_OK;
-}
-
-sdk_ret_t
-port::port_enable(port *port_p)
-{
-    sdk_ret_t ret;
-    linkmgr_entry_data_t data;
-
-    // wait for linkmgr control thread to process port event
-    while (!is_linkmgr_ctrl_thread_ready()) {
-        pthread_yield();
-    }
-
-    data.ctxt  = port_p;
-    data.timer = NULL;
-    data.response_cb = NULL;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_ENABLE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Error notifying control-thread for port enable");
-    }
-    return ret;
-}
-
-sdk_ret_t
-port::port_disable(port *port_p)
-{
-    sdk_ret_t ret;
-    linkmgr_entry_data_t data;
-
-    // wait for linkmgr control thread to process port event
-    while (!is_linkmgr_ctrl_thread_ready()) {
-        pthread_yield();
-    }
-
-    data.ctxt  = port_p;
-    data.timer = NULL;
-    data.response_cb = NULL;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_DISABLE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Error notifying control-thread for port disable");
-    }
-    return ret;
-}
-
-sdk_ret_t
-port::port_quiesce(port *port_p, linkmgr_async_response_cb_t response_cb,
-                   void *response_cookie)
-{
-    sdk_ret_t ret;
-    linkmgr_entry_data_t data;
-
-    // wait for linkmgr control thread to process port event
-    while (!is_linkmgr_ctrl_thread_ready()) {
-        pthread_yield();
-    }
-
-    data.ctxt  = port_p;
-    data.timer = NULL;
-    data.response_cb = response_cb;
-    data.response_cookie = response_cookie;
-
-    ret = linkmgr_notify(LINKMGR_OPERATION_PORT_QUIESCE, &data,
-                         q_notify_mode_t::Q_NOTIFY_MODE_BLOCKING);
-
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Error notifying control-thread for port quiesce");
-    }
-    return ret;
 }
 
 void
