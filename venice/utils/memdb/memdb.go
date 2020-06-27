@@ -643,6 +643,15 @@ func (md *Memdb) AddReceiver(ID string) (objReceiver.Receiver, error) {
 
 //DeleteReceiver delete receiver
 func (md *Memdb) DeleteReceiver(recvr objReceiver.Receiver) error {
+
+	//Clean up references from all objects
+	for _, db := range md.pushdb.pObjDB {
+		db.Lock()
+		for _, obj := range db.objects {
+			obj.RemoveObjReceivers([]objReceiver.Receiver{recvr})
+		}
+		db.Unlock()
+	}
 	return md.pushdb.DeleteReceiver(recvr)
 }
 

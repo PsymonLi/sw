@@ -555,22 +555,24 @@ func (ws *WorkloadState) deleteEndpoints(indexes []int) error {
 			epName := ws.Workload.Name + "-" + name
 			_, ok := nw.FindEndpoint(epName)
 			if !ok {
-				log.Errorf("Could not find endpoint %v for nw %v", epName, nw.Network.Name)
-			} else {
+				log.Errorf("Could not find endpoint %v for nw, still trying to delete endpoint as it might be in flight%v", epName, nw.Network.Name)
+			}
 
-				epInfo := workload.Endpoint{
-					TypeMeta: api.TypeMeta{Kind: "Endpoint"},
-					ObjectMeta: api.ObjectMeta{
-						Name:      epName,
-						Tenant:    ws.Workload.Tenant,
-						Namespace: ws.Workload.Namespace,
-					},
-				}
-
-				// delete the endpoint in api server
-				err = ws.stateMgr.ctrler.Endpoint().Delete(&epInfo)
-				if err != nil {
-					log.Errorf("Error deleting the endpoint. Err: %v", err)
+			//Still try to delete as create may be in flight in scale setup
+			epInfo := workload.Endpoint{
+				TypeMeta: api.TypeMeta{Kind: "Endpoint"},
+				ObjectMeta: api.ObjectMeta{
+					Name:      epName,
+					Tenant:    ws.Workload.Tenant,
+					Namespace: ws.Workload.Namespace,
+				},
+			}
+			// delete the endpoint in api server
+			err = ws.stateMgr.ctrler.Endpoint().Delete(&epInfo)
+			if err != nil {
+				log.Errorf("Error deleting the endpoint. Err: %v", err)
+				//Retry only if not not found
+				if !strings.Contains(strings.ToLower(err.Error()), "not found") {
 					return kvstore.NewTxnFailedError()
 				}
 			}

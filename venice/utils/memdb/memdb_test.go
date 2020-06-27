@@ -3067,6 +3067,37 @@ func TestMemdbObjPushWatcher_3(t *testing.T) {
 		AssertOk(t, err, "Error verifying objects")
 	}
 
+	for _, recv := range receivers {
+		for _, pobj := range pObjMaps["a"] {
+			found, err := pobj.IsReceiver(recv)
+			AssertOk(t, err, "Error finding receiver")
+			Assert(t, found, "Receiver found")
+		}
+		for _, pobj := range pObjMaps["b"] {
+			found, err := pobj.IsReceiver(recv)
+			AssertOk(t, err, "Error finding receiver")
+			Assert(t, found, "Receiver found")
+		}
+	}
+
+	for _, recv := range receivers {
+		err := md.DeleteReceiver(recv)
+		AssertOk(t, err, "Error deleting receiver")
+	}
+
+	for _, recv := range receivers {
+		for _, pobj := range pObjMaps["a"] {
+			found, err := pobj.IsReceiver(recv)
+			AssertError(t, err, "Error finding receiver")
+			Assert(t, !found, "Receiver found")
+		}
+		for _, pobj := range pObjMaps["b"] {
+			found, err := pobj.IsReceiver(recv)
+			AssertError(t, err, "Error finding receiver")
+			Assert(t, !found, "Receiver found")
+		}
+	}
+
 	stopWatchForKinds(t, md, watchers, []string{"a", "b", "c"})
 }
 

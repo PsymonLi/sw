@@ -3158,7 +3158,7 @@ func TestNetworkInterfaceConvert(t *testing.T) {
 		},
 	}
 
-	cNetif := convertNetifObj("testNode", agentNetif)
+	cNetif := convertNetifObj("testNode", nil, agentNetif)
 	if cNetif == nil {
 		t.Fatalf("Unable to convert netif object")
 	}
@@ -3188,7 +3188,7 @@ func TestNetworkInterfaceConvert(t *testing.T) {
 		Assert(t, convertIFTypeToAgentProto(v.api) == v.agent, "convert form api to netproto failed [%v][%v]", convertIFTypeToAgentProto(v.api), v.agent)
 		Assert(t, convertAgentIFToAPIProto(v.agent) == v.api, "convert form netproto to api failed [%v][%v]", convertAgentIFToAPIProto(v.agent), v.api)
 		agentNetif.Spec.Type = v.agent
-		Assert(t, convertNetifObj("testnode", agentNetif) != nil, "failed to convert")
+		Assert(t, convertNetifObj("testnode", nil, agentNetif) != nil, "failed to convert")
 	}
 }
 

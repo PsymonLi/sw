@@ -26,23 +26,28 @@ import (
 	"github.com/pensando/sw/venice/utils/runtime"
 )
 
-func convertNetifObj(nodeID string, agentNetif *netproto.Interface) *network.NetworkInterface {
+func convertNetifObj(nodeID string, current *network.NetworkInterface, agentNetif *netproto.Interface) *network.NetworkInterface {
 	// convert agentNetif -> veniceNetif
 	creationTime, _ := types.TimestampProto(time.Now())
-	netif := &network.NetworkInterface{
-		TypeMeta: api.TypeMeta{
-			Kind: "NetworkInterface",
-		},
-		ObjectMeta: agentNetif.ObjectMeta,
-		Spec: network.NetworkInterfaceSpec{
-			AdminStatus: agentNetif.Spec.AdminStatus,
-		},
-		Status: network.NetworkInterfaceStatus{
-			DSC: nodeID,
-			// TBD: PrimaryMac: "tbf",
-		},
+	var netif *network.NetworkInterface
+	if current == nil {
+		netif = &network.NetworkInterface{
+			TypeMeta: api.TypeMeta{
+				Kind: "NetworkInterface",
+			},
+			ObjectMeta: agentNetif.ObjectMeta,
+			Spec: network.NetworkInterfaceSpec{
+				AdminStatus: agentNetif.Spec.AdminStatus,
+			},
+			Status: network.NetworkInterfaceStatus{
+				DSC: nodeID,
+				// TBD: PrimaryMac: "tbf",
+			},
+		}
+		netif.CreationTime = api.Timestamp{Timestamp: *creationTime}
+	} else {
+		netif = current
 	}
-	netif.CreationTime = api.Timestamp{Timestamp: *creationTime}
 
 	switch strings.ToUpper(netif.Spec.AdminStatus) {
 	case netproto.IFStatus_UP.String():
@@ -149,7 +154,7 @@ func (sm *Statemgr) OnInterfaceCreateReq(nodeID string, agentNetif *netproto.Int
 		return sm.OnInterfaceUpdateReq(nodeID, agentNetif)
 	}
 	log.Infof("Creating network interface %v", agentNetif.Name)
-	netif := convertNetifObj(nodeID, agentNetif)
+	netif := convertNetifObj(nodeID, nil, agentNetif)
 
 	agentNetif.Status.DSC = nodeID
 
@@ -224,7 +229,8 @@ func (sm *Statemgr) OnInterfaceUpdateReq(nodeID string, agentNetif *netproto.Int
 		}
 	}
 	if update {
-		obj.NetworkInterfaceState.NetworkInterface = *(convertNetifObj(nodeID, agentNetif))
+		obj.NetworkInterfaceState.NetworkInterface = *(convertNetifObj(nodeID, &obj.NetworkInterfaceState.NetworkInterface,
+			agentNetif))
 	}
 	obj.NetworkInterfaceState.Unlock()
 	if update == false {
