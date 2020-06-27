@@ -62,6 +62,10 @@
           </div>
           <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
                fxLayoutAlign="start center">
+            <div>Creation time:</div>
+          </div>
+          <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
+               fxLayoutAlign="start center">
             <div>Last Leader Transition Time:</div>
           </div>
           <div class="cluster-node-fieldtitle" fxFlex="30px" fxLayout="row"
@@ -81,6 +85,10 @@
           <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center" class="cluster-node-value">
             <div class="cluster-details-panel-cluster-name">
               {{ cluster?.meta.name }}</div>
+          </div>
+          <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center" class="cluster-node-value">
+            <div class="cluster-details-panel-cluster-name">
+              {{ cluster?.meta['creation-time'] | PrettyDate }}</div>
           </div>
           <div fxFlex="30px" fxLayout="row" fxLayoutAlign="start center" class="cluster-node-value">
             <div class="cluster-details-panel-last-leader-transition-time">
