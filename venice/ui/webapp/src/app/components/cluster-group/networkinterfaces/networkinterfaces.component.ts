@@ -44,6 +44,9 @@ import { DataComponent } from '@app/components/shared/datacomponent/datacomponen
  *
  */
 
+interface DSCMacToObjectMap {
+  [key: string]: ClusterDistributedServiceCard; // dsc.meta.name - dsc
+}
 interface NetworkInterfaceUiModel {
   associatedDSC: string;
   networkinterfaceUIName: string;
@@ -89,11 +92,11 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
 
   cols: TableCol[] = [
     { field: 'meta.name', header: 'Name', class: 'networkinterfaces-column-name', sortable: true, width: '150px', notReorderable: true },
-    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '150px' },
+    { field: 'status.dsc', header: 'DSC', class: ' networkinterfaces-column-dsc', sortable: true, width: '180px' },
     { field: 'spec.attach-tenant', header: 'Attach Tenant', class: ' networkinterfaces-column-tenant', sortable: true, width: '150px' },
     { field: 'spec.attach-network', header: 'Attach Network', class: ' networkinterfaces-column-network', sortable: true, width: '150px' },
     { field: 'status.if-host-status.mac-address', header: 'Mac Address', class: ' networkinterfaces-column-mac', sortable: true, width: '150px' },
-    { field: 'status.if-uplink-status.ip-config.ip-address', header: 'IP Address', class: ' networkinterfaces-column-IP', sortable: true, width: '150px' },
+    { field: 'status.if-uplink-status.ip-config.ip-address', header: 'IP Address', class: ' networkinterfaces-column-IP', sortable: true, width: '100px' },
     { field: 'status', header: 'Admin/Op Status', class: ' networkinterfaces-column-opstatus', sortable: true, width: '125px' },
     { field: 'spec.type', header: 'Type', class: ' networkinterfaces-column-type', sortable: true, width: '100px' },
     { field: 'meta.labels', header: 'Labels', class: '', sortable: true, width: 100 },
@@ -119,6 +122,7 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
   selectedNetworkInterface: NetworkNetworkInterface = null;
 
   _myDSCnameToMacMap: DSCsNameMacMap;
+  _myDSCmacToObjectMap: DSCMacToObjectMap;
 
   // advance search variables
   advSearchCols: TableCol[] = [];
@@ -202,12 +206,23 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
           return;
         }
         this.naplesList = response.data as ClusterDistributedServiceCard[];
+        this._myDSCmacToObjectMap = this.buildIdToNaplesObjectMap(this.naplesList);
         this._myDSCnameToMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
         this.handleDataReady(!this.naplesInit);
         this.naplesInit = true;
       }
     );
     this.subscriptions.push(dscSubscription);
+  }
+
+  buildIdToNaplesObjectMap(naples): DSCMacToObjectMap {
+    const dscIdObjMap: DSCMacToObjectMap = {};
+    for (const smartnic of naples) {
+        if (!Utility.isEmpty(smartnic.meta.name)) {
+          dscIdObjMap[smartnic.meta.name] = smartnic;
+        }
+    }
+    return dscIdObjMap;
   }
 
   watchNetworkInterfaces() {
@@ -464,6 +479,14 @@ export class NetworkinterfacesComponent extends DataComponent implements OnInit 
       }
     }
     return outputs;
+  }
+
+  getAssociatedDSCCondition(nic: Readonly<NetworkNetworkInterface> | NetworkNetworkInterface): string|null {
+    const napleId = nic && nic.status && nic.status.dsc ? nic.status.dsc : '';
+    if (this._myDSCmacToObjectMap && this._myDSCmacToObjectMap[napleId]) {
+      return Utility.getNaplesCondition(this._myDSCmacToObjectMap[napleId]);
+    }
+    return null;
   }
 
   expandRowRequest(event, rowData) {

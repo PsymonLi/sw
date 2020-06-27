@@ -373,45 +373,14 @@ export class ClusterComponent extends BaseComponent implements OnInit, OnDestroy
   }
 
   isRoutingHealthNodeHealthy(rrNode: RoutingHealth): boolean {
-    return (rrNode.status['internal-peers'].established === rrNode.status['internal-peers'].configured ) &&
-    (rrNode.status['external-peers'].established === rrNode.status['external-peers'].configured ) &&
-    (rrNode.status['unexpected-peers'] === 0);
+    return Utility.getRoutingNodeHealth(rrNode);
   }
-  /**
-   * This API get routingHealth node status info.
-   * @param rrNode
-   */
-  /*
-  getRoutingHealthNodeStatus(rrNode: RoutingHealth): string {
-    const obj = Utility.trimUIFields(rrNode.status.getModelValues());
-    const list = [];
-    this.traverseJSONObject(obj, 0, list, this);
-    return list.join('<br/>');
+
+  showRRStatusColumn(): boolean {
+    return  this.uiconfigService.isFeatureEnabled('cloud') && !Utility.isRRNodeListNotConfigured(this.routinghealthlist);
   }
-  padSpace(level: number , space: string = '&nbsp;') {
-    let output = '&nbsp;';
-    for ( let i = 0; i < level; i ++ ) {
-      output += space;
-    }
-    return output;
+
+  isNodeConfigured(rrNode: RoutingHealth): boolean {
+    return Utility.isRRNodeConfigured(rrNode);
   }
-  traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
-    for (const key in data) {
-      if (typeof (data[key]) === 'object' && data[key] !== null) {
-        if (Array.isArray(data[key])) {
-          for (let i = 0; i < data[key].length; i++) {
-            this.traverseJSONObject(data[key][i], indentLevel + 1 , list, linkComponent);
-          }
-        } else {
-          const spaces = linkComponent.padSpace(indentLevel * 5 );
-          list.push( spaces + key );
-          this.traverseJSONObject(data[key], indentLevel + 1, list, linkComponent);
-        }
-      } else {
-        const spaces = linkComponent.padSpace(indentLevel * 5);
-        list.push( spaces + key + ' : ' + data[key]);
-      }
-    }
-  }
-  */
 }

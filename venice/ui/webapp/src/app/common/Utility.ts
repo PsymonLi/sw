@@ -2295,6 +2295,48 @@ export class Utility {
     return retArr;
   }
 
+  public static getUnexpectedPeerHealth(node: RoutingHealth): boolean {
+    return node.status['unexpected-peers'] === 0;
+  }
+
+  public static getExternalPeerHealth(node: RoutingHealth): boolean {
+    return node.status['external-peers'].configured === node.status['external-peers'].established && node.status['external-peers'].configured !== 0;
+  }
+
+  public static getInternalPeerHealth(node: RoutingHealth): boolean {
+    return node.status['internal-peers'].configured === node.status['internal-peers'].established && node.status['internal-peers'].configured !== 0;
+  }
+
+  public static getRoutingNodeHealth(node: RoutingHealth): boolean {
+    return this.getInternalPeerHealth(node) && this.getExternalPeerHealth(node) && this.getUnexpectedPeerHealth(node);
+  }
+
+  public static areRRExternalPeersConfigured(rrNode: RoutingHealth): boolean {
+    return rrNode && rrNode.status && rrNode.status['external-peers'] && rrNode.status['external-peers'].configured && rrNode.status['external-peers'].configured > 0;
+  }
+
+  public static areRRInternalPeersConfigured(rrNode: RoutingHealth): boolean {
+    return rrNode && rrNode.status && rrNode.status['internal-peers'] && rrNode.status['internal-peers'].configured && rrNode.status['internal-peers'].configured > 0;
+  }
+  /**
+   * if RRNode json looks like this
+   *  {'kind':'','meta':{'name':'','generation-id':'','creation-time':'','mod-time':''},'spec':{},'status':{'router-id':'','internal-peers':{'configured':0,'established':0},'external-peers':{'configured':0,'established':0},'unexpected-peers':0}}  ;
+   *  consider it as empty
+   * @param rrNode
+   */
+  public static isRRNodeConfigured(rrNode: RoutingHealth): boolean {
+    return (rrNode && rrNode.status && !Utility.isEmpty(rrNode.status['router-id'])) && (this.areRRExternalPeersConfigured(rrNode) || this.areRRInternalPeersConfigured(rrNode));
+  }
+
+  public static isRRNodeListNotConfigured(rrnodelist: RoutingHealth[]): boolean {
+      const notConfig: boolean = true;
+      for (let i = 0 ; rrnodelist && i < rrnodelist.length ; i++ ) {
+          if (this.isRRNodeConfigured(rrnodelist[i])) {
+            return false;
+          }
+      }
+      return notConfig;
+  }
    /**
    * This API get routingHealth node status info.
    * @param rrNode

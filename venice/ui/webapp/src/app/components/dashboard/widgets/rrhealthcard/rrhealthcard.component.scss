@@ -44,11 +44,11 @@
 }
 
 .rrhealthcard-spacing {
-  margin: 10px 25px 15px 25px;
+  margin: 10px 20px 15px 5px;
 }
 
 .rrhealthcard-alerts {
-  margin: 0px 30px 10px 30px;
+  margin: 0px 50px 10px 30px;
 
   .rrhealthcard-alerts-text {
     @include primary-font(14px, #676763, 400);
@@ -66,4 +66,21 @@
 
 .rrhealthcard-dialog-content {
   @include primary-font(14px, #676763, 400);
+}
+
+.rrhealthcard-psm-status {
+  @include primary-font(20px, #b592e3, 600);
+  margin-top: 60px;
+  padding-left: 10px;
+  cursor: pointer;
+}
+
+.rrhealthcard-noRR-text1 {
+  @include primary-font(24px, #b592e3, 600);
+  margin-top: 35px;
+}
+
+.rrhealthcard-noRR-text2 {
+  @include primary-font(16px, #676763, 400);
+  margin-top: 6px;
 }

@@ -13,36 +13,56 @@
                 [cardState]="cardState"
                 [lastUpdateTime]="lastUpdateTime"
                 [menuItems]="menuItems">
-    <div *ngIf="!loading" fxFlex="100%" class="rrhealthcard-bg" fxLayout="column">
-      <div fxFlex="100%" fxLayout="row">
-        <ng-container *ngTemplateOutlet="nodeDetails ;context:{node: this.routingHealthList[0]}">
-        </ng-container>
-        <ng-container *ngTemplateOutlet="nodeDetails ;context:{node: this.routingHealthList[1]}">
-        </ng-container>
+    <ng-container *ngIf="!loading && !isRRListNotConfigured">
+      <div fxFlex="25%" fxLayout="column">
+        <div fxFlex="nogrow" class="rrhealthcard-psm-status" fxLayoutAlign="center center"
+             [matTooltip]="'Click to view PSM RR health summary'"
+             (click)="showPSMHealthDialogBox()">
+          {{getPSMHeatlhStatus()}}
+        </div>
       </div>
-      <div fxFlex="100%" fxLayout="row" class="rrhealthcard-alerts">
-        <div fxFlex="100%" fxLayout="column">
-          <div fxFlex="100%" fxLayout="row">
-            <div class="rrhealthcard-alerts-text">New warning alerts</div>
-            <div fxFlex="1 0 auto"></div>
-            <div class="rrhealthcard-alerts-number">{{this.alertCountMap['warn']}}</div>
+      <div fxFlex="75%" class="rrhealthcard-bg" fxLayout="column">
+        <div fxLayout="row">
+          <div *ngFor="let item of routingHealthList">
+            <ng-container *ngTemplateOutlet="nodeDetails ;context:{node: item}">
+            </ng-container>
           </div>
-          <div fxFlex="100%" fxLayout="row">
-            <div class="rrhealthcard-alerts-text">New critical alerts</div>
-            <div fxFlex="1 0 auto"></div>
-            <div class="rrhealthcard-alerts-number">{{this.alertCountMap['critical']}}</div>
+        </div>
+        <div fxLayout="row" class="rrhealthcard-alerts">
+          <div fxFlex="100%" fxLayout="column">
+            <div fxFlex="100%" fxLayout="row">
+              <div class="rrhealthcard-alerts-text">Warning Alerts</div>
+              <div fxFlex="1 0 auto"></div>
+              <div class="rrhealthcard-alerts-number">{{this.alertCountMap['warn']}}</div>
+            </div>
+            <div fxFlex="100%" fxLayout="row">
+              <div class="rrhealthcard-alerts-text">Critical Alerts</div>
+              <div fxFlex="1 0 auto"></div>
+              <div class="rrhealthcard-alerts-number">{{this.alertCountMap['critical']}}</div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </ng-container>
+    <ng-container *ngIf="!loading && isRRListNotConfigured">
+      <div fxFlex="100%" fxLayout="column">
+        <div fxFlex="nogrow">
+          <div class="rrhealthcard-noRR-text1" fxLayoutAlign="center center">No Route Reflectors Set
+            Up</div>
+          <div class="rrhealthcard-noRR-text2" fxLayoutAlign="center center">health not available
+          </div>
+        </div>
+      </div>
+    </ng-container>
   </app-basecard>
 </ng-template>
 
 <ng-template #nodeDetails let-node="node">
-  <div *ngIf="node" fxFlex="1 0 auto" fxLayout="column" class="rrhealthcard-spacing">
+  <div *ngIf="isNodeConfigured(node)" fxFlex="1 0 auto" fxLayout="column"
+       class="rrhealthcard-spacing">
     <div fxFlex="100%" fxLayout="row" fxLayoutAlign="start center">
       <div [matTooltip]="'Click to see RR status detail'"
-           (click)="this.selectNodeAndShowDialog(node)">
+           (click)="selectNodeAndShowDialog(node)">
         <mat-icon *ngIf="getNodeHealth(node)"
                   class="rrhealthcard-node-status-icon rrhealthcard-clickable-icon rrhealthcard-icon-healthy"
                   fxLayoutAlign="center center">

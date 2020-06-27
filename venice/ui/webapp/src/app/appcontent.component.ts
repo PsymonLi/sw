@@ -784,8 +784,13 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
         const observables: Observable<any>[] = [];
         nodeNames.forEach( (n: string ) => {
           // build url  /routing/v1/node2/health // node2 is nodeNames[i];
-          observables.push(this.routingService.GetHealthZ(n));
+          if (!Utility.isEmpty(n)) {
+              observables.push(this.routingService.GetHealthZ(n));
+          }
         });
+        if (observables.length === 0 ) {
+          return;
+        }
         const sub = forkJoin(observables).subscribe(
           (results) => {
             const isAllOK = Utility.isForkjoinResultAllOK(results);
@@ -817,7 +822,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
               */
               const routinghealthlist = results.map((r, i) => {
                 const obj = new RoutingHealth(r.body);
-                obj.meta.name = obj.status['router-id']; // patch name
+                obj.meta.name = obj.meta.name ? obj.meta.name : obj.status['router-id']; // patch name
                 obj._ui = { node: nodeNames[i] };
                 return obj;
               });
@@ -841,6 +846,7 @@ export class AppcontentComponent extends BaseComponent implements OnInit, OnDest
     );
     this.subscriptions.push(subscription);
   }
+
   /**
    * Call server to fetch all alerts using search API to populate RHS alert-list
    *

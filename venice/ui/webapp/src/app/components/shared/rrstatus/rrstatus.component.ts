@@ -34,6 +34,7 @@ export class RrstatusComponent extends BaseComponent implements OnInit, OnDestro
   ngOnInit() {
     this.getCluster();
   }
+
   getCluster() {
     const sub = this.clusterService.GetCluster().subscribe(
       (response) => {
@@ -46,14 +47,24 @@ export class RrstatusComponent extends BaseComponent implements OnInit, OnDestro
     );
     this.subscriptions.push(sub);
   }
+
   isRoutingHealthNodeHealthy(): boolean {
-    return (this.nodeHealth.status['internal-peers'].established === this.nodeHealth.status['internal-peers'].configured) &&
-      (this.nodeHealth.status['external-peers'].established === this.nodeHealth.status['external-peers'].configured) &&
-      (this.nodeHealth.status['unexpected-peers'] === 0);
+    return Utility.getRoutingNodeHealth(this.nodeHealth);
   }
+
   isPeerHealthy(type): boolean {
-    return this.nodeHealth.status[type + '-peers'].established === this.nodeHealth.status[type + '-peers'].configured;
+    switch (type) {
+      case 'external':
+        return Utility.getExternalPeerHealth(this.nodeHealth);
+      case 'internal':
+        return Utility.getInternalPeerHealth(this.nodeHealth);
+      case 'unexpected':
+        return Utility.getUnexpectedPeerHealth(this.nodeHealth);
+      default:
+        return false;
+    }
   }
+
   ngOnDestroy() {
     this.subscriptions.forEach(sub => {
       sub.unsubscribe();

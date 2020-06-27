@@ -45,3 +45,19 @@
   text-align: left;
   white-space: nowrap;
 }
+
+.networknetworkinterface-dsc-condition {
+  border-radius: 50%;
+  height: 10px;
+  width: 10px;
+  display: inline-block;
+  margin-right: 8px
+}
+
+.networknetworkinterface-dsc-condition-healthy {
+  background-color: #77a746;
+}
+
+.networknetworkinterface-dsc-condition-unhealthy {
+  background-color: #dd3b09;
+}

@@ -110,7 +110,7 @@
             <th>Quorum</th>
             <th>Phase</th>
             <th *featureGuard="'enterprise'">Condition</th>
-            <th class="cluster-details-node-rrstatus" *featureGuard="'cloud'"
+            <th class="cluster-details-node-rrstatus" *ngIf="showRRStatusColumn()"
                 [matTooltip]="'Configurable Services'">Services</th>
           </tr>
         </ng-template>
@@ -134,11 +134,11 @@
             <td *featureGuard="'enterprise'">
               <div class="cluster-details-nodes-table-cell">{{ displayCondition(node) }}</div>
             </td>
-            <td class="cluster-details-node-rrstatus" *featureGuard="'cloud'">
+            <td class="cluster-details-node-rrstatus" *ngIf="showRRStatusColumn()">
               <div class="cluster-details-nodes-table-cell" fxLayout="row"
                    fxLayoutAlign="start center">
                 <ng-container *ngFor="let item of routinghealthlist">
-                  <ng-container *ngIf="item._ui.node === node.meta.name">
+                  <ng-container *ngIf="isNodeConfigured(item) && item._ui.node === node.meta.name">
                     <img class="cluster-node-service-RR" [matTooltip]="'Route reflector process'"
                          src="/assets/images/icons/ico_rr_badge.svg" />
                     <span class="cluster-node-RR-id"

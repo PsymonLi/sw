@@ -137,10 +137,11 @@ export class NodedetailComponent extends BaseComponent implements OnInit, OnDest
       });
     });
   }
+
   getNodeHealth(nodeName) {
-    if (this.routinghealthlist) {
+    if (!Utility.isRRNodeListNotConfigured(this.routinghealthlist)) {
       for (let i = 0; i < this.routinghealthlist.length; i++) {
-        if (this.routinghealthlist[i]._ui.node === nodeName) {
+        if (Utility.isRRNodeConfigured(this.routinghealthlist[i]) && this.routinghealthlist[i]._ui.node === nodeName) {
           this.showRRHealth = true;
           this.nodeHealth = this.routinghealthlist[i];
           this.last_updated = Utility.getPayloadDatetime();

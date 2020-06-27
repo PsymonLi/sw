@@ -50,24 +50,25 @@
         </span>
       </div>
     </div>
-    <div *roleGuard="'networknetworkinterface_update'" fxFlex="1 0 50%">
-      <div *ngIf="hasSelectedRows()" fxFlex="none" fxLayoutAlign="start center">
-        <!-- TABLE FUNCTION ICONS HERE -->
-        <mat-icon class="global-multi-records-delete-icon"
-                  (click)="editLabels()"
-                  [matTooltip]="'Edit labels of selected network interfaces'">
-          label
-        </mat-icon>
-        <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
-                         (saveEmitter)="handleEditSave($event)"
-                         [inLabelEditMode]="inLabelEditMode"
-                         [loading]="labelLoading"
-                         [metadata]="labelEditorMetaData"
-                         [nameKey]="'meta.name'"
-                         [objects]="getSelectedDataObjects()">
-        </app-labeleditor>
+    <ng-container *featureGuard="'enterprise'">
+      <div *roleGuard="'networknetworkinterface_update'" fxFlex="1 0 50%">
+        <div *ngIf="hasSelectedRows()" fxFlex="none" fxLayoutAlign="start center">
+          <!-- TABLE FUNCTION ICONS HERE -->
+          <mat-icon class="global-multi-records-delete-icon"
+                    (click)="editLabels()"
+                    [matTooltip]="'Edit labels of selected network interfaces'">
+            label
+          </mat-icon>
+          <app-labeleditor (cancelEmitter)="handleEditCancel($event)"
+                           (saveEmitter)="handleEditSave($event)"
+                           [inLabelEditMode]="inLabelEditMode"
+                           [metadata]="labelEditorMetaData"
+                           [nameKey]="'meta.name'"
+                           [objects]="getSelectedDataObjects()">
+          </app-labeleditor>
+        </div>
       </div>
-    </div>
+    </ng-container>
   </div>
 </ng-template>
 
@@ -87,6 +88,14 @@
     </ng-container>
     <ng-container *ngSwitchCase="'status.dsc'">
       <ng-container *roleGuard="'clusterDistributedservicecard_read'">
+        <ng-container *ngIf="getAssociatedDSCCondition(rowData) === 'Healthy'">
+          <span [matTooltip]="'Healthy'"
+                class="networknetworkinterface-dsc-condition networknetworkinterface-dsc-condition-healthy"></span>
+        </ng-container>
+        <ng-container *ngIf="getAssociatedDSCCondition(rowData) !== 'Healthy'">
+          <span [matTooltip]="getAssociatedDSCCondition(rowData)"
+                class="networknetworkinterface-dsc-condition networknetworkinterface-dsc-condition-unhealthy"></span>
+        </ng-container>
         <a routerLink="/cluster/dscs/{{rowData.status.dsc}}">{{rowData._ui.associatedDSC}}</a>
       </ng-container>
     </ng-container>
@@ -131,7 +140,18 @@
                class="networknetworkinterface-detail-key ui-flex">DSC:</a>
             <a fxLayoutAlign="start center" class="networknetworkinterface-detail-value ui-flex"><a
                  routerLink="/cluster/dscs/{{this.selectedNetworkInterface.status.dsc}}">
-                {{this.selectedNetworkInterface._ui && this.selectedNetworkInterface._ui['associatedDSC'] ? this.selectedNetworkInterface._ui['associatedDSC'] : this.selectedNetworkInterface.status.dsc}}</a></a>
+                <ng-container
+                              *ngIf="getAssociatedDSCCondition(this.selectedNetworkInterface) === 'Healthy'">
+                  <span [matTooltip]="'Healthy'"
+                        class="networknetworkinterface-dsc-condition networknetworkinterface-dsc-condition-healthy"></span>
+                </ng-container>
+                <ng-container
+                              *ngIf="getAssociatedDSCCondition(this.selectedNetworkInterface) !== 'Healthy'">
+                  <span [matTooltip]="getAssociatedDSCCondition(this.selectedNetworkInterface)"
+                        class="networknetworkinterface-dsc-condition networknetworkinterface-dsc-condition-unhealthy"></span>
+                </ng-container>
+                {{this.selectedNetworkInterface._ui && this.selectedNetworkInterface._ui['associatedDSC'] ? this.selectedNetworkInterface._ui['associatedDSC'] : this.selectedNetworkInterface.status.dsc}}
+              </a></a>
           </div>
         </div>
       </div>
