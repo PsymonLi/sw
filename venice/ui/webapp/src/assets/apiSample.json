@@ -6025,6 +6025,46 @@
                     },
                     "status": {}
                 }
+            },
+            "GET": {
+                "category": "security",
+                "kind": "apps",
+                "method": "GET",
+                "request": null,
+                "response": {
+                    "kind": "AppList",
+                    "api-version": "v1",
+                    "list-meta": {
+                      "total-count": 1
+                    },
+                    "items": [
+                      {
+                        "kind": "App",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "test",
+                          "tenant": "default",
+                          "namespace": "default",
+                          "generation-id": "1",
+                          "resource-version": "624689",
+                          "uuid": "948c6431-2815-4b6b-9269-938e7a9d3490",
+                          "creation-time": "2020-06-26T22:40:25.858817725Z",
+                          "mod-time": "2020-06-26T22:40:25.858818687Z",
+                          "self-link": "/configs/security/v1/tenant/default/apps/test"
+                        },
+                        "spec": {
+                          "proto-ports": [
+                            {
+                              "protocol": "tcp",
+                              "ports": "21"
+                            }
+                          ]
+                        },
+                        "status": {}
+                      }
+                    ]
+                },
+                "url": "/configs/security/v1/tenant/default/apps"
             }
         },
         "user-preferences": {
@@ -7867,6 +7907,917 @@
                     ]
                 },
                 "url": "/configs/monitoring/v1/tenant/default/flowExportPolicy"
+            }
+        },
+        "vcenter": {
+            "POST": {
+                "category": "orchestrator",
+                "kind": "vcenter",
+                "method": "POST",
+                "request": {
+                    "kind": null,
+                    "api-version": null,
+                    "meta": {
+                      "name": "test",
+                      "tenant": null,
+                      "namespace": null,
+                      "generation-id": null,
+                      "resource-version": null,
+                      "uuid": null,
+                      "labels": null,
+                      "self-link": null
+                    },
+                    "spec": {
+                      "type": "vcenter",
+                      "uri": "test",
+                      "credentials": {
+                        "auth-type": "username-password",
+                        "username": "test",
+                        "password": "test",
+                        "disable-server-authentication": true
+                      },
+                      "manage-namespaces": [
+                        "all_namespaces"
+                      ]
+                    }
+                },
+                "response": {
+                    "kind": "Orchestrator",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "test",
+                      "generation-id": "1",
+                      "resource-version": "629402",
+                      "uuid": "2d5637ee-c867-42c7-8d11-8328292586fb",
+                      "creation-time": "2020-06-26T23:13:29.786692696Z",
+                      "mod-time": "2020-06-26T23:13:29.786694047Z",
+                      "self-link": "/configs/orchestration/v1/orchestrator/test"
+                    },
+                    "spec": {
+                      "type": "vcenter",
+                      "uri": "test",
+                      "credentials": {
+                        "auth-type": "username-password",
+                        "username": "test",
+                        "disable-server-authentication": true
+                      },
+                      "manage-namespaces": [
+                        "all_namespaces"
+                      ]
+                    },
+                    "status": {
+                      "connection-status": ""
+                    }
+                },
+                "url": "/configs/orchestration/v1/orchestrator"
+            },
+            "PUT": {
+                "category": "orchestrator",
+                "kind": "vcenter",
+                "method": "PUT",
+                "request": {
+                    "kind": "Orchestrator",
+                    "api-version": "v1",
+                    "meta": {
+                      "tenant": null,
+                      "namespace": null,
+                      "generation-id": "2",
+                      "resource-version": "630504",
+                      "uuid": "2d5637ee-c867-42c7-8d11-8328292586fb",
+                      "labels": null,
+                      "self-link": "/configs/orchestration/v1/orchestrator/test",
+                      "name": "test"
+                    },
+                    "spec": {
+                      "type": "vcenter",
+                      "uri": "tester1",
+                      "credentials": {
+                        "auth-type": "username-password",
+                        "username": "test",
+                        "password": "",
+                        "disable-server-authentication": true
+                      },
+                      "manage-namespaces": [
+                        "all_namespaces"
+                      ]
+                    }
+                },
+                "response": {
+                    "kind": "Orchestrator",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "test",
+                      "generation-id": "3",
+                      "resource-version": "631140",
+                      "uuid": "2d5637ee-c867-42c7-8d11-8328292586fb",
+                      "creation-time": "2020-06-26T23:13:29.786692696Z",
+                      "mod-time": "2020-06-26T23:24:55.607558808Z",
+                      "self-link": "/configs/orchestration/v1/orchestrator/test"
+                    },
+                    "spec": {
+                      "type": "vcenter",
+                      "uri": "tester1",
+                      "credentials": {
+                        "auth-type": "username-password",
+                        "username": "test",
+                        "disable-server-authentication": true
+                      },
+                      "manage-namespaces": [
+                        "all_namespaces"
+                      ]
+                    },
+                    "status": {
+                      "connection-status": "failure",
+                      "last-transition-time": "2020-06-26T23:22:37.892233567Z",
+                      "message": "Post https://tester/sdk: dial tcp: lookup tester on 127.0.0.11:53: no such host",
+                      "orch-id": 2
+                    }
+                },
+                "url": "/configs/orchestration/v1/orchestrator/test"
+            },
+            "GET": {
+                "category": "orchestrator",
+                "kind": "vcenter",
+                "method": "GET",
+                "request": null,
+                "response": {
+                    "kind": "OrchestratorList",
+                    "api-version": "v1",
+                    "list-meta": {
+                      "total-count": 2
+                    },
+                    "items": [
+                      {
+                        "kind": "Orchestrator",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "test",
+                          "generation-id": "2",
+                          "resource-version": "630504",
+                          "uuid": "2d5637ee-c867-42c7-8d11-8328292586fb",
+                          "creation-time": "2020-06-26T23:13:29.786692696Z",
+                          "mod-time": "2020-06-26T23:22:37.892644619Z",
+                          "self-link": "/configs/orchestration/v1/orchestrator/test"
+                        },
+                        "spec": {
+                          "type": "vcenter",
+                          "uri": "tester",
+                          "credentials": {
+                            "auth-type": "username-password",
+                            "username": "test",
+                            "disable-server-authentication": true
+                          },
+                          "manage-namespaces": [
+                            "all_namespaces"
+                          ]
+                        },
+                        "status": {
+                          "connection-status": "failure",
+                          "last-transition-time": "2020-06-26T23:22:37.892233567Z",
+                          "message": "Post https://tester/sdk: dial tcp: lookup tester on 127.0.0.11:53: no such host",
+                          "orch-id": 2
+                        }
+                      },
+                      {
+                        "kind": "Orchestrator",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "vcenter",
+                          "generation-id": "3",
+                          "resource-version": "26258",
+                          "uuid": "dbc7d94f-f375-4329-9c56-3493e627754f",
+                          "creation-time": "2020-06-23T17:25:22.27644831Z",
+                          "mod-time": "2020-06-23T18:04:25.787093804Z",
+                          "self-link": "/configs/orchestration/v1/orchestrator/vcenter"
+                        },
+                        "spec": {
+                          "type": "vcenter",
+                          "uri": "192.168.30.100:8989",
+                          "credentials": {
+                            "auth-type": "username-password",
+                            "username": "user"
+                          }
+                        },
+                        "status": {
+                          "connection-status": "failure",
+                          "last-transition-time": "2020-06-23T18:04:25.786669153Z",
+                          "message": "Post https://192.168.30.100:8989/sdk: x509: certificate is valid for 127.0.0.1, ::1, not 192.168.30.100",
+                          "orch-id": 1
+                        }
+                      }
+                    ]
+                },
+                "url": "/configs/orchestration/v1/orchestrator"
+            },
+            "DELETE": {
+                "category": "orchestrator",
+                "kind": "vcenter",
+                "method": "DELETE",
+
+                "request": null,
+                "response": {
+                    "kind": "Orchestrator",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "test",
+                      "generation-id": "3",
+                      "resource-version": "631142",
+                      "uuid": "2d5637ee-c867-42c7-8d11-8328292586fb",
+                      "creation-time": "2020-06-26T23:13:29.786692696Z",
+                      "mod-time": "2020-06-26T23:24:55.844911291Z",
+                      "self-link": "/configs/orchestration/v1/orchestrator/test"
+                    },
+                    "spec": {
+                      "type": "vcenter",
+                      "uri": "tester1",
+                      "credentials": {
+                        "auth-type": "username-password",
+                        "username": "test",
+                        "disable-server-authentication": true
+                      },
+                      "manage-namespaces": [
+                        "all_namespaces"
+                      ]
+                    },
+                    "status": {
+                      "connection-status": "failure",
+                      "last-transition-time": "2020-06-26T23:24:55.844369932Z",
+                      "message": "Post https://tester1/sdk: dial tcp: lookup tester1 on 127.0.0.11:53: no such host",
+                      "orch-id": 2
+                    }
+                },
+                "url": "/configs/orchestration/v1/orchestrator/test"
+            }
+        },
+        "network": {
+            "GET": {
+                "category": "network",
+                "kind": "network",
+                "method": "GET",
+                "request": null,
+                "response": {
+                    "kind": "NetworkInterfaceList",
+                    "api-version": "v1",
+                    "list-meta": {
+                      "total-count": 15
+                    },
+                    "items": [
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112c-mgmt-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633312",
+                          "uuid": "3803bcfb-4a39-4ebf-ac43-658c10cb1b9f",
+                          "creation-time": "2020-06-23T17:10:17.981953696Z",
+                          "mod-time": "2020-06-26T23:39:42.791996645Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112c-mgmt-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-mgmt",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112c",
+                          "type": "uplink-mgmt",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-0"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112c-pf-69",
+                          "generation-id": "3",
+                          "resource-version": "633308",
+                          "uuid": "c3240f48-8669-4ded-aa06-76fbee1d54f9",
+                          "creation-time": "2020-06-23T17:09:47.955992204Z",
+                          "mod-time": "2020-06-26T23:39:42.779012266Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112c-pf-69"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112c",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth0",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-0"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112c-pf-70",
+                          "generation-id": "3",
+                          "resource-version": "633303",
+                          "uuid": "d759d9c0-fc76-43dd-a8f6-733462c2084c",
+                          "creation-time": "2020-06-23T17:10:48.01875717Z",
+                          "mod-time": "2020-06-26T23:39:42.7568838Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112c-pf-70"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112c",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth1",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-0"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112c-uplink-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633305",
+                          "uuid": "04890fd5-6e0d-40e4-8128-6af8f97b5d4a",
+                          "creation-time": "2020-06-23T17:10:47.998339783Z",
+                          "mod-time": "2020-06-26T23:39:42.766203459Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112c-uplink-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112c",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-0"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112c-uplink-0-2",
+                          "generation-id": "3",
+                          "resource-version": "633304",
+                          "uuid": "ad827ea8-f85c-456a-96a4-2f7638716d60",
+                          "creation-time": "2020-06-23T17:10:48.005396507Z",
+                          "mod-time": "2020-06-26T23:39:42.762002371Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112c-uplink-0-2"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112c",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-0"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112d-mgmt-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633311",
+                          "uuid": "c13378a7-91a8-48de-9e1b-2232c76e871e",
+                          "creation-time": "2020-06-23T17:11:03.703157847Z",
+                          "mod-time": "2020-06-26T23:39:42.789153377Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112d-mgmt-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-mgmt",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112d",
+                          "type": "uplink-mgmt",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-1"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112d-pf-69",
+                          "generation-id": "3",
+                          "resource-version": "633307",
+                          "uuid": "564ea1da-4a76-44f0-89d5-06170da3aa77",
+                          "creation-time": "2020-06-23T17:11:33.739021193Z",
+                          "mod-time": "2020-06-26T23:39:42.776520534Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112d-pf-69"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112d",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth0",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-1"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112d-pf-70",
+                          "generation-id": "3",
+                          "resource-version": "633309",
+                          "uuid": "6ffe6cd9-66b6-44e3-8681-643d36a446f0",
+                          "creation-time": "2020-06-23T17:12:03.76047286Z",
+                          "mod-time": "2020-06-26T23:39:42.783304416Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112d-pf-70"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112d",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth1",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-1"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112d-uplink-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633302",
+                          "uuid": "f9c22bfc-894b-4521-8fcb-aa0fd477fd3f",
+                          "creation-time": "2020-06-23T17:12:03.743650952Z",
+                          "mod-time": "2020-06-26T23:39:42.75233149Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112d-uplink-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112d",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-1"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112d-uplink-0-2",
+                          "generation-id": "3",
+                          "resource-version": "633310",
+                          "uuid": "bb1fb46b-5011-4a28-b141-b74fb67bb892",
+                          "creation-time": "2020-06-23T17:12:03.750329511Z",
+                          "mod-time": "2020-06-26T23:39:42.786091448Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112d-uplink-0-2"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112d",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-1"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112e-mgmt-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633306",
+                          "uuid": "6e717016-956a-4c2a-8804-a2169e5fb0e8",
+                          "creation-time": "2020-06-23T17:13:26.493991173Z",
+                          "mod-time": "2020-06-26T23:39:42.770870878Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112e-mgmt-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-mgmt",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112e",
+                          "type": "uplink-mgmt",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-2"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112e-pf-69",
+                          "generation-id": "3",
+                          "resource-version": "633315",
+                          "uuid": "76c506a5-5a42-4117-80b8-ecf4d92a1613",
+                          "creation-time": "2020-06-23T17:12:17.436611872Z",
+                          "mod-time": "2020-06-26T23:39:42.801797159Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112e-pf-69"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112e",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth0",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-2"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112e-pf-70",
+                          "generation-id": "3",
+                          "resource-version": "633316",
+                          "uuid": "260cec7c-d1a1-40c9-9df8-22f07eb0564b",
+                          "creation-time": "2020-06-23T17:12:47.458229313Z",
+                          "mod-time": "2020-06-26T23:39:42.804712204Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112e-pf-70"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "host-pf",
+                          "ip-alloc-type": "dhcp"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112e",
+                          "type": "host-pf",
+                          "oper-status": "up",
+                          "if-host-status": {
+                            "host-ifname": "eth1",
+                            "mac-address": "0000.0000.0000"
+                          },
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-2"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112e-uplink-0-1",
+                          "generation-id": "3",
+                          "resource-version": "633314",
+                          "uuid": "e91a4058-eb1b-4740-90c7-54538daa7340",
+                          "creation-time": "2020-06-23T17:13:17.469257504Z",
+                          "mod-time": "2020-06-26T23:39:42.798594368Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112e-uplink-0-1"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112e",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-2"
+                        }
+                      },
+                      {
+                        "kind": "NetworkInterface",
+                        "api-version": "v1",
+                        "meta": {
+                          "name": "00ae.cd00.112e-uplink-0-2",
+                          "generation-id": "3",
+                          "resource-version": "633313",
+                          "uuid": "22df98e5-4626-4f42-a773-1247d2ba7d8a",
+                          "creation-time": "2020-06-23T17:13:23.488005316Z",
+                          "mod-time": "2020-06-26T23:39:42.795924896Z",
+                          "self-link": "/configs/network/v1/networkinterfaces/00ae.cd00.112e-uplink-0-2"
+                        },
+                        "spec": {
+                          "admin-status": "up",
+                          "type": "uplink-eth",
+                          "ip-alloc-type": "static"
+                        },
+                        "status": {
+                          "dsc": "00ae.cd00.112e",
+                          "type": "uplink-eth",
+                          "oper-status": "up",
+                          "if-host-status": {},
+                          "if-uplink-status": {
+                            "ip-config": {}
+                          },
+                          "mirror-sessions": null,
+                          "dsc-id": "naples-2"
+                        }
+                      }
+                    ]
+                },
+                "url": "/configs/network/v1/tenant/default/networks"
+            },
+            "POST": {
+                "category": "network",
+                "kind": "network",
+                "method": "POST",
+                "request": {
+                    "kind": null,
+                    "api-version": null,
+                    "meta": {
+                      "name": "dumm",
+                      "tenant": null,
+                      "namespace": null,
+                      "generation-id": null,
+                      "resource-version": null,
+                      "uuid": null,
+                      "labels": null,
+                      "self-link": null
+                    },
+                    "spec": {
+                      "type": "bridged",
+                      "ipv4-subnet": null,
+                      "ipv4-gateway": null,
+                      "ipv6-subnet": null,
+                      "ipv6-gateway": null,
+                      "vlan-id": 1,
+                      "vxlan-vni": null,
+                      "virtual-router": null,
+                      "ipam-policy": null,
+                      "orchestrators": [
+                        {
+                          "orchestrator-name": "VCSim-2",
+                          "namespace": "1002-0-dc-0"
+                        }
+                      ]
+                    }
+                },
+                "response": {
+                    "kind": "Network",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "dumm",
+                      "tenant": "default",
+                      "namespace": "default",
+                      "generation-id": "1",
+                      "resource-version": "7531873",
+                      "uuid": "9831bb3f-1d16-46f3-b39b-e1a47c784edf",
+                      "creation-time": "2020-06-26T23:54:02.183124344Z",
+                      "mod-time": "2020-06-26T23:54:02.183126556Z",
+                      "self-link": "/configs/network/v1/tenant/default/networks/dumm"
+                    },
+                    "spec": {
+                      "type": "bridged",
+                      "vlan-id": 1,
+                      "orchestrators": [
+                        {
+                          "orchestrator-name": "VCSim-2",
+                          "namespace": "1002-0-dc-0"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "propagation-status": {
+                        "generation-id": "",
+                        "updated": 0,
+                        "pending": 0,
+                        "min-version": "",
+                        "status": "",
+                        "pending-dscs": null
+                      }
+                    }
+                },
+                "url": "/configs/network/v1/tenant/default/networks"
+            },
+            "PUT": {
+                "category": "network",
+                "kind": "network",
+                "method": "PUT",
+                "request": {
+                    "kind": "Network",
+                    "api-version": "v1",
+                    "meta": {
+                      "tenant": "default",
+                      "namespace": "default",
+                      "generation-id": "1",
+                      "resource-version": "7531879",
+                      "uuid": "9831bb3f-1d16-46f3-b39b-e1a47c784edf",
+                      "labels": null,
+                      "self-link": "/configs/network/v1/tenant/default/networks/dumm",
+                      "name": "dumm"
+                    },
+                    "spec": {
+                      "type": "bridged",
+                      "ipv4-subnet": null,
+                      "ipv4-gateway": null,
+                      "ipv6-subnet": null,
+                      "ipv6-gateway": null,
+                      "vxlan-vni": null,
+                      "virtual-router": null,
+                      "ipam-policy": null,
+                      "orchestrators": [
+                        {
+                          "orchestrator-name": "VCSim-2",
+                          "namespace": "all_namespaces"
+                        }
+                      ],
+                      "vlan-id": 1
+                    },
+                    "status": {
+                      "allocated-ipv4-addrs": null,
+                      "id": null,
+                      "oper-state": "active",
+                      "propagation-status": {
+                        "generation-id": "1",
+                        "updated": 9,
+                        "pending": 0,
+                        "min-version": "",
+                        "status": "Propagation Complete"
+                      }
+                    }
+                },
+                "response": {
+                    "kind": "Network",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "dumm",
+                      "tenant": "default",
+                      "namespace": "default",
+                      "generation-id": "2",
+                      "resource-version": "7532445",
+                      "uuid": "9831bb3f-1d16-46f3-b39b-e1a47c784edf",
+                      "creation-time": "2020-06-26T23:54:02.183124344Z",
+                      "mod-time": "2020-06-26T23:57:41.019889314Z",
+                      "self-link": "/configs/network/v1/tenant/default/networks/dumm"
+                    },
+                    "spec": {
+                      "type": "bridged",
+                      "vlan-id": 1,
+                      "orchestrators": [
+                        {
+                          "orchestrator-name": "VCSim-2",
+                          "namespace": "all_namespaces"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "oper-state": "active",
+                      "propagation-status": {
+                        "generation-id": "1",
+                        "updated": 9,
+                        "pending": 0,
+                        "min-version": "",
+                        "status": "Propagation Complete",
+                        "pending-dscs": null
+                      }
+                    }
+                },
+                "url": "/configs/network/v1/tenant/default/networks/dumm"
+            },
+            "DELETE": {
+                "category": "network",
+                "kind": "network",
+                "method": "DELETE",
+                "request": null,
+                "response": {
+                    "kind": "Network",
+                    "api-version": "v1",
+                    "meta": {
+                      "name": "dumm",
+                      "tenant": "default",
+                      "namespace": "default",
+                      "generation-id": "2",
+                      "resource-version": "7532449",
+                      "uuid": "9831bb3f-1d16-46f3-b39b-e1a47c784edf",
+                      "creation-time": "2020-06-26T23:54:02.183124344Z",
+                      "mod-time": "2020-06-26T23:57:42.025485453Z",
+                      "self-link": "/configs/network/v1/tenant/default/networks/dumm"
+                    },
+                    "spec": {
+                      "type": "bridged",
+                      "vlan-id": 1,
+                      "orchestrators": [
+                        {
+                          "orchestrator-name": "VCSim-2",
+                          "namespace": "all_namespaces"
+                        }
+                      ]
+                    },
+                    "status": {
+                      "oper-state": "active",
+                      "propagation-status": {
+                        "generation-id": "2",
+                        "updated": 9,
+                        "pending": 0,
+                        "min-version": "",
+                        "status": "Propagation Complete",
+                        "pending-dscs": null
+                      }
+                    }
+                },
+                "url": "/configs/network/v1/tenant/default/networks/dumm"
             }
         }
     }
