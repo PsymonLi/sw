@@ -316,10 +316,10 @@ pds_encap_to_proto_encap (types::Encap *proto_encap,
 
     case PDS_ENCAP_TYPE_QINQ:
         proto_encap->set_type(types::ENCAP_TYPE_QINQ);
-        proto_encap->mutable_value()->mutable_qinqtag()->
-            set_ctag(pds_encap->val.qinq_tag.c_tag);
-        proto_encap->mutable_value()->mutable_qinqtag()->
-            set_stag(pds_encap->val.qinq_tag.s_tag);
+        proto_encap->mutable_value()->mutable_qinq()->
+            set_ctag(pds_encap->val.qinq.c_tag);
+        proto_encap->mutable_value()->mutable_qinq()->
+            set_stag(pds_encap->val.qinq.s_tag);
         break;
 
     case PDS_ENCAP_TYPE_MPLSoUDP:
@@ -357,8 +357,8 @@ proto_encap_to_pds_encap (types::Encap encap)
 
     case types::ENCAP_TYPE_QINQ:
         pds_encap.type = PDS_ENCAP_TYPE_QINQ;
-        pds_encap.val.qinq_tag.c_tag = encap.value().qinqtag().ctag();
-        pds_encap.val.qinq_tag.s_tag = encap.value().qinqtag().stag();
+        pds_encap.val.qinq.c_tag = encap.value().qinq().ctag();
+        pds_encap.val.qinq.s_tag = encap.value().qinq().stag();
         break;
 
     case types::ENCAP_TYPE_MPLSoUDP:

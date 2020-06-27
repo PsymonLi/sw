@@ -31,8 +31,8 @@ vnic_feeder_encap_init (uint32_t id, pds_encap_type_t encap_type,
         encap->val.vlan_tag = id;
         break;
     case PDS_ENCAP_TYPE_QINQ:
-        encap->val.qinq_tag.c_tag = id;
-        encap->val.qinq_tag.s_tag = id + 4096;
+        encap->val.qinq.c_tag = id;
+        encap->val.qinq.s_tag = id + 4096;
         break;
     case PDS_ENCAP_TYPE_MPLSoUDP:
         encap->val.mpls_tag = id;
@@ -55,8 +55,8 @@ vnic_feeder_encap_next (pds_encap_t *encap, int width)
         encap->val.vlan_tag += width;
         break;
     case PDS_ENCAP_TYPE_QINQ:
-        encap->val.qinq_tag.c_tag += width;
-        encap->val.qinq_tag.s_tag += width;
+        encap->val.qinq.c_tag += width;
+        encap->val.qinq.s_tag += width;
         break;
     case PDS_ENCAP_TYPE_MPLSoUDP:
         encap->val.mpls_tag += width;

@@ -125,18 +125,18 @@ typedef enum pds_encap_type_e {
 } pds_encap_type_t;
 
 /// \brief QinQ tag values
-typedef struct pds_qinq_tag_s {
+typedef struct pds_qinq_encap_s {
     uint16_t c_tag;    ///< customer VLAN tag
     uint16_t s_tag;    ///< service VLAN tag
-} pds_qinq_tag_t;
+} pds_qinq_encap_t;
 
 /// \brief encapsulation values
 typedef union pds_encap_val_u {
-    uint16_t       vlan_tag;    ///< 12 bit .1q tag
-    pds_qinq_tag_t qinq_tag;    ///< QinQ tag
-    pds_vnid_id_t  vnid;        ///< 24 bit VxLAN vnid
-    pds_mpls_tag_t mpls_tag;    ///< 20-bit MPLS tag/slot
-    uint32_t       value;       ///< generic value to refer to other values
+    uint16_t         vlan_tag;    ///< 12 bit .1q tag
+    pds_qinq_encap_t qinq;        ///< QinQ tags
+    pds_vnid_id_t    vnid;        ///< 24 bit VxLAN vnid
+    pds_mpls_tag_t   mpls_tag;    ///< 20-bit MPLS tag/slot
+    uint32_t         value;       ///< generic value to refer to other values
 } pds_encap_val_t;
 
 /// \brief encapsulation config

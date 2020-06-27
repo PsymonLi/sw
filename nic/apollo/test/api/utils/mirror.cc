@@ -14,9 +14,9 @@ namespace api {
 
 void
 mirror_session_feeder::init(pds_obj_key_t key, uint8_t mirror_sess,
-                            pds_obj_key_t interface, uint16_t vlan_tag, 
+                            pds_obj_key_t interface, uint16_t vlan_tag,
                             std::string dst_ip, uint32_t tep, uint32_t span_id,
-                            uint32_t dscp, bool vlan_strip_en, 
+                            uint32_t dscp, bool vlan_strip_en,
                             pds_mirror_session_type_t type, uint16_t snap_len,
                             pds_erspan_type_t erspan_type,
                             pds_erspan_dst_type_t erspan_dst_type,
@@ -40,15 +40,15 @@ mirror_session_feeder::init(pds_obj_key_t key, uint8_t mirror_sess,
     this->dscp = dscp;
     this->snap_len = snap_len;
     spec.key = key;
-    create_mirror_session_spec((pds_mirror_session_spec_t *)&spec, type, 
+    create_mirror_session_spec((pds_mirror_session_spec_t *)&spec, type,
                                interface, vlan_tag, dst_ip, tep,
-                               span_id, dscp, vlan_strip_en, snap_len, 
-                               erspan_type, erspan_dst_type, vpc);  
+                               span_id, dscp, vlan_strip_en, snap_len,
+                               erspan_type, erspan_dst_type, vpc);
 }
 
 void
 mirror_session_feeder::iter_next(int width) {
-    // update both feeder's variables and spec 
+    // update both feeder's variables and spec
     spec.key = int2pdsobjkey(pdsobjkey2int(spec.key) + width);
     if (type == PDS_MIRROR_SESSION_TYPE_RSPAN) {
         type = PDS_MIRROR_SESSION_TYPE_ERSPAN;
@@ -78,13 +78,13 @@ mirror_session_feeder::iter_next(int width) {
         type = PDS_MIRROR_SESSION_TYPE_RSPAN;
         spec.rspan_spec.interface = interface;
         if (encap.type  == PDS_ENCAP_TYPE_DOT1Q) {
-            spec.rspan_spec.encap.type = PDS_ENCAP_TYPE_DOT1Q; 
+            spec.rspan_spec.encap.type = PDS_ENCAP_TYPE_DOT1Q;
             spec.rspan_spec.encap.val.vlan_tag = ++encap.val.vlan_tag;
             spec.type = type;
         } else if (encap.type == PDS_ENCAP_TYPE_QINQ) {
             spec.rspan_spec.encap.type = PDS_ENCAP_TYPE_QINQ;
-            spec.rspan_spec.encap.val.qinq_tag.c_tag++;
-            spec.rspan_spec.encap.val.qinq_tag.s_tag++;
+            spec.rspan_spec.encap.val.qinq.c_tag++;
+            spec.rspan_spec.encap.val.qinq.s_tag++;
         }
     }
     spec.type = type;
@@ -119,7 +119,7 @@ mirror_session_feeder::spec_compare(
         // validate rspan spec
         if ((spec->rspan_spec.interface != this->spec.rspan_spec.interface) ||
             (spec->rspan_spec.encap.type != this->spec.rspan_spec.encap.type) ||
-            (spec->rspan_spec.encap.val.vlan_tag != 
+            (spec->rspan_spec.encap.val.vlan_tag !=
              this->spec.rspan_spec.encap.val.vlan_tag))
             return false;
     } else if (spec->type == PDS_MIRROR_SESSION_TYPE_ERSPAN) {
@@ -156,8 +156,8 @@ mirror_session_feeder::status_compare(
     return true;
 }
 
-void 
-create_mirror_session_spec (pds_mirror_session_spec_t* spec, 
+void
+create_mirror_session_spec (pds_mirror_session_spec_t* spec,
                             pds_mirror_session_type_t type,
                             pds_obj_key_t interface, uint16_t vlan_tag,
                             std::string dst_ip, uint32_t tep,
@@ -165,7 +165,7 @@ create_mirror_session_spec (pds_mirror_session_spec_t* spec,
                             bool vlan_strip_en, uint16_t snap_len,
                             pds_erspan_type_t erspan_type,
                             pds_erspan_dst_type_t erspan_dst_type,
-                            uint32_t vpc) 
+                            uint32_t vpc)
 {
     spec->snap_len = snap_len;
     spec->type = type;
@@ -182,7 +182,7 @@ create_mirror_session_spec (pds_mirror_session_spec_t* spec,
             spec->erspan_spec.tep = int2pdsobjkey(tep);
         } else if (erspan_dst_type == PDS_ERSPAN_DST_TYPE_IP) {
             memset(&spec->erspan_spec.ip_addr, 0x0, sizeof(ip_addr_t));
-            test::extract_ip_addr((char *)dst_ip.c_str(), 
+            test::extract_ip_addr((char *)dst_ip.c_str(),
                                   &spec->erspan_spec.ip_addr);
         }
         spec->erspan_spec.dscp = dscp;
@@ -207,7 +207,7 @@ mirror_session_read (mirror_session_feeder& feeder, sdk_ret_t exp_result) {
 
 static void
 mirror_session_attr_update (mirror_session_feeder& feeder,
-                            pds_mirror_session_spec_t *spec, 
+                            pds_mirror_session_spec_t *spec,
                             uint64_t chg_bmap) {
     if (bit_isset(chg_bmap, MIRROR_SESSION_ATTR_SNAP_LEN)) {
         feeder.spec.snap_len = spec->snap_len;
@@ -217,8 +217,8 @@ mirror_session_attr_update (mirror_session_feeder& feeder,
     }
     if (bit_isset(chg_bmap, MIRROR_SESSION_ATTR_RSPAN)) {
         feeder.spec.rspan_spec.interface = spec->rspan_spec.interface;
-        memcpy(&feeder.spec.rspan_spec.encap, &spec->rspan_spec.encap, 
-                sizeof(pds_encap_t)); 
+        memcpy(&feeder.spec.rspan_spec.encap, &spec->rspan_spec.encap,
+                sizeof(pds_encap_t));
     }
     if (bit_isset(chg_bmap, MIRROR_SESSION_ATTR_ERSPAN)) {
         feeder.spec.erspan_spec.type = spec->erspan_spec.type;
@@ -227,14 +227,14 @@ mirror_session_attr_update (mirror_session_feeder& feeder,
         feeder.spec.erspan_spec.tep = spec->erspan_spec.tep;
         feeder.spec.erspan_spec.dscp = spec->erspan_spec.dscp;
         feeder.spec.erspan_spec.span_id = spec->erspan_spec.span_id;
-        feeder.spec.erspan_spec.vlan_strip_en = 
+        feeder.spec.erspan_spec.vlan_strip_en =
             spec->erspan_spec.vlan_strip_en;
     }
 }
 
 void
-mirror_session_update (mirror_session_feeder& feeder, 
-                       pds_mirror_session_spec_t *spec, 
+mirror_session_update (mirror_session_feeder& feeder,
+                       pds_mirror_session_spec_t *spec,
                        uint64_t chg_bmap, sdk_ret_t exp_result) {
     pds_batch_ctxt_t bctxt = batch_start();
     mirror_session_attr_update(feeder, spec, chg_bmap);

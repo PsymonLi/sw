@@ -52,8 +52,8 @@ utils_encap_val_update (pds_encap_t *encap, uint32_t width=1)
         encap->val.vlan_tag += width;
         break;
     case PDS_ENCAP_TYPE_QINQ:
-        encap->val.qinq_tag.c_tag += width;
-        encap->val.qinq_tag.s_tag += width;
+        encap->val.qinq.c_tag += width;
+        encap->val.qinq.s_tag += width;
         break;
     case PDS_ENCAP_TYPE_MPLSoUDP:
         encap->val.mpls_tag += width;

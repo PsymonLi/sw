@@ -173,8 +173,8 @@ pdsencap_isequal (const pds_encap_t *encap1, const pds_encap_t *encap2)
         }
         break;
     case PDS_ENCAP_TYPE_QINQ:
-        if ((encap1->val.qinq_tag.c_tag != encap2->val.qinq_tag.c_tag) ||
-            (encap1->val.qinq_tag.s_tag != encap2->val.qinq_tag.s_tag)) {
+        if ((encap1->val.qinq.c_tag != encap2->val.qinq.c_tag) ||
+            (encap1->val.qinq.s_tag != encap2->val.qinq.s_tag)) {
             return FALSE;
         }
         break;
