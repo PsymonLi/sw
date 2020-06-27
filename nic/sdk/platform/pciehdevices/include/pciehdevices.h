@@ -111,6 +111,9 @@ typedef struct pciehdevice_resources_s {
 pciehdev_t *pciehdevice_new(const pciehdevice_resources_t *pres);
 void pciehdevice_delete(pciehdev_t *pdev);
 
+/* for pciemgrd-gold-static */
+void pciehdevice_register_debug_device(void);
+
 #ifdef __cplusplus
 }
 #endif

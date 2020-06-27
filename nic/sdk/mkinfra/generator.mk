@@ -110,6 +110,7 @@ define INCLUDE_MODULEMK
     $${TGID}_GEN_TYPES      := $${MODULE_GEN_TYPES}
     $${TGID}_SRCS           := $$(strip $$(call CANPATH,$${MODULE_SRCS}))
     $${TGID}_SRC_DIRS       := $$(patsubst %/,%,$$(sort $$(dir $$(call CANPATH,$${MODULE_SRCS}))))
+    $${TGID}_XOBJS          := $${MODULE_XOBJS}
     $${TGID}_BIN_DIR        := $${MODULE_BIN_DIR}
     $${TGID}_SRC_EXTS       := $$(sort $$(suffix $${MODULE_SRCS}))
     $${TGID}_DEFS           := $${MODULE_DEFS}
@@ -339,6 +340,7 @@ define PROCESS_MODULEMK_OBJS
     else
         ${1}_OBJS   += $$(addprefix $${${1}_BLD_OUT_DIR}/,$$(addsuffix .o,$$(basename $${${1}_SRCS})))
     endif
+    ${1}_OBJS       += $${${1}_XOBJS}
     ${1}_GXX_FLAGS   = $$(filter-out $${${1}_EXCLUDE_FLAGS}, ${CMD_GXX_FLAGS})
     ${1}_GPP_FLAGS   = $$(filter-out $${${1}_EXCLUDE_FLAGS}, ${CMD_GPP_FLAGS})
 endef

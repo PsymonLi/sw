@@ -51,6 +51,15 @@ gold_loop(pciemgrenv_t *pme)
         // memtun bar on the bridge.
         //
         if (pme->enabled_ports & (1 << port)) {
+#ifdef PCIEMGRD_GOLD_STATIC
+            /*
+             * This initialization is handled by "constructors" in
+             * libpciehdevices.so.  When running in a static image,
+             * explicitly call this init function to register the
+             * device type we want to create/add below.
+             */
+            pciehdevice_register_debug_device();
+#endif
             pciehdev_initialize(port);
             memset(pres, 0, sizeof(*pres));
             pres->type = PCIEHDEVICE_DEBUG;

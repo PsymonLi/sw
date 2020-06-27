@@ -1,0 +1,45 @@
+# {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+
+# Build a fully static pciemgrd-gold.  Used to build a custom
+# pciemgrd-gold-static that can be run on other kernels and in other
+# environments besides the native environment of this build system.
+#
+# There are some rough edges in here so this target is disabled
+# by default.  The MODULE_XOBJS hack to pick up an object built
+# by a submake is problematic.  It creates a dependency on a .o
+# that is outside the domain/knowledge/control of the module.mk
+# system, and this causes trouble for a full build.  To build
+# pciemgrd-gold-static in a workspace, build as normal, then install
+# this as module_gold_static.mk, then build the static target.
+#
+#     make ...
+#     mv module_gold_static.mk-disabled module_gold_static.mk
+#     make ... pciemgrd-gold-static.bin
+
+include ${MKDEFS}/pre.mk
+MODULE_TARGET   := pciemgrd-gold-static.bin
+MODULE_ARCH     := aarch64
+MODULE_SRCS     := ${MODULE_SRC_DIR}/pciemgrd.cc \
+		   ${MODULE_SRC_DIR}/gold.cc \
+		   ${MODULE_SRC_DIR}/logger.cc \
+		   ${MODULE_SRC_DIR}/delphic_stubs.cc \
+		   ${NULL}
+MODULE_INCS     := ${MODULE_SRC_DIR}/../include
+MODULE_FLAGS    := -DPCIEMGRD_GOLD -DPCIEMGRD_GOLD_STATIC
+MODULE_LDFLAGS  := -static
+
+# XXX sbus_pcie_rom.o is built in libpcieport by a submake
+# XXX but there is no way right now to add a .o not derived
+# XXX from MODULE_SRCS to a static ARLIB.  So sbus_pcie_rom.o
+# XXX is in libpcieport.so but not in libpcieport.a.  Add to
+# XXX XOBJS here so it gets linked into our static executable.
+MODULE_XOBJS    := ${BLD_OUT_DIR}/sbus_pcie_rom_$(ASIC)_submake/sbus_pcie_rom.o
+
+MODULE_ARLIBS   += pciemgrd pciemgr_if pciemgr pciemgrutils pciehdevices \
+		   pcieport pcietlp intrutils cfgspace misc evutils
+ifeq ($(ARCH),aarch64)
+MODULE_ARLIBS   += catalog sdkfru
+endif
+MODULE_ARLIBS   += logger utils pal
+MODULE_LDLIBS   := ev rt
+include ${MKDEFS}/post.mk

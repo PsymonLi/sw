@@ -34,8 +34,8 @@ typedef struct pciehdevice_s {
 void pciehdevice_register(pciehdevice_t *pdevice);
 
 #define PCIEHDEVICE_REGISTER(pd) \
-    static void pciehdevice_register_##pd(void) __attribute__((constructor)); \
-    static void pciehdevice_register_##pd(void) { pciehdevice_register(&pd); }
+    void pciehdevice_register_##pd(void) __attribute__((constructor)); \
+    void pciehdevice_register_##pd(void) { pciehdevice_register(&pd); }
 
 void add_msix_region(pciehbars_t *pbars,
                      pciehbar_t *pbar,
