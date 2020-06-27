@@ -180,6 +180,8 @@ init_pds (std::string cfg_file, std::string memory_profile,
             init_params.device_profile = PDS_DEVICE_PROFILE_7PF;
         } else if (device_profile.compare("8pf") == 0) {
             init_params.device_profile = PDS_DEVICE_PROFILE_8PF;
+        } else if (device_profile.compare("32vf") == 0) {
+            init_params.device_profile = PDS_DEVICE_PROFILE_32VF;
         }
     }
     if (oper_mode == "bitw_smart_switch") {

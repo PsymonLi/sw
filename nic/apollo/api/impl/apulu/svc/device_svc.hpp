@@ -102,6 +102,9 @@ pds_device_api_spec_to_proto (pds::DeviceSpec *proto_spec,
     case PDS_DEVICE_PROFILE_8PF:
         proto_spec->set_deviceprofile(pds::DEVICE_PROFILE_8PF);
         break;
+    case PDS_DEVICE_PROFILE_32VF:
+        proto_spec->set_deviceprofile(pds::DEVICE_PROFILE_32VF);
+        break;
     default:
         proto_spec->set_deviceprofile(pds::DEVICE_PROFILE_DEFAULT);
         break;
@@ -191,6 +194,9 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         break;
     case pds::DEVICE_PROFILE_8PF:
         api_spec->device_profile = PDS_DEVICE_PROFILE_8PF;
+        break;
+    case pds::DEVICE_PROFILE_32VF:
+        api_spec->device_profile = PDS_DEVICE_PROFILE_32VF;
         break;
     default:
         api_spec->device_profile = PDS_DEVICE_PROFILE_DEFAULT;

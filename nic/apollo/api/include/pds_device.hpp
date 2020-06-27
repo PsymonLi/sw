@@ -68,6 +68,7 @@ typedef enum pds_device_profile_e {
     PDS_DEVICE_PROFILE_6PF     = 5,
     PDS_DEVICE_PROFILE_7PF     = 6,
     PDS_DEVICE_PROFILE_8PF     = 7,
+    PDS_DEVICE_PROFILE_32VF    = 8,
 } pds_device_profile_t;
 
 typedef enum pds_memory_profile_e {

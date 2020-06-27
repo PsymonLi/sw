@@ -51,6 +51,8 @@ device_conf_update (pds_device_spec_t *spec)
         output.put("device-profile", "7pf");
     } else if (spec->device_profile == PDS_DEVICE_PROFILE_8PF) {
         output.put("device-profile", "8pf");
+    } else if (spec->device_profile == PDS_DEVICE_PROFILE_32VF) {
+        output.put("device-profile", "32vf");
     }
 
     // update the memory profile

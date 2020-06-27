@@ -191,6 +191,8 @@ func isValidDeviceProfile(str string) bool {
 		return true
 	} else if strings.Compare(str, "8pf") == 0 {
 		return true
+	} else if strings.Compare(str, "32vf") == 0 {
+		return true
 	}
 
 	return false
@@ -215,6 +217,8 @@ func inputToDeviceProfile(str string) pds.DeviceProfile {
 		return pds.DeviceProfile_DEVICE_PROFILE_7PF
 	} else if strings.Compare(str, "8pf") == 0 {
 		return pds.DeviceProfile_DEVICE_PROFILE_8PF
+	} else if strings.Compare(str, "32vf") == 0 {
+		return pds.DeviceProfile_DEVICE_PROFILE_32VF
 	} else {
 		return pds.DeviceProfile_DEVICE_PROFILE_DEFAULT
 	}

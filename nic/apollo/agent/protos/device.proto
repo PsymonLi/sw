@@ -34,6 +34,7 @@ enum DeviceProfile {
   DEVICE_PROFILE_6PF     = 5;
   DEVICE_PROFILE_7PF     = 6;
   DEVICE_PROFILE_8PF     = 7;
+  DEVICE_PROFILE_32VF    = 8;
 }
 
 // operational mode of the device
