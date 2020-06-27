@@ -59,9 +59,14 @@ export class BasecardComponent implements OnInit, OnChanges {
   // When set to true, card contents will fade into view
   @Input() cardState: CardStates = CardStates.LOADING;
   @Input() menuItems = [];
+  // input to toggle the new gradient theme
+  @Input() gradTheme: boolean = false;
 
 
   showGraph: boolean = false;
+
+  // custom css
+  themeCss = {};
 
   constructor(private router: Router) { }
 
@@ -69,5 +74,17 @@ export class BasecardComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
+    this.generateThemeCss();
+  }
+
+  /* changes the custom css of the cards
+  updates this.themeCss based on this.gradTheme */
+  generateThemeCss() {
+    if (!this.gradTheme) {
+      this.themeCss = {
+        'box-shadow': '0 0 3px 0 ' + this.themeColor,
+        'border': this.hasHover ? 'solid 1px ' + this.themeColor : 'solid 1px #cec5bd'
+      };
+    }
   }
 }

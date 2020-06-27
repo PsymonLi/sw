@@ -1,15 +1,16 @@
-<div [style.box-shadow]="'0 0 3px 0 ' + themeColor"
-     [style.border]="hasHover ? 'solid 1px ' + themeColor : 'solid 1px #cec5bd'"
+<div
+     [ngStyle]="themeCss"
+     [ngClass]="gradTheme ? 'basecard-container-new' : 'basecard-container-old'"
      (mouseenter)="hasHover = true"
-     (mouseleave)="hasHover = false"
-     class="basecard-container">
-  <div [@fade] *ngIf="backgroundIcon" class="basecard-background"
-       fxLayout="row" [fxLayoutAlign]="backgroundIconCentered ? 'center center' : 'start center'">
+     (mouseleave)="hasHover = false">
+  <div [@fade] *ngIf="backgroundIcon && !gradTheme" class="basecard-background" fxLayout="row"
+       [fxLayoutAlign]="backgroundIconCentered ? 'center center' : 'start center'">
     <mat-icon fxFlex="none" *ngIf="backgroundIcon.svgIcon" [style.color]="themeColor"
-              [svgIcon]="backgroundIcon.svgIcon" class="basecard-background-icon">
+              [svgIcon]="backgroundIcon.svgIcon"
+              class="basecard-background-icon">
     </mat-icon>
-    <mat-icon fxFlex="none" *ngIf="backgroundIcon.matIcon"
-              [style.color]="themeColor" class="basecard-background-mat-icon">
+    <mat-icon fxFlex="none" *ngIf="backgroundIcon.matIcon" [style.color]="themeColor"
+              class="basecard-background-mat-icon">
       {{backgroundIcon.matIcon}}
     </mat-icon>
   </div>
@@ -17,12 +18,15 @@
     <!-- Icon bar -->
     <app-dsbdwidgetheader fxFlex="45px" fxLayout="row" [title]="title" [iconFillColor]="themeColor"
                           [lastUpdateTime]="lastUpdateTime" [timeRange]='timeRange' [icon]="icon"
-                          [menuItems]="menuItems">
+                          [menuItems]="menuItems"
+                          [ngClass]="gradTheme ? 'basecard-foreground-header-new' : ''">
 
       <div widget-options>
         <ng-content select="[header-options]"></ng-content>
       </div>
+
     </app-dsbdwidgetheader>
+    <div [ngClass]="gradTheme ? 'gradient-line' : ''"></div>
     <div class="basecard-foreground-content" fxFlex="auto" fxLayout="row">
       <ng-content fxFlex="100%"></ng-content>
     </div>
@@ -38,7 +42,8 @@
       <div fxFlex="nogrow" class="basecard-failed-text">Failed to get data</div>
     </div>
     <div *ngIf="cardState === cardStates.NO_DATA" fxFlex="auto" fxLayout="row"
-         fxLayoutAlign="center center" fxLayoutGap="20px">
+         fxLayoutAlign="center center"
+         fxLayoutGap="20px">
       <mat-icon fxFlex="nogrow" class="basecard-failed-icon">error_outline</mat-icon>
       <div fxFlex="nogrow" class="basecard-failed-text">No data available</div>
     </div>
