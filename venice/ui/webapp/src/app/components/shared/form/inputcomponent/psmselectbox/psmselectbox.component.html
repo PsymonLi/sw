@@ -8,7 +8,9 @@
                 (onFocus)="onBoxFocus($event)" (click)="onBoxClick($event)"
                 (ngModelChange)="onInnerCtrlChange()">
       <ng-template let-item pTemplate="item">
-        <span *ngIf="item.value">{{item.label}}</span>
+        <div *ngIf="item.value" class="psm-form-select-box-dropdown-row">
+          <div class="psm-form-select-box-dropdown-label">{{formatOptionLabel(item)}}</div>
+        </div>
       </ng-template>
     </p-dropdown>
     <label *ngIf="label" [for]="boxId">{{ label }}</label>

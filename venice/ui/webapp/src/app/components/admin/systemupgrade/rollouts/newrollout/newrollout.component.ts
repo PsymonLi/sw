@@ -586,16 +586,6 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
       });
       if (this.rolloutImageOptions.length > 0) {
         this.newRollout.$formGroup.get(['spec', 'version']).enable();  // enable version dropdown if there are version choices.
-        const emptyImageLabel: RolloutImageLabel = { Description: '', Version: '' };
-        const emptyVersion: RolloutImageOption = {
-          label: 'Select a image version',
-          value: '',
-          model: emptyImageLabel
-        };
-
-        // VS-1170. We make an empty verion and make it as default selected version  (html 128 appFloatLabel has conflict with placeholder )
-        this.rolloutImageOptions = [emptyVersion].concat(this.rolloutImageOptions); // this.rolloutImageOptions.unshift([emptyVersion]);
-        this.newRollout.$formGroup.get(['spec', 'version']).setValue(this.rolloutImageOptions[0].value);  // VS-1054. Assign a value to version control
       }
     }
     this.computeVersionDescription(selectedVersion);
@@ -745,8 +735,13 @@ export class NewrolloutComponent extends BaseComponent implements OnInit, OnDest
     }
   }
 
-  onVersionChange($event) {
-    const selectedVersion = $event.value;
+  formatImageLabel() {
+    const func = (option: any) => option.label + (option.model && option.model.Description ?
+        option.model.Description : '');
+    return func;
+  }
+
+  onVersionChange(selectedVersion) {
     this.computeVersionDescription(selectedVersion);
   }
 

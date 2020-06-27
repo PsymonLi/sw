@@ -116,24 +116,11 @@
        [formGroup]="newRolloutForm.get('spec')">
 
     <div fxLayout="row" class="newrollout-input-padding">
-      <span [ngClass]="{ 'newrollout-general-box': true,
-        'requiredField': isFieldEmpty(newRollout.$formGroup.get(['spec', 'version']))
-            }">
-      </span>
-      <span>
-        <p-dropdown fxFlex="300px" class="newrollout-dropdown" appErrorTooltip
-                    [formControl]="newRollout.$formGroup.get(['spec', 'version'])"
-                    styleClass="newrollout-font, newrollout-input-common"
-                    [options]="rolloutImageOptions"
-                    appFloatLabel="version" (onChange)="onVersionChange($event)">
-          <ng-template let-version pTemplate="item">
-            <div class="ui-helper-clearfix newrollout-dropdown-div">
-              <div class="newrollout-dropdown-label">{{version.label}} {{version.model.Description}}
-              </div>
-            </div>
-          </ng-template>
-        </p-dropdown>
-      </span>
+      <app-psmselectbox fxFlex="310px" label="version"
+                        [addEmptyOption]="true" emptyOptionLabel="Select an image version"
+                        (change)="onVersionChange($event)" [options]="rolloutImageOptions"
+                        formControlName="version" [formatOptionLabel]="formatImageLabel()">
+      </app-psmselectbox>
       <div class="newrollout-version-desc">{{ versiondescription }}</div>
     </div>
 

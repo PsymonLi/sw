@@ -9,3 +9,25 @@
     }
   }
 }
+
+.pensando-ui {
+  .ng-trigger.ui-dropdown-panel {
+    margin-top: 5px;
+    margin-left: 2px;
+    border: 1px solid #d6d6d6 !important;
+    z-index: 1000;
+
+    li:empty {
+      border-left: 5px transparent solid !important;
+    }
+
+    .psm-form-select-box-dropdown-row {
+      height: 22px;
+
+      .psm-form-select-box-dropdown-label {
+        font-size: 14px;
+        margin-top: 2px;
+      }
+    }
+  }
+}

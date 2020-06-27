@@ -30,6 +30,7 @@ $vertical-gutter: 5px;
     background: white;
   }
 
+  app-psmselectbox,
   app-psmcalendar {
     position: relative;
     left: -10px;
@@ -174,17 +175,6 @@ $vertical-gutter: 5px;
 
 .newrollout-edit-button {
   width: 100px;
-}
-
-
-.newrollout-dropdown-label {
-  font-size: 14px;
-  margin-top: 4px;
-}
-
-.newrollout-dropdown-div {
-  position: relative;
-  height: 25px;
 }
 
 .newrollout-select-button-div .ui-selectbutton .ui-button.ui-state-active {

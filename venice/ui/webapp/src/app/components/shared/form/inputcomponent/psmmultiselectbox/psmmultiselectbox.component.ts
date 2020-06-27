@@ -29,6 +29,9 @@ export class PsmMultiSelectComponent extends FormInputComponent implements OnIni
   @Input() showHeader: boolean = false;
   @Input() showToggleAll: boolean = false;
 
+  runningFilter: boolean = false;
+  runningShowHeader: boolean = false;
+  runningShowToggleAll: boolean = false;
   allOptions: SelectItem[] = [];
   protected defaultSpanClass: string = 'psm-form-multi-select-container';
   protected defaultComponentClass: string = 'psm-form-multi-select-box';
@@ -49,8 +52,14 @@ export class PsmMultiSelectComponent extends FormInputComponent implements OnIni
     if (changes.options) {
       if (this.allOption) {
         this.allOptions = [this.allOption, ...this.options];
+        this.runningFilter = false;
+        this.runningShowHeader = false;
+        this.runningShowToggleAll = false;
       } else {
         this.allOptions = [...this.options];
+        this.runningFilter = this.filter;
+        this.runningShowHeader = this.showHeader;
+        this.runningShowToggleAll = this.showToggleAll;
       }
     }
   }

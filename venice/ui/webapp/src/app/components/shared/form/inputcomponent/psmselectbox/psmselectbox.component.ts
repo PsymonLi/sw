@@ -23,14 +23,15 @@ import { SelectItem } from 'primeng/api';
 
 export class PsmSelectBoxComponent extends FormInputComponent implements OnInit, OnChanges, AfterViewInit, ControlValueAccessor {
 
+  allOptions: SelectItem[] = [];
+  protected defaultSpanClass: string = 'psm-form-select-box-container';
+  protected defaultComponentClass: string = 'psm-form-select-box';
+
   @Input() options: SelectItem[];
   @Input() addEmptyOption: boolean = false;
   @Input() emptyOptionLabel: string = '';
-
-  allOptions: SelectItem[] = [];
-
-  protected defaultSpanClass: string = 'psm-form-select-box-container';
-  protected defaultComponentClass: string = 'psm-form-select-box';
+  @Input() formatOptionLabel: (option: any) => string =
+      (option: any) => option.label
 
   constructor(protected inj: Injector, protected el: ElementRef, protected cdr: ChangeDetectorRef) {
     super(inj, el, cdr);

@@ -477,6 +477,9 @@ export class NewmirrorsessionComponent extends CreationForm<IMonitoringMirrorSes
     if (!prot) {
       return false;
     }
+    if (prot.trim().toLowerCase() === 'any') {
+      return false;
+    }
     if (arr.length === 1) {
       return Utility.isProtocolNoPortsValid(prot);
     }

@@ -7,7 +7,6 @@ import { Animations } from '@app/animations';
   templateUrl: './listcontainer.component.html',
   styleUrls: ['./listcontainer.component.scss'],
   encapsulation: ViewEncapsulation.None,
-  changeDetection: ChangeDetectionStrategy.OnPush,
   animations: Animations,
 })
 

@@ -46,6 +46,7 @@
                            fxFlex="285px" label="Datacenter Names" formControlName="namespace"
                            [showRequired]="!isFieldEmpty(orchestrator.get(['orchestrator-name']))"
                            [hintTooltip]="'Datacenter in the orchestrator in which this network should be created in. Type \'ALL\' for all datacenters.'"
+                           [filter]="true" [showHeader]="true" [showToggleAll]="true"
                            [options]="orchestrator.datacenterOptions || []"
                            [allOption]="orchestrator.allOption">
     </app-psmmultiselectbox>

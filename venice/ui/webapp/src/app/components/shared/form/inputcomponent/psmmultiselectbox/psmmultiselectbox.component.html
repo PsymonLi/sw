@@ -2,9 +2,9 @@
   <div [class]="getIconSpanClasses()">*</div>
   <div [class]="getSpanClasses()">
     <p-multiSelect [id]="boxId" appendTo="body" [class]="getComponentClass()"
-                   [options]="allOptions" [filter]="filter"
-                   [showHeader]="showHeader"
-                   [showToggleAll]="showToggleAll"
+                   [options]="allOptions" [filter]="runningFilter"
+                   [showHeader]="runningShowHeader"
+                   [showToggleAll]="runningShowToggleAll"
                    [styleClass]="componentStyleClass"
                    [disabled]="disabled" [matTooltip]="getTooltip()"
                    [matTooltipClass]="currentTooltipClass"
