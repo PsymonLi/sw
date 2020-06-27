@@ -3,6 +3,38 @@
     <ng-container *ngTemplateOutlet="details"></ng-container>
     <ng-container *ngTemplateOutlet="interfaces"></ng-container>
   </div>
+  <!-- Deletion screen overlay displays when the policy we are viewing is deleted -->
+  <!-- Missing screen overlay displays when the policy does not exist-->
+  <div #overlay *ngIf="showDeletionScreen || showMissingScreen" fxLayout="row"
+       fxLayoutAlign="center stretch" class="workloaddetail-overlay">
+    <div fxFlex="50%" fxLayout="column">
+      <div fxFlex='20%'></div>
+      <div fxFlex="none" fxLayoutAlign="center center" class="workloaddetail-overlay-image">
+        <div class="workloaddetail-node"></div>
+        <div *ngIf="showDeletionScreen"
+             class="workloaddetail-overlay-badge workloaddetail-delete-overlay"></div>
+        <div *ngIf="showMissingScreen"
+             class="workloaddetail-overlay-badge workloaddetail-missing-overlay"></div>
+      </div>
+      <div *ngIf="showDeletionScreen" fxFlex="none" class="workloaddetail-overlay-text">
+        {{ selectedId }} has been deleted
+      </div>
+      <div *ngIf="showMissingScreen" fxFlex="none" class="workloaddetail-overlay-text">
+        {{ selectedId }} does not exist
+      </div>
+      <div fxFlex="5%"></div>
+      <div fxFlex="none" fxLayout="row" fxLayoutAlign="center stretch" fxLayoutGap="40px">
+        <button fxFlex="none" class="global-button-primary workloaddetail-overlay-button"
+                routerLink="../">
+          WORKLOADS OVERVIEW
+        </button>
+        <button fxFlex="none" class="global-button-primary workloaddetail-overlay-button"
+                (click)="routeToHomepage()">
+          HOMEPAGE
+        </button>
+      </div>
+    </div>
+  </div>
 </app-pagebody>
 
 <ng-template #details>

@@ -1,3 +1,5 @@
+@import 'src/global-mixins';
+
 .workloaddetail {
   padding: 10px;
 
@@ -39,4 +41,54 @@
       margin-top: 30px;
     }
   }
+}
+
+.workloaddetail-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+  display: flex;
+}
+
+.workloaddetail-overlay-image {
+  position: relative;
+}
+
+.workloaddetail-node {
+  background: url("/assets/images/icons/workload/icon-workload.svg") center center no-repeat;
+  background-size: contain;
+  height: 100px;
+  opacity: 0.5;
+  width: 100px;
+}
+
+.workloaddetail-overlay-text {
+  @include primary-font(45px, #676763, 600);
+  text-align: center;
+}
+
+.workloaddetail-overlay-button {
+  font-size: 16px;
+  padding: 6px 20px;
+}
+
+.workloaddetail-overlay-badge {
+  height: 100px;
+  position: absolute;
+  top: -5px;
+  width: 100px;
+}
+
+.workloaddetail-delete-overlay {
+  background: url("/assets/images/icons/ico-del-badge.svg") center center no-repeat;
+  background-size: contain;
+}
+
+.workloaddetail-missing-overlay {
+  background: url("/assets/images/icons/ico-missing-badge.svg") center center no-repeat;
+  background-size: contain;
 }

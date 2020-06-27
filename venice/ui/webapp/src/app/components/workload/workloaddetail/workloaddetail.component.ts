@@ -147,6 +147,8 @@ export class WorkloaddetailComponent extends DataComponent implements OnInit, On
     });
     this.subscriptions = [];
     this.selectedObj = null;
+    this.showDeletionScreen = false;
+    this.showMissingScreen = false;
   }
 
   getHosts() {
@@ -184,6 +186,17 @@ export class WorkloaddetailComponent extends DataComponent implements OnInit, On
   }
 
   getWorkloadDetails() {
+    // We perform a get as well as a watch so that we can know if the object the user is
+    // looking for exists or not.
+    const getSubscription = this.workloadService.GetWorkload(this.selectedId).subscribe(
+      response => {},
+      error => {
+        // If we receive any error code we display object is missing
+        this.showMissingScreen = true;
+        this.loading = false;
+      }
+    );
+
     return this.workloadService.WatchWorkload({ 'field-selector': 'meta.name=' + this.selectedId }).subscribe(
       response => {
         const objEventUtility = new HttpEventUtility<WorkloadWorkload>(WorkloadWorkload);
@@ -218,6 +231,7 @@ export class WorkloaddetailComponent extends DataComponent implements OnInit, On
         this.initWorkload = false;
         this.loading = false;
         this._controllerService.webSocketErrorHandler('Failed to get workloads');
+        this.showMissingScreen = true;
       }
     );
   }
