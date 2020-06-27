@@ -916,7 +916,7 @@ pds_flow_classify_no_vnic (vlib_buffer_t *p,
     return;
 }
 
-always_inline void
+always_inline bool
 pds_flow_l2l_packet_process (vlib_buffer_t *p,
                              p4_rx_cpu_hdr_t *hdr,
                              pds_flow_hw_ctx_t *ctx,
@@ -925,18 +925,19 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
                              u32 *counter)
 {
     pds_impl_db_vnic_entry_t *vnic;
+    bool ret = true;
 
     if (hdr->rx_packet) {
         if (!BIT_ISSET(flags, VPP_CPU_FLAGS_IPV4_2_VALID)) {
             *next = FLOW_CLASSIFY_NEXT_DROP;
             counter[FLOW_CLASSIFY_COUNTER_VNIC_NOT_FOUND] += 1;
-            return;
+            goto end;
         }
         vnic = pds_impl_db_vnic_get(ctx->src_vnic_id);
         if (PREDICT_FALSE(!vnic)) {
             *next = FLOW_CLASSIFY_NEXT_DROP;
             counter[FLOW_CLASSIFY_COUNTER_VNIC_NOT_FOUND] += 1;
-            return;
+            goto end;
         }
         // Store the destination VNIC ID
         ctx->dst_vnic_id = hdr->vnic_id;
@@ -949,13 +950,18 @@ pds_flow_l2l_packet_process (vlib_buffer_t *p,
                             hdr->flags));
         *next = FLOW_CLASSIFY_NEXT_IP4_L2L_FLOW_PROG;
     } else {
+        if (!hdr->defunct_flow) {
+            ret = false;
+            goto end;
+        }
         vnet_buffer(p)->pds_flow_data.egress_lkp_id = hdr->egress_bd_id;
         vlib_buffer_advance(p, pds_flow_classify_get_advance_offset(p,
                             hdr->flags));
         *next = FLOW_CLASSIFY_NEXT_IP4_L2L_DEF_FLOW_PROG;
     }
     counter[FLOW_CLASSIFY_COUNTER_IP4_L2L_FLOW] += 1;
-    return;
+end:
+    return ret;
 }
 
 always_inline bool
@@ -1012,6 +1018,7 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
     u32 nexthop;
     pds_impl_db_vnic_entry_t *vnic;
     pds_flow_hw_ctx_t *ctx = NULL;
+    bool ret;
 
     *next = FLOW_CLASSIFY_N_NEXT;
     flag_orig = hdr->flags;
@@ -1061,8 +1068,12 @@ pds_flow_classify_x1 (vlib_buffer_t *p, u16 *next, u32 *counter)
             return;
         }
         if (pds_flow_packet_l2l(ctx->packet_type)) {
-            pds_flow_l2l_packet_process(p, hdr, ctx, flags, next, counter);
-            goto end;
+            ret = pds_flow_l2l_packet_process(p, hdr, ctx,
+                                              flags, next,
+                                              counter);
+            if (ret == true) {
+                goto end;
+            }
         }
     }
 
