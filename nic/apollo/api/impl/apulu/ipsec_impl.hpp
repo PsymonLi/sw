@@ -151,7 +151,7 @@ protected:
 
 protected:
     // P4 datapath specific state
-    uint64_t base_pa_;    ///< base physical address of cb
+    mem_addr_t base_pa_; ///< base physical address of cb
     uint8_t epoch_;      ///< datapath epoch of the ipsec sa
     uint32_t hw_id_;     ///< hardware id
     /// PI specific info
@@ -202,6 +202,7 @@ public:
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
 
+private:
     /// \brief constructor
     ipsec_sa_encrypt_impl() {}
 
@@ -213,7 +214,6 @@ public:
         ipsec_sa_encrypt_impl();
         key_ = spec->key;
     }
-private:
 
     /// \brief     program ipsec related tables during ipsec sa create
     /// \param[in] epoch epoch being activated
@@ -231,6 +231,8 @@ private:
     /// \brief      fill the ipsec sa status
     /// \param[out] status status
     void fill_status_(pds_ipsec_sa_encrypt_status_t *status);
+
+    friend class ipsec_sa_impl;
 };
 
 /// \brief ipsec decrypt sa implementation
@@ -273,6 +275,7 @@ public:
     virtual sdk_ret_t read_hw(api_base *api_obj, obj_key_t *key,
                               obj_info_t *info) override;
 
+private:
     /// \brief constructor
     ipsec_sa_decrypt_impl() {}
 
@@ -284,7 +287,6 @@ public:
         ipsec_sa_decrypt_impl();
         key_ = spec->key;
     }
-private:
 
     /// \brief     program ipsec related tables during ipsec sa create
     /// \param[in] epoch epoch being activated
@@ -302,6 +304,8 @@ private:
     /// \brief      fill the ipsec sa status
     /// \param[out] status status
     void fill_status_(pds_ipsec_sa_decrypt_status_t *status);
+
+    friend class ipsec_sa_impl;
 };
 
 /// \@}

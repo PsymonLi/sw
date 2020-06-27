@@ -13,6 +13,7 @@
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/asic/asic.hpp"
+#include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/apollo/framework/obj_base.hpp"
 #include "nic/apollo/api/include/pds_init.hpp"
 #include "nic/apollo/api/include/pds_debug.hpp"
@@ -274,6 +275,11 @@ public:
                                            void *ctxt) {
         return SDK_RET_ERR;
     }
+
+    sdk_ret_t p4plus_write(uint64_t va, uint64_t pa, uint8_t *data,
+                           uint32_t size, p4plus_cache_action_t action);
+    sdk_ret_t p4plus_read(uint64_t va, uint64_t pa, uint8_t *data,
+                          uint32_t size);
 
 private:
     pipeline_cfg_t pipeline_cfg_;

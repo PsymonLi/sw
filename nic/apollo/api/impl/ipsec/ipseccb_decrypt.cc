@@ -6,16 +6,19 @@
 /// \file
 /// ipsec cb decrypt routines
 ///
+//----------------------------------------------------------------------------
 
 #include "nic/sdk/include/sdk/ipsec.hpp"
+#include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/apollo/api/pds_state.hpp"
-#include "ipseccb.hpp"
-#include "ipseccb_internal.hpp"
+#include "nic/apollo/core/trace.hpp"
 #include "gen/p4gen/esp_v4_tunnel_n2h_rxdma/include/esp_v4_tunnel_n2h_rxdma_p4plus_ingress.h"
 #include "gen/p4gen/esp_v4_tunnel_n2h_txdma1/include/esp_v4_tunnel_n2h_txdma1_p4plus_ingress.h"
+#include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
+#include "nic/apollo/api/impl/ipsec/ipseccb_internal.hpp"
 
 namespace api {
 namespace impl {
@@ -60,11 +63,11 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_enc_cmd = IPSEC_BARCO_DECRYPT_AES_GCM_256;
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.key_index = htons(ctxt->key_index);
 
-    SDK_TRACE_DEBUG("key_index %d", ctxt->key_index);
+    PDS_TRACE_DEBUG("key_index %d", ctxt->key_index);
     // the below may have to use a different range for the reverse direction
 
     ipsec_cb_ring_addr = asicpd_get_mem_addr(ASIC_HBM_REG_IPSECCB_DECRYPT);
-    SDK_TRACE_DEBUG("CB Ring Addr 0x%lx", ipsec_cb_ring_addr);
+    PDS_TRACE_DEBUG("CB ring addr 0x%lx", ipsec_cb_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_ring_base_addr =
         htonl((uint32_t)ipsec_cb_ring_addr & 0xFFFFFFFF);
@@ -73,15 +76,17 @@ add_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
 
     ipsec_barco_ring_addr =
         asicpd_get_mem_addr(ASIC_HBM_REG_IPSECCB_BARCO_DECRYPT);
-    SDK_TRACE_DEBUG("Barco Ring Addr 0x%lx", ipsec_barco_ring_addr);
+    PDS_TRACE_DEBUG("Barco ring addr 0x%lx", ipsec_barco_ring_addr);
 
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_ring_base_addr = htonll(ipsec_barco_ring_addr);
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_cindex = 0;
     data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_pindex = 0;
 
-    SDK_TRACE_DEBUG("Programming Decrypt stage0 at addr: 0x%lx", addr);
+    PDS_TRACE_DEBUG("Programming decrypt stage0 at addr 0x%lx", addr);
 
-    ret = ipseccb_write_one(addr, (uint8_t *)&data, sizeof(data));
+    ret = impl_base::pipeline_impl()->p4plus_write(0, addr, (uint8_t *)&data,
+                                                   sizeof(data),
+                                                   P4PLUS_CACHE_ACTION_NONE);
 
     return ret;
 }
@@ -94,8 +99,10 @@ add_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
     sdk_ret_t ret;
 
     decrypt_part2.spi = htonl(ctxt->decrypt_spec->spi);
-    ret = ipseccb_write_one(addr, (uint8_t *)&decrypt_part2,
-                            sizeof(decrypt_part2));
+    ret = impl_base::pipeline_impl()->p4plus_write(0, addr,
+                                                   (uint8_t *)&decrypt_part2,
+                                                   sizeof(decrypt_part2),
+                                                   P4PLUS_CACHE_ACTION_NONE);
     return ret;
 }
 
@@ -119,20 +126,21 @@ get_ipsec_decrypt_rx_stage0_entry (ipseccb_ctxt_t *ctxt)
     uint16_t cb_cindex, cb_pindex;
     uint16_t barco_cindex, barco_pindex;
 
-    ipseccb_read_one(addr, (uint8_t *)&data, sizeof(data));
+    impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&data,
+                                            sizeof(data));
 
     ctxt->decrypt_info->status.key_index = ntohs(data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.key_index);
 
     ipsec_cb_ring_addr = ntohll(data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_ring_base_addr);
     cb_cindex = data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_cindex;
     cb_pindex = data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.cb_pindex;
-    SDK_TRACE_DEBUG("CB Ring Addr 0x%lx Pindex %d CIndex %d",
+    PDS_TRACE_DEBUG("CB ring addr 0x%lx pindex %d cindex %d",
                     ipsec_cb_ring_addr, cb_pindex, cb_cindex);
 
     ipsec_barco_ring_addr = ntohll(data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_ring_base_addr);
     barco_cindex = data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_cindex;
     barco_pindex = data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.barco_pindex;
-    SDK_TRACE_DEBUG("Barco Ring Addr 0x%lx Pindex %d CIndex %d",
+    PDS_TRACE_DEBUG("Barco ring addr 0x%lx pindex %d cindex %d",
                     ipsec_barco_ring_addr, barco_pindex, barco_cindex);
 
     ctxt->decrypt_info->status.seq_no_bmp = ntohll(data.u.esp_v4_tunnel_n2h_rxdma_initial_table_d.replay_seq_no_bmp);
@@ -146,7 +154,8 @@ get_ipsec_decrypt_part2 (ipseccb_ctxt_t *ctxt)
     ipsec_decrypt_part2_t decrypt_part2;
     uint64_t addr = ctxt->cb_base_pa + IPSEC_CB_DEC_QSTATE_1_OFFSET;
 
-    ipseccb_read_one(addr, (uint8_t *)&decrypt_part2, sizeof(decrypt_part2));
+    impl_base::pipeline_impl()->p4plus_read(0, addr, (uint8_t *)&decrypt_part2,
+                                            sizeof(decrypt_part2));
 
     ctxt->decrypt_info->status.last_replay_seq_no = ntohl(decrypt_part2.last_replay_seq_no);
     ctxt->decrypt_info->spec.salt = decrypt_part2.iv_salt;
@@ -181,7 +190,7 @@ ipseccb_decrypt_create (uint32_t hw_id, uint64_t base_pa,
 
     ret = capri_barco_sym_alloc_key(&ctxt.key_index);
     if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Failed to create key index");
+        PDS_TRACE_ERR("Failed to create key index");
         return ret;
     }
     key1_allocated = true;
@@ -189,7 +198,7 @@ ipseccb_decrypt_create (uint32_t hw_id, uint64_t base_pa,
     ret = capri_barco_setup_key(ctxt.key_index, ctxt.key_type,
                                 spec->decrypt_key, ctxt.key_size);
     if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Failed to write key at index %u", ctxt.key_index);
+        PDS_TRACE_ERR("Failed to write key at index %u", ctxt.key_index);
         goto cleanup;
     }
 
@@ -197,7 +206,7 @@ ipseccb_decrypt_create (uint32_t hw_id, uint64_t base_pa,
 
     ret = add_ipsec_decrypt_entry(&ctxt);
     if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Failed to ipsec cb at index %u", hw_id);
+        PDS_TRACE_ERR("Failed to ipsec cb at index %u", hw_id);
         goto cleanup;
     }
 
@@ -222,7 +231,7 @@ ipseccb_decrypt_get (uint32_t hw_id, uint64_t base_pa,
 
     ret = get_ipsec_decrypt_entry(&ctxt);
     if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("Failed to get ipsec cb at index %u", hw_id);
+        PDS_TRACE_ERR("Failed to get ipsec cb at index %u", hw_id);
     }
 
     return ret;

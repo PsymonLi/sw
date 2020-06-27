@@ -27,7 +27,7 @@
 namespace api {
 namespace impl {
 
-/// \defgroup PDS_ipsec_sa_impl - ipsec entry datapath implementation
+/// \defgroup PDS_IPSEC_SA_IMPL - ipsec entry datapath implementation
 /// \ingroup PDS_IPSEC
 /// @{
 
@@ -111,8 +111,8 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         }
         hw_id_ = idx;
         base_pa_ = lif_mgr::get_lif_qstate_addr(
-                   api::g_pds_state.ipsec_lif_qstate(),
-                   APULU_IPSEC_LIF, 0, hw_id_);
+                       api::g_pds_state.ipsec_lif_qstate(),
+                       APULU_IPSEC_LIF, 0, hw_id_);
         PDS_TRACE_DEBUG("Alloc hw_id %u base_addr 0x%lx", hw_id_, base_pa_);
         break;
 

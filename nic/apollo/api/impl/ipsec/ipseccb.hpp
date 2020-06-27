@@ -8,8 +8,8 @@
 ///
 //----------------------------------------------------------------------------
 
-#ifndef __IPSECCB_H__
-#define __IPSECCB_H__
+#ifndef __IPSECCB_HPP__
+#define __IPSECCB_HPP__
 
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
@@ -56,4 +56,4 @@ sdk_ret_t ipseccb_decrypt_get(uint32_t hw_id, uint64_t base_pa,
 }    // namespace impl
 }    // namespace api
 
-#endif // __IPSECCB_H__
+#endif // __IPSECCB_HPP__

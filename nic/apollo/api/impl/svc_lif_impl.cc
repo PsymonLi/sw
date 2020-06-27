@@ -11,7 +11,7 @@
 
 #include <cmath>
 #include <cstdio>
-#include "nic/sdk/include/sdk/ipsec.hpp"
+#include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/platform/utils/lif_manager_base.hpp"
 #include "nic/sdk/platform/utils/qstate_mgr.hpp"

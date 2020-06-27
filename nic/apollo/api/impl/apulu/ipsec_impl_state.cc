@@ -51,7 +51,7 @@ ipsec_sa_impl_state::~ipsec_sa_impl_state() {
 ipsec_sa_impl *
 ipsec_sa_impl_state::alloc(void) {
     return (ipsec_sa_impl *)SDK_CALLOC(SDK_MEM_ALLOC_PDS_IPSEC_SA_IMPL,
-                                   sizeof(ipsec_sa_impl));
+                                       sizeof(ipsec_sa_impl));
 }
 
 void

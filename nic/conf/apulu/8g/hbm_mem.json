@@ -142,7 +142,7 @@
         {
             "name": "ipsec_lif2qstate_map",
             "kind": "static",
-            "size": "9M",
+            "size": "8M",
             "comment": "256B * 16K * 2 sessions"
         },
         {

@@ -207,16 +207,18 @@ public:
         return "ipsec_sa_encrypt-" + std::string(key_.str());
     }
 
+private:
     /// \brief constructor
     ipsec_sa_encrypt_entry();
 
     /// \brief destructor
     ~ipsec_sa_encrypt_entry();
 
-private:
     /// \brief      fill the ipsec sa sw spec
     /// \param[out] spec specification
     void fill_spec_(pds_ipsec_sa_encrypt_spec_t *spec);
+
+    friend class ipsec_sa_entry;
 } __PACK__;
 
 class ipsec_sa_decrypt_entry : public ipsec_sa_entry {
@@ -246,16 +248,18 @@ public:
         return "ipsec_sa_decrypt-" + std::string(key_.str());
     }
 
+private:
     /// \brief constructor
     ipsec_sa_decrypt_entry();
 
     /// \brief destructor
     ~ipsec_sa_decrypt_entry();
 
-private:
     /// \brief      fill the ipsec sa sw spec
     /// \param[out] spec specification
     void fill_spec_(pds_ipsec_sa_decrypt_spec_t *spec);
+
+    friend class ipsec_sa_entry;
 } __PACK__;
 
 /// \@}    // end of PDS_IPSEC_ENTRY
