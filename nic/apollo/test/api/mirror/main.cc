@@ -402,6 +402,210 @@ TEST_F(mirror_session_test, mirror_session_workflow_neg_8) {
                   k_dst_ip2, k_tep_id2, span_id_2, 2);
     workflow_neg_8<mirror_session_feeder>(feeder1, feeder2);
 }
+
+//---------------------------------------------------------------------
+// Non templatized test cases
+//---------------------------------------------------------------------
+//
+/// \brief change snap_len of a mirror_session
+TEST_F(mirror_session_test, mirror_session_update_snap_len) {
+    mirror_session_feeder feeder;
+    pds_mirror_session_spec_t spec;
+    memset(&spec, 0, sizeof(spec));
+    pds_obj_key_t key1 = int2pdsobjkey(1);
+
+    // update from 100->90
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_RSPAN, 100); 
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_RSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 90);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_SNAP_LEN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+}
+
+/// \brief change mirror session type 
+TEST_F(mirror_session_test, DISABLED_mirror_session_update_session_type) {
+    mirror_session_feeder feeder;
+    pds_mirror_session_spec_t spec;
+    memset(&spec, 0, sizeof(spec));
+    pds_obj_key_t key1 = int2pdsobjkey(1);
+
+    // update from rspan -> erspan
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_RSPAN, 100);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100);
+    // update should fail as session type is immutable attribute
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_TYPE, SDK_RET_ERR);
+    // As update fails, rollback feeder's spec to old spec
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_RSPAN, 100);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update from erspan -> rspan
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_RSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100);
+    // update should fail as session type is immutable attribute
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_TYPE, SDK_RET_ERR);
+    // As update fails, rollback feeder's spec to old spec
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+}
+
+/// \brief change rspan of a mirror_session
+TEST_F(mirror_session_test, mirror_session_update_rspan) {
+    mirror_session_feeder feeder;
+    pds_mirror_session_spec_t spec;
+    memset(&spec, 0, sizeof(spec));
+    pds_obj_key_t key1 = int2pdsobjkey(1);
+
+    // update interface attribute in rpsan
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_RSPAN, 100);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_RSPAN,
+                               k_ifindex_id2, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_RSPAN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update encap attribute in rspan
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_RSPAN, 100);
+     mirror_session_create(feeder);
+     mirror_session_read(feeder);
+     create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_RSPAN,
+                                k_ifindex_id1, 2, k_dst_ip1, k_tep_id1, 1, 1,
+                                false, 100);
+     mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_RSPAN);
+     mirror_session_read(feeder);
+     // cleanup
+     mirror_session_delete(feeder);
+     mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+}
+
+/// \brief change erspan of a mirror_session
+TEST_F(mirror_session_test, mirror_session_update_erspan) {
+    mirror_session_feeder feeder;
+    pds_mirror_session_spec_t spec;
+    memset(&spec, 0, sizeof(spec));
+    pds_obj_key_t key1 = int2pdsobjkey(1);
+
+    // update erspan type
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100,
+                PDS_ERSPAN_TYPE_1);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100, PDS_ERSPAN_TYPE_2);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_SNAP_LEN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update vpc 
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100,
+                PDS_ERSPAN_TYPE_1, PDS_ERSPAN_DST_TYPE_TEP, 1);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100, PDS_ERSPAN_TYPE_1, 
+                               PDS_ERSPAN_DST_TYPE_TEP, 2);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_SNAP_LEN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update dscp
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 1, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100,
+                PDS_ERSPAN_TYPE_1);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 2,
+                               false, 100, PDS_ERSPAN_TYPE_2);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_ERSPAN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update spanid
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 1, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 2, 1);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_ERSPAN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update vlan-strip-en
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 1, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               true, 100);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_SNAP_LEN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+
+    // update erspan_dst-type
+    feeder.init(key1, 1, k_ifindex_id1, 1, k_dst_ip1,
+                k_tep_id1, 100, 1, false, PDS_MIRROR_SESSION_TYPE_ERSPAN, 100,
+                PDS_ERSPAN_TYPE_1, PDS_ERSPAN_DST_TYPE_TEP);
+    mirror_session_create(feeder);
+    mirror_session_read(feeder);
+    create_mirror_session_spec(&spec, PDS_MIRROR_SESSION_TYPE_ERSPAN,
+                               k_ifindex_id1, 1, k_dst_ip1, k_tep_id1, 1, 1,
+                               false, 100, PDS_ERSPAN_TYPE_2, 
+                               PDS_ERSPAN_DST_TYPE_IP);
+    mirror_session_update(feeder, &spec, MIRROR_SESSION_ATTR_SNAP_LEN);
+    mirror_session_read(feeder);
+    // cleanup
+    mirror_session_delete(feeder);
+    mirror_session_read(feeder, SDK_RET_ENTRY_NOT_FOUND);
+}
+
 /// @}
 }    // namespace api
 }    // namespace test
