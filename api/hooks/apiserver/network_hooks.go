@@ -13,21 +13,25 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/api/generated/apiclient"
 	"github.com/pensando/sw/api/generated/network"
 	"github.com/pensando/sw/api/generated/workload"
-	"github.com/pensando/sw/api/interfaces"
-	"github.com/pensando/sw/api/utils"
+	apiintf "github.com/pensando/sw/api/interfaces"
+	apiutils "github.com/pensando/sw/api/utils"
 	"github.com/pensando/sw/venice/apiserver"
-	"github.com/pensando/sw/venice/apiserver/pkg"
+	apisrvpkg "github.com/pensando/sw/venice/apiserver/pkg"
 	"github.com/pensando/sw/venice/ctrler/orchhub/utils"
 	"github.com/pensando/sw/venice/globals"
 	"github.com/pensando/sw/venice/utils/featureflags"
 	"github.com/pensando/sw/venice/utils/kvstore"
 	"github.com/pensando/sw/venice/utils/log"
+)
+
+const (
+	ipamMaxDhcpServers = 8
 )
 
 type networkHooks struct {
@@ -39,19 +43,18 @@ type networkHooks struct {
 	netwMap   map[string]map[string]*net.IPNet
 }
 
-func (h *networkHooks) validateIPAMPolicyConfig(i interface{}, ver string, ignStatus, ignoreSpec bool) []error {
+func (h *networkHooks) validateIPAMPolicyConfig(i interface{}, ver string, ignStatus, ignoreSpec bool) (ret []error) {
 	cfg, ok := i.(network.IPAMPolicy)
 
 	if ok == false {
 		return []error{errors.New("Invalid input configuration")}
 	}
 
-	// in the current implementation only one dhcp server configuration is supported even though the model
-	// defines it as a slice for future enhancements
-	if len(cfg.Spec.DHCPRelay.Servers) > 1 {
-		return []error{errors.New("Only one DHCP server configuration is supported")}
+	// current support is up to ipamMaxDhcpServers DHCP servers
+	if len(cfg.Spec.DHCPRelay.Servers) > ipamMaxDhcpServers {
+		ret = append(ret, fmt.Errorf("Number of DHCP servers cannot be greater than %d", ipamMaxDhcpServers))
 	}
-	return nil
+	return ret
 }
 
 func validateImportExportRTs(rd *network.RouteDistinguisher, name string) (ret []error) {

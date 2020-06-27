@@ -85,7 +85,9 @@ func TestIPAMPolicyConfig(t *testing.T) {
 		t.Errorf("Failed to create a good IPAMPolicy config (%s)", ok)
 	}
 
-	policy.Spec.DHCPRelay.Servers = append(policy.Spec.DHCPRelay.Servers, server1)
+	for i := 0; i < ipamMaxDhcpServers; i++ {
+		policy.Spec.DHCPRelay.Servers = append(policy.Spec.DHCPRelay.Servers, server1)
+	}
 
 	ok = s.validateIPAMPolicyConfig(policy, "", false, false)
 	if ok == nil {
