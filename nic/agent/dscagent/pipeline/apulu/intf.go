@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -74,6 +75,7 @@ func createInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 }
 
 func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, intf netproto.Interface) error {
+	var interfaceUpdated bool
 	intfReq, err := convertInterface(infraAPI, intf)
 	if err != nil {
 		log.Errorf("Interface: %s convert failed | Err: %v", intf.GetKey(), err)
@@ -107,6 +109,21 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 	if err != nil {
 		log.Errorf("Interface: %s could not get UUID [%v] | Err: %s", intf.GetKey(), intf.UUID, err)
 		return errors.Wrapf(types.ErrBadRequest, "Interface: %s could not get UUID [%v] | Err: %s", intf.GetKey(), intf.UUID, err)
+	}
+
+	interfaceUpdate := func() error {
+		resp, err := client.InterfaceUpdate(context.Background(), intfReq)
+		if err != nil {
+			log.Errorf("Interface: %s update failed | Err: %v", intf.GetKey(), err)
+			return errors.Wrapf(types.ErrDatapathHandling, "Interface: %s update failed | Err: %v", intf.GetKey(), err)
+		}
+		if resp.ApiStatus != halapi.ApiStatus_API_STATUS_OK {
+			log.Errorf("Interface: %s update failed  | Status: %s", intf.GetKey(), resp.ApiStatus)
+			return errors.Wrapf(types.ErrBoltDBStoreCreate, "Interface: %s update failed | Status: %s", intf.GetKey(), resp.ApiStatus)
+		}
+		log.Infof("Interface: %s update | Status: %s | Resp: %v", intf.GetKey(), resp.ApiStatus, resp.Response)
+		interfaceUpdated = true
+		return nil
 	}
 
 	if intf.Spec.Type == netproto.InterfaceSpec_HOST_PF.String() && (oldIntf.Spec.VrfName != intf.Spec.VrfName || oldIntf.Spec.Network != intf.Spec.Network) {
@@ -193,6 +210,15 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 					updsubnet.Request[0].HostIf[index] = updsubnet.Request[0].HostIf[length-1]
 					updsubnet.Request[0].HostIf = updsubnet.Request[0].HostIf[:length-1]
 				}
+				// If detach, send admin-status down before subnet update
+				if intf.Spec.AdminStatus == "UP" {
+					intfReq.Request[0].AdminStatus = halapi.IfStatus_IF_STATUS_DOWN
+				}
+				if err := interfaceUpdate(); err != nil {
+					return err
+				}
+				// Add a delay of half a second to let DHCP process the request
+				time.Sleep(time.Millisecond * 500)
 			}
 
 			resp, err := subnetcl.SubnetUpdate(context.TODO(), updsubnet)
@@ -218,6 +244,13 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 			if err = updateSubnet(intf.Spec.VrfName, intf.Spec.Network, uid.Bytes(), true); err != nil {
 				return errors.Wrapf(types.ErrDatapathHandling, "Interface: %s updating new subnet| Err: %s", oldIntf.GetKey(), err)
 			}
+			// This is for the case where association changes from X to Y.
+			// Ideally NPM might send 2 updates, but this is to handle if NPM
+			// sends only one update
+			interfaceUpdated = false
+			if intf.Spec.AdminStatus == "UP" {
+				intfReq.Request[0].AdminStatus = halapi.IfStatus_IF_STATUS_UP
+			}
 		}
 	}
 	if intf.Spec.Type == netproto.InterfaceSpec_LOOPBACK.String() {
@@ -234,18 +267,12 @@ func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 
 		infraAPI.StoreConfig(cfg)
 	}
-	if intf.Spec.Type != netproto.InterfaceSpec_HOST_PF.String() {
-		resp, err := client.InterfaceUpdate(context.Background(), intfReq)
-		if err != nil {
-			log.Errorf("Interface: %s update failed | Err: %v", intf.GetKey(), err)
-			return errors.Wrapf(types.ErrDatapathHandling, "Interface: %s update failed | Err: %v", intf.GetKey(), err)
-		}
-		if resp.ApiStatus != halapi.ApiStatus_API_STATUS_OK {
-			log.Errorf("Interface: %s update failed  | Status: %s", intf.GetKey(), resp.ApiStatus)
-			return errors.Wrapf(types.ErrBoltDBStoreCreate, "Interface: %s update failed | Status: %s", intf.GetKey(), resp.ApiStatus)
-		}
-		log.Infof("Interface: %s update | Status: %s | Resp: %v", intf.GetKey(), resp.ApiStatus, resp.Response)
 
+	// Update interface if subnet is associated with PF
+	if !interfaceUpdated {
+		if err := interfaceUpdate(); err != nil {
+			return err
+		}
 	}
 
 	dat, _ := intf.Marshal()
@@ -377,8 +404,19 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface) (*halapi
 		}, nil
 
 	case netproto.InterfaceSpec_HOST_PF.String():
-		// No Convert needed for HOST PF
-		return nil, nil
+		return &halapi.InterfaceRequest{
+			BatchCtxt: nil,
+			Request: []*halapi.InterfaceSpec{
+				{
+					Id:          uid.Bytes(),
+					Type:        halapi.IfType_IF_TYPE_HOST,
+					AdminStatus: ifStatus,
+					Ifinfo: &halapi.InterfaceSpec_HostIfSpec{
+						HostIfSpec: &halapi.HostIfSpec{},
+					},
+				},
+			},
+		}, nil
 	case netproto.InterfaceSpec_LOOPBACK.String():
 		return &halapi.InterfaceRequest{
 			BatchCtxt: nil,
