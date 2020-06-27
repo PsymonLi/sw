@@ -920,6 +920,11 @@ func upgradeDeployment(client k8sclient.Interface, module *protos.Module) error 
 	dConfig := createDeploymentObject(module)
 	var retval error
 	restartSuccessful := false
+	if module.Name == globals.Pegasus {
+		dConfig.Spec.MinReadySeconds = 60
+	}
+	log.Infof("Name %v MinReadySeconds %v", module.Name, dConfig.Spec.MinReadySeconds)
+
 	for numTries := 0; numTries < 5; numTries++ {
 		d, err := client.ExtensionsV1beta1().Deployments(defaultNS).Update(dConfig)
 		if err == nil {
