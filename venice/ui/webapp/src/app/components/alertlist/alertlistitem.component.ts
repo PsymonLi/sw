@@ -133,7 +133,7 @@ export class AlertlistitemComponent extends BaseComponent implements OnInit, OnD
   getAlertJSON2String(alert: MonitoringAlert): string {
     const obj = Utility.trimUIFields(alert.status.getModelValues());
     const list = [];
-    Utility.traverseNodeJSONObject(obj, 0, list, this);
+    Utility.traverseJSONObject(obj, 0, list, this);
     return list.join('<br/>');
   }
 

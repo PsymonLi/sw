@@ -120,7 +120,14 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   eventsSelectedTimeRange: TimeRange;
   eventsTimeConstraints: string = '';
 
-  exportMap: CustomExportMap = {};
+  exportMap: CustomExportMap = {
+    'object-ref': (opts) => {
+      return this.getObjectRefField(opts.data);
+    },
+    'source': (opts) => {
+      return this.getSourceNodeAndComponentField(opts.data);
+    }
+  };
 
   selectedEvent: EventsEvent = null;
   maxRecords: number = 4000;
@@ -676,5 +683,25 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
 
   creationFormClose() {
     this.eventsTable.creationFormClose();
+  }
+
+  getObjectRefField(eve: EventsEvent): string {
+    let text: string = '';
+    if (eve && eve['object-ref']) {
+      const kind = eve['object-ref'].kind;
+      const oname = eve['object-ref'].name;
+      text = ((kind && oname) ? kind + ' : ' + oname : (kind ? kind : (oname ? oname : '')));
+    }
+    return text;
+  }
+
+  getSourceNodeAndComponentField(eve: EventsEvent): string {
+    let text: string = '';
+    if (eve && eve.source) {
+      const nodename = eve.source['node-name'];
+      const component = eve.source.component;
+      text = ((nodename && component) ? nodename + ' : ' + component : (nodename ? nodename : (component ? component : '')));
+    }
+    return text;
   }
 }

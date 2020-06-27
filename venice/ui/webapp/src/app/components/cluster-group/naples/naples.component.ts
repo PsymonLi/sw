@@ -250,10 +250,10 @@ export class NaplesComponent extends DataComponent implements OnInit {
 
   filterColumns() {
     // if backend is Venice-for-cloud, don't show [workload  dscProfile]
-    // if backend is Venice-for-enterprise, don't show [status.control-plane-status]
+    // if backend is Venice-for-enterprise, don't show [status.control-plane-status, status.ip-config.ip-address]
     if (this.uiconfigsService.isFeatureEnabled('enterprise')) {
       this.cols = this.cols.filter((col: TableCol) => {
-        return col.field !== 'status.control-plane-status';
+        return !( col.field === 'status.control-plane-status' || col.field === 'status.ip-config.ip-address');
       });
     }
     if (this.uiconfigsService.isFeatureEnabled('cloud')) {

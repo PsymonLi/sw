@@ -276,10 +276,10 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
           nodeMsg += tab + tab + ' - Unexpected Peers Present!' + delimiter;
         }
         if (!this.getExternalPeerHealth(this.routingHealthList[i])) {
-          nodeMsg += tab + tab + ' - External Peers 0 or not established!' + delimiter;
+          nodeMsg += tab + tab + ' - External Peers not configured or not established!' + delimiter;
         }
         if (!this.getInternalPeerHealth(this.routingHealthList[i])) {
-          nodeMsg += tab + tab + ' - Internal Peers 0 or not established!' + delimiter;
+          nodeMsg += tab + tab + ' - Internal Peers not configured or not established!' + delimiter;
         }
         msg += (nodeMsg !== '' ? tab + '- [' + this.routingHealthList[i].meta.name + '] -' + delimiter : '') + nodeMsg;
         rrConfigLength += 1;
@@ -311,7 +311,7 @@ export class RrhealthcardComponent extends BaseComponent implements OnInit, OnDe
 
   getPSMHeatlhStatus(): string {
     if (this.routingHealthList.length === 2) {
-      return this.getNodeHealth(this.routingHealthList[0]) && this.getNodeHealth(this.routingHealthList[1]) ? 'HEALTHY' : 'UNHEALTHY';
+      return this.isNodeConfigured(this.routingHealthList[0]) && this.isNodeConfigured(this.routingHealthList[1]) && this.getNodeHealth(this.routingHealthList[0]) && this.getNodeHealth(this.routingHealthList[1]) ? 'HEALTHY' : 'UNHEALTHY';
     }
     return 'UNHEALTHY';
   }

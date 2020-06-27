@@ -106,7 +106,11 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
   // Used for processing watch stream events
   alertsEventUtility: HttpEventUtility<MonitoringAlert>;
 
-  exportMap: CustomExportMap = {};
+  exportMap: CustomExportMap = {
+    'status.source': (opts) => {
+      return this.getSourceNodeAndComponentField(opts.data);
+    }
+  };
 
   selectedAlert: MonitoringAlert = null;
 
@@ -571,4 +575,19 @@ export class AlertstableComponent extends DataComponent implements OnInit, OnCha
       this.alertsLoading = false;
     }
   }
+
+  getSourceNodeAndComponentField(alert: MonitoringAlert): string {
+    let text: string = '';
+    if (this.sourceFieldExists(alert)) {
+      const nodename = alert.status.source['node-name'];
+      const component = alert.status.source.component;
+      text = ((nodename && component) ? nodename + ' : ' + component : (nodename ? nodename : (component ? component : '')));
+    }
+    return text;
+  }
+
+  sourceFieldExists(alert: MonitoringAlert) {
+    return alert && alert.status && alert.status.source;
+  }
+
 }

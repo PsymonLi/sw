@@ -241,8 +241,13 @@
                 Pending
               </div>
               <div class="dscprofiles-summary-panel-content-value"
-                   *ngIf="selectedDSCProfile?.status['propagation-status']['generation-id'] == selectedDSCProfile?.meta['generation-id'] && selectedDSCProfile?.status['propagation-status'].pending==0">
+                   *ngIf="!(selectedDSCProfile?.status['propagation-status'].updated==0 && selectedDSCProfile?.status['propagation-status'].pending==0 ) &&selectedDSCProfile?.status['propagation-status']['generation-id'] == selectedDSCProfile?.meta['generation-id'] && selectedDSCProfile?.status['propagation-status'].pending==0">
                 Complete
+              </div>
+              <div class="dscprofiles-summary-panel-content-value"
+                   [matTooltip]="'No DSC is using this profile'"
+                   *ngIf="selectedDSCProfile?.status['propagation-status'].updated==0 && selectedDSCProfile?.status['propagation-status'].pending==0 && selectedDSCProfile?.status['propagation-status']['generation-id'] == selectedDSCProfile?.meta['generation-id'] && selectedDSCProfile?.status['propagation-status'].pending==0">
+                N/A
               </div>
 
             </a>

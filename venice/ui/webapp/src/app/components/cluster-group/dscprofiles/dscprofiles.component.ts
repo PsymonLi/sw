@@ -171,7 +171,7 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
     this._route.queryParams.subscribe(params => {
       if (params.hasOwnProperty('dscprofile')) {
         // alerttab selected
-        this.getSearchedNetworkInterface(params['dscprofile']);
+        this.getSearchedDSCProfile(params['dscprofile']);
       }
     });
     this.setDefaultToolbar();
@@ -179,11 +179,11 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
     this.watchNaples();
   }
 
-  getSearchedNetworkInterface(interfacename) {
+  getSearchedDSCProfile(interfacename) {
     const subscription = this.clusterService.GetDSCProfile(interfacename).subscribe(
       response => {
-        const networkinterface = response.body as ClusterDSCProfile;
-        this.selectedDSCProfile = new ClusterDSCProfile(networkinterface);
+        const dscprofile = response.body as ClusterDSCProfile;
+        this.selectedDSCProfile = new ClusterDSCProfile(dscprofile);
         this.updateSelectedDSCProfile();
       },
       this._controllerService.webSocketErrorHandler('Failed to get Network interface ' + interfacename)
@@ -232,11 +232,20 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
   handleDataReady() {
     // When naplesList and dataObjects (dscprofiles) are ready, build profile-dscs
     if (this.naplesList && this.dataObjects) {
+      let matchSelectedDSCProfile: boolean = false; // We want to check if newly arrived DSCProfile objects include selected-Profile
       for (let i = 0; i < this.dataObjects.length; i++) {
         const dscProfile: ClusterDSCProfile = this.dataObjects[i];
+        if ( this.selectedDSCProfile && this.selectedDSCProfile.meta.name === dscProfile.meta.name ) {
+          this.selectedDSCProfile = dscProfile;
+          matchSelectedDSCProfile = true;
+        }
         this.processOneDSCProfile(dscProfile);
       }
-      this.updateSelectedDSCProfile();
+      if (matchSelectedDSCProfile) {
+        this.updateSelectedDSCProfile(); // update selected-profile VS-2010
+      } else {
+        this.selectedDSCProfile = null;   // dismiss detail-panel
+      }
       this.dataObjects = [...this.dataObjects] ;  // tell angular to refresh references.
     }
   }

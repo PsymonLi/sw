@@ -14,7 +14,8 @@
   <app-pentable #alertsTable [actionTemplate]="actionTemplate" [bodyTemplate]="bodyTemplate"
                 [captionTemplate]="captionTemplate" [columns]="cols" [data]="dataObjects"
                 [dataKey]="'meta.name'" [enableCheckbox]="true"
-                [exportFilename]="exportFilename" [loading]="alertsLoading" [numRows]="25"
+                [exportFilename]="exportFilename" [exportMap]="exportMap" [loading]="alertsLoading"
+                [numRows]="25"
                 (rowClickEmitter)="selectAlert($event)" [rowHeight]="36"
                 [searchable]="showAlertsAdvSearch"
                 (searchCancelledEmitter)="onCancelSearch()"
@@ -53,9 +54,8 @@
       <ng-container *ngTemplateOutlet="selectedAlertDetail;"></ng-container>
     </div>
     <app-tableheader title="Alerts" [count]="dataObjects.length" [total]="alerts.length"
-                     [icon]="alertsIcon"
-                     [enableColumnSelect]="false" width="250px"
-                     [class]="showAlertsAdvSearch ? 'alertdetail-tableheader' : ''">
+                     [icon]="alertsIcon" [tableMenuItems]="alertsTable.tableMenuItems"
+                     [enableColumnSelect]="false" width="250px" class="alertdetail-tableheader">
       <div fxFlex="50" fxLayoutAlign="start center">
         <div fxFlex="none">
           <mat-icon *ngIf="showBatchResolveIcon()" matTooltip="Resolve Selected Alerts"
@@ -169,11 +169,12 @@
           <div fxLayout="row">
             <a fxLayoutAlign="start center" class="alertdetail-key ui-flex">Source Node &
               Component:</a>
-            <a fxLayoutAlign="start center" class="alertdetail-value ui-flex">
-              <a class="alertdetail-link" href="{{getAlertSourceNameLink(this.selectedAlert)}}"
+            <a fxFlex="75" fxLayoutAlign="start center" class="alertdetail-value">
+              <a *ngIf="sourceFieldExists(this.selectedAlert) && this.selectedAlert.status.source['node-name']"
+                 class="alertdetail-link" href="{{getAlertSourceNameLink(this.selectedAlert)}}"
                  [matTooltip]="getAlertSourceNameTooltip(this.selectedAlert)">
-                {{ this.selectedAlert.status.source['node-name'] }} </a> :
-              {{ this.selectedAlert.status.source.component }}
+                {{ this.selectedAlert.status.source['node-name'] }} </a>
+              {{ (this.sourceFieldExists(this.selectedAlert) ? (((this.selectedAlert.status.source['node-name'] && this.selectedAlert.status.source.component) ? ' : ' : '') +  this.selectedAlert.status.source.component) : '') }}
             </a>
           </div>
         </div>
@@ -238,9 +239,9 @@
     </ng-container>
     <ng-container *ngSwitchCase="'status.source'">
       <div *ngIf="rowData.status.source != null" style="display: inline">
-        <a href="{{getAlertSourceNameLink(rowData)}}"
+        <a *ngIf="rowData.status.source['node-name']" href="{{getAlertSourceNameLink(rowData)}}"
            [matTooltip]="getAlertSourceNameTooltip(rowData)">{{ rowData.status.source['node-name'] }}</a>
-        : {{ rowData.status.source.component }}
+        {{ ((rowData.status.source['node-name'] && rowData.status.source.component) ? ' : ' : '') +  rowData.status.source.component }}
       </div>
     </ng-container>
     <ng-container *ngSwitchDefault>

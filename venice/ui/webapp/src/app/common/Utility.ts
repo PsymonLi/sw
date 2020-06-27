@@ -27,7 +27,7 @@ import { Eventtypes } from '../enum/eventtypes.enum';
 import { ControllerService } from '../services/controller.service';
 import { LogService } from '../services/logging/log.service';
 import { UIConfigsService } from '../services/uiconfigs.service';
-import {IApiObjectMeta} from '@sdk/v1/models/generated/cluster';
+import { IApiObjectMeta } from '@sdk/v1/models/generated/cluster';
 import { RoutingHealth } from '@sdk/v1/models/generated/routing';
 
 /**
@@ -104,7 +104,7 @@ export class Utility {
   public static HERO_CARD_THIRDVALUE_LENGTH: number = 15;
 
   public static UNSUPPORTED_CATEGORIES = ['Diagnostics'];
-  public static UNSUPPORTED_KINDS = ['License', 'Module', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object',  'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
+  public static UNSUPPORTED_KINDS = ['License', 'Module', 'StatsPolicy', 'Service', 'LbPolicy', 'VirtualRouter', 'IPAMPolicy', 'RoutingConfig', 'RouteTable', 'Bucket', 'Object', 'SecurityGroup', 'Certificate', 'TrafficEncryptionPolicy'];
 
   public static allColors = [
     '#97b8df',
@@ -706,35 +706,49 @@ export class Utility {
   }
 
   /**
-   * This is API recursively traverse the JSON hiearchy. I will invoke callback functions.
-   *
-   * objectCallback and nonObjectCallback are functions.
-   * linkComponent is a compontent.ts
+   * This API recursively traverses a JSON hiearchy and puts each node into an striing array
+   * Space indent level indicates the node hierachical layer.
+   * For example
+   *    Person
+   *        first-name: xxx
+   *        last-name:yyy
+   *         address:
+   *                street-name: abc
+   *                street-number: 123
+   *                city: mmm
    */
-  static traverseJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any, seen?: Set < any >) {
-
+  static traverseJSONObject(data: any, indentLevel: number, list: string[], linkComponent: any) {
     for (const key in data) {
       if (typeof (data[key]) === 'object' && data[key] !== null) {
         if (Array.isArray(data[key])) {
-          // sample array [{"peer-address":"18.0.25.1","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65001,"address-families":["BGP_AFI_IPV4"]},{"peer-address":"20.3.0.54","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65005,"address-families":["BGP_AFI_L2VPN"]}]
           for (let i = 0; i < data[key].length; i++) {
-             if (typeof (data[key][i]) === 'object' && data[key][i] !== null) {
-              const spaces = (linkComponent && linkComponent.padSpace) ?  linkComponent.padSpace(indentLevel * 5 ) : '';
-              list.push( spaces + i  +  ' ' + key );
-              this.traverseJSONObject(data[key][i], indentLevel + 1 + 1 , list, linkComponent);
-             } else {
-              const spaces =  (linkComponent && linkComponent.padSpace) ? linkComponent.padSpace(indentLevel * 5) : '';
-              list.push( spaces + key + ' : ' + data[key][i]);
-             }
+            if (typeof (data[key][i]) === 'object' && data[key][i] !== null) {
+              // sample array [{"peer-address":"18.0.25.1","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65001,"address-families":["BGP_AFI_IPV4"]},{"peer-address":"20.3.0.54","state":"BGP_PEER_STATE_ESTABLISHED","remote-asn":65005,"address-families":["BGP_AFI_L2VPN"]}]
+              const spaces = linkComponent.padSpace(indentLevel * 5);
+              list.push(spaces + i + ' ' + key);
+              this.traverseJSONObject(data[key][i], indentLevel + 1 + 1, list, linkComponent);
+            } else if (typeof (data[key][i]) === 'string' && data[key][i] !== null) {
+              // "down-peers": ["30.2.5.133", "30.2.5.183", "30.2.5.131"]
+              let spaces = '';
+              if (i === 0) {
+                  spaces = linkComponent.padSpace(indentLevel * 5);
+                  list.push(spaces + key + ':');
+              }
+              spaces = linkComponent.padSpace(indentLevel * 6);
+              list.push(spaces + ' ' + data[key][i]);
+            } else {
+              const spaces = linkComponent.padSpace(indentLevel * 5);
+              list.push(spaces + key + ' : ' + data[key][i]);
+            }
           }
         } else {
-          const spaces = (linkComponent && linkComponent.padSpace) ?  linkComponent.padSpace(indentLevel * 5 ) : '';
-          list.push( spaces + key );
+          const spaces = linkComponent.padSpace(indentLevel * 5);
+          list.push(spaces + key);
           this.traverseJSONObject(data[key], indentLevel + 1, list, linkComponent);
         }
       } else {
-        const spaces =  (linkComponent && linkComponent.padSpace) ? linkComponent.padSpace(indentLevel * 5) : '';
-        list.push( spaces + key + ' : ' + data[key]);
+        const spaces = linkComponent.padSpace(indentLevel * 5);
+        list.push(spaces + key + ' : ' + data[key]);
       }
     }
   }
@@ -776,7 +790,7 @@ export class Utility {
 
   public static isProtocolValid(port: string): boolean {
     return port.toLowerCase() === 'tcp' || port.toLowerCase() === 'udp' ||
-           port.toLowerCase() === 'icmp' || port.toLowerCase() === 'any';
+      port.toLowerCase() === 'icmp' || port.toLowerCase() === 'any';
   }
 
   public static isProtocolNoPortsValid(port: string): boolean {
@@ -785,7 +799,7 @@ export class Utility {
 
   public static isProtocolHasPortsValid(port: string): boolean {
     return port.toLowerCase() === 'tcp' || port.toLowerCase() === 'udp' ||
-           port.toLowerCase() === 'any';
+      port.toLowerCase() === 'any';
   }
 
   public static isPortRangeValid(port: string): boolean {
@@ -1208,17 +1222,17 @@ export class Utility {
    * Gets the propinfo for the given key.
    */
   public static getNestedPropInfo(instance: any, keys: string | Array<string>, reportMissingPropInf: boolean = true) {
-    if (keys == null ) {  // do not check "_ui" key.
+    if (keys == null) {  // do not check "_ui" key.
       return null;
     }
     if (typeof keys === 'string') {
-      if ( keys === '_ui') {
+      if (keys === '_ui') {
         return null;
       }
       keys = keys.split('.');
     }
     if (Array.isArray(keys)) {
-      if ( keys[0] && keys[0] === '_ui') {
+      if (keys[0] && keys[0] === '_ui') {
         return null;
       }
     }
@@ -1497,7 +1511,7 @@ export class Utility {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
   }
 
-  static buildStagingBulkEditAction(buffername: String ): IStagingBulkEditAction {
+  static buildStagingBulkEditAction(buffername: String): IStagingBulkEditAction {
     const data = {
       'kind': 'BulkEditAction',
       'meta': {
@@ -1872,7 +1886,7 @@ export class Utility {
    * @param trimDefaults
    */
   public static trimDefaultsAndEmptyFieldsByModel(request: any, model, previousVal = null, trimDefaults = true) {
-    return sdkTrimDefaultsAndEmptyFields(request, model, previousVal, trimDefaults );
+    return sdkTrimDefaultsAndEmptyFields(request, model, previousVal, trimDefaults);
   }
 
   /**
@@ -1880,7 +1894,7 @@ export class Utility {
    * @param request
    */
   public static trimUIFields(request: any) {
-    return  sdkTrimUIFields(request);
+    return sdkTrimUIFields(request);
   }
 
   public static generateDeleteConfirmMsg(objectType: string, name: string): string {
@@ -2135,7 +2149,7 @@ export class Utility {
     return !cond.isHealthy && cond.condition === NaplesConditionValues.UNKNOWN;
   }
 
-  public static isNaplesNICUnhealthy(naples: Readonly<ClusterDistributedServiceCard>| ClusterDistributedServiceCard): boolean {
+  public static isNaplesNICUnhealthy(naples: Readonly<ClusterDistributedServiceCard> | ClusterDistributedServiceCard): boolean {
     const cond: NaplesCondition = this.getNaplesConditionObject(naples);
     return !cond.isHealthy && cond.condition === NaplesConditionValues.UNHEALTHY;
   }
@@ -2259,12 +2273,12 @@ export class Utility {
       return true;
     }
     if (type === NetworkNetworkInterfaceSpec_type['uplink-eth'] &&
-        !name.endsWith('-uplink-1-1') && !name.endsWith('-uplink-1-2')) {
+      !name.endsWith('-uplink-1-1') && !name.endsWith('-uplink-1-2')) {
       return true;
     }
     return false;
   }
-  public static formatPropagationColumn (data, dscMacNameMap: {[key: string]: string } = null) {
+  public static formatPropagationColumn(data, dscMacNameMap: { [key: string]: string } = null) {
     const retArr = [];
     if (data == null) {
       return retArr;
@@ -2273,12 +2287,12 @@ export class Utility {
     for (const k in data) {
       if (data.hasOwnProperty(k) && k !== '_ui' && k !== 'credentials' && k !== 'generation-id' && k !== 'min-version') {
         if (typeof data[k] === 'number') {
-          targetStr += targetStr ? ', ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data[k]  + ' ' : ' ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' +  data[k];
+          targetStr += targetStr ? ', ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + ' ' : ' ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k];
         } else if (k === 'status' && data[k]) {
           if (data[k].includes('on:')) {
             targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ': </span> <span class="propagation-status-pending"> ' + data[k].split('on:')[0] + 'on ' + '</span>';
             data[k].split('on:')[1].split(', ').forEach((macName) => {
-              let  myMac = macName.trim();
+              let myMac = macName.trim();
               myMac = (dscMacNameMap && dscMacNameMap[myMac]) ? dscMacNameMap[myMac] : myMac;
               targetStr += '<span class="propagation-status-pending"> ' + myMac + ' </span>';
             });
@@ -2329,61 +2343,30 @@ export class Utility {
   }
 
   public static isRRNodeListNotConfigured(rrnodelist: RoutingHealth[]): boolean {
-      const notConfig: boolean = true;
-      for (let i = 0 ; rrnodelist && i < rrnodelist.length ; i++ ) {
-          if (this.isRRNodeConfigured(rrnodelist[i])) {
-            return false;
-          }
+    const notConfig: boolean = true;
+    for (let i = 0; rrnodelist && i < rrnodelist.length; i++) {
+      if (this.isRRNodeConfigured(rrnodelist[i])) {
+        return false;
       }
-      return notConfig;
+    }
+    return notConfig;
   }
-   /**
-   * This API get routingHealth node status info.
-   * @param rrNode
-   */
+  /**
+  * This API get routingHealth node status info.
+  * @param rrNode
+  */
   public static routerHealthNodeStatus(rrNode: RoutingHealth): string {
     const obj = Utility.trimUIFields(rrNode.status.getModelValues());
     const list = [];
-    this.traverseNodeJSONObject(obj, 0, list, this);
+    this.traverseJSONObject(obj, 0, list, this);
     return list.join('<br/>');
   }
-  public static padSpace(level: number , space: string = '&nbsp;') {
+  public static padSpace(level: number, space: string = '&nbsp;') {
     let output = '&nbsp;';
-    for ( let i = 0; i < level; i ++ ) {
+    for (let i = 0; i < level; i++) {
       output += space;
     }
     return output;
-  }
-
-  public static traverseNodeJSONObject(data: any, indentLevel: number,  list: string[], linkComponent: any) {
-    for (const key in data) {
-      if (typeof (data[key]) === 'object' && data[key] !== null) {
-        if (Array.isArray(data[key])) {
-          for (let i = 0; i < data[key].length; i++) {
-            if (typeof (data[key][i]) === 'string') {
-              // example: values: ["SERVICE_STOPPED",..]
-              if (i === 0) {
-                const spaces = linkComponent.padSpace(indentLevel * 5 );
-                list.push( spaces + key + ' : ' +  (Array.isArray( data[key][i]) ?  data[key][i].join(',') : data[key][i])) ;
-              } else {
-              const spaces = linkComponent.padSpace( (indentLevel + 1)  * 5 );
-              console.log ('traverseNodeJSONObject here');
-              list.push( spaces  +  data[key][i]);
-              }
-            } else {
-              this.traverseNodeJSONObject(data[key][i], indentLevel + 1 , list, this);
-            }
-          }
-        } else {
-          const spaces = linkComponent.padSpace(indentLevel * 5 );
-          list.push( spaces + key );
-          this.traverseNodeJSONObject(data[key], indentLevel + 1, list, this);
-        }
-      } else {
-        const spaces = linkComponent.padSpace(indentLevel * 5);
-        list.push( spaces + key + ' : ' + data[key]);
-      }
-    }
   }
 
   setControllerService(controllerService: ControllerService) {
@@ -2410,7 +2393,7 @@ export class Utility {
   }
 
   getStagingServices(): StagingService {
-    return this.myStagingService ;
+    return this.myStagingService;
   }
 
   setStagingServices(stagingService: StagingService) {
@@ -2437,11 +2420,11 @@ export class Utility {
     return this._tenant;
   }
 
-  getRoutinghealthlist (): RoutingHealth[] {
+  getRoutinghealthlist(): RoutingHealth[] {
     return this._routinghealthlist;
   }
 
-  setRoutinghealthlist( routinghealthlist: RoutingHealth[]) {
+  setRoutinghealthlist(routinghealthlist: RoutingHealth[]) {
     this._routinghealthlist = routinghealthlist;
   }
 
@@ -2549,12 +2532,55 @@ export class Utility {
         category: catKind.category,
         kind: catKind.kind,
         method: request.method.toString(),
-        request: request.body,
+        request: this.checkRequestData(request, response),
         response: this.checkResponseData(request, response.body),
         url: request.url.replace(window.origin, '')
       };
       this.veniceAPISampleMap[request.url] = urlData;
     }
+  }
+
+  filterOutPasswordText(request: any, pwdstring: string = 'password', replaceValue: string = 'xxxxx'): any {
+    request = _.cloneDeep(request);
+    if (request == null) {
+      return;
+    }
+    if (request.hasOwnProperty(pwdstring)) {
+      request[pwdstring] = replaceValue;
+    }
+    for (const key in request) {
+      if (request.hasOwnProperty(key) && _.isObjectLike(request[key])) {
+        request[key] = this.filterOutPasswordText(request[key], pwdstring, replaceValue);
+      }
+    }
+    return request;
+  }
+
+  checkRequestData(request: any, responseData: any): Object {
+    try {
+      if (!request) {
+        return request;
+      }
+      if (request.url && request.url.indexOf('/v1/login') >= 0) {
+        const hiddenText = '**HIDDEN**';
+        if (request['username']) {
+          request['username'] = hiddenText;
+        }
+        if (request['password']) {
+          request['password'] = hiddenText;
+        }
+        if (request['tenant']) {
+          request['tenant'] = hiddenText;
+        }
+        return request;
+      } else {
+        return this.filterOutPasswordText(request.body);
+      }
+    } catch (error) {
+      // do nothing
+      console.error('Utility.ts.checkRequestData() ', error);
+    }
+    return request;
   }
 
   findCatKindFromRequestURL(request: any, response: any): { category: string, kind: string } {

@@ -27,6 +27,7 @@
                 [data]="dataObjects"
                 [dataKey]="'meta.name'"
                 [exportFilename]="exportFilename"
+                [exportMap]="exportMap"
                 [loading]="eventsLoading"
                 [numRows]="25"
                 (rowClickEmitter)="selectEvent($event)"
@@ -41,6 +42,7 @@
     </div>
     <app-tableheader title="Events" [count]="dataObjects.length" [total]="eventsTotalCount"
                      [max]="eventLimit" [icon]="eventsIcon"
+                     [tableMenuItems]="eventsTable.tableMenuItems"
                      width="250px">
       <div fxFlex="grow" fxLayoutAlign="end center">
         <!-- All events are currently informational, so we do not display severity filters or search filter -->
@@ -132,8 +134,7 @@
             <a fxLayoutAlign="start center" class="eventdetail-key ui-flex">Object Ref:</a>
             <a fxLayoutAlign="start center" class="eventdetail-value ui-flex">
               <ng-container *ngIf="this.selectedEvent['object-ref'] != null">
-                {{ this.selectedEvent['object-ref'].kind }} :
-                {{ this.selectedEvent['object-ref'].name }}
+                {{ getObjectRefField(this.selectedEvent) }}
               </ng-container>
             </a>
           </div>
@@ -172,8 +173,7 @@
             <a fxLayoutAlign="start center" class="eventdetail-key ui-flex">Source Node &
               Component:</a>
             <a fxLayoutAlign="start center" class="eventdetail-value ui-flex">
-              {{ this.selectedEvent.source['node-name'] }} :
-              {{ this.selectedEvent.source.component }}
+              {{ getSourceNodeAndComponentField(this.selectedEvent) }}
             </a>
           </div>
         </div>
@@ -220,12 +220,12 @@
     </ng-container>
     <ng-container *ngSwitchCase="'object-ref'">
       <ng-container *ngIf="rowData['object-ref'] != null">
-        {{ rowData['object-ref'].kind }} : {{ rowData['object-ref'].name }}
+        {{ getObjectRefField(rowData) }}
       </ng-container>
     </ng-container>
     <ng-container *ngSwitchCase="'source'">
       <ng-container *ngIf="rowData.source != null">
-        {{ rowData.source['node-name'] }} : {{ rowData.source.component }}
+        {{ getSourceNodeAndComponentField(rowData) }}
       </ng-container>
     </ng-container>
     <ng-container *ngSwitchDefault>
