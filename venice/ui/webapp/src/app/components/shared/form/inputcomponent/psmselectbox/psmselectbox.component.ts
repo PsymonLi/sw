@@ -27,6 +27,7 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
   protected defaultSpanClass: string = 'psm-form-select-box-container';
   protected defaultComponentClass: string = 'psm-form-select-box';
 
+  @Input() supportClear: boolean = false;
   @Input() options: SelectItem[];
   @Input() addEmptyOption: boolean = false;
   @Input() emptyOptionLabel: string = '';
@@ -56,5 +57,9 @@ export class PsmSelectBoxComponent extends FormInputComponent implements OnInit,
         this.allOptions = [...this.options];
       }
     }
+  }
+
+  resetValue() {
+    this.writeValue(null);
   }
 }

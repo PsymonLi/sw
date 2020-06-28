@@ -15,4 +15,6 @@
     </p-dropdown>
     <label *ngIf="label" [for]="boxId">{{ label }}</label>
   </div>
+  <mat-icon *ngIf="supportClear" class="psm-form-select-delIcon" (click)="resetValue()">cancel
+  </mat-icon>
 </div>

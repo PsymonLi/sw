@@ -1,12 +1,27 @@
 .psm-form {
   .psm-form-select-box-container {
-    width: calc(100% - 10px);
+    width: calc(100% - 30px);
 
     .psm-form-select-box {
       display: block;
-      width: 100%;
+      width: calc(100% + 20px);
       height: 30px;
     }
+  }
+
+  .psm-form-select-delIcon {
+    visibility: hidden;
+    position: relative;
+    left: -20px;
+    font-size: 16px;
+    font-size: 16px;
+    width: 20px;
+    cursor: pointer;
+  }
+
+  .psm-form-select-delIcon:hover,
+  .psm-form-select-box-container:hover+.psm-form-select-delIcon {
+    visibility: visible;
   }
 }
 

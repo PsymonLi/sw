@@ -714,14 +714,23 @@ export class TelemetrychartComponent extends BaseComponent implements OnInit, On
    * @param datasource
    */
   shouldLegendBeDeselectedFromSourceMeta(sourceMeta: SourceMeta, datasource: DataSource): boolean {
-    if (this.metricsMetadata[datasource.measurement].objectKind === 'DistributedServiceCard') {
+    const measurement: MetricMeasurement = this.metricsMetadata[datasource.measurement];
+    if (measurement.objectKind === 'DistributedServiceCard') {
       // Check on DSC
       const dscname = this.getDSCNameFromResultSeries(sourceMeta);
       if (dscname) {
+        const naple = this.naples.find(dsc => (dsc.spec.id === dscname || dsc.meta.name === dscname));
         // If we find the DSC is not in admitted state, we return true --> the chart legend will be in hidden/de-select stage.
-        return !this.isDSCExist( dscname) || !this.isDSCAdmittedByDSCName(dscname);
+        if (!naple || naple.status['admission-phase'] !==
+            ClusterDistributedServiceCardStatus_admission_phase.admitted) {
+          return true;
+        }
+        if (measurement.features && measurement.features.length > 0 &&
+            !ObjectsRelationsUtility.isDSCInFlowawareOrFallwallMode(naple, this.dscProfiles as ClusterDSCProfile[])) {
+          return true;
+        }
       }
-    }  else if (this.metricsMetadata[datasource.measurement].objectKind === 'NetworkInterface') {
+    }  else if (measurement.objectKind === 'NetworkInterface') {
       // Check on NetworkNetworkInterface.
       const niName = this.getNetworkInterfaceNameFromResultSeries(sourceMeta);
       if (niName) {
