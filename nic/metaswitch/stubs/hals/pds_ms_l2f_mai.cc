@@ -32,6 +32,53 @@ extern int l2f_proc_id;
 
 namespace pds_ms {
 
+static void
+local_mac_ip_del_ (ms_bd_id_t bd_id, mac_addr_t mac, const ip_addr_t& ip,
+                   uint8_t* ignore_mac = nullptr)
+{
+    NBB_CREATE_THREAD_CONTEXT
+    NBS_ENTER_SHARED_CONTEXT(l2f_proc_id);
+    NBS_GET_SHARED_DATA();
+
+    ATG_MAI_MAC_IP_ID mac_ip_id = {0};
+    mac_ip_id.bd_id.bd_type = ATG_L2_BRIDGE_DOMAIN_EVPN;
+    mac_ip_id.bd_id.bd_id = bd_id;
+    if (!ip_addr_is_zero(&ip)) {
+        // Delete local MAC only entry
+        pds_ms::pds_to_ms_ipaddr(ip, &mac_ip_id.ip_address);
+    }
+
+    if (is_mac_set(mac)) {
+        // Delete local IP,MAC entry
+        memcpy(mac_ip_id.mac_address, mac, ETH_ADDR_LEN);
+    } else {
+        // Delete local IP entry for any MAC - fetch the MAC for this IP first
+         auto ret_mac_ip_id =
+             l2f::Fte::get().get_me_store().me_ip_find_first_mac_key(mac_ip_id);
+         if (ret_mac_ip_id == nullptr) {
+             PDS_TRACE_DEBUG("Could not find local BD %d IP %s in internal store",
+                             bd_id, ipaddr2str(&ip));
+             goto end;
+         }
+         if (ignore_mac != nullptr) {
+             // Ensure this MAC is not supposed to be ignored
+             if (memcmp(ret_mac_ip_id->mac_address, ignore_mac, ETH_ADDR_LEN)
+                 == 0) {
+                 goto end;
+             }
+         }
+         mac_ip_id = *ret_mac_ip_id;
+         PDS_TRACE_DEBUG("Deleting local BD %d IP %s MAC %s",
+                       bd_id, ipaddr2str(&ip), macaddr2str(mac_ip_id.mac_address));
+    }
+    l2f::l2f_cc_is_mac_delete(mac_ip_id);
+
+end:
+    NBS_RELEASE_SHARED_DATA();
+    NBS_EXIT_SHARED_CONTEXT();
+    NBB_DESTROY_THREAD_CONTEXT
+}
+
 void
 l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
                       mac_addr_t mac, if_index_t lif_ifindex)
@@ -56,6 +103,7 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
         bd_id = ((subnet_uuid_obj_t*) uuid_obj)->ms_id();
     } // Exit Mgmt thread context
 
+    bool has_ip = false;
     if (ip_addr_is_zero(&ip)) {
         PDS_TRACE_DEBUG("Advertise MAC learn for Subnet %s BD %d MAC %s LIF 0x%x MS-LIF 0x%x",
                         subnet_key.str(), bd_id, macaddr2str(mac), lif_ifindex, ms_lif_index);
@@ -64,6 +112,16 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
                         " LIF 0x%x MS-LIF 0x%x",
                         subnet_key.str(), bd_id, ipaddr2str(&ip), macaddr2str(mac),
                         lif_ifindex, ms_lif_index);
+        has_ip = true;
+    }
+
+
+    if (has_ip) {
+        // Could be a L2L move - first delete any prev MAC for this IP.
+        // Pass incoming mac as ignore_mac to avoid delete-create churn
+        // if same mac-ip already exists
+        mac_addr_t zero_mac = {0};
+        local_mac_ip_del_(bd_id, zero_mac, ip, mac);
     }
 
     NBB_CREATE_THREAD_CONTEXT
@@ -92,45 +150,6 @@ l2f_local_mac_ip_add (const pds_obj_key_t& subnet_key, const ip_addr_t& ip,
         }
     }
 
-    NBS_RELEASE_SHARED_DATA();
-    NBS_EXIT_SHARED_CONTEXT();
-    NBB_DESTROY_THREAD_CONTEXT
-}
-
-static void
-local_mac_ip_del_ (ms_bd_id_t bd_id, mac_addr_t mac, const ip_addr_t& ip)
-{
-    NBB_CREATE_THREAD_CONTEXT
-    NBS_ENTER_SHARED_CONTEXT(l2f_proc_id);
-    NBS_GET_SHARED_DATA();
-
-    ATG_MAI_MAC_IP_ID mac_ip_id = {0};
-    mac_ip_id.bd_id.bd_type = ATG_L2_BRIDGE_DOMAIN_EVPN;
-    mac_ip_id.bd_id.bd_id = bd_id;
-    if (!ip_addr_is_zero(&ip)) {
-        // Delete local MAC only entry
-        pds_ms::pds_to_ms_ipaddr(ip, &mac_ip_id.ip_address);
-    }
-
-    if (is_mac_set(mac)) {
-        // Delete local IP,MAC entry
-        memcpy(mac_ip_id.mac_address, mac, ETH_ADDR_LEN);
-    } else {
-        // Delete local IP entry for any MAC - fetch the MAC for this IP first
-         auto ret_mac_ip_id =
-             l2f::Fte::get().get_me_store().me_ip_find_first_mac_key(mac_ip_id);
-         if (ret_mac_ip_id == nullptr) {
-             PDS_TRACE_DEBUG("Could not find local BD %d IP %s in internal store",
-                             bd_id, ipaddr2str(&ip));
-             goto end;
-         }
-         mac_ip_id = *ret_mac_ip_id;
-         PDS_TRACE_DEBUG("Deleting local BD %d IP %s MAC %s",
-                       bd_id, ipaddr2str(&ip), macaddr2str(mac_ip_id.mac_address));
-    }
-    l2f::l2f_cc_is_mac_delete(mac_ip_id);
-
-end:
     NBS_RELEASE_SHARED_DATA();
     NBS_EXIT_SHARED_CONTEXT();
     NBB_DESTROY_THREAD_CONTEXT
