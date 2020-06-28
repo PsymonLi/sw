@@ -23,7 +23,7 @@ static unsigned int g_type_count[PDS_MSG_TYPE_MAX] = {0};
 // callbacks registered for processing VPP commands received from PDS agent
 static std::map<int, pds_cmd_cb_t> g_cmd_cbs;
 
-// called from VPP main poll loop, whenere data is available on the zmq
+// called from VPP main poll loop, whenever data is available on the zmq
 // IPC file descriptor. Calls the SDK IPC library to read messages and
 // dispatch them
 void

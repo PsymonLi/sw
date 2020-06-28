@@ -79,7 +79,7 @@ get_alert_msg (void)
     time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     char timestring[30];
 
-    strftime(timestring, 30, " alert %Y%m%d%H%M%S", localtime(&now));
+    strftime(timestring, 30, " : alert %Y%m%d%H%M%S", localtime(&now));
     return string(timestring);
 }
 

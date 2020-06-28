@@ -30,6 +30,9 @@ func GetTechSupportRequest(name string, nodeNames []string) monitoring.TechSuppo
 }
 
 var _ = Describe("TechSupport", func() {
+        // venice techsupport timeout is 10min - so wait a little longer
+        var tsTimeout string = "15m"
+
 	BeforeEach(func() {
 		// verify cluster is in good health
 		Eventually(func() error {
@@ -63,7 +66,7 @@ var _ = Describe("TechSupport", func() {
 			// verify if techsupport request got completed successfully
 			Eventually(func() error {
 				return ts.model.VerifyTechsupport(techsupportName)
-			}, 5*time.Minute, 30*time.Second).Should(Succeed())
+			}, tsTimeout, 30*time.Second).Should(Succeed())
 
 			// TODO: Add File validations
 
@@ -103,7 +106,7 @@ var _ = Describe("TechSupport", func() {
 			// verify if techsupport request got completed successfully
 			Eventually(func() error {
 				return ts.model.VerifyTechsupport(techsupportName)
-			}, 10*time.Minute, 30*time.Second).Should(Succeed())
+			}, tsTimeout, 30*time.Second).Should(Succeed())
 
 			// TODO: Add File validations
 
