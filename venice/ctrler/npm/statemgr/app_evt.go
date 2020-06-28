@@ -415,7 +415,8 @@ func (sm *Statemgr) ListApps() ([]*AppState, error) {
 	for _, obj := range objs {
 		app, err := AppStateFromObj(obj)
 		if err != nil {
-			return apps, err
+			log.Errorf("Error getting App %v", err)
+			continue
 		}
 
 		apps = append(apps, app)

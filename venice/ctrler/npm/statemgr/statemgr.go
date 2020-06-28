@@ -819,14 +819,13 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 				return
 			}
 
+			log.Infof("Processing dsc update notificatiion event %v : %v", obj.ev, obj.dsc.Status.PrimaryMAC)
 			for feature, svc := range featuremgrs {
 				if feature != "statemgr" {
 					switch obj.ev {
 					case CreateEvent:
-						log.Infof("Sending DSC Created %v", feature)
 						svc.ProcessDSCCreate(obj.dsc)
 					case UpdateEvent:
-						log.Infof("Sending Update Created %v", feature)
 						svc.ProcessDSCUpdate(obj.dsc, obj.ndsc)
 					case DeleteEvent:
 						svc.ProcessDSCDelete(obj.dsc)
@@ -835,8 +834,8 @@ func runDscUpdateNotification(queue chan dscUpdateObj) {
 
 					}
 				}
-
 			}
+			log.Infof("Done Processing dsc update notificatiion event %v : %v", obj.ev, obj.dsc.Status.PrimaryMAC)
 		}
 	}
 }

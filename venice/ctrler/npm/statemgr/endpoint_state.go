@@ -324,7 +324,8 @@ func (sm *Statemgr) ListEndpoints() ([]*EndpointState, error) {
 	for _, obj := range objs {
 		ep, err := EndpointStateFromObj(obj)
 		if err != nil {
-			return eps, err
+			log.Errorf("Error getting endpoint %v", err)
+			continue
 		}
 
 		eps = append(eps, ep)

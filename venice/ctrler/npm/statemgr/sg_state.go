@@ -179,7 +179,8 @@ func (sm *Statemgr) ListSecurityGroups() ([]*SecurityGroupState, error) {
 	for _, obj := range objs {
 		sg, err := SecurityGroupStateFromObj(obj)
 		if err != nil {
-			return sgs, err
+			log.Errorf("Error getting Security group %v", err)
+			continue
 		}
 
 		sgs = append(sgs, sg)

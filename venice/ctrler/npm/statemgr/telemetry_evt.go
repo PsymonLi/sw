@@ -381,7 +381,8 @@ func (sm *Statemgr) ListFlowExportPolicies() ([]*FlowExportPolicyState, error) {
 	for _, obj := range objs {
 		fwp, err := FlowExportPolicyStateFromObj(obj)
 		if err != nil {
-			return fwps, err
+			log.Errorf("Error getting Flow export policy %v", err)
+			continue
 		}
 
 		fwps = append(fwps, fwp)

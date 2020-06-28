@@ -311,7 +311,8 @@ func (sm *Statemgr) ListFirewallProfiles() ([]*FirewallProfileState, error) {
 	for _, obj := range objs {
 		fwp, err := FirewallProfileStateFromObj(obj)
 		if err != nil {
-			return fwps, err
+			log.Errorf("Error getting Firewall profile %v", err)
+			continue
 		}
 
 		fwps = append(fwps, fwp)

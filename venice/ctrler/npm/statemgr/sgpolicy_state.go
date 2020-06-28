@@ -347,7 +347,8 @@ func (sm *Statemgr) ListSgpolicies() ([]*SgpolicyState, error) {
 	for _, obj := range objs {
 		sg, err := SgpolicyStateFromObj(obj)
 		if err != nil {
-			return sgs, err
+			log.Errorf("Error getting Security policy %v", err)
+			continue
 		}
 
 		sgs = append(sgs, sg)

@@ -1054,7 +1054,8 @@ func (sm *Statemgr) ListMirrorSesssions() ([]*MirrorSessionState, error) {
 	for _, obj := range objs {
 		ms, err := MirrorSessionStateFromObj(obj)
 		if err != nil {
-			return mss, err
+			log.Errorf("Error getting mirror session %v", err)
+			continue
 		}
 
 		mss = append(mss, ms)
