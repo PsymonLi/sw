@@ -965,15 +965,16 @@ func (s *xlSets) startMergeWalks(ctx context.Context, bucket, prefix, marker str
 // FileInfo channels which can be read from.
 func (s *xlSets) startMergeWalksN(ctx context.Context, bucket, prefix, marker string, recursive bool, endWalkCh <-chan struct{}, ndisks int) []FileInfoCh {
 	var entryChs []FileInfoCh
-	var success int
+	// var success int
 	for _, set := range s.sets {
 		// Reset for the next erasure set.
-		success = ndisks
+		// success = ndisks
 		for _, disk := range set.getLoadBalancedDisks() {
 			if disk == nil {
 				// Disk can be offline
 				continue
 			}
+
 			entryCh, err := disk.Walk(bucket, prefix, marker, recursive, xlMetaJSONFile, readMetadata, endWalkCh)
 			if err != nil {
 				// Disk walk returned error, ignore it.
@@ -982,10 +983,10 @@ func (s *xlSets) startMergeWalksN(ctx context.Context, bucket, prefix, marker st
 			entryChs = append(entryChs, FileInfoCh{
 				Ch: entryCh,
 			})
-			success--
-			if success == 0 {
-				break
-			}
+			// success--
+			// if success == 0 {
+			// 	break
+			// }
 		}
 	}
 	return entryChs

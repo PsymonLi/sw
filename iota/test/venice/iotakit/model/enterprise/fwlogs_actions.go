@@ -24,13 +24,14 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
+var currTime = time.Now()
+
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
 func (sm *SysModel) GetFwLogObjectCount(
-	tenantName string, bucketName string, objectKeyPrefix string, nodeIpsToSkipFromQuery ...string) (int, error) {
+	tenantName string, bucketName string, objectKeyPrefix string, timeJitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	timeFormat := "2006-01-02T15:04:05Z"
-	// Look for 20 minute time span
-	startTs := time.Now().UTC().Add(-40 * time.Minute).Format(timeFormat)
-	endTs := time.Now().UTC().Add(40 * time.Minute).Format(timeFormat)
+	startTs := currTime.UTC().Add(-40 * time.Minute).Add(-1 * timeJitter).Format(timeFormat)
+	endTs := time.Now().UTC().Add(40 * time.Minute).Add(1 * timeJitter).Format(timeFormat)
 	fs := "start-time=" + startTs + ",end-time=" + endTs + ",dsc-id=" + objectKeyPrefix
 	opts := api.ListWatchOptions{
 		ObjectMeta: api.ObjectMeta{
@@ -330,7 +331,8 @@ func (sm *SysModel) VerifyFwlogFromAllNaples(tenantName string, bucketName strin
 	var failedCount = 0
 	for _, sim := range sm.FakeNaples {
 		mac := sim.Instances[0].Dsc.Status.PrimaryMAC
-		cnt, err := sm.GetFwLogObjectCount(tenantName, bucketName, mac)
+		// VerifyFwlogFromAllNaples is not used anywhere as of now, passing a dummy jitter value
+		cnt, err := sm.GetFwLogObjectCount(tenantName, bucketName, mac, 30*time.Second)
 		if err != nil {
 			return err
 		}

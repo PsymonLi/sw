@@ -642,7 +642,7 @@ func (sm *SysModel) FindFwlogForWorkloadPairsFromElastic(tenantName,
 }
 
 // GetFwLogObjectCount gets the object count for firewall logs under the bucket with the given name
-func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, objectKeyPrefix string, nodeIpsToSkipFromQuery ...string) (int, error) {
+func (sm *SysModel) GetFwLogObjectCount(tenantName string, bucketName string, objectKeyPrefix string, jitter time.Duration, nodeIpsToSkipFromQuery ...string) (int, error) {
 	return 0, fmt.Errorf("not implemented")
 }
 

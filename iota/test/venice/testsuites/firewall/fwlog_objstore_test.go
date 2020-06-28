@@ -170,16 +170,20 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 	naplesBMac := workloadB.NaplesMAC()
 	currentObjectCountNaplesA, currentObjectCountNaplesB := 0, 0
 	var err error
+	jitter := 30 * time.Second
 	Eventually(func() error {
 		currentObjectCountNaplesA, err =
-			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, nodeIpsToSkipFromQuery...)
+			ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, jitter, nodeIpsToSkipFromQuery...)
+		jitter = jitter + (30 * time.Second)
 		return err
 	}).Should(Succeed())
 
+	jitter = 30 * time.Second
 	if naplesAMac != naplesBMac {
 		Eventually(func() error {
 			currentObjectCountNaplesB, err =
-				ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, nodeIpsToSkipFromQuery...)
+				ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, jitter, nodeIpsToSkipFromQuery...)
+			jitter = jitter + (30 * time.Second)
 			return err
 		}).Should(Succeed())
 	}
@@ -201,16 +205,20 @@ func pushLogsAndVerify(timeout time.Duration, nodeIpsToSkipFromQuery ...string) 
 			newObjectCountNaplesA, newObjectCountNaplesB := 0, 0
 			var err error
 
+			jitter = 30 * time.Second
 			Eventually(func() error {
 				newObjectCountNaplesA, err =
-					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, nodeIpsToSkipFromQuery...)
+					ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesAMac, jitter, nodeIpsToSkipFromQuery...)
+				jitter = jitter + (30 * time.Second)
 				return err
 			}).Should(Succeed())
 
+			jitter = 30 * time.Second
 			if naplesAMac != naplesBMac {
 				Eventually(func() error {
 					newObjectCountNaplesB, err =
-						ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, nodeIpsToSkipFromQuery...)
+						ts.model.GetFwLogObjectCount(tenantName, bucketName, naplesBMac, jitter, nodeIpsToSkipFromQuery...)
+					jitter = jitter + (30 * time.Second)
 					return err
 				}).Should(Succeed())
 			}
