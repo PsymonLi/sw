@@ -338,7 +338,7 @@ device_impl::fill_egr_drop_stats_(pds_device_drop_stats_t *egr_drop_stats) {
         "copp_dhcp_host",
         "copp_flow_epoch",
         "copp_flow_miss",
-        "copp6",
+        "copp_datapath_learn",
         "copp7",
         "copp8",
         "copp9",

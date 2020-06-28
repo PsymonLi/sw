@@ -46,6 +46,7 @@
 #define P4_COPP_DROP_CLASS_DHCP_HOST            3
 #define P4_COPP_DROP_CLASS_FLOW_EPOCH           4
 #define P4_COPP_DROP_CLASS_FLOW_MISS            5
+#define P4_COPP_DROP_CLASS_DATAPATH_LEARN       6
 
 namespace api {
 namespace impl {
@@ -1493,7 +1494,7 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     };
     program_copp_entry_(&policer, idx, false);
 
-    // redirect mapping miss IPv4 packets from Host to learn lif
+    // redirect mapping miss IPv4 packets from host PFs for datapath learning
     memset(&key, 0, sizeof(key));
     memset(&mask, 0, sizeof(mask));
     memset(&data, 0, sizeof(data));
@@ -1515,6 +1516,8 @@ lif_impl::create_learn_lif_(pds_lif_spec_t *spec) {
     data.nacl_redirect_to_arm_action.nexthop_type = NEXTHOP_TYPE_NEXTHOP;
     data.nacl_redirect_to_arm_action.nexthop_id = nh_idx_;
     data.nacl_redirect_to_arm_action.copp_policer_id = idx;
+    data.nacl_redirect_to_arm_action.copp_class =
+        P4_COPP_DROP_CLASS_DATAPATH_LEARN;
     data.nacl_redirect_to_arm_action.data = NACL_DATA_ID_L3_MISS_IP4;
     p4pd_ret = p4pd_entry_install(P4TBL_ID_NACL, nacl_idx++,
                                   &key, &mask, &data);
