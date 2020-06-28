@@ -1,0 +1,17 @@
+#!/bin/sh
+
+if [ "x$reason" = "xBOUND" ] || [ "x$reason" = "xRENEW" ] || \
+   [ "x$reason" = "xREBIND" ] || [ "x$reason" = "xREBOOT" ]
+then
+    kill -9 `pidof ntpd`
+    rm -f /etc/ntp.conf
+    if [ "x$new_ntp_servers" != "x" ]
+    then
+        cp /etc/ntp.conf.master /etc/ntp.conf
+        for s in $new_ntp_servers;
+        do
+            echo server $s >> /etc/ntp.conf
+        done
+        /usr/sbin/ntpd &
+    fi
+fi

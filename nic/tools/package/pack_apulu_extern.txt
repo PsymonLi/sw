@@ -21,6 +21,7 @@ nic/operd/metrics/cloud/pcie_metrics.json                         /nic/conf/
 
 # system level tools
 nic/apollo/tools/$PIPELINE/bringup_mgmt_ifs.sh                    /nic/tools/
+nic/apollo/tools/$PIPELINE/dhclient-enter-hooks                   /etc/
 
 # VPP
 nic/build/$ARCH/$PIPELINE/lib/libpdsvendor_impl_ibm.so            /nic/lib/vpp_plugins
