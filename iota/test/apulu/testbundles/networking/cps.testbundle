@@ -41,8 +41,8 @@ testcases:
                 tcpidletimeout : 90
                 udpidletimeout : 90
         iterators:
-            type      : simple
-            proto     : [ udp ]
+            type      : nested
+            proto     : [ udp, tcp ]
             cps       : [ 100000 ]
             duration  : [ 300 ]
         background_tasks:
