@@ -343,11 +343,11 @@ class EntityManagement:
             return False
         print("Waiting for IP:%s to be up." % self.ipaddr)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        ret = sock.connect_ex(('%s' % self.ipaddr, port))
         sock.settimeout(10)
+        ret = sock.connect_ex(('%s' % self.ipaddr, port))
         if ret == 0:
             return True
-        print("Host not up. Ret:%d" % ret)
+        print("Host:%s not up. Ret:%d" % (self.ipaddr, ret))
         return False
 
     @_exceptionWrapper(_errCodes.ENTITY_SSH_CMD_FAILED, "SSH cmd failed")
