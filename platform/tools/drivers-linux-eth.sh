@@ -32,9 +32,7 @@ TOP=$(readlink -f "$(dirname "$0")/../..")
 rm -rf "$GEN_DIR"
 mkdir -p "$GEN_DIR"
 
-# Initialize gen dir with packaged scripts like build.sh
-rsync -r --delete --delete-excluded \
-  "$SCRIPTS_SRC/" "$GEN_DIR"
+cp   "$SCRIPTS_SRC/build.sh" "$GEN_DIR"
 
 # Copy linux driver sources to gen dir
 mkdir -p "$GEN_DIR/drivers/eth/ionic"

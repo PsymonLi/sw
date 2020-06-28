@@ -54,6 +54,7 @@ fi
 TEMP=$(mktemp -d rpms.XXXXXX)
 tar xf $TARBALL -C $TEMP
 cp $TOPDIR/platform/tools/build-rpm.sh $TEMP/drivers-linux-eth
+cp $TOPDIR/platform/tools/drivers-linux-eth/ionic.spec $TEMP/drivers-linux-eth
 
 count=0
 retcode=0
