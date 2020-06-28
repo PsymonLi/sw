@@ -80,8 +80,8 @@ apulu_impl_state::apulu_impl_state(pds_state *state) {
     memset(&table_params, 0, sizeof(table_params));
     table_params.entry_trace_en = false;
     table_params.table_id = P4TBL_ID_LIF_VLAN;
-    if_vlan_tbl_ = slhash::factory(&table_params);
-    SDK_ASSERT(if_vlan_tbl_ != NULL);
+    lif_vlan_tbl_ = slhash::factory(&table_params);
+    SDK_ASSERT(lif_vlan_tbl_ != NULL);
 }
 
 apulu_impl_state::~apulu_impl_state() {
@@ -92,7 +92,7 @@ apulu_impl_state::~apulu_impl_state() {
     rte_indexer::destroy(copp_idxr_);
     rte_indexer::destroy(nat_idxr_);
     rte_indexer::destroy(dnat_idxr_);
-    slhash::destroy(if_vlan_tbl_);
+    slhash::destroy(lif_vlan_tbl_);
 }
 
 sdk_ret_t
@@ -102,13 +102,13 @@ apulu_impl_state::table_stats(debug::table_stats_get_cb_t cb, void *ctxt) {
 
 sdk_ret_t
 apulu_impl_state::table_transaction_begin(void) {
-    if_vlan_tbl_->txn_start();
+    lif_vlan_tbl_->txn_start();
     return SDK_RET_OK;
 }
 
 sdk_ret_t
 apulu_impl_state::table_transaction_end(void) {
-    if_vlan_tbl_->txn_end();
+    lif_vlan_tbl_->txn_end();
     return SDK_RET_OK;
 }
 

@@ -138,7 +138,7 @@ security_policy_impl::program_security_policy_(pds_policy_spec_t *spec) {
     memset(&policy_params, 0, sizeof(policy_params));
     policy_params.policy.af = spec->rule_info->af;
     policy_params.policy.max_rules =
-        (policy_params.policy.af ==IP_AF_IPV4) ?
+        (policy_params.policy.af == IP_AF_IPV4) ?
             PDS_MAX_RULES_PER_IPV4_SECURITY_POLICY :
             PDS_MAX_RULES_PER_IPV6_SECURITY_POLICY;
     if (spec->rule_info->default_action.fw_action.action ==
