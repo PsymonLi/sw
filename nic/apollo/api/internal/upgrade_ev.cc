@@ -83,8 +83,37 @@ upg_graceful_additional_ev_send (sdk::upg::upg_ev_params_t *params)
 static void
 upg_hitless_additional_ev_send (sdk::upg::upg_ev_params_t *params)
 {
-    // TODO
-    SDK_ASSERT(0);
+    upg_ev_msg_id_t id = g_upg_state->ev_in_progress_id();
+    uint32_t wait_in_ms = 2 * 1000;    // 2 seconds
+    bool status_linkmgr, status_core;
+    sdk_ret_t ret;
+
+    if (id == UPG_MSG_ID_PRE_SWITCHOVER) {
+        ret = sdk::linkmgr::linkmgr_threads_suspend();
+        if (ret == SDK_RET_OK) {
+            ret = core::threads_suspend();
+        }
+        // wait for it to be suspended
+        if (ret == SDK_RET_OK) {
+            while (wait_in_ms > 0) {
+                status_linkmgr = sdk::linkmgr::linkmgr_threads_suspended();
+                status_core = core::threads_suspended();
+                if (status_linkmgr && status_core) {
+                    break;
+                }
+                usleep(1000);
+                wait_in_ms--;
+            }
+            if (wait_in_ms == 0) {
+                PDS_TRACE_ERR("Thread suspend failed due to timeout");
+                ret = SDK_RET_ERR;
+            }
+        }
+        api::g_upg_state->set_ev_more(false);
+        // api::g_upg_state->set_ev_status(ret);  // TODO
+    } else {
+        SDK_ASSERT(0);
+    }
 }
 
 
@@ -186,6 +215,9 @@ upg_hitless_ev_send (sdk::upg::upg_ev_params_t *params)
         break;
     case UPG_EV_PRE_SWITCHOVER:
         INVOKE_EV_THREAD_HDLR(ev, pre_switchover_hdlr, UPG_MSG_ID_PRE_SWITCHOVER);
+        // have additional events to send when the first operation completes
+        // on all threads
+        api::g_upg_state->set_ev_more(true);
         break;
     default:
         // TODO

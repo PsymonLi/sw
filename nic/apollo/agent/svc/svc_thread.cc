@@ -149,25 +149,14 @@ svc_server_thread_exit (void *ctxt)
 sdk_ret_t
 svc_server_thread_suspend_cb (void *ctxt)
 {
-    sdk::event_thread::event_thread *thr = (sdk::event_thread::event_thread *)ctxt;
-    sdk_ret_t ret;
-
     svc_server_thread_exit(NULL);
-    ret = sdk::event_thread::event_thread::suspend(thr);
-    return ret;
+    return SDK_RET_OK;
 }
 
 sdk_ret_t
 svc_server_thread_resume_cb (void *ctxt)
 {
-    sdk::event_thread::event_thread *thr = (sdk::event_thread::event_thread *)ctxt;;
-    sdk_ret_t ret;
-
-    ret = svc_server_thread_uds_init();
-    if (ret == SDK_RET_OK) {
-        ret = sdk::event_thread::event_thread::resume(thr);
-    }
-    return ret;
+    return svc_server_thread_uds_init();
 }
 
 }    // namespace core

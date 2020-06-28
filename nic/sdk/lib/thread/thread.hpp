@@ -47,6 +47,9 @@ class thread;
 // walk callback function type
 typedef bool (thread_walk_cb_t)(sdk::lib::thread *thr, void *ctxt);
 
+// thread suspend request function type
+typedef sdk_ret_t (*thread_suspend_req_func_t)(sdk::lib::thread *thr);
+
 // thread strore
 typedef struct thread_store_s {
     thread_store_s() {
@@ -199,9 +202,12 @@ public:
         resume_cb_ =  resume_cb;
         suspend_cb_arg_ =  arg;
     }
-    sdk_ret_t suspend(void); // called from other thread context
-    sdk_ret_t resume(void);  // called from other thread context
-    void check_and_suspend(void); // should be called from current thread context
+    // invoked from caller thread context
+    virtual sdk_ret_t suspend_req(thread_suspend_req_func_t);
+    // invoked from caller thread context
+    sdk_ret_t resume_req(void);
+    // invoked from the target thread context
+    void check_and_suspend(void);
     bool suspended(void) { return suspended_; }
 
 private:

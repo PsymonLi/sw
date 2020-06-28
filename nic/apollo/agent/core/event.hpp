@@ -5,6 +5,7 @@
 #ifndef __AGENT_CORE_EVENT_HPP__
 #define __AGENT_CORE_EVENT_HPP__
 
+#include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/api/include/pds_event.hpp"
 #include "nic/apollo/api/include/pds_upgrade.hpp"
@@ -41,6 +42,9 @@ sdk_ret_t update_event_listener(void *ctxt);
 /// \param[in] event    event being notified
 /// \return    SDK_RET_OK on success, failure status code on error
 sdk_ret_t handle_event_ntfn(const pds_event_t *event);
+
+// thread suspend handlers during hitless upgrade
+sdk_ret_t grpc_svc_suspend_req(sdk::lib::thread *thread);
 
 }    // namespace core
 

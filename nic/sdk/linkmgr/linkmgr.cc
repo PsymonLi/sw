@@ -313,7 +313,7 @@ linkmgr_threads_suspend (void)
             thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
         thread = sdk::lib::thread::find(thread_id);
         if (thread != NULL) {
-            ret = thread->suspend();
+            ret = thread->suspend_req(NULL);
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -333,7 +333,7 @@ linkmgr_threads_resume (void)
             thread_id <= SDK_THREAD_ID_LINKMGR_MAX; thread_id++) {
         thread = sdk::lib::thread::find(thread_id);
         if (thread != NULL) {
-            ret = thread->resume();
+            ret = thread->resume_req();
             if (ret != SDK_RET_OK) {
                 return ret;
             }
@@ -1089,6 +1089,38 @@ port_quiesce (void *pd_p, linkmgr_async_response_cb_t response_cb,
     }
     return ret;
 }
+/// \brief     restore the port state during upgrade
+/// \param[in] port_p pointer to port struct
+/// \return    SDK_RET_OK on success, failure status code on error
+static sdk_ret_t
+port_restore_ (port *port_p)
+{
+    sdk_ret_t ret;
+    uint64_t mask = 1 << (port_p->port_num() - 1);
+
+    // init the bringup and debounce timers
+    port_p->timers_init();
+
+    port_p->set_mac_fns(&mac_fns);
+    port_p->set_serdes_fns(&serdes_fns);
+    if(port_p->port_type() == port_type_t::PORT_TYPE_MGMT) {
+        port_p->set_mac_fns(&mac_mgmt_fns);
+    } else {
+        g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
+                                            mask);
+    }
+    // set the source mac addr for pause frames
+    // TODO required during upgrade?
+    // port_p->port_mac_set_pause_src_addr(args->mac_addr);
+
+    // init MAC stats hbm region address
+    ret = port::port_mac_stats_init(port_p);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("port %u mac stats init failed", port_p->port_num());
+        return ret;
+    }
+    return SDK_RET_OK;
+}
 
 /// \brief     enable port operations after upgrade
 /// \param[in] port_p pointer to port struct
@@ -1104,6 +1136,13 @@ port_switchover_ (port *port_p)
         sdk::lib::catalog::logical_port_to_ifindex(port_p->port_num());
     SDK_TRACE_DEBUG("port upgrade switchover for port %s",
                     eth_ifindex_to_str(ifindex).c_str());
+
+    ret = port_restore_(port_p);
+    if (ret != SDK_RET_OK) {
+        SDK_TRACE_ERR("Failed to restore port %s",
+                      eth_ifindex_to_str(ifindex).c_str());
+        return ret;
+    }
 
     // If Link was UP before upgrade:
     //     Add the port to link poll timer
@@ -1156,46 +1195,6 @@ port_upgrade_switchover (void)
     return SDK_RET_OK;
 }
 
-/// \brief     restore the port state during upgrade
-/// \param[in] port_p pointer to port struct
-/// \param[in] args port information
-/// \return    SDK_RET_OK on success, failure status code on error
-static sdk_ret_t
-port_restore_ (port *port_p, port_args_t *args)
-{
-    sdk_ret_t ret;
-    uint32_t ifindex;
-    uint64_t mask = 1 << (args->port_num - 1);
-
-    ifindex =
-        sdk::lib::catalog::logical_port_to_ifindex(args->port_num);
-    SDK_TRACE_DEBUG("port upgrade restoring state for port %s",
-                    eth_ifindex_to_str(ifindex).c_str());
-
-    // init the bringup and debounce timers
-    port_p->timers_init();
-
-    port_p->set_mac_fns(&mac_fns);
-    port_p->set_serdes_fns(&serdes_fns);
-    if(args->port_type == port_type_t::PORT_TYPE_MGMT) {
-        port_p->set_mac_fns(&mac_mgmt_fns);
-    } else {
-        g_linkmgr_state->set_port_bmap_mask(g_linkmgr_state->port_bmap_mask() |
-                                            mask);
-    }
-    // set the source mac addr for pause frames
-    // TODO required during upgrade?
-    // port_p->port_mac_set_pause_src_addr(args->mac_addr);
-
-    // init MAC stats hbm region address
-    ret = port::port_mac_stats_init(port_p);
-    if (ret != SDK_RET_OK) {
-        SDK_TRACE_ERR("port %u mac stats init failed", args->port_num);
-        return ret;
-    }
-    return SDK_RET_OK;
-}
-
 static port *
 shm_port_alloc (port_args_t *args)
 {
@@ -1228,7 +1227,6 @@ port_create (port_args_t *args)
     sdk_ret_t ret;
     void *mem;
     port *port_p;
-    uint32_t ifindex;
 
     port_init_num_lanes(args);
     if (validate_port_create (args) == false) {
@@ -1249,14 +1247,6 @@ port_create (port_args_t *args)
     }
 
     if (g_linkmgr_state->port_restore_state()) {
-        ret = port_restore_(port_p, args);
-        if (ret != SDK_RET_OK) {
-            ifindex =
-                sdk::lib::catalog::logical_port_to_ifindex(args->port_num);
-            SDK_TRACE_ERR("Failed to restore port %s",
-                          eth_ifindex_to_str(ifindex).c_str());
-            return NULL;
-        }
         g_linkmgr_state->set_port_p(args->port_num - 1, port_p);
         return port_p;
     }

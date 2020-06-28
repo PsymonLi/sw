@@ -241,6 +241,15 @@ upg_ev_compat_check (upg_ev_params_t *params)
 static sdk_ret_t
 upg_ev_start (upg_ev_params_t *params)
 {
+#if 0
+    // TODO @avinash. not sure whether this is the right place
+    // ideally it should be in pre-switchover
+    sdk::linkmgr::linkmgr_threads_suspend();
+    // if this is the place change this to timed wait
+    while (sdk::linkmgr::linkmgr_threads_suspended() == false) {
+        pthread_yield();
+    }
+#endif
     return SDK_RET_OK;
 }
 

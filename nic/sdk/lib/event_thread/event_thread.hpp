@@ -139,8 +139,7 @@ public:
     virtual sdk_ret_t stop(void) override;
     struct ev_loop *ev_loop(void) { return loop_; }
 
-    static sdk_ret_t suspend(event_thread *thread);
-    static sdk_ret_t resume(event_thread *thread);
+    virtual sdk_ret_t suspend_req(sdk::lib::thread_suspend_req_func_t) override;
 protected:
     virtual int init(const char *name, uint32_t thread_id,
                      sdk::lib::thread_role_t thread_role, uint64_t cores_mask,

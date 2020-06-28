@@ -54,11 +54,12 @@ namespace hooks {
 hooks_func_t hooks_func = NULL;
 }     // namespace hooks
 
-// called from other thread context to suspend the grpc service
-static sdk_ret_t
-grpc_svc_suspend_cb (void *ctxt)
+namespace core {
+// called from upgrade thread context to suspend the grpc service
+sdk_ret_t
+grpc_svc_suspend_req (sdk::lib::thread *thread)
 {
-    // as the caller thread is the svc(upgrade) event thread (single)
+    // as the caller thread is always the upgrade event thread,
     // we don't need protection here for accessing server_ready
     if (g_server_ready) {
         g_server->Shutdown();
@@ -66,8 +67,17 @@ grpc_svc_suspend_cb (void *ctxt)
     }
     return SDK_RET_OK;
 }
+}   // namespace core
 
-// called from other thread context to resume the grpc service
+
+// called from agent main thread context to suspend the grpc service
+sdk_ret_t
+grpc_svc_suspend_cb (void *ctxt)
+{
+    return SDK_RET_OK;
+}
+
+// called from agent main thread context to resume the grpc service
 static sdk_ret_t
 grpc_svc_resume_cb (void *ctxt)
 {

@@ -2,7 +2,6 @@
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
 // -----------------------------------------------------------------------------
 
-#include "nic/sdk/lib/thread/thread.hpp"
 #include "nic/apollo/agent/core/event.hpp"
 #include "nic/apollo/agent/core/core.hpp"
 #include "nic/apollo/agent/core/state.hpp"
@@ -39,7 +38,8 @@ update_event_listener (void *ctxt)
 }
 
 static inline sdk_ret_t
-svc_suspend_resume (uint32_t thread_id, bool suspend)
+svc_suspend_resume (uint32_t thread_id, sdk::lib::thread_suspend_req_func_t func,
+                    bool suspend)
 {
     bool status;
     sdk_ret_t ret;
@@ -48,10 +48,10 @@ svc_suspend_resume (uint32_t thread_id, bool suspend)
 
     thr = sdk::lib::thread::find(thread_id);
     if (thr) {
-        ret = suspend ? thr->suspend() : thr->resume();
+        ret = suspend ? thr->suspend_req(func) : thr->resume_req();
         if (ret != SDK_RET_OK) {
-            PDS_TRACE_ERR("service %u suspend/resume request failed, "
-                          "err %u", thread_id, ret);
+            PDS_TRACE_ERR("service {} suspend/resume request failed, "
+                          "err {}", thr->name(), ret);
             return ret;
         }
         // wait for it to be suspended/resumed
@@ -64,8 +64,8 @@ svc_suspend_resume (uint32_t thread_id, bool suspend)
             wait_in_ms--;
         }
         if (wait_in_ms == 0) {
-            PDS_TRACE_ERR("service %u suspend/resume failed due "
-                          "to timeout", thread_id);
+            PDS_TRACE_ERR("service {} suspend/resume failed due "
+                          "to timeout", thr->name());
             return SDK_RET_ERR;
         }
     }
@@ -77,14 +77,15 @@ svc_suspend_resume (bool suspend)
 {
     sdk_ret_t ret;
 
-    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_GRPC_SVC, suspend);
+    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_GRPC_SVC, grpc_svc_suspend_req,
+                             suspend);
     if (unlikely(ret != SDK_RET_OK)) {
-        PDS_TRACE_ERR("Failed to suspend gprc svc thread, err %u", ret);
+        PDS_TRACE_ERR("Failed to suspend gprc svc thread, err {}", ret);
         return ret;
     }
-    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_SVC_SERVER, suspend);
+    ret = svc_suspend_resume(PDS_AGENT_THREAD_ID_SVC_SERVER, NULL, suspend);
     if (unlikely(ret != SDK_RET_OK)) {
-        PDS_TRACE_ERR("Failed to suspend USD server thread, err %u", ret);
+        PDS_TRACE_ERR("Failed to suspend USD server thread, err {}", ret);
         return ret;
     }
     return SDK_RET_OK;

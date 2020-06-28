@@ -389,9 +389,11 @@ thread_suspend_cb_ (sdk::lib::thread *thr, void *ctxt)
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
-        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+        // upgrade thread never should be suspended
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Suspending thread %s", thr->name());
-            *ret = thr->suspend();
+            *ret = thr->suspend_req(NULL);
             if (*ret != SDK_RET_OK) {
                 return true; // stop the walk
             }
@@ -420,9 +422,11 @@ thread_resume_cb_ (sdk::lib::thread *thr, void *ctxt)
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
-        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+        // upgrade thread never will be suspended
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             PDS_TRACE_DEBUG("Resuming thread %s", thr->name());
-            *ret = thr->resume();
+            *ret = thr->resume_req();
             if (*ret != SDK_RET_OK) {
                 return true; // stop the walk
             }
@@ -480,7 +484,8 @@ thread_suspended_cb_ (sdk::lib::thread *thr, void *ctxt)
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
-        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s suspended %u", thr->name(), suspended);
             if (!suspended) {
@@ -512,7 +517,8 @@ thread_resumed_cb_ (sdk::lib::thread *thr, void *ctxt)
         (thr->thread_id() < PDS_THREAD_ID_MAX)) {
         // TODO periodic thread. all modules should un-register their timers
         // and g_twheel num entries should be zero
-        if (thr->thread_id() != PDS_THREAD_ID_PERIODIC) {
+        if ((thr->thread_id() != PDS_THREAD_ID_PERIODIC) &&
+            (thr->thread_id() != PDS_THREAD_ID_UPGRADE)) {
             suspended = thr->suspended();
             SDK_TRACE_DEBUG("Thread %s resumed %u", thr->name(), !suspended);
             if (suspended) {   // still in suspended state
