@@ -191,6 +191,13 @@
 		IfAppRedirInfo
 		InterfaceSpec
 		InterfaceRequestMsg
+		LldpId
+		LldpChassisCapabilityInfo
+		LldpIfChassisInfo
+		LldpIfPortStatus
+		LldpUnknownTlvStatus
+		LldpIfStatus
+		LldpStatus
 		UplinkResponseInfo
 		EnicL2SegInfo
 		SmartEnicInfo
@@ -206,6 +213,8 @@
 		InterfaceDeleteRequestMsg
 		InterfaceDeleteResponse
 		InterfaceDeleteResponseMsg
+		LldpIfStats
+		UplinkIfStats
 		InterfaceStats
 		InterfaceGetRequest
 		InterfaceGetRequestMsg

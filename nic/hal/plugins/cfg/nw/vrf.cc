@@ -11,6 +11,7 @@
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/hal/plugins/cfg/nw/vrf.hpp"
+#include "nic/hal/plugins/cfg/nw/interface_lldp.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/src/utils/utils.hpp"
 #include "nic/hal/src/utils/if_utils.hpp"
@@ -568,6 +569,19 @@ vrf_create (VrfSpec& spec, VrfResponse *rsp)
             HAL_TRACE_ERR("Unable to create cpu lif/if. err: {}", ret);
             goto end;
         }
+
+        // Release read lock
+        hal_handle_cfg_db_lock(true, false);
+
+        // Delay lldp init so that it doesnt compete with OOB bringup for NCSI
+        ret = hal_lldp_config_init();
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to config lldp. err: {}", ret);
+            goto end;
+        }
+
+        // Take read lock
+        hal_handle_cfg_db_lock(true, true);
     }
 
     // form ctxt and call infra add

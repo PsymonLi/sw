@@ -360,6 +360,64 @@ func (mr *MockisInterfaceStatus_IfResponseInfoMockRecorder) Size() *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisInterfaceStatus_IfResponseInfo)(nil).Size))
 }
 
+// MockisInterfaceStats_Ifstats is a mock of isInterfaceStats_Ifstats interface
+type MockisInterfaceStats_Ifstats struct {
+	ctrl     *gomock.Controller
+	recorder *MockisInterfaceStats_IfstatsMockRecorder
+}
+
+// MockisInterfaceStats_IfstatsMockRecorder is the mock recorder for MockisInterfaceStats_Ifstats
+type MockisInterfaceStats_IfstatsMockRecorder struct {
+	mock *MockisInterfaceStats_Ifstats
+}
+
+// NewMockisInterfaceStats_Ifstats creates a new mock instance
+func NewMockisInterfaceStats_Ifstats(ctrl *gomock.Controller) *MockisInterfaceStats_Ifstats {
+	mock := &MockisInterfaceStats_Ifstats{ctrl: ctrl}
+	mock.recorder = &MockisInterfaceStats_IfstatsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockisInterfaceStats_Ifstats) EXPECT() *MockisInterfaceStats_IfstatsMockRecorder {
+	return m.recorder
+}
+
+// isInterfaceStats_Ifstats mocks base method
+func (m *MockisInterfaceStats_Ifstats) isInterfaceStats_Ifstats() {
+	m.ctrl.Call(m, "isInterfaceStats_Ifstats")
+}
+
+// isInterfaceStats_Ifstats indicates an expected call of isInterfaceStats_Ifstats
+func (mr *MockisInterfaceStats_IfstatsMockRecorder) isInterfaceStats_Ifstats() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "isInterfaceStats_Ifstats", reflect.TypeOf((*MockisInterfaceStats_Ifstats)(nil).isInterfaceStats_Ifstats))
+}
+
+// MarshalTo mocks base method
+func (m *MockisInterfaceStats_Ifstats) MarshalTo(arg0 []byte) (int, error) {
+	ret := m.ctrl.Call(m, "MarshalTo", arg0)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// MarshalTo indicates an expected call of MarshalTo
+func (mr *MockisInterfaceStats_IfstatsMockRecorder) MarshalTo(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MarshalTo", reflect.TypeOf((*MockisInterfaceStats_Ifstats)(nil).MarshalTo), arg0)
+}
+
+// Size mocks base method
+func (m *MockisInterfaceStats_Ifstats) Size() int {
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Size indicates an expected call of Size
+func (mr *MockisInterfaceStats_IfstatsMockRecorder) Size() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockisInterfaceStats_Ifstats)(nil).Size))
+}
+
 // MockInterfaceClient is a mock of InterfaceClient interface
 type MockInterfaceClient struct {
 	ctrl     *gomock.Controller

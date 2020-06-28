@@ -600,6 +600,88 @@ message InterfaceRequestMsg {
   repeated InterfaceSpec    request = 1;    // batch of requests
 }
 
+// LLDP chassis/port Identifier key type
+enum LldpIdType {
+  LLDPID_SUBTYPE_NONE    = 0;  //"unknown"
+  LLDPID_SUBTYPE_IFNAME  = 1;  //"ifname"
+  LLDPID_SUBTYPE_IFALIAS = 2;  //"ifalias",
+  LLDPID_SUBTYPE_LOCAL   = 3;  //"local"
+  LLDPID_SUBTYPE_MAC     = 4;  //"mac"
+  LLDPID_SUBTYPE_IP      = 5;  //"ip"
+  LLDPID_SUBTYPE_PORT    = 6;  //"portnum"
+  LLDPID_SUBTYPE_CHASSIS = 7;  //"chasiss-str"
+}
+
+// Protocol used for LLDP
+enum LldpProtoMode {
+  LLDP_MODE_NONE  = 0;
+  LLDP_MODE_LLDP  = 1;
+  LLDP_MODE_CDPV1 = 2;
+  LLDP_MODE_CDPV2 = 3;
+  LLDP_MODE_EDP   = 4;
+  LLDP_MODE_FDP   = 5;
+  LLDP_MODE_SONMP = 6;
+}
+
+// Key-type and value for Identified
+message LldpId {
+  LldpIdType Type  = 1;
+  bytes      Value = 2;
+}
+
+// Capabilities on the interfce
+enum LldpCapType {
+  LLDP_CAPTYPE_OTHER     = 0;
+  LLDP_CAPTYPE_REPEATER  = 1;
+  LLDP_CAPTYPE_BRIDGE    = 2;
+  LLDP_CAPTYPE_ROUTER    = 3;
+  LLDP_CAPTYPE_WLAN      = 4;
+  LLDP_CAPTYPE_TELEPHONE = 5;
+  LLDP_CAPTYPE_DOCSIS    = 6;
+  LLDP_CAPTYPE_STATION   = 7;
+}
+
+message LldpChassisCapabilityInfo {
+  LldpCapType CapType    = 1; // capability type
+  bool        CapEnabled = 2; // enabled/disabled
+}
+
+message LldpIfChassisInfo {
+  string                             SysName    = 1; // system name
+  LldpId                             ChassisId  = 2; // system identifier
+  string                             SysDescr   = 3; // description string
+  types.IPAddress                    MgmtIP     = 4; // management IP
+  repeated LldpChassisCapabilityInfo Capability = 5; // list of capabilities
+}
+
+message LldpIfPortStatus {
+  LldpId PortId    = 1; // port identifier
+  string PortDescr = 2; // description string
+  uint32 Ttl       = 3; // TTL
+}
+
+message LldpUnknownTlvStatus {
+  string  Oui     = 1; // OUI string
+  uint32  Subtype = 2; // subtype identifier
+  uint32  Len     = 3; // length of option
+  string  Value   = 4; // option value string
+}
+
+message LldpIfStatus {
+  string                        IfName               = 1; // interface name
+  uint32                        RouterId             = 2; // router-id
+  LldpProtoMode                 Proto                = 3; // LLDP/CDP/EDP/FDP/..
+  bytes                         Age                  = 4; // uptime in string
+  LldpIfChassisInfo             LldpIfChassisStatus  = 5; // chassis info
+  LldpIfPortStatus              LldpIfPortStatus     = 6; // physical port info
+  repeated LldpUnknownTlvStatus LldpUnknownTlvStatus = 7; // unknown TLVs
+}
+
+message LldpStatus {
+  LldpIfStatus  LldpIfStatus  = 1; // Local interface info
+  LldpIfStatus  LldpNbrStatus = 2; // Neighbor info
+}
+
 // Uplink/Uplink PC's response
 message UplinkResponseInfo {
     uint32      uplink_lport_id = 1;    // Uplink/Uplink PC's lport id
@@ -611,6 +693,7 @@ message UplinkResponseInfo {
     uint64      tx_bytesps      = 7;
     uint64      rx_pps          = 8;
     uint64      rx_bytesps      = 9;
+    LldpStatus  LldpStatus      = 10; // LLDP status info
 }
 
 // Enic <-> L2seg membership info
@@ -710,12 +793,29 @@ message InterfaceDeleteResponseMsg {
   repeated InterfaceDeleteResponse response = 1;
 }
 
+message LldpIfStats {
+  uint32 TxCount        = 1; // transmitted pkts
+  uint32 RxCount        = 2; // received pkts
+  uint32 RxDiscarded    = 3; // rx discarded pkts
+  uint32 RxUnrecognized = 4; // rx unrecognized pkts
+  uint32 AgeoutCount    = 5; // count of entry aged out
+  uint32 InsertCount    = 6; // count of inserts
+  uint32 DeleteCount    = 7; // count of deletes
+}
+
+message UplinkIfStats {
+  LldpIfStats LldpIfStats = 1; // LLDP Tx/Rx packet/error stats
+}
+
 // InterfaceStats captures all the statistics of given interface
 message InterfaceStats {
-  fixed32    num_tx_packets = 1;    // Tx Packets from this interface
-  fixed32    num_tx_bytes   = 2;    // Tx Bytes from this interface
-  fixed32    num_rx_packets = 3;    // Rx Packets to this interface
-  fixed32    num_rx_bytes   = 4;    // Rx Bytes to this interface
+  fixed32    num_tx_packets         = 1;    // Tx Packets from this interface
+  fixed32    num_tx_bytes           = 2;    // Tx Bytes from this interface
+  fixed32    num_rx_packets         = 3;    // Rx Packets to this interface
+  fixed32    num_rx_bytes           = 4;    // Rx Bytes to this interface
+  oneof ifstats {
+    UplinkIfStats   UplinkIfStats   = 5;
+  }
 }
 
 // InterfaceGetRequest is used to get information about a interface

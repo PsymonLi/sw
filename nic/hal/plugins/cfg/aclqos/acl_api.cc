@@ -40,6 +40,84 @@ acl_get_priority(acl_t *pi_acl)
 }
 
 // ----------------------------------------------------------------------------
+// Acl API: Install LLDP entry
+// ----------------------------------------------------------------------------
+hal_ret_t
+acl_install_inband_lldp (if_t *inband_if, if_t *uplink_if) 
+{
+    hal_ret_t        ret;
+    AclSpec          spec;
+    AclResponse      rsp;
+    AclSelector      *match;
+    AclActionInfo    *action;
+    uint32_t         acl_id;
+    uint32_t         priority;
+    uint32_t         if_idx;
+
+    if_idx = uplink_if_get_idx(uplink_if);
+
+    acl_id = ACL_INBAND_LLDP_ID + if_idx;
+    priority = ACL_INBAND_LLDP_PRIORITY;
+
+    match = spec.mutable_match();
+    action = spec.mutable_action();
+    spec.mutable_key_or_handle()->set_acl_id(acl_id);
+    spec.set_priority(priority);
+
+    // Action
+    action->set_action(acl::AclAction::ACL_ACTION_REDIRECT);
+    action->mutable_redirect_if_key_handle()->set_interface_id(uplink_if->if_id);
+
+    // Selector
+    match->mutable_src_if_key_handle()->set_interface_id(inband_if->if_id);
+    match->mutable_eth_selector()->set_eth_type(ETH_TYPE_LLDP);
+    match->mutable_eth_selector()->set_eth_type_mask(0xffff);
+
+    HAL_TRACE_DEBUG("Installing ACL for inband lldp inband_if:{} -> uplink:{}",
+                    inband_if->if_id, uplink_if->if_id);
+    ret = hal::acl_create(spec, &rsp);
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Unable to install inband lldp "
+                      "inband_if -> uplink. err: {}", ret);
+    }
+
+    return ret;
+}
+
+// ----------------------------------------------------------------------------
+// Acl API: UnInstall LLDP entry
+// ----------------------------------------------------------------------------
+hal_ret_t
+acl_uninstall_inband_lldp (if_t *inband_if, if_t *uplink_if)
+{
+    hal_ret_t           ret;
+    AclDeleteRequest    req;
+    AclDeleteResponse   rsp;
+    uint32_t            acl_id;
+    uint32_t            if_idx;
+
+    if_idx = uplink_if_get_idx(uplink_if);
+
+    acl_id = ACL_INBAND_LLDP_ID + if_idx;
+    req.mutable_key_or_handle()->set_acl_id(acl_id);
+    HAL_TRACE_DEBUG("UnInstalling ACL for inband lldp inband_if:{} -> uplink:{}",
+                    inband_if->if_id, uplink_if->if_id);
+    ret = hal::acl_delete(req, &rsp);
+    if (ret == HAL_RET_ACL_NOT_FOUND) {
+        // Possible if lif never went into INIT
+        HAL_TRACE_DEBUG("LLDP NACL {} not found.", acl_id);
+        ret = HAL_RET_OK;
+    }
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Unable to uninstall inband lldp "
+                      "inband_if -> uplink. err: {}", ret);
+    }
+
+    return ret;
+}
+
+
+// ----------------------------------------------------------------------------
 // Set up ncsi/swm queues
 // - These queues are for OOB -> ARM for differentiating
 //   - NCSI protocol packets

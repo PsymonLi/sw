@@ -9,6 +9,7 @@
 #include "nic/hal/hal.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
 #include "nic/hal/plugins/cfg/nw/interface.hpp"
+#include "nic/hal/plugins/cfg/nw/interface_lldp.hpp"
 #include "nic/hal/plugins/cfg/telemetry/telemetry.hpp"
 #include "nic/hal/plugins/cfg/nw/nh.hpp"
 #include "nic/hal/plugins/cfg/nw/filter.hpp"
@@ -605,8 +606,8 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
     dllist_ctxt_t               *lnode     = NULL;
     dhl_entry_t                 *dhl_entry = NULL;
     if_t                        *hal_if    = NULL;
-    pd::pd_func_args_t          pd_func_args = {0};
     lif_t                       *lif = NULL;
+    pd::pd_func_args_t          pd_func_args = {0};
     if_create_app_ctxt_t        *app_ctxt  = NULL;
 
     if (cfg_ctxt == NULL) {
@@ -651,6 +652,7 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
         }
     }
 
+    // We dont want to send pkts to lif before init. 
     if (hal_if->if_type == intf::IF_TYPE_ENIC && 
         hal_if->enic_type == intf::IF_ENIC_TYPE_CLASSIC) {
         lif = find_lif_by_handle(hal_if->lif_handle);
@@ -660,6 +662,15 @@ if_create_add_cb (cfg_op_ctxt_t *cfg_ctxt)
             ret = if_enic_install_ncsi_nacls(hal_if, lif);
             if (ret != HAL_RET_OK) {
                 HAL_TRACE_ERR("Unable to install ncsi nacls. err: {}", ret);
+                goto end;
+            }
+        }
+        if (lif && lif->state == intf::LIF_STATE_INIT && 
+            lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
+            ret = if_enic_install_lldp_nacls(hal_if, lif, true);
+            if (ret != HAL_RET_OK) {
+                HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}", 
+                              ret);
                 goto end;
             }
         }
@@ -3136,6 +3147,11 @@ if_process_get (if_t *hal_if, InterfaceGetResponse *rsp)
         rsp->mutable_status()->mutable_uplink_info()->
             set_hw_port_num(hal_if->uplink_port_num);
         rsp->mutable_status()->set_if_status(hal_if->if_op_status);
+        interface_lldp_status_get(uplink_if_get_idx(hal_if), 
+                                  rsp->mutable_status()->mutable_uplink_info());
+        interface_lldp_stats_get(uplink_if_get_idx(hal_if),
+                                 rsp->mutable_stats()->
+                                 mutable_uplinkifstats()->mutable_lldpifstats());
         // TODO: is this populated today ?
         //uplink_if_info->set_l2segment_id();
         // TODO: don't see this info populated in if today
@@ -4621,6 +4637,14 @@ if_delete_del_cb (cfg_op_ctxt_t *cfg_ctxt)
         }
     }
 
+    if (lif && lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
+        ret = if_enic_install_lldp_nacls(intf, lif, false);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to install ncsi nacls. err: {}", ret);
+            goto end;
+        }
+    }
+
 end:
     return ret;
 }
@@ -5056,6 +5080,39 @@ end:
 }
 
 hal_ret_t
+if_enic_install_lldp_nacls (if_t *enic_if, lif_t *lif, bool install)
+{
+    hal_ret_t   ret = HAL_RET_OK;
+    if_t        *uplink_if = NULL;
+
+    uplink_if = lif_get_pinned_uplink(lif);
+    // Since we are doing this from lif update cb, we already have write lock.
+    // To call acl apis, we just need read lock.
+    // Release write lock
+    hal_handle_cfg_db_lock(false, false);
+    // Take read lock
+    hal_handle_cfg_db_lock(true, true);
+    if (install) {
+        ret = acl_install_inband_lldp(enic_if, uplink_if);
+    } else {
+        ret = acl_uninstall_inband_lldp(enic_if, uplink_if);
+    }
+    if (ret != HAL_RET_OK) {
+        HAL_TRACE_ERR("Unable to {} inband lldp. err {}", 
+                      ret, install ? "install" : "uninstall");
+        goto end;
+    }
+
+end:
+    // Release read lock
+    hal_handle_cfg_db_lock(true, false);
+    // Take write lock
+    hal_handle_cfg_db_lock(false, true);
+
+    return ret;
+}
+
+hal_ret_t
 if_enic_install_ncsi_nacls (if_t *enic_if, lif_t *lif)
 {
     hal_ret_t   ret = HAL_RET_OK;
@@ -5108,6 +5165,17 @@ if_handle_lif_update (pd::pd_if_lif_update_args_t *args)
         ret = acl_install_ncsi_queues();
         if (ret != HAL_RET_OK) {
             HAL_TRACE_ERR("Unable to install ncsi queues on oob. err: {}", ret);
+            goto end;
+        }
+    }
+
+    // Install inband lldp entries
+    if (args->state_changed && args->state == intf::LIF_STATE_INIT && 
+        args->lif->type == types::LIF_TYPE_MNIC_INBAND_MANAGEMENT) {
+        ret = if_enic_install_lldp_nacls(args->intf, args->lif, true);
+        if (ret != HAL_RET_OK) {
+            HAL_TRACE_ERR("Unable to install inband lldp nacls. err: {}", 
+                          ret);
             goto end;
         }
     }

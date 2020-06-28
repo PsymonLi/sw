@@ -27,6 +27,7 @@
 #define ETH_TYPE_DOT1Q                                 0x8100
 #define ETH_TYPE_IPV6                                  0x86DD
 #define ETH_TYPE_NCSI                                  0x88F8
+#define ETH_TYPE_LLDP                                  0x88CC
 
 // MAC address
 #define ETH_ADDR_LEN                                 6

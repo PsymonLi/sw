@@ -26,6 +26,7 @@
 #include "nic/hal/plugins/cfg/lif/lif.hpp"
 #include "nic/hal/vmotion/vmotion.hpp"
 #include "gen/proto/system.pb.h"
+#include "nic/sdk/include/sdk/eth.hpp"
 
 #ifdef SHM
 #define slab_ptr_t        offset_ptr<slab>
@@ -446,6 +447,15 @@ public:
     uint32_t num_swm_eps(void) const { return num_swm_eps_; }
     void set_num_swm_eps(uint32_t num) { num_swm_eps_ = num; }
 
+    const mac_addr_t& system_mac(void) const { return system_mac_; }
+    void set_system_mac(mac_addr_t mac) { memcpy(system_mac_, mac, sizeof(system_mac_)); }
+
+    string product_name(void) const { return product_name_; }
+    void set_product_name(string pname) {
+        product_name_ = pname;
+    }
+
+
 private:
     // following can come from shared memory or non-linux HBM memory
     // NOTE: strictly shmnot required as we can rebuild this from slab elements,
@@ -563,6 +573,8 @@ private:
     bool          age_debug_en_;
     uint32_t      num_inband_eps_;
     uint32_t      num_swm_eps_;
+    mac_addr_t    system_mac_;
+    string        product_name_;
 
 private:
     bool init_pss(hal_cfg_t *hal_cfg, shmmgr *mmgr);
@@ -969,6 +981,15 @@ public:
 
     uint32_t num_swm_eps(void) const { return oper_db_->num_swm_eps(); }
     void set_num_swm_eps(uint32_t num) { oper_db_->set_num_swm_eps(num); }
+
+    const mac_addr_t& system_mac(void) const { return oper_db_->system_mac(); }
+    void set_system_mac(mac_addr_t mac) { oper_db_->set_system_mac(mac); }
+
+    string product_name(void) const { return oper_db_->product_name(); }
+    void set_product_name(string pname) { 
+        return oper_db_->set_product_name(pname);
+    }
+
    
 private:
     // following come from shared memory or non-linux HBM memory

@@ -220,6 +220,10 @@ nic/sdk/third-party/avago/fw/serdes.0x1087_244D.rom                 /nic/conf/fw
 nic/sdk/third-party/avago/fw/serdes.0x1094_244D.rom                 /nic/conf/fw/
 nic/e2etests/go/agent/configs/golden                                /nic/conf/
 
+# lldp
+nic/tools/lldp/S60lldpd                                             /nic/tools/start-lldpd.sh
+nic/conf/iris/lldpd.conf                                            /etc/lldpd.d/lldpd.conf
+
 # CLI
 # nic/gen/common/cli/cli_frontend.py                                /nic/cli/
 # nic/debug_cli/cli/debug_cli_iris.py                               /nic/cli/

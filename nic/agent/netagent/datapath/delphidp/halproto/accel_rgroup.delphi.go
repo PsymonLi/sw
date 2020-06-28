@@ -406,6 +406,13 @@ It has these top-level messages:
 	IfAppRedirInfo
 	InterfaceSpec
 	InterfaceRequestMsg
+	LldpId
+	LldpChassisCapabilityInfo
+	LldpIfChassisInfo
+	LldpIfPortStatus
+	LldpUnknownTlvStatus
+	LldpIfStatus
+	LldpStatus
 	UplinkResponseInfo
 	EnicL2SegInfo
 	SmartEnicInfo
@@ -421,6 +428,8 @@ It has these top-level messages:
 	InterfaceDeleteRequestMsg
 	InterfaceDeleteResponse
 	InterfaceDeleteResponseMsg
+	LldpIfStats
+	UplinkIfStats
 	InterfaceStats
 	InterfaceGetRequest
 	InterfaceGetRequestMsg

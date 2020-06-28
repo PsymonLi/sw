@@ -132,6 +132,9 @@ def getNaplesHALEndPoints(naples_node):
             segmentid = epObj['spec']['keyorhandle']['keyorhandle']['endpointkey']['endpointl2l3key']['l2key']['l2segmentkeyhandle']['keyorhandle']['segmentid']
             interfaceid = epObj['spec']['endpointattrs']['interfacekeyhandle']['keyorhandle']['interfaceid']
             mac_addr_str = address_utils.formatMacAddr(macAddr)
+            # Skipping EDP dmac
+            if mac_addr_str == "00:e0:2b:00:00:00":
+                continue
 
             vlan_id = l2seg_vlan_dict[segmentid]
             lif_id = ifId_lif_dict[interfaceid]
