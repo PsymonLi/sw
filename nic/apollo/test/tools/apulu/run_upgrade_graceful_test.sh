@@ -77,7 +77,7 @@ upg_wait_for_pdsagent
 start_upgrade_manager
 # wait for the upgmgr to exit
 sleep 30
-counter=upg_wait_for_process_exit pdsupgmgr 300
+counter=`upg_wait_for_process_exit pdsupgmgr 300`
 if [ $counter -eq 0 ];then
     echo "Pdsupgmgr not exited"
     exit 1
