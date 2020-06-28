@@ -43,7 +43,7 @@ ionic_lif_rss_config(struct lif *lif,
                      const u8 *key,
                      const u8 *indir)
 {
-    struct ionic_admin_ctx ctx;
+    struct ionic_admin_ctx ctx = {};
 
     UNREFERENCED_PARAMETER(indir);
 

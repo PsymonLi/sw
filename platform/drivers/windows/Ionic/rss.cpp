@@ -338,17 +338,31 @@ ionic_convert_ndis_hash_type(ULONG ndis_hash_type)
 {
     u16 hash_type = 0;
 
-    hash_type = ((ndis_hash_type & NDIS_HASH_IPV4) ? IONIC_RSS_TYPE_IPV4 : 0) |
-                ((ndis_hash_type & NDIS_HASH_TCP_IPV4)
-                     ? IONIC_RSS_TYPE_IPV4_TCP | IONIC_RSS_TYPE_IPV4
-                     : 0) |
-                ((ndis_hash_type & NDIS_HASH_IPV6) ? IONIC_RSS_TYPE_IPV6 : 0) |
-                ((ndis_hash_type & NDIS_HASH_TCP_IPV6)
-                     ? IONIC_RSS_TYPE_IPV6_TCP | IONIC_RSS_TYPE_IPV6
-                     : 0); // |
-    //((ndis_hash_type & NDIS_HASH_IPV6_EX) ? IONIC_RSS_TYPE_IPV6_EX : 0) |
-    //((ndis_hash_type & NDIS_HASH_TCP_IPV6_EX) ? IONIC_RSS_TYPE_IPV6_TCP_EX :
-    // 0);
+    if (ndis_hash_type & NDIS_HASH_IPV4) {
+        hash_type |= IONIC_RSS_TYPE_IPV4;
+    }
+
+    if (ndis_hash_type & NDIS_HASH_TCP_IPV4) {
+        hash_type |= IONIC_RSS_TYPE_IPV4_TCP;
+#if (NDIS_SUPPORT_NDIS680)
+    }
+    if (ndis_hash_type & NDIS_HASH_UDP_IPV4) {
+#endif
+        hash_type |= IONIC_RSS_TYPE_IPV4_UDP;
+    }
+
+    if (ndis_hash_type & NDIS_HASH_IPV6) {
+        hash_type |= IONIC_RSS_TYPE_IPV6;
+    }
+
+    if (ndis_hash_type & NDIS_HASH_TCP_IPV6) {
+        hash_type |= IONIC_RSS_TYPE_IPV6_TCP;
+#if (NDIS_SUPPORT_NDIS680)
+    }
+    if (ndis_hash_type & NDIS_HASH_UDP_IPV6) {
+#endif
+        hash_type |= IONIC_RSS_TYPE_IPV6_UDP;
+    }
 
     return hash_type;
 }
