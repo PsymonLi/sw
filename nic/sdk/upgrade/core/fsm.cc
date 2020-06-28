@@ -50,17 +50,19 @@ upg_stage_t entry_stage;
 static void
 dispatch_event (ipc_svc_dom_id_t dom, upg_stage_t id, upg_svc svc)
 {
-    LOG_SEND_MSG(svc.name().c_str(), fsm_states.timeout(),
-                 ipc_svc_dom_id_to_name(dom));
     SDK_ASSERT(fsm_stages.find(id) != fsm_stages.end());
 
     if (svc.has_valid_ipc_id()) {
         if (dom == IPC_SVC_DOM_ID_B &&
             fsm_states.init_params()->upg_event_fwd_cb) {
+            UPG_TRACE_INFO("Sending request to domain %s, timeout %f",
+                           ipc_svc_dom_id_to_name(dom), fsm_states.timeout())
             fsm_states.clear_pending_svcs();
             fsm_states.init_params()->upg_event_fwd_cb(id, svc.name(),
                                                        svc.ipc_id());
         } else {
+            LOG_SEND_MSG(svc.name().c_str(), fsm_states.timeout(),
+                         ipc_svc_dom_id_to_name(dom));
             fsm_states.set_pending_svc(svc.name());
             svc.dispatch_event(dom, id, fsm_states.init_params()->upg_mode);
         }
@@ -150,11 +152,15 @@ invoke_hooks (upg_stage_t stage_id, hook_execution_t hook_type,
 static bool
 execute_pre_hooks (upg_stage_t stage_id)
 {
+    if (IPC_SVC_DOM_ID_B == fsm_states.domain()) {
+        // hooks will be executed in domain B
+        return true ;
+    }
+
     if (!fsm_states.is_pre_hooks_done()) {
         fsm_states.set_is_pre_hooks_done(true);
         return invoke_hooks(stage_id, PRE_STAGE);
     } else {
-        std::string name = upg_stage2str(stage_id);
         return true;
     }
 }
@@ -162,12 +168,15 @@ execute_pre_hooks (upg_stage_t stage_id)
 static bool
 execute_post_hooks (upg_stage_t stage_id, svc_rsp_code_t status)
 {
+    if (IPC_SVC_DOM_ID_B == fsm_states.domain()) {
+        return true ;
+    }
+
     SDK_ASSERT(status != SVC_RSP_MAX);
     if (!fsm_states.is_post_hooks_done()) {
         fsm_states.set_is_post_hooks_done(true);
         return invoke_hooks(stage_id, POST_STAGE, status);
     } else {
-        std::string name = upg_stage2str(stage_id);
         return true;
     }
 }
