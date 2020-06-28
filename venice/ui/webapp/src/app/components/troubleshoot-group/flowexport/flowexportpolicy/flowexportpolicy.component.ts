@@ -53,6 +53,10 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
       const resArr =  this.formatTargets(value);
       return resArr.toString();
+    },
+    'status.propagation-status': (opts): string => {
+      const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
+      return value['pending-dscs'].join(',');
     }
   };
   isTabComponent = false;

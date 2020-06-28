@@ -193,8 +193,8 @@ $vertical-gutter: 5px;
   margin: 10px 0px;
 }
 
-//VS-492  firefox issue with input.type=number. Ensure not breaking other browsers
-.newrollout .newrollout-row input.ui-inputtext:not(.ui-dropdown-filter) {
+//VS-492  firefox issue with input.type=number. Ensure not breaking other browsers. // VS-2013
+.newrollout-container .newrollout-row input.ui-inputtext:not(.ui-dropdown-filter) {
   padding: 0px 10px;
 }
 
@@ -202,11 +202,11 @@ $vertical-gutter: 5px;
   display: none;
 }
 
-.newrollout .label.newrollout-schedulenow-text.ui-chkbox-label.ui-label-disabled {
+.newrollout-container .label.newrollout-schedulenow-text.ui-chkbox-label.ui-label-disabled {
   opacity: 0.5;
 }
 
-.newrollout .newrollout-schedulenow-text.ui-label-disabled {
+.newrollout-container .newrollout-schedulenow-text.ui-label-disabled {
   opacity: 0.5;
 }
 
