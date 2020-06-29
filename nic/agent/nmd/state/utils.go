@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/pensando/netlink"
+
 	nmdProto "github.com/pensando/sw/nic/agent/protos/nmd"
 	vldtor "github.com/pensando/sw/venice/utils/apigen/validators"
 )
@@ -97,4 +99,18 @@ func errInternalServer(err error) *ErrInternalServer {
 		return &errSrv
 	}
 	return nil
+}
+
+func isInbandIPValid() bool {
+	link, err := netlink.LinkByName("bond0")
+	if err != nil {
+		return false
+	}
+
+	addrs, err := netlink.AddrList(link, netlink.FAMILY_V4)
+	if err != nil || len(addrs) == 0 {
+		return false
+	}
+
+	return true
 }
