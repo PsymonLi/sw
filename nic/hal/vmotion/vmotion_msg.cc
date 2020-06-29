@@ -43,7 +43,7 @@ vmotion_send_msg (VmotionMessage& msg, SSL *ssl)
         ret = HAL_RET_ERR;
         goto end;
     }
-    HAL_TRACE_DEBUG("vmotion msg send. msg_len: {} Sent: {}", msg_len, byte_count);
+    HAL_TRACE_INFO("vmotion msg send. msg_len: {} Sent: {}", msg_len, byte_count);
 end:
     HAL_FREE(HAL_MEM_ALLOC_VMOTION_BUFFER, pkt);
     free(coded_output);
@@ -88,7 +88,7 @@ vmotion_recv_msg (VmotionMessage& msg, SSL *ssl)
         return HAL_RET_CONN_CLOSED;
     }
 
-    HAL_TRACE_DEBUG("vmotion msg recv. msg_len: {}", msg_len);
+    HAL_TRACE_INFO("vmotion msg recv. msg_len: {}", msg_len);
 
     uint32_t tmp_data_len;
     ArrayInputStream ais_msg(buff_msg, msg_len);

@@ -107,6 +107,7 @@ typedef struct vmotion_ep_dbg_s {
     uint32_t          flags;
     uint32_t          sm_state;
     timespec_t        start_time;
+    timespec_t        term_sync_time;
     timespec_t        end_time;
     uint32_t          sync_cnt;
     uint32_t          term_sync_cnt;

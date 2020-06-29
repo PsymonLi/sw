@@ -131,7 +131,7 @@ copy_session_info (VmotionMessage *msg_rsp, SessionGetResponseMsg *rsp,
         sess_cnt++;
     }
     *sess_count = sess_cnt;
-    HAL_TRACE_DEBUG(" Cur_Session : {}, Session_Count : {} ", *cur_sess, *sess_count);
+    HAL_TRACE_INFO(" Cur_Session : {}, Session_Count : {} ", *cur_sess, *sess_count);
     return true;
 }
 
@@ -157,7 +157,7 @@ vmotion_src_host_fsm_def::proc_sync_begin(fsm_state_ctx ctx, fsm_event_data data
     vmn_ep->set_last_sync_time();
 
     if (hal::ep_get_session_info(ep, rsp) != HAL_RET_OK) {
-        HAL_TRACE_DEBUG("Sync no session EP: {}", macaddr2str(ep->l2_key.mac_addr));
+        HAL_TRACE_INFO("Sync no session EP: {}", macaddr2str(ep->l2_key.mac_addr));
         ret = false;
         goto end;
     }
@@ -227,6 +227,9 @@ vmotion_src_host_fsm_def::proc_term_sync_req(fsm_state_ctx ctx, fsm_event_data d
         ret = false;
         goto end;
     }
+
+    // Record vMotion Term Sync start time
+    vmn_ep->debug_record_time(&vmotion_ep_dbg_t::term_sync_time);
 
     // Add EP Quiesce NACL entry
     vmn_ep->get_vmotion()->vmotion_ep_quiesce_program(ep, TRUE);
@@ -389,7 +392,7 @@ src_host_thread_rcv_sock_msg (sdk::event_thread::io_t *io, int sock_fd, int even
 
     ret = vmotion_recv_msg(msg, thread_ctx->tls_connection->get_ssl());
 
-    HAL_TRACE_DEBUG("source host thread recvd sock msg: {} Ret: {} Events: {}",
+    HAL_TRACE_INFO("source host thread recvd sock msg: {} Ret: {} Events: {}",
                     VmotionMessageType_Name(msg.type()), ret, events);
 
     if (ret == HAL_RET_CONN_CLOSED) {
@@ -461,7 +464,7 @@ src_host_thread_exit (void *ctxt)
     vmotion_thread_ctx_t *thread_ctx = (vmotion_thread_ctx_t *)ctxt;
     vmotion_ep           *vmn_ep = thread_ctx->vmn_ep;
 
-    HAL_TRACE_DEBUG("Source host thread exit vmn_ep:{:p}", (void *)vmn_ep);
+    HAL_TRACE_INFO("Source host thread exit vmn_ep:{:p}", (void *)vmn_ep);
 
     vmotion::delay_delete_thread(thread_ctx->th);
 

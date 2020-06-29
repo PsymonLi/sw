@@ -524,7 +524,8 @@ func vmotionShowResp(resp *halproto.VmotionDebugResponse) {
 			ep.GetState())
 		fmt.Printf("  SyncCnt:%d (Msg:%d) TermSyncCnt:%d (Msg:%d)\n",
 			ep.GetSyncSessCnt(), ep.GetSyncCnt(), ep.GetTermSyncSessCnt(), ep.GetTermSyncCnt())
-		fmt.Printf("  StartTime:[%s], EndTime:[%s]\n", ep.GetStartTime(), ep.GetEndTime())
+		fmt.Printf("  Times - Start:[%s], TermSync:[%s] End:[%s]\n", ep.GetStartTime(),
+			ep.GetTermSyncTime(), ep.GetEndTime())
 		fmt.Println(hdrLine)
 	}
 	fmt.Println(hdrLine)
@@ -539,7 +540,7 @@ func vmotionShowResp(resp *halproto.VmotionDebugResponse) {
 			ep.GetState())
 		fmt.Printf("  SyncCnt:%d (Msg:%d) TermSyncCnt:%d (Msg:%d)\n",
 			ep.GetSyncSessCnt(), ep.GetSyncCnt(), ep.GetTermSyncSessCnt(), ep.GetTermSyncCnt())
-		fmt.Printf("  StartTime:[%s]\n", ep.GetStartTime())
+		fmt.Printf("  Times - Start:[%s] TermSync:[%s]\n", ep.GetStartTime(), ep.GetTermSyncTime())
 		fmt.Println(hdrLine)
 	}
 	fmt.Println(hdrLine)

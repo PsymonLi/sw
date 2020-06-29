@@ -187,6 +187,9 @@ vmotion_dst_host_fsm_def::process_rarp_req(fsm_state_ctx ctx, fsm_event_data dat
 
     HAL_TRACE_INFO("Dest Host EP: {}", vmn_ep->get_ep_handle());
 
+    // Record vMotion Term Sync start time
+    vmn_ep->debug_record_time(&vmotion_ep_dbg_t::term_sync_time);
+
     VMOTION_FLAG_SET_RARP_RCVD(vmn_ep);
 
     msg_rsp.set_type(VMOTION_MSG_TYPE_TERM_SYNC_REQ);
@@ -195,6 +198,7 @@ vmotion_dst_host_fsm_def::process_rarp_req(fsm_state_ctx ctx, fsm_event_data dat
         HAL_TRACE_ERR("vmotion: unable to send sync req message");
         return false;
     }
+
     return true;
 }
 
@@ -206,6 +210,9 @@ vmotion_dst_host_fsm_def::process_ep_move_done(fsm_state_ctx ctx, fsm_event_data
 
     HAL_TRACE_INFO("Dest Host EP: {}", vmn_ep->get_ep_handle());
 
+    // Record vMotion Term Sync start time
+    vmn_ep->debug_record_time(&vmotion_ep_dbg_t::term_sync_time);
+
     VMOTION_FLAG_SET_EP_MOV_DONE_RCVD(vmn_ep);
 
     msg_rsp.set_type(VMOTION_MSG_TYPE_TERM_SYNC_REQ);
@@ -214,6 +221,7 @@ vmotion_dst_host_fsm_def::process_ep_move_done(fsm_state_ctx ctx, fsm_event_data
         HAL_TRACE_ERR("vmotion: unable to send sync req message");
         return false;
     }
+
     return true;
 }
 
@@ -262,7 +270,7 @@ vmotion_dst_host_fsm_def::process_sync(fsm_state_ctx ctx, fsm_event_data data)
     pd_func_args.pd_l2seg_get_flow_lkupid = &args;
     hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, &pd_func_args);
 
-    HAL_TRACE_DEBUG("Dest Host Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{} Cnt:{}",
+    HAL_TRACE_INFO("Dest Host Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{} Cnt:{}",
                     macaddr2str(ep->l2_key.mac_addr), ep->l2seg_handle, ep->vrf_handle,
                     l2seg->vrf_handle, args.hwid, ((VmotionMessage *)data)->sync().sessions_size());
 
@@ -312,7 +320,7 @@ vmotion_dst_host_fsm_def::process_term_sync(fsm_state_ctx ctx, fsm_event_data da
     pd_func_args.pd_l2seg_get_flow_lkupid = &args;
     hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_L2SEG_GET_FLOW_LKPID, &pd_func_args);
 
-    HAL_TRACE_DEBUG("Dest Host Term Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{}",
+    HAL_TRACE_INFO("Dest Host Term Sync EP: {} L2SegHdl:{} VrfHdl:{} L2SegVrf:{} lkpVrf:{}",
                     macaddr2str(ep->l2_key.mac_addr), ep->l2seg_handle, ep->vrf_handle,
                     l2seg->vrf_handle, args.hwid);
 
@@ -372,7 +380,7 @@ send_proxy_rarp_request (void *data)
 
     rarp_ctx->ret    = fte::utils::hal_inject_rarp_request_pkt(&pkt_data);
 
-    HAL_TRACE_DEBUG("Send Rarp req EP:{} Ret:{}", macaddr2str(ep->l2_key.mac_addr), rarp_ctx->ret);
+    HAL_TRACE_INFO("Send Rarp req EP:{} Ret:{}", macaddr2str(ep->l2_key.mac_addr), rarp_ctx->ret);
 
     HAL_FREE(hal::HAL_MEM_ALLOC_FTE, rarp_ctx);
 }
@@ -497,7 +505,7 @@ dst_host_thread_rcv_event (void *message, void *ctx)
     vmotion_ep            *vmn_ep = (vmotion_ep *)ctx;
     vmotion_thread_evt_t  evt     = static_cast<vmotion_thread_evt_t>(reinterpret_cast<uintptr_t>(message));
 
-    HAL_TRACE_DEBUG("vMotion dst host event thread. EP: {} Event:{} Flags: {}",
+    HAL_TRACE_INFO("vMotion dst host event thread. EP: {} Event:{} Flags: {}",
                     vmn_ep->get_ep_handle(), evt, *vmn_ep->get_flags());
 
     if (evt == VMOTION_EVT_RARP_RCVD) {
@@ -532,7 +540,7 @@ dst_host_connect_to_old_host(int sock, struct sockaddr_in *addr)
         flags &= ~O_NONBLOCK;
         fcntl(sock, F_SETFL, flags);
 
-        HAL_TRACE_DEBUG("connect success");
+        HAL_TRACE_INFO("connect success");
         return HAL_RET_OK;
     }
 
@@ -547,7 +555,7 @@ dst_host_connect_to_old_host(int sock, struct sockaddr_in *addr)
             flags &= ~O_NONBLOCK;
             fcntl(sock, F_SETFL, flags);
 
-            HAL_TRACE_DEBUG("connect success");
+            HAL_TRACE_INFO("connect success");
             return HAL_RET_OK;
         }
     }
@@ -607,7 +615,7 @@ end:
 hal_ret_t
 vmotion_ep::dst_host_exit(void)
 {
-    HAL_TRACE_DEBUG("Destination host thread exit");
+    HAL_TRACE_INFO("Destination host thread exit");
 
     vmotion::delay_delete_thread(evt_thread_);
 
@@ -630,7 +638,7 @@ vmotion_ep::spawn_dst_host_thread(void)
     char      thread_name[SDK_MAX_THREAD_NAME_LEN];
     hal_ret_t ret = HAL_RET_OK;
 
-    HAL_TRACE_DEBUG("spawning destination host thread");
+    HAL_TRACE_INFO("spawning destination host thread");
 
     ret = get_vmotion()->alloc_thread_id(&thread_id_);
     if (ret != HAL_RET_OK) {

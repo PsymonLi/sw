@@ -1780,11 +1780,12 @@ message VmotionDebugEp {
   uint32            flags                = 5;
   uint32            state                = 6;
   string            start_time           = 7;
-  string            end_time             = 8;
-  uint32            sync_cnt             = 9;
-  uint32            term_sync_cnt        = 10;
-  uint32            sync_sess_cnt        = 11;
-  uint32            term_sync_sess_cnt   = 12;
+  string            term_sync_time       = 8;
+  string            end_time             = 9;
+  uint32            sync_cnt             = 10;
+  uint32            term_sync_cnt        = 11;
+  uint32            sync_sess_cnt        = 12;
+  uint32            term_sync_sess_cnt   = 13;
 }
 
 message VmotionActiveEp {

@@ -16,7 +16,7 @@ vmotion_src_host_fsm_def* vmotion::src_host_fsm_def_ = vmotion_src_host_fsm_def:
 hal_ret_t
 vmotion_init (int vmotion_port)
 {
-    HAL_TRACE_DEBUG("vmotion init port:{}", vmotion_port);
+    HAL_TRACE_INFO("vmotion init port:{}", vmotion_port);
     vmotion *vm =
         vmotion::factory(VMOTION_MAX_THREADS, (vmotion_port ? vmotion_port : VMOTION_PORT));
 
@@ -30,7 +30,7 @@ vmotion_deinit ()
 {
     vmotion *vmn = g_hal_state->get_vmotion();
 
-    HAL_TRACE_DEBUG("vmotion deinit vmn:{:p}", (void *)vmn);
+    HAL_TRACE_INFO("vmotion deinit vmn:{:p}", (void *)vmn);
 
     if (!vmn) {
         return HAL_RET_OK;
@@ -73,7 +73,7 @@ vmotion::destroy(vmotion *vmn)
     if (ret != HAL_RET_RETRY) {
         hal::delay_delete_to_slab(HAL_SLAB_VMOTION, vmn);
     }
-    HAL_TRACE_DEBUG("vMotion Destroy. Ret:{}", ret);
+    HAL_TRACE_INFO("vMotion Destroy. Ret:{}", ret);
 }
 
 static void
@@ -134,7 +134,7 @@ vmotion::deinit()
 {
     std::vector<vmotion_ep_dbg_t *>::iterator it = vmotion_dbg_history_.begin();
 
-    HAL_TRACE_DEBUG("vMotion Deinit. Active VMN_EPs:{}", vmn_eps_.size());
+    HAL_TRACE_INFO("vMotion Deinit. Active VMN_EPs:{}", vmn_eps_.size());
 
     // Exit master thread
     vmotion_.vmotion_master->stop();
@@ -182,7 +182,7 @@ vmotion::delay_deinit()
 {
     std::vector<vmotion_ep_dbg_t *>::iterator it = vmotion_dbg_history_.begin();
 
-    HAL_TRACE_DEBUG("vMotion Delay Deinit Attempt:{}", delay_del_attempt_cnt_);
+    HAL_TRACE_INFO("vMotion Delay Deinit Attempt:{}", delay_del_attempt_cnt_);
 
     if (!vmn_eps_.empty() && delay_del_attempt_cnt_ < VMOTION_DELAY_DEL_MAX_ATTEMPT) {
         delay_del_attempt_cnt_++;
@@ -289,7 +289,7 @@ vmotion::master_thread_exit(void *ctxt)
 {
     vmotion       *vmn = (vmotion *)ctxt;
 
-    HAL_TRACE_DEBUG("Master vMotion thread thread exit");
+    HAL_TRACE_INFO("Master vMotion thread thread exit");
 
     vmotion::delay_delete_thread(vmn->get_master_event_thrd());
 
@@ -365,13 +365,14 @@ vmotion::create_vmotion_ep(ep_t *ep, ep_vmotion_type_t type)
 hal_ret_t
 vmotion::delete_vmotion_ep(vmotion_ep *vmn_ep)
 {
+    VMOTION_WLOCK
     auto it = std::find(vmn_eps_.begin(), vmn_eps_.end(), vmn_ep);
     if (it == vmn_eps_.end()) {
+        VMOTION_WUNLOCK
         HAL_TRACE_ERR("vmotion: EP Missing in EP list");
         return HAL_RET_ERR;
     }
     // Delete the from the EP List
-    VMOTION_WLOCK
     vmn_eps_.erase(it);
     VMOTION_WUNLOCK
 
@@ -562,6 +563,9 @@ vmotion_ep::populate_vmotion_ep_dump (internal::VmotionDebugEp *rsp)
     strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
              localtime(&vmotion_ep_dbg_.start_time.tv_sec));
     rsp->set_start_time(timebuf);
+    strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
+             localtime(&vmotion_ep_dbg_.term_sync_time.tv_sec));
+    rsp->set_term_sync_time(timebuf);
 }
 
 void
@@ -583,6 +587,9 @@ vmotion::populate_vmotion_history_dump (internal::VmotionDebugEp *rsp, vmotion_e
     strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
              localtime(&entry->start_time.tv_sec));
     rsp->set_start_time(timebuf);
+    strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
+             localtime(&entry->term_sync_time.tv_sec));
+    rsp->set_term_sync_time(timebuf);
     strftime(timebuf, sizeof(timebuf), "%Y/%m/%d %H:%M:%S",
              localtime(&entry->end_time.tv_sec));
     rsp->set_end_time(timebuf);
@@ -645,7 +652,7 @@ vmotion_thread_delay_del_cb (void *timer, uint32_t timer_id, void *ctxt)
 {
     sdk::event_thread::event_thread *thr = (sdk::event_thread::event_thread *)ctxt;
 
-    HAL_TRACE_DEBUG("vmotion_thread_delay_del_cb thread: {}", thr->thread_id());
+    HAL_TRACE_INFO("vmotion_thread_delay_del_cb thread: {}", thr->thread_id());
     // Free up event thread memory
     sdk::event_thread::event_thread::destroy(thr);
 
