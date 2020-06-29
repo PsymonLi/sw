@@ -355,27 +355,14 @@ func (sw *nexus3kRest) DoQueueConfig(queueConfig *QueueConfig) error {
 	return sw.runConfigCommands(cmds)
 }
 
-func (sw *nexus3kRest) SetBreakout(breakout bool) {
-	sw.breakout = breakout
-}
-
-func (sw *nexus3kRest) GetBreakout() bool {
-	return sw.breakout
-}
-
 func (sw *nexus3kRest) SetBreakoutMode(port string) error {
 	parts := strings.Split(port, "/")
 	cmds := []string{
 		"interface breakout module 1 port " + parts[1] + " map 50g-2x",
 	}
-	sw.runConfigCommands(cmds)
+	sw.clt.Configure(cmds)
 	cmds = []string{
-		"interface " + port,
-		"fec off",
-	}
-	sw.runConfigCommands(cmds)
-	cmds = []string{
-		"interface " + port + "/1",
+		"interface " + parts[0] + "/" + parts[1] + "/1",
 		"fec off",
 	}
 	sw.runConfigCommands(cmds)
@@ -385,14 +372,14 @@ func (sw *nexus3kRest) SetBreakoutMode(port string) error {
 func (sw *nexus3kRest) UnsetBreakoutMode(port string) error {
 	parts := strings.Split(port, "/")
 	cmds := []string{
-		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
-	}
-	sw.runConfigCommands(cmds)
-	cmds = []string{
 		"interface " + parts[0] + "/" + parts[1] + "/1",
 		"no fec off",
 	}
 	sw.runConfigCommands(cmds)
+	cmds = []string{
+		"no interface breakout module 1 port " + parts[1] + " map 50g-2x",
+	}
+	sw.clt.Configure(cmds)
 	return nil
 }
 

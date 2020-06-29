@@ -113,8 +113,16 @@ class TestSuite:
         else:
             raise ValueError("speed value must be auto, 100g, or 50g. user entered {0}".format(speed))
 
-    def GetPortSpeed(self):
-        return self.__portspeed
+    def GetPortSpeed(self, node=None, nic=None):
+        if not node:
+            return self.__portspeed
+        pipeline = self.GetPipelineFromProvisionInfo(node, nic)
+        if pipeline == "athena":
+            speed = self.__portspeed
+        else:
+            speed = topo_pb2.DataSwitch.Speed_auto
+        api.Logger.debug("{0}:{1} is {2}. using port speed {3}".format(node, nic, pipeline, speed))
+        return speed 
 
     def GetTestbedType(self):
         if self.__spec.meta.mode.lower() == 'hardware':
@@ -504,6 +512,18 @@ class TestSuite:
         if hasattr(self.__spec.meta, 'provision'):
             return self.__spec.meta.provision
         return None
+
+    def GetPipelineFromProvisionInfo(self, nodeName, nicName):
+        try:
+            prov_spec = parser.YmlParse(self.ProvisionInfo())
+            nodes = getattr(prov_spec, 'nodes', [])
+            for node in nodes:
+                if node.node.name == nodeName:
+                    for nic in node.node.nics:
+                        if nic.nic.name == nicName:
+                            return nic.nic.pipeline
+        except:
+            Logger.debug("failed to find pipeline for {0}:{1}".format(nodeName, nicName))
 
     def LogsDir(self):
         return "%s/iota/logs/%s" % (api.GetTopDir(), self.Name())

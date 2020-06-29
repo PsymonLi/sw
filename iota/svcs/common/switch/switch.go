@@ -120,8 +120,6 @@ type Switch interface {
 	DoDscpConfig(dscpConfig *DscpConfig) error
 	DoQueueConfig(queueConfig *QueueConfig) error
 	CheckSwitchConfiguration(port string, mode PortMode, status PortStatus, speed PortSpeed) (string, error)
-	SetBreakout(bool)
-	GetBreakout() bool
 	SetBreakoutMode(string) error
 	UnsetBreakoutMode(string) error
 	CreatePortChannel(portChannelNumber string, mtu uint32, nativeVlan uint32, trunkVlanRange string, ports []string) error

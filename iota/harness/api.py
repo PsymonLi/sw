@@ -101,6 +101,7 @@ def GetTestbedEsxPassword():
 def CleanupTestbed(req):
     global gl_topo_svc_stub
     Logger.debug("Cleaning up Testbed:")
+    UnsetBreakoutInterfaces()
     return __rpc(req, gl_topo_svc_stub.CleanUpTestBed)
 
 def InitTestbed(req):
@@ -1225,8 +1226,6 @@ def GetMultiVlanAllocators():
     return store.GetTestbed().GetMultiVlanAllocators()
 
 def UnsetBreakoutInterfaces():
-    if store.GetTestbed().GetCurrentTestsuite().GetPortSpeed() != topo_svc.DataSwitch.Speed_50G:
-        return
     try:
         req = topo_svc.UnsetBreakoutMsg()
         for instance in store.GetTestbed().GetInstances():
@@ -1238,9 +1237,21 @@ def UnsetBreakoutInterfaces():
                         switch_ctx.password = port.SwitchPassword
                         switch_ctx.ip = port.SwitchIP
                         switch_ctx.igmp_disabled = True
-                        switch_ctx.speed = store.GetTestbed().GetCurrentTestsuite().GetPortSpeed()
-                        switch_ctx.ports.append("e1/" + str(port.SwitchPort))
+                        switch_ctx.speed = topo_svc.DataSwitch.Speed_auto
+                        switch_ctx.ports.append("e1/" + str(port.SwitchPort) + "/1")
         return __rpc(req, gl_topo_svc_stub.UnsetBreakoutInterfaces)
     except:
         Logger.warn("failed to clear breakout interfaces")
+
+def GetCurrentTestsuite():
+    return store.GetTestbed().GetCurrentTestsuite()
+
+def GetVlanGroupNames():
+    return list(store.GetTopology().GetVlanMappings().keys())
+
+def GetVlanGroupVlan(vgi):
+    vas = store.GetTestbed().GetMultiVlanAllocators()
+    for va in vas:
+        if va.GetId() == vgi:
+            return list(va.Vlans())
 

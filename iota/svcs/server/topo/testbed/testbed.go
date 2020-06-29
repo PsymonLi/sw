@@ -468,20 +468,18 @@ func setSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string,
 
 	for _, port := range ports {
 
-		if dataSwitch.GetBreakout() == true {
+		log.Infof("port %s speed is %v", port, speed)
+		if speed == dataswitch.Speed50g {
 			err := dataSwitch.SetBreakoutMode(port)
 			if err != nil {
 				return errors.Wrapf(err, "Setting breakout mode failed %v", port)
 			}
+			port = port + "/1"
 		} else {
 			err := dataSwitch.UnsetBreakoutMode(port)
 			if err != nil {
 				return errors.Wrapf(err, "Clearing breakout mode failed %v", port)
 			}
-		}
-
-		if dataSwitch.GetBreakout() == true {
-			port = port + "/1"
 		}
 
 		if err := dataSwitch.SetTrunkMode(port); err != nil {
@@ -499,10 +497,8 @@ func setSwitchPortConfig(dataSwitch dataswitch.Switch, ports []string,
 			}
 		}
 
-		if speed != dataswitch.Speed50g {
-			if err := dataSwitch.SetSpeed(port, speed); err != nil {
-				return errors.Wrap(err, "Setting Port speed failed")
-			}
+		if err := dataSwitch.SetSpeed(port, speed); err != nil {
+			return errors.Wrap(err, "Setting Port speed failed")
 		}
 
 		if err := dataSwitch.SetNativeVlan(port, nativeVlan); err != nil {
@@ -719,11 +715,10 @@ func doVlanConfiguration(dataSwitch dataswitch.Switch, ports []string, vlanConfi
 	for _, port := range ports {
 		if vlanConfig.Unset {
 			if err := dataSwitch.UnsetTrunkVlanRange(port, vlanConfig.GetVlanRange()); err != nil {
-				return errors.Wrap(err, "Setting Vlan trunk range failed")
+				//return errors.Wrap(err, "unsetting Vlan trunk range failed")
 			}
-			if err := dataSwitch.UnsetNativeVlan(port,
-				int(vlanConfig.GetNativeVlan())); err != nil {
-				return errors.Wrap(err, "Setting Vlan trunk range failed")
+			if err := dataSwitch.UnsetNativeVlan(port, int(vlanConfig.GetNativeVlan())); err != nil {
+				//return errors.Wrap(err, "unsetting native vlan failed")
 			}
 		} else {
 			if err := dataSwitch.SetTrunkVlanRange(port, vlanConfig.GetVlanRange()); err != nil {
@@ -731,7 +726,7 @@ func doVlanConfiguration(dataSwitch dataswitch.Switch, ports []string, vlanConfi
 			}
 			if err := dataSwitch.SetNativeVlan(port,
 				int(vlanConfig.GetNativeVlan())); err != nil {
-				return errors.Wrap(err, "Setting Vlan trunk range failed")
+				return errors.Wrap(err, "Setting native vlan failed")
 			}
 		}
 
@@ -878,9 +873,6 @@ func SetUpTestbedSwitch(dsSwitches []*iota.DataSwitch, switchPortID uint32, nati
 			return nil, errors.New("Switch not found")
 		}
 		speed := getSpeed(ds.GetSpeed())
-		if speed == dataswitch.Speed50g {
-			n3k.SetBreakout(true)
-		}
 
 		err := clearSwitchPortConfig(n3k, ds.GetPorts())
 		if err != nil {

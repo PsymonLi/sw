@@ -200,28 +200,11 @@ class _Testbed:
             return path
         return GlobalOptions.topdir + '/' + path
 
-    def __prepare_SwitchMsg(self, msg, instance, switch_ips, setup_qos=True):
+    def __prepare_SwitchMsg(self, msg, instance, switch_ips, nodeIndex, setup_qos=True):
         if instance.Type != "bm":
             return
-
-        if hasattr(instance, 'DataNetworks') and instance.DataNetworks != None: # for backward compatibility
-            for nw in instance.DataNetworks:
-                switch_ctx = switch_ips.get(nw.SwitchIP, None)
-                if not switch_ctx:
-                    switch_ctx = msg.data_switches.add()
-                    switch_ips[nw.SwitchIP] = switch_ctx
-
-                    switch_ctx.username = nw.SwitchUsername
-                    switch_ctx.password = nw.SwitchPassword
-                    switch_ctx.ip = nw.SwitchIP
-                    # igmp disabled for now
-                    switch_ctx.igmp_disabled = True
-                    if setup_qos:
-                        setUpSwitchQos(switch_ctx)
-                switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
-                switch_ctx.ports.append(nw.Name)
-        else:
-            for nic in instance.Nics:
+        if hasattr(instance, 'Nics') and instance.Nics != None:
+            for nicIndex, nic in enumerate(instance.Nics):
                 for port in nic.Ports:
                     if hasattr(port, 'SwitchIP') and port.SwitchIP and port.SwitchIP != "":
                         switch_ctx = switch_ips.get(port.SwitchIP, None)
@@ -236,10 +219,35 @@ class _Testbed:
                             switch_ctx.igmp_disabled = True
                             if setup_qos:
                                 setUpSwitchQos(switch_ctx)
-                        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
-                        switch_ctx.ports.append("e1/" + str(port.SwitchPort))
+                        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed("node{0}".format(nodeIndex), "naples{0}".format(nicIndex+1))
+                        portStr = "e1/" + str(port.SwitchPort)
+                        #if switch_ctx.speed == topo_pb2.DataSwitch.Speed_50G:
+                        #    portStr = portStr + "/1"
+                        switch_ctx.ports.append(portStr)
                 if not GlobalOptions.enable_multi_naples:
                     break
+        elif hasattr(instance, 'DataNetworks') and instance.DataNetworks != None: # for backward compatibility
+            for nw in instance.DataNetworks:
+                switch_ctx = switch_ips.get(nw.SwitchIP, None)
+                if not switch_ctx:
+                    switch_ctx = msg.data_switches.add()
+                    switch_ips[nw.SwitchIP] = switch_ctx
+
+                    switch_ctx.username = nw.SwitchUsername
+                    switch_ctx.password = nw.SwitchPassword
+                    switch_ctx.ip = nw.SwitchIP
+                    # igmp disabled for now
+                    switch_ctx.igmp_disabled = True
+                    if setup_qos:
+                        setUpSwitchQos(switch_ctx)
+                switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed("node{0}".format(nodeIndex), "naples1")
+                print("LEGACY: PORT {0} SPEED IS {1}".format(nw.Name, switch_ctx.speed))
+                portStr = str(nw.Name)
+                #if switch_ctx.speed == topo_pb2.DataSwitch.Speed_50G:
+                #    portStr = portStr + "/1"
+                switch_ctx.ports.append(portStr)
+        else:
+            raise Exception("failed to process nic info from warmd.json")
         return
 
     def __prepare_TestBedMsg(self, ts):
@@ -263,7 +271,7 @@ class _Testbed:
         Logger.info("Native Vlan %s" % str(msg.native_vlan))
 
         is_vcenter = False
-        for instance in self.__tbspec.Instances:
+        for nodeIndex, instance in enumerate(self.__tbspec.Instances):
             node_msg = msg.nodes.add()
             node_msg.type = topo_pb2.TESTBED_NODE_TYPE_SIM
             node_msg.ip_address = instance.NodeMgmtIP
@@ -314,7 +322,7 @@ class _Testbed:
             #If Vlan base not set, ask topo server to allocate.
             if not (getattr(self.__tbspec, "TestbedVlanBase", None) or GlobalOptions.skip_switch_init):
                 switch_ips = {}
-                self.__prepare_SwitchMsg(msg, instance, switch_ips, setup_qos=True)
+                self.__prepare_SwitchMsg(msg, instance, switch_ips, nodeIndex+1, setup_qos=True)
                 if instance.Type == "bm":
                     #Testbed ID is the last one.
                     msg.testbed_id = getattr(instance, "ID", 0)
@@ -738,8 +746,8 @@ class _Testbed:
         unsetMsg = topo_pb2.SwitchMsg()
         unsetMsg.op = topo_pb2.VLAN_CONFIG
         switch_ips = {}
-        for instance in self.__tbspec.Instances:
-            self.__prepare_SwitchMsg(unsetMsg, instance, switch_ips, setup_qos=False)
+        for nodeIndex,instance in enumerate(self.__tbspec.Instances):
+            self.__prepare_SwitchMsg(unsetMsg, instance, switch_ips, nodeIndex+1, setup_qos=False)
             
         vlans = self.GetVlanRange()
         unsetMsg.vlan_config.unset = True
@@ -756,8 +764,8 @@ class _Testbed:
         setMsg = topo_pb2.SwitchMsg()
         setMsg.op = topo_pb2.CREATE_QOS_CONFIG
         switch_ips = {}
-        for instance in self.__tbspec.Instances:
-            self.__prepare_SwitchMsg(setMsg, instance, switch_ips, setup_qos=True)
+        for nodeIndex,instance in enumerate(self.__tbspec.Instances):
+            self.__prepare_SwitchMsg(setMsg, instance, switch_ips, nodeIndex+1, setup_qos=True)
 
         resp = api.DoSwitchOperation(setMsg)
         if not api.IsApiResponseOk(resp):
@@ -770,8 +778,8 @@ class _Testbed:
         setMsg = topo_pb2.SwitchMsg()
         setMsg.op = topo_pb2.VLAN_CONFIG
         switch_ips = {}
-        for instance in self.__tbspec.Instances:
-            self.__prepare_SwitchMsg(setMsg, instance, switch_ips, setup_qos=True)
+        for nodeIndex,instance in enumerate(self.__tbspec.Instances):
+            self.__prepare_SwitchMsg(setMsg, instance, switch_ips, nodeIndex+1, setup_qos=True)
         vlans = self.GetVlanRange()
         for ip, switch in switch_ips.items():
              setMsg.vlan_config.unset = False
@@ -812,8 +820,8 @@ class _Testbed:
                 return alloc
         raise Exception("could not find any allocators with skipAllocation == False")
 
-    def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset):
-        if self.GetCurrentTestsuite().GetPortSpeed() == topo_pb2.DataSwitch.Speed_50G:
+    def __sendSetVlanRequest(self, switchIp, port, vlans, username, password, unset, portspeed):
+        if portspeed == topo_pb2.DataSwitch.Speed_50G:
             portStr = "e1/" + str(port) + "/1"
         else:
             portStr = "e1/" + str(port)
@@ -823,7 +831,7 @@ class _Testbed:
         switch_ctx.username = username
         switch_ctx.password = password
         switch_ctx.ip = switchIp
-        switch_ctx.speed = self.GetCurrentTestsuite().GetPortSpeed()
+        switch_ctx.speed = portspeed
         switch_ctx.igmp_disabled = True
         switch_ctx.ports.append(portStr)
         setMsg.vlan_config.unset = unset
@@ -867,12 +875,14 @@ class _Testbed:
                         allocator.addMember(entry.node, entry.nic, entry.port)
                     node = topo.GetNodeByName(entry.node) #this returns topo node object
                     port = node.GetPortByIndex(entry.nic, entry.port)
+                    nicName = "naples{0}".format(entry.nic)
+                    portspeed = api.GetCurrentTestsuite().GetPortSpeed(node.Name(), nicName)
                     self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),
                                               origVlanRangeString, port.get("SwitchUsername"), 
-                                              port.get("SwitchPassword"), True)
+                                              port.get("SwitchPassword"), True, portspeed)
                     self.__sendSetVlanRequest(port.get("SwitchIP"), port.get("SwitchPort"),
                                               vlanRangeString, port.get("SwitchUsername"), 
-                                              port.get("SwitchPassword"), False)
+                                              port.get("SwitchPassword"), False, portspeed)
         return types.status.SUCCESS
 
 __testbed = _Testbed()
