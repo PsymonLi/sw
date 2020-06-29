@@ -19,10 +19,16 @@ header p4i_to_p4e_header_h {
     bit<1>  l2_vnic;
     bit<1>  session_info_en;
     bit<1>  conntrack_en;
-    bit<1>  pad1;
+    bit<1>  skip_flow_log;
+    bit<7>  pad;
+    bit<9>  vnic_id;
     bit<16> packet_len;
     bit<16> dnat_epoch;
     bit<32> flow_hash;
+}
+
+header p4i_to_p4e_nat_header_h {
+  bit<128> flow_log_dstAddr;
 }
 
 header ingress_recirc_header_h {
@@ -38,6 +44,21 @@ header ingress_recirc_header_h {
     bit<1>  l2_flow_ohash_lkp;
     bit<1>  flow_ohash_lkp;
     bit<1>  dnat_ohash_lkp;
+}
+
+header egress_recirc_header_h {
+    bit<1> flow_log_disposition;
+    bit<1> flow_log_select;
+    bit<1> direction;
+    bit<1> flow_miss;
+    bit<9>  vnic_id;
+    bit<4> oport;
+    bit<1> skip_flow_log;
+    bit<6> pad;
+}
+
+header egress_recirc_nat_header_h {
+    bit<128> flow_log_srcAddr;
 }
 
 header predicate_header_h {
@@ -438,6 +459,20 @@ header_union l4_uh {
 // @pragma pa_header_union ingress p4_to_p4plus_roce_eth_2
 // ethernet_h ethernet_2;
 
+header_union eg_uh {
+  @name(".p4i_to_p4e_header") 
+    p4i_to_p4e_header_h p4i_to_p4e_header;
+  @name(".egress_recirc_header")
+    egress_recirc_header_h egress_recirc_header;
+}
+
+header_union eg_nat_uh {
+  @name(".p4i_to_p4e_nat_header") 
+    p4i_to_p4e_nat_header_h p4i_to_p4e_nat_header;
+  @name(".egress_recirc_nat_header")
+    egress_recirc_nat_header_h egress_recirc_nat_header;
+}
+
 header_union ethernet_uh {
     ethernet_h ethernet;
     ethernet_h p4_to_p4plus_roce_eth;
@@ -519,9 +554,15 @@ struct headers {
     cap_phv_intr_rxdma_h capri_rxdma_intrinsic;
     cap_phv_intr_txdma_h capri_txdma_intrinsic;
     ingress_recirc_header_h ingress_recirc_header;
+    egress_recirc_header_h egress_recirc_header;
     p4i_to_p4e_header_h p4i_to_p4e_header;
+    p4i_to_p4e_nat_header_h p4i_to_p4e_nat_header;
     p4_to_p4plus_classic_nic_header_h  p4_to_p4plus_classic_nic;
     p4_to_p4plus_ip_addr_h p4_to_p4plus_classic_nic_ip;
+    eg_uh eg_u;  
+
+    eg_nat_uh eg_nat_u;  
+
     // layer 0
     ethernet_h ethernet_0;
     vlan_h ctag_0;

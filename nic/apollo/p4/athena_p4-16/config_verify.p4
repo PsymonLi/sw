@@ -35,7 +35,7 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
         size = SESSION_TABLE_SIZE;
         placement = HBM;
         default_action = config1_epoch_verify;
-        stage = 2;
+        stage = 1;
     }
 
     @capi_bitfields_struct
@@ -49,7 +49,7 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
         size = SESSION_TABLE_SIZE;
         placement = HBM;
         default_action = config2_epoch_verify;
-        stage = 2;
+        stage = 1;
     }
     
    

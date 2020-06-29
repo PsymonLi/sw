@@ -29,6 +29,8 @@ class athena_impl;
 
 #define MAX_KEY_NATIVE_TBL_ENTRIES   3
 #define MAX_KEY_TUNNELED_TBL_ENTRIES 3
+#define MAX_EGRESS_KEY_NATIVE_TBL_ENTRIES   6
+#define MAX_EGRESS_KEY_TUNNELED_TBL_ENTRIES 6
 
 /// \brief pipeline global state
 class athena_impl_state : public state_base {
@@ -42,6 +44,8 @@ public:
     /// \brief accessors
     sltcam *key_native_tbl(void) { return key_native_tbl_; };
     sltcam *key_tunneled_tbl(void) { return key_tunneled_tbl_; };
+    sltcam *egress_key_native_tbl(void) { return egress_key_native_tbl_; };
+    sltcam *egress_key_tunneled_tbl(void) { return egress_key_tunneled_tbl_; };
     sltcam *ingress_drop_stats_tbl(void) { return ingress_drop_stats_tbl_; }
     sltcam *egress_drop_stats_tbl(void) { return egress_drop_stats_tbl_; }
     sltcam *nacl_tbl(void) { return nacl_tbl_; }
@@ -52,12 +56,16 @@ public:
 private:
     sltcam *key_native_tbl_;            ///< key table for native packets
     sltcam *key_tunneled_tbl_;          ///< key table for tunneled packets
+    sltcam *egress_key_native_tbl_;            ///< egress_key table for native packets
+    sltcam *egress_key_tunneled_tbl_;          ///< egress_key table for tunneled packets
     sltcam *ingress_drop_stats_tbl_;    ///< ingress drop stats table
     sltcam *egress_drop_stats_tbl_;     ///< egress drop stats table
     sltcam *nacl_tbl_;                  ///< NACL tcam table
     sltcam *checksum_tbl_;              ///< Checksum tcam table
     sdk::table::handle_t key_native_tbl_hdls_[MAX_KEY_NATIVE_TBL_ENTRIES];
     sdk::table::handle_t key_tunneled_tbl_hdls_[MAX_KEY_TUNNELED_TBL_ENTRIES];
+    sdk::table::handle_t egress_key_native_tbl_hdls_[MAX_EGRESS_KEY_NATIVE_TBL_ENTRIES];
+    sdk::table::handle_t egress_key_tunneled_tbl_hdls_[MAX_EGRESS_KEY_TUNNELED_TBL_ENTRIES];
     sdk::table::handle_t ingress_drop_stats_tbl_hdls_[P4I_DROP_REASON_MAX + 1];
     sdk::table::handle_t egress_drop_stats_tbl_hdls_[P4E_DROP_REASON_MAX + 1];
 };

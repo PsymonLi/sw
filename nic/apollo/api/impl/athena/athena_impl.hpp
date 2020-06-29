@@ -169,6 +169,14 @@ private:
     /// \return SDK_RET_OK on success, failure status code on error
     sdk_ret_t key_tunneled_init_(void);
 
+    /// \brief  init routine to initialize egress key native table
+    /// \return SDK_RET_OK on success, failure status code on error
+    sdk_ret_t egress_key_native_init_(void);
+
+    /// \brief  init routine to initialize egress_key tunnel table
+    /// \return SDK_RET_OK on success, failure status code on error
+    sdk_ret_t egress_key_tunneled_init_(void);
+
     /// \brief  init routine to initialize NACL table
     /// \return SDK_RET_OK on success, failure status code on error
     sdk_ret_t nacl_init_(void);

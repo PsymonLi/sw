@@ -78,8 +78,11 @@
 #define P4I_DROP_REASON_MAX             P4I_DROP_NACL
 
 #define P4E_DROP_INVALID_NEXTHOP        0
+#define P4E_DROP_SECURITY_LIST          1
+#define P4E_DROP_NACL                   2
+#define P4E_DROP_POLICER                3
 #define P4E_DROP_REASON_MIN             P4E_DROP_INVALID_NEXTHOP
-#define P4E_DROP_REASON_MAX             P4E_DROP_INVALID_NEXTHOP
+#define P4E_DROP_REASON_MAX             P4E_DROP_POLICER
 
 /*****************************************************************************/
 /* VNIC Type                                                                 */
@@ -124,6 +127,11 @@
 #define P4E_STATS_FLAG_TX_TO_SWITCH             0x02
 #define P4E_STATS_FLAG_TX_TO_ARM                0x04
 
+/*****************************************************************************/
+/* Flow Log                                                       */
+/*****************************************************************************/
+#define FLOW_LOG_SALT_0  0x73
+#define FLOW_LOG_SALT_1  0xAB
 
 
 #endif /* _ATHENA_DEFINES_H_ */

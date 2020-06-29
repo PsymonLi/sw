@@ -354,6 +354,18 @@
             "size": "8M",
             "cache": "p4ig",
             "_comment": "256K * 32B"
+        },
+        {
+            "name": "flow_log_0",
+            "size": "64M",
+            "cache": "p4eg",
+            "_comment": "1M * 64B"
+        },
+        {
+            "name": "flow_log_1",
+            "size": "64M",
+            "cache": "p4eg",
+            "_comment": "1M * 64B"
         }
     ]
 }

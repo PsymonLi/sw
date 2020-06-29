@@ -16,6 +16,7 @@
 #define IPV4_FLOW_OHASH_TABLE_SIZE                          64
 
 #define NACL_TABLE_SIZE                                     512
+#define MIRRORING_NACL_TABLE_SIZE                           32
 
 #define CHECKSUM_TABLE_SIZE                                 32
 
@@ -28,9 +29,10 @@
 
 #define SESSION_TABLE_SIZE                                  4194304 // 4M
 
-#define POLICER_PPS_SIZE                                    2048
-#define POLICER_BW_SIZE                                     2048
+#define POLICER_BW1_SIZE                                    2048
+#define POLICER_BW2_SIZE                                    2048
 
 #define CONNTRACK_TABLE_SIZE                                4194304     // 4M: used 3.6M
 
 #define P4E_REDIR_TABLE_SIZE                                2
+#define FLOW_LOG_TABLE_SIZE                                 1048576     // 1M

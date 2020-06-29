@@ -33,6 +33,18 @@ athena_impl_state::athena_impl_state(pds_state *state) {
     key_tunneled_tbl_ = sltcam::factory(&table_params);
     SDK_ASSERT(key_tunneled_tbl() != NULL);
 
+    memset(&table_params, 0, sizeof(table_params));
+    table_params.table_id = P4TBL_ID_EGRESS_KEY_NATIVE;
+    table_params.entry_trace_en = true;
+    egress_key_native_tbl_ = sltcam::factory(&table_params);
+    SDK_ASSERT(egress_key_native_tbl() != NULL);
+
+    memset(&table_params, 0, sizeof(table_params));
+    table_params.table_id = P4TBL_ID_EGRESS_KEY_TUNNELED;
+    table_params.entry_trace_en = true;
+    egress_key_tunneled_tbl_ = sltcam::factory(&table_params);
+    SDK_ASSERT(key_tunneled_tbl() != NULL);
+
 #if 0
     memset(&table_params, 0, sizeof(table_params));
     table_params.table_id = P4TBL_ID_P4I_DROP_STATS;
@@ -63,6 +75,8 @@ athena_impl_state::athena_impl_state(pds_state *state) {
 athena_impl_state::~athena_impl_state() {
     sltcam::destroy(key_native_tbl());
     sltcam::destroy(key_tunneled_tbl());
+    sltcam::destroy(egress_key_native_tbl());
+    sltcam::destroy(egress_key_tunneled_tbl());
 #if 0
     sltcam::destroy(ingress_drop_stats_tbl());
     sltcam::destroy(egress_drop_stats_tbl());

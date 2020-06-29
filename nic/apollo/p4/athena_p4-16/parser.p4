@@ -273,7 +273,7 @@ state parse_txdma_gso {
       IP_PROTO_ICMPV6 : parse_icmp_v6_1;
       IP_PROTO_TCP    : parse_tcp_1;
       IP_PROTO_UDP    : parse_udp_1;
-      IP_PROTO_GRE    : parse_gre_1;
+      //      IP_PROTO_GRE    : parse_gre_1;
       IP_PROTO_IPV4   : parse_ipv4_in_ip_1;
       IP_PROTO_IPV6   : parse_ipv6_in_ip_1;
       default : accept;
@@ -725,7 +725,8 @@ state parse_txdma_gso {
     //   metadata.tunnel.tunnel_type_1 = INGRESS_TUNNEL_TYPE_GRE_MPLS;
     transition  parse_mpls;
   }
-  
+
+  /*  
   state parse_gre_1 {
     packet.extract(hdr.gre_1);
 #ifdef IPV6_SUPPORT
@@ -760,7 +761,7 @@ state parse_txdma_gso {
     // metadata.tunnel.tunnel_type_1 =  INGRESS_TUNNEL_TYPE_GRE;
     transition parse_ipv6_2;
   }
-
+  */
   /*  
   state parse_vxlan_1 {
     packet.extract(hdr.vxlan_1);
@@ -1050,11 +1051,11 @@ control AthenaIngressDeparser(packet_out packet,
 	/* Packet build */
         packet.emit(hdr.ingress_recirc_header);	
         packet.emit(hdr.p4i_to_p4e_header);
+        packet.emit(hdr.p4i_to_p4e_nat_header);
         packet.emit(hdr.ethernet_1);
         packet.emit(hdr.ctag_1);
         packet.emit(hdr.ip_1.ipv4);
         packet.emit(hdr.ip_1.ipv6);
-        packet.emit(hdr.gre_1);
         packet.emit(hdr.udp);
         packet.emit(hdr.mpls_src);
         packet.emit(hdr.mpls_dst);

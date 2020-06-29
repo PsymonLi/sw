@@ -23,8 +23,12 @@ control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
         /* To P4E */
        hdr.ingress_recirc_header.setInvalid();
        hdr.p4i_to_p4e_header.setValid();
+       hdr.p4i_to_p4e_header.vnic_id = metadata.key.vnic_id;
        hdr.p4i_to_p4e_header.flow_miss = metadata.cntrl.flow_miss;
        hdr.p4i_to_p4e_header.direction = metadata.cntrl.direction;
+       hdr.p4i_to_p4e_header.skip_flow_log = 0; // TO BE DONE based on P4PLUS 
+       hdr.p4i_to_p4e_nat_header.setValid();
+       hdr.p4i_to_p4e_nat_header.flow_log_dstAddr = metadata.key.src;
        capri_intrinsic.tm_oport = TM_PORT_EGRESS;
      }
    }
@@ -56,25 +60,17 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
 			    inout metadata_t metadata) {
 
   @name(".p4i_to_p4e_state") action p4i_to_p4e_state_a() {
-    metadata.cntrl.direction = hdr.p4i_to_p4e_header.direction;
-    metadata.cntrl.flow_miss = metadata.cntrl.flow_miss | hdr.p4i_to_p4e_header.flow_miss;
-     if(hdr.p4i_to_p4e_header.isValid()) {
-       metadata.cntrl.update_checksum = hdr.p4i_to_p4e_header.update_checksum;
-       if(hdr.p4i_to_p4e_header.flow_miss == FALSE) {
-	 if(hdr.p4i_to_p4e_header.index_type == FLOW_CACHE_INDEX_TYPE_SESSION_INFO) {
 
-	   metadata.cntrl.session_index = hdr.p4i_to_p4e_header.index;
-	   metadata.cntrl.session_index_valid = TRUE;
-	 }
-	 if(hdr.p4i_to_p4e_header.index_type == FLOW_CACHE_INDEX_TYPE_CONNTRACK_INFO) {
-	   metadata.cntrl.conntrack_index = hdr.p4i_to_p4e_header.index[21:0];
-	   metadata.cntrl.conntrack_index_valid = TRUE;
-	 }
+     if(hdr.egress_recirc_header.isValid()) {
+       metadata.cntrl.direction = hdr.egress_recirc_header.direction;
+       metadata.cntrl.redir_type = PACKET_ACTION_REDIR_UPLINK;
+     } else if(hdr.p4i_to_p4e_header.isValid()) {
+       metadata.cntrl.direction = hdr.p4i_to_p4e_header.direction;
+       metadata.cntrl.update_checksum = hdr.p4i_to_p4e_header.update_checksum;
 
 	 //	 metadata.cntrl.l2_session_index = hdr.p4i_to_p4e_header.l2_index;
 	 //metadata.cntrl.l2_session_index_valid = TRUE;
 
-       }
      }
 
   }
@@ -98,12 +94,27 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
         }
 	  default_action = p4i_to_p4e_state_a;
 	  error_action = p4i_to_p4e_state_error;
-	stage = 1;
+	stage = 0;
     }
 
 
   @name(".p4e_to_uplink") action p4e_to_uplink_a() {
-       capri_intrinsic.tm_oport = metadata.cntrl.redir_oport;
+    if(!hdr.egress_recirc_header.isValid()) {
+      hdr.egress_recirc_header.setValid();
+      hdr.eg_nat_u.egress_recirc_nat_header.setValid();
+      capri_intrinsic.tm_oport = TM_PORT_EGRESS; 
+      hdr.egress_recirc_header.flow_log_disposition = metadata.flow_log_key.disposition;
+      hdr.egress_recirc_header.flow_log_select = metadata.cntrl.flow_log_select;
+      hdr.egress_recirc_header.direction = metadata.cntrl.direction;
+      hdr.egress_recirc_header.vnic_id = hdr.p4i_to_p4e_header.vnic_id;
+      hdr.egress_recirc_header.oport = metadata.cntrl.redir_oport;
+      hdr.egress_recirc_header.skip_flow_log = metadata.cntrl.skip_flow_log | metadata.cntrl.flow_log_done; // TO BE DONE
+      //hdr.egress_recirc_header.skip_flow_log = 0; // DUMMY TO TEST RECIRC PATH
+    } else {
+      hdr.egress_recirc_header.setInvalid();
+      hdr.eg_nat_u.egress_recirc_nat_header.setInvalid();
+      capri_intrinsic.tm_oport = hdr.egress_recirc_header.oport;
+    }
        //      capri_intrinsic.lif = p4i_to_p4e_header.nacl_redir_lif;
 
    }

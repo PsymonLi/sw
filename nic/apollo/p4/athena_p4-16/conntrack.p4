@@ -1,5 +1,5 @@
 /******************************************************************************/
-/* TX pipeline                                                                */
+/* Tx pipeline                                                                */
 /******************************************************************************/
 control conntrack_state_update(inout cap_phv_intr_global_h intr_global,
              inout cap_phv_intr_p4_h intr_p4,
@@ -17,24 +17,20 @@ control conntrack_state_update(inout cap_phv_intr_global_h intr_global,
 			   @__ref bit<4> flow_state,
 			   @__ref bit<24> timestamp) {
      
-	 metadata.scratch.flag =  valid_flag;
-	 metadata.scratch.flow_type =  flow_type;
-	 metadata.cntrl.conn_track_prev_state =  flow_state;
+         bit<4> nxt_flow_state = flow_state;
 	 bit<48> current_time;
 	 current_time = __current_time();
 	 timestamp = current_time[46:23];
-	 if(metadata.cntrl.conn_track_tcp == TRUE) {
-	 }
-	 if(metadata.cntrl.conn_track_tcp == FALSE) {
-	   if(flow_state == CONNTRACK_FLOW_STATE_UNESTABLISHED)
-	     flow_state = CONNTRACK_FLOW_STATE_ESTABLISHED;
-	 }
-	 metadata.cntrl.conn_track_curr_state = flow_state;
+	 if(flow_type == CONNTRACK_FLOW_TYPE_TCP) {
+	   /*  TCP  */
+	 } 
 	 
-    }
+	 flow_state = nxt_flow_state;
+	 
+   }
    
-
-    
+   
+    @hbm_table    
     @capi_bitfields_struct
     @name(".conntrack") table conntrack {
         key = {

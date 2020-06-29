@@ -357,7 +357,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
    action session_rewrite_ipv4_snat(SESSION_REWRITE_COMMON_FIELDS,
 				    bit<32> ipv4_addr_snat) {
      session_rewrite_common(SESSION_REWRITE_COMMON_FIELDS_ARGS);
-
+     
      if(metadata.cntrl.direction == TX_FROM_HOST) {
        hdr.ip_1.ipv4.srcAddr = ipv4_addr_snat;
      } else {
@@ -472,7 +472,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
         size  = SESSION_TABLE_SIZE;
 	default_action = session_rewrite;
 	error_action = session_rewrite_error;
-        stage = 4;
+        stage = 2;
         placement = HBM;
     }
 
@@ -811,7 +811,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	default_action = session_rewrite_encap_l2;
 	error_action = session_rewrite_encap_error;
         size  = SESSION_TABLE_SIZE;
-        stage = 4;
+        stage = 2;
         placement = HBM;
     }
 

@@ -33,22 +33,62 @@ parser AthenaEgressParser(packet_in packet,
     //    metadata.cntrl.tm_iport  = intr_global.tm_iport;
     packet.extract(intr_p4);
     transition select(intr_global.tm_iport) {
-      default         : parse_egress;
+     TM_PORT_EGRESS  : parse_egress_recirc_header;      
+     default         : parse_egress;
     }
+  }
+
+  state parse_egress_recirc_header {
+    packet.extract(hdr.egress_recirc_header);
+    metadata.cntrl.direction = hdr.egress_recirc_header.direction;
+    // metadata.cntrl.flow_log_select = hdr.egress_recirc_header.flow_log_select;
+    //egress recirculation is used for flow log and counters
+    //packet should not be updated anymore. 
+    // use flow_miss to skip re-write tables
+    //nacl can use flow-miss and recircualtion valid to trigger permit
+    //  metadata.cntrl.flow_miss = TRUE;
+    transition parse_egress_recirc_nat_header;
+  }
+
+  state parse_egress_recirc_nat_header {
+    packet.extract(hdr.eg_nat_u.egress_recirc_nat_header);
+    metadata.cntrl.skip_flow_log = hdr.egress_recirc_header.skip_flow_log;
+    // metadata.cntrl.direction = hdr.eg_u.egress_recirc_header.direction;
+    metadata.cntrl.flow_log_select = hdr.egress_recirc_header.flow_log_select;
+    //egress recirculation is used for flow log and counters
+    //packet should not be updated anymore. 
+    // use flow_miss to skip re-write tables
+    //nacl can use flow-miss and recircualtion valid to trigger permit
+    //  metadata.cntrl.flow_miss = TRUE; 
+    transition parse_packet;
   }
 
   state parse_egress {
     packet.extract(hdr.p4i_to_p4e_header);
-    //    metadata.cntrl.direction = hdr.p4i_to_p4e_header.direction;
+    metadata.cntrl.direction = hdr.p4i_to_p4e_header.direction;
     // metadata.cntrl.session_index = hdr.p4i_to_p4e_header.index;
 
-    //  metadata.cntrl.flow_miss = hdr.p4i_to_p4e_header.flow_miss;
-    metadata.cntrl.l2_vnic = hdr.p4i_to_p4e_header.l2_vnic;
+    // metadata.cntrl.flow_miss = hdr.p4i_to_p4e_header.flow_miss;
+    //metadata.cntrl.l2_vnic = hdr.p4i_to_p4e_header.l2_vnic;
     /* Skip flow lookup for now for packets injected from ARM */
+    transition parse_egress_p4i_to_p4e_nat;
+    //transition parse_packet;
+  }
+
+  state parse_egress_p4i_to_p4e_nat {
+    packet.extract(hdr.eg_nat_u.p4i_to_p4e_nat_header);
+    metadata.cntrl.skip_flow_log = hdr.p4i_to_p4e_header.skip_flow_log;
+    //    metadata.cntrl.session_info_en = hdr.p4i_to_p4e_header.session_info_en;
+    // metadata.cntrl.conntrack_en = hdr.p4i_to_p4e_header.conntrack_en;
+    // metadata.cntrl.l2_vnic = hdr.p4i_to_p4e_header.l2_vnic;
+    /* Skip flow lookup for now for packets injected from ARM */
+    //transition parse_packet;
+    
     transition select(hdr.p4i_to_p4e_header.flow_miss) {
       TRUE : parse_egress_flow_miss;
       default : parse_packet; 
     }
+    
   }
 
   state parse_egress_flow_miss {
@@ -176,7 +216,7 @@ parser AthenaEgressParser(packet_in packet,
       IP_PROTO_ICMPV6 : parse_icmp_v6_1;
       IP_PROTO_TCP    : parse_tcp_1;
       IP_PROTO_UDP    : parse_udp_1;
-      IP_PROTO_GRE    : parse_gre_1;
+      //    IP_PROTO_GRE    : parse_gre_1;
       IP_PROTO_IPV4   : parse_ipv4_in_ip_1;
       IP_PROTO_IPV6   : parse_ipv6_in_ip_1;
       default : accept;
@@ -655,6 +695,9 @@ control AthenaEgressDeparser(packet_out packet,
         packet.emit(hdr.p4_to_p4plus_classic_nic);	
         packet.emit(hdr.p4_to_p4plus_classic_nic_ip);
 	
+	packet.emit(hdr.egress_recirc_header);
+	packet.emit(hdr.eg_nat_u.egress_recirc_nat_header);
+
         // Packet to uplink - "Push" header - layer 0	
 	packet.emit(hdr.ethernet_0);
 	packet.emit(hdr.ctag_0);

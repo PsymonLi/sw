@@ -46,7 +46,21 @@ struct l2_key_metadata_t {
 	bit<1> ingress_port;
     }
 
+struct flow_log_key_metadata_t {
+	bit<2> ktype;
+	bit<9> vnic_id;
+	bit<128> src;
+	bit<128> dst;
+	bit<8> proto;
+	bit<16> sport;
+	bit<16> dport;
+	bit<1> disposition;
+	bit<8> salt;
+    }
+
 struct control_metadata_t {
+        bit<1> egress_recirc;
+        bit<8> egress_drop_reason;
         bit<1> nacl_permit;
         bit<16> geneve_prototype;
         bit<1> conn_track_tcp;
@@ -152,7 +166,21 @@ struct control_metadata_t {
         /*  Stats - TMP */
         bit <1> stats_id;
         bit <4> p4e_stats_flag;
+ 
+        /*  Flow Log */
+	bit <1>  flow_log_select_ptr;
+	bit <1>  flow_log_done;
+	bit <1>  flow_log_select;
+	bit <20> flow_log_hash;
+	bit <1>  flow_log_collision;   
+	bit <20> flow_log_hash_0;   
+	bit <20> flow_log_hash_1;   
 
+        /*  Mirroring  */
+	bit <1> mirroring_en;
+	bit <1> mirroring_valid;
+	bit <6> mirroring_session;
+ 
     }
 
 
@@ -185,6 +213,7 @@ struct scratch_metadata_t {
 	bit<1> update_l4_chksum;
 	bit<1> index_type;
 	bit<22> index;
+        bit<8> dummy;
 
 
         //common types
@@ -313,4 +342,7 @@ struct metadata_t {
     csum_metadata_t csum;
     capri_gso_csum_value_t gso;
     parser_metadata_t prs;
+    @name(".flow_log_key_metadata")
+    flow_log_key_metadata_t        flow_log_key;
+
 }
