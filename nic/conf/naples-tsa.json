@@ -239,6 +239,10 @@
                                 {       "Name" : "DscAgent State",
                                         "Method": 0,
                                         "Command": "mkdir dscagent-state && cp /data/pen-netagent.db dscagent-state/"
+                                },
+                                {       "Name" : "Routing table",
+                                        "Method": 0,
+                                        "Command": "route -n"
                                 }
 			],
 
