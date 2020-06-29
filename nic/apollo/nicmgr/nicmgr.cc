@@ -32,7 +32,7 @@ sdk::event_thread::prepare_t g_ev_prepare;
 namespace nicmgr {
 
 // TODO, save it devmgr. requires iris/apulu intergration of upgrade mode
-static upg_mode_t upg_init_mode;
+static sysinit_mode_t init_mode;
 
 static void
 prepare_callback (sdk::event_thread::prepare_t *prepare, void *ctx)
@@ -51,9 +51,9 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
     uint32_t thread_id = core::PDS_THREAD_ID_NICMGR;
     sdk::event_thread::event_thread *curr_thread;
     devicemgr_cfg_t cfg;
-    upg_init_mode = api::g_upg_state ?
-        api::g_upg_state->upg_init_mode() : upg_mode_t::UPGRADE_MODE_NONE;
-    bool init_pci = sdk::platform::upgrade_mode_none(upg_init_mode) &&
+    init_mode = api::g_upg_state ?
+        api::g_upg_state->init_mode() : sysinit_mode_t::SYSINIT_MODE_DEFAULT;
+    bool init_pci = sdk::platform::sysinit_mode_default(init_mode) &&
                     sdk::asic::asic_is_hard_init();
 
     // get pds state
@@ -105,19 +105,19 @@ nicmgrapi::nicmgr_thread_init(void *ctxt) {
 
     g_devmgr = new DeviceManager(&cfg);
     SDK_ASSERT(g_devmgr);
-    if (upg_init_mode == upg_mode_t::UPGRADE_MODE_NONE) {
+    if (sdk::platform::sysinit_mode_default(init_mode)) {
         if (sdk::asic::asic_is_hard_init()) {
             g_devmgr->Init(&cfg);
             g_devmgr->LoadProfile(device_cfg_file, init_pci);
         } else {
             g_devmgr->SoftInit(&cfg);
         }
-    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
+    } else if (sdk::platform::sysinit_mode_graceful(init_mode)) {
         g_devmgr->UpgradeGracefulInit(&cfg);
         // upg_init below does the state loading
     } else {
         g_devmgr->UpgradeHitlessInit(&cfg);
-        // TODO : upg_init below does the state loading
+        // upg_init below does the state loading
     }
 
     if (sdk::asic::asic_is_hard_init()) {
@@ -158,9 +158,9 @@ nicmgrapi::hal_up_event_handler_(sdk::ipc::ipc_msg_ptr msg, const void *ctxt) {
     // create mnets
     PDS_TRACE_INFO("Creating mnets ...");
     // TODO Karthi, implementaion for hitless upgrade
-    if (upg_init_mode != upg_mode_t::UPGRADE_MODE_HITLESS) {
+    if (init_mode != sysinit_mode_t::SYSINIT_MODE_HITLESS) {
         g_devmgr->HalEventHandler(true);
-    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
+    } else if (init_mode == sysinit_mode_t::SYSINIT_MODE_HITLESS) {
         g_devmgr->UpgradeHitlessHalEventHandler(true);
     }
 }

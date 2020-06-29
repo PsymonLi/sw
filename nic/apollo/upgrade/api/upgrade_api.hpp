@@ -26,11 +26,11 @@ typedef enum upg_ev_req_msg_id_s {
 /// \brief     upgrade event params
 ///            passed from grpc main thread to request processing thread
 typedef struct upg_ev_req_msg_s {
-    upg_ev_req_msg_id_t id;              ///< message id
-    sdk::platform::upg_mode_t upg_mode;  ///< upgrade mode
-    char fw_pkgname[MAX_FW_PKGNAME_LEN]; ///< firmware package name with path
+    upg_ev_req_msg_id_t id;                  ///< message id
+    sdk::platform::sysinit_mode_t upg_mode;  ///< upgrade mode
+    char fw_pkgname[MAX_FW_PKGNAME_LEN];     ///< firmware package name with path
     // TODO fill other details
-    upg_status_t rsp_status;             ///< upgrade status
+    upg_status_t rsp_status;                ///< upgrade status
 } upg_ev_req_msg_t;
 
 }    // namespace api

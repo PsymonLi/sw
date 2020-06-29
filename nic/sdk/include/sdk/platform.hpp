@@ -42,32 +42,54 @@ SDK_DEFINE_ENUM_TO_STR(asic_type_t, ASIC_TYPE)
 SDK_DEFINE_MAP_EXTERN(asic_type_t, ASIC_TYPE)
 // #undef ASIC_TYPE
 
-#define UPGRADE_MODE(ENTRY)                                               \
-    ENTRY(UPGRADE_MODE_NONE,       0, "UPGRADE_MODE_NONE")                \
-    ENTRY(UPGRADE_MODE_GRACEFUL,   1, "UPGRADE_MODE_GRACEFUL")            \
-    ENTRY(UPGRADE_MODE_HITLESS,    2, "UPGRADE_MODE_HITLESS")             \
+#define SYSINIT_MODE(ENTRY)                                       \
+    ENTRY(SYSINIT_MODE_DEFAULT,    0, "SYSINIT_MODE_DEFAULT")     \
+    ENTRY(SYSINIT_MODE_GRACEFUL,   1, "SYSINIT_MODE_GRACEFUL")    \
+    ENTRY(SYSINIT_MODE_HITLESS,    2, "SYSINIT_MODE_HITLESS")     \
 
-SDK_DEFINE_ENUM(upg_mode_t,        UPGRADE_MODE)
-SDK_DEFINE_ENUM_TO_STR(upg_mode_t, UPGRADE_MODE)
-SDK_DEFINE_MAP_EXTERN(upg_mode_t,  UPGRADE_MODE)
-// #undef UPGRADE_MODE
+SDK_DEFINE_ENUM(sysinit_mode_t,        SYSINIT_MODE)
+SDK_DEFINE_ENUM_TO_STR(sysinit_mode_t, SYSINIT_MODE)
+SDK_DEFINE_MAP_EXTERN(sysinit_mode_t,  SYSINIT_MODE)
+// #undef SYSINIT_MODE
 
 static inline bool
-upgrade_mode_none (upg_mode_t type)
+sysinit_mode_default (sysinit_mode_t type)
 {
-    return type == UPGRADE_MODE_NONE;
+    return type == SYSINIT_MODE_DEFAULT;
 }
 
 static inline bool
-upgrade_mode_hitless (upg_mode_t type)
+sysinit_mode_hitless (sysinit_mode_t type)
 {
-    return type == UPGRADE_MODE_HITLESS;
+    return type == SYSINIT_MODE_HITLESS;
 }
 
 static inline bool
-upgrade_mode_graceful (upg_mode_t type)
+sysinit_mode_graceful (sysinit_mode_t type)
 {
-    return type == UPGRADE_MODE_GRACEFUL;
+    return type == SYSINIT_MODE_GRACEFUL;
+}
+
+// used in hitless upgrade
+#define SYSINIT_DOMAIN(ENTRY)                              \
+    ENTRY(SYSINIT_DOMAIN_A,   0, "SYSINIT_DOMAIN_A")       \
+    ENTRY(SYSINIT_DOMAIN_B,   1, "SYSINIT_DOMAIN_B")       \
+
+SDK_DEFINE_ENUM(sysinit_dom_t,        SYSINIT_DOMAIN)
+SDK_DEFINE_ENUM_TO_STR(sysinit_dom_t, SYSINIT_DOMAIN)
+SDK_DEFINE_MAP_EXTERN(sysinit_dom_t,  SYSINIT_DOMAIN)
+// #undef SYSINIT_DOMAIN
+
+static inline bool
+sysinit_domain_a (sysinit_dom_t dom)
+{
+    return dom == SYSINIT_DOMAIN_A;
+}
+
+static inline bool
+sysinit_domain_b (sysinit_dom_t dom)
+{
+    return dom == SYSINIT_DOMAIN_B;
 }
 
 }    // namespace platform
@@ -75,7 +97,8 @@ upgrade_mode_graceful (upg_mode_t type)
 
 using sdk::platform::platform_type_t;
 using sdk::platform::asic_type_t;
-using sdk::platform::upg_mode_t;
+using sdk::platform::sysinit_mode_t;
+using sdk::platform::sysinit_dom_t;
 
 #endif    // __SDK_PLATFORM_HPP__
 

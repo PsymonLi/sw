@@ -1000,14 +1000,14 @@ DeviceManager::DeviceCreate(bool status) {
     DeviceType type;
     EthDevType eth_type;
     vector<struct mnet_dev_create_req_t *> *mnet_list;
-    upg_mode_t mode = sdk::upg::upg_init_mode();
+    sysinit_mode_t mode = sdk::upg::init_mode();
     struct mnet_dev_create_req_t * mnet_req;
     bool skip_hwinit = false;
 
 #ifndef __aarch64__
     skip_hwinit = true;
 #endif
-    if (sdk::platform::upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         NIC_LOG_INFO("Skipping mnet creation for hitless upgrade");
         skip_hwinit = true;
     }

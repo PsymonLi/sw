@@ -50,7 +50,7 @@ learn_state::lif_init_(void) {
     const char *lif_name = impl::learn_lif_name();
     int count = 0;
     std::string eal_init_list = "-n 4 --master-lcore 1 -c 3";
-    sdk::upg::upg_dom_t dom = sdk::upg::upg_init_domain();
+    sysinit_dom_t dom = sdk::upg::init_domain();
 
     SDK_ASSERT(lif_name);
 
@@ -68,7 +68,7 @@ learn_state::lif_init_(void) {
     }
     PDS_TRACE_INFO("UIO device created, retry count %d", count);
 
-    if (sdk::upg::upg_domain_b(dom)) {
+    if (sdk::platform::sysinit_domain_b(dom)) {
         eal_init_list += " --file-prefix learn_dom_b";
     } else {
         eal_init_list += " --file-prefix learn";

@@ -31,7 +31,7 @@ read_module_version (uint32_t thread_id)
 }
 
 static std::string
-upg_shmstore_name (uint32_t thread_id, const char *name, upg_mode_t mode,
+upg_shmstore_name (uint32_t thread_id, const char *name, sysinit_mode_t mode,
                    bool curr_mod_version, bool vstore)
 {
     std::string fname = std::string(name);
@@ -63,7 +63,7 @@ upg_shmstore_name (uint32_t thread_id, const char *name, upg_mode_t mode,
 
 static inline sdk_ret_t
 upg_shmstore_create_ (uint32_t thread_id, const char *name, size_t size,
-                      upg_mode_t mode, bool vstore)
+                      sysinit_mode_t mode, bool vstore)
 {
     sdk::lib::shmstore *store;
     std::string fname;
@@ -82,7 +82,7 @@ upg_shmstore_create_ (uint32_t thread_id, const char *name, size_t size,
 }
 
 static inline sdk_ret_t
-upg_shmstore_open_ (uint32_t thread_id, const char *name, upg_mode_t mode,
+upg_shmstore_open_ (uint32_t thread_id, const char *name, sysinit_mode_t mode,
                     bool vstore, bool rw_mode = false)
 {
     sdk::lib::shmstore *store;
@@ -106,7 +106,7 @@ upg_shmstore_open_ (uint32_t thread_id, const char *name, upg_mode_t mode,
 // below are for config objects. so need to create only when a backup request
 // comes from upgrade manager
 sdk_ret_t
-upg_shmstore_create (upg_mode_t mode, bool vstore)
+upg_shmstore_create (sysinit_mode_t mode, bool vstore)
 {
     static bool done = false;
     sdk_ret_t ret;
@@ -116,7 +116,7 @@ upg_shmstore_create (upg_mode_t mode, bool vstore)
     }
 
     // create all the required backup files in store
-    if (upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_create_(core::PDS_THREAD_ID_API,
                                    PDS_AGENT_UPGRADE_CFG_SHMSTORE_NAME,
@@ -139,7 +139,7 @@ upg_shmstore_create (upg_mode_t mode, bool vstore)
 }
 
 sdk_ret_t
-upg_shmstore_open (upg_mode_t mode, bool vstore)
+upg_shmstore_open (sysinit_mode_t mode, bool vstore)
 {
     static bool done = false;
     sdk_ret_t ret;
@@ -149,7 +149,7 @@ upg_shmstore_open (upg_mode_t mode, bool vstore)
     }
 
     // create all the required backup files in store
-    if (upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         // agent config store
         ret = upg_shmstore_open_(core::PDS_THREAD_ID_API,
                                  PDS_AGENT_UPGRADE_CFG_SHMSTORE_NAME,
@@ -172,7 +172,7 @@ upg_shmstore_open (upg_mode_t mode, bool vstore)
 
 static sdk_ret_t
 upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
-                          upg_mode_t mode)
+                          sysinit_mode_t mode)
 {
     sdk_ret_t ret;
     bool rw_mode = false;
@@ -192,7 +192,7 @@ upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
                     g_upg_state->module_version(thread_id).minor,
                     g_upg_state->module_prev_version(thread_id).major,
                     g_upg_state->module_prev_version(thread_id).minor);
-    if (sdk::platform::upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         curr_version = g_upg_state->module_version(thread_id);
         prev_version = g_upg_state->module_prev_version(thread_id);
         if (curr_version.version == prev_version.version) {
@@ -214,7 +214,7 @@ upg_oper_shmstore_create (uint32_t thread_id, const char *name, size_t size,
 }
 
 sdk_ret_t
-linkmgr_shmstore_create (upg_mode_t mode)
+linkmgr_shmstore_create (sysinit_mode_t mode)
 {
     return upg_oper_shmstore_create(SDK_IPC_ID_LINKMGR_CTRL,
                                     PDS_LINKMGR_UPGRADE_OPER_SHMSTORE_NAME,
@@ -222,7 +222,7 @@ linkmgr_shmstore_create (upg_mode_t mode)
 }
 
 sdk_ret_t
-nicmgr_shmstore_create (upg_mode_t mode)
+nicmgr_shmstore_create (sysinit_mode_t mode)
 {
     return upg_oper_shmstore_create(core::PDS_THREAD_ID_NICMGR,
                                     PDS_NICMGR_UPGRADE_OPER_SHMSTORE_NAME,
@@ -233,21 +233,20 @@ sdk_ret_t
 upg_init (pds_init_params_t *params)
 {
     sdk_ret_t ret;
-    upg_mode_t mode;
-    sdk::upg::upg_dom_t dom;
+    sysinit_mode_t mode;
+    sysinit_dom_t dom;
 
-    mode = sdk::upg::upg_init_mode();
-    dom = sdk::upg::upg_init_domain();
+    mode = sdk::upg::init_mode();
+    dom = sdk::upg::init_domain();
 
     PDS_TRACE_DEBUG("Setting bootup upgrade mode to %s",
-                    mode == upg_mode_t::UPGRADE_MODE_NONE ? "NONE" :
-                    mode == upg_mode_t::UPGRADE_MODE_GRACEFUL ? "Graceful" :
+                    mode == sysinit_mode_t::SYSINIT_MODE_DEFAULT ? "Default" :
+                    mode == sysinit_mode_t::SYSINIT_MODE_GRACEFUL ? "Graceful" :
                     "Hitless");
 
     PDS_TRACE_DEBUG("Setting bootup domain to %s",
-                    dom == sdk::upg::upg_dom_t::UPGRADE_DOMAIN_NONE ? "NONE" :
-                    dom == sdk::upg::upg_dom_t::UPGRADE_DOMAIN_A ? "Dom_A" :
-                    "Dom_B");
+                    dom == sysinit_dom_t::SYSINIT_DOMAIN_B ? "Dom_B" :
+                    "Dom_A");
 
     // initialize upgrade state and call the upgade compatibitly checks
     if ((g_upg_state = upg_state::factory(params)) == NULL) {
@@ -256,11 +255,11 @@ upg_init (pds_init_params_t *params)
     }
 
     // save upgrade init mode and domain
-    g_upg_state->set_upg_init_mode(mode);
-    g_upg_state->set_upg_init_domain(dom);
+    g_upg_state->set_init_mode(mode);
+    g_upg_state->set_init_domain(dom);
 
     // offset the memory regions based on the regions in use
-    if (sdk::platform::upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         ret = g_pds_state.mempartition()->upgrade_hitless_offset_regions(
             api::g_pds_state.cfg_path().c_str(), false);
         if (ret != SDK_RET_OK) {
@@ -309,7 +308,7 @@ upg_init (pds_init_params_t *params)
     }
 
     // open the store of config objects
-    if (!sdk::platform::upgrade_mode_none(mode)) {
+    if (!sdk::platform::sysinit_mode_default(mode)) {
         ret = upg_shmstore_open(mode);
         if (ret != SDK_RET_OK) {
             return ret;
@@ -324,7 +323,7 @@ upg_restore_api_objs (void)
     // TODO @sunny fix the hang
     return SDK_RET_OK;
 
-    if (sdk::platform::upgrade_mode_hitless(g_upg_state->upg_init_mode())) {
+    if (sdk::platform::sysinit_mode_hitless(g_upg_state->init_mode())) {
         return upg_hitless_restore_api_objs();
     }
 }
@@ -338,7 +337,7 @@ pds_upgrade_start_hdlr (sdk::upg::upg_ev_params_t *params)
     // notify the agent that firmware upgrade is starting so that it can
     // shutdown its external gRPC channel and stop accepting any new incoming
     // config
-    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+    if (sdk::platform::sysinit_mode_hitless(params->mode)) {
         pds_event.event_id = PDS_EVENT_ID_UPGRADE_START;
         ret = g_pds_state.event_notify(&pds_event);
         if (ret != SDK_RET_OK) {
@@ -356,7 +355,7 @@ pds_upgrade_repeal_hdlr (sdk::upg::upg_ev_params_t *params)
 
     // notify the agent that firmware upgrade failed and it needs to re-open
     // its external gRPC to start accepting config
-    if (sdk::platform::upgrade_mode_hitless(params->mode)) {
+    if (sdk::platform::sysinit_mode_hitless(params->mode)) {
         pds_event.event_id = PDS_EVENT_ID_UPGRADE_ABORT;
         ret = g_pds_state.event_notify(&pds_event);
         if (ret != SDK_RET_OK) {

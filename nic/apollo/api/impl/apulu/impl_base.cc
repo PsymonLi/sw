@@ -58,11 +58,11 @@ impl_base::init(pds_init_params_t *params, asic_cfg_t *asic_cfg) {
 
     // followed by pipeline initialization
     if (sdk::asic::asic_is_hard_init()) {
-        if (sdk::platform::upgrade_mode_none(asic_cfg->upg_init_mode)) {
+        if (sdk::platform::sysinit_mode_default(asic_cfg->init_mode)) {
             pipeline_impl_->pipeline_init();
-        } else if (sdk::platform::upgrade_mode_graceful(asic_cfg->upg_init_mode)) {
+        } else if (sdk::platform::sysinit_mode_graceful(asic_cfg->init_mode)) {
             pipeline_impl_->pipeline_upgrade_graceful_init();
-        } else if (sdk::platform::upgrade_mode_hitless(asic_cfg->upg_init_mode)) {
+        } else if (sdk::platform::sysinit_mode_hitless(asic_cfg->init_mode)) {
             pipeline_impl_->pipeline_upgrade_hitless_init();
         }
     } else {

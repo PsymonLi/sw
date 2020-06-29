@@ -261,7 +261,7 @@ hal_is_upg_mode_hitless(void)
     if (unlikely(api::g_upg_state == nullptr)) {
         return false;
     }
-    if (api::g_upg_state->upg_init_mode() == upg_mode_t::UPGRADE_MODE_HITLESS) {
+    if (sdk::platform::sysinit_mode_hitless(api::g_upg_state->init_mode())) {
         // Or coming up gracefully
         return true;
     }

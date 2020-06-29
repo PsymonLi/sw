@@ -46,7 +46,7 @@ upg_ev_pre_respawn_hdlr (sdk::upg::upg_ev_params_t *params)
 {
     pciesys_loginfo("Upgrade handler, event %s mode %u\n",
                     sdk::upg::upg_event2str(params->id), params->mode);
-    if (params->mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
+    if (params->mode == sysinit_mode_t::SYSINIT_MODE_GRACEFUL) {
         if (upgrade_state_save() < 0) {
             pciesys_logerror("Upgrade handler, state save failed\n");
             return SDK_RET_ERR;

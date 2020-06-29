@@ -119,12 +119,12 @@ public:
     void set_ev_params(sdk::upg::upg_ev_params_t *params) {
         ev_state_.params = *params;
     }
-    void set_upg_init_mode(upg_mode_t mode) { upg_init_mode_ = mode; }
-    upg_mode_t upg_init_mode(void) { return upg_init_mode_; }
-    void set_upg_init_domain(sdk::upg::upg_dom_t dom) { upg_init_dom_ = dom; }
-    sdk::upg::upg_dom_t upg_init_domain(void) { return upg_init_dom_; }
-    void set_upg_req_mode(upg_mode_t mode) { upg_req_mode_ = mode; }
-    upg_mode_t upg_req_mode(void) { return upg_req_mode_; }
+    void set_init_mode(sysinit_mode_t mode) { init_mode_ = mode; }
+    sysinit_mode_t init_mode(void) { return init_mode_; }
+    void set_init_domain(sysinit_dom_t dom) { init_dom_ = dom; }
+    sysinit_dom_t init_domain(void) { return init_dom_; }
+    void set_upg_req_mode(sysinit_mode_t mode) { upg_req_mode_ = mode; }
+    sysinit_mode_t upg_req_mode(void) { return upg_req_mode_; }
     /// \brief set backup/restore  status
     void set_backup_status(bool status) { backup_status_ = status; }
     /// \brief get backup/restore status
@@ -165,11 +165,11 @@ private:
     /// event relay and processing states
     ev_in_progress_state_t ev_state_;
     ///  upgrade mode in new request
-    upg_mode_t upg_req_mode_;
+    sysinit_mode_t upg_req_mode_;
     ///  initialization mode during process bringup
-    upg_mode_t upg_init_mode_;
+    sysinit_mode_t init_mode_;
     ///  upgrade init domain
-    sdk::upg::upg_dom_t upg_init_dom_;
+    sysinit_dom_t init_dom_;
     /// backup status
     bool backup_status_;
     /// upgrade object store. indexed using a unique id and store type

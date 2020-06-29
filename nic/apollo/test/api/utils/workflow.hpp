@@ -719,9 +719,9 @@ template <typename feeder_T>
 inline void workflow_u1_s1(feeder_T& feeder1)
 {
     sdk_ret_t ret;
-    upg_mode_t mode;
+    sysinit_mode_t mode;
 
-    mode = upg_mode_t::UPGRADE_MODE_HITLESS;
+    mode = sysinit_mode_t::SYSINIT_MODE_HITLESS;
     // trigger
     pds_batch_ctxt_t bctxt = batch_start();
     many_create<feeder_T>(bctxt, feeder1);
@@ -748,9 +748,9 @@ template <typename feeder_T>
 inline void workflow_u1_s2(feeder_T& feeder1)
 {
     sdk_ret_t ret;
-    upg_mode_t mode;
+    sysinit_mode_t mode;
 
-    mode = upg_mode_t::UPGRADE_MODE_HITLESS;
+    mode = sysinit_mode_t::SYSINIT_MODE_HITLESS;
     // restore the objs
     ret = upg_obj_restore(mode);
     WF_TRACE_ERR((ret == SDK_RET_OK), "WF_U1_S2 - upg restore failed");

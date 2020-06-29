@@ -91,10 +91,10 @@ public:
     uint64_t epoch(void) const { return epoch_; }
     uint64_t new_epoch(void) { return SDK_ATOMIC_INC_UINT64(&epoch_, 1); }
     eventmgr *event_mgr(void) { return evmgr_; }
-    sdk::platform::upg_mode_t init_mode(void) const {
+    sdk::platform::sysinit_mode_t init_mode(void) const {
         return init_mode_;
     }
-    sdk::upg::upg_dom_t domain(void) const {
+    sdk::platform::sysinit_dom_t domain(void) const {
         return domain_;
     }
 
@@ -107,9 +107,9 @@ private:
     cfg_db *cfg_db_;     // cfg db instance pointer
     bool pds_mock_mode_; // true if we are in PDS HAL mock mode
     // firmware initialization/upgrade mode
-    sdk::platform::upg_mode_t init_mode_;
+    sdk::platform::sysinit_mode_t init_mode_;
     // firmware domain w.r.t firmware upgrade
-    sdk::upg::upg_dom_t domain_;
+    sdk::platform::sysinit_dom_t domain_;
     eventmgr *evmgr_;    // event manager instance
 };
 

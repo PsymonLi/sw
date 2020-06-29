@@ -63,7 +63,7 @@ dpdk_sim_init(void)
 {
     int err;
     int app_id = 0;
-    upg_mode_t mode = sdk::upg::upg_init_mode();
+    sysinit_mode_t mode = sdk::upg::init_mode();
 
     if (std::getenv("DPDK_SIM_APP_ID")) {
         std::string dpdk_id_str(std::getenv("DPDK_SIM_APP_ID"));
@@ -79,7 +79,7 @@ dpdk_sim_init(void)
         pmem_base = DPDK_SIM_HIGH_MEM_START + ((app_id - 2) * DPDK_SIM_APP_MEM_SIZE);
     }
     /* clear the memory, otherwise upgrade boot breaks */
-    if (sdk::platform::upgrade_mode_graceful(mode)) {
+    if (sdk::platform::sysinit_mode_graceful(mode)) {
         dpdk_sim_mem_reset(pmem_base, DPDK_SIM_APP_MEM_SIZE);
     }
     return 0;

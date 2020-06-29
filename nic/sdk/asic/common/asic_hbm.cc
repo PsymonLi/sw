@@ -63,7 +63,7 @@ asic_reset_hbm_regions (asic_cfg_t *asic_cfg)
     mpartition_region_t *reg;
     mem_addr_t va, pa;
     bool force_reset =
-        sdk::platform::upgrade_mode_none(asic_cfg->upg_init_mode) ? false : true;
+        sdk::platform::sysinit_mode_default(asic_cfg->init_mode) ? false : true;
 
     if (!asic_cfg)
         return;

@@ -220,8 +220,8 @@ agent_state::init(void) {
     SDK_ASSERT_GOTO(g_state->cfg_db_, error);
     g_state->evmgr_ = eventmgr::factory(PDS_EVENT_ID_MAX);
     SDK_ASSERT_GOTO(g_state->evmgr_, error);
-    g_state->init_mode_ = sdk::upg::upg_init_mode();
-    g_state->domain_ = sdk::upg::upg_init_domain();
+    g_state->init_mode_ = sdk::upg::init_mode();
+    g_state->domain_ = sdk::upg::init_domain();
     return SDK_RET_OK;
 
 error:

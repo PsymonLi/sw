@@ -183,14 +183,14 @@ upg_event_send_to_peer_hdlr (upg_stage_t stage, std::string svc_name,
 }
 
 static void
-upg_fsm_init (upg_mode_t mode, upg_stage_t entry_stage,
+upg_fsm_init (sysinit_mode_t mode, upg_stage_t entry_stage,
               std::string fw_pkgname, bool upg_request_new)
 {
     sdk::upg::fsm_init_params_t params;
     sdk_ret_t ret;
 
     UPG_TRACE_INFO("FSM init mode %s entry-stage %s new-request %u",
-                   sdk::platform::upgrade_mode_hitless(mode) ? "hitless" : "graceful",
+                   sdk::platform::sysinit_mode_hitless(mode) ? "hitless" : "graceful",
                    upg_stage2str(entry_stage), upg_request_new);
 
     memset(&params, 0, sizeof(params));
@@ -203,7 +203,7 @@ upg_fsm_init (upg_mode_t mode, upg_stage_t entry_stage,
     params.tools_dir = g_tools_dir;
 
     // register for peer communication in hitless boot
-    if (sdk::platform::upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         // if it is a new upgrade request
         if (upg_request_new) {
             params.upg_event_fwd_cb = upg_event_send_to_peer_hdlr;
@@ -248,13 +248,13 @@ upg_ev_request_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 static void
 upg_event_thread_init (void *ctxt)
 {
-    upg_mode_t mode = sdk::upg::upg_init_mode(UPGMGR_INIT_MODE_FILE);
+    sysinit_mode_t mode = sdk::upg::init_mode(UPGMGR_INIT_MODE_FILE);
 
     // if it is an graceful upgrade restart, need to continue the stages
     // from previous run
-    if (sdk::platform::upgrade_mode_graceful(mode)) {
+    if (sdk::platform::sysinit_mode_graceful(mode)) {
         upg_fsm_init(mode, UPG_STAGE_READY, "none", false);
-    } else if (sdk::platform::upgrade_mode_hitless(mode)) {
+    } else if (sdk::platform::sysinit_mode_hitless(mode)) {
 #ifndef __aarch64__
         // for simulation, all logs goes to /dev/upgradelog.
         // adding a distinction

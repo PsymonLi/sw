@@ -84,7 +84,7 @@ asic_impl::asic_init (asic_cfg_t *asic_cfg)
     pal_ret = sdk::lib::pal_init(asic_cfg->platform);
     SDK_ASSERT(pal_ret == sdk::lib::PAL_RET_OK);
     if (sdk::asic::asic_is_hard_init()) {
-        if (sdk::platform::upgrade_mode_none(asic_cfg->upg_init_mode)) {
+        if (sdk::platform::sysinit_mode_default(asic_cfg->init_mode)) {
             ret = asicpd_init(asic_cfg);
             // set the reserved min for uplink ports
             asicpd_tm_set_reserved_min(200);

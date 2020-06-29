@@ -14,8 +14,8 @@
 namespace test {
 namespace api {
 
-sdk_ret_t upg_obj_backup(upg_mode_t mode);
-sdk_ret_t upg_obj_restore(upg_mode_t mode);
+sdk_ret_t upg_obj_backup(sysinit_mode_t mode);
+sdk_ret_t upg_obj_restore(sysinit_mode_t mode);
 
 }   // namespace api
 }   // namespace test

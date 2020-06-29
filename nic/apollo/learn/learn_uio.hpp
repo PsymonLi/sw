@@ -105,12 +105,12 @@ static bool
 uio_device_ready (void)
 {
     pds_state *state = &api::g_pds_state;
-    sdk::upg::upg_dom_t dom = sdk::upg::upg_init_domain();
+    sysinit_dom_t dom = sdk::upg::init_domain();
     const char *learn_dev = NULL;
 
     // returns hitless init domain id
     // use default mnic if regular boot and hitless dom-a boot
-    if (sdk::upg::upg_domain_b(dom)) {
+    if (sdk::platform::sysinit_domain_b(dom)) {
         learn_dev = "cpu_mnic3";
     } else {
         learn_dev = "cpu_mnic1";

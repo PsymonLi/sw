@@ -107,7 +107,7 @@ devapi_impl::lif_init(lif_info_t *info) {
         return SDK_RET_ENTRY_NOT_FOUND;
     }
 
-    if (sdk::platform::upgrade_mode_hitless(api::g_upg_state->upg_init_mode()) &&
+    if (sdk::platform::sysinit_mode_hitless(api::g_upg_state->init_mode()) &&
         (lif_spec.tx_sched_table_offset != INVALID_INDEXER_INDEX)) {
         // reserve the bits, configuration has been done already by A
         // during A to B hitless upgrade

@@ -21,7 +21,7 @@ static upg_async_response_cb_t response_cb;
 
 void
 upg_send_request (ipc_svc_dom_id_t dom_id, upg_stage_t stage,
-                  uint32_t svc_id, upg_mode_t mode)
+                  uint32_t svc_id, sysinit_mode_t mode)
 {
     upg_event_msg_t msg;
     upg_ev_id_t ev_id = upg_stage2event(stage);
@@ -66,7 +66,7 @@ wait_for_svc_ready (ipc_svc_dom_id_t dom_id, uint32_t ev_id,
 
 void
 upg_send_broadcast_request (ipc_svc_dom_id_t dom_id, upg_stage_t stage,
-                            upg_mode_t mode, uint32_t num_svcs,
+                            sysinit_mode_t mode, uint32_t num_svcs,
                             ev_tstamp timeout)
 {
     upg_event_msg_t msg;
@@ -83,7 +83,7 @@ upg_send_broadcast_request (ipc_svc_dom_id_t dom_id, upg_stage_t stage,
 }
 
 void
-upg_send_exit_event (upg_mode_t mode)
+upg_send_exit_event (sysinit_mode_t mode)
 {
     upg_event_msg_t msg;
 

@@ -816,11 +816,11 @@ asicpd_upgrade_init (asic_cfg_t *cfg)
     SDK_ASSERT(sdk::asic::asic_is_hard_init());
     elba_cfg_init(cfg, elba_cfg);
 
-    if (sdk::platform::upgrade_mode_graceful(cfg->upg_init_mode)) {
+    if (sdk::platform::sysinit_mode_graceful(cfg->init_mode)) {
         // it is same as hardinit. memory regions marked as reset will
         // be zeroed out by asic_reset_hbm_regions function during elba_init
         return elba_init(&elba_cfg);
-    } else if (sdk::platform::upgrade_mode_hitless(cfg->upg_init_mode)) {
+    } else if (sdk::platform::sysinit_mode_hitless(cfg->init_mode)) {
         SDK_ASSERT(0);
         // return elba_hitless_init(&elba_cfg);
     } else {

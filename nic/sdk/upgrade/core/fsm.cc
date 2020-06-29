@@ -846,14 +846,14 @@ init_fsm (fsm_init_params_t *params)
 }
 
 static sdk_ret_t
-load_pipeline_json(pt::ptree& tree, sdk::platform::upg_mode_t upg_mode)
+load_pipeline_json(pt::ptree& tree, sdk::platform::sysinit_mode_t upg_mode)
 {
     sdk_ret_t ret = SDK_RET_ERR;
     try
     {   std::string upg_gen_json = std::string(std::getenv("CONFIG_PATH"));
         upg_gen_json += "/gen/";
 
-        if (sdk::platform::upgrade_mode_graceful(upg_mode)) {
+        if (sdk::platform::sysinit_mode_graceful(upg_mode)) {
             upg_gen_json += UPGRADE_GRACEFUL;
         } else {
             upg_gen_json += UPGRADE_HITLESS;

@@ -36,10 +36,10 @@ grpc_svc_init (void)
     ServerBuilder *server_builder;
     UpgSvcImpl upg_svc;
     std::string g_grpc_server_addr;
-    upg_mode_t mode = sdk::upg::upg_init_mode(UPGMGR_INIT_MODE_FILE);
+    sysinit_mode_t mode = sdk::upg::init_mode(UPGMGR_INIT_MODE_FILE);
 
     // register for grpc only if it is fresh upgrade
-    if (!sdk::platform::upgrade_mode_none(mode)) {
+    if (!sdk::platform::sysinit_mode_default(mode)) {
         while (1) {
             sleep(10);
         }

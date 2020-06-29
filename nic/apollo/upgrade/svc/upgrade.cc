@@ -49,9 +49,9 @@ UpgSvcImpl::UpgRequest(ServerContext *context,
         msg.id = upg_ev_req_msg_id_t::UPG_REQ_MSG_ID_START;
         // get upgrade mode
         if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_GRACEFUL) {
-            msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_GRACEFUL;
+            msg.upg_mode = sdk::platform::sysinit_mode_t::SYSINIT_MODE_GRACEFUL;
         } else if (request.mode() == pds::UpgradeMode::UPGRADE_MODE_HITLESS) {
-            msg.upg_mode = sdk::platform::upg_mode_t::UPGRADE_MODE_HITLESS;
+            msg.upg_mode = sdk::platform::sysinit_mode_t::SYSINIT_MODE_HITLESS;
         } else {
             UPG_TRACE_ERR("Invalid upgrade mode");
             goto err_exit;
@@ -61,7 +61,7 @@ UpgSvcImpl::UpgRequest(ServerContext *context,
             goto err_exit;
         }
         UPG_TRACE_INFO("Upgrade mode %s, package name %s",
-                       sdk::platform::UPGRADE_MODE_str(msg.upg_mode),
+                       sdk::platform::SYSINIT_MODE_str(msg.upg_mode),
                        request.packagename().c_str());
 
         strncpy(msg.fw_pkgname, request.packagename().c_str(), sizeof(msg.fw_pkgname));

@@ -178,7 +178,7 @@ nicmgr_upg_backup_eth_device_info (struct EthDevInfo *eth_dev_info,
 static void
 nicmgr_upg_restore_eth_device_info (pds::nicmgr::EthDevice *proto_obj)
 {
-    upg_mode_t upg_init_mode = api::g_upg_state->upg_init_mode();
+    sysinit_mode_t init_mode = api::g_upg_state->init_mode();
     struct EthDevInfo *eth_dev_info = new EthDevInfo();
     struct eth_devspec *eth_spec = new eth_devspec();
     struct eth_dev_res *eth_res = new eth_dev_res();
@@ -232,9 +232,9 @@ nicmgr_upg_restore_eth_device_info (pds::nicmgr::EthDevice *proto_obj)
     eth_dev_info->eth_spec = eth_spec;
 
     PDS_TRACE_DEBUG("Restore eth dev %s", eth_spec->name.c_str());
-    if (upg_init_mode == upg_mode_t::UPGRADE_MODE_GRACEFUL) {
+    if (sdk::platform::sysinit_mode_graceful(init_mode)) {
         g_devmgr->RestoreDeviceGraceful(ETH, eth_dev_info);
-    } else if (upg_init_mode == upg_mode_t::UPGRADE_MODE_HITLESS) {
+    } else if (sdk::platform::sysinit_mode_hitless(init_mode)) {
         g_devmgr->RestoreDeviceHitless(ETH, eth_dev_info);
     }
 }
@@ -251,7 +251,7 @@ nicmgr_upg_restore_uplink_info (pds::Port *proto_obj)
 }
 
 static sdk_ret_t
-backup_objs (upg_mode_t mode)
+backup_objs (sysinit_mode_t mode)
 {
     std::vector <struct EthDevInfo*> dev_info;
     std::map<uint32_t, uplink_t*> up_links;
@@ -443,7 +443,7 @@ nicmgr_upg_ev_switchover_hdlr (sdk::ipc::ipc_msg_ptr msg, const void *ctxt)
 sdk_ret_t
 nicmgr_upg_init (void)
 {
-    upg_mode_t upg_init_mode = api::g_upg_state->upg_init_mode();
+    sysinit_mode_t init_mode = api::g_upg_state->init_mode();
     sdk_ret_t ret;
 
     sdk::ipc::reg_request_handler(UPG_MSG_ID_COMPAT_CHECK,
@@ -466,7 +466,7 @@ nicmgr_upg_init (void)
                              nicmgr_upg_process_response);
 
     // load the states
-    if (!sdk::platform::upgrade_mode_none(upg_init_mode)) {
+    if (!sdk::platform::sysinit_mode_default(init_mode)) {
         ret = restore_objs();
         if (ret != SDK_RET_OK) {
             // api::g_upg_state->set_upg_init_error();

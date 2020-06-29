@@ -235,9 +235,9 @@ upg_event_send (sdk::upg::upg_ev_params_t *params)
     // from upg_event_response_cb while we are here..
     api::g_upg_state->ev_incr_in_progress();
 
-    if (upgrade_mode_graceful(params->mode)) {
+    if (sdk::platform::sysinit_mode_graceful(params->mode)) {
         ret = upg_graceful_ev_send(params);
-    } else if (upgrade_mode_hitless(params->mode)) {
+    } else if (sdk::platform::sysinit_mode_hitless(params->mode)) {
         ret = upg_hitless_ev_send(params);
     } else {
         SDK_ASSERT(0);
@@ -253,7 +253,7 @@ upg_event_send (sdk::upg::upg_ev_params_t *params)
            api::g_upg_state->ev_more() &&
            (api::g_upg_state->ev_status() == SDK_RET_OK)) {
         api::g_upg_state->ev_incr_in_progress();
-        if (upgrade_mode_graceful(params->mode)) {
+        if (sdk::platform::sysinit_mode_graceful(params->mode)) {
             upg_graceful_additional_ev_send(params);
         } else {
             upg_hitless_additional_ev_send(params);
@@ -293,7 +293,7 @@ upg_ev_process_response (sdk_ret_t ret, upg_ev_msg_id_t id)
     if (!api::g_upg_state->ev_in_progress() &&
         api::g_upg_state->ev_more() &&
         (api::g_upg_state->ev_status() == SDK_RET_OK)) {
-        if (upgrade_mode_graceful(params->mode)) {
+        if (sdk::platform::sysinit_mode_graceful(params->mode)) {
             upg_graceful_additional_ev_send(params);
         } else {
             upg_hitless_additional_ev_send(params);

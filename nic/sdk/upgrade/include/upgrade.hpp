@@ -92,7 +92,7 @@ SDK_DEFINE_ENUM_TO_STR(upg_status_t, UPG_STATUS_ENTRIES)
 /// TODO: should i convert to protobuf and send
 typedef struct upg_event_msg_s {
     upg_stage_t    stage;             ///< request stage
-    sdk::platform::upg_mode_t mode;   ///< upgrade mode
+    sdk::platform::sysinit_mode_t mode;   ///< upgrade mode
     upg_status_t   rsp_status;        ///< response status
     char           rsp_svc_name[SDK_MAX_NAME_LEN];  ///< response service's name
     uint32_t       rsp_svc_ipc_id;    ///< response services's ipc id. can be used

@@ -60,11 +60,11 @@ vpp_upg_ev_hdlr (sdk::upg::upg_ev_params_t *params)
     }
     ret = SDK_RET_OK;
     pds_vpp_worker_thread_barrier();
-    if (upgrade_mode_graceful(params->mode)) {
+    if (sdk::platform::sysinit_mode_graceful(params->mode)) {
         upg_log_notice("%s: Graceful Upgrade: Handling Upgrade stage %u mode %u\n",
                        __FUNCTION__, params->id, params->mode);
         ret = vpp_graceful_upg_ev_hdlr(params);
-    } else if (upgrade_mode_hitless(params->mode)) {
+    } else if (sdk::platform::sysinit_mode_hitless(params->mode)) {
         upg_log_notice("%s: Hitless Upgrade: Handling Upgrade stage %u mode %u\n",
                        __FUNCTION__, params->id, params->mode);
         ret = vpp_hitless_upg_ev_hdlr(params);

@@ -40,12 +40,12 @@ ipc_svc_dom_id_to_name (ipc_svc_dom_id_t id)
 typedef void (*upg_async_response_cb_t)(upg_event_msg_t *event);
 /// broadcast to a domain
 void upg_send_broadcast_request(ipc_svc_dom_id_t dom_id, upg_stage_t stage,
-                                upg_mode_t mode, uint32_t num_svcs,
+                                sysinit_mode_t mode, uint32_t num_svcs,
                                 ev_tstamp timeout);
-void upg_send_exit_event(upg_mode_t mode);
+void upg_send_exit_event(sysinit_mode_t mode);
 /// unicast request to a service in a domain
 void upg_send_request(ipc_svc_dom_id_t dom_id, upg_stage_t stage,
-                      uint32_t svc_id, upg_mode_t mode);
+                      uint32_t svc_id, sysinit_mode_t mode);
 /// initialize the ipc service
 void upg_ipc_init(upg_async_response_cb_t response_cb);
 

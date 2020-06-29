@@ -24,7 +24,7 @@ obj_backup_hitless (void)
     upg_ev_params_t params;
 
     params.id = UPG_MSG_ID_BACKUP;
-    params.mode = upg_mode_t::UPGRADE_MODE_HITLESS;
+    params.mode = sysinit_mode_t::SYSINIT_MODE_HITLESS;
 
     hitless_list = ::api::g_upg_state->ev_threads_hdlr_hitless();
     std::list<::api::upg_ev_hitless_t>::iterator it = hitless_list.begin();
@@ -48,7 +48,7 @@ obj_backup_graceful (void)
 }
 
 sdk_ret_t
-upg_obj_backup (upg_mode_t mode)
+upg_obj_backup (sysinit_mode_t mode)
 {
     sdk_ret_t ret;
 
@@ -57,9 +57,9 @@ upg_obj_backup (upg_mode_t mode)
         return ret;
     }
 
-    if (upgrade_mode_hitless(mode)) {
+    if (sdk::platform::sysinit_mode_hitless(mode)) {
         ret = obj_backup_hitless();
-    } else if (upgrade_mode_graceful(mode)) {
+    } else if (sdk::platform::sysinit_mode_graceful(mode)) {
         ret = obj_backup_graceful();
     } else {
         ret = SDK_RET_OK;
@@ -68,11 +68,11 @@ upg_obj_backup (upg_mode_t mode)
 }
 
 sdk_ret_t
-upg_obj_restore (upg_mode_t mode)
+upg_obj_restore (sysinit_mode_t mode)
 {
     sdk_ret_t ret;
 
-    SDK_ASSERT(upgrade_mode_hitless(mode));
+    SDK_ASSERT(sdk::platform::sysinit_mode_hitless(mode));
     PDS_TRACE_DEBUG("Upgrade object restore, mode %u", mode);
     ::api::upg_shmstore_open(mode);
     return ::api::upg_hitless_restore_api_objs();

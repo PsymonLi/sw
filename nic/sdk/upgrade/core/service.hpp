@@ -70,7 +70,7 @@ public:
     bool has_valid_ipc_id(void) const { return has_valid_ipc_id_; };
     upg_svc& operator=(const upg_svc &obj);
     void dispatch_event(ipc_svc_dom_id_t dom,
-                        upg_stage_t event, upg_mode_t upg_mode) const;
+                        upg_stage_t event, sysinit_mode_t upg_mode) const;
 private:
     std::string name_;
     uint32_t ipc_id_;

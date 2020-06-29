@@ -842,7 +842,7 @@ capri_cfg_init (asic_cfg_t *cfg, asic_cfg_t& capri_cfg)
 
     capri_cfg.completion_func = cfg->completion_func;
     capri_cfg.device_profile = cfg->device_profile;
-    capri_cfg.upg_init_mode = cfg->upg_init_mode;
+    capri_cfg.init_mode = cfg->init_mode;
     return SDK_RET_OK;
 }
 
@@ -851,7 +851,7 @@ asicpd_init (asic_cfg_t *cfg)
 {
     asic_cfg_t capri_cfg;
 
-    cfg->upg_init_mode = upg_mode_t::UPGRADE_MODE_NONE;
+    cfg->init_mode = sysinit_mode_t::SYSINIT_MODE_DEFAULT;
     capri_cfg_init(cfg, capri_cfg);
     if (sdk::asic::asic_is_hard_init()) {
         //@@TODO - check and update redundant initializations within
@@ -867,7 +867,7 @@ asicpd_soft_init (asic_cfg_t *cfg)
 {
     asic_cfg_t capri_cfg;
 
-    cfg->upg_init_mode = upg_mode_t::UPGRADE_MODE_NONE;
+    cfg->init_mode = sysinit_mode_t::SYSINIT_MODE_DEFAULT;
     capri_cfg_init(cfg, capri_cfg);
     return capri_soft_init(&capri_cfg);
 }
@@ -881,11 +881,11 @@ asicpd_upgrade_init (asic_cfg_t *cfg)
     SDK_ASSERT(sdk::asic::asic_is_hard_init());
     capri_cfg_init(cfg, capri_cfg);
 
-    if (sdk::platform::upgrade_mode_graceful(cfg->upg_init_mode)) {
+    if (sdk::platform::sysinit_mode_graceful(cfg->init_mode)) {
         // it is same as hardinit. memory regions marked as reset will
         // be zeroed out by asic_reset_hbm_regions function during capri_init
         return capri_init(&capri_cfg);
-    } else if (sdk::platform::upgrade_mode_hitless(cfg->upg_init_mode)) {
+    } else if (sdk::platform::sysinit_mode_hitless(cfg->init_mode)) {
         return capri_upgrade_hitless_init(&capri_cfg);
     } else {
         SDK_TRACE_ERR("Invalid upgrade mode");

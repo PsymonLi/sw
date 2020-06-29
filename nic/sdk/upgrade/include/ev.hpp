@@ -54,35 +54,6 @@ SDK_DEFINE_ENUM(upg_ev_id_t, UPG_EV_ENTRIES)
 SDK_DEFINE_ENUM_TO_STR(upg_ev_id_t, UPG_EV_ENTRIES)
 #undef UPG_EV_ENTRIES
 
-// used in hitless upgrade
-#define UPGRADE_DOMAIN(ENTRY)                                     \
-    ENTRY(UPGRADE_DOMAIN_NONE,     0, "UPGRADE_DOMAIN_NONE")    \
-    ENTRY(UPGRADE_DOMAIN_A,        1, "UPGRADE_DOMAIN_A")       \
-    ENTRY(UPGRADE_DOMAIN_B,        2, "UPGRADE_DOMAIN_B")       \
-
-SDK_DEFINE_ENUM(upg_dom_t,        UPGRADE_DOMAIN)
-SDK_DEFINE_ENUM_TO_STR(upg_dom_t, UPGRADE_DOMAIN)
-SDK_DEFINE_MAP_EXTERN(upg_dom_t,  UPGRADE_DOMAIN)
-// #undef UPGRADE_DOMAIN
-
-static inline bool
-upg_domain_none (upg_dom_t dom)
-{
-    return dom == UPGRADE_DOMAIN_NONE;
-}
-
-static inline bool
-upg_domain_a (upg_dom_t dom)
-{
-    return dom == UPGRADE_DOMAIN_A;
-}
-
-static inline bool
-upg_domain_b (upg_dom_t dom)
-{
-    return dom == UPGRADE_DOMAIN_B;
-}
-
 /// \brief asynchronous response callback by the event handler
 /// cookie is passed to the event handler and it should not be modified
 typedef void (*upg_async_ev_response_cb_t)(sdk_ret_t status, const void *cookie);
@@ -107,11 +78,11 @@ upg_stage2event (upg_stage_t stage)
 #define UPGRADE_INIT_MODE_FILE "/.upgrade_init_mode"
 #define UPGRADE_INIT_DOM_FILE "/.upgrade_init_domain"
 
-static inline upg_mode_t
-upg_init_mode (const char *file = NULL)
+static inline sysinit_mode_t
+init_mode (const char *file = NULL)
 {
     FILE *fp;
-    upg_mode_t mode;
+    sysinit_mode_t mode;
     char buf[32], *m = NULL;
 
     fp = file ? fopen(file, "r") : fopen(UPGRADE_INIT_MODE_FILE, "r");
@@ -120,30 +91,30 @@ upg_init_mode (const char *file = NULL)
         fclose(fp);
     }
     if (!m) {
-        return upg_mode_t::UPGRADE_MODE_NONE;
+        return sysinit_mode_t::SYSINIT_MODE_DEFAULT;
     }
     if (strncmp(m, "graceful", strlen("graceful")) == 0) {
-        mode = upg_mode_t::UPGRADE_MODE_GRACEFUL;
+        mode = sysinit_mode_t::SYSINIT_MODE_GRACEFUL;
     } else if (strncmp(m, "hitless", strlen("hitless")) == 0) {
-        mode = upg_mode_t::UPGRADE_MODE_HITLESS;
+        mode = sysinit_mode_t::SYSINIT_MODE_HITLESS;
     } else if (strncmp(m, "none", strlen("none")) == 0) {
-        mode = upg_mode_t::UPGRADE_MODE_NONE;
+        mode = sysinit_mode_t::SYSINIT_MODE_DEFAULT;
     } else {
         SDK_ASSERT(0);
     }
     return mode;
 }
 
-static inline upg_dom_t
-upg_init_domain (void)
+static inline sysinit_dom_t
+init_domain (void)
 {
     FILE *fp;
     char buf[32], *m = NULL;
-    upg_dom_t dom_id;
+    sysinit_dom_t dom_id;
     std::string file = UPGRADE_INIT_DOM_FILE;
 
-    if (upg_init_mode() != upg_mode_t::UPGRADE_MODE_HITLESS) {
-        return upg_dom_t::UPGRADE_DOMAIN_NONE;
+    if (!sdk::platform::sysinit_mode_hitless(init_mode())) {
+        return sysinit_dom_t::SYSINIT_DOMAIN_A;
     }
     fp = fopen(file.c_str(), "r");
     SDK_ASSERT(fp != NULL);
@@ -152,9 +123,9 @@ upg_init_domain (void)
     fclose(fp);
 
     if (strncmp(m, "dom_a", strlen("dom_a")) == 0) {
-        dom_id = upg_dom_t::UPGRADE_DOMAIN_A;
+        dom_id = sysinit_dom_t::SYSINIT_DOMAIN_A;
     } else if (strncmp(m, "dom_b", strlen("dom_b")) == 0) {
-        dom_id = upg_dom_t::UPGRADE_DOMAIN_B;
+        dom_id = sysinit_dom_t::SYSINIT_DOMAIN_B;
     } else {
         SDK_ASSERT(0);
     }
@@ -164,7 +135,7 @@ upg_init_domain (void)
 /// \brief upgrade event msg
 typedef struct upg_ev_params_s {
     upg_ev_id_t id;                         ///< upgrade event id
-    sdk::platform::upg_mode_t mode;         ///< upgrade mode
+    sdk::platform::sysinit_mode_t mode;         ///< upgrade mode
     upg_async_ev_response_cb_t response_cb; ///< response callback
     void *response_cookie;                  ///< response cookie
     void *svc_ctx;                          ///< service context, given during

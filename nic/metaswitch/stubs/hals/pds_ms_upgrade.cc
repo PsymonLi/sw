@@ -30,7 +30,7 @@ pds_ms_upg_cb_ev_backup (api::upg_ev_params_t *params)
 static sdk_ret_t
 pds_ms_upg_cb_ev_start (api::upg_ev_params_t *params)
 {
-    if (params->mode != upg_mode_t::UPGRADE_MODE_HITLESS) {
+    if (!sdk::platform::sysinit_mode_hitless(params->mode)) {
         // Nothing to do for graceful upgrade
         return SDK_RET_OK;
     }
@@ -137,7 +137,7 @@ pds_ms_upg_hitless_start_test (void)
 {
     api::upg_ev_params_t  params {
         .id = UPG_MSG_ID_START,
-        .mode = upg_mode_t::UPGRADE_MODE_HITLESS
+        .mode = sysinit_mode_t::SYSINIT_MODE_HITLESS
     };
     pds_ms_upg_cb_ev_start(&params);
     return params.rsp_code;

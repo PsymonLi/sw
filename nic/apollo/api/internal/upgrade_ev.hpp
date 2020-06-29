@@ -51,7 +51,7 @@ upg_msgid2str (upg_ev_msg_id_t id)
 /// \brief upgrade event parameters passed to the threads
 typedef struct upg_ev_params_s {
     upg_ev_msg_id_t id;                ///< event message id
-    sdk::platform::upg_mode_t mode;    ///< upgrade mode
+    sysinit_mode_t mode;               ///< initialization mode
     sdk_ret_t rsp_code;                ///< response code
 } upg_ev_params_t;
 
@@ -67,8 +67,8 @@ void upg_ev_process_response(sdk_ret_t ret, upg_ev_msg_id_t id);
 sdk_ret_t upg_event_send(sdk::upg::upg_ev_params_t *params);
 sdk_ret_t upg_restore_api_objs(void);
 sdk_ret_t upg_hitless_restore_api_objs(void);
-sdk_ret_t upg_shmstore_create(upg_mode_t mode, bool vstore = false);
-sdk_ret_t upg_shmstore_open(upg_mode_t mode, bool vstore = false);
+sdk_ret_t upg_shmstore_create(sysinit_mode_t mode, bool vstore = false);
+sdk_ret_t upg_shmstore_open(sysinit_mode_t mode, bool vstore = false);
 
 }   // namespace api
 
