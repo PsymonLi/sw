@@ -44,6 +44,8 @@ p4i_device_ip_check:
     phvwr           p.control_metadata_l2_enabled, \
                         d.p4i_device_info_d.l2_enabled
     phvwr.c1        p.control_metadata_to_device_ip, TRUE
+    seq             c1, k.p4plus_to_p4_insert_vlan_tag, TRUE
+    phvwr.c1        p.ctag_1_vid, k.p4plus_to_p4_vlan_vid
     phvwrpair.e     p.p4i_i2e_nexthop_type, NEXTHOP_TYPE_NEXTHOP, \
                         p.p4i_i2e_priority, 0x1f
     phvwr.f         p.key_metadata_entry_valid, TRUE

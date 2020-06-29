@@ -44,6 +44,10 @@ action p4i_device_info(device_mac_addr1, device_mac_addr2,
     } else {
         modify_field(capri_intrinsic.tm_oq, capri_intrinsic.tm_iq);
     }
+
+    if (p4plus_to_p4.insert_vlan_tag == TRUE) {
+        modify_field(ctag_1.vid, p4plus_to_p4_vlan.vid);
+    }
 }
 
 @pragma stage 0
