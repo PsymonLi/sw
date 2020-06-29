@@ -103,6 +103,202 @@ var _ = Describe("mirror session tests", func() {
 				},
 			},
 		}
+
+		var testValidateMirrorSessions = map[*monitoring.MirrorSession]bool{
+			{
+				ObjectMeta: api.ObjectMeta{
+					Name:   "ValidateMirrorSession1",
+					Tenant: "default",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind:       "MirrorSession",
+					APIVersion: "v1",
+				},
+				Spec: monitoring.MirrorSessionSpec{
+					PacketSize:    128,
+					SpanID:        1023,
+					PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+					Collectors: []monitoring.MirrorCollector{
+						{
+							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+							ExportCfg: &monitoring.MirrorExportConfig{
+								Destination: "192.168.1.101",
+							},
+						},
+					},
+					MatchRules: []monitoring.MatchRule{
+						{
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.1"},
+							},
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.101"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"TCP/5555"},
+							},
+						},
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.2.2.202"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"UDP/5555"},
+							},
+						},
+						{
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.2.2.201"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"icmp/5555"},
+							},
+						},
+					},
+				},
+			}: true,
+			{
+				ObjectMeta: api.ObjectMeta{
+					Name:   "ValidateMirrorSession2",
+					Tenant: "default",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind:       "MirrorSession",
+					APIVersion: "v1",
+				},
+				Spec: monitoring.MirrorSessionSpec{
+					PacketSize:    128,
+					PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+					Collectors: []monitoring.MirrorCollector{
+						{
+							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+							ExportCfg: &monitoring.MirrorExportConfig{
+								Destination: "192.168.1.102",
+							},
+						},
+					},
+					MatchRules: []monitoring.MatchRule{
+						{
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.2"},
+							},
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.102"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"UDP/1234-1236"},
+							},
+						},
+					},
+				},
+			}: true,
+			{
+				ObjectMeta: api.ObjectMeta{
+					Name:   "ValidateMirrorSession3",
+					Tenant: "default",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind:       "MirrorSession",
+					APIVersion: "v1",
+				},
+				Spec: monitoring.MirrorSessionSpec{
+					PacketSize:    128,
+					PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+					Collectors: []monitoring.MirrorCollector{
+						{
+							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+							ExportCfg: &monitoring.MirrorExportConfig{
+								Destination: "192.168.1.103",
+							},
+						},
+					},
+					MatchRules: []monitoring.MatchRule{
+						{
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.3"},
+							},
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.103"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"any"},
+							},
+						},
+					},
+				},
+			}: true,
+			{
+				ObjectMeta: api.ObjectMeta{
+					Name:   "ValidateMirrorSessionInvalidProtocol",
+					Tenant: "default",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind:       "MirrorSession",
+					APIVersion: "v1",
+				},
+				Spec: monitoring.MirrorSessionSpec{
+					PacketSize:    128,
+					PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+					Collectors: []monitoring.MirrorCollector{
+						{
+							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+							ExportCfg: &monitoring.MirrorExportConfig{
+								Destination: "192.168.1.104",
+							},
+						},
+					},
+					MatchRules: []monitoring.MatchRule{
+						{
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.4"},
+							},
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.104"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"arp"},
+							},
+						},
+					},
+				},
+			}: false, // only tcp, udp, icmp, any are supported
+			{
+				ObjectMeta: api.ObjectMeta{
+					Name:   "ValidateMirrorSessionAnyProtoWithPort",
+					Tenant: "default",
+				},
+				TypeMeta: api.TypeMeta{
+					Kind:       "MirrorSession",
+					APIVersion: "v1",
+				},
+				Spec: monitoring.MirrorSessionSpec{
+					PacketSize:    128,
+					PacketFilters: []string{monitoring.MirrorSessionSpec_ALL_PKTS.String()},
+					Collectors: []monitoring.MirrorCollector{
+						{
+							Type: monitoring.PacketCollectorType_ERSPAN_TYPE_3.String(),
+							ExportCfg: &monitoring.MirrorExportConfig{
+								Destination: "192.168.1.105",
+							},
+						},
+					},
+					MatchRules: []monitoring.MatchRule{
+						{
+							Dst: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.5"},
+							},
+							Src: &monitoring.MatchSelector{
+								IPAddresses: []string{"10.1.1.105"},
+							},
+							AppProtoSel: &monitoring.AppProtoSelector{
+								ProtoPorts: []string{"any/1234"},
+							},
+						},
+					},
+				},
+			}: false, // cannot specify port when protocol is any
+		}
+
 		// XXX:Need to create other objects - VRF/EPs/routes etc for testing with packets
 
 		var (
@@ -151,6 +347,20 @@ var _ = Describe("mirror session tests", func() {
 				return true
 			}, 30, 5).Should(BeTrue(), fmt.Sprintf("Failed to delete mirror session after testing process"))
 			time.Sleep(5 * time.Second)
+		})
+
+		It("Validate mirror session", func() {
+			ctx := ts.tu.MustGetLoggedInContext(context.Background())
+			for ms, isValid := range testValidateMirrorSessions {
+				By(fmt.Sprintf("Validating mirror session %v", ms.Name))
+				_, err := mirrorRestIf.Create(ctx, ms)
+				By(fmt.Sprintf("Get err: %v", err))
+				if isValid {
+					Expect(err).Should(BeNil())
+				} else {
+					Expect(err).ShouldNot(BeNil())
+				}
+			}
 		})
 
 		It("Check max mirror sessions", func() {
@@ -574,6 +784,7 @@ var _ = Describe("mirror session tests", func() {
 				return true
 			}, 180, 30).Should(BeTrue(), fmt.Sprintf("Failed to get mirror session active state after scheduled time %s", ms.Name))
 		})
+
 		It("Validate propagation status for mirror session", func() {
 			ctx := ts.tu.MustGetLoggedInContext(context.Background())
 			ms := testMirrorSessions[1]

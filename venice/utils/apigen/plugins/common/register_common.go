@@ -182,28 +182,28 @@ type CheckArgs func(string) bool
 
 // ValidatorArgMap defines the argument types for validators
 var ValidatorArgMap = map[string][]CheckArgs{
-	"StrEnum":           {IsString},
-	"StrLen":            {govldtr.IsInt, govldtr.IsInt},
-	"EmptyOrStrLen":     {govldtr.IsInt, govldtr.IsInt},
-	"IntRange":          {govldtr.IsInt, govldtr.IsInt},
-	"IntRangeOrZero":    {govldtr.IsInt, govldtr.IsInt},
-	"IntMin":            {govldtr.IsInt},
-	"CIDR":              {},
-	"IPAddr":            {},
-	"IPv4":              {},
-	"HostAddr":          {},
-	"MacAddr":           {},
-	"URI":               {},
-	"UUID":              {},
-	"Duration":          {IsString, IsString},
-	"EmptyOrDuration":   {IsString, IsString},
-	"ProtoPort":         {},
-	"ProtoPortRange":    {},
-	"ProtoPortAnyRange": {},
-	"RegExp":            {IsValidRegExp},
-	"EmptyOrRegExp":     {IsValidRegExp},
-	"ValidGroup":        {},
-	"ValidKind":         {},
+	"StrEnum":         {IsString},
+	"StrLen":          {govldtr.IsInt, govldtr.IsInt},
+	"EmptyOrStrLen":   {govldtr.IsInt, govldtr.IsInt},
+	"IntRange":        {govldtr.IsInt, govldtr.IsInt},
+	"IntRangeOrZero":  {govldtr.IsInt, govldtr.IsInt},
+	"IntMin":          {govldtr.IsInt},
+	"CIDR":            {},
+	"IPAddr":          {},
+	"IPv4":            {},
+	"HostAddr":        {},
+	"MacAddr":         {},
+	"URI":             {},
+	"UUID":            {},
+	"Duration":        {IsString, IsString},
+	"EmptyOrDuration": {IsString, IsString},
+	"ProtoPort":       {},
+	"ProtoPortRange":  {},
+	"ProtoPortAny":    {},
+	"RegExp":          {IsValidRegExp},
+	"EmptyOrRegExp":   {IsValidRegExp},
+	"ValidGroup":      {},
+	"ValidKind":       {},
 }
 
 // FieldProfile defines a profile for a field, including validators, defaults,
@@ -239,28 +239,28 @@ func (f *FieldProfile) Init() {
 
 // ValidatorProfileMap maps each validator to a profile function
 var ValidatorProfileMap = map[string]func(field *descriptor.Field, reg *descriptor.Registry, ver string, args []string, v *FieldProfile) error{
-	"StrEnum":           strEnumProfile,
-	"StrLen":            strLenProfile,
-	"EmptyOrStrLen":     emptyOrStrLenProfile,
-	"IntRange":          intRangeProfile,
-	"IntRangeOrZero":    intRangeOrZeroProfile,
-	"IntMin":            intMinProfile,
-	"CIDR":              cidrProfile,
-	"IPAddr":            ipAddrProfile,
-	"IPv4":              ipv4Profile,
-	"HostAddr":          hostAddrProfile,
-	"MacAddr":           macAddrProfile,
-	"URI":               uriProfile,
-	"UUID":              uuidProfile,
-	"Duration":          durationProfile,
-	"EmptyOrDuration":   emptyOrDurationProfile,
-	"ProtoPort":         protoPortProfile,
-	"ProtoPortRange":    protoPortRangeProfile,
-	"ProtoPortAnyRange": protoPortAnyRangeProfile,
-	"RegExp":            regexpProfile,
-	"EmptyOrRegExp":     emptyOrRegexpProfile,
-	"ValidGroup":        validGroupProfile,
-	"ValidKind":         validKindProfile,
+	"StrEnum":         strEnumProfile,
+	"StrLen":          strLenProfile,
+	"EmptyOrStrLen":   emptyOrStrLenProfile,
+	"IntRange":        intRangeProfile,
+	"IntRangeOrZero":  intRangeOrZeroProfile,
+	"IntMin":          intMinProfile,
+	"CIDR":            cidrProfile,
+	"IPAddr":          ipAddrProfile,
+	"IPv4":            ipv4Profile,
+	"HostAddr":        hostAddrProfile,
+	"MacAddr":         macAddrProfile,
+	"URI":             uriProfile,
+	"UUID":            uuidProfile,
+	"Duration":        durationProfile,
+	"EmptyOrDuration": emptyOrDurationProfile,
+	"ProtoPort":       protoPortProfile,
+	"ProtoPortRange":  protoPortRangeProfile,
+	"ProtoPortAny":    protoPortAnyProfile,
+	"RegExp":          regexpProfile,
+	"EmptyOrRegExp":   emptyOrRegexpProfile,
+	"ValidGroup":      validGroupProfile,
+	"ValidKind":       validKindProfile,
 }
 
 // convInt is a utility function to get convert string to integer
@@ -543,10 +543,10 @@ func protoPortRangeProfile(field *descriptor.Field, reg *descriptor.Registry, ve
 	return nil
 }
 
-func protoPortAnyRangeProfile(field *descriptor.Field, reg *descriptor.Registry, ver string, args []string, prof *FieldProfile) error {
-	str := "udp/1234-1235"
+func protoPortAnyProfile(field *descriptor.Field, reg *descriptor.Registry, ver string, args []string, prof *FieldProfile) error {
+	str := "udp/1234"
 	prof.Example[ver] = prof.Example[ver] + str
-	prof.DocStrings[ver] = append(prof.DocStrings[ver], "should be a valid layer 3 or layer 4 protocol and port range. any or any/2345 is also allowed")
+	prof.DocStrings[ver] = append(prof.DocStrings[ver], "should be a valid layer 3 or layer 4 protocol and port range. any is also allowed")
 	prof.Required[ver] = true
 	return nil
 }

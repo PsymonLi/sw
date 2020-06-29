@@ -1,6 +1,8 @@
 package validators
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/pensando/sw/api"
@@ -361,7 +363,7 @@ func TestL3L4Proto(t *testing.T) {
 	}
 }
 
-func TestL3L4ProtoAnyRange(t *testing.T) {
+func TestL3L4ProtoPortAny(t *testing.T) {
 	cases := []struct {
 		s      string
 		errMsg string
@@ -375,17 +377,11 @@ func TestL3L4ProtoAnyRange(t *testing.T) {
 		{s: "Udp"},
 		{s: "udp/65535"},
 		{s: "IcMp"},
-		{s: "aRP"},
-		{s: "ipprotocol/17"},
-		{s: "ethertype/0x806"},
 		{s: "icmp/1"},
 		{s: "icmp/3/2"},
 		{s: "icmp/echo reply"},
 		{s: "icmp/redirect/5"},
 		{s: "any"},
-		{s: "any/2345"},
-		{s: "any/1234-1236"},
-		{s: "any/1-65535"},
 		// Bad cases
 		//{s: "TCP/1234-1294", errMsg: "too large port range, limit 50"},
 		{s: "TCP/1234-1224", errMsg: "Invalid port range 1234-1224. first number bigger than second"},
@@ -394,21 +390,27 @@ func TestL3L4ProtoAnyRange(t *testing.T) {
 		{s: "Udp/1/2", errMsg: "Value had invalid format for udp, unexpected second '/' "},
 		{s: "udp/-123", errMsg: "port  must be an integer value"},
 		{s: "foo", errMsg: "Protocol must be a valid L3 or L4 <protocol>/<port>"},
-		{s: "ipprotocol", errMsg: "Value had invalid format for ipprotocol, expected ipprotocol/<port>"},
-		{s: "ipprotocol/17/1/2", errMsg: "Value had invalid format for ipprotocol, unexpected second '/' "},
-		{s: "ethertype/0x806/10", errMsg: "Value had invalid format for ethertype, unexpected second '/' "},
-		{s: "ethertype", errMsg: "Value had invalid format for ethertype, expected ethertype/<protocol number>"},
-		{s: "ethertype/abc", errMsg: "Value had invalid format for ethertype, protocol number must be a 16 bit value"},
-		{s: "ipprotocol/xyz", errMsg: "Value had invalid format for ipprotocol, protocol number must be an 8 bit value"},
-		{s: "ipprotocol/500", errMsg: "Value had invalid format for ipprotocol, protocol number must be an 8 bit value"},
+		{s: "ipprotocol", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ipprotocol/17/1/2", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ethertype/0x806/10", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ethertype", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ethertype/abc", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ipprotocol/xyz", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ipprotocol/500", errMsg: fmt.Sprintf("Only these protocols are supported")},
 		{s: "icmp/xyz", errMsg: "port xyz must be an integer value"},
-		{s: "any/65566", errMsg: "port 65566 outside range"},
+		{s: "aRP", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ipprotocol/17", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "ethertype/0x806", errMsg: fmt.Sprintf("Only these protocols are supported")},
+		{s: "any/65566", errMsg: "Cannot specify ports when protocol is any"},
+		{s: "any/2345", errMsg: "Cannot specify ports when protocol is any"},
+		{s: "any/1234-1236", errMsg: "Cannot specify ports when protocol is any"},
+		{s: "any/1-65535", errMsg: "Cannot specify ports when protocol is any"},
 	}
 	for i, c := range cases {
-		err := ProtoPortAnyRange(c.s)
+		err := ProtoPortAny(c.s)
 		if err == nil && c.errMsg != "" {
 			t.Errorf("Test case %d:%v Validation should have failed", i, c.s)
-		} else if err != nil && err.Error() != c.errMsg {
+		} else if err != nil && !strings.Contains(err.Error(), c.errMsg) {
 			t.Errorf("Test case %d:%v Validation should have failed with %s but got %s", i, c.s, c.errMsg, err.Error())
 		}
 	}

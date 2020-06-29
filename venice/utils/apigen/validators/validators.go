@@ -396,7 +396,7 @@ func knownIcmpTypeCodeVldtr(l3l4Info []string) bool {
 	return false
 }
 
-func strProtoPortVldtr(in string, allowRange bool, allowAny bool) error {
+func strProtoPortVldtr(in string, allowRange bool, allowAny bool, allowedProtoMap map[string]bool) error {
 	// Acceptable string formats are -
 	// L4_proto/port E.g. tcp/1234
 	// L3proto E.g. arp
@@ -412,6 +412,14 @@ func strProtoPortVldtr(in string, allowRange bool, allowAny bool) error {
 
 	if !l3ok && !l4ok && !(allowAny && l3l4proto == "any") {
 		return fmt.Errorf("Protocol must be a valid L3 or L4 <protocol>/<port>")
+	}
+	if allowedProtoMap != nil {
+		if _, ok := allowedProtoMap[l3l4proto]; !ok {
+			return fmt.Errorf("Only these protocols are supported: %v", reflect.ValueOf(allowedProtoMap).MapKeys())
+		}
+	}
+	if l3l4proto == "any" && strings.Contains(in, "/") {
+		return fmt.Errorf("Cannot specify ports when protocol is any")
 	}
 	l4proto := l4Info
 	l3proto := l3Info
@@ -515,19 +523,24 @@ func strProtoPortVldtr(in string, allowRange bool, allowAny bool) error {
 	return nil
 }
 
-// ProtoPortAnyRange validates L3/L4 protocol and port range
-func ProtoPortAnyRange(port string) error {
-	return strProtoPortVldtr(port, true, true)
+// ProtoPortAny validates L3/L4 protocol and port range
+func ProtoPortAny(port string) error {
+	return strProtoPortVldtr(port, true, true, map[string]bool{
+		"tcp":  true,
+		"udp":  true,
+		"icmp": true,
+		"any":  true,
+	})
 }
 
 // ProtoPortRange validates L3/L4 protocol and port range
 func ProtoPortRange(port string) error {
-	return strProtoPortVldtr(port, true, false)
+	return strProtoPortVldtr(port, true, false, nil)
 }
 
 // ProtoPort validates L3/L4 protocol and port
 func ProtoPort(port string) error {
-	return strProtoPortVldtr(port, false, false)
+	return strProtoPortVldtr(port, false, false, nil)
 }
 
 // ValidKind validates that the kind is one of the registered Kinds
