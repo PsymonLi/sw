@@ -50,6 +50,9 @@ DryRunSanity lpm_overlap_priority lpm SUB="v4_overlap"
 DryRunSanity lpm_full_overlap_priority lpm SUB="v4_full_overlap"
 
 DryRunSanity hostvxlan_ex policy SUB="multi_policy"
+DryRunSanity hostvxlan_ex policy SUB="multi_policy_subnet_vnic"
+DryRunSanity hostvxlan_ex policy SUB="scale_policy_subnet_vnic"
+DryRunSanity hostvxlan_ex policy SUB="scale_tag"
 DryRunSanity hostvxlan_ex_anydeny policy SUB="multi_policy"
 
 # end of script

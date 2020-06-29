@@ -334,48 +334,52 @@ def __is_matching_ip(matchtype, ipaddr, ippfx=None, ipaddrLow=None, ipaddrHigh=N
     return False
 
 def __is_matching_src_ip(src_ip, l3matchobj, direction, testcase):
+    dutNode = EzAccessStore.GetDUTNode()
+    v4ltags,v6ltags,v4rtags,v6rtags = utils.GetTagsFromMapping(dutNode)
     af = testcase.config.localmapping.AddrFamily
     if utils.IsPipelineApulu() and (l3matchobj.SrcType == topo.L3MatchType.TAG):
         if direction == "ingress":
             if af == 'IPV4':
-                for obj in testcase.config.v4rtags[l3matchobj.SrcTag]:
+                for obj in v4rtags[l3matchobj.SrcTag]:
                     if str(src_ip) == obj.IP:
                         return True
             else:
-                for obj in testcase.config.v6rtags[l3matchobj.SrcTag]:
+                for obj in v6rtags[l3matchobj.SrcTag]:
                     if str(src_ip) == obj.IP:
                         return True
         else:
             if af == 'IPV4':
-                for obj in testcase.config.v4ltags[l3matchobj.SrcTag]:
+                for obj in v4ltags[l3matchobj.SrcTag]:
                     if str(src_ip) == obj.IP:
                         return True
             else:
-                for obj in testcase.config.v6ltags[l3matchobj.SrcTag]:
+                for obj in v6ltags[l3matchobj.SrcTag]:
                     if str(src_ip) == obj.IP:
                         return True
         return False
     return __is_matching_ip(l3matchobj.SrcType, src_ip, l3matchobj.SrcPrefix, l3matchobj.SrcIPLow, l3matchobj.SrcIPHigh, l3matchobj.SrcTag)
 
 def __is_matching_dst_ip(dst_ip, l3matchobj, direction, testcase):
+    dutNode = EzAccessStore.GetDUTNode()
+    v4ltags,v6ltags,v4rtags,v6rtags = utils.GetTagsFromMapping(dutNode)
     af = testcase.config.localmapping.AddrFamily
     if utils.IsPipelineApulu() and (l3matchobj.DstType == topo.L3MatchType.TAG):
         if direction == "ingress":
             if af == 'IPV4':
-                for obj in testcase.config.v4ltags[l3matchobj.DstTag]:
+                for obj in v4ltags[l3matchobj.DstTag]:
                     if str(dst_ip) == obj.IP:
                         return True
             else:
-                for obj in testcase.config.v6ltags[l3matchobj.DstTag]:
+                for obj in v6ltags[l3matchobj.DstTag]:
                     if str(dst_ip) == obj.IP:
                         return True
         else:
             if af == 'IPV4':
-                for obj in testcase.config.v4rtags[l3matchobj.DstTag]:
+                for obj in v4rtags[l3matchobj.DstTag]:
                     if str(dst_ip) == obj.IP:
                         return True
             else:
-                for obj in testcase.config.v6rtags[l3matchobj.DstTag]:
+                for obj in v6rtags[l3matchobj.DstTag]:
                     if str(dst_ip) == obj.IP:
                         return True
         return False

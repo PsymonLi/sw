@@ -81,11 +81,27 @@ node:
                       keytype  : l3
                       lmacaddr : macaddr/00ae.cd00.000a
                       lipaddr  : '2.1.0.3'
+                      tag      : true
+                      tag_type : specific
+                      tags     :
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                        - 5
                     - id       : 2
                       count    : 1
                       keytype  : l3
                       lmacaddr : macaddr/00ae.cd00.000b
                       lipaddr  : '2.1.0.4'
+                      tag      : true
+                      tag_type : specific
+                      tags     :
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                        - 5
                   srcguard: false         # true or false (default false)
                   public  : false
                   tagged  : false         # true or false (default true)
@@ -101,6 +117,14 @@ node:
                   rmacaddr : macaddr/00ae.cd00.0811
                   ripaddr  : '2.1.0.2'
                   tunnelid : 1
+                  tag      : true
+                  tag_type : specific
+                  tags     :
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
             - id               : 2
               count            : 1
               v4prefixlen      : 24
@@ -121,11 +145,27 @@ node:
                       keytype  : l3
                       lmacaddr : macaddr/00ae.cd00.000d
                       lipaddr  : '9.0.0.3'
+                      tag      : true
+                      tag_type : specific
+                      tags     :
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                        - 5
                     - id       : 4
                       count    : 1
                       keytype  : l3
                       lmacaddr : macaddr/00ae.cd00.000e
                       lipaddr  : '9.0.0.4'
+                      tag      : true
+                      tag_type : specific
+                      tags     :
+                        - 1
+                        - 2
+                        - 3
+                        - 4
+                        - 5
                   srcguard: false         # true or false (default false)
                   public  : false
                   tagged  : true         # true or false (default true)
@@ -143,6 +183,14 @@ node:
                   rmacaddr : macaddr/00ae.cd00.0813
                   ripaddr  : '9.0.0.2'
                   tunnelid : 1
+                  tag      : true
+                  tag_type : specific
+                  tags     :
+                    - 1
+                    - 2
+                    - 3
+                    - 4
+                    - 5
           routetbl:
                  - type: base
                    routetype: fulloverlap_max

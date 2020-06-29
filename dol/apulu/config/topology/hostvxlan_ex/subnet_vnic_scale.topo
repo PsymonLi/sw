@@ -9,5 +9,5 @@ node :
             v4egrpolicycount: 1
             vnic :
               - id : 1
-                v4ingrpolicycount: 1
-                v4egrpolicycount: 1
+                v4ingrpolicycount: 5
+                v4egrpolicycount: 5

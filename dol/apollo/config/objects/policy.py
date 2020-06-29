@@ -666,10 +666,6 @@ class PolicyObject(base.ConfigObjectBase):
             obj.tc_rule = self.__get_random_rule(rule_index)
         #set tag dbs for apulu pipeline
         if utils.IsPipelineApulu():
-            obj.v4ltags = LmappingClient.GetLmappingV4Tags(self.Node)
-            obj.v6ltags = LmappingClient.GetLmappingV6Tags(self.Node)
-            obj.v4rtags = RmappingClient.GetRmappingV4Tags(self.Node)
-            obj.v6rtags = RmappingClient.GetRmappingV6Tags(self.Node)
             obj.remotemapping = self.__get_remotemapping_obj(obj.tc_rule)
         utils.DumpTestcaseConfig(obj)
         return

@@ -571,11 +571,20 @@ jobd/dol/apulu/lpm: ${JOBD_PREREQS}
 
 .PHONY: jobd/dol/apulu/dual_policy
 jobd/dol/apulu/dual_policy: ${JOBD_PREREQS}
-	LOG_SIZE=(80*1024*1024) ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy
 
 .PHONY: jobd/dol/apulu/dual_policy_anydeny
 jobd/dol/apulu/dual_policy_anydeny: ${JOBD_PREREQS}
-	LOG_SIZE=(80*1024*1024) ${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex_anydeny --sub multi_policy
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex_anydeny --sub multi_policy
+
+.PHONY: jobd/dol/apulu/vnic_subnet_policy
+jobd/dol/apulu/vnic_subnet_policy: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub multi_policy_subnet_vnic
+
+.PHONY: jobd/dol/apulu/vnic_subnet_policy_scale
+jobd/dol/apulu/vnic_subnet_policy_scale: ${JOBD_PREREQS}
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub scale_policy_subnet_vnic
+	${NICDIR}/apollo/tools/rundol.sh --pipeline apulu --feature policy --topo hostvxlan_ex --sub scale_tag
 
 .PHONY: jobd/dol/apulu/learn
 jobd/dol/apulu/learn: ${JOBD_PREREQS}

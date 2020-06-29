@@ -1,0 +1,24 @@
+feature:
+    id          : policy
+    sub         : scale_tag
+    package     : test.networking
+    module      : policy
+    runorder    : 8080
+    enable      : True
+    ignore      : True
+    argslist    : tag_scale.alist
+
+modules:
+
+    - module:
+        name            : POLICY_TC_START
+        spec            : load_topo.testspec
+
+    - module:
+        name        : PACKET
+        mlist       : packet.mlist
+
+    - module:
+        name            : POLICY_TC_TEARDOWN
+        spec            : teardown_topo.testspec
+

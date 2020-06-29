@@ -1205,7 +1205,6 @@ def GetPolicies(obj, spec, node, af, direction, generate=True):
     def __get_policies_frm_count(node, vpcid, count, cb):
         addrfamily = 'IPV4' if 'V4' == af else 'IPV6'
         PolicyClient = EzAccessStore.GetConfigClient(ObjectTypes.POLICY)
-        count = min(count, PolicyClient.GetObjsCount(direction, addrfamily))
         policyids = []
         for c in range(count):
             id = cb(node, vpcid)
@@ -1325,3 +1324,12 @@ def IsAttribUpdated(obj, attr):
     if val1 != val2:
         return True
     return False
+
+def GetTagsFromMapping(Node):
+    LmappingClient = EzAccessStore.GetConfigClient(ObjectTypes.LMAPPING)
+    RmappingClient = EzAccessStore.GetConfigClient(ObjectTypes.RMAPPING)
+    v4ltags = LmappingClient.GetLmappingV4Tags(Node)
+    v6ltags = LmappingClient.GetLmappingV6Tags(Node)
+    v4rtags = RmappingClient.GetRmappingV4Tags(Node)
+    v6rtags = RmappingClient.GetRmappingV6Tags(Node)
+    return v4ltags,v6ltags,v4rtags,v6rtags

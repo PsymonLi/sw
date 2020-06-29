@@ -1,0 +1,76 @@
+node:
+  - id : 1
+
+    vpc : 
+      - id : 2
+        policy:
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-1'
+                action    : allow
+                srctype   : tag
+                dsttype   : tag
+                srctag    : 1
+                dsttag    : 1
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-1'
+                action    : allow
+                srctype   : tag
+                dsttype   : tag
+                srctag    : 2
+                dsttag    : 2
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-1'
+                action    : allow
+                srctype   : tag
+                dsttype   : tag
+                srctag    : 3
+                dsttag    : 3
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-1'
+                action    : allow
+                srctype   : tag
+                dsttype   : tag
+                srctag    : 4
+                dsttag    : 4
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-1'
+                action    : allow
+                srctype   : tag
+                dsttype   : tag
+                srctag    : 5
+                dsttag    : 5
+          - policytype        : specific
+            type              : specific
+            direction         : bidir
+            defaultfwaction   : allow
+            rule:
+              - protocol  : any
+                priority  : 'MAXPRIO-2'
+                action    : deny
+                v4pfx     : '0.0.0.0\0'
+                v6pfx     : '::\0'

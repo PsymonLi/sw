@@ -192,6 +192,24 @@ targets:
     build-dependencies:
     - build-apulu-x86
 
+  apulu/dol/vnic_subnet_policy:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/vnic_subnet_policy"]
+    owners: ["email:vgunta@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
+  apulu/dol/vnic_subnet_policy_scale:
+    commands: ["make", "PIPELINE=apulu", "jobd/dol/apulu/vnic_subnet_policy_scale"]
+    owners: ["email:vgunta@pensando.io"]
+    area:
+    sub-area:
+    feature:
+    build-dependencies:
+    - build-apulu-x86
+
 image:
   bind_dir: "/sw"
   work_dir: "/sw/nic"
