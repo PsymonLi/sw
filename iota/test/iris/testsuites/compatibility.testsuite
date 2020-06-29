@@ -33,8 +33,8 @@ common:
 testbundles:
     sanity:
         # Relative paths from iota/test/iris/testbundles/
-        # - networking/connectivity.testbundle
         - server_compatibility/compatibility.testbundle
+        - pciefuzzing/pciefuzzing.testbundle 
 
 teardown:
         # N/A

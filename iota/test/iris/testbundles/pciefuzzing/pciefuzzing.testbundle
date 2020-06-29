@@ -1,0 +1,13 @@
+meta:
+    name    : pciefuzzing
+    os      : [ linux ]
+    nics    : [ pensando ]
+
+testcases:
+    -   name    : fuzzing
+        testcase: testcases.pciefuzzing.fuzzing
+        stress  : True
+        ignore  : False
+        args    :
+            writes  : 10000
+            timeout : 14400
