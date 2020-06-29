@@ -60,11 +60,7 @@ public:
     // eth APIs
     virtual sdk_ret_t eth_dev_admin_status_update(uint32_t lif_id,
                                                   lif_state_t state) = 0;
-    // given host admin state (from driver) on a lif, return the final
-    // state of the lif after taking provider admin state configuration into
-    // account
-    virtual lif_state_t compute_eth_dev_status(uint32_t lif_id,
-                                               lif_state_t admin_state) = 0;
+    virtual lif_state_t eth_dev_provider_admin_status(uint32_t lif_id) = 0;
 
     // qos APIs
     virtual sdk_ret_t qos_class_get(uint8_t group, qos_class_info_t *info) = 0;

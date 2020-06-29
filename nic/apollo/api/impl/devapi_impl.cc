@@ -338,13 +338,12 @@ devapi_impl::eth_dev_admin_status_update(uint32_t lif_id, lif_state_t state) {
 }
 
 lif_state_t
-devapi_impl::compute_eth_dev_status(uint32_t lif_id, lif_state_t admin_state) {
+devapi_impl::eth_dev_provider_admin_status(uint32_t lif_id) {
     if_entry *intf;
     pds_obj_key_t key = uuid_from_objid(HOST_IFINDEX(lif_id));
 
     intf = if_db()->find(&key);
-    if ((intf->admin_state() == PDS_IF_STATE_UP) &&
-        (admin_state == sdk::types::LIF_STATE_UP)) {
+    if (intf->admin_state() == PDS_IF_STATE_UP) {
         return sdk::types::LIF_STATE_UP;
     }
     return sdk::types::LIF_STATE_DOWN;

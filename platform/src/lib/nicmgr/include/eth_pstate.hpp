@@ -62,6 +62,7 @@ typedef struct ethlif_pstate_v1_s {
         active_q_ref_cnt = 0;
         admin_state = 0;
         proxy_admin_state = 0;
+        provider_admin_state = 0;
         port_status = 0;
     }
 
@@ -114,6 +115,9 @@ typedef struct ethlif_pstate_v1_s {
 
     /// lif proxy state
     uint8_t proxy_admin_state;
+
+    /// lif proxy state
+    uint8_t provider_admin_state;
 
     /// lif port status
     uint8_t port_status;

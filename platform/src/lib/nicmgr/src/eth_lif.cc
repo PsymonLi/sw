@@ -148,6 +148,7 @@ EthLif::Init(void)
     lif_pstate->state = LIF_STATE_CREATING;
     lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_UP;
+    lif_pstate->provider_admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->port_status = IONIC_PORT_OPER_STATUS_DOWN;
 
     // set the lif name
@@ -219,6 +220,7 @@ EthLif::UpgradeGracefulInit(void)
     lif_pstate->state = LIF_STATE_CREATING;
     lif_pstate->admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->proxy_admin_state = IONIC_PORT_ADMIN_STATE_UP;
+    lif_pstate->provider_admin_state = IONIC_PORT_ADMIN_STATE_UP;
     lif_pstate->port_status = IONIC_PORT_OPER_STATUS_DOWN;
 
     // set the lif name
@@ -504,8 +506,8 @@ EthLif::LifConfigStatusMem(bool mem_clr) {
 
 status_code_t
 EthLif::LifQInit(bool mem_clr) {
-    uint64_t ring_base; 
-    uint64_t comp_base; 
+    uint64_t ring_base;
+    uint64_t comp_base;
     // NotifyQ
     notify_ring_base =
         pd->nicmgr_mem_alloc(4096 + (sizeof(union ionic_notifyq_comp) *
@@ -550,8 +552,8 @@ EthLif::LifQInit(bool mem_clr) {
         return (IONIC_RC_ENOMEM);
     }
 
-    MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE)); 
-    
+    MEM_CLR(comp_base, 0, (sizeof(struct edma_comp_desc) * ETH_EDMAQ_RING_SIZE));
+
     edmaq = new EdmaQ(hal_lif_info_.name, hal_lif_info_.lif_id,
                       ETH_EDMAQ_QTYPE, ETH_EDMAQ_QID,
                       ring_base, comp_base, ETH_EDMAQ_RING_SIZE, EV_A);
@@ -562,7 +564,7 @@ EthLif::LifQInit(bool mem_clr) {
         return (IONIC_RC_ENOMEM);
     }
     MEM_CLR(ring_base, 0, (sizeof(struct edma_cmd_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
-   
+
     comp_base = pd->nicmgr_mem_alloc((sizeof(struct edma_comp_desc) * ETH_EDMAQ_ASYNC_RING_SIZE));
     if (comp_base == 0) {
         NIC_LOG_ERR("{}: Failed to allocate edma async completion ring!", hal_lif_info_.name);
@@ -2482,6 +2484,7 @@ EthLif::_CmdSetAttr(void *req, void *req_data, void *resp, void *resp_data)
         }
         break;
     case IONIC_LIF_ATTR_NAME:
+        NIC_LOG_INFO("{}: name changed to {}", hal_lif_info_.name, cmd->name);
         strncpy0(lif_pstate->name, cmd->name, sizeof(lif_pstate->name));
         strncpy0(hal_lif_info_.name, cmd->name, sizeof(hal_lif_info_.name));
         dev_api->lif_upd_name(hal_lif_info_.lif_id, lif_pstate->name);
@@ -2662,7 +2665,8 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
     asic_db_addr_t db_addr = { 0 };
 
     NIC_LOG_DEBUG("{}: {}: type {} index {} oper {}", hal_lif_info_.name,
-                  opcode_to_str((cmd_opcode_t)cmd->opcode), cmd->type, cmd->index, cmd->oper);
+                  opcode_to_str((cmd_opcode_t)cmd->opcode),
+                  cmd->type, cmd->index, cmd->oper);
 
     if (!IsLifInitialized()) {
         NIC_LOG_ERR("{}: Lif is not initialized", hal_lif_info_.name);
@@ -2708,7 +2712,7 @@ EthLif::_CmdQControl(void *req, void *req_data, void *resp, void *resp_data)
              * the hal lif's admin status.
              */
             hal_lif_admin_state = cmd->oper == IONIC_Q_ENABLE ?
-                    sdk::types::LIF_STATE_UP : sdk::types::LIF_STATE_DOWN;
+                        sdk::types::LIF_STATE_UP : sdk::types::LIF_STATE_DOWN;
             UpdateHalLifAdminStatus(hal_lif_admin_state);
         }
         break;
@@ -3549,8 +3553,9 @@ EthLif::LifEventHandler(port_status_t *evd)
     uint64_t port_id = 0;
     uplink_t *uplink = NULL;
     port_status_t port_status = { 0 };
-
+    lif_state_t provider_lif_state;
     DeviceManager *devmgr = DeviceManager::GetInstance();
+
     if (spec->eth_type == ETH_HOST) {
         uplink = devmgr->GetUplink(0);
     } else {
@@ -3572,6 +3577,15 @@ EthLif::LifEventHandler(port_status_t *evd)
             NIC_LOG_ERR("{}: Unable to get port status {} for link speed",
                         spec->name, port_id);
         }
+    }
+
+    if (spec->eth_type == ETH_HOST) {
+        provider_lif_state =
+            dev_api->eth_dev_provider_admin_status(hal_lif_info_.lif_id);
+
+        lif_pstate->provider_admin_state =
+            provider_lif_state == sdk::types::LIF_STATE_UP ?
+            IONIC_PORT_ADMIN_STATE_UP : IONIC_PORT_ADMIN_STATE_DOWN;
     }
 
     LinkEventHandler(evd);
@@ -3917,7 +3931,7 @@ EthLif::SetLifLinkState()
     bool state_changed;
     sdk_ret_t ret;
 
-     // drop the event if the lif is not initialized
+    // drop the event if the lif is not initialized
     if (lif_pstate->state != LIF_STATE_INIT &&
         lif_pstate->state != LIF_STATE_UP &&
         lif_pstate->state != LIF_STATE_DOWN) {
@@ -3931,14 +3945,16 @@ EthLif::SetLifLinkState()
         return (IONIC_RC_ERROR);
     }
 
-    if (!spec->vf_dev && lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP) {
+    if (!spec->vf_dev && lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP &&
+        lif_pstate->provider_admin_state == IONIC_PORT_ADMIN_STATE_UP) {
         /*
          * For a PF lif link status just depends on uplink port status.
          */
         next_lif_state = LIF_STATE_UP;
     } else if (spec->vf_dev &&
                lif_pstate->port_status == IONIC_PORT_OPER_STATUS_UP &&
-               lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP) {
+               lif_pstate->proxy_admin_state == IONIC_PORT_ADMIN_STATE_UP &&
+               lif_pstate->provider_admin_state == IONIC_PORT_ADMIN_STATE_UP) {
         /*
          * VF lif link status depends on uplink port status and proxy_admin_state.
          * proxy_admin_state indicates a VF's admin_status controlled by PF.
