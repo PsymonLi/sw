@@ -140,12 +140,14 @@ describe('HttpEventUtility', () => {
     expect(data[2].meta.name).toEqual('obj3');
     expect(data[1].meta.name).toEqual('obj2');
     expect(data[0].meta.name).toEqual('obj1');
+    expect(serviceUtility.hasItem('obj2')).toEqual(true);
 
     serviceUtility.processEvents(deleteEvent);
     expect(data.length).toBe(3);
     expect(data[2].meta.name).toEqual('obj4');
     expect(data[1].meta.name).toEqual('obj3');
     expect(data[0].meta.name).toEqual('obj1');
+    expect(serviceUtility.hasItem('obj2')).toEqual(false);
 
     serviceUtility.processEvents(putAndCreateEvents);
     expect(data.length).toBe(4);

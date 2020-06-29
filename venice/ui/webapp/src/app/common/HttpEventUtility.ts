@@ -167,6 +167,7 @@ export class HttpEventUtility<T> {
   private deleteItem(objName: string): void {
     const index = this.dataMapping[objName];
     this.dataArray.splice(index, 1);
+    delete this.dataMapping[objName];
     // Decrement index of every element after
     // the one we removed in the array.
     for (const key in this.dataMapping) {
