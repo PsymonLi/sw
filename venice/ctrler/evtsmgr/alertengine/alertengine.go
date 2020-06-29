@@ -447,7 +447,7 @@ func (a *alertEngineImpl) createAlert(reqID string, apCl apiclient.Services, ale
 			return true, nil
 		}
 		return false, err
-	}, 2*time.Second, maxRetry)
+	}, 3*time.Second, maxRetry)
 	if err != nil {
 		return false, err
 	}
@@ -536,7 +536,7 @@ func (a *alertEngineImpl) updateAlertsHelper() {
 			delete(a.alertHitCounter.counter, key)
 
 			return nil, nil
-		}, 2*time.Second, maxRetry)
+		}, 6*time.Second, maxRetry)
 
 		if err != nil {
 			a.logger.Errorf("failed to update alert {%v}, increment total-hits by: 1, err: %v", alertName, err)

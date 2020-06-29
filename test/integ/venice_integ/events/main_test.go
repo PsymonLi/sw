@@ -133,7 +133,7 @@ func (t *tInfo) setup(tst *testing.T) error {
 	}
 
 	// start API server
-	if err = t.startAPIServer(tst.Name()); err != nil {
+	if err = t.startAPIServer(tst); err != nil {
 		t.logger.Errorf("failed to start API server, err: %v", err)
 		return err
 	}
@@ -251,9 +251,9 @@ func (t *tInfo) cleanupPolicies() error {
 	return nil
 }
 
-func (t *tInfo) startAPIServer(clusterName string) error {
+func (t *tInfo) startAPIServer(tst *testing.T) error {
 	var err error
-	t.apiServer, t.apiServerAddr, err = serviceutils.StartAPIServer(testURL, clusterName, t.logger, []string{})
+	t.apiServer, t.apiServerAddr, err = serviceutils.StartAPIServer(testURL, tst.Name(), t.logger, []string{})
 	if err != nil {
 		return err
 	}
@@ -263,10 +263,13 @@ func (t *tInfo) startAPIServer(clusterName string) error {
 		t.apiClient.Close()
 	}
 
-	t.apiClient, err = apiclient.NewGrpcAPIClient("events_test", t.apiServerAddr, t.logger)
-	if err != nil {
-		return err
-	}
+	AssertEventually(tst, func() (bool, interface{}) {
+		t.apiClient, err = apiclient.NewGrpcAPIClient("events_test", t.apiServerAddr, t.logger)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}, "Failed to create api client", "15s", "3m")
 
 	return nil
 }

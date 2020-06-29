@@ -1276,6 +1276,9 @@ func TestEventsAlertEngineWithAPIServerShutdown(t *testing.T) {
 	Assert(t, errStatus.Code() == codes.OK, "failed to add alert policy{ap1-*}, err: %+v", errStatus)
 	defer ti.cleanupPolicies()
 
+	// wait for a second for the alert policy to get to evtsmgr cache
+	time.Sleep(1 * time.Second)
+
 	// total alerts should be 0
 	alerts, err := ti.apiClient.MonitoringV1().Alert().List(context.Background(), &api.ListWatchOptions{
 		FieldSelector: fmt.Sprintf("status.reason.alert-policy-id=%s/%s", alertPolicy1.GetName(), alertPolicy1.GetUUID()),
@@ -1315,7 +1318,7 @@ func TestEventsAlertEngineWithAPIServerShutdown(t *testing.T) {
 	time.Sleep(1 * time.Second) // wait for the request to alert engine fail
 
 	// start API server back
-	err = ti.startAPIServer(t.Name())
+	err = ti.startAPIServer(t)
 	AssertOk(t, err, "failed to start API server")
 	defer ti.stopAPIServer()
 
@@ -1335,7 +1338,7 @@ func TestEventsAlertEngineWithAPIServerShutdown(t *testing.T) {
 				return true, nil
 			}
 			return false, fmt.Sprintf("expected: 2, got: %v alerts", len(alerts))
-		}, fmt.Sprintf("expected number of alerts are not created"), "200ms", "6s")
+		}, fmt.Sprintf("expected number of alerts are not created"), "2s", "20s")
 
 	// ensure alert policy status counters are correct
 	AssertEventually(t,
