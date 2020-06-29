@@ -5,7 +5,7 @@
 #include "nic/hal/pd/iris/internal/system_pd.hpp"
 #include "nic/hal/iris/datapath/p4/include/defines.h"
 #include "nic/sdk/lib/p4/p4_api.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
 #include "nic/hal/pd/iris/aclqos/qos_pd.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"

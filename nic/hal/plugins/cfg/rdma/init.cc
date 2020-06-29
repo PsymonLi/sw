@@ -1,7 +1,7 @@
 // {C} Copyright 2019 Pensando Systems Inc. All rights reserved
 
 #include "nic/hal/hal.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/plugins/cfg/rdma/rdma.hpp"
 #include "nic/include/pd.hpp"
 #include "nic/include/pd_api.hpp"

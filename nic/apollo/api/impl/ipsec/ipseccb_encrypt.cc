@@ -10,7 +10,7 @@
 
 #include "nic/sdk/include/sdk/ipsec.hpp"
 #include "nic/sdk/ipsec/ipsec.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/sdk/asic/common/asic_mem.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/apollo/api/pds_state.hpp"

@@ -4,12 +4,12 @@
 #include "nic/include/hal_cfg.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/sdk/asic/pd/pd.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "platform/capri/capri_pxb_pcie.hpp"
 #include "platform/capri/capri_txs_scheduler.hpp"
 #include "asic/common/asic_common.hpp"
 #include "nic/hal/pd/iris/nvme/nvme_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/sdk/platform/capri/capri_barco_rings.hpp"
 
 namespace hal {

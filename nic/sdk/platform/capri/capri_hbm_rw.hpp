@@ -7,7 +7,6 @@
 #include "platform/utils/mpartition.hpp"
 #include "p4/loader/loader.hpp"
 #include "asic/asic.hpp"
-#include "asic/common/asic_hbm.hpp"
 
 namespace sdk {
 namespace platform {

@@ -8,7 +8,7 @@
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/internal/tcpcb_pd.hpp"
 #include "nic/hal/pd/iris/p4pd_tcp_proxy_api.h"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/pd/libs/wring/wring_pd.hpp"
 #include "nic/include/pd.hpp"
 #include "nic/hal/src/internal/proxy.hpp"

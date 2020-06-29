@@ -3,7 +3,7 @@
 #include "platform/elba/elba_barco_res.hpp"
 #include "platform/utils/mpartition.hpp"
 #include "asic/pd/pd.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 
 namespace sdk {
 namespace platform {

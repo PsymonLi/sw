@@ -3,7 +3,7 @@
 #include "nic/sdk/include/sdk/lock.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/ipsec/ipsec_pd.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/asic/common/asic_common.hpp"
 #include "nic/hal/pd/libs/wring/wring_pd.hpp"

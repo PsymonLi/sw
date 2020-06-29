@@ -3,10 +3,10 @@
 //-----------------------------------------------------------------------------
 
 #include "nvme_global_pd.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/platform/capri/capri_barco_rings.hpp"
 #include "nic/hal/pd/libs/wring/wring_pd.hpp"
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/sdk/nvme/nvme_common.h"
 #include "p4pd_nvme_api.h"
 

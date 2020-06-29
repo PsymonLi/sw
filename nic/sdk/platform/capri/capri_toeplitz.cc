@@ -1,10 +1,10 @@
 // {C} Copyright 2018 Pensando Systems Inc. All rights reserved
 
-#include "asic/common/asic_hbm.hpp"
 #include "platform/capri/capri_tbl_rw.hpp"
 #include "platform/capri/capri_hbm_rw.hpp"
 #include "platform/capri/capri_state.hpp"
 #include "platform/utils/mpartition.hpp"
+#include "asic/common/asic_mem.hpp"
 #include "third-party/asic/capri/model/utils/cap_blk_reg_model.h"
 #include "third-party/asic/capri/model/cap_top/cap_top_csr.h"
 

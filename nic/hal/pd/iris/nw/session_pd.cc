@@ -20,11 +20,11 @@
 #include "nic/hal/iris/datapath/p4/include/defines.h"
 #include "nic/hal/pd/iris/internal/system_pd.hpp"
 #include "nic/hal/pd/iris/hal_state_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
 #include "nic/sdk/lib/table/sldirectmap/sldirectmap.hpp"
 #include "nic/sdk/include/sdk/table.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 
 using sdk::table::sdk_table_api_params_t;
 

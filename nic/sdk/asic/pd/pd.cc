@@ -3,7 +3,7 @@
 #include "asic/pd/pd.hpp"
 #include "asic/asic.hpp"
 #include "lib/pal/pal.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 #include "asic/pd/pd_internal.hpp"
 #include "lib/utils/time_profile.hpp"
 #include "platform/utils/mpartition.hpp"
@@ -15,6 +15,8 @@
 namespace sdk {
 namespace asic {
 namespace pd {
+
+#define ASIC_HBM_REG_RSS_INDIR_TABLE    "rss_indir_table"
 
 bool g_mock_mode_;
 static uint64_t table_asm_base[P4TBL_ID_MAX];
@@ -510,37 +512,37 @@ asicpd_tbl_eng_cfg_get (p4pd_pipeline_t pipeline, p4_tbl_eng_cfg_t *cfg,
 mem_addr_t
 asicpd_get_mem_base (void)
 {
-    return asic_get_mem_base();
+    return sdk::asic::asic_get_mem_base();
 }
 
 mem_addr_t
 asicpd_get_mem_offset (const char *reg_name)
 {
-    return asic_get_mem_offset(reg_name);
+    return sdk::asic::asic_get_mem_offset(reg_name);
 }
 
 uint64_t
 asicpd_get_mem_addr (const char *reg_name)
 {
-    return asic_get_mem_addr(reg_name);
+    return sdk::asic::asic_get_mem_addr(reg_name);
 }
 
 uint32_t
 asicpd_get_mem_size_kb (const char *reg_name)
 {
-    return asic_get_mem_size_kb(reg_name);
+    return sdk::asic::asic_get_mem_size_kb(reg_name);
 }
 
 mpartition_region_t *
 asicpd_get_mem_region (char *reg_name)
 {
-    return asic_get_mem_region(reg_name);
+    return sdk::asic::asic_get_mem_region(reg_name);
 }
 
 mpartition_region_t *
 asicpd_get_hbm_region_by_address (uint64_t addr)
 {
-    return asic_get_hbm_region_by_address(addr);
+    return sdk::asic::asic_get_hbm_region_by_address(addr);
 }
 
 void

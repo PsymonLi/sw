@@ -8,7 +8,6 @@
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/asic/pd/db.hpp"
 #include "nic/sdk/asic/common/asic_common.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/asic/common/asic_qstate.hpp"
 #include "nic/sdk/platform/pal/include/pal_mem.h"
 #include "nic/sdk/lib/pal/pal.hpp"

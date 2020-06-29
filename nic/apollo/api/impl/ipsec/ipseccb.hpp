@@ -33,6 +33,26 @@
 #define IPSEC_BARCO_RING_SIZE           512
 #define IPSEC_BARCO_SLOT_ELEM_SIZE      16
 
+#define ASIC_HBM_REG_IPSECCB                     "ipsec-cb"
+#define ASIC_HBM_REG_IPSECCB_BARCO               "ipsec_cb_barco"
+#define ASIC_HBM_REG_IPSECCB_DECRYPT             "ipsec-cb-decrypt"
+#define ASIC_HBM_REG_IPSECCB_BARCO_DECRYPT       "ipsec_cb_barco_decrypt"
+
+#define IPSEC_CB_BASE                            "ipsec_cb_base"
+#define IPSEC_RNMPR_TABLE_BASE                   "hbm_ipsec_rnmpr_table_base"
+#define IPSEC_BIG_RNMPR_TABLE_BASE               "hbm_ipsec_big_rnmpr_table_base"
+#define IPSEC_TNMPR_TABLE_BASE                   "hbm_ipsec_tnmpr_table_base"
+#define IPSEC_BIG_TNMPR_TABLE_BASE               "hbm_ipsec_big_tnmpr_table_base"
+#define IPSEC_PAGE_ADDR_RX                       "hbm_ipsec_page_rx"
+#define IPSEC_ENC_NMDR_PI                        "ipsec_enc_nmdr_pi"
+#define IPSEC_DEC_NMDR_PI                        "ipsec_dec_nmdr_pi"
+#define IPSEC_PAGE_ADDR_TX                       "hbm_ipsec_page_tx"
+#define IPSEC_ENC_NMDR_CI                        "ipsec_enc_nmdr_ci"
+#define IPSEC_DEC_NMDR_CI                        "ipsec_dec_nmdr_ci"
+#define IPSEC_PAD_BYTES_HBM_TABLE_BASE           "ipsec_pad_table_base"
+#define IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_H2N    "ipsec_global_drop_h2n_counters"
+#define IPSEC_GLOBAL_BAD_DMA_COUNTER_BASE_N2H    "ipsec_global_drop_n2h_counters"
+
 //------------------------------------------------------------------------------
 // Data structures
 //------------------------------------------------------------------------------

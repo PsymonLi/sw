@@ -1,7 +1,7 @@
 #include <arpa/inet.h>
 #include "include/sdk/crypto_apis.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 #include "asic/common/asic_common.hpp"
 #include "platform/capri/capri_barco_crypto.hpp"
 #include "platform/capri/capri_barco_res.hpp"

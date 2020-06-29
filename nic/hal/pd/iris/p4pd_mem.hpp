@@ -1,15 +1,17 @@
-#ifndef __ASIC_HBM_HPP__
-#define __ASIC_HBM_HPP__
+//
+// {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// Iris mem region definitions
+///
+//----------------------------------------------------------------------------
 
-#include "asic/asic.hpp"
-#include "platform/utils/mpartition.hpp"
-#include "include/sdk/types.hpp"
+#ifndef __P4PD_MEM_HPP__
+#define __P4PD_MEM_HPP__
 
-#include "platform/capri/capri_hbm_rw.hpp"  /* WIP-WIP: remove capri */
-#include "asic/rw/asicrw.hpp"
-
-namespace sdk  {
-namespace asic {
+namespace hal  {
 
 #define JP4_PRGM                 "p4_program"
 #define JP4PLUS_PRGM             "p4plus_program"
@@ -63,8 +65,6 @@ namespace asic {
 #define ASIC_HBM_REG_CRYPTO_SYM_MSG_DESCR "crypto-sym-msg-descr"
 #define ASIC_HBM_REG_CRYPTO_HBM_MEM     "crypto-hbm-mem"
 #define ASIC_HBM_REG_CRYPTO_HBM_MEM_BIG  "crypto-hbm-mem-big"
-#define ASIC_BARCO_KEY_DESC             "key-desc-array"
-#define ASIC_BARCO_KEY_MEM              "key-mem"
 #define ASIC_HBM_REG_ASYM_KEY_DESCR     "crypto-asym-key-desc-array"
 #define ASIC_HBM_REG_IPSEC_PAD_TABLE    "ipsec_pad_table"
 #define ASIC_HBM_REG_TLS_PROXY_PAD_TABLE "tls_proxy_pad_table"
@@ -245,23 +245,6 @@ namespace asic {
 #define NVME_TX_NMDPR_RING_BASE         "nvme_tx_nmdpr_ring_base"
 #define NVME_RX_NMDPR_RING_BASE         "nvme_rx_nmdpr_ring_base"
 
-//void               set_mem_partition(mpartition *mempartition);
-mem_addr_t asic_get_mem_base(void);
-mem_addr_t asic_get_mem_offset(const char *reg_name);
-mem_addr_t asic_get_mem_addr(const char *reg_name);
-uint32_t asic_get_mem_size_kb(const char *reg_name);
-mpartition_region_t *asic_get_mem_region(char *reg_name);
-mpartition_region_t *asic_get_hbm_region_by_address(uint64_t addr);
-void asic_reset_hbm_regions(asic_cfg_t *asic_cfg);
+}    // namespace hal
 
-}    // namespace asic
-}    // namespace sdk
-
-using sdk::asic::asic_get_mem_base;
-using sdk::asic::asic_get_mem_offset;
-using sdk::asic::asic_get_mem_addr;
-using sdk::asic::asic_get_mem_size_kb;
-using sdk::asic::asic_get_mem_region;
-using sdk::asic::asic_get_hbm_region_by_address;
-
-#endif    // __ASIC_HBM_HPP__
+#endif    // __P4PD_MEM_HPP__

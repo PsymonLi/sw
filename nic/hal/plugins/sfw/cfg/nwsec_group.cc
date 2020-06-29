@@ -7,6 +7,7 @@
 #include "nic/hal/hal.hpp"
 #include "nic/sdk/include/sdk/lock.hpp"
 #include "nic/hal/iris/include/hal_state.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/plugins/sfw/cfg/nwsec_group.hpp"
 #include "gen/hal/include/hal_api_stats.hpp"
 #include "nic/include/pd_api.hpp"
@@ -18,7 +19,6 @@
 #include <malloc.h>
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "gen/proto/rulestats/rulestats.delphi.hpp"
 
 #define NWSEC_RULE_STATS_SHIFT         6

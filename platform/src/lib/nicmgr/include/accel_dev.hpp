@@ -31,7 +31,6 @@
 #include "capri_cpdc.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/platform/capri/capri_barco_rings.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 
 #define HW_CHIP_VER_CSR                 (ELB_ADDR_BASE_MS_SOC_OFFSET + \
                                          ELB_SOC_CSR_STA_VER_BYTE_ADDRESS)
@@ -51,7 +50,6 @@
 #include "capri_cpdc.hpp"
 #include "nic/sdk/platform/capri/capri_barco_crypto.hpp"
 #include "nic/sdk/platform/capri/capri_barco_rings.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 
 #define HW_CHIP_VER_CSR                 (CAP_ADDR_BASE_MS_MS_OFFSET + \
                                          CAP_MS_CSR_STA_VER_BYTE_ADDRESS)

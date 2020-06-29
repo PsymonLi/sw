@@ -223,6 +223,20 @@ typedef struct elba_barco_ring_s {
 #define BARCO_RING_DC_STR       "Barco DC"
 #define BARCO_RING_DC_HOT_STR   "Barco DC Hot"
 
+#define ASIC_HBM_REG_BARCO_RING_ASYM    "brq-ring-asym"
+#define ASIC_HBM_REG_BARCO_RING_GCM0    "brq-ring-gcm0"
+#define ASIC_HBM_REG_BARCO_RING_GCM1    "brq-ring-gcm1"
+#define ASIC_HBM_REG_BARCO_RING_XTS0    "brq-ring-xts0"
+#define ASIC_HBM_REG_BARCO_RING_XTS1    "brq-ring-xts1"
+#define ASIC_HBM_REG_BARCO_RING_MPP0    "brq-ring-mpp0"
+#define ASIC_HBM_REG_BARCO_RING_MPP1    "brq-ring-mpp1"
+#define ASIC_HBM_REG_BARCO_RING_MPP2    "brq-ring-mpp2"
+#define ASIC_HBM_REG_BARCO_RING_MPP3    "brq-ring-mpp3"
+#define ASIC_HBM_REG_BARCO_RING_CP      "brq-ring-cp"
+#define ASIC_HBM_REG_BARCO_RING_CP_HOT  "brq-ring-cp-hot"
+#define ASIC_HBM_REG_BARCO_RING_DC      "brq-ring-dc"
+#define ASIC_HBM_REG_BARCO_RING_DC_HOT  "brq-ring-dc-hot"
+
 sdk_ret_t elba_barco_ring_queue_request(barco_rings_t barco_ring_type,
                                         void *req, uint32_t *req_tag, bool);
 bool elba_barco_ring_poll(barco_rings_t barco_ring_type, uint32_t req_tag);

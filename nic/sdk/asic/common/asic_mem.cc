@@ -1,7 +1,15 @@
+//
 // {C} Copyright 2020 Pensando Systems Inc. All rights reserved
+//
+//----------------------------------------------------------------------------
+///
+/// \file
+/// Asic memory handling utility implementation
+///
+//----------------------------------------------------------------------------
 
 #include "lib/pal/pal.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 #include "asic/rw/asicrw.hpp"
 #include "asic/common/asic_state.hpp"
 

@@ -22,6 +22,9 @@ using sdk::platform::utils::mpartition_region_t;
 #define    JUMBO_FRAME_SIZE             9216
 #define    ETH_FRAME_SIZE               1536
 
+// Below regions to skip the programming. This should be fixed as these are
+// pipeline dependent
+#define MEM_REGION_RSS_INDIR_TABLE_NAME "rss_indir_table"
 #define MEM_REGION_MCAST_REPL_NAME "mcast_repl"
 
 mpartition_region_t *get_mem_region(char *name);

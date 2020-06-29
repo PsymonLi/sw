@@ -6,6 +6,7 @@
 #include "include/sdk/base.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "asic/asic.hpp"
+#include "asic/rw/asicrw.hpp"
 #include "include/sdk/qos.hpp"
 #include "platform/utils/lif_manager_base.hpp"
 #include "platform/utils/program.hpp"

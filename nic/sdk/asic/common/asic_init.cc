@@ -5,7 +5,7 @@
 #include "asic/asic.hpp"
 #include "asic/common/asic_cfg.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 #include "lib/p4/p4_api.hpp"
 #include "include/sdk/mem.hpp"
 

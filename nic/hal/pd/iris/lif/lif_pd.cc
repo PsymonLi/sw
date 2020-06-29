@@ -14,8 +14,8 @@
 #include "nic/hal/src/internal/eth.hpp"
 #include "nic/sdk/asic/pd/scheduler.hpp"
 #include "nic/hal/pd/iris/aclqos/qos_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "gen/proto/nicmgr/metrics.delphi.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 
 using namespace sdk::asic::pd;
 

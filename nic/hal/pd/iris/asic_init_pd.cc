@@ -5,7 +5,7 @@
 #include "nic/sdk/asic/pd/pd.hpp"
 #include "nic/sdk/platform/utils/lif_mgr/lif_mgr.hpp"
 #include "nic/hal/pd/common_p4plus/common_p4plus.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 
 using namespace sdk::asic::pd;
 

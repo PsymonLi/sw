@@ -14,7 +14,7 @@
 #include "platform/elba/elba_barco_res.hpp"
 #include "lib/indexer/indexer.hpp"
 #include "asic/rw/asicrw.hpp"
-#include "asic/common/asic_hbm.hpp"
+#include "asic/common/asic_mem.hpp"
 
 using namespace sdk::asic;
 

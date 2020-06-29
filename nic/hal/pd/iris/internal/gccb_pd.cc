@@ -2,13 +2,13 @@
 #include <arpa/inet.h>
 #include "nic/sdk/include/sdk/lock.hpp"
 #include "nic/include/pd_api.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/hal/pd/libs/wring/wring_pd.hpp"
 #include "nic/hal/src/internal/proxy.hpp"
 #include "nic/hal/hal.hpp"
 #include "gen/p4gen/gc_txdma/include/gc_txdma_p4plus_ingress.h"
 #include "nic/hal/pd/iris/internal/p4plus_pd_api.h"
 #include "nic/hal/pd/iris/internal/gccb_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 
 namespace hal {
 namespace pd {

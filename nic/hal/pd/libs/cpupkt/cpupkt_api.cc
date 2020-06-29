@@ -3,7 +3,7 @@
 #include "nic/hal/pd/cpupkt_api.hpp"
 #include "nic/include/pd_api.hpp"
 #include "nic/hal/pd/iris/hal_state_pd.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/asm/cpu-p4plus/include/cpu-defines.h"
 #include "asic/common/asic_common.hpp"
 #include "platform/pal/include/pal_mem.h"
@@ -894,8 +894,8 @@ cpupkt_descr_to_headers (pd_descr_aol_t *descr,
      * App redirect proxied packets (from TCP/TLS) may use more than one
      * page (currently up to 2) to hold meta headers and payload.
      */
-    if((descr->l0 > JUMBO_FRAME_SIZE) ||
-       (descr->l1 > JUMBO_FRAME_SIZE) ) {
+    if((descr->l0 > CPU_PKT_PAGE_SIZE) ||
+       (descr->l1 > CPU_PKT_PAGE_SIZE) ) {
         HAL_TRACE_DEBUG2("corrupted packet");
         return HAL_RET_HW_FAIL;
     }

@@ -16,12 +16,12 @@
 #include "nic/hal/plugins/proxy/proxy_plugin.hpp"
 #include "nic/sdk/include/sdk/timestamp.hpp"
 #include "lib/thread/thread.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/sdk/lib/pal/pal.hpp"
 #include "nic/sdk/include/sdk/types.hpp"
 #include "gen/proto/delphi.pb.h"
 #include "gen/proto/ftestats/ftestats.delphi.hpp"
 #include "nic/hal/pd/hal_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 
 #define FTE_EXPORT_STATS_SIZE     7
 #define FTE_LIFQ_METRICS_OFFSET   32

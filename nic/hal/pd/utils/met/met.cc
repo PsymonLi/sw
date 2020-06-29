@@ -1,7 +1,7 @@
 #include "nic/hal/pd/utils/met/met.hpp"
 #include "nic/hal/pd/utils/met/repl_list.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "platform/utils/mpartition.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 
 using hal::pd::utils::Met;
 using hal::pd::utils::ReplList;

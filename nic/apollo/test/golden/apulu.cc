@@ -31,6 +31,8 @@
 #include "nic/sdk/asic/rw/asicrw.hpp"
 #include "nic/apollo/p4/include/apulu_defines.h"
 #include "nic/apollo/p4/include/apulu_table_sizes.h"
+#include "nic/apollo/api/impl/apulu/apulu_mem_regions.h"
+#include "nic/apollo/api/impl/ipsec/ipseccb.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "gen/platform/mem_regions.hpp"
 #include "gen/p4gen/apulu/include/p4pd.h"

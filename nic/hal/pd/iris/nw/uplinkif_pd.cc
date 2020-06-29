@@ -7,10 +7,10 @@
 #include "asic/pd/pd.hpp"
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/hal/pd/iris/nw/l2seg_pd.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "gen/proto/nicmgr/metrics.delphi.hpp"
 #include "nic/linkmgr/linkmgr.hpp"
 #include "nic/sdk/asic/rw/asicrw.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
 #include "nic/linkmgr/linkmgr_src.hpp"
 
 using namespace sdk::asic::pd;

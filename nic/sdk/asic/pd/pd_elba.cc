@@ -23,7 +23,6 @@
 #include "platform/utils/mpartition.hpp"
 #include "platform/elba/elba_toeplitz.hpp"
 #include "include/sdk/crypto_apis.hpp"
-#include "asic/common/asic_hbm.hpp"
 #include "platform/elba/elba_barco_rings.hpp"
 #include "platform/elba/elba_barco_sym_apis.hpp"
 #include "platform/elba/elba_barco_asym_apis.hpp"
@@ -42,7 +41,6 @@ namespace pd {
 
 extern bool g_mock_mode_;
 
-#define MAX_IPSEC_PAD_SIZE      256
 #define CRYPTO_KEY_SIZE_MAX     64  /* 2 * 256 bit key */
 
 typedef struct crypto_key_s {
@@ -1426,41 +1424,6 @@ asicpd_crypto_asym_read_key (uint32_t key_idx, crypto_asym_key_t *key)
 
     key->key_param_list = key_desc.key_param_list;
     key->command_reg = key_desc.command_reg;
-
-    return sdk_ret;
-}
-
-sdk_ret_t
-asicpd_crypto_init_ipsec_pad_table (void)
-{
-    uint8_t ipsec_pad_bytes[MAX_IPSEC_PAD_SIZE];
-    uint64_t ipsec_pad_base_addr = 0;
-
-    SDK_TRACE_DEBUG("Initializing IPSEC Pad Bytes table");
-    // Increasing number pattern as per RFC 1-255
-    for (int i = 0; i < MAX_IPSEC_PAD_SIZE; i++) {
-        ipsec_pad_bytes[i] = i+1;
-    }
-
-    ipsec_pad_base_addr = asicpd_get_mem_addr(ASIC_HBM_REG_IPSEC_PAD_TABLE);
-    if (ipsec_pad_base_addr != INVALID_MEM_ADDRESS) {
-        asicpd_p4plus_hbm_write(ipsec_pad_base_addr, ipsec_pad_bytes, MAX_IPSEC_PAD_SIZE,
-                P4PLUS_CACHE_ACTION_NONE);
-    }
-
-    return SDK_RET_OK;
-}
-
-sdk_ret_t
-asicpd_crypto_pd_init (void)
-{
-    sdk_ret_t           sdk_ret = SDK_RET_OK;
-
-    sdk_ret = asicpd_crypto_init_ipsec_pad_table();
-
-    if (sdk_ret != SDK_RET_OK) {
-        return sdk_ret;
-    }
 
     return sdk_ret;
 }

@@ -8,7 +8,7 @@
 #include "nic/hal/pd/gft/gft_state.hpp"
 #include "nic/p4/gft/include/defines.h"
 #include "lib/table/tcam/tcam.hpp"
-#include "nic/sdk/asic/common/asic_hbm.hpp"
+#include "nic/hal/pd/iris/p4pd_mem.hpp"
 #include "nic/hal/pd/common_p4plus/common_p4plus.hpp"
 
 using sdk::table::tcam;

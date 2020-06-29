@@ -46,6 +46,11 @@ typedef enum elba_barco_res_type_e {
     CRYPTO_BARCO_RES_MAX
 } elba_barco_res_type_t;
 
+#define ASIC_HBM_REG_CRYPTO_HBM_MEM         "crypto-hbm-mem"
+#define ASIC_HBM_REG_ASYM_KEY_DESCR         "crypto-asym-key-desc-array"
+#define ASIC_HBM_REG_CRYPTO_SYM_MSG_DESCR   "crypto-sym-msg-descr"
+#define ASIC_HBM_REG_CRYPTO_ASYM_DMA_DESCR  "crypto-asym-dma-descr"
+
 #define CRYPTO_ASYM_DMA_DESCR_COUNT_MAX 1024
 #define CRYPTO_SYM_MSG_DESCR_COUNT_MAX  1024
 #define CRYPTO_HBM_MEM_COUNT_MAX        1024
