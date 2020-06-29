@@ -99,7 +99,7 @@ func (v VersionChecker) CheckNICVersionForAdmission(dscSku string, dscVersion st
 		}
 		return SkipForceRollout, ""
 	}
-	dscMinor, err := strconv.Atoi(veniceDotVersions[1])
+	dscMinor, err := strconv.Atoi(dscDotVersions[1])
 	dscMinorPlusOne := dscMinor + 1
 
 	if err != nil {
