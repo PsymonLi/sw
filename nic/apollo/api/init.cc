@@ -40,11 +40,11 @@ const pds_obj_key_t k_pds_obj_key_invalid = { 0 };
 
 /*
  * Threshold value is in %
- * Currently tmpfs is 100MB, so, when /var/log/pensando crosses 85%
- * (in this case, 85 MB), this would trigger alarm
+ * Currently tmpfs is 100MB, so, when /var/log/pensando crosses 90%
+ * (in this case, 90 MB), this would trigger alarm
  */
 #define PDS_SYSMON_LOGDIR                 "/var/log/pensando"
-#define PDS_SYSMON_LOGDIR_THRESHOLD       85
+#define PDS_SYSMON_LOGDIR_THRESHOLD       90
 
 static sysmon_memory_threshold_cfg_t mem_threshold_cfg[] = {
     {
