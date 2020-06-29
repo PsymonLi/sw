@@ -5,19 +5,19 @@ feature:
     module      : policy
     runorder    : 8080
     enable      : True
-    ignore      : True
+    ignore      : False
     argslist    : multi_policy.alist
 
 modules:
 
     - module:
-        name            : POLICY_TC_START
-        spec            : load_topo.testspec
+        name        : POLICY_TC_START
+        spec        : load_topo.testspec
 
     - module:
         name        : PACKET
         mlist       : packet.mlist
 
     - module:
-        name            : POLICY_TC_TEARDOWN
-        spec            : teardown_topo.testspec
+        name        : POLICY_TC_TEARDOWN
+        spec        : teardown_topo.testspec

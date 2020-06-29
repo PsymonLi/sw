@@ -6,7 +6,7 @@ feature:
     module      : policy
     runorder    : 500
     enable      : True
-    ignore      : True
+    ignore      : False
 
 modules:
 

@@ -5,7 +5,7 @@ feature:
     module      : policy
     runorder    : 8080
     enable      : True
-    ignore      : True
+    ignore      : False
     argslist    : multi_policy1.alist
 
 modules:

@@ -84,21 +84,28 @@ def GetExpectedStats(tc, args):
     else:
         None
     npkts = getattr(args, 'npkts', None)
+    spec['txpackets'] = 0
+    spec['txbytes'] = 0
+    spec['rxpackets'] = 0
+    spec['rxbytes'] = 0
     if pktdir == "TX":
-        spec['txpackets'] = npkts
-        spec['txbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
-        spec['rxpackets'] = 0
-        spec['rxbytes'] = 0
+        if packets.IsAnyCfgMissing(tc):
+            # In Tx packet stats are incremented irrespective of the policy result. 
+            # stats are not updated only incase of any missing configs.
+            spec['txpackets'] = 0
+            spec['txbytes'] = 0
+        else:
+            spec['txpackets'] = npkts
+            spec['txbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
     else:
-        spec['rxpackets'] = npkts
-        spec['rxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
-        spec['txpackets'] = 0
-        spec['txbytes'] = 0
-    if packets.IsNegativeTestCase(tc, args) == True:
-        spec['txpackets'] = 0
-        spec['txbytes'] = 0
-        spec['rxpackets'] = 0
-        spec['rxbytes'] = 0
+        if packets.IsNegativeTestCase(tc, args):
+            # Rx packets stats are not updated if policy evaluation is deny or if any
+            # cfg is missing
+            spec['rxpackets'] = 0
+            spec['rxbytes'] = 0
+        else:
+            spec['rxpackets'] = npkts
+            spec['rxbytes'] = tc.packets.Get(pktid).spktobj.GetSize()
     return spec
 
 def GetModuleArgs(tc):

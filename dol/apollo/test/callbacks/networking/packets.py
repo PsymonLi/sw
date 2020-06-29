@@ -872,7 +872,7 @@ def GetVirtualRouterIP(testcase, pkt, args=None):
 def GetVirtualRouterMAC(testcase, pkt, args=None):
     return str(testcase.config.localmapping.VNIC.SUBNET.VirtualRouterMACAddr)
 
-def __is_any_cfg_deleted(tc):
+def IsAnyCfgMissing(tc):
     device = tc.config.devicecfg
     lmapping = tc.config.localmapping
     rmapping = tc.config.remotemapping
@@ -891,7 +891,7 @@ def __is_any_cfg_deleted(tc):
 
 def GetExpectedPacket(testcase, args):
     #add all the cases for checking packet and return expected packet on demand
-    if __is_any_cfg_deleted(testcase):
+    if IsAnyCfgMissing(testcase):
         logger.info("one or more cfgs deleted - no packet expected")
         return None
     if utils.IsPipelineApulu():
@@ -929,7 +929,7 @@ def IsVRIPNegativeTestCase(tc):
 # False - descriptor on expect is valid
 def IsNegativeTestCase(testcase, args):
     # if no packet is expected, return True otherwise False
-    if __is_any_cfg_deleted(testcase):
+    if IsAnyCfgMissing(testcase):
         logger.info("one or more cfgs deleted - negative testcase")
         return True
     if utils.IsPipelineApulu():
