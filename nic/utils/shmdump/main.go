@@ -103,7 +103,6 @@ func main() {
 		messageType = flag.String("type", "event", "Type of message to be read from the shared memory e.g. fwlog, event")
 		fullDump    = flag.Bool("full", false, "Optional - Dump all fields in fwlog")
 		rindex      = flag.Uint("rindex", 0, "Starting index to dump from")
-		drain       = flag.Bool("drain", false, "Drain the shared memory")
 	)
 
 	flag.Parse()
@@ -155,11 +154,6 @@ func main() {
 		for i := 0; i < instCount; i++ { // read fwlog from all the instances/partitions in the shared memory
 			log.Infof("{%s} reading fwlog events from IPC instance[%v]", *filepath, i)
 			ipc := fwlogShmReader.IPCInstance()
-			// If drain is set, just drain the IPC
-			if *drain {
-				ipc.Drain()
-				continue
-			}
 			// Dump IPC header information if using full dump
 			if *fullDump {
 				fmt.Println(ipc.String())

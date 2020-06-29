@@ -69,16 +69,12 @@ def Setup(tc):
     return startServer(tc)
 
 #
-# First drain the shared memory using "shmdump -drain"  and then issue
-# "shmdump -file=fwlog_ipc_shm -type=fwlog -full" on the
+# Issue "shmdump -file=fwlog_ipc_shm -type=fwlog -full" on the
 # naples to snapshot the current state.
 # 
 def snapshotSharedMem(tc):
     global shmDumpHelper
     napReq = api.Trigger_CreateExecuteCommandsRequest(serial = True)
-    drn_cookie = "shmdump - Drain current shared memory"
-    drn_cmd = "/nic/bin/shmdump -file=fwlog_ipc_shm -type=fwlog -drain"
-    add_naples_command(tc, napReq, drn_cookie, drn_cmd, tc.naples)
     cmd_cookie = "shmdump - Snapshot Run"
     cmd = "/nic/bin/shmdump -file=fwlog_ipc_shm -type=fwlog -full"
     add_naples_command(tc, napReq, cmd_cookie, cmd, tc.naples)
@@ -88,7 +84,7 @@ def snapshotSharedMem(tc):
         return api.types.status.FAILURE
     for command in napResp.commands:
         api.PrintCommandResults(command)
-    prevIndex = shmDumpHelper.store_shmdump_output(napResp.commands[1])
+    prevIndex = shmDumpHelper.store_shmdump_output(napResp.commands[0])
     if prevIndex is None:
         api.Logger.error("ERROR: Parsing of command output failed")
         return api.types.status.FAILURE
