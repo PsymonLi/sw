@@ -361,7 +361,7 @@ func (mss *MirrorSessionState) programMirrorSession(ms *monitoring.MirrorSession
 
 	if mss.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION ||
 		mss.State == monitoring.MirrorSessionState_SCHEDULED {
-		mss.MirrorSession.Write()
+		mss.stateMgr.sm.PeriodicUpdaterPush(mss)
 	}
 }
 
@@ -593,8 +593,6 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionCreate(obj *ctkit.MirrorSess
 
 //OnMirrorSessionCreate mirror session create handle
 func (smm *SmMirrorSessionInterface) addMirror(ms *MirrorSessionState) error {
-
-	defer ms.MirrorSession.Write()
 
 	//Process only if no match rules
 	if ms.isFlowBasedMirroring() {
@@ -1098,6 +1096,7 @@ func (smm *SmMirrorSessionInterface) updateFlowMirror(ms *MirrorSessionState) er
 
 	if ms.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
 		log.Infof("Skipping update of mirror session %+v as limit has reached", ms.MirrorSession.ObjectMeta)
+		smm.sm.PeriodicUpdaterPush(ms)
 		return nil
 	}
 	smgrMirrorInterface.pushUpdateMirrorSession(ms)
