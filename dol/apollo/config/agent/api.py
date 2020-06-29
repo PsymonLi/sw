@@ -36,6 +36,7 @@ import cp_route_pb2_grpc as cp_route_pb2_grpc
 import evpn_pb2_grpc as evpn_pb2_grpc
 import policer_pb2_grpc as policer_pb2_grpc
 import upgrade_pb2_grpc as upgrade_pb2_grpc
+import ipsec_pb2_grpc as ipsec_pb2_grpc
 
 import device_pb2 as device_pb2
 import interface_pb2 as interface_pb2
@@ -58,6 +59,7 @@ import evpn_pb2 as evpn_pb2
 import policer_pb2 as policer_pb2
 import types_pb2 as types_pb2
 import upgrade_pb2 as upgrade_pb2
+import ipsec_pb2 as ipsec_pb2
 from types_pb2 import ServiceRequestOp as ServiceOp
 
 from infra.common.glopts  import GlobalOptions
@@ -125,7 +127,9 @@ class ObjectTypes(enum.IntEnum):
     SECURITY_PROFILE = 30
     DHCP_PROXY = 31
     UPGRADE = 32
-    MAX = 33
+    IPSEC_ENCRYPT_SA = 33
+    IPSEC_DECRYPT_SA = 34
+    MAX = 35
 
 class OperdObjectTypes(enum.IntEnum):
     NONE = 0
@@ -605,6 +609,10 @@ class PdsAgentClient(AgentClientBase):
                                                     self.Channel, 'EvpnIpVrfRt')
         self.Stubs[ObjectTypes.STATIC_ROUTE] = ClientStub(cp_route_pb2_grpc.CPRouteSvcStub,
                                                         self.Channel, 'CPStaticRoute')
+        self.Stubs[ObjectTypes.IPSEC_ENCRYPT_SA] = ClientStub(ipsec_pb2_grpc.IpsecSvcStub,
+                                                        self.Channel, 'IpsecSAEncrypt')
+        self.Stubs[ObjectTypes.IPSEC_DECRYPT_SA] = ClientStub(ipsec_pb2_grpc.IpsecSvcStub,
+                                                        self.Channel, 'IpsecSADecrypt')
         return
 
     def CreateMsgReqTable(self):
@@ -636,6 +644,8 @@ class PdsAgentClient(AgentClientBase):
         self.MsgReqs[ObjectTypes.BGP_EVPN_IP_VRF] = ClientModule(evpn_pb2, 'EvpnIpVrf')
         self.MsgReqs[ObjectTypes.BGP_EVPN_IP_VRF_RT] = ClientModule(evpn_pb2, 'EvpnIpVrfRt')
         self.MsgReqs[ObjectTypes.STATIC_ROUTE] = ClientModule(cp_route_pb2, 'CPStaticRoute')
+        self.MsgReqs[ObjectTypes.IPSEC_ENCRYPT_SA] = ClientModule(ipsec_pb2, 'IpsecSAEncrypt')
+        self.MsgReqs[ObjectTypes.IPSEC_DECRYPT_SA] = ClientModule(ipsec_pb2, 'IpsecSADecrypt')
         return
 
     def __create_restreq_table(self):
@@ -677,6 +687,8 @@ class PdsAgentClient(AgentClientBase):
         self.MsgResps[ObjectTypes.BGP_EVPN_IP_VRF] = ClientResponseModule(evpn_pb2, 'EvpnIpVrf')
         self.MsgResps[ObjectTypes.BGP_EVPN_IP_VRF_RT] = ClientResponseModule(evpn_pb2, 'EvpnIpVrfRt')
         self.MsgResps[ObjectTypes.STATIC_ROUTE] = ClientResponseModule(cp_route_pb2, 'CPStaticRoute')
+        self.MsgResps[ObjectTypes.IPSEC_ENCRYPT_SA] = ClientResponseModule(ipsec_pb2, 'IpsecSAEncrypt')
+        self.MsgResps[ObjectTypes.IPSEC_DECRYPT_SA] = ClientResponseModule(ipsec_pb2, 'IpsecSADecrypt')
         return
 
     def ParseServiceResponse(self, objtype, op, resp):

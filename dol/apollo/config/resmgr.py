@@ -85,6 +85,7 @@ class Resmgr(base.ConfigObjectBase):
     MAX_BGP_EVPN_EVI_RT = 50
     MAX_BGP_EVPN_IP_VRF = 50
     MAX_BGP_EVPN_IP_VRF_RT = 50
+    MAX_IPSEC_SA = 1024
 
     NICMGR_HOST_LIF_BASE = 72
     NICMGR_HOST_LIF_COUNT = 1
@@ -167,6 +168,9 @@ class Resmgr(base.ConfigObjectBase):
         self.EvpnEviRtIdAllocator = iter(irange(1, 50))
         self.EvpnIpVrfIdAllocator = iter(irange(1, 50))
         self.EvpnIpVrfRtIdAllocator = iter(irange(1, 50))
+        self.IpsecEncryptSAIdAllocator = iter(irange(1, 1000))
+        self.IpsecDecryptSAIdAllocator = iter(irange(1, 1000))
+        self.IpsecTunnelAddressAllocator = ipaddress.IPv4Network('205.10.0.0/16').hosts()
 
         # ---------------------------------------------------------------------------------
         # Artemis specific configs

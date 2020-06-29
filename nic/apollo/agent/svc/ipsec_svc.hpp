@@ -175,6 +175,7 @@ pds_ipsec_sa_encrypt_api_spec_to_proto (pds::IpsecSAEncryptSpec *proto_spec,
                                         const pds_ipsec_sa_encrypt_spec_t *api_spec)
 {
     proto_spec->set_id(api_spec->key.id, PDS_MAX_KEY_LEN);
+    proto_spec->set_vpcid(api_spec->vpc.id, PDS_MAX_KEY_LEN);
     proto_spec->set_protocol(
             pds_ipsec_protocol_api_spec_to_proto(api_spec->protocol));
     proto_spec->set_authenticationalgorithm(
@@ -393,6 +394,7 @@ pds_ipsec_sa_decrypt_proto_to_api_spec (pds_ipsec_sa_decrypt_spec_t *api_spec,
                                         const pds::IpsecSADecryptSpec &proto_spec)
 {
     pds_obj_key_proto_to_api_spec(&api_spec->key, proto_spec.id());
+    pds_obj_key_proto_to_api_spec(&api_spec->vpc, proto_spec.vpcid());
     api_spec->protocol = pds_ipsec_protocol_proto_to_api_spec(proto_spec.protocol());
     api_spec->decryption_algo = pds_encryption_algorithm_proto_to_api_spec(
                                     proto_spec.decryptionalgorithm());

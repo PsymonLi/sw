@@ -39,6 +39,11 @@ node:
         - stack  : dual # dual, ipv4 , ipv6
           count : 1
           type  : underlay  # This VPC is applicable only for ARTEMIS pipeline.
+          ipsec:
+            - id         : 1
+              spi        : 0
+              salt       : 0xbbbbbbbb
+              iv         : 0xaaaaaaaaaaaaaaaa
           dhcprelay:
             # TODO: generate max dhcp relay objects instead
              - serverip : '100.1.1.1'

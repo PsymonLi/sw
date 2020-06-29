@@ -11,6 +11,7 @@
 #include "nic/sdk/lib/p4/p4_api.hpp"
 #include "nic/sdk/lib/utils/utils.hpp"
 #include "nic/sdk/include/sdk/if.hpp"
+#include "nic/sdk/ipsec/ipsec.hpp"
 #include "nic/apollo/core/mem.hpp"
 #include "nic/apollo/core/trace.hpp"
 #include "nic/apollo/framework/api_engine.hpp"
@@ -87,6 +88,7 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
     // decrypt spec
     pds_ipsec_sa_encrypt_spec_t *spec =
         &obj_ctxt->api_params->ipsec_sa_encrypt_spec;
+    uint8_t qtype;
 
     switch (obj_ctxt->api_op) {
     case API_OP_CREATE:
@@ -98,8 +100,10 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
 
         if (encrypt_sa_) {
             idxr = ipsec_sa_impl_db()->ipsec_sa_encrypt_idxr();
+            qtype = IPSEC_ENCRYPT_QTYPE;
         } else {
             idxr = ipsec_sa_impl_db()->ipsec_sa_decrypt_idxr();
+            qtype = IPSEC_DECRYPT_QTYPE;
         }
 
         // allocate hw id for this sa
@@ -112,7 +116,7 @@ ipsec_sa_impl::reserve_resources(api_base *api_obj, api_base *orig_obj,
         hw_id_ = idx;
         base_pa_ = lif_mgr::get_lif_qstate_addr(
                        api::g_pds_state.ipsec_lif_qstate(),
-                       APULU_IPSEC_LIF, 0, hw_id_);
+                       APULU_IPSEC_LIF, qtype, hw_id_);
         PDS_TRACE_DEBUG("Alloc hw_id %u base_addr 0x%lx", hw_id_, base_pa_);
         break;
 
