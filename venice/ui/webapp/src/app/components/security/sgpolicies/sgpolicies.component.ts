@@ -240,4 +240,9 @@ export class SgpoliciesComponent extends TablevieweditAbstract<ISecurityNetworkS
     }
     return true;
   }
+
+  onEditPolicy($event , policy: ISecurityNetworkSecurityPolicy) {
+    // The path is => /security/sgpolicies/dp-security-policy
+    this.controllerService.navigate(['/security', 'sgpolicies', policy.meta.name]);
+  }
 }

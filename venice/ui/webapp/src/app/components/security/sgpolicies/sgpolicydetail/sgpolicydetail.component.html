@@ -168,7 +168,8 @@
         <mat-icon [matTooltip]="'Edit Selected Rules'" *ngIf="isOneSelected()"
                   class="sgpolicy-icons-button" (click)="onUpdate()"
                   fxFlex="none">edit</mat-icon>
-        <mat-icon [matTooltip]="'Mark For Deletion'" *ngIf="isAnythingSelected()"
+        <mat-icon [matTooltip]="'Delete selected rules. Each operation can delete up to a maximum of 56 records'"
+                  *ngIf="isAnythingSelected()"
                   class="sgpolicy-icons-button"
                   (click)="onDelete()"
                   fxFlex="none">delete</mat-icon>
