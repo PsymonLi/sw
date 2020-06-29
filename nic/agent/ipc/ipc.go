@@ -125,6 +125,11 @@ func (ipc *IPC) Receive(ctx context.Context, h func([]ipcproto.FWEvent)) {
 	}
 }
 
+// Drains the SHM queue
+func (ipc *IPC) Drain() {
+	ipc.processIPC(func([]ipcproto.FWEvent) {})
+}
+
 // DumpFrom dumps all the available fw events from the shared memory from a given read index
 func (ipc *IPC) DumpFrom(ro uint32) []*ipcproto.FWEvent {
 	var evts []*ipcproto.FWEvent
