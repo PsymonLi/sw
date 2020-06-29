@@ -131,25 +131,33 @@ func makeKey(o api.ObjectMeta) string {
 	return fmt.Sprintf("%s/%s", o.Tenant, o.Name)
 }
 
-func (it *veniceIntegSuite) deleteMirrorSession(ctx context.Context, activeMs map[string]api.ObjectMeta, o *api.ObjectMeta) error {
+func (it *veniceIntegSuite) deleteMirrorSession(ctx context.Context, c *C, activeMs map[string]api.ObjectMeta, o *api.ObjectMeta) error {
 	log.Infof("----- Delete Mirror Session %v", o.Name)
 	_, err := it.restClient.MonitoringV1().MirrorSession().Delete(ctx, o)
 	if err != nil {
 		log.Infof("deleteMirrorSession Error: %v", err)
 		return err
 	}
+	// immediate create fails as it is still in cache of apiserver
+	AssertEventually(c, func() (bool, interface{}) {
+		_, err := it.restClient.MonitoringV1().MirrorSession().Get(ctx, o)
+		if err == nil {
+			return false, nil
+		}
+		return true, nil
+	}, fmt.Sprintf("Delete of Mirror %v failed", o.Name), "1s", "5s")
 	delete(activeMs, makeKey(*o))
 	return err
 }
 
-func (it *veniceIntegSuite) deleteAllMirrorSessions(ctx context.Context, activeMs map[string]api.ObjectMeta) error {
+func (it *veniceIntegSuite) deleteAllMirrorSessions(ctx context.Context, c *C, activeMs map[string]api.ObjectMeta) error {
 	log.Infof("----- Delete ALL Mirror Sessions")
 	msList := []api.ObjectMeta{}
 	for _, o := range activeMs {
 		msList = append(msList, o)
 	}
 	for _, o := range msList {
-		if err := it.deleteMirrorSession(ctx, activeMs, &o); err != nil {
+		if err := it.deleteMirrorSession(ctx, c, activeMs, &o); err != nil {
 			return err
 		}
 	}
@@ -194,7 +202,7 @@ func (it *veniceIntegSuite) TestMirrorSessions(c *C) {
 	err = it.createMirrorSession(ctx, activeMs, &ms)
 	Assert(c, err != nil, "Successfully re-created a mirror session - should not be allowed")
 	// Delete
-	err = it.deleteMirrorSession(ctx, activeMs, &ms.ObjectMeta)
+	err = it.deleteMirrorSession(ctx, c, activeMs, &ms.ObjectMeta)
 	Assert(c, err == nil, "Unable to delete mirror session %v err=%v", testMirrorSessions[0].Name, err)
 	// Recreate
 	log.Infof("----- Recreate Mirror Session[1] %v", testMirrorSessions[0].Name)
@@ -217,7 +225,7 @@ func (it *veniceIntegSuite) TestMirrorSessions(c *C) {
 
 	for _, ms := range testMirrorSessions {
 		log.Infof("----- Delete MirrorSession %s", ms.Name)
-		err = it.deleteMirrorSession(ctx, activeMs, &ms.ObjectMeta)
+		err = it.deleteMirrorSession(ctx, c, activeMs, &ms.ObjectMeta)
 		Assert(c, err == nil, "Failed to delete mirror session")
 	}
 
@@ -236,7 +244,7 @@ func (it *veniceIntegSuite) TestMirrorSessions(c *C) {
 	log.Infof("----- Delete one and re-create")
 	ms = testMirrorSessions[0]
 	ms.Name = fmt.Sprintf("MirrorSession_%v", mid)
-	err = it.deleteMirrorSession(ctx, activeMs, &ms.ObjectMeta)
+	err = it.deleteMirrorSession(ctx, c, activeMs, &ms.ObjectMeta)
 	Assert(c, err == nil, "Failed to delete mirror session")
 	// recreate
 	log.Infof("----- and re-create")
@@ -300,7 +308,7 @@ func (it *veniceIntegSuite) TestMirrorSessions(c *C) {
 
 	time.Sleep(time.Duration(time.Second * 8))
 	// Delete all mirror sessions
-	it.deleteAllMirrorSessions(ctx, activeMs)
+	it.deleteAllMirrorSessions(ctx, c, activeMs)
 }
 
 func (it *veniceIntegSuite) TestMirrorSessionUpdate(c *C) {
@@ -365,7 +373,7 @@ func (it *veniceIntegSuite) TestMirrorSessionUpdate(c *C) {
 	// T3: reduce start time of a scheduled session
 	log.Infof("----- T3: advance start time of a scheduled session")
 	ms = testMirrorSessions[1]
-	err = it.deleteMirrorSession(ctx, activeMs, &ms.ObjectMeta)
+	err = it.deleteMirrorSession(ctx, c, activeMs, &ms.ObjectMeta)
 	Assert(c, err == nil, "Delete failed for mirror session 2")
 
 	ms.Spec.StartConditions.ScheduleTime.Seconds = 20
@@ -401,7 +409,7 @@ func (it *veniceIntegSuite) TestMirrorSessionUpdate(c *C) {
 
 	log.Infof("----- T4: Stop (rightaway) a running session")
 	ms = testMirrorSessions[0]
-	err = it.deleteMirrorSession(ctx, activeMs, &ms.ObjectMeta)
+	err = it.deleteMirrorSession(ctx, c, activeMs, &ms.ObjectMeta)
 	Assert(c, err == nil, "T4 delete old session - error")
 	ms = testMirrorSessions[0]
 	err = it.createMirrorSession(ctx, activeMs, &ms)
@@ -423,7 +431,7 @@ func (it *veniceIntegSuite) TestMirrorSessionUpdate(c *C) {
 
 	time.Sleep(time.Duration(time.Second * 5))
 	// cleanup
-	it.deleteAllMirrorSessions(ctx, activeMs)
+	it.deleteAllMirrorSessions(ctx, c, activeMs)
 	// check if mirror session count is accurate - create and delete max sessions
 	log.Infof("----- Cleanup check : Create Max Mirror Sessions")
 	for i := 0; i < maxMirrorSessions; i++ {
@@ -435,5 +443,5 @@ func (it *veniceIntegSuite) TestMirrorSessionUpdate(c *C) {
 		Assert(c, err == nil, "Unable to create a mirror session - %v", ms.Name)
 	}
 	// cleanup
-	it.deleteAllMirrorSessions(ctx, activeMs)
+	it.deleteAllMirrorSessions(ctx, c, activeMs)
 }

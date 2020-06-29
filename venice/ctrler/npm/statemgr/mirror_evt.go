@@ -139,12 +139,23 @@ func (mss *MirrorSessionState) Write() error {
 		Status:        propStatus.status,
 	}
 	prop := &mss.MirrorSession.Status.PropagationStatus
+	update := false
 
-	//Do write only if changed
 	if propgatationStatusDifferent(prop, newProp) {
 		mss.MirrorSession.Status.PropagationStatus = *newProp
-		log.Infof("Updating propogation status for %v , Updated %v, pending %v",
-			mss.MirrorSession.Name, newProp.Updated, newProp.Pending)
+		update = true
+	}
+
+	if mss.MirrorSession.Status.ScheduleState != mss.State.String() {
+		ts, _ := types.TimestampProto(mss.schTime)
+		mss.MirrorSession.Status.ScheduleState = mss.State.String()
+		mss.MirrorSession.Status.StartedAt.Timestamp = *ts
+		update = true
+	}
+
+	if update {
+		log.Infof("Updating status for %v : State: %+v",
+			mss.MirrorSession.Name, mss.MirrorSession)
 		return mss.MirrorSession.Write()
 	}
 
@@ -545,7 +556,7 @@ func (smm *SmMirrorSessionInterface) pushDeleteMirrorSession(mss *MirrorSessionS
 
 //OnMirrorSessionCreate mirror session create handle
 func (smm *SmMirrorSessionInterface) OnMirrorSessionCreate(obj *ctkit.MirrorSession) error {
-	log.Infof("Got mirror session create")
+	log.Infof("Got mirror session create : %v", obj)
 	// see if we already have the session
 	ms, err := smm.FindMirrorSession(obj.Tenant, obj.Name)
 	if err == nil {
@@ -1124,7 +1135,6 @@ func (smm *SmMirrorSessionInterface) deleteInterfaceMirror(ms *MirrorSessionStat
 
 //OnMirrorSessionDelete mirror session delete handle
 func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSession) error {
-
 	log.Infof("Got mirror delete for %#v", obj.ObjectMeta)
 	ms, err := MirrorSessionStateFromObj(obj)
 	if err != nil {
