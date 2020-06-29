@@ -53,18 +53,20 @@ table lif2 {
 /* LIF/VLAN info                                                              */
 /******************************************************************************/
 action lif_vlan_info(vnic_id, bd_id, vpc_id) {
-    if (vnic_id != 0) {
-        modify_field(vnic_metadata.vnic_id, vnic_id);
-    }
-    if (bd_id != 0) {
-        modify_field(vnic_metadata.bd_id, bd_id);
-        if (arm_to_p4i.flow_lkp_id_override == FALSE) {
-            modify_field(key_metadata.flow_lkp_id, bd_id);
+    //if (table_hit) {
+        if (vnic_id != 0) {
+            modify_field(vnic_metadata.vnic_id, vnic_id);
         }
-    }
-    if (vpc_id != 0) {
-        modify_field(vnic_metadata.vpc_id, vpc_id);
-    }
+        if (bd_id != 0) {
+            modify_field(vnic_metadata.bd_id, bd_id);
+            if (arm_to_p4i.flow_lkp_id_override == FALSE) {
+                modify_field(key_metadata.flow_lkp_id, bd_id);
+            }
+        }
+        if (vpc_id != 0) {
+            modify_field(vnic_metadata.vpc_id, vpc_id);
+        }
+    //}
 
     // keys for local mapping lookup
     if (control_metadata.rx_packet == FALSE) {

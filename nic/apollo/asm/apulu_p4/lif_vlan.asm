@@ -10,16 +10,19 @@ struct phv_         p;
 %%
 
 lif_vlan_info:
+    add             r6, r0, k.vnic_metadata_bd_id
+    add             r7, r0, k.vnic_metadata_vpc_id
+    bcf             [!c1], lif_vlan_local_mapping_key
     sne             c1, d.lif_vlan_info_d.vnic_id, r0
     phvwr.c1        p.vnic_metadata_vnic_id, d.lif_vlan_info_d.vnic_id
     sne             c1, d.lif_vlan_info_d.bd_id, r0
     phvwr.c1        p.vnic_metadata_bd_id, d.lif_vlan_info_d.bd_id
-    cmov            r6, c1, d.lif_vlan_info_d.bd_id, k.vnic_metadata_bd_id
+    add.c1          r6, r0, d.lif_vlan_info_d.bd_id
     seq.c1          c1, k.arm_to_p4i_flow_lkp_id_override, FALSE
     phvwr.c1        p.key_metadata_flow_lkp_id, d.lif_vlan_info_d.bd_id
     sne             c1, d.lif_vlan_info_d.vpc_id, r0
     phvwr.c1        p.vnic_metadata_vpc_id, d.lif_vlan_info_d.vpc_id
-    cmov            r7, c1, d.lif_vlan_info_d.vpc_id, k.vnic_metadata_vpc_id
+    add.c1          r7, r0, d.lif_vlan_info_d.vpc_id
 
 lif_vlan_local_mapping_key:
     bbeq            k.control_metadata_rx_packet, TRUE, \
