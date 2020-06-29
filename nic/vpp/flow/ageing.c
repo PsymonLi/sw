@@ -43,20 +43,18 @@ pds_flow_age_setup_syn_x2 (pds_flow_hw_ctx_t *ctx0, pds_flow_hw_ctx_t *ctx1,
         goto ctx1;
     }
     ctx0->flow_state = PDS_FLOW_STATE_CONN_SETUP;
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_CONN_SETUP_TIMER,
-                                                   fm->tcp_con_setup_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_CONN_SETUP_TIMER,
+                         fm->tcp_con_setup_timeout);
 
 ctx1:
     if (PREDICT_FALSE(ctx1->flow_state >= PDS_FLOW_STATE_CONN_SETUP)) {
         goto end;
     }
     ctx1->flow_state = PDS_FLOW_STATE_CONN_SETUP;
-    ctx1->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id1,
-                                                   PDS_FLOW_CONN_SETUP_TIMER,
-                                                   fm->tcp_con_setup_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx1->timer_hdl,
+                         session_id1, PDS_FLOW_CONN_SETUP_TIMER,
+                         fm->tcp_con_setup_timeout);
 end:
     return;
 }
@@ -72,11 +70,9 @@ pds_flow_age_setup_rst_x2 (pds_flow_hw_ctx_t *ctx0, pds_flow_hw_ctx_t *ctx1,
     }
 
     ctx0->flow_state = PDS_FLOW_STATE_CLOSE;
-    FLOW_AGE_TIMER_STOP(&fm->timer_wheel[thread], ctx0->timer_hdl);
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_CLOSE_TIMER,
-                                                   fm->tcp_close_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_CLOSE_TIMER,
+                         fm->tcp_close_timeout);
 
 ctx1:
     if (PREDICT_FALSE(ctx1->flow_state >= PDS_FLOW_STATE_CLOSE)) {
@@ -84,11 +80,9 @@ ctx1:
     }
 
     ctx1->flow_state = PDS_FLOW_STATE_CLOSE;
-    FLOW_AGE_TIMER_STOP(&fm->timer_wheel[thread], ctx1->timer_hdl);
-    ctx1->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id1,
-                                                   PDS_FLOW_CLOSE_TIMER,
-                                                   fm->tcp_close_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx1->timer_hdl,
+                         session_id1, PDS_FLOW_CLOSE_TIMER,
+                         fm->tcp_close_timeout);
 end:
     return;
 }
@@ -107,10 +101,9 @@ pds_flow_age_setup_con_established_x2 (pds_flow_hw_ctx_t *ctx0,
     }
 
     ctx0->flow_state = PDS_FLOW_STATE_ESTABLISHED;
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_IDLE_TIMER,
-                                                   fm->idle_timeout[ctx0->proto]);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_IDLE_TIMER,
+                         fm->idle_timeout[ctx0->proto]);
 
 ctx1:
     if (PREDICT_FALSE(ctx1->flow_state >= PDS_FLOW_STATE_ESTABLISHED)) {
@@ -118,10 +111,9 @@ ctx1:
     }
 
     ctx1->flow_state = PDS_FLOW_STATE_ESTABLISHED;
-    ctx1->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id1,
-                                                   PDS_FLOW_IDLE_TIMER,
-                                                   fm->idle_timeout[ctx1->proto]);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx1->timer_hdl,
+                         session_id1, PDS_FLOW_IDLE_TIMER,
+                         fm->idle_timeout[ctx1->proto]);
 
 end:
     return;
@@ -134,10 +126,9 @@ pds_flow_age_setup_drop (pds_flow_hw_ctx_t *ctx0,
     pds_flow_main_t *fm = &pds_flow_main;
 
     ctx0->flow_state = PDS_FLOW_STATE_CONN_INIT;
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_DROP_TIMER,
-                                                   fm->drop_timeout[ctx0->proto]);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_DROP_TIMER,
+                         fm->drop_timeout[ctx0->proto]);
     return;
 }
 
@@ -152,10 +143,9 @@ pds_flow_age_setup_syn_x1 (pds_flow_hw_ctx_t *ctx0,
     }
 
     ctx0->flow_state = PDS_FLOW_STATE_CONN_SETUP;
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_CONN_SETUP_TIMER,
-                                                   fm->tcp_con_setup_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_CONN_SETUP_TIMER,
+                         fm->tcp_con_setup_timeout);
     return;
 }
 
@@ -201,11 +191,8 @@ pds_flow_age_setup_fin_x1 (pds_flow_hw_ctx_t *ctx0,
             state = PDS_FLOW_STATE_HALF_CLOSE_IFLOW;
         }
     }
-    FLOW_AGE_TIMER_STOP(&fm->timer_wheel[thread], ctx0->timer_hdl);
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   timer,
-                                                   timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, timer, timeout);
     ctx0->flow_state = state;
     return;
 }
@@ -221,11 +208,9 @@ pds_flow_age_setup_rst_x1 (pds_flow_hw_ctx_t *ctx0,
     }
 
     ctx0->flow_state = PDS_FLOW_STATE_CLOSE;
-    FLOW_AGE_TIMER_STOP(&fm->timer_wheel[thread], ctx0->timer_hdl);
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_CLOSE_TIMER,
-                                                   fm->tcp_close_timeout);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_CLOSE_TIMER,
+                         fm->tcp_close_timeout);
     return;
 }
 
@@ -240,10 +225,9 @@ pds_flow_age_setup_con_established_x1 (pds_flow_hw_ctx_t *ctx0,
     }
 
     ctx0->flow_state = PDS_FLOW_STATE_ESTABLISHED;
-    ctx0->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                   session_id0,
-                                                   PDS_FLOW_IDLE_TIMER,
-                                                   fm->idle_timeout[ctx0->proto]);
+    FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], ctx0->timer_hdl,
+                         session_id0, PDS_FLOW_IDLE_TIMER,
+                         fm->idle_timeout[ctx0->proto]);
     return;
 }
 
@@ -757,10 +741,9 @@ pds_flow_send_keep_alive (pds_flow_hw_ctx_t *session)
     if (ret2 == 0) {
         session->keep_alive_retry += 1;
         // if send was successful, then start the keepalive timer to retry.
-        session->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                          ses_id,
-                                                          PDS_FLOW_KEEP_ALIVE_TIMER,
-                                                          fm->tcp_keep_alive_timeout);
+        FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], session->timer_hdl,
+                             ses_id, PDS_FLOW_KEEP_ALIVE_TIMER,
+                             fm->tcp_keep_alive_timeout);
         session->flow_state = PDS_FLOW_STATE_KEEPALIVE_SENT;
         return;
     }
@@ -830,10 +813,9 @@ pds_flow_connection_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
     if (pds_session_state_established(iflow_state) &&
         pds_session_state_established(rflow_state)) {
         session->flow_state = PDS_FLOW_STATE_ESTABLISHED;
-        session->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                          ses_id,
-                                                          PDS_FLOW_IDLE_TIMER,
-                                                          fm->idle_timeout[session->proto]);
+        FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], session->timer_hdl,
+                             ses_id, PDS_FLOW_IDLE_TIMER,
+                             fm->idle_timeout[session->proto]);
     } else {
         pds_flow_delete_session(ses_id);
         return;
@@ -860,10 +842,9 @@ pds_flow_idle_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
         pds_flow_send_keep_alive(session);
     } else {
         // restart idle timeout with the time left for timeout
-        session->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                          ses_id,
-                                                          PDS_FLOW_IDLE_TIMER,
-                                                          fm->idle_timeout[session->proto] - diff_time);
+        FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], session->timer_hdl,
+                             ses_id, PDS_FLOW_IDLE_TIMER,
+                             (fm->idle_timeout[session->proto] - diff_time));
     }
 
     return;
@@ -883,10 +864,9 @@ pds_flow_keep_alive_timeout (u32 ses_id, u64 cur_time, u64 timestamp)
     if (timestamp &&
         !pds_flow_age_session_expired(session, cur_time, timestamp, &diff_time)) {
         // restart idle timeout with the time left for timeout
-        session->timer_hdl = tw_timer_start_16t_2w_4096sl(&fm->timer_wheel[thread],
-                                                          ses_id,
-                                                          PDS_FLOW_IDLE_TIMER,
-                                                          fm->idle_timeout[session->proto] - diff_time);
+        FLOW_AGE_TIMER_START(&fm->timer_wheel[thread], session->timer_hdl,
+                             ses_id, PDS_FLOW_IDLE_TIMER,
+                             (fm->idle_timeout[session->proto] - diff_time));
         // Reset retry count
         session->keep_alive_retry = 0;
         return;

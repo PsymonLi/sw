@@ -161,10 +161,9 @@ pds_flow_age_setup_cached_sessions(u16 thread_id)
         default:
             continue;
         }
-        ctx->timer_hdl = tw_timer_start_16t_2w_4096sl(
-            &fm->timer_wheel[sess->thread_id],
-            sess->id,
-            timer, timeout);
+        FLOW_AGE_TIMER_START(&fm->timer_wheel[sess->thread_id],
+                             ctx->timer_hdl, sess->id,
+                             timer, timeout);
     }
 }
 

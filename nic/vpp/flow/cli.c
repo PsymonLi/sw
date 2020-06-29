@@ -1009,35 +1009,49 @@ show_pds_flow_session_info_command_fn (vlib_main_t * vm,
        dst_port_set = 0,
        proto_set = 0,
        lkp_id_set = 0,
-       ip4 = 0;
+       ip4 = 0,
+       timer_wheel = 0;
 
     while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT) {
         if (unformat(input, "session %u", &session_index)) {
             session_index_set = 1;
-        } else if (unformat (input, "source-ip %U", unformat_ip46_address, &src)) {
+        } else if (unformat(input, "source-ip %U", unformat_ip46_address, &src)) {
             src_set = 1;
-        } else if (unformat (input, "destination-ip %U",
-                             unformat_ip46_address, &dst)) {
+        } else if (unformat(input, "destination-ip %U",
+                            unformat_ip46_address, &dst)) {
             dst_set = 1;
         } else if (unformat(input, "ip-protocol %U",
                             unformat_ip_protocol, &ip_proto)) {
             proto_set = 1;
-        } else if (unformat (input, "source-port %u", &sport)) {
+        } else if (unformat(input, "source-port %u", &sport)) {
             src_port_set = 1;
-        } else if (unformat (input, "destination-port %u", &dport)) {
+        } else if (unformat(input, "destination-port %u", &dport)) {
             dst_port_set = 1;
-        } else if (unformat (input, "bd-id %u", &bd_id)) {
+        } else if (unformat(input, "bd-id %u", &bd_id)) {
             lkp_id_set = 1;
-        } else if (unformat (input, "detail")) {
+        } else if (unformat(input, "detail")) {
             detail = 1;
+        } else if (unformat(input, "timer-wheel")) {
+            timer_wheel = 1;
         } else {
             vlib_cli_output(vm, "ERROR: Invalid command.\n");
             return 0;
         }
     }
 
-    if (!session_index_set && (!src_set || !dst_set || !proto_set || !lkp_id_set)) {
+    if (!session_index_set &&
+        (!src_set || !dst_set || !proto_set || !lkp_id_set) &&
+        !timer_wheel) {
         vlib_cli_output(vm, "ERROR: Invalid input.\n");
+        return 0;
+    }
+
+    if (timer_wheel) {
+        for (int i = 1; i < fm->no_threads; i++) {
+            vlib_cli_output(vm, "Timer wheel for worker thread %d :", i);
+            vlib_cli_output(vm, "%U", format_tw_timer_wheel_16t_2w_4096sl,
+                            &fm->timer_wheel[i]);
+        }
         return 0;
     }
 
@@ -1103,8 +1117,8 @@ VLIB_CLI_COMMAND (show_pds_flow_session_command, static) =
                   "ip-protocol <TCP|UDP|ICMP> "
                   "[source-port <UDP/TCP port number>] "
                   "[destination-port <UDP/TCP port number>] "
-                  "bd-id <number>)} | session <session-index>} [detail]",
+                  "bd-id <number>)} | session <session-index> | "
+                  "timer-wheel} [detail]",
     .function = show_pds_flow_session_info_command_fn,
     .is_mp_safe = 1,
 };
-

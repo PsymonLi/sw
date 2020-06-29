@@ -680,13 +680,21 @@ always_inline void pds_session_id_flush(void)
 }
 
 // timer_hdl is 23 bits, so check against 0x7fffff
-#define FLOW_AGE_TIMER_STOP(_tw, _hdl)                  \
-{                                                       \
-    if (_hdl != 0x7fffff) {                             \
-        tw_timer_stop_16t_2w_4096sl(_tw, _hdl);         \
-        _hdl = ~0;                                      \
-    }                                                   \
-}                                                       \
+#define FLOW_AGE_TIMER_STOP(_tw, _hdl)                              \
+{                                                                   \
+    if (_hdl != 0x7fffff) {                                         \
+        tw_timer_stop_16t_2w_4096sl(_tw, _hdl);                     \
+        _hdl = ~0;                                                  \
+    }                                                               \
+}                                                                   \
+
+// stop the running timer if any and start new timer
+#define FLOW_AGE_TIMER_START(_tw, _hdl, _ses_id, _timer, _timeout)  \
+{                                                                   \
+    FLOW_AGE_TIMER_STOP(_tw, _hdl);                                 \
+    _hdl = tw_timer_start_16t_2w_4096sl(_tw, _ses_id,               \
+                                        _timer, _timeout);          \
+}                                                                   \
 
 void pds_session_update_data(u32 ses_id, u64 new_handle,
                              bool iflow, bool move_complete, bool lock);
