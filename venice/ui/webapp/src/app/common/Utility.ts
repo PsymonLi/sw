@@ -2278,7 +2278,7 @@ export class Utility {
     }
     return false;
   }
-  public static formatPropagationColumn(data, dscMacNameMap: { [key: string]: string } = null) {
+  public static formatPropagationColumn(data, dscMacNameMap: { [key: string]: string } = null, htmlFormat: boolean = true) {
     const retArr = [];
     if (data == null) {
       return retArr;
@@ -2290,14 +2290,26 @@ export class Utility {
           targetStr += targetStr ? ', ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + ' ' : ' ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k];
         } else if (k === 'status' && data[k]) {
           if (data[k].includes('on:')) {
-            targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ': </span> <span class="propagation-status-pending"> ' + data[k].split('on:')[0] + 'on ' + '</span>';
+            if (htmlFormat) {
+              targetStr += '<span class="blockOnHover"> ' + k.charAt(0).toUpperCase() + k.slice(1) + ': </span> <span class="blockOnHover" class="propagation-status-pending"> ' + data[k].split('on:')[0] + 'on ' + '</span>';
+            } else {
+              targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ': ' + data[k].split('on:')[0] + 'on ';
+            }
             data[k].split('on:')[1].split(', ').forEach((macName) => {
               let myMac = macName.trim();
               myMac = (dscMacNameMap && dscMacNameMap[myMac]) ? dscMacNameMap[myMac] : myMac;
-              targetStr += '<span class="propagation-status-pending"> ' + myMac + ' </span>';
+              if (htmlFormat) {
+                targetStr += '<span class="propagation-status-pending"> ' + myMac + ' </span>';
+              } else {
+                targetStr += myMac;
+              }
             });
           } else {
-            targetStr += '<span> ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + '</span>';
+            if (htmlFormat) {
+              targetStr += '<span class="blockOnHover"> ' + k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k] + '</span>';
+            } else {
+              targetStr += k.charAt(0).toUpperCase() + k.slice(1) + ':' + data[k];
+            }
           }
         }
       }

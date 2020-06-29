@@ -46,17 +46,18 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
   exportMap: CustomExportMap = {
     'spec.match-rules': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr = this.formatMatchRules(value);
-      return resArr.toString();
+      const resArr: any = this.formatMatchRules(value);
+      return resArr ? resArr.join('\n') : '';
     },
     'spec.exports': (opts): string => {
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      const resArr =  this.formatTargets(value);
+      const resArr =  this.formatTargets(value, true);
       return resArr.toString();
     },
     'status.propagation-status': (opts): string => {
+      const rowData = opts.data;
       const value = Utility.getObjectValueByPropertyPath(opts.data, opts.field);
-      return value['pending-dscs'].join(',');
+      return this.displayColumn_propagation(value, rowData._ui.pendingDSCmacnameMap, false);
     }
   };
   isTabComponent = false;
@@ -121,19 +122,29 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       case 'spec.exports':
         return this.formatTargets(value);
       case 'status.propagation-status':
-        return this.displayColumn_propagation(value, exportData._ui.pendingDSCmacnameMap);
+        return this.displayColumn_propagation(value, exportData._ui.pendingDSCmacnameMap, true);
       default:
         return Array.isArray(value) ? JSON.stringify(value, null, 2) : value;
     }
   }
-  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string } ) {
-    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap));
+
+  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string}, htmlFormat: boolean = true) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap, htmlFormat));
   }
+
   displayListInColumn(list: string[]): string {
     return (list && list.length > 0) ?
         list.reduce((accum: string, item: string) => accum + item ) : '';
   }
-  formatTargets(data: IMonitoringExportConfig[]) {
+
+  displayListInLinesInColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('<br>') : '';
+  }
+
+  displayListInLinesInCvsColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('\n') : '';
+  }
+  formatTargets(data: IMonitoringExportConfig[], isForExport: boolean = false) {
     if (data == null) {
       return '';
     }
@@ -154,7 +165,10 @@ export class FlowexportpolicyComponent extends TablevieweditAbstract<IMonitoring
       }
       retArr.push(targetStr);
     });
-    return this.displayListInColumn(retArr);
+    if (isForExport) {
+      return this.displayListInLinesInCvsColumn(retArr);
+    }
+    return this.displayListInLinesInColumn(retArr);
   }
 
   formatMatchRules(data: IMonitoringMatchRule[]) {

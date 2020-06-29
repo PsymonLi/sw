@@ -31,7 +31,6 @@ interface MirrorsessionsUIModel {
   encapsulation: ViewEncapsulation.None
 })
 export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMirrorSession, MonitoringMirrorSession> implements OnInit {
-  exportMap: CustomExportMap = {};
   dataObjects: ReadonlyArray<MonitoringMirrorSession> = [];
 
   bodyicon: any = {
@@ -64,6 +63,32 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
   ];
 
   exportFilename: string = 'PSM-mirrorsessons';
+  exportMap: CustomExportMap = {
+    'spec.collectors': (opts): string => {
+      const rowData = opts.data;
+      return this.displayColumn_collectors(rowData.spec.collectors, true);
+    },
+    'spec.match-rules': (opts): string => {
+      const rowData = opts.data;
+      return this.displayColumn_matchRules(rowData.spec['match-rules'], true);
+    },
+    'status.propagation-status': (opts): string => {
+      const rowData = opts.data;
+      return this.displayColumn_propagation(
+        rowData.status['propagation-status'],
+        rowData._ui.pendingDSCmacnameMap, false);
+    },
+    'spec.interfaces.selectors': (opts): string => {
+      const rowData = opts.data;
+      if (rowData.spec.interfaces && Array.isArray(rowData.spec.interfaces.selectors) &&
+          rowData.spec.interfaces.selectors.length) {
+        return this.displayColumn_interfaceselectors(
+          rowData.spec.interfaces.direction,
+          rowData.spec.interfaces.selectors[0], false);
+      }
+      return '';
+    }
+  };
 
   isTabComponent = false;
   disableTableWhenRowExpanded = true;
@@ -110,20 +135,19 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
 
  }
 
- getMirrorSessions() {
+  getMirrorSessions() {
     const sub = this.monitoringService.ListMirrorSessionCache().subscribe(
-    response => {
-      if (response.connIsErrorState) {
-        return;
-      }
-      this.dataObjects = response.data as MonitoringMirrorSession[];
-      this.handleDataReady();
-    },
-    this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
-  );
-  this.subscriptions.push(sub);
-}
-
+      response => {
+        if (response.connIsErrorState) {
+          return;
+        }
+        this.dataObjects = response.data as MonitoringMirrorSession[];
+        this.handleDataReady();
+      },
+      this.controllerService.webSocketErrorHandler('Failed to get Mirror Sessions')
+    );
+    this.subscriptions.push(sub);
+  }
 
   /**
    * This API is used in getXXX().
@@ -135,7 +159,6 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
     if (this.naplesList && this.naplesList.length > 0 && this.dataObjects && this.dataObjects.length > 0) {
       const _myDSCnameToMacMap: DSCsNameMacMap = ObjectsRelationsUtility.buildDSCsNameMacMap(this.naplesList);
       const macToNameMap = _myDSCnameToMacMap.macToNameMap;
-      console.log (this.getClassName() + 'handleDataReady()');
       this.dataObjects.forEach ( (flowExportPoliy) => {
         if (flowExportPoliy.status['propagation-status'] && flowExportPoliy.status['propagation-status']['pending-dscs']) {
           const propagationStatusDSCName = {};
@@ -196,7 +219,7 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
         }
         return '';
       case 'spec.collectors':
-        return this.displayColumn_collectors(value);
+        return this.displayColumn_collectors(value, false);
       case 'spec.match-rules':
         return this.displayColumn_matchRules(value);
       case 'status.propagation-status':
@@ -205,8 +228,8 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
          return Array.isArray(value) ? value.join(', ') : value;
     }
   }
-  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string } ) {
-    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap));
+  displayColumn_propagation(data,  dscMacNameMap: {[key: string]: string }, htmlFormat: boolean = true ) {
+    return this.displayListInColumn(Utility.formatPropagationColumn(data, dscMacNameMap, htmlFormat));
   }
   displayMatchRules(rule: MonitoringMatchRule): string {
     const arr: string[] = [];
@@ -245,12 +268,12 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
     return arr.join('; ');
   }
 
-  displayColumn_matchRules(value: MonitoringMatchRule[]): string {
+  displayColumn_matchRules(value: MonitoringMatchRule[], isForExport: boolean = false): string {
     const list: string[] = value.map(item => this.displayMatchRules(item));
-    return this.displayListInColumn(list);
+    return isForExport ? this.displayListInLinesInCvsColumn(list) : this.displayListInLinesInColumn(list);
   }
 
-  displayColumn_collectors(value: MonitoringMirrorCollector[]): string {
+  displayColumn_collectors(value: MonitoringMirrorCollector[], isForExport: boolean = false): string {
     const list: string[] = value.map(item => {
       let str: string = item.type;
       if (item['strip-vlan-hdr']) {
@@ -262,31 +285,49 @@ export class MirrorsessionsComponent extends TablevieweditAbstract<IMonitoringMi
       }
       return str;
     });
-    return this.displayListInColumn(list);
+    if (isForExport) {
+      return this.displayListInLinesInCvsColumn(list);
+    }
+    return this.displayListInLinesInColumn(list);
   }
 
-  displayColumn_interfaceselectors(direction: string, value: ILabelsSelector): string {
-    let directionIcon = '<div title="Direction: Both" class="mirrorsessions-column-txrx-icon"></div>';
-    if (direction === 'tx') {
-      directionIcon = '<div title="Direction: TX" class="mirrorsessions-column-tx-icon"></div>';
-    } else if (direction === 'rx') {
-      directionIcon = '<div title="Direction: RX" class="mirrorsessions-column-rx-icon"></div>';
-    }
+  displayColumn_interfaceselectors(direction: string, value: ILabelsSelector, htmlFormat: boolean = true): string {
     const result: string[] = [];
     if (value && value.requirements && value.requirements.length > 0) {
       value.requirements.forEach(selector => {
         const icon = (selector.operator === 'in') ?
             '<div title="In" class="mirrorsessions-column-in-icon"></div>' :
             '<div title="Not In" class="mirrorsessions-column-notin-icon"></div>';
-        result.push('<span>' + selector.key + icon + '[' + selector.values.join(',') + ']</span>');
+        if (htmlFormat) {
+          result.push('<span>' + selector.key + icon + '[' + selector.values.join(',') + ']</span>');
+        } else {
+          result.push(selector.key + ' ' + selector.operator + ' [' + selector.values.join(',') + ']');
+        }
       });
     }
-    return directionIcon + ', ' + result.join(', ');
+    if (htmlFormat) {
+      let directionIcon = '<div title="Direction: Both" class="mirrorsessions-column-txrx-icon"></div>';
+      if (direction === 'tx') {
+        directionIcon = '<div title="Direction: TX" class="mirrorsessions-column-tx-icon"></div>';
+      } else if (direction === 'rx') {
+        directionIcon = '<div title="Direction: RX" class="mirrorsessions-column-rx-icon"></div>';
+      }
+      return directionIcon + ', ' + result.join(', ');
+    }
+    return 'Direction: ' + direction + ', ' + result.join(', ');
+  }
+
+  displayListInLinesInColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('<br>') : '';
+  }
+
+  displayListInLinesInCvsColumn(list: string[]): string {
+    return (list && list.length > 0) ? list.join('\n') : '';
   }
 
   displayListInColumn(list: string[]): string {
     return (list && list.length > 0) ?
-        list.reduce((accum: string, item: string) => accum + item ) : '';
+        list.reduce((accum: string, item: string) => accum + ' ' + item ) : '';
   }
 
   deleteRecord(object: MonitoringMirrorSession): Observable<{ body: IMonitoringMirrorSession | IApiStatus | Error; statusCode: number; }> {
