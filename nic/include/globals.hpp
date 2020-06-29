@@ -3,6 +3,8 @@
 #ifndef __GLOBALS_HPP__
 #define __GLOBALS_HPP__
 
+#include "nic/sdk/include/sdk/globals.hpp"
+
 // interface id ranges
 #define HAL_IF_ID_MIN                      1      // HAL interface id range min
 #define HAL_IF_ID_MAX                      127    // HAL interface id range max
@@ -57,5 +59,9 @@ enum {
     SERVICE_LIF_END
 };
 
+typedef enum hal_mod_id_s {
+     HAL_MOD_ID_FTE          = (sdk_mod_id_t::SDK_MOD_ID_MAX + 1),
+     HAL_MOD_ID_MAX
+ } hal_mod_id_t;
 
 #endif    // __GLOBALS_HPP__

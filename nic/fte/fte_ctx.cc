@@ -135,7 +135,7 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
     }
 
     if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
-        HAL_TRACE_DEBUG("fte: extracted flow key {}", key_);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: extracted flow key {}", key_);
     }
 
     if (likely(hal::g_hal_state->is_microseg_enabled())) {
@@ -177,7 +177,7 @@ ctx_t::init_flows(flow_t iflow[], flow_t rflow[])
                 // check for flood protection limits
                 ret = apply_session_limit();
                 if (ret != HAL_RET_OK) {
-                    HAL_TRACE_VERBOSE ("fte: exceeded session limits, skip session create, ret={}", ret);
+                    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: exceeded session limits, skip session create, ret={}", ret);
                     /*
                      * Set drop bit so any packet-resources can be freed by the CPU-PMD.
                      */
@@ -239,28 +239,28 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
     hal_ret_t ret;
 
     if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
-        HAL_TRACE_VERBOSE("fte: rxpkt{} cpu_rxhdr={}",
-                    copied_pkt ? "(copy)" : "", hex_str((uint8_t*)cpu_rxhdr, sizeof(*cpu_rxhdr)));
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: rxpkt{} cpu_rxhdr={}",
+                            copied_pkt ? "(copy)" : "", hex_str((uint8_t*)cpu_rxhdr, sizeof(*cpu_rxhdr)));
 
-        HAL_TRACE_DEBUG("fte: rxpkt slif={} lif={} qtype={} qid={} len={} pkt={}", 
-                        cpu_rxhdr->src_lif, cpu_rxhdr->lif, cpu_rxhdr->qtype, cpu_rxhdr->qid,
-                         pkt_len, hex_str(pkt, (pkt_len >=128)?128:pkt_len));
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: rxpkt slif={} lif={} qtype={} qid={} len={} pkt={}",
+                            cpu_rxhdr->src_lif, cpu_rxhdr->lif, cpu_rxhdr->qtype, cpu_rxhdr->qid,
+                            pkt_len, hex_str(pkt, (pkt_len >=128)?128:pkt_len));
 
-        HAL_TRACE_VERBOSE("fte: rxpkt slif={} lif={} qtype={} qid={} vrf={} "
-                    "src_app_id={} lkp_dir={} lkp_inst={} lkp_type={} flags={} "
-                    "l2={} l3={} l4={} payload={} src_lport={}",
-                    cpu_rxhdr->src_lif, cpu_rxhdr->lif, cpu_rxhdr->qtype,
-                    cpu_rxhdr->qid, cpu_rxhdr->lkp_vrf, cpu_rxhdr->src_app_id,
-                    cpu_rxhdr->lkp_dir, cpu_rxhdr->lkp_inst, cpu_rxhdr->lkp_type,
-                    cpu_rxhdr->flags, cpu_rxhdr->l2_offset, cpu_rxhdr->l3_offset,
-                    cpu_rxhdr->l4_offset, cpu_rxhdr->payload_offset, cpu_rxhdr->src_lport);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: rxpkt slif={} lif={} qtype={} qid={} vrf={} "
+                            "src_app_id={} lkp_dir={} lkp_inst={} lkp_type={} flags={} "
+                            "l2={} l3={} l4={} payload={} src_lport={}",
+                            cpu_rxhdr->src_lif, cpu_rxhdr->lif, cpu_rxhdr->qtype,
+                            cpu_rxhdr->qid, cpu_rxhdr->lkp_vrf, cpu_rxhdr->src_app_id,
+                            cpu_rxhdr->lkp_dir, cpu_rxhdr->lkp_inst, cpu_rxhdr->lkp_type,
+                            cpu_rxhdr->flags, cpu_rxhdr->l2_offset, cpu_rxhdr->l3_offset,
+                            cpu_rxhdr->l4_offset, cpu_rxhdr->payload_offset, cpu_rxhdr->src_lport);
     }
 
     lifqid_t lifq =  {cpu_rxhdr->lif, cpu_rxhdr->qtype, cpu_rxhdr->qid};
 
     ret = init(lifq, feature_state, num_features);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init ctx, err={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init ctx, err={}", ret);
         return ret;
     }
 
@@ -279,8 +279,8 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
              (packet_parse_result_t)parse_packet(packet, pkt_len, PACKET_LAYER_2_ETHERNET,
                                                  &error);
          if (result != PACKET_OK || error != NULL) {
-             HAL_TRACE_ERR("Unable to parse packet. result: {}, error: {}",
-                           result, error);
+             HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unable to parse packet. result: {}, error: {}",
+                               result, error);
              packet_free(packet);
              return HAL_RET_FTE_SPAN;
          }
@@ -293,7 +293,7 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
          SDK_ASSERT(status == STATUS_OK);
          SDK_ASSERT(error == NULL);
 
-         HAL_TRACE_VERBOSE("fte: fte-span packet: {}", dump);
+         HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: fte-span packet: {}", dump);
          free(dump);
          packet_free(packet);
          return HAL_RET_FTE_SPAN;
@@ -303,7 +303,7 @@ ctx_t::init(cpu_rxhdr_t *cpu_rxhdr, uint8_t *pkt, size_t pkt_len, bool copied_pk
         (tcp_close())) {
         ret = init_flows(iflow, rflow);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("fte: failed to init flows, err={}", ret);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init flows, err={}", ret);
             return ret;
         }
     }
@@ -322,7 +322,7 @@ ctx_t::init(SessionSpec* spec, SessionResponse *rsp, flow_t iflow[], flow_t rflo
 
     ret = init(FLOW_MISS_LIFQ, feature_state, num_features);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init ctx, err={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init ctx, err={}", ret);
         return ret;
     }
 
@@ -331,7 +331,7 @@ ctx_t::init(SessionSpec* spec, SessionResponse *rsp, flow_t iflow[], flow_t rflo
 
     ret = init_flows(iflow, rflow);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init flows, err={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init flows, err={}", ret);
         return ret;
     }
 
@@ -351,7 +351,7 @@ ctx_t::init(SessionSpec* spec, SessionStatus* status, SessionStats* stats, hal::
 
     ret = init(FLOW_MISS_LIFQ, feature_state, num_features);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init ctx, err={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init ctx, err={}", ret);
         return ret;
     }
 
@@ -382,7 +382,7 @@ ctx_t::init(hal::session_t *session, flow_t iflow[], flow_t rflow[],
 
     ret = init(FLOW_MISS_LIFQ, feature_state, num_features);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to init ctx, err={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init ctx, err={}", ret);
         return ret;
     }
 
@@ -402,11 +402,11 @@ ctx_t::init(hal::session_t *session, flow_t iflow[], flow_t rflow[],
     return HAL_RET_OK;
 }
 
-#define LOG_FLOW_UPDATE(__updinfo)                                         \
-    HAL_TRACE_VERBOSE("{}.{} feature={} ret={} {}={}",                       \
-                    role,                                                  \
-                    (role == hal::FLOW_ROLE_INITIATOR)? istage_ : rstage_, \
-                    feature_name_, ret, #__updinfo, flowupd.__updinfo)
+#define LOG_FLOW_UPDATE(__updinfo)                                               \
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "{}.{} feature={} ret={} {}={}",       \
+                          role,                                                  \
+                          (role == hal::FLOW_ROLE_INITIATOR)? istage_ : rstage_, \
+                          feature_name_, ret, #__updinfo, flowupd.__updinfo)
 
 //------------------------------------------------------------------------------
 // Updates the current flow with the sepcified flowupd info
@@ -591,23 +591,23 @@ ctx_t::advance_to_next_stage() {
             session()->iflow && session()->iflow->assoc_flow) {
             SDK_ASSERT_RETURN(istage_ + 1 < MAX_STAGES, HAL_RET_INVALID_OP);
             istage_++;
-            HAL_TRACE_DEBUG("fte: advancing to next iflow stage {}", istage_);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: advancing to next iflow stage {}", istage_);
         } else if (role_ == hal::FLOW_ROLE_RESPONDER &&
                    session()->rflow && session()->rflow->assoc_flow) {
             SDK_ASSERT_RETURN(rstage_ + 1 < MAX_STAGES, HAL_RET_INVALID_OP);
             rstage_++;
-            HAL_TRACE_DEBUG("fte: advancing to next rflow stage {}", rstage_);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: advancing to next rflow stage {}", rstage_);
         }
     } else {
 
         if (role_ == hal::FLOW_ROLE_INITIATOR && iflow_[istage_]->valid_fwding()) {
             SDK_ASSERT_RETURN(istage_ + 1 < MAX_STAGES, HAL_RET_INVALID_OP);
             istage_++;
-            HAL_TRACE_DEBUG("fte: advancing to next iflow stage {}", istage_);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: advancing to next iflow stage {}", istage_);
         } else if (rflow_[rstage_]->valid_fwding()){
             SDK_ASSERT_RETURN(rstage_ + 1 < MAX_STAGES, HAL_RET_INVALID_OP);
             rstage_++;
-            HAL_TRACE_DEBUG("fte: advancing to next rflow stage {}", rstage_);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: advancing to next rflow stage {}", rstage_);
         }
     }
     return HAL_RET_OK;
@@ -622,6 +622,8 @@ ctx_t::invoke_completion_handlers(bool fail)
 {
     for (int i = 0; i < num_features_; i++) {
         if (feature_state_[i].completion_handler != nullptr) {
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: invoking completion handler {}",
+                                  feature_state_[i].name);
             set_feature_name(feature_state_[i].name);
             (*feature_state_[i].completion_handler)(*this, fail);
         }
@@ -640,21 +642,20 @@ ctx_t::process()
     // and we do not want to log the get
     if (!ipc_logging_disable() &&
         pipeline_event() != FTE_SESSION_GET) {
-        //HAL_TRACE_VERBOSE("get ipc logger");
         logger_  = get_current_ipc_logger_inst();
     }
 
     // execute the pipeline
     ret = execute_pipeline(*this);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to execute pipeline, ret={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to execute pipeline, ret={}", ret);
         goto end;
     }
 
     // update flow table
     ret = update_flow_table();
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to updated gft, ret={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to updated gft, ret={}", ret);
         goto end;
     }
 
@@ -693,7 +694,7 @@ ctx_t::swap_flow_objs()
             dl2seg_ = sl2seg_;
             dif_ = hal::find_if_by_handle(sl2seg_->pinned_uplink);
         }
-        HAL_TRACE_VERBOSE("SWAP DIF Lookup.. sl2seg:{:p} dif:{:p}", (void *)sl2seg_, (void*)dif_);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "SWAP DIF Lookup.. sl2seg:{:p} dif:{:p}", (void *)sl2seg_, (void*)dif_);
     }
 }
 

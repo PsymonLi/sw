@@ -990,7 +990,7 @@ public:
         return oper_db_->set_product_name(pname);
     }
 
-   
+
 private:
     // following come from shared memory or non-linux HBM memory
     hal_cfg_db           *cfg_db_;

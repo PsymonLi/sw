@@ -200,8 +200,10 @@ It has these top-level messages:
 	MpuTraceResponseMsg
 	FlushLogsResponse
 	FlushLogsResponseMsg
-	AgingLogsRequest
-	AgingLogsRequestMsg
+	AgingTraceUpdateRequest
+	AgingTraceUpdateRequestMsg
+	FteTraceUpdateRequest
+	FteTraceUpdateRequestMsg
 	ClockSpec
 	ClockStatus
 	ClockStats

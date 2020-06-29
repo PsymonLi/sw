@@ -12,6 +12,7 @@ namespace utils {
 ::utils::log *g_link_trace_logger;
 ::utils::log *g_syslog_logger;
 uint64_t g_cpu_mask;
+uint32_t g_hal_mod_trace_en_bits = 0;
 
 // wrapper for HAL trace init function
 void
@@ -91,6 +92,19 @@ trace_update (::utils::trace_level_e trace_level)
     }
     if (g_link_trace_logger) {
         g_link_trace_logger->set_trace_level(trace_level);
+    }
+}
+
+void
+hal_mod_trace_update (uint32_t mod_id, bool enable)
+{
+    if (mod_id < HAL_MOD_ID_MAX) {
+        uint32_t trace_en_bits = (0x1 << mod_id);
+        if (enable) {
+            g_hal_mod_trace_en_bits |= trace_en_bits;
+        } else {
+            g_hal_mod_trace_en_bits &= ~trace_en_bits;
+        }
     }
 }
 

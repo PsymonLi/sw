@@ -58,7 +58,7 @@ acl_get(const char *name)
 inline void
 print_ref_count(const acl_ctx_t *ctx)
 {
-    HAL_TRACE_VERBOSE("ctx_name: {} ref_count: {}", ctx->name(), ctx->print_ref_count());
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "ctx_name: {} ref_count: {}", ctx->name(), ctx->print_ref_count());
 }
 
 //------------------------------------------------------------------------
@@ -68,7 +68,7 @@ void
 acl_deref(const acl_ctx_t *ctx)
 {
 #if ACL_DEBUG
-    HAL_TRACE_DEBUG("deref for point {:#x}", (uint64_t) ctx);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "deref for point {:#x}", (uint64_t) ctx);
 #endif
     print_ref_count(ctx);
     ctx->deref();

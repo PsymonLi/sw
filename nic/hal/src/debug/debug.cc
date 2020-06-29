@@ -1055,10 +1055,16 @@ span_threshold_update (uint32_t span_threshold)
 }
 
 hal_ret_t 
-aging_logs_update(debug::AgingLogsRequest& req)
+aging_trace_update (debug::AgingTraceUpdateRequest& req)
 {
-    HAL_TRACE_DEBUG("Setting age debug: {}", req.aging_logs_enable());
-    g_hal_state->set_age_debug_enable(req.aging_logs_enable());
+    g_hal_state->set_age_debug_enable(req.aging_trace_enable());
+    return HAL_RET_OK;
+}
+
+hal_ret_t
+fte_trace_update (debug::FteTraceUpdateRequest& req)
+{
+    utils::hal_mod_trace_update(HAL_MOD_ID_FTE, req.fte_trace_enable());
     return HAL_RET_OK;
 }
 

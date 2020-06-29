@@ -53,6 +53,7 @@ var (
 	sourceIP                uint32
 	destIP                  uint32
 	ageDebugEn              string
+	fteDebugEn              string
 )
 
 var debugCmd = &cobra.Command{
@@ -235,11 +236,18 @@ var testFteInjectPacketCmd = &cobra.Command{
 	Run:    testFteInjectPacketCmdHandler,
 }
 
-var ageLogsDebugCmd = &cobra.Command{
+var ageTraceUpdateCmd = &cobra.Command{
 	Use:   "age",
 	Short: "enable/disable aging logs",
 	Long:  "enable/disable aging logs",
-	Run:   ageLogsDebugCmdHandler,
+	Run:   ageTraceUpdateCmdHandler,
+}
+
+var fteTraceUpdateCmd = &cobra.Command{
+	Use:   "fte",
+	Short: "enable/disable fte logs",
+	Long:  "enable/disable fte logs",
+	Run:   fteTraceUpdateCmdHandler,
 }
 
 func init() {
@@ -259,7 +267,8 @@ func init() {
 	debugCmd.AddCommand(microSegCmd)
 	debugCmd.AddCommand(sysDebugCmd)
 	traceDebugCmd.AddCommand(flushLogsDebugCmd)
-	traceDebugCmd.AddCommand(ageLogsDebugCmd)
+	traceDebugCmd.AddCommand(ageTraceUpdateCmd)
+	traceDebugCmd.AddCommand(fteTraceUpdateCmd)
 	fwDebugCmd.AddCommand(secProfDebugCmd)
 	showCmd.AddCommand(traceShowCmd)
 	showCmd.AddCommand(regShowCmd)
@@ -277,7 +286,8 @@ func init() {
 	platDebugCmd.AddCommand(platDatapathCacheDebugCmd)
 
 	traceDebugCmd.Flags().StringVar(&traceLevel, "level", "none", "Specify trace level")
-	ageLogsDebugCmd.Flags().StringVar(&ageDebugEn, "logs", "off", "Turn aging logs on/off")
+	ageTraceUpdateCmd.Flags().StringVar(&ageDebugEn, "logs", "off", "Turn aging logs on/off")
+	fteTraceUpdateCmd.Flags().StringVar(&fteDebugEn, "logs", "off", "Turn fte logs on/off")
 	sessionCtrlDebugCmd.Flags().Uint64Var(&maxSession, "max-session", 0, "Max sessions to handle per fte 1 - 131072")
 	secProfDebugCmd.Flags().Uint32Var(&secProfID, "id", 0, "Specify firewall security profile ID")
 	secProfDebugCmd.Flags().StringVar(&connTrack, "conntrack", "off", "Turn connection tracking on/off")
@@ -1064,7 +1074,7 @@ func flushLogsDebugCmdHandler(cmd *cobra.Command, args []string) {
 	}
 }
 
-func ageLogsDebugCmdHandler(cmd *cobra.Command, args []string) {
+func ageTraceUpdateCmdHandler(cmd *cobra.Command, args []string) {
 	// Connect to HAL
 	c, err := utils.CreateNewGRPCClient()
 	if err != nil {
@@ -1075,15 +1085,15 @@ func ageLogsDebugCmdHandler(cmd *cobra.Command, args []string) {
 
 	client := halproto.NewDebugClient(c)
 
-	var agingLogsReq *halproto.AgingLogsRequestMsg
+	var agingTraceUpdateReq *halproto.AgingTraceUpdateRequestMsg
 	if cmd.Flags().Changed("logs") {
-		var req *halproto.AgingLogsRequest
+		var req *halproto.AgingTraceUpdateRequest
 		// Set Trace
-		req = &halproto.AgingLogsRequest{
-			AgingLogsEnable: convAgeDebugToBool(ageDebugEn),
+		req = &halproto.AgingTraceUpdateRequest{
+			AgingTraceEnable: convDebugStatusStringToBool(ageDebugEn),
 		}
-		agingLogsReq = &halproto.AgingLogsRequestMsg{
-			Request: []*halproto.AgingLogsRequest{req},
+		agingTraceUpdateReq = &halproto.AgingTraceUpdateRequestMsg{
+			Request: []*halproto.AgingTraceUpdateRequest{req},
 		}
 	} else {
 		fmt.Printf("Argument required. Enable/Disable using --logs flag\n")
@@ -1091,14 +1101,48 @@ func ageLogsDebugCmdHandler(cmd *cobra.Command, args []string) {
 	}
 
 	// HAL call
-	_, err = client.AgingLogs(context.Background(), agingLogsReq)
+	_, err = client.AgingTraceUpdate(context.Background(), agingTraceUpdateReq)
 	if err != nil {
 		fmt.Printf("Set age trace failed. %v\n", err)
 		return
 	}
 }
 
-func convAgeDebugToBool(str string) bool {
+func fteTraceUpdateCmdHandler(cmd *cobra.Command, args []string) {
+	// Connect to HAL
+	c, err := utils.CreateNewGRPCClient()
+	if err != nil {
+		fmt.Printf("Could not connect to the HAL. Is HAL Running?\n")
+		os.Exit(1)
+	}
+	defer c.Close()
+
+	client := halproto.NewDebugClient(c)
+
+	var fteTraceUpdateReq *halproto.FteTraceUpdateRequestMsg
+	if cmd.Flags().Changed("logs") {
+		var req *halproto.FteTraceUpdateRequest
+		// Set Trace
+		req = &halproto.FteTraceUpdateRequest{
+			FteTraceEnable: convDebugStatusStringToBool(fteDebugEn),
+		}
+		fteTraceUpdateReq = &halproto.FteTraceUpdateRequestMsg{
+			Request: []*halproto.FteTraceUpdateRequest{req},
+		}
+	} else {
+		fmt.Printf("Argument required. Enable/Disable using --logs flag\n")
+		return
+	}
+
+	// HAL call
+	_, err = client.FteTraceUpdate(context.Background(), fteTraceUpdateReq)
+	if err != nil {
+		fmt.Printf("Set fte trace failed. %v\n", err)
+		return
+	}
+}
+
+func convDebugStatusStringToBool(str string) bool {
 	switch str {
 	case "on":
 		return true

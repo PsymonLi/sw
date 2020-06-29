@@ -66,7 +66,7 @@ ctx_t::extract_flow_key()
     pd_func_args.pd_get_object_from_flow_lkupid = &args;
     ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_GET_OBJ_FROM_FLOW_LKPID, &pd_func_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: Invalid obj id: {}, ret: {}", obj_id, ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: Invalid obj id: {}, ret: {}", obj_id, ret);
         return HAL_RET_L2SEG_NOT_FOUND;
     }
 
@@ -76,7 +76,7 @@ ctx_t::extract_flow_key()
         SDK_ASSERT_RETURN(cpu_rxhdr_->lkp_type != hal::FLOW_KEY_LOOKUP_TYPE_MAC, HAL_RET_ERR);
         use_vrf_ = svrf_ = (hal::vrf_t *)obj;
     } else {
-        HAL_TRACE_ERR("fte: Invalid obj id: {}", obj_id);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: Invalid obj id: {}", obj_id);
         return HAL_RET_ERR;
     }
 
@@ -111,7 +111,7 @@ ctx_t::extract_flow_key()
         break;
 
     default:
-        HAL_TRACE_ERR("Unsupported lkp_type {}", cpu_rxhdr_->lkp_type);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unsupported lkp_type {}", cpu_rxhdr_->lkp_type);
         return HAL_RET_INVALID_ARG;
     }
 
@@ -207,8 +207,8 @@ ctx_t::lookup_flow_objs (void)
         dep_handle_ = (dep_)?dep_->hal_handle:0;
     }
 
-    HAL_TRACE_VERBOSE("VRF:{} l2seg_id:{}, sl2seg:{:p} sep:{:p} dep:{:p}", key_.lkpvrf,
-            (sl2seg_)?sl2seg_->seg_id:0, (void *)sl2seg_, (void *)sep_, (void *)dep_);
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "VRF:{} l2seg_id:{}, sl2seg:{:p} sep:{:p} dep:{:p}", key_.lkpvrf,
+                          (sl2seg_)?sl2seg_->seg_id:0, (void *)sl2seg_, (void *)sep_, (void *)dep_);
 
     sep_handle_ = (sep_)?sep_->hal_handle:0;
     dep_handle_ = (dep_)?dep_->hal_handle:0;
@@ -248,8 +248,8 @@ ctx_t::init_ctxt_from_session(hal::session_t *sess)
         uint16_t id = feature_id(state->feature_name);
         if (id <= num_features_) {
             feature_state_[id].session_state = state;
-            HAL_TRACE_VERBOSE("fte: feature={} restored session state {:p}",
-                            state->feature_name, (void*)state);
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: feature={} restored session state {:p}",
+                                  state->feature_name, (void*)state);
         }
     }
 
@@ -310,11 +310,11 @@ ctx_t::lookup_session()
 {
     session_ = hal::session_lookup(key_, &role_);
     if (!session_) {
-        HAL_TRACE_VERBOSE("fte: session not found role:{}", role_);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: session not found role:{}", role_);
         return HAL_RET_SESSION_NOT_FOUND;
     }
 
-    HAL_TRACE_VERBOSE("fte: found existing session");
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: found existing session");
 
     init_ctxt_from_session(session_);
 
@@ -349,6 +349,8 @@ ctx_t::create_session()
         memcpy(l2_info.smac, smac, sizeof(l2_info.smac));
         memcpy(l2_info.dmac, dmac, sizeof(l2_info.dmac));
     }
+
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: create session");
 
     for (int i = 0; i < MAX_STAGES; i++) {
         iflow_[i]->set_key(key_);
@@ -426,11 +428,12 @@ static inline void fw_log(ipc_logger *logger, fwlog::FWEvent ev)
 {
     uint8_t *buf = logger->get_buffer(LOG_SIZE(ev));
     if (buf == NULL) {
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Null buffer return");
         return;
     }
 
     if (!ev.SerializeToArray(buf, LOG_SIZE(ev))) {
-        HAL_TRACE_ERR("Unable to serialize");
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Unable to serialize");
         return;
     }
 
@@ -465,12 +468,15 @@ ctx_t::add_flow_logging (hal::flow_key_t key, hal_handle_t sess_hdl,
     }
     t_fwlg.set_sipv4(key.sip.v4_addr);
     t_fwlg.set_dipv4(key.dip.v4_addr);
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "sip={}/dip={}", key.sip.v4_addr, key.dip.v4_addr);
 
     t_fwlg.set_ipprot(key.proto);
     if (key.proto == IP_PROTO_TCP || key.proto == IP_PROTO_UDP) {
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "proto={}/sport={}/dport={}", key.proto, key.sport,key.dport);
         t_fwlg.set_sport(key.sport);
         t_fwlg.set_dport(key.dport);
     } else if (key.proto == IP_PROTO_ICMP) {
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "proto=ICMP/type={}/code={}", key.icmp_type,key.icmp_code);
         t_fwlg.set_icmptype(key.icmp_type);
         t_fwlg.set_icmpcode(key.icmp_code);
         t_fwlg.set_icmpid(key.icmp_id);
@@ -634,36 +640,36 @@ ctx_t::update_flow_table()
             session_args.update_iflow = false;
         }
 
-        if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) { 
-            HAL_TRACE_DEBUG("fte::update_flow_table: iflow.{} key={} lkp_inst={} "
-                        "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
-                        "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
-                        "rw_idx={} tnnl_rw_act={} tnnl_rw_idx={} tnnl_vnid={} nat_sip={} "
-                        "nat_dip={} nat_sport={} nat_dport={} nat_type={} is_ing_proxy_mirror={} "
-                        "is_eg_proxy_mirror={} ing_mirror_session={} eg_mirror_session={} "
-                        "slif_en={} slif={} qos_class_en={} qos_class_id={} "
-                        "is_proxy_en={} is_proxy_mcast={} export_en={} export_id1={} "
-                        "export_id2={} export_id3={} export_id4={} conn_track_en={} "
-                        "session_idle_timeout={} smac={} dmac={} l2seg_id={}, skip_sfw_reval={} "
-                        "sfw_rule_id={}, sfw_action={}, sync={} sfw_is_alg={}",
-                        stage, iflow_cfg.key, iflow_attrs.lkp_inst, key_.lkpvrf,
-                        iflow_cfg.action, iflow_attrs.mac_sa_rewrite,
-                        iflow_attrs.mac_da_rewrite, iflow_attrs.ttl_dec, iflow_attrs.mcast_en,
-                        iflow_attrs.lport, iflow_attrs.qid_en, iflow_attrs.qtype, iflow_attrs.qid,
-                        iflow_attrs.rw_act, iflow_attrs.rw_idx, iflow_attrs.tnnl_rw_act,
-                        iflow_attrs.tnnl_rw_idx, iflow_attrs.tnnl_vnid, iflow_cfg.nat_sip,
-                        iflow_cfg.nat_dip, iflow_cfg.nat_sport, iflow_cfg.nat_dport,
-                        iflow_cfg.nat_type, iflow_cfg.is_ing_proxy_mirror, iflow_cfg.is_eg_proxy_mirror,
-                        iflow_cfg.ing_mirror_session, iflow_cfg.eg_mirror_session,
-                        iflow_attrs.expected_src_lif_en, iflow_attrs.expected_src_lif,
-                        iflow_attrs.qos_class_en, iflow_attrs.qos_class_id, iflow_attrs.is_proxy_en,
-                        iflow_attrs.is_proxy_mcast, iflow_attrs.export_en, iflow_attrs.export_id1,
-                        iflow_attrs.export_id2, iflow_attrs.export_id3, iflow_attrs.export_id4,
-                        session_cfg.conn_track_en, session_cfg.idle_timeout,
-                        ether_ntoa((struct ether_addr*)&iflow_cfg.l2_info.smac),
-                        ether_ntoa((struct ether_addr*)&iflow_cfg.l2_info.dmac),
-                        iflow_cfg.l2_info.l2seg_id, session_cfg.skip_sfw_reval, session_cfg.sfw_rule_id,
-                        session_cfg.sfw_action, session_cfg.syncing_session, session_cfg.alg);
+        if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte::update_flow_table: iflow.{} key={} lkp_inst={} "
+                            "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
+                            "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
+                            "rw_idx={} tnnl_rw_act={} tnnl_rw_idx={} tnnl_vnid={} nat_sip={} "
+                            "nat_dip={} nat_sport={} nat_dport={} nat_type={} is_ing_proxy_mirror={} "
+                            "is_eg_proxy_mirror={} ing_mirror_session={} eg_mirror_session={} "
+                            "slif_en={} slif={} qos_class_en={} qos_class_id={} "
+                            "is_proxy_en={} is_proxy_mcast={} export_en={} export_id1={} "
+                            "export_id2={} export_id3={} export_id4={} conn_track_en={} "
+                            "session_idle_timeout={} smac={} dmac={} l2seg_id={}, skip_sfw_reval={} "
+                            "sfw_rule_id={}, sfw_action={}, sync={} sfw_is_alg={}",
+                            stage, iflow_cfg.key, iflow_attrs.lkp_inst, key_.lkpvrf,
+                            iflow_cfg.action, iflow_attrs.mac_sa_rewrite,
+                            iflow_attrs.mac_da_rewrite, iflow_attrs.ttl_dec, iflow_attrs.mcast_en,
+                            iflow_attrs.lport, iflow_attrs.qid_en, iflow_attrs.qtype, iflow_attrs.qid,
+                            iflow_attrs.rw_act, iflow_attrs.rw_idx, iflow_attrs.tnnl_rw_act,
+                            iflow_attrs.tnnl_rw_idx, iflow_attrs.tnnl_vnid, iflow_cfg.nat_sip,
+                            iflow_cfg.nat_dip, iflow_cfg.nat_sport, iflow_cfg.nat_dport,
+                            iflow_cfg.nat_type, iflow_cfg.is_ing_proxy_mirror, iflow_cfg.is_eg_proxy_mirror,
+                            iflow_cfg.ing_mirror_session, iflow_cfg.eg_mirror_session,
+                            iflow_attrs.expected_src_lif_en, iflow_attrs.expected_src_lif,
+                            iflow_attrs.qos_class_en, iflow_attrs.qos_class_id, iflow_attrs.is_proxy_en,
+                            iflow_attrs.is_proxy_mcast, iflow_attrs.export_en, iflow_attrs.export_id1,
+                            iflow_attrs.export_id2, iflow_attrs.export_id3, iflow_attrs.export_id4,
+                            session_cfg.conn_track_en, session_cfg.idle_timeout,
+                            ether_ntoa((struct ether_addr*)&iflow_cfg.l2_info.smac),
+                            ether_ntoa((struct ether_addr*)&iflow_cfg.l2_info.dmac),
+                            iflow_cfg.l2_info.l2seg_id, session_cfg.skip_sfw_reval, session_cfg.sfw_rule_id,
+                            session_cfg.sfw_action, session_cfg.syncing_session, session_cfg.alg);
         }
     }
 
@@ -728,30 +734,30 @@ ctx_t::update_flow_table()
         }
 
         if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_debug)) {
-            HAL_TRACE_DEBUG("fte::update_flow_table: rflow.{} key={} lkp_inst={} "
-                        "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
-                        "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
-                        "rw_idx={} tnnl_rw_act={} tnnl_rw_idx={} tnnl_vnid={} nat_sip={} "
-                        "nat_dip={} nat_sport={} nat_dport={} nat_type={} slif_en={} slif={} "
-                        "ing_mirror_session={} eg_mirror_session={} "
-                        "qos_class_en={} qos_class_id={} export_en={} export_id1={} "
-                        "export_id2={} export_id3={} export_id4={} smac={} dmac={} l2_segid={}",
-                        stage, rflow_cfg.key, rflow_attrs.lkp_inst,
-                        rkey_.lkpvrf, rflow_cfg.action,
-                        rflow_attrs.mac_sa_rewrite,
-                        rflow_attrs.mac_da_rewrite, rflow_attrs.ttl_dec, rflow_attrs.mcast_en,
-                        rflow_attrs.lport, rflow_attrs.qid_en, rflow_attrs.qtype, rflow_attrs.qid,
-                        rflow_attrs.rw_act, rflow_attrs.rw_idx, rflow_attrs.tnnl_rw_act,
-                        rflow_attrs.tnnl_rw_idx, rflow_attrs.tnnl_vnid, rflow_cfg.nat_sip,
-                        rflow_cfg.nat_dip, rflow_cfg.nat_sport, rflow_cfg.nat_dport,
-                        rflow_cfg.nat_type, rflow_attrs.expected_src_lif_en, rflow_attrs.expected_src_lif,
-                        rflow_cfg.ing_mirror_session, rflow_cfg.eg_mirror_session,
-                        rflow_attrs.qos_class_en, rflow_attrs.qos_class_id,
-                        rflow_attrs.export_en, rflow_attrs.export_id1,
-                        rflow_attrs.export_id2, rflow_attrs.export_id3, rflow_attrs.export_id4,
-                        ether_ntoa((struct ether_addr*)&rflow_cfg.l2_info.smac),
-                        ether_ntoa((struct ether_addr*)&rflow_cfg.l2_info.dmac),
-                        rflow_cfg.l2_info.l2seg_id);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte::update_flow_table: rflow.{} key={} lkp_inst={} "
+                            "lkp_vrf={} action={} smac_rw={} dmac-rw={} "
+                            "ttl_dec={} mcast={} lport={} qid_en={} qtype={} qid={} rw_act={} "
+                            "rw_idx={} tnnl_rw_act={} tnnl_rw_idx={} tnnl_vnid={} nat_sip={} "
+                            "nat_dip={} nat_sport={} nat_dport={} nat_type={} slif_en={} slif={} "
+                            "ing_mirror_session={} eg_mirror_session={} "
+                            "qos_class_en={} qos_class_id={} export_en={} export_id1={} "
+                            "export_id2={} export_id3={} export_id4={} smac={} dmac={} l2_segid={}",
+                            stage, rflow_cfg.key, rflow_attrs.lkp_inst,
+                            rkey_.lkpvrf, rflow_cfg.action,
+                            rflow_attrs.mac_sa_rewrite,
+                            rflow_attrs.mac_da_rewrite, rflow_attrs.ttl_dec, rflow_attrs.mcast_en,
+                            rflow_attrs.lport, rflow_attrs.qid_en, rflow_attrs.qtype, rflow_attrs.qid,
+                            rflow_attrs.rw_act, rflow_attrs.rw_idx, rflow_attrs.tnnl_rw_act,
+                            rflow_attrs.tnnl_rw_idx, rflow_attrs.tnnl_vnid, rflow_cfg.nat_sip,
+                            rflow_cfg.nat_dip, rflow_cfg.nat_sport, rflow_cfg.nat_dport,
+                            rflow_cfg.nat_type, rflow_attrs.expected_src_lif_en, rflow_attrs.expected_src_lif,
+                            rflow_cfg.ing_mirror_session, rflow_cfg.eg_mirror_session,
+                            rflow_attrs.qos_class_en, rflow_attrs.qos_class_id,
+                            rflow_attrs.export_en, rflow_attrs.export_id1,
+                            rflow_attrs.export_id2, rflow_attrs.export_id3, rflow_attrs.export_id4,
+                            ether_ntoa((struct ether_addr*)&rflow_cfg.l2_info.smac),
+                            ether_ntoa((struct ether_addr*)&rflow_cfg.l2_info.dmac),
+                            rflow_cfg.l2_info.l2seg_id);
         }
     }
 
@@ -780,7 +786,7 @@ ctx_t::update_flow_table()
         }
     } else if (session_) {
         if (update_session_) {
-            //HAL_TRACE_DEBUG("Updating Session");
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "Updating Session");
             update_type = "update";
             // Update session if it already exists
             ret = hal::session_update(&session_args, session_);
@@ -803,7 +809,9 @@ ctx_t::update_flow_table()
     }
 
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("Session {} failed, ret = {}", update_type, ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "Session {} failed, ret = {}", update_type, ret);
+    } else {
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Session {} of session {} successful", update_type, session_handle);
     }
 
     if (sess_resp()) {
@@ -849,7 +857,7 @@ ctx_t::update_for_dnat(hal::flow_role_t role, const header_rewrite_info_t& heade
     dvrf_ =  hal::vrf_lookup_by_id(key->dvrf_id);
 
     if (dvrf_ == NULL) {
-        HAL_TRACE_ERR("DNAT vrf not found vrf={}", key->dvrf_id);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "DNAT vrf not found vrf={}", key->dvrf_id);
         return HAL_RET_VRF_NOT_FOUND;
     }
 
@@ -939,7 +947,7 @@ ctx_t::update_for_snat(hal::flow_role_t role, const header_rewrite_info_t& heade
         svrf_ =  hal::vrf_lookup_by_id(key->svrf_id);
 
         if (svrf_ == NULL) {
-            HAL_TRACE_ERR("SNAT vrf not found vrf={}", key->svrf_id);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "SNAT vrf not found vrf={}", key->svrf_id);
             return HAL_RET_VRF_NOT_FOUND;
         }
 #endif
@@ -973,6 +981,7 @@ ctx_t::update_for_snat(hal::flow_role_t role, const header_rewrite_info_t& heade
 
 void free_flow_miss_pkt(uint8_t * pkt)
 {
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "free flow miss packet");
     hal::free_to_slab(hal::HAL_SLAB_CPU_PKT, (pkt-sizeof(cpu_rxhdr_t)));
 }
 
@@ -992,11 +1001,11 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
     hal::pd::pd_func_args_t pd_func_args = {0};
 
     if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_verbose)) {
-        HAL_TRACE_VERBOSE("fte: txpkt len={} pkt={}", pkt_len, hex_str(pkt, (pkt_len >=128)?128:pkt_len));
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: txpkt len={} pkt={}", pkt_len, hex_str(pkt, (pkt_len >=128)?128:pkt_len));
     }
 
     if (txpkt_cnt_ >= MAX_QUEUED_PKTS) {
-        HAL_TRACE_ERR("fte: queued tx pkts exceeded {}", txpkt_cnt_);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: queued tx pkts exceeded {}", txpkt_cnt_);
         return HAL_RET_ERR;
     }
 
@@ -1014,6 +1023,7 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
         if ((cpu_rxhdr_->lkp_dir == hal::FLOW_DIR_FROM_UPLINK) && 
             (use_vrf_ || is_proxy_enabled() || tunnel_terminated() ||
              pkt_info->cpu_header.src_lif == HAL_LIF_CPU)) {
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: setting defaults for uplink -> host direction");
             pkt_info->cpu_header.src_lif = HAL_LIF_CPU;
             if (use_vrf_) {
                 hal::pd::pd_vrf_get_fromcpu_vlanid_args_t args;
@@ -1055,14 +1065,14 @@ ctx_t::queue_txpkt(uint8_t *pkt, size_t pkt_len,
     pkt_info->cb = cb;
 
     if (unlikely(hal::utils::hal_trace_level() >= ::utils::trace_verbose)) {
-        HAL_TRACE_VERBOSE("fte: feature={} queued txpkt lkp_inst={} src_lif={} vlan={} "
-                      "dest_lifq={} ring={} wring={} pkt={:p} len={}",
-                      feature_name_,
-                      pkt_info->p4plus_header.lkp_inst,
-                      pkt_info->cpu_header.src_lif,
-                      pkt_info->cpu_header.hw_vlan_id,
-                      pkt_info->lifq, pkt_info->ring_number, pkt_info->wring_type,
-                      pkt_info->pkt, pkt_info->pkt_len);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: feature={} queued txpkt lkp_inst={} src_lif={} vlan={} "
+                          "dest_lifq={} ring={} wring={} pkt={:p} len={}",
+                          feature_name_,
+                          pkt_info->p4plus_header.lkp_inst,
+                          pkt_info->cpu_header.src_lif,
+                          pkt_info->cpu_header.hw_vlan_id,
+                          pkt_info->lifq, pkt_info->ring_number, pkt_info->wring_type,
+                          pkt_info->pkt, pkt_info->pkt_len);
     }
 
     return HAL_RET_OK;
@@ -1114,6 +1124,9 @@ ctx_t::send_queued_pkts(hal::pd::cpupkt_ctxt_t* arm_ctx)
 
     for (int i = 0; i < txpkt_cnt_; i++) {
         txpkt_info_t *pkt_info = &txpkts_[i];
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte:: txpkt slif={} pkt={:p} len={}",
+                          pkt_info->cpu_header.src_lif,
+                          pkt_info->pkt, pkt_info->pkt_len);
         if ( istage_ > 0 ){
             pkt_info->p4plus_header.lkp_inst = 1;
         }
@@ -1136,11 +1149,12 @@ ctx_t::send_queued_pkts(hal::pd::cpupkt_ctxt_t* arm_ctx)
         pd_func_args.pd_cpupkt_send = &args;
         ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_SEND, &pd_func_args);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("fte: failed to transmit pkt, ret={}", ret);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to transmit pkt, ret={}", ret);
         }
         incr_inst_fte_tx_stats(pkt_info->pkt_len);
         // Issue a callback to free the packet
         if (pkt_info->cb) {
+	        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, " packet buffer/cpu_rx header {:#x} {:#x}", (long)cpu_rxhdr_, (long)pkt_);
             pkt_info->cb(pkt_info->pkt);
         }
     }
@@ -1162,9 +1176,9 @@ ctx_t::send_queued_pkts_new (hal::pd::cpupkt_ctxt_t* arm_ctx)
 
     for (int i = 0; i < txpkt_cnt_; i++) {
         txpkt_info_t *pkt_info = &txpkts_[i];
-        HAL_TRACE_DEBUG("fte:: txpkt slif={} pkt={:p} len={}",
-                        pkt_info->cpu_header.src_lif,
-                        pkt_info->pkt, pkt_info->pkt_len);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte:: txpkt slif={} pkt={:p} len={}",
+                          pkt_info->cpu_header.src_lif,
+                          pkt_info->pkt, pkt_info->pkt_len);
 
         if ( istage_ > 0 ){
             pkt_info->p4plus_header.lkp_inst = 1;
@@ -1190,7 +1204,7 @@ ctx_t::send_queued_pkts_new (hal::pd::cpupkt_ctxt_t* arm_ctx)
     pd_func_args.pd_cpupkt_send_new = &args;
     ret = hal::pd::hal_pd_call(hal::pd::PD_FUNC_ID_CPU_SEND_NEW, &pd_func_args);
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: failed to transmit pkt, ret={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to transmit pkt, ret={}", ret);
     }
 
     incr_inst_fte_tx_stats_batch(txpkt_cnt_);
@@ -1200,7 +1214,7 @@ ctx_t::send_queued_pkts_new (hal::pd::cpupkt_ctxt_t* arm_ctx)
 
 	// Issue a callback to free the packet
 	if (pkt_info->cb) {
-	    HAL_TRACE_VERBOSE(" packet buffer/cpu_rx header {:#x} {:#x}", (long)cpu_rxhdr_, (long)pkt_);
+	    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, " packet buffer/cpu_rx header {:#x} {:#x}", (long)cpu_rxhdr_, (long)pkt_);
 	    pkt_info->cb(pkt_info->pkt);
 	}
     }
@@ -1221,8 +1235,8 @@ ctx_t::apply_session_limit(void)
     int8_t                       tcp_flags;
     const fte::cpu_rxhdr_t      *cpurxhdr = cpu_rxhdr();
   
-    HAL_TRACE_VERBOSE("Security profile handle: {}", 
-                     hal::g_hal_state->customer_default_security_profile_hdl());
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Security profile handle: {}", 
+                          hal::g_hal_state->customer_default_security_profile_hdl());
     // check for flood protection limits
     switch (key_.flow_type) {
     case hal::FLOW_TYPE_V4: //intentional fall-through

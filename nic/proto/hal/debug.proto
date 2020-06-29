@@ -67,7 +67,8 @@ service Debug {
   rpc SessionCtrlUpdate (SessionCtrlRequestMsg) returns (types.Empty) {}    
 
   rpc OifListGet (OifListGetRequestMsg) returns (stream OifListGetResponseMsg) {}
-  rpc AgingLogs(AgingLogsRequestMsg) returns (types.Empty) {}
+  rpc AgingTraceUpdate(AgingTraceUpdateRequestMsg) returns (types.Empty) {}
+  rpc FteTraceUpdate(FteTraceUpdateRequestMsg) returns (types.Empty) {}
 }
 
 
@@ -515,12 +516,20 @@ message FlushLogsResponseMsg {
   repeated FlushLogsResponse    response = 1;
 }
 
-message AgingLogsRequest {
-  bool    aging_logs_enable = 1;
+message AgingTraceUpdateRequest {
+  bool    aging_trace_enable = 1;
 }
 
-message AgingLogsRequestMsg {
-  repeated AgingLogsRequest      request = 1;
+message AgingTraceUpdateRequestMsg {
+  repeated AgingTraceUpdateRequest      request = 1;
+}
+
+message FteTraceUpdateRequest {
+  bool    fte_trace_enable = 1;
+}
+
+message FteTraceUpdateRequestMsg {
+  repeated FteTraceUpdateRequest      request = 1;
 }
 
 // Clock Delta Op

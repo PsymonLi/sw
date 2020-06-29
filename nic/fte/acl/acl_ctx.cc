@@ -319,11 +319,11 @@ acl_rule_compare(const acl_rule_t *rule,
         rule->data.priority != other->data.priority ||
         rule->data.userdata != other->data.userdata) {
 #ifdef ACL_DEBUG
-        HAL_TRACE_DEBUG("returning false");
-        HAL_TRACE_DEBUG("cat_mask: {}, {} prio: {}, {} userdata: {:#x}, {:#x}",
-                rule->data.category_mask, other->data.category_mask,
-                rule->data.priority, other->data.priority,
-                (uint64_t) rule->data.userdata, (uint64_t) other->data.userdata);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "returning false");
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "cat_mask: {}, {} prio: {}, {} userdata: {:#x}, {:#x}",
+                            rule->data.category_mask, other->data.category_mask,
+                            rule->data.priority, other->data.priority,
+                            (uint64_t) rule->data.userdata, (uint64_t) other->data.userdata);
 #endif
         return false;
     }
@@ -331,14 +331,14 @@ acl_rule_compare(const acl_rule_t *rule,
     for (uint8_t fid = 0; fid < cfg->num_fields; fid++) {
         if (!acl_fld_compare(cfg->defs[fid].size, &rule->field[fid], &other->field[fid])) {
 #ifdef ACL_DEBUG
-            HAL_TRACE_DEBUG("returning false");
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "returning false");
 #endif
             return false;
         }
     }
 
 #ifdef ACL_DEBUG
-    HAL_TRACE_DEBUG("returning true");
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "returning true");
 #endif
     return true;
 }
@@ -430,7 +430,7 @@ acl_ctx_t::add_rule(const acl_ctx_t **ctxp, const acl_rule_t *rule)
 
     if (min_cost_fid < ctx->cfg_.num_fields) {
     #ifdef ACL_DEBUG
-        HAL_TRACE_DEBUG(" min cost field id: {}, min_cost {}", min_cost_fid, min_cost);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, " min cost field id: {}, min_cost {}", min_cost_fid, min_cost);
     #endif
         return ACL_TABLE_ADD_RULE(&ctx->cfg_, min_cost_fid, tablep, rule);
     }

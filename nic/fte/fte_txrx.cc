@@ -213,7 +213,7 @@ fte_softq_enqueue(uint8_t fte_id, softq_fn_t fn, void *data)
     inst_t *inst = g_inst_list[fte_id];
 
     if (inst == NULL) {
-        HAL_TRACE_ERR("fte: fte.{} is not initialized", fte_id);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: fte.{} is not initialized", fte_id);
         return HAL_RET_ERR;
     }
 
@@ -462,7 +462,7 @@ inst_t::asq_send(hal::pd::cpu_to_p4plus_header_t* cpu_header,
                  hal::pd::p4plus_to_p4_header_t* p4plus_header,
                  uint8_t* pkt, size_t pkt_len)
 {
-    HAL_TRACE_VERBOSE("fte: sending pkt to id: {}, {}", id_, hex_str(pkt, pkt_len));
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: sending pkt to id: {}, {}", id_, hex_str(pkt, pkt_len));
     return fte::impl::cpupkt_send(arm_ctx_, id_, cpu_header, p4plus_header, pkt, pkt_len);
 }
 
@@ -508,7 +508,7 @@ void inst_t::process_softq()
         npkt++;
     }
     if (npkt) {
-        HAL_TRACE_VERBOSE("Done processing softq: {}", npkt);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Done processing softq: {}", npkt);
     }
 }
 
@@ -808,7 +808,7 @@ void inst_t::process_arq()
     }
 
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: arm rx failed, ret={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: arm rx failed, ret={}", ret);
         return;
     }
 
@@ -819,7 +819,7 @@ void inst_t::process_arq()
      */
     if (bypass_fte_) {
 
-        HAL_TRACE_VERBOSE("CPU-PMD: Bypassing FTE processing!! pkt={:p}\n", pkt);
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "CPU-PMD: Bypassing FTE processing!! pkt={:p}\n", pkt);
 
         update_rx_stats(cpu_rxhdr, pkt_len);
         if (pkt) {
@@ -841,7 +841,7 @@ void inst_t::process_arq()
             // write the packet
             ret = ctx_->send_queued_pkts(arm_ctx_);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("fte: failed to send pkt ret={}", ret);
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
             }
 
 	    // The 'send_queued_pkts()' already updates tx stats.
@@ -862,13 +862,13 @@ void inst_t::process_arq()
         ret = ctx_->init(cpu_rxhdr, pkt, pkt_len, copied_pkt, iflow_, rflow_, feature_state_, num_features_);
         if (ret != HAL_RET_OK) {
             if (ret == HAL_RET_FTE_SPAN) {
-                HAL_TRACE_VERBOSE("fte: done processing span packet");
+                HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: done processing span packet");
                 continue;
             } else if (ret == HAL_RET_RETRANSMISSION) {
-                HAL_TRACE_VERBOSE("fte: retransmission packet");
+                HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: retransmission packet");
                 goto send;
             } else {
-                HAL_TRACE_ERR("fte: failed to init context, ret={}", ret);
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init context, ret={}", ret);
                 break;
             }
         }
@@ -879,7 +879,7 @@ void inst_t::process_arq()
         }
         ret = ctx_->process();
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("fte: failed to process, ret={}", ret);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to process, ret={}", ret);
 
             /*
              * We'll set the drop in this error case, so the cpupkt resources
@@ -892,7 +892,7 @@ send:
         // write the packets
         ret = ctx_->send_queued_pkts(arm_ctx_);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("fte: failed to send pkt ret={}", ret);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
         }
     } while(false);
 
@@ -923,7 +923,7 @@ void inst_t::process_arq_new ()
     }
 
     if (ret != HAL_RET_OK) {
-        HAL_TRACE_ERR("fte: arm rx failed, ret={}", ret);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: arm rx failed, ret={}", ret);
         return;
     }
 
@@ -942,7 +942,7 @@ void inst_t::process_arq_new ()
             cpu_rxhdr = cpupkt_batch.pkts[npkt].cpu_rxhdr;
             copied_pkt = cpupkt_batch.pkts[npkt].copied_pkt;
 
-            HAL_TRACE_VERBOSE("CPU-PMD: Bypassing FTE processing!! pkt={:p}\n", pkt);
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "CPU-PMD: Bypassing FTE processing!! pkt={:p}\n", pkt);
 
             if (pkt) {
 
@@ -961,7 +961,7 @@ void inst_t::process_arq_new ()
         // write the packet
         ret = ctx_->send_queued_pkts_new(arm_ctx_);
         if (ret != HAL_RET_OK) {
-            HAL_TRACE_ERR("fte: failed to send pkt ret={}", ret);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
         }
 
         // The 'send_queued_pkts()' already updates tx stats.
@@ -972,7 +972,7 @@ void inst_t::process_arq_new ()
 
     if (!cpupkt_batch.pktcount) return;
 
-    //HAL_TRACE_VERBOSE("Received {} packets", cpupkt_batch.pktcount);
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Received {} packets", cpupkt_batch.pktcount);
 
     for (npkt = 0; npkt < cpupkt_batch.pktcount; npkt++) {
 
@@ -985,8 +985,7 @@ void inst_t::process_arq_new ()
         copied_pkt = cpupkt_batch.pkts[npkt].copied_pkt;
         drop_pkt = false;
 
-        //HAL_TRACE_VERBOSE("npkt {} pkt_len {}, pkt {:p}", npkt, pkt_len, pkt);
-
+        HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "npkt {} pkt_len {}, pkt {:p}", npkt, pkt_len, pkt);
         do {
 
             // Update Rx Counters
@@ -996,9 +995,9 @@ void inst_t::process_arq_new ()
             ret = ctx_->init(cpu_rxhdr, pkt, pkt_len, copied_pkt, iflow_, rflow_, feature_state_, num_features_);
             if (ret != HAL_RET_OK) {
                 if (ret == HAL_RET_FTE_SPAN) {
-                    HAL_TRACE_VERBOSE("fte: done processing span packet");
+                    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: done processing span packet");
                 } else {
-                    HAL_TRACE_ERR("fte: failed to init context, ret={}", ret);
+                    HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to init context, ret={}", ret);
                 }
 
                 /*
@@ -1009,7 +1008,7 @@ void inst_t::process_arq_new ()
             }
 
             if (is_quiesced()) {
-                HAL_TRACE_ERR("FTE in Quiesce mode -- dropping packet");
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "FTE in Quiesce mode -- dropping packet");
                 drop_pkt = true;
                 ctx_->set_drop();
             }
@@ -1031,7 +1030,7 @@ void inst_t::process_arq_new ()
                 }
                 ret = ctx_->process();
                 if (ret != HAL_RET_OK) {
-                    HAL_TRACE_ERR("fte: failied to process, ret={}", ret);
+                    HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failied to process, ret={}", ret);
 
                     /*
                      * We'll set the drop in this error case, so the cpupkt resources
@@ -1044,13 +1043,13 @@ void inst_t::process_arq_new ()
             // write the packets
             ret = ctx_->send_queued_pkts(arm_ctx_);
             if (ret != HAL_RET_OK) {
-                HAL_TRACE_ERR("fte: failed to send pkt ret={}", ret);
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: failed to send pkt ret={}", ret);
             }
         } while(false);
 
         fte::impl::cfg_db_close();
     }
-    //HAL_TRACE_VERBOSE("Done processing {} packets", cpupkt_batch.pktcount);
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Done processing {} packets", cpupkt_batch.pktcount);
 
 }
 

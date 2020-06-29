@@ -92,7 +92,7 @@ flow_t::merge_header_rewrite_with_push(header_push_info_t &dst,
 hal_ret_t flow_t::header_pop(const header_pop_info_t &header_pop)
 {
     if (num_header_updates_ >= MAX_HEADER_UPDATES) {
-        HAL_TRACE_ERR("fte: header updates exceeded");
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
         return HAL_RET_ERR;
     }
 
@@ -110,7 +110,7 @@ hal_ret_t flow_t::header_push(const header_push_info_t &header_push)
     }
 
     if (num_header_updates_ >= MAX_HEADER_UPDATES) {
-        HAL_TRACE_ERR("fte: header updates exceeded");
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
         return HAL_RET_ERR;
     }
 
@@ -145,7 +145,7 @@ hal_ret_t flow_t::header_rewrite(const header_rewrite_info_t &header_rewrite)
     case HEADER_POP:
         // Allocate new update entry
         if (num_header_updates_ >= MAX_HEADER_UPDATES) {
-            HAL_TRACE_ERR("fte: header updates exceeded");
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: header updates exceeded");
             ret = HAL_RET_ERR;
             break;
         }
@@ -401,7 +401,7 @@ hal_ret_t flow_t::build_push_header_config(hal::flow_pgm_attrs_t &attrs,
         break;
 #endif /* PHASE2 */
     default:
-        HAL_TRACE_ERR("fte: invalid encap");
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: invalid encap");
         return HAL_RET_ERR;
     }
 
@@ -496,7 +496,7 @@ hal_ret_t flow_t::to_config(hal::flow_cfg_t &config, hal::flow_pgm_attrs_t &attr
         attrs.mcast_ptr = 0;
         if (attrs.mcast_en) {
             if (mcast_info_.mcast_ptr && mcast_info_.proxy_mcast_ptr) {
-                HAL_TRACE_ERR("fte: {} cannot set both mcast ptrs", __FUNCTION__);
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: {} cannot set both mcast ptrs", __FUNCTION__);
                 ret = HAL_RET_INVALID_OP;
                 goto end;
             }

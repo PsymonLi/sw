@@ -41,7 +41,8 @@ using debug::HbmCacheResponseMsg;
 using debug::SchedulerStatsResponse;
 using debug::SessionCtrlRequestMsg;
 using debug::SessionCtrlSpec;
-using debug::AgingLogsRequest;
+using debug::AgingTraceUpdateRequest;
+using debug::FteTraceUpdateRequest;
 
 namespace hal {
 
@@ -122,7 +123,8 @@ hal_ret_t xcvr_valid_check_enable(bool enable);
 // set span queue threshold
 hal_ret_t span_threshold_update(uint32_t span_threshold);
 
-hal_ret_t aging_logs_update(debug::AgingLogsRequest& req);
+hal_ret_t aging_trace_update(debug::AgingTraceUpdateRequest& req);
+hal_ret_t fte_trace_update(debug::FteTraceUpdateRequest& req);
 
 }    // namespace hal
 

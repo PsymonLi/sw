@@ -156,7 +156,7 @@ hal_ret_t add_feature(const std::string& name)
     feature_t *feature;
 
     if (feature_lookup_(name) != nullptr) {
-        HAL_TRACE_ERR("name={} - duplicate feature", name);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "name={} - duplicate feature", name);
         return HAL_RET_INVALID_ARG;
     }
 
@@ -167,7 +167,7 @@ hal_ret_t add_feature(const std::string& name)
     g_feature_map_[name] = feature;
     g_feature_list_[g_num_features_++] = feature;
 
-    HAL_TRACE_DEBUG("name={} id={}", name, feature->id);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "name={} id={}", name, feature->id);
 
     return HAL_RET_OK;
 }
@@ -181,16 +181,16 @@ hal_ret_t register_feature(const std::string& name,
 {
     feature_t *feature;
 
-    HAL_TRACE_DEBUG("name={}", name);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "name={}", name);
 
     if (!exec_handler) {
-        HAL_TRACE_ERR("fte: skipping invalid feature name={} - null exec_handler",
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: skipping invalid feature name={} - null exec_handler",
                       name);
         return HAL_RET_INVALID_ARG;
     }
 
     if ((feature = feature_lookup_(name)) == nullptr) {
-        HAL_TRACE_ERR("name={} - no such feature", name);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "name={} - no such feature", name);
         return HAL_RET_INVALID_ARG;
     }
 
@@ -199,8 +199,8 @@ hal_ret_t register_feature(const std::string& name,
     if (feature->state_size != 0) {
         // Previously registered
         if (feature->state_size != feature_info.state_size) {
-            HAL_TRACE_ERR("fte::{}: invalid state size update feature={} old={} new={}",
-                          __FUNCTION__, name, feature->state_size, feature_info.state_size);
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte::{}: invalid state size update feature={} old={} new={}",
+                              __FUNCTION__, name, feature->state_size, feature_info.state_size);
             return HAL_RET_INVALID_ARG;
         }
     } else {
@@ -226,10 +226,10 @@ hal_ret_t unregister_feature(const std::string& name)
 {
     feature_t *feature;
 
-    HAL_TRACE_DEBUG("fte::{}: name={}", __FUNCTION__, name);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte::{}: name={}", __FUNCTION__, name);
 
     if ((feature = feature_lookup_(name)) == nullptr) {
-        HAL_TRACE_ERR("fte::{}: name={} - no such feature", __FUNCTION__, name);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte::{}: name={} - no such feature", __FUNCTION__, name);
         return HAL_RET_INVALID_ARG;
     }
 
@@ -297,8 +297,8 @@ pipeline_invoke_exec_(pipeline_t *pipeline, ctx_t &ctx, uint8_t start,
 {
     pipeline_action_t rc = PIPELINE_CONTINUE;
 
-    HAL_TRACE_VERBOSE("Invoking pipeline with start: {} end: {} for ev {}",
-                    start, end, ctx.pipeline_event());
+    HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "Invoking pipeline with start: {} end: {} for ev {}",
+                          start, end, ctx.pipeline_event());
 
     if (ctx.pipeline_event() == FTE_SESSION_DELETE) {
         ctx.set_hal_cleanup(true);
@@ -307,7 +307,7 @@ pipeline_invoke_exec_(pipeline_t *pipeline, ctx_t &ctx, uint8_t start,
     for (int i = start; i < end; i++) {
         feature_t *feature = pipeline->features[i];
         if (feature == nullptr) {
-            HAL_TRACE_DEBUG("skip invalid feature {}", i);
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "skip invalid feature {}", i);
             continue;
         }
 
@@ -333,8 +333,8 @@ pipeline_invoke_exec_(pipeline_t *pipeline, ctx_t &ctx, uint8_t start,
             rc = feature->exec_handler(ctx);
         };
         if (rc != PIPELINE_CONTINUE) {
-            HAL_TRACE_VERBOSE("feature={} pipeline={} event={} action={}",
-                            feature->name, pipeline->name, ctx.pipeline_event(),
+            HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "feature={} pipeline={} event={} action={}",
+                                feature->name, pipeline->name, ctx.pipeline_event(),
                             rc);
             break;
         }
@@ -386,7 +386,7 @@ register_pipeline(const std::string& name, const sys::ForwardMode fwdmode,
         if (lifq.lif == HAL_LIF_CPU) {
             uint32_t id;
             if (CpucbId_Parse(qid, &id) == false) {
-                HAL_TRACE_ERR("plugins::parse_pipeline invalid qid {}", qid);
+                HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "plugins::parse_pipeline invalid qid {}", qid);
                 return HAL_RET_ERR;
             }
             lifq.qid = id;
@@ -394,11 +394,11 @@ register_pipeline(const std::string& name, const sys::ForwardMode fwdmode,
             lifq.qid = atoi(qid.c_str());
         }
     }
-    HAL_TRACE_DEBUG("name={} lifq={} fwdmode={}", name, lifq, fwdmode);
+    HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "name={} lifq={} fwdmode={}", name, lifq, fwdmode);
 
     if ((pipeline = pipeline_lookup_(fwdmode, lifq)) != nullptr) {
-        HAL_TRACE_ERR("fte: skipping duplicate pipline {} lifq={} old-name={}",
-                      name, lifq, pipeline->name);
+        HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: skipping duplicate pipline {} lifq={} old-name={}",
+                          name, lifq, pipeline->name);
         return HAL_RET_ENTRY_EXISTS;
     }
 
@@ -414,11 +414,11 @@ register_pipeline(const std::string& name, const sys::ForwardMode fwdmode,
     for (const std::string& fname: features_outbound) {
         feature_t *feature = feature_lookup_(fname);
         if (!feature) {
-            HAL_TRACE_VERBOSE("fte: unknown feature {} in outbound pipeline {} - skipping",
-                              fname, name);
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: unknown feature {} in outbound pipeline {} - skipping",
+                                  fname, name);
             continue;
         }
-        HAL_TRACE_DEBUG("fte: outbound pipeline feature {}/{}", name, fname);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: outbound pipeline feature {}/{}", name, fname);
         *features++ = feature;
         num_valid_feature += 1;
     }
@@ -428,11 +428,11 @@ register_pipeline(const std::string& name, const sys::ForwardMode fwdmode,
     for (const std::string& fname: features_inbound) {
         feature_t *feature = feature_lookup_(fname);
         if (!feature) {
-            HAL_TRACE_VERBOSE("fte: unknown feature {} in inbound pipeline {} - skipping",
-                              fname, name);
+            HAL_MOD_TRACE_VERBOSE(HAL_MOD_ID_FTE, "fte: unknown feature {} in inbound pipeline {} - skipping",
+                                  fname, name);
             continue;
         }
-        HAL_TRACE_DEBUG("fte: inbound pipeline feature {}/{}", name, fname);
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: inbound pipeline feature {}/{}", name, fname);
         *features++ = feature;
         num_valid_feature += 1;
     }
@@ -453,13 +453,13 @@ execute_pipeline(ctx_t &ctx)
     do {
         pipeline_t *pipeline = pipeline_lookup_(hal::g_hal_state->fwd_mode(), ctx.arm_lifq());
         if (!pipeline) {
-            HAL_TRACE_ERR("fte: pipeline not registered for lifq {} - ignoring packet",
-                          ctx.arm_lifq());
+            HAL_MOD_TRACE_ERR(HAL_MOD_ID_FTE, "fte: pipeline not registered for lifq {} - ignoring packet",
+                              ctx.arm_lifq());
             return HAL_RET_INVALID_ARG;
         }
 
-        HAL_TRACE_VERBOSE("fte: executing pipeline {} lifq={} dir={}",
-                        pipeline->name, pipeline->lifq, ctx.direction());
+        HAL_MOD_TRACE_DEBUG(HAL_MOD_ID_FTE, "fte: executing pipeline {} lifq={} dir={}",
+                            pipeline->name, pipeline->lifq, ctx.direction());
 
         iflow_start = 0;
         iflow_end = rflow_start = pipeline->num_features_outbound;

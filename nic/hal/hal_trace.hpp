@@ -5,6 +5,7 @@
 
 #include "nic/include/trace.hpp"
 #include "nic/sdk/include/sdk/base.hpp"
+#include "nic/include/globals.hpp"
 
 namespace hal {
 namespace utils {
@@ -12,6 +13,7 @@ namespace utils {
 extern ::utils::log *g_trace_logger;
 extern ::utils::log *g_link_trace_logger;
 extern ::utils::log *g_syslog_logger;
+extern uint32_t g_hal_mod_trace_en_bits;
 void trace_init(const char *name, uint64_t cpu_mask, bool sync_mode,
                 const char *persistent_trace_file,
                 const char *non_persistent_trace_file,
@@ -27,6 +29,7 @@ void link_trace_init(const char *name, uint64_t cpu_mask, bool sync_mode,
                      ::utils::trace_level_e non_persistent_trace_level);
 void link_trace_deinit(void);
 void trace_update(::utils::trace_level_e trace_level);
+void hal_mod_trace_update(uint32_t mod_id, bool enable);
 
 // wrapper APIs to get logger and syslogger
 static inline std::shared_ptr<logger>
@@ -83,6 +86,11 @@ hal_trace_flush (void)
     if (hal_link_logger()) {
         hal_link_logger()->flush();
     }
+}
+static inline bool
+hal_mod_trace_enabled (int mod_id)
+{
+    return (g_hal_mod_trace_en_bits & (0x1 << mod_id));
 }
 
 }    // utils
@@ -292,29 +300,36 @@ using hal::utils::hal_link_trace_level;
 // HAL module trace macros
 //------------------------------------------------------------------------------
 #define HAL_MOD_TRACE_ERR(mod_id, fmt, ...)                                    \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_ERR(fmt, ##__VA_ARGS__);                                \
         break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
     default:                                                                   \
         HAL_TRACE_ERR(fmt, ##__VA_ARGS__);                                     \
         break;                                                                 \
     }
 
 #define HAL_MOD_TRACE_ERR_NO_META(mod_id, fmt...)                              \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_ERR_NO_META(fmt);                                       \
         break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
     default:                                                                   \
         HAL_TRACE_ERR_NO_META(fmt);                                            \
         break;                                                                 \
     }
 
 #define HAL_MOD_TRACE_WARN(mod_id, fmt, ...)                                   \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_WARN(fmt, ##__VA_ARGS__);                               \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_WARN(fmt, ##__VA_ARGS__);                                \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_WARN(fmt, ##__VA_ARGS__);                                    \
@@ -322,9 +337,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_WARN_NO_META(mod_id, fmt...)                             \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_WARN_NO_META(fmt);                                      \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_WARN_NO_META(fmt);                                       \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_WARN_NO_META(fmt);                                           \
@@ -332,9 +352,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_INFO(mod_id, fmt, ...)                                   \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_INFO(fmt, ##__VA_ARGS__);                               \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_INFO(fmt, ##__VA_ARGS__);                                \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_INFO(fmt, ##__VA_ARGS__);                                    \
@@ -342,9 +367,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_INFO_NO_META(mod_id, fmt...)                             \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_INFO_NO_META(fmt);                                      \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_INFO_NO_META(fmt);                                       \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_INFO_NO_META(fmt);                                           \
@@ -352,9 +382,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_DEBUG(mod_id, fmt, ...)                                  \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_DEBUG(fmt, ##__VA_ARGS__);                              \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_DEBUG(fmt, ##__VA_ARGS__);                               \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_DEBUG(fmt, ##__VA_ARGS__);                                   \
@@ -362,9 +397,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_DEBUG_NO_META(mod_id, fmt...)                            \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_DEBUG_NO_META(fmt);                                     \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_DEBUG_NO_META(fmt);                                      \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_DEBUG_NO_META(fmt);                                          \
@@ -372,9 +412,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_VERBOSE(mod_id, fmt, ...)                                \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_VERBOSE(fmt, ##__VA_ARGS__);                            \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_VERBOSE(fmt, ##__VA_ARGS__);                             \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_VERBOSE(fmt, ##__VA_ARGS__);                                 \
@@ -382,9 +427,14 @@ using hal::utils::hal_link_trace_level;
     }
 
 #define HAL_MOD_TRACE_VERBOSE_NO_META(mod_id, fmt...)                          \
-    switch (mod_id) {                                                          \
+    switch ((int)mod_id) {                                                     \
     case sdk_mod_id_t::SDK_MOD_ID_LINK:                                        \
         HAL_LINK_TRACE_VERBOSE_NO_META(fmt);                                   \
+        break;                                                                 \
+    case hal_mod_id_t::HAL_MOD_ID_FTE:                                         \
+        if (unlikely(hal::utils::hal_mod_trace_enabled(mod_id))) {             \
+            HAL_TRACE_VERBOSE_NO_META(fmt);                                    \
+        }                                                                      \
         break;                                                                 \
     default:                                                                   \
         HAL_TRACE_VERBOSE_NO_META(fmt);                                        \

@@ -898,22 +898,40 @@ func (mr *MockDebugClientMockRecorder) OifListGet(ctx, in interface{}, opts ...i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OifListGet", reflect.TypeOf((*MockDebugClient)(nil).OifListGet), varargs...)
 }
 
-// AgingLogs mocks base method
-func (m *MockDebugClient) AgingLogs(ctx context.Context, in *AgingLogsRequestMsg, opts ...grpc.CallOption) (*Empty, error) {
+// AgingTraceUpdate mocks base method
+func (m *MockDebugClient) AgingTraceUpdate(ctx context.Context, in *AgingTraceUpdateRequestMsg, opts ...grpc.CallOption) (*Empty, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "AgingLogs", varargs...)
+	ret := m.ctrl.Call(m, "AgingTraceUpdate", varargs...)
 	ret0, _ := ret[0].(*Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AgingLogs indicates an expected call of AgingLogs
-func (mr *MockDebugClientMockRecorder) AgingLogs(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// AgingTraceUpdate indicates an expected call of AgingTraceUpdate
+func (mr *MockDebugClientMockRecorder) AgingTraceUpdate(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgingLogs", reflect.TypeOf((*MockDebugClient)(nil).AgingLogs), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgingTraceUpdate", reflect.TypeOf((*MockDebugClient)(nil).AgingTraceUpdate), varargs...)
+}
+
+// FteTraceUpdate mocks base method
+func (m *MockDebugClient) FteTraceUpdate(ctx context.Context, in *FteTraceUpdateRequestMsg, opts ...grpc.CallOption) (*Empty, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FteTraceUpdate", varargs...)
+	ret0, _ := ret[0].(*Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FteTraceUpdate indicates an expected call of FteTraceUpdate
+func (mr *MockDebugClientMockRecorder) FteTraceUpdate(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FteTraceUpdate", reflect.TypeOf((*MockDebugClient)(nil).FteTraceUpdate), varargs...)
 }
 
 // MockDebug_OifListGetClient is a mock of Debug_OifListGetClient interface
@@ -1502,17 +1520,30 @@ func (mr *MockDebugServerMockRecorder) OifListGet(arg0, arg1 interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OifListGet", reflect.TypeOf((*MockDebugServer)(nil).OifListGet), arg0, arg1)
 }
 
-// AgingLogs mocks base method
-func (m *MockDebugServer) AgingLogs(arg0 context.Context, arg1 *AgingLogsRequestMsg) (*Empty, error) {
-	ret := m.ctrl.Call(m, "AgingLogs", arg0, arg1)
+// AgingTraceUpdate mocks base method
+func (m *MockDebugServer) AgingTraceUpdate(arg0 context.Context, arg1 *AgingTraceUpdateRequestMsg) (*Empty, error) {
+	ret := m.ctrl.Call(m, "AgingTraceUpdate", arg0, arg1)
 	ret0, _ := ret[0].(*Empty)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AgingLogs indicates an expected call of AgingLogs
-func (mr *MockDebugServerMockRecorder) AgingLogs(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgingLogs", reflect.TypeOf((*MockDebugServer)(nil).AgingLogs), arg0, arg1)
+// AgingTraceUpdate indicates an expected call of AgingTraceUpdate
+func (mr *MockDebugServerMockRecorder) AgingTraceUpdate(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgingTraceUpdate", reflect.TypeOf((*MockDebugServer)(nil).AgingTraceUpdate), arg0, arg1)
+}
+
+// FteTraceUpdate mocks base method
+func (m *MockDebugServer) FteTraceUpdate(arg0 context.Context, arg1 *FteTraceUpdateRequestMsg) (*Empty, error) {
+	ret := m.ctrl.Call(m, "FteTraceUpdate", arg0, arg1)
+	ret0, _ := ret[0].(*Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FteTraceUpdate indicates an expected call of FteTraceUpdate
+func (mr *MockDebugServerMockRecorder) FteTraceUpdate(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FteTraceUpdate", reflect.TypeOf((*MockDebugServer)(nil).FteTraceUpdate), arg0, arg1)
 }
 
 // MockDebug_OifListGetServer is a mock of Debug_OifListGetServer interface

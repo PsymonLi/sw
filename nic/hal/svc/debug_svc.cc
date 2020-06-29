@@ -692,20 +692,36 @@ DebugServiceImpl::OifListGet(ServerContext *context,
      return Status::OK;
 }
 
-Status 
-DebugServiceImpl::AgingLogs(ServerContext* context, 
-                 const AgingLogsRequestMsg* req, 
+Status
+DebugServiceImpl::AgingTraceUpdate(ServerContext* context,
+                 const AgingTraceUpdateRequestMsg* req,
                  Empty* response)
 {
      uint32_t      i, nreqs = req->request_size();
 
-     HAL_TRACE_DEBUG("Received Aging Logs Update");
      if (nreqs == 0) {
          return Status(grpc::StatusCode::INVALID_ARGUMENT, "Empty Request");
      }
      for (i = 0; i < nreqs; i++) {
          auto spec = req->request(i);
-         hal::aging_logs_update(spec);
+         hal::aging_trace_update(spec);
+     }
+     return Status::OK;
+}
+
+Status
+DebugServiceImpl::FteTraceUpdate(ServerContext* context,
+                 const FteTraceUpdateRequestMsg* req,
+                 Empty* response)
+{
+     uint32_t      i, nreqs = req->request_size();
+
+     if (nreqs == 0) {
+         return Status(grpc::StatusCode::INVALID_ARGUMENT, "Empty Request");
+     }
+     for (i = 0; i < nreqs; i++) {
+         auto spec = req->request(i);
+         hal::fte_trace_update(spec);
      }
      return Status::OK;
 }
