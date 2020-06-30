@@ -132,7 +132,7 @@
 <ng-template #actionTemplate let-rowData>
 
   <div class="global-column-action-icon-container" fxLayout="row" fxLayoutGap="5px">
-    <button mat-icon-button>
+    <button mat-icon-button *ngIf="showEditButton(rowData)">
       <mat-icon matTooltip="Edit DSC profile" *roleGuard="'clusterdscprofile_update'"
                 class="global-table-action-icon"
                 (click)="expandRowRequest($event, rowData)">edit

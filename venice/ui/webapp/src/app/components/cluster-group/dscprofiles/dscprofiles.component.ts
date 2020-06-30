@@ -52,6 +52,8 @@ interface DSCProfileUiModel {
 export class DscprofilesComponent extends DataComponent implements OnInit {
   @ViewChild('dscProfilesTable') dscProfilesTable: PentableComponent;
 
+  DEFAULT_DSCPROFILE = 'default';
+
   dataObjects: ReadonlyArray<ClusterDSCProfile> = [];
   selectedDSCProfile: ClusterDSCProfile = null;
 
@@ -353,10 +355,17 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
     if (selectedRows.length === 0) {
       return false;
     }
+    const defaultProfile  = selectedRows.find( (rowData: ClusterDSCProfile) => {
+      return rowData.meta.name === this.DEFAULT_DSCPROFILE;
+      }
+    );
+    if ( defaultProfile) {
+      return false;
+    }
     const list = selectedRows.filter((rowData: ClusterDSCProfile) => {
       const uiData: DSCProfileUiModel = rowData._ui as DSCProfileUiModel;
       return uiData.associatedDSCS && uiData.associatedDSCS.length > 0;
-    }
+      }
     );
     return (list.length === 0);
   }
@@ -402,9 +411,22 @@ export class DscprofilesComponent extends DataComponent implements OnInit {
    * @param dscProfile:ClusterDSCProfile
    */
   showDeleteButton(dscProfile: ClusterDSCProfile): boolean {
+    // Per VS-2024, don't allow deleting 'default' profile
+    if (dscProfile.meta.name  ===  this.DEFAULT_DSCPROFILE) {
+      return false;
+    }
     // If dscProfile has associated DSC, we can not delete this dscProfile
     const uiData: DSCProfileUiModel = dscProfile._ui as DSCProfileUiModel;
     return (uiData && uiData.associatedDSCS && uiData.associatedDSCS.length > 0) ? false : true;
+  }
+
+  /**
+   * This API serves html template.
+   * @param dscProfile:ClusterDSCProfile
+   */
+  showEditButton (dscProfile: ClusterDSCProfile): boolean {
+    // user can update DSC profile
+    return true;
   }
 
   selectDSCProfile(event) {
