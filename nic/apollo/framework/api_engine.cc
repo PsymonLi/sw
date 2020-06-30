@@ -558,10 +558,11 @@ api_engine::count_api_msg_(obj_id_t obj_id, api_base *api_obj,
     // check which IPC endpoint needs what type of msg and increment
     // corresponding counters
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_id);
-    for (auto it = ipc_ep_list.begin();
-         (it != ipc_ep_list.end()) && (it->ipc_id != ipc_msg()->sender());
-         ++it) {
-        // atleast one IPC endpoint is potentially interested in this API msg
+    for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
+        if (it->ipc_id == ipc_msg()->sender()) {
+            continue;
+        }
+        // atleast one IPC endpoint is "potentially" interested in this API msg
         api_obj->set_circulate();
         if (batch_ctxt_.msg_map.find(it->ipc_id) != batch_ctxt_.msg_map.end()) {
             if (it->ntfn) {
@@ -630,9 +631,16 @@ api_engine::populate_api_msg_(api_base *api_obj, api_obj_ctxt_t *obj_ctxt) {
     // walk all IPC endpoints interested in this object and keep a copy
     // to be send in respective msg list
     api_obj_ipc_peer_list_t& ipc_ep_list = ipc_peer_list(obj_ctxt->obj_id);
-    for (auto it = ipc_ep_list.begin();
-         (it != ipc_ep_list.end()) && (it->ipc_id != ipc_msg()->sender());
-         ++it) {
+    for (auto it = ipc_ep_list.begin(); it != ipc_ep_list.end(); ++it) {
+        if (it->ipc_id == ipc_msg()->sender()) {
+            continue;
+        }
+        if ((it->ipc_id == (pds_ipc_id_t)core::PDS_THREAD_ID_ROUTING_CFG) &&
+            (ipc_msg()->sender() == core::PDS_THREAD_ID_ROUTING)) {
+            // block this combination
+            // TODO: move this out of api engine
+            continue;
+        }
         if (it->ntfn) {
             // add to notification msg list
             batch_ctxt_.msg_map[it->ipc_id].add_ntfn_msg(&msg);
