@@ -2,6 +2,8 @@ package vospkg
 
 import (
 	"context"
+	"os"
+	"os/exec"
 	"sync"
 	"testing"
 	"time"
@@ -75,10 +77,25 @@ func TestDiskUpdateOps(t *testing.T) {
 	fw := &fakeDiskUpdateWatchServer{ctx: cctx}
 	go srv.WatchDiskThresholdUpdates(&api.ListWatchOptions{}, fw)
 
+	// Create dummy dirs and files
+	tempDir := "./default.fwlogs/data"
+	os.MkdirAll(tempDir, os.ModePerm)
+	exec.Command("/bin/sh", "-c", "cp * "+tempDir+"/.").Output()
+
+	// Remove dummy dirs and files
+	defer func() {
+		os.RemoveAll(tempDir)
+	}()
+
 	// Test static threshold
 	paths := new(sync.Map)
-	paths.Store("./", 0.00001)
-	cancelFunc, err := inst.createDiskUpdateWatcher(paths, time.Second*2)
+	c := DiskMonitorConfig{
+		TenantName:               "default",
+		CombinedThresholdPercent: 0.00001,
+		CombinedBuckets:          []string{"fwlogs"},
+	}
+	paths.Store("", c)
+	cancelFunc, err := inst.createDiskUpdateWatcher(paths, time.Second*2, []string{"./"})
 	Assert(t, err == nil, "failed to create disk update watcher")
 
 	// Start monitor disks
@@ -89,7 +106,7 @@ func TestDiskUpdateOps(t *testing.T) {
 	Assert(t, event != nil, "received event is nil")
 	diskUpdate, ok := event.(*vosinternalprotos.DiskUpdate)
 	Assert(t, ok == true, "event is not a disk update")
-	Assert(t, diskUpdate.Status.Path == "./", "diskupdate path is not correct")
+	Assert(t, diskUpdate.Status.Path == "./", "diskupdate path is not correct", diskUpdate.Status.Path)
 	Assert(t, diskUpdate.Status.Size_ != 0, "diskupdate size is 0")
 	Assert(t, diskUpdate.Status.UsedByNamespace != 0, "diskupdate used is 0")
 	cancelFunc()
@@ -98,8 +115,13 @@ func TestDiskUpdateOps(t *testing.T) {
 	// We cant test events for dynamic threshold becuase its dependent on disk capacity.
 	// Calling this function for getting code coverage
 	paths = new(sync.Map)
-	paths.Store("./", float64(-1))
-	cancelFunc, err = inst.createDiskUpdateWatcher(paths, time.Second*2)
+	c = DiskMonitorConfig{
+		TenantName:               "default",
+		CombinedThresholdPercent: float64(-1),
+		CombinedBuckets:          []string{"fwlogs"},
+	}
+	paths.Store("", c)
+	cancelFunc, err = inst.createDiskUpdateWatcher(paths, time.Second*2, []string{"./"})
 	Assert(t, err == nil, "failed to create disk update watcher")
 	time.Sleep(time.Second * 3)
 
@@ -109,4 +131,5 @@ func TestDiskUpdateOps(t *testing.T) {
 	}
 	err = srv.WatchDiskThresholdUpdates(&opts, fw)
 	Assert(t, err != nil, "filtering is not supported")
+
 }

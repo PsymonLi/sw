@@ -343,9 +343,9 @@ func (h *httpHandler) debugConfigHandler() func(w http.ResponseWriter, req *http
 		switch r.Method {
 		case "GET":
 			config := map[string]interface{}{}
-			ths := map[string]float64{}
+			ths := map[string]DiskMonitorConfig{}
 			h.instance.bucketDiskThresholds.Range(func(k interface{}, v interface{}) bool {
-				ths[k.(string)] = v.(float64)
+				ths[k.(string)] = v.(DiskMonitorConfig)
 				return true
 			})
 			config[bucketDiskThresholdKey] = ths
@@ -438,12 +438,26 @@ func (h *httpHandler) updateBucketThresholdPaths(w http.ResponseWriter, config m
 			return
 		}
 		for p, v := range data {
-			t, ok := v.(float64)
+			t, ok := v.(map[string]interface{})
 			if !ok {
-				http.Error(w, "bucket disk threshold config should be in form map[string]float64", http.StatusBadRequest)
+				http.Error(w, "bucket disk threshold config should be in form map[string]DiskMonitorConfig", http.StatusBadRequest)
 				return
 			}
-			h.instance.bucketDiskThresholds.Store(p, t)
+
+			c := DiskMonitorConfig{}
+			for k, v := range t {
+				switch k {
+				case "buckets":
+					for _, b := range v.([]interface{}) {
+						c.CombinedBuckets = append(c.CombinedBuckets, b.(string))
+					}
+				case "tenant":
+					c.TenantName = v.(string)
+				case "threshold":
+					c.CombinedThresholdPercent = v.(float64)
+				}
+			}
+			h.instance.bucketDiskThresholds.Store(p, c)
 		}
 	}
 }

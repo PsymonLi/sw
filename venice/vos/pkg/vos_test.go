@@ -235,18 +235,15 @@ func TestOptions(t *testing.T) {
 	Assert(t, inst.bucketDiskThresholds != nil, "fwlogs bucket diskthreshold is missing")
 
 	dth := GetBucketDiskThresholds()
-	config := map[string]float64{}
 	dth.Range(func(k interface{}, v interface{}) bool {
-		config[k.(string)] = v.(float64)
+		Assert(t, k.(string) == "", "incorrect tenantName", k.(string))
+		dmc, ok := v.(DiskMonitorConfig)
+		Assert(t, ok, "incorrect type expected vospkg.DiskMonitorConfig")
+		Assert(t, len(dmc.CombinedBuckets) == 2, "incorrecy number of buckets", dmc.CombinedBuckets)
+		Assert(t, dmc.CombinedThresholdPercent == -1, "incorrect threshold", dmc.CombinedThresholdPercent)
+		Assert(t, dmc.TenantName == "", "incorrect tenant name", dmc.TenantName)
 		return true
 	})
-	Assert(t, len(config) == 2, "incorrect disk threshold arguments, expected /disk1/default.fwlogs, /disk2/default.fwlogs")
-	th, ok := config["/disk1/default.fwlogs"]
-	Assert(t, th == -1, "incorrect threshold")
-	Assert(t, ok, "fwlogs bucket threshold missing")
-	th, ok = config["/disk2/default.fwlogs"]
-	Assert(t, th == -1, "incorrect threshold")
-	Assert(t, ok, "fwlogs bucket threshold missing")
 }
 
 func TestGoMaxProcsSetting(t *testing.T) {

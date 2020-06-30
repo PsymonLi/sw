@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,53 +30,131 @@ const (
 	objstoreThreshold = 90
 )
 
-func isThresholdReached(currPath string, size uint64, thresholdPercent float64) (bool, uint64) {
+// DiskMonitorConfig represents Disk monitor configuration used by Vos for monitoring disk usage
+type DiskMonitorConfig struct {
+	// If tenant name is empty it will apply to all tenants
+	TenantName               string   `json:"tenant"`
+	CombinedBuckets          []string `json:"buckets"`
+	CombinedThresholdPercent float64  `json:"threshold"`
+}
+
+func newDiskMonitorConfig(tenantName string,
+	combinedThreshold float64, combinedBuckets ...string) DiskMonitorConfig {
+	return DiskMonitorConfig{
+		TenantName:               tenantName,
+		CombinedThresholdPercent: combinedThreshold,
+		CombinedBuckets:          combinedBuckets,
+	}
+}
+
+func isThresholdReached(basePath string,
+	c DiskMonitorConfig, size uint64, thresholdPercent float64, paths []string) (bool, uint64, error) {
 	var used uint64
+	tenantNames := []string{}
+	if c.TenantName != "" {
+		tenantNames = append(tenantNames, c.TenantName)
+	} else {
+		// List all the dirs under the basePath and extract tenant names from them.
+		dir, err := os.Open(basePath)
+		if err != nil {
+			return false, used, err
+		}
+		defer dir.Close()
 
-	dir, err := os.Open(currPath)
-	if err != nil {
-		return false, used
-	}
-	defer dir.Close()
+		files, err := dir.Readdir(-1)
+		if err != nil {
+			log.Errorf("monitor disk usage path %s, err %+v", basePath, err)
+			return false, 0, err
+		}
 
-	files, err := dir.Readdir(-1)
-	if err != nil {
-		log.Errorf("monitor disk usage path %s, err %+v", currPath, err)
-		return false, 0
-	}
-
-	for _, file := range files {
-		if file.IsDir() {
-			reached, tmp := isThresholdReached(fmt.Sprintf("%s/%s", currPath, file.Name()), size, thresholdPercent)
-			if reached {
-				return true, tmp
+		for _, file := range files {
+			if !file.IsDir() {
+				continue
 			}
-			used += tmp
-		} else {
-			used += uint64(file.Size())
-		}
 
-		p := (float64(used) / float64(size)) * 100
-		if p >= thresholdPercent {
-			log.Infof("disk threshold reached for namespace %s", currPath)
-			return true, used
+			for _, bucket := range c.CombinedBuckets {
+				if strings.Contains(file.Name(), bucket) {
+					tokens := strings.Split(file.Name(), ".")
+					if len(tokens) != 2 {
+						continue
+					}
+					tenantNames = append(tenantNames, tokens[0])
+				}
+			}
 		}
 	}
 
-	return false, used
+	var helper func(currPath string, c DiskMonitorConfig, size uint64, thresholdPercent float64) (bool, uint64, error)
+	helper = func(currPath string, c DiskMonitorConfig, size uint64, thresholdPercent float64) (bool, uint64, error) {
+		dir, err := os.Open(currPath)
+		if err != nil {
+			return false, used, err
+		}
+		defer dir.Close()
+
+		files, err := dir.Readdir(-1)
+		if err != nil {
+			log.Errorf("monitor disk usage path %s, err %+v", currPath, err)
+			return false, 0, err
+		}
+
+		for _, file := range files {
+			if file.IsDir() {
+				reached, tmp, err := helper(fmt.Sprintf("%s/%s", currPath, file.Name()), c, size, thresholdPercent)
+				if err != nil {
+					log.Errorf("error encountered while disk crawling %+v", err)
+					continue
+				}
+				if reached {
+					return true, tmp, nil
+				}
+				used += tmp
+			} else {
+				used += uint64(file.Size())
+			}
+
+			// Multiple the used size with total number of diskpaths, since we are going over only 1 disk.
+			temp := used * uint64(len(paths))
+
+			p := (float64(temp) / float64(size)) * 100
+			if p >= thresholdPercent {
+				log.Infof("disk threshold reached for namespace %s", currPath)
+				return true, temp, nil
+			}
+		}
+		return false, used, nil
+	}
+
+	for _, tn := range tenantNames {
+		for _, bucket := range c.CombinedBuckets {
+			currPath := filepath.Join(basePath, tn+"."+bucket)
+			reached, tmp, err := helper(currPath, c, size, thresholdPercent)
+			if err != nil {
+				log.Errorf("error encountered while disk crawling %+v", err)
+				continue
+			}
+			if reached {
+				return reached, tmp, nil
+			}
+		}
+	}
+
+	return false, used, nil
 }
 
 // disk usage of path/disk
-func diskUsage(path string, thresholdPercent float64) (bool, uint64, uint64, error) {
+func diskUsage(tenant string, c DiskMonitorConfig, paths []string) (bool, uint64, uint64, string, error) {
+	// No need to go over all the disks as they are replication of each other.
+	basePath := paths[0]
 	fs := syscall.Statfs_t{}
-	err := syscall.Statfs(path, &fs)
+	err := syscall.Statfs(basePath, &fs)
 	if err != nil {
-		log.Errorf("monitor disk usage path %s, err %+v", path, err)
-		return false, 0, 0, fmt.Errorf("monitor disk usage err:  %+v", err)
+		log.Errorf("monitor disk usage path %s, err %+v", basePath, err)
+		return false, 0, 0, basePath, fmt.Errorf("monitor disk usage err:  %+v", err)
 	}
 	all := fs.Blocks * uint64(fs.Bsize)
 	allInGB := all / bytesToGBConversionFactor
-	th := thresholdPercent
+	th := c.CombinedThresholdPercent
 	if th == -1 {
 		// calculate threshold percent dynamically based on the current disk size.
 		// This calculation assumes that disk is expanded in chunks of 500GB.
@@ -92,12 +172,12 @@ func diskUsage(path string, thresholdPercent float64) (bool, uint64, uint64, err
 		}
 	}
 
-	reached, used := isThresholdReached(path, all, th)
-	return reached, all, used, nil
+	reached, used, err := isThresholdReached(basePath, c, all, th, paths)
+	return reached, all, used, basePath, err
 }
 
 func (w *storeWatcher) monitorDisks(ctx context.Context,
-	monitorTimeout time.Duration, wg *sync.WaitGroup, paths *sync.Map) {
+	monitorTimeout time.Duration, wg *sync.WaitGroup, monitorConfig *sync.Map, paths []string) {
 	defer wg.Done()
 
 	for {
@@ -105,16 +185,16 @@ func (w *storeWatcher) monitorDisks(ctx context.Context,
 		case <-ctx.Done():
 			return
 		case <-time.After(monitorTimeout):
-			w.statDisk(paths)
+			w.statDisk(monitorConfig, paths)
 		}
 	}
 }
 
-func (w *storeWatcher) statDisk(paths *sync.Map) {
-	paths.Range(func(k interface{}, v interface{}) bool {
-		p := k.(string)
-		t := v.(float64)
-		reached, all, used, err := diskUsage(p, t)
+func (w *storeWatcher) statDisk(monitorConfig *sync.Map, paths []string) {
+	monitorConfig.Range(func(k interface{}, v interface{}) bool {
+		tenant := k.(string)
+		t := v.(DiskMonitorConfig)
+		reached, all, used, p, err := diskUsage(tenant, t, paths)
 		if err != nil {
 			return false
 		}

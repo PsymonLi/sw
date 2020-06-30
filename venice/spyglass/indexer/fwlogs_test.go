@@ -209,7 +209,12 @@ func stopKibana(t *testing.T) {
 func setupVos(t *testing.T, ctx context.Context, logger log.Logger, url string, credentialManagerChannel <-chan interface{}) {
 	go func() {
 		paths := new(sync.Map)
-		paths.Store("/disk1/default.fwlogs", 0.000001)
+		c := vospkg.DiskMonitorConfig{
+			TenantName:               "default",
+			CombinedThresholdPercent: 0.000001,
+			CombinedBuckets:          []string{"fwlogs"},
+		}
+		paths.Store("", c)
 		args := []string{globals.Vos, "server", "--address", fmt.Sprintf("%s:%s", url, globals.VosMinioPort), "/disk1"}
 		_, err := vospkg.New(ctx, false, url,
 			credentialManagerChannel,

@@ -48,6 +48,7 @@ const (
 	cpuDivisionFactor              = 6
 	defaultFlowlogsLifecycleConfig = `<LifecycleConfiguration><Rule><ID>expire-flowlogs</ID><Prefix></Prefix><Status>Enabled</Status>` +
 		`<Expiration><Days>30</Days></Expiration></Rule></LifecycleConfiguration>`
+	periodicDiskMonitorTime = time.Minute * 30
 )
 
 const (
@@ -195,12 +196,12 @@ func (i *instance) createBucket(bucket string, lifecycle string, addWatcher bool
 	return nil
 }
 
-func (i *instance) createDiskUpdateWatcher(paths *sync.Map, monitorPeriod time.Duration) (context.CancelFunc, error) {
+func (i *instance) createDiskUpdateWatcher(monitorConfig *sync.Map, monitorPeriod time.Duration, paths []string) (context.CancelFunc, error) {
 	watcher := &storeWatcher{bucket: "", client: nil, watchPrefixes: i.pfxWatcher}
 	i.watcherMap[diskUpdateWatchPath] = watcher
 	i.wg.Add(1)
 	monitorCtx, cancelFunc := context.WithCancel(i.ctx)
-	go watcher.monitorDisks(monitorCtx, monitorPeriod, &i.wg, paths)
+	go watcher.monitorDisks(monitorCtx, monitorPeriod, &i.wg, monitorConfig, paths)
 	return cancelFunc, nil
 }
 
@@ -337,7 +338,7 @@ func New(ctx context.Context, trace bool, testURL string, credentialsManagerChan
 		return nil, errors.Wrap(err, "failed to create buckets")
 	}
 
-	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds, time.Second*60)
+	_, err = inst.createDiskUpdateWatcher(inst.bucketDiskThresholds, periodicDiskMonitorTime, DiskPaths)
 	if err != nil {
 		log.Errorf("failed to start disk watcher (%+v)", err)
 		return nil, errors.Wrap(err, "failed to start disk watcher")
@@ -411,8 +412,8 @@ func GetBucketDiskThresholds() *sync.Map {
 	// Dynamic threshold calculation is needed for supporting dynamic disk expansion.
 	// Debug API "/debug/config" can be used for overriding threshold percent.
 	m := new(sync.Map)
-	m.Store(DiskPaths[0]+"/"+"default."+fwlogsBucketName, float64(-1))
-	m.Store(DiskPaths[1]+"/"+"default."+fwlogsBucketName, float64(-1))
+	c := newDiskMonitorConfig("", float64(-1), "fwlogs", "meta-fwlogs")
+	m.Store("", c)
 	return m
 }
 

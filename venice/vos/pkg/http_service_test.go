@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -275,8 +276,12 @@ func TestCredentialsHandler(t *testing.T) {
 
 func TestDebugConfigHandler(t *testing.T) {
 	paths := new(sync.Map)
-	paths.Store("/root/dummy_path1", 40.00)
-	paths.Store("/root/dummy_path2", 30.00)
+	c := DiskMonitorConfig{
+		TenantName:               "",
+		CombinedThresholdPercent: 40.00,
+		CombinedBuckets:          []string{"/root/dummy_path1", "/root/dummy_path2"},
+	}
+	paths.Store("", c)
 	fb := &mockBackend{}
 	inst := &instance{bucketDiskThresholds: paths}
 	inst.Init(fb)
@@ -302,21 +307,35 @@ func TestDebugConfigHandler(t *testing.T) {
 	th, ok := config[bucketDiskThresholdKey]
 	Assert(t, ok, "bucketDiskThreshold config is not present in /debug/config response, response:", th)
 	ths, ok := th.(map[string]interface{})
-	Assert(t, ok, "bucketDiskThreshold type is not map[string]interface{}, response:", th)
-	Assert(t, len(ths) == 2, "incorrect number of disk entries, response:", th)
-	for path, threshold := range ths {
-		if path == "/root/dummy_path1" {
-			Assert(t, threshold.(float64) == 40.00, "incorrect threshold value")
-		} else if path == "/root/dummy_path2" {
-			Assert(t, threshold.(float64) == 30.00, "incorrect threshold value")
-		} else {
-			Assert(t, false, "unknown path found in response ", path)
+	Assert(t, ok, "bucketDiskThreshold type is not map[string]interface{}, response:", th, reflect.TypeOf(th).String())
+	Assert(t, len(ths) == 1, "incorrect number of disk entries, response:", th)
+	for tenantName, dmc := range ths {
+		Assert(t, tenantName == "", "incorrect tenantName", tenantName)
+		for key, value := range dmc.(map[string]interface{}) {
+			if key == "buckets" {
+				Assert(t, len(value.([]interface{})) == 2, "incorrect number of buckets", key)
+				for _, b := range value.([]interface{}) {
+					temp := b.(string)
+					if temp != "/root/dummy_path1" && temp != "/root/dummy_path2" {
+						Assert(t, false, "incorrect path found")
+					}
+				}
+			} else if key == "tenant" {
+				Assert(t, value.(string) == "", "incorrect tenant name")
+			} else if key == "threshold" {
+				Assert(t, value.(float64) == 40.00, "incorrect threshold", value.(float64))
+			} else {
+				Assert(t, false, "unknown key found in response ", key)
+			}
 		}
 	}
 	reqBody, err := json.Marshal(map[string]interface{}{
-		bucketDiskThresholdKey: map[string]interface{}{
-			"/root/dummy_path1": 80.00,
-			"/root/dummy_path2": 80.00,
+		bucketDiskThresholdKey: map[string]DiskMonitorConfig{
+			"": DiskMonitorConfig{
+				TenantName:               "",
+				CombinedBuckets:          []string{"/root/dummy_path3", "/root/dummy_path4"},
+				CombinedThresholdPercent: 80.00,
+			},
 		},
 	})
 
@@ -335,14 +354,25 @@ func TestDebugConfigHandler(t *testing.T) {
 	Assert(t, ok, "bucketDiskThreshold config is not present in /debug/config response, response:", th)
 	ths, ok = th.(map[string]interface{})
 	Assert(t, ok, "bucketDiskThreshold type is not map[string]interface{}, response:", th)
-	Assert(t, len(ths) == 2, "incorrect number of disk entries, response:", th)
-	for path, threshold := range ths {
-		if path == "/root/dummy_path1" {
-			Assert(t, threshold.(float64) == 80.00, "incorrect threshold value")
-		} else if path == "/root/dummy_path2" {
-			Assert(t, threshold.(float64) == 80.00, "incorrect threshold value")
-		} else {
-			Assert(t, false, "unknown path found in response ", path)
+	Assert(t, len(ths) == 1, "incorrect number of disk entries, response:", th)
+	for tenantName, dmc := range ths {
+		Assert(t, tenantName == "", "incorrect tenantName", tenantName)
+		for key, value := range dmc.(map[string]interface{}) {
+			if key == "buckets" {
+				Assert(t, len(value.([]interface{})) == 2, "incorrect number of buckets", key)
+				for _, b := range value.([]interface{}) {
+					temp := b.(string)
+					if temp != "/root/dummy_path3" && temp != "/root/dummy_path4" {
+						Assert(t, false, "incorrect path found")
+					}
+				}
+			} else if key == "tenant" {
+				Assert(t, value.(string) == "", "incorrect tenant name")
+			} else if key == "threshold" {
+				Assert(t, value.(float64) == 80.00, "incorrect threshold", value.(float64))
+			} else {
+				Assert(t, false, "unknown key found in response ", key)
+			}
 		}
 	}
 }
