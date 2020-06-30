@@ -556,6 +556,7 @@ func (c *API) WatchTechSupport() {
 
 	if err != nil {
 		log.Error(errors.Wrapf(types.ErrTechSupportWatch, "Controller API: %s", err))
+		techSupportClient.Close()
 		return
 	}
 
@@ -565,7 +566,7 @@ func (c *API) WatchTechSupport() {
 		evt, err := stream.Recv()
 		if err != nil {
 			log.Error(errors.Wrapf(types.ErrTechSupportWatchExited, "Controller API: %s", err))
-			return
+			break
 		}
 		// We don't need to handle multiple Tech Support Events in the same context here. So using the first entry
 		eventType := evt.Events[0].EventType
@@ -615,6 +616,7 @@ func (c *API) WatchTechSupport() {
 		req.Status.URI = vosUri
 		c.sendTechSupportUpdate(techSupportAPIHandler, &req, tsproto.TechSupportRequestStatus_Completed)
 	}
+	techSupportClient.Close()
 }
 
 // closeConnections close connections
