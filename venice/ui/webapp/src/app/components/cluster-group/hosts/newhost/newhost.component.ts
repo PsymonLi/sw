@@ -504,7 +504,16 @@ export class NewhostComponent extends CreationForm<IClusterHost, ClusterHost> im
   }
 
   getObjectValues(): IClusterHost {
-    return this.newObject.getFormGroupValues();
+    const newClusterHost: IClusterHost = this.newObject.getFormGroupValues();
+    for (let i = 0; i < newClusterHost.spec.dscs.length; i++) {
+      if (newClusterHost.spec.dscs[i].id != null) {
+        newClusterHost.spec.dscs[i].id = newClusterHost.spec.dscs[i].id.trim();
+      }
+      if (newClusterHost.spec.dscs[i]['mac-address'] != null) {
+        newClusterHost.spec.dscs[i]['mac-address'] = newClusterHost.spec.dscs[i]['mac-address'].trim();
+      }
+    }
+    return newClusterHost;
   }
 
   onSaveFailure(isCreate: boolean) {

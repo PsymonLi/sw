@@ -30,7 +30,7 @@
           <div class="sgpolicy-summary-panel-content-label"> Propagation: </div>
           <div class="sgpolicy-summary-panel-content-value sgpolicy-summary-panel-content-value-warning"
                *ngIf="selectedPolicy?.status['propagation-status']['generation-id'] != selectedPolicy?.meta['generation-id']">
-            Policy not propagated</div>
+            Started propagating...</div>
           <div class="sgpolicy-summary-panel-content-value  sgpolicy-summary-panel-content-value-warning sgpolicy-summary-panel-content-value-link"
                *ngIf="selectedPolicy?.status['propagation-status']['generation-id'] == selectedPolicy?.meta['generation-id'] && selectedPolicy?.status['propagation-status'].pending>0"
                (click)="viewPendingNaplesList()"
