@@ -61,6 +61,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   currentSearchCriteria: string = '';
   fieldFormArray = new FormArray([]);
   eventArchiveQuery: IMonitoringArchiveQuery = {};
+  watchArchiveSubscription: Subscription;
 
   // EVENTS
   // Used for the table - when true there is a loading icon displayed
@@ -142,6 +143,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   archiveStatusMsg: string = '';
   anyQueryAfterRefresh: boolean = false;
   enableExport: boolean = true;
+  archiveQuery: MonitoringArchiveRequest;
 
   arrayDiffers: IterableDiffer<any>;
   requestStatus: MonitoringArchiveRequestStatus_status;
@@ -242,27 +244,40 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
     }
   }
 
+  getEmittedArchiveQuery(valueEmitted) {
+    this.archiveQuery = valueEmitted;
+    this.watchArchiveObject();
+  }
+
   private handleArchiveLogChange() {
-    if (this.exportedArchiveRequests.length >= this.currentArchReqLength) {
-      this.currentArchReqLength += (this.exportedArchiveRequests.length - this.currentArchReqLength);
-      this.firstElem = this.exportedArchiveRequests[0];
-      if (this.firstElem.status !== null) {
-        if (this.anyQueryAfterRefresh || this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
-          this.displayArchPanel = true;
+    if (this.exportedArchiveRequests.length >= this.currentArchReqLength && this.archiveQuery) {
+      let index = -1;
+      for (const archiveRequest of this.exportedArchiveRequests) {
+        if (archiveRequest.meta.name === this.archiveQuery.meta.name) {
+          index = this.exportedArchiveRequests.indexOf(archiveRequest);
         }
-        this.requestName = this.firstElem.meta.name;
-        if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
-          // disable the archive request button, show cancel
-          this.enableExport = false;
-          this.requestStatus = MonitoringArchiveRequestStatus_status.running;
-        } else if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.completed) {
-          // show download link
-          this.enableExport = true;
-          this.requestStatus = MonitoringArchiveRequestStatus_status.completed;
-          // enable the archive request button
-        } else {
-          this.enableExport = true;
-          this.requestStatus = this.firstElem.status.status;
+      }
+      if (index !== -1) {
+        this.currentArchReqLength += (this.exportedArchiveRequests.length - this.currentArchReqLength);
+        this.firstElem = this.exportedArchiveRequests[index];
+        if (this.firstElem.status !== null) {
+          if (this.anyQueryAfterRefresh || this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
+            this.displayArchPanel = true;
+          }
+          this.requestName = this.firstElem.meta.name;
+          if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
+            // disable the archive request button, show cancel
+            this.enableExport = false;
+            this.requestStatus = MonitoringArchiveRequestStatus_status.running;
+          } else if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.completed) {
+            // show download link
+            this.enableExport = true;
+            this.requestStatus = MonitoringArchiveRequestStatus_status.completed;
+            // enable the archive request button
+          } else {
+            this.enableExport = true;
+            this.requestStatus = this.firstElem.status.status;
+          }
         }
       }
     }
@@ -324,7 +339,11 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
   watchArchiveObject() {
     this.archiveRequestsEventUtility = new HttpEventUtility<MonitoringArchiveRequest>(MonitoringArchiveRequest);
     this.exportedArchiveRequests = this.archiveRequestsEventUtility.array;
-    const sub = this.monitoringService.WatchArchiveRequest({ 'field-selector': 'spec.type=event' }).subscribe(
+
+    if (this.watchArchiveSubscription) {
+      this.watchArchiveSubscription.unsubscribe();
+    }
+    this.watchArchiveSubscription = this.monitoringService.WatchArchiveRequest({ 'field-selector': 'spec.type=event' }).subscribe(
       (response) => {
         this.currentArchReqLength = this.exportedArchiveRequests.length;
         this.archiveRequestsEventUtility.processEvents(response);
@@ -335,7 +354,7 @@ export class EventstableComponent extends DataComponent implements OnInit, OnCha
       },
       this.controllerService.webSocketErrorHandler('Failed to get Event Archive Requests')
     );
-    this.subscriptions.push(sub);
+    this.subscriptions.push(this.watchArchiveSubscription);
   }
 
   getArchiveQuery(archQuer: IMonitoringArchiveQuery) {

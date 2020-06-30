@@ -1,4 +1,4 @@
-import { Component, ViewEncapsulation, Input } from '@angular/core';
+import { Component, ViewEncapsulation, Input, Output, EventEmitter } from '@angular/core';
 import { Utility } from '@app/common/Utility';
 import { CreationForm } from '../tableviewedit/tableviewedit.component';
 import { ControllerService } from '@app/services/controller.service';
@@ -21,6 +21,7 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
 
   @Input() archiveQuery: IMonitoringArchiveQuery = {};
   @Input() queryType: string = 'AuditEvent';
+  @Output() archiveQueryEmitter: EventEmitter<any> = new EventEmitter();
 
   validationMessage: string;
   archiveRequestsEventUtility: HttpEventUtility<MonitoringArchiveRequest>;
@@ -30,6 +31,7 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
   showTimerange: boolean = false;
   displayQuery: boolean = false;
   archiveQueryFormatted: string = '';
+  archiveSearchRequest: MonitoringArchiveRequest;
 
   constructor(protected controllerService: ControllerService,
     protected uiconfigsService: UIConfigsService,
@@ -109,7 +111,7 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
       'type': this.queryType,
       'query': this.archiveQuery
     };
-
+    this.archiveSearchRequest = archiveSearchRequestJSON;
     return this.monitoringService.AddArchiveRequest(archiveSearchRequestJSON);
   }
 
@@ -133,4 +135,12 @@ export class ExportLogsComponent extends CreationForm<IMonitoringArchiveRequest,
     }
     return true;
   }
+
+  onSaveSuccess(isCreate: boolean) {
+    if (isCreate === true) {
+      this.archiveQueryEmitter.emit(this.archiveSearchRequest);
+    }
+  }
+
+  onSaveFailure(isCreate: boolean) { }
 }

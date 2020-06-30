@@ -117,6 +117,8 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
   requestStatus: MonitoringArchiveRequestStatus_status;
   requestName: string = '';
   firstElem: MonitoringArchiveRequest = null;
+  archiveQuery: MonitoringArchiveRequest;
+  watchArchiveSubscription: Subscription;
 
   constructor(
     protected controllerService: ControllerService,
@@ -164,6 +166,7 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
         computeClass: () => this.shouldEnableButtons && this.enableExport ? '' : 'global-button-disabled',
         callback: () => {
           this.createNewObject();
+          this.displayArchPanel = false;
         }
       };
       buttons.push(exportButton);
@@ -199,27 +202,40 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
     }
   }
 
+  getEmittedArchiveQuery(valueEmitted) {
+    this.archiveQuery = valueEmitted;
+    this.watchArchiveObject();
+  }
+
   private handleArchiveLogChange() {
-    if (this.exportedArchiveRequests.length >= this.currentArchReqLength) {
-      this.currentArchReqLength += (this.exportedArchiveRequests.length - this.currentArchReqLength);
-      this.firstElem = this.exportedArchiveRequests[0];
-      if (this.firstElem.status !== null) {
-        if (this.anyQueryAfterRefresh || this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
-          this.displayArchPanel = true;
+    if (this.exportedArchiveRequests.length >= this.currentArchReqLength && this.archiveQuery) {
+      let index = -1;
+      for (const archiveRequest of this.exportedArchiveRequests) {
+        if (archiveRequest.meta.name === this.archiveQuery.meta.name) {
+          index = this.exportedArchiveRequests.indexOf(archiveRequest);
         }
-        this.requestName = this.firstElem.meta.name;
-        if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
-          // disable the archive request button
-          this.enableExport = false;
-          this.requestStatus = MonitoringArchiveRequestStatus_status.running;
-        } else if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.completed) {
-          // show download link
-          this.enableExport = true;
-          this.requestStatus = MonitoringArchiveRequestStatus_status.completed;
-          // enable the archive request button
-        } else {
-          this.enableExport = true;
-          this.requestStatus = this.firstElem.status.status;
+      }
+      if (index !== -1) {
+        this.currentArchReqLength += (this.exportedArchiveRequests.length - this.currentArchReqLength);
+        this.firstElem = this.exportedArchiveRequests[index];
+        if (this.firstElem.status !== null) {
+          if (this.anyQueryAfterRefresh || this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
+            this.displayArchPanel = true;
+          }
+          this.requestName = this.firstElem.meta.name;
+          if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.running || this.firstElem.status.status === null) {
+            // disable the archive request button
+            this.enableExport = false;
+            this.requestStatus = MonitoringArchiveRequestStatus_status.running;
+          } else if (this.firstElem.status.status === MonitoringArchiveRequestStatus_status.completed) {
+            // show download link
+            this.enableExport = true;
+            this.requestStatus = MonitoringArchiveRequestStatus_status.completed;
+            // enable the archive request button
+          } else {
+            this.enableExport = true;
+            this.requestStatus = this.firstElem.status.status;
+          }
         }
       }
     }
@@ -287,7 +303,10 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
   watchArchiveObject() {
     this.archiveRequestsAuditUtility = new HttpEventUtility<MonitoringArchiveRequest>(MonitoringArchiveRequest);
     this.exportedArchiveRequests = this.archiveRequestsAuditUtility.array;
-    const sub = this.monitoringService.WatchArchiveRequest({ 'field-selector': 'spec.type=auditevent' }).subscribe(
+    if (this.watchArchiveSubscription) {
+      this.watchArchiveSubscription.unsubscribe();
+    }
+    this.watchArchiveSubscription = this.monitoringService.WatchArchiveRequest({ 'field-selector': 'spec.type=auditevent' }).subscribe(
       (response) => {
         this.currentArchReqLength = this.exportedArchiveRequests.length;
         this.archiveRequestsAuditUtility.processEvents(response);
@@ -298,7 +317,7 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
       },
       this.controllerService.webSocketErrorHandler('Failed to get Audit Archive Requests')
     );
-    this.subscriptions.push(sub);
+    this.subscriptions.push(this.watchArchiveSubscription);
   }
 
   getArchiveQuery(archQuer: IMonitoringArchiveQuery) {

@@ -105,5 +105,6 @@
 
 <ng-template #createTemplate>
   <app-exportlogs (formClose)="creationFormClose()" [archiveQuery]="auditArchiveQuery"
-                  queryType="AuditEvent"></app-exportlogs>
+                  queryType="AuditEvent" (archiveQueryEmitter)="getEmittedArchiveQuery($event)">
+  </app-exportlogs>
 </ng-template>

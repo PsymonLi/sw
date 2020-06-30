@@ -237,5 +237,6 @@
 <ng-template #createTemplate>
   <app-exportlogs #exportLogsComponent (formClose)="creationFormClose()"
                   (archiveStatus)="showArchiveStatusPanel()"
-                  [archiveQuery]="eventArchiveQuery" queryType="Event"></app-exportlogs>
+                  [archiveQuery]="eventArchiveQuery" queryType="Event"
+                  (archiveQueryEmitter)="getEmittedArchiveQuery($event)"></app-exportlogs>
 </ng-template>
