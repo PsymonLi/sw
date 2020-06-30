@@ -409,13 +409,13 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
                   void *user_ctx,
                   uint32_t *ret_handle)
 {
-    pds_ret_t   ret = PDS_RET_INVALID_ARG;
+    pds_flow_data_t data;
+    pds_ret_t       ret = PDS_RET_INVALID_ARG;
 
     *ret_handle = 0;
     switch (expiry_type) {
 
     case EXPIRY_TYPE_SESSION: {
-        pds_flow_data_t         data;
         pds_flow_session_key_t  key = {0};
 
         if (expiry_log_en) {
@@ -450,23 +450,41 @@ expiry_fn_dflt_fn(uint32_t expiry_id,
 
     case EXPIRY_TYPE_CONNTRACK: {
         pds_conntrack_key_t     key = {0};
-        uint32_t                session_id = 0;
 
         if (expiry_log_en) {
             PDS_TRACE_DEBUG("conntrack_id %u expired", expiry_id);
         }
 
-        pds_conntrack_ctx_get(expiry_id, &session_id);
-        if (session_id) {
+        /* 
+         * Make an assumption that the conntrack entry has a direct
+         * association with a flow cache entry (and vice versa) without
+         * an intervening session. Try deleting the flow cache entry that way.
+         */
+        data.index_type = PDS_FLOW_SPEC_INDEX_CONNTRACK;
+        data.index = expiry_id;
+        ret = pds_flow_cache_entry_delete_by_flow_info(&data);
+        if (ret == PDS_RET_RETRY) {
+            break;
+        }
+        if (ret == PDS_RET_ENTRY_NOT_FOUND) {
+            uint64_t session_id = 0;
 
             /*
-             * Caution: recursion!
+             * So the assumption above was wrong, which means there was an
+             * association  between the conntrack entry and a session.
              */
-            ret = expiry_fn_dflt_fn(session_id, EXPIRY_TYPE_SESSION,
-                                    user_ctx, ret_handle);
-            *ret_handle = session_id;
-            if (ret == PDS_RET_RETRY) {
-                break;
+            pds_conntrack_ctx_get(expiry_id, &session_id);
+            if (pds_conntrack_ctx_session_handle_valid(session_id)) {
+
+                /*
+                 * Caution: recursion!
+                 */
+                ret = expiry_fn_dflt_fn(session_id, EXPIRY_TYPE_SESSION,
+                                        user_ctx, ret_handle);
+                *ret_handle = session_id;
+                if (ret == PDS_RET_RETRY) {
+                    break;
+                }
             }
         }
 

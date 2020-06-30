@@ -1,0 +1,17 @@
+
+test_log_file_create /var/log/pensando/iota_traffic_aging_chkpt_start_test.log
+skip_fte_flow_prog_set true
+
+#sleep and let any in-progress flow miss handling finish
+session_aging_sleep 8
+session_and_cache_clear_full 8388608
+
+session_aging_init
+session_aging_force_expired_ts false
+session_aging_accel_control false
+session_aging_tolerance_secs_set 0
+session_aging_tmo_artificial_long_set
+
+session_and_cache_traffic_chkpt_start
+skip_fte_flow_prog_set false
+

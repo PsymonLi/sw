@@ -193,8 +193,66 @@ testcases:
             dump_expected_count: 0
             log_file: /var/log/pensando/iota_combined_large_test.log
 
+    -   name    : conntrack_cache_aging_hw_large
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : conntrack_cache_aging_hw_large.txt
+            dump_file: /data/iota_conntrack_cache_large.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_conntrack_cache_large_test.log
+
     #=======================================
-    # Aging Tests (with traffic) ... still to come
+    # Aging Tests (with traffic)
     #=======================================
 
+    -   name    : clear_flow_set
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            clear_flow_set: True
+
+    -   name    : Flow_Gen
+        testcase: testcases.networking.config.flow_gen
+        enable  : True
+        args    :
+            max_dyn_flow_count : 64
+
+    -   name    : traffic_aging_chkpt_start
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : traffic_aging_chkpt_start.txt
+            log_file: /var/log/pensando/iota_traffic_aging_chkpt_start_test.log
+
+    -   name    : Data_Path_Test
+        testcase: testcases.networking.data_path
+        enable  : True
+        ignore  : True
+        iterators :
+            type     : nested
+            vnic_type : ['L3']
+            nat       : ['no','yes']
+            proto     : ['UDP', 'TCP']
+            pyld_size : [64]
+            flow_type : ['dynamic']
+            bidir     : ['yes']
+        args    :
+            flow_cnt  : 2
+            pkt_cnt   : 1
+            skip_flow_hit_check : True
+
+    -   name    : traffic_aging_chkpt_end
+        testcase: testcases.networking.aging
+        enable  : True
+        args    :
+            test_dir: /nic/etc/test_scripts
+            test    : traffic_aging_chkpt_end.txt
+            dump_file: /data/iota_traffic_chkpt_end.log
+            dump_sym: SrcIP
+            dump_expected_count: 0
+            log_file: /var/log/pensando/iota_traffic_aging_chkpt_end_test.log
 

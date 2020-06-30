@@ -28,6 +28,7 @@
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/test/api/utils/base.hpp"
 #include "nic/apollo/api/include/athena/pds_base.h"
+#include "nic/apollo/api/include/athena/pds_flow_cache.h"
 #include "script_parser.hpp"
 #include "nic/include/ftl_dev_if.hpp"
 #include "nic/apollo/api/include/athena/pds_conntrack.h"
@@ -450,6 +451,11 @@ public:
     bool session_assoc_conntrack_id(void) { return session_assoc_conntrack_id_; }
 
     void create_id_map_insert(uint32_t id);
+    void create_id_map_override(uint32_t num_entries)
+    {
+        SDK_ASSERT(!create_map_with_ids());
+        rte_atomic32_set(&create_count_, num_entries);
+    }
     void create_id_map_find_erase(uint32_t id);
     uint32_t create_id_map_size(void);
     void create_id_map_empty_check(void);
@@ -614,6 +620,29 @@ private:
 
     enum ftl_dev_if::ftl_qtype     qtype;
     ftl_dev_if::lif_attr_metrics_t base;
+};
+
+/**
+ * FTL table metrics
+ */
+class ftl_table_metrics_t
+{
+public:
+    ftl_table_metrics_t()
+    {
+        base = {0};
+    }
+
+    pds_ret_t baseline(void);
+    uint64_t num_entries(void) const;
+    uint64_t delta_num_entries(void) const;
+
+    void show(bool latest = true) const;
+
+private:
+    pds_ret_t refresh(pds_flow_stats_t& m) const;
+
+    pds_flow_stats_t            base;
 };
 
 /**

@@ -42,14 +42,15 @@ def parse_args(tc):
     #==============================================================
     # init cmd options
     #==============================================================
-    tc.vnic_type  = 'L3'
-    tc.nat        = 'no'
-    tc.pyld_size  = 64
-    tc.proto      = 'UDP'
-    tc.bidir      = 'no'
-    tc.flow_type  = 'dynamic'
-    tc.flow_cnt   = 1
-    tc.pkt_cnt    = 2
+    tc.vnic_type           = 'L3'
+    tc.nat                 = 'no'
+    tc.pyld_size           = 64
+    tc.proto               = 'UDP'
+    tc.bidir               = 'no'
+    tc.flow_type           = 'dynamic'
+    tc.flow_cnt            = 1
+    tc.pkt_cnt             = 2
+    tc.skip_flow_hit_check = False
 
     #==============================================================
     # update non-default cmd options
@@ -78,12 +79,15 @@ def parse_args(tc):
     if hasattr(tc.args, 'pkt_cnt'):
         tc.pkt_cnt = tc.args.pkt_cnt
 
+    if hasattr(tc.args, 'skip_flow_hit_check'):
+        tc.skip_flow_hit_check = tc.args.skip_flow_hit_check
+
     api.Logger.info('vnic_type: {}, nat: {}, pyld_size: {} '
                     'proto: {}, bidir: {}, flow_type: {} '
-                    'flow_cnt: {}, pkt_cnt: {}'
+                    'flow_cnt: {}, pkt_cnt: {} skip_flow_hit_check: {}'
                     .format(tc.vnic_type, tc.nat, tc.pyld_size,
                     tc.proto, tc.bidir, tc.flow_type,
-                    tc.flow_cnt, tc.pkt_cnt))
+                    tc.flow_cnt, tc.pkt_cnt, tc.skip_flow_hit_check))
 
 
 def skip_curr_test(tc):
@@ -461,7 +465,8 @@ def Trigger(tc):
                 pkt_gen.set_icmp_code(flow.icmp_code)
 
             # Calculate the difference of flow cache hit count before and after sending pkt
-            flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
+            if not tc.skip_flow_hit_check:
+                flow_hit_count_before = utils.get_flow_hit_count(tc.bitw_node_name)
 
             find_match = utils.match_dynamic_flows(tc, tc.vnic_id, flow)
 
@@ -471,6 +476,9 @@ def Trigger(tc):
             if not verify:
                 api.Logger.error("ERROR: flow is not installed in flow cache")
                 return api.types.status.FAILURE
+
+            if tc.skip_flow_hit_check:
+                continue
 
             # The difference of flow cache hit count shoule be equal to
             # 2 * (tc.pkt_cnt - NUM_FIRST_PKT_PER_FLOW) for s2h and h2s

@@ -38,6 +38,7 @@ static pds_flow_expiry_fn_t aging_expiry_dflt_fn;
  */
 static aging_tolerance_t    session_tolerance(EXPIRY_TYPE_SESSION);
 static aging_metrics_t      session_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_SESSION);
+static ftl_table_metrics_t  session_ftl_metrics;
 
 const aging_tolerance_t&
 session_tolerance_get(void)
@@ -408,6 +409,35 @@ done:
            SESSION_CREATE_RET_VALIDATE(cache_ret);
 }
 
+bool
+session_and_cache_traffic_chkpt_start(test_vparam_ref_t vparam)
+{
+    session_metrics.baseline();
+    session_ftl_metrics.baseline();
+    session_tolerance.reset(UINT32_MAX);
+    session_tolerance.using_fte_indices(true);
+
+    TEST_LOG_INFO("Current active FTL entries: %" PRIu64 "\n",
+                  session_ftl_metrics.num_entries());
+    return true;
+}
+
+bool
+session_and_cache_traffic_chkpt_end(test_vparam_ref_t vparam)
+{
+    uint64_t    actual = session_ftl_metrics.delta_num_entries();
+    uint32_t    expected = vparam.expected_num();
+
+    if (expected) {
+        TEST_LOG_INFO("Test param expected active FTL entries: %u vs actual: %" 
+                      PRIu64 "\n", expected, actual);
+    } else {
+        TEST_LOG_INFO("Delta active FTL entries: %" PRIu64 "\n", actual);
+    }
+    session_tolerance.create_id_map_override(actual);
+    return true;
+}
+
 pds_ret_t
 session_aging_expiry_fn(uint32_t expiry_id,
                         pds_flow_age_expiry_type_t expiry_type,
@@ -639,12 +669,21 @@ session_assoc_conntrack_id_set(test_vparam_ref_t vparam)
 }
 
 bool
+session_aging_sleep(test_vparam_ref_t vparam)
+{
+    sleep(vparam.expected_num(1));
+    return true;
+}
+
+bool
 session_aging_metrics_show(test_vparam_ref_t vparam)
 {
     aging_metrics_t scanner_metrics(ftl_dev_if::FTL_QTYPE_SCANNER_SESSION);
     aging_metrics_t poller_metrics(ftl_dev_if::FTL_QTYPE_POLLER);
     aging_metrics_t timestamp_metrics(ftl_dev_if::FTL_QTYPE_MPU_TIMESTAMP);
+    ftl_table_metrics_t ftl_metrics;
 
+    ftl_metrics.show();
     scanner_metrics.show();
     poller_metrics.show();
     timestamp_metrics.show();

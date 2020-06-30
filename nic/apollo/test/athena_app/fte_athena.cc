@@ -626,10 +626,15 @@ dump_l2_stats (pds_l2_flow_stats_t *stats)
                          stats->table_remove_lvl[i]);
     }
 }
-static void
-dump_stats (pds_flow_stats_t *stats)
+void
+fte_dump_flow_stats (const pds_flow_stats_t *stats,
+                     FILE *fp)
 {
-    STATS_DUMP_LOG("\nPrinting Flow cache statistics\n");
+    FILE *save_stats_fp = g_stats_fp;
+
+    if (fp) {
+        g_stats_fp = fp;
+    }
     STATS_DUMP_LOG("Insert %lu, Insert_fail_dupl %lu, Insert_fail %lu, "
                     "Insert_fail_recirc %lu\n"
                     "Remove %lu, Remove_not_found %lu, Remove_fail %lu\n"
@@ -665,6 +670,7 @@ dump_stats (pds_flow_stats_t *stats)
                          i, stats->table_insert_lvl[i],
                          stats->table_remove_lvl[i]);
     }
+    g_stats_fp = save_stats_fp;
     return;
 }
 
@@ -701,33 +707,34 @@ accumulate_l2_stats (pds_l2_flow_stats_t *stats)
 }
 
 void
-accumulate_stats (pds_flow_stats_t *stats)
+accumulate_stats (pds_flow_stats_t *accum_stats,
+                  const pds_flow_stats_t *stats)
 {
-    g_flow_stats.api_insert += stats->api_insert;
-    g_flow_stats.api_insert_duplicate += stats->api_insert_duplicate;
-    g_flow_stats.api_insert_fail += stats->api_insert_fail;
-    g_flow_stats.api_insert_recirc_fail += stats->api_insert_recirc_fail;
-    g_flow_stats.api_remove += stats->api_remove;
-    g_flow_stats.api_remove_not_found += stats->api_remove_not_found;
-    g_flow_stats.api_remove_fail += stats->api_remove_fail;
-    g_flow_stats.api_update += stats->api_update;
-    g_flow_stats.api_update_fail += stats->api_update_fail;
-    g_flow_stats.api_get += stats->api_get;
-    g_flow_stats.api_get_fail += stats->api_get_fail;
-    g_flow_stats.api_reserve += stats->api_reserve;
-    g_flow_stats.api_reserve_fail += stats->api_reserve_fail;
-    g_flow_stats.api_release += stats->api_release;
-    g_flow_stats.api_release_fail += stats->api_release_fail;
+    accum_stats->api_insert += stats->api_insert;
+    accum_stats->api_insert_duplicate += stats->api_insert_duplicate;
+    accum_stats->api_insert_fail += stats->api_insert_fail;
+    accum_stats->api_insert_recirc_fail += stats->api_insert_recirc_fail;
+    accum_stats->api_remove += stats->api_remove;
+    accum_stats->api_remove_not_found += stats->api_remove_not_found;
+    accum_stats->api_remove_fail += stats->api_remove_fail;
+    accum_stats->api_update += stats->api_update;
+    accum_stats->api_update_fail += stats->api_update_fail;
+    accum_stats->api_get += stats->api_get;
+    accum_stats->api_get_fail += stats->api_get_fail;
+    accum_stats->api_reserve += stats->api_reserve;
+    accum_stats->api_reserve_fail += stats->api_reserve_fail;
+    accum_stats->api_release += stats->api_release;
+    accum_stats->api_release_fail += stats->api_release_fail;
 
-    g_flow_stats.table_entries += stats->table_entries;
-    g_flow_stats.table_collisions += stats->table_collisions;
-    g_flow_stats.table_insert += stats->table_insert;
-    g_flow_stats.table_remove += stats->table_remove;
-    g_flow_stats.table_read += stats->table_read;
-    g_flow_stats.table_write += stats->table_write;
+    accum_stats->table_entries += stats->table_entries;
+    accum_stats->table_collisions += stats->table_collisions;
+    accum_stats->table_insert += stats->table_insert;
+    accum_stats->table_remove += stats->table_remove;
+    accum_stats->table_read += stats->table_read;
+    accum_stats->table_write += stats->table_write;
     for (int i = 0; i < PDS_FLOW_TABLE_MAX_RECIRC; i++) {
-         g_flow_stats.table_insert_lvl[i] += stats->table_insert_lvl[i];
-         g_flow_stats.table_remove_lvl[i] += stats->table_remove_lvl[i];
+         accum_stats->table_insert_lvl[i] += stats->table_insert_lvl[i];
+         accum_stats->table_remove_lvl[i] += stats->table_remove_lvl[i];
     }
     return;
 }
@@ -866,11 +873,11 @@ dump_conntrack_entry(FILE *fp,
                      const pds_conntrack_info_t *info)
 
 {
-    uint32_t    handle;
+    uint64_t    handle;
 
     pds_conntrack_ctx_get(key->conntrack_id, &handle);
-    CONNTRACK_DUMP_LOG("ID:%u flow_type:%s flow_state:%s handle:%u timestamp:%u\n",
-                       key->conntrack_id,
+    CONNTRACK_DUMP_LOG("ID:%u flow_type:%s flow_state:%s handle:%" PRIu64
+                       " timestamp:%u\n", key->conntrack_id,
                        test::athena_app::flowtype_str_get(info->spec.data.flow_type),
                        test::athena_app::flowstate_str_get(info->spec.data.flow_state),
                        handle, info->status.timestamp);
@@ -979,6 +986,24 @@ get_port_n_rx_queues (const uint16_t port)
 }
 
 pds_ret_t
+fte_get_flow_stats(pds_flow_stats_t *stats)
+{
+    pds_ret_t   ret = PDS_RET_OK;
+
+    memset(stats, 0, sizeof(*stats));
+    for (int i = 0; i < FTE_MAX_CORES; i++) {
+         memset(&flow_stats[i], 0, sizeof(pds_flow_stats_t));
+         ret = pds_flow_cache_stats_get(i, &flow_stats[i]);
+         if (ret != PDS_RET_OK) {
+             PDS_TRACE_ERR("Stats get failed for core#%u\n", i);
+             break;
+         }
+         accumulate_stats(stats, &flow_stats[i]);
+    }
+    return ret;
+}
+
+pds_ret_t
 fte_dump_flow_stats(zmq_msg_t *rx_msg,
                     zmq_msg_t *tx_msg)
 {
@@ -1022,17 +1047,9 @@ fte_dump_flow_stats(zmq_msg_t *rx_msg,
         }
     }
 
-    memset(&g_flow_stats, 0, sizeof(pds_flow_stats_t));
-    for (int i = 0; i < FTE_MAX_CORES; i++) {
-         memset(&flow_stats[i], 0, sizeof(pds_flow_stats_t));
-         if (pds_flow_cache_stats_get(i, &flow_stats[i])
-             == PDS_RET_OK) {
-             accumulate_stats(&flow_stats[i]);
-         } else {
-             PDS_TRACE_ERR("Stats get failed for core#%u\n", i);
-         }
-    }
-    dump_stats(&g_flow_stats);
+    fte_get_flow_stats(&g_flow_stats);
+    STATS_DUMP_LOG("\nPrinting Flow cache statistics\n");
+    fte_dump_flow_stats(&g_flow_stats);
     STATS_DUMP_LOG("\n Printing L2 Flow Stats \n");
 
     memset(&g_l2_flow_stats, 0, sizeof(pds_l2_flow_stats_t));

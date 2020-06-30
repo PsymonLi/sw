@@ -32,6 +32,9 @@ using namespace sdk::table;
 #define IS_INDEX_TYPE_SESSION(type)         \
     ((pds_flow_spec_index_type_t)(type) == PDS_FLOW_SPEC_INDEX_SESSION)
     
+#define IS_INDEX_TYPE_CONNTRACK(type)       \
+    ((pds_flow_spec_index_type_t)(type) == PDS_FLOW_SPEC_INDEX_CONNTRACK)
+
 extern "C" {
 
 static ftl_base *ftl_table;
@@ -84,6 +87,58 @@ pds_flow6_appdata2str (void *appdata)
     return str;
 }
 
+static inline pds_ret_t
+pds_flow_ctx_set(pds_flow_spec_index_type_t type,
+                 uint32_t index,
+                 uint64_t handle)
+{
+    if (IS_INDEX_TYPE_SESSION(type)) {
+        return pds_flow_session_ctx_set(index, handle);
+    }
+    if (IS_INDEX_TYPE_CONNTRACK(type)) {
+        return pds_conntrack_ctx_set(index, handle);
+    }
+    return PDS_RET_INVALID_ARG;
+}
+
+static inline pds_ret_t
+pds_flow_ctx_get(pds_flow_spec_index_type_t type,
+                 uint32_t index,
+                 uint64_t *ret_handle)
+{
+    if (IS_INDEX_TYPE_SESSION(type)) {
+        return pds_flow_session_ctx_get(index, ret_handle);
+    }
+    if (IS_INDEX_TYPE_CONNTRACK(type)) {
+        return pds_conntrack_ctx_get(index, ret_handle);
+    }
+    return PDS_RET_INVALID_ARG;
+}
+
+static inline void
+pds_flow_ctx_clr(pds_flow_spec_index_type_t type,
+                 uint32_t index)
+{
+    if (IS_INDEX_TYPE_SESSION(type)) {
+        pds_flow_session_ctx_clr(index);
+    } else if (IS_INDEX_TYPE_CONNTRACK(type)) {
+        pds_conntrack_ctx_clr(index);
+    }
+}
+
+static inline void
+pds_flow_ctx_move(pds_flow_spec_index_type_t type,
+                  uint32_t index,
+                  uint64_t handle,
+                  bool move_complete)
+{
+    if (IS_INDEX_TYPE_SESSION(type)) {
+        pds_flow_session_ctx_move(index, handle, move_complete);
+    } else if (IS_INDEX_TYPE_CONNTRACK(type)) {
+        pds_conntrack_ctx_move(index, handle, move_complete);
+    }
+}
+
 static sdk_ret_t
 flow_cache_entry_setup_key (flow_hash_entry_t *entry,
                             pds_flow_key_t *key)
@@ -128,7 +183,7 @@ pds_flow_cache_create (pds_cinit_params_t *params)
         return ret;
     }
 
-    ret = (sdk_ret_t)pds_conntrack_ctx_init();
+    ret = (sdk_ret_t)pds_conntrack_ctx_init(params);
     if (ret != SDK_RET_OK) {
         PDS_TRACE_ERR("Conntrack context init failed with ret %u\n", ret);
         return ret;
@@ -190,11 +245,10 @@ pds_flow_cache_entry_create (pds_flow_spec_t *spec)
     params.entry = &entry;
     params.thread_id = thread_id_;
     ret = ftl_table->insert(&params);
-    if ((ret == SDK_RET_OK) && IS_INDEX_TYPE_SESSION(index_type)) {
-        //PDS_TRACE_VERBOSE("session_ctx create session_id %u handle 0x% "
-        //                  PRIx64, index, params.handle.tou64());
-        ret = (sdk_ret_t)pds_flow_session_ctx_set(index,
-                                                  params.handle.tou64());
+    if (ret == SDK_RET_OK) {
+        SDK_ASSERT(params.handle.tou64() & PDS_CONNTRACK_CTX_CACHE_HANDLE_MASK);
+        ret = (sdk_ret_t)pds_flow_ctx_set(index_type, index,
+                                          params.handle.tou64());
         if (ret != SDK_RET_OK) {
             params.movecb = ftl_table_entry_move;
             ftl_table->remove(&params);
@@ -281,19 +335,14 @@ pds_flow_cache_entry_update (pds_flow_spec_t *spec)
     ftlv6_set_index_type(&entry, index_type);
     ret = ftl_table->update(&params);
     if (ret == SDK_RET_OK) {
-        //PDS_TRACE_VERBOSE("session_ctx update session_id %u handle 0x%"
-        //                  PRIx64, index, params.handle.tou64());
         if ((index != old_index) || (index_type != old_type)) {
-            if (IS_INDEX_TYPE_SESSION(old_type)) {
-                pds_flow_session_ctx_clr(old_index);
-            }
-            if (IS_INDEX_TYPE_SESSION(index_type)) {
-                ret = (sdk_ret_t)pds_flow_session_ctx_set(index,
-                                                          params.handle.tou64());
-                if (ret != SDK_RET_OK) {
-                    params.movecb = ftl_table_entry_move;
-                    ftl_table->remove(&params);
-                }
+            pds_flow_ctx_clr(old_type, old_index);
+            SDK_ASSERT(params.handle.tou64() & PDS_CONNTRACK_CTX_CACHE_HANDLE_MASK);
+            ret = (sdk_ret_t)pds_flow_ctx_set(index_type, index,
+                                              params.handle.tou64());
+            if (ret != SDK_RET_OK) {
+                params.movecb = ftl_table_entry_move;
+                ftl_table->remove(&params);
             }
         }
     }
@@ -307,10 +356,8 @@ ftl_table_entry_move (base_table_entry_t *base_entry,
                       bool move_complete)
 {
     flow_hash_entry_t *entry = (flow_hash_entry_t *)base_entry;
-    if (IS_INDEX_TYPE_SESSION(entry->get_idx_type())) {
-        uint32_t session_id = entry->get_idx();
-        pds_flow_session_ctx_move(session_id, new_handle.tou64(), move_complete);
-    }
+    pds_flow_ctx_move((pds_flow_spec_index_type_t)entry->get_idx_type(),
+                      entry->get_idx(), new_handle.tou64(), move_complete);
 }
 
 pds_ret_t
@@ -339,9 +386,8 @@ pds_flow_cache_entry_delete (pds_flow_key_t *key)
     params.movecb = ftl_table_entry_move;
     ret = ftl_table->remove(&params);
     if (ret == SDK_RET_OK) {
-        if (IS_INDEX_TYPE_SESSION(entry.get_idx_type())) {
-            pds_flow_session_ctx_clr(entry.get_idx());
-        }
+        pds_flow_ctx_clr((pds_flow_spec_index_type_t)entry.get_idx_type(),
+                         entry.get_idx());
     }
     return (pds_ret_t) ret;
 }
@@ -359,22 +405,18 @@ pds_flow_cache_entry_delete_by_flow_info (pds_flow_data_t *data)
         PDS_TRACE_ERR("flow data is null");
         return PDS_RET_INVALID_ARG;
     }
-    if (!IS_INDEX_TYPE_SESSION(data->index_type)) {
-        return PDS_RET_INVALID_ARG;
-    }
     params.entry = &entry;
     params.thread_id = thread_id_;
 
     do {
-        ret = pds_flow_session_ctx_get(data->index, &handle);
-        if (ret == PDS_RET_ENTRY_NOT_FOUND) {
+        ret = pds_flow_ctx_get(data->index_type, data->index, &handle);
+        if ((ret == PDS_RET_ENTRY_NOT_FOUND) ||
+            (IS_INDEX_TYPE_CONNTRACK(data->index_type) && 
+             !pds_conntrack_ctx_cache_handle_valid(handle))) {
 
-            // This is a soft error so no need to log;
-            // either session was never mapped to cache, or was already deleted.
-            return PDS_RET_OK;
+            // This is a soft error so no need to log.
+            return PDS_RET_ENTRY_NOT_FOUND;
         }
-        //PDS_TRACE_VERBOSE("delete_by_flow_info session id %u handle 0x%"
-        //                  PRIx64, info->spec.data.index, handle);
         params.handle.tohandle(handle);
         ret = (pds_ret_t) ftl_table->get_with_handle(&params);
         if (retry_count != EXPIRY_RETRY_COUNT)
@@ -396,7 +438,7 @@ pds_flow_cache_entry_delete_by_flow_info (pds_flow_data_t *data)
     /*
      * Other errors imply HW/SW out of sync and are really not recoverable.
      */
-    pds_flow_session_ctx_clr(data->index);
+    pds_flow_ctx_clr((pds_flow_spec_index_type_t)data->index_type, data->index);
     if (ret != PDS_RET_OK) {
         PDS_TRACE_ERR("Failed to get key for index %u handle 0x%" PRIx64,
                       data->index, handle);

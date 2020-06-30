@@ -16,6 +16,8 @@
 #include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_age.h"
 
+typedef struct pds_flow_stats_t pds_flow_stats_t;
+
 namespace fte_ath {
 
 // FIXME: opt_data size is fixed to 4 bytes
@@ -50,8 +52,11 @@ pds_ret_t fte_dump_flows(const char *fname,
                          bool append);
 pds_ret_t fte_dump_flows(zmq_msg_t *rx_msg = nullptr,
                          zmq_msg_t *tx_msg = nullptr);
+pds_ret_t fte_get_flow_stats(pds_flow_stats_t *stats);
 pds_ret_t fte_dump_flow_stats(zmq_msg_t *rx_msg = nullptr,
                               zmq_msg_t *tx_msg = nullptr);
+void fte_dump_flow_stats (const pds_flow_stats_t *stats,
+                          FILE *fp = nullptr);
 pds_ret_t fte_dump_sessions(const char *fname,
                             bool append,
                             uint32_t start_idx = 0,

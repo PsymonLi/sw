@@ -10,6 +10,7 @@
 //----------------------------------------------------------------------------
 #include "nic/sdk/include/sdk/base.hpp"
 #include "nic/apollo/test/api/utils/base.hpp"
+#include "nic/apollo/api/include/athena/pds_init.h"
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
 #include "nic/apollo/api/impl/athena/pds_conntrack_ctx.hpp"
 #include "nic/apollo/test/athena/api/flow_session_info/utils.hpp"
@@ -30,12 +31,15 @@ protected:
     flow_session_info_test() {}
     virtual ~flow_session_info_test() {}
     void SetUp() {
+        pds_cinit_params_t init_params;
         num_create = 0;
         num_update = 0;
         num_read = 0;
         num_delete = 0;
         num_entries = 0;
-        pds_conntrack_ctx_init();
+        memset(&init_params, 0, sizeof(init_params));
+        init_params.flow_age_pid = getpid();
+        pds_conntrack_ctx_init(&init_params);
     }
     void TearDown() {
         pds_conntrack_ctx_fini();

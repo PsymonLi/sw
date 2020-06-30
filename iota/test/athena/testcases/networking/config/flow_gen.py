@@ -886,6 +886,13 @@ def GetFlows(flows_req):
     return flows_resp
 
 
+def ClearFlowSet():
+    flow_set = api.GetTestsuiteAttr("FlowSet") 
+    if flow_set is not None:
+        api.SetTestsuiteAttr("FlowSet", None)
+        del flow_set
+    return api.types.status.SUCCESS
+
 def Setup(tc):
 
     global max_dyn_flow_cnt

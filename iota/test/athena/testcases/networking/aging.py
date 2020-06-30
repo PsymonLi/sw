@@ -3,6 +3,7 @@ import iota.harness.api as api
 import iota.harness.infra.store as store
 import iota.test.athena.utils.athena_client as client
 import iota.test.athena.utils.athena_app as athena_app_utils
+import iota.test.athena.testcases.networking.config.flow_gen as flow_gen 
 from iota.harness.infra.glopts import GlobalOptions
 # from apollo.config.store import client as EzAccessStoreClient
 
@@ -14,16 +15,18 @@ def Setup(tc):
                     tc.node_nic_pairs))
     return api.types.status.SUCCESS
 
-def scriptExec(tc):
+def ScriptExec(tc):
     if GlobalOptions.dryrun:
         return api.types.status.SUCCESS
+    if not hasattr(tc.args, "test"):
+        return api.types.status.SUCCESS
+
     for node, nic in tc.node_nic_pairs:
         api.Logger.info("Running test %s on (%s, %s) ..." % (tc.args.test, 
                                                             node, nic))
         client.ScriptExecCommand(node, nic, tc, tc.args.test_dir, tc.args.test,
                                  getattr(tc.args, "log_file", None))
     return api.types.status.SUCCESS
-
 
 def Trigger(tc):
     for node, nic in tc.node_nic_pairs:
@@ -39,7 +42,10 @@ def Trigger(tc):
                             node, nic))
             return (ret)
 
-    ret = scriptExec(tc)
+    if getattr(tc.args, "clear_flow_set", False):
+        flow_gen.ClearFlowSet()
+
+    ret = ScriptExec(tc)
     if ret != api.types.status.SUCCESS:
         return api.types.status.FAILURE
 
@@ -71,6 +77,9 @@ def VerifyDumpCount(tc):
     return api.types.status.SUCCESS
 
 def Verify(tc):
+    if not hasattr(tc.args, "test"):
+        return api.types.status.SUCCESS
+
     if tc.resp is None:
         return api.types.status.FAILURE
 

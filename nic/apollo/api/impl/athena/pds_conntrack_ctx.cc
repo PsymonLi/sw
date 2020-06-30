@@ -21,7 +21,7 @@
 
 /*
  * Connection tracking context holds a backpointer from conntrack entry to its
- * corresponding conntrack info entry (a 1-to-1 mapping).
+ * flow cache entry (a 1-to-1 mapping).
  *
  * Moving the context outside of conntrack results in shorter write time
  * and, since SW is the only component reading/writing the context,
@@ -48,7 +48,7 @@
  * Fields arrangement intended to minimize memory consumption
  */
 typedef struct {
-    uint32_t            handle;
+    uint64_t            handle;
 } __attribute__((packed)) ctx_entry_t;
 
 typedef struct {
@@ -74,7 +74,7 @@ public:
         fini();
     }
 
-    pds_ret_t init(void);
+    pds_ret_t init(pds_cinit_params_t *params);
     void fini(void);
 
     inline ctx_entry_t *ctx_entry_get(uint32_t conntrack_id)
@@ -115,7 +115,7 @@ private:
 static conntrack_ctx_t            conntrack_ctx;
 
 pds_ret_t
-conntrack_ctx_t::init(void)
+conntrack_ctx_t::init(pds_cinit_params_t *params)
 {
     p4pd_error_t    p4pd_error;
 
@@ -129,44 +129,55 @@ conntrack_ctx_t::init(void)
     }
     PDS_TRACE_DEBUG("Conntrack context init conntrack depth %u",
                     conntrack_prop.tabledepth);
+    /*
+     * Conntrack contexts assumed not needed when flow aging is not enabled
+     * for the current process (memory saving).
+     */
+#ifdef __aarch64__
+    if (params->flow_age_pid == getpid()) {
+#endif
+
 #ifdef CONNTRACK_CTX_MODE_HBM
-    uint64_t hbm_paddr = api::g_pds_state.mempartition()->start_addr(
-                                          CONNTRACK_CTX_HBM_HANDLE);
-    uint32_t hbm_bytes = api::g_pds_state.mempartition()->size(
-                                          CONNTRACK_CTX_HBM_HANDLE);
-    uint32_t table_bytes = sizeof(ctx_entry_t) * conntrack_prop.tabledepth;
-    if ((hbm_paddr == INVALID_MEM_ADDRESS) || (hbm_bytes < table_bytes)) {
-        PDS_TRACE_ERR("failed to obtain enough HBM for %s",
-                      CONNTRACK_CTX_HBM_HANDLE);
-        return PDS_RET_NO_RESOURCE;
-    }
-    if (!platform_is_hw(platform_type)) {
-        PDS_TRACE_ERR("Platform must be HW to use HBM");
-        return PDS_RET_ERR;
-    }
-    ctx_table = (ctx_entry_t *)sdk::lib::pal_mem_map(hbm_paddr, table_bytes);
-    if (!ctx_table) {
-        PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " size %u",
-                      hbm_paddr, table_bytes);
-        return PDS_RET_ERR;
-    }
-    memset((void *)ctx_table, 0, table_bytes);
+        uint64_t hbm_paddr = api::g_pds_state.mempartition()->start_addr(
+                                              CONNTRACK_CTX_HBM_HANDLE);
+        uint32_t hbm_bytes = api::g_pds_state.mempartition()->size(
+                                              CONNTRACK_CTX_HBM_HANDLE);
+        uint32_t table_bytes = sizeof(ctx_entry_t) * conntrack_prop.tabledepth;
+        if ((hbm_paddr == INVALID_MEM_ADDRESS) || (hbm_bytes < table_bytes)) {
+            PDS_TRACE_ERR("failed to obtain enough HBM for %s",
+                          CONNTRACK_CTX_HBM_HANDLE);
+            return PDS_RET_NO_RESOURCE;
+        }
+        if (!platform_is_hw(platform_type)) {
+            PDS_TRACE_ERR("Platform must be HW to use HBM");
+            return PDS_RET_ERR;
+        }
+        ctx_table = (ctx_entry_t *)sdk::lib::pal_mem_map(hbm_paddr, table_bytes);
+        if (!ctx_table) {
+            PDS_TRACE_ERR("failed to memory map addr 0x%" PRIx64 " size %u",
+                          hbm_paddr, table_bytes);
+            return PDS_RET_ERR;
+        }
+        memset((void *)ctx_table, 0, table_bytes);
 #else
-    ctx_table = (ctx_entry_t *)SDK_CALLOC(SDK_MEM_ALLOC_CONNTRACK_CTX,
-                                          conntrack_prop.tabledepth *
-                                          sizeof(ctx_entry_t));
-    if (!ctx_table) {
-        PDS_TRACE_ERR("fail to allocate ctx_table");
-        return PDS_RET_OOM;
+        ctx_table = (ctx_entry_t *)SDK_CALLOC(SDK_MEM_ALLOC_CONNTRACK_CTX,
+                                              conntrack_prop.tabledepth *
+                                              sizeof(ctx_entry_t));
+        if (!ctx_table) {
+            PDS_TRACE_ERR("fail to allocate ctx_table");
+            return PDS_RET_OOM;
+        }
+#endif
+        ctx_lock = (ctx_lock_t *)SDK_CALLOC(SDK_MEM_ALLOC_CONNTRACK_CTX,
+                                            conntrack_prop.tabledepth *
+                                            sizeof(ctx_lock_t));
+        if (!ctx_lock) {
+            PDS_TRACE_ERR("fail to allocate ctx_lock");
+            return PDS_RET_OOM;
+        }
+#ifdef __aarch64__
     }
 #endif
-    ctx_lock = (ctx_lock_t *)SDK_CALLOC(SDK_MEM_ALLOC_CONNTRACK_CTX,
-                                        conntrack_prop.tabledepth *
-                                        sizeof(ctx_lock_t));
-    if (!ctx_lock) {
-        PDS_TRACE_ERR("fail to allocate ctx_lock");
-        return PDS_RET_OOM;
-    }
     return PDS_RET_OK;
 }
 
@@ -195,9 +206,9 @@ extern "C" {
 #endif
 
 pds_ret_t
-pds_conntrack_ctx_init(void)
+pds_conntrack_ctx_init(pds_cinit_params_t *params)
 {
-    return conntrack_ctx.init();
+    return conntrack_ctx.init(params);
 }
 
 void
@@ -208,12 +219,12 @@ pds_conntrack_ctx_fini(void)
 
 pds_ret_t
 pds_conntrack_ctx_set(uint32_t conntrack_id,
-                      uint32_t handle)
+                      uint64_t handle)
 {
     ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
     if (ctx) {
-        uint32_t ctx_handle = 0;
-        SDK_ATOMIC_LOAD_UINT32(&ctx->handle, &ctx_handle);
+        uint64_t ctx_handle = 0;
+        SDK_ATOMIC_LOAD_UINT64(&ctx->handle, &ctx_handle);
         if (ctx_handle && (ctx_handle != handle)) {
 
             /*
@@ -222,10 +233,10 @@ pds_conntrack_ctx_set(uint32_t conntrack_id,
              */
             return PDS_RET_MAPPING_CONFLICT;
         }
-        SDK_ATOMIC_STORE_UINT32(&ctx->handle, &handle);
+        SDK_ATOMIC_STORE_UINT64(&ctx->handle, &handle);
         return PDS_RET_OK;
     }
-    PDS_TRACE_ERR("failed conntrack_id %u handle %u",
+    PDS_TRACE_ERR("failed conntrack_id %u handle %" PRIu64,
                   conntrack_id, handle);
     return PDS_RET_INVALID_ARG;
 }
@@ -235,18 +246,18 @@ pds_conntrack_ctx_clr(uint32_t conntrack_id)
 {
     ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
     if (ctx) {
-        uint32_t ctx_handle = 0;
-        SDK_ATOMIC_STORE_UINT32(&ctx->handle, &ctx_handle);
+        uint64_t ctx_handle = 0;
+        SDK_ATOMIC_STORE_UINT64(&ctx->handle, &ctx_handle);
     }
 }
 
 pds_ret_t
 pds_conntrack_ctx_get(uint32_t conntrack_id,
-                      uint32_t *ret_handle)
+                      uint64_t *ret_handle)
 {
     ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
     if (ctx) {
-        SDK_ATOMIC_LOAD_UINT32(&ctx->handle, ret_handle);
+        SDK_ATOMIC_LOAD_UINT64(&ctx->handle, ret_handle);
         if (*ret_handle) {
             return PDS_RET_OK;
         }
@@ -256,17 +267,38 @@ pds_conntrack_ctx_get(uint32_t conntrack_id,
 
 pds_ret_t
 pds_conntrack_ctx_get_clr(uint32_t conntrack_id,
-                          uint32_t *ret_handle)
+                          uint64_t *ret_handle)
 {
     ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
     if (ctx) {
-        uint32_t ctx_handle = 0;
-        SDK_ATOMIC_EXCHANGE_UINT32(&ctx->handle, &ctx_handle, ret_handle);
+        uint64_t ctx_handle = 0;
+        SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &ctx_handle, ret_handle);
         if (*ret_handle) {
             return PDS_RET_OK;
         }
     }
     return PDS_RET_ENTRY_NOT_FOUND;
+}
+
+void
+pds_conntrack_ctx_move(uint32_t conntrack_id,
+                       uint64_t handle, 
+                       bool move_complete)
+{
+    /*
+     * 2-step move (see Bucket::defragment_())
+     */
+    if (move_complete) {
+    } else {
+        ctx_entry_t *ctx = conntrack_ctx.ctx_entry_get(conntrack_id);
+        if (ctx) {
+            uint64_t old_handle;
+            SDK_ATOMIC_EXCHANGE_UINT64(&ctx->handle, &handle, &old_handle);
+            if (!old_handle) {
+                SDK_ATOMIC_STORE_UINT64(&ctx->handle, &old_handle);
+            }
+        }
+    }
 }
 
 /*

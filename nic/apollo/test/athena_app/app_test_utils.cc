@@ -12,6 +12,8 @@
 #include "nic/apollo/api/impl/athena/ftl_pollers_client.hpp"
 #include "nic/sdk/model_sim/include/lib_model_client.h"
 #include "nic/p4/ftl_dev/include/ftl_dev_shared.h"
+#include "nic/apollo/core/trace.hpp"
+#include "fte_athena.hpp"
 
 FILE    *app_test_log_fp;
 
@@ -698,6 +700,58 @@ aging_metrics_t::refresh(ftl_dev_if::lif_attr_metrics_t& m) const
     return ret;
 }
 
+/**
+ * FTL table metrics
+ */
+pds_ret_t
+ftl_table_metrics_t::baseline(void)
+{
+    return refresh(base);
+}
+
+uint64_t
+ftl_table_metrics_t::num_entries(void) const
+{
+    return base.table_insert - base.table_remove;
+}
+
+uint64_t
+ftl_table_metrics_t::delta_num_entries(void) const
+{
+    pds_flow_stats_t    curr;
+    uint64_t            delta = 0;
+
+    if (refresh(curr) == PDS_RET_OK) {
+        delta = (curr.table_insert - curr.table_remove) -
+                num_entries();
+    }
+    return delta;
+}
+
+void
+ftl_table_metrics_t::show(bool latest) const
+{
+    FILE                *fp;
+    pds_flow_stats_t    curr;
+
+    fp = app_test_log_fp ? app_test_log_fp : stdout;
+
+    TEST_LOG_INFO("\nFTL table metrics:"
+                  "\n------------------\n");
+    if (latest) {
+        refresh(curr);
+        fte_ath::fte_dump_flow_stats(&curr, fp);
+    } else {
+        fte_ath::fte_dump_flow_stats(&base, fp);
+    }
+}
+
+pds_ret_t
+ftl_table_metrics_t::refresh(pds_flow_stats_t& m) const
+{
+    return fte_ath::fte_get_flow_stats(&m);
+}
+
 /*
  * Aging timeout configs
  */
@@ -921,16 +975,17 @@ aging_tmo_cfg_t::tmo_factory_dflt_set(void)
 void 
 aging_tmo_cfg_t::tmo_artificial_long_set(void)
 {
-    tmo_rec.tcp_syn_tmo      = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.tcp_est_tmo      = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.tcp_fin_tmo      = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.tcp_timewait_tmo = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.tcp_rst_tmo      = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.icmp_tmo         = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.udp_tmo          = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.udp_est_tmo      = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.others_tmo       = SCANNER_SESSION_TMO_DFLT;
-    tmo_rec.session_tmo      = SCANNER_SESSION_TMO_DFLT;
+#define TMO_ARTIFICIAL_LONG     (SCANNER_SESSION_TMO_DFLT * 2)
+    tmo_rec.tcp_syn_tmo      = TMO_ARTIFICIAL_LONG;
+    tmo_rec.tcp_est_tmo      = TMO_ARTIFICIAL_LONG;
+    tmo_rec.tcp_fin_tmo      = TMO_ARTIFICIAL_LONG;
+    tmo_rec.tcp_timewait_tmo = TMO_ARTIFICIAL_LONG;
+    tmo_rec.tcp_rst_tmo      = TMO_ARTIFICIAL_LONG;
+    tmo_rec.icmp_tmo         = TMO_ARTIFICIAL_LONG;
+    tmo_rec.udp_tmo          = TMO_ARTIFICIAL_LONG;
+    tmo_rec.udp_est_tmo      = TMO_ARTIFICIAL_LONG;
+    tmo_rec.others_tmo       = TMO_ARTIFICIAL_LONG;
+    tmo_rec.session_tmo      = TMO_ARTIFICIAL_LONG;
     tmo_set();
 }
 
@@ -1213,14 +1268,14 @@ bool
 test_log_file_create(test_vparam_ref_t vparam)
 {
     app_test_log_fp = fopen(vparam.expected_str().c_str(), "w+");
-    return true;
+    return !!app_test_log_fp;
 }
 
 bool
 test_log_file_append(test_vparam_ref_t vparam)
 {
     app_test_log_fp = fopen(vparam.expected_str().c_str(), "a+");
-    return true;
+    return !!app_test_log_fp;
 }
 
 void

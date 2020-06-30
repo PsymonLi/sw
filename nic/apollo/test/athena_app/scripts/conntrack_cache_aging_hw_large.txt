@@ -1,0 +1,28 @@
+
+test_log_file_create /var/log/pensando/iota_conntrack_cache_large_test.log
+skip_fte_flow_prog_set TRUE
+conntrack_table_clear_full 8388608
+session_and_cache_clear_full 8388608
+
+conntrack_aging_init
+conntrack_aging_force_expired_ts false
+conntrack_aging_accel_control false
+conntrack_aging_tolerance_secs_set 0
+conntrack_aging_tmo_artificial_long_set
+
+# Amar's patterns
+conntrack_and_cache_populate tcp {vnic 2 256} {sip 11.0.0.1 2} {dip 9.0.0.1 2} {sport 100 20} {dport 201 100}
+conntrack_aging_normal_tmo_set {ICMP unestablished 3} {icmp established 3}  {others unestablished 3} {others established 3}
+conntrack_aging_normal_tmo_set {udp unestablished 3} {UDP ESTABLISHED 3}
+conntrack_aging_normal_tmo_set {tcp unestablished 3} {TCP syn_sent 3} {TCP SYN_RECV 3} {tcp synack_sent 3} {tcp synack_recv 3} {tcp established 3} {tcp fin_sent 40} {tcp fin_recv 3} {tcp time_wait 3} {tcp rst_close 3}
+conntrack_aging_test
+
+flow_cache_dump /data/iota_conntrack_cache_large.log
+
+conntrack_aging_metrics_show
+conntrack_aging_accel_control false
+conntrack_aging_tmo_factory_dflt_set
+conntrack_aging_fini
+
+skip_fte_flow_prog_set false
+

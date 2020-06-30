@@ -257,6 +257,181 @@ conntrack_populate_full(test_vparam_ref_t vparam)
     return CONNTRACK_CREATE_RET_VALIDATE(ret) && tuple_eval.zero_failures();
 }
 
+/*
+ * Populate flow cache entries with data directly as conntrack indices
+ * without any intervening sessions.
+ */
+bool
+conntrack_and_cache_populate(test_vparam_ref_t vparam)
+{
+    pds_conntrack_spec_t    spec;
+    tuple_eval_t            tuple_eval;
+    std::string             field_type;
+    uint64_t                ids_max;
+    flow_key_field_t        vnic;
+    flow_key_field_t        sip;
+    flow_key_field_t        dip;
+    flow_key_field_t        dport;
+    flow_key_field_t        sport;
+    uint32_t                value;
+    uint32_t                count;
+    uint32_t                proto = IPPROTO_NONE;
+    pds_ret_t               ret = PDS_RET_OK;
+    pds_ret_t               cache_ret = PDS_RET_OK;
+
+    conntrack_metrics.baseline();
+    conntrack_spec_init(&spec);
+
+    if (vparam.size() == 0) {
+        TEST_LOG_ERR("A protocol type (UDP/TCP/ICMP) is required\n");
+        return false;
+    }
+    for (uint32_t i = 0; i < vparam.size(); i++) {
+
+        if (i == 0) {
+            ret = vparam.proto(0, &proto);
+            if (ret != PDS_RET_OK) {
+                return false;
+            }
+            continue;
+        }
+
+        /*
+         * Here we expect tuples of the form {type value [count]},
+         * e.g., {sip 192.168.1.1 1000}. Note: count is optional (default 1)
+         */
+        tuple_eval.reset(vparam, i);
+        field_type = tuple_eval.str(0);
+        value = tuple_eval.num(1);
+        count = tuple_eval.size() > 2 ? tuple_eval.num(2) : 0;
+        if (field_type == "vnic") {
+            vnic.reset(value, count);
+        } else if (field_type == "sip") {
+            sip.reset(value, count);
+        } else if (field_type == "dip") {
+            dip.reset(value, count);
+        } else if (field_type == "sport") {
+            sport.reset(value, count);
+        } else if (field_type == "dport") {
+            dport.reset(value, count);
+        } else {
+            TEST_LOG_ERR("Unknown tuple type %s\n", field_type.c_str());
+            return false;
+        }
+    }
+
+    ids_max = (uint64_t)vnic.count() * (uint64_t)sip.count()   *
+              (uint64_t)dip.count()  * (uint64_t)sport.count() *
+              (uint64_t)dport.count();
+    ct_tolerance.reset(ids_max > UINT32_MAX ? UINT32_MAX : ids_max);
+
+    spec.key.conntrack_id = 1;
+    spec.data.flow_state = ESTABLISHED;
+    switch (proto) { 
+    case IPPROTO_ICMP:
+        spec.data.flow_type = PDS_FLOW_TYPE_ICMP;
+        break;
+    case IPPROTO_UDP:
+        spec.data.flow_type = PDS_FLOW_TYPE_UDP;
+        break;
+    case IPPROTO_TCP:
+        spec.data.flow_type = PDS_FLOW_TYPE_TCP;
+        break;
+    default:
+        spec.data.flow_type = PDS_FLOW_TYPE_OTHERS;
+        break;
+    }
+
+    for (vnic.restart(); vnic.count(); vnic.next_value()) {
+        for (sip.restart(); sip.count(); sip.next_value()) {
+            for (dip.restart(); dip.count(); dip.next_value()) {
+                for (sport.restart(); sport.count(); sport.next_value()) {
+                    for (dport.restart(); dport.count(); dport.next_value()) {
+
+                        /*
+                         * Create a conntrack entry for 1-to-1 mapping to flow
+                         * cache but only do so if this iteration is not a recirc
+                         * due to an earlier "cache entry already exists".
+                         */
+                        if (cache_ret != PDS_RET_ENTRY_EXISTS) {
+                            if (proto == IPPROTO_TCP) {
+                                spec.data.flow_state = (pds_flow_state_t)
+                                     randomize_max((uint32_t)RST_CLOSE, true);
+                            }
+                            ret = pds_conntrack_state_create(&spec);
+                            if (!CONNTRACK_CREATE_RET_VALIDATE(ret)) {
+                                goto done;
+                            }
+                            ct_tolerance.create_id_map_insert(spec.key.conntrack_id);
+                        }
+
+                        if (proto == IPPROTO_ICMP) {
+                            cache_ret = (pds_ret_t)
+                                        fte_ath::fte_flow_create_icmp(vnic.value(),
+                                               sip.value(), dip.value(),
+                                               proto, sport.value(), dport.value(),
+                                               spec.key.conntrack_id,
+                                               PDS_FLOW_SPEC_INDEX_CONNTRACK,
+                                               spec.key.conntrack_id);
+                        } else {
+                            cache_ret = (pds_ret_t)
+                                        fte_ath::fte_flow_create(vnic.value(),
+                                               sip.value(), dip.value(),
+                                               proto, sport.value(), dport.value(),
+                                               PDS_FLOW_SPEC_INDEX_CONNTRACK,
+                                               spec.key.conntrack_id);
+                        }
+
+                        switch (cache_ret) {
+
+                        case PDS_RET_OK:
+                            if (++spec.key.conntrack_id >= PDS_CONNTRACK_ID_MAX) {
+                                goto done;
+                            }
+                            break;
+
+                        case PDS_RET_NO_RESOURCE:
+                            TEST_LOG_INFO("flow cache table full at %u entries\n",
+                                          ct_tolerance.create_id_map_size());
+                            cache_ret = PDS_RET_OK;
+                            goto done;
+
+                        case PDS_RET_ENTRY_EXISTS:
+
+                            /*
+                             * Continue cache entry creation even on key hash
+                             * collision but use the last conntrack ID.
+                             */
+                            break;
+
+                        default:
+                            TEST_LOG_ERR("failed cache create - vnic:%u "
+                                 "sip:0x%x dip:0x%x sport:%u dport:%u proto:%u "
+                                 "at count:%u error:%d\n", vnic.value(),
+                                 sip.value(), dip.value(), sport.value(),
+                                 dport.value(), proto,
+                                 ct_tolerance.create_id_map_size(), cache_ret);
+                            goto done;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+done:
+    TEST_LOG_INFO("Flow entries created: %d, ret %d cache_ret %d\n",
+                  ct_tolerance.create_id_map_size(), ret, cache_ret);
+
+    /*
+     * Flow cache entry creations were best effort due to hash outcomes
+     * so any non-zero count would be considered a success.
+     */
+    return ct_tolerance.create_id_map_size() &&
+           CONNTRACK_CREATE_RET_VALIDATE(ret) &&
+           CONNTRACK_CREATE_RET_VALIDATE(cache_ret);
+}
+
 pds_ret_t
 conntrack_aging_expiry_fn(uint32_t expiry_id,
                           pds_flow_age_expiry_type_t expiry_type,
