@@ -160,6 +160,13 @@ interface_lldp_parse_json (bool nbrs, pds_lldp_status_t *lldp_status,
     try {
         BOOST_FOREACH (pt::ptree::value_type &lldp,
                        json_pt.get_child("lldp")) {
+
+            // check if any interfaces present in the lldp tree
+            boost::optional<pt::ptree&> interface_opt = lldp.second.get_child_optional("interface");
+            if (!interface_opt) {
+                continue;
+            }
+
             BOOST_FOREACH (pt::ptree::value_type &iface,
                            lldp.second.get_child("interface")) {
                 str = iface.second.get<std::string>("name", "");
