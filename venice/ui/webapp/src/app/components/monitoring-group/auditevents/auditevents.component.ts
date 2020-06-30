@@ -88,6 +88,7 @@ export class AuditeventsComponent extends TablevieweditAbstract<IAuditAuditEvent
   // Backend currently only supports time being sorted
   cols: TableCol[] = [
     { field: 'user.name', header: 'Who', class: 'auditevents-column-common auditevents-column-who', sortable: false, width: 10 },
+    { field: 'meta.tenant', header: 'Tenant', class: 'auditevents-column-common auditevents-column-tenant', sortable: false, width: 10 },
     { field: 'meta.mod-time', header: 'Time', class: 'auditevents-column-common auditevents-column-date', sortable: true, width: '180px' },
     { field: 'action', header: 'Action', class: 'auditevents-column-common auditevents-column-action', sortable: false, width: 9 },
     { field: 'resource.kind', header: 'Act On (kind)', class: 'auditevents-column-common auditevents-column-act_on', sortable: false },
