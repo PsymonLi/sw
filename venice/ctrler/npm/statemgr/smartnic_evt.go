@@ -168,7 +168,8 @@ func (sm *Statemgr) dscCreate(smartNic *ctkit.DistributedServiceCard) (*Distribu
 }
 
 func (sm *Statemgr) dscDecommissioned(dsc *cluster.DistributedServiceCard) bool {
-	return dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String())
+	return dsc.Spec.MgmtMode != strings.ToLower(cluster.DistributedServiceCardSpec_NETWORK.String()) ||
+		strings.ToLower(dsc.Status.AdmissionPhase) == strings.ToLower(cluster.DistributedServiceCardStatus_REJECTED.String())
 }
 
 func (sm *Statemgr) addDSCRelatedobjects(smartNic *ctkit.DistributedServiceCard, sns *DistributedServiceCardState, sendSgPolicies bool) {
