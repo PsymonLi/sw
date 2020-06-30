@@ -375,7 +375,7 @@ vnic_impl::nuke_resources(api_base *api_obj) {
         PDS_IMPL_FILL_LIF_VLAN_KEY(&lif_vlan_key, &vnic_encap);
         PDS_IMPL_FILL_TABLE_API_PARAMS(&tparams, &lif_vlan_key, NULL, NULL,
                                        LIF_VLAN_LIF_VLAN_INFO_ID,
-                                       lif_vlan_hdl_);
+                                       sdk::table::handle_t::null());
         apulu_impl_db()->lif_vlan_tbl()->remove(&tparams);
     }
 

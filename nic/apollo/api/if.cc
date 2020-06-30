@@ -184,8 +184,8 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
 
     case IF_TYPE_CONTROL:
         ifindex_ = CONTROL_IFINDEX(0);
-        PDS_TRACE_DEBUG("Initializing inband control interface %s, ifindex 0x%x",
-                        spec->key.str(), ifindex_);
+        PDS_TRACE_DEBUG("Initializing inband control interface %s, "
+                        "ifindex 0x%x", spec->key.str(), ifindex_);
         if_info_.control_.ip_pfx_ = spec->control_if_info.ip_prefix;
         memcpy(if_info_.control_.mac_, spec->control_if_info.mac_addr,
                ETH_ADDR_LEN);
@@ -199,8 +199,8 @@ if_entry::init_config(api_ctxt_t *api_ctxt) {
         break;
 
     case IF_TYPE_ETH:
-         ifindex_ = api::objid_from_uuid(key_);
-         break;
+        ifindex_ = api::objid_from_uuid(key_);
+        break;
 
     case IF_TYPE_NONE:
         break;
@@ -290,6 +290,7 @@ if_entry::compute_update(api_obj_ctxt_t *obj_ctxt) {
             obj_ctxt->upd_bmap |= PDS_IF_UPD_TX_POLICER;
         }
     }
+    PDS_TRACE_DEBUG("if %s update bmap 0x%lx", key_.str(), obj_ctxt->upd_bmap);
     return SDK_RET_OK;
 }
 

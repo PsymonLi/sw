@@ -61,7 +61,7 @@ pds_obj_key_t hals_route_t::make_pds_rttable_key_(state_t* state) {
     return (rttbl_key_);
 }
 
-static void 
+static void
 make_pds_rttable_spec(state_t* state, pds_route_table_spec_t &rttable,
                        const pds_obj_key_t& rttable_key) {
     memset(&rttable, 0, sizeof(pds_route_table_spec_t));
@@ -80,7 +80,7 @@ bool
 hals_route_t::update_route_store_(state_t* state,
                                   const pds_obj_key_t& rttable_key) {
     bool ret;
-    
+
     // Populate the new route
     route_.attrs.prefix = ips_info_.pfx;
     route_.attrs.nh_type = PDS_NH_TYPE_OVERLAY_ECMP;
@@ -110,7 +110,7 @@ hals_route_t::update_route_store_(state_t* state,
                     PDS_MS_COMMIT_BATCH_TIMER_MS,
                     ips_info_.vrf_id);
     }
-    
+
     return ret;
 }
 
@@ -121,7 +121,7 @@ process_route_batch(state_t *state, const pds_obj_key_t& rttable_key,
     sdk_ret_t ret;
     pds_route_table_spec_t rttbl_spec;
     pds_batch_ctxt_guard_t bctxt_guard;
-   
+
     // If num routes exceeds capacity then batch commit will be skipped
     // and pushed later when the number of routes goes below the route
     // table capacity
@@ -165,7 +165,7 @@ process_route_batch(state_t *state, const pds_obj_key_t& rttable_key,
         return bctxt_guard;
     }
     bctxt_guard.set(bctxt);
-    
+
     return bctxt_guard;
 }
 
@@ -173,7 +173,7 @@ pds_batch_ctxt_guard_t hals_route_t::make_batch_pds_spec_(state_t* state,
                                                           const pds_obj_key_t&
                                                           rttable_key) {
     pds_batch_ctxt_guard_t bctxt_guard;
-    
+
     if (!update_route_store_(state, rttable_key)) {
         // Skip batch processing if batch is not ready to be committed
         // Return empty guard
@@ -196,7 +196,7 @@ sdk_ret_t hals_route_t::underlay_route_add_upd_() {
 
         auto it_internal = state->ip_track_internalip_store().find(ips_info_.pfx);
         if (it_internal != state->ip_track_internalip_store().end()) {
-            auto ip_track_obj = 
+            auto ip_track_obj =
                 state->ip_track_store().get(it_internal->second);
             pds_obj_key = ip_track_obj->pds_obj_key();
             destip = ip_track_obj->destip();
@@ -293,7 +293,7 @@ batch_commit_route_table (state_t *state, pds_batch_ctxt_guard_t &bctxt_guard,
                              "Async reply %s", l_rttbl_key_.str(),
                              (pds_status) ? "Success" : "Failure");
         };
-    
+
     // All processing complete, only batch commit remains -
     // safe to release the cookie_uptr unique_ptr
     auto cookie = cookie_uptr.release();
@@ -349,13 +349,13 @@ void hals_route_t::overlay_route_del_() {
         // Cannot add Subnet Delete to an existing batch
         state_ctxt.state()->flush_outstanding_pds_batch();
 
-        // Routes will only get committed once the batch timer expires OR 
+        // Routes will only get committed once the batch timer expires OR
         // we accumulate PDS_MS_COMMIT_BATCH_SIZE number of routes
         if (pds_bctxt_guard) {
-            batch_commit_route_table(state_ctxt.state(), pds_bctxt_guard, 
+            batch_commit_route_table(state_ctxt.state(), pds_bctxt_guard,
                                      rttable_key, cookie_uptr_);
         }
-    
+
     } // End of state thread_context
       // Do Not access/modify global state after this
     return;
@@ -432,12 +432,12 @@ hals_route_t::handle_add_upd_ips(ATG_ROPI_UPDATE_ROUTE* add_upd_route_ips)
         pds_bctxt_guard = make_batch_pds_spec_(state_ctxt.state(),
                                                rttable_key);
         if (!pds_bctxt_guard) {
-            PDS_TRACE_DEBUG("%s route add/update added to pending batch",
-                             ippfx2str(&ips_info_.pfx));
+            PDS_TRACE_VERBOSE("%s route add/update added to pending batch",
+                              ippfx2str(&ips_info_.pfx));
             return rc;
         }
-    
-        // Routes will only get committed once the batch timer expires OR 
+
+        // Routes will only get committed once the batch timer expires OR
         // we accumulate PDS_MS_COMMIT_BATCH_SIZE number of routes
         if (pds_bctxt_guard) {
             batch_commit_route_table(state_ctxt.state(), pds_bctxt_guard,
@@ -485,11 +485,11 @@ route_timer_expiry_cb (NTL_TIMER_LIST_CB *list_cb, NTL_TIMER_CB *timer_cb)
     pds_batch_ctxt_guard_t bctxt_guard;
     pds_obj_key_t rttable_key = {0};
     std::unique_ptr<cookie_t> cookie_uptr;
-    
+
     // Action correlator contains the vrf-id
     vrf_id = timer_cb->action_correlator;
     PDS_TRACE_DEBUG("Route Batch commit timer expired for VRF %d", vrf_id);
-    
+
     {
         auto state_ctxt = pds_ms::state_t::thread_context();
         auto vpc_obj = state_ctxt.state()->vpc_store().get(vrf_id);
@@ -502,7 +502,7 @@ route_timer_expiry_cb (NTL_TIMER_LIST_CB *list_cb, NTL_TIMER_CB *timer_cb)
             return;
         }
         rttable_key = vpc_obj->properties().vpc_spec.v4_route_table;
-        
+
         cookie_uptr.reset(new cookie_t);
         bctxt_guard = process_route_batch(state_ctxt.state(), rttable_key,
                                           cookie_uptr);
