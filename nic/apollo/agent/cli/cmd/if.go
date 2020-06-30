@@ -737,11 +737,11 @@ func printLifSummary(count int) {
 }
 
 func printLifHeader() {
-	hdrLine := strings.Repeat("-", 172)
+	hdrLine := strings.Repeat("-", 180)
 	fmt.Println(hdrLine)
-	fmt.Printf("%-40s%-10s%-15s%-20s%-40s%-25s%-11s%-11s\n",
+	fmt.Printf("%-40s%-10s%-15s%-20s%-40s%-25s%-10s%-11s%-9s\n",
 		"ID", "IfIndex", "Name", "MAC Address", "PinnedInterface",
-		"Type", "Oper State", "Admin State")
+		"Type", "OperState", "AdminState", "VnicHwId")
 	fmt.Println(hdrLine)
 }
 
@@ -751,11 +751,19 @@ func printLif(lif *pds.Lif) {
 	lifType := strings.Replace(spec.GetType().String(), "LIF_TYPE_", "", -1)
 	lifType = strings.Replace(lifType, "_", "-", -1)
 	state := strings.Replace(status.GetStatus().String(), "IF_STATUS_", "", -1)
+	name := status.GetName()
+	if name == "" {
+		name = "-"
+	}
+	vnicId := fmt.Sprint(status.GetVnicIndex())
+	if vnicId == "65535" {
+		vnicId = "-"
+	}
 	adminState := strings.Replace(status.GetAdminState().String(), "IF_STATUS_", "", -1)
-	fmt.Printf("%-40s%-10x%-15s%-20s%-40s%-25s%-11s%-11s\n",
+	fmt.Printf("%-40s%-10x%-15s%-20s%-40s%-25s%-10s%-11s%-9s\n",
 		utils.IdToStr(spec.GetId()), status.GetIfIndex(),
-		status.GetName(), utils.MactoStr(spec.GetMacAddress()),
+		name, utils.MactoStr(spec.GetMacAddress()),
 		utils.IdToStr(spec.GetPinnedInterface()), lifType, state,
-		adminState)
+		adminState, vnicId)
 
 }

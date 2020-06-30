@@ -375,6 +375,8 @@ message LifStatus {
   IfStatus Status     = 4;
   // nexthop hw idx of this lif, if any
   uint32   NhIndex    = 5;
+  // vnic hw idx of this lif
+  uint32   VnicIndex  = 6;
 }
 
 message LifStats {

@@ -52,6 +52,8 @@ typedef struct pds_lif_status_s {
     pds_if_state_t admin_state;
     ///< operational status of the lif
     pds_if_state_t state;
+    ///< vnic hw index of this lif
+    uint32_t       vnic_hw_idx;
 } __PACK__ pds_lif_status_t;
 
 typedef struct pds_lif_info_s {

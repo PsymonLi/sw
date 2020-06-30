@@ -41,6 +41,7 @@ pds_lif_to_lif_status (pds_lif_status_t *status, api::impl::lif_impl *lif)
     status->admin_state = lif_state_to_if_state(lif->admin_state());
     status->ifindex = lif->ifindex();
     status->nh_idx = lif->nh_idx();
+    status->vnic_hw_idx = lif->vnic_hw_id();
     return SDK_RET_OK;
 }
 
