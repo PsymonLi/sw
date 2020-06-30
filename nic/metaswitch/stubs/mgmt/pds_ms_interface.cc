@@ -67,7 +67,7 @@ interface_uuid_fetch(const pds_obj_key_t& key, bool del_op = false)
                     .append(" in Interface request"), SDK_RET_INVALID_ARG);
     }
     auto interface_uuid_obj = (interface_uuid_obj_t*) uuid_obj;
-    PDS_TRACE_DEBUG("Fetched Interface UUID %s MSIfindex 0x%X",
+    PDS_TRACE_VERBOSE("Fetched Interface UUID %s MSIfindex 0x%X",
                      key.str(), interface_uuid_obj->ms_id());
     if (del_op) {
         mgmt_ctxt.state()->set_pending_uuid_delete(key);
@@ -107,7 +107,7 @@ process_interface_update (pds_if_spec_t *if_spec,
     LimInterfaceAddrSpec lim_addr_spec;
     PDS_MS_START_TXN(PDS_MS_CTM_GRPC_CORRELATOR);
     bool has_ip_addr = false;
-    bool ip_update = false;
+    bool ip_modified = false;
     ip_prefix_t *intf_ip_prfx = NULL;
 
     if (if_spec->type == IF_TYPE_L3) {
@@ -146,20 +146,34 @@ process_interface_update (pds_if_spec_t *if_spec,
 
     if (update) {
         auto ifinfo = interface_uuid_fetch(if_spec->key);
+        if (!IPADDR_EQ (&ifinfo.ip_prfx.addr, &intf_ip_prfx->addr)) {
+            ip_modified = true;
+        }
+        if (ifinfo.eth_ifindex == 0) {
+            PDS_TRACE_INFO("Loopback interface update UUID %s MS[[0x%x]]",
+                            if_spec->key.str(),ifinfo.ms_ifindex);
+
+        } else {
+            PDS_TRACE_INFO("L3 Intf Update UUID %s Eth[0x%X] to MS[0x%X]]",
+                            if_spec->key.str(), ifinfo.eth_ifindex,
+                            ifinfo.ms_ifindex);
+        }
+
         // if we have an existing intf ip and not same as updated
         // interface ip, then delete the ip address. updated IP,
         // it configured, will be added subsequently
-        if (!ip_addr_is_zero(&ifinfo.ip_prfx.addr)  &&
-            !IPADDR_EQ (&ifinfo.ip_prfx.addr, &intf_ip_prfx->addr)) {
+        if (!ip_addr_is_zero(&ifinfo.ip_prfx.addr)  && ip_modified) {
             LimInterfaceAddrSpec lim_del_addr_spec;
             LimIntfType iftype = LIM_IF_TYPE_LOOPBACK;
             uint32_t ifid = LOOPBACK_IF_ID;
-            ip_update = true;
+
             if (ifinfo.eth_ifindex) {
                 iftype = LIM_IF_TYPE_ETH;
                 ifid = api::objid_from_uuid(if_spec->l3_if_info.port);
             }
-            PDS_TRACE_INFO("Deleting IP address for interface update");
+            PDS_TRACE_INFO("Intf %s delete old IP address %s",
+                           if_spec->key.str(), ippfx2str(&ifinfo.ip_prfx));
+
             populate_lim_addr_spec (&ifinfo.ip_prfx, lim_del_addr_spec,
                                     iftype, ifid);
 
@@ -179,7 +193,9 @@ process_interface_update (pds_if_spec_t *if_spec,
     }
 
     if (has_ip_addr) {
-        PDS_TRACE_INFO("Setting IP address for interface");
+        PDS_TRACE_INFO("Intf %s set IP address %s",
+                       if_spec->key.str(), ippfx2str(intf_ip_prfx));
+
         if (if_spec->type == IF_TYPE_LOOPBACK){
             // we are maintaining only one entry for redistribute connected rule
             // so delete should be completed before adding the rule for update case
@@ -190,7 +206,7 @@ process_interface_update (pds_if_spec_t *if_spec,
         pds_ms_set_liminterfaceaddrspec_amb_lim_l3_if_addr (
                                         lim_addr_spec, row_status,
                                         PDS_MS_CTM_GRPC_CORRELATOR, FALSE);
-        if (ip_update) {
+        if (ip_modified) {
             // ip address is modified. update cached ip
             interface_uuid_ip_prefix (if_spec->key, *intf_ip_prfx, false);
         }
@@ -358,6 +374,10 @@ interface_delete (pds_obj_key_t* key, pds_batch_ctxt_t bctxt)
         // For delete if_spec needs to be populated with type alone
         pds_if_spec_t if_spec = {0};
         if_spec.type = IF_TYPE_LOOPBACK;
+
+        PDS_TRACE_INFO("Loopback Intf Delete:: UUID %s MS[0x%X]]",
+                       key->str(), ms_ifindex);
+
         ret_status = process_interface_update(&if_spec, ms_ifindex,
                                               AMB_ROW_DESTROY);
         if (ret_status != types::ApiStatus::API_STATUS_OK) {

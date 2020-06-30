@@ -111,7 +111,8 @@ static void create_device_proto_grpc (bool overlay_routing = true) {
     }
 }
 
-static void create_intf_proto_grpc (bool lo=false, bool second=false, bool update=false, ipv4_addr_t ipv4 = 0) {
+static void create_intf_proto_grpc (bool lo=false, bool second=false, bool update=false,
+                                    bool input_ip=false, ipv4_addr_t ipv4 = 0) {
     InterfaceRequest    request;
     InterfaceResponse   response;
     ClientContext       context;
@@ -125,7 +126,7 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false, bool updat
         pds_if.type = ::IF_TYPE_LOOPBACK;
         if (g_node_id !=3) {
             pds_if.loopback_if_info.ip_prefix.addr.af = IP_AF_IPV4;
-            if (update) {
+            if (input_ip) {
                 pds_if.loopback_if_info.ip_prefix.addr.addr.v4_addr = ipv4;
             } else {
                 pds_if.loopback_if_info.ip_prefix.addr.addr.v4_addr = g_test_conf_.local_lo_ip_addr;
@@ -140,7 +141,7 @@ static void create_intf_proto_grpc (bool lo=false, bool second=false, bool updat
                                                            g_system_mac_addr);
         } else {
             pds_if.key = test::uuid_from_objid(k_l3_if_id, g_system_mac_addr);
-            if (update) {
+            if (input_ip) {
                 pds_if.l3_if_info.ip_prefix.addr.addr.v4_addr = ipv4;
             } else {
                 pds_if.l3_if_info.ip_prefix.addr.addr.v4_addr = g_test_conf_.local_ip_addr;
@@ -1277,11 +1278,11 @@ int main(int argc, char** argv)
             return 0;
         } else if (!strcmp(argv[1], "lo-update1")) {
             // Update
-            create_intf_proto_grpc(true, false, true, 0x05050505);
+            create_intf_proto_grpc(true, false, true, true);
             return 0;
         } else if (!strcmp(argv[1], "lo-update2")) {
             // Update
-            create_intf_proto_grpc(true, false, true, g_test_conf_.local_lo_ip_addr);
+            create_intf_proto_grpc(true, false, true);
             return 0;
         } else if (!strcmp(argv[1], "bgp-upeer-passwd")) {
             // First underlay peer
@@ -1293,11 +1294,11 @@ int main(int argc, char** argv)
             return 0;
         } else if (!strcmp(argv[1], "if-update1")) {
             // Update
-            create_intf_proto_grpc(false, false, true, 0x05050505);
+            create_intf_proto_grpc(false, false, true, true, 0x05050505);
             return 0;
         } else if (!strcmp(argv[1], "if-update2")) {
             // Update
-            create_intf_proto_grpc(false, false, true, g_test_conf_.local_ip_addr);
+            create_intf_proto_grpc(false, false, true);
             return 0;
         } else if (!strcmp(argv[1], "del-ip-track1")) {
             ip_addr_t ip = {0};
