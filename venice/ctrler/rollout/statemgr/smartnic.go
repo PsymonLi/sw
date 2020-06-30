@@ -57,6 +57,9 @@ func (sm *Statemgr) CreateDSCRolloutState(ro *protos.DSCRollout, ros *RolloutSta
 			op = protos.DSCOp_DSCPreCheckForDisruptive
 			nextOp = protos.DSCOp_DSCDisruptiveUpgrade
 		}
+		if snicStatus.Phase == roproto.RolloutPhase_PRE_CHECK.String() {
+			opStatus = ""
+		}
 		if snicStatus.Phase == roproto.RolloutPhase_FAIL.String() {
 			opStatus = "failure"
 			atomic.AddInt32(&ros.numPreUpgradeFailures, 1)
