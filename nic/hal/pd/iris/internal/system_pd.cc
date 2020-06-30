@@ -41,7 +41,8 @@ static struct clock_table_info_s {
     p4pd_table_cache_t cache;
     uint16_t entry_width;
     sdk::types::mem_addr_t start_addr;
-    uint64_t multiplier;
+    uint64_t multiplier_ns;
+    uint64_t multiplier_ms;
 } g_clock_table_info;
 
 #define HAL_TIMER_ID_CLOCK_SYNC_INTVL     (60 * TIME_MSECS_PER_MIN)
@@ -742,6 +743,7 @@ clock_delta_comp_cb (void *timer, uint32_t timer_id, void *ctxt)
 {
     uint64_t              hw_tick = 0, hw_ns = 0, sw_ns = 0, delta_ns = 0;
     timespec_t            sw_ts;
+    uint64_t              sw_ms = 0;
 
     // Read hw time
     asicpd_tm_get_clock_tick(&hw_tick);
@@ -782,11 +784,14 @@ clock_delta_comp_cb (void *timer, uint32_t timer_id, void *ctxt)
 
     clock_gettime(CLOCK_REALTIME, &sw_ts);
     sdk::timestamp_to_nsecs(&sw_ts, &sw_ns);
+    sw_ms = sw_ns/TIME_NSECS_PER_MSEC;
 
     bzero(g_hbm_clockaddr, sizeof(clock_gettimeofday_t));
-    sdk::lib::memrev(g_hbm_clockaddr->time_in_ns, (uint8_t *)&sw_ns, CLOCK_WIDTH);
     sdk::lib::memrev(g_hbm_clockaddr->ticks, (uint8_t *)&hw_tick, CLOCK_WIDTH);
-    sdk::lib::memrev(g_hbm_clockaddr->multiplier_ns, (uint8_t *)&g_clock_table_info.multiplier, CLOCK_WIDTH);
+    sdk::lib::memrev(g_hbm_clockaddr->time_in_ns, (uint8_t *)&sw_ns, CLOCK_WIDTH);
+    sdk::lib::memrev(g_hbm_clockaddr->time_in_ms, (uint8_t *)&sw_ms, CLOCK_WIDTH);
+    sdk::lib::memrev(g_hbm_clockaddr->multiplier_ns, (uint8_t *)&g_clock_table_info.multiplier_ns, CLOCK_WIDTH);
+    sdk::lib::memrev(g_hbm_clockaddr->multiplier_ms, (uint8_t *)&g_clock_table_info.multiplier_ms, CLOCK_WIDTH);
 
 #ifdef ELBA
     elba_hbm_table_entry_cache_invalidate(g_clock_table_info.cache, 0,
@@ -810,8 +815,10 @@ pd_set_clock_multiplier (pd_func_args_t *pd_func_args)
 
     // Read the multiplier again in case there is a change in frequency
     g_clock_freq = args->frequency;
-    g_clock_table_info.multiplier =
-                   g_hal_state->catalog()->clock_get_multiplier(g_clock_freq);
+    g_clock_table_info.multiplier_ns =
+                   g_hal_state->catalog()->clock_get_multiplier_ns(g_clock_freq);
+    g_clock_table_info.multiplier_ms =
+                   g_hal_state->catalog()->clock_get_multiplier_ms(g_clock_freq);
     pd_clock_trigger_sync(pd_func_args);
 
     return HAL_RET_OK;
@@ -857,8 +864,9 @@ pd_clock_delta_comp (pd_func_args_t *pd_func_args)
 
     //Compute the clock adjustment based on the frequency to 1 decimal point
     g_clock_adjustment = floor(10.0 * ((double)(((double)1)/CLOCK_FREQ))*TIME_NSECS_PER_SEC)/10.0;
-    g_clock_table_info.multiplier = g_hal_state->catalog()->clock_get_multiplier(g_clock_freq);
-    HAL_TRACE_DEBUG("g_clock_freq: {} Multiplier: {}", g_clock_freq, g_clock_table_info.multiplier);
+    g_clock_table_info.multiplier_ns = g_hal_state->catalog()->clock_get_multiplier_ns(g_clock_freq);
+    g_clock_table_info.multiplier_ms = g_hal_state->catalog()->clock_get_multiplier_ms(g_clock_freq);
+    HAL_TRACE_DEBUG("g_clock_freq: {} Multiplier ns: {}", g_clock_freq, g_clock_table_info.multiplier_ns);
     printf("Freq: %lu Adjustment: %lf\n", CLOCK_FREQ, g_clock_adjustment);
 
     clock_delta_comp_cb(NULL, HAL_TIMER_ID_CLOCK_SYNC, NULL);

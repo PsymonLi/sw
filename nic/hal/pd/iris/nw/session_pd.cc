@@ -70,8 +70,7 @@ p4pd_add_upd_flow_stats_table_entry (uint32_t *assoc_hw_idx, uint64_t permit_pac
 
     SDK_ASSERT(assoc_hw_idx != NULL);
     fs_entry.clear();
-    // P4 has 32 bits so we have to use top 32 bits. We lose the precision by 2^16 ns
-    fs_entry.set_last_seen_timestamp(clock >> 16);
+    fs_entry.set_last_seen_timestamp(clock);
     fs_entry.set_permit_packets(permit_packets);
     fs_entry.set_permit_bytes(permit_bytes);
     fs_entry.set_drop_packets(drop_packets);
@@ -93,8 +92,8 @@ p4pd_add_upd_flow_stats_table_entry (uint32_t *assoc_hw_idx, uint64_t permit_pac
         HAL_TRACE_ERR("flow stats table write failure, err : {}", ret);
         return ret;
     }
-    HAL_TRACE_VERBOSE("Setting the last seen timestamp: {} clock {} hwIndx: {}",
-                      fs_entry.get_last_seen_timestamp(), clock, *assoc_hw_idx);
+    HAL_TRACE_DEBUG("Setting the last seen timestamp: {} clock {} hwIndx: {}",
+                     fs_entry.get_last_seen_timestamp(), clock, *assoc_hw_idx);
     return HAL_RET_OK;
 }
 
@@ -381,7 +380,6 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
     sdk_table_api_params_t params;
     session_t *session = args->session;
     uint64_t clock = args->clock;
-    uint64_t t_clock = 0;
 
     sess_pd = session->pd;
 
@@ -407,9 +405,8 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
     }
     if (flow_attrs->drop) {
         d.action_id = FLOW_INFO_FLOW_HIT_DROP_ID;
-        t_clock = clock >> 16;
         sdk::lib::memrev(d.action_u.flow_info_flow_hit_drop.start_timestamp,
-                         (uint8_t *)&t_clock,
+                         (uint8_t *)&clock,
                          sizeof(d.action_u.flow_info_flow_hit_drop.start_timestamp));
 
     } else {
@@ -564,9 +561,8 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
         // Dont update the start timestamp during update
         // we dont want to mess up aging logic
         if (!entry_exists) {
-            t_clock = clock >> 16;
             sdk::lib::memrev(d.action_u.flow_info_flow_info.start_timestamp,
-                         (uint8_t *)&t_clock,
+                         (uint8_t *)&clock,
                          sizeof(d.action_u.flow_info_flow_info.start_timestamp));
         }
     } // End updateion flow allow action
@@ -583,11 +579,12 @@ p4pd_add_upd_flow_info_table_entry (pd_session_create_args_t *args, pd_flow_t *f
             return ret;
         }
     } else {
-        sdk::lib::memrev((uint8_t *)&t_clock,
+        sdk::lib::memrev((uint8_t *)&clock,
                          d.action_u.flow_info_flow_info.start_timestamp,
                          sizeof(d.action_u.flow_info_flow_info.start_timestamp));
-        HAL_TRACE_VERBOSE("Writing flow info start timestamp {} to flow index {} action id {}",
-                        t_clock, flow_pd->assoc_hw_id, d.action_id);
+        HAL_TRACE_VERBOSE("Writing flow info start timestamp {} to flow index {} action id {}"\
+                        " read clock{}", args->clock, clock, 
+                        flow_pd->assoc_hw_id, d.action_id);
         params.handle.pindex(flow_pd->assoc_hw_id);
         params.actiondata = &d;
         // insert the entry
@@ -1059,14 +1056,12 @@ p4pd_add_flow_hash_table_entries_return:
 hal_ret_t
 pd_session_create (pd_func_args_t *pd_func_args)
 {
-    pd_conv_sw_clock_to_hw_clock_args_t     clock_args;
     hal_ret_t                               ret;
     pd_session_create_args_t               *args = pd_func_args->pd_session_create;
     pd_session_t                           *session_pd;
     session_t                              *session = args->session;
-    uint64_t                                sw_ns = 0, clock=0;
+    uint64_t                                sw_ns = 0;
     timespec_t                              ts;
-    pd_func_args_t                          pd_clock_fn_args = {0};
 
     session_pd = session_pd_alloc_init();
     if (session_pd == NULL) {
@@ -1090,22 +1085,14 @@ pd_session_create (pd_func_args_t *pd_func_args)
     }
 
     // Get the hw clock
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(CLOCK_REALTIME, &ts);
     sdk::timestamp_to_nsecs(&ts, &sw_ns);
-    clock_args.hw_tick = &clock;
-    clock_args.sw_ns = sw_ns;
-    pd_clock_fn_args.pd_conv_sw_clock_to_hw_clock = &clock_args;
-    pd_conv_sw_clock_to_hw_clock(&pd_clock_fn_args);
-
-    args->clock = clock;
-    args->last_seen_clock = clock;
+    args->clock = (sw_ns/TIME_NSECS_PER_MSEC);
+    args->last_seen_clock = args->clock;
+    HAL_TRACE_DEBUG("sw-ns: {} clock: {}", sw_ns, args->clock);
 
     if (session->syncing_session) {
-        clock_args.sw_ns = sw_ns + VMOTION_AGE_DELAY;
-        pd_clock_fn_args.pd_conv_sw_clock_to_hw_clock = &clock_args;
-        pd_conv_sw_clock_to_hw_clock(&pd_clock_fn_args);
-
-        args->last_seen_clock = clock;
+        args->last_seen_clock = ((sw_ns + VMOTION_AGE_DELAY)/TIME_NSECS_PER_MSEC);
     }
 
     // add flow stats entries first
@@ -1164,13 +1151,11 @@ hal_ret_t
 pd_session_update (pd_func_args_t *pd_func_args)
 {
     timespec_t                           ts;
-    pd_conv_sw_clock_to_hw_clock_args_t  clock_args;
-    pd_func_args_t                       pd_clock_fn_args = {0};
     hal_ret_t                            ret;
     pd_session_update_args_t            *args = pd_func_args->pd_session_update;
     pd_session_t                        *session_pd = NULL;
     session_t                           *session = args->session;
-    uint64_t                             sw_ns = 0, clock=0;
+    uint64_t                             sw_ns = 0;
 
     session_pd = session->pd;
 
@@ -1191,22 +1176,13 @@ pd_session_update (pd_func_args_t *pd_func_args)
     }
 
     // Get the hw clock
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(CLOCK_REALTIME, &ts);
     sdk::timestamp_to_nsecs(&ts, &sw_ns);
-    clock_args.hw_tick = &clock;
-    clock_args.sw_ns = sw_ns;
-    pd_clock_fn_args.pd_conv_sw_clock_to_hw_clock = &clock_args;
-    pd_conv_sw_clock_to_hw_clock(&pd_clock_fn_args);
-
-    args->clock = clock;
-    args->last_seen_clock = clock;
+    args->clock = (sw_ns/TIME_NSECS_PER_MSEC);
+    args->last_seen_clock = args->clock;
 
     if (session->syncing_session) {
-        clock_args.sw_ns = sw_ns + VMOTION_AGE_DELAY;
-        pd_clock_fn_args.pd_conv_sw_clock_to_hw_clock = &clock_args;
-        pd_conv_sw_clock_to_hw_clock(&pd_clock_fn_args);
-
-        args->last_seen_clock = clock;
+        args->last_seen_clock = ((sw_ns + VMOTION_AGE_DELAY)/TIME_NSECS_PER_MSEC);
     }
 
     // Do this only if we want to write specific stats
@@ -1436,7 +1412,6 @@ hal_ret_t
 pd_flow_get (pd_func_args_t *pd_func_args)
 {
     hal_ret_t ret = HAL_RET_OK;
-    pd_conv_hw_clock_to_sw_clock_args_t clock_args = {0};
     pd_flow_get_args_t *args = pd_func_args->pd_flow_get;
     sdk_ret_t sdk_ret;
     flow_info_actiondata_t f = {0};
@@ -1481,12 +1456,8 @@ pd_flow_get (pd_func_args_t *pd_func_args)
     args->flow_state->bytes = fs_entry.get_permit_bytes();
     args->flow_state->drop_packets = fs_entry.get_drop_packets();
     args->flow_state->drop_bytes = fs_entry.get_drop_bytes();
-
-    clock_args.hw_tick = fs_entry.get_last_seen_timestamp();
-    clock_args.hw_tick = (clock_args.hw_tick << 16);
-    clock_args.sw_ns = &args->flow_state->last_pkt_ts;
-    pd_func_args->pd_conv_hw_clock_to_sw_clock = &clock_args;
-    pd_conv_hw_clock_to_sw_clock(pd_func_args);
+    args->flow_state->last_pkt_ts = fs_entry.get_last_seen_timestamp();
+    args->flow_state->last_pkt_ts *= TIME_NSECS_PER_MSEC;
 
     info_table = (sldirectmap *)g_hal_state_pd->dm_table(P4TBL_ID_FLOW_INFO);
     SDK_ASSERT(info_table != NULL);
@@ -1498,19 +1469,16 @@ pd_flow_get (pd_func_args_t *pd_func_args)
     ret = hal_sdk_ret_to_hal_ret(sdk_ret);
     if (ret == HAL_RET_OK) {
         if (f.action_id == FLOW_INFO_FLOW_HIT_DROP_ID) {
-            sdk::lib::memrev((uint8_t *)&clock_args.hw_tick,
+            sdk::lib::memrev((uint8_t *)&args->flow_state->create_ts,
                 f.action_u.flow_info_flow_hit_drop.start_timestamp,
                 sizeof(f.action_u.flow_info_flow_hit_drop.start_timestamp));
-
         } else {
-            sdk::lib::memrev((uint8_t *)&clock_args.hw_tick,
+            sdk::lib::memrev((uint8_t *)&args->flow_state->create_ts,
                 f.action_u.flow_info_flow_info.start_timestamp,
                 sizeof(f.action_u.flow_info_flow_info.start_timestamp));
         }
-        clock_args.hw_tick = (clock_args.hw_tick << 16);
-        clock_args.sw_ns = &args->flow_state->create_ts;
-        pd_func_args->pd_conv_hw_clock_to_sw_clock = &clock_args;
-        pd_conv_hw_clock_to_sw_clock(pd_func_args);
+        // P4 has timestamp in ms
+        args->flow_state->create_ts <<= 24;
     }
 
     return ret;
@@ -1523,7 +1491,6 @@ pd_flow_get_for_age_thread (pd_func_args_t *pd_func_args, flow_t *flow_p,
                             uint16_t current_age_timer_ticks)
 {
     hal_ret_t                            ret;
-    pd_conv_hw_clock_to_sw_clock_args_t  clock_args;
     pd_flow_get_args_t                  *args;
     pd_flow_t                            pd_flow;
     flow_telemetry_state_t              *flow_telemetry_state_p;
@@ -1563,11 +1530,8 @@ pd_flow_get_for_age_thread (pd_func_args_t *pd_func_args, flow_t *flow_p,
     }
 
     //Retrieve Last-seen-packet-timestamp in this Flow-context
-    clock_args.hw_tick = fs_entry.get_last_seen_timestamp();
-    clock_args.hw_tick = (clock_args.hw_tick << 16);
-    clock_args.sw_ns = &args->flow_state->last_pkt_ts;
-    pd_func_args->pd_conv_hw_clock_to_sw_clock = &clock_args;
-    pd_conv_hw_clock_to_sw_clock(pd_func_args);
+    args->flow_state->last_pkt_ts = fs_entry.get_last_seen_timestamp();
+    args->flow_state->last_pkt_ts *= TIME_NSECS_PER_MSEC;
 
     //Flow-Proto-States are created dynamically on-demand based on the
     // drop_packets symptoms observed in Flow-stats-table D-vector
@@ -1854,24 +1818,17 @@ hal_ret_t
 pd_add_cpu_bypass_flow_info (uint32_t *flow_info_hwid)
 {
     timespec_t                           ts;
-    pd_conv_sw_clock_to_hw_clock_args_t  clock_args;
-    pd_func_args_t                       pd_clock_fn_args = {0};
     flow_info_actiondata_t               d = { 0};
     hal_ret_t                            ret = HAL_RET_OK;
     sdk_ret_t                            sdk_ret;
     sldirectmap                         *info_table = NULL;
-    uint64_t                             sw_ns = 0, clock = 0;
+    uint64_t                             sw_ns = 0;
     sdk_table_api_params_t               params;
 
     // Get the hw clock
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(CLOCK_REALTIME, &ts);
     sdk::timestamp_to_nsecs(&ts, &sw_ns);
-    clock_args.hw_tick = &clock;
-    clock_args.sw_ns = sw_ns;
-    pd_clock_fn_args.pd_conv_sw_clock_to_hw_clock = &clock_args;
-    pd_conv_sw_clock_to_hw_clock(&pd_clock_fn_args);
-
-    ret = p4pd_add_upd_flow_stats_table_entry(flow_info_hwid, 0, 0, 0, 0, clock, false);
+    ret = p4pd_add_upd_flow_stats_table_entry(flow_info_hwid, 0, 0, 0, 0, sw_ns, false);
     if (ret != HAL_RET_OK) {
         return ret;
     }

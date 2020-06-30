@@ -437,7 +437,8 @@ catalog::populate_clock_info (ptree &prop_tree)
     for (ptree::value_type &clock_info : prop_tree.get_child("clock_info")) {
          if (num_freq < MAX_CLOCK_FREQ) {
              catalog_db_.clock_info[num_freq].clock_freq = clock_info.second.get<uint16_t>("freq", 0);
-             catalog_db_.clock_info[num_freq].clock_multiplier = clock_info.second.get<uint64_t>("multiplier", 0);
+             catalog_db_.clock_info[num_freq].clock_multiplier_ns = clock_info.second.get<uint64_t>("multiplier_ns", 0);
+             catalog_db_.clock_info[num_freq].clock_multiplier_ms = clock_info.second.get<uint64_t>("multiplier_ms", 0);
              num_freq += 1;
           }
     }
@@ -1131,10 +1132,19 @@ catalog::tm_port_to_ifindex(uint32_t tm_port) {
 }
 
 uint64_t
-catalog::clock_get_multiplier(uint16_t freq) {
+catalog::clock_get_multiplier_ns(uint16_t freq) {
     for (uint8_t idx=0; idx<MAX_CLOCK_FREQ; idx++) {
          if (freq == catalog_db_.clock_info[idx].clock_freq)
-             return catalog_db_.clock_info[idx].clock_multiplier;
+             return catalog_db_.clock_info[idx].clock_multiplier_ns;
+    }
+    return 0;
+}
+
+uint64_t
+catalog::clock_get_multiplier_ms(uint16_t freq) {
+    for (uint8_t idx=0; idx<MAX_CLOCK_FREQ; idx++) {
+         if (freq == catalog_db_.clock_info[idx].clock_freq)
+             return catalog_db_.clock_info[idx].clock_multiplier_ms;
     }
     return 0;
 }

@@ -391,12 +391,12 @@
             }
         }
     },
-    "num_clock_info": "2",
+    "num_clock_info": "3",
     "clock_info" :
     [
-        {"freq" : "833", "multiplier" : "2576980377"},
-        {"freq" : "416", "multiplier" : "5153960754"},
-        {"freq" : "208", "multiplier" : "10307921508"}
+        {"freq" : "833", "multiplier_ns" : "2576980377", "multiplier_ms" : "2638829"},
+        {"freq" : "416", "multiplier_ns" : "5153960754", "multiplier_ms" : "5277656"},
+        {"freq" : "208", "multiplier_ns" : "10307921508", "multiplier_ms" : "10555312"}
     ]
 
 }

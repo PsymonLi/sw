@@ -877,7 +877,7 @@ session_state_to_session_get_response (session_t *session,
     uint64_t        session_timeout=0, time_elapsed=0, time_remaining=0;
 
     // get current time
-    clock_gettime(CLOCK_MONOTONIC, &ctime);
+    clock_gettime(CLOCK_REALTIME, &ctime);
     sdk::timestamp_to_nsecs(&ctime, &ctime_ns);
 
     response->mutable_spec()->set_tcp_ts_option(session_state->tcp_ts_option);
@@ -3313,7 +3313,7 @@ tcp_tickle_timeout_cb (void *timer, uint32_t timer_id, void *timer_ctxt)
 
     session->tcp_cxntrack_timer = NULL;
     // get current time
-    clock_gettime(CLOCK_MONOTONIC, &ctime);
+    clock_gettime(CLOCK_REALTIME, &ctime);
     sdk::timestamp_to_nsecs(&ctime, &ctime_ns);
     hal_has_session_aged(session, ctime_ns, &session_state, false);
 
@@ -3742,7 +3742,7 @@ session_age_walk_cb (void *timer, uint32_t timer_id, void *ctxt)
     }
 
     // get current time
-    clock_gettime(CLOCK_MONOTONIC, &ctime);
+    clock_gettime(CLOCK_REALTIME, &ctime);
     sdk::timestamp_to_nsecs(&ctime, &args.ctime_ns);
     if (unlikely(g_hal_state->is_age_debug_enabled())) {
         HAL_TRACE_DEBUG("Entering timer id {}, bucket: {} bucket_no: {}", 
