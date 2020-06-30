@@ -1,7 +1,7 @@
 /******************************************************************************/
 /* Rx pipeline                                                                */
 /******************************************************************************/
-control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
+control nacl_lookup(inout cap_phv_intr_global_h intr_global,
              inout cap_phv_intr_p4_h intr_p4,
              inout headers hdr,
              inout metadata_t metadata) {
@@ -40,16 +40,22 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
 	metadata.cntrl.redir_qtype = qtype;
 	metadata.cntrl.redir_qid = qid;
 	metadata.cntrl.redir_app_id = app_id;
-	capri_intrinsic.drop = 0;
-	metadata.cntrl.p4i_drop_reason = 0;
+	intr_global.drop = 0;
         metadata.cntrl.skip_flow_log = TRUE;		   
-	metadata.cntrl.p4e_stats_flag = P4E_STATS_FLAG_TX_TO_ARM; //TO BE COMPLETED 
+	metadata.cntrl.p4e_drop_reason = 0;
+	if(oport == TM_PORT_DMA) {
+	  metadata.cntrl.p4e_stats_flag = P4E_STATS_FLAG_TX_TO_ARM;
+	} else if (oport == UPLINK_SWITCH) {
+	  metadata.cntrl.p4e_stats_flag = P4E_STATS_FLAG_TX_TO_SWITCH;
+	} else {
+	  metadata.cntrl.p4e_stats_flag = P4E_STATS_FLAG_TX_TO_HOST;
+	}
     }
     
     @name(".nacl_error")
       action nacl_error() {
-      capri_intrinsic.drop = 1;
-      
+      intr_global.drop = 1;
+
     }
     
     
@@ -57,7 +63,8 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
         key = {
             metadata.cntrl.direction        : ternary;
             metadata.cntrl.flow_miss        : ternary;
- 	    capri_intrinsic.lif : ternary;
+ 	    intr_global.lif                 : ternary @name(".capri_intrinsic.lif");
+	    hdr.ctag_1.vid                  : ternary @name(".vlan");
         }
         actions = {
 	  nacl_drop;
@@ -67,10 +74,10 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
         size = NACL_TABLE_SIZE;
         default_action = nacl_drop;
 	error_action = nacl_error;
-        stage = 2;
+        stage = 3;
     }
 
-
+    /*
     @name(".mirroring_nacl")
       action mirroring_nacl_a(bit<6> session_number) {
       metadata.cntrl.mirroring_valid = TRUE;
@@ -100,13 +107,15 @@ control nacl_lookup(inout cap_phv_intr_global_h capri_intrinsic,
         stage = 2;
     }
 
-
+    */
     apply {
         nacl.apply();
 	//TBD proper skip on span packets
+	/*
 	if(metadata.cntrl.mirroring_en == TRUE) {
 	  mirroring_nacl.apply();
 	}
+	*/
     }
 
 }

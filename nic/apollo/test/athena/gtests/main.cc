@@ -39,6 +39,7 @@
 #include "nic/apollo/api/include/athena/pds_flow_session_info.h"
 #include "nic/apollo/api/include/athena/pds_flow_session_rewrite.h"
 #include "nic/apollo/api/include/athena/pds_dnat.h"
+#include "nic/apollo/api/include/athena/pds_conntrack.h"
 #include "athena_gtest.hpp"
 #include <boost/crc.hpp>
 
@@ -143,6 +144,21 @@ sdk_logger (uint32_t mod_id, sdk_trace_level_e tracel_level,
 }
 } // namespace core
 
+//#define str ( name ) #name
+const char* conntrack_flow_state_enum [] = {
+  "UNESTABLISHED", 
+  "SYN_SENT", 
+  "SYN_RECV ", 
+  "SYNACK_SENT", 
+  "SYNACK_RECV", 
+  "ESTABLISHED", 
+  "FIN_SENT", 
+  "FIN_RECV", 
+  "TIME_WAIT", 
+  "RST_CLOSE", 
+  "REMOVED" 
+};
+
 pds_ret_t
 flow_table_init(void)
 {
@@ -224,6 +240,11 @@ sdk_ret_t send_packet(const char *out_pkt_descr, uint8_t *out_pkt, uint16_t out_
             dump_pkt(epkt);
             printf("Received Packet:\n");
             dump_pkt(ipkt);
+	    for (int i = 0; i < ipkt.size(); i++) {
+	      if(ipkt[i] != epkt[i]) {
+		printf("Byte %u: epkt = 0x%x, ipkt = 0x%x\n", i, epkt[i], ipkt[i]);
+	      }
+	    }
             return SDK_RET_ERR;
         }
     }
@@ -302,6 +323,11 @@ sdk_ret_t send_packet_wmask(const char *out_pkt_descr, uint8_t *out_pkt, uint16_
             dump_pkt(epkt);
             printf("Received Packet:\n");
             dump_pkt(ipkt);
+	    for (int i = 0; i < ipkt.size(); i++) {
+	      if(ipkt[i] != epkt[i]) {
+		printf("Byte %u: epkt = 0x%x, ipkt = 0x%x\n", i, epkt[i], ipkt[i]);
+	      }
+	    }
             return SDK_RET_ERR;
         }
     }
@@ -760,7 +786,14 @@ uint32_t    g_epoch_index = 1;
 uint32_t    g_flow_ohash_index = 1;
 uint32_t    g_l2_flow_ohash_index = 1;
 uint32_t    g_dnat_ohash_index = 1;
+uint32_t    g_conntrack_index = 1;
 
+uint32_t    g_session_id_v4_tcp = 0;
+uint32_t    g_conntrack_id_v4_tcp = 0;
+uint32_t    g_conntrack_id_v6_tcp = 0;
+uint32_t    g_conntrack_id_v4_udp = 0;
+uint32_t    g_conntrack_id_v4_icmp = 0;
+uint32_t    g_conntrack_id_v4_others = 0;
 
 /*
  * Common Infrastructure
@@ -1275,6 +1308,228 @@ create_session_info_all(uint32_t session_id, uint32_t conntrack_id,
     }
     return (sdk_ret_t)ret;
 }
+
+sdk_ret_t
+update_session_info_all(uint32_t session_id, uint32_t conntrack_id,
+                uint8_t skip_flow_log, mac_addr_t *host_mac,
+                uint16_t h2s_epoch_vnic, uint32_t h2s_epoch_vnic_id,
+                uint16_t h2s_epoch_mapping, uint32_t h2s_epoch_mapping_id,
+                uint16_t h2s_policer_bw1_id, uint16_t h2s_policer_bw2_id,
+                uint16_t h2s_vnic_stats_id, uint8_t *h2s_vnic_stats_mask,
+                uint16_t h2s_vnic_histogram_latency_id, uint16_t h2s_vnic_histogram_packet_len_id,
+                uint8_t h2s_tcp_flags_bitmap,
+                uint32_t h2s_session_rewrite_id,
+                uint16_t h2s_allowed_flow_state_bitmask,
+                pds_egress_action_t h2s_egress_action,
+
+                uint16_t s2h_epoch_vnic, uint32_t s2h_epoch_vnic_id,
+                uint16_t s2h_epoch_mapping, uint32_t s2h_epoch_mapping_id,
+                uint16_t s2h_policer_bw1_id, uint16_t s2h_policer_bw2_id,
+                uint16_t s2h_vnic_stats_id, uint8_t *s2h_vnic_stats_mask,
+                uint16_t s2h_vnic_histogram_latency_id, uint16_t s2h_vnic_histogram_packet_len_id,
+                uint8_t s2h_tcp_flags_bitmap,
+                uint32_t s2h_session_rewrite_id,
+                uint16_t s2h_allowed_flow_state_bitmask,
+                pds_egress_action_t s2h_egress_action)
+{
+    pds_ret_t                               ret = PDS_RET_OK;
+    pds_flow_session_spec_t                 spec;
+
+    memset(&spec, 0, sizeof(spec));
+
+    pds_flow_session_key_t key = { 0 };
+    pds_flow_session_info_t info = { 0 };
+
+    key.session_info_id = session_id;
+    key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
+ 
+    pds_flow_session_info_read( &key, &info);
+    
+    if (ret != PDS_RET_OK) {
+        printf("Failed to read session s2h info : %u\n", ret);
+	return (sdk_ret_t)ret;
+
+    }
+    
+    spec.key = key;
+    spec.data = info.spec.data;
+
+    if(conntrack_id != 0) {
+      spec.data.conntrack_id = conntrack_id;
+    }
+    //    spec.data.skip_flow_log = skip_flow_log;
+    // sdk::lib::memrev(spec.data.host_mac, (uint8_t*)host_mac, sizeof(mac_addr_t));
+
+    /* Host-to-switch */
+    /*
+    spec.data.host_to_switch_flow_info.epoch_vnic = h2s_epoch_vnic;
+    spec.data.host_to_switch_flow_info.epoch_vnic_id = h2s_epoch_vnic_id;
+    spec.data.host_to_switch_flow_info.epoch_mapping = h2s_epoch_mapping;
+    spec.data.host_to_switch_flow_info.policer_bw1_id = h2s_policer_bw1_id;
+    spec.data.host_to_switch_flow_info.policer_bw2_id = h2s_policer_bw2_id;
+    spec.data.host_to_switch_flow_info.vnic_stats_id = h2s_vnic_stats_id;
+    sdk::lib::memrev(spec.data.host_to_switch_flow_info.vnic_stats_mask,
+            h2s_vnic_stats_mask, PDS_FLOW_STATS_MASK_LEN);
+    spec.data.host_to_switch_flow_info.vnic_histogram_latency_id = h2s_vnic_histogram_latency_id;
+    spec.data.host_to_switch_flow_info.vnic_histogram_packet_len_id = h2s_vnic_histogram_packet_len_id;
+    spec.data.host_to_switch_flow_info.tcp_flags_bitmap = h2s_tcp_flags_bitmap;
+    spec.data.host_to_switch_flow_info.rewrite_id = h2s_session_rewrite_id;
+    */
+    if(h2s_allowed_flow_state_bitmask != 0) {
+      spec.data.host_to_switch_flow_info.allowed_flow_state_bitmask = h2s_allowed_flow_state_bitmask;
+    }
+    if(h2s_egress_action) {
+      spec.data.host_to_switch_flow_info.egress_action = h2s_egress_action;
+    }
+
+    /* Switch-to-host */
+    /*
+    spec.data.switch_to_host_flow_info.epoch_vnic = s2h_epoch_vnic;
+    spec.data.switch_to_host_flow_info.epoch_vnic_id = s2h_epoch_vnic_id;
+    spec.data.switch_to_host_flow_info.epoch_mapping = s2h_epoch_mapping;
+    spec.data.switch_to_host_flow_info.policer_bw1_id = s2h_policer_bw1_id;
+    spec.data.switch_to_host_flow_info.policer_bw2_id = s2h_policer_bw2_id;
+    spec.data.switch_to_host_flow_info.vnic_stats_id = s2h_vnic_stats_id;
+    sdk::lib::memrev(spec.data.switch_to_host_flow_info.vnic_stats_mask,
+            s2h_vnic_stats_mask, PDS_FLOW_STATS_MASK_LEN);
+    spec.data.switch_to_host_flow_info.vnic_histogram_latency_id = s2h_vnic_histogram_latency_id;
+    spec.data.switch_to_host_flow_info.vnic_histogram_packet_len_id = s2h_vnic_histogram_packet_len_id;
+    spec.data.switch_to_host_flow_info.tcp_flags_bitmap = s2h_tcp_flags_bitmap;
+    spec.data.switch_to_host_flow_info.rewrite_id = s2h_session_rewrite_id;
+    */
+
+    if(s2h_allowed_flow_state_bitmask != 0) {
+      spec.data.switch_to_host_flow_info.allowed_flow_state_bitmask = s2h_allowed_flow_state_bitmask;
+    }
+    if(s2h_egress_action) {
+      spec.data.switch_to_host_flow_info.egress_action = s2h_egress_action;
+    }
+
+    ret = pds_flow_session_info_create(&spec);
+    if (ret != PDS_RET_OK) {
+        printf("Failed to program session s2h info : %u\n", ret);
+    }
+    return (sdk_ret_t)ret;
+}
+
+sdk_ret_t
+update_session_info_conntrack(uint32_t session_id, uint32_t conntrack_id,
+                uint16_t h2s_allowed_flow_state_bitmask,
+                uint16_t s2h_allowed_flow_state_bitmask)
+{
+    pds_ret_t                               ret = PDS_RET_OK;
+    pds_flow_session_spec_t                 spec;
+
+    memset(&spec, 0, sizeof(spec));
+
+    pds_flow_session_key_t key = { 0 };
+    pds_flow_session_info_t info = { 0 };
+
+    key.session_info_id = session_id;
+    key.direction = (SWITCH_TO_HOST | HOST_TO_SWITCH);
+
+    pds_flow_session_info_read( &key, &info);
+    
+    if (ret != PDS_RET_OK) {
+        printf("Failed to read session s2h info : %u\n", ret);
+	return (sdk_ret_t)ret;
+
+    }
+    
+    spec.key = key;
+    spec.data = info.spec.data;
+
+    if(conntrack_id != 0) {
+      spec.data.conntrack_id = conntrack_id;
+    }
+    if(h2s_allowed_flow_state_bitmask != 0) {
+      spec.data.host_to_switch_flow_info.allowed_flow_state_bitmask = h2s_allowed_flow_state_bitmask;
+    }
+    if(s2h_allowed_flow_state_bitmask != 0) {
+      spec.data.switch_to_host_flow_info.allowed_flow_state_bitmask = s2h_allowed_flow_state_bitmask;
+    }
+    ret = pds_flow_session_info_create(&spec);
+    if (ret != PDS_RET_OK) {
+        printf("Failed to program session s2h info : %u\n", ret);
+    }
+    return (sdk_ret_t)ret;
+}
+
+sdk_ret_t
+create_conntrack_all(uint32_t conntrack_id, pds_flow_type_t flow_type, pds_flow_state_t flow_state)
+{
+    pds_ret_t                               ret = PDS_RET_OK;
+    pds_conntrack_spec_t                    spec;
+
+    memset(&spec, 0, sizeof(spec));
+    spec.key.conntrack_id = conntrack_id;
+
+    spec.data.flow_type = (pds_flow_type_t)flow_type;
+    spec.data.flow_state = (pds_flow_state_t)flow_state;
+
+    ret = pds_conntrack_state_create(&spec);
+    if (ret != PDS_RET_OK) {
+        printf("Failed to program conntrack: %u\n", ret);
+    }
+    return (sdk_ret_t)ret;
+}
+
+sdk_ret_t
+read_conntrack_all(uint32_t conntrack_id, pds_flow_type_t &flow_type, pds_flow_state_t &flow_state)
+{
+    pds_ret_t                               ret = PDS_RET_OK;
+    //    pds_conntrack_spec_t                    *spec;
+
+    pds_conntrack_key_t key = { 0 };
+    pds_conntrack_info_t info = { 0 };
+
+    //   fill_key(&key, index);
+    key.conntrack_id = conntrack_id;
+    ret = pds_conntrack_state_read(&key, &info);
+
+    if (ret != PDS_RET_OK) {
+        printf("Failed to read conntrack: %u\n", ret);
+    }
+
+    flow_type = info.spec.data.flow_type;
+    flow_state = info.spec.data.flow_state;
+
+    return (sdk_ret_t)ret;
+}
+
+sdk_ret_t
+compare_conntrack(uint32_t conntrack_id, pds_flow_type_t e_flow_type, pds_flow_state_t e_flow_state)
+{
+    sdk_ret_t                               ret = SDK_RET_OK;
+    //    pds_conntrack_spec_t                    *spec;
+
+    pds_flow_type_t      r_flow_type;
+    pds_flow_state_t     r_flow_state;
+
+    string s_flow_state;
+
+    ret = read_conntrack_all(conntrack_id, r_flow_type, r_flow_state);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
+    printf("conntrack: entry %u: flow_type=%u, flow_state=%u\n", conntrack_id, r_flow_type, r_flow_state);
+    
+    //   s_flow_state = conntrack_flow_state_enum[r_flow_state];
+    //printf "conntrack: %s\n", s_flow_state.c_str());
+
+    if(e_flow_type != r_flow_type) {
+      printf("conntrack: entry %u: r_flow_type=%u, does not match e_flow_type=%u\n", conntrack_id, r_flow_type, e_flow_type); 
+      return SDK_RET_ERR;
+    }
+
+    if(e_flow_state != r_flow_state) {
+      printf("conntrack: entry %u: r_flow_state=%u, does not match e_flow_state=%u\n", conntrack_id, r_flow_state, e_flow_state); 
+      return SDK_RET_ERR;
+    }
+
+    return ret;
+}
                             
 sdk_ret_t
 vlan_to_vnic_map(uint16_t vlan_id, uint16_t vnic_id, pds_vnic_type_t vnic_type)
@@ -1391,12 +1646,10 @@ setup_flows(void)
         return ret;
     }
 
-#ifdef NAT_1_TO_1
     ret = athena_gtest_setup_flows_nat();
     if (ret != SDK_RET_OK) {
         return ret;
     }
-#endif
 #ifndef P4_14
    
     ret = athena_gtest_setup_flows_udp_udpsrcport();
@@ -1419,7 +1672,6 @@ setup_flows(void)
         return ret;
     }
 
-#ifdef NAT_1_TO_1
     ret = athena_gtest_setup_l2_flows_nat();
     if (ret != SDK_RET_OK) {
         return ret;
@@ -1429,8 +1681,6 @@ setup_flows(void)
     if (ret != SDK_RET_OK) {
         return ret;
     }
-
-#endif
     
    ret = athena_gtest_setup_l2_flows_udp_udpsrcport();
     if (ret != SDK_RET_OK) {
@@ -1477,6 +1727,10 @@ setup_flows(void)
         return ret;
     }
 
+    ret = athena_gtest_setup_l2_flows_conntrack_tcp();
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
     
 #endif
     return ret;
@@ -1597,6 +1851,7 @@ TEST(athena_gtest, sim)
     /* Setup all flows */
     ASSERT_TRUE((ret = setup_flows()) == SDK_RET_OK);
 
+
     /* UDP Flow tests */
     ASSERT_TRUE(athena_gtest_test_flows_udp() == SDK_RET_OK);
 
@@ -1612,40 +1867,39 @@ TEST(athena_gtest, sim)
     /* ICMP Flow tests */
     ASSERT_TRUE(athena_gtest_test_flows_icmp() == SDK_RET_OK);
 
-#ifdef NAT_1_TO_1
     /* NAT Flow tests */
     ASSERT_TRUE(athena_gtest_test_flows_nat() == SDK_RET_OK);
-#endif
 
-#ifndef P4_14
     /* UDP Flow with UDP SRCPORT tests */
     ASSERT_TRUE(athena_gtest_test_flows_udp_udpsrcport() == SDK_RET_OK);
    
     /* L2 UDP Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_udp() == SDK_RET_OK);
-
+    
     /* L2 TCP Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_tcp() == SDK_RET_OK);
 
     /* L2 ICMP Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_icmp() == SDK_RET_OK);
 
-#ifdef NAT_1_TO_1
     /* L2 NAT Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_nat() == SDK_RET_OK);
 
     /* L2 NAT Flow tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_recirc() == SDK_RET_OK);
 
-#endif
 
     /* L2 UDP Flow with UDP SRCPORT tests */
     ASSERT_TRUE(athena_gtest_test_l2_flows_udp_udpsrcport() == SDK_RET_OK);
-    /* L2 TCP Flow with Geneve Encap */
+ 
+   /* L2 TCP Flow with Geneve Encap */
     ASSERT_TRUE(athena_gtest_test_l2_flows_geneve_encap() == SDK_RET_OK);
+
+    
+   /* L2 TCP Flow with Geneve Encap for Conntrack */
+    ASSERT_TRUE(athena_gtest_test_l2_flows_conntrack_tcp() == SDK_RET_OK);
     
 
-#endif
 
     iterate_dump_flows();
 

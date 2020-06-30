@@ -80,7 +80,8 @@
 #define P4E_DROP_INVALID_NEXTHOP        0
 #define P4E_DROP_SECURITY_LIST          1
 #define P4E_DROP_NACL                   2
-#define P4E_DROP_POLICER                3
+#define P4E_DROP_CONNTRACK              3
+#define P4E_DROP_POLICER                4
 #define P4E_DROP_REASON_MIN             P4E_DROP_INVALID_NEXTHOP
 #define P4E_DROP_REASON_MAX             P4E_DROP_POLICER
 
@@ -113,11 +114,15 @@
 #define CONNTRACK_FLOW_STATE_TIME_WAIT          8
 #define CONNTRACK_FLOW_STATE_RST_CLOSE          9
 #define CONNTRACK_FLOW_STATE_REMOVED            10
-#define CONNTRACK_FLOW_STATE_RSVD0              11
-#define CONNTRACK_FLOW_STATE_RSVD1              12
-#define CONNTRACK_FLOW_STATE_RSVD2              13
-#define CONNTRACK_FLOW_STATE_RSVD3              14
-#define CONNTRACK_FLOW_STATE_RSVD4              15
+//#define CONNTRACK_FLOW_STATE_EGRESS_RECV        11
+//#define CONNTRACK_FLOW_STATE_INGRESS_RECV       12
+#define CONNTRACK_FLOW_STATE_OPEN_CONN_SENT     11
+#define CONNTRACK_FLOW_STATE_OPEN_CONN_RECV     12
+#define CONNTRACK_FLOW_STATE_RSVD0              13
+#define CONNTRACK_FLOW_STATE_RSVD1              14
+#define CONNTRACK_FLOW_STATE_RSVD2              15
+//#define CONNTRACK_FLOW_STATE_RSVD3              14
+//#define CONNTRACK_FLOW_STATE_RSVD4              15
 
 
 /*****************************************************************************/

@@ -3,11 +3,11 @@
 
 #define DROP_PACKET_INGRESS(x) \
     metadata.cntrl.drop_reason[x:x] = 1; \
-    capri_intrinsic.drop = 1;
+    intr_global.drop = 1;
 
 #define DROP_PACKET_EGRESS(x) \
     metadata.cntrl.egress_drop_reason[x:x] = 1; \
-    capri_intrinsic.drop = 1;
+    intr_global.drop = 1;
 
 #define SET_BIT_VALUE(m, x, v) \
     m[x:x] = v;
@@ -78,7 +78,7 @@ control AthenaEgressPipeline(inout cap_phv_intr_global_h intr_global,
       config_verify.apply(intr_global, intr_p4, hdr, metadata);
       egress_key_init.apply(intr_global, intr_p4, hdr, metadata);
       nacl_lookup.apply(intr_global, intr_p4, hdr, metadata);
-      policers.apply(intr_global, intr_p4, hdr, metadata);
+     // policers.apply(intr_global, intr_p4, hdr, metadata);
       flow_log_lookup.apply(intr_global, intr_p4, hdr, metadata);
       update_checksums.apply(intr_global, intr_p4, hdr, metadata);
       egress_inter_pipe.apply(intr_global, intr_p4, hdr, metadata);

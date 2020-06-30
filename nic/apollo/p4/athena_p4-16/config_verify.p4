@@ -11,7 +11,13 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
       if(metadata.cntrl.epoch1_value != epoch) {
 	metadata.cntrl.flow_miss = TRUE;
       }
-//      metadata.scratch.config_epoch = epoch;
+      /* Implementation to be decided */
+      /*
+      if(hdr.p4i_to_p4e_header.dnat_epoch != 0) {
+	if (hdr.p4i_to_p4e_header.dnat_epoch > metadata.cntrl.epoch1_value) {
+	    metadata.cntrl.flow_miss = TRUE;
+      }
+      */
     }
 
     @name(".config2_epoch_verify")
@@ -19,7 +25,6 @@ control config_verify(inout cap_phv_intr_global_h intr_global,
       if(metadata.cntrl.epoch2_value != epoch) {
 	metadata.cntrl.flow_miss = TRUE;
       }
-//      metadata.scratch.config_epoch = epoch;
     }
 
 

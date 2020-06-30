@@ -12,7 +12,7 @@
 #define PKT_IPV6_PAYLOAD_LEN_2       hdr.ip_2.ipv6.payloadLen
 
 control session_info_lookup(inout cap_phv_intr_global_h intr_global,
-             inout cap_phv_intr_p4_h capri_p4_intrinsic,
+             inout cap_phv_intr_p4_h intr_p4,
              inout headers hdr,
              inout metadata_t metadata) {
 
@@ -22,39 +22,38 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 				        bit<22> conntrack_id,
 				 @__ref bit<18> timestamp,
 				        bit<48> smac,
-				 bit<16> h2s_epoch_vnic_value,
-				 bit<20> h2s_epoch_vnic_id,
-				 bit<16> h2s_epoch_mapping_value,
-				 bit<20> h2s_epoch_mapping_id,
-				 bit<13>     h2s_throttle_bw1_id,
-				 bit<13>     h2s_throttle_bw2_id,
-				        bit<9>     h2s_vnic_statistics_id,
-				        bit<32>     h2s_vnic_statistics_mask,
-				        bit<9>     h2s_vnic_histogram_packet_len_id,
-				        bit<9>     h2s_vnic_histogram_latency_id,
-				        bit<8>     h2s_slow_path_tcp_flags_match,
-				 bit<22> h2s_session_rewrite_id,
-				 bit<3> h2s_egress_action,
-				 bit<10> h2s_allowed_flow_state_bitmap,
-
-
-				 bit<16> s2h_epoch_vnic_value,
-				 bit<20> s2h_epoch_vnic_id,
-				 bit<16> s2h_epoch_mapping_value,
-				 bit<20> s2h_epoch_mapping_id,
-				 bit<13>     s2h_throttle_bw1_id,
-				 bit<13>     s2h_throttle_bw2_id,
-				        bit<9>     s2h_vnic_statistics_id,
-				        bit<32>     s2h_vnic_statistics_mask,
-				        bit<9>     s2h_vnic_histogram_packet_len_id,
-				        bit<9>     s2h_vnic_histogram_latency_id,
-				        bit<8>     s2h_slow_path_tcp_flags_match,
-				 bit<22> s2h_session_rewrite_id,
-				 bit<3> s2h_egress_action,
+				        bit<16> h2s_epoch_vnic_value,
+					bit<20> h2s_epoch_vnic_id,
+					bit<16> h2s_epoch_mapping_value,
+					bit<20> h2s_epoch_mapping_id,
+					bit<13> h2s_throttle_bw1_id,
+					bit<13> h2s_throttle_bw2_id,
+				        bit<9>  h2s_vnic_statistics_id,
+				        bit<32> h2s_vnic_statistics_mask,
+				        bit<9>  h2s_vnic_histogram_packet_len_id,
+				        bit<9>  h2s_vnic_histogram_latency_id,
+				        bit<8>  h2s_slow_path_tcp_flags_match,
+					bit<22> h2s_session_rewrite_id,
+					bit<3>  h2s_egress_action,
+					bit<10> h2s_allowed_flow_state_bitmap,
+							
+					bit<16> s2h_epoch_vnic_value,
+					bit<20> s2h_epoch_vnic_id,
+					bit<16> s2h_epoch_mapping_value,
+					bit<20> s2h_epoch_mapping_id,
+					bit<13> s2h_throttle_bw1_id,
+					bit<13> s2h_throttle_bw2_id,
+				        bit<9>  s2h_vnic_statistics_id,
+				        bit<32> s2h_vnic_statistics_mask,
+				        bit<9>  s2h_vnic_histogram_packet_len_id,
+				        bit<9>  s2h_vnic_histogram_latency_id,
+				        bit<8>  s2h_slow_path_tcp_flags_match,
+					bit<22> s2h_session_rewrite_id,
+					bit<3>  s2h_egress_action,
 					bit<10> s2h_allowed_flow_state_bitmap,
 				        bit<1>  valid_flag
-
-						       ) {
+					
+			  ) {
       if(valid_flag == TRUE) {
 	bit<48> current_time;
 	current_time = __current_time();
@@ -62,10 +61,10 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	__unlock();
 	metadata.cntrl.skip_flow_log = skip_flow_log;
 	if(conntrack_id != 0) {
-	  //   metadata.cntrl.conntrack_index = conntrack_id;
-	  //  metadata.cntrl.conntrack_index_valid = TRUE;
-	  hdr.p4i_to_p4e_header.index = (bit<24>)conntrack_id;
-	    hdr.p4i_to_p4e_header.conntrack_en = TRUE;
+	  metadata.cntrl.conntrack_index = conntrack_id;
+	  metadata.cntrl.conntrack_index_valid = TRUE;
+	  // hdr.p4i_to_p4e_header.index = (bit<24>)conntrack_id;
+	  // hdr.p4i_to_p4e_header.conntrack_en = TRUE;
 	}
 	
 	//	if(metadata.cntrl.direction == TX_FROM_HOST) {
@@ -472,7 +471,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
         size  = SESSION_TABLE_SIZE;
 	default_action = session_rewrite;
 	error_action = session_rewrite_error;
-        stage = 2;
+        stage = 3;
         placement = HBM;
     }
 
@@ -811,7 +810,7 @@ control session_info_lookup(inout cap_phv_intr_global_h intr_global,
 	default_action = session_rewrite_encap_l2;
 	error_action = session_rewrite_encap_error;
         size  = SESSION_TABLE_SIZE;
-        stage = 2;
+        stage = 3;
         placement = HBM;
     }
 

@@ -258,10 +258,70 @@ setup_l2_flow_nat(void)
         return ret;
     }
 
+    ipv4_session_id = g_session_index;
+    g_session_index++;
+
+    memset(&host_mac, 0, sizeof(host_mac));
+    ret = create_session_info_all(ipv4_session_id, /*conntrack_id*/0,
+                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+
+                /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
+                /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
+                /*h2s_policer_bw1_id*/0, /*h2s_policer_bw2_id*/0,
+                /*h2s_vnic_stats_id*/0, /*h2s_vnic_stats_mask*/ vnic_stats_mask,
+                /*h2s_vnic_histogram_latency_id*/0, /*h2s_vnic_histogram_packet_len_id*/0,
+                /*h2s_tcp_flags_bitmap*/0,
+                /*h2s_session_rewrite_id*/ h2s_session_rewrite_id,
+                /*h2s_allowed_flow_state_bitmask*/0,
+                /*h2s_egress_action*/EGRESS_ACTION_NONE,
+
+                /*s2h_epoch_vnic*/ 0, /*s2h_epoch_vnic_id*/ 0,
+                /*s2h_epoch_mapping*/0, /*s2h_epoch_mapping_id*/0,
+                /*s2h_policer_bw1_id*/0, /*s2h_policer_bw2_id*/0,
+                /*s2h_vnic_stats_id*/0, /*s2h_vnic_stats_mask*/ vnic_stats_mask,
+                /*s2h_vnic_histogram_latency_id*/0, /*s2h_vnic_histogram_packet_len_id*/0,
+                /*s2h_tcp_flags_bitmap*/0,
+                /*s2h_session_rewrite_id*/ s2h_session_rewrite_id,
+                /*s2h_allowed_flow_state_bitmask*/0,
+                /*s2h_egress_action*/EGRESS_ACTION_NONE
+                );
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
     // Setup Normalized TCP IPv4 Flow entry
     ret = create_flow_v4_tcp_udp(g_nat_vnic_id, g_h2s_sip, g_h2s_dip,
             g_h2s_proto_tcp, g_h2s_sport, g_h2s_dport,
             PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
+    ipv6_session_id = g_session_index;
+    g_session_index++;
+    ret = create_session_info_all(ipv6_session_id, /*conntrack_id*/0,
+                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+
+                /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
+                /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
+                /*h2s_policer_bw1_id*/0, /*h2s_policer_bw2_id*/0,
+                /*h2s_vnic_stats_id*/0, /*h2s_vnic_stats_mask*/ vnic_stats_mask,
+                /*h2s_vnic_histogram_latency_id*/0, /*h2s_vnic_histogram_packet_len_id*/0,
+                /*h2s_tcp_flags_bitmap*/0,
+                /*h2s_session_rewrite_id*/ h2s_ipv6_session_rewrite_id,
+                /*h2s_allowed_flow_state_bitmask*/0,
+                /*h2s_egress_action*/EGRESS_ACTION_NONE,
+
+                /*s2h_epoch_vnic*/ 0, /*s2h_epoch_vnic_id*/ 0,
+                /*s2h_epoch_mapping*/0, /*s2h_epoch_mapping_id*/0,
+                /*s2h_policer_bw1_id*/0, /*s2h_policer_bw2_id*/0,
+                /*s2h_vnic_stats_id*/0, /*s2h_vnic_stats_mask*/ vnic_stats_mask,
+                /*s2h_vnic_histogram_latency_id*/0, /*s2h_vnic_histogram_packet_len_id*/0,
+                /*s2h_tcp_flags_bitmap*/0,
+                /*s2h_session_rewrite_id*/ s2h_ipv6_session_rewrite_id,
+                /*s2h_allowed_flow_state_bitmask*/0,
+                /*s2h_egress_action*/EGRESS_ACTION_NONE
+                );
     if (ret != SDK_RET_OK) {
         return ret;
     }
@@ -274,10 +334,70 @@ setup_l2_flow_nat(void)
         return ret;
     }
 
+    ipv4_session_id = g_session_index;
+    g_session_index++;
+
+    memset(&host_mac, 0, sizeof(host_mac));
+    ret = create_session_info_all(ipv4_session_id, /*conntrack_id*/0,
+                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+
+                /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
+                /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
+                /*h2s_policer_bw1_id*/0, /*h2s_policer_bw2_id*/0,
+                /*h2s_vnic_stats_id*/0, /*h2s_vnic_stats_mask*/ vnic_stats_mask,
+                /*h2s_vnic_histogram_latency_id*/0, /*h2s_vnic_histogram_packet_len_id*/0,
+                /*h2s_tcp_flags_bitmap*/0,
+                /*h2s_session_rewrite_id*/ h2s_session_rewrite_id,
+                /*h2s_allowed_flow_state_bitmask*/0,
+                /*h2s_egress_action*/EGRESS_ACTION_NONE,
+
+                /*s2h_epoch_vnic*/ 0, /*s2h_epoch_vnic_id*/ 0,
+                /*s2h_epoch_mapping*/0, /*s2h_epoch_mapping_id*/0,
+                /*s2h_policer_bw1_id*/0, /*s2h_policer_bw2_id*/0,
+                /*s2h_vnic_stats_id*/0, /*s2h_vnic_stats_mask*/ vnic_stats_mask,
+                /*s2h_vnic_histogram_latency_id*/0, /*s2h_vnic_histogram_packet_len_id*/0,
+                /*s2h_tcp_flags_bitmap*/0,
+                /*s2h_session_rewrite_id*/ s2h_session_rewrite_id,
+                /*s2h_allowed_flow_state_bitmask*/0,
+                /*s2h_egress_action*/EGRESS_ACTION_NONE
+                );
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
     // Setup Normalized ICMP Flow entry
     ret = create_flow_v4_icmp(g_nat_vnic_id, g_h2s_sip, g_h2s_dip,
         g_h2s_proto_icmp, g_h2s_icmp_type, g_h2s_icmp_code, g_h2s_icmp_identifier,
         PDS_FLOW_SPEC_INDEX_SESSION, ipv4_session_id);
+    if (ret != SDK_RET_OK) {
+        return ret;
+    }
+
+    ipv6_session_id = g_session_index;
+    g_session_index++;
+    ret = create_session_info_all(ipv6_session_id, /*conntrack_id*/0,
+                /*skip_flow_log*/ FALSE, /*host_mac*/ &host_mac,
+
+                /*h2s_epoch_vnic*/ 0, /*h2s_epoch_vnic_id*/ 0,
+                /*h2s_epoch_mapping*/0, /*h2s_epoch_mapping_id*/0,
+                /*h2s_policer_bw1_id*/0, /*h2s_policer_bw2_id*/0,
+                /*h2s_vnic_stats_id*/0, /*h2s_vnic_stats_mask*/ vnic_stats_mask,
+                /*h2s_vnic_histogram_latency_id*/0, /*h2s_vnic_histogram_packet_len_id*/0,
+                /*h2s_tcp_flags_bitmap*/0,
+                /*h2s_session_rewrite_id*/ h2s_ipv6_session_rewrite_id,
+                /*h2s_allowed_flow_state_bitmask*/0,
+                /*h2s_egress_action*/EGRESS_ACTION_NONE,
+
+                /*s2h_epoch_vnic*/ 0, /*s2h_epoch_vnic_id*/ 0,
+                /*s2h_epoch_mapping*/0, /*s2h_epoch_mapping_id*/0,
+                /*s2h_policer_bw1_id*/0, /*s2h_policer_bw2_id*/0,
+                /*s2h_vnic_stats_id*/0, /*s2h_vnic_stats_mask*/ vnic_stats_mask,
+                /*s2h_vnic_histogram_latency_id*/0, /*s2h_vnic_histogram_packet_len_id*/0,
+                /*s2h_tcp_flags_bitmap*/0,
+                /*s2h_session_rewrite_id*/ s2h_ipv6_session_rewrite_id,
+                /*s2h_allowed_flow_state_bitmask*/0,
+                /*s2h_egress_action*/EGRESS_ACTION_NONE
+                );
     if (ret != SDK_RET_OK) {
         return ret;
     }

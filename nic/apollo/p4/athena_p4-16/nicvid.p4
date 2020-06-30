@@ -1,5 +1,5 @@
 
-control vnic(inout cap_phv_intr_global_h capri_intrinsic,
+control vnic(inout cap_phv_intr_global_h intr_global,
             inout cap_phv_intr_p4_h intr_p4,
             inout headers hdr,
             inout metadata_t metadata) {
@@ -32,7 +32,7 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
 
     @name(".mpls_label_to_vnic_error")
       action mpls_label_to_vnic_error() {
-      capri_intrinsic.drop = 1;
+      intr_global.drop = 1;
  //     capri_intrinsic.debug_trace = 1;
       
     }
@@ -89,7 +89,7 @@ control vnic(inout cap_phv_intr_global_h capri_intrinsic,
 
    @name(".vlan_to_vnic_error")
       action vlan_to_vnic_error() {
-      capri_intrinsic.drop = 1;
+      intr_global.drop = 1;
 //      capri_intrinsic.debug_trace = 1;
       
     }

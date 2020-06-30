@@ -49,6 +49,8 @@ control flow_lookup(inout cap_phv_intr_global_h intr_global,
 	    hdr.p4i_to_p4e_header.direction = metadata.cntrl.direction;
 	    if(idx_type == FLOW_CACHE_INDEX_TYPE_CONNTRACK_INFO) {
 	      hdr.p4i_to_p4e_header.conntrack_en = TRUE;
+	      metadata.cntrl.flow_miss = TRUE;
+
 	    } else {
 	      hdr.p4i_to_p4e_header.session_info_en = TRUE;
 	    }

@@ -8,7 +8,7 @@
 #define PKT_IPV6_PAYLOAD_LEN_1       hdr.ip_1.ipv6.payloadLen
 #define PKT_IPV6_PAYLOAD_LEN_2       hdr.ip_2.ipv6.payloadLen
 
-control update_checksums(inout cap_phv_intr_global_h capri_intrinsic,
+control update_checksums(inout cap_phv_intr_global_h intr_global,
         inout cap_phv_intr_p4_h intr_p4,
         inout headers hdr, 
         inout metadata_t metadata) {
@@ -108,7 +108,7 @@ control update_checksums(inout cap_phv_intr_global_h capri_intrinsic,
 
     @name(".checksum_error")
         action checksum_error() {
-            capri_intrinsic.drop = 1;
+            intr_global.drop = 1;
 
         }
 

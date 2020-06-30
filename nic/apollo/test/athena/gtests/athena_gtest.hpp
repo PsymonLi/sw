@@ -1,6 +1,8 @@
 #ifndef __ATHENA_GTEST_HPP__
 #define __ATHENA_GTEST_HPP__
 
+#include "nic/apollo/api/include/athena/pds_conntrack.h"
+
 #define VNIC_ID_UDP         0x0001
 #define VNIC_ID_TCP         0x0002
 #define VNIC_ID_SLOW_PATH   0x0003
@@ -17,6 +19,7 @@
 #define VNIC_ID_L2_UDPSPORT    0x000d
 #define VNIC_ID_RECIRC    0x000e
 #define VNIC_ID_GENEVE_ENCAP    0x000f
+#define VNIC_ID_L2_CONN_TCP    0x0020
 
 #define VLAN_ID_VLAN0         0x0
 #define VLAN_ID_UDP         0x0001
@@ -35,6 +38,7 @@
 #define VLAN_ID_L2_UDPSPORT    0x000d
 #define VLAN_ID_RECIRC    0x000e
 #define VLAN_ID_GENEVE_ENCAP    0x000f
+#define VLAN_ID_L2_CONN_TCP         0x0020
 
 
 //#define MPLS_LABEL_UDP      0x49440
@@ -54,6 +58,7 @@
 #define GENEVE_DST_SLOT_ID_UDPSPORT      0x1234f
 #define GENEVE_DST_SLOT_ID_RECIRC      0x12350
 #define GENEVE_DST_SLOT_ID_GENEVE_ENCAP      0x12351
+#define GENEVE_DST_SLOT_ID_CONN_TCP      0x12360
 
 
 
@@ -65,6 +70,14 @@ extern uint32_t    g_epoch_index;
 extern uint32_t    g_flow_ohash_index;
 extern uint32_t    g_l2_flow_ohash_index;
 extern uint32_t    g_dnat_ohash_index;
+extern uint32_t    g_conntrack_index;
+
+extern uint32_t    g_session_id_v4_tcp;
+extern uint32_t    g_conntrack_id_v4_tcp;
+extern uint32_t    g_conntrack_id_v6_tcp;
+extern uint32_t    g_conntrack_id_v4_udp;
+extern uint32_t    g_conntrack_id_v4_icmp;
+extern uint32_t    g_conntrack_id_v4_others;
 
 void
 dump_pkt(std::vector<uint8_t> &pkt);
@@ -137,7 +150,6 @@ vlan_to_vnic_map(uint16_t vlan_id, uint16_t vnic_id, pds_vnic_type_t vnic_type =
 sdk_ret_t
 mpls_label_to_vnic_map(uint32_t mpls_label, uint16_t vnic_id, pds_vnic_type_t vnic_type = VNIC_TYPE_L3);
 
-#ifndef P4_14
 sdk_ret_t
 create_l2_flow (uint16_t vnic_id, mac_addr_t dmac,  uint32_t index);
 
@@ -182,7 +194,6 @@ sdk_ret_t
 create_s2h_session_rewrite_insert_ctag(uint32_t session_rewrite_id,
 				       uint16_t vlan);
 
-#endif
 
 sdk_ret_t
 create_session_info_all(uint32_t session_id, uint32_t conntrack_id,
@@ -208,6 +219,43 @@ create_session_info_all(uint32_t session_id, uint32_t conntrack_id,
                 pds_egress_action_t s2h_egress_action);
 
 sdk_ret_t
+update_session_info_all(uint32_t session_id, uint32_t conntrack_id,
+                uint8_t skip_flow_log, mac_addr_t *host_mac,
+                uint16_t h2s_epoch_vnic, uint32_t h2s_epoch_vnic_id,
+                uint16_t h2s_epoch_mapping, uint32_t h2s_epoch_mapping_id,
+                uint16_t h2s_policer_bw1_id, uint16_t h2s_policer_bw2_id,
+                uint16_t h2s_vnic_stats_id, uint8_t *h2s_vnic_stats_mask,
+                uint16_t h2s_vnic_histogram_latency_id, uint16_t h2s_vnic_histogram_packet_len_id,
+                uint8_t h2s_tcp_flags_bitmap,
+                uint32_t h2s_session_rewrite_id,
+                uint16_t h2s_allowed_flow_state_bitmask,
+                pds_egress_action_t h2s_egress_action,
+
+                uint16_t s2h_epoch_vnic, uint32_t s2h_epoch_vnic_id,
+                uint16_t s2h_epoch_mapping, uint32_t s2h_epoch_mapping_id,
+                uint16_t s2h_policer_bw1_id, uint16_t s2h_policer_bw2_id,
+                uint16_t s2h_vnic_stats_id, uint8_t *s2h_vnic_stats_mask,
+                uint16_t s2h_vnic_histogram_latency_id, uint16_t s2h_vnic_histogram_packet_len_id,
+                uint8_t s2h_tcp_flags_bitmap,
+                uint32_t s2h_session_rewrite_id,
+                uint16_t s2h_allowed_flow_state_bitmask,
+                pds_egress_action_t s2h_egress_action);
+
+sdk_ret_t
+update_session_info_conntrack(uint32_t session_id, uint32_t conntrack_id,
+                uint16_t h2s_allowed_flow_state_bitmask,
+                uint16_t s2h_allowed_flow_state_bitmask);
+
+sdk_ret_t
+create_conntrack_all(uint32_t conntrack_id, pds_flow_type_t flow_type, pds_flow_state_t flow_state);
+
+sdk_ret_t
+read_conntrack_all(uint32_t conntrack_id,  pds_flow_type_t &flow_type, pds_flow_state_t &flow_state);
+
+sdk_ret_t
+compare_conntrack(uint32_t conntrack_id, pds_flow_type_t e_flow_type, pds_flow_state_t e_flow_state);
+
+sdk_ret_t
 create_flow_v4_icmp(uint16_t vnic_id, ipv4_addr_t v4_addr_sip,
         ipv4_addr_t v4_addr_dip,
         uint8_t proto, uint8_t type, uint8_t code, uint16_t identifier,
@@ -227,7 +275,6 @@ sdk_ret_t
 create_dnat_map_ipv6(uint16_t vnic_id, ipv6_addr_t *v6_nat_dip, 
         ipv6_addr_t *v6_orig_dip, uint16_t dnat_epoch);
 
-#ifndef P4_14
 static uint32_t
 generate_hash_ (void *key, uint32_t key_len, uint32_t crc_init_val);
 
@@ -257,7 +304,6 @@ void
 p4pd_ipv6_dnat_insert (uint16_t vnic_id, ipv6_addr_t v6_nat_dip,
 		       ipv6_addr_t v6_orig_dip, uint16_t dnat_epoch,  bool ovfl = 0, uint8_t recirc_num = 0);
 
-#endif
 
 
 /* VLAN0 Flows */
@@ -302,7 +348,6 @@ athena_gtest_setup_flows_nat(void);
 sdk_ret_t
 athena_gtest_test_flows_nat(void);
 
-#ifndef P4_14
 /* UDP Flows with UDP SRC PORT*/
 sdk_ret_t
 athena_gtest_setup_flows_udp_udpsrcport(void);
@@ -359,6 +404,12 @@ athena_gtest_setup_l2_flows_recirc(void);
 sdk_ret_t
 athena_gtest_test_l2_flows_recirc(void);
 
-#endif
+/* Conntrack TCP  Flows */
+sdk_ret_t
+athena_gtest_setup_l2_flows_conntrack_tcp(void);
+
+sdk_ret_t
+athena_gtest_test_l2_flows_conntrack_tcp(void);
+
 
 #endif /* __ATHENA_GTEST_HPP__ */

@@ -60,13 +60,13 @@ struct flow_log_key_metadata_t {
 
 struct control_metadata_t {
         bit<1> egress_recirc;
-        bit<8> egress_drop_reason;
         bit<1> nacl_permit;
         bit<16> geneve_prototype;
-        bit<1> conn_track_tcp;
-        bit<4> conn_track_prev_state;
-        bit<4> conn_track_curr_state;
+        bit<1> conntrack_tcp;
+        bit<4> conntrack_flow_state_pre;
+        bit<4> conntrack_flow_state_post;
         bit<16> drop_reason;
+        bit<16> egress_drop_reason;
 	bit<1> parser_encap_error;
 	bit<1> forward_to_uplink;
 	bit<1> redir_to_rxdma;
@@ -319,6 +319,7 @@ struct csum_metadata_t {
      bit<16>     icmp_len; 
      bit<16>     udp_len; 
      bit<16>     tcp_len; 
+     bit<16>     l2_complete_len; 
 
 }
 

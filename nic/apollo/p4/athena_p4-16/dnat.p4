@@ -1,5 +1,5 @@
 
-control dnat_lookup(inout cap_phv_intr_global_h capri_intrinsic,
+control dnat_lookup(inout cap_phv_intr_global_h intr_global,
             inout cap_phv_intr_p4_h intr_p4,
             inout headers hdr,
             inout metadata_t metadata) {
@@ -97,13 +97,13 @@ control dnat_lookup(inout cap_phv_intr_global_h capri_intrinsic,
 
     @name(".dnat_ohash_error")
       action dnat_ohash_error() {
-      capri_intrinsic.drop = 1;
+      intr_global.drop = 1;
       
     }
     
     @name(".dnat_error")
       action dnat_error() {
-      capri_intrinsic.drop = 1;
+      intr_global.drop = 1;
       
     }
     

@@ -43,7 +43,9 @@ typedef enum pds_flow_state_e {
     FIN_RECV,                      ///< FIN received
     TIME_WAIT,                     ///< Wait
     RST_CLOSE,                     ///< RST close
-    REMOVED                        ///< Connection removed
+    REMOVED,                       ///< Connection removed
+    OPEN_CONN_SENT,                ///< TCP OPEN, UDP, ICMP, OTHERS unestablished H2S
+    OPEN_CONN_RECV                 ///< TCP_OPEN, UDP, ICMP, OTHERS unestablished S2H
 } pds_flow_state_t;
 
 /// \brief Connection tracking data

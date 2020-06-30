@@ -2,8 +2,8 @@
 /*****************************************************************************/
 /* Inter pipe : ingress pipeline                                             */
 /*****************************************************************************/
-control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
-			    inout cap_phv_intr_p4_h capri_p4_intrinsic,
+control ingress_inter_pipe(inout cap_phv_intr_global_h intr_global,
+			    inout cap_phv_intr_p4_h intr_p4,
 			    inout headers hdr,
 			    inout metadata_t metadata) {
 
@@ -18,7 +18,7 @@ control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
          /* Recirc back to P4I */
        hdr.ingress_recirc_header.setValid();
        hdr.ingress_recirc_header.direction = metadata.cntrl.direction;
-       capri_intrinsic.tm_oport = TM_PORT_INGRESS;
+       intr_global.tm_oport = TM_PORT_INGRESS;
      } else {
         /* To P4E */
        hdr.ingress_recirc_header.setInvalid();
@@ -29,7 +29,7 @@ control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
        hdr.p4i_to_p4e_header.skip_flow_log = 0; // TO BE DONE based on P4PLUS 
        hdr.p4i_to_p4e_nat_header.setValid();
        hdr.p4i_to_p4e_nat_header.flow_log_dstAddr = metadata.key.src;
-       capri_intrinsic.tm_oport = TM_PORT_EGRESS;
+       intr_global.tm_oport = TM_PORT_EGRESS;
      }
    }
 
@@ -43,7 +43,7 @@ control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
     }
 
     apply{
-      if(capri_intrinsic.drop == 0) {
+      if(intr_global.drop == 0) {
 	p4i_to_p4e.apply();
       }
     }
@@ -54,8 +54,8 @@ control ingress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
 /* Inter pipe : egress pipeline                                              */
 /*****************************************************************************/
 
-control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
-			    inout cap_phv_intr_p4_h capri_p4_intrinsic,
+control egress_inter_pipe(inout cap_phv_intr_global_h intr_global,
+			    inout cap_phv_intr_p4_h intr_p4,
 			    inout headers hdr,
 			    inout metadata_t metadata) {
 
@@ -67,21 +67,20 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
      } else if(hdr.p4i_to_p4e_header.isValid()) {
        metadata.cntrl.direction = hdr.p4i_to_p4e_header.direction;
        metadata.cntrl.update_checksum = hdr.p4i_to_p4e_header.update_checksum;
-
-	 //	 metadata.cntrl.l2_session_index = hdr.p4i_to_p4e_header.l2_index;
-	 //metadata.cntrl.l2_session_index_valid = TRUE;
-
+       if(hdr.p4i_to_p4e_header.index_type == FLOW_CACHE_INDEX_TYPE_CONNTRACK_INFO) {
+	 metadata.cntrl.conntrack_index = hdr.p4i_to_p4e_header.index[21:0];
+	 metadata.cntrl.conntrack_index_valid = TRUE;
+       }
+       
      }
-
   }
-
 
   @name(".p4i_to_p4e_state_error")
   action p4i_to_p4e_state_error() {
-    capri_intrinsic.drop = 1;
+    intr_global.drop = 1;
 //    capri_intrinsic.debug_trace = 1;
-    if (capri_intrinsic.tm_oq != TM_P4_RECIRC_QUEUE) {
-      capri_intrinsic.tm_iq = capri_intrinsic.tm_oq;
+    if (intr_global.tm_oq != TM_P4_RECIRC_QUEUE) {
+      intr_global.tm_iq = intr_global.tm_oq;
     }
 
     
@@ -102,7 +101,7 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
     if(!hdr.egress_recirc_header.isValid()) {
       hdr.egress_recirc_header.setValid();
       hdr.eg_nat_u.egress_recirc_nat_header.setValid();
-      capri_intrinsic.tm_oport = TM_PORT_EGRESS; 
+      intr_global.tm_oport = TM_PORT_EGRESS; 
       hdr.egress_recirc_header.flow_log_disposition = metadata.flow_log_key.disposition;
       hdr.egress_recirc_header.flow_log_select = metadata.cntrl.flow_log_select;
       hdr.egress_recirc_header.direction = metadata.cntrl.direction;
@@ -113,16 +112,14 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
     } else {
       hdr.egress_recirc_header.setInvalid();
       hdr.eg_nat_u.egress_recirc_nat_header.setInvalid();
-      capri_intrinsic.tm_oport = hdr.egress_recirc_header.oport;
+      intr_global.tm_oport = hdr.egress_recirc_header.oport;
     }
-       //      capri_intrinsic.lif = p4i_to_p4e_header.nacl_redir_lif;
 
    }
 
-
    @name(".p4e_to_rxdma") action p4e_to_rxdma_a() {
-        capri_intrinsic.tm_oport = TM_PORT_DMA;
-        capri_intrinsic.lif = metadata.cntrl.redir_lif;
+        intr_global.tm_oport = TM_PORT_DMA;
+        intr_global.lif = metadata.cntrl.redir_lif;
 	hdr.capri_rxdma_intrinsic.setValid();
 	hdr.capri_rxdma_intrinsic.qid = metadata.cntrl.redir_qid;
 	hdr.capri_rxdma_intrinsic.qtype = metadata.cntrl.redir_qtype;
@@ -132,7 +129,7 @@ control egress_inter_pipe(inout cap_phv_intr_global_h capri_intrinsic,
 	hdr.p4_to_p4plus_classic_nic.setValid();
 	hdr.p4_to_p4plus_classic_nic.p4plus_app_id = metadata.cntrl.redir_app_id;
 	hdr.p4_to_p4plus_classic_nic_ip.setValid();
-	hdr.p4_to_p4plus_classic_nic.packet_len = (bit<16>)capri_p4_intrinsic.packet_len;
+	hdr.p4_to_p4plus_classic_nic.packet_len = (bit<16>)intr_p4.packet_len;
 	if(hdr.ip_1.ipv4.isValid()) {
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_sa = (bit<128>)hdr.ip_1.ipv4.srcAddr;
 	  hdr.p4_to_p4plus_classic_nic_ip.ip_da = (bit<128>)hdr.ip_1.ipv4.dstAddr;

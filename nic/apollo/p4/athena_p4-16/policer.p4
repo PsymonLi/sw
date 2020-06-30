@@ -2,7 +2,7 @@
 /* Egr pipeline                                                                */
 /******************************************************************************/
 
-control policers(inout cap_phv_intr_global_h capri_intrinsic,
+control policers(inout cap_phv_intr_global_h intr_global,
             inout cap_phv_intr_p4_h intr_p4,
             inout headers hdr,
             inout metadata_t metadata) {
