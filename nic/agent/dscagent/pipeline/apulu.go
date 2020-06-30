@@ -634,7 +634,13 @@ func (a *ApuluAPI) HandleInterface(oper types.Operation, intf netproto.Interface
 		oldLoopbackIf = cfg.LoopbackIP
 	}
 
-	err = apulu.HandleInterface(a.InfraAPI, a.InterfaceClient, a.SubnetClient, oper, intf)
+	collectorMap := make(map[uint64]int)
+	err = validator.ValidateInterface(a.InfraAPI, intf, collectorMap, apulu.MirrorKeyToSessionIdMapping)
+	if err != nil {
+		log.Error(err)
+	}
+
+	err = apulu.HandleInterface(a.InfraAPI, a.InterfaceClient, a.SubnetClient, oper, intf, collectorMap)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -1115,9 +1121,102 @@ func (a *ApuluAPI) HandleIPAMPolicy(oper types.Operation, policy netproto.IPAMPo
 	return
 }
 
-// HandleInterfaceMirrorSession handles CRUD Methods for MirrorSession Object
-func (i *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netproto.InterfaceMirrorSession) (mirrors []netproto.InterfaceMirrorSession, err error) {
-	return nil, errors.New("Not implemented")
+func getMirrorSessionObj(infraObj types.InfraAPI, mirror netproto.InterfaceMirrorSession) (mirrorSessionObj netproto.InterfaceMirrorSession, err error) {
+	//read from BoltDB
+	var (
+		mirrorRawData []byte
+	)
+	mirrorRawData, err = infraObj.Read(mirror.Kind, mirror.GetKey())
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrBadRequest, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
+		return mirrorSessionObj, errors.Wrapf(types.ErrBadRequest, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound)
+	}
+	err = mirrorSessionObj.Unmarshal(mirrorRawData)
+	if err != nil {
+		log.Error(errors.Wrapf(types.ErrUnmarshal, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
+		return mirrorSessionObj, errors.Wrapf(types.ErrUnmarshal, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
+	}
+	return mirrorSessionObj, nil
+}
+
+// HandleInterfaceMirrorSession handles CRUD Methods for InterfaceMirrorSession Object
+func (a *ApuluAPI) HandleInterfaceMirrorSession(oper types.Operation, mirror netproto.InterfaceMirrorSession) (mirrors []netproto.InterfaceMirrorSession, err error) {
+	a.Lock()
+	defer a.Unlock()
+
+	err = utils.ValidateMeta(oper, mirror.Kind, mirror.ObjectMeta)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	var existingMirrorSession netproto.InterfaceMirrorSession
+	switch oper {
+	case types.Get:
+		//read from BoltDB
+		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
+		if err != nil {
+			mirrors = append(mirrors, existingMirrorSession)
+			return mirrors, nil
+		} else {
+			return nil, err
+		}
+	case types.List:
+		//read from BoltDB
+		var mirrorRawArr [][]byte
+		mirrorRawArr, err = a.InfraAPI.List(mirror.Kind)
+		if err != nil {
+			log.Error(errors.Wrapf(types.ErrBadRequest, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound))
+			return nil, errors.Wrapf(types.ErrBadRequest, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), types.ErrObjNotFound)
+		}
+		for _, mirrorSessionRaw := range mirrorRawArr {
+			var mirrorSessionObj netproto.InterfaceMirrorSession
+			err = proto.Unmarshal(mirrorSessionRaw, &mirrorSessionObj)
+			if err != nil {
+				log.Error(errors.Wrapf(types.ErrUnmarshal, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
+				continue
+			}
+			mirrors = append(mirrors, mirrorSessionObj)
+		}
+		return mirrors, err
+	case types.Create:
+	case types.Update:
+		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
+		//check if existing session and new request are same and ignore
+		if err != nil && proto.Equal(&existingMirrorSession.Spec, &mirror.Spec) {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+
+	case types.Delete:
+		existingMirrorSession, err = getMirrorSessionObj(a.InfraAPI, mirror)
+		if err != nil {
+			mirror = existingMirrorSession
+		} else {
+			return nil, err
+		}
+	}
+
+	log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjBegin)
+	defer log.Infof("InterfaceMirrorSession: %s | Op: %s | %s", mirror.GetKey(), oper, types.InfoHandleObjEnd)
+
+	var halMirrorSessionCount int
+	for _, sessionIds := range apulu.MirrorKeyToSessionIdMapping {
+		halMirrorSessionCount += len(sessionIds)
+	}
+
+	vrf, err := validator.ValidateInterfaceMirrorSession(a.InfraAPI, mirror, oper, halMirrorSessionCount)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	err = apulu.HandleInterfaceMirrorSession(a.InfraAPI, a.MirrorClient, a.InterfaceClient, a.SubnetClient, oper, mirror, vrf.Status.VrfID)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return
 }
 
 // HandleMirrorSession handles CRUDs for MirrorSession object

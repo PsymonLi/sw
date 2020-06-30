@@ -4,6 +4,8 @@ package utils
 
 import (
 	"testing"
+
+	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
 
 func TestConvertMAC(t *testing.T) {
@@ -36,6 +38,111 @@ func TestUint64ToMac(t *testing.T) {
 	for _, c := range cases {
 		if c.out != Uint64ToMac(c.in) {
 			t.Errorf("failed [%v] -> [%v]", c.in, Uint64ToMac(c.in))
+		}
+	}
+}
+
+func TestClassifyInterfaceMirrorGenericAttributes(t *testing.T) {
+	cases := []struct {
+		in1 netproto.InterfaceMirrorSession
+		in2 netproto.InterfaceMirrorSession
+		out bool
+	}{
+		{
+			in1: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+					Collectors: []netproto.MirrorCollector{
+						{
+							ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
+						},
+					},
+				},
+			},
+			in2: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+					Collectors: []netproto.MirrorCollector{
+						{
+							ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
+						},
+					},
+				},
+			},
+			out: false,
+		},
+		{
+			in1: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+				},
+			},
+			in2: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+					Collectors: []netproto.MirrorCollector{
+						{
+							ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
+						},
+					},
+				},
+			},
+			out: false,
+		},
+		{
+			in1: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+				},
+			},
+			in2: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     2,
+					PacketSize: 128,
+				},
+			},
+			out: true,
+		},
+		{
+			in1: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+				},
+			},
+			in2: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 256,
+				},
+			},
+			out: true,
+		},
+		{
+			in1: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     1,
+					PacketSize: 128,
+				},
+			},
+			in2: netproto.InterfaceMirrorSession{
+				Spec: netproto.InterfaceMirrorSessionSpec{
+					SpanID:     2,
+					PacketSize: 256,
+				},
+			},
+			out: true,
+		},
+	}
+
+	for _, c := range cases {
+		if c.out != ClassifyInterfaceMirrorGenericAttributes(c.in1, c.in2) {
+			t.Errorf("failed [%v,%v] -> [%v]", c.in1, c.in2, ClassifyInterfaceMirrorGenericAttributes(c.in1, c.in2))
 		}
 	}
 }

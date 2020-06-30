@@ -16,20 +16,8 @@ import (
 	"github.com/pensando/sw/venice/utils/log"
 )
 
-// Collector represents a single collector with respect to HAL
-type Collector struct {
-	Name         string
-	Destination  string
-	PacketSize   uint32
-	Gateway      string
-	Type         string
-	StripVlanHdr bool
-	SessionID    uint64
-	SpanID       uint32
-}
-
 // HandleCol handles crud operations on collector
-func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, col Collector, vrfID uint64) error {
+func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, oper types.Operation, col commonUtils.Collector, vrfID uint64) error {
 	switch oper {
 	case types.Create:
 		return createColHandler(infraAPI, telemetryClient, intfClient, epClient, col, vrfID)
@@ -42,7 +30,7 @@ func HandleCol(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, 
 	}
 }
 
-func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col Collector, vrfID uint64) error {
+func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col commonUtils.Collector, vrfID uint64) error {
 	mgmtIP := commonUtils.GetMgmtIP(MgmtLink)
 	if err := CreateLateralNetAgentObjects(infraAPI, intfClient, epClient, vrfID, col.Name, mgmtIP, col.Destination, col.Gateway, true); err != nil {
 		log.Error(errors.Wrapf(types.ErrMirrorCreateLateralObjects, "Collector: %s | Err: %v", col.Name, err))
@@ -61,7 +49,7 @@ func createColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 	return nil
 }
 
-func updateColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col Collector, vrfID uint64) error {
+func updateColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col commonUtils.Collector, vrfID uint64) error {
 	// Update MirrorSession
 	mirrorReqMsg := convertHalMirrorSession(col, vrfID)
 	resp, err := telemetryClient.MirrorSessionUpdate(context.Background(), mirrorReqMsg)
@@ -74,7 +62,7 @@ func updateColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 	return nil
 }
 
-func deleteColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col Collector, vrfID uint64) error {
+func deleteColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryClient, intfClient halapi.InterfaceClient, epClient halapi.EndpointClient, col commonUtils.Collector, vrfID uint64) error {
 	mirrorSessionDeleteReq := &halapi.MirrorSessionDeleteRequestMsg{
 		Request: []*halapi.MirrorSessionDeleteRequest{
 			{
@@ -96,7 +84,7 @@ func deleteColHandler(infraAPI types.InfraAPI, telemetryClient halapi.TelemetryC
 	return nil
 }
 
-func convertHalMirrorSession(col Collector, vrfID uint64) *halapi.MirrorSessionRequestMsg {
+func convertHalMirrorSession(col commonUtils.Collector, vrfID uint64) *halapi.MirrorSessionRequestMsg {
 	ctype := strings.ToUpper(col.Type)
 	if _, ok := halapi.ERSpanType_value[ctype]; !ok {
 		// erspan type 3 by default

@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
+	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	halapi "github.com/pensando/sw/nic/agent/dscagent/types/irisproto"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
@@ -18,12 +19,6 @@ const (
 	actionMirror = iota
 	actionCollectFlowStats
 )
-
-type collectorWalker struct {
-	mc          netproto.MirrorCollector
-	markDeleted bool
-	sessionID   uint64
-}
 
 type flowWalker struct {
 	r           netproto.MatchRule
@@ -57,7 +52,7 @@ func createMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 		sessionID := infraAPI.AllocateID(types.MirrorSessionID, 0)
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
-		col := buildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -109,7 +104,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	// but it adds complexity to state handling specially the order in which collectors are present and their
 	// session IDs.
 	// Also get the ordered sessionIDs for the new mirror session. It includes the IDs for the newly added collectors as well
-	addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs := classifyCollectors(infraAPI, existingMirror.Spec.Collectors, mirror.Spec.Collectors, mirrorKey)
+	addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs := commonUtils.ClassifyCollectors(infraAPI, existingMirror.Spec.Collectors, mirror.Spec.Collectors, MirrorDestToIDMapping[mirrorKey])
 
 	log.Infof("MirrorSession: Added: %v", addedCollectors)
 	log.Infof("MirrorSession: Deleted: %v", deletedCollectors)
@@ -120,7 +115,7 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	if len(deletedCollectors) != 0 {
 		var mirrorKeys []*halapi.MirrorSessionKeyHandle
 		for _, w := range unchangedCollectors {
-			mirrorKeys = append(mirrorKeys, convertMirrorSessionKeyHandle(w.sessionID))
+			mirrorKeys = append(mirrorKeys, convertMirrorSessionKeyHandle(w.SessionID))
 		}
 
 		flows := buildFlow(existingMirror.Spec.MatchRules, mirrorKeys, nil, mirrorSessionToFlowMonitorRuleMapping[mirror.GetKey()])
@@ -130,10 +125,10 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 
 		// Now delete the mirror sessions
 		for _, w := range deletedCollectors {
-			sessionID := w.sessionID
+			sessionID := w.SessionID
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Delete collector to HAL
-			col := buildCollector(colName, sessionID, w.mc, existingMirror.Spec.PacketSize, existingMirror.Spec.SpanID)
+			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, existingMirror.Spec.PacketSize, existingMirror.Spec.SpanID)
 			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -144,10 +139,10 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	// If the generic attributes of mirror session have been modified, issue an update to unchanged mirror sessions
 	if updateAllCollectors {
 		for _, w := range unchangedCollectors {
-			sessionID := w.sessionID
+			sessionID := w.SessionID
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Update collector
-			col := buildCollector(colName, sessionID, w.mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Update, col, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorUpdate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorUpdate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -158,10 +153,10 @@ func updateMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 	// Add the newly added collectors
 	// session IDs have been already generated during classification
 	for _, w := range addedCollectors {
-		sessionID := w.sessionID
+		sessionID := w.SessionID
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
-		col := buildCollector(colName, sessionID, w.mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "MirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -260,7 +255,7 @@ func deleteMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClient halapi.
 		sessionID := sessionIDs[idx]
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Delete collector to HAL
-		col := buildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorDelete, "MirrorSession: %s | Err: %v", mirror.GetKey(), err))
 		}
@@ -347,75 +342,6 @@ func convertRuleIDKeyHandle(ruleID uint64) *halapi.FlowMonitorRuleKeyHandle {
 			FlowmonitorruleId: ruleID,
 		},
 	}
-}
-
-func buildCollector(name string, sessionID uint64, mc netproto.MirrorCollector, packetSize, spanID uint32) Collector {
-	return Collector{
-		Name:         name,
-		Destination:  mc.ExportCfg.Destination,
-		PacketSize:   packetSize,
-		Gateway:      mc.ExportCfg.Gateway,
-		Type:         mc.Type,
-		StripVlanHdr: mc.StripVlanHdr,
-		SessionID:    sessionID,
-		SpanID:       spanID,
-	}
-}
-
-func classifyCollectors(infraAPI types.InfraAPI, existingCollectors, mirrorCollectors []netproto.MirrorCollector, mirrorKey string) ([]collectorWalker, []collectorWalker, []collectorWalker, []uint64) {
-	var existingWalkers, addedCollectors, deletedCollectors, unchangedCollectors []collectorWalker
-	var sessionIDs []uint64
-
-	// get the existing sessions in order. Needed so that we maintain order for sessionIDs in the new mirror session
-	existingSessionIDs := MirrorDestToIDMapping[mirrorKey]
-
-	// Walk and mark all the existing collectors for delete
-	for idx, mc := range existingCollectors {
-		existingWalkers = append(existingWalkers, collectorWalker{
-			mc:          mc,
-			markDeleted: true,
-			sessionID:   existingSessionIDs[idx],
-		})
-	}
-
-	// Walk the new mirror collectors and unmark the unchanged collectors for delete
-	for _, mc := range mirrorCollectors {
-		found := false
-		var sessionID uint64
-
-		// Find if collector has not changed
-		for idx, walker := range existingWalkers {
-			// Check only collectors marked for delete. This handles the case where
-			// old mirror session had same collectors
-			if walker.markDeleted && utils.CollectorEqual(mc, walker.mc) {
-				// Unmark the collector for delete and add to unchanged collectors
-				existingWalkers[idx].markDeleted = false
-				unchangedCollectors = append(unchangedCollectors, existingWalkers[idx])
-				sessionID = existingWalkers[idx].sessionID
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			// Get the added collectors and allocate a session ID for each
-			sessionID = infraAPI.AllocateID(types.MirrorSessionID, 0)
-			addedCollectors = append(addedCollectors, collectorWalker{
-				mc:        mc,
-				sessionID: sessionID,
-			})
-		}
-		sessionIDs = append(sessionIDs, sessionID)
-	}
-
-	// Get the list of collectors that need to be deleted
-	for _, w := range existingWalkers {
-		if w.markDeleted {
-			deletedCollectors = append(deletedCollectors, w)
-		}
-	}
-
-	return addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs
 }
 
 // get the number of expanded rules to HAL for a venice level match rule

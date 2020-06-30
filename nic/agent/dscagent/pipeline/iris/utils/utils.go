@@ -87,17 +87,6 @@ func ConvertIPAddresses(addresses ...string) (ipAddresses []*halapi.IPAddress) {
 	return
 }
 
-// ClassifyInterfaceMirrorGenericAttributes returns whether collectors need to be updated for a mirror
-func ClassifyInterfaceMirrorGenericAttributes(existingMirror, mirror netproto.InterfaceMirrorSession) bool {
-	if existingMirror.Spec.PacketSize != mirror.Spec.PacketSize {
-		return true
-	}
-	if existingMirror.Spec.SpanID != mirror.Spec.SpanID {
-		return true
-	}
-	return false
-}
-
 // ClassifyMirrorGenericAttributes returns whether collectors need to be updated for a mirror
 func ClassifyMirrorGenericAttributes(existingMirror, mirror netproto.MirrorSession) bool {
 	if existingMirror.Spec.PacketSize != mirror.Spec.PacketSize {

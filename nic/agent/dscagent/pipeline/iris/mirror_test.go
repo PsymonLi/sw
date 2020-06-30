@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pensando/sw/api"
+	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 )
@@ -192,9 +193,9 @@ func TestClassifyCollectors(t *testing.T) {
 	cases := []struct {
 		in1                 []netproto.MirrorCollector
 		in2                 []netproto.MirrorCollector
-		addedCollectors     []collectorWalker
-		deletedCollectors   []collectorWalker
-		unchangedCollectors []collectorWalker
+		addedCollectors     []commonUtils.CollectorWalker
+		deletedCollectors   []commonUtils.CollectorWalker
+		unchangedCollectors []commonUtils.CollectorWalker
 	}{
 		{
 			in1: []netproto.MirrorCollector{
@@ -213,23 +214,23 @@ func TestClassifyCollectors(t *testing.T) {
 					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 				},
 			},
-			addedCollectors: []collectorWalker{
+			addedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.103"},
 					},
 				},
 			},
-			deletedCollectors: []collectorWalker{
+			deletedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
 			},
-			unchangedCollectors: []collectorWalker{
+			unchangedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 					},
 				},
@@ -255,21 +256,21 @@ func TestClassifyCollectors(t *testing.T) {
 					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 				},
 			},
-			addedCollectors: []collectorWalker{
+			addedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.103"},
 					},
 				},
 			},
-			unchangedCollectors: []collectorWalker{
+			unchangedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 					},
 				},
@@ -289,16 +290,16 @@ func TestClassifyCollectors(t *testing.T) {
 					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 				},
 			},
-			deletedCollectors: []collectorWalker{
+			deletedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
 			},
-			unchangedCollectors: []collectorWalker{
+			unchangedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 					},
 				},
@@ -321,23 +322,23 @@ func TestClassifyCollectors(t *testing.T) {
 					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 				},
 			},
-			addedCollectors: []collectorWalker{
+			addedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 					},
 				},
 			},
-			deletedCollectors: []collectorWalker{
+			deletedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
 			},
-			unchangedCollectors: []collectorWalker{
+			unchangedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
@@ -360,26 +361,26 @@ func TestClassifyCollectors(t *testing.T) {
 					ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.104"},
 				},
 			},
-			addedCollectors: []collectorWalker{
+			addedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.103"},
 					},
 				},
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.104"},
 					},
 				},
 			},
-			deletedCollectors: []collectorWalker{
+			deletedCollectors: []commonUtils.CollectorWalker{
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.101"},
 					},
 				},
 				{
-					mc: netproto.MirrorCollector{
+					Mc: netproto.MirrorCollector{
 						ExportCfg: netproto.MirrorExportConfig{Destination: "192.168.100.102"},
 					},
 				},
@@ -400,7 +401,7 @@ func TestClassifyCollectors(t *testing.T) {
 			existingIDs = append(existingIDs, infraAPI.AllocateID(types.MirrorSessionID, 0))
 		}
 		MirrorDestToIDMapping[mirrorKey] = existingIDs
-		add, del, unchange, ids := classifyCollectors(infraAPI, c.in1, c.in2, mirrorKey)
+		add, del, unchange, ids := commonUtils.ClassifyCollectors(infraAPI, c.in1, c.in2, MirrorDestToIDMapping[mirrorKey])
 		if len(add) != len(c.addedCollectors) {
 			t.Errorf("failed len(add)=%v len(c.addedCollectors)=%v", len(add), len(c.addedCollectors))
 		}
@@ -411,36 +412,36 @@ func TestClassifyCollectors(t *testing.T) {
 			t.Errorf("failed len(unchange)=%v len(c.unchangedCollectors)=%v", len(unchange), len(c.unchangedCollectors))
 		}
 		for idx, col := range add {
-			if !reflect.DeepEqual(col.mc, c.addedCollectors[idx].mc) {
-				t.Errorf("failed unequal collector %v %v", col.mc, c.addedCollectors[idx].mc)
+			if !reflect.DeepEqual(col.Mc, c.addedCollectors[idx].Mc) {
+				t.Errorf("failed unequal collector %v %v", col.Mc, c.addedCollectors[idx].Mc)
 			}
-			if checkIDExists(col.sessionID, existingIDs) {
-				t.Errorf("failed %v found in %v", col.sessionID, existingIDs)
+			if checkIDExists(col.SessionID, existingIDs) {
+				t.Errorf("failed %v found in %v", col.SessionID, existingIDs)
 			}
-			if !checkIDExists(col.sessionID, ids) {
-				t.Errorf("failed %v not found in %v", col.sessionID, ids)
+			if !checkIDExists(col.SessionID, ids) {
+				t.Errorf("failed %v not found in %v", col.SessionID, ids)
 			}
 		}
 		for idx, col := range del {
-			if !reflect.DeepEqual(col.mc, c.deletedCollectors[idx].mc) {
-				t.Errorf("failed unequal collector %v %v", col.mc, c.deletedCollectors[idx].mc)
+			if !reflect.DeepEqual(col.Mc, c.deletedCollectors[idx].Mc) {
+				t.Errorf("failed unequal collector %v %v", col.Mc, c.deletedCollectors[idx].Mc)
 			}
-			if !checkIDExists(col.sessionID, existingIDs) {
-				t.Errorf("failed %v not found in %v", col.sessionID, existingIDs)
+			if !checkIDExists(col.SessionID, existingIDs) {
+				t.Errorf("failed %v not found in %v", col.SessionID, existingIDs)
 			}
-			if checkIDExists(col.sessionID, ids) {
-				t.Errorf("failed %v found in %v", col.sessionID, ids)
+			if checkIDExists(col.SessionID, ids) {
+				t.Errorf("failed %v found in %v", col.SessionID, ids)
 			}
 		}
 		for idx, col := range unchange {
-			if !reflect.DeepEqual(col.mc, c.unchangedCollectors[idx].mc) {
-				t.Errorf("failed unequal collector %v %v", col.mc, c.unchangedCollectors[idx].mc)
+			if !reflect.DeepEqual(col.Mc, c.unchangedCollectors[idx].Mc) {
+				t.Errorf("failed unequal collector %v %v", col.Mc, c.unchangedCollectors[idx].Mc)
 			}
-			if !checkIDExists(col.sessionID, ids) {
-				t.Errorf("failed %v not found in %v", col.sessionID, ids)
+			if !checkIDExists(col.SessionID, ids) {
+				t.Errorf("failed %v not found in %v", col.SessionID, ids)
 			}
-			if !checkIDExists(col.sessionID, existingIDs) {
-				t.Errorf("failed %v not found in %v", col.sessionID, existingIDs)
+			if !checkIDExists(col.SessionID, existingIDs) {
+				t.Errorf("failed %v not found in %v", col.SessionID, existingIDs)
 			}
 		}
 		delete(MirrorDestToIDMapping, mirrorKey)

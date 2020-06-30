@@ -16,6 +16,7 @@ import (
 
 	"github.com/pensando/sw/api"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/apulu/utils"
+	commonutils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
 	"github.com/pensando/sw/nic/agent/protos/netproto"
 	halapi "github.com/pensando/sw/nic/apollo/agent/gen/pds"
@@ -23,12 +24,12 @@ import (
 )
 
 // HandleInterface handles crud operations on interface
-func HandleInterface(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, oper types.Operation, intf netproto.Interface) error {
+func HandleInterface(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, oper types.Operation, intf netproto.Interface, collectorMap map[uint64]int) error {
 	switch oper {
 	case types.Create:
 		return createInterfaceHandler(infraAPI, client, subnetcl, intf)
 	case types.Update:
-		return updateInterfaceHandler(infraAPI, client, subnetcl, intf)
+		return updateInterfaceHandler(infraAPI, client, subnetcl, intf, collectorMap)
 	case types.Delete:
 		return deleteInterfaceHandler(infraAPI, client, subnetcl, intf)
 	default:
@@ -37,7 +38,7 @@ func HandleInterface(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetc
 }
 
 func createInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, intf netproto.Interface) error {
-	intfReq, err := convertInterface(infraAPI, intf)
+	intfReq, err := convertInterface(infraAPI, intf, nil)
 	if err != nil {
 		log.Errorf("Interface: %s convert failed | Err: %v", intf.GetKey(), err)
 		return errors.Wrapf(types.ErrBadRequest, "Interface: %s convert failed | Err: %v", intf.GetKey(), err)
@@ -74,9 +75,10 @@ func createInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 	return nil
 }
 
-func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, intf netproto.Interface) error {
+func updateInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, subnetcl halapi.SubnetSvcClient, intf netproto.Interface, collectorMap map[uint64]int) error {
 	var interfaceUpdated bool
-	intfReq, err := convertInterface(infraAPI, intf)
+	intfReq, err := convertInterface(infraAPI, intf, collectorMap)
+
 	if err != nil {
 		log.Errorf("Interface: %s convert failed | Err: %v", intf.GetKey(), err)
 		return errors.Wrapf(types.ErrBadRequest, "Interface: %s convert failed | Err: %v", intf.GetKey(), err)
@@ -314,7 +316,7 @@ func deleteInterfaceHandler(infraAPI types.InfraAPI, client halapi.IfSvcClient, 
 	return nil
 }
 
-func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface) (*halapi.InterfaceRequest, error) {
+func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface, collectorMap map[uint64]int) (*halapi.InterfaceRequest, error) {
 	var ifStatus halapi.IfStatus
 
 	uid, err := uuid.FromString(intf.UUID)
@@ -336,6 +338,19 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface) (*halapi
 			prefix = nil
 		}
 	}
+	//Handle/attach mirror sessions
+	var txSessions, rxSessions [][]byte
+	if collectorMap != nil && len(collectorMap) > 0 {
+		for key, val := range collectorMap {
+			if (val & types.MirrorDirINGRESS) != 0 {
+				txSessions = append(txSessions, commonutils.ConvertUint64ToByteArr(key))
+			}
+			if (val & types.MirrorDirEGRESS) != 0 {
+				rxSessions = append(rxSessions, commonutils.ConvertUint64ToByteArr(key))
+			}
+		}
+	}
+
 	switch intf.Spec.Type {
 	case netproto.InterfaceSpec_L3.String():
 		portuid, err := uuid.FromString(intf.Status.InterfaceUUID)
@@ -414,6 +429,8 @@ func convertInterface(infraAPI types.InfraAPI, intf netproto.Interface) (*halapi
 					Ifinfo: &halapi.InterfaceSpec_HostIfSpec{
 						HostIfSpec: &halapi.HostIfSpec{},
 					},
+					TxMirrorSessionId: txSessions,
+					RxMirrorSessionId: rxSessions,
 				},
 			},
 		}, nil

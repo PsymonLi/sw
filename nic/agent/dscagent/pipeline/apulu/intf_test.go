@@ -56,22 +56,22 @@ func TestHandleInterface(t *testing.T) {
 	if _, err := addDummyVrf(); err != nil {
 		t.Fatal(err)
 	}
-	err := HandleInterface(infraAPI, intfClient, subnetClient, types.Create, intf)
+	err := HandleInterface(infraAPI, intfClient, subnetClient, types.Create, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Update, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Update, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Delete, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Delete, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterface(infraAPI, intfClient, subnetClient, 42, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, 42, intf, nil)
 	if err == nil {
 		t.Fatal("Invalid op must return a valid error.")
 	}
@@ -132,18 +132,18 @@ func TestHandleLoopbackInterface(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Create, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Create, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	intf.Spec.IPAddress = "2.2.2.2/32"
-	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Update, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Update, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Delete, intf)
+	err = HandleInterface(infraAPI, intfClient, subnetClient, types.Delete, intf, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,17 +178,17 @@ func TestHandleInterfaceInfraFailures(t *testing.T) {
 		t.Fatal(err)
 	}
 	i := newBadInfraAPI()
-	err := HandleInterface(i, intfClient, subnetClient, types.Create, intf)
+	err := HandleInterface(i, intfClient, subnetClient, types.Create, intf, nil)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterface(i, intfClient, subnetClient, types.Update, intf)
+	err = HandleInterface(i, intfClient, subnetClient, types.Update, intf, nil)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}
 
-	err = HandleInterface(i, intfClient, subnetClient, types.Delete, intf)
+	err = HandleInterface(i, intfClient, subnetClient, types.Delete, intf, nil)
 	if err == nil {
 		t.Fatalf("Must return a valid error. Err: %v", err)
 	}

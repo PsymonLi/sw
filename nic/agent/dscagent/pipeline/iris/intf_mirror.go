@@ -8,7 +8,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/pensando/sw/nic/agent/dscagent/pipeline/iris/utils"
 	commonUtils "github.com/pensando/sw/nic/agent/dscagent/pipeline/utils"
 	"github.com/pensando/sw/nic/agent/dscagent/pipeline/utils/validator"
 	"github.com/pensando/sw/nic/agent/dscagent/types"
@@ -37,7 +36,7 @@ func createInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 		sessionID := infraAPI.AllocateID(types.MirrorSessionID, 0)
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
-		col := buildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -75,14 +74,14 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 	dirUpdated := existingMirror.Spec.MirrorDirection != mirror.Spec.MirrorDirection
 
 	// Check if all the collectors need to be updated
-	updateAllCollectors := utils.ClassifyInterfaceMirrorGenericAttributes(existingMirror, mirror)
+	updateAllCollectors := commonUtils.ClassifyInterfaceMirrorGenericAttributes(existingMirror, mirror)
 
 	// Classify collectors into added, deleted or unchanged collectors.
 	// Currently any change is results in delete and recreate, but this can be improved to just update the mirror session
 	// but it adds complexity to state handling specially the order in which collectors are present and their
 	// session IDs.
 	// Also get the ordered sessionIDs for the new mirror session. It includes the IDs for the newly added collectors as well
-	addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs := classifyCollectors(infraAPI, existingMirror.Spec.Collectors, mirror.Spec.Collectors, mirrorKey)
+	addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs := commonUtils.ClassifyCollectors(infraAPI, existingMirror.Spec.Collectors, mirror.Spec.Collectors, MirrorDestToIDMapping[mirrorKey])
 
 	log.Infof("InterfaceMirrorSession: Added: %v", addedCollectors)
 	log.Infof("InterfaceMirrorSession: Deleted: %v", deletedCollectors)
@@ -114,7 +113,7 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 			}
 			// Remove the deleted collectors sessionIDs from the collector map
 			for _, w := range deletedCollectors {
-				delete(collectorMap, w.sessionID)
+				delete(collectorMap, w.SessionID)
 			}
 			if err := HandleInterface(infraAPI, intfClient, types.Update, intf, collectorMap); err != nil {
 				log.Error(errors.Wrapf(types.ErrInterfaceUpdateDuringInterfaceMirrorSessionUpdate, "Interface: %s | Err: %v", intf.GetKey(), err))
@@ -123,10 +122,10 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 
 		// Now delete the mirror sessions
 		for _, w := range deletedCollectors {
-			sessionID := w.sessionID
+			sessionID := w.SessionID
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Delete collector to HAL
-			col := buildCollector(colName, sessionID, w.mc, existingMirror.Spec.PacketSize, existingMirror.Spec.SpanID)
+			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, existingMirror.Spec.PacketSize, existingMirror.Spec.SpanID)
 			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorDelete, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorDelete, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -137,10 +136,10 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 	// If the generic attributes of mirror session have been modified, issue an update to unchanged mirror sessions
 	if updateAllCollectors {
 		for _, w := range unchangedCollectors {
-			sessionID := w.sessionID
+			sessionID := w.SessionID
 			colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 			// Update collector
-			col := buildCollector(colName, sessionID, w.mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+			col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 			if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Update, col, vrfID); err != nil {
 				log.Error(errors.Wrapf(types.ErrCollectorUpdate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
 				return errors.Wrapf(types.ErrCollectorUpdate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -151,10 +150,10 @@ func updateInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 	// Add the newly added collectors
 	// session IDs have been already generated during classification
 	for _, w := range addedCollectors {
-		sessionID := w.sessionID
+		sessionID := w.SessionID
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Create collector
-		col := buildCollector(colName, sessionID, w.mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, w.Mc, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Create, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorCreate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
 			return errors.Wrapf(types.ErrCollectorCreate, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err)
@@ -214,7 +213,7 @@ func deleteInterfaceMirrorSessionHandler(infraAPI types.InfraAPI, telemetryClien
 		sessionID := sessionIDs[idx]
 		colName := fmt.Sprintf("%s-%d", mirrorKey, sessionID)
 		// Delete collector to HAL
-		col := buildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
+		col := commonUtils.BuildCollector(colName, sessionID, c, mirror.Spec.PacketSize, mirror.Spec.SpanID)
 		if err := HandleCol(infraAPI, telemetryClient, intfClient, epClient, types.Delete, col, vrfID); err != nil {
 			log.Error(errors.Wrapf(types.ErrCollectorDelete, "InterfaceMirrorSession: %s | Err: %v", mirror.GetKey(), err))
 		}

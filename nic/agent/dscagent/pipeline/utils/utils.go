@@ -567,3 +567,124 @@ func Uint64ToMac(in uint64) string {
 	}
 	return s
 }
+
+//BuildCollector builds a collector object - part of mirror spec
+func BuildCollector(name string, sessionID uint64, mc netproto.MirrorCollector, packetSize, spanID uint32) Collector {
+	return Collector{
+		Name:         name,
+		Destination:  mc.ExportCfg.Destination,
+		PacketSize:   packetSize,
+		Gateway:      mc.ExportCfg.Gateway,
+		Type:         mc.Type,
+		StripVlanHdr: mc.StripVlanHdr,
+		SessionID:    sessionID,
+		SpanID:       spanID,
+	}
+}
+
+// ClassifyInterfaceMirrorGenericAttributes returns whether collectors need to be updated for a mirror
+func ClassifyInterfaceMirrorGenericAttributes(existingMirror, mirror netproto.InterfaceMirrorSession) bool {
+	if existingMirror.Spec.PacketSize != mirror.Spec.PacketSize {
+		return true
+	}
+	if existingMirror.Spec.SpanID != mirror.Spec.SpanID {
+		return true
+	}
+	return false
+}
+
+// CollectorWalker is used to mark and classify existing mirror sessions
+type CollectorWalker struct {
+	Mc          netproto.MirrorCollector
+	MarkDeleted bool
+	SessionID   uint64
+}
+
+// ClassifyCollector classifies mirror sessions
+func ClassifyCollectors(infraAPI types.InfraAPI, existingCollectors, mirrorCollectors []netproto.MirrorCollector, existingSessionIDs []uint64) ([]CollectorWalker, []CollectorWalker, []CollectorWalker, []uint64) {
+	var existingWalkers, addedCollectors, deletedCollectors, unchangedCollectors []CollectorWalker
+	var sessionIDs []uint64
+
+	// Walk and mark all the existing collectors for delete
+	for idx, mc := range existingCollectors {
+		existingWalkers = append(existingWalkers, CollectorWalker{
+			Mc:          mc,
+			MarkDeleted: true,
+			SessionID:   existingSessionIDs[idx],
+		})
+	}
+
+	// Walk the new mirror collectors and unmark the unchanged collectors for delete
+	for _, mc := range mirrorCollectors {
+		found := false
+		var sessionID uint64
+
+		// Find if collector has not changed
+		for idx, walker := range existingWalkers {
+			// Check only collectors marked for delete. This handles the case where
+			// old mirror session had same collectors
+			if walker.MarkDeleted && CollectorsEqual(mc, walker.Mc) {
+				// Unmark the collector for delete and add to unchanged collectors
+				existingWalkers[idx].MarkDeleted = false
+				unchangedCollectors = append(unchangedCollectors, existingWalkers[idx])
+				sessionID = existingWalkers[idx].SessionID
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			// Get the added collectors and allocate a session ID for each
+			sessionID = infraAPI.AllocateID(types.MirrorSessionID, 0)
+			addedCollectors = append(addedCollectors, CollectorWalker{
+				Mc:        mc,
+				SessionID: sessionID,
+			})
+		}
+		sessionIDs = append(sessionIDs, sessionID)
+	}
+
+	// Get the list of collectors that need to be deleted
+	for _, w := range existingWalkers {
+		if w.MarkDeleted {
+			deletedCollectors = append(deletedCollectors, w)
+		}
+	}
+
+	return addedCollectors, deletedCollectors, unchangedCollectors, sessionIDs
+}
+
+// CollectorsEqual compares two MirrorCollector
+func CollectorsEqual(mc1, mc2 netproto.MirrorCollector) bool {
+	if mc1.ExportCfg.Destination != mc2.ExportCfg.Destination {
+		return false
+	}
+	if mc1.ExportCfg.Gateway != mc2.ExportCfg.Gateway {
+		return false
+	}
+	if mc1.Type != mc2.Type {
+		return false
+	}
+	if mc1.StripVlanHdr != mc2.StripVlanHdr {
+		return false
+	}
+	return true
+}
+
+func ConvertUint64ToByteArr(val uint64) []byte {
+	barr := make([]byte, 8)
+	binary.LittleEndian.PutUint64(barr, val)
+	return barr
+}
+
+// Collector represents a single collector with respect to HAL
+type Collector struct {
+	Name         string
+	Destination  string
+	PacketSize   uint32
+	Gateway      string
+	Type         string
+	StripVlanHdr bool
+	SessionID    uint64
+	SpanID       uint32
+}
