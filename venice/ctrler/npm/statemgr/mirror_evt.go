@@ -126,8 +126,13 @@ func propgatationStatusDifferent(
 
 //Write writes to apiserver
 func (mss *MirrorSessionState) Write() error {
-	mss.MirrorSession.Lock()
-	defer mss.MirrorSession.Unlock()
+	mss.stateMgr.Lock()
+	defer mss.stateMgr.Unlock()
+
+	if mss.markedForDelete {
+		log.Infof("Marked for delete : %+v skipping write", mss.MirrorSession.Name)
+		return nil
+	}
 
 	propStatus := mss.getPropStatus()
 	newProp := &monitoring.PropagationStatus{
@@ -278,9 +283,6 @@ func buildDSCMirrorSession(mss *MirrorSessionState) *netproto.MirrorSession {
 
 // MirrorSessionCountAllocate : Increment the active session counter if max is not reached
 func (smm *SmMirrorSessionInterface) MirrorSessionCountAllocate() bool {
-	smm.Mutex.Lock()
-	defer smm.Mutex.Unlock()
-
 	if smm.numMirrorSessions < MaxMirrorSessions {
 		smm.numMirrorSessions++
 		log.Infof("Allocated mirror session: count %v", smm.numMirrorSessions)
@@ -292,8 +294,6 @@ func (smm *SmMirrorSessionInterface) MirrorSessionCountAllocate() bool {
 
 // MirrorSessionCountFree : decrement the active session counter
 func (smm *SmMirrorSessionInterface) MirrorSessionCountFree() {
-	smm.Mutex.Lock()
-	defer smm.Mutex.Unlock()
 	if smm.numMirrorSessions > 0 {
 		smm.numMirrorSessions--
 		log.Infof("Active mirror session: count %v", smm.numMirrorSessions)
@@ -311,7 +311,11 @@ func (mss *MirrorSessionState) isFlowBasedMirroring() bool {
 	return isFlowBasedMirroring(&mss.MirrorSession.MirrorSession)
 }
 
-func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSession) {
+func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSession) error {
+	if mss.State == monitoring.MirrorSessionState_ACTIVE {
+		log.Infof("Mirror session %v already active", mss.MirrorSession.Name)
+		return fmt.Errorf("session active")
+	}
 	if isFlowBasedMirroring(ms) && !mss.stateMgr.MirrorSessionCountAllocate() {
 		mss.State = monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION
 		mss.MirrorSession.Status.ScheduleState = monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String()
@@ -325,6 +329,7 @@ func (mss *MirrorSessionState) setMirrorSessionRunning(ms *monitoring.MirrorSess
 		_t, _ := mss.MirrorSession.Status.StartedAt.Time()
 		log.Infof("Mirror session %v StartedAt %v", mss.MirrorSession.Name, _t)
 	}
+	return nil
 }
 
 func (mss *MirrorSessionState) programMirrorSession(ms *monitoring.MirrorSession) {
@@ -442,8 +447,8 @@ func (smm *SmMirrorSessionInterface) runMirrorSessionWatcher() {
 }
 
 func (smm *SmMirrorSessionInterface) handleMirrorSessionTimerEvent(et mirrorTimerType, genID string, mss *MirrorSessionState) {
-	mss.MirrorSession.Lock()
-	defer mss.MirrorSession.Unlock()
+	smm.Lock()
+	defer smm.Unlock()
 	if mss.markedForDelete || genID != mss.MirrorSession.ObjectMeta.GenerationID {
 		return
 	}
@@ -453,6 +458,7 @@ func (smm *SmMirrorSessionInterface) handleMirrorSessionTimerEvent(et mirrorTime
 
 		if mss.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION ||
 			mss.State == monitoring.MirrorSessionState_SCHEDULED {
+			return
 		}
 		smm.addMirror(mss)
 	case mirrorExpTimer:
@@ -556,7 +562,9 @@ func (smm *SmMirrorSessionInterface) pushDeleteMirrorSession(mss *MirrorSessionS
 
 //OnMirrorSessionCreate mirror session create handle
 func (smm *SmMirrorSessionInterface) OnMirrorSessionCreate(obj *ctkit.MirrorSession) error {
-	log.Infof("Got mirror session create : %v", obj)
+	smm.Lock()
+	defer smm.Unlock()
+	log.Infof("Got mirror session create : %+v", obj)
 	// see if we already have the session
 	ms, err := smm.FindMirrorSession(obj.Tenant, obj.Name)
 	if err == nil {
@@ -707,8 +715,6 @@ func (smm *SmMirrorSessionInterface) initInterfaceMirrorSession(ms *MirrorSessio
 
 func (smm *SmMirrorSessionInterface) addInterfaceMirror(ms *MirrorSessionState) error {
 
-	smm.Lock()
-	defer smm.Unlock()
 	//Process only if no match rules
 	smgrMirrorInterface.addMirrorSession(ms)
 	if ms.MirrorSession.Spec.Interfaces == nil {
@@ -777,9 +783,6 @@ func selectorsEqual(sel []*labels.Selector, otherSel []*labels.Selector) bool {
 //OnMirrorSessionUpdate mirror session update handle
 func (smm *SmMirrorSessionInterface) updateInterfaceMirror(ms *MirrorSessionState, nmirror *monitoring.MirrorSession) error {
 	log.Infof("Got mirror update for %#v", nmirror.ObjectMeta)
-
-	smm.Lock()
-	defer smm.Unlock()
 	// see if anything changed
 
 	currentCollectors := ms.MirrorSession.Spec.GetCollectors()
@@ -947,7 +950,9 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionUpdate(mirror *ctkit.MirrorS
 		//mss.MirrorSession.ObjectMeta = nmirror.ObjectMeta
 		return nil
 	}
-	log.Infof("Processing mirror update for %#v", nmirror.ObjectMeta)
+	smm.Lock()
+	defer smm.Unlock()
+	log.Infof("Processing mirror update for %#v", nmirror)
 
 	ms, err := MirrorSessionStateFromObj(mirror)
 	if err != nil {
@@ -1135,6 +1140,8 @@ func (smm *SmMirrorSessionInterface) deleteInterfaceMirror(ms *MirrorSessionStat
 //OnMirrorSessionDelete mirror session delete handle
 func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSession) error {
 	log.Infof("Got mirror delete for %#v", obj.ObjectMeta)
+	smm.Lock()
+	defer smm.Unlock()
 	ms, err := MirrorSessionStateFromObj(obj)
 	if err != nil {
 		log.Errorf("Error finding mirror object for delete %v", err)
@@ -1176,13 +1183,11 @@ func (smm *SmMirrorSessionInterface) OnMirrorSessionDelete(obj *ctkit.MirrorSess
 					// before we get the lock the state may change we have to
 					// do the state check after the lock
 					if m.MirrorSession.Status.ScheduleState == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION.String() {
-						m.setMirrorSessionRunning(&m.MirrorSession.MirrorSession)
-						if m.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
+						if m.setMirrorSessionRunning(&m.MirrorSession.MirrorSession) != nil || m.State == monitoring.MirrorSessionState_ERR_NO_MIRROR_SESSION {
 							log.Infof("retry failed session %v in state:%v ", m.MirrorSession.Name, m.MirrorSession.Status.ScheduleState)
 							m.MirrorSession.Unlock()
 							continue
 						}
-						m.State = monitoring.MirrorSessionState_SCHEDULED
 					}
 					m.MirrorSession.Unlock()
 					return smm.addMirror(m)
@@ -1239,6 +1244,8 @@ func (sm *Statemgr) OnMirrorSessionOperUpdate(nodeID string, objinfo *netproto.M
 	if err != nil {
 		return err
 	}
+	eps.stateMgr.Lock()
+	defer eps.stateMgr.Unlock()
 	eps.updateNodeVersion(nodeID, objinfo.ObjectMeta.GenerationID)
 	return nil
 }
@@ -1272,6 +1279,8 @@ func (sm *Statemgr) OnInterfaceMirrorSessionOperUpdate(nodeID string, objinfo *n
 	if err != nil {
 		return err
 	}
+	eps.stateMgr.Lock()
+	defer eps.stateMgr.Unlock()
 	eps.updateNodeVersion(nodeID, objinfo.ObjectMeta.GenerationID)
 	return nil
 }
