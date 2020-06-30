@@ -224,8 +224,8 @@ pds_device_proto_to_api_spec (pds_device_spec_t *api_spec,
         api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
         break;
     default:
-        // default is set to HOST mode
-        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_HOST;
+        api_spec->dev_oper_mode = PDS_DEV_OPER_MODE_NONE;
+        return SDK_RET_INVALID_ARG;
         break;
     }
     switch (proto_spec.deviceprofile()) {

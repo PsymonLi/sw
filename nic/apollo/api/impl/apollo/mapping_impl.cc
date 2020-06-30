@@ -45,14 +45,12 @@ pds_encap_t mapping_impl::mytep_encap_;
 mapping_impl *
 mapping_impl::factory(pds_mapping_spec_t *spec) {
     mapping_impl    *impl;
-    device_entry    *device;
 
     impl = mapping_impl_db()->alloc();
     if (unlikely(impl == NULL)) {
         return NULL;
     }
     new (impl) mapping_impl();
-    device = device_db()->find();
     if (spec->is_local) {
         impl->is_local_ = true;
     } else {

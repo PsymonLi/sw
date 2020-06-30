@@ -347,6 +347,12 @@ apulu_impl::table_engine_cfg_update_(p4plus_prog_t *prog) {
 sdk_ret_t
 apulu_impl::init_(pipeline_cfg_t *pipeline_cfg) {
     pipeline_cfg_ = *pipeline_cfg;
+    // if oper mode is stil not set, update to default here
+    if (api::g_pds_state.device_oper_mode() == PDS_DEV_OPER_MODE_NONE) {
+        // default mode is host mode for apulu
+        PDS_TRACE_DEBUG("Setting device operational mode to host mode");
+        api::g_pds_state.set_device_oper_mode(PDS_DEV_OPER_MODE_HOST);
+    }
     return SDK_RET_OK;
 }
 

@@ -1,0 +1,54 @@
+{
+    "_comment_" : "the order of the objects listed here should be maintained",
+    "objects" : [
+        {
+            "kind" : "device",
+            "gw-ip-addr": "1.0.0.1",
+            "ip-addr" : "1.0.0.2",
+            "mac-addr" : "0x000201000001",
+            "dual-stack": "false",
+            "encap": "vxlan",
+            "oper-mode": "bitw_smart_service"
+        },
+        {
+            "kind" : "tep",
+            "count" : "1024",
+            "prefix": "1.0.0.0/8"
+        },
+        {
+            "_comment_" : "security policy parameters here are per subnet per direction",
+            "kind" : "security-policy",
+            "v4-count" : "1023",
+            "v6-count" : "15",
+            "stateful" : "false"
+        },
+        {
+            "_comment_" : "All VPCs have same prefix",
+            "kind" : "vpc",
+            "count" : "1",
+            "prefix" : "2.0.0.0/8",
+            "v6-prefix" : "2019::/96",
+            "subnets" : "1"
+        },
+        {
+            "_comment_" : "per vpc, per subnet vnic scale",
+            "kind" : "vnic",
+            "count" : "1",
+            "tagged": "false"
+        },
+        {
+            "kind" : "flows",
+            "num_tcp": "0",
+            "num_udp": "0",
+            "num_icmp": "0",
+            "sport_lo": "100",
+            "sport_hi": "101",
+            "dport_lo": "100",
+            "dport_hi": "107",
+            "ops" : {
+                "create" : "true",
+                "delete" : "true"
+            }
+        }
+    ]
+}

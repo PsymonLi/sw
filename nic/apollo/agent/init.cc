@@ -190,8 +190,10 @@ init_pds (std::string cfg_file, std::string memory_profile,
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_SMART_SERVICE;
     } else if (oper_mode == "bitw_classic_switch") {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_BITW_CLASSIC_SWITCH;
-    } else {
+    } else if (oper_mode == "host") {
         init_params.device_oper_mode = PDS_DEV_OPER_MODE_HOST;
+    } else if ((oper_mode == "") || (oper_mode == "default")) {
+        init_params.device_oper_mode = PDS_DEV_OPER_MODE_NONE;
     }
     init_params.event_cb = handle_event_ntfn;
     ret = pds_init(&init_params);
@@ -295,12 +297,14 @@ device_conf_read (std::string& device_profile, std::string& memory_profile,
         if (memory_profile.empty()) {
             memory_profile = pt.get<std::string>("memory-profile", "default");
         }
-        device_oper_mode = pt.get<std::string>("oper-mode", "host");
+        if (device_oper_mode.empty()) {
+            device_oper_mode = pt.get<std::string>("oper-mode", "default");
+        }
     } catch (...) {
         // we will hit this if DEVICE_CONF_FILE doesn't exist
         device_profile = "default";
         memory_profile = "default";
-        device_oper_mode = "host";
+        device_oper_mode = "default";
     }
 }
 
@@ -334,11 +338,11 @@ spawn_svc_server_thread (void)
 //------------------------------------------------------------------------------
 sdk_ret_t
 agent_init (std::string cfg_file, std::string memory_profile,
-            std::string device_profile, std::string pipeline)
+            std::string device_profile, std::string device_oper_mode,
+            std::string pipeline)
 {
     sdk_ret_t ret;
     sdk::lib::thread *thread;
-    std::string device_oper_mode;
 
     // initialize the logger instance
     logger_init();

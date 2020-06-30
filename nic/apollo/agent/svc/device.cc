@@ -63,9 +63,9 @@ device_conf_update (pds_device_spec_t *spec)
     }
 
     // update the forwarding mode
-    if ((spec->dev_oper_mode == PDS_DEV_OPER_MODE_NONE) ||
-        (spec->dev_oper_mode == PDS_DEV_OPER_MODE_HOST)) {
-        // host (pcie) enabled mode
+    if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_NONE) {
+        output.put("oper-mode", "");
+    } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_HOST) {
         output.put("oper-mode", "host");
     } else if (spec->dev_oper_mode == PDS_DEV_OPER_MODE_BITW_SMART_SWITCH) {
         // bump-in-the-wire smart switch mode
@@ -124,7 +124,11 @@ pds_svc_device_create (const pds::DeviceRequest *proto_req,
         batched_internally = true;
     }
 
-    pds_device_proto_to_api_spec(api_spec, proto_req->request());
+    ret = pds_device_proto_to_api_spec(api_spec, proto_req->request());
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Invalid device object specification, err %u", ret);
+        goto end;
+    }
     pds_ms::device_create(api_spec);
     if (!core::agent_state::state()->pds_mock_mode()) {
         ret = pds_device_create(api_spec, bctxt);
@@ -184,7 +188,11 @@ pds_svc_device_update (const pds::DeviceRequest *proto_req,
         batched_internally = true;
     }
 
-    pds_device_proto_to_api_spec(&api_spec, proto_req->request());
+    ret = pds_device_proto_to_api_spec(&api_spec, proto_req->request());
+    if (ret != SDK_RET_OK) {
+        PDS_TRACE_ERR("Invalid device object specification, err %u", ret);
+        goto end;
+    }
     if (!core::agent_state::state()->pds_mock_mode()) {
         ret = pds_device_update(&api_spec, bctxt);
         if (ret != SDK_RET_OK) {

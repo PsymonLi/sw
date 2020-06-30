@@ -26,6 +26,7 @@ char *g_cfg_file = NULL;         // hal config file
 bool g_daemon_mode = false;      // daemon mode
 bool g_nocleanup = false;        // cleanup of config
 string g_profile;                // profile file
+string g_oper_mode;              // operational mode of the device
 
 // scale test base class
 class scale_test : public pds_test_base {
@@ -35,11 +36,13 @@ protected:
     virtual void SetUp() {}
     virtual void TearDown() {}
     static void SetUpTestCase() {
-        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
         test_case_params_t params;
+
+        g_trace_level = sdk::lib::SDK_TRACE_LEVEL_DEBUG;
         params.cfg_file = g_cfg_file;
         params.enable_fte = false;
         params.profile = g_profile;
+        params.oper_mode = g_oper_mode;
         pds_test_base::SetUpTestCase(params);
     }
     static void TearDownTestCase() {
@@ -120,7 +123,8 @@ main (int argc, char **argv)
     };
 
     // parse CLI options
-    while ((oc = getopt_long(argc, argv, ":hdc:i:p:zW;", longopts, NULL)) != -1) {
+    while ((oc = getopt_long(argc, argv, ":hdc:i:p:o:zW;",
+                             longopts, NULL)) != -1) {
         switch (oc) {
         case 'c':
             g_cfg_file = optarg;
@@ -149,6 +153,16 @@ main (int argc, char **argv)
             g_input_cfg_file = optarg;
             if (!g_input_cfg_file) {
                 fprintf(stderr, "test config file is not specified\n");
+                print_usage(argv);
+                exit(1);
+            }
+            break;
+
+        case 'o':
+            if (optarg) {
+                g_oper_mode = std::string(optarg);
+            } else {
+                fprintf(stderr, "device operationl mode not specified\n");
                 print_usage(argv);
                 exit(1);
             }

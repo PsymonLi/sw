@@ -135,6 +135,7 @@ typedef struct test_case_params_t_ {
     const char      *cfg_file;        ///< config file
     bool            enable_fte;       ///< Unused
     std::string     profile;          ///< config profile
+    std::string     oper_mode;        ///< operational mode of the device
 } test_case_params_t;
 
 // base class for all gtests.

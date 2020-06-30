@@ -530,7 +530,6 @@ pds_init (pds_init_params_t *params)
     } else {
         // impl init
         SDK_ASSERT(impl_base::init(params, &asic_cfg) == SDK_RET_OK);
-
     }
     return SDK_RET_OK;
 }
