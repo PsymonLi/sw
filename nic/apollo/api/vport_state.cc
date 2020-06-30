@@ -60,7 +60,7 @@ vport_state::find(pds_obj_key_t *key) const {
 
 sdk_ret_t
 vport_state::walk(state_walk_cb_t walk_cb, void *ctxt) {
-    return vport_ht_->walk(walk_cb, ctxt);
+    return vport_ht_->walk_safe(walk_cb, ctxt);
 }
 
 sdk_ret_t

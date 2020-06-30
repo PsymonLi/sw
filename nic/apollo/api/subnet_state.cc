@@ -63,7 +63,7 @@ subnet_state::find(pds_obj_key_t *subnet_key) const {
 
 sdk_ret_t
 subnet_state::walk(state_walk_cb_t walk_cb, void *ctxt) {
-    return subnet_ht_->walk(walk_cb, ctxt);
+    return subnet_ht_->walk_safe(walk_cb, ctxt);
 }
 
 sdk_ret_t

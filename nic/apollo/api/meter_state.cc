@@ -62,7 +62,7 @@ meter_state::find(pds_obj_key_t *key) const {
 
 sdk_ret_t
 meter_state::walk(state_walk_cb_t walk_cb, void *ctxt) {
-    return meter_ht()->walk(walk_cb, ctxt);
+    return meter_ht()->walk_safe(walk_cb, ctxt);
 }
 
 /// \@}    // end of PDS_METER_STATE

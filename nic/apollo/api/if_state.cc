@@ -100,7 +100,7 @@ if_state::walk(uint32_t if_type, sdk::lib::ht::ht_walk_cb_t walk_cb,
     walk_ctxt.if_type = if_type;
     walk_ctxt.ctxt = ctxt;
     walk_ctxt.walk_cb = walk_cb;
-    ifindex_ht_->walk(if_state::walk_cb_, &walk_ctxt);
+    ifindex_ht_->walk_safe(if_state::walk_cb_, &walk_ctxt);
     return SDK_RET_OK;
 }
 

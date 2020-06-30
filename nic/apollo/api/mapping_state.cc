@@ -186,7 +186,7 @@ mapping_state::perish(const pds_obj_key_t& key) {
 
 sdk_ret_t
 mapping_state::walk(state_walk_cb_t walk_cb, void *ctxt) {
-    return mapping_ht_->walk(walk_cb, ctxt);
+    return mapping_ht_->walk_safe(walk_cb, ctxt);
 }
 
 sdk_ret_t

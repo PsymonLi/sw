@@ -62,7 +62,7 @@ tag_state::find(pds_obj_key_t *key) const {
 
 sdk_ret_t
 tag_state::walk(state_walk_cb_t walk_cb, void *ctxt) {
-    return tag_ht_->walk(walk_cb, ctxt);
+    return tag_ht_->walk_safe(walk_cb, ctxt);
 }
 
 sdk_ret_t

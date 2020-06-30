@@ -113,7 +113,7 @@ public:
         lif_cb_ctxt.lif = NULL;
         lif_cb_ctxt.type = type;
         lif_cb_ctxt.pinned_if = IFINDEX_INVALID;
-        lif_ht_->walk(lif_compare_cb_, &lif_cb_ctxt);
+        lif_ht_->walk_safe(lif_compare_cb_, &lif_cb_ctxt);
         return lif_cb_ctxt.lif;
     }
 
@@ -128,7 +128,7 @@ public:
         lif_cb_ctxt.lif = NULL;
         lif_cb_ctxt.type = type;
         lif_cb_ctxt.pinned_if = pinned_if;
-        lif_ht_->walk(lif_compare_cb_, &lif_cb_ctxt);
+        lif_ht_->walk_safe(lif_compare_cb_, &lif_cb_ctxt);
         return lif_cb_ctxt.lif;
     }
 
@@ -137,7 +137,7 @@ public:
     /// \param[in] ctxt       opaque context passed back to the callback
     /// \return   SDK_RET_OK on success, failure status code on error
     virtual sdk_ret_t walk(state_walk_cb_t walk_cb, void *ctxt) {
-        return lif_ht_->walk(walk_cb, ctxt);
+        return lif_ht_->walk_safe(walk_cb, ctxt);
     }
 
     /// \brief return the number of host lifs in the database
