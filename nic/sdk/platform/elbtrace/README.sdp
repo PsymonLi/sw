@@ -1,3 +1,5 @@
+Refer to README.md for detailed setup instruction. It's similar for MPU/SDP/DMA trace
+
 SDP trace setup instructions
 ============================
 1. Configuration
@@ -20,7 +22,7 @@ SDP trace setup instructions
 SDP trace postprocessing instructions
 ======================================
 
-    >> sdk/platform/elbtrace/elbtrace.py decode_sdp <dump_filename>.bin 
+    >> sdk/platform/elbtrace/elbtrace.py decode_sdp sdp.bin 
 
     optional arguments:
      --sort=<fieldname>

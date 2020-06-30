@@ -181,13 +181,13 @@ def decode_mpu_trace_file(bytez):
         s += sizeof(TraceFileHeader)
 
         #print(sizeof(TraceFileHeader))
-        print("\n>>> Trace config HDR : 0x{:0128x}\n".format(int.from_bytes(fhdr, byteorder='big')))
-        for fld in (fhdr._fields_):
-            if not fld[0].startswith('_'):
-                if fld[0].startswith('pipeline'):
-                    print("{:50} {:#x} ({})".format(fld[0], getattr(fhdr, fld[0]), PIPELINE(getattr(fhdr, fld[0])).name))
-                else:
-                    print("{:50} {:#x}".format(fld[0], getattr(fhdr, fld[0])))
+        #print("\n>>> Trace config HDR : 0x{:0128x}\n".format(int.from_bytes(fhdr, byteorder='big')))
+        #for fld in (fhdr._fields_):
+        #    if not fld[0].startswith('_'):
+        #        if fld[0].startswith('pipeline'):
+        #            print("{:50} {:#x} ({})".format(fld[0], getattr(fhdr, fld[0]), PIPELINE(getattr(fhdr, fld[0])).name))
+        #        else:
+        #            print("{:50} {:#x}".format(fld[0], getattr(fhdr, fld[0])))
 
         assert(fhdr.trace_size != 0)
         # Read Trace
@@ -209,12 +209,12 @@ def decode_mpu_trace_kd(bytez):
             break
     else:
         # Empty trace
-        print("\n Empty trace \n")
+        #print("\n Empty trace \n")
         return
 
     # print(','.join(hex(x) for x in bytez[:64]))
 
-    print("Found magic at offset ", i)
+    #print("Found magic at offset ", i)
     from collections import deque
     bytez = deque(bytez)
     bytez.rotate(-i)

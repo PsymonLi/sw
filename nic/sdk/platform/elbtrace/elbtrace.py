@@ -47,7 +47,8 @@ data_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
 data_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
 
 m_file_parser = subparsers.add_parser('decode_mpu', help='Parse MPU Trace file')
-m_file_parser.add_argument('file', help='Trace file path')
+m_file_parser.add_argument('mpu_file', help='MPU Trace file path')
+m_file_parser.add_argument('--decode_sdp', help="Parse SDP Trace file")
 m_file_parser.add_argument('--sym', default='elbtrace.syms', help="Symbol file")
 m_file_parser.add_argument('--load', default='mpu_prog_info.json', help="Loader file")
 m_file_parser.add_argument('--fltr', nargs='+', default=list(), help='Header filters')
@@ -139,13 +140,44 @@ elif args.command == "decode_mpu":
     else:
         create_loader_db()
 
+
+    def print_trace(sdp_trace):
+    
+        print("printing sdp_trace")
+        for ts in sdp_trace:
+            print("timestamp is {}".format(hex(ts)))
+            print("timestamp is {}".format(ts))
+            #print(sdp_trace[ts])
+            print("individual fields")
+            for entry in sdp_trace[ts]:
+                print("entry")
+                #print(entry)
+                for key in (entry):
+                    print("{:50} {:#x}".format(key, entry[key]))
+        return
+
+
+
+    if args.decode_sdp:
+        print("decode_sdp detected")
+        sort_type=""
+        k = open(args.decode_sdp, "rb")
+        sdp_list = decode_sdp_trace_file(k.read(), sort_type, 0)
+        #print("sdp_list")
+        #print(sdp_list)
+        #print_trace(sdp_list)
+        #print(sdp_list[1918281453])
+        #print_trace(sdp_list)
+####
     def hdr_sort_key(hdr):
         return hdr.sdp_pkt_id, hdr.stg, hdr.timestamp
 
-    with open(args.file, "rb") as f:
+
+    with open(args.mpu_file, "rb") as f:
 
         trace = defaultdict(list)
-
+        
+        j = 0x0
         # Decode and filter the trace
         for fhdr, hdr, key, data, instructions in decode_mpu_trace_file(f.read()):
 
@@ -156,6 +188,7 @@ elif args.command == "decode_mpu":
             # Save trace entry
             trace[hdr.phv_timestamp_capture].append((fhdr, hdr, key, data, instructions))
 
+
         # Print the trace
         for ts in sorted(trace):
 
@@ -163,7 +196,35 @@ elif args.command == "decode_mpu":
             print("=== PHV ===")
             print()
 
+            stg_phv = defaultdict(list)
+            #check if ts entry is available in sdp_list
+            if ts in sdp_list:
+                #print("Timestamp match found")
+                for entry in sdp_list[ts]:
+                    #print("entry")
+                    #for key in (entry):
+                        #print("{:50} {:#x}".format(key, entry[key]))
+                    #create per stage entries
+                    stg_num = entry["stage_num"]
+                    #print(stg_num)
+                    stg_phv[stg_num].append(entry["sdp_phv"])
+                    #print(entry["sdp_phv"])
+                #del sdp_list[ts]
+
             for fhdr, hdr, key, data, instructions in sorted(trace[ts], key=lambda x: hdr_sort_key(x[1])):
+                
+                if hdr.stg in stg_phv:
+                    print("=== STG PHV ===")
+                    print("Stage Num: {}".format(hdr.stg))
+                    #print(stg_phv[hdr.stg])
+                    for entry in stg_phv[hdr.stg]:
+                        for name, val in decode_phv(hdr.entry_pc << 6, entry):
+                            print("{:50} {:#x}".format(name, val))
+                        print("")
+                    #delete per-stage entries after printing to avoid printing again
+                    del stg_phv[hdr.stg]
+                #print(stg_phv)
+
 
                 # Header
                 print("\n>>> HDR : 0x{:0128x}\n".format(int.from_bytes(hdr, byteorder='big')))
@@ -179,6 +240,7 @@ elif args.command == "decode_mpu":
                 print("\n>>> PROGRAM : pc 0x{:010x} program '{:}' label '{:}'\n".format(
                     hdr.entry_pc << 6, pgm, label))
                 prev_time = hdr.timestamp
+
 
                 if key:
                     # Decode key
@@ -270,12 +332,10 @@ elif args.command == "decode_mpu":
                         ))
                         
                         print()
-                        print("=====MPU Intruction Header start")
+                        print("=== MPU Instruction Header === ")
                         for fld in (instr._fields_):
                             if not fld[0].startswith('_'):
                                 print("{:50} {:#x}".format(fld[0], getattr(instr, fld[0])))
-                        print("=====MPU Intruction Header End")
-
                         print()
 
                         prev_time = instr.timestamp
@@ -299,6 +359,10 @@ elif args.command == "decode_sdp":
         trace = defaultdict(list)
         sort_type = args.sort
 
-        decode_sdp_trace_file(f.read(), sort_type)
+        sdp_list = decode_sdp_trace_file(f.read(), sort_type, 1)
+        #print_sdp(sdp_list, sort_type)
 
         print("decode_sdp done")
+
+
+

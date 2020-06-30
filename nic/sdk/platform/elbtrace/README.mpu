@@ -1,0 +1,29 @@
+Refer to README.md for detailed instruction
+
+MPU trace setup instructions
+============================
+1. Configuration
+
+    >> elbtrace conf_mpu conf/elbtrace/<cfg_filename>.json
+
+2. Check configuration
+
+    >> elbtrace show_mpu
+
+3. Reset configuration
+
+    >> elbtrace reset_mpu
+
+4. Dump trace
+
+    >> elbtrace dmp_mpu <dump_filename>.bin
+
+
+MPU trace postprocessing instructions
+======================================
+Refer to README.md for detailed instruction
+ 
+    >> sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --load=mpu_prog_info.json --sym=elbtrace.syms
+    >> sdk/platform/mputrace/elbtrace.py decode_mpu mpu.bin --fltr phv_timestamp_capture=0x1c07a80c --load=mpu_prog_info.json --sym=elbtrace.syms > pkt1c07.log
+
+    >> sdk/platform/elbtrace/elbtrace.py decode_mpu mpu.bin --decode_sdp=sdp.bin --load=mpu_prog_info.json --sym=elbtrace.syms
