@@ -2573,21 +2573,7 @@ export class Utility {
       if (!request) {
         return request;
       }
-      if (request.url && request.url.indexOf('/v1/login') >= 0) {
-        const hiddenText = '**HIDDEN**';
-        if (request['username']) {
-          request['username'] = hiddenText;
-        }
-        if (request['password']) {
-          request['password'] = hiddenText;
-        }
-        if (request['tenant']) {
-          request['tenant'] = hiddenText;
-        }
-        return request;
-      } else {
-        return this.filterOutPasswordText(request.body);
-      }
+      return this.filterOutPasswordText(request.body);
     } catch (error) {
       // do nothing
       console.error('Utility.ts.checkRequestData() ', error);
