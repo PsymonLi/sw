@@ -230,6 +230,7 @@ class EntityManagement:
         self.fw_images = fw_images
         self.console_logfile = None
         self.SSHPassInit()
+        self.upgrade_complete = False
         return
 
     def SetHost(self, host):
@@ -243,6 +244,11 @@ class EntityManagement:
         self.scp_pfx = "sshpass -p %s scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
         self.ssh_pfx = "sshpass -p %s ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no " % self.password
 
+    def IsUpgradeComplete(self):
+        return self.upgrade_complete
+
+    def SetUpgradeComplete(self, flag):
+        self.upgrade_complete = flag
 
     def NaplesWait(self):
         self.clear_buffer()
@@ -594,10 +600,11 @@ class NaplesManagement(EntityManagement):
 
     @_exceptionWrapper(_errCodes.NAPLES_FW_INSTALL_FAILED, "Gold Firmware Install failed")
     def InstallGoldFirmware(self):
-        self.CopyIN(os.path.join(GlobalOptions.wsdir, self.fw_images.gold_fw_img), entity_dir = NAPLES_TMP_DIR)
-        self.SendlineExpect("/nic/tools/sysupdate.sh -p " + NAPLES_TMP_DIR + "/" + os.path.basename(self.fw_images.gold_fw_img),
-                            "#", timeout = UPGRADE_TIMEOUT)
-        self.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
+        if not self.IsNaplesGoldFWLatest():
+            self.CopyIN(os.path.join(GlobalOptions.wsdir, self.fw_images.gold_fw_img), entity_dir = NAPLES_TMP_DIR)
+            self.SendlineExpect("/nic/tools/sysupdate.sh -p " + NAPLES_TMP_DIR + "/" + os.path.basename(self.fw_images.gold_fw_img),
+                                "#", timeout = UPGRADE_TIMEOUT)
+            self.SendlineExpect("/nic/tools/fwupdate -l", "#", trySync=True)
 
     def __connect_to_console(self):
         for _ in range(3):
@@ -1016,7 +1023,10 @@ class HostManagement(EntityManagement):
         #            entity_dir = HOST_NAPLES_DIR, naples_dir = "/sysconfig/config0")
 
         for naples_inst in self.naples:
+            if naples_inst.IsUpgradeComplete():
+                continue
             naples_inst.InstallPrep()
+            naples_inst.ReadInternalIP()
 
             if copy_fw:
                 self.CopyIN(os.path.join(GlobalOptions.wsdir, naples_inst.fw_images.image), entity_dir = HOST_NAPLES_DIR, naples_dir = NAPLES_TMP_DIR)
@@ -1222,6 +1232,8 @@ class EsxHostManagement(HostManagement):
     def InstallMainFirmware(self, mount_data = True, copy_fw = True):
 
         for naples_inst in self.naples:
+            if naples_inst.IsUpgradeComplete():
+                continue
             naples_inst.InstallPrep()
 
             #Ctrl VM reboot might have removed the image
@@ -1615,7 +1627,8 @@ class PenOrchestrator:
 
         if GlobalOptions.only_init == True:
             # Case 3: Only INIT option.
-            naples_inst.Connect()
+            for naples_inst in self.__naples:
+                naples_inst.Connect()
             self.__host.Init(driver_pkg = self.__driver_images.drivers_pkg, cleanup = True)
             return
 
@@ -1724,6 +1737,7 @@ class PenOrchestrator:
                 print("installing and running tests with firmware without checking goldfw")
                 try:
                     naples_inst.InstallMainFirmware()
+                    naples_inst.SetUpgradeComplete(True)
                     if not naples_inst.IsNaplesGoldFWLatest():
                         naples_inst.InstallGoldFirmware()
                 except:

@@ -27,7 +27,7 @@ def __get_l2segment_vlan_for_endpoint(ep):
     assert(len(objects) == 1)
     return objects[0].spec.vlan_id
 
-def __setup_vmotion_on_hosts():
+def __setup_vmotion_on_hosts(nodes = None):
     vmotion_workloads = {}
     ep_objs = netagent_api.QueryConfigs(kind='Endpoint')
     ep_ref = None
@@ -60,33 +60,42 @@ def __setup_vmotion_on_hosts():
     return api.types.status.SUCCESS
 
 
-def __add_workloads(target_node = None):
+def __add_workloads(nodes):
     req = topo_svc.WorkloadMsg()
-    if target_node:
-        # Iterate over all devices
-        for dev_name in api.GetDeviceNames(target_node):
-            if api.GetTestbedNicMode(target_node, dev_name) in ['hostpin', 'hostpin_dvs', 'unified']:
-                wl_orch.AddConfigWorkloads(req, target_node)
-                break
-            elif api.GetTestbedNicMode(target_node, dev_name) == 'classic':
-                wl_orch.AddConfigClassicWorkloads(req, target_node)
-                break
+
+    # Create list(s) based on NicMode
+    classic_wload_nodes = []
+    unified_wload_nodes = []
+    vmotion_enabled_nodes = []
+    # Iterate over all devices
+    for node in nodes:
+        for dev_name in api.GetDeviceNames(node.Name()):
+            if api.GetTestbedNicMode(node.Name(), dev_name) in ['hostpin', 'hostpin_dvs', 'unified']:
+                if node.Name() not in unified_wload_nodes:
+                    unified_wload_nodes.append(node.Name())
+                if api.GetTestbedNicMode(node.Name(), dev_name) == 'hostpin_dvs':
+                    if node.Name() not in vmotion_enabled_nodes:
+                        vmotion_enabled_nodes.append(node.Name())
+            elif api.GetTestbedNicMode(node.Name(), dev_name) == 'classic':
+                if node.Name() not in classic_wload_nodes:
+                    classic_wload_nodes.append(node.Name())
             else:
-                api.Logger.error("Unknown NicMode for device - skipping")
-    else:
-        if api.GetTestbedNicMode(target_node) in ['hostpin', 'hostpin_dvs', 'unified']:
-            wl_orch.AddConfigWorkloads(req, target_node)
-        elif api.GetTestbedNicMode(target_node) == 'classic':
-            wl_orch.AddConfigClassicWorkloads(req, target_node)
-        else:
-            assert(0)
+                api.Logger.error("Unknown NicMode for node %s device %s - Skipping" % (node, dev_name))
+
+    if classic_wload_nodes: 
+        api.Logger.info("Creating Classic-Workloads for %s" % classic_wload_nodes)
+        wl_orch.AddConfigClassicWorkloads(req, classic_wload_nodes)
+    if unified_wload_nodes:
+        api.Logger.info("Creating hostpin/unified mode workloads for %s" % unified_wload_nodes)
+        wl_orch.AddConfigWorkloads(req, unified_wload_nodes)
 
     if len(req.workloads):
         resp = api.AddWorkloads(req, skip_bringup=api.IsConfigOnly())
         if resp is None:
             sys.exit(1)
-    if api.GetTestbedNicMode(target_node) == 'hostpin_dvs':
-        ret = __setup_vmotion_on_hosts()
+
+    if vmotion_enabled_nodes:
+        ret = __setup_vmotion_on_hosts(vmotion_enabled_nodes)
         if ret != api.types.status.SUCCESS:
             sys.exit(1)
     return api.types.status.SUCCESS
@@ -117,8 +126,10 @@ def GetIPv6Allocator(nw_name):
 def GetMacAllocator(): 
     return copy.deepcopy(wl_orch.TopoWorkloadConfig.GetClassicMacAllocator())
 
-def AddWorkloads(target_node = None):
-    return __add_workloads(target_node)
+def AddWorkloads(nodes = None):
+    if not nodes:
+        nodes = api.GetNodes()
+    return __add_workloads(nodes)
 
 def RestoreWorkloads():
     return __recover_workloads()
@@ -225,7 +236,7 @@ def ReAddWorkloads(node):
         __readd_classic_workloads(node)
     else:
         __delete_workloads(node)
-        __add_workloads(node)
+        __add_workloads([node])
     return AddNaplesWorkloads(node)
 
 def UpdateNetworkAndEnpointObject():
@@ -270,7 +281,7 @@ def Main(args):
         if nic_mode not in ['classic']:
             kinds = ["SecurityProfile"] if nic_mode == 'unified' else None
             netagent_api.PushBaseConfig(kinds=kinds)
-        __add_workloads()
+        __add_workloads(api.GetNodes())
     return api.types.status.SUCCESS
 
 if __name__ == '__main__':

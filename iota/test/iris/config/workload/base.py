@@ -389,7 +389,7 @@ class NodeWorkloads(object):
                 wl_msg = req.workloads.add()
                 intf = wl_msg.interfaces.add()
                 intfObj = interfaces[subif_indx % len(interfaces)] # TODO enhance for unequal distribution of workloads
-                nw_spec = self.GetSubInterfaceNetworkSpec(device_name, subif_indx, self.__wlSpec.spec)
+                nw_spec = self.GetSubInterfaceNetworkSpec(device_name[-1:], subif_indx, self.__wlSpec.spec)
                 ipv4_allocator = nw_spec.GetPrimaryIPv4Allocator() # ipv4_allocators[i]
                 ipv6_allocator = nw_spec.GetPrimaryIPv6Allocator() # ipv6_allocators[i]
                 vlan = nw_spec.GetVLAN() # vlans[i]
@@ -451,7 +451,7 @@ def __get_l2segment_vlan_for_endpoint(ep):
     assert(len(objects) == 1)
     return objects[0].spec.vlan_id
 
-def AddConfigWorkloads(req, target_node = None):
+def AddConfigWorkloads(req, nodes = None):
     mva = api.GetMultiVlanAllocators()
     third_party_workload_count = 0
     ep_objs = netagent_api.QueryConfigs(kind='Endpoint')
@@ -460,7 +460,7 @@ def AddConfigWorkloads(req, target_node = None):
         node_name = getattr(ep.spec, "_node_name", None)
         if not node_name:
             node_name = ep.spec.node_uuid
-        if target_node and target_node != node_name:
+        if nodes and node_name not in nodes:
             api.Logger.debug("Skipping add workload for node %s" % node_name)
             continue
         if not api.IsNaplesNode(node_name):
@@ -532,7 +532,7 @@ def AddConfigWorkloads(req, target_node = None):
         wl_msg.cpus = api.GetWorkloadCpusForNode(wl_msg.node_name)
         wl_msg.memory = api.GetWorkloadMemoryForNode(wl_msg.node_name)
 
-def AddConfigClassicWorkloads(req, target_node = None):
+def AddConfigClassicWorkloads(req, nodes = None):
     # Using up first vlan for native
 
     req.workload_op = topo_svc.ADD
@@ -541,19 +541,17 @@ def AddConfigClassicWorkloads(req, target_node = None):
     # Forming native workloads
     for workload in TopoWorkloadConfig.GetNativeWorkloadInstances():
         wl = workload.workload
-        if target_node and target_node != wl.node:
-            continue
-        node_wlm = NodeWorkloads(wl, native_vlan)
-        node_wlm.CreateNativeWorkloads(req)
+        if nodes and wl.node in nodes:
+            node_wlm = NodeWorkloads(wl, native_vlan)
+            node_wlm.CreateNativeWorkloads(req)
 
     tagged_vlan = api.Testbed_AllocateVlan()
     api.Logger.info("Allocating tagged VLAN %d" % tagged_vlan) 
     for workload in TopoWorkloadConfig.GetTaggedWorkloadInstances():
         wl = workload.workload
-        if target_node and target_node != wl.node:
-            continue
-        node_wlm = NodeWorkloads(wl, tagged_vlan)
-        node_wlm.CreateTaggedWorkloads(req)
+        if nodes and wl.node in nodes:
+            node_wlm = NodeWorkloads(wl, tagged_vlan)
+            node_wlm.CreateTaggedWorkloads(req)
 
     return
 
